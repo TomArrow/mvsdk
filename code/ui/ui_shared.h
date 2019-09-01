@@ -45,7 +45,7 @@
 #define WINDOW_POPUP				0x00200000	// popup
 #define WINDOW_BACKCOLORSET			0x00400000	// backcolor was explicitly set 
 #define WINDOW_TIMEDVISIBLE			0x00800000	// visibility timing ( NOT implemented )
-#ifdef JK2MV_MENU
+#if defined(JK2MV_MENU) || defined(JK2_UI)
 #define WINDOW_ASPECTCORRECT		0x10000000	// aspect correct window's item/position
 #define WINDOW_ALIGN_CENTER			0x20000000	// used for aspect corrected items' where their new position needs to be aligned with their old position
 #endif
