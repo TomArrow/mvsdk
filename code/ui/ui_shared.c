@@ -11,7 +11,7 @@
 #include "../ui/ui_local.h"
 #endif
 
-#ifdef JK2MV_MENU
+#if defined(JK2MV_MENU) || defined(JK2_UI)
 #include "ui_local.h"
 extern void UI_WideScreenMode(qboolean on);
 extern vmCvar_t	ui_widescreen;
@@ -744,7 +744,7 @@ void Window_Paint(Window *w, float fadeAmount, float fadeClamp, float fadeCycle)
 		{
 			DC->setColor(w->foreColor);
 		}
-#ifdef JK2MV_MENU
+#if defined(JK2MV_MENU) || defined(JK2_UI)
 		if (ui_widescreen.integer && (w->flags & WINDOW_ASPECTCORRECT)) {
 			UI_WideScreenMode(qtrue);
 			if (w->flags & WINDOW_ALIGN_CENTER) {
@@ -4478,7 +4478,7 @@ void Item_Model_Paint(itemDef_t *item)
 	refdef.fov_x = 45;
 	refdef.fov_y = 45;
 
-#if JK2MV_MENU
+#if defined(JK2MV_MENU) || defined(JK2_UI)
 	if (ui_widescreen.integer && (item->window.flags & WINDOW_ASPECTCORRECT)) {
 		refdef.fov_x *= uiInfo.screenXFactorInv;
 	}
@@ -5754,8 +5754,8 @@ qboolean ItemParse_decoration( itemDef_t *item, int handle ) {
 	return qtrue;
 }
 
-#ifdef JK2MV_MENU
 qboolean ItemParse_aspectCorrect( itemDef_t *item, int handle ) {
+#if defined(JK2MV_MENU) || defined(JK2_UI)
 	item->window.flags |= WINDOW_ASPECTCORRECT;
 
 	if (PC_Int_Parse(handle, &item->alignment)) {
@@ -5769,10 +5769,9 @@ qboolean ItemParse_aspectCorrect( itemDef_t *item, int handle ) {
 				break; //do nothing unless I need to use these at some point
 		}
 	}
-
+#endif
 	return qtrue;
 }
-#endif
 
 // notselectable
 qboolean ItemParse_notselectable( itemDef_t *item, int handle ) {
@@ -6489,9 +6488,7 @@ static keywordHash_t itemParseKeywords[] = {
 	{"cvarTest",		ItemParse_cvarTest,			NULL	},
 	{"desctext",		ItemParse_descText,			NULL	},
 	{"decoration",		ItemParse_decoration,		NULL	},
-#ifdef JK2MV_MENU
-	{"aspectCorrect",	ItemParse_aspectCorrect,	NULL	},	// Expects argument for horizontal alignment style, takes -1 or ITEM_ALIGN_LEFT/RIGHT/CENTER
-#endif
+	{"aspectCorrect",	ItemParse_aspectCorrect,	NULL	},	//JK2MV_MENU/UI: Expects argument for horizontal alignment style, takes -1 or ITEM_ALIGN_LEFT/RIGHT/CENTER
 	{"disableCvar",		ItemParse_disableCvar,		NULL	},
 	{"doubleclick",		ItemParse_doubleClick,		NULL	},
 	{"elementheight",	ItemParse_elementheight,	NULL	},
