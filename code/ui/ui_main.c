@@ -292,10 +292,20 @@ static void UI_UpdateWidescreen(void) {
 	if (uiInfo.portraitMode && isMainMenu) {
 		uiInfo.screenWidth = (float)SCREEN_WIDTH;
 		uiInfo.screenHeight = (float)SCREEN_HEIGHT;
+		if (ui_widescreen.integer < 3) { //for the sake of direct comparison
+			uiInfo.screenYFactor = (float)SCREEN_HEIGHT / uiInfo.screenHeight;
+			uiInfo.screenYFactorInv = uiInfo.screenHeight / (float)SCREEN_HEIGHT;
+			uiInfo.portraitMode = qfalse;
+		}
 	}
 
 	if (mvapi >= 3 && ui_widescreen.integer != 2)
 		trap_MVAPI_SetVirtualScreen(uiInfo.screenWidth, uiInfo.screenHeight);
+
+#if DEBUG
+	if (uiInfo.uiDC.FPS > 24) //sad hack of a workaround to keep this from being called on startup
+		UI_Load();
+#endif
 }
 
 menuDef_t *Menus_FindByName(const char *p);
@@ -759,7 +769,7 @@ void _UI_Refresh( int realtime )
 		UI_BuildFindPlayerList(qfalse);
 
 		// draw cursor
-		if (ui_widescreen.integer && mvapi >= 3 && uiInfo.portraitMode && isMainMenu) { //Scale height on the main menu in portrait mode.
+		if (ui_widescreen.integer >= 3 && mvapi >= 3 && uiInfo.portraitMode && isMainMenu) { //Scale height on the main menu in portrait mode.
 			UI_SetColor(NULL);
 			trap_MVAPI_SetVirtualScreen((float)SCREEN_WIDTH, (float)SCREEN_HEIGHT * uiInfo.screenYFactorInv);
 			UI_DrawHandlePic(uiInfo.uiDC.cursorx, uiInfo.uiDC.cursory * uiInfo.screenYFactorInv, 48, 48, uiInfo.uiDC.Assets.cursor);
@@ -7481,7 +7491,7 @@ void _UI_MouseEvent( int dx, int dy )
 	else if (uiInfo.uiDC.cursorx > SCREEN_WIDTH)
 		uiInfo.uiDC.cursorx = SCREEN_WIDTH;
 
-	if (ui_widescreen.integer && uiInfo.portraitMode && isMainMenu)
+	if (ui_widescreen.integer >= 3 && uiInfo.portraitMode && isMainMenu)
 		uiInfo.uiDC.cursory += dy * uiInfo.screenYFactor;
 	else
 		uiInfo.uiDC.cursory += dy;
@@ -8180,7 +8190,11 @@ static const cvarTable_t cvarTable[] = {
 	{ &ui_serverStatusTimeOut, "ui_serverStatusTimeOut", "7000", CVAR_ARCHIVE},
 	{ &ui_s_language, "s_language", "english", CVAR_ARCHIVE | CVAR_NORESTART},
 
+#if DEBUG
+	{ &ui_widescreen, "ui_widescreen", "1", CVAR_ARCHIVE },
+#else
 	{ &ui_widescreen, "ui_widescreen", "1", CVAR_ARCHIVE | CVAR_LATCH },
+#endif
 
 	{ &ui_MVSDK, "ui_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_USERINFO },
 
