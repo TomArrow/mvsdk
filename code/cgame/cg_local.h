@@ -1302,12 +1302,9 @@ typedef struct
 // all clients to begin playing instantly
 typedef struct {
 	gameState_t		gameState;			// gamestate from server
-	vmglconfig_t		glconfig;			// rendering configuration
 	float			screenXScale;		// derived from glconfig
 	float			screenYScale;
 	//float			screenXBias;
-	float			screenHeight;
-	float			screenWidth;		// virtual screen width (originally 640)
 
 	int				serverCommandSequence;	// reliable command stream counter
 	int				processedSnapshotNum;// the number of snapshots cgame has requested
@@ -1597,7 +1594,11 @@ void CG_NextForcePower_f(void);
 void CG_PrevForcePower_f(void);
 void MV_LoadSettings( const char *info );
 void MV_UpdateCgFlags( void );
-void CG_WideScreenMode(qboolean on);
+
+#ifdef JK2_CGAME
+#include "../ui/ui_shared.h"
+extern displayContextDef_t cgDC;
+#endif
 
 //
 // cg_view.c

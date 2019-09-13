@@ -102,7 +102,7 @@ void CG_DrawInformation( void ) {
 	const char	*s;
 	const char	*info;
 	const char	*sysInfo;
-	const float	x = 0.5f * cgs.screenWidth;
+	const float	x = 0.5f * cgDC.screenWidth;
 	int			y;
 	int			value, valueNOFP;
 	qhandle_t	levelshot;
@@ -118,7 +118,7 @@ void CG_DrawInformation( void ) {
 		levelshot = trap_R_RegisterShaderNoMip( "menu/art/unknownmap" );
 	}
 	trap_R_SetColor( NULL );
-	CG_DrawPic(0, 0, cgs.screenWidth, cgs.screenHeight, levelshot);
+	CG_DrawPic(0, 0, cgDC.screenWidth, cgDC.screenHeight, levelshot);
 
 	CG_LoadBar();
 				   
@@ -129,17 +129,17 @@ void CG_DrawInformation( void ) {
 	// screen to write into
 	if ( cg.infoScreenText[0] ) {
 		const char *psLoading = CG_GetStripEdString("MENUS3", "LOADING_MAPNAME");
-		UI_DrawProportionalString( x, (cgs.screenHeight*0.27f)-2-32, va(/*"Loading... %s"*/ psLoading, cg.infoScreenText),
+		UI_DrawProportionalString( x, (cgDC.screenHeight*0.27f)-2-32, va(/*"Loading... %s"*/ psLoading, cg.infoScreenText),
 			UI_CENTER|UI_INFOFONT|UI_DROPSHADOW, colorWhite );
 	} else {
 		const char *psAwaitingSnapshot = CG_GetStripEdString("MENUS3", "AWAITING_SNAPSHOT");
-		UI_DrawProportionalString( x, (cgs.screenHeight*0.27f)-2-32, /*"Awaiting snapshot..."*/psAwaitingSnapshot,
+		UI_DrawProportionalString( x, (cgDC.screenHeight*0.27f)-2-32, /*"Awaiting snapshot..."*/psAwaitingSnapshot,
 			UI_CENTER|UI_INFOFONT|UI_DROPSHADOW, colorWhite );
 	}
 
 	// draw info string information
 
-	y = (cgs.screenHeight*0.375f)-32;
+	y = (cgDC.screenHeight*0.375f)-32;
 
 	// don't print server lines if playing a local game
 	trap_Cvar_VariableStringBuffer( "sv_running", buf, sizeof( buf ) );
@@ -174,7 +174,7 @@ void CG_DrawInformation( void ) {
 
 			if (motdString[0])
 			{
-				UI_DrawProportionalString( x, cgs.screenHeight-55, motdString,
+				UI_DrawProportionalString( x, cgDC.screenHeight-55, motdString,
 					UI_CENTER|UI_INFOFONT|UI_DROPSHADOW, colorWhite );
 			}
 		}
@@ -409,8 +409,8 @@ void CG_LoadBar(void)
 	const int tickpadx = 20, tickpady = 12;
 	const int capwidth = 8;
 	const float barwidth = numticks*tickwidth+tickpadx*2+capwidth*2;
-	const float barleft = 0.5f * (cgs.screenWidth - barwidth);
-	const int barheight = tickheight + tickpady*2, bartop = cgs.screenHeight-barheight;
+	const float barleft = 0.5f * (cgDC.screenWidth - barwidth);
+	const int barheight = tickheight + tickpady*2, bartop = cgDC.screenHeight-barheight;
 	const float capleft = barleft+tickpadx;
 	const float tickleft = capleft+capwidth;
 	const float ticktop = bartop+tickpady;

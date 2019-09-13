@@ -870,14 +870,6 @@ typedef struct {
 
 	qboolean inGameLoad;
 
-	float		screenHeight;
-	float		screenWidth;
-	float		screenXFactor;
-	float		screenXFactorInv;
-	float		screenYFactor;
-	float		screenYFactorInv;
-	qboolean	portraitMode;
-
 }	uiInfo_t;
 
 extern uiInfo_t uiInfo;

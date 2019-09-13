@@ -876,11 +876,11 @@ void CG_DrawIconBackground(void)
 	}
 
 	x2 = 30;
-	y2 = cgs.screenHeight-70;
+	y2 = cgDC.screenHeight-70;
 
 	prongLeftX = x2 + 37; 
-	prongRightX = cgs.screenWidth - x2 - 37 + 1;
-	prongWidth = cgs.screenWidth - 2 * (x2 + 60);
+	prongRightX = cgDC.screenWidth - x2 - 37 + 1;
+	prongWidth = cgDC.screenWidth - 2 * (x2 + 60);
 
 	if (inTime > wpTime)
 	{
@@ -1098,7 +1098,7 @@ void CG_DrawWeaponSelect( void ) {
 
 	// Max number of icons on the side
 	if (cg_widescreen.integer)
-		sideMax = (cgs.screenWidth - 240 - bigIconSize) / (smallIconSize + pad) / 2;
+		sideMax = (cgDC.screenWidth - 240 - bigIconSize) / (smallIconSize + pad) / 2;
 	else
 		sideMax = 3;
 
@@ -1126,8 +1126,8 @@ void CG_DrawWeaponSelect( void ) {
 		i = 13;
 	}
 
-	x = 0.5f * cgs.screenWidth;
-	y = cgs.screenHeight - 70;
+	x = 0.5f * cgDC.screenWidth;
+	y = cgDC.screenHeight - 70;
 
 	// Background
 //	memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
@@ -1251,11 +1251,11 @@ void CG_DrawWeaponSelect( void ) {
 		
 		if ( trap_SP_GetStringTextString( va("INGAME_%s",cg_weapons[ cg.weaponSelect ].item->classname), text, sizeof( text )))
 		{
-			UI_DrawProportionalString(0.5f * cgs.screenWidth, y+45, text, UI_CENTER|UI_SMALLFONT, textColor);
+			UI_DrawProportionalString(0.5f * cgDC.screenWidth, y+45, text, UI_CENTER|UI_SMALLFONT, textColor);
 		}
 		else
 		{
-			UI_DrawProportionalString(0.5f * cgs.screenWidth, y+45, cg_weapons[ cg.weaponSelect ].item->classname, UI_CENTER|UI_SMALLFONT, textColor);
+			UI_DrawProportionalString(0.5f * cgDC.screenWidth, y+45, cg_weapons[ cg.weaponSelect ].item->classname, UI_CENTER|UI_SMALLFONT, textColor);
 		}
 	}
 

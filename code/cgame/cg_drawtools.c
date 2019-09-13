@@ -349,8 +349,8 @@ void CG_TileClear( void ) {
 	int		top, bottom, left, right;
 	int		w, h;
 
-	w = cgs.glconfig.vidWidth;
-	h = cgs.glconfig.vidHeight;
+	w = cgDC.glconfig.vidWidth;
+	h = cgDC.glconfig.vidHeight;
 
 	if ( cg.refdef.x == 0 && cg.refdef.y == 0 && 
 		cg.refdef.width == w && cg.refdef.height == h ) {

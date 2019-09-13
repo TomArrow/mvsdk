@@ -1,9 +1,6 @@
 #include "cg_local.h"
 #include "../ui/ui_shared.h"
 
-extern displayContextDef_t cgDC;
-
-
 // set in CG_ParseTeamInfo
 
 //static int sortedTeamPlayers[TEAM_MAXOVERLAY];

@@ -4,7 +4,7 @@
 #include "cg_local.h"
 #include "../ui/ui_shared.h"
 
-#define	SCOREBOARD_X		(0.5f * cgs.screenWidth - 320.0f)
+#define	SCOREBOARD_X		(0.5f * cgDC.screenWidth - 320.0f)
 
 #define SB_HEADER			86
 #define SB_TOP				(SB_HEADER+32)
@@ -31,7 +31,7 @@
 #define SB_HEAD_X			(SCOREBOARD_X+64)
 
 #define SB_SCORELINE_X		(SCOREBOARD_X+100)
-#define SB_SCORELINE_WIDTH	(cgs.screenWidth - SB_SCORELINE_X * 2)
+#define SB_SCORELINE_WIDTH	(cgDC.screenWidth - SB_SCORELINE_X * 2)
 
 #define SB_RATING_WIDTH	    0 // (6 * BIGCHAR_WIDTH)
 #define SB_NAME_X			(SB_SCORELINE_X)
@@ -286,11 +286,11 @@ qboolean CG_DrawOldScoreboard( void ) {
 	{
 		s = va("%s" S_COLOR_WHITE " %s", cgs.clientinfo[cgs.duelWinner].name, CG_GetStripEdString("INGAMETEXT", "DUEL_WINS") );
 		/*w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-		x = 0.5f * ( cgs.screenWidth - w );
+		x = 0.5f * ( cgDC.screenWidth - w );
 		y = 40;
 		CG_DrawBigString( x, y, s, fade );
 		*/
-		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		x = 0.5f * ( cgDC.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
 		y = 40;
 		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
 	}
@@ -299,22 +299,22 @@ qboolean CG_DrawOldScoreboard( void ) {
 	{
 		s = va("%s" S_COLOR_WHITE " %s %s", cgs.clientinfo[cgs.duelist1].name, CG_GetStripEdString("INGAMETEXT", "SPECHUD_VERSUS"), cgs.clientinfo[cgs.duelist2].name );
 		/*w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-		x = 0.5f * ( cgs.screenWidth - w );
+		x = 0.5f * ( cgDC.screenWidth - w );
 		y = 40;
 		CG_DrawBigString( x, y, s, fade );
 		*/
-		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		x = 0.5f * ( cgDC.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
 		y = 40;
 		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
 	}
 	else if ( cg.killerName[0] ) {
 		s = va("%s %s", CG_GetStripEdString("INGAMETEXT", "KILLEDBY"), cg.killerName );
 		/*w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-		x = 0.5f * ( cgs.screenWidth - w );
+		x = 0.5f * ( cgDC.screenWidth - w );
 		y = 40;
 		CG_DrawBigString( x, y, s, fade );
 		*/
-		x = 0.5f * (cgs.screenWidth - CG_Text_Width(s, 1.0f, FONT_MEDIUM));
+		x = 0.5f * (cgDC.screenWidth - CG_Text_Width(s, 1.0f, FONT_MEDIUM));
 		y = 40;
 		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
 	}
@@ -339,7 +339,7 @@ qboolean CG_DrawOldScoreboard( void ) {
 				sWith,
 				cg.snap->ps.persistant[PERS_SCORE] );
 			// w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-			x = 0.5f * cgs.screenWidth;
+			x = 0.5f * cgDC.screenWidth;
 			y = 60;
 			// CG_DrawBigString( x, y, s, fade );
 			UI_DrawProportionalString(x, y, s, UI_CENTER|UI_DROPSHADOW, colorTable[CT_WHITE]);
@@ -353,7 +353,7 @@ qboolean CG_DrawOldScoreboard( void ) {
 			s = va("Blue leads %i to %i",cg.teamScores[1], cg.teamScores[0] );
 		}
 
-		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		x = 0.5f * ( cgDC.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
 		y = 60;
 		
 		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );

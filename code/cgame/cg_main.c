@@ -7,7 +7,7 @@
 
 #include "../ui/ui_shared.h"
 // display context for new ui stuff
-displayContextDef_t cgDC;
+displayContextDef_t cgDC = { 0 };
 
 #if !defined(CL_LIGHT_H_INC)
 	#include "cg_lights.h"
@@ -814,47 +814,6 @@ static void CG_ForceModelChange( void ) {
 }
 
 /*
-===================
-CG_WideScreenMode
-Make 2D drawing functions use widescreen or 640x480 coordinates
-===================
-*/
-void CG_WideScreenMode(qboolean on) {
-	if (mvapi >= 3) {
-		if (on) {
-			trap_MVAPI_SetVirtualScreen(cgs.screenWidth, (float)cgs.screenHeight);
-		}
-		else {
-			trap_MVAPI_SetVirtualScreen((float)SCREEN_WIDTH, (float)SCREEN_HEIGHT);
-		}
-	}
-}
-
-
-/*
-===================
-CG_UpdateWidescreen
-===================
-*/
-static void CG_UpdateWidescreen(void) {
-	if (cg_widescreen.integer && mvapi >= 3) {
-		if ( cgs.glconfig.vidWidth >= cgs.glconfig.vidHeight ) {
-			cgs.screenWidth = (float)SCREEN_HEIGHT * cgs.glconfig.vidWidth / cgs.glconfig.vidHeight;
-			cgs.screenHeight = (float)SCREEN_HEIGHT;
-		} else {
-			cgs.screenWidth = (float)SCREEN_WIDTH;
-			cgs.screenHeight = (float)SCREEN_WIDTH * cgs.glconfig.vidHeight / cgs.glconfig.vidWidth;
-		}
-	} else {
-		cgs.screenWidth = (float)SCREEN_WIDTH;
-		cgs.screenHeight = (float)SCREEN_HEIGHT;
-	}
-	
-	if (mvapi >= 3 && cg_widescreen.integer != 2)
-		trap_MVAPI_SetVirtualScreen(cgs.screenWidth, cgs.screenHeight);
-}
-
-/*
 =================
 CG_UpdateCvars
 =================
@@ -891,7 +850,8 @@ void CG_UpdateCvars( void ) {
 
 	if (widescreenModificationCount != cg_widescreen.modificationCount) {
 		widescreenModificationCount = cg_widescreen.modificationCount;
-		CG_UpdateWidescreen();
+		cgDC.widescreenEnabled = (qboolean)(cg_widescreen.integer && mvapi >= 3);
+		UpdateWidescreen(cgDC.widescreenEnabled);
 	}
 }
 
@@ -2319,8 +2279,6 @@ void CG_LoadHudMenu()
 	cgDC.stopCinematic = &CG_StopCinematic;
 	cgDC.drawCinematic = &CG_DrawCinematic;
 	cgDC.runCinematicFrame = &CG_RunCinematicFrame;
-	
-	Init_Display(&cgDC);
 
 	Menu_Reset();
 }
@@ -2692,16 +2650,17 @@ Ghoul2 Insert End
 	// old servers
 
 	// get the rendering configuration from the client system
-	trap_GetGlconfig( &cgs.glconfig );
-	cgs.screenXScale = cgs.glconfig.vidWidth / 640.0;
-	cgs.screenYScale = cgs.glconfig.vidHeight / 480.0;
-
+	trap_GetGlconfig( &cgDC.glconfig );
+	cgs.screenXScale = cgDC.glconfig.vidWidth / SCREEN_WIDTH;
+	cgs.screenYScale = cgDC.glconfig.vidHeight / SCREEN_HEIGHT;
 
 	CG_RegisterCvars();
 
-	CG_InitConsoleCommands();
+	Init_Display(&cgDC);
+	cgDC.widescreenEnabled = (qboolean)(cg_widescreen.integer && mvapi >= 3);
+	UpdateWidescreen(cgDC.widescreenEnabled);
 
-	CG_UpdateWidescreen();
+	CG_InitConsoleCommands();
 
 	// get the gamestate from the client system
 	trap_GetGameState( &cgs.gameState );

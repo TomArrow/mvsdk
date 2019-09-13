@@ -45,10 +45,8 @@
 #define WINDOW_POPUP				0x00200000	// popup
 #define WINDOW_BACKCOLORSET			0x00400000	// backcolor was explicitly set 
 #define WINDOW_TIMEDVISIBLE			0x00800000	// visibility timing ( NOT implemented )
-#if defined(JK2MV_MENU) || defined(JK2_UI)
 #define WINDOW_ASPECTCORRECT		0x10000000	// aspect correct window's item/position
 #define WINDOW_ALIGN_CENTER			0x20000000	// used for aspect corrected items' where their new position needs to be aligned with their old position
-#endif
 
 
 // CGAME cursor type bits
@@ -343,7 +341,7 @@ typedef struct {
 	void (*setColor) (const vec4_t v);
 	void (*drawHandlePic) (float x, float y, float w, float h, qhandle_t asset);
 	void (*drawStretchPic) (float x, float y, float w, float h, float s1, float t1, float s2, float t2, qhandle_t hShader );
-  void (*drawText) (float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont);
+	void (*drawText) (float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont);
 	int (*textWidth) (const char *text, float scale, int iMenuFont);
 	int (*textHeight) (const char *text, float scale, int iMenuFont);
 	qhandle_t (*registerModel) (const char *p);
@@ -367,19 +365,19 @@ typedef struct {
 	void (*ownerDrawItem) (float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle,int iMenuFont);
 	float (*getValue) (int ownerDraw);
 	qboolean (*ownerDrawVisible) (int flags);
-  void (*runScript)(const char **p);
-  qboolean (*deferScript)(const char **p);
+	void (*runScript)(const char **p);
+	qboolean (*deferScript)(const char **p);
 	void (*getTeamColor)(vec4_t *color);
 	void (*getCVarString)(const char *cvar, char *buffer, int bufsize);
 	float (*getCVarValue)(const char *cvar);
 	void (*setCVar)(const char *cvar, const char *value);
-  void (*drawTextWithCursor)(float x, float y, float scale, const vec4_t color, const char *text, unsigned cursorPos, char cursor, unsigned limit, int style, int iFontIndex);
+	void (*drawTextWithCursor)(float x, float y, float scale, const vec4_t color, const char *text, unsigned cursorPos, char cursor, unsigned limit, int style, int iFontIndex);
 	void (*setOverstrikeMode)(qboolean b);
 	qboolean (*getOverstrikeMode)();
 	void (*startLocalSound)( sfxHandle_t sfx, int channelNum );
 	qboolean (*ownerDrawHandleKey)(int ownerDraw, int flags, float *special, int key);
 	int (*feederCount)(float feederID);
-  const char *(*feederItemText)(float feederID, int index, int column, qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6);
+	const char *(*feederItemText)(float feederID, int index, int column, qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6);
 	qhandle_t (*feederItemImage)(float feederID, int index);
 	qboolean (*feederSelection)(float feederID, int index);
 	void (*keynumToStringBuf)( int keynum, char *buf, int buflen );
@@ -400,22 +398,31 @@ typedef struct {
 	void (*getClipboardData)(char *buf, int bufsize);
 	qboolean (*isDown)(int keynum);
 
-	float			yscale;
-	float			xscale;
-  float			bias;
-  int				realTime;
-  int				frameTime;
-	float			cursorx;
-	float			cursory;
+	float		yscale;
+	float		xscale;
+	float		bias;
+	int			realTime;
+	int			frameTime;
+	float		cursorx;
+	float		cursory;
 	qboolean	debug;
 
-  cachedAssets_t Assets;
+	cachedAssets_t	Assets;
 
-	vmglconfig_t glconfig;
-	qhandle_t	whiteShader;
-	qhandle_t gradientImage;
-	qhandle_t cursor;
-	float FPS;
+	vmglconfig_t	glconfig; // rendering configuration
+	qhandle_t		whiteShader;
+	qhandle_t		gradientImage;
+	qhandle_t		cursor;
+	float			FPS;
+
+	float		screenWidth; // virtual screen width (originally 640)
+	float		screenHeight;
+	float		screenXFactor;
+	float		screenXFactorInv;
+	float		screenYFactor;
+	float		screenYFactorInv;
+	qboolean	portraitMode;
+	qboolean	widescreenEnabled;
 
 } displayContextDef_t;
 
@@ -473,7 +480,10 @@ qboolean UI_OutOfMemory();
 void Controls_GetConfig( void );
 void Controls_SetConfig(qboolean restart);
 
-/*
+void UpdateWidescreen(qboolean enabled); //used for cvar updates, MUST be called AFTER Init_Display(&displayContext_t) is called from module
+void SetWideScreenMode(qboolean on);
+
+#if !defined(JK2_UI) && !defined(JK2MV_MENU)
 int			trap_PC_AddGlobalDefine			( char *define );
 int			trap_PC_LoadSource				( const char *filename );
 int			trap_PC_FreeSource				( int handle );
@@ -481,13 +491,14 @@ int			trap_PC_ReadToken				( int handle, pc_token_t *pc_token );
 int			trap_PC_SourceFileAndLine		( int handle, char *filename, int *line );
 int			trap_PC_LoadGlobalDefines		( const char* filename );
 void		trap_PC_RemoveAllGlobalDefines	( void );
-*/
+#else
 extern int			(*trap_PC_AddGlobalDefine)					(char *define);
 extern int			(*trap_PC_LoadSource)						(const char *filename);
 extern int			(*trap_PC_FreeSource)						(int handle);
 extern int			(*trap_PC_ReadToken)						(int handle, pc_token_t *pc_token);
 extern int			(*trap_PC_SourceFileAndLine)				(int handle, char *filename, int *line);
 extern int			(*trap_PC_LoadGlobalDefines)				(const char* filename);
+#endif
 
 int			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
 int			trap_R_Font_StrLenChars(const char *text);

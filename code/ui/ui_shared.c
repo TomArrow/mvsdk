@@ -8,13 +8,8 @@
 #if defined(JK2_CGAME)
 #include "../cgame/cg_local.h"
 #elif defined(JK2_UI) || defined(JK2MV_MENU)
+extern qboolean isMainMenu;
 #include "../ui/ui_local.h"
-#endif
-
-#if defined(JK2MV_MENU) || defined(JK2_UI)
-#include "ui_local.h"
-extern void UI_WideScreenMode(qboolean on);
-extern vmCvar_t	ui_widescreen;
 #endif
 
 #define SCROLL_TIME_START					500
@@ -639,9 +634,65 @@ Initializes the display with a structure to all the drawing routines
 */
 void Init_Display(displayContextDef_t *dc) {
 	DC = dc;
+
+	DC->screenWidth = (float)SCREEN_WIDTH;
+	DC->screenHeight = (float)SCREEN_HEIGHT;
 }
 
+/*
+===================
+SetWideScreenMode
+Make 2D drawing functions use widescreen or 640x480 coordinates
+===================
+*/
+void SetWideScreenMode(qboolean on) {
+	if (mvapi >= 3) {
+		if (on) {
+			trap_MVAPI_SetVirtualScreen(DC->screenWidth, (float)DC->screenHeight);
+		}
+		else {
+			trap_MVAPI_SetVirtualScreen((float)SCREEN_WIDTH, (float)SCREEN_HEIGHT);
+		}
+	}
+}
 
+/*
+===================
+UpdateWidescreen
+===================
+*/
+void UpdateWidescreen(qboolean enabled) {
+	if (enabled) {
+		if (DC->glconfig.vidWidth >= DC->glconfig.vidHeight) {
+			DC->screenWidth = (float)SCREEN_HEIGHT * DC->glconfig.vidWidth / DC->glconfig.vidHeight;
+			DC->screenHeight = (float)SCREEN_HEIGHT;
+			DC->portraitMode = qfalse;
+		} else {
+			DC->screenWidth = (float)SCREEN_WIDTH;
+			DC->screenHeight = (float)SCREEN_WIDTH * DC->glconfig.vidHeight / DC->glconfig.vidWidth;
+			DC->portraitMode = qtrue;
+		}
+	} else {
+		DC->screenWidth = (float)SCREEN_WIDTH;
+		DC->screenHeight = (float)SCREEN_HEIGHT;
+		DC->portraitMode = qfalse;
+	}
+
+	DC->screenXFactor = (float)SCREEN_WIDTH / DC->screenWidth;
+	DC->screenXFactorInv = DC->screenWidth / (float)SCREEN_WIDTH;
+
+	DC->screenYFactor = (float)SCREEN_HEIGHT / DC->screenHeight;
+	DC->screenYFactorInv = DC->screenHeight / (float)SCREEN_HEIGHT;
+
+#if defined(JK2_UI) || defined(JK2MV_MENU)
+	if (DC->portraitMode && isMainMenu) { //handled inside UI_Updatewidescreen();
+		return;
+	}
+#endif
+
+	if (mvapi >= 3)
+		trap_MVAPI_SetVirtualScreen(DC->screenWidth, DC->screenHeight);
+}
 
 // type and style painting 
 
@@ -744,29 +795,25 @@ void Window_Paint(Window *w, float fadeAmount, float fadeClamp, float fadeCycle)
 		{
 			DC->setColor(w->foreColor);
 		}
-#if defined(JK2MV_MENU) || defined(JK2_UI)
-		if (ui_widescreen.integer && (w->flags & WINDOW_ASPECTCORRECT)) {
-			UI_WideScreenMode(qtrue);
+
+		if (DC->widescreenEnabled && (w->flags & WINDOW_ASPECTCORRECT)) {
+			SetWideScreenMode(qtrue);
 			if (w->flags & WINDOW_ALIGN_CENTER) {
-				fillRect.x += (0.5f * (uiInfo.screenWidth - SCREEN_WIDTH));
+				fillRect.x += (0.5f * (DC->screenWidth - SCREEN_WIDTH));
 			}
 			else {
-				float xOffset = 0.5f * ((fillRect.w - (fillRect.w * uiInfo.screenXFactor)) * uiInfo.screenXFactorInv);
+				float xOffset = 0.5f * ((fillRect.w - (fillRect.w * DC->screenXFactor)) * DC->screenXFactorInv);
 
-				fillRect.x *= uiInfo.screenXFactorInv;
+				fillRect.x *= DC->screenXFactorInv;
 				fillRect.x += xOffset;
 			}
 			DC->drawHandlePic(fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background);
-			UI_WideScreenMode(qfalse);
+			SetWideScreenMode(qfalse);
 		}
 		else {
 			DC->drawHandlePic(fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background);
 		}
 		DC->setColor(NULL);
-#else
-		DC->drawHandlePic(fillRect.x, fillRect.y, fillRect.w, fillRect.h, w->background);
-		DC->setColor(NULL);
-#endif
 	} 
 	else if (w->style == WINDOW_STYLE_TEAMCOLOR) 
 	{
@@ -4478,11 +4525,9 @@ void Item_Model_Paint(itemDef_t *item)
 	refdef.fov_x = 45;
 	refdef.fov_y = 45;
 
-#if defined(JK2MV_MENU) || defined(JK2_UI)
-	if (ui_widescreen.integer && (item->window.flags & WINDOW_ASPECTCORRECT)) {
-		refdef.fov_x *= uiInfo.screenXFactorInv;
+	if (DC->widescreenEnabled && (item->window.flags & WINDOW_ASPECTCORRECT)) {
+		refdef.fov_x *= DC->screenXFactorInv;
 	}
-#endif
 
 	//refdef.fov_x = (int)((float)refdef.width / 640.0f * 90.0f);
 	//xx = refdef.width / tan( refdef.fov_x / 360 * M_PI );
@@ -5349,13 +5394,7 @@ void Menu_Paint(menuDef_t *menu, qboolean forcePaint) {
 	if (menu->fullScreen) {
 		// implies a background shader
 		// FIXME: make sure we have a default shader if fullscreen is set with no background
-		#if defined(JK2_CGAME)
-		DC->drawHandlePic( 0, 0, cgs.screenWidth, cgs.screenHeight, menu->window.background );
-		#elif defined(JK2_UI) || defined(JK2MV_MENU)
-		DC->drawHandlePic( 0, 0, uiInfo.screenWidth, uiInfo.screenHeight, menu->window.background );
-		#else
-		DC->drawHandlePic( 0, 0, (float)SCREEN_WIDTH, (float)SCREEN_HEIGHT, menu->window.background );
-		#endif
+		DC->drawHandlePic( 0, 0, DC->screenWidth, DC->screenHeight, menu->window.background );
 	} else if (menu->window.background) {
 		// this allows a background shader without being full screen
 		//UI_DrawHandlePic(menu->window.rect.x, menu->window.rect.y, menu->window.rect.w, menu->window.rect.h, menu->backgroundShader);
@@ -5755,7 +5794,8 @@ qboolean ItemParse_decoration( itemDef_t *item, int handle ) {
 }
 
 qboolean ItemParse_aspectCorrect( itemDef_t *item, int handle ) {
-#if defined(JK2MV_MENU) || defined(JK2_UI)
+	//not sure if this flag should be enabled in cgame as it's intended to be used in UI where most elements aren't aspect correct
+	//found no noticable issues with it enabled so leaving it for now.
 	item->window.flags |= WINDOW_ASPECTCORRECT;
 
 	if (PC_Int_Parse(handle, &item->alignment)) {
@@ -5769,7 +5809,6 @@ qboolean ItemParse_aspectCorrect( itemDef_t *item, int handle ) {
 				break; //do nothing unless I need to use these at some point
 		}
 	}
-#endif
 	return qtrue;
 }
 
@@ -7378,12 +7417,7 @@ void Menu_PaintAll() {
 	// motd
 	DC->getCVarString("cl_motdString", motd, sizeof(motd));
 	if (strlen(motd)) {
-
-		#if defined(JK2_CGAME)
-		y = cgs.screenHeight - 15;
-		#elif defined(JK2_UI) || defined(JK2MV_MENU)
-		y = uiInfo.screenHeight - 15;
-		#endif
+		y = DC->screenHeight - 15;
 		DC->drawText(10, y, 0.6f, v, motd, 0, 0, 0, 0);
 	}
 }
