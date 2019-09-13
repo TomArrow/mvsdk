@@ -231,16 +231,17 @@ static void CG_DrawZoomMask( void )
 		float yOffset = 0.5f * (cgs.screenHeight - SCREEN_HEIGHT);
 
 		// Fill the left and right
-		CG_FillRect(0, 0, xOffset, SCREEN_HEIGHT, colorTable[CT_BLACK]);
-		CG_FillRect(xOffset + SCREEN_WIDTH, 0, xOffset, SCREEN_HEIGHT, colorTable[CT_BLACK]);
+		trap_R_SetColor(colorTable[CT_BLACK]);
+		trap_R_DrawStretchPic(0, 0, xOffset, SCREEN_HEIGHT, 0, 0, 0, 0, cgs.media.whiteShader);
+		trap_R_DrawStretchPic(xOffset + SCREEN_WIDTH, 0, xOffset, SCREEN_HEIGHT, 0, 0, 0, 0, cgs.media.whiteShader);
 
 		// Fill the top and bottom
-		CG_FillRect(0, 0, SCREEN_WIDTH, yOffset, colorTable[CT_BLACK]);
-		CG_FillRect(0, yOffset + SCREEN_HEIGHT, SCREEN_WIDTH, yOffset, colorTable[CT_BLACK]);
+		trap_R_DrawStretchPic(0, 0, SCREEN_WIDTH, yOffset, 0, 0, 0, 0, cgs.media.whiteShader);
+		trap_R_DrawStretchPic(0, yOffset + SCREEN_HEIGHT, SCREEN_WIDTH, yOffset, 0, 0, 0, 0, cgs.media.whiteShader);
 
 		// Draw target mask
 		trap_R_SetColor(colorTable[CT_WHITE]);
-		CG_DrawPic(xOffset, yOffset, SCREEN_WIDTH, SCREEN_HEIGHT, cgs.media.disruptorMask);
+		trap_R_DrawStretchPic(xOffset, yOffset, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1, 1, cgs.media.disruptorMask);
 
 		// disruptor zoom mode
 		level = (float)(50.0f - zoomFov) / 50.0f;//(float)(80.0f - zoomFov) / 80.0f;
