@@ -552,6 +552,7 @@ vmCvar_t	cg_movementKeysSize;
 //only for you, arto
 vmCvar_t	cg_hudColors;
 vmCvar_t	cg_drawScore;
+vmCvar_t	cg_drawScoreDefrag;
 vmCvar_t	cg_centerHeight;
 vmCvar_t	cg_centerSize;
 
@@ -806,6 +807,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	//only for you, arto
 	{ &cg_hudColors, "cg_hudColors", "1", CVAR_ARCHIVE },
 	{ &cg_drawScore, "cg_drawScore", "2", CVAR_ARCHIVE },
+	{ &cg_drawScoreDefrag, "cg_drawScoreDefrag", "0", CVAR_ARCHIVE }, // Interpret score as seconds into a run
 	{ &cg_centerHeight, "cg_centerHeight", "0", CVAR_ARCHIVE },
 	{ &cg_centerSize, "cg_centerSize", "1.0", CVAR_ARCHIVE },
 

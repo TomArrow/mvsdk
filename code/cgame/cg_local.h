@@ -1637,6 +1637,7 @@ extern	vmCvar_t		cg_movementKeysSize;
 //only for you, arto
 extern	vmCvar_t		cg_hudColors;
 extern	vmCvar_t		cg_drawScore;
+extern	vmCvar_t		cg_drawScoreDefrag;
 extern	vmCvar_t		cg_centerHeight;
 extern	vmCvar_t		cg_centerSize;
 

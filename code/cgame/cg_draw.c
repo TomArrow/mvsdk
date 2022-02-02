@@ -1164,7 +1164,13 @@ void CG_DrawHUD(centity_t	*cent)
 
 	if (cg_drawScore.integer) {
 		//scoreStr = va("Score: %i", cgs.clientinfo[cg.snap->ps.clientNum].score);
-		if (cgs.gametype == GT_TOURNAMENT)
+		if (cg_drawScoreDefrag.integer) {
+			// it's actually a time in seconds.
+			int seconds = cg.snap->ps.persistant[PERS_SCORE];
+			int minutes = seconds / 60;
+			scoreStr = va("Time: %d:%02d", minutes, seconds % 60);
+		}
+		else if (cgs.gametype == GT_TOURNAMENT)
 		{//A duel that requires more than one kill to knock the current enemy back to the queue
 		 //show current kills out of how many needed
 			scoreStr = va("Score: %i/%i", cg.snap->ps.persistant[PERS_SCORE], cgs.fraglimit);
@@ -2017,15 +2023,24 @@ CG_DrawFPS
 ==================
 */
 #define	FPS_FRAMES	16
+#define	FPS_FRAMES_FOR_BOTTOM10P	10
+#define	FPS_FRAMES_FOR_BOTTOM1P	10
+#define	FPS_FRAMES_FOR_BOTTOM01P	10
 static float CG_DrawFPS( float y ) {
 	char		*s;
 	float		w;
 	static int	previousTimes[FPS_FRAMES];
-	static int	index;
+	static int	bottomTimes10P[FPS_FRAMES_FOR_BOTTOM10P];
+	static int	bottomTimes1P[FPS_FRAMES_FOR_BOTTOM1P];
+	static int	bottomTimes01P[FPS_FRAMES_FOR_BOTTOM01P];
+	static int	index, indexBottom10P, indexBottom1P, indexBottom01P;
 	int		i, total;
 	int		fps;
 	static	int	previous;
+	static	int	bottom10Pfps,bottom1Pfps,bottom01Pfps;
 	int		t, frameTime;
+	static const int biggestInt = ~0 ^ (1 << 31);
+	int fastest,fastestIndex;
 
 	// don't use serverTime, because that will be drifting to
 	// correct for internet lag changes, timescales, timedemos, etc
@@ -2034,7 +2049,117 @@ static float CG_DrawFPS( float y ) {
 	previous = t;
 
 	previousTimes[index % FPS_FRAMES] = frameTime;
-	index++;
+	index++; 
+	indexBottom10P++;
+	indexBottom1P++;
+	indexBottom01P++;
+
+	// Bottom 10% frames
+	if (indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P*10) {
+		//int slowest = 0;
+		total = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+			total += bottomTimes10P[i];
+			//slowest = Q_max(bottomTimes1P[i],slowest);
+		}
+		//fps = 1000 / slowest; 
+		fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / total;
+		bottom10Pfps = fps;
+
+		memset(bottomTimes10P,0,sizeof(bottomTimes10P));
+		indexBottom10P = 1;
+	}
+	{ // Draw bottom 1% frames
+		s = va("%ifps  10%%", bottom10Pfps);
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
+		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2, s, g_color_table[7],qfalse, qtrue,8,8,20);
+
+		fastest = biggestInt;
+		fastestIndex = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+			if (bottomTimes10P[i] < fastest) {
+				fastest = bottomTimes10P[i];
+				fastestIndex = i;
+			}
+		}
+		// Replace fastest frametime with current frametime if it is slower than fastest
+		if (frameTime > fastest) {
+			bottomTimes10P[fastestIndex] = frameTime;
+		}
+	}
+
+	// Bottom 1% frames
+	if (indexBottom1P > FPS_FRAMES_FOR_BOTTOM1P * 100) {
+		//int slowest = 0;
+		total = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+			total += bottomTimes1P[i];
+			//slowest = Q_max(bottomTimes1P[i],slowest);
+		}
+		//fps = 1000 / slowest; 
+		fps = 1000 * FPS_FRAMES_FOR_BOTTOM1P / total;
+		bottom1Pfps = fps;
+
+		memset(bottomTimes1P, 0, sizeof(bottomTimes1P));
+		indexBottom1P = 1;
+	}
+	{ // Draw bottom 1% frames
+		s = va("%ifps   1%%", bottom1Pfps);
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
+		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+
+		fastest = biggestInt;
+		fastestIndex = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+			if (bottomTimes1P[i] < fastest) {
+				fastest = bottomTimes1P[i];
+				fastestIndex = i;
+			}
+		}
+		// Replace fastest frametime with current frametime if it is slower than fastest
+		if (frameTime > fastest) {
+			bottomTimes1P[fastestIndex] = frameTime;
+		}
+	}
+
+	// Bottom 0.1% frames
+	if (indexBottom01P > FPS_FRAMES_FOR_BOTTOM01P * 1000) {
+		//int slowest = 0;
+		total = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+			total += bottomTimes01P[i];
+			//slowest = Q_max(bottomTimes1P[i],slowest);
+		}
+		//fps = 1000 / slowest; 
+		fps = 1000 * FPS_FRAMES_FOR_BOTTOM01P / total;
+		bottom01Pfps = fps;
+
+		memset(bottomTimes01P, 0, sizeof(bottomTimes01P));
+		indexBottom01P = 1;
+	}
+	{ // Draw bottom 0.1% frames
+		s = va("%ifps 0.1%%", bottom01Pfps);
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
+		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8*2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+
+		fastest = biggestInt;
+		fastestIndex = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+			if (bottomTimes01P[i] < fastest) {
+				fastest = bottomTimes01P[i];
+				fastestIndex = i;
+			}
+		}
+		// Replace fastest frametime with current frametime if it is slower than fastest
+		if (frameTime > fastest) {
+			bottomTimes01P[fastestIndex] = frameTime;
+		}
+	}
+
+
 	if ( index > FPS_FRAMES ) {
 		// average multiple frames together to smooth changes out a bit
 		total = 0;
@@ -2061,8 +2186,8 @@ static float CG_DrawFPS( float y ) {
 		}
 		else
 		{
-		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
-		CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+			w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+			CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
 		}
 		//JAPRO - Clientside - Add cg_drawfps 2 - End
 	}

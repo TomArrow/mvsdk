@@ -6227,7 +6227,7 @@ void CG_Player( centity_t *cent ) {
 	renderfx = 0;
 	if ( cent->currentState.number == cg.snap->ps.clientNum) {
 		if (!cg.renderingThirdPerson) {
-			if (!cg_fpls.integer || cent->currentState.weapon != WP_SABER)
+			if (cg_fpls.integer != 1 || cent->currentState.weapon != WP_SABER)
 			{
 				renderfx = RF_THIRD_PERSON;			// only draw in mirrors
 			}
@@ -6467,7 +6467,7 @@ doEssentialOne:
 	{
 		if (cgFPLSState != 0)
 		{
-			CG_ForceFPLSPlayerModel(cent, ci);
+		    CG_ForceFPLSPlayerModel(cent, ci);
 			cgFPLSState = 0;
 			return;
 		}
