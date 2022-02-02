@@ -885,7 +885,7 @@ void CG_DrawIconBackground(void)
 	}
 
 	x2 = 30;
-	y2 = SCREEN_HEIGHT-70;
+	y2 = cgs.screenHeight-70;
 
 	prongLeftX = x2 + 37; 
 	prongRightX = cgs.screenWidth - x2 - 37 + 1;
@@ -1136,7 +1136,7 @@ void CG_DrawWeaponSelect( void ) {
 	}
 
 	x = 0.5f * cgs.screenWidth;
-	y = 410;
+	y = cgs.screenHeight - 70;
 
 	// Background
 //	memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));

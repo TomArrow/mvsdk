@@ -735,8 +735,7 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 			break;
 		}
 
-		Com_sprintf(soundName, sizeof(soundName), "%s", s+1);
-		COM_StripExtension(soundName, soundName, sizeof(soundName));
+		COM_StripExtension(s+1, soundName, sizeof(soundName));
 		//strip the extension because we might want .mp3's
 
 		ci->sounds[i] = 0;
@@ -1995,7 +1994,7 @@ static void CG_RunLerpFrame( centity_t *cent, clientInfo_t *ci, lerpFrame_t *lf,
 
 		// get the next frame based on the animation
 		anim = lf->animation;
-		if ( !anim->frameLerp ) {
+		if ( !anim || !anim->frameLerp ) {
 			return;		// shouldn't happen
 		}
 
@@ -5232,7 +5231,7 @@ static void CG_G2EntRunLerpFrame( centity_t *cent, lerpFrame_t *lf, int newAnima
 
 		// get the next frame based on the animation
 		anim = lf->animation;
-		if ( !anim->frameLerp ) {
+		if ( !anim || !anim->frameLerp ) {
 			return;		// shouldn't happen
 		}
 
