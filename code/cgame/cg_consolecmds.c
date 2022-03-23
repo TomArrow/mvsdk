@@ -61,6 +61,22 @@ static void CG_Viewpos_f (void) {
 		(int)cg.refdefViewAngles[YAW]);
 }
 
+/*
+=============
+CG_Viewaxis_f
+
+Debugging command to print the current view axis
+=============
+*/
+static void CG_Viewaxis_f (void) {
+	vec3_t viewAxis[3];
+	AnglesToAxis(cg.refdefViewAngles,viewAxis);
+	CG_Printf ("%s" S_COLOR_WHITE " (%f %f %f),(%f %f %f),(%f %f %f)\n", cgs.mapname, 
+		viewAxis[0][0], viewAxis[0][1], viewAxis[0][2],
+		viewAxis[1][0], viewAxis[1][1], viewAxis[1][2],
+		viewAxis[2][0], viewAxis[2][1], viewAxis[2][2]);
+}
+
 
 static void CG_ScoresDown_f( void ) {
 
@@ -479,6 +495,7 @@ static bitInfo_T speedometerSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Speed graph" },//7
 	{ "Display speed in kilometers instead of units" },//8
 	{ "Display speed in imperial miles instead of units" },//9
+	{ "Disable speed display" },//10
 };
 static const int MAX_SPEEDOMETER_SETTINGS = ARRAY_LEN(speedometerSettings);
 
@@ -1084,6 +1101,7 @@ static consoleCommand_t	commands[] = {
 	{ "nextskin", CG_TestModelNextSkin_f },
 	{ "prevskin", CG_TestModelPrevSkin_f },
 	{ "viewpos", CG_Viewpos_f },
+	{ "viewaxis", CG_Viewaxis_f },
 	{ "+scores", CG_ScoresDown_f },
 	{ "-scores", CG_ScoresUp_f },
 	{ "sizeup", CG_SizeUp_f },
