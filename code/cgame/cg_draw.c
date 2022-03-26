@@ -6347,6 +6347,8 @@ void CG_AddSpeed(void)
 ===================
 CG_DrawSpeedGraph
 ===================
+
+Ported from Tremulous project.
 */
 static void CG_DrawSpeedGraph(rectDef_t* rect, vec4_t foreColor,
 	vec4_t backColor)
