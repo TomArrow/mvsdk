@@ -1071,7 +1071,20 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	// model
 	v = Info_ValueForKey( configstring, "model" );
-	if ( cg_forceModel.integer ) {
+	if (strlen(cg_forceMyModel.string) && cg.snap && clientNum == cg.snap->ps.clientNum) {
+		Q_strncpyz(newInfo.modelName, cg_forceMyModel.string, sizeof(newInfo.modelName));
+
+		slash = strchr(newInfo.modelName, '/');
+		if (!slash) {
+			// modelName didn not include a skin name
+			Q_strncpyz(newInfo.skinName, "default", sizeof(newInfo.skinName));
+		}
+		else {
+			Q_strncpyz(newInfo.skinName, slash + 1, sizeof(newInfo.skinName));
+			// truncate modelName
+			*slash = 0;
+		}
+	} else if (cg_forceModel.integer) {
 		// forcemodel makes everyone use a single model
 		// to prevent load hitches
 		char modelStr[MAX_QPATH];

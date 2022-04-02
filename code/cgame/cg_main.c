@@ -126,6 +126,7 @@ char *HolocronIcons[] = {
 	"gfx/mp/f_icon_saber_throw"		//FP_SABERTHROW
 };
 
+int forceMyModelModificationCount = -1;
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
@@ -630,6 +631,7 @@ vmCvar_t 	cg_teamChatHeight;
 vmCvar_t 	cg_stats;
 vmCvar_t 	cg_buildScript;
 vmCvar_t 	cg_forceModel;
+vmCvar_t 	cg_forceMyModel;
 vmCvar_t	cg_paused;
 vmCvar_t	cg_blood;
 vmCvar_t	cg_predictItems;
@@ -879,6 +881,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_teamChatTime, "cg_teamChatTime", "3000", CVAR_ARCHIVE  },
 	{ &cg_teamChatHeight, "cg_teamChatHeight", "0", CVAR_ARCHIVE  },
 	{ &cg_forceModel, "cg_forceModel", "0", CVAR_ARCHIVE  },
+	{ &cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE  },
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
@@ -964,6 +967,7 @@ void CG_RegisterCvars( void ) {
 	cgs.localServer = atoi( var );
 
 	forceModelModificationCount = cg_forceModel.modificationCount;
+	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -1129,6 +1133,10 @@ void CG_UpdateCvars( void ) {
 	// if force model changed
 	if ( forceModelModificationCount != cg_forceModel.modificationCount ) {
 		forceModelModificationCount = cg_forceModel.modificationCount;
+		CG_ForceModelChange();
+	}
+	if ( forceMyModelModificationCount != cg_forceMyModel.modificationCount ) {
+		forceMyModelModificationCount = cg_forceMyModel.modificationCount;
 		CG_ForceModelChange();
 	}
 
