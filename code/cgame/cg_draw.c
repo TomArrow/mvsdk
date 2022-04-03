@@ -2052,12 +2052,13 @@ static float CG_DrawFPS( float y ) {
 
 	previousTimes[index % FPS_FRAMES] = frameTime;
 	index++; 
+
 	indexBottom10P++;
 	indexBottom1P++;
 	indexBottom01P++;
 
 	// Bottom 10% frames
-	if (indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P*10) {
+	if (indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
 		//int slowest = 0;
 		total = 0;
 		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
@@ -2068,14 +2069,15 @@ static float CG_DrawFPS( float y ) {
 		fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / total;
 		bottom10Pfps = fps;
 
-		memset(bottomTimes10P,0,sizeof(bottomTimes10P));
+		memset(bottomTimes10P, 0, sizeof(bottomTimes10P));
 		indexBottom10P = 1;
 	}
-	{ // Draw bottom 1% frames
+	{ // Draw bottom 10% frames
 		s = va("%ifps  10%%", bottom10Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2, s, g_color_table[7],qfalse, qtrue,8,8,20);
+		if(cg_drawFPSLowest.integer)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
 		fastest = biggestInt;
 		fastestIndex = 0;
@@ -2110,7 +2112,8 @@ static float CG_DrawFPS( float y ) {
 		s = va("%ifps   1%%", bottom1Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+		if (cg_drawFPSLowest.integer)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
 		fastest = biggestInt;
 		fastestIndex = 0;
@@ -2145,7 +2148,8 @@ static float CG_DrawFPS( float y ) {
 		s = va("%ifps 0.1%%", bottom01Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8*2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+		if (cg_drawFPSLowest.integer)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
 		fastest = biggestInt;
 		fastestIndex = 0;
@@ -2159,7 +2163,8 @@ static float CG_DrawFPS( float y ) {
 		if (frameTime > fastest) {
 			bottomTimes01P[fastestIndex] = frameTime;
 		}
-	}
+	}			
+	
 
 
 	if ( index > FPS_FRAMES ) {
