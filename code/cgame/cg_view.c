@@ -1674,6 +1674,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// decide on third person view
 	cg.renderingThirdPerson = (cg_thirdPerson.integer || cg.snap->ps.stats[STAT_HEALTH] <= 0) && cg.snap->ps.pm_type != PM_SPECTATOR;
 
+	// update speedometer
+	CG_AddSpeed();
+
 	if (cg.snap->ps.stats[STAT_HEALTH] > 0 && (cg.predictedPlayerState.weapon == WP_SABER || cg.predictedPlayerState.usingATST ||
 		cg.predictedPlayerState.forceHandExtend == HANDEXTEND_KNOCKDOWN || cg.predictedPlayerState.fallingToDeath))
 	{

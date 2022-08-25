@@ -604,6 +604,9 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		pm.ps = &client->ps;
 		pm.cmd = *ucmd;
 		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;	// spectators can fly through bodies
+		if (ent->client->noclip) {
+			pm.tracemask = 0;
+		}
 		pm.trace = trap_Trace;
 		pm.pointcontents = trap_PointContents;
 

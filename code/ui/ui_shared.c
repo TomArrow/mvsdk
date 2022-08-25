@@ -3989,6 +3989,7 @@ static bind_t g_bindings[] =
 	{"messagemode2",	-1,					-1,		-1, -1},
 	{"messagemode3",	-1,					-1,		-1, -1},
 	{"messagemode4",	-1,					-1,		-1, -1},
+	{"messagemode5",	-1,					-1,		-1, -1},
 	{"+use",			-1,					-1,		-1,	-1},
 	{"+force_jump",		-1,					-1,		-1,	-1},
 	{"force_throw",		A_F1,				-1,		-1,	-1},
