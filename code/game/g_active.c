@@ -446,7 +446,11 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	VectorSubtract( ent->client->ps.origin, range, mins );
 	VectorAdd( ent->client->ps.origin, range, maxs );
 
+<<<<<<< HEAD
+	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
+=======
 	num = JKMod_DimensionEntitiesInBox( mins, maxs, touch, MAX_GENTITIES, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	// can't use ent->r.absmin, because that has a one unit pad
 	VectorAdd( ent->client->ps.origin, ent->r.mins, mins );
@@ -542,7 +546,11 @@ void G_MoverTouchPushTriggers( gentity_t *ent, vec3_t oldOrg )
 		VectorSubtract( checkSpot, range, mins );
 		VectorAdd( checkSpot, range, maxs );
 
+<<<<<<< HEAD
+		num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
+=======
 		num =  JKMod_DimensionEntitiesInBox( mins, maxs, touch, MAX_GENTITIES, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		// can't use ent->r.absmin, because that has a one unit pad
 		VectorAdd( checkSpot, ent->r.mins, mins );
@@ -598,17 +606,26 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		client->ps.pm_type = PM_SPECTATOR;
 		client->ps.speed = 400;	// faster than normal
 		client->ps.basespeed = 400;
+<<<<<<< HEAD
+=======
 		client->ps.forceHandExtend = jkcvar_pluginRequired.integer == 2 && !client->pers.jkmodPers.clientPlugin ? HANDEXTEND_KNOCKDOWN : HANDEXTEND_NONE; // Tr!Force: [Plugin] Don't allow user actions
+>>>>>>> jediknightplus/master
 
 		// set up for pmove
 		memset (&pm, 0, sizeof(pm));
 		pm.ps = &client->ps;
 		pm.cmd = *ucmd;
+<<<<<<< HEAD
+		pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;	// spectators can fly through bodies
+		if (ent->client->noclip) {
+			pm.tracemask = 0;
+=======
 		// Tr!Force: [PlayerMovement] Spectators can fly through everything
 		if (client->ps.stats[JK_MOVEMENT] & JK_SPECTATOR_NOCLIP) {
 			pm.tracemask = MASK_PLAYERSOLID & ~MASK_ALL;
 		} else {
 			pm.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;	// spectators can fly through bodies
+>>>>>>> jediknightplus/master
 		}
 		pm.trace = trap_Trace;
 		pm.pointcontents = trap_PointContents;
@@ -672,7 +689,11 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
 		}
 		if ( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
 			client->inactivityWarning = qtrue;
+<<<<<<< HEAD
+			trap_SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\n\"" );
+=======
 			trap_SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\"" ); // Workaround
+>>>>>>> jediknightplus/master
 		}
 	}
 	return qtrue;
@@ -704,9 +725,12 @@ void ClientTimerActions( gentity_t *ent, int msec ) {
 		if ( client->ps.stats[STAT_ARMOR] > client->ps.stats[STAT_MAX_HEALTH] ) {
 			client->ps.stats[STAT_ARMOR]--;
 		}
+<<<<<<< HEAD
+=======
 
 		// Tr!Force: [JKMod] Launch custom client timer actions
 		JKMod_ClientTimerActions(ent, msec);
+>>>>>>> jediknightplus/master
 	}
 }
 
@@ -858,7 +882,11 @@ void SendPendingPredictableEvents( playerState_t *ps ) {
 		extEvent = ps->externalEvent;
 		ps->externalEvent = 0;
 		// create temporary entity for event
+<<<<<<< HEAD
+		t = G_TempEntity( ps->origin, event );
+=======
 		t = JKMod_G_TempEntity( ps->origin, (entity_event_t)event, ps->clientNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		number = t->s.number;
 		BG_PlayerStateToEntityState( ps, &t->s, qtrue );
 		t->s.number = number;
@@ -1009,7 +1037,11 @@ If "g_synchronousClients 1" is set, this will be called exactly
 once for each server frame, which makes for smooth demo recording.
 ==============
 */
+<<<<<<< HEAD
+void ClientThink_real( gentity_t *ent ) {
+=======
 void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client think real function
+>>>>>>> jediknightplus/master
 	gclient_t	*client;
 	pmove_t		pm;
 	int			oldEventSequence;
@@ -1078,6 +1110,8 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Pause] Check pause think
 	if (level.jkmodLocals.pauseTime > level.time) 
 	{
@@ -1085,6 +1119,7 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	if (ent && ent->client && (ent->client->ps.eFlags & EF_INVULNERABLE))
 	{
 		if (ent->client->invulnerableTimer <= level.time)
@@ -1114,18 +1149,28 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 		{
 			client->ps.pm_type = client->ps.forceGripChangeMovetype;
 		}
+<<<<<<< HEAD
+=======
 		// Tr!Force: [Emotes] Chair emote player freeze
 		else if (ent->client->jkmodClient.chairModelUsed)
 		{
 			client->ps.pm_type = PM_FREEZE;
 			VectorClear(client->ps.velocity);
 		}
+>>>>>>> jediknightplus/master
 		else
 		{
 			client->ps.pm_type = PM_NORMAL;
 		}
 	}
 
+<<<<<<< HEAD
+	client->ps.gravity = g_gravity.value;
+
+	// set speed
+	client->ps.speed = g_speed.value;
+	client->ps.basespeed = g_speed.value;
+=======
 	if (client->pers.jkmodPers.customSettings) // Tr!Force: [JKMod] Apply custom settings
 	{
 		client->ps.gravity = client->pers.jkmodPers.customGravity;
@@ -1142,6 +1187,7 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 		client->ps.speed = g_speed.value;
 		client->ps.basespeed = g_speed.value;
 	}
+>>>>>>> jediknightplus/master
 
 	if (ent->client->ps.duelInProgress)
 	{
@@ -1197,6 +1243,8 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 			ucmd->forwardmove = 0;
 			ucmd->rightmove = 0;
 			ucmd->upmove = 0;
+<<<<<<< HEAD
+=======
 
 			// Tr!Force: [Duel] Don't allow
 			if (jkcvar_allowCustomDuel.integer)
@@ -1204,11 +1252,24 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 				ucmd->buttons = 0;
 				ucmd->generic_cmd = 0;
 			}
+>>>>>>> jediknightplus/master
 		}
 
 		if (!duelAgainst || !duelAgainst->client || !duelAgainst->inuse ||
 			duelAgainst->client->ps.duelIndex != ent->s.number)
 		{
+<<<<<<< HEAD
+			ent->client->ps.duelInProgress = 0;
+			G_AddEvent(ent, EV_PRIVATE_DUEL, 0);
+		}
+		else if (duelAgainst->health < 1 || duelAgainst->client->ps.stats[STAT_HEALTH] < 1)
+		{
+			ent->client->ps.duelInProgress = 0;
+			duelAgainst->client->ps.duelInProgress = 0;
+
+			G_AddEvent(ent, EV_PRIVATE_DUEL, 0);
+			G_AddEvent(duelAgainst, EV_PRIVATE_DUEL, 0);
+=======
 			// ent->client->ps.duelInProgress = 0;
 			// G_AddEvent(ent, EV_PRIVATE_DUEL, 0);
 
@@ -1251,10 +1312,14 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 			// Tr!Force: [Dimensions] Remove duel flag
 			if (ent->client->ps.stats[JK_DIMENSION] != DIMENSION_FREE) JKMod_DimensionSet(ent, DIMENSION_FREE);
 			if (duelAgainst->client->ps.stats[JK_DIMENSION] != DIMENSION_FREE) JKMod_DimensionSet(duelAgainst, DIMENSION_FREE);
+>>>>>>> jediknightplus/master
 
 			//Winner gets full health.. providing he's still alive
 			if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
 			{
+<<<<<<< HEAD
+				if (ent->health < ent->client->ps.stats[STAT_MAX_HEALTH])
+=======
 				// Tr!Force: [Duel] Default start health and shield
 				if (jkcvar_duelStartHealth.integer != 0 && jkcvar_duelStartArmor.integer != 0)
 				{
@@ -1262,6 +1327,7 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 					ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_MAX_HEALTH] * 0.25;
 				}
 				else if (ent->health < ent->client->ps.stats[STAT_MAX_HEALTH])
+>>>>>>> jediknightplus/master
 				{
 					ent->client->ps.stats[STAT_HEALTH] = ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
 				}
@@ -1287,7 +1353,11 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 				G_CenterPrint( -1, 3, va("%s\n", G_GetStripEdString("SVINGAME", "PLDUELTIE")) );
 			}
 		}
+<<<<<<< HEAD
+		else
+=======
 		else if (jkcvar_duelDistance.integer > 0) // Tr!Force: [Duel] Custom max distance
+>>>>>>> jediknightplus/master
 		{
 			vec3_t vSub;
 			float subLen = 0;
@@ -1295,6 +1365,15 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 			VectorSubtract(ent->client->ps.origin, duelAgainst->client->ps.origin, vSub);
 			subLen = VectorLength(vSub);
 
+<<<<<<< HEAD
+			if (subLen >= 1024)
+			{
+				ent->client->ps.duelInProgress = 0;
+				duelAgainst->client->ps.duelInProgress = 0;
+
+				G_AddEvent(ent, EV_PRIVATE_DUEL, 0);
+				G_AddEvent(duelAgainst, EV_PRIVATE_DUEL, 0);
+=======
 			if (subLen >= jkcvar_duelDistance.integer) // Tr!Force: [Duel] Custom max distance
 			{
 				// ent->client->ps.duelInProgress = 0;
@@ -1314,6 +1393,7 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 				// Tr!Force: [Dimensions] Remove duel flag
 				if (ent->client->ps.stats[JK_DIMENSION] != DIMENSION_FREE) JKMod_DimensionSet(ent, DIMENSION_FREE);
 				if (duelAgainst->client->ps.stats[JK_DIMENSION] != DIMENSION_FREE) JKMod_DimensionSet(duelAgainst, DIMENSION_FREE);
+>>>>>>> jediknightplus/master
 
 				trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "PLDUELSTOP")) );
 			}
@@ -1405,6 +1485,10 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 
 	pm.pmove_fixed = g_pmove_fixed.integer | client->pers.pmoveFixed;
 	pm.pmove_msec = g_pmove_msec.integer;
+<<<<<<< HEAD
+	pm.pmove_float = g_pmove_float.integer;
+=======
+>>>>>>> jediknightplus/master
 
 	pm.animations = bgGlobalAnimations;//NULL;
 
@@ -1690,6 +1774,8 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 	if (client->ps.forceKickFlip)
 	{
 		gentity_t *faceKicked = &g_entities[client->ps.forceKickFlip-1];
+<<<<<<< HEAD
+=======
 		qboolean faceKickedDamage = faceKicked->takedamage;
 
 		// Tr!Force: [ChatProtect] Prevent kicks
@@ -1698,12 +1784,17 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 		{
 			faceKicked = NULL;
 		}
+>>>>>>> jediknightplus/master
 
 		if (faceKicked && faceKicked->client && (!OnSameTeam(ent, faceKicked) || g_friendlyFire.integer) &&
 			(!faceKicked->client->ps.duelInProgress || faceKicked->client->ps.duelIndex == ent->s.number) &&
 			(!ent->client->ps.duelInProgress || ent->client->ps.duelIndex == faceKicked->s.number))
 		{
+<<<<<<< HEAD
+			if ( faceKicked && faceKicked->client && faceKicked->health && faceKicked->takedamage )
+=======
 			if ( faceKicked && faceKicked->client && faceKicked->health && /*faceKicked->takedamage*/ faceKickedDamage ) // Tr!Force: [ChatProtect] Prevent kicks
+>>>>>>> jediknightplus/master
 			{//push them away and do pain
 				vec3_t oppDir;
 				int strength = (int)VectorNormalize2( client->ps.velocity, oppDir );
@@ -1721,6 +1812,12 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 				{
 					if (faceKicked->health > 0 &&
 						faceKicked->client->ps.stats[STAT_HEALTH] > 0 &&
+<<<<<<< HEAD
+						faceKicked->client->ps.forceHandExtend != HANDEXTEND_KNOCKDOWN)
+					{
+						if (Q_irand(1, 10) <= 3)
+						{ //only actually knock over sometimes, but always do velocity hit
+=======
 						faceKicked->client->ps.forceHandExtend != HANDEXTEND_KNOCKDOWN
 						&& !JKMod_EmoteIn(ent, -1) // Tr!Force: [Emotes] Prediction
 						)
@@ -1736,6 +1833,7 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 							}
 
 							//only actually knock over sometimes, but always do velocity hit
+>>>>>>> jediknightplus/master
 							faceKicked->client->ps.forceHandExtend = HANDEXTEND_KNOCKDOWN;
 							faceKicked->client->ps.forceHandExtendTime = level.time + 1100;
 							faceKicked->client->ps.forceDodgeAnim = 0; //this toggles between 1 and 0, when it's 1 we should play the get up anim
@@ -1762,12 +1860,15 @@ void BaseJK2_ClientThink_real( gentity_t *ent ) { // Tr!Force: [BaseJK2] Client 
 	if ( client->ps.stats[STAT_HEALTH] <= 0 ) {
 		// wait for the attack button to be pressed
 		if ( level.time > client->respawnTime && !gDoSlowMoDuel ) {
+<<<<<<< HEAD
+=======
 			// Tr!Force: [BotsAI] Instant respawn while static
 			if ( bot_forgimmick.integer && (ent->r.svFlags & SVF_BOT) ) {
 				respawn( ent );
 				return;
 			}
 
+>>>>>>> jediknightplus/master
 			// forcerespawn is to prevent users from waiting out powerups
 			if ( g_forcerespawn.integer > 0 && 
 				( level.time - client->respawnTime ) > g_forcerespawn.integer * 1000 ) {
@@ -1845,8 +1946,13 @@ void ClientThink( int clientNum ) {
 }
 
 
+<<<<<<< HEAD
+void G_RunClient( gentity_t *ent ) {
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer ) {
+=======
 void BaseJK2_G_RunClient( gentity_t *ent ) { // Tr!Force: [BaseJK2] Run client function
 	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer ) { 
+>>>>>>> jediknightplus/master
 		return;
 	}
 

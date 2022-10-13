@@ -99,9 +99,12 @@ field_t fields[] = {
 	{"angle", FOFS(s.angles), F_ANGLEHACK},
 	{"targetShaderName", FOFS(targetShaderName), F_LSTRING},
 	{"targetShaderNewName", FOFS(targetShaderNewName), F_LSTRING},
+<<<<<<< HEAD
+=======
 	// Tr!Force: [MapFixes] Added missing fields
 	{"mins", FOFS(r.mins), F_VECTOR},
 	{"maxs", FOFS(r.maxs), F_VECTOR},
+>>>>>>> jediknightplus/master
 
 	{NULL}
 };
@@ -302,7 +305,11 @@ Finds the spawn function for the entity and calls it,
 returning qfalse if not found
 ===============
 */
+<<<<<<< HEAD
+qboolean G_CallSpawn( gentity_t *ent ) {
+=======
 qboolean BaseJK2_G_CallSpawn( gentity_t *ent ) { // Tr!Force: [BaseJK2] Call spawn function
+>>>>>>> jediknightplus/master
 	spawn_t	*s;
 	gitem_t	*item;
 
@@ -437,7 +444,11 @@ void G_SpawnGEntityFromSpawnVars( void ) {
 	static char *gametypeNames[] = {"ffa", "holocron", "jedimaster", "duel", "single", "team", "saga", "ctf", "cty"};
 
 	// get the next free entity
+<<<<<<< HEAD
+	ent = G_Spawn();
+=======
 	ent = JKMod_G_Spawn( ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	for ( i = 0 ; i < level.numSpawnVars ; i++ ) {
 		G_ParseField( level.spawnVars[i][0], level.spawnVars[i][1], ent );
@@ -799,6 +810,9 @@ void SP_worldspawn( void )
 
 	trap_SetConfigstring( CS_LEVEL_START_TIME, va("%i", level.startTime ) );
 
+<<<<<<< HEAD
+	G_SpawnString( "music", "", &text );
+=======
 	// Tr!Force: [MapFixes] Find SP map default music
 	if (jkcvar_mapFixes.integer && JKMod_SPMapCheck(JKMod_GetCurrentMap())) 
 	{
@@ -821,6 +835,7 @@ void SP_worldspawn( void )
 		}
 	}
 
+>>>>>>> jediknightplus/master
 	trap_SetConfigstring( CS_MUSIC, text );
 
 	G_SpawnString( "message", "", &text );

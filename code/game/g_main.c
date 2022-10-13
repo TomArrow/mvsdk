@@ -108,6 +108,11 @@ vmCvar_t	g_debugUp;
 vmCvar_t	g_smoothClients;
 vmCvar_t	g_pmove_fixed;
 vmCvar_t	g_pmove_msec;
+<<<<<<< HEAD
+vmCvar_t	g_pmove_float;
+vmCvar_t	g_fixHighFPSAbuse;
+=======
+>>>>>>> jediknightplus/master
 vmCvar_t	g_rankings;
 vmCvar_t	g_listEntity;
 vmCvar_t	g_redteam;
@@ -274,8 +279,15 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_enableDust, "g_enableDust", "0", 0, 0, qtrue, qfalse },
 	{ &g_enableBreath, "g_enableBreath", "0", 0, 0, qtrue, qfalse },
 	{ &g_smoothClients, "g_smoothClients", "1", 0, 0, qfalse},
+<<<<<<< HEAD
+	{ &g_pmove_fixed, "pmove_fixed", "0", CVAR_SYSTEMINFO, 0, qtrue},
+	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qtrue},
+	{ &g_pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO, 0, qtrue},
+	{ &g_fixHighFPSAbuse, "g_fixHighFPSAbuse", "0", CVAR_SYSTEMINFO, 0, qtrue},
+=======
 	{ &g_pmove_fixed, "pmove_fixed", "0", CVAR_SYSTEMINFO, 0, qfalse},
 	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qfalse},
+>>>>>>> jediknightplus/master
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 
@@ -577,12 +589,18 @@ void G_RemapTeamShaders( void ) {
 G_RegisterCvars
 =================
 */
+<<<<<<< HEAD
+void G_RegisterCvars( void ) {
+=======
 void BaseJK2_G_RegisterCvars( void ) { // Tr!Force: [BaseJK2] Register cvars function
+>>>>>>> jediknightplus/master
 	int			i;
 	cvarTable_t	*cv;
 	qboolean remapped = qfalse;
 
 	for ( i = 0, cv = gameCvarTable ; i < gameCvarTableSize ; i++, cv++ ) {
+<<<<<<< HEAD
+=======
 
 		// Tr!Force: [GameTypeConfig] Cvar latch temp unlock toggle
 		if (cv->vmCvar != &g_gametype && cv->cvarFlags & (CVAR_LATCH | CVAR_TEMP) && jkcvar_gameTypeConfig.integer) 
@@ -592,6 +610,7 @@ void BaseJK2_G_RegisterCvars( void ) { // Tr!Force: [BaseJK2] Register cvars fun
 			JKMod_Printf("%s latched from basejk %s\n", cv->cvarName, (cv->cvarFlags & CVAR_LATCH ? "^5locked" : "^3unlocked"));
 		}
 
+>>>>>>> jediknightplus/master
 		trap_Cvar_Register( cv->vmCvar, cv->cvarName,
 			cv->defaultString, cv->cvarFlags );
 		if ( cv->vmCvar )
@@ -602,6 +621,8 @@ void BaseJK2_G_RegisterCvars( void ) { // Tr!Force: [BaseJK2] Register cvars fun
 		}
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [GameTypeConfig] Cvar latch temp unlock finish
 	if (jkcvar_gameTypeConfig.integer && level.jkmodLocals.cvarTempUnlock == 1) 
 	{
@@ -610,6 +631,7 @@ void BaseJK2_G_RegisterCvars( void ) { // Tr!Force: [BaseJK2] Register cvars fun
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	if ( strcmp(g_gamename.string, GAMEVERSION) || strcmp(g_gamedate.string, __DATE__) ) {
 		// Inform the host about the unexpected change
 		G_Printf( S_COLOR_YELLOW "WARNING: The gamename or gamedate changed after mapchange.\n"
@@ -640,7 +662,11 @@ void BaseJK2_G_RegisterCvars( void ) { // Tr!Force: [BaseJK2] Register cvars fun
 G_UpdateCvars
 =================
 */
+<<<<<<< HEAD
+void G_UpdateCvars( void ) {
+=======
 void BaseJK2_G_UpdateCvars( void ) { // Tr!Force: [BaseJK2] Update cvars function
+>>>>>>> jediknightplus/master
 	int			i;
 	cvarTable_t	*cv;
 	qboolean remapped = qfalse;
@@ -652,7 +678,11 @@ void BaseJK2_G_UpdateCvars( void ) { // Tr!Force: [BaseJK2] Update cvars functio
 			if ( cv->modificationCount != cv->vmCvar->modificationCount ) {
 				cv->modificationCount = cv->vmCvar->modificationCount;
 
+<<<<<<< HEAD
+				if ( cv->trackChange ) {
+=======
 				if ( cv->trackChange && !level.jkmodLocals.cvarToggleMod ) { // Tr!Force: [JKMod] Toggle mod check
+>>>>>>> jediknightplus/master
 					trap_SendServerCommand( -1, va("print \"Server: %s changed to %s\n\"", 
 						cv->cvarName, cv->vmCvar->string ) );
 				}
@@ -727,9 +757,14 @@ G_InitGame
 
 ============
 */
+<<<<<<< HEAD
+void G_InitGame( int levelTime, int randomSeed, int restart ) {
+	int					i;
+=======
 void BaseJK2_G_InitGame( int levelTime, int randomSeed, int restart ) { // Tr!Force: BaseJk2 Init game function
 	int					i;
 	unsigned			jkmod_dimensionBase; // Tr!Force: [Dimensions] Global base dimension
+>>>>>>> jediknightplus/master
 
 	B_InitAlloc(); //make sure everything is clean
 
@@ -785,11 +820,18 @@ void BaseJK2_G_InitGame( int levelTime, int randomSeed, int restart ) { // Tr!Fo
 	G_InitMemory();
 
 	// set some level globals
+<<<<<<< HEAD
+	memset( &level, 0, sizeof( level ) );
+	level.time = levelTime;
+	level.startTime = levelTime;
+
+=======
 	jkmod_dimensionBase = level.jkmodLocals.dimensionBase ? level.jkmodLocals.dimensionBase : DIMENSION_FREE; // Tr!Force: [Dimensions] Global base dimension
 	memset( &level, 0, sizeof( level ) );
 	level.time = levelTime;
 	level.startTime = levelTime;
 	level.jkmodLocals.dimensionBase = g_gametype.integer == GT_FFA ? jkmod_dimensionBase : DIMENSION_FREE; // Tr!Force: [Dimensions] Global base dimension
+>>>>>>> jediknightplus/master
 	level.snd_fry = G_SoundIndex("sound/player/fry.wav");	// FIXME standing in lava / slime
 
 	//trap_SP_RegisterServer("mp_svgame");
@@ -1035,10 +1077,13 @@ void AddTournamentPlayer( void ) {
 			client->sess.spectatorClient < 0  ) {
 			continue;
 		}
+<<<<<<< HEAD
+=======
 		// Tr!Force: [Plugin] Don't allow
 		if (jkcvar_pluginRequired.integer == 2 && !client->pers.jkmodPers.clientPlugin) {
 			continue;
 		}
+>>>>>>> jediknightplus/master
 
 		if ( !nextInLine || client->sess.spectatorOrder > nextInLine->sess.spectatorOrder ) {
 			nextInLine = client;
@@ -1184,9 +1229,12 @@ void AdjustTournamentScores( void ) {
 			ClientUserinfoChanged( clientNum );
 			trap_SetConfigstring ( CS_CLIENT_DUELWINNER, va("%i", clientNum ) );
 
+<<<<<<< HEAD
+=======
 			// Tr!Force: [PlayerStatus] Announce score
 			if (jkcvar_chatAutoStatus.integer && level.clients[clientNum].sess.jkmodSess.playerStatus) JKMod_playerStatus(&g_entities[clientNum], qtrue);
 
+>>>>>>> jediknightplus/master
 			clientNum = level.sortedClients[clFailure];
 
 			level.clients[ clientNum ].sess.losses++;
@@ -1203,9 +1251,12 @@ void AdjustTournamentScores( void ) {
 			ClientUserinfoChanged( clientNum );
 			trap_SetConfigstring ( CS_CLIENT_DUELWINNER, va("%i", clientNum ) );
 
+<<<<<<< HEAD
+=======
 			// Tr!Force: [PlayerStatus] Announce score
 			if (jkcvar_chatAutoStatus.integer && level.clients[clientNum].sess.jkmodSess.playerStatus) JKMod_playerStatus(&g_entities[clientNum], qtrue);
 
+>>>>>>> jediknightplus/master
 			clientNum = level.sortedClients[clFailure];
 
 			level.clients[ clientNum ].sess.losses++;
@@ -1220,9 +1271,12 @@ void AdjustTournamentScores( void ) {
 			ClientUserinfoChanged( clientNum );
 
 			trap_SetConfigstring ( CS_CLIENT_DUELWINNER, va("%i", clientNum ) );
+<<<<<<< HEAD
+=======
 
 			// Tr!Force: [PlayerStatus] Announce score
 			if (jkcvar_chatAutoStatus.integer && level.clients[clientNum].sess.jkmodSess.playerStatus) JKMod_playerStatus(&g_entities[clientNum], qtrue);
+>>>>>>> jediknightplus/master
 		}
 
 		clientNum = level.sortedClients[1];
@@ -2375,6 +2429,26 @@ void CheckVote( void ) {
 			level.votingGametypeTo = 0;
 		}
 	}
+<<<<<<< HEAD
+	if ( !level.voteTime ) {
+		return;
+	}
+	if ( level.time - level.voteTime >= VOTE_TIME ) {
+		trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED")) );
+	} else {
+		if ( level.voteYes > level.numVotingClients/2 ) {
+			// execute the command, then remove the vote
+			trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED")) );
+			level.voteExecuteTime = level.time + 3000;
+		} else if ( level.voteNo >= level.numVotingClients/2 ) {
+			// same behavior as a timeout
+			trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED")) );
+		} else {
+			// still waiting for a majority
+			return;
+		}
+	}
+=======
 	if ( !level.voteTime || level.jkmodLocals.pauseTime > level.time ) { // Tr!Force: [Pause] Check vote time
 		return;
 	}
@@ -2439,6 +2513,7 @@ void CheckVote( void ) {
 		trap_SendServerCommand(-1, va("print \"Vote results: Yes: ^2%d ^7No: ^1%d\n\"", level.voteYes, level.voteNo));
 	}
 
+>>>>>>> jediknightplus/master
 	level.voteTime = 0;
 	trap_SetConfigstring( CS_VOTE_TIME, "" );
 
@@ -2573,8 +2648,11 @@ CheckCvars
 */
 void CheckCvars( void ) {
 	static int lastMod = -1;
+<<<<<<< HEAD
+=======
 	
 	if ( VALIDCVAR(jkcvar_serverClosed.string) ) return; // Tr!Force: [JKMod] Server closed on top
+>>>>>>> jediknightplus/master
 
 	if ( g_password.modificationCount != lastMod ) {
 		lastMod = g_password.modificationCount;
@@ -2653,6 +2731,38 @@ void G_RunFrame( int levelTime ) {
 			float timeDif = (level.time - gSlowMoDuelTime); //difference in time between when the slow motion was initiated and now
 			float useDif = 0; //the difference to use when actually setting the timescale
 
+<<<<<<< HEAD
+			if (timeDif < 150)
+			{
+				trap_Cvar_Set("timescale", "0.1f");
+			}
+			else if (timeDif < 1150)
+			{
+				useDif = (timeDif/1000); //scale from 0.1 up to 1
+				if (useDif < 0.1)
+				{
+					useDif = 0.1;
+				}
+				if (useDif > 1.0)
+				{
+					useDif = 1.0;
+				}
+				trap_Cvar_Set("timescale", va("%f", useDif));
+			}
+			else
+			{
+				char buf[128];
+				float tFVal = 0;
+
+				trap_Cvar_VariableStringBuffer("timescale", buf, sizeof(buf));
+
+				tFVal = atof(buf);
+
+				trap_Cvar_Set("timescale", "1");
+				if (timeDif > 1500 && tFVal == 1.0f)
+				{
+					gDoSlowMoDuel = qfalse;
+=======
 			// Tr!Force: [JKMod] Slow-mo duel end workaround
 			if (jkcvar_duelEndSlow.integer)
 			{
@@ -2708,6 +2818,7 @@ void G_RunFrame( int levelTime ) {
 					{
 						gDoSlowMoDuel = qfalse;
 					}
+>>>>>>> jediknightplus/master
 				}
 			}
 		}
@@ -2725,12 +2836,15 @@ void G_RunFrame( int levelTime ) {
 
 	g_TimeSinceLastFrame = (level.time - g_LastFrameTime);
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Pause] Check paused frame
 	if (JKMod_PauseFrameCheck(levelTime)) {
 		JKMod_PauseFrameRun();
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	// get any cvar changes
 	G_UpdateCvars();
 
@@ -2829,12 +2943,15 @@ start = trap_Milliseconds();
 	}
 end = trap_Milliseconds();
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JKMod] Check server news
 	JKMod_ServerNewsCheck();
 
 	// Tr!Force: [JKMod] Check server idle
 	JKMod_ServerIdleCheck();
 
+>>>>>>> jediknightplus/master
 	// see if it is time to do a tournement restart
 	CheckTournament();
 

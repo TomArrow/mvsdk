@@ -76,9 +76,12 @@ qboolean BG_SaberInAttack( int move )
 	case LS_A_JUMP_T__B_:
 	case LS_A_FLIP_STAB:
 	case LS_A_FLIP_SLASH:
+<<<<<<< HEAD
+=======
 	case LS_JK_DUAL_SPIN1: // Tr!Force: [PlayerMovement] Dual saber moves
 	case LS_JK_DUAL_SPIN2: // Tr!Force: [PlayerMovement] Dual saber moves
 	case LS_JK_DUAL_TORNADO: // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 		return qtrue;
 		break;
 	}
@@ -96,9 +99,12 @@ qboolean BG_SaberInSpecial( int move )
 	case LS_A_JUMP_T__B_:
 	case LS_A_FLIP_STAB:
 	case LS_A_FLIP_SLASH:
+<<<<<<< HEAD
+=======
 	case LS_JK_DUAL_SPIN1: // Tr!Force: [PlayerMovement] Dual saber moves
 	case LS_JK_DUAL_SPIN2: // Tr!Force: [PlayerMovement] Dual saber moves
 	case LS_JK_DUAL_TORNADO: // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 		return qtrue;
 	}
 	return qfalse;
@@ -222,6 +228,8 @@ qboolean BG_SpinningSaberAnim( int anim )
 	return qfalse;
 }
 
+<<<<<<< HEAD
+=======
 // Tr!Force: [PlayerMovement] Dual saber moves
 qboolean JKMod_BG_SpinningDualAnim( int anim )
 {
@@ -238,6 +246,7 @@ qboolean JKMod_BG_SpinningDualAnim( int anim )
 	return qfalse;
 }
 
+>>>>>>> jediknightplus/master
 qboolean BG_SaberInSpecialAttack( int anim )
 {
 	switch ( anim&~ANIM_TOGGLEBIT )

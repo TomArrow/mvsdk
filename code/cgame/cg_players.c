@@ -21,7 +21,12 @@ char	*cg_customSoundNames[MAX_CUSTOM_SOUNDS] = {
 	"*choke3.wav",
 	"*gasp.wav",
 	"*land1.wav",
+<<<<<<< HEAD
+	"*taunt.wav",
+	"*roll1.wav"
+=======
 	"*taunt.wav"
+>>>>>>> jediknightplus/master
 };
 
 
@@ -252,7 +257,11 @@ retryModel:
 		retriedAlready = qtrue;
 	}
 
+<<<<<<< HEAD
+	if ( (cg_mv_fixbrokenmodelsclient.integer == 1 || (cg_mv_fixbrokenmodelsclient.integer && jk2startversion > VERSION_1_02)) && !CG_IsValidCharacterModel(modelName, skinName))
+=======
 	if ( (cg_mv_fixbrokenmodelsclient.integer == 1 || (cg_mv_fixbrokenmodelsclient.integer && jk2gameplay > VERSION_1_02)) && !CG_IsValidCharacterModel(modelName, skinName)) // Tr!Force: [Gameplay] Check ingame gameplay changes
+>>>>>>> jediknightplus/master
 	{
 		modelName = "kyle";
 		skinName = "default";
@@ -495,7 +504,12 @@ retryModel:
 				}
 
 				//rww - Set the animation again because it just got reset due to the model change
+<<<<<<< HEAD
+				//trap_G2API_SetBoneAnim(ci->ghoul2Model, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), anim->firstFrame + anim->numFrames-1, anim->firstFrame + anim->numFrames, flags, 1.0f, cg.time, -1, 150);
+				trap_G2API_SetBoneAnim(ci->ghoul2Model, 0, ((ci->jk2gameplay == VERSION_1_02 && cg_fixlean.integer != 2) ? "upper_lumbar" : "lower_lumbar"), anim->firstFrame + anim->numFrames - 1, anim->firstFrame + anim->numFrames, flags, 1.0f, cg.time, -1, 150);
+=======
 				trap_G2API_SetBoneAnim(ci->ghoul2Model, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), anim->firstFrame + anim->numFrames-1, anim->firstFrame + anim->numFrames, flags, 1.0f, cg.time, -1, 150);
+>>>>>>> jediknightplus/master
 
 				cg_entities[clientNum].currentState.torsoAnim = 0;
 			}
@@ -567,6 +581,11 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	int			fLen = 0;
 	char		soundpath[MAX_QPATH];
 	char		soundName[1024];
+<<<<<<< HEAD
+	const char	*defaultModel;
+	qboolean	isDefaultModel = qfalse;
+=======
+>>>>>>> jediknightplus/master
 	qboolean	isFemale = qfalse;
 	fileHandle_t f;
 
@@ -577,8 +596,11 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		clientNum = -1;
 	}
 
+<<<<<<< HEAD
+=======
 	ci->deferred = qfalse;
 
+>>>>>>> jediknightplus/master
 	/*
 	if (ci->team == TEAM_SPECTATOR)
 	{
@@ -618,6 +640,19 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		//rww - DO NOT error out here! Someone could just type in a nonsense model name and crash everyone's client.
 		//Give it a chance to load default model for this client instead.
 
+<<<<<<< HEAD
+		isDefaultModel = qtrue;
+		if (ci->gender != GENDER_FEMALE) {
+			defaultModel = DEFAULT_MODEL;
+			isFemale = qfalse;
+		}
+		else {
+			defaultModel = "jan";
+			isFemale = qtrue;
+		}
+
+=======
+>>>>>>> jediknightplus/master
 		// fall back to default team name
 		if( cgs.gametype >= GT_TEAM) {
 			// keep skin name
@@ -626,12 +661,21 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 			} else {
 				Q_strncpyz(teamname, DEFAULT_REDTEAM_NAME, sizeof(teamname) );
 			}
+<<<<<<< HEAD
+			if ( !CG_RegisterClientModelname( ci, defaultModel, ci->skinName, teamname, -1 ) ) {
+				CG_Error( "DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", defaultModel, ci->skinName );
+			}
+		} else {
+			if ( !CG_RegisterClientModelname( ci, defaultModel, "default", teamname, -1 ) ) {
+				CG_Error( "DEFAULT_MODEL (%s) failed to register", defaultModel );
+=======
 			if ( !CG_RegisterClientModelname( ci, DEFAULT_TEAM_MODEL, ci->skinName, teamname, -1 ) ) {
 				CG_Error( "DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", DEFAULT_TEAM_MODEL, ci->skinName );
 			}
 		} else {
 			if ( !CG_RegisterClientModelname( ci, DEFAULT_MODEL, "default", teamname, -1 ) ) {
 				CG_Error( "DEFAULT_MODEL (%s) failed to register", DEFAULT_MODEL );
+>>>>>>> jediknightplus/master
 			}
 		}
 		modelloaded = qfalse;
@@ -656,8 +700,18 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	}
 
 	// sounds
+<<<<<<< HEAD
+	if (!isDefaultModel)
+		dir = ci->modelName;
+	else
+		dir = isFemale ? DEFAULT_FEMALE_SOUNDPATH : DEFAULT_MALE_SOUNDPATH;
+
+	fallback = isFemale ? DEFAULT_FEMALE_SOUNDPATH : DEFAULT_MALE_SOUNDPATH;
+	
+=======
 	dir = ci->modelName;
 	fallback = DEFAULT_MALE_SOUNDPATH; //(cgs.gametype >= GT_TEAM) ? DEFAULT_TEAM_MODEL : DEFAULT_MODEL;
+>>>>>>> jediknightplus/master
 
 	if ( ci->skinName[0] == '\0' || !Q_stricmp( "default", ci->skinName ) )
 	{//try default sounds.cfg first
@@ -708,6 +762,11 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	}
 
 	if (isFemale)
+<<<<<<< HEAD
+		ci->gender = GENDER_FEMALE;
+	else
+		ci->gender = GENDER_MALE;
+=======
 	{
 		ci->gender = GENDER_FEMALE;
 	}
@@ -715,6 +774,7 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	{
 		ci->gender = GENDER_MALE;
 	}
+>>>>>>> jediknightplus/master
 
 	for ( i = 0 ; i < MAX_CUSTOM_SOUNDS ; i++ ) {
 		s = cg_customSoundNames[i];
@@ -725,7 +785,11 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		COM_StripExtension(s+1, soundName, sizeof(soundName));
 		//strip the extension because we might want .mp3's
 
+<<<<<<< HEAD
+		ci->sounds[i] = 0;
+=======
 		//ci->sounds[i] = 0;
+>>>>>>> jediknightplus/master
 		// if the model didn't load use the sounds of the default model
 		if (soundpath[0])
 		{
@@ -755,6 +819,12 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 				ci->sounds[i] = trap_S_RegisterSound( va("sound/%s/%s", fallback, soundName) );
 			}
 		}
+<<<<<<< HEAD
+
+		if (!ci->sounds[i] && i == 15) //"*roll1"
+			ci->sounds[i] = ci->sounds[3]; //fallback to jumpsound if model doesn't have a custom roll sound
+=======
+>>>>>>> jediknightplus/master
 	}
 
 	ci->deferred = qfalse;
@@ -1018,8 +1088,11 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	v = Info_ValueForKey( configstring, "c2" );
 	CG_ColorFromString( v, newInfo.color2 );
 
+<<<<<<< HEAD
+=======
 	newInfo.jkmod_color2 = atoi(v); // Tr!Force: [DualSaber] Added 2nd color
 
+>>>>>>> jediknightplus/master
 	// bot skill
 	v = Info_ValueForKey( configstring, "skill" );
 	newInfo.botSkill = atoi( v );
@@ -1056,7 +1129,24 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	// model
 	v = Info_ValueForKey( configstring, "model" );
+<<<<<<< HEAD
+	if (strlen(cg_forceMyModel.string) && cg.snap && clientNum == cg.snap->ps.clientNum) {
+		Q_strncpyz(newInfo.modelName, cg_forceMyModel.string, sizeof(newInfo.modelName));
+
+		slash = strchr(newInfo.modelName, '/');
+		if (!slash) {
+			// modelName didn not include a skin name
+			Q_strncpyz(newInfo.skinName, "default", sizeof(newInfo.skinName));
+		}
+		else {
+			Q_strncpyz(newInfo.skinName, slash + 1, sizeof(newInfo.skinName));
+			// truncate modelName
+			*slash = 0;
+		}
+	} else if (cg_forceModel.integer) {
+=======
 	if ( cg_forceModel.integer ) {
+>>>>>>> jediknightplus/master
 		// forcemodel makes everyone use a single model
 		// to prevent load hitches
 		char modelStr[MAX_QPATH];
@@ -1178,6 +1268,8 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		MV_SetGamePlay( newInfo.jk2gameplay );
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JKMod] Custom client info
 	v = Info_ValueForKey( configstring, "jkhat" );
 	newInfo.jkmod_hat = atoi(v);
@@ -1186,6 +1278,7 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	v = Info_ValueForKey( configstring, "jkrace" );
 	newInfo.jkmod_race = atoi(v);
 
+>>>>>>> jediknightplus/master
 	newInfo.ATST = wasATST;
 
 	if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc )
@@ -1296,7 +1389,12 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 			}
 
 			//rww - Set the animation again because it just got reset due to the model change
+<<<<<<< HEAD
+			//trap_G2API_SetBoneAnim(ci->ghoul2Model, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed, cg.time, setFrame, 150);
+			trap_G2API_SetBoneAnim(ci->ghoul2Model, 0, ((ci->jk2gameplay == VERSION_1_02 && cg_fixlean.integer != 2) ? "upper_lumbar" : "lower_lumbar"), firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed, cg.time, setFrame, 150);
+=======
 			trap_G2API_SetBoneAnim(ci->ghoul2Model, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed, cg.time, setFrame, 150);
+>>>>>>> jediknightplus/master
 
 			cg_entities[clientNum].currentState.torsoAnim = 0;
 		}
@@ -1618,7 +1716,12 @@ static void CG_SetLerpFrameAnimation( centity_t *cent, clientInfo_t *ci, lerpFra
 
 		animSpeed *= animSpeedMult;
 
+<<<<<<< HEAD
+		//if ( ci->jk2gameplay != VERSION_1_02 ) BG_SaberStartTransAnim(cent->currentState.fireflag, newAnimation, &animSpeed);
+		if ( ci->jk2gameplay != VERSION_1_02 || cg_fixlean.integer ) BG_SaberStartTransAnim(cent->currentState.fireflag, newAnimation, &animSpeed);
+=======
 		if ( ci->jk2gameplay != VERSION_1_02 ) BG_SaberStartTransAnim(cent->currentState.fireflag, newAnimation, &animSpeed);
+>>>>>>> jediknightplus/master
 
 		if (torsoOnly)
 		{
@@ -1648,20 +1751,46 @@ static void CG_SetLerpFrameAnimation( centity_t *cent, clientInfo_t *ci, lerpFra
 
 			if (torsoOnly)
 			{
+<<<<<<< HEAD
+				//if ( ci->jk2gameplay != VERSION_1_02 && (cent->currentState.torsoAnim&~ANIM_TOGGLEBIT) == (cent->currentState.legsAnim&~ANIM_TOGGLEBIT) && cent->pe.legs.frame >= anim->firstFrame && cent->pe.legs.frame <= (anim->firstFrame + anim->numFrames))
+				if ( (ci->jk2gameplay != VERSION_1_02 || cg_fixlean.integer == 2) && (cent->currentState.torsoAnim&~ANIM_TOGGLEBIT) == (cent->currentState.legsAnim&~ANIM_TOGGLEBIT) && cent->pe.legs.frame >= anim->firstFrame && cent->pe.legs.frame <= (anim->firstFrame + anim->numFrames))
+=======
 				if ( ci->jk2gameplay != VERSION_1_02 && (cent->currentState.torsoAnim&~ANIM_TOGGLEBIT) == (cent->currentState.legsAnim&~ANIM_TOGGLEBIT) && cent->pe.legs.frame >= anim->firstFrame && cent->pe.legs.frame <= (anim->firstFrame + anim->numFrames))
+>>>>>>> jediknightplus/master
 				{
 					trap_G2API_SetBoneAnim(cent->ghoul2, 0, "lower_lumbar", anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed,cg.time, cent->pe.legs.frame, blendTime);
 					beginFrame = cent->pe.legs.frame;
 				}
 				else
 				{
+<<<<<<< HEAD
+					//trap_G2API_SetBoneAnim(cent->ghoul2, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed,cg.time, -1, blendTime);
+					trap_G2API_SetBoneAnim(cent->ghoul2, 0, ((ci->jk2gameplay == VERSION_1_02 && cg_fixlean.integer != 2) ? "upper_lumbar" : "lower_lumbar"), anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed,cg.time, -1, blendTime);
+=======
 					trap_G2API_SetBoneAnim(cent->ghoul2, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed,cg.time, -1, blendTime);
+>>>>>>> jediknightplus/master
 				}
 				cgs.clientinfo[cent->currentState.number].torsoAnim = newAnimation;
 			}
 			else
 			{
 				trap_G2API_SetBoneAnim(cent->ghoul2, 0, "model_root", anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed, cg.time, -1, blendTime);
+<<<<<<< HEAD
+				//if ( ci->jk2gameplay == VERSION_1_02 ) cgs.clientinfo[cent->currentState.number].torsoAnim = newAnimation;
+				if ( ci->jk2gameplay == VERSION_1_02 && cg_fixlean.integer != 2 ) cgs.clientinfo[cent->currentState.number].torsoAnim = newAnimation;
+				cgs.clientinfo[cent->currentState.number].legsAnim = newAnimation;
+			}
+
+			if ((cent->currentState.torsoAnim&~ANIM_TOGGLEBIT) == newAnimation)
+			{
+				if (beginFrame != anim->firstFrame)
+				{
+					trap_G2API_SetBoneAnim(cent->ghoul2, 0, "Motion", anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed, cg.time, beginFrame, blendTime);
+				}
+				else
+				{
+					trap_G2API_SetBoneAnim(cent->ghoul2, 0, "Motion", anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed, cg.time, -1, blendTime);
+=======
 				if ( ci->jk2gameplay == VERSION_1_02 ) cgs.clientinfo[cent->currentState.number].torsoAnim = newAnimation;
 				cgs.clientinfo[cent->currentState.number].legsAnim = newAnimation;
 			}
@@ -1695,6 +1824,7 @@ static void CG_SetLerpFrameAnimation( centity_t *cent, clientInfo_t *ci, lerpFra
 					{
 						trap_G2API_SetBoneAnim(cent->ghoul2, 0, "Motion", anim->firstFrame, anim->firstFrame + anim->numFrames, flags, animSpeed, cg.time, -1, blendTime);
 					}
+>>>>>>> jediknightplus/master
 				}
 			}
 		}
@@ -1922,7 +2052,12 @@ static void CG_RunLerpFrame( centity_t *cent, clientInfo_t *ci, lerpFrame_t *lf,
 	{
 		int flags = BONE_ANIM_OVERRIDE_FREEZE; //|BONE_ANIM_BLEND;
 		float animSpeed = 1.0f;
+<<<<<<< HEAD
+		//trap_G2API_SetBoneAnim(cent->ghoul2, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), cent->currentState.forceFrame, cent->currentState.forceFrame+1, flags, animSpeed, cg.time, -1, 150);
+		trap_G2API_SetBoneAnim(cent->ghoul2, 0, ((ci->jk2gameplay == VERSION_1_02 && cg_fixlean.integer != 2) ? "upper_lumbar" : "lower_lumbar"), cent->currentState.forceFrame, cent->currentState.forceFrame+1, flags, animSpeed, cg.time, -1, 150);
+=======
 		trap_G2API_SetBoneAnim(cent->ghoul2, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), cent->currentState.forceFrame, cent->currentState.forceFrame+1, flags, animSpeed, cg.time, -1, 150);
+>>>>>>> jediknightplus/master
 		trap_G2API_SetBoneAnim(cent->ghoul2, 0, "model_root", cent->currentState.forceFrame, cent->currentState.forceFrame+1, flags, animSpeed, cg.time, -1, 150);
 		trap_G2API_SetBoneAnim(cent->ghoul2, 0, "Motion", cent->currentState.forceFrame, cent->currentState.forceFrame+1, flags, animSpeed, cg.time, -1, 150);
 
@@ -2855,7 +2990,11 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 	AnglesSubtract( headAngles, torsoAngles, headAngles );
 	AnglesSubtract( torsoAngles, legsAngles, torsoAngles );
 
+<<<<<<< HEAD
+	if ( jk2startversion != VERSION_1_02 || cg_fixlean.integer ) legsAngles[PITCH] = 0;
+=======
 	if ( jk2gameplay != VERSION_1_02 ) legsAngles[PITCH] = 0; // Tr!Force: [Gameplay] Check ingame gameplay changes
+>>>>>>> jediknightplus/master
 
 	AnglesToAxis( legsAngles, legs );
 	// we assume that model 0 is the player model.
@@ -2880,7 +3019,11 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 	viewAngles[YAW] = viewAngles[ROLL] = 0;
 	viewAngles[PITCH] *= 0.5;
 
+<<<<<<< HEAD
+	if ( jk2startversion == VERSION_1_02 && !cg_fixlean.integer )
+=======
 	if ( jk2gameplay == VERSION_1_02 ) // Tr!Force: [Gameplay] Check ingame gameplay changes
+>>>>>>> jediknightplus/master
 	{
 		VectorCopy( cent->lerpAngles, angles );
 		angles[PITCH] = 0;
@@ -3233,6 +3376,37 @@ static void CG_PlayerFlag( centity_t *cent, qhandle_t hModel ) {
 		return;
 	}
 
+<<<<<<< HEAD
+	VectorSet( tAng, cent->turAngles[PITCH], cent->turAngles[YAW], cent->turAngles[ROLL] );
+
+	trap_G2API_GetBoltMatrix(cent->ghoul2, 0, cgs.clientinfo[cent->currentState.number].bolt_llumbar, &boltMatrix, tAng, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
+	trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, ORIGIN, boltOrg);
+
+	trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, POSITIVE_X, tAng);
+	vectoangles(tAng, tAng);
+
+	VectorCopy(cent->lerpAngles, angles);
+
+	boltOrg[2] -= 12;
+	VectorSet(getAng, 0, cent->lerpAngles[1], 0);
+	AngleVectors(getAng, 0, right, 0);
+	boltOrg[0] += right[0]*8;
+	boltOrg[1] += right[1]*8;
+	boltOrg[2] += right[2]*8;
+
+	angles[PITCH] = -cent->lerpAngles[PITCH]/2-30;
+	angles[YAW] = tAng[YAW]+270;
+
+	AnglesToAxis(angles, axis);
+
+	memset( &ent, 0, sizeof( ent ) );
+	VectorMA( boltOrg, 24, axis[0], ent.origin );
+
+	angles[ROLL] += 20;
+	AnglesToAxis( angles, ent.axis );
+
+	ent.hModel = hModel;
+=======
 	// Tr!Force: [FlagAlignment] Custom alignment (Experimental)
 	if (jkcvar_cg_flagAlignment.integer)
 	{
@@ -3288,12 +3462,26 @@ static void CG_PlayerFlag( centity_t *cent, qhandle_t hModel ) {
 
 		ent.hModel = hModel;
 	}
+>>>>>>> jediknightplus/master
 
 	ent.modelScale[0] = 0.5;
 	ent.modelScale[1] = 0.5;
 	ent.modelScale[2] = 0.5;
 	ScaleModelAxis(&ent);
 
+<<<<<<< HEAD
+	
+	ent.shaderRGBA[3] = 255;
+	if (cg_thirdPersonFlagAlpha.value < 1.0f && cent->currentState.number == cg.snap->ps.clientNum)
+	{ //If we're the current client (in third person), render the flag on our back transparently
+		float alpha = (cg_thirdPersonFlagAlpha.value * 255.0f); //JAPRO - Clientside - Transparant Flag option
+		if (alpha >= 0 && alpha <= 255)
+			ent.shaderRGBA[3] = alpha;
+		ent.renderfx |= RF_FORCE_ENT_ALPHA;
+	}
+	
+	//FIXME: Not doing this at the moment because sorting totally messes up
+=======
 	// Tr!Force: [FlagOpacity] Make it transparent
 	if (jkcvar_cg_flagOpacity.value < 255 && cent->currentState.number == cg.snap->ps.clientNum)
 	{ 
@@ -3302,6 +3490,7 @@ static void CG_PlayerFlag( centity_t *cent, qhandle_t hModel ) {
 		else ent.shaderRGBA[3] = 255;
 		ent.renderfx |= RF_FORCE_ENT_ALPHA;
 	}
+>>>>>>> jediknightplus/master
 
 	trap_R_AddRefEntityToScene( &ent );
 }
@@ -3322,24 +3511,46 @@ static void CG_PlayerPowerups( centity_t *cent, refEntity_t *torso ) {
 
 	// quad gives a dlight
 	if ( powerups & ( 1 << PW_QUAD ) ) {
+<<<<<<< HEAD
+		trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 0.2f, 0.2f, 1.0f );
+=======
 		trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 0.2f, 0.2f, 1 );
+>>>>>>> jediknightplus/master
 	}
 
 	// redflag
 	if ( powerups & ( 1 << PW_REDFLAG ) ) {
 		CG_PlayerFlag( cent, cgs.media.redFlagModel );
+<<<<<<< HEAD
+		trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 1.0f, 0.2f, 0.2f );
+=======
 		trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 1.0, 0.2f, 0.2f );
+>>>>>>> jediknightplus/master
 	}
 
 	// blueflag
 	if ( powerups & ( 1 << PW_BLUEFLAG ) ) {
 		CG_PlayerFlag( cent, cgs.media.blueFlagModel );
+<<<<<<< HEAD
+		trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 0.2f, 0.2f, 1.0f );
+=======
 		trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 0.2f, 0.2f, 1.0 );
+>>>>>>> jediknightplus/master
 	}
 
 	// neutralflag
 	if ( powerups & ( 1 << PW_NEUTRALFLAG ) ) {
+<<<<<<< HEAD
+		if (cgs.isCTFMod && cgs.CTF3ModeActive) {
+			CG_PlayerFlag( cent, cgs.media.neutralFlagModel );
+			trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 1.0f, 1.0f, 0.2f );
+		}
+		else {
+			trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 1.0f, 1.0f, 1.0f );
+		}
+=======
 		trap_R_AddLightToScene( cent->lerpOrigin, 200 + (rand()&31), 1.0, 1.0, 1.0 );
+>>>>>>> jediknightplus/master
 	}
 
 	// haste leaves smoke trails
@@ -3436,16 +3647,23 @@ static void CG_PlayerSprites( centity_t *cent ) {
 		return; //this entity is mind-tricking the current client, so don't render it
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JKMod] Don't show on emote menu
 	if ( JKMod_CG_EmoteUI() ) return;
 
+>>>>>>> jediknightplus/master
 	if ( cent->currentState.eFlags & EF_CONNECTION && cg_drawPlayerSprites.integer & 1 ) {
 		CG_PlayerFloatSprite( cent, cgs.media.connectionShader );
 		return;
 	}
 
 	if ( cent->currentState.eFlags & EF_TALK && cg_drawPlayerSprites.integer & 2 ) {
+<<<<<<< HEAD
+		CG_PlayerFloatSprite( cent, cgs.media.balloonShader );
+=======
 		CG_PlayerFloatSprite( cent, (jkcvar_cg_chatIcon.integer ? trap_R_RegisterShader("jkmod_chat_icon")  : cgs.media.balloonShader) ); // Tr!Force: [ChatIcon] Draw custom chat icon
+>>>>>>> jediknightplus/master
 		return;
 	}
 /*
@@ -3500,7 +3718,11 @@ Returns the Z component of the surface being shadowed
   should it return a full plane instead of a Z?
 ===============
 */
+<<<<<<< HEAD
+#define	SHADOW_DISTANCE		512
+=======
 #define	SHADOW_DISTANCE		128
+>>>>>>> jediknightplus/master
 static qboolean CG_PlayerShadow( centity_t *cent, float *shadowPlane ) {
 	vec3_t		end, mins = {-15, -15, 0}, maxs = {15, 15, 2};
 	trace_t		trace;
@@ -3977,11 +4199,19 @@ void CG_DoSaber( vec3_t origin, vec3_t dir, float length, saber_colors_t color, 
 	// It's not quite what I'd hoped tho.  If you have any ideas, go for it!  --Pat
 	if (length < SABER_LENGTH_MAX)
 	{
+<<<<<<< HEAD
+		radiusmult = 1.0f + (2.0f / length);		// Note this creates a curve, and length cannot be < 0.5.
+	}
+	else
+	{
+		radiusmult = 1.0f;
+=======
 		radiusmult = 1.0 + (2.0 / length);		// Note this creates a curve, and length cannot be < 0.5.
 	}
 	else
 	{
 		radiusmult = 1.0;
+>>>>>>> jediknightplus/master
 	}
 
 
@@ -4306,7 +4536,11 @@ void CG_G2SaberEffects(vec3_t start, vec3_t end, centity_t *owner)
 }
 #endif
 
+<<<<<<< HEAD
+#define SABER_TRAIL_TIME	40.0f
+=======
 #define SABER_TRAIL_TIME	jkcvar_cg_saberTrailSpeed.value // Tr!Force: [SaberTrail] Set custom speed
+>>>>>>> jediknightplus/master
 #define FX_USE_ALPHA		0x08000000
 
 void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, int renderfx, int modelIndex, vec3_t origin, vec3_t angles, qboolean fromSaber)
@@ -4324,9 +4558,14 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	vec3_t futureAngles;
 	effectTrailArgStruct_t fx;
 	int scolor = 0;
+<<<<<<< HEAD
+	vec3_t otherPos, otherDir, otherEnd;
+	float dualLen = 0.7;
+=======
 	int jkmod_color2 = 0; // Tr!Force: [DualSaber] Added 2nd color
 	vec3_t otherPos, otherDir, otherEnd;
 	float dualLen = cgs.jkmodCGS.dualSaber ? 1 : 0.7; // Tr!Force: [DualSaber] Fixed length
+>>>>>>> jediknightplus/master
 
 	saberEnt = &cg_entities[cent->currentState.saberEntityNum];
 
@@ -4426,6 +4665,20 @@ Ghoul2 Insert Start
 	}
 
 	scolor = cgs.clientinfo[cent->currentState.number].icolor1;
+<<<<<<< HEAD
+
+	if (cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
+	{
+		if (cgs.clientinfo[cent->currentState.number].team == TEAM_RED &&
+			(cg_saberTeamColors.integer || scolor == SABER_BLUE))
+		{
+			scolor = SABER_RED;
+		}
+		else if (cgs.clientinfo[cent->currentState.number].team == TEAM_BLUE &&
+			(cg_saberTeamColors.integer || scolor == SABER_RED))
+		{
+			scolor = SABER_BLUE;
+=======
 	jkmod_color2 = cgs.clientinfo[cent->currentState.number].jkmod_color2; // Tr!Force: [DualSaber] Added 2nd color
 
 	if (cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
@@ -4439,6 +4692,7 @@ Ghoul2 Insert Start
 		{
 			scolor = SABER_BLUE;
 			jkmod_color2 = SABER_BLUE; // Tr!Force: [DualSaber] Added 2nd color
+>>>>>>> jediknightplus/master
 		}
 	}
 
@@ -4481,7 +4735,11 @@ Ghoul2 Insert Start
 
 			VectorCopy(trace.endpos, end);
 
+<<<<<<< HEAD
+			if (cent->currentState.bolt2)
+=======
 			if (cent->currentState.bolt2 && !cgs.jkmodCGS.dualSaber) // Tr!Force: [DualSaber] Allow saber marks
+>>>>>>> jediknightplus/master
 			{
 				break;
 			}
@@ -4491,9 +4749,20 @@ Ghoul2 Insert Start
 			{
 				if ( trace.entityNum == ENTITYNUM_WORLD )
 				{//only put marks on architecture
+<<<<<<< HEAD
+					float markDistance = Distance(client->saberTrail.oldPos[i], trace.endpos);
+					if (markDistance > 8.0f)
+					{ // Let's do some cool burn/glowing mark bits!!!
+						CG_CreateSaberMarks(client->saberTrail.oldPos[i], trace.endpos, trace.plane.normal);
+						// stash point so we can connect-the-dots later
+						VectorCopy(trace.endpos, client->saberTrail.oldPos[i]);
+						VectorCopy(trace.plane.normal, client->saberTrail.oldNormal[i]);
+					}				
+=======
 					// Let's do some cool burn/glowing mark bits!!!
 					CG_CreateSaberMarks( client->saberTrail.oldPos[i], trace.endpos, trace.plane.normal );
 				
+>>>>>>> jediknightplus/master
 					//make a sound
 					if ( cg.time - client->saberHitWallSoundDebounceTime >= 100 )
 					{//ugh, need to have a real sound debouncer... or do this game-side
@@ -4508,6 +4777,16 @@ Ghoul2 Insert Start
 				client->saberTrail.haveOldPos[i] = qtrue;
 //				CG_ImpactMark( cgs.media.rivetMarkShader, client->saberTrail.oldPos[i], client->saberTrail.oldNormal[i],
 //						0.0f, 1.0f, 1.0f, 1.0f, 1.0f, qfalse, 1.1f, qfalse );
+<<<<<<< HEAD
+				// stash point so we can connect-the-dots later
+				VectorCopy(trace.endpos, client->saberTrail.oldPos[i]);
+				VectorCopy(trace.plane.normal, client->saberTrail.oldNormal[i]);
+			}
+		}
+		else
+		{
+			if (cent->currentState.bolt2)
+=======
 			}
 
 			// stash point so we can connect-the-dots later
@@ -4517,6 +4796,7 @@ Ghoul2 Insert Start
 		else
 		{
 			if (cent->currentState.bolt2 && !cgs.jkmodCGS.dualSaber) // Tr!Force: [DualSaber] Allow saber marks
+>>>>>>> jediknightplus/master
 			{
 				break;
 			}
@@ -4557,6 +4837,8 @@ Ghoul2 Insert Start
 				dualSaberLen = VectorLength(v);
 
 				VectorCopy(trace.endpos, end);
+<<<<<<< HEAD
+=======
 
 				// Tr!Force: [DualSaber] Allow saber marks
 				if (cgs.jkmodCGS.dualSaber)
@@ -4587,6 +4869,7 @@ Ghoul2 Insert Start
 			else
 			{
 				client->saberTrail.jkmod_haveOldPos[i] = qfalse;
+>>>>>>> jediknightplus/master
 			}
 		}
 	}
@@ -4606,7 +4889,10 @@ CheckTrail:
 		if ( (saberMoveData[cent->currentState.saberMove].trailLength > 0 || ((cent->currentState.powerups & (1 << PW_SPEED) && cg_speedTrail.integer)) || cent->currentState.saberInFlight) && cg.time < saberTrail->lastTime + 2000 ) // if we have a stale segment, don't draw until we have a fresh one
 		{
 			vec3_t	rgb1={255.0f,255.0f,255.0f};
+<<<<<<< HEAD
+=======
 			vec3_t	jkmod_rgb2={255.0f,255.0f,255.0f}; // Tr!Force: [DualSaber] Added 2nd color
+>>>>>>> jediknightplus/master
 
 			switch( scolor )
 			{
@@ -4633,6 +4919,8 @@ CheckTrail:
 					break;
 			}
 
+<<<<<<< HEAD
+=======
 			// Tr!Force: [DualSaber] Added 2nd color
 			switch( jkmod_color2 )
 			{
@@ -4659,6 +4947,7 @@ CheckTrail:
 					break;
 			}
 
+>>>>>>> jediknightplus/master
 			//Here we will use the happy process of filling a struct in with arguments and passing it to a trap function
 			//so that we can take the struct and fill in an actual CTrail type using the data within it once we get it
 			//into the effects area
@@ -4726,9 +5015,12 @@ CheckTrail:
 			{
 				float oldAlpha = 1.0f - ( diff / SABER_TRAIL_TIME );
 
+<<<<<<< HEAD
+=======
 				// Tr!Force: [DualSaber] Added 2nd color
 				if (cgs.jkmodCGS.dualSaber) VectorCopy( jkmod_rgb2, rgb1 ); 
 
+>>>>>>> jediknightplus/master
 				VectorCopy( otherPos, fx.mVerts[0].origin );
 				VectorMA( otherEnd, 3.0f, otherDir, fx.mVerts[1].origin );
 
@@ -4805,7 +5097,11 @@ JustDoIt:
 		
 		CG_DoSaber( org_, axis_[0], sideOneLen, scolor, renderfx );
 
+<<<<<<< HEAD
+		CG_DoSaber( otherPos, otherDir, sideTwoLen, scolor, renderfx );
+=======
 		CG_DoSaber( otherPos, otherDir, sideTwoLen, (cgs.jkmodCGS.dualSaber ? jkmod_color2 : scolor), renderfx ); // Tr!Force: [DualSaber] Added 2nd color
+>>>>>>> jediknightplus/master
 	}
 	else
 	{
@@ -6164,15 +6460,111 @@ void CG_Player( centity_t *cent ) {
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Player] Load custom player functions
 	JKMod_CG_Player(cent);
 
+>>>>>>> jediknightplus/master
 	if (!cent->trickAlphaTime || (cg.time - cent->trickAlphaTime) > 1000)
 	{ //things got out of sync, perhaps a new client is trying to fill in this slot
 		cent->trickAlpha = 255;
 		cent->trickAlphaTime = cg.time;
 	}
 
+<<<<<<< HEAD
+	//JAPRO - Clientside - Draw Non-Duelers - Start
+	if (cent->currentState.number != cg.snap->ps.clientNum && ((cg.predictedPlayerState.clientNum != cent->currentState.owner))) { // we only care about other players
+		if (cg.snap->ps.duelInProgress) { // we are dueling
+			if (cent->currentState.number != cg.snap->ps.duelIndex) { // don't draw this entity because we aren't dueling them
+				if ((cg.predictedPlayerState.persistant[PERS_TEAM] != TEAM_SPECTATOR) || cg.predictedPlayerState.pm_flags & PMF_FOLLOW)
+					if ((cgs.isCaMod || cgs.isJK2Pro) && !cg_drawNonDuelers.integer)
+						return;
+			}
+		}
+	}
+	//JAPRO - Clientside - Draw Non-Duelers - End
+
+	//JAPRO - Clientside - Draw Player Collision Hitbox - Start
+	if (cg_drawHitBox.integer) {
+		vec3_t bmins = {-15, -15, DEFAULT_MINS_2}, bmaxs = {15, 15, DEFAULT_MAXS_2}, absmin, absmax;
+		int x = 0, zd = 0, zu = 0;
+
+		if (pm && cent->currentState.clientNum == pm->ps->clientNum)
+		{
+			VectorCopy(pm->mins, bmins);
+			VectorCopy(pm->maxs, bmaxs);
+		}
+		else if (cent->currentState.solid) {
+			x = (cent->currentState.solid & 255);
+			zd = ((cent->currentState.solid >> 8) & 255);
+			zu = ((cent->currentState.solid >> 16) & 255) - 32;
+
+			bmins[0] = bmins[1] = -x;
+			bmaxs[0] = bmaxs[1] = x;
+			bmins[2] = -zd;
+			bmaxs[2] = zu;
+		}
+
+		if (!CG_IsMindTricked(cent->currentState.trickedentindex,
+			cent->currentState.trickedentindex2,
+			cent->currentState.trickedentindex3,
+			cent->currentState.trickedentindex4, cg.snap->ps.clientNum))
+		{
+
+			VectorAdd( cent->lerpOrigin, bmins, absmin );
+			VectorAdd( cent->lerpOrigin, bmaxs, absmax );
+			//CG_CubeOutline( absmin, absmax, 1, COLOR_RED, 0.25 );
+			{
+				vec3_t	point1, point2, point3, point4;
+				int		vec[3];
+				int		axis, i;
+
+				for ( axis = 0, vec[0] = 0, vec[1] = 1, vec[2] = 2; axis < 3; axis++, vec[0]++, vec[1]++, vec[2]++ )
+				{
+					for ( i = 0; i < 3; i++ )
+					{
+						if ( vec[i] > 2 )
+						{
+							vec[i] = 0;
+						}
+					}
+
+					point1[vec[1]] = absmin[vec[1]];
+					point1[vec[2]] = absmin[vec[2]];
+
+					point2[vec[1]] = absmin[vec[1]];
+					point2[vec[2]] = absmax[vec[2]];
+
+					point3[vec[1]] = absmax[vec[1]];
+					point3[vec[2]] = absmax[vec[2]];
+
+					point4[vec[1]] = absmax[vec[1]];
+					point4[vec[2]] = absmin[vec[2]];
+
+					//- face
+					point1[vec[0]] = point2[vec[0]] = point3[vec[0]] = point4[vec[0]] = absmin[vec[0]];
+
+					CG_TestLine( point1, point2, /*cg.time*/1, COLOR_RED, 1 );
+					CG_TestLine( point2, point3, /*cg.time*/1, COLOR_RED, 1 );
+					CG_TestLine( point1, point4, /*cg.time*/1, COLOR_RED, 1 );
+					CG_TestLine( point4, point3, /*cg.time*/1, COLOR_RED, 1 );
+
+					//+ face
+					point1[vec[0]] = point2[vec[0]] = point3[vec[0]] = point4[vec[0]] = absmax[vec[0]];
+
+					CG_TestLine( point1, point2, /*cg.time*/1, COLOR_RED, 1 );
+					CG_TestLine( point2, point3, /*cg.time*/1, COLOR_RED, 1 );
+					CG_TestLine( point1, point4, /*cg.time*/1, COLOR_RED, 1 );
+					CG_TestLine( point4, point1, /*cg.time*/1, COLOR_RED, 1 );
+				}
+			}
+		}
+	}
+	//JAPRO - Clientside - Draw Player Collision Hitbox - End
+
+=======
+>>>>>>> jediknightplus/master
 	//If this client has tricked you.
 	if (CG_IsMindTricked(cent->currentState.trickedentindex,
 		cent->currentState.trickedentindex2,
@@ -6225,7 +6617,11 @@ void CG_Player( centity_t *cent ) {
 	renderfx = 0;
 	if ( cent->currentState.number == cg.snap->ps.clientNum) {
 		if (!cg.renderingThirdPerson) {
+<<<<<<< HEAD
+			if (cg_fpls.integer != 1 || cent->currentState.weapon != WP_SABER)
+=======
 			if (!cg_fpls.integer || cent->currentState.weapon != WP_SABER)
+>>>>>>> jediknightplus/master
 			{
 				renderfx = RF_THIRD_PERSON;			// only draw in mirrors
 			}
@@ -6279,7 +6675,23 @@ void CG_Player( centity_t *cent ) {
 	{
 		cent->ghoul2weapon = NULL; //be sure to update after respawning/getting limb regrown
 	}
+<<<<<<< HEAD
+
+	// option to use a different run animation with active saber (like SP and JKA)
+	if (cg_SPRunAnim.integer && (ci->jk2gameplay != VERSION_1_02 || cg_fixlean.integer) && cent->currentState.weapon == WP_SABER && !cent->currentState.saberInFlight && cent->saberLength > 0)
+	{
+		if ((cent->currentState.torsoAnim & ~ANIM_TOGGLEBIT) == BOTH_RUN1) {
+			cent->currentState.torsoAnim = BOTH_RUN2;
+		}
+
+		if ((cent->currentState.legsAnim & ~ANIM_TOGGLEBIT) == BOTH_RUN1) {
+			cent->currentState.legsAnim = BOTH_RUN2;
+		}
+	}
+
+=======
 	
+>>>>>>> jediknightplus/master
 	memset (&legs, 0, sizeof(legs));
 
 	CG_SetGhoul2Info(&legs, cent);
@@ -6303,6 +6715,24 @@ void CG_Player( centity_t *cent ) {
 		if ((cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR || cg.snap->ps.persistant[PERS_TEAM] == team) &&
 			!(cent->currentState.eFlags & EF_DEAD))
 		{
+<<<<<<< HEAD
+			switch (team)
+			{
+				case TEAM_RED:
+					CG_PlayerFloatSprite( cent, cgs.media.teamRedShader);
+					break;
+				case TEAM_BLUE:
+					CG_PlayerFloatSprite( cent, cgs.media.teamBlueShader);
+					break;
+				case TEAM_FREE:
+					if (cgs.isCTFMod && cgs.CTF3ModeActive && team == TEAM_FREE) {
+						CG_PlayerFloatSprite( cent, cgs.media.teamYellowShader);
+						break;
+					}
+				default:
+					CG_PlayerFloatSprite( cent, cgs.media.teamBlueShader); // old fallback behavior
+					break;
+=======
 			if (team == TEAM_RED)
 			{
 				CG_PlayerFloatSprite( cent, cgs.media.teamRedShader);
@@ -6310,6 +6740,7 @@ void CG_Player( centity_t *cent ) {
 			else	// if (team == TEAM_BLUE)
 			{
 				CG_PlayerFloatSprite( cent, cgs.media.teamBlueShader);
+>>>>>>> jediknightplus/master
 			}
 		}
 	}
@@ -6444,7 +6875,11 @@ doEssentialOne:
 	{
 		if (cgFPLSState != 0)
 		{
+<<<<<<< HEAD
+		    CG_ForceFPLSPlayerModel(cent, ci);
+=======
 			CG_ForceFPLSPlayerModel(cent, ci);
+>>>>>>> jediknightplus/master
 			cgFPLSState = 0;
 			return;
 		}
@@ -6770,7 +7205,11 @@ doEssentialTwo:
 				efOrg[1] -= boltDir[1]*4;
 				efOrg[2] -= boltDir[2]*4;
 
+<<<<<<< HEAD
+				if ( jk2startversion == VERSION_1_02 && !cg_fixlean.integer )
+=======
 				if ( jk2gameplay == VERSION_1_02 ) // Tr!Force: [Gameplay] Check ingame gameplay changes
+>>>>>>> jediknightplus/master
 				{
 					efOrg[2] += 8;
 				}
@@ -6782,7 +7221,11 @@ doEssentialTwo:
 				VectorCopy(efOrg, cent->grip_arm.origin);
 				VectorCopy(cent->grip_arm.origin, cent->grip_arm.lightingOrigin);
 
+<<<<<<< HEAD
+				if ( jk2startversion == VERSION_1_02 && !cg_fixlean.integer )
+=======
 				if ( jk2gameplay == VERSION_1_02 ) // Tr!Force: [Gameplay] Check ingame gameplay changes
+>>>>>>> jediknightplus/master
 				{
 					VectorCopy(cent->lerpAngles, armAng);
 					armAng[ROLL] = -90;
@@ -6855,6 +7298,8 @@ doEssentialTwo:
 			legs.shaderRGBA[3] = 1;
 		}
 	}
+<<<<<<< HEAD
+=======
 	// Tr!Force: [ChatProtect] Chat player transparency
 	else if ((cent->currentState.eFlags & EF_TALK) && (cent->currentState.eFlags & JK_PASS_THROUGH) && jkcvar_cg_chatPlayerOpacity.integer)
 	{
@@ -6869,6 +7314,7 @@ doEssentialTwo:
 			}
 		}
 	}
+>>>>>>> jediknightplus/master
 
 	if (cg_entities[cent->currentState.number].teamPowerEffectTime > cg.time)
 	{
@@ -7160,22 +7606,57 @@ doEssentialTwo:
 
 	if (cent->currentState.eFlags & EF_INVULNERABLE)
 	{
+<<<<<<< HEAD
+		if (cg_teamRespawnShield.integer && ci && cgs.gametype != GT_CTY) {
+			switch (ci->team)
+			{
+				case TEAM_RED:
+					CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysaliredShader);
+					break;
+				case TEAM_FREE:
+					if (cgs.isCTFMod && cgs.CTF3ModeActive) {
+						CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysalimariShader);
+						break;
+					}
+				case TEAM_BLUE:
+				default:
+					CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysaliblueShader);
+					break;
+			}
+		}
+		else {
+			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.invulnerabilityShader );
+		}
+=======
 		CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.invulnerabilityShader );
+>>>>>>> jediknightplus/master
 	}
 stillDoSaber:
 	if (cent->currentState.weapon == WP_SABER && !cent->currentState.shouldtarget)
 	{
+<<<<<<< HEAD
+		//JAPRO - Clientside - Use all saber hum sounds
+=======
+>>>>>>> jediknightplus/master
 		if (!cent->currentState.saberInFlight && !(cent->currentState.eFlags & EF_DEAD))
 		{
 			if (cg.snap->ps.clientNum == cent->currentState.number)
 			{
 				trap_S_AddLoopingSound( cent->currentState.number, cg.refdef.vieworg, vec3_origin, 
+<<<<<<< HEAD
+					cgs.media.saberHumSounds[cent->currentState.number % 4] );
+=======
 					trap_S_RegisterSound( "sound/weapons/saber/saberhum1.wav" ) );
+>>>>>>> jediknightplus/master
 			}
 			else
 			{
 				trap_S_AddLoopingSound( cent->currentState.number, cent->lerpOrigin, vec3_origin, 
+<<<<<<< HEAD
+					cgs.media.saberHumSounds[cent->currentState.number % 4] );
+=======
 					trap_S_RegisterSound( "sound/weapons/saber/saberhum1.wav" ) );
+>>>>>>> jediknightplus/master
 			}
 		}
 
@@ -7380,12 +7861,15 @@ stillDoSaber:
 		cent->saberLength = 0;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Dimension] Don't show saber on racers
 	if (cg.snap->ps.stats[JK_DIMENSION] == DIMENSION_RACE && cent->ghoul2)
 	{
 		trap_G2API_RemoveGhoul2Model(&(cent->ghoul2), 1);
 	}
 
+>>>>>>> jediknightplus/master
 	if (cent->currentState.eFlags & EF_DEAD)
 	{
 		if (cent->ghoul2 && cent->currentState.saberInFlight && g2HasWeapon)
@@ -7409,6 +7893,28 @@ stillDoSaber:
 		legs.renderfx |= RF_MINLIGHT;
 	}
 
+<<<<<<< HEAD
+//JAPRO - Clientside - Brightskins - Start
+	if (cg_brightskins.integer)
+	{
+		if (mvapi >= 3) {
+			legs.renderfx |= RF_FULLBRIGHT; //while custom RGBA colors in JKA were the reason for this originally, it looks really nice with overbrightbits in JK2
+		}
+		else {
+			legs.shaderRGBA[0] = 255;
+			legs.shaderRGBA[1] = 255;
+			legs.shaderRGBA[2] = 255;
+			legs.renderfx |= RF_RGB_TINT;
+		}
+	}
+	//JAPRO - Clientside - Brightskins - End
+
+	if (mvapi >= 3 && !cg_playerLOD.integer && cg.snap->ps.clientNum == cent->currentState.number)
+		legs.renderfx |= RF_NOLOD; //JAPRO - Clientside - Force high detail on local player
+
+
+=======
+>>>>>>> jediknightplus/master
 	if (cg.snap->ps.duelInProgress /*&& cent->currentState.number != cg.snap->ps.clientNum*/)
 	{ //I guess go ahead and glow your own client too in a duel
 		if (cent->currentState.number != cg.snap->ps.duelIndex &&
@@ -7419,7 +7925,11 @@ stillDoSaber:
 			legs.shaderRGBA[2] = 50;
 			legs.renderfx |= RF_RGB_TINT;
 		}
+<<<<<<< HEAD
+		else if (cg_privateDuelShell.integer)
+=======
 		else if (jkcvar_cg_duelGlow.integer) // Tr!Force: [DuelGlow] Enable and disable
+>>>>>>> jediknightplus/master
 		{ //adjust the glow by how far away you are from your dueling partner
 			centity_t *duelEnt;
 
@@ -7472,7 +7982,14 @@ stillDoSaber:
 
 				if (subLen <= 1024)
 				{
+<<<<<<< HEAD
+					if (mvapi >= 3)
+						legs.renderfx |= RF_FULLBRIGHT;
+					else
+						legs.renderfx |= RF_RGB_TINT;
+=======
 					legs.renderfx |= RF_RGB_TINT;
+>>>>>>> jediknightplus/master
 				}
 			}
 		}
@@ -7505,7 +8022,12 @@ doEssentialThree:
 		}
 
 		trap_G2API_SetBoneAnim(legs.ghoul2, 0, "model_root", cent->miscTime, cent->miscTime, BONE_ANIM_OVERRIDE_FREEZE, 1.0f, cg.time, cent->miscTime, -1);
+<<<<<<< HEAD
+		//trap_G2API_SetBoneAnim(legs.ghoul2, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), cent->miscTime, cent->miscTime, BONE_ANIM_OVERRIDE_FREEZE, 1.0f, cg.time, cent->miscTime, -1);
+		trap_G2API_SetBoneAnim(legs.ghoul2, 0, ((ci->jk2gameplay == VERSION_1_02 && cg_fixlean.integer != 2) ? "upper_lumbar" : "lower_lumbar"), cent->miscTime, cent->miscTime, BONE_ANIM_OVERRIDE_FREEZE, 1.0f, cg.time, cent->miscTime, -1);
+=======
 		trap_G2API_SetBoneAnim(legs.ghoul2, 0, (ci->jk2gameplay == VERSION_1_02 ? "upper_lumbar" : "lower_lumbar"), cent->miscTime, cent->miscTime, BONE_ANIM_OVERRIDE_FREEZE, 1.0f, cg.time, cent->miscTime, -1);
+>>>>>>> jediknightplus/master
 		trap_G2API_SetBoneAnim(legs.ghoul2, 0, "Motion", cent->miscTime, cent->miscTime, BONE_ANIM_OVERRIDE_FREEZE, 1.0f, cg.time, cent->miscTime, -1);
 
 		VectorCopy(cent->currentState.origin2, hitLoc);
@@ -7645,7 +8167,11 @@ doEssentialThree:
 		
 		trap_R_AddRefEntityToScene( &legs );
 	}
+<<<<<<< HEAD
+
+=======
 	
+>>>>>>> jediknightplus/master
 	//For now, these two are using the old shield shader. This is just so that you
 	//can tell it apart from the JM/duel shaders, but it's still very obvious.
 	if (cent->currentState.forcePowersActive & (1 << FP_PROTECT))

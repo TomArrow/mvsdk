@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+﻿# Make sure the user is not executing this script directly
+=======
 # Make sure the user is not executing this script directly
+>>>>>>> jediknightplus/master
 if(NOT InMVSDK)
 	message(FATAL_ERROR "Use the top-level cmake script!")
 endif(NOT InMVSDK)
@@ -16,18 +20,27 @@ set(MVGAMEHEADERS
 	"${SRCDir}/game/be_ea.h"
 	"${SRCDir}/game/bg_local.h"
 	"${SRCDir}/game/bg_public.h"
+<<<<<<< HEAD
+=======
 	"${JKModDir}/game/jk_public.h" # Tr!Force: [CMake] JKMod headers
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/bg_saga.h"
 	"${SRCDir}/game/bg_weapons.h"
 	"${SRCDir}/game/botlib.h"
 	"${SRCDir}/game/chars.h"
 	"${SRCDir}/game/g_local.h"
+<<<<<<< HEAD
+=======
 	"${JKModDir}/game/jk_local.h" # Tr!Force: [CMake] JKMod headers
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/g_public.h"
 	"${SRCDir}/game/g_team.h"
 	"${SRCDir}/game/inv.h"
 	"${SRCDir}/game/match.h"
+<<<<<<< HEAD
+=======
 	"${JKModDir}/game/jk_version.h" # Tr!Force: [CMake] JKMod headers
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/surfaceflags.h"
 	"${SRCDir}/game/syn.h"
@@ -50,8 +63,11 @@ set(MVGAMEHEADERS
 
 set(MVGAMESOURCES
 	"${SRCDir}/game/g_main.c" # keep this on top (qvm compiler needs VM_Main as the first compiled function)
+<<<<<<< HEAD
+=======
 	"${JKModDir}/game/jk_main.c" # Tr!Force: [CMake] JKMod sources
 	"${JKModDir}/game/jk_common.c" # Tr!Force: [CMake] JKMod sources
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/ai_main.c"
 	"${SRCDir}/game/ai_util.c"
 	"${SRCDir}/game/ai_wpnav.c"
@@ -62,6 +78,13 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/bg_slidemove.c"
 	"${SRCDir}/game/bg_weapons.c"
 	"${SRCDir}/game/g_active.c"
+<<<<<<< HEAD
+	"${SRCDir}/game/g_arenas.c"
+	"${SRCDir}/game/g_bot.c"
+	"${SRCDir}/game/g_client.c"
+	"${SRCDir}/game/g_cmds.c"
+	"${SRCDir}/game/g_combat.c"
+=======
 	"${JKModDir}/game/jk_active.c" # Tr!Force: [CMake] JKMod sources
 	"${SRCDir}/game/g_arenas.c"
 	"${SRCDir}/game/g_bot.c"
@@ -73,16 +96,28 @@ set(MVGAMESOURCES
 	"${JKModDir}/game/jk_emotes.c" # Tr!Force: [CMake] JKMod sources
 	"${SRCDir}/game/g_combat.c"
 	"${JKModDir}/game/jk_dimensions.c" # Tr!Force: [CMake] JKMod sources
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/g_items.c"
 	"${SRCDir}/game/g_log.c"
 	"${SRCDir}/game/g_mem.c"
 	"${SRCDir}/game/g_misc.c"
+<<<<<<< HEAD
+=======
 	"${JKModDir}/game/jk_misc.c" # Tr!Force: [CMake] JKMod sources
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/g_missile.c"
 	"${SRCDir}/game/g_mover.c"
 	"${SRCDir}/game/g_object.c"
 	"${SRCDir}/game/g_saga.c"
 	"${SRCDir}/game/g_session.c"
+<<<<<<< HEAD
+	"${SRCDir}/game/g_spawn.c"
+	"${SRCDir}/game/g_svcmds.c"
+	"${SRCDir}/game/g_target.c"
+	"${SRCDir}/game/g_team.c"
+	"${SRCDir}/game/g_trigger.c"
+	"${SRCDir}/game/g_utils.c"
+=======
 	"${JKModDir}/game/jk_session.c" # Tr!Force: [CMake] JKMod sources
 	"${SRCDir}/game/g_spawn.c"
 	"${JKModDir}/game/jk_spawn.c" # Tr!Force: [CMake] JKMod sources
@@ -94,6 +129,7 @@ set(MVGAMESOURCES
 	"${JKModDir}/game/jk_trigger.c" # Tr!Force: [CMake] JKMod sources
 	"${SRCDir}/game/g_utils.c"
 	"${JKModDir}/game/jk_utils.c" # Tr!Force: [CMake] JKMod sources
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/g_weapon.c"
 	"${SRCDir}/game/q_math.c"
 	"${SRCDir}/game/q_shared.c"

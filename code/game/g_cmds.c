@@ -58,6 +58,19 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 		}
 		perfect = ( cl->ps.persistant[PERS_RANK] == 0 && cl->ps.persistant[PERS_KILLED] == 0 ) ? 1 : 0;
 
+<<<<<<< HEAD
+		Com_sprintf (entry, sizeof(entry),
+			" %i %i %i %i %i %i %i %i %i %i %i %i %i %i", level.sortedClients[i],
+			cl->ps.persistant[PERS_SCORE], ping, (level.time - cl->pers.enterTime)/60000,
+			scoreFlags, g_entities[level.sortedClients[i]].s.powerups, accuracy, 
+			cl->ps.persistant[PERS_IMPRESSIVE_COUNT],
+			cl->ps.persistant[PERS_EXCELLENT_COUNT],
+			cl->ps.persistant[PERS_GAUNTLET_FRAG_COUNT], 
+			cl->ps.persistant[PERS_DEFEND_COUNT], 
+			cl->ps.persistant[PERS_ASSIST_COUNT], 
+			perfect,
+			cl->ps.persistant[PERS_CAPTURES]);
+=======
 		// Tr!Force: [Scoreboard] Extra info
 		if (ent->client->pers.jkmodPers.clientPlugin) 
 		{
@@ -89,6 +102,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 				cl->ps.persistant[PERS_CAPTURES]);
 		}
 
+>>>>>>> jediknightplus/master
 		j = strlen(entry);
 		if (stringlength + j > 1022)
 			break;
@@ -119,9 +133,12 @@ CheatsOk
 ==================
 */
 qboolean	CheatsOk( gentity_t *ent ) {
+<<<<<<< HEAD
+=======
 	if ( ent->client->ps.stats[JK_DIMENSION] == DIMENSION_CHEAT ) { // Tr!Force: [Dimensions] Allow cheats for this one
 		return qtrue;
 	}
+>>>>>>> jediknightplus/master
 	if ( !g_cheats.integer ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOCHEATS")));
 		return qfalse;
@@ -274,6 +291,8 @@ void Cmd_Give_f (gentity_t *ent)
 		i = 0;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JetPack] Apply on give command
 	if (give_all || Q_stricmp( name, "jetpack") == 0) 
 	{
@@ -288,6 +307,7 @@ void Cmd_Give_f (gentity_t *ent)
 		if (!give_all) return;
 	}
 
+>>>>>>> jediknightplus/master
 	if (give_all || Q_stricmp( name, "health") == 0)
 	{
 		if (trap_Argc() == 3) {
@@ -320,7 +340,11 @@ void Cmd_Give_f (gentity_t *ent)
 
 	if (give_all || Q_stricmp(name, "ammo") == 0)
 	{
+<<<<<<< HEAD
+		int num = 999;
+=======
 		int num = INFINITE_AMMO; // Tr!Force: [InfiniteAmmo] Add ammo on cheats
+>>>>>>> jediknightplus/master
 		if (trap_Argc() == 3) {
 			trap_Argv( 2, arg, sizeof( arg ) );
 			num = atoi(arg);
@@ -373,7 +397,11 @@ void Cmd_Give_f (gentity_t *ent)
 			return;
 		}
 
+<<<<<<< HEAD
+		it_ent = G_Spawn();
+=======
 		it_ent = JKMod_G_Spawn( ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		VectorCopy( ent->r.currentOrigin, it_ent->s.origin );
 		it_ent->classname = it->classname;
 		G_SpawnItem (it_ent, it);
@@ -534,12 +562,15 @@ void Cmd_Kill_f( gentity_t *ent ) {
 	if (ent->health <= 0) {
 		return;
 	}
+<<<<<<< HEAD
+=======
 	if (ent->client->ps.stats[JK_DIMENSION] == DIMENSION_RACE) // Tr!Force: [Dimensions] Don't kill, respawn
 	{
 		trap_UnlinkEntity(ent);
 		ClientSpawn(ent);
 		return;
 	}
+>>>>>>> jediknightplus/master
 
 	if (g_gametype.integer == GT_TOURNAMENT && level.numPlayingClients > 1 && !level.warmupTime)
 	{
@@ -582,9 +613,12 @@ Let everyone know about a team change
 */
 void BroadcastTeamChange( gclient_t *client, int oldTeam )
 {
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JKMod] Clear map restarted
 	if (level.jkmodLocals.mapRestarted) level.jkmodLocals.mapRestarted = qfalse;
 
+>>>>>>> jediknightplus/master
 	client->ps.fd.forceDoInit = 1; //every time we change teams make sure our force powers are set right
 
 	if ( client->sess.sessionTeam == TEAM_RED ) {
@@ -766,6 +800,8 @@ void SetTeam( gentity_t *ent, char *s ) {
 		team = TEAM_SPECTATOR;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Pause] Don't allow
 	if (level.jkmodLocals.pauseTime > level.time)
 	{
@@ -773,6 +809,7 @@ void SetTeam( gentity_t *ent, char *s ) {
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	//
 	// decide if we will allow the change
 	//
@@ -856,6 +893,8 @@ void StopFollowing( gentity_t *ent ) {
 	ent->r.svFlags &= ~SVF_BOT;
 	ent->client->ps.clientNum = ent - g_entities;
 	ent->client->ps.weapon = WP_NONE;
+<<<<<<< HEAD
+=======
 
 	// Workaround
 	ent->client->ps.duelInProgress = qfalse; 
@@ -864,6 +903,7 @@ void StopFollowing( gentity_t *ent ) {
 
 	// Tr!Force: [Dimensions] Check dimension
 	JKMod_DimensionSet(ent, level.jkmodLocals.dimensionBase);
+>>>>>>> jediknightplus/master
 }
 
 /*
@@ -914,6 +954,9 @@ void Cmd_Team_f( gentity_t *ent ) {
 		//ent->client->sess.losses++;
 	}
 
+<<<<<<< HEAD
+	trap_Argv( 1, s, sizeof( s ) );
+=======
 	// Tr!Force: [Plugin] Don't allow
 	if (jkcvar_pluginRequired.integer == 2 && !ent->client->pers.jkmodPers.clientPlugin)
 	{
@@ -924,6 +967,7 @@ void Cmd_Team_f( gentity_t *ent ) {
 	{
 		trap_Argv(1, s, sizeof(s));
 	}
+>>>>>>> jediknightplus/master
 
 	SetTeam( ent, s );
 
@@ -1043,11 +1087,14 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir ) {
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Plugin] Don't allow
 	if (jkcvar_pluginRequired.integer == 2 && !ent->client->pers.jkmodPers.clientPlugin) {
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	// if they are playing a tournement game, count as a loss
 	if ( (g_gametype.integer == GT_TOURNAMENT )
 		&& ent->client->sess.sessionTeam == TEAM_FREE ) {\
@@ -1119,6 +1166,13 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, cons
 	if ( mode == SAY_TEAM  && !OnSameTeam(ent, other) ) {
 		return;
 	}
+<<<<<<< HEAD
+	// no chatting to players in tournements
+	if ( (g_gametype.integer == GT_TOURNAMENT )
+		&& other->client->sess.sessionTeam == TEAM_FREE
+		&& ent->client->sess.sessionTeam != TEAM_FREE ) {
+		//Hmm, maybe some option to do so if allowed?  Or at least in developer mode...
+=======
 	// Tr!Force: [Duel] Allow duel chat
 	if (!jkcvar_allowDuelChat.integer) 
 	{
@@ -1134,6 +1188,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, cons
 	// Tr!Force: [Ignore] Apply chat ignore
 	if (JKMod_IgnoreClientCheck(0, other->s.number, ent->s.number))
 	{
+>>>>>>> jediknightplus/master
 		return;
 	}
 
@@ -1160,18 +1215,26 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	switch ( mode ) {
 	default:
 	case SAY_ALL:
+<<<<<<< HEAD
+		G_LogPrintf( "say: %s: %s\n", ent->client->pers.netname, chatText );
+=======
 		// Tr!Force: [PlayerStatus] Don't add to log
 		if (jkcvar_chatAutoStatus.integer ? ent->client->pers.jkmodPers.playerStatusDelay <= level.time : qtrue) 
 			G_LogPrintf( "say: %s: %s\n", ent->client->pers.netname, chatText );
 
+>>>>>>> jediknightplus/master
 		Com_sprintf (name, sizeof(name), "%s%c%c"EC": ", ent->client->pers.netname, Q_COLOR_ESCAPE, COLOR_WHITE );
 		color = COLOR_GREEN;
 		break;
 	case SAY_TEAM:
+<<<<<<< HEAD
+		G_LogPrintf( "sayteam: %s: %s\n", ent->client->pers.netname, chatText );
+=======
 		// Tr!Force: [PlayerStatus] Don't add to log
 		if (jkcvar_chatAutoStatus.integer ? ent->client->pers.jkmodPers.playerStatusDelay <= level.time : qtrue) 
 			G_LogPrintf( "sayteam: %s: %s\n", ent->client->pers.netname, chatText );
 
+>>>>>>> jediknightplus/master
 		if (Team_GetLocationMsg(ent, location, sizeof(location)))
 			Com_sprintf (name, sizeof(name), EC"(%s%c%c"EC") (%s)"EC": ", 
 				ent->client->pers.netname, Q_COLOR_ESCAPE, COLOR_WHITE, location);
@@ -1216,7 +1279,11 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 Cmd_Say_f
 ==================
 */
+<<<<<<< HEAD
+static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
+=======
 /*static*/ void BaseJK2_Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) { // Tr!Force: [BaseJK2] Command say function
+>>>>>>> jediknightplus/master
 	char		*p;
 
 	if ( trap_Argc () < 2 && !arg0 ) {
@@ -1508,7 +1575,11 @@ Cmd_Where_f
 ==================
 */
 void Cmd_Where_f( gentity_t *ent ) {
+<<<<<<< HEAD
+	trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", vtos( ent->s.origin ) ) );
+=======
 	trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", vtos( ent->client->ps.origin ) ) ); // Workaround
+>>>>>>> jediknightplus/master
 }
 
 static const char *gameNames[] = {
@@ -2031,9 +2102,16 @@ void Cmd_SetViewpos_f( gentity_t *ent ) {
 	char		buffer[MAX_TOKEN_CHARS];
 	int			i;
 
+<<<<<<< HEAD
+	if ( !g_cheats.integer ) {
+		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOCHEATS")));
+		return;
+	}
+=======
 	// Tr!Force: [Dimensions] Allow cheats for this one
 	if ( !CheatsOk( ent ) ) return;
 
+>>>>>>> jediknightplus/master
 	if ( trap_Argc() != 5 ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"usage: setviewpos x y z yaw\n\""));
 		return;
@@ -2209,12 +2287,15 @@ void Cmd_ToggleSaber_f(gentity_t *ent)
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Dimensions] Don't allow saber toggle on race dimension
 	if (ent->client->ps.stats[JK_DIMENSION] == DIMENSION_RACE)
 	{
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 //	if (ent->client->ps.duelInProgress && !ent->client->ps.saberHolstered)
 //	{
 //		return;
@@ -2322,7 +2403,11 @@ qboolean G_OtherPlayersDueling(void)
 	return qfalse;
 }
 
+<<<<<<< HEAD
+void Cmd_EngageDuel_f(gentity_t *ent)
+=======
 void BaseJK2_Cmd_EngageDuel_f(gentity_t *ent) // Tr!Force: [Duel] BaseJK2 engage duel command
+>>>>>>> jediknightplus/master
 {
 	trace_t tr;
 	vec3_t forward, fwdOrg;
@@ -2564,7 +2649,11 @@ void DismembermentByNum(gentity_t *self, int num);
 ClientCommand
 =================
 */
+<<<<<<< HEAD
+void ClientCommand( int clientNum ) {
+=======
 void BaseJK2_ClientCommand( int clientNum ) { // Tr!Force: [BaseJK2] Client command function
+>>>>>>> jediknightplus/master
 	gentity_t *ent;
 	char	cmd[MAX_TOKEN_CHARS];
 	char token[BIG_INFO_STRING]; // As the engine uses Cmd_TokenizeString2 a single parameter is theoretically not limited by MAX_TOKEN_CHARS, but by BIG_INFO_STRING
@@ -2770,6 +2859,10 @@ void BaseJK2_ClientCommand( int clientNum ) { // Tr!Force: [BaseJK2] Client comm
 		Cmd_ForceChanged_f (ent);
 	else if (Q_stricmp (cmd, "where") == 0)
 		Cmd_Where_f (ent);
+<<<<<<< HEAD
+	else if (Q_stricmp (cmd, "callvote") == 0)
+		Cmd_CallVote_f (ent);
+=======
 	else if (Q_stricmp(cmd, "callvote") == 0) {
 		if (jkcvar_voteControl.integer) { // Tr!Force: [Vote] Custom callvote control
 			JKMod_CallVote(ent);
@@ -2777,6 +2870,7 @@ void BaseJK2_ClientCommand( int clientNum ) { // Tr!Force: [BaseJK2] Client comm
 			Cmd_CallVote_f(ent);
 		}
 	}
+>>>>>>> jediknightplus/master
 	else if (Q_stricmp (cmd, "vote") == 0)
 		Cmd_Vote_f (ent);
 	else if (Q_stricmp (cmd, "callteamvote") == 0)
@@ -2809,12 +2903,19 @@ void BaseJK2_ClientCommand( int clientNum ) { // Tr!Force: [BaseJK2] Client comm
 			ent->client->ps.velocity[2] = presaveVel;
 		}
 	}
+<<<<<<< HEAD
+	else if (Q_stricmp(cmd, "g2animent") == 0 && CheatsOk( ent ))
+	{
+		G_CreateExampleAnimEnt(ent);
+	}
+=======
 #endif
 	else if (Q_stricmp(cmd, "g2animent") == 0 && CheatsOk( ent ) && jk2startversion != VERSION_1_02) // Tr!Force: [Gameplay] Don't allow this
 	{
 		G_CreateExampleAnimEnt(ent);
 	}
 #ifdef _DEBUG
+>>>>>>> jediknightplus/master
 	else if (Q_stricmp(cmd, "loveandpeace") == 0 && CheatsOk( ent ))
 	{
 		trace_t tr;
@@ -2880,8 +2981,11 @@ void BaseJK2_ClientCommand( int clientNum ) { // Tr!Force: [BaseJK2] Client comm
 	{
 		Cmd_ToggleSaber_f(ent);
 
+<<<<<<< HEAD
+=======
 		ent->client->pers.jkmodPers.dualSaber = qfalse; // Tr!Force: [DualSaber] Check disable
 
+>>>>>>> jediknightplus/master
 		if (!ent->client->ps.saberHolstered)
 		{
 			if (ent->client->ps.dualBlade)

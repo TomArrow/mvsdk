@@ -521,7 +521,11 @@ ScorePlum
 void ScorePlum( gentity_t *ent, vec3_t origin, int score ) {
 	gentity_t *plum;
 
+<<<<<<< HEAD
+	plum = G_TempEntity( origin, EV_SCOREPLUM );
+=======
 	plum = JKMod_G_TempEntity( origin, EV_SCOREPLUM, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	// only send this temp entity to a single client
 	plum->r.svFlags |= SVF_SINGLECLIENT;
 	plum->r.singleClient = ent->s.number;
@@ -600,15 +604,23 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	vel[1] = direction[1]*speed;
 	vel[2] = direction[2]*speed;
 
+<<<<<<< HEAD
+	launched = LaunchItem(item, self->client->ps.origin, vel);
+=======
 	launched = JKMod_LaunchItem(item, self->client->ps.origin, vel, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	launched->s.generic1 = self->s.number;
 	launched->s.powerups = level.time + 1500;
 
 	launched->count = bg_itemlist[BG_GetItemIndexByTag(weapon, IT_WEAPON)].quantity;
 
+<<<<<<< HEAD
+	self->client->ps.ammo[weaponData[weapon].ammoIndex] -= bg_itemlist[BG_GetItemIndexByTag(weapon, IT_WEAPON)].quantity;
+=======
 	// Tr!Force: [InfiniteAmmo] Check ammo
 	if (self->client->ps.ammo[weaponData[weapon].ammoIndex] != INFINITE_AMMO) self->client->ps.ammo[weaponData[weapon].ammoIndex] -= bg_itemlist[BG_GetItemIndexByTag(weapon, IT_WEAPON)].quantity;
+>>>>>>> jediknightplus/master
 
 	if (self->client->ps.ammo[weaponData[weapon].ammoIndex] < 0)
 	{
@@ -663,7 +675,10 @@ void TossClientItems( gentity_t *self ) {
 	if ( weapon > WP_BRYAR_PISTOL && 
 		weapon != WP_EMPLACED_GUN &&
 		weapon != WP_TURRET &&
+<<<<<<< HEAD
+=======
 		self->client->ps.stats[JK_DIMENSION] != DIMENSION_INSTA && // Tr!Force: [Dimensions] Don't drop weapon
+>>>>>>> jediknightplus/master
 		self->client->ps.ammo[ weaponData[weapon].ammoIndex ] ) {
 		gentity_t *te;
 
@@ -671,7 +686,11 @@ void TossClientItems( gentity_t *self ) {
 		item = BG_FindItemForWeapon( weapon );
 
 		// tell all clients to remove the weapon model on this guy until he respawns
+<<<<<<< HEAD
+		te = G_TempEntity( vec3_origin, EV_DESTROY_WEAPON_MODEL );
+=======
 		te = JKMod_G_TempEntity( vec3_origin, EV_DESTROY_WEAPON_MODEL, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		te->r.svFlags |= SVF_BROADCAST;
 		te->s.eventParm = self->s.number;
 
@@ -1904,7 +1923,11 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 
 	// broadcast the death event to everyone
+<<<<<<< HEAD
+	ent = G_TempEntity( self->r.currentOrigin, EV_OBITUARY );
+=======
 	ent = JKMod_G_TempEntity( self->r.currentOrigin, EV_OBITUARY, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	ent->s.eventParm = meansOfDeath;
 	ent->s.otherEntityNum = self->s.number;
 	ent->s.otherEntityNum2 = killer;
@@ -1968,9 +1991,12 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 					(self->client && self->client->ps.isJediMaster))
 				{
 					AddScore( attacker, self->r.currentOrigin, 1 );
+<<<<<<< HEAD
+=======
 
 					// Tr!Force: [PlayerStatus] Announce score
 					if (jkcvar_chatAutoStatus.integer && attacker->client->sess.jkmodSess.playerStatus && !attacker->client->ps.isJediMaster) JKMod_playerStatus(attacker, qtrue);
+>>>>>>> jediknightplus/master
 					
 					if (self->client && self->client->ps.isJediMaster)
 					{
@@ -1991,9 +2017,12 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			else
 			{
 				AddScore( attacker, self->r.currentOrigin, 1 );
+<<<<<<< HEAD
+=======
 
 				// Tr!Force: [PlayerStatus] Announce score
 				if (jkcvar_chatAutoStatus.integer && attacker->client->sess.jkmodSess.playerStatus && g_gametype.integer < GT_JEDIMASTER) JKMod_playerStatus(attacker, qtrue);
+>>>>>>> jediknightplus/master
 			}
 
 			if( meansOfDeath == MOD_STUN_BATON ) {
@@ -2098,6 +2127,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [DropFlag] Client dropped flag timer reset
 	self->client->jkmodClient.dropFlagTime = 0;
 
@@ -2107,6 +2138,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	// Tr!Force: [Emotes] Chair emote disable
 	if (self->client->jkmodClient.chairModelUsed) JKMod_ChairModelDisable(self);
 
+>>>>>>> jediknightplus/master
 	Cmd_Score_f( self );		// show scores
 	// send updated scores to any clients that are following this one,
 	// or they would get stale scoreboards
@@ -2383,7 +2415,11 @@ void LimbTouch( gentity_t *self, gentity_t *other, trace_t *trace )
 
 void LimbThink( gentity_t *ent )
 {
+<<<<<<< HEAD
+	if (ent->speed < level.time)
+=======
 	if (ent->jkmodEnt.time1/*speed*/ < level.time) // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 	{
 		ent->think = G_FreeEntity;
 		ent->nextthink = level.time;
@@ -2392,7 +2428,11 @@ void LimbThink( gentity_t *ent )
 
 	if (ent->s.pos.trType != TR_GRAVITY)
 	{
+<<<<<<< HEAD
+		int addamt = (ent->speed - level.time);
+=======
 		int addamt = (ent->jkmodEnt.time1/*ent->speed*/ - level.time); // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 
 		if (addamt > 5000)
 		{
@@ -2616,7 +2656,11 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 			boltAngles[1] = -boltMatrix.matrix[1][1];
 			boltAngles[2] = -boltMatrix.matrix[2][1];
 
+<<<<<<< HEAD
+			te = G_TempEntity( boltPoint, EV_SABER_HIT );
+=======
 			te = JKMod_G_TempEntity( boltPoint, EV_SABER_HIT, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 			VectorCopy(boltPoint, te->s.origin);
 			VectorCopy(boltAngles, te->s.angles);
@@ -2626,7 +2670,11 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 				te->s.angles[1] = 1;
 			}
 
+<<<<<<< HEAD
+			te->s.eventParm = 16; //lots of sparks
+=======
 			te->s.eventParm = 16; //lots of sparkss
+>>>>>>> jediknightplus/master
 		}
 	}
 }
@@ -2637,13 +2685,21 @@ void G_Dismember( gentity_t *ent, vec3_t point, int limbType, float limbRollBase
 	gentity_t *limb;
 
 	VectorCopy( point, newPoint );
+<<<<<<< HEAD
+	limb = G_Spawn();
+=======
 	limb = JKMod_G_Spawn( ent->s.number ); // Tr!Force: [Dimensions] Tag owner info 
+>>>>>>> jediknightplus/master
 	limb->classname = "playerlimb";
 	G_SetOrigin( limb, newPoint );
 	VectorCopy( newPoint, limb->s.pos.trBase );
 	limb->think = LimbThink;
 	limb->touch = LimbTouch;
+<<<<<<< HEAD
+	limb->speed = level.time + Q_irand(4000, 8000);
+=======
 	limb->jkmodEnt.time1/*speed*/ = level.time + Q_irand(4000, 8000); // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 	limb->nextthink = level.time + FRAMETIME;
 
 	//need size, contents, clipmask
@@ -3040,6 +3096,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	float		famt = 0;
 	float		hamt = 0;
 	float		shieldAbsorbed = 0;
+<<<<<<< HEAD
+=======
 	// Tr!Force: [DamagePlums] Set variables
 	int			takeHealth;
 	int			oldHealth = targ->health;
@@ -3053,6 +3111,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			return;
 		}
 	}
+>>>>>>> jediknightplus/master
 
 	if ( !targ ) return;
 
@@ -3063,6 +3122,31 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	}
 
 	if (!targ->takedamage) {
+<<<<<<< HEAD
+		return;
+	}
+
+	if (targ && targ->client && targ->client->ps.duelInProgress)
+	{
+		if (attacker && attacker->client && attacker->s.number != targ->client->ps.duelIndex)
+		{
+			return;
+		}
+		else if (attacker && attacker->client && mod != MOD_SABER)
+		{
+			return;
+		}
+	}
+	if (attacker && attacker->client && attacker->client->ps.duelInProgress)
+	{
+		if (targ && targ->client && targ->s.number != attacker->client->ps.duelIndex)
+		{
+			return;
+		}
+		else if (targ && targ->client && mod != MOD_SABER)
+		{
+			return;
+=======
 		// Tr!Force: [Dimensions] Allow world hurt
 		if (targ->client->ps.stats[JK_DIMENSION] == DIMENSION_RACE) 
 		{ 
@@ -3131,6 +3215,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			{
 				return;
 			}
+>>>>>>> jediknightplus/master
 		}
 	}
 
@@ -3198,7 +3283,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	}
 
 	// figure momentum add, even if the damage won't be taken
+<<<<<<< HEAD
+	if ( knockback && targ->client ) {
+=======
 	if ( knockback && targ->client && !targ->client->jkmodClient.chairModelUsed ) { // Tr!Force: [Emotes] Chair emote player prevent momentum
+>>>>>>> jediknightplus/master
 		vec3_t	kvel;
 		float	mass;
 
@@ -3277,6 +3366,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	// check for completely getting out of the damage
 	if ( !(dflags & DAMAGE_NO_PROTECTION) ) {
 
+<<<<<<< HEAD
+=======
 		if ( targ->client->ps.stats[JK_DIMENSION] == DIMENSION_INSTA ) { // Tr!Force: [Dimensions] 1 hit 1 kill
 
 			switch (mod) {
@@ -3297,6 +3388,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			}
 		}
 
+>>>>>>> jediknightplus/master
 		// if TF_NO_FRIENDLY_FIRE is set, don't do damage to the target
 		// if the attacker was on the same team
 		if ( targ != attacker && OnSameTeam (targ, attacker)  ) {
@@ -3467,13 +3559,21 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			//G_Sound(targ, CHAN_AUTO, protectHitSound);
 			if (targ->client->forcePowerSoundDebounce < level.time && jk2gameplay != VERSION_1_02)
 			{
+<<<<<<< HEAD
+				G_PreDefSound(targ->client->ps.origin, PDSOUND_PROTECTHIT);
+=======
 				JKMod_G_PreDefSound(targ->client->ps.origin, PDSOUND_PROTECTHIT, targ->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 				targ->client->forcePowerSoundDebounce = level.time + 400;
 			}
 
 			if ( jk2gameplay == VERSION_1_02 )
 			{
+<<<<<<< HEAD
+				G_PreDefSound(targ->client->ps.origin, PDSOUND_PROTECTHIT);
+=======
 				JKMod_G_PreDefSound(targ->client->ps.origin, PDSOUND_PROTECTHIT, targ->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			}
 
 			if (targ->client->ps.fd.forcePowerLevel[FP_PROTECT] == FORCE_LEVEL_1)
@@ -3538,7 +3638,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		gentity_t	*evEnt;
 
 		// Send off an event to show a shield shell on the player, pointing in the right direction.
+<<<<<<< HEAD
+		evEnt = G_TempEntity(targ->r.currentOrigin, EV_SHIELD_HIT);
+=======
 		evEnt = JKMod_G_TempEntity(targ->r.currentOrigin, EV_SHIELD_HIT, targ->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		evEnt->s.otherEntityNum = targ->s.number;
 		evEnt->s.eventParm = DirToByte(dir);
 		evEnt->s.time2=shieldAbsorbed;
@@ -3617,6 +3721,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 				VectorCopy( dir, targ->pos2 );
 			}
 
+<<<<<<< HEAD
+=======
 			// Tr!Force: [Dimensions] Don't die, respawn
 			if (targ->client->ps.stats[JK_DIMENSION] == DIMENSION_RACE)
 			{
@@ -3628,6 +3734,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 				}
 			}
 
+>>>>>>> jediknightplus/master
 			targ->enemy = attacker;
 			targ->die (targ, inflictor, attacker, take, mod);
 			return;
@@ -3635,6 +3742,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			targ->pain (targ, attacker, take);
 		}
 
+<<<<<<< HEAD
+		G_LogWeaponDamage(attacker->s.number, mod, take);
+	}
+
+=======
 		//G_LogWeaponDamage(attacker->s.number, mod, take); // Tr!Force: [DamagePlums] Log before
 	}
 
@@ -3665,6 +3777,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 
 		G_LogWeaponDamage(attacker->s.number, mod, take);
 	}
+>>>>>>> jediknightplus/master
 }
 
 
@@ -3752,7 +3865,11 @@ qboolean G_RadiusDamage ( vec3_t origin, gentity_t *attacker, float damage, floa
 		maxs[i] = origin[i] + radius;
 	}
 
+<<<<<<< HEAD
+	numListedEntities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
+=======
 	numListedEntities = JKMod_DimensionEntitiesInBox( mins, maxs, entityList, MAX_GENTITIES, attacker->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	for ( e = 0 ; e < numListedEntities ; e++ ) {
 		ent = &g_entities[entityList[ e ]];

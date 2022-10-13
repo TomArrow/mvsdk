@@ -707,6 +707,10 @@ Ghoul2 Insert End
 				if (weapon->altMuzzleEffect)
 				{
 					trap_FX_PlayEffectID(weapon->altMuzzleEffect, flashorigin, flashdir);
+<<<<<<< HEAD
+					cent->muzzleFlashTime = 0; //japro - fix loud gunshots with high fps
+=======
+>>>>>>> jediknightplus/master
 				}
 			}
 			else
@@ -714,6 +718,10 @@ Ghoul2 Insert End
 				if (weapon->muzzleEffect)
 				{
 					trap_FX_PlayEffectID(weapon->muzzleEffect, flashorigin, flashdir);
+<<<<<<< HEAD
+					cent->muzzleFlashTime = 0; //japro - fix loud gunshots with high fps
+=======
+>>>>>>> jediknightplus/master
 				}
 			}
 		}
@@ -742,7 +750,11 @@ void CG_AddViewWeapon( playerState_t *ps ) {
 	float		fovOffset;
 	vec3_t		angles;
 	weaponInfo_t	*weapon;
+<<<<<<< HEAD
+	float cgFov = cg_fovViewmodel.integer ? cg_fovViewmodel.value : cg_fov.value;
+=======
 	float	cgFov = cg_fov.value;
+>>>>>>> jediknightplus/master
 
 	if (cgFov < 1)
 	{
@@ -786,8 +798,13 @@ void CG_AddViewWeapon( playerState_t *ps ) {
 	}
 
 	// drop gun lower at higher fov
+<<<<<<< HEAD
+	if ( cg_fovViewmodelAdjust.integer && cgFov > 90 ) {
+		fovOffset = -0.2f * ( cgFov - 90 );
+=======
 	if ( cgFov > 90 ) {
 		fovOffset = -0.2 * ( cgFov - 90 );
+>>>>>>> jediknightplus/master
 	} else {
 		fovOffset = 0;
 	}
@@ -807,6 +824,16 @@ void CG_AddViewWeapon( playerState_t *ps ) {
 
 	AnglesToAxis( angles, hand.axis );
 
+<<<<<<< HEAD
+	if (cg_fovViewmodel.integer)
+	{
+		float fracDistFOV = tan(cg.refdef.fov_x * (M_PI / 180) * 0.5f);
+		float fracWeapFOV = (1.0f / fracDistFOV) * tan(cgFov * (M_PI / 180) * 0.5f);
+		VectorScale(hand.axis[0], fracWeapFOV, hand.axis[0]);
+	}
+
+=======
+>>>>>>> jediknightplus/master
 	// map torso animations to weapon animations
 	if ( cg_gun_frame.integer ) {
 		// development tool
@@ -854,7 +881,11 @@ WEAPON SELECTION
 
 void CG_DrawIconBackground(void)
 {
+<<<<<<< HEAD
+	float			height,xAdd,x2,y2,t;
+=======
 	int				height,xAdd,x2,y2,t;
+>>>>>>> jediknightplus/master
 	float			prongLeftX, prongRightX;
 	float			prongWidth;
 	float			inTime = cg.invenSelectTime+WEAPON_SELECT_TIME;
@@ -916,9 +947,15 @@ void CG_DrawIconBackground(void)
 				cg.iconHUDPercent=0;
 			}
 
+<<<<<<< HEAD
+			xAdd = 8*cg.iconHUDPercent;
+
+			height = (60.0f*cg.iconHUDPercent);
+=======
 			xAdd = (int) 8*cg.iconHUDPercent;
 
 			height = (int) (60.0f*cg.iconHUDPercent);
+>>>>>>> jediknightplus/master
 			CG_DrawPic( x2+60, y2+30, prongWidth, -height, drawType);	// Top half
 			CG_DrawPic( x2+60, y2+30-2, prongWidth, height, drawType);	// Bottom half
 
@@ -957,7 +994,11 @@ void CG_DrawIconBackground(void)
 	}
 
 	trap_R_SetColor( colorTable[CT_WHITE] );					
+<<<<<<< HEAD
+	height = 60.0f*cg.iconHUDPercent;
+=======
 	height = (int) (60.0f*cg.iconHUDPercent);
+>>>>>>> jediknightplus/master
 	CG_DrawPic( x2+60, y2+30, prongWidth, -height, drawType);	// Top half
 	CG_DrawPic( x2+60, y2+30-2, prongWidth, height, drawType);	// Bottom half
 
@@ -980,7 +1021,11 @@ void CG_DrawIconBackground(void)
 */
 	// Side Prongs
 	trap_R_SetColor( colorTable[CT_WHITE]);					
+<<<<<<< HEAD
+	xAdd = 8*cg.iconHUDPercent;
+=======
 	xAdd = (int) 8*cg.iconHUDPercent;
+>>>>>>> jediknightplus/master
 	CG_DrawPic( prongLeftX+xAdd, y2-10, 40, 80, background);
 	CG_DrawPic( prongRightX-xAdd, y2-10, -40, 80, background);
 
@@ -1002,7 +1047,11 @@ qboolean CG_WeaponCheck(int weap)
 CG_WeaponSelectable
 ===============
 */
+<<<<<<< HEAD
+qboolean CG_WeaponSelectable( int i ) {
+=======
 static qboolean CG_WeaponSelectable( int i ) {
+>>>>>>> jediknightplus/master
 	/*if ( !cg.snap->ps.ammo[weaponData[i].ammoIndex] ) {
 		return qfalse;
 	}*/
@@ -1381,6 +1430,10 @@ void CG_Weapon_f( void ) {
 
 	if (num == 1 && cg.snap->ps.weapon == WP_SABER)
 	{
+<<<<<<< HEAD
+		cg.weaponSelectTime = cg.time;
+=======
+>>>>>>> jediknightplus/master
 		if (cg.snap->ps.weaponTime < 1)
 		{
 			//trap_SendClientCommand("sv_saberswitch");

@@ -95,6 +95,19 @@ if(BuildQVMs)
 			"mv.info"
 		)
 
+
+		source_group("jk2pro-bins" FILES ${AssetsFiles})
+
+		# generate jk2pro-bins.pk3
+		if(MultiConfigGenerator)
+			set(OUTFILE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>/eternaljk2/jk2pro-bins.pk3)
+		else()
+			set(OUTFILE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/eternaljk2/jk2pro-bins.pk3)
+		endif()
+
+		include(InstallZIP)
+		add_zip_command(${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 ${OUTFILE}
+
 		source_group("assetsmv2" FILES ${AssetsFiles})
 
 		# generate assetsmv2.pk3
@@ -106,10 +119,22 @@ if(BuildQVMs)
 
 		include(InstallZIP)
 		add_zip_command(${CMAKE_CURRENT_BINARY_DIR}/assetsmv2.pk3 ${OUTFILE}
+
 			DIR "${CMAKE_CURRENT_BINARY_DIR}"
 			FILES "${AssetsFiles}"
 			DEPENDS qvms
 		)
+
+
+		add_custom_target(bins-jk2pro DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3")
+		set_property(TARGET bins-jk2pro PROPERTY FOLDER "Modules")
+
+		if(WIN32 OR BuildPortableVersion)
+			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 DESTINATION "eternaljk2")
+		elseif(APPLE)
+			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 DESTINATION "jk2mvmp.app/Contents/MacOS/eternaljk2")
+		else()
+			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 DESTINATION "share/jk2mv/eternaljk2")
 
 		add_custom_target(assetsmv2 DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/assetsmv2.pk3")
 		set_property(TARGET assetsmv2 PROPERTY FOLDER "Modules")
@@ -120,6 +145,7 @@ if(BuildQVMs)
 			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/assetsmv2.pk3 DESTINATION "jk2mvmp.app/Contents/MacOS/base")
 		else()
 			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/assetsmv2.pk3 DESTINATION "share/jk2mv/base")
+
 		endif()
 	endif()
 endif()

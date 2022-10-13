@@ -203,7 +203,11 @@ int G_RadiusList ( vec3_t origin, float radius,	gentity_t *ignore, qboolean take
 		maxs[i] = origin[i] + radius;
 	}
 
+<<<<<<< HEAD
+	numListedEntities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
+=======
 	numListedEntities = JKMod_DimensionEntitiesInBox( mins, maxs, entityList, MAX_GENTITIES, ignore->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	for ( e = 0 ; e < numListedEntities ; e++ ) 
 	{
@@ -762,7 +766,11 @@ void G_KillBox (gentity_t *ent) {
 
 	VectorAdd( ent->client->ps.origin, ent->r.mins, mins );
 	VectorAdd( ent->client->ps.origin, ent->r.maxs, maxs );
+<<<<<<< HEAD
+	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
+=======
 	num =  JKMod_DimensionEntitiesInBox( mins, maxs, touch, MAX_GENTITIES, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	for (i=0 ; i<num ; i++) {
 		hit = &g_entities[touch[i]];
@@ -853,7 +861,11 @@ gentity_t *G_ScreenShake(vec3_t org, gentity_t *target, float intensity, int dur
 {
 	gentity_t	*te;
 
+<<<<<<< HEAD
+	te = G_TempEntity( org, EV_SCREENSHAKE );
+=======
 	te = JKMod_G_TempEntity( org, EV_SCREENSHAKE, target ? target->s.number : ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	VectorCopy(org, te->s.origin);
 	te->s.angles[0] = intensity;
 	te->s.time = duration;
@@ -884,7 +896,11 @@ void G_MuteSound( int entnum, int channel )
 {
 	gentity_t	*te, *e;
 
+<<<<<<< HEAD
+	te = G_TempEntity( vec3_origin, EV_MUTE_SOUND );
+=======
 	te = JKMod_G_TempEntity( vec3_origin, EV_MUTE_SOUND, entnum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->r.svFlags = SVF_BROADCAST;
 	te->s.trickedentindex2 = entnum;
 	te->s.trickedentindex = channel;
@@ -906,7 +922,11 @@ G_Sound
 void G_Sound( gentity_t *ent, int channel, int soundIndex ) {
 	gentity_t	*te;
 
+<<<<<<< HEAD
+	te = G_SoundTempEntity( ent->r.currentOrigin, EV_GENERAL_SOUND, channel );
+=======
 	te = JKMod_G_SoundTempEntity( ent->r.currentOrigin, EV_GENERAL_SOUND, channel, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->s.eventParm = soundIndex;
 
 	if (ent && ent->client && channel > TRACK_CHANNEL_NONE)
@@ -951,7 +971,11 @@ G_EntitySound
 void G_EntitySound( gentity_t *ent, int channel, int soundIndex ) {
 	gentity_t	*te;
 
+<<<<<<< HEAD
+	te = G_TempEntity( ent->r.currentOrigin, EV_ENTITY_SOUND );
+=======
 	te = JKMod_G_TempEntity( ent->r.currentOrigin, EV_ENTITY_SOUND, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->s.eventParm = soundIndex;
 	te->s.weapon = ent->s.number;
 	te->s.trickedentindex = channel;
@@ -1000,9 +1024,12 @@ void TryUse( gentity_t *ent )
 	vec3_t		src, dest, vf;
 	vec3_t		viewspot;
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JetPack] Use button
 	JKMod_JetpackTryUse(ent);
 
+>>>>>>> jediknightplus/master
 	VectorCopy(ent->client->ps.origin, viewspot);
 	viewspot[2] += ent->client->ps.viewheight;
 
@@ -1016,11 +1043,14 @@ void TryUse( gentity_t *ent )
 	
 	if ( trace.fraction == 1.0f || trace.entityNum < 1 )
 	{
+<<<<<<< HEAD
+=======
 		// Tr!Force: [ButtonUse] Unset valid target
 		if (ent->client->ps.stats[JK_MOVEMENT] & JK_USE_STAND) ent->client->pers.jkmodPers.buttonUseAnimValid = qfalse;
 
 		// Tr!Force: [Emotes] Chair emote disable
 		if (ent->client->jkmodClient.chairModelUsed && ent->client->jkmodClient.chairModelDelay < level.time) JKMod_ChairModelDisable(ent);
+>>>>>>> jediknightplus/master
 		return;
 	}
 
@@ -1029,9 +1059,12 @@ void TryUse( gentity_t *ent )
 	//Check for a use command
 	if ( ValidUseTarget( target ) )
 	{
+<<<<<<< HEAD
+=======
 		// Tr!Force: [ButtonUse] Set valid target
 		if ((ent->client->ps.stats[JK_MOVEMENT] & JK_USE_STAND) && Q_stricmp("jkmod_chair_model", target->classname)) ent->client->pers.jkmodPers.buttonUseAnimValid = qtrue;
 
+>>>>>>> jediknightplus/master
 		/*
 		NPC_SetAnim( ent, SETANIM_TORSO, BOTH_FORCEPUSH, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD );
 		if ( !VectorLengthSquared( ent->client->ps.velocity ) )

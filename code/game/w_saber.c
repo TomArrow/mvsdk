@@ -146,8 +146,12 @@ void WP_SaberInitBladeData( gentity_t *ent )
 
 	//We do not want the client to have any real knowledge of the entity whatsoever. It will only
 	//ever be used on the server.
+<<<<<<< HEAD
+	saberent = G_Spawn();
+=======
 	saberent = JKMod_G_Spawn( ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
 	saberent->jkmodEnt.dimensionNumber = ent->jkmodEnt.dimensionNumber; // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	ent->client->ps.saberEntityNum = saberent->s.number;
 	saberent->classname = "lightsaber";
 			
@@ -1528,8 +1532,11 @@ qboolean G_SaberInBackAttack(int move)
 	case LS_A_BACK:
 	case LS_A_BACK_CR:
 	case LS_A_BACKSTAB:
+<<<<<<< HEAD
+=======
 	case LS_JK_DUAL_SPIN1: // Tr!Force: [PlayerMovement] Dual saber moves
 	case LS_JK_DUAL_SPIN2: // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 		return qtrue;
 	}
 
@@ -1687,31 +1694,41 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 			return qfalse;
 		}
 
+<<<<<<< HEAD
+=======
 		// Tr!Force: [ChatProtect] Check saber clash
 		if (g_entities[tr.entityNum].inuse && g_entities[tr.entityNum].client && (g_entities[tr.entityNum].client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
 		if (g_entities[tr.entityNum].inuse && g_entities[tr.entityNum].client && (self->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
 
+>>>>>>> jediknightplus/master
 		didHit = qtrue;
 
 		if (self->client->ps.saberMove == LS_A_BACK ||
 			self->client->ps.saberMove == LS_A_BACK_CR ||
 			self->client->ps.saberMove == LS_A_BACKSTAB ||
+<<<<<<< HEAD
+			self->client->ps.saberMove == LS_A_JUMP_T__B_)
+=======
 			self->client->ps.saberMove == LS_A_JUMP_T__B_ ||
 			self->client->ps.saberMove == LS_JK_DUAL_SPIN1 || // Tr!Force: [PlayerMovement] Dual saber moves
 			self->client->ps.saberMove == LS_JK_DUAL_SPIN2 || // Tr!Force: [PlayerMovement] Dual saber moves
 			self->client->ps.saberMove == LS_JK_DUAL_TORNADO ) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 		{
 			unblockable = qtrue;
 			if (self->client->ps.saberMove == LS_A_JUMP_T__B_)
 			{ //do extra damage for special unblockables
 				dmg += 40;
 			}
+<<<<<<< HEAD
+=======
 			else if (self->client->ps.saberMove == LS_JK_DUAL_TORNADO) // Tr!Force: [PlayerMovement] Dual saber moves
 			{
 				dmg += 25;
 			}
+>>>>>>> jediknightplus/master
 			else
 			{
 				dmg += 20;
@@ -1720,7 +1737,11 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 
 		if (g_entities[tr.entityNum].client && !unblockable && WP_SaberCanBlock(&g_entities[tr.entityNum], tr.endpos, 0, MOD_SABER, qfalse, attackStr))
 		{
+<<<<<<< HEAD
+			te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+=======
 			te = JKMod_G_TempEntity( tr.endpos, EV_SABER_BLOCK, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			VectorCopy(tr.endpos, te->s.origin);
 			VectorCopy(tr.plane.normal, te->s.angles);
 			te->s.eventParm = 1;
@@ -1806,7 +1827,11 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 
 			G_Damage(&g_entities[tr.entityNum], self, self, dir, tr.endpos, dmg, 0, MOD_SABER);
 
+<<<<<<< HEAD
+			te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+=======
 			te = JKMod_G_TempEntity( tr.endpos, EV_SABER_HIT, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			VectorCopy(tr.endpos, te->s.origin);
 			VectorCopy(tr.plane.normal, te->s.angles);
 			
@@ -1857,6 +1882,11 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 			return qfalse;
 		}
 
+<<<<<<< HEAD
+		didHit = qtrue;
+
+		te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+=======
 		// Tr!Force: [ChatProtect] Check saber clash
 		if (otherOwner && otherOwner->client && (otherOwner->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
@@ -1866,6 +1896,7 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 		didHit = qtrue;
 
 		te = JKMod_G_TempEntity( tr.endpos, EV_SABER_BLOCK, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		VectorCopy(tr.endpos, te->s.origin);
 		VectorCopy(tr.plane.normal, te->s.angles);
@@ -2091,7 +2122,10 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 	{ //this animation is that of the last attack movement, and so it should do full damage
 		qboolean saberInSpecial = BG_SaberInSpecial(self->client->ps.saberMove);
 		qboolean inBackAttack = G_SaberInBackAttack(self->client->ps.saberMove);
+<<<<<<< HEAD
+=======
 		qboolean jkmod_dualMoves = (self->client->ps.stats[JK_MOVEMENT] & JK_DUAL_MOVES) && self->client->ps.dualBlade; // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 
 		dmg = SABER_HITDAMAGE;
 
@@ -2107,12 +2141,16 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			{
 				dmg = G_GetAttackDamage(self, 2, 180, 0.65f);
 			}
+<<<<<<< HEAD
+			else if (inBackAttack && jk2gameplay == VERSION_1_04)
+=======
 			else if (saberInSpecial &&
 					 (self->client->ps.saberMove == LS_JK_DUAL_TORNADO)) // Tr!Force: [PlayerMovement] Dual saber moves
 			{
 				dmg = G_GetAttackDamage(self, 2, 25, 0.5f);
 			}
 			else if (inBackAttack && (jk2gameplay == VERSION_1_04 || jkmod_dualMoves)) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 			{
 				dmg = G_GetAttackDamage(self, 2, 30, 0.5f); //can hit multiple times (and almost always does), so..
 			}
@@ -2126,12 +2164,19 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			if (saberInSpecial &&
 				(self->client->ps.saberMove == LS_A_FLIP_STAB || self->client->ps.saberMove == LS_A_FLIP_SLASH))
 			{ //a well-timed hit with this can do a full 85
+<<<<<<< HEAD
+				if ( jk2gameplay == VERSION_1_04 ) dmg = G_GetAttackDamage(self, 2, 80, 0.5f);
+				else							   dmg = G_GetAttackDamage(self, 2, 100, 0.5f);
+			}
+			else if (inBackAttack && jk2gameplay == VERSION_1_04)
+=======
 				if ( jk2gameplay == VERSION_1_04 || jkmod_dualMoves) // Tr!Force: [PlayerMovement] Dual saber moves
 					dmg = G_GetAttackDamage(self, 2, 80, 0.5f);
 				else							   
 					dmg = G_GetAttackDamage(self, 2, 100, 0.5f);
 			}
 			else if (inBackAttack && (jk2gameplay == VERSION_1_04 || jkmod_dualMoves)) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 			{
 				dmg = G_GetAttackDamage(self, 2, 25, 0.5f);
 			}
@@ -2147,7 +2192,11 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			{
 				dmg = G_GetAttackDamage(self, 2, SABER_HITDAMAGE-5, 0.3f);
 			}
+<<<<<<< HEAD
+			else if (inBackAttack && jk2gameplay == VERSION_1_04)
+=======
 			else if (inBackAttack && (jk2gameplay == VERSION_1_04 || jkmod_dualMoves)) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 			{
 				dmg = G_GetAttackDamage(self, 2, 30, 0.5f);
 			}
@@ -2174,7 +2223,11 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 
 		if (!inBackAttack || jk2gameplay != VERSION_1_04)
 		{
+<<<<<<< HEAD
+			if (self->client->ps.saberMove == LS_A_JUMP_T__B_)
+=======
 			if (self->client->ps.saberMove == LS_A_JUMP_T__B_ || self->client->ps.saberMove == LS_JK_DUAL_TORNADO) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 			{ //do extra damage for special unblockables
 				dmg += 5; //This is very tiny, because this move has a huge damage ramp
 			}
@@ -2257,19 +2310,26 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			return qfalse;
 		}
 
+<<<<<<< HEAD
+=======
 		// Tr!Force: [ChatProtect] Check saber clash
 		if (g_entities[tr.entityNum].inuse && g_entities[tr.entityNum].client && (g_entities[tr.entityNum].client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
 		if (g_entities[tr.entityNum].inuse && g_entities[tr.entityNum].client && (self->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
 
+>>>>>>> jediknightplus/master
 		self->client->ps.saberIdleWound = level.time + g_saberDmgDelay_Idle.integer;
 
 		didHit = qtrue;
 
 		if (g_entities[tr.entityNum].client && !unblockable && WP_SaberCanBlock(&g_entities[tr.entityNum], tr.endpos, 0, MOD_SABER, qfalse, attackStr))
 		{
+<<<<<<< HEAD
+			te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+=======
 			te = JKMod_G_TempEntity( tr.endpos, EV_SABER_BLOCK, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			if (dmg <= SABER_NONATTACK_DAMAGE)
 			{
 				self->client->ps.saberIdleWound = level.time + g_saberDmgDelay_Idle.integer;
@@ -2343,7 +2403,11 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 
 			G_Damage(&g_entities[tr.entityNum], self, self, dir, tr.endpos, dmg, 0, MOD_SABER);
 
+<<<<<<< HEAD
+			te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+=======
 			te = JKMod_G_TempEntity( tr.endpos, EV_SABER_HIT, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 			VectorCopy(tr.endpos, te->s.origin);
 			VectorCopy(tr.plane.normal, te->s.angles);
@@ -2361,7 +2425,11 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			{
 				te->s.eventParm = 0;
 			}
+<<<<<<< HEAD
+
+=======
 			
+>>>>>>> jediknightplus/master
 			self->client->ps.saberAttackWound = level.time + 100;
 		}
 	}
@@ -2395,6 +2463,12 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			return qfalse;
 		}
 
+<<<<<<< HEAD
+		didHit = qtrue;
+		self->client->ps.saberIdleWound = level.time + g_saberDmgDelay_Idle.integer;
+
+		te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+=======
 		// Tr!Force: [ChatProtect] Check saber clash
 		if (otherOwner && otherOwner->client && (otherOwner->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
@@ -2405,6 +2479,7 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 		self->client->ps.saberIdleWound = level.time + g_saberDmgDelay_Idle.integer;
 
 		te = JKMod_G_TempEntity( tr.endpos, EV_SABER_BLOCK, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		if (dmg <= SABER_NONATTACK_DAMAGE)
 		{
 			self->client->ps.saberIdleWound = level.time + g_saberDmgDelay_Idle.integer;
@@ -2765,12 +2840,15 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 			return qfalse;
 		}
 
+<<<<<<< HEAD
+=======
 		// Tr!Force: [ChatProtect] Check saber clash (throw)
 		if (ent->inuse && ent->client && (ent->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
 		if (ent->inuse && ent->client && (saberOwner->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 			return qfalse;
 
+>>>>>>> jediknightplus/master
 		VectorSubtract(saberent->r.currentOrigin, ent->client->ps.origin, vecsub);
 		veclen = VectorLength(vecsub);
 
@@ -2786,7 +2864,11 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 				{ //they blocked it
 					if ( jk2gameplay != VERSION_1_02 ) WP_SaberBlockNonRandom(ent, tr.endpos, qfalse);
 
+<<<<<<< HEAD
+					te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+=======
 					te = JKMod_G_TempEntity( tr.endpos, EV_SABER_BLOCK, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 					VectorCopy(tr.endpos, te->s.origin);
 					VectorCopy(tr.plane.normal, te->s.angles);
 					if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])
@@ -2824,7 +2906,11 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 						G_Damage(ent, saberOwner, saberOwner, dir, tr.endpos, saberent->damage, 0, MOD_SABER);
 					}
 
+<<<<<<< HEAD
+					te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+=======
 					te = JKMod_G_TempEntity( tr.endpos, EV_SABER_HIT, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 					VectorCopy(tr.endpos, te->s.origin);
 					VectorCopy(tr.plane.normal, te->s.angles);
 					if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])
@@ -2872,7 +2958,11 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 					G_Damage(ent, saberOwner, saberOwner, dir, tr.endpos, 5, 0, MOD_SABER);
 				}
 
+<<<<<<< HEAD
+				te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+=======
 				te = JKMod_G_TempEntity( tr.endpos, EV_SABER_HIT, tr.entityNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 				VectorCopy(tr.endpos, te->s.origin);
 				VectorCopy(tr.plane.normal, te->s.angles);
 				if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])
@@ -2901,10 +2991,13 @@ void saberCheckRadiusDamage(gentity_t *saberent, int returning)
 	int dist = 0;
 	gentity_t *ent;
 	gentity_t *saberOwner = &g_entities[saberent->r.ownerNum];
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Dimensions] Tag owner info
 	int num;
 	int touch[MAX_GENTITIES];
 	vec3_t mins, maxs;
+>>>>>>> jediknightplus/master
 
 	if (returning && returning != 2)
 	{
@@ -2925,6 +3018,15 @@ void saberCheckRadiusDamage(gentity_t *saberent, int returning)
 		return;
 	}
 
+<<<<<<< HEAD
+	while (i < MAX_GENTITIES)
+	{
+		ent = &g_entities[i];
+
+		CheckThrownSaberDamaged(saberent, saberOwner, ent, dist, returning);
+
+		i++;
+=======
 	// Tr!Force: [Dimensions] Tag owner info
 	VectorSet( mins, -dist, -dist, -dist );
 	VectorSet( maxs,  dist,  dist,  dist );
@@ -2943,6 +3045,7 @@ void saberCheckRadiusDamage(gentity_t *saberent, int returning)
 		}
 
 		CheckThrownSaberDamaged(saberent, saberOwner, ent, dist, returning);
+>>>>>>> jediknightplus/master
 	}
 }
 
@@ -3036,7 +3139,11 @@ void MakeDeadSaber(gentity_t *ent)
 		return;
 	}
 
+<<<<<<< HEAD
+	saberent = G_Spawn();
+=======
 	saberent = JKMod_G_Spawn( ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	VectorCopy(ent->r.currentOrigin, startorg);
 	VectorCopy(ent->r.currentAngles, startang);
@@ -3685,7 +3792,11 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 			{
 				gentity_t *te;
 				vec3_t dir;
+<<<<<<< HEAD
+				te = G_TempEntity( g_entities[self->client->ps.saberEntityNum].r.currentOrigin, EV_SABER_BLOCK );
+=======
 				te = JKMod_G_TempEntity( g_entities[self->client->ps.saberEntityNum].r.currentOrigin, EV_SABER_BLOCK, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 				VectorSet( dir, 0, 1, 0 );
 				VectorCopy(g_entities[self->client->ps.saberEntityNum].r.currentOrigin, te->s.origin);
 				VectorCopy(dir, te->s.angles);
@@ -3705,12 +3816,17 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 
 		if (self->client->ps.dualBlade)
 		{
+<<<<<<< HEAD
+			self->client->ps.saberIdleWound = 0;
+			self->client->ps.saberAttackWound = 0;
+=======
 			// Tr!Force: [DualSaber] Use proper saber timing
 			if (!self->client->pers.jkmodPers.dualSaber)
 			{
 				self->client->ps.saberIdleWound = 0;
 				self->client->ps.saberAttackWound = 0;
 			}
+>>>>>>> jediknightplus/master
 		}
 
 		if (self->client->hasCurrentPosition && g_saberInterpolate.integer)
@@ -3892,12 +4008,17 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 			VectorMA( boltOrigin, -12, rawAngles, otherOrg );
 			VectorMA( otherOrg, -40, rawAngles, otherEnd );
 
+<<<<<<< HEAD
+			self->client->ps.saberIdleWound = 0;
+			self->client->ps.saberAttackWound = 0;
+=======
 			// Tr!Force: [DualSaber] Use proper saber timing
 			if (!self->client->pers.jkmodPers.dualSaber)
 			{
 				self->client->ps.saberIdleWound = 0;
 				self->client->ps.saberAttackWound = 0;
 			}
+>>>>>>> jediknightplus/master
 
 			CheckSaberDamage(self, otherOrg, otherEnd, qfalse, (MASK_PLAYERSOLID|CONTENTS_LIGHTSABER|MASK_SHOT));
 		}

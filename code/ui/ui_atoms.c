@@ -356,11 +356,14 @@ qboolean UI_ConsoleCommand( int realTime ) {
 		return qtrue;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JKMod] Check custom console commands
 	if ( JKMod_UI_ConsoleCommand(cmd) ) {
 		return qtrue;
 	}
 
+>>>>>>> jediknightplus/master
 	return qfalse;
 }
 

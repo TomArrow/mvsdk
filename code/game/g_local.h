@@ -9,6 +9,7 @@
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
+
 // #define	GAMEVERSION	"basemv" // Tr!Force: [Plugin] Use this on main version header
 
 #define BODY_QUEUE_SIZE		8
@@ -250,6 +251,7 @@ struct gentity_s {
 
 	gitem_t		*item;			// for bonus items
 
+
 	jkmod_ent_t	jkmodEnt;		// Tr!Force: [JKMod] server entity
 };
 
@@ -314,6 +316,7 @@ typedef struct {
 	int			updateUITime;		// only update userinfo for FP/SL if < level.time
 	qboolean	teamLeader;			// true when this client is a team leader
 
+
 	jkmod_sess_t	jkmodSess;		// Tr!Force: [JKMod] client session
 } clientSession_t;
 
@@ -324,6 +327,7 @@ typedef struct {
 } mvclientSession_t;
 
 //
+#define MAX_NETNAME			36
 #define MAX_NETNAME			/*36*/MAX_NAME_BIG // Tr!Force: [Header] Use this on main local header
 #define	MAX_VOTE_COUNT		3
 
@@ -344,6 +348,7 @@ typedef struct {
 	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
 	qboolean	botDelayed;			// Is ClientBegin still outstanding for this bot, because it was delayed?
+
 
 	jkmod_pers_t	jkmodPers;		// Tr!Force: [JKMod] client persistant
 } clientPersistant_t;
@@ -437,6 +442,7 @@ struct gclient_s {
 	int			forcePowerSoundDebounce; //if > level.time, don't do certain sound events again (drain sound, absorb sound, etc)
 
 	qboolean	fjDidJump;
+
 
 	jkmod_client_t	jkmodClient;	// Tr!Force: [JKMod] client clear
 };
@@ -533,6 +539,7 @@ typedef struct {
 
 	// MVSDK
 	qboolean	bboxEncoding;
+
 
 	jkmod_locals_t	jkmodLocals;		// Tr!Force: [JKMod] level locals
 } level_locals_t;
@@ -850,7 +857,10 @@ void MV_BBoxToTime2( gentity_t *ent );
 // g_client.c
 //
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot );
+
+
 void SetupGameGhoul2Model( gclient_t *client, char *modelname ); // Tr!Force: [JKMod] Gameplay clean client g2 instances
+
 void ClientUserinfoChanged( int clientNum );
 void ClientDisconnect( int clientNum );
 void ClientBegin( int clientNum, qboolean allowTeamReset );
@@ -1069,6 +1079,9 @@ extern	vmCvar_t	g_blueteam;
 extern	vmCvar_t	g_smoothClients;
 extern	vmCvar_t	g_pmove_fixed;
 extern	vmCvar_t	g_pmove_msec;
+
+extern	vmCvar_t	g_pmove_float;
+extern	vmCvar_t	g_fixHighFPSAbuse;
 extern	vmCvar_t	g_rankings;
 extern	vmCvar_t	g_enableDust;
 extern	vmCvar_t	g_enableBreath;

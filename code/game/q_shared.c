@@ -991,10 +991,36 @@ char *Q_CleanStr( char *string, qboolean use102color ) {
 	return string;
 }
 
+<<<<<<< HEAD
+char *Q_CleanAsciiStr( char *string ) {
+	char*	d;
+	char*	s;
+	int		c;
+
+	s = string;
+	d = string;
+	while ((c = *s) != 0 ) {
+		if ( c >= 0x20 && c <= 0x7E ) {
+			*d++ = c;
+		}
+		s++;
+	}
+	*d = '\0';
+
+	return string;
+}
+
+=======
+>>>>>>> jediknightplus/master
 #if defined(_MSC_VER) && _MSC_VER < 1900
 /*
 =============
 Q_vsnprintf
+<<<<<<< HEAD
+/*
+Q_strstrip
+=======
+>>>>>>> jediknightplus/master
 
 Special wrapper function for Microsoft's broken _vsnprintf() function.
 =============
@@ -1017,6 +1043,76 @@ size_t Q_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
 }
 #endif
 
+<<<<<<< HEAD
+/*
+Q_strstrip
+
+Description:	Replace strip[x] in string with repl[x] or remove characters entirely
+Mutates:		string
+Return:			--
+
+Examples:		Q_strstrip( "Bo\nb is h\rairy!!", "\n\r!", "123" );	// "Bo1b is h2airy33"
+Q_strstrip( "Bo\nb is h\rairy!!", "\n\r!", "12" );	// "Bo1b is h2airy"
+Q_strstrip( "Bo\nb is h\rairy!!", "\n\r!", NULL );	// "Bob is hairy"
+*/
+
+void Q_strstrip( char *string, const char *strip, const char *repl )
+{
+	char		*out=string, *p=string, c;
+	const char	*s=strip;
+	int			replaceLen = repl?strlen( repl ):0, offset=0;
+	qboolean	recordChar = qtrue;
+
+	while ( (c = *p++) != '\0' )
+	{
+		recordChar = qtrue;
+		for ( s=strip; *s; s++ )
+		{
+			offset = s-strip;
+			if ( c == *s )
+			{
+				if ( !repl || offset >= replaceLen )
+					recordChar = qfalse;
+				else
+					c = repl[offset];
+				break;
+			}
+		}
+		if ( recordChar )
+			*out++ = c;
+	}
+	*out = '\0';
+}
+
+/*
+Q_strchrs
+
+Description:	Find any characters in a string. Think of it as a shorthand strchr loop.
+Mutates:		--
+Return:			first instance of any characters found
+otherwise NULL
+*/
+
+const char *Q_strchrs( const char *string, const char *search )
+{
+	const char *p = string, *s = search;
+
+	while ( *p != '\0' )
+	{
+		for ( s=search; *s; s++ )
+		{
+			if ( *p == *s )
+				return p;
+		}
+		p++;
+	}
+
+	return NULL;
+}
+
+
+=======
+>>>>>>> jediknightplus/master
 void QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) {
 	int		len;
 	va_list		argptr;

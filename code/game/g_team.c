@@ -112,7 +112,11 @@ void PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage)
 		teamIndex = 50;
 	}
 
+<<<<<<< HEAD
+	te = G_TempEntity(vec3_origin, EV_CTFMESSAGE);
+=======
 	te = JKMod_G_TempEntity(vec3_origin, EV_CTFMESSAGE, ENTITYNUM_WORLD); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->r.svFlags |= SVF_BROADCAST;
 	te->s.eventParm = ctfMessage;
 	te->s.trickedentindex = plIndex;
@@ -144,7 +148,11 @@ AddTeamScore
 void AddTeamScore(vec3_t origin, int team, int score) {
 	gentity_t	*te;
 
+<<<<<<< HEAD
+	te = G_TempEntity(origin, EV_GLOBAL_TEAM_SOUND );
+=======
 	te = JKMod_G_TempEntity(origin, EV_GLOBAL_TEAM_SOUND, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->r.svFlags |= SVF_BROADCAST;
 
 	if ( team == TEAM_RED ) {
@@ -572,7 +580,11 @@ void Team_ReturnFlagSound( gentity_t *ent, int team ) {
 		return;
 	}
 
+<<<<<<< HEAD
+	te = G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_TEAM_SOUND );
+=======
 	te = JKMod_G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_TEAM_SOUND, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	if( team == TEAM_BLUE ) {
 		te->s.eventParm = GTS_RED_RETURN;
 	}
@@ -610,7 +622,11 @@ void Team_TakeFlagSound( gentity_t *ent, int team ) {
 			break;
 	}
 
+<<<<<<< HEAD
+	te = G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_TEAM_SOUND );
+=======
 	te = JKMod_G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_TEAM_SOUND, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	if( team == TEAM_BLUE ) {
 		te->s.eventParm = GTS_RED_TAKEN;
 	}
@@ -628,7 +644,11 @@ void Team_CaptureFlagSound( gentity_t *ent, int team ) {
 		return;
 	}
 
+<<<<<<< HEAD
+	te = G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_TEAM_SOUND );
+=======
 	te = JKMod_G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_TEAM_SOUND, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	if( team == TEAM_BLUE ) {
 		te->s.eventParm = GTS_BLUE_CAPTURE;
 	}
@@ -746,9 +766,12 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	// other gets another 10 frag bonus
 	AddScore(other, ent->r.currentOrigin, CTF_CAPTURE_BONUS);
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [PlayerStatus] Announce score
 	if (jkcvar_chatAutoStatus.integer && other->client->sess.jkmodSess.playerStatus) JKMod_playerStatus(other, qtrue);
 
+>>>>>>> jediknightplus/master
 	Team_CaptureFlagSound( ent, team );
 
 	// Ok, let's do the player loop, hand out the bonuses

@@ -1,8 +1,11 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "g_local.h"
+<<<<<<< HEAD
+=======
 #undef trap_Trace // Tr!Force: [Dimensions] Undo re-routing for calls made from here
 #undef trap_SetBrushModel // Tr!Force: [MapFixes] Undo re-routing for calls made from here
+>>>>>>> jediknightplus/master
 
 // this file is only included when building a dll
 // g_syscalls.asm is included instead when building a qvm

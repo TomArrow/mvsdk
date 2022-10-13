@@ -166,11 +166,18 @@ qboolean G_DoesMapSupportGametype(const char *mapname, int gametype)
 	int			n = 0;
 	char		*type = NULL;
 
+<<<<<<< HEAD
+	if (!g_arenaInfos[0])
+=======
 	if (!mapname || !mapname[0])
+>>>>>>> jediknightplus/master
 	{
 		return qfalse;
 	}
 
+<<<<<<< HEAD
+	if (!mapname || !mapname[0])
+=======
 	// Tr!Force: [Vote] Fix for gametype not supported maps
 	if (jkcvar_voteAnyMap.integer)
 	{
@@ -189,6 +196,7 @@ qboolean G_DoesMapSupportGametype(const char *mapname, int gametype)
 	}
 
 	if (!g_arenaInfos[0])
+>>>>>>> jediknightplus/master
 	{
 		return qfalse;
 	}
@@ -319,6 +327,21 @@ static void G_LoadArenas( void ) {
 		G_LoadArenasFromFile("scripts/arenas.txt");
 	}
 
+<<<<<<< HEAD
+	// get all arenas from .arena files
+	numdirs = trap_FS_GetFileList("scripts", ".arena", dirlist, 1024 );
+	dirptr  = dirlist;
+	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
+		dirlen = strlen(dirptr);
+		strcpy(filename, "scripts/");
+		strcat(filename, dirptr);
+		G_LoadArenasFromFile(filename);
+	}
+	trap_Printf( va( "%i arenas parsed\n", g_numArenas ) );
+	
+	for( n = 0; n < g_numArenas; n++ ) {
+		Info_SetValueForKey( g_arenaInfos[n], "num", va( "%i", n ) );
+=======
 	// Tr!Force; [MapCycle] Load only the maps from file
 	if (jkcvar_mapCycleFromFile.integer)
 	{
@@ -340,6 +363,7 @@ static void G_LoadArenas( void ) {
 		for (n = 0; n < g_numArenas; n++) {
 			Info_SetValueForKey(g_arenaInfos[n], "num", va("%i", n));
 		}
+>>>>>>> jediknightplus/master
 	}
 
 	G_RefreshNextMap(g_gametype.integer, qfalse);
@@ -467,7 +491,11 @@ G_RemoveRandomBot
 */
 int G_RemoveRandomBot( int team ) {
 	int i;
+<<<<<<< HEAD
+	char netname[36];
+=======
 	char netname[MAX_NETNAME]; // Workaround
+>>>>>>> jediknightplus/master
 	gclient_t	*cl;
 
 	for ( i=0 ; i< g_maxclients.integer ; i++ ) {
@@ -483,7 +511,11 @@ int G_RemoveRandomBot( int team ) {
 		}
 		strcpy(netname, cl->pers.netname);
 		Q_CleanStr(netname, (qboolean)(jk2startversion == VERSION_1_02));
+<<<<<<< HEAD
+		trap_SendConsoleCommand( EXEC_INSERT, va("kick %s\n", netname) );
+=======
 		trap_SendConsoleCommand( EXEC_INSERT, va("kick \"%s\"\n", netname) ); // Workaround
+>>>>>>> jediknightplus/master
 		return qtrue;
 	}
 	return qfalse;
@@ -738,7 +770,11 @@ qboolean G_BotConnect( int clientNum, qboolean restart ) {
 G_AddBot
 ===============
 */
+<<<<<<< HEAD
+static void G_AddBot( const char *name, float skill, const char *team, int delay, char *altname) {
+=======
 static void G_AddBot( const char *name, float skill, const char *team, int delay, char *altname, int jkmod_hat ) { // Tr!Force: [Bots] Add custom hats
+>>>>>>> jediknightplus/master
 	int				clientNum;
 	char			*botinfo;
 	gentity_t		*bot;
@@ -832,12 +868,15 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 		Info_SetValueForKey( userinfo, "personality", s );
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Bots] Add custom hats
 	Info_SetValueForKey( userinfo, "jk_cg_customHats", va("%i", jkmod_hat) ); 
 
 	// Tr!Force: [Plugin] Validate bots
 	Info_SetValueForKey( userinfo, "jkmod_client", JK_VERSION ); 
 
+>>>>>>> jediknightplus/master
 	// have the server allocate a client slot
 	clientNum = trap_BotAllocateClient();
 	if ( clientNum == -1 ) {
@@ -944,7 +983,10 @@ void Svcmd_AddBot_f( void ) {
 	char			altname[MAX_TOKEN_CHARS];
 	char			string[MAX_TOKEN_CHARS];
 	char			team[MAX_TOKEN_CHARS];
+<<<<<<< HEAD
+=======
 	int				jkmod_hat;		// Tr!Force: [Bots] Add custom hats
+>>>>>>> jediknightplus/master
 
 	// are bots enabled?
 	if ( !trap_Cvar_VariableIntegerValue( "bot_enable" ) ) {
@@ -954,7 +996,11 @@ void Svcmd_AddBot_f( void ) {
 	// name
 	trap_Argv( 1, name, sizeof( name ) );
 	if ( !name[0] ) {
+<<<<<<< HEAD
+		trap_Printf( "Usage: Addbot <botname> [skill 1-5] [team] [msec delay] [altname]\n" );
+=======
 		trap_Printf( "Usage: Addbot <botname> [skill 1-5] [team] [msec delay] [altname] [hat 1-8]\n" ); // Tr!Force: [Bots] Add custom hats
+>>>>>>> jediknightplus/master
 		return;
 	}
 
@@ -982,6 +1028,9 @@ void Svcmd_AddBot_f( void ) {
 	// alternative name
 	trap_Argv( 5, altname, sizeof( altname ) );
 
+<<<<<<< HEAD
+	G_AddBot( name, skill, team, delay, altname );
+=======
 	// Tr!Force: [Bots] Add custom hats
 	trap_Argv( 6, string, sizeof( string ) );
 	if ( !string[0] ) {
@@ -992,6 +1041,7 @@ void Svcmd_AddBot_f( void ) {
 	}
 	
 	G_AddBot( name, skill, team, delay, altname, jkmod_hat ); // Tr!Force: [Bots] Add custom hats
+>>>>>>> jediknightplus/master
 
 	// if this was issued during gameplay and we are playing locally,
 	// go ahead and load the bot's media immediately

@@ -93,11 +93,14 @@ void CG_DamageFeedback( int yawByte, int pitchByte, int damage ) {
 	// show the attacking player's head and name in corner
 	cg.attackerTime = cg.time;
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [DamageBlend] Don't show in low damage
 	if (jkcvar_cg_damageBlend.integer == 2 && damage <= 5) {
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	// the lower on health you are, the greater the view kick will be
 	health = cg.snap->ps.stats[STAT_HEALTH];
 	if ( health < 40 ) {
@@ -112,6 +115,12 @@ void CG_DamageFeedback( int yawByte, int pitchByte, int damage ) {
 	if (kick > 10)
 		kick = 10;
 
+<<<<<<< HEAD
+	if (cg_lowhpsound.integer && (health + cg.predictedPlayerState.stats[STAT_ARMOR] - damage) <= cg_lowhpsound.integer)
+		trap_S_StartLocalSound(cgs.media.lowHPSound, CHAN_LOCAL_SOUND);
+
+=======
+>>>>>>> jediknightplus/master
 	// if yaw and pitch are both 255, make the damage always centered (falling, etc)
 	if ( yawByte == 255 && pitchByte == 255 ) {
 		cg.damageX = 0;
@@ -288,6 +297,21 @@ static void pushReward(sfxHandle_t sfx, qhandle_t shader, int rewardCount) {
 		cg.rewardCount[cg.rewardStack] = rewardCount;
 	}
 }
+<<<<<<< HEAD
+
+static void CG_ResetRewards(void)
+{
+	//called on map_restart or when switching perspectives in specA
+	if (cg.rewardStack || cg.rewardCount) {
+		cg.rewardStack = 0;
+		cg.rewardTime = 0;
+		memset(&cg.rewardCount, 0, sizeof(cg.rewardCount));
+		memset(&cg.rewardShader, 0, sizeof(cg.rewardShader));
+		memset(&cg.rewardSound, 0, sizeof(cg.rewardSound));
+	}
+}
+=======
+>>>>>>> jediknightplus/master
 #endif
 
 int cgAnnouncerTime = 0; //to prevent announce sounds from playing on top of each other
@@ -313,6 +337,24 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 		armor  = ps->persistant[PERS_ATTACKEE_ARMOR] & 0xff;
 		health = ps->persistant[PERS_ATTACKEE_ARMOR] >> 8;
 
+<<<<<<< HEAD
+//JAPRO - Clientside - Hitsounds Start
+		if (cg_hitSounds.integer == 1)
+			trap_S_StartLocalSound( cgs.media.hitSound, CHAN_LOCAL_SOUND );
+		else if (cg_hitSounds.integer == 2)
+			trap_S_StartLocalSound( cgs.media.hitSound2, CHAN_LOCAL_SOUND ); 
+		else if (cg_hitSounds.integer == 3)
+			trap_S_StartLocalSound( cgs.media.hitSound3, CHAN_LOCAL_SOUND ); 
+		else if (cg_hitSounds.integer > 3)
+			trap_S_StartLocalSound( cgs.media.hitSound4, CHAN_LOCAL_SOUND ); 
+		
+	}
+	else if ( ps->persistant[PERS_HITS] < ops->persistant[PERS_HITS] ) {
+		if (cg_hitSounds.integer)
+		trap_S_StartLocalSound( cgs.media.hitTeamSound, CHAN_LOCAL_SOUND );
+	}
+//JAPRO - Clientside - Hitsounds End
+=======
 		if (armor > health/2)
 		{	// We also hit shields along the way, so consider them "pierced".
 //			trap_S_StartLocalSound( cgs.media.shieldPierceSound, CHAN_LOCAL_SOUND );
@@ -335,6 +377,7 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 	} else if ( ps->persistant[PERS_HITS] < ops->persistant[PERS_HITS] ) {
 		//trap_S_StartLocalSound( cgs.media.hitTeamSound, CHAN_LOCAL_SOUND );
 	}
+>>>>>>> jediknightplus/master
 
 	// health changes of more than -3 should make pain sounds
 	if (cg_oldPainSounds.integer)
@@ -374,7 +417,11 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 		reward = qtrue;
 		//Com_Printf("excellent\n");
 	}
+<<<<<<< HEAD
+	if (ps->persistant[PERS_GAUNTLET_FRAG_COUNT] != ops->persistant[PERS_GAUNTLET_FRAG_COUNT] && !(jk2version == VERSION_1_02 && cgs.gametype == GT_CTF)) { //does this always happen
+=======
 	if (ps->persistant[PERS_GAUNTLET_FRAG_COUNT] != ops->persistant[PERS_GAUNTLET_FRAG_COUNT]) {
+>>>>>>> jediknightplus/master
 		sfx = cgs.media.humiliationSound;
 		pushReward(sfx, cgs.media.medalGauntlet, ps->persistant[PERS_GAUNTLET_FRAG_COUNT]);
 		reward = qtrue;
@@ -386,8 +433,13 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 		//Com_Printf("defend\n");
 	}
 	if (ps->persistant[PERS_ASSIST_COUNT] != ops->persistant[PERS_ASSIST_COUNT]) {
+<<<<<<< HEAD
+		pushReward(cgs.media.assistSound, cgs.media.medalAssist, ps->persistant[PERS_ASSIST_COUNT]);
+		reward = qtrue;
+=======
 		//pushReward(cgs.media.assistSound, cgs.media.medalAssist, ps->persistant[PERS_ASSIST_COUNT]);
 		//reward = qtrue;
+>>>>>>> jediknightplus/master
 		//Com_Printf("assist\n");
 	}
 	// if any of the player event bits changed
@@ -415,7 +467,10 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 					if (  ps->persistant[PERS_RANK] == 0 ) {
 						CG_AddBufferedSound(cgs.media.takenLeadSound);
 						cgAnnouncerTime = cg.time + 3000;
+<<<<<<< HEAD
+=======
 						cg.jkmodCG.duelEndLead = jkcvar_cg_duelEnd.integer ? cg.time + 3000 : 0; // Tr!Force: [DuelEnd] Sound check
+>>>>>>> jediknightplus/master
 					} else if ( ps->persistant[PERS_RANK] == RANK_TIED_FLAG ) {
 						//CG_AddBufferedSound(cgs.media.tiedLeadSound);
 					} else if ( ( ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG ) == 0 ) {
@@ -425,7 +480,10 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 						{
 							CG_AddBufferedSound(cgs.media.lostLeadSound);
 							cgAnnouncerTime = cg.time + 3000;
+<<<<<<< HEAD
+=======
 							cg.jkmodCG.duelEndLead = jkcvar_cg_duelEnd.integer ? cg.time + 3000 : 0; // Tr!Force: [DuelEnd] Sound check
+>>>>>>> jediknightplus/master
 						}
 					}
 				}
@@ -441,6 +499,10 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 		if ( !( cg.timelimitWarnings & 4 ) && msec > ( cgs.timelimit * 60 + 2 ) * 1000 ) {
 			cg.timelimitWarnings |= 1 | 2 | 4;
 			//trap_S_StartLocalSound( cgs.media.suddenDeathSound, CHAN_ANNOUNCER );
+<<<<<<< HEAD
+			trap_S_StartLocalSound(cgs.media.tiedLeadSound, CHAN_ANNOUNCER);
+=======
+>>>>>>> jediknightplus/master
 		}
 		else if ( !( cg.timelimitWarnings & 2 ) && msec > (cgs.timelimit - 1) * 60 * 1000 ) {
 			cg.timelimitWarnings |= 1 | 2;
@@ -487,6 +549,10 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 		cg.thisFrameTeleport = qtrue;
 		// make sure we don't get any unwanted transition effects
 		*ops = *ps;
+<<<<<<< HEAD
+		CG_ResetRewards();
+=======
+>>>>>>> jediknightplus/master
 	}
 
 	// damage events (player is getting wounded)
@@ -501,6 +567,10 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 
 	if ( cg.mapRestart ) {
 		CG_Respawn();
+<<<<<<< HEAD
+		CG_ResetRewards();
+=======
+>>>>>>> jediknightplus/master
 		cg.mapRestart = qfalse;
 	}
 
@@ -509,6 +579,14 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 		CG_CheckLocalSounds( ps, ops );
 	}
 
+<<<<<<< HEAD
+	if (ops->weapon != ps->weapon) { // show weapon switching on HUD while spectating
+		cg.weaponSelect = ps->weapon;
+		cg.weaponSelectTime = cg.time;
+	}
+
+=======
+>>>>>>> jediknightplus/master
 	// check for going low on ammo
 	CG_CheckAmmo();
 
@@ -521,4 +599,7 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 		cg.duckTime = cg.time;
 	}
 }
+<<<<<<< HEAD
+=======
 
+>>>>>>> jediknightplus/master

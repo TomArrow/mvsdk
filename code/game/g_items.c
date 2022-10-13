@@ -370,7 +370,11 @@ qboolean PlaceShield(gentity_t *playerent)
 		if ( !tr.startsolid && !tr.allsolid )
 		{
 			// got enough room so place the portable shield
+<<<<<<< HEAD
+			shield = G_Spawn();
+=======
 			shield = JKMod_G_Spawn( playerent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 			// Figure out what direction the shield is facing.
 			if (fabs(fwd[0]) > fabs(fwd[1]))
@@ -688,7 +692,11 @@ void pas_think( gentity_t *ent )
 	testMaxs[1] = ent->r.currentOrigin[1] + ent->r.maxs[1]-4;
 	testMaxs[2] = ent->r.currentOrigin[2] + ent->r.maxs[2]-4;
 
+<<<<<<< HEAD
+	numListedEntities = trap_EntitiesInBox( testMins, testMaxs, iEntityList, MAX_GENTITIES );
+=======
 	numListedEntities = JKMod_DimensionEntitiesInBox( testMins, testMaxs, iEntityList, MAX_GENTITIES, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	while (i < numListedEntities)
 	{
@@ -696,7 +704,11 @@ void pas_think( gentity_t *ent )
 		{ //client stuck inside me. go nonsolid.
 			int clNum = iEntityList[i];
 
+<<<<<<< HEAD
+			numListedEntities = trap_EntitiesInBox( g_entities[clNum].r.absmin, g_entities[clNum].r.absmax, iEntityList, MAX_GENTITIES );
+=======
 			numListedEntities = JKMod_DimensionEntitiesInBox( g_entities[clNum].r.absmin, g_entities[clNum].r.absmax, iEntityList, MAX_GENTITIES, clNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 			i = 0;
 			while (i < numListedEntities)
@@ -743,7 +755,11 @@ void pas_think( gentity_t *ent )
 		return;
 	}
 
+<<<<<<< HEAD
+	if ((ent->bolt_LLeg+TURRET_LIFETIME) < level.time)
+=======
 	if ((ent->jkmodEnt.time1/*bolt_LLeg*/+TURRET_LIFETIME) < level.time) // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 	{
 		G_Sound( ent, CHAN_BODY, G_SoundIndex( "sound/chars/turret/shutdown.wav" ));
 		ent->s.bolt2 = ENTITYNUM_NONE;
@@ -919,7 +935,11 @@ void turret_die(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int 
 	// hack the effect angle so that explode death can orient the effect properly
 	VectorSet( self->s.angles, 0, 0, 1 );
 
+<<<<<<< HEAD
+	G_PlayEffect(EFFECT_EXPLOSION_PAS, self->s.pos.trBase, self->s.angles);
+=======
 	JKMod_G_PlayEffect(EFFECT_EXPLOSION_PAS, self->s.pos.trBase, self->s.angles, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	G_RadiusDamage(self->s.pos.trBase, &g_entities[self->boltpoint3], 30, 256, self, MOD_UNKNOWN);
 
 	g_entities[self->boltpoint3].client->ps.fd.sentryDeployed = qfalse;
@@ -994,7 +1014,11 @@ void ItemUse_Sentry( gentity_t *ent )
 	fwdorg[1] = ent->client->ps.origin[1] + fwd[1]*64;
 	fwdorg[2] = ent->client->ps.origin[2] + fwd[2]*64;
 
+<<<<<<< HEAD
+	sentry = G_Spawn();
+=======
 	sentry = JKMod_G_Spawn( ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	sentry->classname = "sentryGun";
 	sentry->s.modelindex = G_ModelIndex("models/items/psgun.glm"); //replace ASAP
@@ -1026,7 +1050,11 @@ void ItemUse_Sentry( gentity_t *ent )
 
 	sentry->bolt_Head = 1000;
 
+<<<<<<< HEAD
+	sentry->bolt_LLeg = level.time;
+=======
 	sentry->jkmodEnt.time1/*bolt_LLeg*/ = level.time; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 
 	sentry->noDamageTeam = ent->client->sess.sessionTeam;
 
@@ -1180,10 +1208,13 @@ int Pickup_Holdable( gentity_t *ent, gentity_t *other ) {
 
 void Add_Ammo (gentity_t *ent, int weapon, int count)
 {
+<<<<<<< HEAD
+=======
 	// Tr!Force: [InfiniteAmmo] Add ammo on item
 	if (count == INFINITE_AMMO) ent->client->ps.ammo[weapon] = INFINITE_AMMO;
 	if (ent->client->ps.ammo[weapon] == INFINITE_AMMO) return;
 
+>>>>>>> jediknightplus/master
 	ent->client->ps.ammo[weapon] += count;
 	if ( ent->client->ps.ammo[weapon] > ammoData[weapon].max ) {
 		ent->client->ps.ammo[weapon] = ammoData[weapon].max;
@@ -1337,6 +1368,8 @@ void RespawnItem( gentity_t *ent ) {
 			;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Items] Reset original item position
 	if (jkcvar_itemForcePhysics.integer <= 1)
 	{
@@ -1346,6 +1379,7 @@ void RespawnItem( gentity_t *ent ) {
 		VectorCopy(ent->jkmodEnt.itemFirstOrigin, ent->r.currentOrigin);
 	}
 
+>>>>>>> jediknightplus/master
 	ent->r.contents = CONTENTS_TRIGGER;
 	//ent->s.eFlags &= ~EF_NODRAW;
 	ent->s.eFlags &= ~(EF_NODRAW | EF_ITEMPLACEHOLDER);
@@ -1358,10 +1392,17 @@ void RespawnItem( gentity_t *ent ) {
 
 		// if the powerup respawn sound should Not be global
 		if (ent->speed) {
+<<<<<<< HEAD
+			te = G_TempEntity( ent->s.pos.trBase, EV_GENERAL_SOUND );
+		}
+		else {
+			te = G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_SOUND );
+=======
 			te = JKMod_G_TempEntity( ent->s.pos.trBase, EV_GENERAL_SOUND, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
 		}
 		else {
 			te = JKMod_G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_SOUND, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		}
 		te->s.eventParm = G_SoundIndex( "sound/items/respawn1" );
 		te->r.svFlags |= SVF_BROADCAST;
@@ -1425,6 +1466,8 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 		}
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [GameGeneral] Item pickup rules pre-check
 	if ( ent->s.modelindex < 1 || ent->s.modelindex >= bg_numItems || ent->item->giType == IT_BAD ) { 
 		G_Printf( "BG_CanItemBeGrabbed: index out of range (Pre-check)\n" );
@@ -1432,6 +1475,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	// the same pickup rules are used for client side and server side
 	if ( !BG_CanItemBeGrabbed( g_gametype.integer, &ent->s, &other->client->ps ) ) {
 		return;
@@ -1524,13 +1568,21 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 		if (!ent->speed) {
 			gentity_t	*te;
 
+<<<<<<< HEAD
+			te = G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_ITEM_PICKUP );
+=======
 			te = JKMod_G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_ITEM_PICKUP, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			te->s.eventParm = ent->s.modelindex;
 			te->r.svFlags |= SVF_BROADCAST;
 		} else {
 			gentity_t	*te;
 
+<<<<<<< HEAD
+			te = G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_ITEM_PICKUP );
+=======
 			te = JKMod_G_TempEntity( ent->s.pos.trBase, EV_GLOBAL_ITEM_PICKUP, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			te->s.eventParm = ent->s.modelindex;
 			// only send this temp entity to a single client
 			te->r.svFlags |= SVF_SINGLECLIENT;
@@ -1703,7 +1755,11 @@ gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
 	VectorScale( velocity, 150, velocity );
 	velocity[2] += 200 + crandom() * 50;
 	
+<<<<<<< HEAD
+	return LaunchItem( item, ent->s.pos.trBase, velocity );
+=======
 	return JKMod_LaunchItem( item, ent->s.pos.trBase, velocity, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 }
 
 
@@ -1902,6 +1958,8 @@ void FinishSpawningItem( gentity_t *ent ) {
 	}
 	*/
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Items] Reset original item position
 	if (!ent->jkmodEnt.itemSpawnedBefore)
 	{
@@ -1909,6 +1967,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 		VectorCopy(tr.endpos, ent->jkmodEnt.itemFirstOrigin);
 	}
 
+>>>>>>> jediknightplus/master
 	trap_LinkEntity (ent);
 }
 
@@ -2022,7 +2081,10 @@ be on an entity that hasn't spawned yet.
 */
 void G_SpawnItem (gentity_t *ent, gitem_t *item) {
 	int wDisable = 0;
+<<<<<<< HEAD
+=======
 	qboolean GTconfigLoaded = jkcvar_gameTypeConfig.integer && level.newSession ? level.jkmodLocals.cvarTempUnlock == 2 : qtrue; // Tr!Force: [GameTypeConfig] Check until loaded
+>>>>>>> jediknightplus/master
 
 	G_SpawnFloat( "random", "0", &ent->random );
 	G_SpawnFloat( "wait", "0", &ent->wait );
@@ -2030,11 +2092,15 @@ void G_SpawnItem (gentity_t *ent, gitem_t *item) {
 	// Register the item even if we're going to remove it, as unpatched clients
 	// don't update their item registration on map_restart and we might enable
 	// weapons after a map_restart.
+<<<<<<< HEAD
+	RegisterItem( item );
+=======
 	if (!itemRegistered[item - bg_itemlist]) // Tr!Force: [GameGeneral] Save item registered
 	{
 		RegisterItem(item);
 		if (level.numConnectedClients) SaveRegisteredItems();
 	}
+>>>>>>> jediknightplus/master
 
 	if (g_gametype.integer == GT_TOURNAMENT)
 	{
@@ -2056,6 +2122,11 @@ void G_SpawnItem (gentity_t *ent, gitem_t *item) {
 		}
 	}
 
+<<<<<<< HEAD
+	if ( G_ItemDisabled(item) )
+		return;
+
+=======
 	if ( G_ItemDisabled(item) && GTconfigLoaded ) // Tr!Force: [GameTypeConfig] Check until loaded
 		return;
 
@@ -2065,6 +2136,7 @@ void G_SpawnItem (gentity_t *ent, gitem_t *item) {
 		VectorCopy(ent->jkmodEnt.itemFirstOrigin, ent->s.origin);
 	}
 
+>>>>>>> jediknightplus/master
 	ent->item = item;
 	// some movers spawn on the second frame, so delay item
 	// spawns until the third frame so they can ride trains

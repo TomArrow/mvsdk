@@ -100,7 +100,11 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 			VectorCopy(rofftarget->s.pos.trBase, rofftarget->s.origin2);
 			VectorCopy(rofftarget->s.apos.trBase, rofftarget->s.angles2);
 
+<<<<<<< HEAD
+			te = G_TempEntity( rofftarget->s.pos.trBase, EV_PLAY_ROFF );
+=======
 			te = JKMod_G_TempEntity( rofftarget->s.pos.trBase, EV_PLAY_ROFF, rofftarget->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			te->s.eventParm = ent->roffid;
 			te->s.weapon = rofftarget->s.number;
 			te->s.trickedentindex = 0;
@@ -117,6 +121,8 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 	} else {
 		// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
+<<<<<<< HEAD
+=======
 
 		// Tr!Force: [Dimensions] Ugly workaround because dont know why some defrag maps has "wait" "-1" on start timers
 		if (ent->target && (jkcvar_altDimension.integer & DIMENSION_RACE))
@@ -136,6 +142,7 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 			}
 		}
 
+>>>>>>> jediknightplus/master
 		ent->touch = 0;
 		ent->nextthink = level.time + FRAMETIME;
 		ent->think = G_FreeEntity;
@@ -450,10 +457,14 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	int		dflags;
 
 	if ( !other->takedamage ) {
+<<<<<<< HEAD
+		return;
+=======
 		// Tr!Force: [Dimensions] Allow world hurt
 		if (other->client->ps.stats[JK_DIMENSION] != DIMENSION_RACE) {
 			return;
 		}
+>>>>>>> jediknightplus/master
 	}
 
 	if ( self->timestamp > level.time ) {
@@ -490,6 +501,17 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	if (self->damage == -1 && other && other->client)
 	{
+<<<<<<< HEAD
+		if (other->client->ps.otherKillerTime > level.time)
+		{ //we're as good as dead, so if someone pushed us into this then remember them
+			other->client->ps.otherKillerTime = level.time + 20000;
+			other->client->ps.otherKillerDebounceTime = level.time + 10000;
+		}
+		other->client->ps.fallingToDeath = level.time;
+
+		self->timestamp = 0; //do not ignore others
+		G_EntitySound(other, CHAN_VOICE, G_SoundIndex("*falling1.wav"));
+=======
 		// Tr!Force: [Dimensions] Don't die, respawn
 		if (other->client->ps.stats[JK_DIMENSION] == DIMENSION_RACE) 
 		{
@@ -508,6 +530,7 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 			self->timestamp = 0; //do not ignore others
 			G_EntitySound(other, CHAN_VOICE, G_SoundIndex("*falling1.wav"));
 		}
+>>>>>>> jediknightplus/master
 	}
 	else	
 	{

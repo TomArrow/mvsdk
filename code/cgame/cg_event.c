@@ -81,6 +81,17 @@ CG_Obituary
 =============
 */
 static void CG_Obituary( entityState_t *ent ) {
+<<<<<<< HEAD
+	int				target = ent->otherEntityNum;
+	int				attacker = ent->otherEntityNum2;
+	int				mod = ent->eventParm;
+	char			*message = NULL;
+	clientInfo_t	*targetInfo = NULL;
+	clientInfo_t	*attackerInfo = NULL;
+	char			targetName[MAX_QPATH+2] = {0};
+	char			attackerName[MAX_QPATH+2] = {0};
+	gender_t		gender;
+=======
 	int			mod;
 	int			target, attacker;
 	char		*message;
@@ -94,16 +105,32 @@ static void CG_Obituary( entityState_t *ent ) {
 	target = ent->otherEntityNum;
 	attacker = ent->otherEntityNum2;
 	mod = ent->eventParm;
+>>>>>>> jediknightplus/master
 
 	if ( target < 0 || target >= MAX_CLIENTS ) {
 		CG_Error( "CG_Obituary: target out of range" );
 	}
+<<<<<<< HEAD
+=======
 	ci = &cgs.clientinfo[target];
+>>>>>>> jediknightplus/master
 
 	if ( attacker < 0 || attacker >= MAX_CLIENTS ) {
 		attacker = ENTITYNUM_WORLD;
 		attackerInfo = NULL;
 	} else {
+<<<<<<< HEAD
+		attackerInfo = &cgs.clientinfo[attacker];
+	}
+
+	targetInfo = &cgs.clientinfo[target];
+	if ( !targetInfo || !targetInfo->infoValid ) {
+		return;
+	}
+	Com_sprintf(targetName, sizeof(targetName), "%s%s", targetInfo->name, S_COLOR_WHITE);
+
+	// check for single client messages
+=======
 		attackerInfo = CG_ConfigString( CS_PLAYERS + attacker );
 	}
 
@@ -116,6 +143,7 @@ static void CG_Obituary( entityState_t *ent ) {
 
 	// check for single client messages
 
+>>>>>>> jediknightplus/master
 	switch( mod ) {
 	case MOD_SUICIDE:
 	case MOD_FALLING:
@@ -134,7 +162,11 @@ static void CG_Obituary( entityState_t *ent ) {
 
 	// Attacker killed themselves.  Ridicule them for it.
 	if (attacker == target) {
+<<<<<<< HEAD
+		gender = targetInfo->gender;
+=======
 		gender = ci->gender;
+>>>>>>> jediknightplus/master
 		switch (mod) {
 		case MOD_BRYAR_PISTOL:
 		case MOD_BRYAR_PISTOL_ALT:
@@ -204,7 +236,11 @@ static void CG_Obituary( entityState_t *ent ) {
 	}
 
 	if (message) {
+<<<<<<< HEAD
+		gender = targetInfo->gender;
+=======
 		gender = ci->gender;
+>>>>>>> jediknightplus/master
 
 		if (!message[0])
 		{
@@ -225,7 +261,12 @@ clientkilled:
 
 	// check for kill messages from the current clientNum
 	if ( attacker == cg.snap->ps.clientNum ) {
+<<<<<<< HEAD
+		char	s[MAX_STRING_CHARS] = {0};
+		int		len = strlen(targetName);
+=======
 		char	*s;
+>>>>>>> jediknightplus/master
 
 		if ( cgs.gametype < GT_TEAM && cgs.gametype != GT_TOURNAMENT ) {
 			if (cgs.gametype == GT_JEDIMASTER &&
@@ -234,23 +275,78 @@ clientkilled:
 				!cg.snap->ps.isJediMaster &&
 				CG_ThereIsAMaster())
 			{
+<<<<<<< HEAD
+				char part1[512] = {0};
+				char part2[512] = {0};
+				trap_SP_GetStringTextString("INGAMETEXT_KILLED_MESSAGE", part1, sizeof(part1));
+				trap_SP_GetStringTextString("INGAMETEXT_JMKILLED_NOTJM", part2, sizeof(part2));
+				if (len >= MAX_NETNAME)
+					Com_sprintf(s, sizeof(s), "%s\n%s\n%s\n", part1, targetName, part2);
+				else
+					Com_sprintf(s, sizeof(s), "%s %s\n%s\n", part1, targetName, part2);
+=======
 				char part1[512];
 				char part2[512];
 				trap_SP_GetStringTextString("INGAMETEXT_KILLED_MESSAGE", part1, sizeof(part1));
 				trap_SP_GetStringTextString("INGAMETEXT_JMKILLED_NOTJM", part2, sizeof(part2));
 				s = va("%s %s\n%s\n", part1, targetName, part2);
+>>>>>>> jediknightplus/master
 			}
 			else if (cgs.gametype == GT_JEDIMASTER &&
 				attacker < MAX_CLIENTS &&
 				!ent->isJediMaster &&
 				!cg.snap->ps.isJediMaster)
 			{ //no JM, saber must be out
+<<<<<<< HEAD
+				char part1[512] = {0};
+=======
 				char part1[512];
+>>>>>>> jediknightplus/master
 				trap_SP_GetStringTextString("INGAMETEXT_KILLED_MESSAGE", part1, sizeof(part1));
 				/*
 				kmsg1 = "for 0 points.\nGo for the saber!";
 				strcpy(part2, kmsg1);
 
+<<<<<<< HEAD
+				Com_sprintf(s, sizeof(s), "%s %s %s\n", part1, targetName, part2);
+				*/
+				if (len >= MAX_NETNAME)
+					Com_sprintf(s, sizeof(s), "%s\n%s\n", part1, targetName);
+				else
+					Com_sprintf(s, sizeof(s), "%s %s\n", part1, targetName);
+			}
+			else
+			{
+				char sPlaceWith[256] = {0};
+				char sKilledStr[256] = {0};
+				trap_SP_GetStringTextString("INGAMETEXT_PLACE_WITH",     sPlaceWith, sizeof(sPlaceWith));
+				trap_SP_GetStringTextString("INGAMETEXT_KILLED_MESSAGE", sKilledStr, sizeof(sKilledStr));
+
+				if (len >= MAX_NETNAME) {
+					Com_sprintf(s, sizeof(s), "%s\n%s.\n%s %s %i.", sKilledStr, targetName, 
+						CG_PlaceString( cg.snap->ps.persistant[PERS_RANK] + 1 ), 
+						sPlaceWith,
+						cg.snap->ps.persistant[PERS_SCORE] );
+				}
+				else {
+					Com_sprintf(s, sizeof(s), "%s %s.\n%s %s %i.", sKilledStr, targetName, 
+						CG_PlaceString( cg.snap->ps.persistant[PERS_RANK] + 1 ), 
+						sPlaceWith,
+						cg.snap->ps.persistant[PERS_SCORE] );
+				}
+			}
+		} else {
+			char sKilledStr[256] = {0};
+
+			trap_SP_GetStringTextString("INGAMETEXT_KILLED_MESSAGE", sKilledStr, sizeof(sKilledStr));
+			if (len >= MAX_NETNAME)
+				Com_sprintf(s, sizeof(s), "%s\n%s", sKilledStr, targetName);
+			else
+				Com_sprintf(s, sizeof(s), "%s %s", sKilledStr, targetName);
+		}
+		if (!(cg_singlePlayerActive.integer && cg_cameraOrbit.integer)) {
+			CG_CenterPrintMultiKill( s, cgs.screenHeight * 0.30, BIGCHAR_WIDTH );
+=======
 				s = va("%s %s %s\n", part1, targetName, part2);
 				*/
 				s = va("%s %s\n", part1, targetName);
@@ -274,17 +370,26 @@ clientkilled:
 		}
 		if (!(cg_singlePlayerActive.integer && cg_cameraOrbit.integer)) {
 			CG_CenterPrint( s, cgs.screenHeight * 0.30, BIGCHAR_WIDTH );
+>>>>>>> jediknightplus/master
 		} 
 		// print the text message as well
 	}
 
 	// check for double client messages
+<<<<<<< HEAD
+	if ( !attackerInfo || !attackerInfo->infoValid ) {
+		attacker = ENTITYNUM_WORLD;
+		Q_strncpyz( attackerName, "noname", sizeof(attackerName) );
+	} else {
+		Com_sprintf(attackerName, sizeof(attackerName), "%s%s", attackerInfo->name, S_COLOR_WHITE);
+=======
 	if ( !attackerInfo ) {
 		attacker = ENTITYNUM_WORLD;
 		strcpy( attackerName, "noname" );
 	} else {
 		Q_strncpyz( attackerName, Info_ValueForKey( attackerInfo, "n" ), sizeof(attackerName) - 2);
 		strcat( attackerName, S_COLOR_WHITE );
+>>>>>>> jediknightplus/master
 		// check for kill messages about the current clientNum
 		if ( target == cg.snap->ps.clientNum ) {
 			Q_strncpyz( cg.killerName, attackerName, sizeof( cg.killerName ) );
@@ -571,7 +676,11 @@ static void CG_ItemPickup( int itemNum ) {
 
 	//rww - print pickup messages
 	if (bg_itemlist[itemNum].classname && bg_itemlist[itemNum].classname[0] &&
+<<<<<<< HEAD
+		(bg_itemlist[itemNum].giType != IT_TEAM || (bg_itemlist[itemNum].giTag != PW_REDFLAG && bg_itemlist[itemNum].giTag != PW_BLUEFLAG && bg_itemlist[itemNum].giTag != PW_NEUTRALFLAG)) )
+=======
 		(bg_itemlist[itemNum].giType != IT_TEAM || (bg_itemlist[itemNum].giTag != PW_REDFLAG && bg_itemlist[itemNum].giTag != PW_BLUEFLAG)) )
+>>>>>>> jediknightplus/master
 	{ //don't print messages for flags, they have their own pickup event broadcasts
 		char	text[1024];
 
@@ -879,6 +988,28 @@ void CG_GetCTFMessageEvent(entityState_t *es)
 		teamName = CG_TeamName(teamIndex);
 	}
 
+<<<<<<< HEAD
+	if (teamIndex == TEAM_RED) {
+		if (es->eventParm == CTFMESSAGE_PLAYER_GOT_FLAG) {
+			cgs.redFlagCarrier = ci;
+			cgs.redFlagTime = cg.time;
+		}
+	}
+	else if (teamIndex == TEAM_FREE) {
+		if (es->eventParm == CTFMESSAGE_PLAYER_GOT_FLAG) {
+			cgs.yellowFlagCarrier = ci;
+			cgs.yellowFlagTime = cg.time;
+		}
+	}
+	else { //if (teamIndex == TEAM_BLUE) {
+		if (es->eventParm == CTFMESSAGE_PLAYER_GOT_FLAG) {
+			cgs.blueFlagCarrier = ci;
+			cgs.blueFlagTime = cg.time;
+		}
+	}
+
+=======
+>>>>>>> jediknightplus/master
 	CG_PrintCTFMessage(ci, teamName, es->eventParm);
 }
 
@@ -1150,6 +1281,8 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 		else
 		{ //ending the duel
 			CG_StartMusic(qtrue);
+<<<<<<< HEAD
+=======
 
 			// Tr!Force: [DuelEnd] Main check
 			if (cg.predictedPlayerState.stats[STAT_HEALTH] > 0) {
@@ -1157,12 +1290,34 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 			} else {
 				JKMod_CG_DuelEnd(qfalse);
 			}
+>>>>>>> jediknightplus/master
 		}
 		break;
 
 	case EV_JUMP:
 		DEBUGNAME("EV_JUMP");
+<<<<<<< HEAD
+		if (cg.predictedPlayerState.duelInProgress && (cg.predictedPlayerState.clientNum != es->clientNum && cg.predictedPlayerState.duelIndex != es->clientNum))
+			break;
+
+		if (cg.time - cent->pe.painTime < 500) //don't play jump sound immediately after pain sound?
+			break;
+
+		if (cg_jumpSounds.integer == 1)//JAPRO - Clientside - Add jumpsounds 2 option
+		{
+			trap_S_StartSound( NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*jump1.wav" ) );
+		}
+		else if (cg_jumpSounds.integer == 2 && cg.snap->ps.clientNum != es->number)
+		{
+			trap_S_StartSound( NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*jump1.wav" ) );
+		}
+		else if (cg_jumpSounds.integer > 2 && cg.snap->ps.clientNum == es->number)
+		{
+			trap_S_StartSound( NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*jump1.wav" ) );
+		}
+=======
 		trap_S_StartSound (NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*jump1.wav" ) );
+>>>>>>> jediknightplus/master
 		break;
 	case EV_ROLL:
 		DEBUGNAME("EV_ROLL");
@@ -1175,7 +1330,20 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 			DoFall(cent, es, clientNum);
 		}
 
+<<<<<<< HEAD
+		if (cg.predictedPlayerState.duelInProgress && (cg.predictedPlayerState.clientNum != es->clientNum && cg.predictedPlayerState.duelIndex != es->clientNum))
+			break;
+
+		if (cg_rollSounds.integer == 1)//JAPRO - Clientside - Add rollsounds options
+				trap_S_StartSound( NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*roll1.wav" ) );
+		else if (cg_rollSounds.integer == 2 && cg.snap->ps.clientNum != es->number)
+			trap_S_StartSound( NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*roll1.wav" ) );
+		else if (cg_rollSounds.integer > 2 && cg.snap->ps.clientNum == es->number)
+			trap_S_StartSound( NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*roll1.wav" ) );
+
+=======
 		trap_S_StartSound (NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*jump1.wav" ) );
+>>>>>>> jediknightplus/master
 		trap_S_StartSound( NULL, es->number, CHAN_BODY, cgs.media.rollSound  );
 
 		//FIXME: need some sort of body impact on ground sound and maybe kick up some dust?
@@ -1448,6 +1616,50 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 	case EV_SABER_HIT:
 		DEBUGNAME("EV_SABER_HIT");
+<<<<<<< HEAD
+		{
+			int hitSoundNum = 0;
+			qhandle_t hitSound;
+
+			if (cg_newSaberHitSounds.integer == 1)
+				hitSoundNum = Q_irand(1, 3);
+			else if (cg_newSaberHitSounds.integer > 1) 
+				hitSoundNum = Q_irand(0, 3);
+
+			hitSound = hitSoundNum ? trap_S_RegisterSound(va("sound/weapons/saber/saberhit%i.wav", hitSoundNum)) : trap_S_RegisterSound("sound/weapons/saber/saberhit.wav");
+			if (cgs.isCaMod && cg.snap->ps.duelInProgress && es->otherEntityNum != cg.snap->ps.clientNum && es->otherEntityNum != cg.snap->ps.duelIndex)
+				break;
+
+			if (es->eventParm == 16)
+			{ //Make lots of sparks, something special happened
+				vec3_t fxDir;
+			VectorCopy(es->angles, fxDir);
+			if (!fxDir[0] && !fxDir[1] && !fxDir[2])
+				{
+					fxDir[1] = 1;
+				}
+				trap_S_StartSound(es->origin, es->number, CHAN_AUTO, hitSound);
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/blood_sparks.efx"), es->origin, fxDir);
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/blood_sparks.efx"), es->origin, fxDir);
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/blood_sparks.efx"), es->origin, fxDir);
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/blood_sparks.efx"), es->origin, fxDir);
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/blood_sparks.efx"), es->origin, fxDir);
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/blood_sparks.efx"), es->origin, fxDir);
+			}
+			else if (es->eventParm)
+			{ //hit a person
+			vec3_t fxDir;
+			VectorCopy(es->angles, fxDir);
+			if (!fxDir[0] && !fxDir[1] && !fxDir[2])
+				{
+					fxDir[1] = 1;
+				}
+				trap_S_StartSound(es->origin, es->number, CHAN_AUTO, hitSound);
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/blood_sparks.efx"), es->origin, fxDir);
+			}
+			else
+			{ //hit something else
+=======
 		if (es->eventParm == 16)
 		{ //Make lots of sparks, something special happened
 			vec3_t fxDir;
@@ -1477,20 +1689,39 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 		}
 		else
 		{ //hit something else
+>>>>>>> jediknightplus/master
 			vec3_t fxDir;
 			VectorCopy(es->angles, fxDir);
 			if (!fxDir[0] && !fxDir[1] && !fxDir[2])
 			{
+<<<<<<< HEAD
+					fxDir[1] = 1;
+				}
+				trap_S_StartSound(es->origin, es->number, CHAN_AUTO, trap_S_RegisterSound("sound/weapons/saber/saberhit.wav"));
+				trap_FX_PlayEffectID(trap_FX_RegisterEffect("saber/spark.efx"), es->origin, fxDir);
+			}
+=======
 				fxDir[1] = 1;
 			}			
 			trap_S_StartSound(es->origin, es->number, CHAN_AUTO, trap_S_RegisterSound("sound/weapons/saber/saberhit.wav"));
 			trap_FX_PlayEffectID( trap_FX_RegisterEffect("saber/spark.efx"), es->origin, fxDir );
+>>>>>>> jediknightplus/master
 		}
 		break;
 
 	case EV_SABER_BLOCK:
 		DEBUGNAME("EV_SABER_BLOCK");
 
+<<<<<<< HEAD
+		if (cgs.isCaMod && jk2version == VERSION_1_04
+			&& cg.predictedPlayerState.duelInProgress
+			&& es->otherEntityNum != cg.predictedPlayerState.clientNum
+			&& es->otherEntityNum != cg.predictedPlayerState.duelIndex
+			&& cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR)
+			break;
+
+=======
+>>>>>>> jediknightplus/master
 		if (es->eventParm)
 		{ //saber block
 			vec3_t fxDir;
@@ -1523,7 +1754,11 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 		break;
 
 	case EV_BECOME_JEDIMASTER:
+<<<<<<< HEAD
+		DEBUGNAME("EV_BECOME_JEDIMASTER");
+=======
 		DEBUGNAME("EV_SABER_UNHOLSTER");
+>>>>>>> jediknightplus/master
 		{
 			trace_t tr;
 			vec3_t playerMins = {-15, -15, DEFAULT_MINS_2+8};
@@ -1861,12 +2096,20 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 	case EV_ITEM_POP:
 		DEBUGNAME("EV_ITEM_POP");
+<<<<<<< HEAD
+		trap_S_StartSound( NULL, es->number, CHAN_AUTO, cgs.media.respawnSound );
+=======
 		trap_S_StartSound (NULL, es->number, CHAN_AUTO, cgs.media.respawnSound );
+>>>>>>> jediknightplus/master
 		break;
 	case EV_ITEM_RESPAWN:
 		DEBUGNAME("EV_ITEM_RESPAWN");
 		cent->miscTime = cg.time;	// scale up from this
+<<<<<<< HEAD
+		trap_S_StartSound( NULL, es->number, CHAN_AUTO, cgs.media.respawnSound );
+=======
 		trap_S_StartSound (NULL, es->number, CHAN_AUTO, cgs.media.respawnSound );
+>>>>>>> jediknightplus/master
 		break;
 
 	case EV_GRENADE_BOUNCE:
@@ -2059,8 +2302,11 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 		{
 			vec3_t fxDir;
 
+<<<<<<< HEAD
+=======
 			if (es->generic1 == GENERIC_SERVERSIDE) break; // Tr!Force: [JKMod] Don't render serverside only
 
+>>>>>>> jediknightplus/master
 			AngleVectors(es->angles, fxDir, 0, 0);
 			
 			if (!fxDir[0] && !fxDir[1] && !fxDir[2])

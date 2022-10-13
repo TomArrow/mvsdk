@@ -126,8 +126,16 @@ char *HolocronIcons[] = {
 	"gfx/mp/f_icon_saber_throw"		//FP_SABERTHROW
 };
 
+<<<<<<< HEAD
+int forceMyModelModificationCount = -1;
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
+int crosshairColorModificationCount = -1;//japro
+int strafeHelperActiveColorModificationCount = -1;//japro
+=======
+int forceModelModificationCount = -1;
+int widescreenModificationCount = -1;
+>>>>>>> jediknightplus/master
 
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum );
 void CG_Shutdown( void );
@@ -446,6 +454,10 @@ vmCvar_t	cg_bobroll;
 vmCvar_t	cg_shadows;
 vmCvar_t	cg_drawTimer;
 vmCvar_t	cg_drawFPS;
+<<<<<<< HEAD
+vmCvar_t	cg_drawFPSLowest;
+=======
+>>>>>>> jediknightplus/master
 vmCvar_t	cg_drawSnapshot;
 vmCvar_t	cg_draw3dIcons;
 vmCvar_t	cg_drawIcons;
@@ -512,8 +524,106 @@ vmCvar_t	cg_animBlend;
 
 vmCvar_t	cg_dismember;
 
+<<<<<<< HEAD
+//jk2pro Client Cvars - start
+vmCvar_t	cjp_client;
+
+vmCvar_t	cg_raceTimer;
+vmCvar_t	cg_raceTimerSize;
+vmCvar_t	cg_raceTimerX;
+vmCvar_t	cg_raceTimerY;
+vmCvar_t	cg_speedometer;
+vmCvar_t	cg_speedometerX;
+vmCvar_t	cg_speedometerY;
+vmCvar_t	cg_speedometerSize;
+vmCvar_t	cg_showpos;
+
+vmCvar_t	cg_strafeHelperCutoff;
+vmCvar_t	cg_strafeHelper;
+vmCvar_t	cg_strafeHelperPrecision;
+vmCvar_t	cg_strafeHelperLineWidth;
+vmCvar_t	cg_strafeHelperActiveColor;
+vmCvar_t	cg_strafeHelperInactiveAlpha;
+
+vmCvar_t	cg_strafeHelperOffset;
+vmCvar_t	cg_strafeHelper_FPS;
+
+vmCvar_t	cg_crosshairSizeScale;
+vmCvar_t	cg_crosshairSaberStyleColor;
+vmCvar_t	cg_crosshairColor;
+vmCvar_t	cg_crosshairIdentifyTarget;
+
+vmCvar_t	cg_enhancedFlagStatus;
+vmCvar_t	cg_drawTimerMsec;
+vmCvar_t	cg_movementKeys;
+vmCvar_t	cg_movementKeysX;
+vmCvar_t	cg_movementKeysY;
+vmCvar_t	cg_movementKeysSize;
+
+//only for you, arto
+vmCvar_t	cg_hudColors;
+vmCvar_t	cg_drawScore;
+vmCvar_t	cg_drawScoreDefrag;
+vmCvar_t	cg_centerHeight;
+vmCvar_t	cg_centerSize;
+
+//chatbox
+vmCvar_t	cg_chatBox;
+vmCvar_t	cg_chatBoxFontSize;
+vmCvar_t	cg_chatBoxHeight;
+//japro chatbox stuff
+vmCvar_t	cg_chatBoxShowHistory;
+vmCvar_t	cg_chatBoxX;
+vmCvar_t	cg_chatBoxCutOffLength;
+vmCvar_t	cg_chatSounds;
+vmCvar_t	cg_cleanChatbox;
+vmCvar_t	cg_newFont;
+
+vmCvar_t	cg_remaps;
+vmCvar_t	cg_autoKillWhenFalling;
+
+vmCvar_t	cg_jumpSounds;
+vmCvar_t	cg_rollSounds;
+vmCvar_t	cg_hitSounds;
+vmCvar_t	cg_newSaberHitSounds;
+vmCvar_t	cg_thirdPersonFlagAlpha;
+vmCvar_t	cg_drawNonDuelers;
+vmCvar_t	cg_brightskins;
+vmCvar_t	cg_drawHitBox;
+vmCvar_t	cg_playerLOD;
+vmCvar_t	cg_privateDuelShell;
+vmCvar_t	cg_teamRespawnShield;
+vmCvar_t	cg_saberTeamColors;
+
 vmCvar_t	cg_widescreen;
 vmCvar_t	cg_fovAspectAdjust;
+vmCvar_t	cg_cameraFPS;
+
+vmCvar_t	cg_fovViewmodel;
+vmCvar_t	cg_fovViewmodelAdjust;
+
+vmCvar_t	cg_fkDuration;
+vmCvar_t	cg_fkFirstJumpDuration;
+vmCvar_t	cg_fkSecondJumpDelay;
+
+vmCvar_t	cl_commandsize;//Loda - FPS UNLOCK client modcode
+
+vmCvar_t	cg_fixlean; //idk man
+vmCvar_t	cg_SPRunAnim;
+
+vmCvar_t	cg_drawInventory;
+vmCvar_t	cg_smallScoreboard;
+vmCvar_t	cg_colorScoreboard;
+vmCvar_t	cg_drawScoreboardIcons;
+vmCvar_t	cg_drawPowerUpIcons;
+vmCvar_t	cg_drawDemoName;
+vmCvar_t	cg_lowhpsound;
+vmCvar_t	cg_backSwingCameraRange;
+//jk2 pro stuff end
+=======
+vmCvar_t	cg_widescreen;
+vmCvar_t	cg_fovAspectAdjust;
+>>>>>>> jediknightplus/master
 
 vmCvar_t	cg_thirdPerson;
 vmCvar_t	cg_thirdPersonRange;
@@ -535,6 +645,10 @@ vmCvar_t 	cg_teamChatHeight;
 vmCvar_t 	cg_stats;
 vmCvar_t 	cg_buildScript;
 vmCvar_t 	cg_forceModel;
+<<<<<<< HEAD
+vmCvar_t 	cg_forceMyModel;
+=======
+>>>>>>> jediknightplus/master
 vmCvar_t	cg_paused;
 vmCvar_t	cg_blood;
 vmCvar_t	cg_predictItems;
@@ -550,6 +664,10 @@ vmCvar_t 	cg_scorePlum;
 vmCvar_t 	cg_smoothClients;
 vmCvar_t	cg_pmove_fixed;
 vmCvar_t	cg_pmove_msec;
+<<<<<<< HEAD
+vmCvar_t	cg_pmove_float;
+=======
+>>>>>>> jediknightplus/master
 vmCvar_t	cg_cameraMode;
 vmCvar_t	cg_cameraOrbit;
 vmCvar_t	cg_cameraOrbitDelay;
@@ -598,8 +716,13 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_ignore, "cg_ignore", "0", 0 },	// used for debugging
 	{ &cg_autoswitch, "cg_autoswitch", "1", CVAR_ARCHIVE },
 	{ &cg_drawGun, "cg_drawGun", "1", CVAR_ARCHIVE },
+<<<<<<< HEAD
+	{ &cg_zoomFov, "cg_zoomfov", "30.0", CVAR_ARCHIVE },
+	{ &cg_fov, "cg_fov", "90", CVAR_ARCHIVE },
+=======
 	{ &cg_zoomFov, "cg_zoomfov", "40.0", CVAR_ARCHIVE },
 	{ &cg_fov, "cg_fov", "80", CVAR_ARCHIVE },
+>>>>>>> jediknightplus/master
 	{ &cg_viewsize, "cg_viewsize", "100", CVAR_ARCHIVE },
 	{ &cg_stereoSeparation, "cg_stereoSeparation", "0.4", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE  },
@@ -607,8 +730,14 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE  },
 	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE  },
+<<<<<<< HEAD
+	{ &cg_drawFPSLowest, "cg_drawFPSLowest", "1", CVAR_ARCHIVE  },
+	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE  },
+	{ &cg_draw3dIcons, "cg_draw3dIcons", "0", CVAR_ARCHIVE  },
+=======
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE  },
 	{ &cg_draw3dIcons, "cg_draw3dIcons", "1", CVAR_ARCHIVE  },
+>>>>>>> jediknightplus/master
 	{ &cg_drawIcons, "cg_drawIcons", "1", CVAR_ARCHIVE  },
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "0", CVAR_ARCHIVE  },
 	{ &cg_drawEnemyInfo, "cg_drawEnemyInfo", "1", CVAR_ARCHIVE  },
@@ -628,11 +757,19 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_gun_y, "cg_gunY", "0", CVAR_ARCHIVE },
 	{ &cg_gun_z, "cg_gunZ", "0", CVAR_ARCHIVE },
 	{ &cg_centertime, "cg_centertime", "3", CVAR_CHEAT },
+<<<<<<< HEAD
+	{ &cg_runpitch, "cg_runpitch", "0", CVAR_ARCHIVE},
+	{ &cg_runroll, "cg_runroll", "0", CVAR_ARCHIVE },
+	{ &cg_bobup , "cg_bobup", "0", CVAR_ARCHIVE },
+	{ &cg_bobpitch, "cg_bobpitch", "0", CVAR_ARCHIVE },
+	{ &cg_bobroll, "cg_bobroll", "0", CVAR_ARCHIVE },
+=======
 	{ &cg_runpitch, "cg_runpitch", "0.002", CVAR_ARCHIVE},
 	{ &cg_runroll, "cg_runroll", "0.005", CVAR_ARCHIVE },
 	{ &cg_bobup , "cg_bobup", "0.005", CVAR_ARCHIVE },
 	{ &cg_bobpitch, "cg_bobpitch", "0.002", CVAR_ARCHIVE },
 	{ &cg_bobroll, "cg_bobroll", "0.002", CVAR_ARCHIVE },
+>>>>>>> jediknightplus/master
 	//{ &cg_swingSpeed, "cg_swingSpeed", "0.3", CVAR_CHEAT },
 	{ &cg_animSpeed, "cg_animspeed", "1", CVAR_CHEAT },
 	{ &cg_debugAnim, "cg_debuganim", "0", CVAR_CHEAT },
@@ -673,6 +810,111 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_dismember, "cg_dismember", "0", CVAR_ARCHIVE },
 
+<<<<<<< HEAD
+	//jk2pro Client Cvars start
+	{ &cjp_client, "cjp_client", "1.4JAPRO", CVAR_USERINFO|CVAR_ROM },
+	{ &cg_raceTimer, "cg_raceTimer", "3", 0 },
+	{ &cg_raceTimerSize, "cg_raceTimerSize", "0.75", 0 },
+	{ &cg_raceTimerX, "cg_raceTimerX", "5", 0 },
+	{ &cg_raceTimerY, "cg_raceTimerY", "280", 0 },
+	{ &cg_speedometer, "cg_speedometer", "0", CVAR_ARCHIVE },
+	{ &cg_speedometerX, "cg_speedometerX", "98", CVAR_ARCHIVE },
+	{ &cg_speedometerY, "cg_speedometerY", "460", CVAR_ARCHIVE },
+	{ &cg_speedometerSize, "cg_speedometerSize", "0.75", CVAR_ARCHIVE },
+	{ &cg_showpos, "cg_showpos", "0", 0 },
+
+
+	{ &cg_strafeHelperCutoff, "cg_strafeHelperCutoff", "240", CVAR_ARCHIVE },
+	{ &cg_strafeHelper, "cg_strafeHelper", "992", CVAR_ARCHIVE },
+	{ &cg_strafeHelperPrecision, "cg_strafeHelperPrecision", "256", 0 },
+	{ &cg_strafeHelperLineWidth, "cg_strafeHelperLineWidth", "1", CVAR_ARCHIVE },
+	{ &cg_strafeHelperActiveColor, "cg_strafeHelperActiveColor", "0 255 0 200", CVAR_ARCHIVE },
+	{ &cg_strafeHelperInactiveAlpha, "cg_strafeHelperInactiveAlpha", "200", CVAR_ARCHIVE },
+
+	{ &cg_strafeHelperOffset, "cg_strafeHelperOffset", "75", CVAR_ARCHIVE },
+	{ &cg_strafeHelper_FPS, "cg_strafeHelper_FPS", "0", 0 },
+
+	{ &cg_crosshairSizeScale, "cg_crosshairSizeScale", "1", CVAR_ARCHIVE },
+	{ &cg_crosshairSaberStyleColor, "cg_crosshairSaberStyleColor", "0", CVAR_ARCHIVE },
+	{ &cg_crosshairColor, "cg_crosshairColor", "0 0 0 255", CVAR_ARCHIVE },
+	{ &cg_crosshairIdentifyTarget, "cg_crosshairIdentifyTarget", "1", CVAR_ARCHIVE },
+
+	{ &cg_enhancedFlagStatus, "cg_enhancedFlagStatus", "2", CVAR_ARCHIVE },
+	{ &cg_drawTimerMsec, "cg_drawTimerMsec", "1", CVAR_ARCHIVE },
+	{ &cg_movementKeys, "cg_movementKeys", "0", CVAR_ARCHIVE },
+	{ &cg_movementKeysX, "cg_movementKeysX", "148", CVAR_ARCHIVE },
+	{ &cg_movementKeysY, "cg_movementKeysY", "428", CVAR_ARCHIVE },
+	{ &cg_movementKeysSize, "cg_movementKeysSize", "1.0", CVAR_ARCHIVE },
+
+	//only for you, arto
+	{ &cg_hudColors, "cg_hudColors", "1", CVAR_ARCHIVE },
+	{ &cg_drawScore, "cg_drawScore", "2", CVAR_ARCHIVE },
+	{ &cg_drawScoreDefrag, "cg_drawScoreDefrag", "0", CVAR_ARCHIVE }, // Interpret score as seconds into a run
+	{ &cg_centerHeight, "cg_centerHeight", "0", CVAR_ARCHIVE },
+	{ &cg_centerSize, "cg_centerSize", "1.0", CVAR_ARCHIVE },
+
+	//chatbox
+	{ &cg_chatBox, "cg_chatBox", "10000", CVAR_ARCHIVE },
+	{ &cg_chatBoxFontSize, "cg_chatBoxFontSize", "1.0", CVAR_ARCHIVE },
+	{ &cg_chatBoxHeight, "cg_chatBoxHeight", "360", CVAR_ARCHIVE },
+	//japro chatbox stuff
+	{ &cg_chatBoxShowHistory, "cg_chatBoxShowHistory", "1", CVAR_ARCHIVE },
+	{ &cg_chatBoxX, "cg_chatBoxX", "16", CVAR_ARCHIVE },
+	{ &cg_chatBoxCutOffLength, "cg_chatBoxCutOffLength", "375", CVAR_ARCHIVE },
+	{ &cg_chatSounds, "cg_chatSounds", "1", CVAR_ARCHIVE },
+	{ &cg_cleanChatbox, "cg_cleanChatbox", "0", 0 },
+	{ &cg_newFont, "cg_newFont", "0", CVAR_ARCHIVE },
+
+	{ &cg_remaps, "cg_remaps", "1",	CVAR_LATCH|CVAR_TEMP },
+	{ &cg_autoKillWhenFalling, "cg_autoKillWhenFalling", "0", CVAR_ARCHIVE },
+
+	{ &cg_jumpSounds, "cg_jumpSounds", "1", CVAR_ARCHIVE },
+	{ &cg_rollSounds, "cg_rollSounds", "1", CVAR_ARCHIVE },
+	{ &cg_hitSounds, "cg_hitSounds", "0", CVAR_ARCHIVE },
+	{ &cg_newSaberHitSounds, "cg_newSaberHitSounds", "0", CVAR_ARCHIVE },
+	{ &cg_thirdPersonFlagAlpha, "cg_thirdPersonFlagAlpha", "1.0", CVAR_ARCHIVE },
+	{ &cg_drawNonDuelers, "cg_drawNonDuelers", "0", 0 },
+	{ &cg_brightskins, "cg_brightskins", "0", CVAR_ARCHIVE },
+	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_TEMP },
+	{ &cg_playerLOD, "cg_playerLOD", "0", CVAR_ARCHIVE },
+	{ &cg_privateDuelShell,	"cg_privateDuelShell", "1", CVAR_ARCHIVE },
+	{ &cg_teamRespawnShield, "cg_teamRespawnShield", "1", CVAR_ARCHIVE },
+	{ &cg_saberTeamColors, "cg_saberTeamColors", "1", 0 },
+
+	{ &cg_widescreen, "cg_widescreen", "1", CVAR_ARCHIVE },
+	{ &cg_fovAspectAdjust, "cg_fovAspectAdjust", "1", CVAR_ARCHIVE },
+	{ &cg_cameraFPS, "cg_cameraFPS", "125", CVAR_ARCHIVE },
+
+	{ &cg_fovViewmodel, "cg_fovViewmodel", "80", CVAR_ARCHIVE },
+	{ &cg_fovViewmodelAdjust, "cg_fovViewmodelAdjust", "1", CVAR_ARCHIVE },
+
+	{ &cg_fkDuration, "cg_fkDuration", "50", 0 },
+	{ &cg_fkFirstJumpDuration, "cg_fkFirstJumpDuration", "0", 0 },
+	{ &cg_fkSecondJumpDelay, "cg_fkSecondJumpDelay", "0", 0 },
+
+	{ &cl_commandsize, "cl_commandsize", "64", CVAR_ARCHIVE },//Loda - FPS UNLOCK client modcode
+
+	{ &cg_fixlean, "cg_fixlean", "0", CVAR_LATCH }, //idk man
+	{ &cg_SPRunAnim, "cg_SPRunAnim", "0", 0 },
+
+	{ &cg_drawInventory, "cg_drawInventory", "1", CVAR_ARCHIVE },
+	{ &cg_smallScoreboard, "cg_smallScoreboard", "0", CVAR_ARCHIVE },
+	{ &cg_colorScoreboard, "cg_colorScoreboard", "0", CVAR_ARCHIVE },
+	{ &cg_drawScoreboardIcons, "cg_drawScoreboardIcons", "0", CVAR_ARCHIVE },
+	{ &cg_drawPowerUpIcons, "cg_drawPowerUpIcons", "1", CVAR_ARCHIVE },
+	{ &cg_drawDemoName, "cg_drawDemoName", "1", 0 },
+	{ &cg_lowhpsound,	"cg_lowhpsound", "35", CVAR_ARCHIVE },
+	{ &cg_backSwingCameraRange, "cg_backSwingCameraRange", "0", CVAR_ARCHIVE },
+	//jk2pro stuff end
+
+	{ &cg_thirdPerson, "cg_thirdPerson", "0", CVAR_ARCHIVE },
+	{ &cg_thirdPersonRange, "cg_thirdPersonRange", "80", CVAR_ARCHIVE },
+	{ &cg_thirdPersonAngle, "cg_thirdPersonAngle", "0", CVAR_CHEAT },
+	{ &cg_thirdPersonPitchOffset, "cg_thirdPersonPitchOffset", "0", CVAR_CHEAT },
+	{ &cg_thirdPersonVertOffset, "cg_thirdPersonVertOffset", "16", CVAR_ARCHIVE },
+	{ &cg_thirdPersonCameraDamp, "cg_thirdPersonCameraDamp", "0.3", CVAR_ARCHIVE },
+	{ &cg_thirdPersonTargetDamp, "cg_thirdPersonTargetDamp", "0.5", CVAR_ARCHIVE },
+=======
 	{ &cg_widescreen, "cg_widescreen", "1", CVAR_ARCHIVE },
 	{ &cg_fovAspectAdjust, "cg_fovAspectAdjust", "0", CVAR_ARCHIVE },
 
@@ -683,6 +925,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_thirdPersonVertOffset, "cg_thirdPersonVertOffset", "16", CVAR_CHEAT },
 	{ &cg_thirdPersonCameraDamp, "cg_thirdPersonCameraDamp", "0.3", 0 },
 	{ &cg_thirdPersonTargetDamp, "cg_thirdPersonTargetDamp", "0.5", CVAR_CHEAT },
+>>>>>>> jediknightplus/master
 	
 	{ &cg_thirdPersonHorzOffset, "cg_thirdPersonHorzOffset", "0", CVAR_CHEAT },
 	{ &cg_thirdPersonAlpha,	"cg_thirdPersonAlpha",	"1.0", CVAR_CHEAT },
@@ -690,6 +933,10 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_teamChatTime, "cg_teamChatTime", "3000", CVAR_ARCHIVE  },
 	{ &cg_teamChatHeight, "cg_teamChatHeight", "0", CVAR_ARCHIVE  },
 	{ &cg_forceModel, "cg_forceModel", "0", CVAR_ARCHIVE  },
+<<<<<<< HEAD
+	{ &cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE  },
+=======
+>>>>>>> jediknightplus/master
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
@@ -727,8 +974,14 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
+<<<<<<< HEAD
+	{ &cg_pmove_fixed, "pmove_fixed", "0", CVAR_SERVERINFO },
+	{ &cg_pmove_msec, "pmove_msec", "8", CVAR_SERVERINFO },
+	{ &cg_pmove_float, "pmove_float", "0", CVAR_SERVERINFO },
+=======
 	{ &cg_pmove_fixed, "pmove_fixed", "0", 0},
 	{ &cg_pmove_msec, "pmove_msec", "8", 0},
+>>>>>>> jediknightplus/master
 	{ &cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE},
 	{ &cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE},
 	{ &cg_smallFont, "ui_smallFont", "0.25", CVAR_ARCHIVE},
@@ -759,7 +1012,11 @@ static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
 CG_RegisterCvars
 =================
 */
+<<<<<<< HEAD
+void CG_RegisterCvars( void ) {
+=======
 void BaseJK2_CG_RegisterCvars( void ) { // Tr!Force: [BaseJK2] Register client cvars function
+>>>>>>> jediknightplus/master
 	int			i;
 	cvarTable_t	*cv;
 	char		var[MAX_TOKEN_CHARS];
@@ -774,6 +1031,10 @@ void BaseJK2_CG_RegisterCvars( void ) { // Tr!Force: [BaseJK2] Register client c
 	cgs.localServer = atoi( var );
 
 	forceModelModificationCount = cg_forceModel.modificationCount;
+<<<<<<< HEAD
+	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
+=======
+>>>>>>> jediknightplus/master
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -852,23 +1113,96 @@ static void CG_UpdateWidescreen(void) {
 
 	cgs.screenXFactor = (float)SCREEN_WIDTH / cgs.screenWidth;
 	cgs.screenXFactorInv = cgs.screenWidth / (float)SCREEN_WIDTH;
+<<<<<<< HEAD
+	
+=======
 
+>>>>>>> jediknightplus/master
 	cgs.screenYFactor = (float)SCREEN_HEIGHT / cgs.screenHeight;
 	cgs.screenYFactorInv = cgs.screenHeight / (float)SCREEN_HEIGHT;
 
 	cgDC.screenWidth = cgs.screenWidth;
 	cgDC.screenHeight = cgs.screenHeight;
 
+<<<<<<< HEAD
+	if (mvapi >= 3 && cg_widescreen.integer != 2)
+=======
 	if (mvapi >= 3)
+>>>>>>> jediknightplus/master
 		trap_MVAPI_SetVirtualScreen(cgs.screenWidth, cgs.screenHeight);
 }
 
 /*
+<<<<<<< HEAD
+===================
+CG_CrosshairColorChange
+===================
+*/
+static void CG_CrosshairColorChange(void) {
+	int i;
+	sscanf(cg_crosshairColor.string, "%f %f %f %f", &cg.crosshairColor[0], &cg.crosshairColor[1], &cg.crosshairColor[2], &cg.crosshairColor[3]);
+
+	for (i = 0; i < 4; i++) {
+		if (cg.crosshairColor[i] < 1)
+			cg.crosshairColor[i] = 0;
+		else if (cg.crosshairColor[i] > 255)
+			cg.crosshairColor[i] = 255;
+	}
+
+	cg.crosshairColor[0] /= 255.0f;
+	cg.crosshairColor[1] /= 255.0f;
+	cg.crosshairColor[2] /= 255.0f;
+	cg.crosshairColor[3] /= 255.0f;
+
+	//Com_Printf("New color is %f, %f, %f, %f\n", cg.crosshairColor[0], cg.crosshairColor[1], cg.crosshairColor[2], cg.crosshairColor[3]);
+}
+
+/*
+===================
+CG_StrafeHelperActiveColorChange
+===================
+*/
+static void CG_StrafeHelperActiveColorChange(void) {
+	int i;
+	if (sscanf(cg_strafeHelperActiveColor.string, "%f %f %f %f", &cg.strafeHelperActiveColor[0], &cg.strafeHelperActiveColor[1], &cg.strafeHelperActiveColor[2], &cg.strafeHelperActiveColor[3]) != 4) {
+		cg.strafeHelperActiveColor[0] = 0;
+		cg.strafeHelperActiveColor[1] = 255;
+		cg.strafeHelperActiveColor[2] = 0;
+		cg.strafeHelperActiveColor[3] = 200;
+	}
+
+	for (i = 0; i < 4; i++) {
+		if (cg.strafeHelperActiveColor[i] < 0)
+			cg.strafeHelperActiveColor[i] = 0;
+		else if (cg.strafeHelperActiveColor[i] > 255)
+			cg.strafeHelperActiveColor[i] = 255;
+	}
+
+	trap_Cvar_Set("ui_sha_r", va("%f", cg.strafeHelperActiveColor[0]));
+	trap_Cvar_Set("ui_sha_g", va("%f", cg.strafeHelperActiveColor[1]));
+	trap_Cvar_Set("ui_sha_b", va("%f", cg.strafeHelperActiveColor[2]));
+	trap_Cvar_Set("ui_sha_a", va("%f", cg.strafeHelperActiveColor[3]));
+
+	cg.strafeHelperActiveColor[0] /= 255.0f;
+	cg.strafeHelperActiveColor[1] /= 255.0f;
+	cg.strafeHelperActiveColor[2] /= 255.0f;
+	cg.strafeHelperActiveColor[3] /= 255.0f;
+
+	//Com_Printf("New color is %f, %f, %f, %f\n", cg.strafeHelperActiveColor[0], cg.strafeHelperActiveColor[1], cg.strafeHelperActiveColor[2], cg.strafeHelperActiveColor[3]);
+}
+
+/*
+=======
+>>>>>>> jediknightplus/master
 =================
 CG_UpdateCvars
 =================
 */
+<<<<<<< HEAD
+void CG_UpdateCvars( void ) {
+=======
 void BaseJK2_CG_UpdateCvars( void ) { // Tr!Force: [BaseJK2] Update client cvars function
+>>>>>>> jediknightplus/master
 	int			i;
 	cvarTable_t	*cv;
 
@@ -897,11 +1231,31 @@ void BaseJK2_CG_UpdateCvars( void ) { // Tr!Force: [BaseJK2] Update client cvars
 		forceModelModificationCount = cg_forceModel.modificationCount;
 		CG_ForceModelChange();
 	}
+<<<<<<< HEAD
+	if ( forceMyModelModificationCount != cg_forceMyModel.modificationCount ) {
+		forceMyModelModificationCount = cg_forceMyModel.modificationCount;
+		CG_ForceModelChange();
+	}
+=======
+>>>>>>> jediknightplus/master
 
 	if (widescreenModificationCount != cg_widescreen.modificationCount) {
 		widescreenModificationCount = cg_widescreen.modificationCount;
 		CG_UpdateWidescreen();
 	}
+<<<<<<< HEAD
+
+	if (crosshairColorModificationCount != cg_crosshairColor.modificationCount) {
+		crosshairColorModificationCount = cg_crosshairColor.modificationCount;
+		CG_CrosshairColorChange();
+	}
+
+	if (strafeHelperActiveColorModificationCount != cg_strafeHelperActiveColor.modificationCount) {
+		strafeHelperActiveColorModificationCount = cg_strafeHelperActiveColor.modificationCount;
+		CG_StrafeHelperActiveColorChange();
+	}
+=======
+>>>>>>> jediknightplus/master
 }
 
 int CG_CrosshairPlayer( void ) {
@@ -932,8 +1286,11 @@ void QDECL CG_Printf( const char *msg, ... ) {
 	Q_vsnprintf (text, sizeof(text), msg, argptr);
 	va_end (argptr);
 
+<<<<<<< HEAD
+=======
 	cg.jkmodCG.consolePrint++;				// Tr!Force: [JKMod] Console print lines
 	cg.jkmodCG.consolePrintTime = cg.time;	// Tr!Force: [JKMod] Console print timestamp
+>>>>>>> jediknightplus/master
 	trap_Print( text );
 }
 
@@ -983,6 +1340,39 @@ const char *CG_Argv( int arg ) {
 	return buffer;
 }
 
+<<<<<<< HEAD
+/*
+================
+CG_SendConsoleCommand
+Ensures trailing newline & handles va formatting
+================
+*/
+void QDECL CG_SendConsoleCommand(const char *fmt, ...)
+{
+	va_list argptr;
+	char buf[MAX_STRING_CHARS];
+	int len;
+
+	if (!fmt || !fmt[0])
+		return;
+
+	va_start(argptr, fmt);
+	len = Q_vsnprintf(buf, sizeof(buf), fmt, argptr);
+	va_end(argptr);
+
+	if (!buf || !buf[0])
+		return;
+
+	if (!len)
+		return;
+	if (buf[len - 1] != '\n') //check for trailing newline
+		Q_strcat(buf, sizeof(buf), "\n"); //append one if we don't have one already
+
+	trap_SendConsoleCommand(buf);
+}
+
+=======
+>>>>>>> jediknightplus/master
 
 //========================================================================
 
@@ -1077,17 +1467,30 @@ static void CG_RegisterSounds( void ) {
 
 	cgs.media.rivetMarkShader			= trap_R_RegisterShader( "gfx/damage/rivetmark" );
 
+<<<<<<< HEAD
+	cgs.media.saberClashFlare			= trap_R_RegisterShader( "gfx/effects/saberFlare" );
+=======
 	trap_R_RegisterShader( "gfx/effects/saberFlare" );
+>>>>>>> jediknightplus/master
 
 	trap_R_RegisterShader( "powerups/ysalimarishell" );
 	trap_R_RegisterShader("gfx/effects/saberDamageGlow" );
 	
 	trap_R_RegisterShader( "gfx/effects/forcePush" );
 
+<<<<<<< HEAD
+	cgs.media.forcefieldShader[TEAM_RED] = trap_R_RegisterShader( "gfx/misc/red_portashield" );
+	cgs.media.forcefieldDmgShader[TEAM_RED] = 	trap_R_RegisterShader( "gfx/misc/red_dmgshield" );
+	cgs.media.forcefieldShader[TEAM_BLUE] = trap_R_RegisterShader( "gfx/misc/blue_portashield" );
+	cgs.media.forcefieldDmgShader[TEAM_BLUE] = trap_R_RegisterShader( "gfx/misc/blue_dmgshield" );
+	cgs.media.forcefieldShader[TEAM_FREE] = trap_R_RegisterShader( "gfx/misc/yellow_portashield" );
+	cgs.media.forcefieldDmgShader[TEAM_FREE] = trap_R_RegisterShader( "gfx/misc/yellow_dmgshield" );
+=======
 	trap_R_RegisterShader( "gfx/misc/red_dmgshield" );
 	trap_R_RegisterShader( "gfx/misc/red_portashield" );
 	trap_R_RegisterShader( "gfx/misc/blue_dmgshield" );
 	trap_R_RegisterShader( "gfx/misc/blue_portashield" );
+>>>>>>> jediknightplus/master
 
 	trap_R_RegisterShader( "models/map_objects/imp_mine/turret_chair_dmg.tga" );
 
@@ -1106,7 +1509,16 @@ static void CG_RegisterSounds( void ) {
 		trap_S_RegisterSound(va("sound/weapons/saber/bounce%i.wav", i));
 	}
 
+<<<<<<< HEAD
+	for (i = 0; i < 5; i++) {//JAPRO - Clientside - Use all saber hum sounds
+		cgs.media.saberHumSounds[i] = trap_S_RegisterSound(va("sound/weapons/saber/saberhum%i.wav", i + 1));
+		if (!cgs.media.saberHumSounds[i])
+			Com_Printf("failed to register sound \"sound/weapons/saber/saberhum%i.wav\"\n", i + 1);
+	}
+
+=======
 	trap_S_RegisterSound( "sound/weapons/saber/saberhum1.wav" );
+>>>>>>> jediknightplus/master
 	trap_S_RegisterSound( "sound/weapons/saber/saberon.wav" );
 	trap_S_RegisterSound( "sound/weapons/saber/saberoffquick.wav" );
 	trap_S_RegisterSound( "sound/weapons/saber/saberhitwall1" );
@@ -1175,7 +1587,11 @@ static void CG_RegisterSounds( void ) {
 	if ( cgs.gametype >= GT_TEAM || cg_buildScript.integer ) {
 
 #ifdef JK2AWARDS
+<<<<<<< HEAD
+		cgs.media.captureAwardSound = trap_S_RegisterSound( "sound/chars/mothma/misc/capture.wav" );
+=======
 		cgs.media.captureAwardSound = trap_S_RegisterSound( "sound/teamplay/flagcapture_yourteam.wav" );
+>>>>>>> jediknightplus/master
 #endif
 		cgs.media.redLeadsSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM046");
 		cgs.media.blueLeadsSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM045");
@@ -1184,12 +1600,22 @@ static void CG_RegisterSounds( void ) {
 		cgs.media.redScoredSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM044");
 		cgs.media.blueScoredSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM043" );
 
+<<<<<<< HEAD
+		if ( cgs.gametype == GT_CTF || cg_buildScript.integer ) {
+=======
 		if ( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY || cg_buildScript.integer ) {
+>>>>>>> jediknightplus/master
 			cgs.media.redFlagReturnedSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM042" );
 			cgs.media.blueFlagReturnedSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM041" );
 			cgs.media.redTookFlagSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM040" );
 			cgs.media.blueTookFlagSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM039" );
+<<<<<<< HEAD
+		}
 
+		if ( cgs.gametype == GT_CTY || cg_buildScript.integer ) {
+=======
+
+>>>>>>> jediknightplus/master
 			cgs.media.redYsalReturnedSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM050" );
 			cgs.media.blueYsalReturnedSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM049" );
 			cgs.media.redTookYsalSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM048" );
@@ -1229,6 +1655,10 @@ static void CG_RegisterSounds( void ) {
 	cgs.media.deniedSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM017" );
 	cgs.media.humiliationSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM019" );
 	cgs.media.defendSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM024" );
+<<<<<<< HEAD
+	cgs.media.assistSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM026" );
+=======
+>>>>>>> jediknightplus/master
 #endif
 
 	cgs.media.takenLeadSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM051");
@@ -1299,6 +1729,21 @@ static void CG_RegisterSounds( void ) {
 	
 	cgs.media.winnerSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM006" );
 	cgs.media.loserSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM010" );
+<<<<<<< HEAD
+
+	//jk2pro
+	cgs.media.lowHPSound	= trap_S_RegisterSound("sound/common/warning.wav");
+	cgs.media.hitSound		= trap_S_RegisterSound("sound/effects/hitsound.wav"); 
+	cgs.media.hitSound2		= trap_S_RegisterSound("sound/effects/hitsound2.wav");
+	cgs.media.hitSound3		= trap_S_RegisterSound("sound/effects/hitsound3.wav");
+	cgs.media.hitSound4		= trap_S_RegisterSound("sound/effects/hitsound4.wav");
+	cgs.media.hitTeamSound	= trap_S_RegisterSound("sound/effects/hitsoundteam.wav");
+
+	//new chat sound options
+	cgs.media.teamChatSound = trap_S_RegisterSound("sound/movers/switches/button_11.mp3");
+	cgs.media.privateChatSound = trap_S_RegisterSound("sound/interface/commlink_off.mp3");
+=======
+>>>>>>> jediknightplus/master
 }
 
 
@@ -1483,6 +1928,11 @@ static void CG_RegisterGraphics( void ) {
 		}
 	}
 
+<<<<<<< HEAD
+	cgs.media.neutralFlagModel = trap_R_RegisterModel( "models/flags/n_flag.md3" );
+
+=======
+>>>>>>> jediknightplus/master
 	if ( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY || cg_buildScript.integer ) {
 		if (cg_buildScript.integer)
 		{
@@ -1503,6 +1953,20 @@ static void CG_RegisterGraphics( void ) {
 			cgs.media.blueFlagModel = trap_R_RegisterModel( "models/flags/b_flag_ysal.md3" );
 		}
 
+<<<<<<< HEAD
+		cgs.media.flagShaderYsal[TEAM_RED] = trap_R_RegisterShaderNoMip( "gfx/hud/mpi_rflag_ys" );
+		cgs.media.flagShaderYsal[TEAM_BLUE] = trap_R_RegisterShaderNoMip( "gfx/hud/mpi_bflag_ys" );
+		cgs.media.flagShaderYsal[TEAM_FREE] = trap_R_RegisterShaderNoMip( "icons/iconf_neutral1" ); //will have to do for now
+
+		cgs.media.flagShader[TEAM_RED] = trap_R_RegisterShaderNoMip( "gfx/hud/mpi_rflag" );
+		cgs.media.flagShader[TEAM_BLUE] = trap_R_RegisterShaderNoMip( "gfx/hud/mpi_bflag" );
+		cgs.media.flagShader[TEAM_FREE] = trap_R_RegisterShaderNoMip( "icons/iconf_neutral1" );
+
+		cgs.media.flagShaderTaken[TEAM_RED] = trap_R_RegisterShaderNoMip( "gfx/hud/mpi_rflag_x" );
+		cgs.media.flagShaderTaken[TEAM_BLUE] = trap_R_RegisterShaderNoMip( "gfx/hud/mpi_bflag_x" );
+		cgs.media.flagShaderTaken[TEAM_FREE] = trap_R_RegisterShaderNoMip( "icons/iconf_neutral1_x" );
+
+=======
 		trap_R_RegisterShaderNoMip( "gfx/hud/mpi_rflag_x" );
 		trap_R_RegisterShaderNoMip( "gfx/hud/mpi_bflag_x" );
 
@@ -1511,6 +1975,7 @@ static void CG_RegisterGraphics( void ) {
 
 		trap_R_RegisterShaderNoMip( "gfx/hud/mpi_rflag" );
 		trap_R_RegisterShaderNoMip( "gfx/hud/mpi_bflag" );
+>>>>>>> jediknightplus/master
 
 		trap_R_RegisterShaderNoMip("gfx/2d/net.tga");
 
@@ -1526,6 +1991,8 @@ static void CG_RegisterGraphics( void ) {
 		cgs.media.neutralFlagBaseModel = trap_R_RegisterModel( "models/mapobjects/flagbase/ntrl_base.md3" );
 	}
 
+<<<<<<< HEAD
+=======
 	if ( cg_buildScript.integer ) {
 		cgs.media.neutralFlagModel = 0;//trap_R_RegisterModel( "models/flags/n_flag.md3" );
 		cgs.media.flagShader[0] = 0;//trap_R_RegisterShaderNoMip( "icons/iconf_neutral1" );
@@ -1534,10 +2001,15 @@ static void CG_RegisterGraphics( void ) {
 		cgs.media.flagShader[3] = 0;//trap_R_RegisterShaderNoMip( "icons/iconf_neutral3" );
 	}
 
+>>>>>>> jediknightplus/master
 
 	if ( cgs.gametype >= GT_TEAM || cg_buildScript.integer ) {
 		cgs.media.teamRedShader = trap_R_RegisterShader( "sprites/team_red" );
 		cgs.media.teamBlueShader = trap_R_RegisterShader( "sprites/team_blue" );
+<<<<<<< HEAD
+		cgs.media.teamYellowShader = trap_R_RegisterShader( "sprites/team_yellow" );
+=======
+>>>>>>> jediknightplus/master
 		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/blueflag" );
 		cgs.media.teamStatusBar = trap_R_RegisterShader( "gfx/2d/colorbar.tga" );
 	}
@@ -1559,6 +2031,24 @@ static void CG_RegisterGraphics( void ) {
 	cgs.media.enlightenmentShader	= trap_R_RegisterShader( "powerups/enlightenmentshell");
 	cgs.media.invulnerabilityShader = trap_R_RegisterShader( "powerups/invulnerabilityshell");
 
+<<<<<<< HEAD
+//JAPRO - Clientside - Movement Keys - Start
+	cgs.media.keyCrouchOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/crouch_off");
+	cgs.media.keyCrouchOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/crouch_on");
+	cgs.media.keyJumpOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jump_off");
+	cgs.media.keyJumpOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jump_on");
+	cgs.media.keyBackOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/back_off");
+	cgs.media.keyBackOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/back_on");
+	cgs.media.keyForwardOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/forward_off");
+	cgs.media.keyForwardOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/forward_on");
+	cgs.media.keyLeftOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/left_off");
+	cgs.media.keyLeftOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/left_on");
+	cgs.media.keyRightOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/right_off");
+	cgs.media.keyRightOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/right_on");
+//JAPRO - Clientside - Movement Keys - End
+
+=======
+>>>>>>> jediknightplus/master
 #ifdef JK2AWARDS
 	cgs.media.medalImpressive		= trap_R_RegisterShaderNoMip( "medal_impressive" );
 	cgs.media.medalExcellent		= trap_R_RegisterShaderNoMip( "medal_excellent" );
@@ -2215,8 +2705,13 @@ static qboolean CG_FeederSelection(float feederID, int index) {
 	return qtrue;
 }
 
+<<<<<<< HEAD
+static float CG_Cvar_Get(const char *cvar) {
+	char buff[MAX_CVAR_VALUE_STRING];
+=======
 /*static*/ float CG_Cvar_Get(const char *cvar) { // Tr!Force: [CGameGeneral] Allow cvar get in other places
 	char buff[128];
+>>>>>>> jediknightplus/master
 	memset(buff, 0, sizeof(buff));
 	trap_Cvar_VariableStringBuffer(cvar, buff, sizeof(buff));
 	return atof(buff);
@@ -2569,8 +3064,11 @@ Ghoul2 Insert End
 	cgDC.Assets.qhSmallFont  = trap_R_RegisterFont("ocr_a");
 	cgDC.Assets.qhMediumFont = trap_R_RegisterFont("ergoec");
 	cgDC.Assets.qhBigFont = cgDC.Assets.qhMediumFont;
+<<<<<<< HEAD
+=======
 	
 	trap_SP_Register("jkmod_ingame"); // Tr!Force: [JKMod] Load ingame texts
+>>>>>>> jediknightplus/master
 
 	memset( &cgs, 0, sizeof( cgs ) );
 	memset( cg_weapons, 0, sizeof(cg_weapons) );
@@ -2751,10 +3249,13 @@ Ghoul2 Insert End
 
 	CG_RegisterGraphics();
 
+<<<<<<< HEAD
+=======
 	CG_LoadingString( "client plugin" );	// Tr!Force: [JKMod] Register media
 
 	JKMod_CG_RegisterMedia();				// Tr!Force: [JKMod] Register media
 
+>>>>>>> jediknightplus/master
 	CG_LoadingString( "clients" );
 
 	CG_RegisterClients();		// if low on memory, some clients will be deferred
@@ -2781,6 +3282,23 @@ Ghoul2 Insert End
 	CG_UpdateConfigString( CS_SHADERSTATE, qtrue );
 
 	trap_S_ClearLoopingSounds( qtrue );
+<<<<<<< HEAD
+
+	s = cgs.mapname+5;
+	if (s) { //exec cfg for custom map specific remaps/skies/other stuff
+		char mapname_noExt[MAX_QPATH] = {0};
+
+		COM_StripExtension(s, mapname_noExt, sizeof(mapname_noExt));
+		if (mapname_noExt && mapname_noExt[0]) {
+			int cl_noPrint = (int)CG_Cvar_Get("cl_noprint");
+			if (!cl_noPrint)
+				CG_SendConsoleCommand("cl_noprint 1; exec %s.cfg; cl_noprint 0\n", mapname_noExt);
+			else
+				CG_SendConsoleCommand("exec %s.cfg\n", mapname_noExt);
+		}
+	}
+=======
+>>>>>>> jediknightplus/master
 }
 
 /*
@@ -2801,6 +3319,36 @@ void CG_Shutdown( void )
 	// like closing files or archiving session data
 }
 
+<<<<<<< HEAD
+//do we have any force powers that we would normally need to cycle to?
+qboolean CG_NoUseableForce(void)
+{
+	int i = FP_HEAL;
+
+	if (cg.predictedPlayerState.stats[STAT_HEALTH] <= 0)
+		return qtrue;
+
+	while (i < NUM_FORCE_POWERS)
+	{ 
+		if (i != FP_SABERTHROW &&
+			i != FP_SABERATTACK &&
+			i != FP_SABERDEFEND &&
+			i != FP_LEVITATION)
+		{ //valid selectable power
+			if (cg.predictedPlayerState.fd.forcePowersKnown & (1 << i))
+			{ //we have it
+				return qfalse;
+			}
+		}
+		i++;
+	}
+
+	//no useable force powers, I guess.
+	return qtrue;
+}
+
+=======
+>>>>>>> jediknightplus/master
 
 /*
 ===============
@@ -2809,13 +3357,30 @@ CG_NextForcePower_f
 */
 void CG_NextForcePower_f( void ) 
 {
+<<<<<<< HEAD
+	usercmd_t cmd;
+
+=======
+>>>>>>> jediknightplus/master
 	if ( !cg.snap )
 	{
 		return;
 	}
 
+<<<<<<< HEAD
+	if (cg.snap->ps.pm_type == PM_SPECTATOR || (cg.snap->ps.pm_flags & PMF_FOLLOW))
+	{
+		return;
+	}
+
+	trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
+	if ((cmd.buttons & BUTTON_USE) || CG_NoUseableForce())
+	{
+		CG_NextInventory_f();
+=======
 	if (cg.snap->ps.pm_flags & PMF_FOLLOW)
 	{
+>>>>>>> jediknightplus/master
 		return;
 	}
 
@@ -2841,13 +3406,30 @@ CG_PrevForcePower_f
 */
 void CG_PrevForcePower_f( void ) 
 {
+<<<<<<< HEAD
+	usercmd_t cmd;
+
+=======
+>>>>>>> jediknightplus/master
 	if ( !cg.snap )
 	{
 		return;
 	}
 
+<<<<<<< HEAD
+	if (cg.predictedPlayerState.pm_type == PM_SPECTATOR || cg.snap->ps.pm_flags & PMF_FOLLOW)
+	{
+		return;
+	}
+
+	trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
+	if ((cmd.buttons & BUTTON_USE) || CG_NoUseableForce())
+	{
+		CG_PrevInventory_f();
+=======
 	if (cg.snap->ps.pm_flags & PMF_FOLLOW)
 	{
+>>>>>>> jediknightplus/master
 		return;
 	}
 

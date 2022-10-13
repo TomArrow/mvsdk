@@ -9,8 +9,9 @@ list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Project & Versioning
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(MVSDK "JediKnightPlus")
+set(MVSDK "JK2MV + EternalJK2MV + JediKnightPlus")
 set(MVSDKURL "https://jkplus.github.io")
+
 if(NOT InMV)
 	set(ProjectName ${MVSDK} CACHE STRING "Project Name")
 	project(${ProjectName})
@@ -19,7 +20,7 @@ endif()
 include(GetGitRevisionDescription)
 git_describe(MVSDK_VERSION --tags)
 if(NOT MVSDK_VERSION OR MVSDK_VERSION STREQUAL "GIT-NOTFOUND" OR MVSDK_VERSION STREQUAL "HEAD-HASH-NOTFOUND")
-	set(MVSDK_VERSION "UNKNOWN")
+	set(MVSDK_VERSION "EVERYTHINGJK2_PLUS1.4PRO")
 	message(WARNING "Could not find git or git repository. Install git and make sure you actually cloned the repository (Directory named .git must exist) for correct versioning.")
 endif()
 

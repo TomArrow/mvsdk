@@ -133,7 +133,11 @@ void ThrowSaberToAttacker(gentity_t *self, gentity_t *attacker)
 		VectorCopy(ent->s.origin2, ent->s.pos.trBase);
 		VectorCopy(ent->s.origin2, ent->s.origin);
 		VectorCopy(ent->s.origin2, ent->r.currentOrigin);
+<<<<<<< HEAD
+		ent->pos2[0] = 0;
+=======
 		ent->jkmodEnt.time1/*pos2[0]*/ = 0; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 		trap_LinkEntity(ent);
 		return;
 	}
@@ -173,21 +177,37 @@ void JMSaberThink(gentity_t *ent)
 			ent->s.eType = ET_MISSILE;
 			ent->enemy = NULL;
 
+<<<<<<< HEAD
+			ent->pos2[0] = 1;
+			ent->pos2[1] = 0; //respawn next think
+=======
 			// ent->pos2[0] = 1; // Tr!Force: [Pause] Skip this
 			ent->jkmodEnt.time1/*pos2[1]*/ = 0; //respawn next think // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 			trap_LinkEntity(ent);
 		}
 		else
 		{
+<<<<<<< HEAD
+			ent->pos2[1] = level.time + JMSABER_RESPAWN_TIME;
+		}
+	}
+	else if (ent->pos2[0] && ent->pos2[1] < level.time)
+=======
 			ent->jkmodEnt.time1/*pos2[1]*/ = level.time + JMSABER_RESPAWN_TIME; // Tr!Force: [Pause] Think time
 		}
 	}
 	else if (ent->jkmodEnt.time1/*pos2[0]*/ && ent->jkmodEnt.time1/*pos2[1]*/ < level.time) // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 	{
 		VectorCopy(ent->s.origin2, ent->s.pos.trBase);
 		VectorCopy(ent->s.origin2, ent->s.origin);
 		VectorCopy(ent->s.origin2, ent->r.currentOrigin);
+<<<<<<< HEAD
+		ent->pos2[0] = 0;
+=======
 		ent->jkmodEnt.time1/*pos2[0]*/ = 0; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 		trap_LinkEntity(ent);
 	}
 
@@ -263,8 +283,13 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 		i++;
 	}
 
+<<<<<<< HEAD
+	self->pos2[0] = 1;
+	self->pos2[1] = level.time + JMSABER_RESPAWN_TIME;
+=======
 	// self->pos2[0] = 1; // Tr!Force: [Pause] Skip this
 	self->jkmodEnt.time1/*pos2[1]*/ = level.time + JMSABER_RESPAWN_TIME; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 
 	self->s.modelindex = 0;
 	self->s.eFlags |= EF_NODRAW;
@@ -609,7 +634,11 @@ void InitBodyQue (void) {
 
 	level.bodyQueIndex = 0;
 	for (i=0; i<BODY_QUEUE_SIZE ; i++) {
+<<<<<<< HEAD
+		ent = G_Spawn();
+=======
 		ent = JKMod_G_Spawn( ENTITYNUM_NONE ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		ent->classname = "bodyque";
 		ent->neverFree = qtrue;
 		level.bodyQue[i] = ent;
@@ -737,7 +766,10 @@ void CopyToBodyQue( gentity_t *ent ) {
 	}
 
 	VectorCopy ( body->s.pos.trBase, body->r.currentOrigin );
+<<<<<<< HEAD
+=======
 	JKMod_DimensionOwnerCheck( ent->s.number, body ); // Tr!Force: [Dimensions] Entity owner check
+>>>>>>> jediknightplus/master
 	trap_LinkEntity (body);
 }
 
@@ -787,7 +819,11 @@ void respawn( gentity_t *ent ) {
 	ClientSpawn(ent);
 
 	// add a teleportation effect
+<<<<<<< HEAD
+	tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN );
+=======
 	tent = JKMod_G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	tent->s.clientNum = ent->s.clientNum;
 }
 
@@ -1136,8 +1172,11 @@ void ClientUserinfoChanged( int clientNum ) {
 	char	redTeam[MAX_INFO_STRING];
 	char	blueTeam[MAX_INFO_STRING];
 	char	userinfo[MAX_INFO_STRING];
+<<<<<<< HEAD
+=======
 	int		jkmod_hat;		// Tr!Force: [JKMod] Custom client info
 	int		jkmod_race;		// Tr!Force: [JKMod] Custom client info
+>>>>>>> jediknightplus/master
 
 	// NameCrashFix (whitelisted characters)
 	static const char	validChars[]  = " ~QqWwEeRrTtYyUuIiOoPpAaSsDdFfGgHhJjKkLlZzXxCcVvBbNnMm1234567890<>?,./';:][{}`-=!@#$^&*()_+|";
@@ -1160,6 +1199,8 @@ void ClientUserinfoChanged( int clientNum ) {
 		client->pers.localClient = qtrue;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Plugin] Check plugin
 	s = Info_ValueForKey( userinfo, "jkmod_client" );
 	if ( !strcmp( s, JK_VERSION ) ) {
@@ -1201,6 +1242,7 @@ void ClientUserinfoChanged( int clientNum ) {
 		}
 	}
 
+>>>>>>> jediknightplus/master
 	// check the item prediction
 	s = Info_ValueForKey( userinfo, "cg_predictItems" );
 	if ( !atoi( s ) ) {
@@ -1234,7 +1276,11 @@ void ClientUserinfoChanged( int clientNum ) {
 		ptr = strstr( s, "@@@" );
 	}
 	
+<<<<<<< HEAD
+	ClientCleanName( s, ent->client->pers.netname, sizeof(ent->client->pers.netname) );
+=======
 	JKMod_ClientCleanName( s, ent->client->pers.netname, sizeof(ent->client->pers.netname), ent); // Tr!Force: [JKMod] Client clean name
+>>>>>>> jediknightplus/master
 	Info_RemoveKey( userinfo, "name" );
 	Info_SetValueForKey( userinfo, "name", ent->client->pers.netname );
 	trap_SetUserinfo( clientNum, userinfo );
@@ -1280,8 +1326,11 @@ void ClientUserinfoChanged( int clientNum ) {
 		Q_strncpyz( model, "kyle/default", sizeof(model) );
 	}
 
+<<<<<<< HEAD
+=======
 	JKMod_PlayerModelInfo(ent, model); // Tr!Force: [GameGeneral] Update model and skin name
 
+>>>>>>> jediknightplus/master
 	Q_strncpyz( forcePowers, Info_ValueForKey (userinfo, "forcepowers"), sizeof( forcePowers ) );
 
 	team = client->sess.sessionTeam;
@@ -1327,6 +1376,8 @@ void ClientUserinfoChanged( int clientNum ) {
 	}
 	*/
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JKMod] Custom user info
 	s = Info_ValueForKey( userinfo, "jk_cg_customHats" );
 	if ( ! *s || atoi( s ) != 0 ) {
@@ -1338,6 +1389,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	// Tr!Force: [JKMod] Custom user info
 	jkmod_race = client->pers.jkmodPers.raceBestTime;
 
+>>>>>>> jediknightplus/master
 	// team task (0 = none, 1 = offence, 2 = defence)
 	teamTask = atoi(Info_ValueForKey(userinfo, "teamtask"));
 	// team Leader (1 = leader, 0 is normal player)
@@ -1353,6 +1405,18 @@ void ClientUserinfoChanged( int clientNum ) {
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
 	if ( ent->r.svFlags & SVF_BOT ) {
+<<<<<<< HEAD
+		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i",
+			client->pers.netname, team, model,  c1, c2, 
+			client->pers.maxHealth, client->sess.wins, client->sess.losses,
+			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay );
+	} else {
+		s = va("n\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i",
+			client->pers.netname, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2, 
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay);
+	}
+
+=======
 		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkhat\\%i\\jkrace\\%i",
 			client->pers.netname, team, model,  c1, c2, 
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
@@ -1371,6 +1435,7 @@ void ClientUserinfoChanged( int clientNum ) {
 		);
 	}
 	
+>>>>>>> jediknightplus/master
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );
 
 	if (g_logClientInfo.integer)
@@ -1433,7 +1498,11 @@ qboolean MV_SetClientIP( int clientNum, char *value )
 	return qtrue;
 }
 
+<<<<<<< HEAD
+char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
+=======
 char *BaseJK2_ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) { // Tr!Force: [BaseJK2] Client connect function
+>>>>>>> jediknightplus/master
 	char		*value;
 //	char		*areabits;
 	gclient_t	*client;
@@ -1567,10 +1636,16 @@ char *BaseJK2_ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 	ClientUserinfoChanged( clientNum );
 
 	// don't do the "xxx connected" messages if they were caried over from previous level
+<<<<<<< HEAD
+	if ( firstTime ) {
+		trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", client->pers.netname, G_GetStripEdString("SVINGAME", "PLCONNECT")) );
+	}
+=======
 	// Tr!Force: [Welcome] Don't show on client begin
 	/*if ( firstTime ) {
 		trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", client->pers.netname, G_GetStripEdString("SVINGAME", "PLCONNECT")) );
 	}*/
+>>>>>>> jediknightplus/master
 
 	if ( g_gametype.integer >= GT_TEAM &&
 		client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -1580,7 +1655,11 @@ char *BaseJK2_ClientConnect( int clientNum, qboolean firstTime, qboolean isBot )
 	// count current clients and rank for scoreboard
 	CalculateRanks();
 
+<<<<<<< HEAD
+	te = G_TempEntity( vec3_origin, EV_CLIENTJOIN );
+=======
 	te = JKMod_G_TempEntity( vec3_origin, EV_CLIENTJOIN, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->r.svFlags |= SVF_BROADCAST;
 	te->s.eventParm = clientNum;
 
@@ -1604,15 +1683,22 @@ to be placed into the level.  This will happen every level load,
 and on transition between teams, but doesn't happen on respawns
 ============
 */
+<<<<<<< HEAD
+void ClientBegin( int clientNum, qboolean allowTeamReset ) {
+=======
 void BaseJK2_ClientBegin( int clientNum, qboolean allowTeamReset ) { // Tr!Force: [BaseJK2] Client begin function
+>>>>>>> jediknightplus/master
 	gentity_t	*ent;
 	gclient_t	*client;
 	gentity_t	*tent;
 	int			flags, i;
 	char		userinfo[MAX_INFO_VALUE], *modelname;
+<<<<<<< HEAD
+=======
 	int			jksave_player;		// Tr!Force: [JKMod] Don't remove flags
 	int			jksave_dimension;	// Tr!Force: [Dimensions] Don't remove flags
 	int			jksave_movement;	// Tr!Force: [JKMod] Don't remove flags
+>>>>>>> jediknightplus/master
 
 	ent = g_entities + clientNum;
 	
@@ -1691,7 +1777,11 @@ void BaseJK2_ClientBegin( int clientNum, qboolean allowTeamReset ) { // Tr!Force
 	if ( ent->r.linked ) {
 		trap_UnlinkEntity( ent );
 	}
+<<<<<<< HEAD
+	G_InitGentity( ent );
+=======
 	JKMod_G_InitGentity( ent, clientNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	ent->touch = 0;
 	ent->pain = 0;
 	ent->client = client;
@@ -1707,10 +1797,13 @@ void BaseJK2_ClientBegin( int clientNum, qboolean allowTeamReset ) { // Tr!Force
 	// world to the new position
 	flags = client->ps.eFlags;
 
+<<<<<<< HEAD
+=======
 	jksave_player = client->ps.stats[JK_PLAYER];		// Tr!Force: [JKMod] Don't remove flags
 	jksave_dimension = client->ps.stats[JK_DIMENSION];	// Tr!Force: [Dimensions] Don't remove flags
 	jksave_movement = client->ps.stats[JK_MOVEMENT];	// Tr!Force: [JKMod] Don't remove flags
 
+>>>>>>> jediknightplus/master
 	i = 0;
 
 	while (i < NUM_FORCE_POWERS)
@@ -1737,10 +1830,13 @@ void BaseJK2_ClientBegin( int clientNum, qboolean allowTeamReset ) { // Tr!Force
 	memset( &client->ps, 0, sizeof( client->ps ) );
 	client->ps.eFlags = flags;
 
+<<<<<<< HEAD
+=======
 	client->ps.stats[JK_PLAYER] = jksave_player;				// Tr!Force: [JKMod] Don't remove flags
 	client->ps.stats[JK_DIMENSION] = jksave_dimension;			// Tr!Force: [Dimensions] Don't remove flags
 	client->ps.stats[JK_MOVEMENT] = jksave_movement;			// Tr!Force: [JKMod] Don't remove flags
 
+>>>>>>> jediknightplus/master
 	client->ps.hasDetPackPlanted = qfalse;
 
 	//first-time force power initialization
@@ -1770,6 +1866,14 @@ void BaseJK2_ClientBegin( int clientNum, qboolean allowTeamReset ) { // Tr!Force
 
 	if ( client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		// send event
+<<<<<<< HEAD
+		tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN );
+		tent->s.clientNum = ent->s.clientNum;
+
+		if ( g_gametype.integer != GT_TOURNAMENT  ) {
+			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", client->pers.netname, G_GetStripEdString("SVINGAME", "PLENTER")) );
+		}
+=======
 		tent = JKMod_G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN, clientNum ); // Tr!Force: [DImensions] Tag owner info
 		tent->s.clientNum = ent->s.clientNum;
 
@@ -1777,6 +1881,7 @@ void BaseJK2_ClientBegin( int clientNum, qboolean allowTeamReset ) { // Tr!Force
 		/*if ( g_gametype.integer != GT_TOURNAMENT  ) {
 			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", client->pers.netname, G_GetStripEdString("SVINGAME", "PLENTER")) );
 		}*/
+>>>>>>> jediknightplus/master
 	}
 	G_LogPrintf( "ClientBegin: %i\n", clientNum );
 
@@ -1835,9 +1940,12 @@ void ClientSpawn(gentity_t *ent) {
 	void		*ghoul2save;
 	int		saveSaberNum = ENTITYNUM_NONE;
 	int		wDisable = 0;
+<<<<<<< HEAD
+=======
 	int		jksave_player;		// Tr!Force: [JKMod] Don't remove flags
 	int		jksave_dimension;	// Tr!Force: [Dimensions] Don't remove flags
 	int		jksave_movement;	// Tr!Force: [JKMod] Don't remove flags
+>>>>>>> jediknightplus/master
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -1945,6 +2053,10 @@ void ClientSpawn(gentity_t *ent) {
 
 	saveSaberNum = client->ps.saberEntityNum;
 
+<<<<<<< HEAD
+	memset (client, 0, sizeof(*client)); // bk FIXME: Com_Memset?
+
+=======
 	jksave_player = client->ps.stats[JK_PLAYER];		// Tr!Force: [JKMod] Don't remove flags
 	jksave_dimension = client->ps.stats[JK_DIMENSION];	// Tr!Force: [Dimensions] Don't remove flags
 	jksave_movement = client->ps.stats[JK_MOVEMENT];	// Tr!Force: [JKMod] Don't remove flags
@@ -1955,6 +2067,7 @@ void ClientSpawn(gentity_t *ent) {
 	client->ps.stats[JK_DIMENSION] = jksave_dimension;			// Tr!Force: [Dimensions] Don't remove flags
 	client->ps.stats[JK_MOVEMENT] = jksave_movement;			// Tr!Force: [JKMod] Don't remove flags
 
+>>>>>>> jediknightplus/master
 	//rww - Don't wipe the ghoul2 instance or the animation data
 	client->ghoul2 = ghoul2save;
 
@@ -2255,6 +2368,8 @@ void ClientSpawn(gentity_t *ent) {
 	// Start with a small amount of armor as well.
 	client->ps.stats[STAT_ARMOR] = client->ps.stats[STAT_MAX_HEALTH] * 0.25;
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [GameGeneral] Custom spawn point
 	if (ent->client->pers.jkmodPers.customSpawnCheck) 
 	{
@@ -2265,6 +2380,7 @@ void ClientSpawn(gentity_t *ent) {
 		spawn_angles[1] = ent->client->pers.jkmodPers.customSpawn[4];
 	}
 
+>>>>>>> jediknightplus/master
 	G_SetOrigin( ent, spawn_origin );
 	VectorCopy( spawn_origin, client->ps.origin );
 
@@ -2277,6 +2393,10 @@ void ClientSpawn(gentity_t *ent) {
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 
 	} else {
+<<<<<<< HEAD
+		G_KillBox( ent );
+		trap_LinkEntity (ent);
+=======
 		// Tr!Force: [Dimensions] Don't kill racers on spawn
 		if (client->ps.stats[JK_DIMENSION] != DIMENSION_RACE)
 		{
@@ -2289,6 +2409,7 @@ void ClientSpawn(gentity_t *ent) {
 				JKMod_AntiStuckBox(ent);
 			}
 		}
+>>>>>>> jediknightplus/master
 
 		// force the base weapon up
 		client->ps.weapon = WP_BRYAR_PISTOL;
@@ -2325,9 +2446,12 @@ void ClientSpawn(gentity_t *ent) {
 		}
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [GameGeneral] Activate saber on spawn
 	if (!jkcvar_spawnActivateSaber.integer && client->ps.weapon == WP_SABER) ent->client->ps.saberHolstered = qtrue;
 
+>>>>>>> jediknightplus/master
 	// run a client frame to drop exactly to the floor,
 	// initialize animations and other things
 	client->ps.commandTime = level.time - 100;
@@ -2341,12 +2465,18 @@ void ClientSpawn(gentity_t *ent) {
 		trap_LinkEntity( ent );
 	}
 
+<<<<<<< HEAD
+	if (g_spawnInvulnerability.integer)
+=======
 	if (g_spawnInvulnerability.integer && !(ent->client->ps.stats[JK_DIMENSION] & (DIMENSION_RACE | DIMENSION_INSTA))) // Tr!Force: [Dimensions] Don't set invulnerable flag
+>>>>>>> jediknightplus/master
 	{
 		ent->client->ps.eFlags |= EF_INVULNERABLE;
 		ent->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Dimensions] Set dimension settings
 	if (client->pers.jkmodPers.customSettings && client->sess.sessionTeam != TEAM_SPECTATOR)
 	{
@@ -2356,6 +2486,7 @@ void ClientSpawn(gentity_t *ent) {
 	// Tr!Force: [DualSaber] Check enable
 	if (client->ps.weapon == WP_SABER) client->ps.dualBlade = client->pers.jkmodPers.dualSaber;
 
+>>>>>>> jediknightplus/master
 	// run the presend to set anything else
 	if ( ent->client->sess.spectatorState != SPECTATOR_FOLLOW )
 	{ // Only do this if we're not dealing with follow spectators to prevent two bugs:
@@ -2430,7 +2561,11 @@ void ClientDisconnect( int clientNum ) {
 	// send effect if they were completely connected
 	if ( ent->client->pers.connected == CON_CONNECTED 
 		&& ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+<<<<<<< HEAD
+		tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT );
+=======
 		tent = JKMod_G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT, clientNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		tent->s.clientNum = ent->s.clientNum;
 
 		// They don't get to take powerups with them!
@@ -2448,9 +2583,12 @@ void ClientDisconnect( int clientNum ) {
 			level.clients[ level.sortedClients[0] ].ps.persistant[PERS_SCORE] = 0;
 			level.clients[ level.sortedClients[0] ].sess.wins++;
 			ClientUserinfoChanged( level.sortedClients[0] );
+<<<<<<< HEAD
+=======
 
 			// Tr!Force: [PlayerStatus] Announce score
 			if (jkcvar_chatAutoStatus.integer && level.clients[level.sortedClients[0]].sess.jkmodSess.playerStatus) JKMod_playerStatus(&g_entities[level.sortedClients[0]], qtrue);
+>>>>>>> jediknightplus/master
 		}
 		else if ( level.sortedClients[0] == clientNum ) {
 			level.clients[ level.sortedClients[1] ].ps.persistant[PERS_SCORE] = 0;
@@ -2467,6 +2605,8 @@ void ClientDisconnect( int clientNum ) {
 	ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
 	ent->client->sess.sessionTeam = TEAM_FREE;
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Emotes] Chair emote disable
 	if (ent->client->jkmodClient.chairModelUsed) JKMod_ChairModelDisable(ent);
 	
@@ -2476,6 +2616,7 @@ void ClientDisconnect( int clientNum ) {
 	// Tr!Force: [JKMod] Clear ignored client
 	JKMod_IgnoreClientClear(clientNum);
 	
+>>>>>>> jediknightplus/master
 	trap_SetConfigstring( CS_PLAYERS + clientNum, "");
 
 	CalculateRanks();
@@ -2485,6 +2626,8 @@ void ClientDisconnect( int clientNum ) {
 	}
 
 	G_ClearClientLog(clientNum);
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [Dimensions] Entity owner check
 	for ( i = 0; i < level.num_entities; i++ ) {
@@ -2492,6 +2635,7 @@ void ClientDisconnect( int clientNum ) {
 			JKMod_DimensionOwnerCheck( ENTITYNUM_NONE, &g_entities[i] );
 		}
 	}
+>>>>>>> jediknightplus/master
 }
 
 #define MAX_CLIENT_CENTERPRINT_LINELENGTH 50

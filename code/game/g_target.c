@@ -197,6 +197,9 @@ void SP_target_speaker( gentity_t *ent ) {
 	G_SpawnFloat( "random", "0", &ent->random );
 
 	if ( !G_SpawnString( "noise", "NOSOUND", &s ) ) {
+<<<<<<< HEAD
+		G_Error( "target_speaker without a noise key at %s", vtos( ent->s.origin ) );
+=======
 		// Tr!Force: [MapFixes] Speakers playing bad soundfiles
 		if (jkcvar_mapFixes.integer) 
 		{
@@ -219,6 +222,7 @@ void SP_target_speaker( gentity_t *ent ) {
 			ent->spawnflags &= ~1;
 			ent->spawnflags &= ~2;
 		}
+>>>>>>> jediknightplus/master
 	}
 
 	// force all client reletive sounds to be "activator" speakers that

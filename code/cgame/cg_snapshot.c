@@ -5,6 +5,28 @@
 
 #include "cg_local.h"
 
+<<<<<<< HEAD
+ID_INLINE void CG_LastWeapon(void) { //Called by CG_SetNextSnap, dunno if need to use snap or can use predicted..
+	if (!cg.snap)
+		return;
+	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+		return;
+	if (cg.snap->ps.pm_flags & PMF_FOLLOW || cg.snap->ps.pm_type == PM_SPECTATOR)
+		return;
+
+	if (!cg.lastWeaponSelect[0])
+		cg.lastWeaponSelect[0] = cg.predictedPlayerState.weapon;
+	if (!cg.lastWeaponSelect[1])
+		cg.lastWeaponSelect[1] = cg.predictedPlayerState.weapon;
+
+	if (cg.lastWeaponSelect[0] != cg.predictedPlayerState.weapon) { //Current does not match selected
+		cg.lastWeaponSelect[1] = cg.lastWeaponSelect[0]; //Set last to current
+		cg.lastWeaponSelect[0] = cg.predictedPlayerState.weapon; //Set current to selected
+	}
+
+}
+=======
+>>>>>>> jediknightplus/master
 
 
 /*
@@ -183,6 +205,12 @@ static void CG_TransitionSnapshot( void ) {
 		if ( ( ps->eFlags ^ ops->eFlags ) & EF_TELEPORT_BIT ) {
 			cg.thisFrameTeleport = qtrue;	// will be cleared by prediction code
 		}
+<<<<<<< HEAD
+		else if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
+			cg.thisFrameTeleport = qfalse; // clear for interpolated player with new camera damping
+		}
+=======
+>>>>>>> jediknightplus/master
 
 		// if we are not doing client side movement prediction for any
 		// reason, then the client events and view changes will be issued now
@@ -251,6 +279,11 @@ static void CG_SetNextSnap( snapshot_t *snap ) {
 
 	// sort out solid entities
 	CG_BuildSolidList();
+<<<<<<< HEAD
+
+	CG_LastWeapon();
+=======
+>>>>>>> jediknightplus/master
 }
 
 
@@ -451,5 +484,26 @@ void CG_ProcessSnapshots( void ) {
 		CG_Error( "CG_ProcessSnapshots: cg.nextSnap->serverTime <= cg.time" );
 	}
 
+<<<<<<< HEAD
+	// set cg.frameInterpolation
+	if (cg.nextSnap) {
+		int		delta;
+
+		delta = (cg.nextSnap->serverTime - cg.snap->serverTime);
+		if (delta == 0) {
+			cg.frameInterpolation = 0;
+		}
+		else {
+			cg.frameInterpolation = (float)(cg.time - cg.snap->serverTime) / delta;
+		}
+	}
+	else {
+		cg.frameInterpolation = 0;	// actually, it should never be used, because
+									// no entities should be marked as interpolating
+		cg.predictedTimeFrac = 0.0f;
+	}
+
+=======
+>>>>>>> jediknightplus/master
 }
 

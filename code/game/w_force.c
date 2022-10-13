@@ -358,26 +358,42 @@ void WP_InitForcePowers( gentity_t *ent )
 
 	if (HasSetSaberOnly())
 	{
+<<<<<<< HEAD
+		gentity_t *te = G_TempEntity( vec3_origin, EV_SET_FREE_SABER );
+=======
 		gentity_t *te = JKMod_G_TempEntity( vec3_origin, EV_SET_FREE_SABER, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		te->r.svFlags |= SVF_BROADCAST;
 		te->s.eventParm = 1;
 	}
 	else
 	{
+<<<<<<< HEAD
+		gentity_t *te = G_TempEntity( vec3_origin, EV_SET_FREE_SABER );
+=======
 		gentity_t *te = JKMod_G_TempEntity( vec3_origin, EV_SET_FREE_SABER, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		te->r.svFlags |= SVF_BROADCAST;
 		te->s.eventParm = 0;
 	}
 
 	if (g_forcePowerDisable.integer)
 	{
+<<<<<<< HEAD
+		gentity_t *te = G_TempEntity( vec3_origin, EV_SET_FORCE_DISABLE );
+=======
 		gentity_t *te = JKMod_G_TempEntity( vec3_origin, EV_SET_FORCE_DISABLE, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		te->r.svFlags |= SVF_BROADCAST;
 		te->s.eventParm = 1;
 	}
 	else
 	{
+<<<<<<< HEAD
+		gentity_t *te = G_TempEntity( vec3_origin, EV_SET_FORCE_DISABLE );
+=======
 		gentity_t *te = JKMod_G_TempEntity( vec3_origin, EV_SET_FORCE_DISABLE, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		te->r.svFlags |= SVF_BROADCAST;
 		te->s.eventParm = 0;
 	}
@@ -395,7 +411,11 @@ void WP_InitForcePowers( gentity_t *ent )
 		if (g_gametype.integer != GT_HOLOCRON && g_gametype.integer != GT_JEDIMASTER)
 		{
 #ifdef EVENT_FORCE_RANK
+<<<<<<< HEAD
+			gentity_t *te = G_TempEntity( vec3_origin, EV_GIVE_NEW_RANK );
+=======
 			gentity_t *te = JKMod_G_TempEntity( vec3_origin, EV_GIVE_NEW_RANK, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 			te->r.svFlags |= SVF_BROADCAST;
 			te->s.trickedentindex = ent->s.number;
@@ -437,7 +457,11 @@ void WP_InitForcePowers( gentity_t *ent )
 	if (!didEvent)
 	{
 #ifdef EVENT_FORCE_RANK
+<<<<<<< HEAD
+		gentity_t *te = G_TempEntity( vec3_origin, EV_GIVE_NEW_RANK );
+=======
 		gentity_t *te = JKMod_G_TempEntity( vec3_origin, EV_GIVE_NEW_RANK, ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		te->r.svFlags |= SVF_BROADCAST;
 		te->s.trickedentindex = ent->s.number;
@@ -605,12 +629,15 @@ void WP_SpawnInitForcePowers( gentity_t *ent )
 
 int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forcePower)
 {
+<<<<<<< HEAD
+=======
 	// Tr!Force: [GameGeneral] Drain model check
 	if (!Q_stricmp("jkmod_drain_model", other->classname)) 
 	{
 		return 1;
 	}
 
+>>>>>>> jediknightplus/master
 	if (other && other->client && other->client->ps.usingATST)
 	{
 		return 0;
@@ -626,12 +653,20 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 		return 0;
 	}
 
+<<<<<<< HEAD
+	//Dueling fighters cannot use force powers on others, with the exception of force push when locked with each other
+	if (attacker && attacker->client && attacker->client->ps.duelInProgress)
+=======
 	// Tr!Force: [Dimensions] Check collide
 	if (!JKMod_DimensionCollide(attacker, other))
+>>>>>>> jediknightplus/master
 	{
 		return 0;
 	}
 
+<<<<<<< HEAD
+	if (other && other->client && other->client->ps.duelInProgress)
+=======
 	// Tr!Force: [Duel] Check usage in force duel
 	if (jkcvar_allowCustomDuel.integer)
 	{
@@ -665,6 +700,7 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 
 	// Tr!Force: [ChatProtect] Prevent force usage
 	if ((other->client->ps.stats[JK_PLAYER] & JK_CHAT_IN) && jkcvar_chatProtect.integer >= 2)
+>>>>>>> jediknightplus/master
 	{
 		return 0;
 	}
@@ -809,7 +845,11 @@ int WP_AbsorbConversion(gentity_t *attacked, int atdAbsLevel, gentity_t *attacke
 	//play sound indicating that attack was absorbed
 	if (attacked->client->forcePowerSoundDebounce < level.time && jk2gameplay != VERSION_1_02)
 	{
+<<<<<<< HEAD
+		abSound = G_PreDefSound(attacked->client->ps.origin, PDSOUND_ABSORBHIT);
+=======
 		abSound = JKMod_G_PreDefSound(attacked->client->ps.origin, PDSOUND_ABSORBHIT, attacked->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		abSound->s.trickedentindex = attacked->s.number;
 
 		attacked->client->forcePowerSoundDebounce = level.time + 400;
@@ -817,7 +857,11 @@ int WP_AbsorbConversion(gentity_t *attacked, int atdAbsLevel, gentity_t *attacke
 
 	if ( jk2gameplay == VERSION_1_02 )
 	{
+<<<<<<< HEAD
+		G_PreDefSound(attacker->client->ps.origin, PDSOUND_ABSORBHIT);
+=======
 		JKMod_G_PreDefSound(attacker->client->ps.origin, PDSOUND_ABSORBHIT, attacked->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	}
 
 	return getLevel;
@@ -1220,7 +1264,11 @@ void ForceTeamHeal( gentity_t *self )
 			//At this point we know we got one, so add him into the collective event client bitflag
 			if (!te)
 			{
+<<<<<<< HEAD
+				te = G_TempEntity( self->client->ps.origin, EV_TEAM_POWER);
+=======
 				te = JKMod_G_TempEntity( self->client->ps.origin, EV_TEAM_POWER, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 				te->s.eventParm = 1; //eventParm 1 is heal, eventParm 2 is force regen
 
 				//since we had an extra check above, do the drain now because we got at least one guy
@@ -1316,7 +1364,11 @@ void ForceTeamForceReplenish( gentity_t *self )
 		//At this point we know we got one, so add him into the collective event client bitflag
 		if (!te)
 		{
+<<<<<<< HEAD
+			te = G_TempEntity( self->client->ps.origin, EV_TEAM_POWER);
+=======
 			te = JKMod_G_TempEntity( self->client->ps.origin, EV_TEAM_POWER, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			te->s.eventParm = 2; //eventParm 1 is heal, eventParm 2 is force regen
 		}
 
@@ -1475,7 +1527,11 @@ void ForceProtect( gentity_t *self )
 	self->client->ps.forceAllowDeactivateTime = level.time + 1500;
 
 	WP_ForcePowerStart( self, FP_PROTECT, 0 );
+<<<<<<< HEAD
+	G_PreDefSound(self->client->ps.origin, PDSOUND_PROTECT);
+=======
 	JKMod_G_PreDefSound(self->client->ps.origin, PDSOUND_PROTECT, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	G_Sound( self, TRACK_CHANNEL_3, protectLoopSound );
 }
 
@@ -1511,7 +1567,11 @@ void ForceAbsorb( gentity_t *self )
 	self->client->ps.forceAllowDeactivateTime = level.time + 1500;
 
 	WP_ForcePowerStart( self, FP_ABSORB, 0 );
+<<<<<<< HEAD
+	G_PreDefSound(self->client->ps.origin, PDSOUND_ABSORB);
+=======
 	JKMod_G_PreDefSound(self->client->ps.origin, PDSOUND_ABSORB, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	G_Sound( self, TRACK_CHANNEL_3, absorbLoopSound );
 }
 
@@ -1690,7 +1750,11 @@ void ForceShootLightning( gentity_t *self )
 			mins[i] = center[i] - radius;
 			maxs[i] = center[i] + radius;
 		}
+<<<<<<< HEAD
+		numListedEntities = trap_EntitiesInBox( mins, maxs, iEntityList, MAX_GENTITIES );
+=======
 		numListedEntities = JKMod_DimensionEntitiesInBox( mins, maxs, iEntityList, MAX_GENTITIES, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		i = 0;
 		while (i < numListedEntities)
@@ -1822,15 +1886,24 @@ void ForceDrain( gentity_t *self )
 void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t impactPoint )
 {
 	gentity_t *tent;
+<<<<<<< HEAD
+=======
 	qboolean jkmod_drainmodel = !Q_stricmp("jkmod_drain_model", traceEnt->classname); // Tr!Force: [GameGeneral] Drain model check
+>>>>>>> jediknightplus/master
 
 	self->client->dangerTime = level.time;
 	self->client->ps.eFlags &= ~EF_INVULNERABLE;
 	self->client->invulnerableTimer = 0;
 
+<<<<<<< HEAD
+	if ( traceEnt && traceEnt->takedamage )
+	{
+		if ( traceEnt->client && (!OnSameTeam(self, traceEnt) || g_friendlyFire.integer) && self->client->ps.fd.forceDrainTime < level.time && traceEnt->client->ps.fd.forcePower )
+=======
 	if ( traceEnt && traceEnt->takedamage || jkmod_drainmodel ) // Tr!Force: [GameGeneral] Drain model check
 	{
 		if ( traceEnt->client || jkmod_drainmodel && (!OnSameTeam(self, traceEnt) || g_friendlyFire.integer) && self->client->ps.fd.forceDrainTime < level.time && traceEnt->client->ps.fd.forcePower || jkmod_drainmodel ) // Tr!Force: [GameGeneral] Drain model check
+>>>>>>> jediknightplus/master
 		{//an enemy or object
 			if (!traceEnt->client && traceEnt->s.eType == ET_GRAPPLE)
 			{ //g2animent
@@ -1896,7 +1969,11 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 					self->client->ps.stats[STAT_HEALTH] = self->health;
 				}
 
+<<<<<<< HEAD
+				traceEnt->client->ps.fd.forcePowerRegenDebounceTime = level.time + 800; //don't let the client being drained get force power back right away
+=======
 				if (!jkmod_drainmodel) traceEnt->client->ps.fd.forcePowerRegenDebounceTime = level.time + 800; //don't let the client being drained get force power back right away // Tr!Force: [GameGeneral] Drain model check
+>>>>>>> jediknightplus/master
 
 				//Drain the standard amount since we just drained someone else
 
@@ -1930,7 +2007,11 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 
 				if (traceEnt->client->forcePowerSoundDebounce < level.time || jk2gameplay == VERSION_1_02)
 				{
+<<<<<<< HEAD
+					tent = G_TempEntity( impactPoint, EV_FORCE_DRAINED);
+=======
 					tent = JKMod_G_TempEntity( impactPoint, EV_FORCE_DRAINED, traceEnt->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 					tent->s.eventParm = DirToByte(dir);
 					tent->s.owner = traceEnt->s.number;
 
@@ -1947,7 +2028,10 @@ int ForceShootDrain( gentity_t *self )
 	vec3_t	end, forward;
 	gentity_t	*traceEnt;
 	int			gotOneOrMore = 0;
+<<<<<<< HEAD
+=======
 	qboolean	jkmod_drainmodel = qfalse; // Tr!Force: [GameGeneral] Drain model check
+>>>>>>> jediknightplus/master
 
 	if ( self->health <= 0 )
 	{
@@ -1970,7 +2054,11 @@ int ForceShootDrain( gentity_t *self )
 			mins[i] = center[i] - radius;
 			maxs[i] = center[i] + radius;
 		}
+<<<<<<< HEAD
+		numListedEntities = trap_EntitiesInBox( mins, maxs, iEntityList, MAX_GENTITIES );
+=======
 		numListedEntities = JKMod_DimensionEntitiesInBox( mins, maxs, iEntityList, MAX_GENTITIES, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		i = 0;
 		while (i < numListedEntities)
@@ -1984,14 +2072,28 @@ int ForceShootDrain( gentity_t *self )
 		{
 			traceEnt = entityList[e];
 
+<<<<<<< HEAD
+=======
 			jkmod_drainmodel = !Q_stricmp("jkmod_drain_model", traceEnt->classname); // Tr!Force: [GameGeneral] Drain model check
 			
+>>>>>>> jediknightplus/master
 			if ( !traceEnt )
 				continue;
 			if ( traceEnt == self )
 				continue;
 			if ( !traceEnt->inuse )
 				continue;
+<<<<<<< HEAD
+			if ( !traceEnt->takedamage )
+				continue;
+			if ( traceEnt->health <= 0 )//no torturing corpses
+				continue;
+			if ( !traceEnt->client )
+				continue;
+			if ( !traceEnt->client->ps.fd.forcePower )
+				continue;
+			if (OnSameTeam(self, traceEnt))
+=======
 			if ( !traceEnt->takedamage && !jkmod_drainmodel )
 				continue;
 			if ( traceEnt->health <= 0 && !jkmod_drainmodel )//no torturing corpses
@@ -2001,6 +2103,7 @@ int ForceShootDrain( gentity_t *self )
 			if ( !traceEnt->client->ps.fd.forcePower && !jkmod_drainmodel )
 				continue;
 			if ( OnSameTeam(self, traceEnt) && !jkmod_drainmodel )
+>>>>>>> jediknightplus/master
 				continue;
 			//this is all to see if we need to start a saber attack, if it's in flight, this doesn't matter
 			// find the distance from the edge of the bounding box
@@ -2041,6 +2144,8 @@ int ForceShootDrain( gentity_t *self )
 				continue;
 			}
 
+<<<<<<< HEAD
+=======
 			// Tr!Force: [GameGeneral] Drain model check
 			if ( jkmod_drainmodel )
 			{
@@ -2050,6 +2155,7 @@ int ForceShootDrain( gentity_t *self )
 				VectorCopy( mid_org, ent_org );
 			}
 
+>>>>>>> jediknightplus/master
 			//Now check and see if we can actually hit it
 			trap_Trace( &tr, self->client->ps.origin, vec3_origin, vec3_origin, ent_org, self->s.number, MASK_SHOT );
 			if ( tr.fraction < 1.0f && tr.entityNum != traceEnt->s.number )
@@ -2067,10 +2173,14 @@ int ForceShootDrain( gentity_t *self )
 		VectorMA( self->client->ps.origin, 2048, forward, end );
 		
 		trap_Trace( &tr, self->client->ps.origin, vec3_origin, vec3_origin, end, self->s.number, MASK_SHOT );
+<<<<<<< HEAD
+		if ( tr.entityNum == ENTITYNUM_NONE || tr.fraction == 1.0 || tr.allsolid || tr.startsolid || !g_entities[tr.entityNum].client || !g_entities[tr.entityNum].inuse )
+=======
 		
 		jkmod_drainmodel = !Q_stricmp("jkmod_drain_model", g_entities[tr.entityNum].classname); // Tr!Force: [GameGeneral] Drain model check
 
 		if ( (tr.entityNum == ENTITYNUM_NONE || tr.fraction == 1.0 || tr.allsolid || tr.startsolid || !g_entities[tr.entityNum].client || !g_entities[tr.entityNum].inuse) && !jkmod_drainmodel ) // Tr!Force: [GameGeneral] Drain model check
+>>>>>>> jediknightplus/master
 		{
 			return 0;
 		}
@@ -2202,7 +2312,11 @@ int WP_GetVelocityForForceJump( gentity_t *self, vec3_t jumpVel, usercmd_t *ucmd
 
 	G_MuteSound(self->client->ps.fd.killSoundEntIndex[TRACK_CHANNEL_1-50], CHAN_VOICE);
 
+<<<<<<< HEAD
+	G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP);
+=======
 	JKMod_G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	if (self->client->ps.fd.forceJumpCharge < JUMP_VELOCITY+40)
 	{ //give him at least a tiny boost from just a tap
@@ -2482,7 +2596,11 @@ void ForceTelepathy(gentity_t *self)
 	}
 	else
 	{
+<<<<<<< HEAD
+		numListedEntities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
+=======
 		numListedEntities = JKMod_DimensionEntitiesInBox( mins, maxs, entityList, MAX_GENTITIES, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		e = 0;
 
@@ -2828,7 +2946,11 @@ void ForceThrow( gentity_t *self, qboolean pull )
 	}
 	else
 	{
+<<<<<<< HEAD
+		numListedEntities = trap_EntitiesInBox( mins, maxs, entityList, MAX_GENTITIES );
+=======
 		numListedEntities = JKMod_DimensionEntitiesInBox( mins, maxs, entityList, MAX_GENTITIES, self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		e = 0;
 
@@ -3048,7 +3170,10 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				int otherPushPower = push_list[x]->client->ps.fd.forcePowerLevel[powerUse];
 				qboolean canPullWeapon = qtrue;
 				float dirLen = 0;
+<<<<<<< HEAD
+=======
 				qboolean jkmod_resistPush = push_list[x]->client->ps.stats[JK_MOVEMENT] & JK_RESIST_PUSH; // Tr!Force: [PlayerMovement] Resist push/pull anim
+>>>>>>> jediknightplus/master
 
 				pushPowerMod = pushPower;
 
@@ -3068,12 +3193,21 @@ void ForceThrow( gentity_t *self, qboolean pull )
 					if ( pull )
 					{
 						G_Sound( push_list[x], CHAN_BODY, G_SoundIndex( "sound/weapons/force/pull.wav" ) );
+<<<<<<< HEAD
+						push_list[x]->client->ps.forceHandExtend = HANDEXTEND_FORCEPULL;
+=======
 						push_list[x]->client->ps.forceHandExtend = jkmod_resistPush ? HANDEXTEND_TAUNT : HANDEXTEND_FORCEPULL; // Tr!Force: [PlayerMovement] Resist push/pull anim
+>>>>>>> jediknightplus/master
 						push_list[x]->client->ps.forceHandExtendTime = level.time + 400;
 					}
 					else
 					{
 						G_Sound( push_list[x], CHAN_BODY, G_SoundIndex( "sound/weapons/force/push.wav" ) );
+<<<<<<< HEAD
+						push_list[x]->client->ps.forceHandExtend = HANDEXTEND_FORCEPUSH;
+						push_list[x]->client->ps.forceHandExtendTime = level.time + 1000;
+					}
+=======
 						push_list[x]->client->ps.forceHandExtend = jkmod_resistPush ? HANDEXTEND_TAUNT : HANDEXTEND_FORCEPUSH; // Tr!Force: [PlayerMovement] Resist push/pull anim
 						push_list[x]->client->ps.forceHandExtendTime = level.time + 1000;
 					}
@@ -3081,6 +3215,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 					// Tr!Force: [PlayerMovement] Resist push/pull anim
 					if ( jkmod_resistPush ) push_list[x]->client->ps.forceDodgeAnim = BOTH_RESISTPUSH;
 
+>>>>>>> jediknightplus/master
 					push_list[x]->client->ps.powerups[PW_DISINT_4] = push_list[x]->client->ps.forceHandExtendTime + 200;
 
 					//Make a counter-throw effect
@@ -3207,9 +3342,12 @@ void ForceThrow( gentity_t *self, qboolean pull )
 						pushPowerMod = 16;
 					}
 
+<<<<<<< HEAD
+=======
 					// Tr!Force: [GameGeneral] Fullbody push effect
 					push_list[x]->client->jkmodClient.pushEffectTime = level.time + 600;
 
+>>>>>>> jediknightplus/master
 					push_list[x]->client->ps.velocity[0] = pushDir[0]*pushPowerMod;
 					push_list[x]->client->ps.velocity[1] = pushDir[1]*pushPowerMod;
 
@@ -3297,6 +3435,8 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				Touch_Button( push_list[x], self, NULL );
 				continue;
 			}
+<<<<<<< HEAD
+=======
 			// Tr!Force: [Items] Allow force physics on items
 			else if (push_list[x]->s.eType == ET_ITEM && jkcvar_itemForcePhysics.integer)
 			{
@@ -3335,6 +3475,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				// Bounce
 				push_list[x]->s.eFlags |= EF_BOUNCE_HALF;
 			}
+>>>>>>> jediknightplus/master
 		}
 	}
 
@@ -4179,8 +4320,12 @@ void FindGenericEnemyIndex(gentity_t *self)
 	{
 		ent = &g_entities[i];
 
+<<<<<<< HEAD
+		if (ent && ent->client && ent->s.number != self->s.number && ent->health > 0 && !OnSameTeam(self, ent) && ent->client->ps.pm_type != PM_INTERMISSION && ent->client->ps.pm_type != PM_SPECTATOR)
+=======
 		// Tr!Force: [Dimensions] Check collide
 		if (ent && ent->client && ent->s.number != self->s.number && JKMod_DimensionCollide(self, ent) && ent->health > 0 && !OnSameTeam(self, ent) && ent->client->ps.pm_type != PM_INTERMISSION && ent->client->ps.pm_type != PM_SPECTATOR)
+>>>>>>> jediknightplus/master
 		{
 			VectorSubtract(ent->client->ps.origin, self->client->ps.origin, a);
 			tlen = VectorLength(a);
@@ -4234,7 +4379,11 @@ void SeekerDroneUpdate(gentity_t *self)
 		a[YAW] = 0;
 		a[PITCH] = 1;
 
+<<<<<<< HEAD
+		G_PlayEffect(EFFECT_SPARK_EXPLOSION, org, a);
+=======
 		JKMod_G_PlayEffect(EFFECT_SPARK_EXPLOSION, org, a, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		self->client->ps.eFlags -= EF_SEEKERDRONE;
 		self->client->ps.genericEnemyIndex = -1;
@@ -4281,7 +4430,11 @@ void SeekerDroneUpdate(gentity_t *self)
 		a[YAW] = 0;
 		a[PITCH] = 1;
 
+<<<<<<< HEAD
+		G_PlayEffect(EFFECT_SPARK_EXPLOSION, org, a);
+=======
 		JKMod_G_PlayEffect(EFFECT_SPARK_EXPLOSION, org, a, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 		self->client->ps.eFlags -= EF_SEEKERDRONE;
 		self->client->ps.genericEnemyIndex = -1;
@@ -4356,7 +4509,11 @@ void SeekerDroneUpdate(gentity_t *self)
 				VectorNormalize(endir);
 
 				WP_FireGenericBlasterMissile(self, org, endir, 0, 15, 2000, MOD_BLASTER);
+<<<<<<< HEAD
+				G_SoundAtLoc( org, CHAN_WEAPON, G_SoundIndex("sound/weapons/bryar/fire.wav") );
+=======
 				JKMod_G_SoundAtLoc( org, CHAN_WEAPON, G_SoundIndex("sound/weapons/bryar/fire.wav"), self->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 				self->client->ps.droneFireTime = level.time + Q_irand(400, 700);
 			}
@@ -4631,7 +4788,11 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 					if (self->client->pers.cmd.upmove &&
 						self->client->ps.fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_1)
 					{ //force getup
+<<<<<<< HEAD
+						G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP);
+=======
 						JKMod_G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 						self->client->ps.forceDodgeAnim = 2;
 						self->client->ps.forceHandExtendTime = level.time + 500;
 
@@ -4669,7 +4830,11 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 				if (self->client->pers.cmd.upmove &&
 					self->client->ps.fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_1)
 				{ //force getup
+<<<<<<< HEAD
+					G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP);
+=======
 					JKMod_G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 					self->client->ps.forceDodgeAnim = 2;
 					self->client->ps.forceHandExtendTime = level.time + 800;//1000;
 
@@ -4824,7 +4989,11 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 
 	if (self->client->ps.fd.forceJumpSound)
 	{
+<<<<<<< HEAD
+		G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP);
+=======
 		JKMod_G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		self->client->ps.fd.forceJumpSound = 0;
 	}
 
@@ -4832,7 +5001,11 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 	{
 		if (self->client->ps.fd.forceGripSoundTime < level.time)
 		{
+<<<<<<< HEAD
+			G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEGRIP);
+=======
 			JKMod_G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEGRIP, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			self->client->ps.fd.forceGripSoundTime = level.time + 1000;
 		}
 	}

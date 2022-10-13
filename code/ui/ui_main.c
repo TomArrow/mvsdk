@@ -174,6 +174,13 @@ void MVAPI_AfterInit(void)
 		MV_SetGamePlay( jk2startversion );
 	}
 
+<<<<<<< HEAD
+	if (mvapi >= 1) { //to show jk2mv menu settings
+		trap_Cvar_Set("ui_menulevel", "1");
+	}
+
+=======
+>>>>>>> jediknightplus/master
 	// Call _UI_Init now, because we delayed it earilier
 	_UI_Init( Init_inGameLoad );
 }
@@ -600,6 +607,10 @@ static void Text_Paint(float x, float y, float scale, const vec4_t color, const 
 							iStyleOR | iFontIndex,	// const int iFontHandle
 							!limit?-1:limit,		// iCharLimit (-1 = none)
 							scale );				// const float scale = 1.0f
+<<<<<<< HEAD
+
+=======
+>>>>>>> jediknightplus/master
 	UI_WideScreenMode(qfalse);
 }
 
@@ -689,7 +700,10 @@ static void Text_Paint_Limit(float *maxX, float x, float y, float scale, vec4_t 
 
 void UI_ShowPostGame(qboolean newHigh) {
 	trap_Cvar_Set ("cg_cameraOrbit", "0");
+<<<<<<< HEAD
+=======
 	trap_Cvar_Set("cg_thirdPerson", "0");
+>>>>>>> jediknightplus/master
 	trap_Cvar_Set( "sv_killserver", "1" );
 	uiInfo.soundHighScore = newHigh;
   _UI_SetActiveMenu(UIMENU_POSTGAME);
@@ -775,7 +789,10 @@ void _UI_Refresh( int realtime )
 		UI_BuildServerStatus(qfalse);
 		// refresh find player list
 		UI_BuildFindPlayerList(qfalse);
+<<<<<<< HEAD
+=======
 
+>>>>>>> jediknightplus/master
 		// draw cursor
 		if ( (trap_Key_GetCatcher() & KEYCATCH_UI) && Menu_Count() > 0 ) {
 			float	cursorx = uiInfo.uiDC.cursorx * uiInfo.screenXFactorInv;
@@ -1250,7 +1267,10 @@ void UI_LoadMenus(const char *menuFile, qboolean reset) {
 }
 
 void UI_Load() {
+<<<<<<< HEAD
+=======
 	char *fallbackMenus = !trap_Cvar_VariableValue("mv_apienabled") ? "ui/jk2mpingame_fallback.txt" : "ui/jk2mpingame.txt"; // Tr!Force: [JKMod] Fallback menus
+>>>>>>> jediknightplus/master
 	char *menuSet;
 	char lastName[1024];
 	menuDef_t *menu = Menu_GetFocused();
@@ -1265,7 +1285,11 @@ void UI_Load() {
 
 	if (uiInfo.inGameLoad)
 	{
+<<<<<<< HEAD
+		menuSet= "ui/jk2mpingame.txt";
+=======
 		menuSet = fallbackMenus; // Tr!Force: [JKMod] Fallback menus
+>>>>>>> jediknightplus/master
 	}
 	else
 	{
@@ -1794,6 +1818,11 @@ static void UI_DrawTeamMember(rectDef_t *rect, float scale, vec4_t color, qboole
   Text_Paint(rect->x, rect->y, scale, finalColor, text, 0, 0, textStyle, iMenuFont);
 }
 
+<<<<<<< HEAD
+static void UI_DrawEffects(rectDef_t *rect, float scale, vec4_t color) 
+{
+	UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiSaberColorShaders[uiInfo.effectsColor]);
+=======
 static void UI_DrawEffects(rectDef_t *rect, float scale, vec4_t color, qboolean dualsaber) 
 {
 	// Tr!Force: [DualSaber] Blade color menu
@@ -1802,6 +1831,7 @@ static void UI_DrawEffects(rectDef_t *rect, float scale, vec4_t color, qboolean 
 	} else {
 		UI_DrawHandlePic( rect->x, rect->y, rect->w, rect->h, uiSaberColorShaders[uiInfo.effectsColor]);
 	}
+>>>>>>> jediknightplus/master
 }
 
 static void UI_DrawMapPreview(rectDef_t *rect, float scale, vec4_t color, qboolean net) {
@@ -2053,12 +2083,18 @@ void UpdateForceStatus()
 		case TEAM_RED:
 			uiSkinColor = SKINCOLOR_RED;
 			uiInfo.effectsColor = SABER_RED;
+<<<<<<< HEAD
+=======
 			uiInfo.effectsColor2 = SABER_RED; // Tr!Force: [DualSaber] Blade color menu
+>>>>>>> jediknightplus/master
 			break;
 		case TEAM_BLUE:
 			uiSkinColor = SKINCOLOR_BLUE;
 			uiInfo.effectsColor = SABER_BLUE;
+<<<<<<< HEAD
+=======
 			uiInfo.effectsColor2 = SABER_BLUE; // Tr!Force: [DualSaber] Blade color menu
+>>>>>>> jediknightplus/master
 			break;
 		default:
 			//uiSkinColor = SKINCOLOR_DEFAULT;
@@ -3011,10 +3047,14 @@ static void UI_OwnerDraw(float x, float y, float w, float h, float text_x, float
 		UI_DrawForceStars(&rect, scale, color, textStyle, findex, drawRank, 0, NUM_FORCE_POWER_LEVELS-1);
 		break;
     case UI_EFFECTS:
+<<<<<<< HEAD
+      UI_DrawEffects(&rect, scale, color);
+=======
       UI_DrawEffects(&rect, scale, color, qfalse);
       break;
 	case UI_EFFECTS_2:
       UI_DrawEffects(&rect, scale, color, qtrue);
+>>>>>>> jediknightplus/master
       break;
     case UI_PLAYERMODEL:
       //UI_DrawPlayerModel(&rect);
@@ -3332,7 +3372,11 @@ static qboolean UI_Handicap_HandleKey(int flags, float *special, int key) {
   return qfalse;
 }
 
+<<<<<<< HEAD
+static qboolean UI_Effects_HandleKey(int flags, float *special, int key) {
+=======
 static qboolean UI_Effects_HandleKey(int flags, float *special, int key, qboolean dualsaber) {
+>>>>>>> jediknightplus/master
 	if (key == A_MOUSE1 || key == A_MOUSE2 || key == A_ENTER || key == A_KP_ENTER) {
 		
 		if ( !UI_TrueJediEnabled() )
@@ -3345,6 +3389,21 @@ static qboolean UI_Effects_HandleKey(int flags, float *special, int key, qboolea
 			}
 		}
 				
+<<<<<<< HEAD
+		if (key == A_MOUSE2) {
+			uiInfo.effectsColor--;
+		} else {
+			uiInfo.effectsColor++;
+		}
+		
+		if( uiInfo.effectsColor > 5 ) {
+			uiInfo.effectsColor = 0;
+		} else if (uiInfo.effectsColor < 0) {
+			uiInfo.effectsColor = 5;
+		}
+		
+		trap_Cvar_SetValue( "color1", /*uitogamecode[uiInfo.effectsColor]*/uiInfo.effectsColor );
+=======
 		// Tr!Force: [DualSaber] Blade color menu
 		if (dualsaber)
 		{
@@ -3378,6 +3437,7 @@ static qboolean UI_Effects_HandleKey(int flags, float *special, int key, qboolea
 		
 			trap_Cvar_SetValue( "color1", /*uitogamecode[uiInfo.effectsColor]*/uiInfo.effectsColor );
 		}
+>>>>>>> jediknightplus/master
 		return qtrue;
 	}
 	return qfalse;
@@ -3837,10 +3897,14 @@ static qboolean UI_OwnerDrawHandleKey(int ownerDraw, int flags, float *special, 
 		return UI_ForcePowerRank_HandleKey(flags, special, key, uiForcePowersRank[findex], 0, NUM_FORCE_POWER_LEVELS-1, ownerDraw);
 		break;
     case UI_EFFECTS:
+<<<<<<< HEAD
+      return UI_Effects_HandleKey(flags, special, key);
+=======
       return UI_Effects_HandleKey(flags, special, key, qfalse);
       break;
 	case UI_EFFECTS_2:
       return UI_Effects_HandleKey(flags, special, key, qtrue);
+>>>>>>> jediknightplus/master
       break;
     case UI_CLANNAME:
       return UI_ClanName_HandleKey(flags, special, key);
@@ -4230,7 +4294,10 @@ static void UI_StartSkirmish(qboolean next) {
 	trap_Cvar_Set("ui_pure", va("%i", temp));
 
 	trap_Cvar_Set("cg_cameraOrbit", "0");
+<<<<<<< HEAD
+=======
 	trap_Cvar_Set("cg_thirdPerson", "0");
+>>>>>>> jediknightplus/master
 	trap_Cvar_Set("cg_drawTimer", "1");
 	trap_Cvar_Set("g_doWarmup", "1");
 	trap_Cvar_Set("g_warmup", "15");
@@ -4472,9 +4539,12 @@ static void UI_Update(const char *name) {
 			trap_Cvar_SetValue("ui_r_fullscreen", 1);
 		}
 	}
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [JKMod] Check custom menu update
 	JKMod_UI_Update(name, val);
+>>>>>>> jediknightplus/master
 }
 
 static int gUISelectedMap = 0;
@@ -4545,7 +4615,11 @@ you to discard your changes if you did something you didnt want
 void UI_UpdateVideoSetup ( void )
 {
 	trap_Cvar_Set ( "r_mode", UI_Cvar_VariableString ( "ui_r_mode" ) );
+<<<<<<< HEAD
+	if (mvapi >= 1) trap_Cvar_Set ( "r_aspectratio", UI_Cvar_VariableString ( "ui_r_aspectratio" ) );
+=======
 	trap_Cvar_Set ( "r_aspectratio", UI_Cvar_VariableString("ui_r_aspectratio"));
+>>>>>>> jediknightplus/master
 	trap_Cvar_Set ( "r_fullscreen", UI_Cvar_VariableString ( "ui_r_fullscreen" ) );
 	trap_Cvar_Set ( "r_colorbits", UI_Cvar_VariableString ( "ui_r_colorbits" ) );
 	trap_Cvar_Set ( "r_lodbias", UI_Cvar_VariableString ( "ui_r_lodbias" ) );
@@ -4554,7 +4628,11 @@ void UI_UpdateVideoSetup ( void )
 	trap_Cvar_Set ( "r_texturemode", UI_Cvar_VariableString ( "ui_r_texturemode" ) );
 	trap_Cvar_Set ( "r_detailtextures", UI_Cvar_VariableString ( "ui_r_detailtextures" ) );
 	trap_Cvar_Set ( "r_ext_compress_textures", UI_Cvar_VariableString ( "ui_r_ext_compress_textures" ) );
+<<<<<<< HEAD
+	if (mvapi >= 1) trap_Cvar_Set ( "r_ext_multisample", UI_Cvar_VariableString ( "ui_r_ext_multisample" ) );
+=======
 	trap_Cvar_Set ( "r_ext_multisample", UI_Cvar_VariableString ( "ui_r_ext_multisample" ) );
+>>>>>>> jediknightplus/master
 	trap_Cvar_Set ( "r_depthbits", UI_Cvar_VariableString ( "ui_r_depthbits" ) );
 	trap_Cvar_Set ( "r_subdivisions", UI_Cvar_VariableString ( "ui_r_subdivisions" ) );
 	trap_Cvar_Set ( "r_fastSky", UI_Cvar_VariableString ( "ui_r_fastSky" ) );
@@ -4588,7 +4666,11 @@ void UI_GetVideoSetup ( void )
 	trap_Cvar_Register ( NULL, "ui_r_texturemode",			"0", CVAR_ROM|CVAR_INTERNAL );
 	trap_Cvar_Register ( NULL, "ui_r_detailtextures",		"0", CVAR_ROM|CVAR_INTERNAL );
 	trap_Cvar_Register ( NULL, "ui_r_ext_compress_textures","0", CVAR_ROM|CVAR_INTERNAL );
+<<<<<<< HEAD
+	if (mvapi >= 1) trap_Cvar_Register ( NULL, "ui_r_ext_multisample",		"0", CVAR_ROM|CVAR_INTERNAL );
+=======
 	trap_Cvar_Register ( NULL, "ui_r_ext_multisample",		"0", CVAR_ROM|CVAR_INTERNAL );
+>>>>>>> jediknightplus/master
 	trap_Cvar_Register ( NULL, "ui_r_depthbits",			"0", CVAR_ROM|CVAR_INTERNAL );
 	trap_Cvar_Register ( NULL, "ui_r_subdivisions",			"0", CVAR_ROM|CVAR_INTERNAL );
 	trap_Cvar_Register ( NULL, "ui_r_fastSky",				"0", CVAR_ROM|CVAR_INTERNAL );
@@ -4607,7 +4689,11 @@ void UI_GetVideoSetup ( void )
 	trap_Cvar_Set ( "ui_r_texturemode", UI_Cvar_VariableString ( "r_texturemode" ) );
 	trap_Cvar_Set ( "ui_r_detailtextures", UI_Cvar_VariableString ( "r_detailtextures" ) );
 	trap_Cvar_Set ( "ui_r_ext_compress_textures", UI_Cvar_VariableString ( "r_ext_compress_textures" ) );
+<<<<<<< HEAD
+	if (mvapi >= 1) trap_Cvar_Set ( "ui_r_ext_multisample", UI_Cvar_VariableString ( "r_ext_multisample" ) );
+=======
 	trap_Cvar_Set ( "ui_r_ext_multisample", UI_Cvar_VariableString ( "r_ext_multisample" ) );
+>>>>>>> jediknightplus/master
 	trap_Cvar_Set ( "ui_r_depthbits", UI_Cvar_VariableString ( "r_depthbits" ) );
 	trap_Cvar_Set ( "ui_r_subdivisions", UI_Cvar_VariableString ( "r_subdivisions" ) );
 	trap_Cvar_Set ( "ui_r_fastSky", UI_Cvar_VariableString ( "r_fastSky" ) );
@@ -4616,9 +4702,17 @@ void UI_GetVideoSetup ( void )
 	trap_Cvar_Set ( "ui_cg_shadows", UI_Cvar_VariableString ( "cg_shadows" ) );
 	trap_Cvar_Set ( "ui_r_modified", "0" );
 
+<<<<<<< HEAD
+	if (mvapi >= 1)
+	{ // screen resolutions
+		trap_Cvar_Register(NULL, "ui_r_aspectratio", "0", CVAR_ROM | CVAR_INTERNAL);
+		trap_Cvar_Set("ui_r_aspectratio", UI_Cvar_VariableString("r_aspectratio"));
+	}
+=======
 	// screen resolutions
 	trap_Cvar_Register(NULL, "ui_r_aspectratio", "0", CVAR_ROM | CVAR_INTERNAL);
 	trap_Cvar_Set("ui_r_aspectratio", UI_Cvar_VariableString("r_aspectratio"));
+>>>>>>> jediknightplus/master
 }
 
 static void UI_RunMenuScript(const char **args)
@@ -4635,7 +4729,10 @@ static void UI_RunMenuScript(const char **args)
 			int warmupTime = 0;
 			int doWarmup = 0;
 
+<<<<<<< HEAD
+=======
 			trap_Cvar_Set("cg_thirdPerson", "0");
+>>>>>>> jediknightplus/master
 			trap_Cvar_Set("cg_cameraOrbit", "0");
 			trap_Cvar_Set("ui_singlePlayerActive", "0");
 			trap_Cvar_SetValue( "dedicated", Com_Clamp( 0, 2, ui_dedicated.integer ) );
@@ -4846,7 +4943,10 @@ static void UI_RunMenuScript(const char **args)
 			uiInfo.serverStatusInfo.numLines = 0;
 			Menu_SetFeederSelection(NULL, FEEDER_FINDPLAYER, 0, NULL);
 		} else if (Q_stricmp(name, "JoinServer") == 0) {
+<<<<<<< HEAD
+=======
 			trap_Cvar_Set("cg_thirdPerson", "0");
+>>>>>>> jediknightplus/master
 			trap_Cvar_Set("cg_cameraOrbit", "0");
 			trap_Cvar_Set("ui_singlePlayerActive", "0");
 			if (uiInfo.serverStatus.currentServer >= 0 && uiInfo.serverStatus.currentServer < uiInfo.serverStatus.numDisplayServers) {
@@ -5194,7 +5294,11 @@ static void UI_RunMenuScript(const char **args)
 				trap_UI_DeleteDLFile(&uiInfo.downloadsList[uiInfo.downloadsIndex]);
 				UI_LoadDLFiles();
 			}
+<<<<<<< HEAD
+		} else {
+=======
 		} else if (!JKMod_UI_RunMenuScript(args, name)) { // Tr!Force: [JKMod] Check custom menu scripts
+>>>>>>> jediknightplus/master
 			Com_Printf("unknown UI script %s\n", name);
 		}
 	}
@@ -6008,7 +6112,11 @@ static void UI_BuildServerStatus(qboolean force) {
 UI_FeederCount
 ==================
 */
+<<<<<<< HEAD
+static int UI_FeederCount(float feederID) 
+=======
 /*static*/ int BaseJK2_UI_FeederCount(float feederID) // Tr!Force: [BaseJK2] Feeder count function
+>>>>>>> jediknightplus/master
 {
 	switch ( (int)feederID )
 	{
@@ -6254,8 +6362,13 @@ static void UI_UpdatePendingPings() {
 
 }
 
+<<<<<<< HEAD
+static const char *UI_FeederItemText(float feederID, int index, int column, 
+	qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6) {
+=======
 /*static*/ const char *BaseJK2_UI_FeederItemText(float feederID, int index, int column, 
 	qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6) { // Tr!Force: [BaseJK2] Feeder item text function
+>>>>>>> jediknightplus/master
 	static char info[MAX_STRING_CHARS];
 	static char hostname[1024];
 	static char clientBuff[32];
@@ -6629,7 +6742,11 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
 				if (!noIconHead.name)
 				{
 					noIconHead.next = NULL;
+<<<<<<< HEAD
+					noIconHead.icon = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
+=======
 					noIconHead.icon = trap_R_RegisterShaderNoMip("gfx/mp/jkmod_missing_icon"); // Tr!Force: [MissingIcon] Add new one
+>>>>>>> jediknightplus/master
 					noIconHead.name = noIconHeadName;
 
 					UI_InsertHeadRaw(&noIconHead);
@@ -6718,7 +6835,11 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
   return 0;
 }
 
+<<<<<<< HEAD
+qboolean UI_FeederSelection(float feederID, int index) {
+=======
 qboolean BaseJK2_UI_FeederSelection(float feederID, int index) { // Tr!Force: [BaseJK2] Feeder selection
+>>>>>>> jediknightplus/master
 	static char info[MAX_STRING_CHARS];
 	if (feederID == FEEDER_HEADS) 
 	{
@@ -7317,7 +7438,10 @@ UI_Init
 */
 void _UI_Init( qboolean inGameLoad ) {
 	int i;
+<<<<<<< HEAD
+=======
 	const char *fallbackMenus = !trap_Cvar_VariableValue("mv_apienabled") ? "ui/jk2mpingame_fallback.txt" : "ui/jk2mpingame.txt"; // Tr!Force: [JKMod] Fallback menus
+>>>>>>> jediknightplus/master
 	const char *menuSet;
 	uiClientState_t cstate;
 
@@ -7423,9 +7547,13 @@ void _UI_Init( qboolean inGameLoad ) {
 		if (!trap_SP_Register(va("menus%d",i)))	//, /*SP_REGISTER_REQUIRED|*/SP_REGISTER_MENU))
 			break;
 	}
+<<<<<<< HEAD
+	trap_SP_Register("mv"); // language file
+=======
 
 	trap_SP_Register("mv"); // language file
 	trap_SP_Register("jkmod_menus"); // Tr!Force: [JKMod] Load menus texts
+>>>>>>> jediknightplus/master
 
 
 	Init_Display(&uiInfo.uiDC);
@@ -7459,7 +7587,11 @@ void _UI_Init( qboolean inGameLoad ) {
 #if 1
 	if (inGameLoad)
 	{
+<<<<<<< HEAD
+		UI_LoadMenus("ui/jk2mpingame.txt", qtrue);
+=======
 		UI_LoadMenus(fallbackMenus, qtrue); // Tr!Force: [JKMod] Fallback menus
+>>>>>>> jediknightplus/master
 	}
 	else
 	{
@@ -7467,7 +7599,11 @@ void _UI_Init( qboolean inGameLoad ) {
 	}
 #else //this was adding quite a giant amount of time to the load time
 	UI_LoadMenus(menuSet, qtrue);
+<<<<<<< HEAD
+	UI_LoadMenus("ui/jk2mpingame.txt", qtrue);
+=======
 	UI_LoadMenus(fallbackMenus, qtrue); // Tr!Force: [JKMod] Fallback menus
+>>>>>>> jediknightplus/master
 #endif
 	
 	Menus_CloseAll();
@@ -7484,7 +7620,10 @@ void _UI_Init( qboolean inGameLoad ) {
 
 	// sets defaults for ui temp cvars
 	uiInfo.effectsColor = /*gamecodetoui[*/(int)trap_Cvar_VariableValue("color1");//-1];
+<<<<<<< HEAD
+=======
 	uiInfo.effectsColor2 = /*gamecodetoui[*/(int)trap_Cvar_VariableValue("color2");//-1]; // Tr!Force: [DualSaber] Blade color menu
+>>>>>>> jediknightplus/master
 	uiInfo.currentCrosshair = (int)trap_Cvar_VariableValue("cg_drawCrosshair");
 	trap_Cvar_Set("ui_mousePitch", (trap_Cvar_VariableValue("m_pitch") >= 0) ? "0" : "1");
 
@@ -7880,6 +8019,10 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 	char			info[MAX_INFO_VALUE];
 	char text[256];
 	float centerPoint, yStart, scale;
+<<<<<<< HEAD
+	const float xOffset = 0.5f * (uiInfo.screenWidth - SCREEN_WIDTH);
+=======
+>>>>>>> jediknightplus/master
 
 	char sStripEdTemp[256];
 
@@ -7887,7 +8030,22 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 
 
 	if ( !overlay && menu ) {
+<<<<<<< HEAD
+		if (menu->items[0]) {
+			UI_WideScreenMode(qtrue);
+			menu->items[0]->window.rect.x = xOffset;
+			Menu_Paint(menu, qtrue);
+			UI_FillRect(0, 0, xOffset, SCREEN_HEIGHT, colorBlack);
+			UI_FillRect(xOffset + SCREEN_WIDTH, 0, xOffset, SCREEN_HEIGHT, colorBlack);
+			UI_WideScreenMode(qfalse);
+		}
+		else {
+			Menu_Paint(menu, qtrue);
+
+		}
+=======
 		Menu_Paint(menu, qtrue);
+>>>>>>> jediknightplus/master
 	}
 
 	if (!overlay) {
@@ -8276,7 +8434,11 @@ int teamModelModificationCount = -1;
 UI_RegisterCvars
 =================
 */
+<<<<<<< HEAD
+void UI_RegisterCvars( void ) {
+=======
 void BaseJK2_UI_RegisterCvars( void ) {  // Tr!Force: [BaseJK2] Register UI cvars function
+>>>>>>> jediknightplus/master
 	int			i;
 	const cvarTable_t *cv;
 
@@ -8294,7 +8456,11 @@ void BaseJK2_UI_RegisterCvars( void ) {  // Tr!Force: [BaseJK2] Register UI cvar
 UI_UpdateCvars
 =================
 */
+<<<<<<< HEAD
+void UI_UpdateCvars( void ) {
+=======
 void BaseJK2_UI_UpdateCvars( void ) {  // Tr!Force: [BaseJK2] Update UI cvars function
+>>>>>>> jediknightplus/master
 	int			i;
 	const cvarTable_t	*cv;
 

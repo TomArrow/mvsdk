@@ -258,6 +258,22 @@ void FX_DrawPortableShield(centity_t *cent)
 	start[2] += height/2;
 	end[2] += height/2;
 
+<<<<<<< HEAD
+	switch (team)
+	{
+		case TEAM_RED:
+			shader = (cent->currentState.trickedentindex ? cgs.media.forcefieldDmgShader[TEAM_RED] : cgs.media.forcefieldShader[TEAM_RED]);
+			break;
+		case TEAM_FREE:
+			if (cgs.isCTFMod && cgs.CTF3ModeActive) {
+				shader = (cent->currentState.trickedentindex ? cgs.media.forcefieldDmgShader[TEAM_FREE] : cgs.media.forcefieldShader[TEAM_FREE]);
+				break;
+			}
+		default:
+		case TEAM_BLUE:
+			shader = (cent->currentState.trickedentindex ? cgs.media.forcefieldDmgShader[TEAM_BLUE] : cgs.media.forcefieldShader[TEAM_BLUE]);
+			break;
+=======
 	if (team == TEAM_RED)
 	{
 		if (cent->currentState.trickedentindex)
@@ -279,6 +295,7 @@ void FX_DrawPortableShield(centity_t *cent)
 		{
 			shader = trap_R_RegisterShader( "gfx/misc/blue_portashield" );
 		}
+>>>>>>> jediknightplus/master
 	}
 
 	FX_AddOrientedLine(start, end, normal, 1.0f, height, 0.0f, 1.0f, 1.0f, 50.0, shader);
@@ -507,6 +524,13 @@ static void CG_General( centity_t *cent ) {
 		}
 	}
 
+<<<<<<< HEAD
+	if (cent->currentState.eType == ET_BODY && cg.predictedPlayerState.duelInProgress) {
+		return;
+	}
+
+=======
+>>>>>>> jediknightplus/master
 	if (cent->currentState.modelGhoul2 >= G2_MODELPART_HEAD &&
 		cent->currentState.modelGhoul2 <= G2_MODELPART_RLEG &&
 		cent->currentState.modelindex < MAX_CLIENTS &&
@@ -1775,11 +1799,19 @@ Ghoul2 Insert End
 	else
 	{	// add to refresh list  -- normal item
 		if (item->giType == IT_TEAM &&
+<<<<<<< HEAD
+			(item->giTag == PW_REDFLAG || item->giTag == PW_BLUEFLAG || item->giTag == PW_NEUTRALFLAG))
+		{
+			ent.modelScale[0] = 0.7f;
+			ent.modelScale[1] = 0.7f;
+			ent.modelScale[2] = 0.7f;
+=======
 			(item->giTag == PW_REDFLAG || item->giTag == PW_BLUEFLAG))
 		{
 			ent.modelScale[0] = 0.7;
 			ent.modelScale[1] = 0.7;
 			ent.modelScale[2] = 0.7;
+>>>>>>> jediknightplus/master
 			ScaleModelAxis(&ent);
 		}
 		trap_R_AddRefEntityToScene(&ent);
@@ -2470,6 +2502,8 @@ void CG_AddPacketEntities( void ) {
 	centity_t			*cent;
 	playerState_t		*ps;
 
+<<<<<<< HEAD
+=======
 	// set cg.frameInterpolation
 	if ( cg.nextSnap ) {
 		int		delta;
@@ -2485,6 +2519,7 @@ void CG_AddPacketEntities( void ) {
 									// no entities should be marked as interpolating
 	}
 
+>>>>>>> jediknightplus/master
 	// the auto-rotating items will all have the same axis
 	cg.autoAngles[0] = 0;
 	cg.autoAngles[1] = ( cg.time & 2047 ) * 360 / 2048.0;

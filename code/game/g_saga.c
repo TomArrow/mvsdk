@@ -140,7 +140,11 @@ void SagaBroadcast_OBJECTIVECOMPLETE(int team, int client, int objective)
 
 	VectorClear(nomatter);
 
+<<<<<<< HEAD
+	te = G_TempEntity( nomatter, EV_SAGA_OBJECTIVECOMPLETE );
+=======
 	te = JKMod_G_TempEntity( nomatter, EV_SAGA_OBJECTIVECOMPLETE, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->r.svFlags |= SVF_BROADCAST;
 	te->s.eventParm = team;
 	te->s.weapon = client;
@@ -154,7 +158,11 @@ void SagaBroadcast_ROUNDOVER(int winningteam, int winningclient)
 
 	VectorClear(nomatter);
 
+<<<<<<< HEAD
+	te = G_TempEntity( nomatter, EV_SAGA_ROUNDOVER );
+=======
 	te = JKMod_G_TempEntity( nomatter, EV_SAGA_ROUNDOVER, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->r.svFlags |= SVF_BROADCAST;
 	te->s.eventParm = winningteam;
 	te->s.weapon = winningclient;

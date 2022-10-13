@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+﻿# Make sure the user is not executing this script directly
+=======
 # Make sure the user is not executing this script directly
+>>>>>>> jediknightplus/master
 if(NOT InMVSDK)
 	message(FATAL_ERROR "Use the top-level cmake script!")
 endif(NOT InMVSDK)
@@ -10,23 +14,33 @@ set(MVUIHEADERS
 	"${SRCDir}/ui/keycodes.h"
 	"${SRCDir}/ui/ui_force.h"
 	"${SRCDir}/ui/ui_local.h"
+<<<<<<< HEAD
+=======
 	"${JKModDir}/ui/jk_ui_local.h" # Tr!Force: [CMake] JKMod headers
+>>>>>>> jediknightplus/master
 	"${SRCDir}/ui/ui_public.h"
 	"${SRCDir}/ui/ui_shared.h"
 	"${SRCDir}/ui/ui_multiversion.h"
 	"${SRCDir}/ui/ui_multiversion_syscalls.h"
 	
 	"${SRCDir}/game/bg_weapons.h"
+<<<<<<< HEAD
+=======
 	"${JKModDir}/game/jk_version.h" # Tr!Force: [CMake] JKMod headers
+>>>>>>> jediknightplus/master
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/bg_multiversion.h"
 )
 
 set(MVUISOURCES
 	"${SRCDir}/ui/ui_main.c" # keep this on top (qvm compiler needs VM_Main as the first compiled function)
+<<<<<<< HEAD
+	"${SRCDir}/ui/ui_atoms.c"
+=======
 	"${JKModDir}/ui/jk_ui_main.c" # Tr!Force: [CMake] JKMod sources
 	"${SRCDir}/ui/ui_atoms.c"
 	"${JKModDir}/ui/jk_ui_atoms.c" # Tr!Force: [CMake] JKMod sources
+>>>>>>> jediknightplus/master
 	"${SRCDir}/ui/ui_force.c"
 	"${SRCDir}/ui/ui_gameinfo.c"
 	"${SRCDir}/ui/ui_shared.c"

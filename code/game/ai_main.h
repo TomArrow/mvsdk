@@ -413,6 +413,7 @@ extern int gLevelFlags;
 extern float floattime;
 #define FloatTime() floattime
 
+
 // Tr!Force: [Bot] Custom AI
 void JKMod_CustomBotAI(bot_state_t *bs, float thinktime);
 gentity_t *CheckForFriendInLOF(bot_state_t *bs);

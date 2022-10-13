@@ -89,6 +89,7 @@
 #define CS_CLIENT_DUELWINNER	29		// current duel round winner - needed for printing at top of scoreboard
 #define CS_CLIENT_DUELISTS		30		// client numbers for both current duelists. Needed for a number of client-side things.
 
+
 #define CS_PAUSE				31		// Tr!Force: [Pause] Set config string
 
 // these are also in be_aas_def.h - argh (rjr)
@@ -172,6 +173,27 @@ and some other output data.  Used for local prediction on the client game and tr
 movement on the server game.
 ===================================================================================
 */
+
+extern Q_INLINE int PM_GetMovePhysics(void);
+typedef enum //movementstyle enum
+{
+	MV_SIEGE,
+	MV_JKA,
+	MV_QW,
+	MV_CPM,
+	MV_Q3,
+	MV_PJK,
+	MV_WSW,
+	MV_RJQ3,
+	MV_RJCPM,
+	MV_SWOOP,
+	MV_JETPACK,
+	MV_SPEED,
+	MV_SP,
+	MV_SLICK,
+	MV_BOTCPM,
+	MV_NUMSTYLES
+} movementStyle_e;
 
 
 typedef struct animation_s {
@@ -281,6 +303,7 @@ typedef struct {
 	// for fixed msec Pmove
 	int			pmove_fixed;
 	int			pmove_msec;
+	int			pmove_float;
 
 	// callbacks to test the world
 	// these will be different functions during game and cgame
@@ -323,12 +346,34 @@ typedef enum {
 	STAT_DEAD_YAW,					// look this direction when dead (FIXME: get rid of?)
 	STAT_CLIENTS_READY,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
 	STAT_MAX_HEALTH,				// health / armor limit, changable by handicap
+
+	STAT_DASHTIME,
+	STAT_LASTJUMPSPEED,
+	STAT_RACEMODE,
+	STAT_ONLYBHOP,
+	STAT_MOVEMENTSTYLE,
+	STAT_JUMPTIME,
+	STAT_WJTIME
+
+} statIndex_t;
+
+typedef enum {
+	STAT_HEALTH,
+	STAT_HOLDABLE_ITEM,
+	STAT_HOLDABLE_ITEMS,
+	STAT_PERSISTANT_POWERUP,
+	STAT_WEAPONS,					// 16 bit fields
+	STAT_ARMOR,				
+	STAT_DEAD_YAW,					// look this direction when dead (FIXME: get rid of?)
+	STAT_CLIENTS_READY,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
+	STAT_MAX_HEALTH,				// health / armor limit, changable by handicap
+
 	// Tr!Force: [JKMod] Custom stats data
 	JK_PLAYER,
 	JK_DIMENSION,
 	JK_MOVEMENT,
 	JK_FUEL
-} statIndex_t;
+} statIndexJKPlus_t; // This conflicts with normal statIndex_t so it gets its own thing.
 
 
 // player_state->persistant[] indexes
@@ -647,7 +692,6 @@ typedef enum {
 	EV_TAUNT_PATROL,
 
 	EV_BODY_QUEUE_COPY,
-
 	EV_MAX,					// Tr!Force: [GameGeneral] Max event count
 	
 } entity_event_t;			// There is a maximum of 256 events (8 bits transmission, 2 high bits for uniqueness)

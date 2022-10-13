@@ -35,6 +35,9 @@ typedef enum {
 	WP_NUM_WEAPONS
 } weapon_t;
 
+//jk2pro
+//anything > this will be considered not player useable
+//#define LAST_USEABLE_WEAPON			WP_DET_PACK // Commented out by jkplus
 
 typedef enum //# ammo_e
 {

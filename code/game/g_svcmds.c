@@ -388,7 +388,11 @@ ConsoleCommand
 
 =================
 */
+<<<<<<< HEAD
+qboolean	ConsoleCommand( void ) {
+=======
 qboolean	BaseJK2_ConsoleCommand( void ) { // Tr!Force: [BaseJK2] Server console command
+>>>>>>> jediknightplus/master
 	char	cmd[MAX_TOKEN_CHARS];
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );

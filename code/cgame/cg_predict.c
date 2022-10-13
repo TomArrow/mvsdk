@@ -80,6 +80,35 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 			continue;
 		}
 
+<<<<<<< HEAD
+		//JAPRO - Clientside - Duel Passthru Prediction - Start 
+		if (cgs.isolateDuels && ent->eType == ET_PLAYER)
+		{
+			if (cg.predictedPlayerState.duelInProgress)
+			{ // we are in a private duel 
+				if (ent->number != cg.predictedPlayerState.duelIndex && ent->eType != ET_MOVER)
+				{ // we are not dueling them 
+				  // don't clip 
+					continue;
+				}
+			}
+			else if (ent->bolt1)
+			{ // we are not in a private duel, and this player is dueling don't clip 
+				continue;
+			}
+			else if (cgs.isJK2Pro && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
+				if (ent->eType == ET_MOVER) { //TR_SINCE since func_bobbings are still solid, sad hack 
+					if ((VectorLengthSquared(ent->pos.trDelta) || VectorLengthSquared(ent->apos.trDelta)) && ent->pos.trType != TR_SINE) {//If its moving? //how to get classname clientside? 
+						continue; //Dont predict moving et_movers as solid..since that means they are likely func_door or func_plat.. which are nonsolid to racers serverside 
+					}
+				}
+				else {
+					continue;
+				}
+			}
+		}
+		//JAPRO - Clientside - Duel Passthru Prediction - End
+=======
 		// Tr!Force: [DuelPassThrough] Check private duels
 		if (cgs.jkmodCGS.duelPassThrough)
 		{
@@ -95,6 +124,7 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 				}
 			}
 		}
+>>>>>>> jediknightplus/master
 
 		if (ent->number >= MAX_CLIENTS && cg.snap && ent->genericenemyindex && (ent->genericenemyindex-1024) == cg.snap->ps.clientNum)
 		{ //rww - method of keeping objects from colliding in client-prediction (in case of ownership)
@@ -274,7 +304,13 @@ static void CG_InterpolatePlayerState( qboolean grabAngles ) {
 		return;
 	}
 
+<<<<<<< HEAD
+	// fau - for player it would more correct to interpolate between
+	// commandTimes (but requires one more snaphost ahead)
+	f = cg.frameInterpolation;
+=======
 	f = (float)( cg.time - prev->serverTime ) / ( next->serverTime - prev->serverTime );
+>>>>>>> jediknightplus/master
 
 	i = next->ps.bobCycle;
 	if ( i < prev->ps.bobCycle ) {
@@ -292,6 +328,10 @@ static void CG_InterpolatePlayerState( qboolean grabAngles ) {
 			f * (next->ps.velocity[i] - prev->ps.velocity[i] );
 	}
 
+<<<<<<< HEAD
+	cg.predictedTimeFrac = f * (next->ps.commandTime - prev->ps.commandTime);
+=======
+>>>>>>> jediknightplus/master
 }
 
 /*
@@ -372,6 +412,12 @@ static void CG_TouchItem( centity_t *cent ) {
 		if (cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_BLUE &&
 			item->giTag == PW_BLUEFLAG)
 			return;
+<<<<<<< HEAD
+		if (cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_FREE &&
+			item->giTag == PW_NEUTRALFLAG)
+			return;
+=======
+>>>>>>> jediknightplus/master
 	}
 
 	if (item->giType == IT_POWERUP &&
@@ -627,6 +673,10 @@ void CG_PredictPlayerState( void ) {
 	qboolean	moved;
 	usercmd_t	oldestCmd;
 	usercmd_t	latestCmd;
+<<<<<<< HEAD
+	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
+=======
+>>>>>>> jediknightplus/master
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
 
@@ -639,7 +689,11 @@ void CG_PredictPlayerState( void ) {
 	}
 
 	// demo playback just copies the moves
+<<<<<<< HEAD
+	if ( cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer == 2 ) {
+=======
 	if ( cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) ) {
+>>>>>>> jediknightplus/master
 		CG_InterpolatePlayerState( qfalse );
 		return;
 	}
@@ -661,12 +715,16 @@ void CG_PredictPlayerState( void ) {
 		cg_pmove.tracemask = MASK_PLAYERSOLID;
 	}
 	if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) {
+<<<<<<< HEAD
+		cg_pmove.tracemask &= ~CONTENTS_BODY;	// spectators can fly through bodies
+=======
 		// Tr!Force: [PlayerMovement] Spectators can fly through everything
 		if (cg.snap->ps.stats[JK_MOVEMENT] & JK_SPECTATOR_NOCLIP) {
 			cg_pmove.tracemask &= ~MASK_ALL;
 		} else {
 			cg_pmove.tracemask &= ~CONTENTS_BODY;	// spectators can fly through bodies
 		}
+>>>>>>> jediknightplus/master
 	}
 	cg_pmove.noFootsteps = ( cgs.dmflags & DF_NO_FOOTSTEPS ) > 0;
 
@@ -678,7 +736,11 @@ void CG_PredictPlayerState( void ) {
 	// if we don't have the commands right after the snapshot, we
 	// can't accurately predict a current position, so just freeze at
 	// the last good position we had
+<<<<<<< HEAD
+	cmdNum = current - REAL_CMD_BACKUP + 1;
+=======
 	cmdNum = current - CMD_BACKUP + 1;
+>>>>>>> jediknightplus/master
 	trap_GetUserCmd( cmdNum, &oldestCmd );
 	if ( oldestCmd.serverTime > cg.snap->ps.commandTime 
 		&& oldestCmd.serverTime < cg.time ) {	// special check for map_restart
@@ -703,6 +765,24 @@ void CG_PredictPlayerState( void ) {
 		cg.physicsTime = cg.snap->serverTime;
 	}
 
+<<<<<<< HEAD
+	//JAPRO - Clientside - Unlock Pmove bounds - Start 
+	if ( cg_pmove_msec.integer < 2 ) {
+		trap_Cvar_Set("pmove_msec", "2");
+	}
+	else if (cg_pmove_msec.integer > 66) {
+		trap_Cvar_Set("pmove_msec", "66");
+	}
+	//JAPRO - Clientside - Unlock Pmove bounds - End 
+
+	cg_pmove.pmove_fixed = cg_pmove_fixed.integer;// | cg_pmove_fixed.integer;
+	cg_pmove.pmove_msec = cg_pmove_msec.integer;
+	cg_pmove.pmove_float = cg_pmove_float.integer;
+
+	// run cmds
+	moved = qfalse;
+	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= current ; cmdNum++ ) {
+=======
 	if ( cg_pmove_msec.integer < 8 ) {
 		trap_Cvar_Set("pmove_msec", "8");
 	}
@@ -716,6 +796,7 @@ void CG_PredictPlayerState( void ) {
 	// run cmds
 	moved = qfalse;
 	for ( cmdNum = current - CMD_BACKUP + 1 ; cmdNum <= current ; cmdNum++ ) {
+>>>>>>> jediknightplus/master
 		// get the command
 		trap_GetUserCmd( cmdNum, &cg_pmove.cmd );
 
@@ -859,6 +940,11 @@ void CG_PredictPlayerState( void ) {
 		}
 	}
 
+<<<<<<< HEAD
+	cg.predictedTimeFrac = 0.0f;
+
+=======
+>>>>>>> jediknightplus/master
 	// fire events and other transition triggered things
 	CG_TransitionPlayerState( &cg.predictedPlayerState, &oldPlayerState );
 

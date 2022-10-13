@@ -892,7 +892,11 @@ void CG_ScorePlum( int client, vec3_t org, int score ) {
 	le->leFlags = 0;
 	le->leType = LE_SCOREPLUM;
 	le->startTime = cg.time;
+<<<<<<< HEAD
+	le->endTime = cg.time + 4000;
+=======
 	le->endTime = cg.time + (cg_scorePlum.integer == 2 ? 1500 : 4000); // Tr!Force: [DamagePlums] Make it faster
+>>>>>>> jediknightplus/master
 	le->lifeRate = 1.0 / ( le->endTime - le->startTime );
 
 	

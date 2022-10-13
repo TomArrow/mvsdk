@@ -1094,3 +1094,31 @@ float JK2_powf ( float x, int y )
 	return r;
 }
 
+<<<<<<< HEAD
+// Returns `base` raised to the power of `exp`
+float Q_pown(float base, int exp)
+{
+	float		result = 1.0f;
+	qboolean	invert = qfalse;
+
+	if (exp < 0) {
+		invert = qtrue;
+		exp = -exp;
+	}
+
+	while (exp > 0) {
+		if (exp & 1) {
+			result *= base;
+		}
+
+		base *= base;
+		exp >>= 1;
+	}
+
+	if (invert)
+		result = 1.0f / result;
+
+	return result;
+}
+=======
+>>>>>>> jediknightplus/master

@@ -214,6 +214,26 @@ static void CG_StepOffset( void ) {
 	}
 }
 
+<<<<<<< HEAD
+static const vec3_t	cameramins = { -CAMERA_SIZE, -CAMERA_SIZE, -CAMERA_SIZE };
+static const vec3_t	cameramaxs = { CAMERA_SIZE, CAMERA_SIZE, CAMERA_SIZE };
+
+typedef struct dampPos_s {
+	vec3_t	ideal;		// ideal location
+	vec3_t	prevIdeal;
+	vec3_t	damp;		// position = ideal + damp
+} dampPos_t;
+
+static struct {
+	dampPos_t	target;
+	dampPos_t	loc;
+	vec3_t		fwd;
+	vec3_t		focus;
+	float		lastYaw;
+	int			lastTime;
+	float		lastTimeFrac;
+} cam;
+=======
 #define CAMERA_DAMP_INTERVAL	50
 
 static vec3_t	cameramins = { -CAMERA_SIZE, -CAMERA_SIZE, -CAMERA_SIZE };
@@ -228,6 +248,7 @@ int		cameraLastFrame=0;
 
 float	cameraLastYaw=0;
 float	cameraStiffFactor=0.0f;
+>>>>>>> jediknightplus/master
 
 /*
 ===============
@@ -265,6 +286,28 @@ static void CG_CalcIdealThirdPersonViewTarget(void)
 	// Initialize IdealTarget
 	if (gCGHasFallVector)
 	{
+<<<<<<< HEAD
+		VectorCopy(gCGFallVector, cam.focus);
+	}
+	else
+	{
+		VectorCopy(cg.refdef.vieworg, cam.focus);
+	}
+
+	// Add in the new viewheight
+	//if ( cg.snap ) cam.focus[2] += cg.snap->ps.viewheight; //36 = standing, 12 = crouching. 
+	if (cg.snap) cam.focus[2] += cg.predictedPlayerState.viewheight; //Proper prediction
+
+	// Add in a vertical offset from the viewpoint, which puts the actual target above the head, regardless of angle.
+//	VectorMA(cam.focus, thirdPersonVertOffset, cameraup, cam.target.ideal);
+	
+	// Add in a vertical offset from the viewpoint, which puts the actual target above the head, regardless of angle.
+	VectorCopy( cam.focus, cam.target.ideal );
+	cam.target.ideal[2] += cg_thirdPersonVertOffset.value;
+	//VectorMA(cam.focus, cg_thirdPersonVertOffset.value, cameraup, cam.target.ideal);
+}
+
+=======
 		VectorCopy(gCGFallVector, cameraFocusLoc);
 	}
 	else
@@ -286,6 +329,7 @@ static void CG_CalcIdealThirdPersonViewTarget(void)
 
 	
 
+>>>>>>> jediknightplus/master
 /*
 ===============
 CG_CalcTargetThirdPersonViewLocation
@@ -296,6 +340,10 @@ static void CG_CalcIdealThirdPersonViewLocation(void)
 {
 	float thirdPersonRange = cg_thirdPersonRange.value;
 
+<<<<<<< HEAD
+	if (cg.predictedPlayerState.saberMove == LS_A_BACK || cg.predictedPlayerState.saberMove == LS_A_BACK_CR
+		|| cg.predictedPlayerState.saberMove == LS_A_BACKSTAB) 
+=======
 	// Tr!Force: [SpecialMoveCamera] Camera range on saber move
 	if (jkcvar_cg_specialMoveCamera.integer && !cg.jkmodCG.duelEnd && (
 		cg.predictedPlayerState.saberMove == LS_A_BACK || 
@@ -307,10 +355,23 @@ static void CG_CalcIdealThirdPersonViewLocation(void)
 		cg.predictedPlayerState.saberMove == LS_JK_DUAL_SPIN1 ||
 		cg.predictedPlayerState.saberMove == LS_JK_DUAL_SPIN2 ||
 		cg.predictedPlayerState.saberMove == LS_JK_DUAL_TORNADO )) 
+>>>>>>> jediknightplus/master
 	{
 		float animLength = bgGlobalAnimations[cg.predictedPlayerState.legsAnim&~ANIM_TOGGLEBIT].numFrames * abs(bgGlobalAnimations[cg.predictedPlayerState.legsAnim&~ANIM_TOGGLEBIT].frameLerp);
 		float elapsedTime = (float)(animLength - cg.predictedPlayerState.legsTimer);
 		float backDist = 0;
+<<<<<<< HEAD
+		if (elapsedTime < animLength / 2.0f)
+		{//starting anim
+			backDist = (elapsedTime / animLength)*120.0f;
+		}
+		else
+		{//endinganim
+			backDist = ((animLength - elapsedTime) / animLength)*120.0f;
+		}
+		if (cg_backSwingCameraRange.integer && cg.predictedPlayerState.stats[STAT_HEALTH] > 0)
+			thirdPersonRange += backDist;
+=======
 
 		// Starting anim
 		if (elapsedTime < animLength / 2.0f)
@@ -324,6 +385,7 @@ static void CG_CalcIdealThirdPersonViewLocation(void)
 		}
 
 		if (cg.predictedPlayerState.stats[STAT_HEALTH] > 0) thirdPersonRange += backDist;
+>>>>>>> jediknightplus/master
 	}
 
 	if (cg.snap && cg.snap->ps.usingATST)
@@ -331,7 +393,11 @@ static void CG_CalcIdealThirdPersonViewLocation(void)
 		thirdPersonRange = 300;
 	}
 
+<<<<<<< HEAD
+	VectorMA(cam.target.ideal, -(thirdPersonRange), cam.fwd, cam.loc.ideal);
+=======
 	VectorMA(cameraIdealTarget, -(thirdPersonRange), camerafwd, cameraIdealLoc);
+>>>>>>> jediknightplus/master
 }
 
 
@@ -339,6 +405,122 @@ static void CG_CalcIdealThirdPersonViewLocation(void)
 static void CG_ResetThirdPersonViewDamp(void)
 {
 	trace_t trace;
+<<<<<<< HEAD
+	vec3_t target;
+
+	// Set the cam.target.ideal
+	CG_CalcIdealThirdPersonViewTarget();
+
+	// Set the cam.loc.ideal
+	CG_CalcIdealThirdPersonViewLocation();
+
+	// Now, we just set everything to the new positions.
+	VectorClear(cam.loc.damp);
+	VectorClear(cam.target.damp);
+	VectorCopy(cam.loc.ideal, cam.loc.prevIdeal);
+	VectorCopy(cam.target.ideal, cam.target.prevIdeal);
+
+	// First thing we do is trace from the first person viewpoint out to the new target location.
+	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, cam.target.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	if (trace.fraction <= 1.0)
+	{
+		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
+	}
+
+	VectorAdd(cam.target.ideal, cam.target.damp, target);
+
+	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
+	CG_Trace(&trace, target, cameramins, cameramaxs, cam.loc.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	if (trace.fraction <= 1.0)
+	{
+		VectorSubtract(trace.endpos, cam.loc.ideal, cam.loc.damp);
+	}
+}
+
+static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
+{
+	vec3_t idealDelta;
+
+	if ( dtime <= 0.0f )
+		return;
+
+	VectorSubtract(pos->ideal, pos->prevIdeal, idealDelta);
+	// saving previous ideal position only when dtime > 0 makes camera
+	// freeze when player is lagging
+	VectorCopy(pos->ideal, pos->prevIdeal);
+
+	if ( cg_cameraFPS.integer >= CAMERA_MIN_FPS )
+	{
+		// FPS-independent solution thanks to semigroup property:
+		// If t1, t2 are positive time periods, dampfactor and
+		// velocity (idealDelta) don't change then:
+		// damp_(t1 + t2)(pos) = damp_t1(damp_t2(pos))
+
+		// if dtime == 1 (stable framerate equal to cg_camerafps)
+		// result is the same as in original code.
+		vec3_t	shift;
+		float	invdtime;
+		float	timeadjfactor;
+		float	codampfactor;
+
+		// dtime is relative: physics time / emulated time
+		dtime *= cg_cameraFPS.value / 1000.0f;
+		invdtime = 1.0f / dtime;
+		timeadjfactor = powf(dampfactor, dtime);
+		// shift = (idealDelta / dtime) * (dampfactor / (1 - dampfactor))
+		codampfactor = dampfactor / (1.0f - dampfactor);
+		VectorScale(idealDelta, invdtime, shift);
+		VectorScale(shift, codampfactor, shift);
+		// damp(dtime) = dampfactor^dtime * (damp(0) + shift) - shift
+		pos->damp[0] = timeadjfactor * (pos->damp[0] + shift[0]) - shift[0];
+		pos->damp[1] = timeadjfactor * (pos->damp[1] + shift[1]) - shift[1];
+		pos->damp[2] = timeadjfactor * (pos->damp[2] + shift[2]) - shift[2];
+	}
+	else
+	{
+		// Original JK2 camera damping:
+		// idealDelta_n = ideal_n+1 - ideal_n
+		// damp_n+1 = dampfactor * (damp_n - idealDelta_n)
+		VectorSubtract(pos->damp, idealDelta, pos->damp);
+		VectorScale(pos->damp, dampfactor, pos->damp);
+	}
+}
+
+// This is called every frame.
+static void CG_UpdateThirdPersonTargetDamp(float dtime)
+{
+	trace_t trace;
+	vec3_t	target;
+	float	dampfactor;
+
+	// Set the cam.target.ideal
+	// Automatically get the ideal target, to avoid jittering.
+	CG_CalcIdealThirdPersonViewTarget();
+
+	if (cg_thirdPersonTargetDamp.value >= 1.0||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
+	{	// No damping.
+		VectorClear(cam.target.damp);
+		cam.lastTime = 0;
+	}
+	else if (cg_thirdPersonTargetDamp.value > 0.0f)
+	{	
+		dampfactor = 1.0 - cg_thirdPersonTargetDamp.value;	// We must exponent the amount LEFT rather than the amount bled off
+		CG_DampPosition(&cam.target, dampfactor, dtime);
+	}
+	else
+	{
+		VectorSubtract(cam.target.prevIdeal, cam.target.ideal, cam.target.damp);
+	}
+
+	// Now we trace to see if the new location is cool or not.
+	VectorAdd(cam.target.ideal, cam.target.damp, target);
+
+	// First thing we do is trace from the first person viewpoint out to the new target location.
+	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, target, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	if (trace.fraction < 1.0)
+	{
+		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
+=======
 
 	// Cap the pitch within reasonable limits
 	if (cameraFocusAngles[PITCH] > 89.0)
@@ -422,6 +604,7 @@ static void CG_UpdateThirdPersonTargetDamp(void)
 	if (trace.fraction < 1.0)
 	{
 		VectorCopy(trace.endpos, cameraCurTarget);
+>>>>>>> jediknightplus/master
 	}
 
 	// Note that previously there was an upper limit to the number of physics traces that are done through the world
@@ -431,6 +614,25 @@ static void CG_UpdateThirdPersonTargetDamp(void)
 }
 
 // This can be called every interval, at the user's discretion.
+<<<<<<< HEAD
+static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float pitch)
+{
+	trace_t trace;
+	vec3_t	location, target;
+	float	dampfactor;
+
+	// Set the cam.loc.ideal
+	CG_CalcIdealThirdPersonViewLocation();
+	
+	// First thing we do is calculate the appropriate damping factor for the camera.
+	dampfactor = 0.0f;
+	if (cg_thirdPersonCameraDamp.value != 0.0f)
+	{
+		// Note that the camera pitch has already been capped off to 89.
+		// The higher the pitch, the larger the factor, so as you look up, it damps a lot less.
+		pitch /= 115.0f;
+		dampfactor = (1.0f - cg_thirdPersonCameraDamp.value) * pitch * pitch;
+=======
 static void CG_UpdateThirdPersonCameraDamp(void)
 {
 	trace_t trace;
@@ -453,10 +655,44 @@ static void CG_UpdateThirdPersonCameraDamp(void)
 		// The higher the pitch, the larger the factor, so as you look up, it damps a lot less.
 		pitch /= 89.0;	
 		dampfactor = (1.0-cg_thirdPersonCameraDamp.value)*(pitch*pitch);
+>>>>>>> jediknightplus/master
 
 		dampfactor += cg_thirdPersonCameraDamp.value;
 
 		// Now we also multiply in the stiff factor, so that faster yaw changes are stiffer.
+<<<<<<< HEAD
+		if (stiffFactor > 0.0f)
+		{	// The stiffFactor is how much of the remaining damp below 1 should be shaved off, i.e. approach 1 as stiffening increases.
+			dampfactor += (1.0f - dampfactor) * stiffFactor;
+		}
+	}
+
+	if (dampfactor>=1.0||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
+	{	// No damping.
+		VectorClear(cam.loc.damp);
+		cam.lastTime = 0;
+	}
+	else if (dampfactor > 0.0f)
+	{
+		dampfactor = 1.0f - dampfactor;	// We must exponent the amount LEFT rather than the amount bled off
+
+		CG_DampPosition(&cam.loc, dampfactor, dtime);
+	}
+	else
+	{
+		VectorSubtract(cam.loc.prevIdeal, cam.loc.ideal, cam.loc.damp);
+	}
+
+	VectorAdd(cam.loc.ideal, cam.loc.damp, location);
+	VectorAdd(cam.target.ideal, cam.target.damp, target);
+
+	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
+	CG_Trace(&trace, target, cameramins, cameramaxs, location, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+
+	if (trace.fraction < 1.0)
+	{
+		VectorSubtract(trace.endpos, cam.loc.ideal, cam.loc.damp);
+=======
 		if (cameraStiffFactor > 0.0f)
 		{	// The cameraStiffFactor is how much of the remaining damp below 1 should be shaved off, i.e. approach 1 as stiffening increases.
 			dampfactor += (1.0-dampfactor)*cameraStiffFactor;
@@ -492,6 +728,7 @@ static void CG_UpdateThirdPersonCameraDamp(void)
 	if (trace.fraction < 1.0)
 	{
 		VectorCopy( trace.endpos, cameraCurLoc );
+>>>>>>> jediknightplus/master
 
 		//FIXME: when the trace hits movers, it gets very very jaggy... ?
 		/*
@@ -529,6 +766,16 @@ CG_OffsetThirdPersonView
 ===============
 */
 extern vmCvar_t cg_thirdPersonHorzOffset;
+<<<<<<< HEAD
+static void CG_OffsetThirdPersonView( void )
+{
+	vec3_t	target, location, diff;
+	vec3_t	focusAngles;
+	float	dtime;
+
+	// Set camera viewing direction.
+	VectorCopy( cg.refdefViewAngles, focusAngles );
+=======
 static void CG_OffsetThirdPersonView( void ) 
 {
 	vec3_t diff;
@@ -539,10 +786,40 @@ static void CG_OffsetThirdPersonView( void )
 
 	// Set camera viewing direction.
 	VectorCopy( cg.refdefViewAngles, cameraFocusAngles );
+>>>>>>> jediknightplus/master
 
 	// if dead, look at killer
 	if ( cg.snap->ps.stats[STAT_HEALTH] <= 0 ) 
 	{
+<<<<<<< HEAD
+		focusAngles[YAW] = cg.snap->ps.stats[STAT_DEAD_YAW];
+	}
+	else
+	{	// Add in the third Person Angle.
+		focusAngles[YAW] += cg_thirdPersonAngle.value;
+		focusAngles[PITCH] += cg_thirdPersonPitchOffset.value;
+	}
+
+	// Cap the pitch within reasonable limits
+	if (focusAngles[PITCH] > 80.0f)
+	{
+		focusAngles[PITCH] = 80.0f;
+	}
+	else if (focusAngles[PITCH] < -80.0f)
+	{
+		focusAngles[PITCH] = -80.0f;
+	}
+
+	AngleVectors(focusAngles, cam.fwd, NULL, NULL);
+
+	// The next thing to do is to see if we need to calculate a new camera target location.
+
+	dtime = cg.predictedPlayerState.commandTime - cam.lastTime;
+	dtime += cg.predictedTimeFrac - cam.lastTimeFrac;
+
+	// If we went back in time for some reason, or if we just started, reset the sample.
+	if (cam.lastTime == 0 || dtime < 0.0f || cg.thisFrameTeleport )
+=======
 		cameraFocusAngles[YAW] = cg.snap->ps.stats[STAT_DEAD_YAW];
 	}
 	else
@@ -555,11 +832,50 @@ static void CG_OffsetThirdPersonView( void )
 
 	// If we went back in time for some reason, or if we just started, reset the sample.
 	if (cameraLastFrame == 0 || cameraLastFrame > cg.time)
+>>>>>>> jediknightplus/master
 	{
 		CG_ResetThirdPersonViewDamp();
 	}
 	else
 	{
+<<<<<<< HEAD
+		float	stiffFactor;
+		float	deltayaw;
+		float	pitch;
+
+		deltayaw = Q_fabs(focusAngles[YAW] - cam.lastYaw);
+		if (deltayaw > 180.0f)
+		{ // Normalize this angle so that it is between 0 and 180.
+			deltayaw = Q_fabs(deltayaw - 360.0f);
+		}
+		if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
+			if ( dtime > 0.0f ) {
+				stiffFactor = deltayaw / dtime;
+			} else {
+				stiffFactor = 0.0f;
+			}
+		} else {
+			stiffFactor = deltayaw / cg.frametime;
+		}
+		if (stiffFactor < 1.0f)
+		{
+			stiffFactor = 0.0f;
+		}
+		else if (stiffFactor > 2.5f)
+		{
+			stiffFactor = 0.75f;
+		}
+		else
+		{	// 1 to 2 scales from 0.0 to 0.5
+			stiffFactor = (stiffFactor - 1.0f) * 0.5f;
+		}
+
+		pitch = Q_fabs(focusAngles[PITCH]);
+
+		// Move the target to the new location.
+		CG_UpdateThirdPersonTargetDamp(dtime);
+		CG_UpdateThirdPersonCameraDamp(dtime, stiffFactor, pitch);
+=======
 		// Cap the pitch within reasonable limits
 		if (cameraFocusAngles[PITCH] > 80.0)
 		{
@@ -595,11 +911,40 @@ static void CG_OffsetThirdPersonView( void )
 		// Move the target to the new location.
 		CG_UpdateThirdPersonTargetDamp();
 		CG_UpdateThirdPersonCameraDamp();
+>>>>>>> jediknightplus/master
 	}
 
 	// Now interestingly, the Quake method is to calculate a target focus point above the player, and point the camera at it.
 	// We won't do that for now.
 
+<<<<<<< HEAD
+	VectorAdd(cam.target.ideal, cam.target.damp, target);
+	VectorAdd(cam.loc.ideal, cam.loc.damp, location);
+
+	// We must now take the angle taken from the camera target and location.
+	VectorSubtract(target, location, diff);
+	if ( VectorLengthSquared( diff ) < 0.01f * 0.01f )
+	{//must be hitting something, need some value to calc angles, so use cam forward
+		VectorCopy( cam.fwd, diff );
+	}
+
+	vectoangles(diff, cg.refdefViewAngles);
+
+	// Temp: just move the camera to the side a bit
+	if ( cg_thirdPersonHorzOffset.value != 0.0f )
+	{
+		AnglesToAxis( cg.refdefViewAngles, cg.refdef.viewaxis );
+		VectorMA( location, cg_thirdPersonHorzOffset.value,
+			cg.refdef.viewaxis[1], location );
+	}
+
+	// ...and of course we should copy the new view location to the proper spot too.
+	VectorCopy(location, cg.refdef.vieworg);
+
+	cam.lastTime = cg.predictedPlayerState.commandTime;
+	cam.lastTimeFrac = cg.predictedTimeFrac;
+	cam.lastYaw = focusAngles[YAW];
+=======
 	// We must now take the angle taken from the camera target and location.
 	/*VectorSubtract(cameraCurTarget, cameraCurLoc, diff);
 	VectorNormalize(diff);
@@ -626,6 +971,7 @@ static void CG_OffsetThirdPersonView( void )
 	VectorCopy(cameraCurLoc, cg.refdef.vieworg);
 
 	cameraLastFrame=cg.time;
+>>>>>>> jediknightplus/master
 }
 
 
@@ -1268,6 +1614,8 @@ static int CG_CalcViewValues( void ) {
 			cg_thirdPersonAngle.value += cg_cameraOrbit.value;
 		}
 	}
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [DuelEnd] Camera check
 	if (cg.jkmodCG.duelEnd && cg.jkmodCG.duelEndWinner && cg.renderingThirdPerson && !cg_cameraOrbit.integer) 
@@ -1287,6 +1635,7 @@ static int CG_CalcViewValues( void ) {
 		}
 	}
 
+>>>>>>> jediknightplus/master
 	// add error decay
 	if ( cg_errorDecay.value > 0 ) {
 		int		t;
@@ -1305,6 +1654,11 @@ static int CG_CalcViewValues( void ) {
 		// back away from character
 		CG_OffsetThirdPersonView();
 	} else {
+<<<<<<< HEAD
+		// reset third person camera damping
+		cam.lastTime = 0;
+=======
+>>>>>>> jediknightplus/master
 		// offset for local bobbing and kicks
 		CG_OffsetFirstPersonView();
 	}
@@ -1544,6 +1898,51 @@ Screen Effect stuff ends here
 ================================
 */
 
+<<<<<<< HEAD
+ID_INLINE void CG_DoAsync(void) {
+	if (cg.doVstrTime && cg.time > cg.doVstrTime) {
+		trap_SendConsoleCommand(cg.doVstr);
+		cg.doVstrTime = 0;
+	}
+	//if (!(cgs.restricts & RESTRICT_FLIPKICKBIND)) {	//Now flipkick time
+
+	//Need to decouple frames from kick i guess.
+
+	//If we are on kick 1, check to see if our cvar for it is above frames.  If so , kick and increment kickcount.
+
+	//Increment
+	if (cg.numFKFrames > cg_fkDuration.integer) {
+		trap_SendConsoleCommand("-moveup\n");
+		cg.numFKFrames = 0;
+		cg.numJumps = 0;
+	}
+	else if (cg.numFKFrames) {
+		if (cg.numJumps == 1) {
+			if (cg.numFKFrames > cg_fkFirstJumpDuration.integer) {
+				trap_SendConsoleCommand("-moveup\n");
+				cg.numJumps++;
+			}
+		}
+		else if (cg.numJumps == 2) {
+			if (cg.numFKFrames > cg_fkSecondJumpDelay.integer) {
+				trap_SendConsoleCommand("+moveup\n");
+				cg.numJumps++;
+			}
+		}
+		else if (cg.numFKFrames % 2) {//1,3,5
+			trap_SendConsoleCommand("+moveup\n");
+			cg.numJumps++;
+		}
+		else {//2,4,6
+			trap_SendConsoleCommand("-moveup\n");
+			cg.numJumps++;
+		}
+		cg.numFKFrames++;
+	}
+}
+
+=======
+>>>>>>> jediknightplus/master
 /*
 =================
 CG_DrawActiveFrame
@@ -1551,18 +1950,31 @@ CG_DrawActiveFrame
 Generates and draws a game scene and status information at the given time.
 =================
 */
+<<<<<<< HEAD
+=======
 static int jkmod_macro_scan_time = 0;		//Tr!Force: [MacroScan] Last macro scan
 static qboolean jkmod_macro_scan = qfalse;	//Tr!Force: [MacroScan] Macro scan enabled
 
+>>>>>>> jediknightplus/master
 void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback ) {
 	int		inwater;
 
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
 
+<<<<<<< HEAD
+	if (cg.snap && cg_ui_myteam.integer != cg.snap->ps.persistant[PERS_TEAM]) {
+		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW || cg.snap->ps.pm_type == PM_SPECTATOR))
+			trap_Cvar_Set( "ui_myteam", va("%i", cg.snap->ps.persistant[PERS_TEAM]) );
+		else if (cg_ui_myteam.integer != 3)
+			trap_Cvar_Set("ui_myteam", "3");
+
+		trap_Cvar_Update(&cg_ui_myteam);
+=======
 	if (cg.snap && cg_ui_myteam.integer != cg.snap->ps.persistant[PERS_TEAM])
 	{
 		trap_Cvar_Set ( "ui_myteam", va("%i", cg.snap->ps.persistant[PERS_TEAM]) );
+>>>>>>> jediknightplus/master
 	}
 
 	// update cvars
@@ -1575,6 +1987,8 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	//Tr!Force: [MacroScan] See if we should force a scan for macros
 	if (cgs.jkmodCGS.macroScan)
 	{
@@ -1593,6 +2007,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		jkmod_macro_scan = qtrue;
 	}
 
+>>>>>>> jediknightplus/master
 	trap_FX_AdjustTime( cg.time, cg.refdef.vieworg, cg.refdef.viewaxis );
 
 	CG_RunLightStyles();
@@ -1637,12 +2052,23 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	CG_PredictPlayerState();
 
 	// decide on third person view
+<<<<<<< HEAD
+	cg.renderingThirdPerson = (cg_thirdPerson.integer || cg.snap->ps.stats[STAT_HEALTH] <= 0) && cg.snap->ps.pm_type != PM_SPECTATOR;
+
+	// update speedometer
+	CG_AddSpeed();
+=======
 	cg.renderingThirdPerson = cg_thirdPerson.integer || (cg.snap->ps.stats[STAT_HEALTH] <= 0);
+>>>>>>> jediknightplus/master
 
 	if (cg.snap->ps.stats[STAT_HEALTH] > 0 && (cg.predictedPlayerState.weapon == WP_SABER || cg.predictedPlayerState.usingATST ||
 		cg.predictedPlayerState.forceHandExtend == HANDEXTEND_KNOCKDOWN || cg.predictedPlayerState.fallingToDeath))
 	{
+<<<<<<< HEAD
+		if (cg_fpls.integer && cg.predictedPlayerState.weapon == WP_SABER && !cg_thirdPerson.integer)
+=======
 		if (cg_fpls.integer && cg.predictedPlayerState.weapon == WP_SABER)
+>>>>>>> jediknightplus/master
 		{ //force to first person for fpls
 			cg.renderingThirdPerson = 0;
 		}
@@ -1655,11 +2081,14 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	{ //always force first person when zoomed
 		cg.renderingThirdPerson = 0;
 	}
+<<<<<<< HEAD
+=======
 	// Tr!Force: [JKMod] Check emote camera
 	else if (cg.jkmodCG.emoteCamera) 
 	{
 		cg.renderingThirdPerson = 1;
 	}
+>>>>>>> jediknightplus/master
 
 	// build cg.refdef
 	inwater = CG_CalcViewValues();
@@ -1667,7 +2096,11 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	CG_CalcScreenEffects();
 
 	// first person blend blobs, done after AnglesToAxis
+<<<<<<< HEAD
+	if ( !cg.renderingThirdPerson ) {
+=======
 	if ( !cg.renderingThirdPerson || jkcvar_cg_damageBlend.integer ) { // Tr!Force: [DamageBlend] Enable in 3rd person too
+>>>>>>> jediknightplus/master
 		CG_DamageBlendBlob();
 	}
 
@@ -1747,6 +2180,12 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );
 
+<<<<<<< HEAD
+	//jk2pro
+	CG_DoAsync();
+
+=======
+>>>>>>> jediknightplus/master
 	if ( cg_stats.integer ) {
 		CG_Printf( "cg.clientFrame:%i\n", cg.clientFrame );
 	}

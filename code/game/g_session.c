@@ -53,9 +53,12 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		);
 	var = va( "sessionmv%i", (int)(client-level.clients) );
 	trap_Cvar_Set( var, s );
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [Session] Write session data
 	JKMod_WriteSessionData(client);
+>>>>>>> jediknightplus/master
 }
 
 /*
@@ -99,9 +102,12 @@ void G_ReadSessionData( gclient_t *client ) {
 
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [Session] Read session data
 	JKMod_ReadSessionData(client);
+>>>>>>> jediknightplus/master
 }
 
 /*
@@ -190,8 +196,12 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 					level.numNonSpectatorClients >= g_maxGameClients.integer ) {
 					sess->sessionTeam = TEAM_SPECTATOR;
 				} else {
+<<<<<<< HEAD
+					sess->sessionTeam = TEAM_FREE;
+=======
 					// Tr!Force: [Plugin] Don't allow
 					sess->sessionTeam = (jkcvar_pluginRequired.integer == 2 && !client->pers.jkmodPers.clientPlugin && !isBot) ? TEAM_SPECTATOR : TEAM_FREE;
+>>>>>>> jediknightplus/master
 				}
 				break;
 			case GT_TOURNAMENT:
@@ -199,8 +209,12 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 				if ( level.numNonSpectatorClients >= 2 ) {
 					sess->sessionTeam = TEAM_SPECTATOR;
 				} else {
+<<<<<<< HEAD
+					sess->sessionTeam = TEAM_FREE;
+=======
 					// Tr!Force: [Plugin] Don't allow
 					sess->sessionTeam = (jkcvar_pluginRequired.integer == 2 && !client->pers.jkmodPers.clientPlugin && !isBot) ? TEAM_SPECTATOR : TEAM_FREE;
+>>>>>>> jediknightplus/master
 				}
 				break;
 			}
@@ -210,9 +224,12 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess->spectatorState = SPECTATOR_FREE;
 	sess->spectatorOrder = 0;
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Session] Initialize session data
 	JKMod_InitSessionData(client);
 
+>>>>>>> jediknightplus/master
 	G_WriteClientSessionData( client );
 }
 

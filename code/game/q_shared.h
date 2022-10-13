@@ -265,6 +265,8 @@ typedef int		clipHandle_t;
 
 #define	MAX_NAME_LENGTH		32		// max length of a client name
 
+#define MAX_NETNAME			36
+
 #define	MAX_SAY_TEXT	150
 
 // paramters for command buffer stuffing
@@ -659,6 +661,7 @@ signed char ClampChar( int i );
 signed short ClampShort( int i );
 
 float JK2_powf ( float x, int y );
+float Q_pown(float x, int n);
 
 // this isn't a real cheap function to call!
 int DirToByte( vec3_t dir );
@@ -672,6 +675,9 @@ void ByteToDir( int b, vec3_t dir );
 #define VectorCopy(a,b)			((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
 #define	VectorScale(v, s, o)	((o)[0]=(v)[0]*(s),(o)[1]=(v)[1]*(s),(o)[2]=(v)[2]*(s))
 #define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
+#define VectorLerp( f, s, e, r ) ((r)[0]=(s)[0]+(f)*((e)[0]-(s)[0]),\
+  (r)[1]=(s)[1]+(f)*((e)[1]-(s)[1]),\
+  (r)[2]=(s)[2]+(f)*((e)[2]-(s)[2])) 
 
 #else
 
@@ -939,6 +945,14 @@ void	Q_strcat( char *dest, int size, const char *src );
 int Q_PrintStrlen( const char *string, qboolean use102color );
 // removes color sequences from string
 char *Q_CleanStr( char *string, qboolean use102color );
+char *Q_CleanAsciiStr( char *string );
+
+const char *Q_strchrs( const char *string, const char *search );
+void Q_strstrip( char *string, const char *strip, const char *repl );
+
+const char *Q_strchrs( const char *string, const char *search );
+void Q_strstrip( char *string, const char *strip, const char *repl );
+
 
 //=============================================
 

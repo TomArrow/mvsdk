@@ -74,8 +74,9 @@
 
 #define	NUM_CROSSHAIRS		10
 
-#define TEAM_OVERLAY_MAXNAME_WIDTH	12
-#define TEAM_OVERLAY_MAXLOCATION_WIDTH	16
+
+#define TEAM_OVERLAY_MAXNAME_WIDTH	32
+#define TEAM_OVERLAY_MAXLOCATION_WIDTH	64
 
 #define	DEFAULT_MODEL			"kyle"
 #define	DEFAULT_TEAM_MODEL		"kyle"
@@ -85,6 +86,16 @@
 
 #define DEFAULT_REDTEAM_NAME		"Empire"
 #define DEFAULT_BLUETEAM_NAME		"Rebellion"
+
+
+
+#define JK2AWARDS
+#define CAMERA_MIN_FPS 15
+
+//[JK2PRO - Clientside - All - Jcinfo bitvalues
+#define JK2PRO_CINFO_HIGHFPSFIX		(1<<0) //unused
+
+extern int dueltypes[MAX_CLIENTS];//jk2PRO - Clientside - Fullforce Duels
 
 typedef enum {
 	FOOTSTEP_NORMAL,
@@ -453,6 +464,7 @@ typedef struct
 	vec3_t		oldNormal[2];	// store this in case we don't have a connect-the-dots situation
 							//	..then we'll need the normal to project a mark blob onto the impact point
 
+
 	// Tr!Force: [DualSaber] Allow saber marks
 	qboolean	jkmod_haveOldPos[2];
 	vec3_t		jkmod_oldPos[2];		
@@ -549,10 +561,12 @@ typedef struct {
 	int				torsoAnim;
 
 	mvversion_t		jk2gameplay;
+
 	// Tr!Force: [JKMod] Custom client info
 	int				jkmod_hat;
 	int				jkmod_race;
 	int				jkmod_color2;
+
 } clientInfo_t;
 
 
@@ -649,6 +663,15 @@ typedef struct {
 // all cg.stepTime, cg.duckTime, cg.landTime, etc are set to cg.time when the action
 // occurs, and they will have visible effects for #define STEP_TIME or whatever msec after
 
+
+#define	MAX_CHATBOX_ITEMS		5
+typedef struct chatBoxItem_s
+{
+	char	string[MAX_STRING_CHARS];
+	int		time;
+	int		lines;
+} chatBoxItem_t;
+
 #define MAX_PREDICTED_EVENTS	16
 
 #include "../../jkmod/cgame/jk_cg_local.h" // Tr!Force: [JKMod] Main header
@@ -717,6 +740,8 @@ typedef struct {
 	// input state sent to server
 	int			weaponSelect;
 
+	short		lastWeaponSelect[2];//japro
+
 	int			forceSelect;
 	int			itemSelect;
 
@@ -768,7 +793,7 @@ typedef struct {
 	int			centerPrintTime;
 	int			centerPrintCharWidth;
 	int			centerPrintY;
-	char		centerPrint[1024];
+	char		centerPrint[MAX_STRING_CHARS];
 	int			centerPrintLines;
 
 	// low ammo warning state
@@ -881,6 +906,40 @@ Ghoul2 Insert End
 
 	char				sharedBuffer[MAX_CG_SHARED_BUFFER_SIZE];
 
+	//jk2pro/eternaljk2mv stuff
+	//chatbox
+	chatBoxItem_t		chatItems[MAX_CHATBOX_ITEMS];
+	int					chatItemActive;
+
+	//new simple hud stuff
+	int			oldammo;
+	int			oldAmmoTime;
+
+	int			forceHUDTotalFlashTime;
+	int			forceHUDNextFlashTime;
+	qboolean	forceHUDActive;				// Flag to show force hud is off/on
+
+	unsigned int		displacement, displacementSamples; //Speedometer, racetimer stuff
+	float				maxSpeed, currentSpeed, previousSpeed;
+	vec3_t				lastGroundPosition;
+	int					lastGroundTime, lastJumpHeightTime, lastJumpDistanceTime;
+	qboolean			firstTimeInAir, wasOnGround;
+	float				lastZSpeed, lastGroundSpeed, lastJumpHeight, lastJumpDistance, lastYawSpeed;
+	int					lastCheckPointPrintTime;
+	int					timerStartTime;
+	vec4_t				strafeHelperActiveColor;
+	vec4_t				crosshairColor;
+	//char				logStrafeTrailFilename[MAX_QPATH];
+	//qboolean			loggingStrafeTrail;
+	//fileHandle_t		strafeTrailFileHandle;
+	//clientCheckpoint_t	clientCheckpoints[MAX_CLIENT_CHECKPOINTS];//japro checkpoint
+	int					doVstrTime;
+	char				doVstr[MAX_QPATH];
+	short				numFKFrames;
+	short				numJumps;
+	int					lastAutoKillTime;
+	float				predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
+
 	jkmod_cg_t			jkmodCG;		// Tr!Force: [JKMod] Client game
 } cg_t;
 
@@ -937,7 +996,11 @@ typedef struct {
 	qhandle_t	redFlagModel;
 	qhandle_t	blueFlagModel;
 	qhandle_t	neutralFlagModel;
-	qhandle_t	flagShader[4];
+
+	qhandle_t	flagShaderYsal[3];
+	//qhandle_t	flagShader[3]; //JK2
+	qhandle_t	flagShaderTaken[3];
+	qhandle_t	flagShader[4]; // JKPlus thing
 
 	qhandle_t	flagPoleModel;
 	qhandle_t	flagFlapModel;
@@ -956,6 +1019,25 @@ typedef struct {
 	qhandle_t	teamStatusBar;
 
 	qhandle_t	deferShader;
+
+
+//JAPRO - Clientside - Movement keys - Start
+	qhandle_t	keyCrouchOffShader;
+	qhandle_t	keyCrouchOnShader;
+	qhandle_t	keyJumpOffShader;
+	qhandle_t	keyJumpOnShader;
+	qhandle_t	keyBackOffShader;
+	qhandle_t	keyBackOnShader;
+	qhandle_t	keyForwardOffShader;
+	qhandle_t	keyForwardOnShader;
+	qhandle_t	keyLeftOffShader;
+	qhandle_t	keyLeftOnShader;
+	qhandle_t	keyRightOffShader;
+	qhandle_t	keyRightOnShader;
+//JAPRO - Clientside - Movement keys - End
+
+	qhandle_t	forcefieldShader[3];
+	qhandle_t	forcefieldDmgShader[3];
 
 	qhandle_t	lightningShader;
 
@@ -977,8 +1059,15 @@ typedef struct {
 
 	qhandle_t	rivetMarkShader;
 
+
+	qhandle_t	saberClashFlare;
+
+//JAPRO - Clientside - Use all saber hum sounds
+	qhandle_t	saberHumSounds[4];
+
 	qhandle_t	teamRedShader;
 	qhandle_t	teamBlueShader;
+	qhandle_t	teamYellowShader;
 
 	qhandle_t	balloonShader;
 	qhandle_t	connectionShader;
@@ -1119,6 +1208,7 @@ typedef struct {
 	sfxHandle_t deniedSound;
 	sfxHandle_t humiliationSound;
 	sfxHandle_t defendSound;
+	sfxHandle_t	assistSound;
 #endif
 
 	sfxHandle_t takenLeadSound;
@@ -1200,14 +1290,14 @@ typedef struct {
 	qhandle_t rageRecShader;
 
 	//other HUD parts
-	qhandle_t HUDLeftFrame;
-	qhandle_t HUDArmor1;
-	qhandle_t HUDArmor2;
-	qhandle_t HUDHealth;
-	qhandle_t HUDHealthTic;
-	qhandle_t HUDArmorTic;
-	qhandle_t HUDLeftStatic;
-	qhandle_t HUDLeft;
+	qhandle_t	HUDLeftFrame;
+	qhandle_t	HUDArmor1;
+	qhandle_t	HUDArmor2;
+	qhandle_t	HUDHealth;
+	qhandle_t	HUDHealthTic;
+	qhandle_t	HUDArmorTic;
+	qhandle_t	HUDLeftStatic;
+	qhandle_t	HUDLeft;
 
 	qhandle_t	HUDSaberStyle1;
 	qhandle_t	HUDSaberStyle2;
@@ -1234,6 +1324,17 @@ typedef struct {
 	sfxHandle_t	zoomLoop;
 	sfxHandle_t	zoomEnd;
 	sfxHandle_t	disruptorZoomLoop;
+
+	//jk2pro
+	sfxHandle_t	lowHPSound;
+	sfxHandle_t	hitSound;
+	sfxHandle_t	hitSound2;
+	sfxHandle_t	hitSound3;
+	sfxHandle_t	hitSound4;
+	sfxHandle_t	hitTeamSound;
+
+	sfxHandle_t	teamChatSound;
+	sfxHandle_t	privateChatSound;
 
 } cgMedia_t;
 
@@ -1324,8 +1425,8 @@ typedef struct {
 	//float			screenXBias;
 	float			screenHeight;
 	float			screenWidth;		// virtual screen width (originally 640)
-	float			screenXFactor;
-	float			screenXFactorInv;
+	float			screenXFactor;		// 640 / screenWidth (for calculations)
+	float			screenXFactorInv;	// screenWidth / 640
 	float			screenYFactor;
 	float			screenYFactorInv;
 
@@ -1366,13 +1467,17 @@ typedef struct {
 
 	int				levelStartTime;
 
-	int				scores1, scores2;		// from configstrings
+	int				scores1, scores2, scores3;		// from configstrings
 	int				jediMaster;
 	int				duelWinner;
 	int				duelist1;
 	int				duelist2;
-	int				redflag, blueflag;		// flag status from configstrings
+	int				redflag, blueflag, yellowflag;	// flag status from configstrings
 	int				flagStatus;
+
+	//new flagstatus stuff
+	clientInfo_t	*redFlagCarrier, *blueFlagCarrier, *yellowFlagCarrier;
+	int				redFlagTime, blueFlagTime, yellowFlagTime;
 
 	qboolean  newHud;
 
@@ -1428,6 +1533,13 @@ Ghoul2 Insert End
 
 	int				mvsdk_svFlags;
 
+	//jk2pro
+	int				jcinfo;
+	qboolean		isJK2Pro;
+	qboolean		isCTFMod;
+	qboolean		CTF3ModeActive;
+	qboolean		isolateDuels;
+	qboolean		isCaMod;
 	jkmod_cgs_t		jkmodCGS;		// Tr!Force: [JKMod] Client game static
 	jkmod_media_t	jkmodMedia;		// Tr!Force: [JKMod] Client media
 
@@ -1452,6 +1564,7 @@ extern	vmCvar_t		cg_bobroll;
 extern	vmCvar_t		cg_shadows;
 extern	vmCvar_t		cg_drawTimer;
 extern	vmCvar_t		cg_drawFPS;
+extern	vmCvar_t		cg_drawFPSLowest;
 extern	vmCvar_t		cg_drawSnapshot;
 extern	vmCvar_t		cg_draw3dIcons;
 extern	vmCvar_t		cg_drawIcons;
@@ -1519,8 +1632,100 @@ extern	vmCvar_t		cg_animBlend;
 
 extern	vmCvar_t		cg_dismember;
 
+//jk2pro Client Cvars - start
+extern	vmCvar_t		cg_raceTimer;
+extern	vmCvar_t		cg_raceTimerSize;
+extern	vmCvar_t		cg_raceTimerX;
+extern	vmCvar_t		cg_raceTimerY;
+extern	vmCvar_t		cg_speedometer;
+extern	vmCvar_t		cg_speedometerX;
+extern	vmCvar_t		cg_speedometerY;
+extern	vmCvar_t		cg_speedometerSize;
+extern	vmCvar_t		cg_showpos;
+
+extern	vmCvar_t		cg_strafeHelperCutoff;
+extern	vmCvar_t		cg_strafeHelper;
+extern	vmCvar_t		cg_strafeHelperPrecision;
+extern	vmCvar_t		cg_strafeHelperLineWidth;
+extern	vmCvar_t		cg_strafeHelperActiveColor;
+extern	vmCvar_t		cg_strafeHelperInactiveAlpha;
+
+extern	vmCvar_t		cg_strafeHelperOffset;
+extern	vmCvar_t		cg_strafeHelper_FPS;
+
+extern	vmCvar_t		cg_crosshairSizeScale;
+extern	vmCvar_t		cg_crosshairSaberStyleColor;
+extern	vmCvar_t		cg_crosshairColor;
+extern	vmCvar_t		cg_crosshairIdentifyTarget;
+
+extern	vmCvar_t		cg_enhancedFlagStatus;
+extern	vmCvar_t		cg_drawTimerMsec;
+extern	vmCvar_t		cg_movementKeys;
+extern	vmCvar_t		cg_movementKeysX;
+extern	vmCvar_t		cg_movementKeysY;
+extern	vmCvar_t		cg_movementKeysSize;
+
+//only for you, arto
+extern	vmCvar_t		cg_hudColors;
+extern	vmCvar_t		cg_drawScore;
+extern	vmCvar_t		cg_drawScoreDefrag;
+extern	vmCvar_t		cg_centerHeight;
+extern	vmCvar_t		cg_centerSize;
+
+//chatbox
+extern	vmCvar_t		cg_chatBox;
+extern	vmCvar_t		cg_chatBoxFontSize;
+extern	vmCvar_t		cg_chatBoxHeight;
+//japro chatbox stuff
+extern	vmCvar_t		cg_chatBoxShowHistory;
+extern	vmCvar_t		cg_chatBoxX;
+extern	vmCvar_t		cg_chatBoxCutOffLength;
+extern	vmCvar_t		cg_chatSounds;
+extern	vmCvar_t		cg_cleanChatbox;
+extern	vmCvar_t		cg_newFont;
+
+extern	vmCvar_t		cg_jumpSounds;
+extern	vmCvar_t		cg_rollSounds;
+extern	vmCvar_t		cg_hitSounds;
+extern	vmCvar_t		cg_newSaberHitSounds;
+extern	vmCvar_t		cg_thirdPersonFlagAlpha;
+extern	vmCvar_t		cg_drawNonDuelers;
+extern	vmCvar_t		cg_brightskins;
+extern	vmCvar_t		cg_drawHitBox;
+extern	vmCvar_t		cg_playerLOD;
+extern	vmCvar_t		cg_privateDuelShell;
+extern	vmCvar_t		cg_teamRespawnShield;
+extern	vmCvar_t		cg_saberTeamColors;
+
+extern	vmCvar_t		cg_remaps;
+extern	vmCvar_t		cg_autoKillWhenFalling;
+
 extern	vmCvar_t		cg_widescreen;
 extern	vmCvar_t		cg_fovAspectAdjust;
+extern	vmCvar_t		cg_cameraFPS;
+
+extern	vmCvar_t		cg_fovViewmodel;
+extern	vmCvar_t		cg_fovViewmodelAdjust;
+
+extern	vmCvar_t		cg_fkDuration;
+extern	vmCvar_t		cg_fkFirstJumpDuration;
+extern	vmCvar_t		cg_fkSecondJumpDelay;
+
+extern	vmCvar_t		cl_commandsize;//Loda - FPS UNLOCK client modcode
+
+extern	vmCvar_t		cg_fixlean; //idk man
+extern	vmCvar_t		cg_SPRunAnim;
+
+extern	vmCvar_t		cg_drawInventory;
+extern	vmCvar_t		cg_smallScoreboard;
+extern	vmCvar_t		cg_colorScoreboard;
+extern	vmCvar_t		cg_drawScoreboardIcons;
+extern	vmCvar_t		cg_drawPowerUpIcons;
+extern	vmCvar_t		cg_drawDemoName;
+extern	vmCvar_t		cg_lowhpsound;
+extern	vmCvar_t		cg_backSwingCameraRange;
+//jk2 pro stuff end
+
 
 extern	vmCvar_t		cg_thirdPerson;
 extern	vmCvar_t		cg_thirdPersonRange;
@@ -1541,6 +1746,7 @@ extern	vmCvar_t		cg_teamChatTime;
 extern	vmCvar_t		cg_teamChatHeight;
 extern	vmCvar_t		cg_stats;
 extern	vmCvar_t 		cg_forceModel;
+extern	vmCvar_t 		cg_forceMyModel;
 extern	vmCvar_t 		cg_buildScript;
 extern	vmCvar_t		cg_paused;
 extern	vmCvar_t		cg_blood;
@@ -1555,6 +1761,7 @@ extern	vmCvar_t		cg_hudFiles;
 extern	vmCvar_t		cg_smoothClients;
 extern	vmCvar_t		cg_pmove_fixed;
 extern	vmCvar_t		cg_pmove_msec;
+extern	vmCvar_t		cg_pmove_float;
 extern	vmCvar_t		cg_cameraOrbit;
 extern	vmCvar_t		cg_cameraOrbitDelay;
 extern	vmCvar_t		cg_timescaleFadeEnd;
@@ -1601,6 +1808,8 @@ const char *CG_Argv( int arg );
 void QDECL CG_Printf( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
 Q_NORETURN void QDECL CG_Error( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
 
+void QDECL CG_SendConsoleCommand(const char *fmt, ...);
+
 void CG_StartMusic( qboolean bForceStart );
 
 void CG_UpdateCvars( void );
@@ -1636,6 +1845,7 @@ void CG_ZoomUp_f( void );
 void CG_AddBufferedSound( sfxHandle_t sfx);
 
 void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
+
 /*
 Ghoul2 Insert Start
 */
@@ -1658,6 +1868,7 @@ void CG_FillRect( float x, float y, float width, float height, const float *colo
 void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
 void CG_DrawRotatePic( float x, float y, float width, float height,float angle, qhandle_t hShader );
 void CG_DrawRotatePic2( float x, float y, float width, float height,float angle, qhandle_t hShader );
+
 void CG_DrawString( float x, float y, const char *string, 
 				   float charWidth, float charHeight, const float *modulate );
 
@@ -1696,7 +1907,9 @@ extern  char teamChat2[256];
 
 void CG_AddLagometerFrameInfo( void );
 void CG_AddLagometerSnapshotInfo( snapshot_t *snap );
+void CG_AddSpeed(void);
 void CG_CenterPrint( const char *str, int y, int charWidth );
+void CG_CenterPrintMultiKill(const char *str, int y, int charWidth);
 void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t headAngles );
 void CG_DrawActive( stereoFrame_t stereoView );
 void CG_DrawFlagModel( float x, float y, float w, float h, int team, qboolean force2D );
@@ -1723,6 +1936,7 @@ void CG_CheckOrderPending(void);
 const char *CG_GameTypeString(void);
 qboolean CG_YourTeamHasFlag(void);
 qboolean CG_OtherTeamHasFlag(void);
+clientInfo_t *CG_GetFlagCarrier(team_t flag);
 qhandle_t CG_StatusHandle(int task);
 
 

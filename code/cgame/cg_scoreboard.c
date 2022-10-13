@@ -36,8 +36,13 @@
 #define SB_RATING_WIDTH	    0 // (6 * BIGCHAR_WIDTH)
 #define SB_NAME_X			(SB_SCORELINE_X)
 #define SB_SCORE_X			(SB_SCORELINE_X + .55 * SB_SCORELINE_WIDTH)
+<<<<<<< HEAD
+#define SB_PING_X			(SB_SCORELINE_X + .70 * SB_SCORELINE_WIDTH)
+#define SB_TIME_X			(SB_SCORELINE_X + .85 * SB_SCORELINE_WIDTH)
+=======
 #define SB_PING_X			(SB_SCORELINE_X + (jkcvar_cg_scoreboardExtras.integer ? .72 : .70) * SB_SCORELINE_WIDTH) // Tr!Force: [Scoreboard] Extra info
 #define SB_TIME_X			(SB_SCORELINE_X + (jkcvar_cg_scoreboardExtras.integer ? .87 : .85) * SB_SCORELINE_WIDTH) // Tr!Force: [Scoreboard] Extra info
+>>>>>>> jediknightplus/master
 
 // The new and improved score board
 //
@@ -89,21 +94,33 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 			CG_DrawFlagModel( iconx, y - ( 32 - BIGCHAR_HEIGHT ) / 2, 32, 32, TEAM_FREE, qfalse );
 		}
 		else {
+<<<<<<< HEAD
+			CG_DrawFlagModel( iconx + 32, y, 16, 16, TEAM_FREE, qfalse );
+=======
 			CG_DrawFlagModel( iconx, y, 16, 16, TEAM_FREE, qfalse );
+>>>>>>> jediknightplus/master
 		}
 	} else if ( ci->powerups & ( 1 << PW_REDFLAG ) ) {
 		if( largeFormat ) {
 			CG_DrawFlagModel( iconx, y, 32, 32, TEAM_RED, qfalse );
 		}
 		else {
+<<<<<<< HEAD
+			CG_DrawFlagModel( iconx + 32, y, 16, 16, TEAM_RED, qfalse );
+=======
 			CG_DrawFlagModel( iconx, y, 32, 32, TEAM_RED, qfalse );
+>>>>>>> jediknightplus/master
 		}
 	} else if ( ci->powerups & ( 1 << PW_BLUEFLAG ) ) {
 		if( largeFormat ) {
 			CG_DrawFlagModel( iconx, y, 32, 32, TEAM_BLUE, qfalse );
 		}
 		else {
+<<<<<<< HEAD
+			CG_DrawFlagModel( iconx + 32, y, 16, 16, TEAM_BLUE, qfalse );
+=======
 			CG_DrawFlagModel( iconx, y, 32, 32, TEAM_BLUE, qfalse );
+>>>>>>> jediknightplus/master
 		}
 	} else {
 		// draw the wins / losses
@@ -149,6 +166,79 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		}
 
 		hcolor[3] = fade * 0.7;
+<<<<<<< HEAD
+		CG_FillRect( SB_SCORELINE_X - 5, y + 2, SB_SCORELINE_WIDTH + 10, largeFormat?SB_NORMAL_HEIGHT:SB_INTER_HEIGHT, hcolor );
+	}
+
+	if (!cg_drawScoreboardIcons.integer) {
+		CG_Text_Paint(SB_NAME_X, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+	}
+	else {
+		if (largeFormat) {
+			CG_DrawPic(SB_NAME_X-5, y+2, 25, 25, ci->modelIcon);
+			CG_Text_Paint(SB_NAME_X+24, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+		}
+		else {
+			CG_DrawPic(SB_NAME_X-5, y+2, 15, 15, ci->modelIcon);
+			CG_Text_Paint(SB_NAME_X+12, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+		}
+	}
+
+	if (score->ping != -1)
+	{
+		if ( ci->team != TEAM_SPECTATOR || cgs.gametype == GT_TOURNAMENT )
+		{
+			if (cgs.gametype == GT_TOURNAMENT)
+			{
+				CG_Text_Paint (SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i/%i", ci->wins, ci->losses),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL );
+			}
+			else if (cgs.gametype == GT_CTF)
+			{
+				CG_Text_Paint(SB_SCORELINE_X + 0.47f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORELINE_X + 0.59f * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorYellow : colorWhite, va("%i", score->captures), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorCyan : colorWhite, va("%i", score->impressiveCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //i think this is ret frags? but idk
+				CG_Text_Paint(SB_SCORELINE_X + 0.72f * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorMagenta : colorWhite, va("%i", score->defendCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);//loda
+			}
+			else
+			{
+				CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i", score->score),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			}
+		}
+		
+		if (cgs.gametype == GT_CTF)
+		{
+			if (ci->botSkill != 0)
+				CG_Text_Paint(SB_SCORELINE_X + 0.80 * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			else
+				CG_Text_Paint(SB_SCORELINE_X + 0.80 * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, va("%i", score->ping), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+
+			CG_Text_Paint(SB_SCORELINE_X + 0.90 * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, va("%i", score->time), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+		}
+		else
+		{
+			if (ci->botSkill != 0)
+				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			else
+				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, va("%i", score->ping), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+
+			CG_Text_Paint(SB_TIME_X, y, 1.0f * scale, colorWhite, va("%i", score->time), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+		}
+	}
+	else if (cgs.gametype == GT_CTF)
+	{
+		CG_Text_Paint(SB_SCORELINE_X + 0.47f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //score
+		CG_Text_Paint(SB_SCORELINE_X + 0.59f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //caps
+		CG_Text_Paint(SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //assists
+		CG_Text_Paint(SB_SCORELINE_X + 0.73f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //defends
+		CG_Text_Paint(SB_SCORELINE_X + 0.80f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //ping
+		CG_Text_Paint(SB_SCORELINE_X + 0.90f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //time
+	}
+	else
+	{
+		CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+		CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+		CG_Text_Paint(SB_TIME_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+=======
 
 		// Tr!Force: [Dimension] Show race time
 		if (cg.snap->ps.stats[JK_DIMENSION] == DIMENSION_RACE)
@@ -253,14 +343,19 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	else 
 	{
 		CG_Text_Paint (SB_TIME_X, y, 1.0f * scale, colorWhite, va("%i", score->time),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL );
+>>>>>>> jediknightplus/master
 	}
 
 	// add the "ready" marker for intermission exiting
 	if ( cg.snap->ps.stats[ STAT_CLIENTS_READY ] & ( 1 << score->client ) ) 
 	{
+<<<<<<< HEAD
+		CG_Text_Paint (SB_NAME_X - 64, y + 2, 0.7f * scale, colorWhite, CG_GetStripEdString("INGAMETEXT", "READY"),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+=======
 		float readyAlign = jkcvar_cg_scoreboardIcons.integer && largeFormat ? 74 : 64; // Tr!Force: [ScoreboardIcons] Adjust ready label
 
 		CG_Text_Paint (SB_NAME_X - readyAlign, y + 2, 0.7f * scale, colorWhite, CG_GetStripEdString("INGAMETEXT", "READY"),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+>>>>>>> jediknightplus/master
 	}
 }
 
@@ -331,12 +426,20 @@ Draw the normal in-game scoreboard
 */
 qboolean CG_DrawOldScoreboard( void ) {
 	float	x;
+<<<<<<< HEAD
+	int		y, i, n1, n2, n3;
+=======
 	int		y, i, n1, n2;
+>>>>>>> jediknightplus/master
 	// int		w;
 	float	fade;
 	float	*fadeColor;
 	char	*s;
+<<<<<<< HEAD
+	int maxClients, realMaxClients;
+=======
 	int maxClients;
+>>>>>>> jediknightplus/master
 	int lineHeight;
 	int topBorderSize, bottomBorderSize;
 
@@ -353,7 +456,11 @@ qboolean CG_DrawOldScoreboard( void ) {
 
 	if ( cg.showScores || cg.predictedPlayerState.pm_type == PM_DEAD ||
 		 cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
+<<<<<<< HEAD
+		fade = 1.0f;
+=======
 		fade = 1.0;
+>>>>>>> jediknightplus/master
 		fadeColor = colorWhite;
 	} else {
 		fadeColor = CG_FadeColor( cg.scoreFadeTime, FADE_TIME );
@@ -432,6 +539,32 @@ qboolean CG_DrawOldScoreboard( void ) {
 			// CG_DrawBigString( x, y, s, fade );
 			UI_DrawProportionalString(x, y, s, UI_CENTER|UI_DROPSHADOW, colorTable[CT_WHITE]);
 		}
+<<<<<<< HEAD
+	} else if ( cgs.isCTFMod && cgs.CTF3ModeActive ) {
+		if ( cgs.scores1 == cgs.scores2 && cgs.scores2 == cgs.scores3 ) {
+			s = va ("Teams are tied at %i", cgs.scores1 );
+		} else if ( cgs.scores1 > cgs.scores2 && cgs.scores1 > cgs.scores3 ) {
+			s = va( "Red leads with %i - Blue: %i Yellow: %i", cgs.scores1, cgs.scores2, cgs.scores3 );
+		} else if ( cgs.scores2 > cgs.scores1 && cgs.scores2 > cgs.scores3 ) {
+			s = va( "Blue leads with %i - Red: %i Yellow: %i", cgs.scores2, cgs.scores1, cgs.scores3 );
+		} else if ( cgs.scores3 > cgs.scores1 && cgs.scores3 > cgs.scores2 ) {
+			s = va( "Yellow leads with %i - Red: %i Blue: %i", cgs.scores3, cgs.scores1, cgs.scores2 );
+		} else {
+			s = va( "Red: %i Blue: %i Yellow: %i", cgs.scores1, cgs.scores2, cgs.scores3 );
+		}
+
+		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		y = 60;
+		
+		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+	} else {
+		if ( cg.teamScores[0] == cg.teamScores[1] ) {
+			s = va("Teams are tied at %i", cg.teamScores[0] );
+		} else if ( cg.teamScores[0] >= cg.teamScores[1] ) {
+			s = va("Red leads %i to %i",cg.teamScores[0], cg.teamScores[1] );
+		} else {
+			s = va("Blue leads %i to %i",cg.teamScores[1], cg.teamScores[0] );
+=======
 	} else {
 		const char *sTo = CG_GetStripEdString("JKINGAME", "TO"); // Tr!Force: [CGameGeneral] Use translated text
 
@@ -441,6 +574,7 @@ qboolean CG_DrawOldScoreboard( void ) {
 			s = va("%s %i %s %i", CG_GetStripEdString("JKINGAME", "RED_LEADS"), cg.teamScores[0], sTo, cg.teamScores[1] ); // Tr!Force: [CGameGeneral] Use translated text
 		} else {
 			s = va("%s %i %s %i", CG_GetStripEdString("JKINGAME", "BLUE_LEADS"), cg.teamScores[1], sTo, cg.teamScores[0] ); // Tr!Force: [CGameGeneral] Use translated text
+>>>>>>> jediknightplus/master
 		}
 
 		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
@@ -459,7 +593,11 @@ qboolean CG_DrawOldScoreboard( void ) {
 	// Unfortunately, since it's so sodding late now and post release I can't enable the localisation code (REM'd) since some of 
 	//	the localised strings don't fit - since no-one's ever seen them to notice this.  Smegging brilliant. Thanks people.
 	//
+<<<<<<< HEAD
+	CG_Text_Paint ( SB_NAME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "NAME")*/"Name",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+=======
 	CG_Text_Paint ( SB_NAME_X, y, 1.0f, colorWhite, CG_GetStripEdString("MENUS3", "NAME"), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM ); // Tr!Force: [CGameGeneral] Use translated text
+>>>>>>> jediknightplus/master
 	if (cgs.gametype == GT_TOURNAMENT)
 	{
 		char sWL[100];
@@ -467,6 +605,24 @@ qboolean CG_DrawOldScoreboard( void ) {
 
 		CG_Text_Paint ( SB_SCORE_X, y, 1.0f, colorWhite, sWL, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
 	}
+<<<<<<< HEAD
+	else if (cgs.gametype == GT_CTF)
+	{
+		CG_Text_Paint ( SB_SCORELINE_X + 0.47f * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.59f * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorYellow : colorWhite, "C", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		//CG_Text_Paint ( SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "A", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
+		//CG_Text_Paint ( SB_SCORELINE_X + 0.73f * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "D", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorCyan : colorWhite, "R", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
+		CG_Text_Paint ( SB_SCORELINE_X + 0.72f * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorMagenta : colorWhite, "BC", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.80 * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorGreen : colorWhite, "Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.90 * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+	}
+	else
+	{
+		CG_Text_Paint ( SB_SCORE_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "SCORE")*/"Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_PING_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_TIME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+=======
 	else if (jkcvar_cg_scoreboardExtras.integer) // Tr!Force: [Scoreboard] Extra info
 	{
 		CG_Text_Paint ( SB_SCORE_X, y, 1.0f, colorWhite, CG_GetStripEdString("JKINGAME", "SCORE"), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM ); // Tr!Force: [CGameGeneral] Use translated text
@@ -488,12 +644,17 @@ qboolean CG_DrawOldScoreboard( void ) {
 	// Tr!Force: [Scoreboard] Extra info
 	if (cg.snap->ps.stats[JK_DIMENSION] == DIMENSION_RACE) {
 		CG_Text_Paint ( SB_TIME_X, y + 19, 0.5f, colorWhite, CG_GetStripEdString("JKINGAME", "RECORD"), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+>>>>>>> jediknightplus/master
 	}
 
 	y = SB_TOP;
 
 	// If there are more than SB_MAXCLIENTS_NORMAL, use the interleaved scores
+<<<<<<< HEAD
+	if ( cg.numScores > SB_MAXCLIENTS_NORMAL || cgs.gametype == GT_CTF || cg_smallScoreboard.integer ) {
+=======
 	if ( cg.numScores > SB_MAXCLIENTS_NORMAL ) {
+>>>>>>> jediknightplus/master
 		maxClients = SB_MAXCLIENTS_INTER;
 		lineHeight = SB_INTER_HEIGHT;
 		topBorderSize = 8;
@@ -505,6 +666,9 @@ qboolean CG_DrawOldScoreboard( void ) {
 		bottomBorderSize = 8;
 	}
 
+<<<<<<< HEAD
+	realMaxClients = maxClients;
+=======
 	// Tr!Force: [ScoreboardIcons] Adjust team background
 	if (jkcvar_cg_scoreboardIcons.integer) {
 		topBorderSize = 6;
@@ -516,6 +680,7 @@ qboolean CG_DrawOldScoreboard( void ) {
 		topBorderSize = -2;
 		bottomBorderSize = 0;
 	}
+>>>>>>> jediknightplus/master
 
 	localClient = qfalse;
 
@@ -527,7 +692,75 @@ qboolean CG_DrawOldScoreboard( void ) {
 
 	//I guess this can be accomplished simply by printing the first teams score with a maxClients
 	//value passed in related to how many players are on both teams.
+<<<<<<< HEAD
+	if (cgs.gametype >= GT_TEAM && cgs.isCTFMod && cgs.CTF3ModeActive)
+	{
+		int team1MaxCl = CG_GetTeamCount(TEAM_RED, maxClients);
+		int team2MaxCl = CG_GetTeamCount(TEAM_BLUE, maxClients);
+		int team3MaxCl = CG_GetTeamCount(TEAM_FREE, maxClients);
+		//
+		// teamplay scoreboard
+		//
+		y += lineHeight/2;
+
+		if (team1MaxCl > 7 && (team1MaxCl+team2MaxCl+team3MaxCl) > maxClients)
+		{
+			team1MaxCl -= team2MaxCl;
+			team1MaxCl -= team3MaxCl;
+			//subtract as many as you have to down to 10, once we get there
+			//we just set it to 10
+
+			if (team1MaxCl < 7)
+			{
+				team1MaxCl = 7;
+			}
+		}
+			
+		if (team2MaxCl > 7 && (team1MaxCl+team2MaxCl+team3MaxCl) > maxClients)
+		{
+			team2MaxCl -= team1MaxCl;
+			team2MaxCl -= team2MaxCl;
+			//subtract as many as you have to down to 10, once we get there
+			//we just set it to 10
+
+			if (team2MaxCl < 7)
+			{
+				team2MaxCl = 7;
+			}
+		}
+		team3MaxCl = (maxClients-team1MaxCl-team2MaxCl); //team3 can display however many is left over after team1 & team2's display
+
+		n1 = CG_TeamScoreboard(y, TEAM_RED, fade, team1MaxCl, lineHeight, qtrue);
+		CG_DrawTeamBackground(SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED);
+		CG_TeamScoreboard(y, TEAM_RED, fade, team1MaxCl, lineHeight, qfalse);
+		y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
+
+		//maxClients -= n1;
+
+		n2 = CG_TeamScoreboard(y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qtrue);
+		CG_DrawTeamBackground(SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE);
+		CG_TeamScoreboard(y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qfalse);
+		y += (n2 * lineHeight) + BIGCHAR_HEIGHT;
+
+		//maxClients -= n2;
+
+		n3 = CG_TeamScoreboard(y, TEAM_FREE, fade, team3MaxCl, lineHeight, qtrue);
+		CG_DrawTeamBackground(SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n3 * lineHeight + bottomBorderSize, 0.33f, TEAM_FREE);
+		CG_TeamScoreboard(y, TEAM_FREE, fade, team3MaxCl, lineHeight, qfalse);
+		y += (n3 * lineHeight) + BIGCHAR_HEIGHT;
+
+		//maxClients -= n3;
+
+		maxClients -= (team1MaxCl+team2MaxCl+team3MaxCl);
+
+		maxClients = realMaxClients;
+
+		n1 = CG_TeamScoreboard(y, TEAM_SPECTATOR, fade, maxClients, lineHeight, qfalse);
+		y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
+	} else if (cgs.gametype >= GT_TEAM) {
+=======
 	if ( cgs.gametype >= GT_TEAM ) {
+>>>>>>> jediknightplus/master
 		//
 		// teamplay scoreboard
 		//
@@ -554,14 +787,22 @@ qboolean CG_DrawOldScoreboard( void ) {
 			n1 = CG_TeamScoreboard( y, TEAM_RED, fade, team1MaxCl, lineHeight, qtrue );
 			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED );
 			CG_TeamScoreboard( y, TEAM_RED, fade, team1MaxCl, lineHeight, qfalse );
+<<<<<<< HEAD
+			y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
+
+=======
 			if (jkcvar_cg_scoreboardExtras.integer)  CG_DrawTeamBackground( SB_SCORELINE_X - 5, y + 2, SB_SCORELINE_WIDTH + 10, 1, 0.5f, TEAM_RED ); // Tr!Force: [Scoreboard] Team thin border
 			y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
+>>>>>>> jediknightplus/master
 			//maxClients -= n1;
 
 			n2 = CG_TeamScoreboard( y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qtrue );
 			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE );
 			CG_TeamScoreboard( y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qfalse );
+<<<<<<< HEAD
+=======
 			if (jkcvar_cg_scoreboardExtras.integer)  CG_DrawTeamBackground( SB_SCORELINE_X - 5, y + 2, SB_SCORELINE_WIDTH + 10, 1, 0.5f, TEAM_BLUE); // Tr!Force: [Scoreboard] Team thin border
+>>>>>>> jediknightplus/master
 			y += (n2 * lineHeight) + BIGCHAR_HEIGHT;
 
 			//maxClients -= n2;
@@ -588,7 +829,10 @@ qboolean CG_DrawOldScoreboard( void ) {
 			n1 = CG_TeamScoreboard( y, TEAM_BLUE, fade, team1MaxCl, lineHeight, qtrue );
 			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE );
 			CG_TeamScoreboard( y, TEAM_BLUE, fade, team1MaxCl, lineHeight, qfalse );
+<<<<<<< HEAD
+=======
 			if (jkcvar_cg_scoreboardExtras.integer)  CG_DrawTeamBackground( SB_SCORELINE_X - 5, y + 2, SB_SCORELINE_WIDTH + 10, 1, 0.5f, TEAM_BLUE ); // Tr!Force: [Scoreboard] Team thin border
+>>>>>>> jediknightplus/master
 			y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
 
 			//maxClients -= n1;
@@ -596,13 +840,22 @@ qboolean CG_DrawOldScoreboard( void ) {
 			n2 = CG_TeamScoreboard( y, TEAM_RED, fade, team2MaxCl, lineHeight, qtrue );
 			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED );
 			CG_TeamScoreboard( y, TEAM_RED, fade, team2MaxCl, lineHeight, qfalse );
+<<<<<<< HEAD
+=======
 			if (jkcvar_cg_scoreboardExtras.integer)  CG_DrawTeamBackground( SB_SCORELINE_X - 5, y + 2, SB_SCORELINE_WIDTH + 10, 1, 0.5f, TEAM_RED ); // Tr!Force: [Scoreboard] Team thin border
+>>>>>>> jediknightplus/master
 			y += (n2 * lineHeight) + BIGCHAR_HEIGHT;
 
 			//maxClients -= n2;
 
 			maxClients -= (team1MaxCl+team2MaxCl);
 		}
+<<<<<<< HEAD
+
+		maxClients = realMaxClients;
+
+=======
+>>>>>>> jediknightplus/master
 		n1 = CG_TeamScoreboard( y, TEAM_SPECTATOR, fade, maxClients, lineHeight, qfalse );
 		y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
 

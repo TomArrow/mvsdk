@@ -274,7 +274,11 @@ gentity_t *CreateMissile( vec3_t org, vec3_t dir, float vel, int life,
 {
 	gentity_t	*missile;
 
+<<<<<<< HEAD
+	missile = G_Spawn();
+=======
 	missile = JKMod_G_Spawn( owner->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	
 	missile->nextthink = level.time + life;
 	missile->think = G_FreeEntity;
@@ -355,11 +359,14 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		{
 			goto killProj;
 		}
+<<<<<<< HEAD
+=======
 		// Tr!Force: [ChatProtect] Check missile impact
 		else if (otherOwner && otherOwner->client && (otherOwner->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 		{
 			goto killProj;
 		}
+>>>>>>> jediknightplus/master
 	}
 	else
 	{
@@ -368,11 +375,14 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		{
 			goto killProj;
 		}
+<<<<<<< HEAD
+=======
 		// Tr!Force: [ChatProtect] Check missile impact
 		else if (other && other->client && (other->client->ps.stats[JK_PLAYER] & JK_CHAT_IN))
 		{
 			goto killProj;
 		}
+>>>>>>> jediknightplus/master
 	}
 
 	if (other->takedamage && other->client &&
@@ -390,7 +400,11 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		gentity_t *te;
 		int otherDefLevel = other->client->ps.fd.forcePowerLevel[FP_SABERDEFEND];
 
+<<<<<<< HEAD
+		te = G_TempEntity( ent->r.currentOrigin, EV_SABER_BLOCK );
+=======
 		te = JKMod_G_TempEntity( ent->r.currentOrigin, EV_SABER_BLOCK, ent->r.ownerNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		VectorCopy(ent->r.currentOrigin, te->s.origin);
 		VectorCopy(trace->plane.normal, te->s.angles);
 		te->s.eventParm = 0;
@@ -456,7 +470,11 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 			//in this case, deflect it even if we can't actually block it because it hit our saber
 			WP_SaberCanBlock(otherOwner, ent->r.currentOrigin, 0, 0, qtrue, 0);
 
+<<<<<<< HEAD
+			te = G_TempEntity( ent->r.currentOrigin, EV_SABER_BLOCK );
+=======
 			te = JKMod_G_TempEntity( ent->r.currentOrigin, EV_SABER_BLOCK, ent->r.ownerNum ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			VectorCopy(ent->r.currentOrigin, te->s.origin);
 			VectorCopy(trace->plane.normal, te->s.angles);
 			te->s.eventParm = 0;

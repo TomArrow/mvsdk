@@ -249,11 +249,14 @@ saberMoveData_t	saberMoveData[LS_MOVE_MAX] = {//							NB:randomized
 	{"Reflect UL",	BOTH_P1_S1_TR,		Q_R,	Q_TL,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_BL2TR,		LS_A_TR2BL,		300	},	// LS_PARRY_UL,
 	{"Reflect LR",	BOTH_P1_S1_BR,		Q_R,	Q_BL,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_TR2BL,		LS_A_BL2TR,		300	},	// LS_PARRY_LR
 	{"Reflect LL",	BOTH_P1_S1_BL,		Q_R,	Q_BR,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_TL2BR,		LS_A_BR2TL,		300	},	// LS_PARRY_LL,
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [PlayerMovement] Dual saber moves
 	{"Dual Spin 1",	BOTH_BUTTERFLY_LEFT,	Q_R,	Q_R,	AFLAG_ACTIVE,	100,	BLK_TIGHT,	LS_READY,		LS_READY,		200	}, // LS_JK_DUAL_SPIN1
 	{"Dual Spin 2",	BOTH_BUTTERFLY_FL1,		Q_R,	Q_R,	AFLAG_ACTIVE,	100,	BLK_TIGHT,	LS_READY,		LS_READY,		200	}, // LS_JK_DUAL_SPIN2
 	{"Dual Tornado",BOTH_FJSS_TL_BR,		Q_L,	Q_R,	AFLAG_ACTIVE,	100,	BLK_TIGHT,	LS_READY,		LS_T1__R_T_,	200	}, // LS_JK_DUAL_TORNADO
+>>>>>>> jediknightplus/master
 };
 
 
@@ -1109,8 +1112,13 @@ saberMoveName_t PM_SaberFlipOverAttackMove(trace_t *tr)
 	VectorCopy( pm->ps->viewangles, fwdAngles );
 	fwdAngles[PITCH] = fwdAngles[ROLL] = 0;
 	AngleVectors( fwdAngles, jumpFwd, NULL, NULL );
+<<<<<<< HEAD
+	VectorScale( jumpFwd, 50, pm->ps->velocity );
+	pm->ps->velocity[2] = 400;
+=======
 	VectorScale( jumpFwd, (pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade ? 150 : 50, pm->ps->velocity ); // Tr!Force: [PlayerMovement] Dual saber moves
 	pm->ps->velocity[2] = (pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade ? 330 : 400; // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 
 	psData = pm->bgClients[tr->entityNum];
 
@@ -1145,7 +1153,11 @@ saberMoveName_t PM_SaberFlipOverAttackMove(trace_t *tr)
 	pm->ps->fd.forceJumpSound = 1;
 	pm->cmd.upmove = 0;
 
+<<<<<<< HEAD
+	if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 ) : PM_irand_timesync( 0, 1 )) )
+=======
 	if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 ) : PM_irand_timesync( 0, 1 )) || (pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade ) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 	{
 		return LS_A_FLIP_STAB;
 	}
@@ -1212,7 +1224,11 @@ saberMoveName_t PM_SaberJumpAttackMove( void )
 	pm->ps->fd.forceJumpSound = 1;
 	pm->cmd.upmove = 0;
 
+<<<<<<< HEAD
+	return LS_A_JUMP_T__B_;
+=======
 	return (pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade ? LS_JK_DUAL_TORNADO : LS_A_JUMP_T__B_; // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 }
 
 float PM_GroundDistance(void)
@@ -1303,16 +1319,28 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 				{//medium and higher attacks
 					if ( (pm->ps->pm_flags&PMF_DUCKED) || pm->cmd.upmove < 0 )
 					{
+<<<<<<< HEAD
+						newmove = LS_A_BACK_CR;
+					}
+					else
+					{
+						newmove = LS_A_BACK;
+=======
 						newmove = (pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade ? LS_JK_DUAL_SPIN2 : LS_A_BACK_CR; // Tr!Force: [PlayerMovement] Dual saber moves
 					}
 					else
 					{
 						newmove = (pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade ? LS_JK_DUAL_SPIN1 : LS_A_BACK; // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 					}
 				}
 				else
 				{ //weak attack
+<<<<<<< HEAD
+					newmove = LS_A_BACKSTAB;
+=======
 					newmove = (pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade ? LS_JK_DUAL_SPIN1 : LS_A_BACKSTAB; // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 				}
 			}
 			else
@@ -1426,7 +1454,11 @@ void PM_WeaponLightsaber(void)
 			PM_SetAnim(SETANIM_TORSO,BOTH_STAND1,SETANIM_FLAG_OVERRIDE, 100);
 		}
 
+<<<<<<< HEAD
+		if (pm->ps->weaponTime < 1 && ((pm->cmd.buttons & BUTTON_ALT_ATTACK) || (pm->cmd.buttons & BUTTON_ATTACK)))
+=======
 		if (pm->ps->weaponTime < 1 && ((pm->cmd.buttons & BUTTON_ALT_ATTACK) || (pm->cmd.buttons & BUTTON_ATTACK)) && pm->ps->stats[JK_DIMENSION] != DIMENSION_RACE) // Tr!Force: [Dimensions] Don't allow saber toggle on race dimension
+>>>>>>> jediknightplus/master
 		{
 			if (pm->ps->duelTime < pm->cmd.serverTime)
 			{
@@ -1945,13 +1977,25 @@ weapChecks:
 	pm->ps->weaponTime = addTime;
 }
 
+<<<<<<< HEAD
+#ifdef JK2_CGAME
+#include "../cgame/cg_local.h" //ahahahahhahahaha@$!$!
+#endif
+
+=======
+>>>>>>> jediknightplus/master
 void PM_SetSaberMove(short newMove)
 {
 	unsigned int setflags = saberMoveData[newMove].animSetFlags;
 	int	anim = saberMoveData[newMove].animToUse;
 	int parts = SETANIM_TORSO;
 	
+<<<<<<< HEAD
+	if ( newMove == LS_READY || ((newMove == LS_A_FLIP_STAB || newMove == LS_A_FLIP_SLASH) &&
+		jk2gameplay != VERSION_1_02) )
+=======
 	if ( newMove == LS_READY || ((newMove == LS_A_FLIP_STAB || newMove == LS_A_FLIP_SLASH) && jk2gameplay != VERSION_1_02) ) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 	{//finished with a kata (or in a special move) reset attack counter
 		pm->ps->saberAttackChainCount = 0;
 	}
@@ -2002,9 +2046,12 @@ void PM_SetSaberMove(short newMove)
 		|| newMove == LS_A_BACK_CR
 		|| newMove == LS_A_FLIP_STAB
 		|| newMove == LS_A_FLIP_SLASH
+<<<<<<< HEAD
+=======
 		|| newMove == LS_JK_DUAL_SPIN1 // Tr!Force: [PlayerMovement] Dual saber moves
 		|| newMove == LS_JK_DUAL_SPIN2 // Tr!Force: [PlayerMovement] Dual saber moves
 		|| newMove == LS_JK_DUAL_TORNADO // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 		|| jk2gameplay == VERSION_1_02 )
 	{
 		setflags |= SETANIM_FLAG_OVERRIDE;
@@ -2039,6 +2086,13 @@ void PM_SetSaberMove(short newMove)
 		|| newMove == LS_A_BACK
 		|| newMove == LS_A_BACK_CR
 		|| newMove == LS_A_FLIP_STAB
+<<<<<<< HEAD
+		|| newMove == LS_A_FLIP_SLASH )
+	{
+		parts = SETANIM_BOTH;
+	}
+	else if ( BG_SpinningSaberAnim( anim ) )
+=======
 		|| newMove == LS_A_FLIP_SLASH
 		|| newMove == LS_JK_DUAL_SPIN1 // Tr!Force: [PlayerMovement] Dual saber moves
 		|| newMove == LS_JK_DUAL_SPIN2 // Tr!Force: [PlayerMovement] Dual saber moves
@@ -2047,6 +2101,7 @@ void PM_SetSaberMove(short newMove)
 		parts = SETANIM_BOTH;
 	}
 	else if ( BG_SpinningSaberAnim( anim ) && !JKMod_BG_SpinningDualAnim( anim ) ) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 	{//spins must be played on entire body
 		parts = SETANIM_BOTH;
 	}
@@ -2065,7 +2120,15 @@ void PM_SetSaberMove(short newMove)
 		}
 	}
 
+<<<<<<< HEAD
+#ifdef JK2_CGAME
+	PM_SetAnim(parts, anim, ((jk2gameplay == VERSION_1_02 && !cg_fixlean.integer) ? (setflags | SETANIM_FLAG_HOLD) : setflags), saberMoveData[newMove].blendTime);
+#else
 	PM_SetAnim(parts, anim, (jk2gameplay == VERSION_1_02 ? (setflags|SETANIM_FLAG_HOLD) : setflags), saberMoveData[newMove].blendTime);
+#endif
+=======
+	PM_SetAnim(parts, anim, (jk2gameplay == VERSION_1_02 ? (setflags|SETANIM_FLAG_HOLD) : setflags), saberMoveData[newMove].blendTime);
+>>>>>>> jediknightplus/master
 
 	if ( (pm->ps->torsoAnim&~ANIM_TOGGLEBIT) == anim )
 	{//successfully changed anims

@@ -143,7 +143,10 @@ extern int (*forcePowerNeeded)[NUM_FORCE_POWERS];
 void MV_SetGamePlay( mvversion_t version )
 { /* Set weaponData (ammo costs, ...), forcePowerNeeded (force costs) and the gameplay value according to the new version. */
 #ifdef JK2_GAME
+<<<<<<< HEAD
+=======
 	char userinfo[MAX_INFO_STRING]; // Tr!Force: [Gameplay] Clean client G2 instances
+>>>>>>> jediknightplus/master
 	gentity_t *saberent;
 	gentity_t *ent;
 	int		   i;
@@ -176,7 +179,11 @@ void MV_SetGamePlay( mvversion_t version )
 	{
 		ent = &g_entities[i];
 
+<<<<<<< HEAD
+		if ( ent && ent->client && ent->inuse )
+=======
 		if ( ent->client && ent->inuse ) // Tr!Force: [Gameplay] Clean client G2 instances
+>>>>>>> jediknightplus/master
 		{
 			/* Adjust the size of the saberbox (8.0f in 1.02, 16.0f in 1.03 and 1.04). The define for SABER_BOX_SIZE already contains the check for the current version, so we can just use the same code for all 3 versions here. */
 			saberent = &g_entities[ent->client->ps.saberEntityNum];
@@ -185,6 +192,8 @@ void MV_SetGamePlay( mvversion_t version )
 				VectorSet( saberent->r.mins, -SABER_BOX_SIZE, -SABER_BOX_SIZE, -SABER_BOX_SIZE );
 				VectorSet( saberent->r.maxs, SABER_BOX_SIZE, SABER_BOX_SIZE, SABER_BOX_SIZE );
 			}
+<<<<<<< HEAD
+=======
 			
 			// Tr!Force: [Gameplay] Clean client G2 instances
 			trap_GetUserinfo( i, userinfo, sizeof(userinfo) );
@@ -199,6 +208,7 @@ void MV_SetGamePlay( mvversion_t version )
 				ent->bolt_RLeg = trap_G2API_AddBolt( ent->client->ghoul2, 0, "rtibia" );
 				ent->bolt_Motion = trap_G2API_AddBolt( ent->client->ghoul2, 0, "Motion" );
 			}
+>>>>>>> jediknightplus/master
 		}
 	}
 	

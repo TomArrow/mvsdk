@@ -75,15 +75,26 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	// use temp events at source and destination to prevent the effect
 	// from getting dropped by a second player event
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+<<<<<<< HEAD
+		tent = G_TempEntity( player->client->ps.origin, EV_PLAYER_TELEPORT_OUT );
+		tent->s.clientNum = player->s.clientNum;
+
+		tent = G_TempEntity( origin, EV_PLAYER_TELEPORT_IN );
+=======
 		tent = JKMod_G_TempEntity( player->client->ps.origin, EV_PLAYER_TELEPORT_OUT, player->s.number ); // Tr!Force: [Dimension] Tag owner info
 		tent->s.clientNum = player->s.clientNum;
 
 		tent = JKMod_G_TempEntity( origin, EV_PLAYER_TELEPORT_IN, player->s.number ); // Tr!Force: [Dimension] Tag owner info
+>>>>>>> jediknightplus/master
 		tent->s.clientNum = player->s.clientNum;
 	}
 
 	// unlink to make sure it can't possibly interfere with G_KillBox
+<<<<<<< HEAD
+	trap_UnlinkEntity (player);
+=======
 	if (jkcvar_teleportFrag.integer) trap_UnlinkEntity (player); // Tr!Force: [TeleFrag] Allow kill and unlink
+>>>>>>> jediknightplus/master
 
 	VectorCopy ( origin, player->client->ps.origin );
 	player->client->ps.origin[2] += 1;
@@ -102,11 +113,15 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 
 	// kill anything at the destination
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+<<<<<<< HEAD
+		G_KillBox (player);
+=======
 		// Tr!Force: [TeleFrag] Allow kill and unlink
 		if (jkcvar_teleportFrag.integer)
 			G_KillBox(player);
 		else
 			JKMod_AntiStuckBox(player); 
+>>>>>>> jediknightplus/master
 	}
 
 	// save results of pmove
@@ -115,11 +130,16 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	// use the precise origin for linking
 	VectorCopy( player->client->ps.origin, player->r.currentOrigin );
 
+<<<<<<< HEAD
+	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+		trap_LinkEntity (player);
+=======
 	// Tr!Force: [Emotes] Chair emote disable
 	if (player->client->jkmodClient.chairModelUsed) JKMod_ChairModelDisable(player);
 
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		if (jkcvar_teleportFrag.integer) trap_LinkEntity (player); // Tr!Force: [TeleFrag] Allow kill and unlink
+>>>>>>> jediknightplus/master
 	}
 }
 
@@ -425,8 +445,13 @@ void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 	self->s.modelindex = 0;
 	self->enemy = other;
 
+<<<<<<< HEAD
+	self->pos2[0] = 1;
+	self->pos2[1] = level.time + HOLOCRON_RESPAWN_TIME;
+=======
 	// self->pos2[0] = 1; // Tr!Force: [Pause] Skip this
 	self->jkmodEnt.time1/*pos2[1]*/ = level.time + HOLOCRON_RESPAWN_TIME; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 
 	/*
 	if (self->count == FP_SABERATTACK && !HasSetSaberOnly())
@@ -451,7 +476,11 @@ void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 
 void HolocronThink(gentity_t *ent)
 {
+<<<<<<< HEAD
+	if (ent->pos2[0] && (!ent->enemy || !ent->enemy->client || ent->enemy->health < 1))
+=======
 	if (ent->jkmodEnt.time1/*pos2[0]*/ && (!ent->enemy || !ent->enemy->client || ent->enemy->health < 1)) // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 	{
 		if (ent->enemy && ent->enemy->client)
 		{
@@ -467,9 +496,15 @@ void HolocronThink(gentity_t *ent)
 			goto justthink;
 		}
 	}
+<<<<<<< HEAD
+	else if (ent->pos2[0] && ent->enemy && ent->enemy->client)
+	{
+		ent->pos2[1] = level.time + HOLOCRON_RESPAWN_TIME;
+=======
 	else if (ent->jkmodEnt.time1/*pos2[0]*/ && ent->enemy && ent->enemy->client) // Tr!Force: [Pause] Think time
 	{
 		ent->jkmodEnt.time1/*pos2[1]*/ = level.time + HOLOCRON_RESPAWN_TIME; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 	}
 
 	if (ent->enemy && ent->enemy->client)
@@ -505,7 +540,11 @@ void HolocronThink(gentity_t *ent)
 
 			ent->s.pos.trTime = level.time;
 
+<<<<<<< HEAD
+			ent->pos2[0] = 0;
+=======
 			ent->jkmodEnt.time1/*pos2[0]*/ = 0; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 
 			trap_LinkEntity(ent);
 
@@ -513,7 +552,11 @@ void HolocronThink(gentity_t *ent)
 		}
 	}
 
+<<<<<<< HEAD
+	if (ent->pos2[0] && ent->pos2[1] < level.time)
+=======
 	if (ent->jkmodEnt.time1/*pos2[0]*/ && ent->jkmodEnt.time1/*pos2[1]*/ < level.time) // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 	{ //isn't in original place and has been there for (HOLOCRON_RESPAWN_TIME) seconds without being picked up, so respawn
 		VectorCopy(ent->s.origin2, ent->s.pos.trBase);
 		VectorCopy(ent->s.origin2, ent->s.origin);
@@ -521,7 +564,11 @@ void HolocronThink(gentity_t *ent)
 
 		ent->s.pos.trTime = level.time;
 
+<<<<<<< HEAD
+		ent->pos2[0] = 0;
+=======
 		ent->jkmodEnt.time1/*pos2[0]*/ = 0; // Tr!Force: [Pause] Think time
+>>>>>>> jediknightplus/master
 
 		trap_LinkEntity(ent);
 	}
@@ -548,10 +595,16 @@ void SP_misc_holocron(gentity_t *ent)
 
 	if (HasSetSaberOnly())
 	{
+<<<<<<< HEAD
+		if (ent->count == FP_SABERATTACK ||
+			ent->count == FP_SABERDEFEND ||
+			ent->count == FP_SABERTHROW)
+=======
 		if (!jkcvar_allowSaberHolocrons.integer && ( // Tr!Force: [GameGeneral] NOT having saber holocrons in saber only mode is pointless
 			ent->count == FP_SABERATTACK ||
 			ent->count == FP_SABERDEFEND ||
 			ent->count == FP_SABERTHROW))
+>>>>>>> jediknightplus/master
 		{ //having saber holocrons in saber only mode is pointless
 			G_FreeEntity(ent);
 			return;
@@ -875,7 +928,10 @@ void SP_misc_shield_floor_unit( gentity_t *ent )
 
 	ent->s.eFlags = 0;
 	ent->r.svFlags |= SVF_PLAYER_USABLE;
+<<<<<<< HEAD
+=======
 	ent->s.generic1 |= GENERIC_USABLE; // Tr!Force: [IdentifyObjects] Check usable hint
+>>>>>>> jediknightplus/master
 	ent->r.contents = CONTENTS_SOLID;
 	ent->clipmask = MASK_SOLID;
 
@@ -917,7 +973,10 @@ void SP_misc_model_shield_power_converter( gentity_t *ent )
 
 	ent->s.eFlags = 0;
 	ent->r.svFlags |= SVF_PLAYER_USABLE;
+<<<<<<< HEAD
+=======
 	ent->s.generic1 |= GENERIC_USABLE; // Tr!Force: [IdentifyObjects] Check usable hint
+>>>>>>> jediknightplus/master
 	ent->r.contents = CONTENTS_SOLID;
 	ent->clipmask = MASK_SOLID;
 
@@ -1049,7 +1108,10 @@ void SP_misc_model_ammo_power_converter( gentity_t *ent )
 
 	ent->s.eFlags = 0;
 	ent->r.svFlags |= SVF_PLAYER_USABLE;
+<<<<<<< HEAD
+=======
 	ent->s.generic1 |= GENERIC_USABLE; // Tr!Force: [IdentifyObjects] Check usable hint
+>>>>>>> jediknightplus/master
 	ent->r.contents = CONTENTS_SOLID;
 	ent->clipmask = MASK_SOLID;
 
@@ -1161,7 +1223,10 @@ void SP_misc_model_health_power_converter( gentity_t *ent )
 
 	ent->s.eFlags = 0;
 	ent->r.svFlags |= SVF_PLAYER_USABLE;
+<<<<<<< HEAD
+=======
 	ent->s.shouldtarget = qtrue;
+>>>>>>> jediknightplus/master
 	ent->r.contents = CONTENTS_SOLID;
 	ent->clipmask = MASK_SOLID;
 
@@ -1245,7 +1310,11 @@ gentity_t *CreateNewDamageBox( gentity_t *ent )
 
 	//We do not want the client to have any real knowledge of the entity whatsoever. It will only
 	//ever be used on the server.
+<<<<<<< HEAD
+	dmgBox = G_Spawn();
+=======
 	dmgBox = JKMod_G_Spawn( ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	dmgBox->classname = "dmg_box";
 			
 	dmgBox->r.svFlags = SVF_USE_CURRENT_ORIGIN;
@@ -1419,6 +1488,8 @@ void fx_runner_think( gentity_t *ent )
 		// let our target know that we have spawned an effect
 		G_UseTargets( ent, ent );
 	}
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [MapFixes] Add fx missing think
 	if (jkcvar_mapFixes.integer)
@@ -1434,6 +1505,7 @@ void fx_runner_think( gentity_t *ent )
 			G_RadiusDamage( ent->r.currentOrigin, ent, ent->splashDamage, ent->splashRadius, ent, MOD_UNKNOWN );
 		}
 	}
+>>>>>>> jediknightplus/master
 }
 
 //----------------------------------------------------------
@@ -1537,6 +1609,8 @@ void SP_fx_runner( gentity_t *ent )
 	G_SpawnInt( "delay", "400", &ent->delay );
 	G_SpawnFloat( "random", "0", &ent->random );
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [MapFixes] Add fx missing fields
 	if (jkcvar_mapFixes.integer)
 	{
@@ -1544,15 +1618,19 @@ void SP_fx_runner( gentity_t *ent )
 		G_SpawnInt( "splashDamage", "5", &ent->splashDamage );
 	}
 	
+>>>>>>> jediknightplus/master
 	if (!ent->s.angles[0] && !ent->s.angles[1] && !ent->s.angles[2])
 	{
 		// didn't have angles, so give us the default of up
 		VectorSet( ent->s.angles, -90, 0, 0 );
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [MapFixes] Add fx angles field
 	if (jkcvar_mapFixes.integer) G_SetAngles(ent, ent->s.angles);
 
+>>>>>>> jediknightplus/master
 	// make us useable if we can be targeted
 	if ( ent->targetname )
 	{
@@ -2148,11 +2226,15 @@ qboolean ExampleAnimEntClearLOS(gentity_t *self, vec3_t point)
 
 	trap_Trace(&tr, self->r.currentOrigin, 0, 0, point, self->s.number, self->clipmask);
 
+<<<<<<< HEAD
+	if (ExampleAnimEntAlignment(self) == ANIMENT_ALIGNED_GOOD)
+=======
 	if (!(g_entities[tr.entityNum].r.contents & CONTENTS_BODY) || g_entities[tr.entityNum].flags & FL_NOTARGET) // Tr!Force: [JKMod] Ignore empty bodies and notarget
 	{
 		return qfalse;
 	}
 	else if (ExampleAnimEntAlignment(self) == ANIMENT_ALIGNED_GOOD)
+>>>>>>> jediknightplus/master
 	{
 		if (tr.fraction == 1 ||
 			(g_entities[tr.entityNum].s.eType == ET_GRAPPLE && ExampleAnimEntAlignment(&g_entities[tr.entityNum]) != ANIMENT_ALIGNED_GOOD) ||
@@ -2784,7 +2866,11 @@ void ExampleAnimEntUpdateSelf(gentity_t *self)
 	VectorCopy(preserveAngles, self->s.apos.trBase);
 }
 
+<<<<<<< HEAD
+void G_SpawnExampleAnimEnt(vec3_t pos, int aeType, animentCustomInfo_t *aeInfo)
+=======
 void G_SpawnExampleAnimEnt(vec3_t pos, int aeType, animentCustomInfo_t *aeInfo, int dimensionOwner) // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 {
 	gentity_t *animEnt;
 	vec3_t playerMins;
@@ -2854,8 +2940,12 @@ void G_SpawnExampleAnimEnt(vec3_t pos, int aeType, animentCustomInfo_t *aeInfo, 
 		}
 	}
 
+<<<<<<< HEAD
+	animEnt = G_Spawn();
+=======
 	animEnt = JKMod_G_Spawn( dimensionOwner ); // Tr!Force: [Dimensions] Tag owner info
 	animEnt->jkmodEnt.dimensionNumber = g_entities[dimensionOwner].jkmodEnt.dimensionNumber; // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	animEnt->watertype = aeType; //set the animent type
 
@@ -2943,7 +3033,11 @@ void G_SpawnExampleAnimEnt(vec3_t pos, int aeType, animentCustomInfo_t *aeInfo, 
 
 	animEnt->health = 60;
 
+<<<<<<< HEAD
+	animEnt->s.owner = MAX_CLIENTS+1;
+=======
 	animEnt->s.owner = dimensionOwner; // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	animEnt->s.shouldtarget = qtrue;
 	animEnt->s.teamowner = 0;
 
@@ -3103,7 +3197,11 @@ void AESpawner_Think(gentity_t *ent)
 					{
 						aeInfo = ExampleAnimEntCustomData(ent); //we can get this info from the spawner, because it has its waterlevel set too.
 					}
+<<<<<<< HEAD
+					G_SpawnExampleAnimEnt(ent->s.origin, ent->watertype, aeInfo);
+=======
 					G_SpawnExampleAnimEnt(ent->s.origin, ent->watertype, aeInfo, ent->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 				}
 			}
 		}
@@ -3313,6 +3411,8 @@ void G_CreateExampleAnimEnt(gentity_t *ent)
 	int		iArg = 0;
 	int		argNum = trap_Argc();
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Dimensions] Check maximum allowed
 	if (ent->client->ps.stats[JK_DIMENSION] == DIMENSION_CHEAT)
 	{
@@ -3369,6 +3469,7 @@ void G_CreateExampleAnimEnt(gentity_t *ent)
 		}
 	}
 
+>>>>>>> jediknightplus/master
 	memset(&aeInfo, 0, sizeof(aeInfo));
 
 	if (argNum > 1)
@@ -3438,7 +3539,11 @@ void G_CreateExampleAnimEnt(gentity_t *ent)
 		}
 	}
 
+<<<<<<< HEAD
+	G_SpawnExampleAnimEnt(fwdPos, iArg, &aeInfo);
+=======
 	G_SpawnExampleAnimEnt(fwdPos, iArg, &aeInfo, ent->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 }
 //rww - here ends the main example g2animent stuff
 

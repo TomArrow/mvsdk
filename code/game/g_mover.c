@@ -252,7 +252,11 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 	// unlink the pusher so we don't get it in the entityList
 	trap_UnlinkEntity( pusher );
 
+<<<<<<< HEAD
+	listedEntities = trap_EntitiesInBox( totalMins, totalMaxs, entityList, MAX_GENTITIES );
+=======
 	listedEntities = JKMod_DimensionEntitiesInBox( totalMins, totalMaxs, entityList, MAX_GENTITIES, pusher->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 
 	// move the pusher to it's final position
 	VectorAdd( pusher->r.currentOrigin, move, pusher->r.currentOrigin );
@@ -594,6 +598,11 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 	// if all the way up, just delay before coming down
 	if ( ent->moverState == MOVER_POS2 && other && other->client ) {
+<<<<<<< HEAD
+		//rww - don't delay if we're not being used by a player
+		ent->nextthink = level.time + ent->wait;
+		return;
+=======
 		// Tr!Force: [MapFixes] Fix doors and elevators for SP maps
 		if (jkcvar_mapFixes.integer && JKMod_SPMapCheck(JKMod_GetCurrentMap()))
 		{
@@ -615,6 +624,7 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 			ent->nextthink = level.time + ent->wait;
 			return;
 		}
+>>>>>>> jediknightplus/master
 	}
 
 	// only partway down before reversing
@@ -674,6 +684,11 @@ void InitMover( gentity_t *ent ) {
 		ent->s.modelindex2 = G_ModelIndex( ent->model2 );
 	}
 
+<<<<<<< HEAD
+	// if the "loopsound" key is set, use a constant looping sound when moving
+	if ( G_SpawnString( "noise", "100", &sound ) ) {
+		ent->s.loopSound = G_SoundIndex( sound );
+=======
 	// Tr!Force: [MapFixes] Don't use constant looping sound on SP maps
 	if (jkcvar_mapFixes.integer)
 	{
@@ -690,6 +705,7 @@ void InitMover( gentity_t *ent ) {
 		if (G_SpawnString("noise", "100", &sound)) {
 			ent->s.loopSound = G_SoundIndex(sound);
 		}
+>>>>>>> jediknightplus/master
 	}
 
 	// if the "color" or "light" keys are set, setup constantLight
@@ -741,12 +757,15 @@ void InitMover( gentity_t *ent ) {
 	if ( ent->s.pos.trDuration <= 0 ) {
 		ent->s.pos.trDuration = 1;
 	}
+<<<<<<< HEAD
+=======
 
 	// Tr!Force: [IdentifyObjects] Check force swirl
 	if ( ent->spawnflags & SPF_BUTTON_FPUSHABLE )
 	{
 		ent->s.generic1 |= GENERIC_PUSHABLE;
 	}
+>>>>>>> jediknightplus/master
 }
 
 
@@ -788,7 +807,11 @@ void Blocked_Door( gentity_t *ent, gentity_t *other ) {
 		}
 		else
 		{
+<<<<<<< HEAD
+			G_TempEntity( other->s.origin, EV_ITEM_POP );
+=======
 			JKMod_G_TempEntity( other->s.origin, EV_ITEM_POP, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 			G_FreeEntity( other );
 		}
 		return;
@@ -903,6 +926,9 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 	mins[best] -= 120;
 
 	// create a trigger with this size
+<<<<<<< HEAD
+	other = G_Spawn ();
+=======
 	other = JKMod_G_Spawn ( ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
 	// Tr!Force: [MapFixes] Fix doors and elevators for SP maps
 	if (jkcvar_mapFixes.integer && JKMod_SPMapCheck(JKMod_GetCurrentMap())) 
@@ -913,6 +939,7 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 		VectorSet(mins, 0, 0, 0);
 		other->target = ent->targetname;
 	}
+>>>>>>> jediknightplus/master
 	other->classname = "door_trigger";
 	VectorCopy (mins, other->r.mins);
 	VectorCopy (maxs, other->r.maxs);
@@ -927,6 +954,9 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 }
 
 void Think_MatchTeam( gentity_t *ent ) {
+<<<<<<< HEAD
+	MatchTeam( ent, ent->moverState, level.time );
+=======
 	// Tr!Force: [MapFixes] Fix doors and elevators for SP maps
 	if (jkcvar_mapFixes.integer && JKMod_SPMapCheck(JKMod_GetCurrentMap()))
 	{
@@ -955,6 +985,7 @@ void Think_MatchTeam( gentity_t *ent ) {
 	{
 		MatchTeam( ent, ent->moverState, level.time );
 	}
+>>>>>>> jediknightplus/master
 }
 
 
@@ -1044,12 +1075,15 @@ void SP_func_door (gentity_t *ent) {
 		VectorCopy( temp, ent->pos1 );
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [MapFixes] Fix doors and elevators for SP maps
 	if (jkcvar_mapFixes.integer && JKMod_SPMapCheck(JKMod_GetCurrentMap()))
 	{
 		 if (ent->spawnflags & 64) ent->boltpoint1 = 1;
 	}
 
+>>>>>>> jediknightplus/master
 	InitMover( ent );
 
 	ent->nextthink = level.time + FRAMETIME;
@@ -1143,7 +1177,11 @@ void SpawnPlatTrigger( gentity_t *ent ) {
 
 	// the middle trigger will be a thin trigger just
 	// above the starting position
+<<<<<<< HEAD
+	trigger = G_Spawn();
+=======
 	trigger = JKMod_G_Spawn( ent->s.number ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	trigger->classname = "plat_trigger";
 	trigger->touch = Touch_PlatCenterTrigger;
 	trigger->r.contents = CONTENTS_TRIGGER;
@@ -1353,7 +1391,10 @@ void SP_func_button( gentity_t *ent ) {
 	if ( (ent->spawnflags&SPF_BUTTON_USABLE) )
 	{
 		ent->r.svFlags |= SVF_PLAYER_USABLE;
+<<<<<<< HEAD
+=======
 		ent->s.generic1 |= GENERIC_USABLE; // Tr!Force: [IdentifyObjects] Check usable hint
+>>>>>>> jediknightplus/master
 	}
 
 	InitMover( ent );
@@ -1577,8 +1618,11 @@ void SP_func_static( gentity_t *ent ) {
 	InitMover( ent );
 	VectorCopy( ent->s.origin, ent->s.pos.trBase );
 	VectorCopy( ent->s.origin, ent->r.currentOrigin );
+<<<<<<< HEAD
+=======
 	// Tr!Force: [MapFixes] Spawn func static
 	if (jkcvar_mapFixes.integer) trap_LinkEntity(ent);
+>>>>>>> jediknightplus/master
 }
 
 
@@ -1767,7 +1811,11 @@ void BreakableBrushDie(gentity_t *self, gentity_t *inflictor, gentity_t *attacke
 
 	if (self->boltpoint2)
 	{
+<<<<<<< HEAD
+		te = G_TempEntity( dif, EV_DEBRIS );
+=======
 		te = JKMod_G_TempEntity( dif, EV_DEBRIS, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		te->s.eventParm = self->s.number;
 		te->s.weapon = self->boltpoint1;
 		te->s.trickedentindex = self->boltpoint2; //debris model index
@@ -1788,7 +1836,11 @@ void BreakableBrushDie(gentity_t *self, gentity_t *inflictor, gentity_t *attacke
 		u[YAW] = 0;
 		u[PITCH] = 1;
 		u[ROLL] = 0;
+<<<<<<< HEAD
+		G_PlayEffect(EFFECT_EXPLOSION, dif, u);
+=======
 		JKMod_G_PlayEffect(EFFECT_EXPLOSION, dif, u, self->s.number); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 		G_Sound(self, CHAN_BODY, gExplSound);
 	}
 
@@ -1978,7 +2030,11 @@ void GlassDie(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int da
 
 	self->splashRadius = 40; // ?? some random number, maybe it's ok?
 
+<<<<<<< HEAD
+	te = G_TempEntity( dif, EV_GLASS_SHATTER );
+=======
 	te = JKMod_G_TempEntity( dif, EV_GLASS_SHATTER, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->s.genericenemyindex = self->s.number;
 	VectorCopy(self->pos1, te->s.origin);
 	VectorCopy(self->pos2, te->s.angles);
@@ -1999,7 +2055,11 @@ void GlassDie_Old(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, in
 
 	G_UseTargets(self, attacker);
 
+<<<<<<< HEAD
+	te = G_TempEntity( dif, EV_GLASS_SHATTER );
+=======
 	te = JKMod_G_TempEntity( dif, EV_GLASS_SHATTER, ENTITYNUM_WORLD ); // Tr!Force: [Dimensions] Tag owner info
+>>>>>>> jediknightplus/master
 	te->s.genericenemyindex = self->s.number;
 	VectorCopy(self->r.maxs, te->s.origin);
 	VectorCopy(self->r.mins, te->s.angles);
@@ -2112,7 +2172,10 @@ void func_usable_think( gentity_t *self )
 	if ( self->spawnflags & 8 )
 	{
 		self->r.svFlags |= SVF_PLAYER_USABLE;	//Replace the usable flag
+<<<<<<< HEAD
+=======
 		self->s.generic1 |= GENERIC_USABLE;		// Tr!Force: [IdentifyObjects] Check usable hint
+>>>>>>> jediknightplus/master
 		self->use = func_usable_use;
 		self->think = 0;
 	}
@@ -2139,7 +2202,10 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 	{//ALWAYS_ON
 		//Remove the ability to use the entity directly
 		self->r.svFlags &= ~SVF_PLAYER_USABLE;
+<<<<<<< HEAD
+=======
 		self->s.generic1 &= ~GENERIC_USABLE; // Tr!Force: [IdentifyObjects] Check usable hint
+>>>>>>> jediknightplus/master
 		//also remove ability to call any use func at all!
 		self->use = 0;
 		
@@ -2163,6 +2229,14 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 	}
 	else
 	{
+<<<<<<< HEAD
+		self->s.solid = 0;
+		self->r.contents = 0;
+		self->clipmask = 0;
+		self->r.svFlags |= SVF_NOCLIENT;
+		self->s.eFlags |= EF_NODRAW;
+		self->count = 0;
+=======
 		// Tr!Force: [MapFixes] Prevent use removal for func_usable on SP maps affected by target_scriptrunner
 		if (jkcvar_mapFixes.integer ? !(JKMod_SPMapCheck(JKMod_GetCurrentMap()) && !self->spawnflags && !(self->target && self->target[0])) : qtrue)
 		{
@@ -2173,6 +2247,7 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 			self->s.eFlags |= EF_NODRAW;
 			self->count = 0;
 		}
+>>>>>>> jediknightplus/master
 
 		if(self->target && self->target[0])
 		{
@@ -2243,7 +2318,10 @@ void SP_func_usable( gentity_t *self )
 	*/
 
 	self->r.svFlags |= SVF_PLAYER_USABLE;
+<<<<<<< HEAD
+=======
 	self->s.generic1 |= GENERIC_USABLE; // Tr!Force: [IdentifyObjects] Check usable hint
+>>>>>>> jediknightplus/master
 
 	self->use = func_usable_use;
 

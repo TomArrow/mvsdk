@@ -9,6 +9,11 @@
 
 #ifdef JK2_GAME
 #include "g_local.h"
+<<<<<<< HEAD
+#elif JK2_CGAME
+#include "../cgame/cg_local.h"
+=======
+>>>>>>> jediknightplus/master
 #endif
 
 #define MAX_WEAPON_CHARGE_TIME 5000
@@ -34,11 +39,14 @@ float	pm_waterfriction = 1.0f;
 float	pm_flightfriction = 3.0f;
 float	pm_spectatorfriction = 5.0f;
 
+<<<<<<< HEAD
+=======
 // Tr!Force: [JetPack] Physics details
 float	jkmod_pm_jetPackFriction = 0.4f;
 float	jkmod_pm_jetPackAccelerate = 0.3f;
 float	jkmod_pm_jetPackSpeed = 5.0f;
 
+>>>>>>> jediknightplus/master
 int		c_pmove = 0;
 
 float forceSpeedLevels[4] = 
@@ -243,6 +251,32 @@ float forceJumpStrength[NUM_FORCE_POWER_LEVELS] =
 	840
 };
 
+<<<<<<< HEAD
+Q_INLINE int PM_GetMovePhysics(void)
+{
+	if (!pm || !pm->ps)
+		return MV_JKA;
+#if 0//JK2_GAME
+	if (pm->ps->stats[STAT_RACEMODE])
+		return (pm->ps->stats[STAT_MOVEMENTSTYLE]);
+	else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
+		return (g_movementStyle.integer);
+	else if (g_movementStyle.integer < MV_SIEGE)
+		return 0;
+	else if (g_movementStyle.integer >= MV_NUMSTYLES)
+		return MV_JKA;
+#elif JK2_CGAME
+	if (cgs.isJK2Pro) {
+		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+	}
+	//if (cgs.gametype == GT_SIEGE)
+	//	return MV_SIEGE;
+#endif
+	return MV_JKA;
+}
+
+=======
+>>>>>>> jediknightplus/master
 int PM_GetSaberStance(void)
 {
 	if ( pm->ps->dualBlade )
@@ -388,17 +422,24 @@ static void PM_Friction( void ) {
 		drop += speed*pm_waterfriction*pm->waterlevel*pml.frametime;
 	}
 
+<<<<<<< HEAD
+	if ( pm->ps->pm_type == PM_SPECTATOR || pm->ps->pm_type == PM_FLOAT )
+=======
 	if ( pm->ps->pm_type == PM_SPECTATOR || pm->ps->pm_type == PM_FLOAT || pm->ps->eFlags & JK_JETPACK_FLAMING) // Tr!Force: [JetPack] Check jetpack
+>>>>>>> jediknightplus/master
 	{
 		if (pm->ps->pm_type == PM_FLOAT)
 		{ //almost no friction while floating
 			drop += speed*0.1*pml.frametime;
 		}
+<<<<<<< HEAD
+=======
 		// Tr!Force: [JetPack] Set jetpack friction
 		else if (pm->ps->eFlags & JK_JETPACK_FLAMING)
 		{ 
 			drop += speed*jkmod_pm_jetPackFriction*pml.frametime;
 		}
+>>>>>>> jediknightplus/master
 		else
 		{
 			drop += speed*pm_spectatorfriction*pml.frametime;
@@ -752,12 +793,15 @@ static qboolean PM_CheckJump( void )
 		return qfalse;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [PlayerMovement] JKA Jetpack Style
 	if ((pm->ps->stats[JK_MOVEMENT] & JK_JETPACK_JKA) && (pm->ps->eFlags & JK_JETPACK_FLAMING))
 	{
 		return qfalse;
 	}
 
+>>>>>>> jediknightplus/master
 	//Don't allow jump until all buttons are up
 	if ( pm->ps->pm_flags & PMF_RESPAWNED ) {
 		return qfalse;		
@@ -2171,9 +2215,12 @@ static void PM_CrashLand( void ) {
 			}
 			else
 			{
+<<<<<<< HEAD
+=======
 				// Tr!Force: [Dimensions] No fall pain sound
 				if (pm->ps->stats[JK_DIMENSION] == DIMENSION_RACE && delta_send > 44) delta_send = 44;
 
+>>>>>>> jediknightplus/master
 				PM_AddEventWithParm( EV_FALL, delta_send );
 			}
 		}
@@ -2352,6 +2399,8 @@ static void PM_GroundTrace( void ) {
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [PlayerMovement] JKA Jetpack Style
 	if ((pm->ps->stats[JK_MOVEMENT] & JK_JETPACK_JKA) && (pm->ps->eFlags & JK_JETPACK_FLAMING))
 	{
@@ -2361,6 +2410,7 @@ static void PM_GroundTrace( void ) {
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	// if the trace didn't hit anything, we are in free fall
 	if ( trace.fraction == 1.0 ) {
 		PM_GroundTraceMissed();
@@ -2552,6 +2602,8 @@ static void PM_CheckDuck (void)
 		pm->maxs[2] = CROUCH_MAXS_2;
 		pm->ps->viewheight = DEFAULT_VIEWHEIGHT;
 	}
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Emotes] Check emote height
 	else if (pm->ps->stats[JK_PLAYER] & JK_EMOTE_IN)
 	{
@@ -2576,6 +2628,7 @@ static void PM_CheckDuck (void)
 			pm->ps->viewheight = DEFAULT_VIEWHEIGHT;
 		}
 	}
+>>>>>>> jediknightplus/master
 	else
 	{
 		pm->maxs[2] = DEFAULT_MAXS_2;
@@ -3164,8 +3217,12 @@ static qboolean PM_DoChargedWeapons( void )
 			{
 				if (pm->ps->weaponChargeSubtractTime < pm->cmd.serverTime)
 				{
+<<<<<<< HEAD
+					pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] -= weaponData[pm->ps->weapon].altChargeSub;
+=======
 					// Tr!Force: [InfiniteAmmo] Ammo pmove check
 					if (pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] != INFINITE_AMMO) pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] -= weaponData[pm->ps->weapon].altChargeSub;
+>>>>>>> jediknightplus/master
 					pm->ps->weaponChargeSubtractTime = pm->cmd.serverTime + weaponData[pm->ps->weapon].altChargeSubTime;
 				}
 			}
@@ -3195,8 +3252,12 @@ static qboolean PM_DoChargedWeapons( void )
 			{
 				if (pm->ps->weaponChargeSubtractTime < pm->cmd.serverTime)
 				{
+<<<<<<< HEAD
+					pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] -= weaponData[pm->ps->weapon].chargeSub;
+=======
 					// Tr!Force: [InfiniteAmmo] Ammo pmove check
 					if (pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] != INFINITE_AMMO) pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] -= weaponData[pm->ps->weapon].chargeSub;
+>>>>>>> jediknightplus/master
 					pm->ps->weaponChargeSubtractTime = pm->cmd.serverTime + weaponData[pm->ps->weapon].chargeSubTime;
 				}
 			}
@@ -3514,6 +3575,8 @@ static void PM_Weapon( void )
 			break;
 		case HANDEXTEND_TAUNT:
 			desiredAnim = pm->ps->forceDodgeAnim;
+<<<<<<< HEAD
+=======
 
 			// Tr!Force: [Emotes] prediction
 			if ((pm->ps->stats[JK_PLAYER] & JK_EMOTE_IN)
@@ -3526,6 +3589,7 @@ static void PM_Weapon( void )
 				pm->ps->legsTimer = 1;
 			}
 
+>>>>>>> jediknightplus/master
 			break;
 			//Hmm... maybe use these, too?
 			//BOTH_FORCEHEAL_QUICK //quick heal (SP level 2 & 3)
@@ -3740,7 +3804,11 @@ static void PM_Weapon( void )
 		pm->ps->weapon == pm->cmd.weapon &&
 		(pm->ps->weaponTime <= 0 || pm->ps->weaponstate != WEAPON_FIRING) )
 	{
+<<<<<<< HEAD
+		if ( pm->ps->ammo[ weaponData[pm->ps->weapon].ammoIndex ] != -1 )
+=======
 		if ( pm->ps->ammo[ weaponData[pm->ps->weapon].ammoIndex ] != INFINITE_AMMO ) // Tr!Force: [InfiniteAmmo] Ammo pmove check
+>>>>>>> jediknightplus/master
 		{
 			// enough energy to fire this weapon?
 			if (pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] < weaponData[pm->ps->weapon].energyPerShot &&
@@ -3812,6 +3880,8 @@ static void PM_Weapon( void )
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [PlayerMovements] Weapon stand
 	if (pm->ps->stats[JK_MOVEMENT] & JK_WEAPON_STAND)
 	{
@@ -3826,6 +3896,7 @@ static void PM_Weapon( void )
 		}
 	}
 
+>>>>>>> jediknightplus/master
 	if (((pm->ps->torsoAnim & ~ANIM_TOGGLEBIT) == TORSO_WEAPONREADY4 ||
 		(pm->ps->torsoAnim & ~ANIM_TOGGLEBIT) == BOTH_ATTACK4) &&
 		(pm->ps->weapon != WP_DISRUPTOR || pm->ps->zoomMode != 1))
@@ -3911,7 +3982,11 @@ static void PM_Weapon( void )
 	pm->ps->weaponstate = WEAPON_FIRING;
 
 	// take an ammo away if not infinite
+<<<<<<< HEAD
+	if ( pm->ps->ammo[ weaponData[pm->ps->weapon].ammoIndex ] != -1 )
+=======
 	if ( pm->ps->ammo[ weaponData[pm->ps->weapon].ammoIndex ] != INFINITE_AMMO ) // Tr!Force: [InfiniteAmmo] Ammo pmove check
+>>>>>>> jediknightplus/master
 	{
 		// enough energy to fire this weapon?
 		if ((pm->ps->ammo[weaponData[pm->ps->weapon].ammoIndex] - amount) >= 0) 
@@ -4171,7 +4246,11 @@ void PM_AdjustAttackStates( pmove_t *pm )
 
 		if (pm->cmd.upmove > 0 || pm->cmd.forwardmove || pm->cmd.rightmove)
 		{
+<<<<<<< HEAD
+			if (pm->ps->zoomMode == 1 && pm->ps->zoomLockTime < pm->cmd.serverTime)
+=======
 			if (pm->ps->zoomMode == 1 && pm->ps->zoomLockTime < pm->cmd.serverTime && !(pm->ps->stats[JK_MOVEMENT] & JK_DISRUPTOR_WALK)) // Tr!Force: [PlayerMovement] Disruptor zoom
+>>>>>>> jediknightplus/master
 			{ //check for == 1 so we can't turn binoculars off with disruptor alt fire
 				pm->ps->zoomMode = 0;
 				pm->ps->zoomTime = pm->ps->commandTime;
@@ -4200,7 +4279,11 @@ void PM_AdjustAttackStates( pmove_t *pm )
 	{
 		if (pm->cmd.upmove > 0 || pm->cmd.forwardmove || pm->cmd.rightmove)
 		{
+<<<<<<< HEAD
+			if (pm->ps->zoomMode == 1 && pm->ps->zoomLockTime < pm->cmd.serverTime)
+=======
 			if (pm->ps->zoomMode == 1 && pm->ps->zoomLockTime < pm->cmd.serverTime && !(pm->ps->stats[JK_MOVEMENT] & JK_DISRUPTOR_WALK)) // Tr!Force: [PlayerMovement] Disruptor zoom
+>>>>>>> jediknightplus/master
 			{ //check for == 1 so we can't turn binoculars off with disruptor alt fire
 				pm->ps->zoomMode = 0;
 				pm->ps->zoomTime = pm->ps->commandTime;
@@ -4433,7 +4516,11 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 			ps->speed *= 0.5f;
 		}
 	}
+<<<<<<< HEAD
+	else if ( ps->weapon == WP_SABER && BG_SaberInAttack( ps->saberMove ) )
+=======
 	else if ( ps->weapon == WP_SABER && BG_SaberInAttack( ps->saberMove ) && !((pm->ps->stats[JK_MOVEMENT] & JK_DUAL_MOVES) && pm->ps->dualBlade && BG_SaberInSpecial(ps->saberMove)) ) // Tr!Force: [PlayerMovement] Dual saber moves
+>>>>>>> jediknightplus/master
 	{//if attacking with saber while running, drop your speed
 		switch( ps->fd.saberAnimLevel )
 		{
@@ -4481,6 +4568,8 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 }
 
 /*
+<<<<<<< HEAD
+=======
 =====================================================================
 Tr!Force: [JetPack] movement function
 =====================================================================
@@ -4616,6 +4705,7 @@ void JKMod_PM_JetPack(void)
 }
 
 /*
+>>>>>>> jediknightplus/master
 ================
 PmoveSingle
 
@@ -4673,12 +4763,15 @@ void PmoveSingle (pmove_t *pmove) {
 		pm->cmd.rightmove = pm->cmd.upmove = 0;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [PlayerMovement] Dual saber moves
 	if ( pm->ps->saberMove == LS_JK_DUAL_SPIN1 || pm->ps->saberMove == LS_JK_DUAL_SPIN2 || pm->ps->saberMove == LS_JK_DUAL_TORNADO )
 	{
 		pm->cmd.upmove = 0;
 	}
 
+>>>>>>> jediknightplus/master
 	if ( pm->ps->saberMove == LS_A_BACK || pm->ps->saberMove == LS_A_BACK_CR 
 		|| pm->ps->saberMove == LS_A_BACKSTAB || pm->ps->saberMove == LS_A_FLIP_STAB ||
 		pm->ps->saberMove == LS_A_FLIP_SLASH || pm->ps->saberMove == LS_A_JUMP_T__B_ )
@@ -4701,7 +4794,11 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 
 	if (((pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_KISSER1LOOP ||
+<<<<<<< HEAD
+		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_KISSEE1LOOP) && jk2gameplay == VERSION_1_04)
+=======
 		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_KISSEE1LOOP) && (jk2gameplay == VERSION_1_03 || jk2gameplay == VERSION_1_04)) // Tr!Force: [Emotes] Allow kiss
+>>>>>>> jediknightplus/master
 	{
 		pm->cmd.forwardmove = 0;
 		pm->cmd.rightmove = 0;
@@ -4804,7 +4901,11 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 
 	if (((pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_KISSER1LOOP ||
+<<<<<<< HEAD
+		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_KISSEE1LOOP) && jk2gameplay == VERSION_1_04)
+=======
 		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_KISSEE1LOOP) && (jk2gameplay == VERSION_1_03 || jk2gameplay == VERSION_1_04)) // Tr!Force: [Emotes] Allow kiss
+>>>>>>> jediknightplus/master
 	{
 		pm->ps->viewangles[PITCH] = 0;
 		PM_SetPMViewAngle(pm->ps, pm->ps->viewangles, &pm->cmd);
@@ -4905,6 +5006,10 @@ void PmoveSingle (pmove_t *pmove) {
 	{
 		PM_FlyMove ();
 	}
+<<<<<<< HEAD
+	else
+	{
+=======
 	// Tr!Force: [JetPack] Load jetpack function
 	else if ((pm->ps->eFlags & JK_JETPACK_FLAMING) && !pml.groundPlane)
 	{
@@ -4918,6 +5023,7 @@ void PmoveSingle (pmove_t *pmove) {
 			pm->ps->eFlags &= ~JK_JETPACK_FLAMING;
 		}
 
+>>>>>>> jediknightplus/master
 		if (pm->ps->pm_flags & PMF_TIME_WATERJUMP) {
 			PM_WaterJumpMove();
 		} else if ( pm->waterlevel > 1 ) {
@@ -4959,7 +5065,33 @@ void PmoveSingle (pmove_t *pmove) {
 	PM_WaterEvents();
 
 	// snap some parts of playerstate to save network bandwidth
+<<<<<<< HEAD
+	if (pm->ps->persistant[PERS_TEAM] == TEAM_SPECTATOR) {
+		trap_SnapVector( pm->ps->velocity );
+	}
+	else {
+		if (pm->ps->stats[STAT_RACEMODE] || pm->pmove_float > 2) {
+		}
+#if JK2_GAME
+		else if (g_fixHighFPSAbuse.integer
+#elif JK2_CGAME
+		else if ((cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX) //could move these checks to cg_predict, and just set pm->pmove_float accordingly?
+#endif
+			&& (pml.msec <= 4 || pml.msec > 25)) { //do nothing above 250FPS or below 40FPS
+		}
+		else if (pm->pmove_float == 2) { //pmove_float 2: snaps vertical velocity only, so 125/142fps jumps are still the same height?
+			vec3_t oldVelocity = { 0 };
+			VectorCopy( pm->ps->velocity, oldVelocity );
+			trap_SnapVector( pm->ps->velocity );
+			pm->ps->velocity[2] = oldVelocity[2];
+		}
+		else if (!pm->pmove_float) {
+			trap_SnapVector( pm->ps->velocity );
+		}
+	}
+=======
 	trap_SnapVector( pm->ps->velocity );
+>>>>>>> jediknightplus/master
 
 	if (gPMDoSlowFall)
 	{

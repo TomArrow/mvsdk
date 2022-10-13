@@ -78,7 +78,11 @@ void CG_LoadingClient( int clientNum ) {
 	}
 */
 	Q_strncpyz( personality, Info_ValueForKey( info, "n" ), sizeof(personality) );
+<<<<<<< HEAD
+	//Q_CleanStr( personality, (qboolean)(jk2startversion == VERSION_1_02) );
+=======
 	Q_CleanStr( personality, (qboolean)(jk2startversion == VERSION_1_02) );
+>>>>>>> jediknightplus/master
 
 	/*
 	if( cgs.gametype == GT_SINGLE_PLAYER ) {
@@ -103,7 +107,12 @@ void CG_DrawInformation( void ) {
 	const char	*info;
 	const char	*sysInfo;
 	const float	x = 0.5f * cgs.screenWidth;
+<<<<<<< HEAD
+	const float xOffset = 0.5f * (cgs.screenWidth - SCREEN_WIDTH);
+	float		y;
+=======
 	int			y;
+>>>>>>> jediknightplus/master
 	int			value, valueNOFP;
 	qhandle_t	levelshot;
 	char		buf[1024];
@@ -113,12 +122,33 @@ void CG_DrawInformation( void ) {
 	sysInfo = CG_ConfigString( CS_SYSTEMINFO );
 
 	s = Info_ValueForKey( info, "mapname" );
+<<<<<<< HEAD
+
+	levelshot = trap_R_RegisterShaderNoMip(va("levelshots/%s", s));
+	trap_R_SetColor(NULL);
+
+	if (levelshot && cgs.screenXFactor < 1.0) {
+		CG_DrawPic(0, 0 - (SCREEN_HEIGHT*cgs.screenXFactorInv - SCREEN_HEIGHT) / 2, cgs.screenWidth, SCREEN_HEIGHT*cgs.screenXFactorInv, levelshot);
+	}
+	else {
+		if (!levelshot) {
+			levelshot = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
+			CG_FillRect(0, 0, xOffset, SCREEN_HEIGHT, colorTable[CT_BLACK]);
+			CG_FillRect(xOffset + SCREEN_WIDTH, 0, xOffset, SCREEN_HEIGHT, colorTable[CT_BLACK]);
+			CG_DrawPic(xOffset, 0, SCREEN_WIDTH, SCREEN_HEIGHT, levelshot);
+		}
+		else {
+			CG_DrawPic(0, 0, cgs.screenWidth, SCREEN_HEIGHT, levelshot);
+		}
+	}
+=======
 	levelshot = trap_R_RegisterShaderNoMip( va( "levelshots/%s", s ) );
 	if ( !levelshot ) {
 		levelshot = trap_R_RegisterShaderNoMip( "menu/art/unknownmap" );
 	}
 	trap_R_SetColor( NULL );
 	CG_DrawPic(0, 0, cgs.screenWidth, cgs.screenHeight, levelshot);
+>>>>>>> jediknightplus/master
 
 	CG_LoadBar();
 				   
@@ -146,7 +176,11 @@ void CG_DrawInformation( void ) {
 	if ( !atoi( buf ) ) {
 		// server hostname
 		Q_strncpyz(buf, Info_ValueForKey( info, "sv_hostname" ), 1024);
+<<<<<<< HEAD
+		Q_CleanAsciiStr(buf);
+=======
 		Q_CleanStr(buf, (qboolean)(jk2startversion == VERSION_1_02));
+>>>>>>> jediknightplus/master
 		UI_DrawProportionalString( x, y, buf,
 			UI_CENTER|UI_INFOFONT|UI_DROPSHADOW, colorWhite );
 		y += iPropHeight;
@@ -293,6 +327,12 @@ void CG_DrawInformation( void ) {
 
 		trap_SP_GetStringTextString("INGAMETEXT_MAXFORCERANK",fmStr, sizeof(fmStr));
 
+<<<<<<< HEAD
+		if (value > 6)
+			value = 6;
+
+=======
+>>>>>>> jediknightplus/master
 		if ( value >= 0 && value < (int)ARRAY_LEN(forceMasteryLevels) ) {
 			text = va( "%s %s", fmStr, CG_GetStripEdString("INGAMETEXT", forceMasteryLevels[value]) );
 		} else {

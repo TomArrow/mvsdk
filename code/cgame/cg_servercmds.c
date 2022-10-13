@@ -46,7 +46,11 @@ CG_ParseScores
 =================
 */
 static void CG_ParseScores( void ) {
+<<<<<<< HEAD
+	int		i, powerups, readScores;
+=======
 	int		i, powerups, readScores, scoreOffset; // Tr!Force: [Scoreboard] Extra info
+>>>>>>> jediknightplus/master
 
 	cg.numScores = atoi( CG_Argv( 1 ) );
 
@@ -68,6 +72,23 @@ static void CG_ParseScores( void ) {
 
 	memset( cg.scores, 0, sizeof( cg.scores ) );
 	for ( i = 0 ; i < readScores ; i++ ) {
+<<<<<<< HEAD
+		//
+		cg.scores[i].client = atoi( CG_Argv( i * 14 + 4 ) );
+		cg.scores[i].score = atoi( CG_Argv( i * 14 + 5 ) );
+		cg.scores[i].ping = atoi( CG_Argv( i * 14 + 6 ) );
+		cg.scores[i].time = atoi( CG_Argv( i * 14 + 7 ) );
+		cg.scores[i].scoreFlags = atoi( CG_Argv( i * 14 + 8 ) );
+		powerups = atoi( CG_Argv( i * 14 + 9 ) );
+		cg.scores[i].accuracy = atoi(CG_Argv(i * 14 + 10));
+		cg.scores[i].impressiveCount = atoi(CG_Argv(i * 14 + 11));
+		cg.scores[i].excellentCount = atoi(CG_Argv(i * 14 + 12));
+		cg.scores[i].guantletCount = atoi(CG_Argv(i * 14 + 13));
+		cg.scores[i].defendCount = atoi(CG_Argv(i * 14 + 14));
+		cg.scores[i].assistCount = atoi(CG_Argv(i * 14 + 15));
+		cg.scores[i].perfect = atoi(CG_Argv(i * 14 + 16));
+		cg.scores[i].captures = atoi(CG_Argv(i * 14 + 17));
+=======
 		// Tr!Force: [Scoreboard] Extra info
 		if (cgs.jkmodCGS.modCheck) {
 			scoreOffset = 15;
@@ -90,6 +111,7 @@ static void CG_ParseScores( void ) {
 		cg.scores[i].assistCount = atoi(CG_Argv(i * scoreOffset + 15));
 		cg.scores[i].perfect = atoi(CG_Argv(i * scoreOffset + 16));
 		cg.scores[i].captures = atoi(CG_Argv(i * scoreOffset + 17));
+>>>>>>> jediknightplus/master
 
 		if ( cg.scores[i].client < 0 || cg.scores[i].client >= MAX_CLIENTS ) {
 			cg.scores[i].client = 0;
@@ -138,9 +160,18 @@ and whenever the server updates any serverinfo flagged cvars
 */
 static void CG_ParseServerinfo( const char *info ) {
 	char	*mapname;
+<<<<<<< HEAD
+	char	*v = NULL;
+
+	v = Info_ValueForKey( info, "g_gametype" );
+	cgs.gametype = atoi( v );
+	trap_Cvar_Set( "g_gametype", v );
+
+=======
 
 	cgs.gametype = atoi( Info_ValueForKey( info, "g_gametype" ) );
 	trap_Cvar_Set("g_gametype", va("%i", cgs.gametype));
+>>>>>>> jediknightplus/master
 	cgs.needpass = atoi( Info_ValueForKey( info, "needpass" ) );
 	cgs.jediVmerc = atoi( Info_ValueForKey( info, "g_jediVmerc" ) );
 	cgs.wDisable = atoi( Info_ValueForKey( info, "wdisable" ) );
@@ -153,6 +184,49 @@ static void CG_ParseServerinfo( const char *info ) {
 	cgs.timelimit = atoi( Info_ValueForKey( info, "timelimit" ) );
 	cgs.maxclients = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 
+<<<<<<< HEAD
+	cgs.isJK2Pro = qfalse;
+	cgs.isCTFMod = qfalse;
+	cgs.CTF3ModeActive = qfalse;
+	cgs.isolateDuels = qfalse;
+	cgs.isCaMod = qfalse;
+	cgs.jcinfo = 0;
+	v = Info_ValueForKey(info, "gamename");
+	if (v)
+	{
+		Q_CleanStr(v, qtrue);
+		if (!Q_stricmpn(v, "jk2pro", 5)) {
+			cgs.isJK2Pro = qtrue;
+			cgs.isolateDuels = qtrue;
+			v = Info_ValueForKey(info, "jcinfo");
+			cgs.jcinfo = atoi(v);//[JAPRO - Clientside - All - Add gamename variable to get jcinfo from japro servers]
+			v = Info_ValueForKey(info, "g_fixHighFPSAbuse");
+			if (v && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
+				cgs.jcinfo |= JK2PRO_CINFO_HIGHFPSFIX;
+			}
+			trap_Cvar_Set("cjp_client", "1.4JAPRO");
+		}
+		else if (!Q_stricmpn(v, "< VvV >", 7) || !Q_stricmpn(v, "CPT ][ Mod", 10)) {
+			cgs.isCTFMod = qtrue;
+			cgs.CTF3ModeActive = (qboolean)(atoi(Info_ValueForKey(info, "g_allowFreeTeam")));
+			v = Info_ValueForKey(info, "g_block333");
+			if (v) cgs.jcinfo = atoi(v);
+			if (cgs.jcinfo && cgs.jcinfo != 3) {
+				cgs.jcinfo = JK2PRO_CINFO_HIGHFPSFIX;
+			}
+			trap_Cvar_Set("cjp_client", "1.4JAPRO");
+		}
+		else if (!Q_stricmpn(v, "Ca Mod", 6))
+		{
+			cgs.isolateDuels = qtrue;
+			cgs.isCaMod = qtrue;
+		}
+		else if (!Q_stricmpn(v, "fgcMod", 6))
+		{
+			cgs.isolateDuels = qtrue;
+			cgs.isCaMod = qfalse;
+		}
+=======
 	cgs.jkmodCGS.pluginRequired = atoi(Info_ValueForKey(info, "jk_pluginRequired"));	// Tr!Force: [Plugin] Main cvar
 	cgs.jkmodCGS.macroScan = atoi(Info_ValueForKey(info, "jk_macroScan"));				// Tr!Force: [MacroScan] Main cvar
 	cgs.jkmodCGS.customHats = atoi(Info_ValueForKey(info, "jk_customHats"));			// Tr!Force: [CustomHats] Main cvar
@@ -166,10 +240,15 @@ static void CG_ParseServerinfo( const char *info ) {
 		char *gamename = Info_ValueForKey(info, "gamename");
 		Com_sprintf(cgs.jkmodCGS.gameName, sizeof(cgs.jkmodCGS.gameName), "%s", gamename);
 		cgs.jkmodCGS.modCheck = (qboolean)!strcmp(gamename, GAMEVERSION);
+>>>>>>> jediknightplus/master
 	}
 
 	mapname = Info_ValueForKey( info, "mapname" );
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> jediknightplus/master
 	//rww - You must do this one here, Info_ValueForKey always uses the same memory pointer.
 	trap_Cvar_Set ( "ui_about_mapname", mapname );
 
@@ -222,7 +301,12 @@ static void CG_ShaderStateChanged( const char *o ) {
 				strncpy(timeOffset, t, o-t);
 				timeOffset[o-t] = 0;
 				o++;
+<<<<<<< HEAD
+				if (cg_remaps.integer && Q_stricmpn(originalShader, "console", 7)) //JAPRO - Clientside - Allow noremaps
+					trap_R_RemapShader( originalShader, newShader, timeOffset );
+=======
 				trap_R_RemapShader( originalShader, newShader, timeOffset );
+>>>>>>> jediknightplus/master
 			}
 		} else {
 			break;
@@ -308,7 +392,17 @@ void CG_UpdateConfigString( int num, qboolean init )
 			cgs.scores2 = atoi( str );
 			break;
 		case CS_CLIENT_JEDIMASTER:
+<<<<<<< HEAD
+			if (!cgs.isCTFMod || !cgs.CTF3ModeActive) {
+				cgs.jediMaster = atoi(str);
+			}
+			else {
+				//cgs.teamScores[3] = atoi(str);
+				cgs.scores3 = atoi(str);
+			}
+=======
 			cgs.jediMaster = atoi ( str );
+>>>>>>> jediknightplus/master
 			break;
 		case CS_CLIENT_DUELWINNER:
 			cgs.duelWinner = atoi ( str );
@@ -387,6 +481,13 @@ void CG_UpdateConfigString( int num, qboolean init )
 				// format is rb where its red/blue, 0 is at base, 1 is taken, 2 is dropped
 				cgs.redflag = str[0] - '0';
 				cgs.blueflag = str[1] - '0';
+<<<<<<< HEAD
+				if (cgs.isCTFMod && cgs.CTF3ModeActive)
+					cgs.yellowflag = str[2] - '0';
+				else
+					cgs.yellowflag = 0;
+=======
+>>>>>>> jediknightplus/master
 			}
 			break;
 		case CS_SHADERSTATE:
@@ -403,8 +504,11 @@ void CG_UpdateConfigString( int num, qboolean init )
 		case CS_MVSDK:
 			MV_LoadSettings( str );
 			break;
+<<<<<<< HEAD
+=======
 		case CS_PAUSE: // Tr!Force: [Pause] Get server pause time
 			cgs.jkmodCGS.pauseTime = atoi(str);
+>>>>>>> jediknightplus/master
 		default:
 			break;
 		}
@@ -601,7 +705,10 @@ static void CG_MapRestart( void ) {
 			trap_SendConsoleCommand(va("set g_synchronousclients 1 ; record %s \n", cg_recordSPDemoName.string));
 		}
 	}
+<<<<<<< HEAD
+=======
 	trap_Cvar_Set("cg_thirdPerson", "0");
+>>>>>>> jediknightplus/master
 }
 
 #define MAX_VOICEFILESIZE	16384
@@ -1160,9 +1267,18 @@ The string has been tokenized and can be retrieved with
 Cmd_Argc() / Cmd_Argv()
 =================
 */
+<<<<<<< HEAD
+extern void CG_ChatBox_AddString(char *chatStr);
+static void CG_ServerCommand( void ) {
+	const char	*cmd;
+	char		text[MAX_STRING_CHARS] = { 0 };
+	char tempChatStr[MAX_STRING_CHARS] = {0};
+	char *r = text, *w = tempChatStr;
+=======
 static void CG_ServerCommand( void ) {
 	const char	*cmd;
 	char		text[MAX_SAY_TEXT];
+>>>>>>> jediknightplus/master
 
 	cmd = CG_Argv(0);
 
@@ -1275,13 +1391,50 @@ static void CG_ServerCommand( void ) {
 	if ( !strcmp( cmd, "print" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
 		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
+<<<<<<< HEAD
+=======
 		if (strstr(strEd, "This server is running JK2MV")) return; // Tr!Force: [JKMod] Skip JK2MV message
+>>>>>>> jediknightplus/master
 		CG_Printf( "%s", strEd );
 		return;
 	}
 
 	if ( !strcmp( cmd, "chat" ) ) {
 		if ( !cg_teamChatsOnly.integer ) {
+<<<<<<< HEAD
+			if (cg_chatSounds.integer)
+				trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
+			Q_strncpyz(text, CG_Argv(1), sizeof(text));
+			CG_RemoveChatEscapeChar( text );
+
+			// replace "*/." with real percent symbol, and replace two single quotes with double quote
+			// NOTE: this creates real percent symbols in the string, be careful using va(), etc below here!
+			while (*r) {
+				if (*r == '*' && *(r + 1) == '/' && *(r + 2) == '.') {
+					*w = '%';
+					r += 3;
+				}
+				else if (*r == '\'' && *(r + 1) == '\'') {
+					*w = '"';
+					r += 2;
+				}
+				else {
+					*w = *r;
+					r++;
+				}
+				w++;
+			}
+			Q_strncpyz(text, tempChatStr, sizeof(text));
+
+			if (cg_chatBox.integer) {
+				CG_Printf("[skipnotify]%s\n", text); 
+				CG_ChatBox_AddString(text);
+			}
+			else {
+				CG_Printf( "%s\n", text );
+				if (cg_chatSounds.integer == 2 && strstr(text, "^7]: ^6")) //would be done in chatbox code otherwise
+					trap_S_StartLocalSound(cgs.media.privateChatSound, CHAN_LOCAL_SOUND);
+=======
 			trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
 			Q_strncpyz( text, CG_Argv(1), MAX_SAY_TEXT );
 			CG_RemoveChatEscapeChar( text );
@@ -1293,12 +1446,46 @@ static void CG_ServerCommand( void ) {
 			}
 			else {
 				CG_Printf("%s\n", text);
+>>>>>>> jediknightplus/master
 			}
 		}
 		return;
 	}
 
 	if ( !strcmp( cmd, "tchat" ) ) {
+<<<<<<< HEAD
+		if (cg_chatSounds.integer)
+			trap_S_StartLocalSound( cg_chatSounds.integer == 2 ? cgs.media.teamChatSound : cgs.media.talkSound, CHAN_LOCAL_SOUND );
+		Q_strncpyz( text, CG_Argv(1), sizeof(text) );
+		CG_RemoveChatEscapeChar( text );
+
+		// replace "*/." with real percent symbol, and replace two single quotes with double quote
+		// NOTE: this creates real percent symbols in the string, be careful using va(), etc below here!
+		while (*r) {
+			if (*r == '*' && *(r + 1) == '/' && *(r + 2) == '.') {
+				*w = '%';
+				r += 3;
+			}
+			else if (*r == '\'' && *(r + 1) == '\'') {
+				*w = '"';
+				r += 2;
+			}
+			else {
+				*w = *r;
+				r++;
+			}
+			w++;
+		}
+		Q_strncpyz(text, tempChatStr, sizeof(text));
+
+		CG_AddToTeamChat( text );
+		if (cg_chatBox.integer) {
+			CG_Printf("[skipnotify]%s\n", text);
+			CG_ChatBox_AddString(text);
+		}
+		else {
+			CG_Printf( "%s\n", text );
+=======
 		trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
 		Q_strncpyz( text, CG_Argv(1), MAX_SAY_TEXT );
 		CG_RemoveChatEscapeChar( text );
@@ -1311,6 +1498,7 @@ static void CG_ServerCommand( void ) {
 		}
 		else {
 			CG_Printf("%s\n", text);
+>>>>>>> jediknightplus/master
 		}
 		return;
 	}
@@ -1345,7 +1533,11 @@ static void CG_ServerCommand( void ) {
 	}
 
   if ( Q_stricmp (cmd, "remapShader") == 0 ) {
+<<<<<<< HEAD
+		if (trap_Argc() == 4 && cg_remaps.integer && Q_stricmpn(CG_Argv(1), "console", 7)) { //JAPRO - Clientside - Allow noremaps
+=======
 		if (trap_Argc() == 4) {
+>>>>>>> jediknightplus/master
 			trap_R_RemapShader(CG_Argv(1), CG_Argv(2), CG_Argv(3));
 		}
 	}
@@ -1363,6 +1555,8 @@ static void CG_ServerCommand( void ) {
 		return;
 	}
 
+<<<<<<< HEAD
+=======
 	// Tr!Force: [Duels] Update private duel cvar from server cmd
 	if ( !strcmp( cmd, "jk_cg_privateDuel" ) )
 	{
@@ -1395,6 +1589,7 @@ static void CG_ServerCommand( void ) {
 		return;
 	}
 
+>>>>>>> jediknightplus/master
 	CG_Printf( "Unknown client game command: %s\n", cmd );
 }
 

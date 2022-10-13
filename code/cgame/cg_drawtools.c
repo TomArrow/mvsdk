@@ -58,15 +58,25 @@ void CG_GetColorForHealth( int health, int armor, vec4_t hcolor ) {
 	// set the color based on health
 	hcolor[0] = 1.0;
 	hcolor[3] = 1.0;
+<<<<<<< HEAD
+	if ( health >= 100 && (jk2version != VERSION_1_02 || armor) ) {
+		hcolor[2] = 1.0;
+	} else if ( (jk2version == VERSION_1_02 && health <= 100) || (health < 66) ) {
+=======
 	if ( health >= 100 ) {
 		hcolor[2] = 1.0;
 	} else if ( health < 66 ) {
+>>>>>>> jediknightplus/master
 		hcolor[2] = 0;
 	} else {
 		hcolor[2] = ( health - 66 ) / 33.0;
 	}
 
+<<<<<<< HEAD
+	if ( health > 60 && (jk2version != VERSION_1_02 || armor) ) {
+=======
 	if ( health > 60 ) {
+>>>>>>> jediknightplus/master
 		hcolor[1] = 1.0;
 	} else if ( health < 30 ) {
 		hcolor[1] = 0;

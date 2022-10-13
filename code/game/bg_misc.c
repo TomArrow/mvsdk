@@ -158,6 +158,8 @@ int WeaponAttackAnim[WP_NUM_WEAPONS] =
 	BOTH_ATTACK1//WP_TURRET,
 };
 
+<<<<<<< HEAD
+=======
 // Tr!Force: [GameGeneral] Given a boltmatrix, return in vec a normalised vector for the axis requested in flags
 void JKMod_BG_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec)
 {
@@ -200,6 +202,7 @@ void JKMod_BG_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t v
 		break;
 	}
 }
+>>>>>>> jediknightplus/master
 
 /*
 ================
@@ -1379,10 +1382,13 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 		{
 			if (!ps->saberLockFrame || power != FP_PUSH)
 			{
+<<<<<<< HEAD
+=======
 				#ifdef JK2_GAME
 				// Tr!Force: [Duel] Check force duel
 				if (!JKMod_ForcePowerValid(power, ps))
 				#endif
+>>>>>>> jediknightplus/master
 				return qfalse;
 			}
 		}
