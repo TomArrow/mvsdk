@@ -89,3 +89,4 @@ float frexpf(float x, int *exp);
 float logf(float a);
 float powf(float x, float y);
 
+float copysignf(float x, float y);
