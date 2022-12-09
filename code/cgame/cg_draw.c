@@ -5160,6 +5160,15 @@ static void CG_Draw2D( void ) {
 		//		Clear the fall vector to avoid that.
 		gCGHasFallVector = qfalse;
 		VectorClear( gCGFallVector );
+
+		// We still want center messages, but nothing else
+		if (cg_drawCenterAlways.integer) {
+			// don't draw center string if scoreboard is up
+			cg.scoreBoardShowing = CG_DrawScoreboard();
+			if (!cg.scoreBoardShowing) {
+				CG_DrawCenterString();
+			}
+		}
 		return;
 	}
 
