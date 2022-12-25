@@ -72,6 +72,11 @@ static void CG_TransitionEntity( centity_t *cent ) {
 	// clear the next state.  if will be set by the next CG_SetNextSnap
 	cent->interpolate = qfalse;
 
+	if (cent->currentState.number >= 0 && cent->currentState.number < MAX_CLIENTS && (cg_debugSaber.integer < -1 || cg_debugSaber.integer >= MAX_CLIENTS || cg_debugSaber.integer == cent->currentState.number) && cent->currentState.saberMove != cent->previousSaberMove) {
+		CG_Printf("ent:%3i  saberMove:%3i  saberMoveName:%s \n", cent->currentState.number, cent->currentState.saberMove, saberMoveData[cent->currentState.saberMove].name);
+		cent->previousSaberMove = cent->currentState.saberMove;
+	}
+
 	// check for events
 	CG_CheckEvents( cent );
 }
@@ -128,8 +133,14 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 
 		CG_ResetEntity( cent );
 
+		if (state->number >= 0 && state->number < MAX_CLIENTS && (cg_debugSaber.integer < -1 || cg_debugSaber.integer >= MAX_CLIENTS || cg_debugSaber.integer == state->number) && state->saberMove != cent->previousSaberMove) {
+			CG_Printf("ent:%3i  saberMove:%3i  saberMoveName:%s \n", state->number, state->saberMove, saberMoveData[state->saberMove].name);
+			cent->previousSaberMove = state->saberMove;
+		}
+
 		// check for events
 		CG_CheckEvents( cent );
+
 	}
 }
 
