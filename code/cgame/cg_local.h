@@ -1807,6 +1807,7 @@ extern	vmCvar_t		cg_autoBackStab_distance;
 extern	vmCvar_t		cg_autoBackStab_usePrediction;
 extern	vmCvar_t		cg_debugSaberBox;
 extern	vmCvar_t		cg_debugSaberBox_usePrediction;
+extern	vmCvar_t		cg_friendsChatsOnly;
 
 //
 // cg_main.c

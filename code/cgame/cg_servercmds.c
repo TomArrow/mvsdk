@@ -1317,9 +1317,49 @@ static void CG_ServerCommand( void ) {
 
 	if ( !strcmp( cmd, "chat" ) ) {
 		if ( !cg_teamChatsOnly.integer ) {
-			if (cg_chatSounds.integer)
-				trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
 			Q_strncpyz(text, CG_Argv(1), sizeof(text));
+
+			if (cg_friendsChatsOnly.integer)
+			{
+				int i = 0;
+				const char *ch = text;
+				qboolean printMessage = qfalse;
+				char name[64];
+				int length = 0;
+
+				for (i = 0; i < MAX_CLIENTS; i++)
+				{
+					if (cg.isFriend[i] || i == cg.clientNum)
+					{
+						Com_sprintf(name, sizeof(name), "%s%c%c\x19: ", cgs.clientinfo[i].name, Q_COLOR_ESCAPE, COLOR_WHITE);
+						length = strlen(name);
+
+						if (Q_stricmpn(text, name, length) == 0)
+						{
+							printMessage = qtrue;
+							break;
+						}
+
+						Com_sprintf(name, sizeof(name), "\x19[%s%c%c\x19]", cgs.clientinfo[i].name, Q_COLOR_ESCAPE, COLOR_WHITE);
+						length = strlen(name);
+
+						if (Q_stricmpn(text, name, length) == 0)
+						{
+							printMessage = qtrue;
+							break;
+						}
+					}
+				}
+
+				if (printMessage == qfalse)
+				{
+					return;
+				}
+			}
+
+			if (cg_chatSounds.integer)
+				trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
+
 			CG_RemoveChatEscapeChar( text );
 
 			// replace "*/." with real percent symbol, and replace two single quotes with double quote
@@ -1355,9 +1395,40 @@ static void CG_ServerCommand( void ) {
 	}
 
 	if ( !strcmp( cmd, "tchat" ) ) {
-		if (cg_chatSounds.integer)
-			trap_S_StartLocalSound( cg_chatSounds.integer == 2 ? cgs.media.teamChatSound : cgs.media.talkSound, CHAN_LOCAL_SOUND );
 		Q_strncpyz( text, CG_Argv(1), sizeof(text) );
+
+		if (cg_friendsChatsOnly.integer)
+		{
+			int i = 0;
+			const char *ch = text;
+			qboolean printMessage = qfalse;
+			char name[64];
+			int length = 0;
+
+			for (i = 0; i < MAX_CLIENTS; i++)
+			{
+				if (cg.isFriend[i] || i == cg.clientNum)
+				{
+					Com_sprintf(name, sizeof(name), "\x19(%s%c%c\x19)", cgs.clientinfo[i].name, Q_COLOR_ESCAPE, COLOR_WHITE);
+					length = strlen(name);
+
+					if (Q_stricmpn(text, name, length) == 0)
+					{
+						printMessage = qtrue;
+						break;
+					}
+				}
+			}
+
+			if (printMessage == qfalse)
+			{
+				return;
+			}
+		}
+
+		if (cg_chatSounds.integer)
+			trap_S_StartLocalSound(cg_chatSounds.integer == 2 ? cgs.media.teamChatSound : cgs.media.talkSound, CHAN_LOCAL_SOUND);
+
 		CG_RemoveChatEscapeChar( text );
 
 		// replace "*/." with real percent symbol, and replace two single quotes with double quote
