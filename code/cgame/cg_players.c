@@ -6231,7 +6231,7 @@ qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char 
 					int parts;
 					if (doTrace && anim != BOTH_WALL_RUN_LEFT && anim != BOTH_WALL_RUN_RIGHT)
 					{
-						if (trace.entityNum < MAX_CLIENTS)
+						if (trace.entityNum < MAX_CLIENTS && !cgs.clientinfo[trace.entityNum].isFriend)
 						{
 							return qtrue; //let the server know that this person gets kicked by this client
 						}
@@ -6268,7 +6268,7 @@ qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char 
 
 				if (trace.fraction < 1.0f)
 				{//there is a wall there
-					if (trace.entityNum < MAX_CLIENTS)
+					if (trace.entityNum < MAX_CLIENTS && !cgs.clientinfo[trace.entityNum].isFriend)
 					{
 						return qtrue; //let the server know that this person gets kicked by this client
 					}

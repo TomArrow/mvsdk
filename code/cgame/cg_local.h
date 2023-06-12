@@ -551,6 +551,8 @@ typedef struct {
 
 	mvversion_t		jk2gameplay;
 	float			colorOverride[3];
+
+	qboolean		isFriend;
 } clientInfo_t;
 
 
@@ -2078,6 +2080,7 @@ void CG_DrawOldTourneyScoreboard( void );
 //
 qboolean CG_ConsoleCommand( void );
 void CG_InitConsoleCommands( void );
+int CG_ClientNumberFromString(const char *s);
 
 //
 // cg_servercmds.c
