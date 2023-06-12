@@ -6145,7 +6145,7 @@ void CG_CubeOutline(vec3_t absmin, vec3_t absmax, int time, unsigned int color, 
 	}
 }
 
-qboolean CG_CanBackStab(void)
+int CG_CanBackStab(void)
 {
 	trace_t tr;
 	vec3_t flatAng;
@@ -6171,9 +6171,9 @@ qboolean CG_CanBackStab(void)
 
 	AngleVectors(flatAng, fwd, 0, 0);
 
-	back[0] = ps->origin[0] - fwd[0] * cg_autoBackStab_distance.value;
-	back[1] = ps->origin[1] - fwd[1] * cg_autoBackStab_distance.value;
-	back[2] = ps->origin[2] - fwd[2] * cg_autoBackStab_distance.value;
+	back[0] = ps->origin[0] + fwd[0] * cg_autoBackStab_distance.value;
+	back[1] = ps->origin[1] + fwd[1] * cg_autoBackStab_distance.value;
+	back[2] = ps->origin[2] + fwd[2] * cg_autoBackStab_distance.value;
 
 	VectorAdd(back, trmins, dbgMins);
 	VectorAdd(back, trmaxs, dbgMaxs);
@@ -6191,12 +6191,12 @@ qboolean CG_CanBackStab(void)
 		{
 			if (ps->saberMove == LS_READY && !BG_InRoll(ps, ps->legsAnim))
 			{
-				return qtrue;
+				return tr.entityNum;
 			}
 		}
 	}
 
-	return qfalse;
+	return -1;
 }
 
 void CG_DoAutoBackStab(void)
@@ -6210,6 +6210,15 @@ void CG_DoAutoBackStab(void)
 	const signed char no_value = 0;
 	int buttons = 0;
 	playerState_t *ps;
+	int clientNum;
+	vec3_t viewangles;
+	vec3_t delta_angles;
+	vec3_t eye;
+	vec3_t eorg;
+	int viewangles_integer[3];
+	int anim = 0;
+	centity_t *cent;
+	int i;
 
 	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
 	{
@@ -6226,7 +6235,9 @@ void CG_DoAutoBackStab(void)
 		return;
 	}
 
-	if (CG_CanBackStab() == qfalse)
+	clientNum = CG_CanBackStab();
+
+	if (CG_CanBackStab() == -1)
 	{
 		return;
 	}
@@ -6240,21 +6251,65 @@ void CG_DoAutoBackStab(void)
 		ps = &cg.snap->ps;
 	}
 
+	if (ps->forceHandExtend != HANDEXTEND_NONE)
+	{
+		return;
+	}
+
+	cent = &cg_entities[clientNum];
+	VectorCopy(ps->origin, eye);
+	eye[2] += ps->viewheight;
+
+	VectorCopy(cent->lerpOrigin, eorg);
+
+	anim = cent->currentState.legsAnim & ~ANIM_TOGGLEBIT;
+
+	if (anim == BOTH_CROUCH1WALK || anim == BOTH_CROUCH1IDLE || CG_InRoll(cent) || CG_InKnockDown(anim))
+	{
+		eorg[2] += 12; // crouched
+	}
+	else
+	{
+		eorg[2] += 36; // default
+	}
+
+	VectorSubtract(eorg, eye, viewangles);
+
+	VectorNormalize(viewangles);
+	vectoangles(viewangles, viewangles);
+
+	viewangles[1] += 180;
+
+	for (i = 0; i < 3; i++)
+	{
+		delta_angles[i] = SHORT2ANGLE(ps->delta_angles[i]);
+	}
+
+	AnglesSubtract(viewangles, delta_angles, viewangles);
+
+	for (i = 0; i < 3; i++)
+	{
+		viewangles_integer[i] = ANGLE2SHORT(viewangles[i]);
+	}
+
 	if (cg_autoBackStab.integer == 1 || (cg_autoBackStab.integer == 3 && cg.doAutoBackStab))
 	{
 		buttons |= BUTTON_ATTACK;
-		trap_SetUserCmdValue(no_value, NULL, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, no_value, no_value, USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE);
+		trap_SetUserCmdValue(no_value, viewangles_integer, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, no_value, no_value, USERCMD_SET_ANGLES | USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE);
+		cg.isAutoBackStabActive = qtrue;
 	}
 	else if (cg_autoBackStab.integer == 2 || (cg_autoBackStab.integer == 4 && cg.doAutoBackStab))
 	{
 		if (ps->groundEntityNum != ENTITYNUM_NONE)
 		{ // on the ground
 			trap_SetUserCmdValue(no_value, NULL, buttons, no_value, no_value, no_value, no_value, no_forward_or_backward, no_left_or_right, up, no_value, USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			cg.isAutoBackStabActive = qtrue;
 		}
 		else
 		{ // in the air
 			buttons |= BUTTON_ATTACK;
-			trap_SetUserCmdValue(no_value, NULL, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, down, no_value, USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			trap_SetUserCmdValue(no_value, viewangles_integer, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, down, no_value, USERCMD_SET_ANGLES | USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			cg.isAutoBackStabActive = qtrue;
 		}
 	}
 }
@@ -7549,8 +7604,14 @@ doEssentialTwo:
 
 	if (cg.snap->ps.clientNum == cent->currentState.number)
 	{
-		CG_DoAutoKick();
 		CG_DoAutoBackStab();
+
+		if (cg.isAutoBackStabActive == qfalse)
+		{
+			CG_DoAutoKick();
+		}
+
+		cg.isAutoBackStabActive = qfalse;
 	}
 
 	CG_DrawSaberBox(cent);

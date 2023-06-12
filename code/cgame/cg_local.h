@@ -931,6 +931,7 @@ Ghoul2 Insert End
 	qboolean			doAutoKick;
 	byte				autoKickDebugDirection;
 	qboolean			doAutoBackStab;
+	qboolean			isAutoBackStabActive;
 	qboolean			isFriend[MAX_CLIENTS];
 } cg_t;
 
