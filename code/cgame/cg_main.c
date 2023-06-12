@@ -705,6 +705,10 @@ vmCvar_t	cg_autoKick_indicator;
 vmCvar_t	cg_autoKick_checkRoll;
 vmCvar_t	cg_autoKick_checkAir;
 vmCvar_t	cg_autoKick_checkKnockdown;
+vmCvar_t	cg_autoBackStab;
+vmCvar_t	cg_autoBackStab_debug;
+vmCvar_t	cg_autoBackStab_distance;
+vmCvar_t	cg_autoBackStab_usePrediction;
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -982,6 +986,10 @@ Ghoul2 Insert End
 	{ &cg_autoKick_checkRoll, "cg_autoKick_checkRoll", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 	{ &cg_autoKick_checkAir, "cg_autoKick_checkAir", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 	{ &cg_autoKick_checkKnockdown, "cg_autoKick_checkKnockdown", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoBackStab, "cg_autoBackStab", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoBackStab_debug, "cg_autoBackStab_debug", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoBackStab_distance, "cg_autoBackStab_distance", "128.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoBackStab_usePrediction, "cg_autoBackStab_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );

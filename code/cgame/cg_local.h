@@ -932,6 +932,7 @@ Ghoul2 Insert End
 
 	qboolean			doAutoKick;
 	byte				autoKickDebugDirection;
+	qboolean			doAutoBackStab;
 } cg_t;
 
 #define MAX_TICS	14
@@ -1801,6 +1802,10 @@ extern	vmCvar_t		cg_autoKick_indicator;
 extern	vmCvar_t		cg_autoKick_checkRoll;
 extern	vmCvar_t		cg_autoKick_checkAir;
 extern	vmCvar_t		cg_autoKick_checkKnockdown;
+extern	vmCvar_t		cg_autoBackStab;
+extern	vmCvar_t		cg_autoBackStab_debug;
+extern	vmCvar_t		cg_autoBackStab_distance;
+extern	vmCvar_t		cg_autoBackStab_usePrediction;
 
 //
 // cg_main.c

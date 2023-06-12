@@ -6143,6 +6143,120 @@ void CG_CubeOutline(vec3_t absmin, vec3_t absmax, int time, unsigned int color, 
 	}
 }
 
+qboolean CG_CanBackStab(void)
+{
+	trace_t tr;
+	vec3_t flatAng;
+	vec3_t fwd, back;
+	vec3_t trmins = { -15, -15, -8 };
+	vec3_t trmaxs = { 15, 15, 8 };
+	playerState_t *ps;
+
+	vec3_t dbgMins;
+	vec3_t dbgMaxs;
+
+	if (cg_autoBackStab_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	VectorCopy(ps->viewangles, flatAng);
+	flatAng[PITCH] = 0;
+
+	AngleVectors(flatAng, fwd, 0, 0);
+
+	back[0] = ps->origin[0] - fwd[0] * cg_autoBackStab_distance.value;
+	back[1] = ps->origin[1] - fwd[1] * cg_autoBackStab_distance.value;
+	back[2] = ps->origin[2] - fwd[2] * cg_autoBackStab_distance.value;
+
+	VectorAdd(back, trmins, dbgMins);
+	VectorAdd(back, trmaxs, dbgMaxs);
+
+	if (cg_autoBackStab_debug.integer)
+	{
+		CG_CubeOutline(dbgMins, dbgMaxs, 1, COLOR_RED, 1);
+	}
+
+	CG_Trace(&tr, ps->origin, trmins, trmaxs, back, ps->clientNum, MASK_PLAYERSOLID);
+
+	if (tr.fraction != 1.0 && tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS && !cgs.clientinfo[tr.entityNum].isFriend)
+	{
+		if (!BG_SaberInSpecialAttack(ps->torsoAnim) || jk2gameplay != VERSION_1_04)
+		{
+			if (ps->saberMove == LS_READY && !BG_InRoll(ps, ps->legsAnim))
+			{
+				return qtrue;
+			}
+		}
+	}
+
+	return qfalse;
+}
+
+void CG_DoAutoBackStab(void)
+{
+	const signed char backward = -127;
+	const signed char up = 127;
+	const signed char down = -127;
+	const signed char no_forward_or_backward = 0;
+	const signed char no_up_or_down = 0;
+	const signed char no_left_or_right = 0;
+	const signed char no_value = 0;
+	int buttons = 0;
+	playerState_t *ps;
+
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		return;
+	}
+
+	if (cg_entities[cg.clientNum].currentState.eFlags & EF_TALK)
+	{
+		return;
+	}
+
+	if (cg_autoBackStab.integer < 1)
+	{
+		return;
+	}
+
+	if (CG_CanBackStab() == qfalse)
+	{
+		return;
+	}
+
+	if (cg_autoBackStab_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	if (cg_autoBackStab.integer == 1 || (cg_autoBackStab.integer == 3 && cg.doAutoBackStab))
+	{
+		buttons |= BUTTON_ATTACK;
+		trap_SetUserCmdValue(no_value, NULL, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, no_value, no_value, USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE);
+	}
+	else if (cg_autoBackStab.integer == 2 || (cg_autoBackStab.integer == 4 && cg.doAutoBackStab))
+	{
+		if (ps->groundEntityNum != ENTITYNUM_NONE)
+		{ // on the ground
+			trap_SetUserCmdValue(no_value, NULL, buttons, no_value, no_value, no_value, no_value, no_forward_or_backward, no_left_or_right, up, no_value, USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+		}
+		else
+		{ // in the air
+			buttons |= BUTTON_ATTACK;
+			trap_SetUserCmdValue(no_value, NULL, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, down, no_value, USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+		}
+	}
+}
+
 qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char upmove)
 {
 	playerState_t *ps;
@@ -7321,6 +7435,7 @@ doEssentialTwo:
 	if (cg.snap->ps.clientNum == cent->currentState.number)
 	{
 		CG_DoAutoKick();
+		CG_DoAutoBackStab();
 	}
 
 	if (cent->currentState.weapon == WP_STUN_BATON && cent->currentState.number == cg.snap->ps.clientNum)
