@@ -696,6 +696,15 @@ vmCvar_t	cg_char_color_green;
 vmCvar_t	cg_char_color_blue;
 
 vmCvar_t	cg_wallHack;
+vmCvar_t	cg_autoKick;
+vmCvar_t	cg_autoKick_debug;
+vmCvar_t	cg_autoKick_sideKickFirst;
+vmCvar_t	cg_autoKick_distance;
+vmCvar_t	cg_autoKick_usePrediction;
+vmCvar_t	cg_autoKick_indicator;
+vmCvar_t	cg_autoKick_checkRoll;
+vmCvar_t	cg_autoKick_checkAir;
+vmCvar_t	cg_autoKick_checkKnockdown;
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -964,6 +973,15 @@ Ghoul2 Insert End
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_ARCHIVE | CVAR_USERINFO },
 
 	{ &cg_wallHack, "cg_wallHack", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick, "cg_autoKick", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_debug, "cg_autoKick_debug", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_sideKickFirst, "cg_autoKick_sideKickFirst", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_distance, "cg_autoKick_distance", "16.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_usePrediction, "cg_autoKick_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_indicator, "cg_autoKick_indicator", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_checkRoll, "cg_autoKick_checkRoll", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_checkAir, "cg_autoKick_checkAir", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoKick_checkKnockdown, "cg_autoKick_checkKnockdown", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
@@ -1908,6 +1926,8 @@ static void CG_RegisterGraphics( void ) {
 	cgs.media.keyCrouchOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/crouch_on");
 	cgs.media.keyJumpOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jump_off");
 	cgs.media.keyJumpOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jump_on");
+	cgs.media.keyJumpOffAutoKickShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jump_off_autokick");
+	cgs.media.keyJumpOnAutoKickShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jump_on_autokick");
 	cgs.media.keyBackOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/back_off");
 	cgs.media.keyBackOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/back_on");
 	cgs.media.keyForwardOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/forward_off");

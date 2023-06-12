@@ -111,6 +111,15 @@ static void CG_scrollScoresUp_f( void) {
 	}
 }
 
+static void CG_AutoKickDown_f(void)
+{
+	cg.doAutoKick = qtrue;
+}
+
+static void CG_AutoKickUp_f(void)
+{
+	cg.doAutoKick = qfalse;
+}
 
 static void CG_spWin_f( void) {
 	trap_Cvar_Set("cg_cameraOrbit", "2");
@@ -1285,6 +1294,9 @@ static consoleCommand_t	commands[] = {
 	{ "weaplast", CG_LastWeapon_f },
 
 	{ "killTracker", CG_KillTracker_f },
+
+	{ "+autoKick", CG_AutoKickDown_f },
+	{ "-autoKick", CG_AutoKickUp_f },
 };
 
 

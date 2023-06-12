@@ -6097,6 +6097,255 @@ float CG_GroundDistance(playerState_t *ps, vec3_t mins, vec3_t maxs)
 	return VectorLength(down);
 }
 
+qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char upmove)
+{
+	playerState_t *ps;
+
+	if (cg_autoKick_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	if (ps->usingATST)
+	{
+		return qfalse;
+	}
+
+	if (cg_autoKick_checkKnockdown.integer > 0 && ps->forceHandExtend == HANDEXTEND_KNOCKDOWN)
+	{
+		return qfalse;
+	}
+
+	//Don't allow jump until all buttons are up
+	if (ps->pm_flags & PMF_RESPAWNED) {
+		return qfalse;
+	}
+
+	if (cg_autoKick_checkKnockdown.integer > 0 && CG_InKnockDown(ps->legsAnim))
+	{//in knockdown
+		return qfalse;
+	}
+
+	if (cg_autoKick_checkRoll.integer > 0 && BG_InRoll(ps, ps->legsAnim))
+	{//in roll
+		return qfalse;
+	}
+
+	//Not jumping
+	if (upmove < 10 && (ps->groundEntityNum != ENTITYNUM_NONE || jk2gameplay == VERSION_1_02)) {
+		return qfalse;
+	}
+
+	// must wait for jump to be released
+	if (ps->pm_flags & PMF_JUMP_HELD)
+	{
+		// clear upmove so cmdscale doesn't lower running speed
+		return qfalse;
+	}
+
+	if (upmove > 0 && !(ps->pm_flags & PMF_JUMP_HELD) && ps->weapon == WP_SABER)
+	{
+		if (cg_autoKick_checkAir.integer < 1 || ps->groundEntityNum != ENTITYNUM_NONE)
+		{//on the ground
+			//check for left-wall and right-wall special jumps
+			int anim = -1;
+			if (rightmove > 0)
+			{//strafing right
+				if (forwardmove > 0)
+				{//wall-run
+					anim = BOTH_WALL_RUN_RIGHT;
+				}
+				else if (forwardmove == 0)
+				{//wall-flip
+					anim = BOTH_WALL_FLIP_RIGHT;
+				}
+			}
+			else if (rightmove < 0)
+			{//strafing left
+				if (forwardmove > 0)
+				{//wall-run
+					anim = BOTH_WALL_RUN_LEFT;
+				}
+				else if (forwardmove == 0)
+				{//wall-flip
+					anim = BOTH_WALL_FLIP_LEFT;
+				}
+			}
+			else if (jk2gameplay == VERSION_1_02 && forwardmove > 0)
+			{//run up wall, flip backwards
+				anim = BOTH_WALL_FLIP_BACK1;
+			}
+
+			if (anim != -1)
+			{
+				vec3_t fwd, right, traceto, mins, maxs, fwdAngles;
+				vec3_t	idealNormal;
+				trace_t	trace;
+				qboolean doTrace = qfalse;
+				int contents = MASK_PLAYERSOLID;
+
+				VectorSet(mins, -15, -15, 0);
+				VectorSet(maxs, 15, 15, 24);
+				VectorSet(fwdAngles, 0, ps->viewangles[YAW], 0);
+
+				memset(&trace, 0, sizeof(trace)); //to shut the compiler up
+
+				AngleVectors(fwdAngles, fwd, right, NULL);
+
+				//trace-check for a wall, if necc.
+				switch (anim)
+				{
+				case BOTH_WALL_FLIP_LEFT:
+					//NOTE: purposely falls through to next case!
+				case BOTH_WALL_RUN_LEFT:
+					doTrace = qtrue;
+					VectorMA(ps->origin, -cg_autoKick_distance.value, right, traceto);
+					break;
+
+				case BOTH_WALL_FLIP_RIGHT:
+					//NOTE: purposely falls through to next case!
+				case BOTH_WALL_RUN_RIGHT:
+					doTrace = qtrue;
+					VectorMA(ps->origin, cg_autoKick_distance.value, right, traceto);
+					break;
+
+				case BOTH_WALL_FLIP_BACK1:
+					doTrace = qtrue;
+					VectorMA(ps->origin, cg_autoKick_distance.value, fwd, traceto);
+					break;
+				}
+
+				if (doTrace)
+				{
+					CG_Trace(&trace, ps->origin, mins, maxs, traceto, ps->clientNum, contents);
+					VectorSubtract(ps->origin, traceto, idealNormal);
+					VectorNormalize(idealNormal);
+				}
+
+				if (!doTrace || (trace.fraction < 1.0f && (trace.entityNum < MAX_CLIENTS || DotProduct(trace.plane.normal, idealNormal) > 0.7)))
+				{//there is a wall there.. or hit a client
+					int parts;
+					if (doTrace && anim != BOTH_WALL_RUN_LEFT && anim != BOTH_WALL_RUN_RIGHT)
+					{
+						if (trace.entityNum < MAX_CLIENTS)
+						{
+							return qtrue; //let the server know that this person gets kicked by this client
+						}
+					}
+				}
+			}
+		}
+		else
+		{//in the air
+			int legsAnim = (ps->legsAnim & ~ANIM_TOGGLEBIT);
+			vec3_t mins, maxs;
+
+			VectorSet(mins, -15, -15, -24);
+			VectorSet(maxs, 15, 15, 40);
+
+			if (jk2gameplay != VERSION_1_02 &&
+				forwardmove > 0 //pushing forward
+				&& ps->velocity[2] > 200
+				&& CG_GroundDistance(ps, mins, maxs) <= 80 //unfortunately we do not have a happy ground timer like SP (this would use up more bandwidth if we wanted prediction workign right), so we'll just use the actual ground distance.
+				&& !BG_InSpecialJump(ps->legsAnim))
+			{//run up wall, flip backwards
+				vec3_t fwd, traceto, fwdAngles;
+				trace_t	trace;
+				vec3_t	idealNormal;
+
+				VectorSet(fwdAngles, 0, ps->viewangles[YAW], 0);
+
+				AngleVectors(fwdAngles, fwd, NULL, NULL);
+				VectorMA(ps->origin, 32, fwd, traceto);
+
+				CG_Trace(&trace, ps->origin, mins, maxs, traceto, ps->clientNum, MASK_PLAYERSOLID);//FIXME: clip brushes too?
+				VectorSubtract(ps->origin, traceto, idealNormal);
+				VectorNormalize(idealNormal);
+
+				if (trace.fraction < 1.0f)
+				{//there is a wall there
+					if (trace.entityNum < MAX_CLIENTS)
+					{
+						return qtrue; //let the server know that this person gets kicked by this client
+					}
+				}
+			}
+		}
+	}
+
+	return qfalse;
+}
+
+void CG_DoAutoKick(void)
+{
+	const signed char forward = 127;
+	const signed char left = -127;
+	const signed char right = 127;
+	const signed char up = 127;
+	const signed char no_forward_or_backward = 0;
+	const signed char no_left_or_right = 0;
+	const signed char no_value = 0;
+
+	cg.autoKickDebugDirection = 0; // noone is kicked
+
+	if ((cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cg_entities[cg.clientNum].currentState.eFlags & EF_TALK) && !cg_autoKick_debug.integer)
+	{
+		return;
+	}
+
+	if (cg_autoKick.integer > 0 || cg.doAutoKick)
+	{
+		if (cg_autoKick_sideKickFirst.integer < 1 && CG_CanKick(forward, no_left_or_right, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 1; // kick front
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, forward, no_left_or_right, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+		else if (CG_CanKick(no_forward_or_backward, right, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 2; // kick right
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, no_forward_or_backward, right, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+		else if (CG_CanKick(no_forward_or_backward, left, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 3; // kick left
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, no_forward_or_backward, left, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+		else if (cg_autoKick_sideKickFirst.integer > 0 && CG_CanKick(forward, no_left_or_right, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 1; // kick front
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, forward, no_left_or_right, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+	}
+}
+
 /*
 ===============
 CG_Player
@@ -7021,6 +7270,11 @@ doEssentialTwo:
 		{
 			CG_ForcePushBlur( efOrg );
 		}
+	}
+
+	if (cg.snap->ps.clientNum == cent->currentState.number)
+	{
+		CG_DoAutoKick();
 	}
 
 	if (cent->currentState.weapon == WP_STUN_BATON && cent->currentState.number == cg.snap->ps.clientNum)

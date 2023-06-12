@@ -2421,6 +2421,60 @@ static void CG_DrawInventory(int y)
 	}
 }
 
+byte autoKickDebugPreviousDirection = 0;
+
+static float CG_DrawAutoKick(float y)
+{
+	const char *s;
+	float w;
+
+	switch (cg.autoKickDebugDirection)
+	{
+	case 1:
+		s = S_COLOR_RED "Active: front";
+		break;
+	case 2:
+		s = S_COLOR_GREEN "Active: right";
+		break;
+	case 3:
+		s = S_COLOR_MAGENTA "Active: left";
+		break;
+	case 0:
+	default:
+		s = "Active: none";
+		break;
+	}
+
+	if (cg.autoKickDebugDirection != 0 && cg.autoKickDebugDirection != autoKickDebugPreviousDirection)
+	{
+		autoKickDebugPreviousDirection = cg.autoKickDebugDirection;
+	}
+
+	w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+	CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+
+	switch (autoKickDebugPreviousDirection)
+	{
+	case 1:
+		s = S_COLOR_RED "Previous: front";
+		break;
+	case 2:
+		s = S_COLOR_GREEN "Previous: right";
+		break;
+	case 3:
+		s = S_COLOR_MAGENTA "Previous: left";
+		break;
+	case 0:
+	default:
+		s = "Previous: none";
+		break;
+	}
+
+	w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+	CG_DrawBigString(cgs.screenWidth - 5 - w, (y + BIGCHAR_HEIGHT + 4) + 2, s, 1.0f);
+
+	return (y + BIGCHAR_HEIGHT + 4) + BIGCHAR_HEIGHT + 4;
+}
 
 /*
 =====================
@@ -2444,6 +2498,9 @@ static void CG_DrawUpperRight( void ) {
 	}
 	if ( cg_drawTimer.integer ) {
 		y = CG_DrawTimer( y );
+	}
+	if ( cg_autoKick_debug.integer ) {
+		y = CG_DrawAutoKick( y );
 	}
 	
 	y = CG_DrawEnemyInfo ( y );
@@ -5750,10 +5807,28 @@ static void CG_MovementKeys(centity_t *cent)
 	else
 		CG_DrawPic(w * 2 + x, y, w, h, cgs.media.keyCrouchOffShader);
 
-	if (cmd.upmove > 0)
-		CG_DrawPic(x, y, w, h, cgs.media.keyJumpOnShader);
+	if (cg_autoKick_indicator.integer > 0 && (cg_autoKick.integer > 0 || cg.doAutoKick == qtrue))
+	{
+		if (cmd.upmove > 0)
+		{
+			CG_DrawPic(x, y, w, h, cgs.media.keyJumpOnAutoKickShader);
+		}
+		else
+		{
+			CG_DrawPic(x, y, w, h, cgs.media.keyJumpOffAutoKickShader);
+		}
+	}
 	else
-		CG_DrawPic(x, y, w, h, cgs.media.keyJumpOffShader);
+	{
+		if (cmd.upmove > 0)
+		{
+			CG_DrawPic(x, y, w, h, cgs.media.keyJumpOnShader);
+		}
+		else
+		{
+			CG_DrawPic(x, y, w, h, cgs.media.keyJumpOffShader);
+		}
+	}
 
 	if (cmd.forwardmove < 0)
 		CG_DrawPic(w + x, h + y, w, h, cgs.media.keyBackOnShader);

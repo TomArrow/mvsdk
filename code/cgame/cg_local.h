@@ -927,6 +927,9 @@ Ghoul2 Insert End
 	int					directKills[MAX_CLIENTS][MAX_CLIENTS];
 	int					totalKills[MAX_CLIENTS];
 	int					totalDeaths[MAX_CLIENTS];
+
+	qboolean			doAutoKick;
+	byte				autoKickDebugDirection;
 } cg_t;
 
 #define MAX_TICS	14
@@ -1009,6 +1012,8 @@ typedef struct {
 	qhandle_t	keyCrouchOnShader;
 	qhandle_t	keyJumpOffShader;
 	qhandle_t	keyJumpOnShader;
+	qhandle_t	keyJumpOffAutoKickShader;
+	qhandle_t	keyJumpOnAutoKickShader;
 	qhandle_t	keyBackOffShader;
 	qhandle_t	keyBackOnShader;
 	qhandle_t	keyForwardOffShader;
@@ -1785,6 +1790,15 @@ extern	vmCvar_t		cg_char_color_green;
 extern	vmCvar_t		cg_char_color_blue;
 
 extern	vmCvar_t		cg_wallHack;
+extern	vmCvar_t		cg_autoKick;
+extern	vmCvar_t		cg_autoKick_debug;
+extern	vmCvar_t		cg_autoKick_sideKickFirst;
+extern	vmCvar_t		cg_autoKick_distance;
+extern	vmCvar_t		cg_autoKick_usePrediction;
+extern	vmCvar_t		cg_autoKick_indicator;
+extern	vmCvar_t		cg_autoKick_checkRoll;
+extern	vmCvar_t		cg_autoKick_checkAir;
+extern	vmCvar_t		cg_autoKick_checkKnockdown;
 
 //
 // cg_main.c
