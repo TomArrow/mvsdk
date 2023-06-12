@@ -6081,6 +6081,22 @@ qboolean CG_GetRootSurfNameWithVariant( void *ghoul2, const char *rootSurfName, 
 	return qfalse;
 }
 
+float CG_GroundDistance(playerState_t *ps, vec3_t mins, vec3_t maxs)
+{
+	trace_t tr;
+	vec3_t down;
+
+	VectorCopy(ps->origin, down);
+
+	down[2] -= 4096;
+
+	CG_Trace(&tr, ps->origin, mins, maxs, down, ps->clientNum, MASK_SOLID);
+
+	VectorSubtract(ps->origin, tr.endpos, down);
+
+	return VectorLength(down);
+}
+
 /*
 ===============
 CG_Player
