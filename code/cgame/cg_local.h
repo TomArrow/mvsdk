@@ -551,8 +551,6 @@ typedef struct {
 
 	mvversion_t		jk2gameplay;
 	float			colorOverride[3];
-
-	qboolean		isFriend;
 } clientInfo_t;
 
 
@@ -933,6 +931,7 @@ Ghoul2 Insert End
 	qboolean			doAutoKick;
 	byte				autoKickDebugDirection;
 	qboolean			doAutoBackStab;
+	qboolean			isFriend[MAX_CLIENTS];
 } cg_t;
 
 #define MAX_TICS	14

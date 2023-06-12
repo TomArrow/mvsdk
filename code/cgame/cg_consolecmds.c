@@ -156,7 +156,7 @@ static void CG_FriendAdd_f(void)
 				continue;
 			}
 
-			ci->isFriend = qtrue;
+			cg.isFriend[i] = qtrue;
 		}
 
 		CG_Printf("Added all clients to the friends list\n");
@@ -171,7 +171,7 @@ static void CG_FriendAdd_f(void)
 	}
 
 	ci = &cgs.clientinfo[clientNum];
-	ci->isFriend = qtrue;
+	cg.isFriend[clientNum] = qtrue;
 	CG_Printf("Added client %d (%s" S_COLOR_WHITE ") to the friends list\n", clientNum, ci->name);
 }
 
@@ -200,7 +200,7 @@ static void CG_FriendRemove_f(void)
 				continue;
 			}
 
-			ci->isFriend = qfalse;
+			cg.isFriend[i] = qfalse;
 		}
 
 		CG_Printf("Removed all clients from the friends list\n");
@@ -215,7 +215,7 @@ static void CG_FriendRemove_f(void)
 	}
 
 	ci = &cgs.clientinfo[clientNum];
-	ci->isFriend = qfalse;
+	cg.isFriend[clientNum] = qfalse;
 	CG_Printf("Removed client %d (%s" S_COLOR_WHITE ") from the friends list\n", clientNum, ci->name);
 }
 
@@ -231,7 +231,7 @@ static void CG_FriendsList_f(void)
 		if (!ci->infoValid)
 			continue;
 
-		if (ci->isFriend)
+		if (cg.isFriend[i])
 		{
 			CG_Printf("%2d %s" S_COLOR_WHITE "\n", i, ci->name);
 			count++;

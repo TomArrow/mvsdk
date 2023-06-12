@@ -1106,6 +1106,8 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		cg.totalKills[clientNum] = 0;
 		cg.totalDeaths[clientNum] = 0;
 
+		cg.isFriend[clientNum] = qfalse;
+
 		return;		// player just left
 	}
 
@@ -6183,7 +6185,7 @@ qboolean CG_CanBackStab(void)
 
 	CG_Trace(&tr, ps->origin, trmins, trmaxs, back, ps->clientNum, MASK_PLAYERSOLID);
 
-	if (tr.fraction != 1.0 && tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS && !cgs.clientinfo[tr.entityNum].isFriend)
+	if (tr.fraction != 1.0 && tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS && !cg.isFriend[tr.entityNum])
 	{
 		if (!BG_SaberInSpecialAttack(ps->torsoAnim) || jk2gameplay != VERSION_1_04)
 		{
@@ -6399,7 +6401,7 @@ qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char 
 				{//there is a wall there.. or hit a client
 					if (doTrace && anim != BOTH_WALL_RUN_LEFT && anim != BOTH_WALL_RUN_RIGHT)
 					{
-						if (trace.entityNum < MAX_CLIENTS && !cgs.clientinfo[trace.entityNum].isFriend)
+						if (trace.entityNum < MAX_CLIENTS && !cg.isFriend[trace.entityNum])
 						{
 							return qtrue; //let the server know that this person gets kicked by this client
 						}
@@ -6445,7 +6447,7 @@ qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char 
 
 				if (trace.fraction < 1.0f)
 				{//there is a wall there
-					if (trace.entityNum < MAX_CLIENTS && !cgs.clientinfo[trace.entityNum].isFriend)
+					if (trace.entityNum < MAX_CLIENTS && !cg.isFriend[trace.entityNum])
 					{
 						return qtrue; //let the server know that this person gets kicked by this client
 					}
