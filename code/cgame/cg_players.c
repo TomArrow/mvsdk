@@ -6553,6 +6553,19 @@ void CG_DrawSaberBox(centity_t *cent)
 		return;
 	}
 
+	if (CG_IsMindTricked(cent->currentState.trickedentindex,
+		cent->currentState.trickedentindex2,
+		cent->currentState.trickedentindex3,
+		cent->currentState.trickedentindex4, cg.snap->ps.clientNum))
+	{
+		return;
+	}
+
+	if (cent->weapon != WP_SABER || cent->currentState.shouldtarget)
+	{
+		return;
+	}
+
 	VectorSet(r_mins, -SABER_BOX_SIZE, -SABER_BOX_SIZE, -SABER_BOX_SIZE);
 	VectorSet(r_maxs, SABER_BOX_SIZE, SABER_BOX_SIZE, SABER_BOX_SIZE);
 
@@ -6600,11 +6613,7 @@ void CG_DrawSaberBox(centity_t *cent)
 
 	VectorCopy(boltAngles, rawAngles);
 	VectorMA(boltOrigin, 40, boltAngles, end);
-
-	if (cent->weapon == WP_SABER && !cent->currentState.shouldtarget)
-	{
-		VectorMA(boltOrigin, 20, boltAngles, r_currentOrigin);
-	}
+	VectorMA(boltOrigin, 20, boltAngles, r_currentOrigin);
 
 	VectorAdd(r_currentOrigin, r_mins, dbgMins);
 	VectorAdd(r_currentOrigin, r_maxs, dbgMaxs);
