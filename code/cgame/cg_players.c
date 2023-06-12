@@ -6097,6 +6097,52 @@ float CG_GroundDistance(playerState_t *ps, vec3_t mins, vec3_t maxs)
 	return VectorLength(down);
 }
 
+void CG_CubeOutline(vec3_t absmin, vec3_t absmax, int time, unsigned int color, int radius)
+{
+	vec3_t	point1, point2, point3, point4;
+	int		vec[3];
+	int		axis, i;
+
+	for (axis = 0, vec[0] = 0, vec[1] = 1, vec[2] = 2; axis < 3; axis++, vec[0]++, vec[1]++, vec[2]++)
+	{
+		for (i = 0; i < 3; i++)
+		{
+			if (vec[i] > 2)
+			{
+				vec[i] = 0;
+			}
+		}
+
+		point1[vec[1]] = absmin[vec[1]];
+		point1[vec[2]] = absmin[vec[2]];
+
+		point2[vec[1]] = absmin[vec[1]];
+		point2[vec[2]] = absmax[vec[2]];
+
+		point3[vec[1]] = absmax[vec[1]];
+		point3[vec[2]] = absmax[vec[2]];
+
+		point4[vec[1]] = absmax[vec[1]];
+		point4[vec[2]] = absmin[vec[2]];
+
+		//- face
+		point1[vec[0]] = point2[vec[0]] = point3[vec[0]] = point4[vec[0]] = absmin[vec[0]];
+
+		CG_TestLine(point1, point2, time, color, radius);
+		CG_TestLine(point2, point3, time, color, radius);
+		CG_TestLine(point1, point4, time, color, radius);
+		CG_TestLine(point4, point3, time, color, radius);
+
+		//+ face
+		point1[vec[0]] = point2[vec[0]] = point3[vec[0]] = point4[vec[0]] = absmax[vec[0]];
+
+		CG_TestLine(point1, point2, time, color, radius);
+		CG_TestLine(point2, point3, time, color, radius);
+		CG_TestLine(point1, point4, time, color, radius);
+		CG_TestLine(point4, point1, time, color, radius);
+	}
+}
+
 qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char upmove)
 {
 	playerState_t *ps;
