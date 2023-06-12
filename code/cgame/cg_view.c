@@ -1674,15 +1674,15 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// let the client system know what our weapon and zoom settings are
 	if (cg.snap && cg.snap->ps.saberLockTime > cg.time)
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, 0.01, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue(0, NULL, 0, cg.weaponSelect, cg.forceSelect, cg.itemSelect, 0, 0, 0, 0, 0.01f, USERCMD_SET_WEAPON | USERCMD_SET_FORCESEL | USERCMD_SET_INVENSEL | USERCMD_SET_SENSITIVITYSCALE);
 	}
 	else if (cg.snap && cg.snap->ps.usingATST)
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, 0.2, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue(0, NULL, 0, cg.weaponSelect, cg.forceSelect, cg.itemSelect, 0, 0, 0, 0, 0.2f, USERCMD_SET_WEAPON | USERCMD_SET_FORCESEL | USERCMD_SET_INVENSEL | USERCMD_SET_SENSITIVITYSCALE);
 	}
 	else
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, cg.zoomSensitivity, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue(0, NULL, 0, cg.weaponSelect, cg.forceSelect, cg.itemSelect, 0, 0, 0, 0, cg.zoomSensitivity, USERCMD_SET_WEAPON | USERCMD_SET_FORCESEL | USERCMD_SET_INVENSEL | USERCMD_SET_SENSITIVITYSCALE);
 	}
 
 	// this counter will be bumped for every valid scene we generate

@@ -609,3 +609,15 @@ typedef struct
 #define	MAX_CG_SHARED_BUFFER_SIZE		2048
 
 //----------------------------------------------
+
+#define USERCMD_SET_SERVERTIME        (1U << 0U)
+#define USERCMD_SET_ANGLES            (1U << 1U)
+#define USERCMD_SET_BUTTONS           (1U << 2U)
+#define USERCMD_SET_WEAPON            (1U << 3U)
+#define USERCMD_SET_FORCESEL          (1U << 4U)
+#define USERCMD_SET_INVENSEL          (1U << 5U)
+#define USERCMD_SET_GENERIC_CMD       (1U << 6U)
+#define USERCMD_SET_FORWARDMOVE       (1U << 7U)
+#define USERCMD_SET_RIGHTMOVE         (1U << 8U)
+#define USERCMD_SET_UPMOVE            (1U << 9U)
+#define USERCMD_SET_SENSITIVITYSCALE  (1U << 10U)

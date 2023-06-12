@@ -2273,8 +2273,21 @@ int			trap_GetCurrentCmdNumber( void );
 
 qboolean	trap_GetUserCmd( int cmdNumber, usercmd_t *ucmd );
 
-// used for the weapon select and zoom
-void		trap_SetUserCmdValue( int stateValue, float sensitivityScale, int fpSel, int invenSel );
+void
+trap_SetUserCmdValue(
+	int serverTime,
+	const int *angles,
+	int buttons,
+	byte weapon,
+	byte forcesel,
+	byte invensel,
+	byte generic_cmd,
+	signed char forwardmove,
+	signed char rightmove,
+	signed char upmove,
+	float sensitivityScale,
+	unsigned int flags
+);
 
 void		trap_SetClientForceAngle(int time, vec3_t angle);
 void		trap_SetClientTurnExtent(float turnAdd, float turnSub, int turnTime);

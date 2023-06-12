@@ -388,8 +388,23 @@ qboolean	trap_GetUserCmd( int cmdNumber, usercmd_t *ucmd ) {
 	return syscall( CG_GETUSERCMD, cmdNumber, ucmd );
 }
 
-void		trap_SetUserCmdValue( int stateValue, float sensitivityScale, int fpSel, int invenSel ) {
-	syscall( CG_SETUSERCMDVALUE, stateValue, PASSFLOAT(sensitivityScale), fpSel, invenSel );
+void
+trap_SetUserCmdValue(
+	int serverTime,
+	const int *angles,
+	int buttons,
+	byte weapon,
+	byte forcesel,
+	byte invensel,
+	byte generic_cmd,
+	signed char forwardmove,
+	signed char rightmove,
+	signed char upmove,
+	float sensitivityScale,
+	unsigned int flags
+)
+{
+	syscall(CG_SETUSERCMDVALUE, serverTime, angles, buttons, weapon, forcesel, invensel, generic_cmd, forwardmove, rightmove, upmove, PASSFLOAT(sensitivityScale), flags);
 }
 
 void trap_SetClientForceAngle(int time, vec3_t angle)
