@@ -4836,6 +4836,11 @@ int CG_IsMindTricked(int trickIndex1, int trickIndex2, int trickIndex3, int tric
 	int checkIn;
 	int sub = 0;
 
+	if (cg_wallHack.integer > 0 && cg.snap->ps.clientNum == client)
+	{
+		return 0;
+	}
+
 	if (cg_entities[client].currentState.forcePowersActive & (1 << FP_SEE))
 	{
 		return 0;
@@ -6367,6 +6372,11 @@ void CG_Player( centity_t *cent ) {
 				return;
 			}
 		}
+	}
+
+	if (cg_wallHack.integer > 0)
+	{
+		renderfx |= RF_DEPTHHACK;
 	}
 
 	// Update the player's client entity information regarding weapons.

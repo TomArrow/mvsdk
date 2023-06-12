@@ -1784,6 +1784,8 @@ extern	vmCvar_t		cg_char_color_red;
 extern	vmCvar_t		cg_char_color_green;
 extern	vmCvar_t		cg_char_color_blue;
 
+extern	vmCvar_t		cg_wallHack;
+
 //
 // cg_main.c
 //

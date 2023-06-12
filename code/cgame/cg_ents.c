@@ -1093,6 +1093,29 @@ Ghoul2 Insert End
 	if (s1->number == cg.snap->ps.clientNum) {
 		ent.renderfx |= RF_THIRD_PERSON;	// only draw from mirrors
 	}
+
+	if (cg_wallHack.integer > 0)
+	{
+		switch (cent->currentState.eType)
+		{
+			case ET_PLAYER:
+			case ET_ITEM:
+			case ET_MISSILE:
+			case ET_SPECIAL:
+			case ET_HOLOCRON:
+			case ET_TEAM:
+				ent.renderfx |= RF_DEPTHHACK;
+				break;
+			default:
+				break;
+		}
+
+		if (cent->currentState.weapon != WP_NONE)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+	}
+
 /*
 Ghoul2 Insert Start
 */
@@ -1192,6 +1215,12 @@ Ghoul2 Insert End
 
 		ent.customShader = cgs.media.solidWhite;
 		ent.renderfx = RF_RGB_TINT;
+
+		if (cg_wallHack.integer > 0)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		wv = sin( cg.time * 0.003f ) * 0.08f + 0.1f;
 		ent.shaderRGBA[0] = wv * 255;
 		ent.shaderRGBA[1] = wv * 255;
@@ -1229,6 +1258,12 @@ Ghoul2 Insert End
 
 		ent.customShader = cgs.media.solidWhite;
 		ent.renderfx = RF_RGB_TINT;
+
+		if (cg_wallHack.integer > 0)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		wv = sin( cg.time * 0.005f ) * 0.08f + 0.1f; //* 0.08f + 0.1f;
 
 		if (cent->currentState.trickedentindex3 == 1)
@@ -1480,6 +1515,11 @@ Ghoul2 Insert Start
 			ent.shaderRGBA[2] = 150;
 		}
 
+		if (cg_wallHack.integer > 0)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		trap_R_AddRefEntityToScene(&ent);
 
 		if (!doGrey)
@@ -1512,6 +1552,11 @@ Ghoul2 Insert End
 		if (item->giType != IT_POWERUP || item->giTag != PW_FORCE_BOON)
 		{
 			ent.renderfx |= RF_FORCE_ENT_ALPHA;
+		}
+
+		if (cg_wallHack.integer > 0)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
 		}
 
 		if ( es->eFlags & EF_ITEMPLACEHOLDER )
@@ -1693,6 +1738,11 @@ Ghoul2 Insert End
 	// if just respawned, slowly scale up
 	
 	msec = cg.time - cent->miscTime;
+
+	if (cg_wallHack.integer > 0)
+	{
+		ent.renderfx |= RF_DEPTHHACK;
+	}
 
 	if (CG_GreyItem(item->giType, item->giTag, cg.snap->ps.fd.forceSide))
 	{
@@ -1983,6 +2033,11 @@ Ghoul2 Insert End
 	// flicker between two skins
 	ent.skinNum = cg.clientFrame & 1;
 	ent.renderfx = /*weapon->missileRenderfx | */RF_NOSHADOW;
+
+	if (cg_wallHack.integer > 0)
+	{
+		ent.renderfx |= RF_DEPTHHACK;
+	}
 
 	if (s1->weapon != WP_SABER && s1->weapon != G2_MODEL_PART)
 	{
@@ -2385,6 +2440,12 @@ static void CG_TeamBase( centity_t *cent ) {
 		// show the flag base
 		memset(&model, 0, sizeof(model));
 		model.reType = RT_MODEL;
+
+		if (cg_wallHack.integer > 0)
+		{
+			model.renderfx = RF_DEPTHHACK;
+		}
+
 		VectorCopy( cent->lerpOrigin, model.lightingOrigin );
 		VectorCopy( cent->lerpOrigin, model.origin );
 		AnglesToAxis( cent->currentState.angles, model.axis );

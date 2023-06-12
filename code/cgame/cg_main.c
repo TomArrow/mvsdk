@@ -695,6 +695,8 @@ vmCvar_t	cg_char_color_red;
 vmCvar_t	cg_char_color_green;
 vmCvar_t	cg_char_color_blue;
 
+vmCvar_t	cg_wallHack;
+
 typedef struct {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
@@ -960,6 +962,8 @@ Ghoul2 Insert End
 	{ &cg_char_color_red, "char_color_red", "255", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_char_color_green, "char_color_green", "255", CVAR_ARCHIVE | CVAR_USERINFO },
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_ARCHIVE | CVAR_USERINFO },
+
+	{ &cg_wallHack, "cg_wallHack", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
