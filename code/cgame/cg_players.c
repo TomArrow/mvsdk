@@ -6381,6 +6381,15 @@ qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char 
 
 				if (doTrace)
 				{
+					if (cg_autoKick_debug.integer)
+					{
+						vec3_t r_mins;
+						vec3_t r_maxs;
+						VectorAdd(traceto, mins, r_mins);
+						VectorAdd(traceto, maxs, r_maxs);
+						CG_CubeOutline(r_mins, r_maxs, 1, COLOR_RED, 1);
+					}
+
 					CG_Trace(&trace, ps->origin, mins, maxs, traceto, ps->clientNum, contents);
 					VectorSubtract(ps->origin, traceto, idealNormal);
 					VectorNormalize(idealNormal);
@@ -6388,7 +6397,6 @@ qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char 
 
 				if (!doTrace || (trace.fraction < 1.0f && (trace.entityNum < MAX_CLIENTS || DotProduct(trace.plane.normal, idealNormal) > 0.7)))
 				{//there is a wall there.. or hit a client
-					int parts;
 					if (doTrace && anim != BOTH_WALL_RUN_LEFT && anim != BOTH_WALL_RUN_RIGHT)
 					{
 						if (trace.entityNum < MAX_CLIENTS && !cgs.clientinfo[trace.entityNum].isFriend)
@@ -6421,6 +6429,15 @@ qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char 
 
 				AngleVectors(fwdAngles, fwd, NULL, NULL);
 				VectorMA(ps->origin, 32, fwd, traceto);
+
+				if (cg_autoKick_debug.integer)
+				{
+					vec3_t r_mins;
+					vec3_t r_maxs;
+					VectorAdd(traceto, mins, r_mins);
+					VectorAdd(traceto, maxs, r_maxs);
+					CG_CubeOutline(r_mins, r_maxs, 1, COLOR_RED, 1);
+				}
 
 				CG_Trace(&trace, ps->origin, mins, maxs, traceto, ps->clientNum, MASK_PLAYERSOLID);//FIXME: clip brushes too?
 				VectorSubtract(ps->origin, traceto, idealNormal);
