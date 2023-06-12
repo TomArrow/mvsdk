@@ -709,6 +709,8 @@ vmCvar_t	cg_autoBackStab;
 vmCvar_t	cg_autoBackStab_debug;
 vmCvar_t	cg_autoBackStab_distance;
 vmCvar_t	cg_autoBackStab_usePrediction;
+vmCvar_t	cg_debugSaberBox;
+vmCvar_t	cg_debugSaberBox_usePrediction;
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -990,6 +992,8 @@ Ghoul2 Insert End
 	{ &cg_autoBackStab_debug, "cg_autoBackStab_debug", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 	{ &cg_autoBackStab_distance, "cg_autoBackStab_distance", "128.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 	{ &cg_autoBackStab_usePrediction, "cg_autoBackStab_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_debugSaberBox, "cg_debugSaberBox", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_debugSaberBox_usePrediction, "cg_debugSaberBox_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );

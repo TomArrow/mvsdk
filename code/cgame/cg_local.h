@@ -1806,6 +1806,8 @@ extern	vmCvar_t		cg_autoBackStab;
 extern	vmCvar_t		cg_autoBackStab_debug;
 extern	vmCvar_t		cg_autoBackStab_distance;
 extern	vmCvar_t		cg_autoBackStab_usePrediction;
+extern	vmCvar_t		cg_debugSaberBox;
+extern	vmCvar_t		cg_debugSaberBox_usePrediction;
 
 //
 // cg_main.c

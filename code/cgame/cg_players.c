@@ -6506,6 +6506,93 @@ void CG_DoAutoKick(void)
 	}
 }
 
+void CG_DrawSaberBox(centity_t *cent)
+{
+	mdxaBone_t	boltMatrix;
+	vec3_t properAngles, properOrigin;
+	vec3_t boltAngles, boltOrigin;
+	vec3_t end;
+	vec3_t legAxis[3];
+	vec3_t addVel;
+	vec3_t rawAngles;
+	float fVSpeed = 0.0f;
+	int torsoAnim;
+	int legsAnim;
+	int returnAfterUpdate = 0;
+	float animSpeedScale = 1.0f;
+	qboolean setTorso = qfalse;
+	vec3_t r_currentOrigin = { 0.0f, 0.0f, 0.0f };
+	vec3_t dbgMins;
+	vec3_t dbgMaxs;
+	const float SABER_BOX_SIZE = (jk2gameplay == VERSION_1_02 ? 8.0f : 16.0f);
+	vec3_t r_mins;
+	vec3_t r_maxs;
+	int i;
+
+	if (cg_debugSaberBox.integer == 0)
+	{
+		return;
+	}
+
+	VectorSet(r_mins, -SABER_BOX_SIZE, -SABER_BOX_SIZE, -SABER_BOX_SIZE);
+	VectorSet(r_maxs, SABER_BOX_SIZE, SABER_BOX_SIZE, SABER_BOX_SIZE);
+
+	torsoAnim = (cent->currentState.torsoAnim & ~ANIM_TOGGLEBIT);
+	legsAnim = (cent->currentState.legsAnim & ~ANIM_TOGGLEBIT);
+
+	VectorCopy(cent->lerpOrigin, properOrigin);
+	VectorCopy(cent->lerpAngles, properAngles);
+	VectorCopy(cent->currentState.pos.trDelta, addVel);
+	VectorNormalize(addVel);
+
+	for (i = 0; i < 3; i++)
+	{
+		if (cent->currentState.pos.trDelta[i] < 0)
+		{
+			fVSpeed += (-cent->currentState.pos.trDelta[i]);
+		}
+		else
+		{
+			fVSpeed += cent->currentState.pos.trDelta[i];
+		}
+	}
+
+	fVSpeed *= 0.08f;
+
+	for (i = 0; i < 3; i++)
+	{
+		properOrigin[i] += addVel[i] * fVSpeed;
+	}
+
+	properAngles[0] = 0;
+	properAngles[1] = cent->lerpAngles[YAW];
+	properAngles[2] = 0;
+
+	AnglesToAxis(properAngles, legAxis);
+	CG_G2PlayerAngles(cent, legAxis, properAngles);
+
+	trap_G2API_GetBoltMatrix(cent->ghoul2, 1, 0, &boltMatrix, properAngles, properOrigin, cg.time, cgs.gameModels, vec3_origin);
+
+	for (i = 0; i < 3; i++)
+	{
+		boltOrigin[i] = boltMatrix.matrix[i][3];
+		boltAngles[i] = -boltMatrix.matrix[i][1];
+	}
+
+	VectorCopy(boltAngles, rawAngles);
+	VectorMA(boltOrigin, 40, boltAngles, end);
+
+	if (cent->weapon == WP_SABER && !cent->currentState.shouldtarget)
+	{
+		VectorMA(boltOrigin, 20, boltAngles, r_currentOrigin);
+	}
+
+	VectorAdd(r_currentOrigin, r_mins, dbgMins);
+	VectorAdd(r_currentOrigin, r_maxs, dbgMaxs);
+
+	CG_CubeOutline(dbgMins, dbgMaxs, 1, COLOR_RED, 1);
+}
+
 /*
 ===============
 CG_Player
@@ -7437,6 +7524,8 @@ doEssentialTwo:
 		CG_DoAutoKick();
 		CG_DoAutoBackStab();
 	}
+
+	CG_DrawSaberBox(cent);
 
 	if (cent->currentState.weapon == WP_STUN_BATON && cent->currentState.number == cg.snap->ps.clientNum)
 	{
