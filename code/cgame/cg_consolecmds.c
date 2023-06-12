@@ -131,6 +131,16 @@ static void CG_AutoBackStabUp_f(void)
 	cg.doAutoBackStab = qfalse;
 }
 
+static void CG_AutoAimDown_f(void)
+{
+	cg.doAutoAim = qtrue;
+}
+
+static void CG_AutoAimUp_f(void)
+{
+	cg.doAutoAim = qfalse;
+}
+
 static void CG_FriendAdd_f(void)
 {
 	int clientNum = -1;
@@ -1421,6 +1431,8 @@ static consoleCommand_t	commands[] = {
 	{ "friendsList", CG_FriendsList_f },
 	{ "+autoBackStab", CG_AutoBackStabDown_f },
 	{ "-autoBackStab", CG_AutoBackStabUp_f },
+	{ "+autoAim", CG_AutoAimDown_f },
+	{ "-autoAim", CG_AutoAimUp_f },
 };
 
 

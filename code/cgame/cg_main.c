@@ -712,6 +712,10 @@ vmCvar_t	cg_autoBackStab_usePrediction;
 vmCvar_t	cg_debugSaberBox;
 vmCvar_t	cg_debugSaberBox_usePrediction;
 vmCvar_t	cg_friendsChatsOnly;
+vmCvar_t	cg_autoAim;
+vmCvar_t	cg_autoAim_debug;
+vmCvar_t	cg_autoAim_usePrediction;
+vmCvar_t	cg_autoAim_ignoreWalls;
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -996,6 +1000,10 @@ Ghoul2 Insert End
 	{ &cg_debugSaberBox, "cg_debugSaberBox", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 	{ &cg_debugSaberBox_usePrediction, "cg_debugSaberBox_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 	{ &cg_friendsChatsOnly, "cg_friendsChatsOnly", "0", CVAR_ARCHIVE | CVAR_GLOBAL },
+	{ &cg_autoAim, "cg_autoAim", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoAim_debug, "cg_autoAim_debug", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoAim_usePrediction, "cg_autoAim_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
+	{ &cg_autoAim_ignoreWalls, "cg_autoAim_ignoreWalls", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );

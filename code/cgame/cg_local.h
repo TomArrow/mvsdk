@@ -932,6 +932,8 @@ Ghoul2 Insert End
 	byte				autoKickDebugDirection;
 	qboolean			doAutoBackStab;
 	qboolean			isAutoBackStabActive;
+	qboolean			doAutoAim;
+	int					autoAimClient;
 	qboolean			isFriend[MAX_CLIENTS];
 } cg_t;
 
@@ -1809,6 +1811,10 @@ extern	vmCvar_t		cg_autoBackStab_usePrediction;
 extern	vmCvar_t		cg_debugSaberBox;
 extern	vmCvar_t		cg_debugSaberBox_usePrediction;
 extern	vmCvar_t		cg_friendsChatsOnly;
+extern	vmCvar_t		cg_autoAim;
+extern	vmCvar_t		cg_autoAim_debug;
+extern	vmCvar_t		cg_autoAim_usePrediction;
+extern	vmCvar_t		cg_autoAim_ignoreWalls;
 
 //
 // cg_main.c

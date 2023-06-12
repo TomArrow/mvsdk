@@ -6676,6 +6676,230 @@ void CG_DrawSaberBox(centity_t *cent)
 	CG_CubeOutline(dbgMins, dbgMaxs, 1, COLOR_RED, 1);
 }
 
+void CG_DoAutoAim(void)
+{
+	vec3_t a;
+	float distcheck;
+	float closest = 999999;
+	int bestindex = -1;
+	int i = 0;
+	float hasEnemyDist = 0;
+	clientInfo_t *ci;
+	centity_t *cent;
+	playerState_t *ps;
+	vec3_t eye;
+	trace_t tr;
+	
+	// aim conditions
+	qboolean doMinDistance = qfalse;
+	qboolean doCrosshair = qfalse;
+
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		cg.autoAimClient = 0;
+		return;
+	}
+
+	if (cg_entities[cg.clientNum].currentState.eFlags & EF_TALK)
+	{
+		cg.autoAimClient = 0;
+		return;
+	}
+
+	if (cg_autoAim.integer < 1 && cg.doAutoAim == qfalse)
+	{
+		cg.autoAimClient = 0;
+		return;
+	}
+
+	// 1 minimum distance only
+	// 2 crosshair then minimum distance
+	// 3 crosshair only
+	// 4 minimum distance only (press)
+	// 5 crosshair then minimum distance (press)
+	// 6 crosshair only (press)
+	switch (cg_autoAim.integer)
+	{
+		case 1:
+			doMinDistance = qtrue;
+			break;
+		case 2:
+			doMinDistance = qtrue;
+			doCrosshair = qtrue;
+			break;
+		case 3:
+			doCrosshair = qtrue;
+			break;
+		case 4:
+			if (cg.doAutoAim)
+			{
+				doMinDistance = qtrue;
+			}
+			break;
+		case 5:
+			if (cg.doAutoAim)
+			{
+				doMinDistance = qtrue;
+				doCrosshair = qtrue;
+			}
+			break;
+		case 6:
+			if (cg.doAutoAim)
+			{
+				doCrosshair = qtrue;
+			}
+			break;
+		default:
+			doMinDistance = qtrue;
+			break;
+	}
+
+	if (cg_autoAim_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	VectorCopy(ps->origin, eye);
+	eye[2] += ps->viewheight;
+
+	if (doCrosshair)
+	{
+		if (cg.autoAimClient != 0)
+		{
+			bestindex = cg.autoAimClient - 1;
+		}
+		else
+		{
+			bestindex = CG_CrosshairPlayer();
+		}
+	}
+
+	if (bestindex != -1)
+	{
+		if (cg.isFriend[bestindex])
+		{
+			bestindex = -1;
+		}
+	}
+
+	if (bestindex != -1)
+	{
+		ci = &cgs.clientinfo[bestindex];
+		cent = &cg_entities[bestindex];
+		cg.autoAimClient = bestindex + 1;
+	}
+	if (bestindex == -1 && doMinDistance)
+	{
+		for (i = 0; i < MAX_CLIENTS; i++)
+		{
+			ci = &cgs.clientinfo[i];
+			cent = &cg_entities[i];
+			if (!ci->infoValid)
+			{
+				continue;
+			}
+
+			if (i == cg.clientNum)
+			{
+				continue;
+			}
+
+			if (cg.isFriend[i])
+			{
+				continue;
+			}
+
+			if (cent->currentState.eFlags & EF_DEAD)
+			{
+				continue;
+			}
+
+			if (ci->team == TEAM_SPECTATOR)
+			{
+				continue;
+			}
+
+			VectorSubtract(cent->lerpOrigin, eye, a);
+			distcheck = VectorLength(a);
+			vectoangles(a, a);
+
+			if (distcheck < closest)
+			{
+				int mask = 0;
+
+				if (!cg_autoAim_ignoreWalls.integer)
+				{
+					mask |= MASK_SOLID;
+				}
+
+				CG_Trace(&tr, eye, NULL, NULL, cent->lerpOrigin, -1, mask);
+
+				if (tr.fraction != 1)
+				{
+					continue;
+				}
+
+				if (!hasEnemyDist || distcheck < (hasEnemyDist - 128))
+				{
+					closest = distcheck;
+					bestindex = i;
+				}
+			}
+		}
+	}
+
+	if (bestindex != (-1))
+	{
+		vec3_t viewangles;
+		vec3_t delta_angles;
+		vec3_t eorg;
+		int viewangles_integer[3];
+		const char no_value = 0;
+		int anim = 0;
+		cent = &cg_entities[bestindex];
+
+		VectorCopy(cent->lerpOrigin, eorg);
+
+		anim = cent->currentState.legsAnim & ~ANIM_TOGGLEBIT;
+
+		if (anim == BOTH_CROUCH1WALK || anim == BOTH_CROUCH1IDLE || CG_InRoll(cent) || CG_InKnockDown(anim))
+		{
+			eorg[2] += 12; // crouched
+		}
+		else
+		{
+			eorg[2] += 36; // default
+		}
+
+		VectorSubtract(eorg, eye, viewangles);
+		VectorNormalize(viewangles);
+		vectoangles(viewangles, viewangles);
+
+		for (i = 0; i < 3; i++)
+		{
+			delta_angles[i] = SHORT2ANGLE(ps->delta_angles[i]);
+		}
+
+		AnglesSubtract(viewangles, delta_angles, viewangles);
+
+		for (i = 0; i < 3; i++)
+		{
+			viewangles_integer[i] = ANGLE2SHORT(viewangles[i]);
+		}
+
+		trap_SetUserCmdValue(no_value, viewangles_integer, no_value, no_value, no_value, no_value, no_value, no_value, no_value, no_value, no_value, USERCMD_SET_ANGLES);
+		
+		if (cg_autoAim_debug.integer)
+		{
+			CG_TestLine(eye, eorg, 1, COLOR_RED, 1);
+		}
+	}
+}
+
 /*
 ===============
 CG_Player
@@ -7608,6 +7832,7 @@ doEssentialTwo:
 
 		if (cg.isAutoBackStabActive == qfalse)
 		{
+			CG_DoAutoAim();
 			CG_DoAutoKick();
 		}
 
