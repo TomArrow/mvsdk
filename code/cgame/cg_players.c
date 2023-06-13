@@ -1101,6 +1101,7 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		for (i = 0; i < MAX_CLIENTS; i++)
 		{
 			cg.directKills[i][clientNum] = 0;
+			cg.directKills[clientNum][i] = 0;
 		}
 
 		cg.totalKills[clientNum] = 0;
@@ -8442,9 +8443,9 @@ stillDoSaber:
 		if (cent->currentState.number != cg.snap->ps.duelIndex &&
 			cent->currentState.number != cg.snap->ps.clientNum)
 		{ //everyone not involved in the duel is drawn very dark
-			legs.shaderRGBA[0] = 50;
-			legs.shaderRGBA[1] = 50;
-			legs.shaderRGBA[2] = 50;
+			legs.shaderRGBA[0] /= 5.0f;
+			legs.shaderRGBA[1] /= 5.0f;
+			legs.shaderRGBA[2] /= 5.0f;
 			legs.renderfx |= RF_RGB_TINT;
 		}
 		else if (cg_privateDuelShell.integer)
@@ -8457,6 +8458,7 @@ stillDoSaber:
 			{
 				vec3_t vecSub;
 				float subLen = 0;
+				byte savRGBA[3];
 
 				VectorSubtract(duelEnt->lerpOrigin, cg.snap->ps.origin, vecSub);
 				subLen = VectorLength(vecSub);
@@ -8471,32 +8473,26 @@ stillDoSaber:
 					subLen = 1020;
 				}
 
-				legs.shaderRGBA[0] = 255 - subLen/4;
-				legs.shaderRGBA[1] = 255 - subLen/4;
-				legs.shaderRGBA[2] = 255 - subLen/4;
 
-				if (legs.shaderRGBA[2] < 1) legs.shaderRGBA[2] = 1;
+				savRGBA[0] = legs.shaderRGBA[0];
+				savRGBA[1] = legs.shaderRGBA[1];
+				savRGBA[2] = legs.shaderRGBA[2];
+				legs.shaderRGBA[0] = MAX(255-subLen/4,1);
+				legs.shaderRGBA[1] = MAX(255-subLen/4,1);
+				legs.shaderRGBA[2] = MAX(255-subLen/4,1);
 
 				legs.renderfx &= ~RF_RGB_TINT;
 				legs.renderfx &= ~RF_FORCE_ENT_ALPHA;
 				legs.customShader = cgs.media.forceShell;
 		
-				trap_R_AddRefEntityToScene( &legs );
+				trap_R_AddRefEntityToScene( &legs );	//draw the shell
 
-				legs.customShader = 0;
+				legs.customShader = 0;	//reset to player model
 
-				legs.shaderRGBA[0] = 255 - subLen/8;
-				legs.shaderRGBA[1] = 255 - subLen/8;
-				legs.shaderRGBA[2] = 255 - subLen/8;
+				legs.shaderRGBA[0] = MAX(savRGBA[0]-subLen/8,1);
+				legs.shaderRGBA[1] = MAX(savRGBA[1]-subLen/8,1);
+				legs.shaderRGBA[2] = MAX(savRGBA[2]-subLen/8,1);
 
-				if (legs.shaderRGBA[2] < 1)
-				{
-					legs.shaderRGBA[2] = 1;
-				}
-				if (legs.shaderRGBA[2] > 255)
-				{
-					legs.shaderRGBA[2] = 255;
-				}
 
 				if (subLen <= 1024)
 				{
