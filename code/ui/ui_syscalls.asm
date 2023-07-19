@@ -159,7 +159,43 @@ equ trap_R_RemapShader_1_02					 -89	; UI_R_REMAP_SHADER
 equ trap_SP_Register						-201	; UI_SP_REGISTER 
 equ trap_SP_GetStringTextString				-202	; UI_SP_GETSTRINGTEXTSTRING 
 equ trap_G2API_SetBoneAngles				-203	; UI_G2_ANGLEOVERRIDE 
-
+equ trap_R_ShaderNameFromIndex				-204	; UI_R_SHADERNAMEFROMINDEX 
+equ trap_SP_GetNumLanguages					-205	; UI_SP_GETNUMLANGUAGES 
+equ trap_GetLanguageName					-206	; UI_SP_GETLANGUAGENAME 
+equ trap_G2_ListModelSurfaces				-207	; UI_G2_LISTSURFACES 
+equ trap_G2_ListModelBones					-208	; UI_G2_LISTBONES 
+equ trap_G2_SetGhoul2ModelIndexes			-209	; UI_G2_SETMODELS 
+equ trap_G2_HaveWeGhoul2Models				-210	; UI_G2_HAVEWEGHOULMODELS 
+equ trap_G2API_GetBoltMatrix				-211	; UI_G2_GETBOLT 
+equ trap_G2API_GetBoltMatrix_NoReconstruct	-212	; UI_G2_GETBOLT_NOREC 
+equ trap_G2API_GetBoltMatrix_NoRecNoRot		-213	; UI_G2_GETBOLT_NOREC_NOROT 
+equ trap_G2API_InitGhoul2Model				-214	; UI_G2_INITGHOUL2MODEL 
+equ trap_G2API_CollisionDetect				-215	; UI_G2_COLLISIONDETECT 
+equ trap_G2API_CollisionDetectCache			-216	; UI_G2_COLLISIONDETECTCACHE 
+equ trap_G2API_CleanGhoul2Models			-217	; UI_G2_CLEANMODELS 
+equ trap_G2API_SetBoneAnim					-218	; UI_G2_PLAYANIM 
+equ trap_G2API_GetBoneAnim					-219	; UI_G2_GETBONEANIM 
+equ trap_G2API_GetBoneFrame					-220	; UI_G2_GETBONEFRAME 
+equ trap_G2API_GetGLAName					-221	; UI_G2_GETGLANAME 
+equ trap_G2API_CopyGhoul2Instance			-222	; UI_G2_COPYGHOUL2INSTANCE 
+equ trap_G2API_CopySpecificGhoul2Model		-223	; UI_G2_COPYSPECIFICGHOUL2MODEL 
+equ trap_G2API_DuplicateGhoul2Instance		-224	; UI_G2_DUPLICATEGHOUL2INSTANCE 
+equ trap_G2API_HasGhoul2ModelOnIndex		-225	; UI_G2_HASGHOUL2MODELONINDEX 
+equ trap_G2API_RemoveGhoul2Model			-226	; UI_G2_REMOVEGHOUL2MODEL 
+equ trap_G2API_AddBolt						-227	; UI_G2_ADDBOLT 
+equ trap_G2API_SetBoltInfo					-228	; UI_G2_SETBOLTON 
+equ trap_G2API_SetRootSurface				-229	; UI_G2_SETROOTSURFACE 
+equ trap_G2API_SetSurfaceOnOff				-230	; UI_G2_SETSURFACEONOFF 
+equ trap_G2API_SetNewOrigin					-231	; UI_G2_SETNEWORIGIN 
+equ trap_G2API_GetTime						-232	; UI_G2_GETTIME 
+equ trap_G2API_SetTime						-233	; UI_G2_SETTIME 
+equ trap_G2API_SetRagDoll					-234	; UI_G2_SETRAGDOLL 
+equ trap_G2API_AnimateG2Models				-235	; UI_G2_ANIMATEG2MODELS 
+equ trap_G2API_SetBoneIKState				-236	; UI_G2_SETBONEIKSTATE 
+equ trap_G2API_IKMove						-237	; UI_G2_IKMOVE 
+equ trap_G2API_GetSurfaceName				-238	; UI_G2_GETSURFACENAME 
+equ trap_G2API_SetSkin						-239	; UI_G2_SETSKIN 
+equ trap_G2API_AttachG2Model				-240	; UI_G2_ATTACHG2MODEL 
 
 ; hardcoded functions
 equ memset									-101	; UI_MEMSET 

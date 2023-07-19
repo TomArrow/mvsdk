@@ -142,6 +142,63 @@ Ghoul2 Insert Start
 /*
 Ghoul2 Insert End
 */
+
+	UI_R_SHADERNAMEFROMINDEX,
+	UI_SP_GETNUMLANGUAGES,
+	UI_SP_GETLANGUAGENAME,
+
+/*
+Ghoul2 Insert Start
+*/
+	UI_G2_LISTSURFACES,
+	UI_G2_LISTBONES,
+	UI_G2_SETMODELS,
+	UI_G2_HAVEWEGHOULMODELS,
+	UI_G2_GETBOLT,
+	UI_G2_GETBOLT_NOREC,
+	UI_G2_GETBOLT_NOREC_NOROT,
+	UI_G2_INITGHOUL2MODEL,
+	UI_G2_COLLISIONDETECT,
+	UI_G2_COLLISIONDETECTCACHE,
+	UI_G2_CLEANMODELS,
+	UI_G2_PLAYANIM,
+	UI_G2_GETBONEANIM,
+	UI_G2_GETBONEFRAME, //trimmed down version of GBA, so I don't have to pass all those unused args across the VM-exe border
+	UI_G2_GETGLANAME,
+	UI_G2_COPYGHOUL2INSTANCE,
+	UI_G2_COPYSPECIFICGHOUL2MODEL,
+	UI_G2_DUPLICATEGHOUL2INSTANCE,
+	UI_G2_HASGHOUL2MODELONINDEX,
+	UI_G2_REMOVEGHOUL2MODEL,
+	UI_G2_ADDBOLT,
+	UI_G2_SETBOLTON,
+	UI_G2_SETROOTSURFACE,
+	UI_G2_SETSURFACEONOFF,
+	UI_G2_SETNEWORIGIN,
+
+	UI_G2_GETTIME,
+	UI_G2_SETTIME,
+
+/*
+	//rww - RAGDOLL_BEGIN
+*/
+	UI_G2_SETRAGDOLL,
+	UI_G2_ANIMATEG2MODELS,
+/*
+	//rww - RAGDOLL_END
+*/
+
+	//rww - ik move method, allows you to specify a bone and move it to a world point (within joint constraints)
+	//by using the majority of gil's existing bone angling stuff from the ragdoll code.
+	UI_G2_SETBONEIKSTATE,
+	UI_G2_IKMOVE,
+
+	UI_G2_GETSURFACENAME,
+	UI_G2_SETSKIN,
+	UI_G2_ATTACHG2MODEL,
+/*
+Ghoul2 Insert End
+*/
 } uiImport_t;
 
 typedef enum {
@@ -279,7 +336,12 @@ typedef enum {
 	UIMENU_TEAM,
 	UIMENU_POSTGAME,
 	UIMENU_PLAYERFORCE,
-	UIMENU_MV_DOWNLOAD_POPUP
+	UIMENU_MV_DOWNLOAD_POPUP,
+	UIMENU_SIEGEMESSAGE,
+	UIMENU_SIEGEOBJECTIVES,
+	UIMENU_VOICECHAT,
+	UIMENU_CLOSEALL,
+	UIMENU_CLASSSEL,
 } uiMenuCommand_t;
 
 #define SORT_HOST			0
@@ -317,10 +379,12 @@ typedef enum {
 
 	UI_DRAW_CONNECT_SCREEN,
 //	void	UI_DrawConnectScreen( qboolean overlay );
-	UI_HASUNIQUECDKEY
+	UI_HASUNIQUECDKEY,
 // if !overlay, the background will be drawn, otherwise it will be
 // overlayed over whatever the cgame has drawn.
 // a GetClientState syscall will be made to get the current strings
+
+	UI_MENU_RESET,
 } uiExport_t;
 
 #endif

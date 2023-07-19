@@ -158,7 +158,22 @@ unsigned int trap_AnyLanguage_ReadCharFromString_1_02( const char **ppText )
 
 
 qhandle_t trap_R_RegisterShaderNoMip( const char *name ) {
+	char buf[1024];
+	
+	if (name[0] == '*') {
+		trap_Cvar_VariableStringBuffer(name+1, buf, sizeof(buf));
+		if (buf[0]) {
+			return syscall( UI_R_REGISTERSHADERNOMIP, &buf );
+		}
+	}
 	return syscall( UI_R_REGISTERSHADERNOMIP, name );
+}
+
+//added so I don't have to store a string containing the path of
+//the shader icon for a class -rww
+void trap_R_ShaderNameFromIndex(char *name, int index)
+{
+	syscall( UI_R_SHADERNAMEFROMINDEX, name, index );
 }
 
 void trap_R_ClearScene( void ) {
@@ -577,6 +592,16 @@ qboolean trap_SP_Register(char *file )
 	return syscall( UI_SP_REGISTER,file );
 }
 
+int trap_SP_GetNumLanguages( void )
+{
+	return syscall( UI_SP_GETNUMLANGUAGES );
+}
+
+void trap_GetLanguageName( const int languageIndex, char *buffer )
+{
+	syscall( UI_SP_GETLANGUAGENAME, languageIndex, buffer);
+}
+
 int trap_SP_GetStringTextString(const char *text, char *buffer, int bufferLength)
 {
 	return syscall( UI_SP_GETSTRINGTEXTSTRING, text, buffer, bufferLength );
@@ -584,6 +609,96 @@ int trap_SP_GetStringTextString(const char *text, char *buffer, int bufferLength
 /*
 Ghoul2 Insert Start
 */
+void trap_G2_ListModelSurfaces(void *ghlInfo)
+{
+	syscall( UI_G2_LISTSURFACES, ghlInfo);
+}
+
+void trap_G2_ListModelBones(void *ghlInfo, int frame)
+{
+	syscall( UI_G2_LISTBONES, ghlInfo, frame);
+}
+
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList)
+{
+	syscall( UI_G2_SETMODELS, ghoul2, modelList, skinList);
+}
+
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2)
+{
+	return (qboolean)(syscall(UI_G2_HAVEWEGHOULMODELS, ghoul2));
+}
+
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale)
+{
+	return (qboolean)(syscall(UI_G2_GETBOLT, ghoul2, modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale));
+}
+
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale)
+{ //Same as above but force it to not reconstruct the skeleton before getting the bolt position
+	return (qboolean)(syscall(UI_G2_GETBOLT_NOREC, ghoul2, modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale));
+}
+
+qboolean trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale)
+{ //Same as above but force it to not reconstruct the skeleton before getting the bolt position
+	return (qboolean)(syscall(UI_G2_GETBOLT_NOREC_NOROT, ghoul2, modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale));
+}
+
+int trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias)
+{
+	return syscall(UI_G2_INITGHOUL2MODEL, ghoul2Ptr, fileName, modelIndex, customSkin, customShader, modelFlags, lodBias);
+}
+
+qboolean trap_G2API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin)
+{
+	return syscall(UI_G2_SETSKIN, ghoul2, modelIndex, customSkin, renderSkin);
+}
+
+void trap_G2API_CollisionDetect ( 
+	CollisionRecord_t *collRecMap, 
+	void* ghoul2, 
+	const vec3_t angles, 
+	const vec3_t position,
+	int frameNumber, 
+	int entNum, 
+	const vec3_t rayStart, 
+	const vec3_t rayEnd, 
+	const vec3_t scale, 
+	int traceFlags, 
+	int useLod,
+	float fRadius
+	)
+{
+	syscall ( UI_G2_COLLISIONDETECT, collRecMap, ghoul2, angles, position, frameNumber, entNum, rayStart, rayEnd, scale, traceFlags, useLod, PASSFLOAT(fRadius) );
+}
+
+void trap_G2API_CollisionDetectCache ( 
+	CollisionRecord_t *collRecMap, 
+	void* ghoul2, 
+	const vec3_t angles, 
+	const vec3_t position,
+	int frameNumber, 
+	int entNum, 
+	const vec3_t rayStart, 
+	const vec3_t rayEnd, 
+	const vec3_t scale, 
+	int traceFlags, 
+	int useLod,
+	float fRadius
+	)
+{
+	syscall ( UI_G2_COLLISIONDETECTCACHE, collRecMap, ghoul2, angles, position, frameNumber, entNum, rayStart, rayEnd, scale, traceFlags, useLod, PASSFLOAT(fRadius) );
+}
+
+void trap_G2API_CleanGhoul2Models(void **ghoul2Ptr)
+{
+	syscall(UI_G2_CLEANMODELS, ghoul2Ptr);
+}
+
 qboolean trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
 								const int up, const int right, const int forward, qhandle_t *modelList,
 								int blendTime , int currentTime )
@@ -591,6 +706,119 @@ qboolean trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *bone
 	return (syscall(UI_G2_ANGLEOVERRIDE, ghoul2, modelIndex, boneName, angles, flags, up, right, forward, modelList, blendTime, currentTime));
 }
 
+qboolean trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime )
+{
+	return syscall(UI_G2_PLAYANIM, ghoul2, modelIndex, boneName, startFrame, endFrame, flags, PASSFLOAT(animSpeed), currentTime, PASSFLOAT(setFrame), blendTime);
+}
+
+qboolean trap_G2API_GetBoneAnim(void *ghoul2, const char *boneName, const int currentTime, float *currentFrame,
+						   int *startFrame, int *endFrame, int *flags, float *animSpeed, int *modelList, const int modelIndex)
+{
+	return syscall(UI_G2_GETBONEANIM, ghoul2, boneName, currentTime, currentFrame, startFrame, endFrame, flags, animSpeed, modelList, modelIndex);
+}
+
+qboolean trap_G2API_GetBoneFrame(void *ghoul2, const char *boneName, const int currentTime, float *currentFrame, int *modelList, const int modelIndex)
+{
+	return syscall(UI_G2_GETBONEFRAME, ghoul2, boneName, currentTime, currentFrame, modelList, modelIndex);
+}
+
+void trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf)
+{
+	syscall(UI_G2_GETGLANAME, ghoul2, modelIndex, fillBuf);
+}
+
+int trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex)
+{
+	return syscall(UI_G2_COPYGHOUL2INSTANCE, g2From, g2To, modelIndex);
+}
+
+void trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo)
+{
+	syscall(UI_G2_COPYSPECIFICGHOUL2MODEL, g2From, modelFrom, g2To, modelTo);
+}
+
+void trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To)
+{
+	syscall(UI_G2_DUPLICATEGHOUL2INSTANCE, g2From, g2To);
+}
+
+qboolean trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_G2_HASGHOUL2MODELONINDEX, ghlInfo, modelIndex);
+}
+
+qboolean trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_G2_REMOVEGHOUL2MODEL, ghlInfo, modelIndex);
+}
+
+int	trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName)
+{
+	return syscall(UI_G2_ADDBOLT, ghoul2, modelIndex, boneName);
+}
+
+void trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo)
+{
+	syscall(UI_G2_SETBOLTON, ghoul2, modelIndex, boltInfo);
+}
+
+qboolean trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName)
+{
+	return syscall(UI_G2_SETROOTSURFACE, ghoul2, modelIndex, surfaceName);
+}
+
+qboolean trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags)
+{
+	return syscall(UI_G2_SETSURFACEONOFF, ghoul2, surfaceName, flags);
+}
+
+qboolean trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex)
+{
+	return syscall(UI_G2_SETNEWORIGIN, ghoul2, boltIndex);
+}
+
+int trap_G2API_GetTime(void)
+{
+	return syscall(UI_G2_GETTIME);
+}
+
+void trap_G2API_SetTime(int time, int clock)
+{
+	syscall(UI_G2_SETTIME, time, clock);
+}
+
+//rww - RAGDOLL_BEGIN
+void trap_G2API_SetRagDoll(void *ghoul2, sharedRagDollParams_t *params)
+{
+	syscall(UI_G2_SETRAGDOLL, ghoul2, params);
+}
+
+void trap_G2API_AnimateG2Models(void *ghoul2, int time, sharedRagDollUpdateParams_t *params)
+{
+	syscall(UI_G2_ANIMATEG2MODELS, ghoul2, time, params);
+}
+//rww - RAGDOLL_END
+
+qboolean trap_G2API_SetBoneIKState(void *ghoul2, int time, const char *boneName, int ikState, sharedSetBoneIKStateParams_t *params)
+{
+	return syscall(UI_G2_SETBONEIKSTATE, ghoul2, time, boneName, ikState, params);
+}
+
+qboolean trap_G2API_IKMove(void *ghoul2, int time, sharedIKMoveParams_t *params)
+{
+	return syscall(UI_G2_IKMOVE, ghoul2, time, params);
+}
+
+void trap_G2API_GetSurfaceName(void *ghoul2, int surfNumber, int modelIndex, char *fillBuf)
+{
+	syscall(UI_G2_GETSURFACENAME, ghoul2, surfNumber, modelIndex, fillBuf);
+}
+
+qboolean trap_G2API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel)
+{
+	return syscall(UI_G2_ATTACHG2MODEL, ghoul2From, modelIndexFrom, ghoul2To, toBoltIndex, toModel);
+}
 /*
 Ghoul2 Insert End
 */
