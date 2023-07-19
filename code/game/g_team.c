@@ -925,7 +925,7 @@ gentity_t *SelectRandomTeamSpawnPoint( int teamstate, team_t team ) {
 
 	if (g_gametype.integer == GT_SAGA)
 	{
-		if (team == SAGATEAM_IMPERIAL)
+		if (team == SIEGETEAM_TEAM1)
 		{
 			classname = "info_player_imperial";
 		}

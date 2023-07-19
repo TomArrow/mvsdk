@@ -105,26 +105,7 @@ vec4_t colorTable[CT_MAX] =
 
 };
 
-char *HolocronIcons[] = {
-	"gfx/mp/f_icon_lt_heal",		//FP_HEAL,
-	"gfx/mp/f_icon_levitation",		//FP_LEVITATION,
-	"gfx/mp/f_icon_speed",			//FP_SPEED,
-	"gfx/mp/f_icon_push",			//FP_PUSH,
-	"gfx/mp/f_icon_pull",			//FP_PULL,
-	"gfx/mp/f_icon_lt_telepathy",	//FP_TELEPATHY,
-	"gfx/mp/f_icon_dk_grip",		//FP_GRIP,
-	"gfx/mp/f_icon_dk_l1",			//FP_LIGHTNING,
-	"gfx/mp/f_icon_dk_rage",		//FP_RAGE,
-	"gfx/mp/f_icon_lt_protect",		//FP_PROTECT,
-	"gfx/mp/f_icon_lt_absorb",		//FP_ABSORB,
-	"gfx/mp/f_icon_lt_healother",	//FP_TEAM_HEAL,
-	"gfx/mp/f_icon_dk_forceother",	//FP_TEAM_FORCE,
-	"gfx/mp/f_icon_dk_drain",		//FP_DRAIN,
-	"gfx/mp/f_icon_sight",			//FP_SEE,
-	"gfx/mp/f_icon_saber_attack",	//FP_SABERATTACK,
-	"gfx/mp/f_icon_saber_defend",	//FP_SABERDEFEND,
-	"gfx/mp/f_icon_saber_throw"		//FP_SABERTHROW
-};
+#include "holocronicons.h"
 
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
@@ -2568,7 +2549,7 @@ static qhandle_t CG_FeederItemImage(float feederID, int index) {
 	return 0;
 }
 
-static qboolean CG_FeederSelection(float feederID, int index) {
+static qboolean CG_FeederSelection(float feederID, int index, itemDef_t *item) {
 	if ( cgs.gametype >= GT_TEAM ) {
 		int i, count;
 		int team = (feederID == FEEDER_REDTEAM_LIST) ? TEAM_RED : TEAM_BLUE;

@@ -1,7 +1,7 @@
 #include "g_local.h"
 #include "bg_saga.h"
 
-char		saga_info[MAX_SAGA_INFO_SIZE];
+char		saga_info[MAX_SIEGE_INFO_SIZE];
 int			saga_valid;
 int			saga_round_over;
 
@@ -24,7 +24,7 @@ void InitSagaMode(void)
 	vmCvar_t		mapname;
 	char			levelname[512];
 	char			goalreq[64];
-	char			objectives[MAX_SAGA_INFO_SIZE];
+	char			objectives[MAX_SIEGE_INFO_SIZE];
 	int				len = 0;
 	fileHandle_t	f;
 
@@ -49,7 +49,7 @@ void InitSagaMode(void)
 
 	len = trap_FS_FOpenFile(levelname, &f, FS_READ);
 
-	if (!f || len >= MAX_SAGA_INFO_SIZE)
+	if (!f || len >= MAX_SIEGE_INFO_SIZE)
 	{
 		goto failure;
 	}
@@ -164,7 +164,7 @@ void BroadcastObjectiveCompletion(int team, int objective, int final, int client
 {
 	if (client != ENTITYNUM_NONE && g_entities[client].client && (int)g_entities[client].client->sess.sessionTeam == team)
 	{ //guy who completed this objective gets points, providing he's on the opposing team
-		AddScore(&g_entities[client], g_entities[client].client->ps.origin, SAGA_POINTS_OBJECTIVECOMPLETED);
+		AddScore(&g_entities[client], g_entities[client].client->ps.origin, SIEGE_POINTS_OBJECTIVECOMPLETED);
 	}
 	
 	SagaBroadcast_OBJECTIVECOMPLETE(team, client, objective);
@@ -184,11 +184,11 @@ void AddSagaWinningTeamPoints(int team, int winner)
 		{
 			if (i == winner)
 			{
-				AddScore(ent, ent->client->ps.origin, SAGA_POINTS_TEAMWONROUND+SAGA_POINTS_FINALOBJECTIVECOMPLETED);
+				AddScore(ent, ent->client->ps.origin, SIEGE_POINTS_TEAMWONROUND+SIEGE_POINTS_FINALOBJECTIVECOMPLETED);
 			}
 			else
 			{
-				AddScore(ent, ent->client->ps.origin, SAGA_POINTS_TEAMWONROUND);
+				AddScore(ent, ent->client->ps.origin, SIEGE_POINTS_TEAMWONROUND);
 			}
 		}
 
@@ -216,7 +216,7 @@ void SagaRoundComplete(int winningteam, int winningclient)
 
 	AddSagaWinningTeamPoints(winningteam, winningclient);
 
-	if (winningteam == SAGATEAM_IMPERIAL)
+	if (winningteam == SIEGETEAM_TEAM1)
 	{
 		LogExit( "The Imperials completed their final objective." );
 	}
@@ -237,7 +237,7 @@ void SagaObjectiveCompleted(int team, int objective, int final, int client)
 
 	if (final != -1)
 	{
-		if (team == SAGATEAM_IMPERIAL)
+		if (team == SIEGETEAM_TEAM1)
 		{
 			imperial_goals_completed++;
 		}
@@ -247,7 +247,7 @@ void SagaObjectiveCompleted(int team, int objective, int final, int client)
 		}
 	}
 
-	if (team == SAGATEAM_IMPERIAL)
+	if (team == SIEGETEAM_TEAM1)
 	{
 		goals_completed = imperial_goals_completed;
 		goals_required = imperial_goals_required;
@@ -290,8 +290,8 @@ void sagaTriggerUse(gentity_t *ent, gentity_t *other, gentity_t *activator)
 {
 	char			teamstr[64];
 	char			objectivestr[64];
-	char			objectives[MAX_SAGA_INFO_SIZE];
-	char			desiredobjective[MAX_SAGA_INFO_SIZE];
+	static char			objectives[MAX_SIEGE_INFO_SIZE];
+	static char			desiredobjective[MAX_SIEGE_INFO_SIZE];
 	int				clUser = ENTITYNUM_NONE;
 	int				final = 0;
 	int				i = 0;
@@ -306,7 +306,7 @@ void sagaTriggerUse(gentity_t *ent, gentity_t *other, gentity_t *activator)
 		clUser = activator->s.number;
 	}
 
-	if (ent->side == SAGATEAM_IMPERIAL)
+	if (ent->side == SIEGETEAM_TEAM1)
 	{
 		Com_sprintf(teamstr, sizeof(teamstr), "Imperial");
 	}

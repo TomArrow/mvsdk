@@ -9,7 +9,7 @@
 #include "g_local.h"
 #endif
 
-#ifdef JK2_UI
+#if defined(JK2MV_MENU) || defined(JK2_UI)
 #include "../ui/ui_local.h"
 #endif
 
@@ -490,6 +490,49 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber
 	powerOut[i] = 0;
 
 	return maintainsValidity;
+}
+
+// given a boltmatrix, return in vec a normalised vector for the axis requested in flags
+void BG_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec)
+{
+	switch (flags)
+	{
+	case ORIGIN:
+		vec[0] = boltMatrix->matrix[0][3];
+		vec[1] = boltMatrix->matrix[1][3];
+		vec[2] = boltMatrix->matrix[2][3];
+		break;
+	case POSITIVE_Y:
+		vec[0] = boltMatrix->matrix[0][1];
+		vec[1] = boltMatrix->matrix[1][1];
+		vec[2] = boltMatrix->matrix[2][1];
+ 		break;
+	case POSITIVE_X:
+		vec[0] = boltMatrix->matrix[0][0];
+		vec[1] = boltMatrix->matrix[1][0];
+		vec[2] = boltMatrix->matrix[2][0];
+		break;
+	case POSITIVE_Z:
+		vec[0] = boltMatrix->matrix[0][2];
+		vec[1] = boltMatrix->matrix[1][2];
+		vec[2] = boltMatrix->matrix[2][2];
+		break;
+	case NEGATIVE_Y:
+		vec[0] = -boltMatrix->matrix[0][1];
+		vec[1] = -boltMatrix->matrix[1][1];
+		vec[2] = -boltMatrix->matrix[2][1];
+		break;
+	case NEGATIVE_X:
+		vec[0] = -boltMatrix->matrix[0][0];
+		vec[1] = -boltMatrix->matrix[1][0];
+		vec[2] = -boltMatrix->matrix[2][0];
+		break;
+	case NEGATIVE_Z:
+		vec[0] = -boltMatrix->matrix[0][2];
+		vec[1] = -boltMatrix->matrix[1][2];
+		vec[2] = -boltMatrix->matrix[2][2];
+		break;
+	}
 }
 
 /*QUAKED item_***** ( 0 0 0 ) (-16 -16 -16) (16 16 16) suspended
@@ -2367,6 +2410,35 @@ PLAYER ANGLES
 
 =============================================================================
 */
+
+#if defined(JK2MV_MENU) || defined(JK2_UI)
+int BG_ModelCache(const char *modelName, const char *skinName)
+{
+#ifdef QAGAME
+	void *g2 = NULL;
+
+	if (skinName && skinName[0])
+	{
+		trap_R_RegisterSkin(skinName);
+	}
+
+	//I could hook up a precache ghoul2 function, but oh well, this works
+	trap_G2API_InitGhoul2Model(&g2, modelName, 0, 0, 0, 0, 0);
+	if (g2)
+	{ //now get rid of it
+		trap_G2API_CleanGhoul2Models(&g2);
+	}
+	return 0;
+#else
+	if (skinName && skinName[0])
+	{
+		trap_R_RegisterSkin(skinName);
+	}
+	return trap_R_RegisterModel(modelName);
+#endif
+}
+#endif
+
 #define MAX_POOL_SIZE	2048000 //1024000
 
 static char		bg_pool[MAX_POOL_SIZE];
@@ -2581,8 +2653,8 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	torsoAngles[YAW] = headAngles[YAW] + 0.25 * movementOffsets[ dir ];
 
 	// torso
-	BG_SwingAngles( torsoAngles[YAW], 25, 90, /*cg_swingSpeed.value*/ 0.3, torso_yawAngle, torso_yawing, frameTime );
-	BG_SwingAngles( legsAngles[YAW], 40, 90, /*cg_swingSpeed.value*/ 0.3, legs_yawAngle, legs_yawing, frameTime );
+	BG_SwingAngles( torsoAngles[YAW], 25.0f, 90.0f, /*cg_swingSpeed.value*/ 0.3f, torso_yawAngle, torso_yawing, frameTime );
+	BG_SwingAngles( legsAngles[YAW], 40.0f, 90.0f, /*cg_swingSpeed.value*/ 0.3f, legs_yawAngle, legs_yawing, frameTime );
 
 	torsoAngles[YAW] = *torso_yawAngle;
 	legsAngles[YAW] = *legs_yawAngle;
@@ -2595,7 +2667,7 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	} else {
 		dest = headAngles[PITCH] * 0.75;
 	}
-	BG_SwingAngles( dest, 15, 30, 0.1, torso_pitchAngle, torso_pitching, frameTime );
+	BG_SwingAngles( dest, 15.0f, 30.0f, 0.1f, torso_pitchAngle, torso_pitching, frameTime );
 	torsoAngles[PITCH] = *torso_pitchAngle;
 
 	// --------- roll -------------
@@ -2606,7 +2678,7 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 		vec3_t	axis[3];
 		float	side;
 
-		speed *= 0.05;
+		speed *= 0.05f;
 
 		AnglesToAxis( legsAngles, axis );
 		side = speed * DotProduct( velocity, axis[1] );

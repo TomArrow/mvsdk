@@ -169,25 +169,6 @@ typedef enum {
 	TFP_ABSORB
 } teamForcePowers_t;
 
-typedef struct
-{
-	// Actual trail stuff
-	int		inAction;	// controls whether should we even consider starting one
-	int		duration;	// how long each trail seg stays in existence
-	int		lastTime;	// time a saber segement was last stored
-	vec3_t	base;
-	vec3_t	tip;
-
-	vec3_t	dualbase;
-	vec3_t	dualtip;
-
-	// Marks stuff
-	qboolean	haveOldPos[2];
-	vec3_t		oldPos[2];
-	vec3_t		oldNormal[2];	// store this in case we don't have a connect-the-dots situation
-							//	..then we'll need the normal to project a mark blob onto the impact point
-} saberTrail_t;
-
 // centity_t have a direct corespondence with gentity_t in the game, but
 // only the entityState_t is directly communicated to the cgame
 typedef struct centity_s {

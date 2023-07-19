@@ -113,6 +113,8 @@ extern vmCvar_t	ui_smallFont;
 extern vmCvar_t	ui_bigFont;
 extern vmCvar_t ui_serverStatusTimeOut;
 
+extern vmCvar_t ui_bypassMainMenuLoad;
+
 // botfilter
 extern vmCvar_t	ui_botfilter;
 
@@ -344,7 +346,7 @@ extern sfxHandle_t	MenuField_Key( menufield_s* m, int* key );
 //
 // ui_main.c
 //
-qboolean UI_FeederSelection(float feederID, int index);
+qboolean UI_FeederSelection( float feederID, int index, itemDef_t *item );
 void UI_Report();
 void UI_Load();
 void UI_LoadMenus(const char *menuFile, qboolean reset);
@@ -637,7 +639,8 @@ typedef struct {
 #define MAX_DOWNLOADS 512
 #define MAX_DEMOS 256
 #define MAX_MOVIES 256
-//#define MAX_PLAYERMODELS 256
+#define MAX_Q3PLAYERMODELS 256
+#define MAX_PLAYERMODELS 32
 
 #define MAX_SCROLLTEXT_SIZE		4096
 #define MAX_SCROLLTEXT_LINES		64
@@ -764,6 +767,19 @@ typedef struct {
 	const char *modDescr;
 } modInfo_t;
 
+typedef struct {
+	char		Name[64];
+	int			SkinHeadCount;
+	char		SkinHeadNames[MAX_PLAYERMODELS][16];
+	int			SkinTorsoCount;
+	char		SkinTorsoNames[MAX_PLAYERMODELS][16];
+	int			SkinLegCount;
+	char		SkinLegNames[MAX_PLAYERMODELS][16];
+	char		ColorShader[MAX_PLAYERMODELS][64];
+	int			ColorCount;
+	char		ColorActionText[MAX_PLAYERMODELS][128];
+} playerSpeciesInfo_t;
+
 typedef struct q3Head_s q3Head_t;
 struct q3Head_s {
 	const char *name;
@@ -862,6 +878,8 @@ typedef struct {
 	sfxHandle_t newHighScoreSound;
 
 	int				q3HeadCount;
+	char			q3HeadNames[MAX_Q3PLAYERMODELS][64];
+	qhandle_t		q3HeadIcons[MAX_Q3PLAYERMODELS];
 	q3Head_t		*q3Heads;
 	int				q3SelectedHead;
 
@@ -875,6 +893,17 @@ typedef struct {
 	int effectsColor;
 
 	qboolean inGameLoad;
+
+	int					playerSpeciesCount;
+	playerSpeciesInfo_t	playerSpecies[MAX_PLAYERMODELS];
+	int					playerSpeciesIndex;
+
+	short		movesTitleIndex;
+	char		*movesBaseAnim;
+	int			moveAnimTime;
+
+	int			languageCount;
+	int			languageCountIndex;
 
 	float		virtualScreenHeightOn;	// renderer virtual screen height when widescreen is on
 	float		virtualScreenHeightOff;	// renderer virtual screen height when widescreen is off

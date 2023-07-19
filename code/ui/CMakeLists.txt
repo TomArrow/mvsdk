@@ -25,10 +25,13 @@ set(MVUISOURCES
 	"${SRCDir}/ui/ui_atoms.c"
 	"${SRCDir}/ui/ui_force.c"
 	"${SRCDir}/ui/ui_gameinfo.c"
+	"${SRCDir}/ui/ui_saber.c"
 	"${SRCDir}/ui/ui_shared.c"
 	"${SRCDir}/ui/ui_multiversion.c"
 
 	"${SRCDir}/game/bg_misc.c"
+	"${SRCDir}/game/bg_saberLoad.c"
+	"${SRCDir}/game/bg_saga.c"
 	"${SRCDir}/game/bg_weapons.c"
 	"${SRCDir}/game/q_math.c"
 	"${SRCDir}/game/q_shared.c"

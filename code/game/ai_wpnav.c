@@ -1417,7 +1417,7 @@ void CalculateSagaGoals(void)
 
 			if (wpindex != -1 && gWPArray[wpindex] && gWPArray[wpindex]->inuse)
 			{ //found the waypoint nearest the center of this objective-related object
-				if (ent->side == SAGATEAM_IMPERIAL)
+				if (ent->side == SIEGETEAM_TEAM1)
 				{
 					gWPArray[wpindex]->flags |= WPFLAG_SAGA_IMPERIALOBJ;
 				}

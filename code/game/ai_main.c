@@ -3158,7 +3158,7 @@ int SagaTakesPriority(bot_state_t *bs)
 		dosw = 1;
 	}
 
-	if (bcl->sess.sessionTeam == SAGATEAM_IMPERIAL)
+	if (bcl->sess.sessionTeam == SIEGETEAM_TEAM1)
 	{
 		attacker = imperial_attackers;
 		// flagForDefendableObjective = WPFLAG_SAGA_REBELOBJ;

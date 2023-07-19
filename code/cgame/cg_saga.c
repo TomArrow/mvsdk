@@ -7,7 +7,7 @@
 #define DEFAULT_WIN_ROUND			"sound/chars/kyle/prototype/personal.mp3"
 #define DEFAULT_LOSE_ROUND			"sound/chars/kyle/prototype/isntworking.mp3"
 
-char		cg_saga_info[MAX_SAGA_INFO_SIZE];
+char		cg_saga_info[MAX_SIEGE_INFO_SIZE];
 int			cg_saga_valid;
 
 //The following two functions are very cheap parsing functions
@@ -229,7 +229,7 @@ void CG_InitSagaMode(void)
 
 	len = trap_FS_FOpenFile(levelname, &f, FS_READ);
 
-	if (!f || len >= MAX_SAGA_INFO_SIZE)
+	if (!f || len >= MAX_SIEGE_INFO_SIZE)
 	{
 		goto failure;
 	}
@@ -248,7 +248,7 @@ void CG_SagaRoundOver(centity_t *ent, int won)
 {
 	int				myTeam;
 	char			teamstr[64];
-	char			objectives[MAX_SAGA_INFO_SIZE];
+	char			objectives[MAX_SIEGE_INFO_SIZE];
 	char			appstring[1024];
 	char			soundstr[1024];
 	int				success = 0;
@@ -271,7 +271,7 @@ void CG_SagaRoundOver(centity_t *ent, int won)
 		return;
 	}
 
-	if (myTeam == SAGATEAM_IMPERIAL)
+	if (myTeam == SIEGETEAM_TEAM1)
 	{
 		Q_strncpyz(teamstr, "Imperial", sizeof(teamstr));
 	}
@@ -331,8 +331,8 @@ void CG_SagaObjectiveCompleted(centity_t *ent, int won, int objectivenum)
 	int				myTeam;
 	char			teamstr[64];
 	char			objstr[256];
-	char			objectives[MAX_SAGA_INFO_SIZE];
-	char			foundobjective[MAX_SAGA_INFO_SIZE];
+	static char			objectives[MAX_SIEGE_INFO_SIZE];
+	static char			foundobjective[MAX_SIEGE_INFO_SIZE];
 	char			appstring[1024];
 	char			soundstr[1024];
 	int				success = 0;
@@ -357,7 +357,7 @@ void CG_SagaObjectiveCompleted(centity_t *ent, int won, int objectivenum)
 		return;
 	}
 
-	if (won == SAGATEAM_IMPERIAL)
+	if (won == SIEGETEAM_TEAM1)
 	{
 		Q_strncpyz(teamstr, "Imperial", sizeof(teamstr));
 	}
@@ -384,7 +384,7 @@ void CG_SagaObjectiveCompleted(centity_t *ent, int won, int objectivenum)
 
 		if (CGSagaGetValueGroup(objectives, objstr, foundobjective))
 		{
-			if (myTeam == SAGATEAM_IMPERIAL)
+			if (myTeam == SIEGETEAM_TEAM1)
 			{
 				success = CGSagaGetPairedValue(foundobjective, "message_imperial", appstring, 1);
 			}
@@ -398,7 +398,7 @@ void CG_SagaObjectiveCompleted(centity_t *ent, int won, int objectivenum)
 				Com_Printf("%s\n", appstring);
 			}
 
-			if (myTeam == SAGATEAM_IMPERIAL)
+			if (myTeam == SIEGETEAM_TEAM1)
 			{
 				Q_strncpyz(teamstr, "sound_imperial", sizeof(teamstr));
 			}
