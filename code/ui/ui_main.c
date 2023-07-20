@@ -11140,8 +11140,9 @@ void _UI_Init( qboolean inGameLoad ) {
 		if (!trap_SP_Register(va("menus%d",i)))	//, /*SP_REGISTER_REQUIRED|*/SP_REGISTER_MENU))
 			break;
 	}
-	trap_SP_Register("mv"); // language file
 
+	trap_SP_Register("mv"); // language file
+	trap_SP_Register("menus_jka");
 
 	Init_Display(&uiInfo.uiDC);
 
