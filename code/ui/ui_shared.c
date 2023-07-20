@@ -2514,7 +2514,7 @@ qboolean Item_TextScroll_HandleKey ( itemDef_t *item, int key, qboolean down, qb
 		max = Item_TextScroll_MaxScroll(item);
 
 		viewmax = (item->window.rect.h / scrollPtr->lineHeight);
-		if ( key == A_CURSOR_UP || key == A_KP_8 || key == A_MWHEELUP ) // Enable scrolling with the mousewheel.
+		if ( key == A_CURSOR_UP || key == A_KP_8 )
 		{
 			scrollPtr->startPos--;
 			if (scrollPtr->startPos < 0)
@@ -2524,7 +2524,7 @@ qboolean Item_TextScroll_HandleKey ( itemDef_t *item, int key, qboolean down, qb
 			return qtrue;
 		}
 
-		if ( key == A_CURSOR_DOWN || key == A_KP_2 || key == A_MWHEELDOWN ) // Enable scrolling with the mousewheel.
+		if ( key == A_CURSOR_DOWN || key == A_KP_2 )
 		{
 			scrollPtr->startPos++;
 			if (scrollPtr->startPos > max)
@@ -2532,6 +2532,33 @@ qboolean Item_TextScroll_HandleKey ( itemDef_t *item, int key, qboolean down, qb
 				scrollPtr->startPos = max;
 			}
 
+			return qtrue;
+		}
+
+		if ( key == A_MWHEELUP )
+		{
+			int count = DC->isDown( A_CTRL ) ? 5 : 1;
+			scrollPtr->startPos -= count;
+			if (scrollPtr->startPos < 0)
+			{
+				scrollPtr->startPos = 0;
+				Display_MouseMove(NULL, DC->cursorx, DC->cursory);
+				return qfalse;
+			}
+			Display_MouseMove(NULL, DC->cursorx, DC->cursory);
+			return qtrue;
+		}
+		if ( key == A_MWHEELDOWN )
+		{
+			int count = DC->isDown( A_CTRL ) ? 5 : 1;
+			scrollPtr->startPos += count;
+			if (scrollPtr->startPos > max)
+			{
+				scrollPtr->startPos = max;
+				Display_MouseMove(NULL, DC->cursorx, DC->cursory);
+				return qfalse;
+			}
+			Display_MouseMove(NULL, DC->cursorx, DC->cursory);
 			return qtrue;
 		}
 
@@ -3141,17 +3168,6 @@ qboolean Item_ListBox_HandleKey(itemDef_t *item, int key, qboolean down, qboolea
 				viewmax = (item->window.rect.h / listPtr->elementHeight);
 			}
 
-			if ( key == A_MWHEELUP || key == A_MWHEELDOWN )
-			{ // Enable scrolling with the mousewheel.
-				if ( key == A_MWHEELUP )	listPtr->startPos--;
-				if ( key == A_MWHEELDOWN )	listPtr->startPos++;
-
-				if ( listPtr->startPos > max ) listPtr->startPos = max;
-				if ( listPtr->startPos < 0 ) listPtr->startPos = 0;
-
-				return qtrue;
-			}
-
 			if ( key == A_CURSOR_UP || key == A_KP_8 ) 
 			{
 				if (!listPtr->notselectable) {
@@ -3200,6 +3216,33 @@ qboolean Item_ListBox_HandleKey(itemDef_t *item, int key, qboolean down, qboolea
 					if (listPtr->startPos > max)
 						listPtr->startPos = max;
 				}
+				return qtrue;
+			}
+
+			if ( key == A_MWHEELUP )
+			{
+				int count = DC->isDown( A_CTRL ) ? 5 : 1;
+				listPtr->startPos -= ((int)item->special == FEEDER_Q3HEADS) ? viewmax : count;
+				if (listPtr->startPos < 0)
+				{
+					listPtr->startPos = 0;
+					Display_MouseMove(NULL, DC->cursorx, DC->cursory);
+					return qfalse;
+				}
+				Display_MouseMove(NULL, DC->cursorx, DC->cursory);
+				return qtrue;
+			}
+			if ( key == A_MWHEELDOWN )
+			{
+				int count = DC->isDown( A_CTRL ) ? 5 : 1;
+				listPtr->startPos += ((int)item->special == FEEDER_Q3HEADS) ? viewmax : count;
+				if (listPtr->startPos > max)
+				{
+					listPtr->startPos = max;
+					Display_MouseMove(NULL, DC->cursorx, DC->cursory);
+					return qfalse;
+				}
+				Display_MouseMove(NULL, DC->cursorx, DC->cursory);
 				return qtrue;
 			}
 		}
@@ -3962,7 +4005,7 @@ qboolean Item_Slider_HandleKey(itemDef_t *item, int key, qboolean down) {
 			}
 		}
 	}
-	DC->Print("slider handle key exit\n");
+	//DC->Print("slider handle key exit\n");
 	return qfalse;
 }
 
