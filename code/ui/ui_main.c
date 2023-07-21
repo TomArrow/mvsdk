@@ -1377,6 +1377,7 @@ void _UI_Refresh( int realtime )
 }
 
 void UI_CleanupGhoul2(void);
+void UI_FreeAllSpecies(void);
 
 /*
 =================
@@ -1394,6 +1395,7 @@ void _UI_Shutdown( void ) {
 	// relevant or not.
 	trap_Cvar_Set("_ui_serverForceRank", va("%i", uiServerForceRank));
 	UI_CleanupGhoul2();
+	UI_FreeAllSpecies();
 }
 
 char *defaultMenu = NULL;
@@ -9352,34 +9354,34 @@ static const char *UI_FeederItemText(float feederID, int index, int column,
 	} 
 	else if (feederID == FEEDER_COLORCHOICES)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount)
 		{
-			*handle1 = trap_R_RegisterShaderNoMip( uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorShader[index]);
-			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorShader[index];
+			*handle1 = trap_R_RegisterShaderNoMip( uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Color[index].shader);
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Color[index].shader;
 		}
 	}
 	else if (feederID == FEEDER_PLAYER_SKIN_HEAD)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount)
 		{
-			*handle1 = trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadNames[index]));
-			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadNames[index];
+			*handle1 = trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHead[index].name));
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHead[index].name;
 		}
 	}
 	else if (feederID == FEEDER_PLAYER_SKIN_TORSO)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount)
 		{
-			*handle1 = trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoNames[index]));
-			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoNames[index];
+			*handle1 = trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorso[index].name));
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorso[index].name;
 		}
 	}
 	else if (feederID == FEEDER_PLAYER_SKIN_LEGS)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount)
 		{
-			*handle1 = trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegNames[index]));
-			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegNames[index];
+			*handle1 = trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLeg[index].name));
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLeg[index].name;
 		}
 	}
 	else if (feederID == FEEDER_SIEGE_BASE_CLASS)
@@ -9618,35 +9620,35 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
 			return uiInfo.mapList[index].levelShot;
 		}
 	}
-	else if (feederID == FEEDER_PLAYER_SKIN_HEAD) 
+	else if (feederID == FEEDER_PLAYER_SKIN_HEAD)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount)
 		{
 			//return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadIcons[index];
-			return trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadNames[index]));
+			return trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHead[index].name));
 		}
-	} 
-	else if (feederID == FEEDER_PLAYER_SKIN_TORSO) 
+	}
+	else if (feederID == FEEDER_PLAYER_SKIN_TORSO)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount)
 		{
 			//return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoIcons[index];
-			return trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoNames[index]));
+			return trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorso[index].name));
 		}
-	} 
-	else if (feederID == FEEDER_PLAYER_SKIN_LEGS) 
+	}
+	else if (feederID == FEEDER_PLAYER_SKIN_LEGS)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount)
 		{
 			//return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegIcons[index];
-			return trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegNames[index]));
+			return trap_R_RegisterShaderNoMip(va("models/players/%s/icon_%s", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Name, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLeg[index].name));
 		}
-	} 
+	}
 	else if (feederID == FEEDER_COLORCHOICES)
 	{
-		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount) 
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount)
 		{
-			return trap_R_RegisterShaderNoMip( uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorShader[index]);
+			return trap_R_RegisterShaderNoMip( uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Color[index].shader);
 		}
 	}
 
@@ -10242,38 +10244,41 @@ qboolean UI_FeederSelection(float feederFloat, int index, itemDef_t *item)
 	} else if (feederID == FEEDER_DEMOS) {
 		uiInfo.demoIndex = index;
 	}
-	else if (feederID == FEEDER_COLORCHOICES) 
+	else if (feederID == FEEDER_COLORCHOICES)
 	{
 		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount)
 		{
-			Item_RunScript(item, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorActionText[index]);
+			Item_RunScript(item, uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Color[index].actionText);
 		}
 	}
-	else if (feederID == FEEDER_PLAYER_SKIN_HEAD) 
+	else if (feederID == FEEDER_PLAYER_SKIN_HEAD)
 	{
 		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount)
 		{
-			trap_Cvar_Set("ui_char_skin_head", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadNames[index]);
+			trap_Cvar_Set("ui_char_skin_head", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHead[index].name);
 		}
-	} 
-	else if (feederID == FEEDER_PLAYER_SKIN_TORSO) 
+	}
+	else if (feederID == FEEDER_PLAYER_SKIN_TORSO)
 	{
 		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount)
 		{
-			trap_Cvar_Set("ui_char_skin_torso", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoNames[index]);
+			trap_Cvar_Set("ui_char_skin_torso", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorso[index].name);
 		}
-	} 
-	else if (feederID == FEEDER_PLAYER_SKIN_LEGS) 
+	}
+	else if (feederID == FEEDER_PLAYER_SKIN_LEGS)
 	{
 		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount)
 		{
-			trap_Cvar_Set("ui_char_skin_legs", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegNames[index]);
+			trap_Cvar_Set("ui_char_skin_legs", uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLeg[index].name);
 		}
-	} 
-	else if (feederID == FEEDER_PLAYER_SPECIES) 
+	}
+	else if (feederID == FEEDER_PLAYER_SPECIES)
 	{
-		uiInfo.playerSpeciesIndex = index;
-	} 
+		if (index >= 0 && index < uiInfo.playerSpeciesCount)
+		{
+			uiInfo.playerSpeciesIndex = index;
+		}
+	}
 	else if (feederID == FEEDER_LANGUAGES) 
 	{
 		uiInfo.languageCountIndex = index;
@@ -10834,7 +10839,10 @@ static qboolean UI_ParseColorData(char* buf, playerSpeciesInfo_t *species,char*	
 	p = buf;
 	COM_BeginParseSession(file);
 	species->ColorCount = 0;
-
+#ifdef DYNAMIC_PLAYER_SPECIES
+	species->ColorMax = 16;
+	species->Color = (playerColor_t *)malloc(species->ColorMax * sizeof(playerColor_t));
+#endif
 	while ( p )
 	{
 		token = COM_ParseExt( &p, qtrue );	//looking for the shader
@@ -10842,7 +10850,16 @@ static qboolean UI_ParseColorData(char* buf, playerSpeciesInfo_t *species,char*	
 		{
 			return species->ColorCount;
 		}
-		Q_strncpyz( species->ColorShader[species->ColorCount], token, sizeof(species->ColorShader[0]) );
+#ifdef DYNAMIC_PLAYER_SPECIES
+		if (species->ColorCount >= species->ColorMax)
+		{
+			species->ColorMax *= 2;
+			species->Color = (playerColor_t *)realloc(species->Color, species->ColorMax * sizeof(playerColor_t));
+		}
+#endif
+		memset(&species->Color[species->ColorCount], 0, sizeof(playerColor_t));
+
+		Q_strncpyz( species->Color[species->ColorCount].shader, token, MAX_QPATH );
 
 		token = COM_ParseExt( &p, qtrue );	//looking for action block {
 		if ( token[0] != '{' )
@@ -10850,7 +10867,6 @@ static qboolean UI_ParseColorData(char* buf, playerSpeciesInfo_t *species,char*	
 			return qfalse;
 		}
 
-		assert(!species->ColorActionText[species->ColorCount][0]);
 		token = COM_ParseExt( &p, qtrue );	//looking for action commands
 		while (token[0] != '}')
 		{
@@ -10858,9 +10874,8 @@ static qboolean UI_ParseColorData(char* buf, playerSpeciesInfo_t *species,char*	
 			{	//EOF
 				return qfalse;
 			}
-			assert(species->ColorCount < sizeof(species->ColorActionText)/sizeof(species->ColorActionText[0]) );
-			Q_strcat(species->ColorActionText[species->ColorCount], sizeof(species->ColorActionText[0]), token);
-			Q_strcat(species->ColorActionText[species->ColorCount], sizeof(species->ColorActionText[0]), " ");
+			Q_strcat(species->Color[species->ColorCount].actionText, ACTION_BUFFER_SIZE, token);
+			Q_strcat(species->Color[species->ColorCount].actionText, ACTION_BUFFER_SIZE, " ");
 			token = COM_ParseExt( &p, qtrue );	//looking for action commands or final }
 		}
 		species->ColorCount++;	//next color please
@@ -10868,38 +10883,86 @@ static qboolean UI_ParseColorData(char* buf, playerSpeciesInfo_t *species,char*	
 	return qtrue;//never get here
 }
 
+static void UI_FreeSpecies( playerSpeciesInfo_t *species )
+{
+#ifdef DYNAMIC_PLAYER_SPECIES
+	free(species->SkinHead);
+	free(species->SkinTorso);
+	free(species->SkinLeg);
+	free(species->Color);
+#endif
+	memset(species, 0, sizeof(playerSpeciesInfo_t));
+}
+
+void UI_FreeAllSpecies( void )
+{
+	int i;
+
+	for (i = 0; i < uiInfo.playerSpeciesCount; i++)
+	{
+		UI_FreeSpecies(&uiInfo.playerSpecies[i]);
+	}
+
+#ifdef DYNAMIC_PLAYER_SPECIES
+	free(uiInfo.playerSpecies);
+#endif
+}
+
 /*
 =================
 UI_BuildPlayerModel_List
 =================
 */
-static void UI_BuildPlayerModel_List( qboolean inGameLoad )
+void UI_BuildPlayerModel_List( qboolean inGameLoad )
 {
-	int		numdirs;
-	char	dirlist[2048];
-	char*	dirptr;
-	int		dirlen;
-	int		i;
-	int		j;
+	static const size_t DIR_LIST_SIZE = 16384;
 
+	int			numdirs;
+	size_t		dirListSize = DIR_LIST_SIZE;
+	char		stackDirList[8192];
+	char		*dirlist = NULL;
+	char		*dirptr;
+	int			dirlen;
+	int			i, j;
+	int			w = 0;
+
+#ifdef DYNAMIC_PLAYER_SPECIES
+	dirlist = malloc(DIR_LIST_SIZE);
+#endif
+	if ( !dirlist )
+	{
+#ifdef DYNAMIC_PLAYER_SPECIES
+		Com_Printf(S_COLOR_YELLOW "WARNING: Failed to allocate %u bytes of memory for player model "
+			"directory list. Using stack allocated buffer of %u bytes instead.",
+			DIR_LIST_SIZE, sizeof(stackDirList));
+#endif
+		dirlist = stackDirList;
+		dirListSize = sizeof(stackDirList);
+	}
 
 	uiInfo.playerSpeciesCount = 0;
 	uiInfo.playerSpeciesIndex = 0;
+#ifdef DYNAMIC_PLAYER_SPECIES
+	uiInfo.playerSpeciesMax = 8;
+	uiInfo.playerSpecies = (playerSpeciesInfo_t *)malloc(uiInfo.playerSpeciesMax * sizeof(playerSpeciesInfo_t));
+#endif
+
+#ifndef DYNAMIC_PLAYER_SPECIES
 	memset(uiInfo.playerSpecies, 0, sizeof (uiInfo.playerSpecies) );
+#endif
 
 	// iterate directory of all player models
-	numdirs = trap_FS_GetFileList("models/players", "/", dirlist, 2048 );
+	numdirs = trap_FS_GetFileList("models/players", "/", dirlist, dirListSize );
 	dirptr  = dirlist;
 	for (i=0; i<numdirs; i++,dirptr+=dirlen+1)
 	{
-		char	filelist[2048];
-		char*	fileptr;
+		char	*fileptr;
 		int		filelen;
-		int f = 0;
-		char fpath[2048];
+		int		f = 0;
+		char	fpath[MAX_QPATH];
 
 		dirlen = strlen(dirptr);
-		
+
 		if (dirlen)
 		{
 			if (dirptr[dirlen-1]=='/')
@@ -10910,86 +10973,149 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 			continue;
 		}
 
-		if (!strcmp(dirptr,".") || !strcmp(dirptr,".."))
+		if (!Q_stricmp(dirptr, ".") || !Q_stricmp(dirptr, ".."))
 			continue;
-			
-		Com_sprintf(fpath, 2048, "models/players/%s/PlayerChoice.txt", dirptr);
+
+		Com_sprintf(fpath, sizeof(fpath), "models/players/%s/PlayerChoice.txt", dirptr);
 		filelen = trap_FS_FOpenFile(fpath, &f, FS_READ);
 
 		if (f)
-		{ 
-			char buffer[2048];
-			char	skinname[64];
-			int		numfiles;
-			int		iSkinParts=0;
-
-			trap_FS_Read(&buffer, filelen, f);
-			trap_FS_FCloseFile(f);
-			buffer[filelen] = 0;	//ensure trailing NULL
-
-			//record this species
-			Q_strncpyz( uiInfo.playerSpecies[uiInfo.playerSpeciesCount].Name, dirptr, sizeof(uiInfo.playerSpecies[0].Name) );
-
-			if (!UI_ParseColorData(buffer,&uiInfo.playerSpecies[uiInfo.playerSpeciesCount],fpath))
+		{
+			char	filelist[2048];
+			playerSpeciesInfo_t *species = NULL;
+			char                 skinname[64];
+			int                  numfiles;
+			int                  iSkinParts=0;
+#ifdef DYNAMIC_PLAYER_SPECIES
+			char                *buffer = NULL;
+			buffer = malloc(filelen + 1);
+			if (!buffer)
 			{
-				Com_Printf(S_COLOR_RED"UI_BuildPlayerModel_List: Errors parsing '%s'\n", fpath);
+				trap_FS_FCloseFile( f );
+				Com_Error(ERR_FATAL, "Could not allocate buffer to read %s", fpath);
+			}
+			
+#endif
+
+#ifndef DYNAMIC_PLAYER_SPECIES
+			char				buffer[2048];
+			if (filelen > 0 && filelen > sizeof(buffer))
+			{
+				filelen = sizeof(buffer);
+			}
+#endif
+			if (filelen > 0)
+			{
+				trap_FS_Read(buffer, filelen, f);
+				buffer[filelen] = 0;
+			}
+			else
+			{
+				buffer[0] = 0;
 			}
 
-			numfiles = trap_FS_GetFileList( va("models/players/%s",dirptr), ".skin", filelist, 2048 );
+			trap_FS_FCloseFile(f);
+
+			//record this species
+#ifdef DYNAMIC_PLAYER_SPECIES
+			if (uiInfo.playerSpeciesCount >= uiInfo.playerSpeciesMax)
+			{
+				uiInfo.playerSpeciesMax *= 2;
+				uiInfo.playerSpecies = (playerSpeciesInfo_t *)realloc(uiInfo.playerSpecies, uiInfo.playerSpeciesMax*sizeof(playerSpeciesInfo_t));
+			}
+#endif
+			species = &uiInfo.playerSpecies[uiInfo.playerSpeciesCount];
+			memset(species, 0, sizeof(playerSpeciesInfo_t));
+			Q_strncpyz( species->Name, dirptr, MAX_QPATH );
+
+			if (!UI_ParseColorData(buffer,species,fpath))
+			{
+				Com_Printf(S_COLOR_RED "UI_BuildPlayerModel_List: Errors parsing '%s'\n", fpath);
+			}
+
+#ifdef DYNAMIC_PLAYER_SPECIES
+			species->SkinHeadMax = 8;
+			species->SkinTorsoMax = 8;
+			species->SkinLegMax = 8;
+
+			species->SkinHead = (skinName_t *)malloc(species->SkinHeadMax * sizeof(skinName_t));
+			species->SkinTorso = (skinName_t *)malloc(species->SkinTorsoMax * sizeof(skinName_t));
+			species->SkinLeg = (skinName_t *)malloc(species->SkinLegMax * sizeof(skinName_t));
+
+			free(buffer);
+#endif
+			numfiles = trap_FS_GetFileList( va("models/players/%s",dirptr), ".skin", filelist, sizeof(filelist) );
 			fileptr  = filelist;
 			for (j=0; j<numfiles; j++,fileptr+=filelen+1)
 			{
 				if (trap_Cvar_VariableValue("fs_copyfiles") > 0 )
 				{
 					trap_FS_FOpenFile(va("models/players/%s/%s",dirptr,fileptr), &f, FS_READ);
-					if (f) trap_FS_FCloseFile(f);
+					if (f)
+						trap_FS_FCloseFile(f);
 				}
 
 				filelen = strlen(fileptr);
-				COM_StripExtension(fileptr, skinname, sizeof(skinname));
+				COM_StripExtension(fileptr,skinname,sizeof(skinname));
 
 				if (bIsImageFile(dirptr, skinname))
 				{ //if it exists
 					if (Q_stricmpn(skinname,"head_",5) == 0)
 					{
-						if (uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinHeadCount < MAX_PLAYERMODELS) 
+#ifdef DYNAMIC_PLAYER_SPECIES
+						if (species->SkinHeadCount >= species->SkinHeadMax)
 						{
-							Q_strncpyz(
-								uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinHeadNames[uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinHeadCount++], 
-								skinname, 
-								sizeof(uiInfo.playerSpecies[0].SkinHeadNames[0])
-								);
+							species->SkinHeadMax *= 2;
+							species->SkinHead = (skinName_t *)realloc(species->SkinHead, species->SkinHeadMax*sizeof(skinName_t));
+						}
+#endif
+#ifndef DYNAMIC_PLAYER_SPECIES
+						if (species->SkinHeadCount < MAX_PLAYERMODELS)
+#endif
+						{
+							Q_strncpyz(species->SkinHead[species->SkinHeadCount++].name, skinname, SKIN_LENGTH);
 							iSkinParts |= 1<<0;
 						}
-					} else
-					if (Q_stricmpn(skinname,"torso_",6) == 0)
+					}
+					else if (Q_stricmpn(skinname,"torso_",6) == 0)
 					{
-						if (uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinTorsoCount < MAX_PLAYERMODELS) 
+#ifdef DYNAMIC_PLAYER_SPECIES
+						if (species->SkinTorsoCount >= species->SkinTorsoMax)
 						{
-							Q_strncpyz(uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinTorsoNames[uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinTorsoCount++], 
-								skinname, 
-								sizeof(uiInfo.playerSpecies[0].SkinTorsoNames[0])
-								);
+							species->SkinTorsoMax *= 2;
+							species->SkinTorso = (skinName_t *)realloc(species->SkinTorso, species->SkinTorsoMax*sizeof(skinName_t));
+						}
+#endif
+#ifndef DYNAMIC_PLAYER_SPECIES
+						if (species->SkinTorsoCount < MAX_PLAYERMODELS)
+#endif
+						{
+							Q_strncpyz(species->SkinTorso[species->SkinTorsoCount++].name, skinname, SKIN_LENGTH);
 							iSkinParts |= 1<<1;
 						}
-					} else
-					if (Q_stricmpn(skinname,"lower_",6) == 0)
+					}
+					else if (Q_stricmpn(skinname,"lower_",6) == 0)
 					{
-						if (uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinLegCount < MAX_PLAYERMODELS) 
+#ifdef DYNAMIC_PLAYER_SPECIES
+						if (species->SkinLegCount >= species->SkinLegMax)
 						{
-							Q_strncpyz(uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinLegNames[uiInfo.playerSpecies[uiInfo.playerSpeciesCount].SkinLegCount++], 
-								skinname, 
-								sizeof(uiInfo.playerSpecies[0].SkinLegNames[0]) 
-								);
-								iSkinParts |= 1<<2;
+							species->SkinLegMax *= 2;
+							species->SkinLeg = (skinName_t *)realloc(species->SkinLeg, species->SkinLegMax*sizeof(skinName_t));
+						}
+#endif
+#ifndef DYNAMIC_PLAYER_SPECIES
+						if (species->SkinLegCount < MAX_PLAYERMODELS)
+#endif
+						{
+							Q_strncpyz(species->SkinLeg[species->SkinLegCount++].name, skinname, SKIN_LENGTH);
+							iSkinParts |= 1<<2;
 						}
 					}
-					
 				}
 			}
 			if (iSkinParts != 7)
 			{	//didn't get a skin for each, then skip this model.
-				memset(&uiInfo.playerSpecies[uiInfo.playerSpeciesCount], 0, sizeof(uiInfo.playerSpecies[uiInfo.playerSpeciesCount]));//undo the colors
+				UI_FreeSpecies(species);
 				continue;
 			}
 			uiInfo.playerSpeciesCount++;
@@ -11005,13 +11131,20 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 					trap_G2API_CleanGhoul2Models (&ghoul2);
 				}
 			}
+#ifndef DYNAMIC_PLAYER_SPECIES
 			if (uiInfo.playerSpeciesCount >= MAX_PLAYERMODELS)
 			{
 				return;
 			}
+#endif
 		}
-	}	
-
+	}
+#ifdef DYNAMIC_PLAYER_SPECIES
+	if ( dirlist != stackDirList )
+	{
+		free(dirlist);
+	}
+#endif
 }
 
 

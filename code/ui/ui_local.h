@@ -11,6 +11,15 @@
 #include "ui_shared.h"
 #include "../api/mvmenu.h"
 
+#ifndef Q3_VM
+// allow use of malloc, realloc, free
+#define UI_ALLOW_DYNAMIC_MEMORY
+#endif
+
+#ifdef UI_ALLOW_DYNAMIC_MEMORY
+#define DYNAMIC_PLAYER_SPECIES
+#endif
+
 // global display context
 
 extern vmCvar_t	ui_ffa_fraglimit;
@@ -767,17 +776,39 @@ typedef struct {
 	const char *modDescr;
 } modInfo_t;
 
+#define SKIN_LENGTH			16
+#define ACTION_BUFFER_SIZE	128
+
 typedef struct {
-	char		Name[64];
-	int			SkinHeadCount;
-	char		SkinHeadNames[MAX_PLAYERMODELS][16];
-	int			SkinTorsoCount;
-	char		SkinTorsoNames[MAX_PLAYERMODELS][16];
-	int			SkinLegCount;
-	char		SkinLegNames[MAX_PLAYERMODELS][16];
-	char		ColorShader[MAX_PLAYERMODELS][64];
-	int			ColorCount;
-	char		ColorActionText[MAX_PLAYERMODELS][128];
+	char name[SKIN_LENGTH];
+} skinName_t;
+
+typedef struct {
+	char shader[MAX_QPATH];
+	char actionText[ACTION_BUFFER_SIZE];
+} playerColor_t;
+
+typedef struct playerSpeciesInfo_s {
+	char			Name[MAX_QPATH];
+	int				SkinHeadCount;
+	int				SkinTorsoCount;
+	int				SkinLegCount;
+	int				ColorCount;
+#ifdef DYNAMIC_PLAYER_SPECIES
+	int				SkinHeadMax;
+	int				SkinTorsoMax;
+	int				SkinLegMax;
+	int				ColorMax;
+	skinName_t		*SkinHead;
+	skinName_t		*SkinTorso;
+	skinName_t		*SkinLeg;
+	playerColor_t	*Color;
+#else
+	skinName_t		SkinHead[MAX_PLAYERMODELS];
+	skinName_t		SkinTorso[MAX_PLAYERMODELS];
+	skinName_t		SkinLeg[MAX_PLAYERMODELS];
+	playerColor_t	Color[MAX_PLAYERMODELS];
+#endif
 } playerSpeciesInfo_t;
 
 typedef struct q3Head_s q3Head_t;
@@ -894,9 +925,15 @@ typedef struct {
 
 	qboolean inGameLoad;
 
-	int					playerSpeciesCount;
-	playerSpeciesInfo_t	playerSpecies[MAX_PLAYERMODELS];
-	int					playerSpeciesIndex;
+#ifdef DYNAMIC_PLAYER_SPECIES
+	int						playerSpeciesMax;
+	playerSpeciesInfo_t		*playerSpecies;
+#else
+	playerSpeciesInfo_t		playerSpecies[MAX_PLAYERMODELS];
+#endif
+	
+	int						playerSpeciesCount;
+	int						playerSpeciesIndex;
 
 	short		movesTitleIndex;
 	char		*movesBaseAnim;
