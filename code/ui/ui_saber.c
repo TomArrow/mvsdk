@@ -301,15 +301,18 @@ qboolean UI_SaberProperNameForSaber( const char *saberName, char *saberProperNam
 {
 	char	stringedSaberName[1024];
 	qboolean ret = UI_SaberParseParm( saberName, "name", stringedSaberName );
+
+	saberProperName[0] = '\0';
+
 	// if it's a stringed reference translate it
 	if( ret && stringedSaberName && stringedSaberName[0] == '@')
 	{
-		trap_SP_GetStringTextString(&stringedSaberName[1], saberProperName, 1024);
+		trap_SP_GetStringTextString(&stringedSaberName[1], saberProperName, MAX_STRING_CHARS);
 	}
-	else
+	if (saberProperName[0] == '\0')
 	{
 		// no stringed so just use it as it
-		strcpy( saberProperName, stringedSaberName );
+		Q_strncpyz( saberProperName, stringedSaberName, MAX_STRING_CHARS );
 	}
 
 	return ret;
