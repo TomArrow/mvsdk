@@ -944,9 +944,9 @@ Ghoul2 Insert End
 
 	{ &cg_drawKillMessage, "cg_drawKillMessage", "1", CVAR_ARCHIVE },
 	{ &cg_showKills, "cg_showKills", "0", CVAR_ARCHIVE },
-	{ &cg_char_color_red, "char_color_red", "255", CVAR_ARCHIVE },
-	{ &cg_char_color_green, "char_color_green", "255", CVAR_ARCHIVE },
-	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_ARCHIVE },
+	{ &cg_char_color_red, "char_color_red", "255", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_GLOBAL },
+	{ &cg_char_color_green, "char_color_green", "255", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_GLOBAL },
+	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_ARCHIVE | CVAR_USERINFO | CVAR_GLOBAL },
 	{ &cg_drawLocalTime, "cg_drawLocalTime", "0", CVAR_ARCHIVE },
 	{ &cg_drawLocalTimeX, "cg_drawLocalTimeX", "400", CVAR_ARCHIVE },
 	{ &cg_drawLocalTimeY, "cg_drawLocalTimeY", "460", CVAR_ARCHIVE },
