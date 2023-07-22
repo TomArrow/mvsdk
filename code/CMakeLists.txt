@@ -10,6 +10,7 @@ configure_file("mvsdk_setup.h.in" "${CMAKE_BINARY_DIR}/mvsdk_setup.h" @ONLY)
 add_subdirectory("game")
 add_subdirectory("cgame")
 add_subdirectory("ui")
+add_subdirectory("ui_eternal")
 
 if(BuildQVMs)
 	# Custom target for building qvm's

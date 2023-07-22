@@ -108,6 +108,7 @@ endif()
 set(MVGAME "jk2mpgame_${Architecture}")
 set(MVCGAME "cgame_${Architecture}")
 set(MVUI "ui_${Architecture}")
+set(ETERNAL_UI "eternal_ui_${Architecture}")
 
 set(LCC "q3lcc")
 set(CPP "q3cpp")
