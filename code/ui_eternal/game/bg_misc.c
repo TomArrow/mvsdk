@@ -26,11 +26,11 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "qcommon/q_shared.h"
 #include "bg_public.h"
 
-#if defined(_GAME)
+#if defined(JK2_GAME)
 	#include "g_local.h"
-#elif defined(_CGAME)
+#elif defined(JK2_CGAME)
 	#include "cgame/cg_local.h"
-#elif defined(UI_BUILD)
+#elif defined(JK2_UI)
 	#include "ui/ui_local.h"
 #endif
 
@@ -608,7 +608,7 @@ qboolean BG_LegalizedForcePowers(char *powerOut, size_t powerOutSize, int maxRan
 	else
 		allowedPoints = 156;
 
-#ifdef _GAME
+#ifdef JK2_GAME
 	//if (g_fixWeaponForcePoints.integer && g_weaponDisable.integer != 524279)
 		//allowedPoints += 2;
 #endif
@@ -798,7 +798,7 @@ qboolean BG_LegalizedForcePowers(char *powerOut, size_t powerOutSize, int maxRan
 	}
 
 //[JAPRO - Serverside - Saber - Allow server to cap block level - End]
-#ifdef _GAME
+#ifdef JK2_GAME
 	if (g_maxSaberDefense.integer && (final_Powers[FP_SABER_DEFENSE] > g_maxSaberDefense.integer))//my block is middle[2], forced max is 2, 
 		final_Powers[FP_SABER_DEFENSE] = g_maxSaberDefense.integer;
 #endif
@@ -1855,7 +1855,7 @@ qboolean BG_HasYsalamiri(int gametype, playerState_t *ps)
 }
 
 //JAPRO - Serverside - Fullforce Dueling - Start
-#ifndef _GAME
+#ifndef JK2_GAME
 extern int cg_dueltypes[MAX_CLIENTS];
 #endif
 //JAPRO - Serverside - Fullforce Dueling - End
@@ -1883,7 +1883,7 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 	}
 
 //JAPRO - Serverside - Add fullforce duels - Start
-#ifdef _GAME
+#ifdef JK2_GAME
 	if (ps->duelInProgress) // consider duel types.
 		{
 			switch (dueltypes[ps->clientNum]) {
@@ -1912,7 +1912,7 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 				break;
 			}
 		}
-#elif defined _CGAME
+#elif defined JK2_CGAME
 	if (ps->duelInProgress) // consider duel types.
 	{
 		switch ( cg_dueltypes[ps->clientNum]) {
@@ -2019,7 +2019,7 @@ gitem_t	*BG_FindItemForWeapon( weapon_t weapon ) {
 		}
 	}
 
-#ifdef _GAME
+#ifdef JK2_GAME
 	//Debug this crash
 	Com_Printf("BG_FindItemForWeapon crash\n"); 
 	Svcmd_GameMem_f();
@@ -2498,7 +2498,7 @@ void BG_EvaluateTrajectory( const trajectory_t *tr, int atTime, vec3_t result ) 
 		result[2] -= 0.5 * DEFAULT_GRAVITY * deltaTime * deltaTime;		// FIXME: local gravity...
 		break;
 	default:
-#ifdef _GAME
+#ifdef JK2_GAME
 		Com_Error( ERR_DROP, "BG_EvaluateTrajectory: [ GAME] unknown trType: %i", tr->trType );
 #else
 		Com_Error( ERR_DROP, "BG_EvaluateTrajectory: [CGAME] unknown trType: %i", tr->trType );
@@ -2554,7 +2554,7 @@ void BG_EvaluateTrajectoryDelta( const trajectory_t *tr, int atTime, vec3_t resu
 		result[2] -= DEFAULT_GRAVITY * deltaTime;		// FIXME: local gravity...
 		break;
 	default:
-#ifdef _GAME
+#ifdef JK2_GAME
 		Com_Error( ERR_DROP, "BG_EvaluateTrajectoryDelta: [ GAME] unknown trType: %i", tr->trType );
 #else
 		Com_Error( ERR_DROP, "BG_EvaluateTrajectoryDelta: [CGAME] unknown trType: %i", tr->trType );
@@ -2748,7 +2748,7 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 		}
 
 		if ( showEvents.integer != 0 ) {
-#ifdef _GAME
+#ifdef JK2_GAME
 			Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
 #else
 			Com_Printf("Cgame event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
@@ -3293,7 +3293,7 @@ PLAYER ANGLES
 
 int BG_ModelCache(const char *modelName, const char *skinName)
 {
-	#ifdef _GAME
+	#ifdef JK2_GAME
 		void *g2 = NULL;
 
 		if ( VALIDSTRING( skinName ) )
@@ -3306,28 +3306,28 @@ int BG_ModelCache(const char *modelName, const char *skinName)
 			trap->G2API_CleanGhoul2Models( &g2 );
 
 		return 0;
-	#else // !_GAME
+	#else // !JK2_GAME
 		if ( VALIDSTRING( skinName ) )
 		{
-			#ifdef _CGAME
+			#ifdef JK2_CGAME
 				trap->R_RegisterSkin( skinName );
-			#else // !_CGAME
+			#else // !JK2_CGAME
 				trap->R_RegisterSkin( skinName );
-			#endif // _CGAME
+			#endif // JK2_CGAME
 		}
-		#ifdef _CGAME
+		#ifdef JK2_CGAME
 			return trap->R_RegisterModel( modelName );
-		#else // !_CGAME
+		#else // !JK2_CGAME
 			return trap->R_RegisterModel( modelName );
-		#endif // _CGAME
-	#endif // _GAME
+		#endif // JK2_CGAME
+	#endif // JK2_GAME
 }
 
-#if defined(_GAME)
+#if defined(JK2_GAME)
 	#define MAX_POOL_SIZE	3000000 //1024000
-#elif defined(_CGAME) //don't need as much for cgame stuff. 2mb will be fine.
+#elif defined(JK2_CGAME) //don't need as much for cgame stuff. 2mb will be fine.
 	#define MAX_POOL_SIZE	2048000
-#elif defined(UI_BUILD) //And for the ui the only thing we'll be using this for anyway is allocating anim data for g2 menu models
+#elif defined(JK2_UI) //And for the ui the only thing we'll be using this for anyway is allocating anim data for g2 menu models
 	#define MAX_POOL_SIZE	512000
 #endif
 

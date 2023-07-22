@@ -25,9 +25,9 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 //
 // string allocation/managment
 
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	#include "cgame/cg_local.h"
-#elif UI_BUILD
+#elif JK2_UI
 	#include "ui/ui_local.h"
 #endif
 
@@ -75,7 +75,7 @@ typedef struct scrollInfo_s {
 	qboolean scrollDir;
 } scrollInfo_t;
 
-#ifdef UI_BUILD // Defined in ui_main.c, not in the namespace
+#ifdef JK2_UI // Defined in ui_main.c, not in the namespace
 	// Some extern functions hoisted from the middle of this file to get all the non-cgame,
 	// non-namespace stuff together
 	extern void UI_SaberDrawBlades( itemDef_t *item, vec3_t origin, vec3_t angles );
@@ -126,7 +126,7 @@ extern qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int 
 extern qboolean ItemParse_model_g2anim_go( itemDef_t *item, const char *animName );
 
 
-#ifdef _CGAME
+#ifdef JK2_CGAME
 #define MEM_POOL_SIZE  (128 * 1024)
 #else
 #define MEM_POOL_SIZE  (4 * 1024 * 1024)
@@ -190,9 +190,9 @@ void UI_Set2DRatio(void)
 	float ratio = 0.0f;
 	glconfig_t *glconfig;
 
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	glconfig = &cgs.glconfig;
-#elif defined(UI_BUILD)
+#elif defined(JK2_UI)
 	glconfig = &uiInfo.uiDC.glconfig;
 #endif
 
@@ -204,9 +204,9 @@ void UI_Set2DRatio(void)
 	else
 		ratio = 1.0f;
 
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	cgs.widthRatioCoef = ratio;
-#elif defined(UI_BUILD)
+#elif defined(JK2_UI)
 	uiInfo.uiDC.widthRatioCoef = ratio;
 #endif
 }
@@ -740,7 +740,7 @@ void Window_Paint(windowDef_t *w, float fadeAmount, float fadeClamp, float fadeC
 		GradientBar_Paint(&fillRect, w->backColor);
 	}
 	else if ( w->style == WINDOW_STYLE_SHADER ) {
-#ifndef _CGAME
+#ifndef JK2_CGAME
 		if ( w->flags & WINDOW_PLAYERCOLOR ) {
 			vec4_t	color;
 			color[0] = ui_char_color_red.integer/255.0f;
@@ -3510,7 +3510,7 @@ void Leaving_EditField(itemDef_t *item)
 	}
 }
 
-#ifdef UI_BUILD
+#ifdef JK2_UI
 qboolean Item_TextField_HandleKey( itemDef_t *item, int key );
 void Item_TextField_Paste( itemDef_t *item ) {
 	int		pasteLen, i;
@@ -3548,7 +3548,7 @@ qboolean Item_TextField_HandleKey(itemDef_t *item, int key) {
 		if ( key & K_CHAR_FLAG ) {
 			key &= ~K_CHAR_FLAG;
 
-#ifdef UI_BUILD
+#ifdef JK2_UI
 			if ( key == 'v' - 'a' + 1 ) {	// ctrl-v is paste
 				Item_TextField_Paste( item );
 				return qtrue;
@@ -4526,7 +4526,7 @@ void Item_SetTextExtents(itemDef_t *item, int *width, int *height, const char *t
 
 	// keeps us from computing the widths and heights more than once
 	if (*width == 0 || (item->type == ITEM_TYPE_OWNERDRAW && item->textalignment == ITEM_ALIGN_CENTER)
-#ifndef _CGAME
+#ifndef JK2_CGAME
 		|| (item->text && item->text[0]=='@' && item->asset != se_language.modificationCount )	//string package language changed
 #endif
 		)
@@ -4558,7 +4558,7 @@ void Item_SetTextExtents(itemDef_t *item, int *width, int *height, const char *t
 		}
 
 		ToWindowCoords(&item->textRect.x, &item->textRect.y, &item->window);
-#ifndef _CGAME
+#ifndef JK2_CGAME
 		if (item->text && item->text[0]=='@' )//string package
 		{//mark language
 			item->asset = se_language.modificationCount;
@@ -5379,7 +5379,7 @@ void UI_ScaleModelAxis( refEntity_t *ent )
 	}
 }
 
-#ifndef _CGAME
+#ifndef JK2_CGAME
 extern void UI_SaberAttachToChar( itemDef_t *item );
 #endif
 
@@ -5398,7 +5398,7 @@ void Item_Model_Paint(itemDef_t *item)
 	}
 
 	// a moves datapad anim is playing
-#ifdef UI_BUILD
+#ifdef JK2_UI
 	if (uiInfo.moveAnimTime && (uiInfo.moveAnimTime < uiInfo.uiDC.realTime))
 	{
 		if (modelPtr)
@@ -5558,7 +5558,7 @@ void Item_Model_Paint(itemDef_t *item)
 
 		VectorCopy(modelPtr->g2scale, ent.modelScale);
 		UI_ScaleModelAxis(&ent);
-#ifndef _CGAME
+#ifndef JK2_CGAME
 		if ( (item->flags&ITF_ISCHARACTER) )
 		{
 			ent.shaderRGBA[0] = ui_char_color_red.integer;
@@ -5746,7 +5746,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 				image = DC->feederItemImage(item->special, i);
 				if (image)
 				{
-#ifndef _CGAME
+#ifndef JK2_CGAME
 					if (item->window.flags & WINDOW_PLAYERCOLOR || ((int)item->special == FEEDER_Q3HEADS && image == uiInfo.uiDC.Assets.defaultIconRGB))
 					{
 						vec4_t	color;
@@ -5760,13 +5760,13 @@ void Item_ListBox_Paint(itemDef_t *item) {
 					}
 #endif
 					DC->drawHandlePic(x+1, y+1, listPtr->elementWidth - 2, listPtr->elementHeight - 2, image);
-#ifndef _CGAME
+#ifndef JK2_CGAME
 					if ((int)item->special == FEEDER_Q3HEADS && image == uiInfo.uiDC.Assets.defaultIconRGB)//hackhackhack
 						DC->setColor(NULL);
 #endif
 				}
 
-#ifndef _CGAME
+#ifndef JK2_CGAME
 				if (i == item->cursorPos) {
 					if ((int)item->special != FEEDER_Q3HEADS || ui_selectedModelIndex.integer != -1)
 						DC->drawRect(x, y, listPtr->elementWidth-1, listPtr->elementHeight-1, item->window.borderSize, item->window.borderColor);
@@ -5860,7 +5860,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 						image = DC->feederItemImage(item->special, i);
 						if (image)
 						{
-#ifndef _CGAME
+#ifndef JK2_CGAME
 							if (item->window.flags & WINDOW_PLAYERCOLOR || ((int)item->special == FEEDER_Q3HEADS && image == uiInfo.uiDC.Assets.defaultIconRGB))
 							{
 								vec4_t	color;
@@ -5873,7 +5873,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 							}
 #endif
 							DC->drawHandlePic(x+1, y+1, listPtr->elementWidth - 2, listPtr->elementHeight - 2, image);
-#ifndef _CGAME
+#ifndef JK2_CGAME
 							if ((int)item->special == FEEDER_Q3HEADS && image == uiInfo.uiDC.Assets.defaultIconRGB)//hackhackhack
 								DC->setColor(NULL);
 #endif
@@ -7242,7 +7242,7 @@ ItemParse_asset_model
 */
 qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTimeLength )
 {
-#ifdef UI_BUILD
+#ifdef JK2_UI
 	int g2Model;
 	modelDef_t *modelPtr;
 	Item_ValidateTypeData(item);
@@ -7342,7 +7342,7 @@ qboolean ItemParse_asset_model( itemDef_t *item, int handle ) {
 		return qfalse;
 	}
 
-#ifdef UI_BUILD
+#ifdef JK2_UI
 	if (!Q_stricmp(token.string,"ui_char_model") )
 	{
 		char modelPath[MAX_QPATH] = {0};
@@ -8273,7 +8273,7 @@ qboolean ItemParse_cvarFloat( itemDef_t *item, int handle ) {
 	return qfalse;
 }
 
-#ifdef UI_BUILD
+#ifdef JK2_UI
 char currLanguage[32][128];
 static const char languageString[32] = "@MENUS_MYLANGUAGE";
 #endif
@@ -8300,7 +8300,7 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 	if (!Q_stricmp(token.string, "feeder")) {
 		if (item->special == FEEDER_PLAYER_SPECIES)
 		{
-#ifndef _CGAME
+#ifndef JK2_CGAME
 			for (; multiPtr->count < uiInfo.playerSpeciesCount; multiPtr->count++)
 			{
 				multiPtr->cvarList[multiPtr->count] = String_Alloc(Q_strupr(va("@MENUS_%s",uiInfo.playerSpecies[multiPtr->count].Name )));	//look up translation
@@ -8312,7 +8312,7 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 		// languages
 		if (item->special == FEEDER_LANGUAGES)
 		{
-#ifdef UI_BUILD
+#ifdef JK2_UI
 			for (; multiPtr->count < uiInfo.languageCount; multiPtr->count++)
 			{
 				// The displayed text
@@ -8505,7 +8505,7 @@ qboolean ItemParse_Appearance_slot( itemDef_t *item, int handle )
 
 qboolean ItemParse_isSaber( itemDef_t *item, int handle  )
 {
-#ifndef _CGAME
+#ifndef JK2_CGAME
 
 	int	i;
 
@@ -8533,7 +8533,7 @@ qboolean ItemParse_isSaber( itemDef_t *item, int handle  )
 
 qboolean ItemParse_isSaber2( itemDef_t *item, int handle  )
 {
-#ifndef _CGAME
+#ifndef JK2_CGAME
 	int	i;
 	if (PC_Int_Parse(handle, &i))
 	{

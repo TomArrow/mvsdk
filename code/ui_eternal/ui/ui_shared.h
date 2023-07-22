@@ -576,7 +576,7 @@ Ghoul2 Insert End
 
 extern const char *HolocronIcons[NUM_FORCE_POWERS];
 
-#ifdef UI_BUILD
+#ifdef JK2_UI
 static char *baseModelList[] = {
 	"alora",
 	"alora2",

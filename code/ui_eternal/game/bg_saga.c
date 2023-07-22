@@ -34,11 +34,11 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "bg_saga.h"
 #include "bg_weapons.h"
 
-#ifdef _GAME
+#ifdef JK2_GAME
 	#include "g_local.h"
-#elif _CGAME
+#elif JK2_CGAME
 	#include "cgame/cg_local.h"
-#elif UI_BUILD
+#elif JK2_UI
 	#include "ui/ui_local.h"
 #endif
 
@@ -994,13 +994,13 @@ void BG_SiegeParseClassFile(const char *filename, siegeClassDesc_t *descBuffer)
 	//Parse shader for ui to use
 	if (BG_SiegeGetPairedValue(classInfo, "uishader", parseBuf))
 	{
-		#if defined(_GAME)
+		#if defined(JK2_GAME)
 			bgSiegeClasses[bgNumSiegeClasses].uiPortraitShader = 0;
 			memset(bgSiegeClasses[bgNumSiegeClasses].uiPortrait,0,sizeof(bgSiegeClasses[bgNumSiegeClasses].uiPortrait));
-		#elif defined(_CGAME)
+		#elif defined(JK2_CGAME)
 			bgSiegeClasses[bgNumSiegeClasses].uiPortraitShader = 0;
 			memset(bgSiegeClasses[bgNumSiegeClasses].uiPortrait,0,sizeof(bgSiegeClasses[bgNumSiegeClasses].uiPortrait));
-		#elif defined(UI_BUILD) //ui
+		#elif defined(JK2_UI) //ui
 			bgSiegeClasses[bgNumSiegeClasses].uiPortraitShader = trap->R_RegisterShaderNoMip(parseBuf);
 			memcpy(bgSiegeClasses[bgNumSiegeClasses].uiPortrait,parseBuf,sizeof(bgSiegeClasses[bgNumSiegeClasses].uiPortrait));
 		#endif
@@ -1013,12 +1013,12 @@ void BG_SiegeParseClassFile(const char *filename, siegeClassDesc_t *descBuffer)
 	//Parse shader for ui to use
 	if (BG_SiegeGetPairedValue(classInfo, "class_shader", parseBuf))
 	{
-	#ifdef _GAME
+	#ifdef JK2_GAME
 		bgSiegeClasses[bgNumSiegeClasses].classShader = 0;
 	#else //cgame, ui
-		#if defined(_CGAME)
+		#if defined(JK2_CGAME)
 			bgSiegeClasses[bgNumSiegeClasses].classShader = trap->R_RegisterShaderNoMip(parseBuf);
-		#elif defined(UI_BUILD)
+		#elif defined(JK2_UI)
 			bgSiegeClasses[bgNumSiegeClasses].classShader = trap->R_RegisterShaderNoMip(parseBuf);
 		#endif
 		assert( bgSiegeClasses[bgNumSiegeClasses].classShader );
@@ -1291,7 +1291,7 @@ void BG_SiegeParseTeamFile(const char *filename)
 	}
 
 	//I don't entirely like doing things this way but it's the easiest way.
-	#ifdef _CGAME
+	#ifdef JK2_CGAME
 		if (BG_SiegeGetPairedValue(teamInfo, "FriendlyShader", parseBuf))
 			bgSiegeTeams[bgNumSiegeTeams].friendlyShader = trap->R_RegisterShaderNoMip(parseBuf);
 	#else
@@ -1380,7 +1380,7 @@ siegeTeam_t *BG_SiegeFindThemeForTeam(int team)
     return NULL;
 }
 
-#if defined(_GAME) || defined(_CGAME) //only for game/cgame
+#if defined(JK2_GAME) || defined(JK2_CGAME) //only for game/cgame
 //precache all the sabers for the active classes for the team
 extern qboolean WP_SaberParseParms( const char *saberName, saberInfo_t *saber ); //bg_saberLoad.cpp
 extern int BG_ModelCache(const char *modelName, const char *skinName); //bg_misc.c

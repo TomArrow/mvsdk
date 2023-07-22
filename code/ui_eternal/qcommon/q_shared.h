@@ -695,7 +695,7 @@ qboolean Info_Validate( const char *s );
 qboolean Info_NextPair( const char **s, char *key, char *value );
 
 // this is only here so the functions in q_shared.c and bg_*.c can link
-#if defined( _GAME ) || defined( _CGAME ) || defined( UI_BUILD )
+#if defined( JK2_GAME ) || defined( JK2_CGAME ) || defined( JK2_UI )
 	NORETURN_PTR void (*Com_Error)( int level, const char *error, ... );
 	void (*Com_Printf)( const char *msg, ... );
 #else

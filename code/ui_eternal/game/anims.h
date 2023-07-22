@@ -1752,7 +1752,7 @@ typedef enum //# animNumber_e
 	//New anim as per Jarrod's request
 	LEGS_TURN180,
 
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	//JA+ animations
 	BOTH_KISSEE,
 	BOTH_KISSER,

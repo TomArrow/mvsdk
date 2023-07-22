@@ -28,20 +28,20 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "bg_local.h"
 #include "w_saber.h"
 
-#ifdef _GAME
+#ifdef JK2_GAME
 	#include "g_local.h"
-#elif _CGAME
+#elif JK2_CGAME
 	#include "cgame/cg_local.h"
-#elif UI_BUILD
+#elif JK2_UI
 	#include "ui/ui_local.h"
 #endif
 
 extern stringID_table_t animTable[MAX_ANIMATIONS+1];
 
 int BG_SoundIndex( const char *sound ) {
-#ifdef _GAME
+#ifdef JK2_GAME
 	return G_SoundIndex( sound );
-#elif defined(_CGAME) || defined(UI_BUILD)
+#elif defined(JK2_CGAME) || defined(JK2_UI)
 	return trap->S_RegisterSound( sound );
 #endif
 }
@@ -1365,7 +1365,7 @@ static void Saber_ParseCustomBladeShader(saberInfo_t *saber, const char **p) {
 		SkipRestOfLine(p);
 		return;
 	}
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	if (s)
 		saber->customBladeShader = trap->R_RegisterShader(s);
 	else
@@ -1378,7 +1378,7 @@ static void Saber_ParseCustomTrailShader(saberInfo_t *saber, const char **p) {
 		SkipRestOfLine(p);
 		return;
 	}
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	if (s)
 		saber->customTrailShader = trap->R_RegisterShader(s);
 	else
@@ -1391,7 +1391,7 @@ static void Saber_ParseCustomGlowShader(saberInfo_t *saber, const char **p) {
 		SkipRestOfLine(p);
 		return;
 	}
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	if (s)
 		saber->customGlowShader = trap->R_RegisterShader(s);
 	else
@@ -1399,7 +1399,7 @@ static void Saber_ParseCustomGlowShader(saberInfo_t *saber, const char **p) {
 		saber->customGlowShader = 0;
 }
 static void Saber_ParseCustomRGBLight(saberInfo_t *saber, const char **p) {
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	int i;
 	float f;
 #endif
@@ -1408,7 +1408,7 @@ static void Saber_ParseCustomRGBLight(saberInfo_t *saber, const char **p) {
 	saber->customRGB[1] = 0.0f;
 	saber->customRGB[2] = 0.0f;
 
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	for (i = 0; i < 3; i++)
 	{
 		if (COM_ParseFloat(p, &f)) {
@@ -1430,7 +1430,7 @@ static void Saber_ParseG2MarksShader( saberInfo_t *saber, const char **p ) {
 		SkipRestOfLine( p );
 		return;
 	}
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->g2MarksShader = trap->R_RegisterShader( value );
 #else
 	SkipRestOfLine( p );
@@ -1442,7 +1442,7 @@ static void Saber_ParseG2WeaponMarkShader( saberInfo_t *saber, const char **p ) 
 		SkipRestOfLine( p );
 		return;
 	}
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->g2WeaponMarkShader = trap->R_RegisterShader( value );
 #else
 	SkipRestOfLine( p );
@@ -1591,7 +1591,7 @@ static void Saber_ParseBlockEffect( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->blockEffect = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -1601,7 +1601,7 @@ static void Saber_ParseHitPersonEffect( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->hitPersonEffect = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -1611,7 +1611,7 @@ static void Saber_ParseHitOtherEffect( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->hitOtherEffect = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -1621,7 +1621,7 @@ static void Saber_ParseBladeEffect( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->bladeEffect = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -1677,7 +1677,7 @@ static void Saber_ParseG2MarksShader2( saberInfo_t *saber, const char **p ) {
 		SkipRestOfLine( p );
 		return;
 	}
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->g2MarksShader2 = trap->R_RegisterShader( value );
 #else
 	SkipRestOfLine( p );
@@ -1689,7 +1689,7 @@ static void Saber_ParseG2WeaponMarkShader2( saberInfo_t *saber, const char **p )
 		SkipRestOfLine( p );
 		return;
 	}
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->g2WeaponMarkShader2 = trap->R_RegisterShader( value );
 #else
 	SkipRestOfLine( p );
@@ -1838,7 +1838,7 @@ static void Saber_ParseBlockEffect2( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->blockEffect2 = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -1848,7 +1848,7 @@ static void Saber_ParseHitPersonEffect2( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->hitPersonEffect2 = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -1858,7 +1858,7 @@ static void Saber_ParseHitOtherEffect2( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->hitOtherEffect2 = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -1868,7 +1868,7 @@ static void Saber_ParseBladeEffect2( saberInfo_t *saber, const char **p ) {
 	const char *value;
 	if ( COM_ParseString( p, &value ) )
 		return;
-#ifdef _CGAME
+#ifdef JK2_CGAME
 	saber->bladeEffect2 = trap->FX_RegisterEffect( value );
 #else
 	SkipRestOfLine( p );
@@ -2382,7 +2382,7 @@ void WP_SaberLoadParms( void )
 
 		if ( (totallen + len+1) >= MAX_SABER_DATA_SIZE ) {
 			trap->FS_Close( f );
-#ifdef UI_BUILD
+#ifdef JK2_UI
 			Com_Error( ERR_FATAL, "WP_SaberLoadParms: Saber extensions (*.sab) are too large!\nRan out of space before reading %s", holdChar );
 #else
 			Com_Error( ERR_DROP, "WP_SaberLoadParms: Saber extensions (*.sab) are too large!\nRan out of space before reading %s", holdChar );
@@ -2407,7 +2407,7 @@ void WP_SaberLoadParms( void )
 	}
 }
 
-#ifdef UI_BUILD
+#ifdef JK2_UI
 qboolean WP_IsSaberTwoHanded( const char *saberName )
 {
 	int twoHanded;
@@ -2427,7 +2427,7 @@ void WP_SaberGetHiltInfo( const char *singleHilts[MAX_SABER_HILTS], const char *
 	const char	*saberName;
 	const char	*token;
 	const char	*p;
-#ifdef UI_BUILD
+#ifdef JK2_UI
 	int			w = 0;
 	qboolean	baseHilt = qfalse;
 #endif
@@ -2460,7 +2460,7 @@ void WP_SaberGetHiltInfo( const char *singleHilts[MAX_SABER_HILTS], const char *
 			continue;
 		}
 
-#ifdef UI_BUILD
+#ifdef JK2_UI
 		baseHilt = qfalse;
 		if (ui_sv_pure.integer) {
 			for (w = 0; w < BASE_HILT_COUNT; w++) {
