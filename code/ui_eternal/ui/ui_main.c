@@ -11122,9 +11122,9 @@ void UI_BuildQ3Model_List( void )
 {
 	int			numdirs;
 	int			numfiles;
-	char		dirlist[2048];
-	char		filelist[2048];
-	char		skinname[64];
+	char		*dirlist;
+	char		*filelist;
+	char		skinname[MAX_QPATH];
 	char		*dirptr;
 	char		*fileptr;
 	char		*check;
@@ -11137,13 +11137,21 @@ void UI_BuildQ3Model_List( void )
 	uiInfo.q3HeadCount = 0;
 
 	// iterate directory of all player models
-	numdirs = trap->FS_GetFileList("models/players", "/", dirlist, 2048 );
+	numdirs = UI_GetFileList("models/players", "/", &dirlist);
 	dirptr  = dirlist;
 	for (i=0; i<numdirs && uiInfo.q3HeadCount < MAX_Q3PLAYERMODELS; i++,dirptr+=dirlen+1)
 	{
 		dirlen = strlen(dirptr);
 
-		if (dirlen && dirptr[dirlen-1]=='/') dirptr[dirlen-1]='\0';
+		if (dirlen)
+		{
+			if (dirptr[dirlen-1]=='/')
+				dirptr[dirlen-1]='\0';
+		}
+		else
+		{
+			continue;
+		}
 
 		if (!Q_stricmp(dirptr, ".") || !Q_stricmp(dirptr, ".."))
 			continue;
@@ -11160,7 +11168,7 @@ void UI_BuildQ3Model_List( void )
 				continue;
 		}
 
-		numfiles = trap->FS_GetFileList( va("models/players/%s", dirptr), "skin", filelist, 2048 );
+		numfiles = UI_GetFileList(va("models/players/%s", dirptr), "skin", &filelist);
 		fileptr  = filelist;
 		for (j=0; j<numfiles && uiInfo.q3HeadCount < MAX_Q3PLAYERMODELS;j++,fileptr+=filelen+1)
 		{
@@ -11251,13 +11259,11 @@ void UI_BuildQ3Model_List( void )
 				uiInfo.q3HeadCount++;
 				//rww - we are now registering them as they are drawn like the TA feeder, so as to decrease UI load time.
 			}
-
-			if (uiInfo.q3HeadCount >= MAX_Q3PLAYERMODELS)
-			{
-				return;
-			}
 		}
+		free(filelist);
 	}
+	Com_Printf("Loaded %d head icons\n", uiInfo.q3HeadCount);
+	free(dirlist);
 }
 
 void UI_SiegeInit(void)
@@ -11391,11 +11397,7 @@ UI_BuildPlayerModel_List
 */
 void UI_BuildPlayerModel_List( qboolean inGameLoad )
 {
-	static const size_t DIR_LIST_SIZE = 16384;
-
 	int			numdirs;
-	size_t		dirListSize = DIR_LIST_SIZE;
-	char		stackDirList[8192];
 	char		*dirlist;
 	char		*dirptr;
 	int			dirlen;
@@ -11403,24 +11405,13 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 	int			w = 0;
 	qboolean	baseSpecies = qfalse;
 
-	dirlist = malloc(DIR_LIST_SIZE);
-	if ( !dirlist )
-	{
-		Com_Printf(S_COLOR_YELLOW "WARNING: Failed to allocate %u bytes of memory for player model "
-			"directory list. Using stack allocated buffer of %u bytes instead.",
-			DIR_LIST_SIZE, sizeof(stackDirList));
-
-		dirlist = stackDirList;
-		dirListSize = sizeof(stackDirList);
-	}
-
 	uiInfo.playerSpeciesCount = 0;
 	uiInfo.playerSpeciesIndex = 0;
 	uiInfo.playerSpeciesMax = 8;
 	uiInfo.playerSpecies = (playerSpeciesInfo_t *)malloc(uiInfo.playerSpeciesMax * sizeof(playerSpeciesInfo_t));
 
 	// iterate directory of all player models
-	numdirs = trap->FS_GetFileList("models/players", "/", dirlist, dirListSize );
+	numdirs = UI_GetFileList("models/players", "/", &dirlist);
 	dirptr  = dirlist;
 	for (i=0; i<numdirs; i++,dirptr+=dirlen+1)
 	{
@@ -11449,9 +11440,9 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 
 		if (f)
 		{
-			char	filelist[2048];
+			char *filelist;
 			playerSpeciesInfo_t *species = NULL;
-			char                 skinname[64];
+			char                 skinname[MAX_QPATH];
 			int                  numfiles;
 			int                  iSkinParts=0;
 			char                *buffer = NULL;
@@ -11495,7 +11486,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 
 			if (!UI_ParseColorData(buffer,species,fpath))
 			{
-				Com_Printf(S_COLOR_RED"UI_BuildPlayerModel_List: Errors parsing '%s'\n", fpath);
+				Com_Printf(S_COLOR_RED "UI_BuildPlayerModel_List: Errors parsing '%s'\n", fpath);
 			}
 
 			species->SkinHeadMax = 8;
@@ -11508,7 +11499,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 
 			free(buffer);
 
-			numfiles = trap->FS_GetFileList( va("models/players/%s",dirptr), ".skin", filelist, sizeof(filelist) );
+			numfiles = UI_GetFileList(va("models/players/%s", dirptr), ".skin", &filelist);
 			fileptr  = filelist;
 			for (j=0; j<numfiles; j++,fileptr+=filelen+1)
 			{
@@ -11556,6 +11547,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 					}
 				}
 			}
+			free(filelist);
 			if (iSkinParts != 7)
 			{	//didn't get a skin for each, then skip this model.
 				UI_FreeSpecies(species);
@@ -11576,11 +11568,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 			}
 		}
 	}
-
-	if ( dirlist != stackDirList )
-	{
-		free(dirlist);
-	}
+	free(dirlist);
 }
 
 static qhandle_t UI_RegisterShaderNoMip( const char *name ) {
