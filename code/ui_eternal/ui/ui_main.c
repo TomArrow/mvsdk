@@ -505,7 +505,6 @@ static const char *gameTypes[GT_MAX_GAME_TYPE] = {
 	"Holocron",
 	"JediMaster",
 	"Duel",
-	"PowerDuel",
 	"SP",
 	"Team FFA",
 	"Siege",
@@ -1630,8 +1629,6 @@ static const char* UI_GetGameTypeName(int gtEnum)
 		return UI_GetStringEdString("MENUS1", "SAGA");//"Team FFA";
 	case GT_DUEL:
 		return UI_GetStringEdString("MENUS1", "DUEL");//"Team FFA";
-	case GT_POWERDUEL:
-		return UI_GetStringEdString("MENUS1", "SAGA");//"Team FFA";
 	case GT_TEAM:
 		return UI_GetStringEdString("MENUS1", "TEAM_FFA");//"Team FFA";
 	case GT_SIEGE:
@@ -1932,7 +1929,7 @@ qboolean UI_HasSetSaberOnly( const char *info, const int gametype )
 		return qfalse;
 	}
 
-	if (gametype == GT_DUEL || gametype == GT_POWERDUEL)
+	if (gametype == GT_DUEL)
 	{
 		wDisable = atoi(Info_ValueForKey(info, "g_duelWeaponDisable"));
 	}
@@ -5747,7 +5744,7 @@ static void UI_StartSkirmish(qboolean next) {
 
 	delay = 500;
 
-	if (g == GT_DUEL || g == GT_POWERDUEL) {
+	if (g == GT_DUEL) {
 		temp = uiInfo.mapList[ui_currentMap.integer].teamMembers * 2;
 		trap->Cvar_Set("sv_maxClients", va("%d", temp));
 		Com_sprintf( buff, sizeof(buff), "wait ; addbot %s %f "", %i \n", uiInfo.mapList[ui_currentMap.integer].opponentName, skill, delay);
@@ -7357,12 +7354,6 @@ void UI_ClampMaxPlayers( void ) {
 			trap->Cvar_Set( "sv_maxClients", "2" );
 	}
 
-	// power duel requires 3 players
-	else if ( uiInfo.gameTypes[ui_netGametype.integer].gtEnum == GT_POWERDUEL ) {
-		if ( (int)trap->Cvar_VariableValue( "sv_maxClients" ) < 3 )
-			trap->Cvar_Set( "sv_maxClients", "3" );
-	}
-
 	// can never exceed MAX_CLIENTS
 	if ( (int)trap->Cvar_VariableValue( "sv_maxClients" ) > MAX_CLIENTS ) {
 		trap->Cvar_Set( "sv_maxClients", XSTRING(MAX_CLIENTS) );
@@ -7437,8 +7428,7 @@ static void UI_RunMenuScript(char **args)
 				trap->Cvar_Set("g_warmup", "120");
 			}
 
-			if (trap->Cvar_VariableValue( "g_gametype" ) == GT_DUEL ||
-				trap->Cvar_VariableValue( "g_gametype" ) == GT_POWERDUEL)
+			if (trap->Cvar_VariableValue( "g_gametype" ) == GT_DUEL)
 			{ //always set fraglimit 1 when starting a duel game
 				trap->Cvar_Set("fraglimit", "1");
 				trap->Cvar_Set("timelimit", "0");

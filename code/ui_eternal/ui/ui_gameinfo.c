@@ -198,11 +198,9 @@ void UI_LoadArenas( void ) {
 			}
 			if( strstr( type, "duel" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_DUEL);
-				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_POWERDUEL);
 			}
 			if( strstr( type, "powerduel" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_DUEL);
-				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_POWERDUEL);
 			}
 			if( strstr( type, "siege" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_SIEGE);

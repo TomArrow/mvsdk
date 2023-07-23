@@ -3407,19 +3407,6 @@ qboolean BG_OutOfMemory ( void )
 	return bg_poolSize >= MAX_POOL_SIZE;
 }
 
-const char *gametypeStringShort[GT_MAX_GAME_TYPE] = {
-	"FFA",
-	"HOLO",
-	"JM",
-	"1v1",
-	"2v1",
-	"SP",
-	"TDM",
-	"SAGA",
-	"CTF",
-	"CTY"
-};
-
 const char *BG_GetGametypeString( int gametype )
 {
 	switch ( gametype )
@@ -3432,8 +3419,6 @@ const char *BG_GetGametypeString( int gametype )
 		return "Jedi Master";
 	case GT_DUEL:
 		return "Duel";
-	case GT_POWERDUEL:
-		return "Power Duel";
 	case GT_SINGLE_PLAYER:
 		return "Cooperative";
 
@@ -3458,7 +3443,7 @@ int BG_GetGametypeForString( const char *gametype )
 	else if ( !Q_stricmp( gametype, "holocron" ) )		return GT_HOLOCRON;
 	else if ( !Q_stricmp( gametype, "jm" ) )			return GT_JEDIMASTER;
 	else if ( !Q_stricmp( gametype, "duel" ) )			return GT_DUEL;
-	else if ( !Q_stricmp( gametype, "powerduel" ) )		return GT_POWERDUEL;
+	else if ( !Q_stricmp( gametype, "powerduel" ) )		return GT_DUEL;
 	else if ( !Q_stricmp( gametype, "sp" )
 			||!Q_stricmp( gametype, "coop" ) )			return GT_SINGLE_PLAYER;
 	else if ( !Q_stricmp( gametype, "tdm" )
