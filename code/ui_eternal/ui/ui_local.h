@@ -51,6 +51,7 @@ void UI_LoadArenas( void );
 void UI_LoadForceConfig_List( void );
 void UI_UpdateCurrentServerInfo( void );
 void UI_BuildQ3Model_List( void );
+int UI_GetFileList(const char *path, const char *extension, char **fileList);
 void UI_BuildPlayerModel_List( qboolean inGameLoad );
 void UI_UpdateSaberHiltInfo( void );
 

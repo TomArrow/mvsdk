@@ -11355,6 +11355,35 @@ void UI_FreeAllSpecies( void )
 	free(uiInfo.playerSpecies);
 }
 
+int UI_GetFileList(const char *path, const char *extension, char **fileList)
+{
+	char *buffer = NULL;
+	size_t bufferSize = MAX_QPATH;
+	size_t previousBufferSize = bufferSize;
+	int listSize = 0;
+	int previousListSize = -1;
+	*fileList = NULL;
+	while (listSize != previousListSize)
+	{
+		previousBufferSize = bufferSize;
+		bufferSize *= 2;
+		buffer = realloc(*fileList, bufferSize);
+		if (buffer == NULL)
+		{
+			return listSize;
+		}
+		*fileList = buffer;
+		previousListSize = listSize;
+		listSize = trap->FS_GetFileList(path, extension, *fileList, bufferSize);
+	}
+	buffer = realloc(*fileList, previousBufferSize);
+	if (buffer != NULL)
+	{
+		*fileList = buffer;
+	}
+	return listSize;
+}
+
 /*
 =================
 UI_BuildPlayerModel_List
