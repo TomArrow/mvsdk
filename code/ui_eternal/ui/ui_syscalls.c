@@ -334,6 +334,9 @@ void trap_CIN_SetExtents (int handle, int x, int y, int w, int h) {
 void trap_R_RemapShader( const char *oldShader, const char *newShader, const char *timeOffset ) {
 	Q_syscall( UI_R_REMAP_SHADER, oldShader, newShader, timeOffset );
 }
+qboolean trap_SP_Register(char *file) {
+	return Q_syscall(UI_SP_REGISTER, file);
+}
 int trap_SP_GetNumLanguages( void ) {
 	return Q_syscall( UI_SP_GETNUMLANGUAGES );
 }
@@ -584,6 +587,7 @@ static void TranslateSyscalls( void ) {
 	trap->S_StopBackgroundTrack				= trap_S_StopBackgroundTrack;
 	trap->S_RegisterSound					= trap_S_RegisterSound;
 
+	trap->SP_Register						= trap_SP_Register;
 	trap->SE_GetLanguageName				= trap_GetLanguageName;
 	trap->SE_GetNumLanguages				= trap_SP_GetNumLanguages;
 	trap->SE_GetStringTextString			= trap_SP_GetStringTextString;

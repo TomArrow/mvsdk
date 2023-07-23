@@ -27,7 +27,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #include "../qcommon/q_shared.h"
 
 #define	MAX_DLIGHTS		32			// can't be increased, because bit flags are used on surfaces
-#define	REFENTITYNUM_BITS	11		// can't be increased without changing drawsurf bit packing
+#define	REFENTITYNUM_BITS	10		// can't be increased without changing drawsurf bit packing
 #define	REFENTITYNUM_MASK	((1<<REFENTITYNUM_BITS) - 1)
 // the last N-bit number (2^REFENTITYNUM_BITS - 1) is reserved for the special world refentity,
 //  and this is reflected by the value of MAX_REFENTITIES (which therefore is not a power-of-2)
@@ -69,15 +69,15 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #define RF_DISINTEGRATE1	0x20000	// does a procedural hole-ripping thing.
 #define RF_DISINTEGRATE2	0x40000	// does a procedural hole-ripping thing with scaling at the ripping point
 
-#define RF_SETANIMINDEX		0x80000	//use backEnd.currentEntity->e.skinNum for R_BindAnimatedImage
+#define RF_SETANIMINDEX		0x200000	//use backEnd.currentEntity->e.skinNum for R_BindAnimatedImage
 
-#define RF_ALPHA_DEPTH		0x100000 //depth write on alpha model
+#define RF_ALPHA_DEPTH		0x400000 //depth write on alpha model
 
-#define RF_FORCEPOST		0x200000 //force it to post-render -rww
+#define RF_FORCEPOST		0x800000 //force it to post-render -rww
 
-#define	RF_FULLBRIGHT		0x400000 //RGB brightskins
+#define	RF_FULLBRIGHT		0x80000 //RGB brightskins
 
-#define RF_NOLOD			0x800000 //for local player
+#define RF_NOLOD			0x100000 //for local player
 
 // refdef flags
 #define RDF_NOWORLDMODEL	1		// used for player configuration screen
@@ -308,9 +308,7 @@ typedef struct refdef_s {
 	int			x, y, width, height;
 	float		fov_x, fov_y;
 	vec3_t		vieworg;
-	vec3_t		viewangles;
 	matrix3_t	viewaxis;		// transformation matrix
-	int			viewContents;		// world contents at vieworg
 
 	// time in milliseconds for shader effects and other time dependent rendering issues
 	int			time;
@@ -347,23 +345,27 @@ typedef enum { // r_ext_preferred_tc_method
 } textureCompression_t;
 
 typedef struct glconfig_s {
-	const char				*renderer_string;
-	const char				*vendor_string;
-	const char				*version_string;
-	const char				*extensions_string;
+	char					renderer_string[MAX_STRING_CHARS];
+	char					vendor_string[MAX_STRING_CHARS];
+	char					version_string[MAX_STRING_CHARS];
+	char					extensions_string[BIG_INFO_STRING];
 
 	int						maxTextureSize;			// queried from GL
 	int						maxActiveTextures;		// multitexture ability
-	float					maxTextureFilterAnisotropy;
 
 	int						colorBits, depthBits, stencilBits;
 
 	qboolean				deviceSupportsGamma;
 	textureCompression_t	textureCompression;
 	qboolean				textureEnvAddAvailable;
+	qboolean				textureFilterAnisotropicAvailable;
 	qboolean				clampToEdgeAvailable;
 
 	int						vidWidth, vidHeight;
+	// aspect is the screen's physical width / height, which may be different
+	// than scrWidth / scrHeight if the pixels are non-square
+	// normal screens should be 4/3, but wide aspect monitors may be 16/9
+	float					windowAspect;
 
 	int						displayFrequency;
 
@@ -372,4 +374,5 @@ typedef struct glconfig_s {
 	// used CDS.
 	qboolean				isFullscreen;
 	qboolean				stereoEnabled;
+	qboolean				smpActive;		// dual processor
 } glconfig_t;

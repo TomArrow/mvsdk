@@ -82,8 +82,10 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #define LISTBOX_IMAGE 0x01
 
 // list feeders
+#define FEEDER_HEADS						0x00			// model heads
 #define FEEDER_MAPS							0x01			// text maps based on game type
 #define FEEDER_SERVERS						0x02			// servers
+#define FEEDER_CLANS						0x03			// clan names
 #define FEEDER_ALLMAPS						0x04			// all maps available, in graphic format
 #define FEEDER_REDTEAM_LIST					0x05			// red team members
 #define FEEDER_BLUETEAM_LIST				0x06			// blue team members
@@ -131,6 +133,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #define FEEDER_MOVES_TITLES					0x2a			// move titles for the data pad moves screen
 #define FEEDER_SABER_SINGLE_INFO			0x2b			// saber single
 #define FEEDER_SABER_STAFF_INFO				0x2c			// saber staff
+#define FEEDER_DOWNLOADS					0x2d			// list of downloaded / blocked files
 
 
 // Xbox specific, hope no one minds
@@ -362,6 +365,9 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 //extra, for patch
 #define UI_JEDI_NONJEDI 289
+
+// Xbox-only, for complicated passcode entry screen. Sorry.
+#define UI_XBOX_PASSCODE 290
 
 #define UI_CHAT_MAIN		291
 #define UI_CHAT_ATTACK		292

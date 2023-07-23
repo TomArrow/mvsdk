@@ -43,11 +43,12 @@ typedef enum uiMenuCommand_e {
 	UIMENU_TEAM,
 	UIMENU_POSTGAME,
 	UIMENU_PLAYERFORCE,
+	UIMENU_MV_DOWNLOAD_POPUP,
 	UIMENU_SIEGEMESSAGE,
 	UIMENU_SIEGEOBJECTIVES,
 	UIMENU_VOICECHAT,
 	UIMENU_CLOSEALL,
-	UIMENU_CLASSSEL
+	UIMENU_CLASSSEL,
 } uiMenuCommand_t;
 
 #define SORT_HOST			0
@@ -78,7 +79,6 @@ typedef enum uiImportLegacy_e {
 	UI_R_REGISTERMODEL,
 	UI_R_REGISTERSKIN,
 	UI_R_REGISTERSHADERNOMIP,
-	UI_R_SHADERNAMEFROMINDEX,
 	UI_R_CLEARSCENE,
 	UI_R_ADDREFENTITYTOSCENE,
 	UI_R_ADDPOLYTOSCENE,
@@ -161,19 +161,22 @@ typedef enum uiImportLegacy_e {
 	UI_COS,
 	UI_ATAN2,
 	UI_SQRT,
-	UI_MATRIXMULTIPLY,
+	UI_FLOOR,
 	UI_ANGLEVECTORS,
 	UI_PERPENDICULARVECTOR,
-	UI_FLOOR,
 	UI_CEIL,
 	UI_TESTPRINTINT,
 	UI_TESTPRINTFLOAT,
 	UI_ACOS,
 	UI_ASIN,
+	UI_MATRIXMULTIPLY,
 
+	UI_SP_REGISTER = 200,
+	UI_SP_GETSTRINGTEXTSTRING,
+	UI_G2_ANGLEOVERRIDE,
+	UI_R_SHADERNAMEFROMINDEX,
 	UI_SP_GETNUMLANGUAGES,
 	UI_SP_GETLANGUAGENAME,
-	UI_SP_GETSTRINGTEXTSTRING = 200,
 	UI_G2_LISTSURFACES,
 	UI_G2_LISTBONES,
 	UI_G2_SETMODELS,
@@ -185,7 +188,6 @@ typedef enum uiImportLegacy_e {
 	UI_G2_COLLISIONDETECT,
 	UI_G2_COLLISIONDETECTCACHE,
 	UI_G2_CLEANMODELS,
-	UI_G2_ANGLEOVERRIDE,
 	UI_G2_PLAYANIM,
 	UI_G2_GETBONEANIM,
 	UI_G2_GETBONEFRAME, //trimmed down version of GBA, so I don't have to pass all those unused args across the VM-exe border
@@ -311,6 +313,7 @@ typedef struct uiImport_s {
 	void			(*S_StopBackgroundTrack)				( void );
 	sfxHandle_t		(*S_RegisterSound)						( const char *sample );
 
+	qboolean		(*SP_Register)							( char *file );
 	void			(*SE_GetLanguageName)					( const int languageIndex, char *buffer );
 	int				(*SE_GetNumLanguages)					( void );
 	qboolean		(*SE_GetStringTextString)				( const char *text, char *buffer, int bufferLength );

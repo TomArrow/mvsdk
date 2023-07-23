@@ -11573,6 +11573,7 @@ UI_Init
 =================
 */
 void UI_Init( qboolean inGameLoad ) {
+	int i;
 	const char *menuSet;
 
 	// Get the list of possible languages
@@ -11665,6 +11666,15 @@ void UI_Init( qboolean inGameLoad ) {
 	uiInfo.uiDC.drawCinematic					= &UI_DrawCinematic;
 	uiInfo.uiDC.runCinematicFrame				= &UI_RunCinematicFrame;
 	uiInfo.uiDC.ext.Font_StrLenPixels			= trap->ext.R_Font_StrLenPixels;
+
+	for (i=0; i<10; i++)
+	{
+		if (!trap->SP_Register(va("menus%d",i)))
+			break;
+	}
+
+	trap->SP_Register("mv");
+	trap->SP_Register("menus_jka");
 
 	Init_Display(&uiInfo.uiDC);
 
