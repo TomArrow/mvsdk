@@ -8301,10 +8301,24 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 		if (item->special == FEEDER_PLAYER_SPECIES)
 		{
 #ifndef JK2_CGAME
+			char buffer[2];
+			char name[MAX_QPATH];
 			for (; multiPtr->count < uiInfo.playerSpeciesCount; multiPtr->count++)
 			{
-				multiPtr->cvarList[multiPtr->count] = String_Alloc(Q_strupr(va("@MENUS_JKA_%s",uiInfo.playerSpecies[multiPtr->count].Name )));	//look up translation
-				multiPtr->cvarStr[multiPtr->count] = uiInfo.playerSpecies[multiPtr->count].Name;	//value
+				Q_strncpyz(name, uiInfo.playerSpecies[multiPtr->count].Name, sizeof(name));
+				Q_strupr(name);
+				trap->SE_GetStringTextString(va("MENUS_JKA_%s", name), buffer, sizeof(buffer));
+
+				if (buffer[0] != '\0')
+				{
+					multiPtr->cvarList[multiPtr->count] = String_Alloc(va("@MENUS_JKA_%s", name));
+				}
+				else
+				{
+					multiPtr->cvarList[multiPtr->count] = String_Alloc(name);
+				}
+
+				multiPtr->cvarStr[multiPtr->count] = uiInfo.playerSpecies[multiPtr->count].Name;
 			}
 #endif
 			return qtrue;
