@@ -562,7 +562,7 @@ static const char *GetCRDelineatedString( const char *psStripFileRef, const char
 
 static const char *GetMonthAbbrevString( int iMonth )
 {
-	const char *p = GetCRDelineatedString("MP_INGAME","MONTHS", iMonth);
+	const char *p = GetCRDelineatedString("INGAMETEXT","MONTHS", iMonth);
 
 	return p ? p : "Jan";	// sanity
 }
@@ -608,7 +608,7 @@ static const char *GetNetSourceString(int iSource)
 {
 	static char result[256] = {0};
 
-	Q_strncpyz( result, GetCRDelineatedString( "MP_INGAME", "NET_SOURCES", UI_SourceForLAN() ), sizeof(result) );
+	Q_strncpyz( result, GetCRDelineatedString( "INGAMETEXT", "NET_SOURCES", UI_SourceForLAN() ), sizeof(result) );
 
 	if ( iSource >= UIAS_GLOBAL1 && iSource <= UIAS_GLOBAL5 ) {
 		Q_strcat( result, sizeof(result), va( " %d", iSource ) );
@@ -878,7 +878,7 @@ static void Text_Paint_Limit(float *maxX, float x, float y, float scale, vec4_t 
 void UI_LoadNonIngame() {
 	const char *menuSet = UI_Cvar_VariableString("ui_menuFilesMP");
 	if (menuSet == NULL || menuSet[0] == '\0') {
-		menuSet = "ui/jampmenus.txt";
+		menuSet = "ui/jk2mpmenus.txt";
 	}
 	UI_LoadMenus(menuSet, qfalse);
 	uiInfo.inGameLoad = qfalse;
@@ -1488,14 +1488,14 @@ void UI_LoadMenus(const char *menuFile, qboolean reset) {
 	int handle;
 //	int start = trap->Milliseconds();
 
-	trap->PC_LoadGlobalDefines ( "ui/jamp/menudef.h" );
+	trap->PC_LoadGlobalDefines ( "ui/jk2mp/menudef.h" );
 
 	handle = trap->PC_LoadSource( menuFile );
 	if (!handle) {
 		Com_Printf( S_COLOR_YELLOW "menu file not found: %s, using default\n", menuFile );
-		handle = trap->PC_LoadSource( "ui/jampmenus.txt" );
+		handle = trap->PC_LoadSource( "ui/jk2mpmenus.txt" );
 		if (!handle) {
-			trap->Error( ERR_DROP, S_COLOR_RED "default menu file not found: ui/jampmenus.txt, unable to continue!\n" );
+			trap->Error( ERR_DROP, S_COLOR_RED "default menu file not found: ui/jk2mpmenus.txt, unable to continue!\n" );
 		}
 	}
 
@@ -1545,14 +1545,14 @@ void UI_Load( void ) {
 
 	if (uiInfo.inGameLoad)
 	{
-		menuSet = "ui/jampingame.txt";
+		menuSet = "ui/jk2mpingame.txt";
 	}
 	else
 	{
 		menuSet = UI_Cvar_VariableString("ui_menuFilesMP");
 	}
 	if (menuSet == NULL || menuSet[0] == '\0') {
-		menuSet = "ui/jampmenus.txt";
+		menuSet = "ui/jk2mpmenus.txt";
 	}
 
 	String_Init();
@@ -1560,7 +1560,7 @@ void UI_Load( void ) {
 #ifdef PRE_RELEASE_TADEMO
 	UI_ParseGameInfo("demogameinfo.txt");
 #else
-	UI_ParseGameInfo("ui/jamp/gameinfo.txt");
+	UI_ParseGameInfo("ui/jk2mp/gameinfo.txt");
 #endif
 	UI_LoadArenas();
 	UI_LoadBots();
@@ -1621,27 +1621,27 @@ static const char* UI_GetGameTypeName(int gtEnum)
 	switch ( gtEnum )
 	{
 	case GT_FFA:
-		return UI_GetStringEdString("MENUS", "FREE_FOR_ALL");//"Free For All";
+		return UI_GetStringEdString("MENUS1", "FREE_FOR_ALL");//"Free For All";
 	case GT_HOLOCRON:
-		return UI_GetStringEdString("MENUS", "HOLOCRON_FFA");//"Holocron FFA";
+		return UI_GetStringEdString("MENUS1", "HOLOCRON_FFA");//"Holocron FFA";
 	case GT_JEDIMASTER:
-		return UI_GetStringEdString("MENUS", "SAGA");//"Jedi Master";??
+		return UI_GetStringEdString("INGAMETEXT", "SKILL5");//"Jedi Master";??
 	case GT_SINGLE_PLAYER:
-		return UI_GetStringEdString("MENUS", "SAGA");//"Team FFA";
+		return UI_GetStringEdString("MENUS1", "SAGA");//"Team FFA";
 	case GT_DUEL:
-		return UI_GetStringEdString("MENUS", "DUEL");//"Team FFA";
+		return UI_GetStringEdString("MENUS1", "DUEL");//"Team FFA";
 	case GT_POWERDUEL:
-		return UI_GetStringEdString("MENUS", "POWERDUEL");//"Team FFA";
+		return UI_GetStringEdString("MENUS1", "SAGA");//"Team FFA";
 	case GT_TEAM:
-		return UI_GetStringEdString("MENUS", "TEAM_FFA");//"Team FFA";
+		return UI_GetStringEdString("MENUS1", "TEAM_FFA");//"Team FFA";
 	case GT_SIEGE:
-		return UI_GetStringEdString("MENUS", "SIEGE");//"Siege";
+		return UI_GetStringEdString("MENUS1", "SAGA");//"Siege";
 	case GT_CTF:
-		return UI_GetStringEdString("MENUS", "CAPTURE_THE_FLAG");//"Capture the Flag";
+		return UI_GetStringEdString("MENUS1", "CAPTURE_THE_FLAG");//"Capture the Flag";
 	case GT_CTY:
-		return UI_GetStringEdString("MENUS", "CAPTURE_THE_YSALIMARI");//"Capture the Ysalamiri";
+		return UI_GetStringEdString("MENUS1", "CAPTURE_THE_YSALIMARI");//"Capture the Ysalamiri";
 	}
-	return UI_GetStringEdString("MENUS", "SAGA");//"Team FFA";
+	return UI_GetStringEdString("MENUS1", "SAGA");//"Team FFA";
 }
 
 
@@ -1684,7 +1684,7 @@ static void UI_DrawAutoSwitch(rectDef_t *rect, float scale, vec4_t color, int te
 		break;
 	}
 
-	stripString = UI_GetStringEdString("MP_INGAME", (char *)switchString);
+	stripString = UI_GetStringEdString("INGAMETEXT", (char *)switchString);
 
 	if (stripString)
 	{
@@ -1779,7 +1779,7 @@ static void UI_DrawSkill(rectDef_t *rect, float scale, vec4_t color, int textSty
 	if (i < 1 || i > numSkillLevels) {
 		i = 1;
 	}
-	Text_Paint(rect->x, rect->y, scale, color, (char *)UI_GetStringEdString("MP_INGAME", (char *)skillLevels[i-1]),0, 0, textStyle, iMenuFont);
+	Text_Paint(rect->x, rect->y, scale, color, (char *)UI_GetStringEdString("INGAMETEXT", (char *)skillLevels[i-1]),0, 0, textStyle, iMenuFont);
 }
 
 static void UI_DrawGenericNum(rectDef_t *rect, float scale, vec4_t color, int textStyle, int val, int min, int max, int type,int iMenuFont)
@@ -1812,7 +1812,7 @@ static void UI_DrawForceMastery(rectDef_t *rect, float scale, vec4_t color, int 
 		i = max;
 	}
 
-	s = (char *)UI_GetStringEdString("MP_INGAME", forceMasteryLevels[i]);
+	s = (char *)UI_GetStringEdString("INGAMETEXT", forceMasteryLevels[i]);
 	Text_Paint(rect->x, rect->y, scale, color, s, 0, 0, textStyle, iMenuFont);
 }
 
@@ -1823,18 +1823,18 @@ static void UI_DrawSkinColor(rectDef_t *rect, float scale, vec4_t color, int tex
 	switch(val)
 	{
 	case TEAM_RED:
-		trap->SE_GetStringTextString("MENUS_TEAM_RED", s, sizeof(s));
+		trap->SE_GetStringTextString("MENUS0_TEAM_RED", s, sizeof(s));
 //		Com_sprintf(s, sizeof(s), "Red\0");
 		break;
 	case TEAM_BLUE:
-		trap->SE_GetStringTextString("MENUS_TEAM_BLUE", s, sizeof(s));
+		trap->SE_GetStringTextString("MENUS0_TEAM_BLUE", s, sizeof(s));
 //		Com_sprintf(s, sizeof(s), "Blue\0");
 		break;
 	case 3:
 		Com_sprintf(s, sizeof(s), "RGB\0");
 		break;
 	default:
-		trap->SE_GetStringTextString("MENUS_DEFAULT", s, sizeof(s));
+		trap->SE_GetStringTextString("MENUS0_DEFAULT", s, sizeof(s));
 //		Com_sprintf(s, sizeof(s), "Default\0");
 		break;
 	}
@@ -1875,7 +1875,7 @@ static void UI_DrawForceSide(rectDef_t *rect, float scale, vec4_t color, int tex
 
 	if (val == FORCE_LIGHTSIDE)
 	{
-		trap->SE_GetStringTextString("MENUS_FORCEDESC_LIGHT",s, sizeof(s));
+		trap->SE_GetStringTextString("MENUS3_FORCEDESC_LIGHT",s, sizeof(s));
 		menu = Menus_FindByName("forcealloc");
 		if (menu)
 		{
@@ -1898,7 +1898,7 @@ static void UI_DrawForceSide(rectDef_t *rect, float scale, vec4_t color, int tex
 	}
 	else
 	{
-		trap->SE_GetStringTextString("MENUS_FORCEDESC_DARK",s, sizeof(s));
+		trap->SE_GetStringTextString("MENUS3_FORCEDESC_DARK",s, sizeof(s));
 		menu = Menus_FindByName("forcealloc");
 		if (menu)
 		{
@@ -2028,9 +2028,9 @@ static void UI_DrawJediNonJedi(rectDef_t *rect, float scale, vec4_t color, int t
 	}
 
 	if ( val == FORCE_NONJEDI )
-		trap->SE_GetStringTextString("MENUS_NO",s, sizeof(s));
+		trap->SE_GetStringTextString("MENUS0_NO",s, sizeof(s));
 	else
-		trap->SE_GetStringTextString("MENUS_YES",s, sizeof(s));
+		trap->SE_GetStringTextString("MENUS0_YES",s, sizeof(s));
 
 	Text_Paint(rect->x, rect->y, scale, color, s,0, 0, textStyle, iMenuFont);
 }
@@ -2087,12 +2087,12 @@ static void UI_DrawTeamMember(rectDef_t *rect, float scale, vec4_t color, qboole
 		if (value == -1)
 		{
 			//text = "Closed";
-			text = UI_GetStringEdString("MENUS", "CLOSED");
+			text = UI_GetStringEdString("MENUS3", "CLOSED");
 		}
 		else
 		{
 			//text = "Human";
-			text = UI_GetStringEdString("MENUS", "HUMAN");
+			text = UI_GetStringEdString("MENUS3", "HUMAN");
 		}
 	} else {
 		value -= 2;
@@ -2395,7 +2395,7 @@ static void UI_DrawNetSource(rectDef_t *rect, float scale, vec4_t color, int tex
 		trap->Cvar_Update(&ui_netSource);
 	}
 
-	trap->SE_GetStringTextString("MENUS_SOURCE", holdSPString, sizeof(holdSPString) );
+	trap->SE_GetStringTextString("MENUS3_SOURCE", holdSPString, sizeof(holdSPString) );
 	Text_Paint(rect->x, rect->y, scale, color, va("%s %s",holdSPString,
 		GetNetSourceString(ui_netSource.integer)), 0, 0, textStyle, iMenuFont);
 }
@@ -2432,7 +2432,7 @@ static void UI_DrawNetMapCinematic(rectDef_t *rect, float scale, vec4_t color) {
 
 static void UI_DrawNetFilter(rectDef_t *rect, float scale, vec4_t color, int textStyle, int iMenuFont)
 {
-	trap->SE_GetStringTextString("MENUS_GAME", holdSPString, sizeof(holdSPString));
+	trap->SE_GetStringTextString("MENUS3_GAME", holdSPString, sizeof(holdSPString));
 
 	Text_Paint(rect->x, rect->y, scale, color, va("%s %s",holdSPString, UI_FilterDescription( ui_serverFilterType.integer )), 0, 0, textStyle, iMenuFont);
 }
@@ -2676,18 +2676,18 @@ static int UI_OwnerDrawWidth(int ownerDraw, float scale) {
 		{
 		case TEAM_RED:
 //			s = "Red";
-			s = (char *)UI_GetStringEdString("MENUS", "TEAM_RED");
+			s = (char *)UI_GetStringEdString("MENUS0", "TEAM_RED");
 			break;
 		case TEAM_BLUE:
 //			s = "Blue";
-			s = (char *)UI_GetStringEdString("MENUS", "TEAM_BLUE");
+			s = (char *)UI_GetStringEdString("MENUS0", "TEAM_BLUE");
 			break;
 		case 3:
 			s = "RGB";
 			break;
 		default:
 //			s = "Default";
-			s = (char *)UI_GetStringEdString("MENUS", "DEFAULT");
+			s = (char *)UI_GetStringEdString("MENUS0", "DEFAULT");
 			break;
 		}
 		break;
@@ -2700,12 +2700,12 @@ static int UI_OwnerDrawWidth(int ownerDraw, float scale) {
 		if (i == FORCE_LIGHTSIDE)
 		{
 //			s = "Light";
-			s = (char *)UI_GetStringEdString("MENUS", "FORCEDESC_LIGHT");
+			s = (char *)UI_GetStringEdString("MENUS3", "FORCEDESC_LIGHT");
 		}
 		else
 		{
 //			s = "Dark";
-			s = (char *)UI_GetStringEdString("MENUS", "FORCEDESC_DARK");
+			s = (char *)UI_GetStringEdString("MENUS3", "FORCEDESC_DARK");
 		}
 		break;
     case UI_JEDI_NONJEDI:
@@ -2718,12 +2718,12 @@ static int UI_OwnerDrawWidth(int ownerDraw, float scale) {
 		if (i == FORCE_NONJEDI)
 		{
 //			s = "Non-Jedi";
-			s = (char *)UI_GetStringEdString("MENUS", "NO");
+			s = (char *)UI_GetStringEdString("MENUS0", "NO");
 		}
 		else
 		{
 //			s = "Jedi";
-			s = (char *)UI_GetStringEdString("MENUS", "YES");
+			s = (char *)UI_GetStringEdString("MENUS0", "YES");
 		}
 		break;
     case UI_FORCE_RANK:
@@ -2732,7 +2732,7 @@ static int UI_OwnerDrawWidth(int ownerDraw, float scale) {
 			i = 1;
 		}
 
-		s = (char *)UI_GetStringEdString("MP_INGAME", forceMasteryLevels[i]);
+		s = (char *)UI_GetStringEdString("INGAMETEXT", forceMasteryLevels[i]);
 		break;
 	case UI_FORCE_RANK_HEAL:
 	case UI_FORCE_RANK_LEVITATION:
@@ -2774,18 +2774,18 @@ static int UI_OwnerDrawWidth(int ownerDraw, float scale) {
 		if (i < 1 || i > numSkillLevels) {
 			i = 1;
 		}
-		s = (char *)UI_GetStringEdString("MP_INGAME", (char *)skillLevels[i-1]);
+		s = (char *)UI_GetStringEdString("INGAMETEXT", (char *)skillLevels[i-1]);
       break;
     case UI_BLUETEAMNAME:
 		i = UI_TeamIndexFromName(UI_Cvar_VariableString("ui_blueTeam"));
 		if (i >= 0 && i < uiInfo.teamCount) {
-			s = va("%s: %s", (char *)UI_GetStringEdString("MENUS", "TEAM_BLUE"), uiInfo.teamList[i].teamName);
+			s = va("%s: %s", (char *)UI_GetStringEdString("MENUS0", "TEAM_BLUE"), uiInfo.teamList[i].teamName);
 		}
       break;
     case UI_REDTEAMNAME:
 		i = UI_TeamIndexFromName(UI_Cvar_VariableString("ui_redTeam"));
 		if (i >= 0 && i < uiInfo.teamCount) {
-			s = va("%s: %s",  (char *)UI_GetStringEdString("MENUS", "TEAM_RED"), uiInfo.teamList[i].teamName);
+			s = va("%s: %s",  (char *)UI_GetStringEdString("MENUS0", "TEAM_RED"), uiInfo.teamList[i].teamName);
 		}
       break;
     case UI_BLUETEAM1:
@@ -2851,11 +2851,11 @@ static int UI_OwnerDrawWidth(int ownerDraw, float scale) {
 				trap->Cvar_Set("ui_netSource", "0");
 				trap->Cvar_Update(&ui_netSource);
 			}
-			trap->SE_GetStringTextString("MENUS_SOURCE", holdSPString, sizeof(holdSPString));
+			trap->SE_GetStringTextString("MENUS3_SOURCE", holdSPString, sizeof(holdSPString));
 			s = va("%s %s", holdSPString, GetNetSourceString(ui_netSource.integer));
 			break;
 		case UI_NETFILTER:
-			trap->SE_GetStringTextString("MENUS_GAME", holdSPString, sizeof(holdSPString));
+			trap->SE_GetStringTextString("MENUS3_GAME", holdSPString, sizeof(holdSPString));
 			s = va("%s %s", holdSPString, UI_FilterDescription( ui_serverFilterType.integer ) );
 			break;
 		case UI_TIER:
@@ -2870,7 +2870,7 @@ static int UI_OwnerDrawWidth(int ownerDraw, float scale) {
 			break;
 		case UI_KEYBINDSTATUS:
 			if (Display_KeyBindPending()) {
-				s = UI_GetStringEdString("MP_INGAME", "WAITING_FOR_NEW_KEY");
+				s = UI_GetStringEdString("INGAMETEXT", "WAITING_FOR_NEW_KEY");
 			} else {
 			//	s = "Press ENTER or CLICK to change, Press BACKSPACE to clear";
 			}
@@ -2903,13 +2903,13 @@ static void UI_DrawBotSkill(rectDef_t *rect, float scale, vec4_t color, int text
 {
 	if (uiInfo.skillIndex >= 0 && uiInfo.skillIndex < numSkillLevels)
 	{
-		Text_Paint(rect->x, rect->y, scale, color, (char *)UI_GetStringEdString("MP_INGAME", (char *)skillLevels[uiInfo.skillIndex]), 0, 0, textStyle,iMenuFont);
+		Text_Paint(rect->x, rect->y, scale, color, (char *)UI_GetStringEdString("INGAMETEXT", (char *)skillLevels[uiInfo.skillIndex]), 0, 0, textStyle,iMenuFont);
 	}
 }
 
 static void UI_DrawRedBlue(rectDef_t *rect, float scale, vec4_t color, int textStyle,int iMenuFont)
 {
-	Text_Paint(rect->x, rect->y, scale, color, (uiInfo.redBlue == 0) ? UI_GetStringEdString("MP_INGAME","RED") : UI_GetStringEdString("MP_INGAME","BLUE"), 0, 0, textStyle,iMenuFont);
+	Text_Paint(rect->x, rect->y, scale, color, (uiInfo.redBlue == 0) ? UI_GetStringEdString("INGAMETEXT","RED") : UI_GetStringEdString("INGAMETEXT","BLUE"), 0, 0, textStyle,iMenuFont);
 }
 
 static void UI_DrawCrosshair(rectDef_t *rect, float scale, vec4_t color) {
@@ -2944,14 +2944,14 @@ static void UI_DrawServerRefreshDate(rectDef_t *rect, float scale, vec4_t color,
 		lowLight[3] = 0.8 * color[3];
 		LerpColor(color,lowLight,newColor,0.5+0.5*sin((float)(uiInfo.uiDC.realTime / PULSE_DIVISOR)));
 
-		trap->SE_GetStringTextString("MP_INGAME_GETTINGINFOFORSERVERS", holdSPString, sizeof(holdSPString));
+		trap->SE_GetStringTextString("INGAMETEXT_GETTINGINFOFORSERVERS", holdSPString, sizeof(holdSPString));
 		Text_Paint(rect->x, rect->y, scale, newColor, va((char *) holdSPString, trap->LAN_GetServerCount(UI_SourceForLAN())), 0, 0, textStyle, iMenuFont);
 	}
 	else
 	{
 		char buff[64];
 		Q_strncpyz(buff, UI_Cvar_VariableString(va("ui_lastServerRefresh_%i", ui_netSource.integer)), sizeof(buff));
-		trap->SE_GetStringTextString("MP_INGAME_SERVER_REFRESHTIME", holdSPString, sizeof(holdSPString));
+		trap->SE_GetStringTextString("INGAMETEXT_SERVER_REFRESHTIME", holdSPString, sizeof(holdSPString));
 
 		Text_Paint(rect->x, rect->y, scale, color, va("%s: %s", holdSPString, buff), 0, 0, textStyle, iMenuFont);
 	}
@@ -3017,7 +3017,7 @@ static void UI_DrawServerMOTD(rectDef_t *rect, float scale, vec4_t color, int iM
 
 static void UI_DrawKeyBindStatus(rectDef_t *rect, float scale, vec4_t color, int textStyle,int iMenuFont) {
 	if (Display_KeyBindPending()) {
-		Text_Paint(rect->x, rect->y, scale, color, UI_GetStringEdString("MP_INGAME", "WAITING_FOR_NEW_KEY"), 0, 0, textStyle,iMenuFont);
+		Text_Paint(rect->x, rect->y, scale, color, UI_GetStringEdString("INGAMETEXT", "WAITING_FOR_NEW_KEY"), 0, 0, textStyle,iMenuFont);
 	} else {
 //		Text_Paint(rect->x, rect->y, scale, color, "Press ENTER or CLICK to change, Press BACKSPACE to clear", 0, 0, textStyle,iMenuFont);
 	}
@@ -5483,12 +5483,12 @@ static void UI_LoadMods() {
 	int		dirlen;
 	char	version[MAX_CVAR_VALUE_STRING] = {0};
 
-	trap->SE_GetStringTextString("MENUS_ALL", sAll, sizeof(sAll));
+	trap->SE_GetStringTextString("MENUS_JKA_ALL", sAll, sizeof(sAll));
 
 	// To still display base game with old engine
 	Q_strncpyz( version, UI_Cvar_VariableString( "version" ), sizeof(version) );
 	if ( strstr( version, "2003" ) ) {
-		trap->SE_GetStringTextString("MENUS_JEDI_ACADEMY", sJediAcademy, sizeof(sJediAcademy));
+		trap->SE_GetStringTextString("MENUS_JKA_JEDI_ACADEMY", sJediAcademy, sizeof(sJediAcademy));
 		uiInfo.modList[0].modName = String_Alloc("");
 		uiInfo.modList[0].modDescr = String_Alloc(sJediAcademy);
 		uiInfo.modCount = 1;
@@ -7517,7 +7517,7 @@ static void UI_RunMenuScript(char **args)
 		} else if (Q_stricmp(name, "clearError") == 0) {
 			trap->Cvar_Set("com_errorMessage", "");
 		} else if (Q_stricmp(name, "loadGameInfo") == 0) {
-			UI_ParseGameInfo("ui/jamp/gameinfo.txt");
+			UI_ParseGameInfo("ui/jk2mp/gameinfo.txt");
 		} else if (Q_stricmp(name, "RefreshServers") == 0) {
 			UI_StartServerRefresh(qtrue);
 			UI_BuildServerDisplayList(qtrue);
@@ -9331,7 +9331,7 @@ static void UI_BuildFindPlayerList(qboolean force) {
 		//
 		uiInfo.numFoundPlayerServers = 1;
 
-		trap->SE_GetStringTextString("MENUS_SEARCHING", holdSPString, sizeof(holdSPString));
+		trap->SE_GetStringTextString("MENUS_JKA_SEARCHING", holdSPString, sizeof(holdSPString));
 		trap->Cvar_Set( "ui_playerServersFound", va(	holdSPString,uiInfo.pendingServerStatus.num, numFound));
 	//	Com_sprintf(uiInfo.foundPlayerServerNames[uiInfo.numFoundPlayerServers-1],
 	//					sizeof(uiInfo.foundPlayerServerNames[uiInfo.numFoundPlayerServers-1]),
@@ -9375,7 +9375,7 @@ static void UI_BuildFindPlayerList(qboolean force) {
 					}
 				}
 
-				trap->SE_GetStringTextString("MENUS_SEARCHING", holdSPString, sizeof(holdSPString));
+				trap->SE_GetStringTextString("MENUS_JKA_SEARCHING", holdSPString, sizeof(holdSPString));
 				trap->Cvar_Set( "ui_playerServersFound", va(	holdSPString,uiInfo.pendingServerStatus.num, numFound));
 			//	Com_sprintf(uiInfo.foundPlayerServerNames[uiInfo.numFoundPlayerServers-1],
 			//					sizeof(uiInfo.foundPlayerServerNames[uiInfo.numFoundPlayerServers-1]),
@@ -9405,7 +9405,7 @@ static void UI_BuildFindPlayerList(qboolean force) {
 				uiInfo.pendingServerStatus.server[i].valid = qtrue;
 				uiInfo.pendingServerStatus.num++;
 
-				trap->SE_GetStringTextString("MENUS_SEARCHING", holdSPString, sizeof(holdSPString));
+				trap->SE_GetStringTextString("MENUS_JKA_SEARCHING", holdSPString, sizeof(holdSPString));
 				trap->Cvar_Set( "ui_playerServersFound", va(	holdSPString,uiInfo.pendingServerStatus.num, numFound));
 
 			//	Com_sprintf(uiInfo.foundPlayerServerNames[uiInfo.numFoundPlayerServers-1],
@@ -9424,7 +9424,7 @@ static void UI_BuildFindPlayerList(qboolean force) {
 		uiInfo.nextFindPlayerRefresh = uiInfo.uiDC.realTime + 25;
 	}
 	else {
-		trap->SE_GetStringTextString("MENUS_SERVERS_FOUNDWITH", holdSPString, sizeof(holdSPString));
+		trap->SE_GetStringTextString("MENUS3_SERVERS_FOUNDWITH", holdSPString, sizeof(holdSPString));
 		// add a line that shows the number of servers found
 		if (!uiInfo.numFoundPlayerServers)
 		{
@@ -11695,17 +11695,17 @@ void UI_Init( qboolean inGameLoad ) {
 	uiInfo.characterCount = 0;
 	uiInfo.aliasCount = 0;
 
-	UI_ParseGameInfo("ui/jamp/gameinfo.txt");
+	UI_ParseGameInfo("ui/jk2mp/gameinfo.txt");
 
 	menuSet = UI_Cvar_VariableString("ui_menuFilesMP");
 	if (menuSet == NULL || menuSet[0] == '\0') {
-		menuSet = "ui/jampmenus.txt";
+		menuSet = "ui/jk2mpmenus.txt";
 	}
 
 #if 1
 	if (inGameLoad)
 	{
-		UI_LoadMenus("ui/jampingame.txt", qtrue);
+		UI_LoadMenus("ui/jk2mpingame.txt", qtrue);
 	}
 	else if (!ui_bypassMainMenuLoad.integer)
 	{
@@ -11713,7 +11713,7 @@ void UI_Init( qboolean inGameLoad ) {
 	}
 #else //this was adding quite a giant amount of time to the load time
 	UI_LoadMenus(menuSet, qtrue);
-	UI_LoadMenus("ui/jampingame.txt", qtrue);
+	UI_LoadMenus("ui/jk2mpingame.txt", qtrue);
 #endif
 
 	{
@@ -11818,7 +11818,7 @@ void UI_Refresh( int realtime )
 
 		if (!parsedFPMessage[0] /*&& uiMaxRank > ui_rankChange.integer*/)
 		{
-			const char *printMessage = UI_GetStringEdString("MP_INGAME", "SET_NEW_RANK");
+			const char *printMessage = UI_GetStringEdString("INGAMETEXT", "SET_NEW_RANK");
 
 			int i = 0;
 			int p = 0;
@@ -12021,17 +12021,17 @@ static void UI_DisplayDownloadInfo( const char *downloadName, float centerPoint,
 
 	UI_FillRect( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, colorLtGreyAlpha );
 
-	s = GetCRDelineatedString("MENUS","DOWNLOAD_STUFF", 0);	// "Downloading:"
+	s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 0);	// "Downloading:"
 	Q_strncpyz(sDownLoading,s?s:"", sizeof(sDownLoading));
-	s = GetCRDelineatedString("MENUS","DOWNLOAD_STUFF", 1);	// "Estimated time left:"
+	s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 1);	// "Estimated time left:"
 	Q_strncpyz(sEstimatedTimeLeft,s?s:"", sizeof(sEstimatedTimeLeft));
-	s = GetCRDelineatedString("MENUS","DOWNLOAD_STUFF", 2);	// "Transfer rate:"
+	s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 2);	// "Transfer rate:"
 	Q_strncpyz(sTransferRate,s?s:"", sizeof(sTransferRate));
-	s = GetCRDelineatedString("MENUS","DOWNLOAD_STUFF", 3);	// "of"
+	s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 3);	// "of"
 	Q_strncpyz(sOf,s?s:"", sizeof(sOf));
-	s = GetCRDelineatedString("MENUS","DOWNLOAD_STUFF", 4);	// "copied"
+	s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 4);	// "copied"
 	Q_strncpyz(sCopied,s?s:"", sizeof(sCopied));
-	s = GetCRDelineatedString("MENUS","DOWNLOAD_STUFF", 5);	// "sec."
+	s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 5);	// "sec."
 	Q_strncpyz(sSec,s?s:"", sizeof(sSec));
 
 	downloadSize = trap->Cvar_VariableValue( "cl_downloadSize" );
@@ -12136,15 +12136,15 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 
 	info[0] = '\0';
 	if( trap->GetConfigString( CS_SERVERINFO, info, sizeof(info) ) ) {
-		trap->SE_GetStringTextString("MENUS_LOADING_MAPNAME", sStringEdTemp, sizeof(sStringEdTemp));
+		trap->SE_GetStringTextString("MENUS3_LOADING_MAPNAME", sStringEdTemp, sizeof(sStringEdTemp));
 		Text_PaintCenter(centerPoint, yStart, scale, colorWhite, va( /*"Loading %s"*/sStringEdTemp, Info_ValueForKey( info, "mapname" )), 0, FONT_MEDIUM);
 	}
 
 	if (!Q_stricmp(cstate.servername,"localhost")) {
-		trap->SE_GetStringTextString("MENUS_STARTING_UP", sStringEdTemp, sizeof(sStringEdTemp));
+		trap->SE_GetStringTextString("MENUS3_STARTING_UP", sStringEdTemp, sizeof(sStringEdTemp));
 		Text_PaintCenter(centerPoint, yStart + 48, scale, colorWhite, sStringEdTemp, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
 	} else {
-		trap->SE_GetStringTextString("MENUS_CONNECTING_TO", sStringEdTemp, sizeof(sStringEdTemp));
+		trap->SE_GetStringTextString("MENUS3_CONNECTING_TO", sStringEdTemp, sizeof(sStringEdTemp));
 		Q_strncpyz(text, va(/*"Connecting to %s"*/sStringEdTemp, cstate.servername), sizeof(text));
 		Text_PaintCenter(centerPoint, yStart + 48, scale, colorWhite,text , ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
 	}
@@ -12159,13 +12159,13 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 	switch ( cstate.connState ) {
 	case CA_CONNECTING:
 		{
-			trap->SE_GetStringTextString("MENUS_AWAITING_CONNECTION", sStringEdTemp, sizeof(sStringEdTemp));
+			trap->SE_GetStringTextString("MENUS3_AWAITING_CONNECTION", sStringEdTemp, sizeof(sStringEdTemp));
 			s = va(/*"Awaiting connection...%i"*/sStringEdTemp, cstate.connectPacketCount);
 		}
 		break;
 	case CA_CHALLENGING:
 		{
-			trap->SE_GetStringTextString("MENUS_AWAITING_CHALLENGE", sStringEdTemp, sizeof(sStringEdTemp));
+			trap->SE_GetStringTextString("MENUS3_AWAITING_CHALLENGE", sStringEdTemp, sizeof(sStringEdTemp));
 			s = va(/*"Awaiting challenge...%i"*/sStringEdTemp, cstate.connectPacketCount);
 		}
 		break;
@@ -12178,7 +12178,7 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 				return;
 			}
 		}
-		trap->SE_GetStringTextString("MENUS_AWAITING_GAMESTATE", sStringEdTemp, sizeof(sStringEdTemp));
+		trap->SE_GetStringTextString("MENUS3_AWAITING_GAMESTATE", sStringEdTemp, sizeof(sStringEdTemp));
 		s = /*"Awaiting gamestate..."*/sStringEdTemp;
 		break;
 	case CA_LOADING:

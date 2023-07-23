@@ -3435,7 +3435,7 @@ const char *Item_Multi_Setting(itemDef_t *item) {
  			}
  		}
 	}
-	return "@MENUS_CUSTOM";
+	return "@MENUS1_CUSTOM";
 }
 
 qboolean Item_Multi_HandleKey(itemDef_t *item, int key)
@@ -4843,8 +4843,8 @@ void Item_YesNoBitmask_Paint(itemDef_t *item) {
 	value = (item->cvar) ? DC->getCVarValue(item->cvar) : 0;
 	mask = (item->bitMask) ? atoi(item->bitMask) : 0;
 
-	trap->SE_GetStringTextString("MENUS_YES", sYES, sizeof(sYES));
-	trap->SE_GetStringTextString("MENUS_NO", sNO, sizeof(sNO));
+	trap->SE_GetStringTextString("MENUS0_YES", sYES, sizeof(sYES));
+	trap->SE_GetStringTextString("MENUS0_NO", sNO, sizeof(sNO));
 
 	//JLFYESNO MPMOVED
 	if (item->invertYesNo)
@@ -4884,8 +4884,8 @@ void Item_YesNo_Paint(itemDef_t *item) {
 
 	value = (item->cvar) ? DC->getCVarValue(item->cvar) : 0;
 
-	trap->SE_GetStringTextString("MENUS_YES",sYES, sizeof(sYES));
-	trap->SE_GetStringTextString("MENUS_NO", sNO,  sizeof(sNO));
+	trap->SE_GetStringTextString("MENUS0_YES",sYES, sizeof(sYES));
+	trap->SE_GetStringTextString("MENUS0_NO", sNO,  sizeof(sNO));
 
 //JLFYESNO MPMOVED
 	if (item->invertYesNo)
@@ -5143,7 +5143,7 @@ void BindingFromName( const char *cvar ) {
 				DC->keynumToStringBuf( b2, keyname[1], sizeof( keyname[1] ) );
 // do NOT do this or it corrupts asian text!!!					Q_strupr(keyname[1]);
 
-				trap->SE_GetStringTextString( "MENUS_KEYBIND_OR", sOR, sizeof( sOR ) );
+				trap->SE_GetStringTextString( "MENUS3_KEYBIND_OR", sOR, sizeof( sOR ) );
 
 				Com_sprintf( g_nameBind, sizeof( g_nameBind ), "%s %s %s", keyname[0], sOR, keyname[1] );
 			}
@@ -8275,7 +8275,7 @@ qboolean ItemParse_cvarFloat( itemDef_t *item, int handle ) {
 
 #ifdef JK2_UI
 char currLanguage[32][128];
-static const char languageString[32] = "@MENUS_MYLANGUAGE";
+static const char languageString[32] = "@MENUS_JKA_MYLANGUAGE";
 #endif
 
 qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
@@ -8303,7 +8303,7 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 #ifndef JK2_CGAME
 			for (; multiPtr->count < uiInfo.playerSpeciesCount; multiPtr->count++)
 			{
-				multiPtr->cvarList[multiPtr->count] = String_Alloc(Q_strupr(va("@MENUS_%s",uiInfo.playerSpecies[multiPtr->count].Name )));	//look up translation
+				multiPtr->cvarList[multiPtr->count] = String_Alloc(Q_strupr(va("@MENUS_JKA_%s",uiInfo.playerSpecies[multiPtr->count].Name )));	//look up translation
 				multiPtr->cvarStr[multiPtr->count] = uiInfo.playerSpecies[multiPtr->count].Name;	//value
 			}
 #endif
@@ -8746,7 +8746,7 @@ static void Item_ApplyHacks( itemDef_t *item ) {
 		}
 		if ( !found && multiPtr->count < MAX_MULTI_CVARS )
 		{
-			multiPtr->cvarList[multiPtr->count] = String_Alloc("@MENUS_VERY_HIGH");
+			multiPtr->cvarList[multiPtr->count] = String_Alloc("@MENUS0_VERY_HIGH");
 			multiPtr->cvarValue[multiPtr->count] = 44;
 			multiPtr->count++;
 			//Com_Printf( "Extended sound quality field to contain very high setting.\n");
