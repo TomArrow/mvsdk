@@ -130,6 +130,18 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 	#define PATH_SEP '/'
 
+	#ifdef __ppc__
+		#define ARCH_STRING "ppc"
+	#elif defined __arm__
+		#define ARCH_STRING "arm"
+	#elif defined __i386__
+		#define ARCH_STRING "x86"
+	#elif defined __x86_64__
+		#define ARCH_STRING "x86_64"
+	#elif defined(__aarch64__) or defined(ARCH_ARM64)
+		#define ARCH_STRING "arm64"
+	#endif
+
 	#if !defined(ARCH_STRING)
 		#error ARCH_STRING should be defined by the build system
 	#endif
