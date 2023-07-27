@@ -34,6 +34,7 @@ USER INTERFACE MAIN
 //#define PRE_RELEASE_TADEMO
 
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "ghoul2/G2.h"
 #include "ui_local.h"
@@ -11285,6 +11286,8 @@ void UI_SiegeInit(void)
 	}
 }
 
+#define CHECK_ALLOCATION(function, variable, size) if (variable == NULL) {Com_Error(ERR_FATAL, "%s: failed to allocate %" PRIuMAX " bytes for " #variable "\n", function, size);}
+
 /*
 =================
 UI_ParseColorData
@@ -11302,6 +11305,8 @@ static qboolean UI_ParseColorData(char* buf, playerSpeciesInfo_t *species,char*	
 	species->ColorMax = 16;
 	species->Color = (playerColor_t *)malloc(species->ColorMax * sizeof(playerColor_t));
 
+	CHECK_ALLOCATION("UI_ParseColorData", species->Color, species->ColorMax * sizeof(playerColor_t));
+
 	while ( p )
 	{
 		token = COM_ParseExt( &p, qtrue );	//looking for the shader
@@ -11313,6 +11318,7 @@ static qboolean UI_ParseColorData(char* buf, playerSpeciesInfo_t *species,char*	
 		{
 			species->ColorMax *= 2;
 			species->Color = (playerColor_t *)realloc(species->Color, species->ColorMax * sizeof(playerColor_t));
+			CHECK_ALLOCATION("UI_ParseColorData", species->Color, species->ColorMax * sizeof(playerColor_t));
 		}
 
 		memset(&species->Color[species->ColorCount], 0, sizeof(playerColor_t));
@@ -11376,6 +11382,7 @@ int UI_GetFileList(const char *path, const char *extension, char **fileList)
 		buffer = realloc(*fileList, bufferSize);
 		if (buffer == NULL)
 		{
+			Com_Printf(S_COLOR_YELLOW "WARNING: UI_GetFileList: failed to reallocate from %" PRIuMAX " bytes to %" PRIuMAX " bytes\n", previousBufferSize, bufferSize);
 			return listSize;
 		}
 		*fileList = buffer;
@@ -11386,6 +11393,10 @@ int UI_GetFileList(const char *path, const char *extension, char **fileList)
 	if (buffer != NULL)
 	{
 		*fileList = buffer;
+	}
+	else
+	{
+		Com_Printf(S_COLOR_YELLOW "WARNING: UI_GetFileList: failed to reallocate from %" PRIuMAX " bytes to %" PRIuMAX " bytes\n", bufferSize, previousBufferSize);
 	}
 	return listSize;
 }
@@ -11409,6 +11420,8 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 	uiInfo.playerSpeciesIndex = 0;
 	uiInfo.playerSpeciesMax = 8;
 	uiInfo.playerSpecies = (playerSpeciesInfo_t *)malloc(uiInfo.playerSpeciesMax * sizeof(playerSpeciesInfo_t));
+
+	CHECK_ALLOCATION("UI_BuildPlayerModel_List", uiInfo.playerSpecies, uiInfo.playerSpeciesMax * sizeof(playerSpeciesInfo_t));
 
 	// iterate directory of all player models
 	numdirs = UI_GetFileList("models/players", "/", &dirlist);
@@ -11479,6 +11492,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 			{
 				uiInfo.playerSpeciesMax *= 2;
 				uiInfo.playerSpecies = (playerSpeciesInfo_t *)realloc(uiInfo.playerSpecies, uiInfo.playerSpeciesMax*sizeof(playerSpeciesInfo_t));
+				CHECK_ALLOCATION("UI_BuildPlayerModel_List", uiInfo.playerSpecies, uiInfo.playerSpeciesMax * sizeof(playerSpeciesInfo_t));
 			}
 			species = &uiInfo.playerSpecies[uiInfo.playerSpeciesCount];
 			memset(species, 0, sizeof(playerSpeciesInfo_t));
@@ -11496,6 +11510,10 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 			species->SkinHead = (skinName_t *)malloc(species->SkinHeadMax * sizeof(skinName_t));
 			species->SkinTorso = (skinName_t *)malloc(species->SkinTorsoMax * sizeof(skinName_t));
 			species->SkinLeg = (skinName_t *)malloc(species->SkinLegMax * sizeof(skinName_t));
+
+			CHECK_ALLOCATION("UI_BuildPlayerModel_List", species->SkinHead, species->SkinHeadMax * sizeof(skinName_t));
+			CHECK_ALLOCATION("UI_BuildPlayerModel_List", species->SkinTorso, species->SkinTorsoMax * sizeof(skinName_t));
+			CHECK_ALLOCATION("UI_BuildPlayerModel_List", species->SkinLeg, species->SkinLegMax * sizeof(skinName_t));
 
 			free(buffer);
 
@@ -11521,6 +11539,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 						{
 							species->SkinHeadMax *= 2;
 							species->SkinHead = (skinName_t *)realloc(species->SkinHead, species->SkinHeadMax*sizeof(skinName_t));
+							CHECK_ALLOCATION("UI_BuildPlayerModel_List", species->SkinHead, species->SkinHeadMax * sizeof(skinName_t));
 						}
 						Q_strncpyz(species->SkinHead[species->SkinHeadCount++].name, skinname, SKIN_LENGTH);
 						iSkinParts |= 1<<0;
@@ -11531,6 +11550,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 						{
 							species->SkinTorsoMax *= 2;
 							species->SkinTorso = (skinName_t *)realloc(species->SkinTorso, species->SkinTorsoMax*sizeof(skinName_t));
+							CHECK_ALLOCATION("UI_BuildPlayerModel_List", species->SkinTorso, species->SkinTorsoMax * sizeof(skinName_t));
 						}
 						Q_strncpyz(species->SkinTorso[species->SkinTorsoCount++].name, skinname, SKIN_LENGTH);
 						iSkinParts |= 1<<1;
@@ -11541,6 +11561,7 @@ void UI_BuildPlayerModel_List( qboolean inGameLoad )
 						{
 							species->SkinLegMax *= 2;
 							species->SkinLeg = (skinName_t *)realloc(species->SkinLeg, species->SkinLegMax*sizeof(skinName_t));
+							CHECK_ALLOCATION("UI_BuildPlayerModel_List", species->SkinLeg, species->SkinLegMax * sizeof(skinName_t));
 						}
 						Q_strncpyz(species->SkinLeg[species->SkinLegCount++].name, skinname, SKIN_LENGTH);
 						iSkinParts |= 1<<2;
