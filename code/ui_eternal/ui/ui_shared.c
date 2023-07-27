@@ -3417,6 +3417,8 @@ const char *Item_Multi_Setting(itemDef_t *item) {
 			}
 		}
 
+		multiPtr->count = Com_Clampi(0, MAX_MULTI_CVARS - 1, multiPtr->count);
+
 		for (i = 0; i < multiPtr->count; i++)
 		{
 			if (multiPtr->strDef)
@@ -8305,6 +8307,14 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 			char name[MAX_QPATH];
 			for (; multiPtr->count < uiInfo.playerSpeciesCount; multiPtr->count++)
 			{
+				multiPtr->count = Com_Clampi(0, uiInfo.playerSpeciesCount - 1, multiPtr->count);
+				if (&uiInfo.playerSpecies[multiPtr->count] == NULL)
+				{
+					Com_Printf(S_COLOR_YELLOW "WARNING: ItemParse_cvarStrList: trying to access NULL player specie\n");
+					multiPtr->cvarList[multiPtr->count] = String_Alloc("NULL");
+					return qtrue;
+				}
+
 				Q_strncpyz(name, uiInfo.playerSpecies[multiPtr->count].Name, sizeof(name));
 				Q_strupr(name);
 				trap->SE_GetStringTextString(va("MENUS_JKA_%s", name), buffer, sizeof(buffer));
