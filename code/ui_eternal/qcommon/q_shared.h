@@ -183,7 +183,7 @@ typedef int32_t qhandle_t, thandle_t, fxHandle_t, sfxHandle_t, fileHandle_t, cli
 #define	MAX_STRING_TOKENS	1024	// max tokens resulting from Cmd_TokenizeString
 #define	MAX_TOKEN_CHARS		1024	// max length of an individual token
 
-#define	MAX_INFO_STRING		1024
+#define	MAX_INFO_STRING		4096
 #define	MAX_INFO_KEY		1024
 #define	MAX_INFO_VALUE		1024
 

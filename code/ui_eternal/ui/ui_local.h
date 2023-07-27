@@ -145,7 +145,7 @@ typedef struct playerInfo_s {
 #define MAX_MODS				64
 #define MAX_DEMOS				2048 // 256
 #define MAX_MOVIES				2048 // 256
-#define MAX_Q3PLAYERMODELS		4096
+#define MAX_Q3PLAYERMODELS		8192
 
 #define DEMO_DIRECTORY "demos"
 #define DEMO_EXTENSION "dm_"
@@ -366,7 +366,7 @@ typedef struct uiInfo_s {
 	int						currentCrosshair;
 
 	int						q3HeadCount;
-	char					q3HeadNames[MAX_Q3PLAYERMODELS][64];
+	char					q3HeadNames[MAX_Q3PLAYERMODELS][1024];
 	qhandle_t				q3HeadIcons[MAX_Q3PLAYERMODELS];
 	int						q3SelectedHead;
 

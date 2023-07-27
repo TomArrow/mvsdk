@@ -36,7 +36,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #define MAX_MENUDEFFILE				8192 //4096
 #define MAX_MENUFILE				65536 //32768
 #define MAX_MENUS					128 //64
-#define MAX_MENUITEMS				512 //256
+#define MAX_MENUITEMS				4800
 #define MAX_COLOR_RANGES			10
 #define MAX_OPEN_MENUS				64 //16
 #define	MAX_TEXTSCROLL_LINES		256
@@ -76,7 +76,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #define CURSOR_ARROW				0x00000002
 #define CURSOR_SIZER				0x00000004
 
-#define STRING_POOL_SIZE (2*1024*1024)
+#define STRING_POOL_SIZE (4*1024*1024)
 
 #define MAX_STRING_HANDLES 4096
 #define MAX_SCRIPT_ARGS 12
