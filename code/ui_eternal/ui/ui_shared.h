@@ -462,7 +462,7 @@ typedef struct displayContextDef_s {
 	void			(*startLocalSound)					( sfxHandle_t sfx, int channelNum );
 	qboolean		(*ownerDrawHandleKey)				( int ownerDraw, int flags, float *special, int key );
 	int				(*feederCount)						( float feederID );
-	const char *	(*feederItemText)					( float feederID, int index, int column, qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3 );
+	const char *	(*feederItemText)					( float feederID, int index, int column, qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6 );
 	qhandle_t		(*feederItemImage)					( float feederID, int index );
 	qboolean		(*feederSelection)					( float feederID, int index, itemDef_t *item );
 	void			(*keynumToStringBuf)				( int keynum, char *buf, int buflen );

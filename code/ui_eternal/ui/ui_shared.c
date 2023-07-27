@@ -5672,7 +5672,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 	float x, y, sizeWidth, count, i, i2,sizeHeight, thumb;
 	int startPos;
 	qhandle_t image;
-	qhandle_t optionalImage1, optionalImage2, optionalImage3;
+	qhandle_t optionalImage1, optionalImage2, optionalImage3, optionalImage4;
 	listBoxDef_t *listPtr = item->typeData.listbox;
 //JLF MPMOVED
 
@@ -5798,7 +5798,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 
 #ifdef	_DEBUG
 		// Show pic name
-		text = DC->feederItemText(item->special, item->cursorPos, 0, &optionalImage1, &optionalImage2, &optionalImage3);
+		text = DC->feederItemText(item->special, item->cursorPos, 0, &optionalImage1, &optionalImage2, &optionalImage3, &optionalImage4, NULL, NULL);
 		if (text)
 		{
 			DC->drawText(item->window.rect.x, item->window.rect.y+item->window.rect.h, item->textscale, item->window.foreColor, text, 0, 0, item->textStyle, item->iMenuFont);
@@ -5963,7 +5963,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 					{
 						char	temp[MAX_STRING_CHARS];
 						int imageStartX = listPtr->columnInfo[j].pos;
-						text = DC->feederItemText(item->special, i, j, &optionalImage1, &optionalImage2, &optionalImage3);
+						text = DC->feederItemText(item->special, i, j, &optionalImage1, &optionalImage2, &optionalImage3, &optionalImage4, NULL, NULL);
 
 						if( !text )
 						{
@@ -6015,7 +6015,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 				}
 				else
 				{
-					text = DC->feederItemText(item->special, i, 0, &optionalImage1, &optionalImage2, &optionalImage3 );
+					text = DC->feederItemText(item->special, i, 0, &optionalImage1, &optionalImage2, &optionalImage3, &optionalImage4, NULL, NULL );
 					if ( optionalImage1 >= 0 || optionalImage2 >= 0 || optionalImage3 >= 0)
 					{
 						//DC->drawHandlePic(x + 4 + listPtr->elementHeight, y, listPtr->columnInfo[j].width, listPtr->columnInfo[j].width, optionalImage);

@@ -9805,14 +9805,14 @@ static void UI_UpdatePendingPings() {
 }
 
 static const char *UI_FeederItemText(float feederID, int index, int column,
-									 qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3) {
+									 qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6) {
 	static char info[MAX_STRING_CHARS]; // don't change this size without changing the sizes inside the SaberProperName calls
 	static char hostname[MAX_HOSTNAMELENGTH] = {0};
 	static char clientBuff[32];
 	static char needPass[32];
 	static int lastColumn = -1;
 	static int lastTime = 0;
-	*handle1 = *handle2 = *handle3 = -1;
+	*handle1 = *handle2 = *handle3 = *handle4 = -1;
 
 	if (feederID == FEEDER_SABER_SINGLE_INFO)
 	{
