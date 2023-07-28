@@ -7575,6 +7575,11 @@ stillDoSaber:
 		legs.renderfx |= RF_MINLIGHT;
 	}
 
+	if (cg.snap->ps.clientNum != cent->currentState.number && cg_wallhack.integer == 1 && cgs.gametype <= GT_TEAM)
+	{
+		legs.renderfx |= RF_DEPTHHACK;
+	}
+
 //JAPRO - Clientside - Brightskins - Start
 	if (cg_brightskins.integer)
 	{
