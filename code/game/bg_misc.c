@@ -2125,6 +2125,119 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad ) {
 	VectorCopy( jumppad->origin2, ps->velocity );
 }
 
+
+
+#define JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY 1
+#define JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY 2
+#define JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_Z 4
+#define JUMPPAD_VELOCITY_SPAWNFLAG_ADD_Z 8
+#define JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_XY 16
+#define JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_Z 32
+#define JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS 64
+
+void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad) {
+	vec3_t tmpHorz, tmpVert;
+	int flags = jumppad->weapon;
+	float speedHorz = jumppad->angles2[0];
+	float speedVert = jumppad->angles2[2];
+	qboolean isFirstFrame = ps->jumppad_ent != jumppad->number;
+
+
+	/*
+	vec3_t	angles;
+	float p;
+	int effectNum;
+
+	// if we didn't hit this same jumppad the previous frame
+	// then don't play the event sound again if we are in a fat trigger
+	if ( ps->jumppad_ent != jumppad->number ) {
+
+		vectoangles( jumppad->origin2, angles);
+		p = fabs( AngleNormalize180( angles[PITCH] ) );
+		if( p < 45 ) {
+			effectNum = 0;
+		} else {
+			effectNum = 1;
+		}
+	}
+	*/
+
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY) {
+
+		VectorCopy(ps->velocity, tmpHorz);
+		tmpHorz[2] = 0;
+		VectorNormalize(tmpHorz);
+		VectorScale(tmpHorz, speedHorz, tmpHorz);
+	}
+	else {
+
+		VectorCopy(jumppad->origin2, tmpHorz);
+		tmpHorz[2] = 0;
+		if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_XY) {
+
+			// Is the angle between the vectors bigger than 90 degrees? Then reverse our drection to result in increased speed.
+			if (DotProduct(tmpHorz, ps->velocity) < 0) {
+				VectorNegate(tmpHorz, tmpHorz);
+			}
+		}
+	}
+
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_Z) {
+
+		VectorSet(tmpVert, 0, 0, copysignf(speedVert, ps->velocity[2]));
+	}
+	else {
+
+		VectorSet(tmpVert, 0, 0, flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_Z ? copysignf(jumppad->origin2[2], ps->velocity[2]) : jumppad->origin2[2]);
+	}
+
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY) {
+
+		if (isFirstFrame) {
+
+			VectorAdd(tmpHorz, ps->velocity, tmpHorz);
+			tmpHorz[2] = 0;
+
+			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && DotProduct(tmpHorz, ps->velocity) < 0) {
+
+				VectorSet(tmpHorz, 0, 0, 0);
+			}
+
+			ps->velocity[0] = tmpHorz[0];
+			ps->velocity[1] = tmpHorz[1];
+		}
+	}
+	else {
+		ps->velocity[0] = tmpHorz[0];
+		ps->velocity[1] = tmpHorz[1];
+	}
+
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_Z) {
+
+		if (isFirstFrame) {
+
+			tmpVert[2] += ps->velocity[2];
+
+			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && tmpVert[2] * ps->velocity[2] < 0) {
+
+				tmpVert[2] = 0;
+			}
+
+			ps->velocity[2] = tmpVert[2];
+		}
+	}
+	else {
+		ps->velocity[2] = tmpVert[2];
+	}
+
+
+	// remember hitting this jumppad this frame
+	ps->jumppad_ent = jumppad->number;
+	ps->jumppad_frame = ps->pmove_framecount;
+	// give the player the velocity from the jumppad
+	//VectorCopy( jumppad->origin2, ps->velocity );
+}
+
 /*
 ========================
 BG_PlayerStateToEntityState

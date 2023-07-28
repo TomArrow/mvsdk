@@ -107,6 +107,7 @@ vec4_t colorTable[CT_MAX] =
 
 #include "holocronicons.h"
 
+int forceMyModelModificationCount = -1;
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
@@ -433,6 +434,7 @@ vmCvar_t	cg_bobroll;
 vmCvar_t	cg_shadows;
 vmCvar_t	cg_drawTimer;
 vmCvar_t	cg_drawFPS;
+vmCvar_t	cg_drawFPSLowest;
 vmCvar_t	cg_drawSnapshot;
 vmCvar_t	cg_draw3dIcons;
 vmCvar_t	cg_drawIcons;
@@ -447,6 +449,7 @@ vmCvar_t	cg_crosshairX;
 vmCvar_t	cg_crosshairY;
 vmCvar_t	cg_crosshairHealth;
 vmCvar_t	cg_draw2D;
+vmCvar_t	cg_drawCenterAlways;
 vmCvar_t	cg_drawStatus;
 vmCvar_t	cg_animSpeed;
 vmCvar_t	cg_debugAnim;
@@ -537,6 +540,7 @@ vmCvar_t	cg_movementKeysSize;
 //only for you, arto
 vmCvar_t	cg_hudColors;
 vmCvar_t	cg_drawScore;
+vmCvar_t	cg_drawScoreDefrag;
 vmCvar_t	cg_centerHeight;
 vmCvar_t	cg_centerSize;
 
@@ -613,6 +617,7 @@ vmCvar_t 	cg_teamChatHeight;
 vmCvar_t 	cg_stats;
 vmCvar_t 	cg_buildScript;
 vmCvar_t 	cg_forceModel;
+vmCvar_t 	cg_forceMyModel;
 vmCvar_t	cg_paused;
 vmCvar_t	cg_blood;
 vmCvar_t	cg_predictItems;
@@ -699,9 +704,11 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_stereoSeparation, "cg_stereoSeparation", "0.4", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE  },
 	{ &cg_draw2D, "cg_draw2D", "1", CVAR_ARCHIVE  },
+	{ &cg_drawCenterAlways, "cg_drawCenterAlways", "0", CVAR_ARCHIVE  },
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE  },
 	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE  },
+	{ &cg_drawFPSLowest, "cg_drawFPSLowest", "1", CVAR_ARCHIVE  },
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE  },
 	{ &cg_draw3dIcons, "cg_draw3dIcons", "0", CVAR_ARCHIVE  },
 	{ &cg_drawIcons, "cg_drawIcons", "1", CVAR_ARCHIVE  },
@@ -731,7 +738,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	//{ &cg_swingSpeed, "cg_swingSpeed", "0.3", CVAR_CHEAT },
 	{ &cg_animSpeed, "cg_animspeed", "1", CVAR_CHEAT },
 	{ &cg_debugAnim, "cg_debuganim", "0", CVAR_CHEAT },
-	{ &cg_debugSaber, "cg_debugsaber", "0", CVAR_CHEAT },
+	{ &cg_debugSaber, "cg_debugsaber", "-1", CVAR_CHEAT },
 	{ &cg_debugPosition, "cg_debugposition", "0", CVAR_CHEAT },
 	{ &cg_debugEvents, "cg_debugevents", "0", CVAR_CHEAT },
 	{ &cg_errorDecay, "cg_errordecay", "100", 0 },
@@ -806,6 +813,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	//only for you, arto
 	{ &cg_hudColors, "cg_hudColors", "1", CVAR_ARCHIVE },
 	{ &cg_drawScore, "cg_drawScore", "2", CVAR_ARCHIVE },
+	{ &cg_drawScoreDefrag, "cg_drawScoreDefrag", "0", CVAR_ARCHIVE }, // Interpret score as seconds into a run
 	{ &cg_centerHeight, "cg_centerHeight", "0", CVAR_ARCHIVE },
 	{ &cg_centerSize, "cg_centerSize", "1.0", CVAR_ARCHIVE },
 
@@ -876,6 +884,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_teamChatTime, "cg_teamChatTime", "3000", CVAR_ARCHIVE  },
 	{ &cg_teamChatHeight, "cg_teamChatHeight", "0", CVAR_ARCHIVE  },
 	{ &cg_forceModel, "cg_forceModel", "0", CVAR_ARCHIVE  },
+	{ &cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE  },
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
@@ -977,6 +986,7 @@ void CG_RegisterCvars( void ) {
 	cgs.localServer = atoi( var );
 
 	forceModelModificationCount = cg_forceModel.modificationCount;
+	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -1156,6 +1166,10 @@ void CG_UpdateCvars( void ) {
 	// if force model changed
 	if ( forceModelModificationCount != cg_forceModel.modificationCount ) {
 		forceModelModificationCount = cg_forceModel.modificationCount;
+		CG_ForceModelChange();
+	}
+	if ( forceMyModelModificationCount != cg_forceMyModel.modificationCount ) {
+		forceMyModelModificationCount = cg_forceMyModel.modificationCount;
 		CG_ForceModelChange();
 	}
 

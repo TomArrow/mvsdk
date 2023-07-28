@@ -179,6 +179,7 @@ typedef struct centity_s {
 
 	int				muzzleFlashTime;	// move to playerEntity?
 	int				previousEvent;
+	int				previousSaberMove;	// for cg_debugSaber
 	int				teleportFlag;
 
 	int				trailTime;		// so missile trails can handle dropped initial packets
@@ -1525,6 +1526,7 @@ extern	vmCvar_t		cg_bobroll;
 extern	vmCvar_t		cg_shadows;
 extern	vmCvar_t		cg_drawTimer;
 extern	vmCvar_t		cg_drawFPS;
+extern	vmCvar_t		cg_drawFPSLowest;
 extern	vmCvar_t		cg_drawSnapshot;
 extern	vmCvar_t		cg_draw3dIcons;
 extern	vmCvar_t		cg_drawIcons;
@@ -1542,10 +1544,12 @@ extern	vmCvar_t		cg_crosshairSize;
 extern	vmCvar_t		cg_crosshairHealth;
 extern	vmCvar_t		cg_drawStatus;
 extern	vmCvar_t		cg_draw2D;
+extern	vmCvar_t		cg_drawCenterAlways;
 extern	vmCvar_t		cg_animSpeed;
 extern	vmCvar_t		cg_debugAnim;
 extern	vmCvar_t		cg_debugPosition;
 extern	vmCvar_t		cg_debugEvents;
+extern	vmCvar_t		cg_debugSaber;
 extern	vmCvar_t		cg_errorDecay;
 extern	vmCvar_t		cg_nopredict;
 extern	vmCvar_t		cg_noPlayerAnims;
@@ -1628,6 +1632,7 @@ extern	vmCvar_t		cg_movementKeysSize;
 //only for you, arto
 extern	vmCvar_t		cg_hudColors;
 extern	vmCvar_t		cg_drawScore;
+extern	vmCvar_t		cg_drawScoreDefrag;
 extern	vmCvar_t		cg_centerHeight;
 extern	vmCvar_t		cg_centerSize;
 
@@ -1703,6 +1708,7 @@ extern	vmCvar_t		cg_teamChatTime;
 extern	vmCvar_t		cg_teamChatHeight;
 extern	vmCvar_t		cg_stats;
 extern	vmCvar_t 		cg_forceModel;
+extern	vmCvar_t 		cg_forceMyModel;
 extern	vmCvar_t 		cg_buildScript;
 extern	vmCvar_t		cg_paused;
 extern	vmCvar_t		cg_blood;
@@ -1862,6 +1868,7 @@ extern  char teamChat2[256];
 
 void CG_AddLagometerFrameInfo( void );
 void CG_AddLagometerSnapshotInfo( snapshot_t *snap );
+void CG_AddSpeed(void);
 void CG_CenterPrint( const char *str, int y, int charWidth );
 void CG_CenterPrintMultiKill(const char *str, int y, int charWidth);
 void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t headAngles );

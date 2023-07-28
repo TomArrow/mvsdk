@@ -17,7 +17,8 @@ static void CG_StrafeHelper(centity_t *cent); //jk2pro
 static void CG_DrawAccelMeter(void); //jk2pro
 static void CG_JumpHeight(centity_t *cent); //jk2pro
 //static void CG_RaceTimer(centity_t *cent); //jk2pro
-static void CG_DrawSpeedGraph(void); //jk2pro
+static void CG_DrawSpeedGraph(rectDef_t* rect, vec4_t foreColor,
+	vec4_t backColor); //jk2pro
 static void CG_JumpDistance(void); //jk2pro
 static void CG_DrawVerticalSpeed(void); //jk2pro
 static void CG_DrawYawSpeed(void); //jk2pro
@@ -50,6 +51,7 @@ static void CG_DrawShowPos(void); //jk2pro
 #define SPEEDOMETER_SPEEDGRAPH		(1<<7)
 #define SPEEDOMETER_KPH				(1<<8)
 #define SPEEDOMETER_MPH				(1<<9)
+#define SPEEDOMETER_NOSPEED			(1<<10)
 //jk2pro end
 
 
@@ -1172,7 +1174,13 @@ void CG_DrawHUD(centity_t	*cent)
 
 	if (cg_drawScore.integer) {
 		//scoreStr = va("Score: %i", cgs.clientinfo[cg.snap->ps.clientNum].score);
-		if (cgs.gametype == GT_TOURNAMENT)
+		if (cg_drawScoreDefrag.integer) {
+			// it's actually a time in seconds.
+			int seconds = cg.snap->ps.persistant[PERS_SCORE];
+			int minutes = seconds / 60;
+			scoreStr = va("Time: %d:%02d", minutes, seconds % 60);
+		}
+		else if (cgs.gametype == GT_TOURNAMENT)
 		{//A duel that requires more than one kill to knock the current enemy back to the queue
 		 //show current kills out of how many needed
 			scoreStr = va("Score: %i/%i", cg.snap->ps.persistant[PERS_SCORE], cgs.fraglimit);
@@ -2025,15 +2033,24 @@ CG_DrawFPS
 ==================
 */
 #define	FPS_FRAMES	16
+#define	FPS_FRAMES_FOR_BOTTOM10P	10
+#define	FPS_FRAMES_FOR_BOTTOM1P	10
+#define	FPS_FRAMES_FOR_BOTTOM01P	10
 static float CG_DrawFPS( float y ) {
 	char		*s;
 	float		w;
 	static int	previousTimes[FPS_FRAMES];
-	static int	index;
+	static int	bottomTimes10P[FPS_FRAMES_FOR_BOTTOM10P];
+	static int	bottomTimes1P[FPS_FRAMES_FOR_BOTTOM1P];
+	static int	bottomTimes01P[FPS_FRAMES_FOR_BOTTOM01P];
+	static int	index, indexBottom10P, indexBottom1P, indexBottom01P;
 	int		i, total;
 	int		fps;
 	static	int	previous;
+	static	int	bottom10Pfps,bottom1Pfps,bottom01Pfps;
 	int		t, frameTime;
+	static const int biggestInt = ~0 ^ (1 << 31);
+	int fastest,fastestIndex;
 
 	// don't use serverTime, because that will be drifting to
 	// correct for internet lag changes, timescales, timedemos, etc
@@ -2042,7 +2059,122 @@ static float CG_DrawFPS( float y ) {
 	previous = t;
 
 	previousTimes[index % FPS_FRAMES] = frameTime;
-	index++;
+	index++; 
+
+	indexBottom10P++;
+	indexBottom1P++;
+	indexBottom01P++;
+
+	// Bottom 10% frames
+	if (indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
+		//int slowest = 0;
+		total = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+			total += bottomTimes10P[i];
+			//slowest = Q_max(bottomTimes1P[i],slowest);
+		}
+		//fps = 1000 / slowest; 
+		fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / total;
+		bottom10Pfps = fps;
+
+		memset(bottomTimes10P, 0, sizeof(bottomTimes10P));
+		indexBottom10P = 1;
+	}
+	{ // Draw bottom 10% frames
+		s = va("%ifps  10%%", bottom10Pfps);
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
+		if(cg_drawFPSLowest.integer)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+
+		fastest = biggestInt;
+		fastestIndex = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+			if (bottomTimes10P[i] < fastest) {
+				fastest = bottomTimes10P[i];
+				fastestIndex = i;
+			}
+		}
+		// Replace fastest frametime with current frametime if it is slower than fastest
+		if (frameTime > fastest) {
+			bottomTimes10P[fastestIndex] = frameTime;
+		}
+	}
+
+	// Bottom 1% frames
+	if (indexBottom1P > FPS_FRAMES_FOR_BOTTOM1P * 100) {
+		//int slowest = 0;
+		total = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+			total += bottomTimes1P[i];
+			//slowest = Q_max(bottomTimes1P[i],slowest);
+		}
+		//fps = 1000 / slowest; 
+		fps = 1000 * FPS_FRAMES_FOR_BOTTOM1P / total;
+		bottom1Pfps = fps;
+
+		memset(bottomTimes1P, 0, sizeof(bottomTimes1P));
+		indexBottom1P = 1;
+	}
+	{ // Draw bottom 1% frames
+		s = va("%ifps   1%%", bottom1Pfps);
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
+		if (cg_drawFPSLowest.integer)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+
+		fastest = biggestInt;
+		fastestIndex = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+			if (bottomTimes1P[i] < fastest) {
+				fastest = bottomTimes1P[i];
+				fastestIndex = i;
+			}
+		}
+		// Replace fastest frametime with current frametime if it is slower than fastest
+		if (frameTime > fastest) {
+			bottomTimes1P[fastestIndex] = frameTime;
+		}
+	}
+
+	// Bottom 0.1% frames
+	if (indexBottom01P > FPS_FRAMES_FOR_BOTTOM01P * 1000) {
+		//int slowest = 0;
+		total = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+			total += bottomTimes01P[i];
+			//slowest = Q_max(bottomTimes1P[i],slowest);
+		}
+		//fps = 1000 / slowest; 
+		fps = 1000 * FPS_FRAMES_FOR_BOTTOM01P / total;
+		bottom01Pfps = fps;
+
+		memset(bottomTimes01P, 0, sizeof(bottomTimes01P));
+		indexBottom01P = 1;
+	}
+	{ // Draw bottom 0.1% frames
+		s = va("%ifps 0.1%%", bottom01Pfps);
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
+		if (cg_drawFPSLowest.integer)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+
+		fastest = biggestInt;
+		fastestIndex = 0;
+		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+			if (bottomTimes01P[i] < fastest) {
+				fastest = bottomTimes01P[i];
+				fastestIndex = i;
+			}
+		}
+		// Replace fastest frametime with current frametime if it is slower than fastest
+		if (frameTime > fastest) {
+			bottomTimes01P[fastestIndex] = frameTime;
+		}
+	}			
+	
+
+
 	if ( index > FPS_FRAMES ) {
 		// average multiple frames together to smooth changes out a bit
 		total = 0;
@@ -2069,8 +2201,8 @@ static float CG_DrawFPS( float y ) {
 		}
 		else
 		{
-		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
-		CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+			w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+			CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
 		}
 		//JAPRO - Clientside - Add cg_drawfps 2 - End
 	}
@@ -5081,6 +5213,20 @@ static void CG_Draw2D( void ) {
 	}
 
 	if ( cg_draw2D.integer == 0 ) {
+
+		//Raz: If you fall to your death, then turn cg_draw2D off, your camera will not update
+		//		Clear the fall vector to avoid that.
+		gCGHasFallVector = qfalse;
+		VectorClear( gCGFallVector );
+
+		// We still want center messages, but nothing else
+		if (cg_drawCenterAlways.integer) {
+			// don't draw center string if scoreboard is up
+			cg.scoreBoardShowing = CG_DrawScoreboard();
+			if (!cg.scoreBoardShowing) {
+				CG_DrawCenterString();
+			}
+		}
 		return;
 	}
 
@@ -5830,6 +5976,8 @@ static void CG_MovementKeys(centity_t *cent)
 }
 
 #define ACCEL_SAMPLES 16
+#define STAT_W    150//45
+#define STAT_H    22
 static void CG_Speedometer(void)
 {
 	const char *accelStr, *accelStr2, *accelStr3;
@@ -5843,6 +5991,17 @@ static void CG_Speedometer(void)
 	unsigned int frameTime;
 	static unsigned int index;
 	static int	previous, lastupdate;
+
+	if (cg_speedometer.integer & SPEEDOMETER_SPEEDGRAPH) {
+		rectDef_t speedgraphRect;
+		vec4_t foreColor = { 0.0f,0.8f,1.0f,0.8f };
+		vec4_t backColor = { 0.0f,0.8f,1.0f,0.2f };
+		speedgraphRect.x = (320 - (STAT_W / 2));
+		speedgraphRect.y = SCREEN_HEIGHT - STAT_H - 2;//350;
+		speedgraphRect.w = STAT_W;
+		speedgraphRect.h = STAT_H;
+		CG_DrawSpeedGraph(&speedgraphRect, foreColor, backColor);
+	}
 
 	lastSpeed = currentSpeed;
 
@@ -5890,23 +6049,27 @@ static void CG_Speedometer(void)
 		accelStr3 = S_COLOR_WHITE "m:";
 	}
 
-	if (!(cg_speedometer.integer & SPEEDOMETER_KPH) && !(cg_speedometer.integer & SPEEDOMETER_MPH))
-	{
-		Com_sprintf(speedStr, sizeof(speedStr), "   %.0f", currentSpeed); //floorf(currentSpeed + 0.5f));
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-	}
-	else if (cg_speedometer.integer & SPEEDOMETER_KPH)
-	{
-		Com_sprintf(speedStr2, sizeof(speedStr2), "   %.1f", currentSpeed * 0.05f);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-	}
-	else if (cg_speedometer.integer & SPEEDOMETER_MPH)
-	{
-		Com_sprintf(speedStr3, sizeof(speedStr3), "    %.1f", currentSpeed * 0.03106855f);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+	if (!(cg_speedometer.integer & SPEEDOMETER_NOSPEED)) {
+
+		if (!(cg_speedometer.integer & SPEEDOMETER_KPH) && !(cg_speedometer.integer & SPEEDOMETER_MPH))
+		{
+			Com_sprintf(speedStr, sizeof(speedStr), "   %.0f", currentSpeed); //floorf(currentSpeed + 0.5f));
+			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		}
+		else if (cg_speedometer.integer & SPEEDOMETER_KPH)
+		{
+			Com_sprintf(speedStr2, sizeof(speedStr2), "   %.1f", currentSpeed * 0.05f);
+			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		}
+		else if (cg_speedometer.integer & SPEEDOMETER_MPH)
+		{
+			Com_sprintf(speedStr3, sizeof(speedStr3), "    %.1f", currentSpeed * 0.03106855f);
+			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		}
+
 	}
 
 	speedometerXPos += 52;
@@ -6186,6 +6349,105 @@ static void CG_DrawYawSpeed( void ) {
     speedometerXPos += 16;
 }
 #endif
+
+#define SPEEDOMETER_NUM_SAMPLES 500//160
+#define SPEEDOMETER_DRAW_TEXT   0x1
+#define SPEEDOMETER_DRAW_GRAPH  0x2
+#define SPEEDOMETER_IGNORE_Z    0x4
+float speedSamples[SPEEDOMETER_NUM_SAMPLES];
+// array indices
+int oldestSpeedSample = 0;
+int maxSpeedSample = 0;
+
+/*
+===================
+CG_AddSpeed
+append a speed to the sample history
+===================
+*/
+void CG_AddSpeed(void)
+{
+	float speed;
+	vec3_t vel;
+
+	VectorCopy(cg.snap->ps.velocity, vel);
+
+	/*if (cg_drawSpeed.integer & SPEEDOMETER_IGNORE_Z)
+		vel[2] = 0;*/
+
+	speed = VectorLength(vel);
+
+	if (speed > speedSamples[maxSpeedSample])
+	{
+		maxSpeedSample = oldestSpeedSample;
+		speedSamples[oldestSpeedSample++] = speed;
+		oldestSpeedSample %= SPEEDOMETER_NUM_SAMPLES;
+		return;
+	}
+
+	speedSamples[oldestSpeedSample] = speed;
+	if (maxSpeedSample == oldestSpeedSample++)
+	{
+		// if old max was overwritten find a new one
+		int i;
+		for (maxSpeedSample = 0, i = 1; i < SPEEDOMETER_NUM_SAMPLES; i++)
+		{
+			if (speedSamples[i] > speedSamples[maxSpeedSample])
+				maxSpeedSample = i;
+		}
+	}
+
+	oldestSpeedSample %= SPEEDOMETER_NUM_SAMPLES;
+}
+
+#define SPEEDOMETER_MIN_RANGE 900
+#define SPEED_MED 1000.f
+#define SPEED_FAST 1600.f
+/*
+===================
+CG_DrawSpeedGraph
+===================
+
+Ported from Tremulous project.
+*/
+static void CG_DrawSpeedGraph(rectDef_t* rect, vec4_t foreColor,
+	vec4_t backColor)
+{
+	int i;
+	float val, max, top;
+	// colour of graph is interpolated between these values
+	const vec3_t slow = { 0.0, 0.0, 1.0 };
+	const vec3_t medium = { 0.0, 1.0, 0.0 };
+	const vec3_t fast = { 1.0, 0.0, 0.0 };
+	vec4_t color;
+
+	max = speedSamples[maxSpeedSample];
+	if (max < SPEEDOMETER_MIN_RANGE)
+		max = SPEEDOMETER_MIN_RANGE;
+
+	trap_R_SetColor(backColor);
+	CG_DrawPic(rect->x, rect->y, rect->w, rect->h, cgs.media.whiteShader);
+
+	Vector4Copy(foreColor, color);
+
+	for (i = 1; i < SPEEDOMETER_NUM_SAMPLES; i++)
+	{
+		val = speedSamples[(oldestSpeedSample + i) % SPEEDOMETER_NUM_SAMPLES];
+		if (val < SPEED_MED)
+			VectorLerp(val / SPEED_MED, slow, medium, color);
+		else if (val < SPEED_FAST)
+			VectorLerp((val - SPEED_MED) / (SPEED_FAST - SPEED_MED),
+				medium, fast, color);
+		else
+			VectorCopy(fast, color);
+		trap_R_SetColor(color);
+		top = rect->y + (1 - val / max) * rect->h;
+		CG_DrawPic(rect->x + (i / (float)SPEEDOMETER_NUM_SAMPLES) * rect->w, top,
+			rect->w / (float)SPEEDOMETER_NUM_SAMPLES, val * rect->h / max,
+			cgs.media.whiteShader);
+	}
+	trap_R_SetColor(NULL);
+}
 
 void Dzikie_CG_DrawSpeed(int moveDir) {
 	float length;

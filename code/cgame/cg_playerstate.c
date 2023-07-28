@@ -485,6 +485,8 @@ CG_TransitionPlayerState
 ===============
 */
 void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
+	centity_t* cent;
+
 	// check for changing follow mode
 	if ( ps->clientNum != ops->clientNum ) {
 		cg.thisFrameTeleport = qtrue;
@@ -521,6 +523,12 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 
 	// check for going low on ammo
 	CG_CheckAmmo();
+
+	cent = &cg_entities[ps->clientNum];
+	if ((cg_debugSaber.integer < -1 || cg_debugSaber.integer >= MAX_CLIENTS || cg_debugSaber.integer == ps->clientNum) && ps->saberMove != cent->previousSaberMove) {
+		CG_Printf("ent:%3i  saberMove:%3i  saberMoveName:%s \n", ps->clientNum, ps->saberMove, saberMoveData[ps->saberMove].name);
+		cent->previousSaberMove = ps->saberMove;
+	}
 
 	// run events
 	CG_CheckPlayerstateEvents( ps, ops );
