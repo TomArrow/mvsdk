@@ -5172,7 +5172,17 @@ static void CG_Draw2D( void ) {
 
 		// We still want strafehelper & speedometer, but nothing else
 		if (cg_drawStrafeHelperSpeedometerAlways.integer) {
+
 			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
+
+			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE) || cg_strafeHelper.integer || (cgs.isJK2Pro && cg_raceTimer.integer > 1))
+				CG_CalculateSpeed(cent);
+
+			speedometerXPos = cg_speedometerX.value;
+
+			if (cg_hudFiles.integer)
+				speedometerXPos -= 8;
+
 			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
 				CG_Speedometer();
 
