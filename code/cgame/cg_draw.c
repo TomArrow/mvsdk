@@ -5169,6 +5169,52 @@ static void CG_Draw2D( void ) {
 				CG_DrawCenterString();
 			}
 		}
+
+		// We still want strafehelper & speedometer, but nothing else
+		if (cg_drawStrafeHelperSpeedometerAlways.integer) {
+			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
+			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
+				CG_Speedometer();
+
+				if ((cg_speedometer.integer & SPEEDOMETER_ACCELMETER) || (cg_strafeHelper.integer & SHELPER_ACCELMETER))
+					CG_DrawAccelMeter();
+				if (cg_speedometer.integer & SPEEDOMETER_JUMPHEIGHT)
+					CG_JumpHeight(cent);
+				if (cg_speedometer.integer & SPEEDOMETER_JUMPDISTANCE)
+					CG_JumpDistance();
+				if (cg_speedometer.integer & SPEEDOMETER_VERTICALSPEED)
+					CG_DrawVerticalSpeed();
+			}
+
+			if (cg_strafeHelper.integer)
+				CG_StrafeHelper(cent);
+
+			if (cg_strafeHelper.integer & SHELPER_CROSSHAIR) {
+				vec4_t		hcolor;
+				float		lineWidth;
+
+				if (!cg.crosshairColor[0] && !cg.crosshairColor[1] && !cg.crosshairColor[2]) { //default to white
+					hcolor[0] = 1.0f;
+					hcolor[1] = 1.0f;
+					hcolor[2] = 1.0f;
+					hcolor[3] = 1.0f;
+				}
+				else {
+					hcolor[0] = cg.crosshairColor[0];
+					hcolor[1] = cg.crosshairColor[1];
+					hcolor[2] = cg.crosshairColor[2];
+					hcolor[3] = cg.crosshairColor[3];
+				}
+
+				lineWidth = cg_strafeHelperLineWidth.value;
+				if (lineWidth < 0.25f)
+					lineWidth = 0.25f;
+				else if (lineWidth > 5)
+					lineWidth = 5;
+
+				Dzikie_CG_DrawLine(cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) - 5, cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) + 5, lineWidth, hcolor, hcolor[3], 0); //640x480, 320x240
+			}
+		}
 		return;
 	}
 
