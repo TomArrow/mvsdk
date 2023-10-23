@@ -1260,6 +1260,8 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand ("vosay_team");
 	trap_AddCommand ("votell");
 	trap_AddCommand ("give");
+	trap_AddCommand ("savepos");
+	trap_AddCommand ("respos");
 	trap_AddCommand ("god");
 	trap_AddCommand ("notarget");
 	trap_AddCommand ("noclip");

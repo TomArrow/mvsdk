@@ -1036,8 +1036,8 @@ void ClientThink_real( gentity_t *ent ) {
 		msec = 200;
 	}
 
-	if ( g_pmove_msec.integer < 8 ) {
-		trap_Cvar_Set("pmove_msec", "8");
+	if ( g_pmove_msec.integer < 1 ) {
+		trap_Cvar_Set("pmove_msec", "1");
 	}
 	else if (g_pmove_msec.integer > 33) {
 		trap_Cvar_Set("pmove_msec", "33");

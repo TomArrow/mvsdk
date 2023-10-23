@@ -430,6 +430,56 @@ void Cmd_Noclip_f( gentity_t *ent ) {
 	trap_SendServerCommand( ent-g_entities, va("print \"%s\"", msg));
 }
 
+/*
+==================
+Cmd_Savepos_f
+
+argv(0) savepos
+==================
+*/
+void Cmd_Savepos_f( gentity_t *ent ) {
+	char	*msg;
+
+	if ( !CheatsOk( ent ) ) {
+		return;
+	}
+
+	VectorCopy(ent->client->ps.origin,ent->client->savePosPosition);
+	VectorCopy(ent->client->ps.velocity,ent->client->savePosVelocity);
+	VectorCopy(ent->client->ps.viewangles,ent->client->savePosAngle);
+	ent->client->savePosUsed = qtrue;
+	msg = "Position, velocity and angle saved.\n";
+
+	trap_SendServerCommand( ent-g_entities, va("print \"%s\"", msg));
+}
+
+/*
+==================
+Cmd_Respos_f
+
+argv(0) respos
+==================
+*/
+void Cmd_Respos_f( gentity_t *ent ) {
+	char	*msg;
+
+	if ( !CheatsOk( ent ) ) {
+		return;
+	}
+
+	if ( ent->client->savePosUsed ) {
+		VectorCopy(ent->client->savePosPosition, ent->client->ps.origin);
+		VectorCopy(ent->client->savePosVelocity, ent->client->ps.velocity);
+		SetClientViewAngle(ent,ent->client->savePosAngle);
+		ent->client->ps.eFlags ^= EF_TELEPORT_BIT;
+	}
+	else {
+		msg = "Cannot restore position, velocity and angle. None saved.\n";
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\"", msg));
+	}
+
+}
+
 
 /*
 ==================
@@ -2546,6 +2596,14 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "savepos"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "respos"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "kill"))
 		{
 			giveError = qtrue;
@@ -2633,6 +2691,10 @@ void ClientCommand( int clientNum ) {
 		Cmd_Notarget_f (ent);
 	else if (Q_stricmp (cmd, "noclip") == 0)
 		Cmd_Noclip_f (ent);
+	else if (Q_stricmp (cmd, "savepos") == 0)
+		Cmd_Savepos_f (ent);
+	else if (Q_stricmp (cmd, "respos") == 0)
+		Cmd_Respos_f (ent);
 	else if (Q_stricmp (cmd, "kill") == 0)
 		Cmd_Kill_f (ent);
 	else if (Q_stricmp (cmd, "teamtask") == 0)
