@@ -705,6 +705,8 @@ typedef struct {
 	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;
+	int			predictionBaseTime; // From SaberMod: serverTime of snapshot predictedPlayerState is based on. With cg_optimizedPredict 1
+	vec3_t		predictedPlayerOrigin;	// predicted origin unaffected by BG_AdjustPositionForMover
 
 	int			eventSequence;
 	int			predictableEvents[MAX_PREDICTED_EVENTS];
@@ -1724,6 +1726,7 @@ extern	vmCvar_t 		cg_buildScript;
 extern	vmCvar_t		cg_paused;
 extern	vmCvar_t		cg_blood;
 extern	vmCvar_t		cg_predictItems;
+extern	vmCvar_t		cg_optimizedPredict;
 extern	vmCvar_t		cg_deferPlayers;
 extern	vmCvar_t		cg_drawFriend;
 extern	vmCvar_t		cg_teamChatsOnly;

@@ -653,6 +653,7 @@ to ease the jerk.
 =================
 */
 void CG_PredictPlayerState( void ) {
+	const snapshot_t* baseSnap;
 	int			cmdNum, current, i;
 	playerState_t	oldPlayerState;
 	qboolean	moved;
@@ -722,12 +723,33 @@ void CG_PredictPlayerState( void ) {
 	// the server time is beyond our current cg.time,
 	// because predicted player positions are going to 
 	// be ahead of everything else anyway
-	if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
-		cg.predictedPlayerState = cg.nextSnap->ps;
-		cg.physicsTime = cg.nextSnap->serverTime;
-	} else {
-		cg.predictedPlayerState = cg.snap->ps;
-		cg.physicsTime = cg.snap->serverTime;
+	if (cg_optimizedPredict.integer) {
+		// From SaberMod
+		if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
+			baseSnap = cg.nextSnap;
+		}
+		else {
+			baseSnap = cg.snap;
+		}
+
+		// don't recalculalate if base playerState hasn't changed
+		if (baseSnap->serverTime != cg.predictionBaseTime) {
+			cg.predictedPlayerState = baseSnap->ps;
+			cg.physicsTime = baseSnap->serverTime;
+			cg.predictionBaseTime = baseSnap->serverTime;
+		}
+		else {
+			// restore origin unaffected by BG_AdjustPositionForMover
+			VectorCopy(cg.predictedPlayerOrigin, cg.predictedPlayerState.origin);
+		}
+	} else{
+		if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
+			cg.predictedPlayerState = cg.nextSnap->ps;
+			cg.physicsTime = cg.nextSnap->serverTime;
+		} else {
+			cg.predictedPlayerState = cg.snap->ps;
+			cg.physicsTime = cg.snap->serverTime;
+		}
 	}
 
 	//JAPRO - Clientside - Unlock Pmove bounds - Start 
@@ -876,6 +898,11 @@ void CG_PredictPlayerState( void ) {
 			CG_Printf( "not moved\n" );
 		}
 		return;
+	}
+
+	if (cg_optimizedPredict.integer) {
+		// save origin before CG_AdjustPositionForMover
+		VectorCopy(cg.predictedPlayerState.origin, cg.predictedPlayerOrigin);
 	}
 
 	// adjust for the movement of the groundentity
