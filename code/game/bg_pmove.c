@@ -2412,6 +2412,25 @@ static void PM_GroundTrace( void ) {
 		if ( pm->debugLevel ) {
 			Com_Printf("%i:Land\n", c_pmove);
 		}
+
+		// Thanks to Loda for making this fix and Daggo for pointing me to it.
+		if (trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f)
+		{ // It's a ramp!
+			if (!pml.clipped)
+			{
+				// Don't actually fix this atm to not cause prediction errors.
+				//PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
+				if (pm->debugLevel) {
+					Com_Printf("%i:Dead ramp\n", c_pmove);
+				}
+
+			}
+			else {
+				if (pm->debugLevel) {
+					Com_Printf("%i:Good ramp\n", c_pmove);
+				}
+			}
+		}
 		
 		PM_CrashLand();
 

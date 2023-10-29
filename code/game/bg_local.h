@@ -32,6 +32,8 @@ typedef struct
 	int			previous_waterlevel;
 
 	int			seed;
+
+	qboolean	clipped;
 } pml_t;
 
 extern	pml_t		pml;

@@ -765,6 +765,8 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.pmove_msec = cg_pmove_msec.integer;
 	cg_pmove.pmove_float = cg_pmove_float.integer;
 
+	cg_pmove.debugLevel = cg_debugMove.integer;
+
 	// run cmds
 	moved = qfalse;
 	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= current ; cmdNum++ ) {

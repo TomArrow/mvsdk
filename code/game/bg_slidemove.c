@@ -207,6 +207,83 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	return ( bumpcount != 0 );
 }
 
+// A dumbed down version of PM_SlideMove
+// We only check if we freely get where we need to get and then do a check for ground under us.
+// The apparent cause of the bug in a nutshell:
+// We can freely (no clip/objects/floor in the way) travel/fall to the place where we will logically be in pml.frameTime time.
+// This means no ramp boost through PM_ClipVelocity happens.
+// Let's say we are falling straight down at effective velocity[2] == -1000 and 142 fps (pml.frametime == 0.007 which is 7msec).
+// That puts us traveling down at about 7 units per frame. 
+// If the ground is less than 7 units away from us, we will catch it in the initial PM_StepSlideMove and it will be clipped (ramp boost).
+// If the ground is 8 units away from us, we will catch it the same way in the next frame.
+// HOWEVER, if the ground is more than 7 and less than 7.25 units away from us, we will first fall the 7 units, and then the following ground check (which checks 0.25 units under new position)
+// will determine that we are standing on ground without giving ramp boost. Which is also the place where Loda's old ramp boost fix is applied in case the ramp boost didn't happen which he checked via
+// pml.clipped
+qboolean PM_PredictDeadRamp(qboolean gravity) {
+	trace_t	trace;
+	vec3_t		end;
+	vec3_t		testVelocity;
+	vec3_t		point;
+	vec3_t		newPos;
+	int			i, j, k;
+
+	if (pm->ps->groundEntityNum != ENTITYNUM_NONE) {
+		return qfalse;
+	}
+
+	VectorCopy(pm->ps->velocity, testVelocity);
+	if (gravity) {
+		testVelocity[2] -= pm->ps->gravity * pml.frametime;
+		testVelocity[2] = (pm->ps->velocity[2] + testVelocity[2]) * 0.5;
+	}
+
+	// calculate position we are trying to move to
+	VectorMA(pm->ps->origin, pml.frametime, testVelocity, end);
+
+	// see if we can make it there
+	pm->trace(&trace, pm->ps->origin, pm->mins, pm->maxs, end, pm->ps->clientNum, pm->tracemask);
+
+
+	if (trace.fraction == 1) {
+		VectorCopy(trace.endpos, newPos);
+
+		point[0] = newPos[0];
+		point[1] = newPos[1];
+		point[2] = newPos[2] - 0.25;
+
+		pm->trace(&trace, newPos, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
+
+		// do something corrective if the trace starts in a solid...
+		if (trace.allsolid) {
+			// jitter around
+			for (i = -1; i <= 1; i++) {
+				for (j = -1; j <= 1; j++) {
+					for (k = -1; k <= 1; k++) {
+						VectorCopy(newPos, point);
+						point[0] += (float)i;
+						point[1] += (float)j;
+						point[2] += (float)k;
+						pm->trace(&trace, point, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
+						if (!trace.allsolid) {
+							point[0] = newPos[0];
+							point[1] = newPos[1];
+							point[2] = newPos[2] - 0.25;
+
+							pm->trace(&trace, newPos, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
+							i = j = k; // Stupid way to end the loop lol.
+						}
+					}
+				}
+			}
+		}
+
+		if (trace.fraction != 1.0 && (trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f)) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
 /*
 ==================
 PM_StepSlideMove
@@ -234,6 +311,12 @@ void PM_StepSlideMove( qboolean gravity ) {
 	VectorCopy (pm->ps->origin, start_o);
 	VectorCopy (pm->ps->velocity, start_v);
 
+	if (pm->debugLevel) {
+		if (PM_PredictDeadRamp(gravity)) {
+			Com_Printf("%i:predicting dead ramp\n", c_pmove);
+		}
+	}
+	
 	if ( PM_SlideMove( gravity ) == 0 ) {
 		return;		// we got exactly where we wanted to go first try	
 	}
@@ -274,6 +357,8 @@ void PM_StepSlideMove( qboolean gravity ) {
 			return;		// can't step up
 		}
 	}
+
+	pml.clipped = qtrue;
 
 	stepSize = trace.endpos[2] - start_o[2];
 	// try slidemove from this position
