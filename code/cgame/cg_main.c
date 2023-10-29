@@ -156,14 +156,18 @@ This must be the very first function compiled into the .q3vm file
 */
 qboolean menuInJK2MV = qfalse;
 int mvapi = 0;
+int coolApi = 0;
 int Init_serverMessageNum;
 int Init_serverCommandSequence;
 int Init_clientNum;
 LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
 	int requestedMvApi = 0;
+	char coolApiFeaturesBuffer[80];
 
 	switch ( command ) {
 	case CG_INIT:
+		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		coolApi = atoi(coolApiFeaturesBuffer);
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call CG_Init if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
@@ -448,6 +452,7 @@ vmCvar_t	cg_bobroll;
 //vmCvar_t	cg_swingSpeed;
 vmCvar_t	cg_shadows;
 vmCvar_t	cg_drawTimer;
+vmCvar_t	cg_drawRamps;
 vmCvar_t	cg_drawFPS;
 vmCvar_t	cg_drawFPSLowest;
 vmCvar_t	cg_drawSnapshot;
@@ -690,6 +695,10 @@ vmCvar_t	cg_drawPlayerSprites;
 vmCvar_t	cg_MVSDK;
 vmCvar_t	mvsdk_cgFlags;
 
+int			cg_deadRampsCounted = 0;
+int			cg_goodRampsCounted = 0;
+int			cg_rampCountLastCmdTime = 0;
+
 typedef struct {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
@@ -711,6 +720,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawStrafeHelperSpeedometerAlways, "cg_drawStrafeHelperSpeedometerAlways", "0", CVAR_ARCHIVE  },
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE  },
 	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE  },
+	{ &cg_drawRamps, "cg_drawRamps", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPSLowest, "cg_drawFPSLowest", "1", CVAR_ARCHIVE  },
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE  },

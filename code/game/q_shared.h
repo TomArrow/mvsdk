@@ -2196,6 +2196,43 @@ enum {
 	FONT_LARGE
 };
 
+#define COOL_APIFEATURE_SETPREDICTEDMOVEMENT (1<<0)
 
+// This is a simplified playerState_t of sorts to communicate predicted playerstate stuff to the engine 
+typedef struct predictedMovement_s {
+	int			commandTime;	// cmd->serverTime of last executed command
+	int			pm_type;
+	int			pm_flags;		// ducked, jump_held, etc
+	int			pm_time;
+
+	vec3_t		origin;
+	vec3_t		velocity;
+
+	int			gravity;
+	int			speed;
+	int			basespeed; //used in prediction to know base server g_speed value when modifying speed between updates
+	int			delta_angles[3];	// add to command angles to get view direction
+									// changed by spawns, rotating objects, and teleporters
+
+	
+	int			groundEntityNum;// ENTITYNUM_NONE = in air
+
+	int			movementDir;	// a number 0 to 7 that represents the reletive angle
+								// of movement to the view angle (axial and diagonals)
+								// when at rest, the value will remain unchanged
+								// used to twist the legs during strafing
+
+	int			eFlags;			// copied to entityState_t->eFlags
+
+
+	int			clientNum;		// ranges from 0 to MAX_CLIENTS-1
+
+	vec3_t		viewangles;		// for fixed views
+	int			viewheight;
+
+	int			jumppad_ent;	// jumppad entity hit this frame
+
+	forcedata_t	fd;
+} predictedMovement_t;
 
 #endif	// __Q_SHARED_H

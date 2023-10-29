@@ -245,6 +245,11 @@ void trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba,
 	syscall( CG_R_FONT_DRAWSTRING, ox, oy, text, rgba, setIndex, iCharLimit, PASSFLOAT(scale));
 }
 
+void trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS)
+{
+	syscall(CG_COOL_API_SETPREDICTEDMOVEMENT, predictedPS);
+}
+
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
 {
@@ -786,6 +791,7 @@ void trap_CG_RegisterSharedMemory_1_04(char *memory)
 {
 	syscall(CG_SET_SHARED_BUFFER, memory);
 }
+
 
 
 /* 1.02 */

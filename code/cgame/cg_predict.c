@@ -14,6 +14,7 @@ static	centity_t	*cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
 static	int			cg_numTriggerEntities;
 static	centity_t	*cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
 
+
 /*
 ====================
 CG_BuildSolidList
@@ -624,6 +625,34 @@ void CG_EntityStateToPlayerState( entityState_t *s, playerState_t *ps ) {
 	ps->generic1 = s->generic1;
 }
 
+
+void CG_COOL_API_SetPredictedMovement(playerState_t* predictedPS)
+{
+	predictedMovement_t predictedMovement;
+	if (!(coolApi & COOL_APIFEATURE_SETPREDICTEDMOVEMENT)) {
+		return;
+	}
+	predictedMovement.commandTime = predictedPS->commandTime;
+	predictedMovement.pm_type = predictedPS->pm_type;
+	predictedMovement.pm_flags = predictedPS->pm_flags;
+	predictedMovement.pm_time = predictedPS->pm_time;
+	VectorCopy(predictedPS->origin, predictedMovement.origin);
+	VectorCopy(predictedPS->velocity, predictedMovement.velocity);
+	predictedMovement.gravity = predictedPS->gravity;
+	predictedMovement.speed = predictedPS->speed;
+	predictedMovement.basespeed = predictedPS->basespeed;
+	VectorCopy(predictedPS->delta_angles, predictedMovement.delta_angles);
+	predictedMovement.groundEntityNum = predictedPS->groundEntityNum;
+	predictedMovement.movementDir = predictedPS->movementDir;
+	predictedMovement.eFlags = predictedPS->eFlags;
+	predictedMovement.clientNum = predictedPS->clientNum;
+	VectorCopy(predictedPS->viewangles, predictedMovement.viewangles);
+	predictedMovement.viewheight = predictedPS->viewheight;
+	predictedMovement.jumppad_ent = predictedPS->jumppad_ent;
+	predictedMovement.fd = predictedPS->fd;
+	trap_CG_COOL_API_SetPredictedMovement(&predictedMovement);
+}
+
 playerState_t cgSendPS[MAX_CLIENTS];
 
 /*
@@ -653,6 +682,7 @@ to ease the jerk.
 =================
 */
 void CG_PredictPlayerState( void ) {
+	static int lastSnapPsCommandTime = 0;
 	const snapshot_t* baseSnap;
 	int			cmdNum, current, i;
 	playerState_t	oldPlayerState;
@@ -670,6 +700,11 @@ void CG_PredictPlayerState( void ) {
 		cg.validPPS = qtrue;
 		cg.predictedPlayerState = cg.snap->ps;
 	}
+
+	if (cg.snap->ps.commandTime < lastSnapPsCommandTime) {
+		cg_rampCountLastCmdTime = 0;
+	}
+	lastSnapPsCommandTime = cg.snap->ps.commandTime;
 
 	// demo playback just copies the moves
 	if ( cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer == 2 ) {
@@ -890,6 +925,8 @@ void CG_PredictPlayerState( void ) {
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
 	}
+
+	CG_COOL_API_SetPredictedMovement(&cg.predictedPlayerState);
 
 	if ( cg_showmiss.integer > 1 ) {
 		CG_Printf( "[%i : %i] ", cg_pmove.cmd.serverTime, cg.time );

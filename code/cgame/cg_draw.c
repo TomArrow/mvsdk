@@ -2249,6 +2249,36 @@ static float CG_DrawTimer( float y ) {
 	return y + BIGCHAR_HEIGHT + 4;
 }
 
+/*
+=================
+CG_DrawRamps
+=================
+*/
+static float CG_DrawRamps( float y ) {
+	char		*s;
+	float		w;
+	int			msec, secs, mins;
+	char		rampFixCount[20];
+
+	trap_Cvar_VariableStringBuffer("com_deadRampFixedCount", rampFixCount, sizeof(rampFixCount));
+
+	s = va("ramps: dead: %d, good:%d, fix:%d",cg_deadRampsCounted,cg_goodRampsCounted,atoi(rampFixCount));
+
+	if (cg_drawRamps.integer == 1)
+	{
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		CG_DrawSmallString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+	}
+	else
+	{
+		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+		CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+	}
+	//JAPRO - Clientside - Show MS in map timer. - End
+
+	return y + BIGCHAR_HEIGHT + 4;
+}
+
 
 /*
 =================
@@ -2568,6 +2598,9 @@ static void CG_DrawUpperRight( void ) {
 	}
 	if ( cg_drawTimer.integer ) {
 		y = CG_DrawTimer( y );
+	}
+	if ( cg_drawRamps.integer ) {
+		y = CG_DrawRamps( y );
 	}
 	
 	y = CG_DrawEnemyInfo ( y );

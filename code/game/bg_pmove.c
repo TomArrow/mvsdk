@@ -2327,7 +2327,6 @@ static void PM_GroundTraceMissed( void ) {
 	pml.walking = qfalse;
 }
 
-
 /*
 =============
 PM_GroundTrace
@@ -2423,13 +2422,25 @@ static void PM_GroundTrace( void ) {
 				if (pm->debugLevel) {
 					Com_Printf("%i:Dead ramp\n", c_pmove);
 				}
-
+#if JK2_CGAME
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime) {
+					cg_deadRampsCounted++;
+				}
+#endif
 			}
 			else {
 				if (pm->debugLevel) {
 					Com_Printf("%i:Good ramp\n", c_pmove);
 				}
+#if JK2_CGAME
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime) {
+					cg_goodRampsCounted++;
+				}
+#endif
 			}
+#if JK2_CGAME
+			cg_rampCountLastCmdTime = pm->ps->commandTime;
+#endif
 		}
 		
 		PM_CrashLand();

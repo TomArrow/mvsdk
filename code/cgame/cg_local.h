@@ -1536,6 +1536,7 @@ extern	vmCvar_t		cg_bobroll;
 //extern	vmCvar_t		cg_swingSpeed;
 extern	vmCvar_t		cg_shadows;
 extern	vmCvar_t		cg_drawTimer;
+extern	vmCvar_t		cg_drawRamps;
 extern	vmCvar_t		cg_drawFPS;
 extern	vmCvar_t		cg_drawFPSLowest;
 extern	vmCvar_t		cg_drawSnapshot;
@@ -1766,6 +1767,11 @@ extern	vmCvar_t		cg_ui_myteam;
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
 extern	vmCvar_t		cg_drawPlayerSprites;
+
+extern int			cg_deadRampsCounted;
+extern int			cg_goodRampsCounted;
+extern int			cg_rampCountLastCmdTime;
+
 /*
 Ghoul2 Insert Start
 */
@@ -2187,6 +2193,9 @@ int			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const flo
 int			trap_R_Font_StrLenChars(const char *text);
 int			trap_R_Font_HeightPixels(const int iFontIndex, const float scale);
 void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);
+
+void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
+
 /*
 qboolean	trap_Language_IsAsian(void);
 qboolean	trap_Language_UsesSpaces(void);
@@ -2466,6 +2475,7 @@ Ghoul2 Insert End
 */
 
 extern int mvapi;
+extern int coolApi;
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel );
