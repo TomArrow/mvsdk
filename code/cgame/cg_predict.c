@@ -788,8 +788,8 @@ void CG_PredictPlayerState( void ) {
 	}
 
 	//JAPRO - Clientside - Unlock Pmove bounds - Start 
-	if ( cg_pmove_msec.integer < 2 ) {
-		trap_Cvar_Set("pmove_msec", "2");
+	if ( cg_pmove_msec.integer < 1 ) {
+		trap_Cvar_Set("pmove_msec", "1");
 	}
 	else if (cg_pmove_msec.integer > 66) {
 		trap_Cvar_Set("pmove_msec", "66");
