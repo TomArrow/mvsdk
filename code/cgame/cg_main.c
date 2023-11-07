@@ -688,6 +688,7 @@ vmCvar_t	cg_recordSPDemo;
 vmCvar_t	cg_recordSPDemoName;
 
 vmCvar_t	cg_ui_myteam;
+vmCvar_t	cg_com_maxfps;
 
 vmCvar_t	cg_mv_fixbrokenmodelsclient;
 vmCvar_t	cg_drawPlayerSprites;
@@ -698,6 +699,18 @@ vmCvar_t	mvsdk_cgFlags;
 int			cg_deadRampsCounted = 0;
 int			cg_goodRampsCounted = 0;
 int			cg_rampCountLastCmdTime = 0;
+
+//snaphud start
+vmCvar_t cg_snapHud;
+vmCvar_t cg_snapHudRgba1;
+vmCvar_t cg_snapHudRgba2;
+vmCvar_t cg_snapHudY;
+vmCvar_t cg_snapHudHeight;
+vmCvar_t cg_snapHudAuto;
+vmCvar_t cg_snapHudDef;
+vmCvar_t cg_snapHudSpeed;
+vmCvar_t cg_snapHudFps;
+//snaphud end
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -763,6 +776,18 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_tracerChance, "cg_tracerchance", "0.4", CVAR_CHEAT },
 	{ &cg_tracerWidth, "cg_tracerwidth", "1", CVAR_CHEAT },
 	{ &cg_tracerLength, "cg_tracerlength", "100", CVAR_CHEAT },
+
+	//snaphud start
+	{ &cg_snapHud, "cg_snapHud", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba1, "cg_snapHudRgba1", ".02 .1 .02 .4", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba2, "cg_snapHudRgba2", ".05 .05 .05 .1", CVAR_ARCHIVE },
+	{ &cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE },
+	{ &cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE },
+	{ &cg_snapHudAuto, "cg_snapHudHeight", "1", CVAR_ARCHIVE },
+	{ &cg_snapHudDef, "cg_snapHudHeight", "45", CVAR_ARCHIVE },
+	{ &cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudFps, "cg_snapHudFps","0", CVAR_ARCHIVE },
+	//snaphud end
 
 	{ &cg_swingAngles, "cg_swingAngles", "1", 0 },
 
@@ -950,6 +975,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_trueLightning, "cg_trueLightning", "0.0", CVAR_ARCHIVE},
 
 	{ &cg_ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
+	{ &cg_com_maxfps, "com_maxfps", "", 0},
 
 	{ &cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE },
 	{ &cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE },
