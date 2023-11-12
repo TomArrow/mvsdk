@@ -6757,7 +6757,7 @@ static void CG_StrafeHelper(centity_t *cent)
 	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
 		currentCmdNumber = trap_GetCurrentCmdNumber();
 		trap_GetUserCmd(currentCmdNumber, &cmd);
-		if(cg_strafeHelper_RealPhysicsLines.integer && currentCmdNumber > 1){
+		if((cg_strafeHelper_RealPhysicsLines.integer || cg_com_physicsFps.integer) && currentCmdNumber > 1){
 
 			trap_GetUserCmd(currentCmdNumber-1, &oldcmd);
 			if (cmd.serverTime != oldcmd.serverTime) {
