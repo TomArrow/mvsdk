@@ -6898,10 +6898,9 @@ static usercmd_t CG_DirToCmd(int moveDir){
 
 void CG_FillAngleYaw(float start, float end, float viewangle, float y, float height, const float *color) {
 	float fovscale, x, width;
-	vec2_t cgamefov = { 0 };
-	cgamefov[0] = cg.refdef.fov_x;
-	cgamefov[1] = cg.refdef.fov_y;
-	fovscale = tan(DEG2RAD(cgamefov[0] / 2));
+	float cgamefov;
+	cgamefov = cg.refdef.fov_x;
+	fovscale = tan(DEG2RAD(cgamefov / 2));
 	x = cgs.screenWidth / 2 + tan(DEG2RAD(viewangle + start)) / fovscale*cgs.screenWidth / 2;
 	width = abs(cgs.screenWidth*(tan(DEG2RAD(viewangle + end)) - tan(DEG2RAD(viewangle + start))) / (fovscale * 2)) + 1;
 
@@ -6944,21 +6943,28 @@ void CG_DrawSnapHud(void)
 	qboolean pro = qfalse;
 	struct usercmd_s inCmd = { 0 };
 
-	if (!(cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback))
+	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback)
 	{ //real client
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &inCmd);
-		va[YAW] = cg.predictedPlayerState.viewangles[YAW];
 		snappinghud.m[0] = inCmd.forwardmove;
 		snappinghud.m[1] = inCmd.rightmove;
 	}
 	else if (cg.snap)
 	{ //spectating/demo playback
-		CG_DirToCmd(cg.snap->ps.movementDir);
-		va[YAW] = cg.snap->ps.viewangles[YAW];
+		inCmd = CG_DirToCmd(cg.snap->ps.movementDir);
 		snappinghud.m[0] = inCmd.forwardmove;
 		snappinghud.m[1] = inCmd.rightmove;
 	} else {
 		return;
+	}
+
+	if (cg.renderingThirdPerson)
+	{
+		va[YAW] = cg.predictedPlayerState.viewangles[YAW];
+	}
+	else
+	{
+		va[YAW] = cg.refdefViewAngles[YAW]; // Because in first person we can have weaponkick (I think)
 	}
 
 	if (!cg_draw2D.integer)

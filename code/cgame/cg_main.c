@@ -779,8 +779,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	//snaphud start
 	{ &cg_snapHud, "cg_snapHud", "0", CVAR_ARCHIVE },
-	{ &cg_snapHudRgba1, "cg_snapHudRgba1", ".02 .1 .02 .4", CVAR_ARCHIVE },
-	{ &cg_snapHudRgba2, "cg_snapHudRgba2", ".05 .05 .05 .1", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba1, "cg_snapHudRgba1", "1 0 0 0.5", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba2, "cg_snapHudRgba2", "0 1 1 0.5", CVAR_ARCHIVE },
 	{ &cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE },
 	{ &cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE },
 	{ &cg_snapHudAuto, "cg_snapHudHeight", "1", CVAR_ARCHIVE },
