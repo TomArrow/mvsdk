@@ -787,8 +787,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_snapHudRgba2, "cg_snapHudRgba2", "0 1 1 0.5", CVAR_ARCHIVE },
 	{ &cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE },
 	{ &cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE },
-	{ &cg_snapHudAuto, "cg_snapHudHeight", "1", CVAR_ARCHIVE },
-	{ &cg_snapHudDef, "cg_snapHudHeight", "45", CVAR_ARCHIVE },
+	{ &cg_snapHudAuto, "cg_snapHudAuto", "1", CVAR_ARCHIVE },
+	{ &cg_snapHudDef, "cg_snapHudDef", "45", CVAR_ARCHIVE },
 	{ &cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE },
 	{ &cg_snapHudFps, "cg_snapHudFps","0", CVAR_ARCHIVE },
 	//snaphud end
@@ -981,7 +981,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
 	{ &cg_com_maxfps, "com_maxfps", "", 0},
-	{ &cg_com_physicsFps, "cg_com_physicsFps", "", 0},
+	{ &cg_com_physicsFps, "com_physicsFps", "", 0},
 
 	{ &cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE },
 	{ &cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE },

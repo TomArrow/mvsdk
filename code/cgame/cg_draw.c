@@ -6743,6 +6743,7 @@ static void CG_StrafeHelper(centity_t *cent)
 	int moveDir;
 	int currentCmdNumber;
 	int referenceFrameTime;
+	static int referenceFrameTimeOld;
 	qboolean onGround;
 	usercmd_t cmd = { 0 };
 	usercmd_t oldcmd = { 0 };
@@ -6761,6 +6762,10 @@ static void CG_StrafeHelper(centity_t *cent)
 			trap_GetUserCmd(currentCmdNumber-1, &oldcmd);
 			if (cmd.serverTime != oldcmd.serverTime) {
 				referenceFrameTime = cmd.serverTime - oldcmd.serverTime;
+				referenceFrameTimeOld = referenceFrameTime;
+			}
+			else {
+				referenceFrameTime = referenceFrameTimeOld;
 			}
 		}
 	}
@@ -7011,7 +7016,7 @@ void CG_DrawSnapHud(void)
 	if (!cg_draw2D.integer)
 		return;
 
-	speed = cg_snapHudSpeed.integer ? (float)cg_snapHudSpeed.integer : 250; //250 is base speed
+	speed = cg_snapHudSpeed.integer ? (float)cg_snapHudSpeed.integer : cg.predictedPlayerState.speed; //250 is base speed
 	fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : (cg_com_physicsFps.integer ? cg_com_physicsFps.integer : cg_com_maxfps.integer); //uses your maxfps setting by default
 
 	if (speed != snappinghud.speed || fps != snappinghud.fps) {//set these if not set, update if changed
