@@ -454,6 +454,7 @@ vmCvar_t	cg_shadows;
 vmCvar_t	cg_drawTimer;
 vmCvar_t	cg_drawRamps;
 vmCvar_t	cg_drawFPS;
+vmCvar_t	cg_drawFPSPhysical;
 vmCvar_t	cg_drawFPSLowest;
 vmCvar_t	cg_drawSnapshot;
 vmCvar_t	cg_draw3dIcons;
@@ -545,6 +546,7 @@ vmCvar_t	cg_strafeHelperInactiveAlpha;
 
 vmCvar_t	cg_strafeHelperOffset;
 vmCvar_t	cg_strafeHelper_FPS;
+vmCvar_t	cg_strafeHelper_RealPhysicsLines;
 
 vmCvar_t	cg_crosshairSizeScale;
 vmCvar_t	cg_crosshairSaberStyleColor;
@@ -689,6 +691,7 @@ vmCvar_t	cg_recordSPDemoName;
 
 vmCvar_t	cg_ui_myteam;
 vmCvar_t	cg_com_maxfps;
+vmCvar_t	cg_com_physicsFps;
 
 vmCvar_t	cg_mv_fixbrokenmodelsclient;
 vmCvar_t	cg_drawPlayerSprites;
@@ -735,6 +738,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE  },
 	{ &cg_drawRamps, "cg_drawRamps", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE  },
+	{ &cg_drawFPSPhysical, "cg_drawFPSPhysical", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPSLowest, "cg_drawFPSLowest", "1", CVAR_ARCHIVE  },
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE  },
 	{ &cg_draw3dIcons, "cg_draw3dIcons", "0", CVAR_ARCHIVE  },
@@ -835,7 +839,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_strafeHelperInactiveAlpha, "cg_strafeHelperInactiveAlpha", "200", CVAR_ARCHIVE },
 
 	{ &cg_strafeHelperOffset, "cg_strafeHelperOffset", "75", CVAR_ARCHIVE },
-	{ &cg_strafeHelper_FPS, "cg_strafeHelper_FPS", "0", 0 },
+	{ &cg_strafeHelper_FPS, "cg_strafeHelper_FPS", "0", CVAR_ARCHIVE },
+	{ &cg_strafeHelper_RealPhysicsLines, "cg_strafeHelper_RealPhysicsLines", "0", CVAR_ARCHIVE },
 
 	{ &cg_crosshairSizeScale, "cg_crosshairSizeScale", "1", CVAR_ARCHIVE },
 	{ &cg_crosshairSaberStyleColor, "cg_crosshairSaberStyleColor", "0", CVAR_ARCHIVE },
@@ -976,6 +981,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
 	{ &cg_com_maxfps, "com_maxfps", "", 0},
+	{ &cg_com_physicsFps, "cg_com_physicsFps", "", 0},
 
 	{ &cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE },
 	{ &cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE },

@@ -1538,6 +1538,7 @@ extern	vmCvar_t		cg_shadows;
 extern	vmCvar_t		cg_drawTimer;
 extern	vmCvar_t		cg_drawRamps;
 extern	vmCvar_t		cg_drawFPS;
+extern	vmCvar_t		cg_drawFPSPhysical;
 extern	vmCvar_t		cg_drawFPSLowest;
 extern	vmCvar_t		cg_drawSnapshot;
 extern	vmCvar_t		cg_draw3dIcons;
@@ -1629,6 +1630,7 @@ extern	vmCvar_t		cg_strafeHelperInactiveAlpha;
 
 extern	vmCvar_t		cg_strafeHelperOffset;
 extern	vmCvar_t		cg_strafeHelper_FPS;
+extern	vmCvar_t		cg_strafeHelper_RealPhysicsLines;
 
 extern	vmCvar_t		cg_crosshairSizeScale;
 extern	vmCvar_t		cg_crosshairSaberStyleColor;
@@ -1765,6 +1767,7 @@ extern  vmCvar_t		cg_recordSPDemoName;
 
 extern	vmCvar_t		cg_ui_myteam;
 extern	vmCvar_t		cg_com_maxfps;
+extern	vmCvar_t		cg_com_physicsFps;
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
 extern	vmCvar_t		cg_drawPlayerSprites;

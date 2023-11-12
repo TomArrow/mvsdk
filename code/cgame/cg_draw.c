@@ -2069,19 +2069,39 @@ static float CG_DrawFPS( float y ) {
 	int		t, frameTime;
 	static const int biggestInt = ~0 ^ (1 << 31);
 	int fastest,fastestIndex;
+	int cmdNum;
+	usercmd_t cmd;
+	qboolean skipFrame;
 
-	// don't use serverTime, because that will be drifting to
-	// correct for internet lag changes, timescales, timedemos, etc
-	t = trap_Milliseconds();
+	if (!cg_drawFPSPhysical.integer) {
+		// don't use serverTime, because that will be drifting to
+		// correct for internet lag changes, timescales, timedemos, etc
+		t = trap_Milliseconds();
+	}
+	else {
+		cmdNum = trap_GetCurrentCmdNumber();
+		if (cmdNum > 0) {
+			trap_GetUserCmd(cmdNum, &cmd);
+			t = cmd.serverTime;
+			trap_GetUserCmd(cmdNum-1, &cmd);
+			previous = cmd.serverTime;
+		}
+		else { 
+			t = previous;
+		}
+	}
 	frameTime = t - previous;
+	skipFrame = (t == previous);
 	previous = t;
 
-	previousTimes[index % FPS_FRAMES] = frameTime;
-	index++; 
+	if (!skipFrame) {
+		previousTimes[index % FPS_FRAMES] = frameTime;
+		index++;
 
-	indexBottom10P++;
-	indexBottom1P++;
-	indexBottom01P++;
+		indexBottom10P++;
+		indexBottom1P++;
+		indexBottom01P++;
+	}
 
 	// Bottom 10% frames
 	if (indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
@@ -2099,23 +2119,25 @@ static float CG_DrawFPS( float y ) {
 		indexBottom10P = 1;
 	}
 	{ // Draw bottom 10% frames
-		s = va("%ifps  10%%", bottom10Pfps);
+		s = va(cg_drawFPSPhysical.integer ? "%ipfps  10%%" : "%ifps  10%%", bottom10Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
 		if(cg_drawFPSLowest.integer)
 			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
-		fastest = biggestInt;
-		fastestIndex = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
-			if (bottomTimes10P[i] < fastest) {
-				fastest = bottomTimes10P[i];
-				fastestIndex = i;
+		if (!skipFrame) {
+			fastest = biggestInt;
+			fastestIndex = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+				if (bottomTimes10P[i] < fastest) {
+					fastest = bottomTimes10P[i];
+					fastestIndex = i;
+				}
 			}
-		}
-		// Replace fastest frametime with current frametime if it is slower than fastest
-		if (frameTime > fastest) {
-			bottomTimes10P[fastestIndex] = frameTime;
+			// Replace fastest frametime with current frametime if it is slower than fastest
+			if (frameTime > fastest) {
+				bottomTimes10P[fastestIndex] = frameTime;
+			}
 		}
 	}
 
@@ -2135,23 +2157,25 @@ static float CG_DrawFPS( float y ) {
 		indexBottom1P = 1;
 	}
 	{ // Draw bottom 1% frames
-		s = va("%ifps   1%%", bottom1Pfps);
+		s = va(cg_drawFPSPhysical.integer ? "%ipfps   1%%":"%ifps   1%%", bottom1Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
 		if (cg_drawFPSLowest.integer)
 			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
-		fastest = biggestInt;
-		fastestIndex = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
-			if (bottomTimes1P[i] < fastest) {
-				fastest = bottomTimes1P[i];
-				fastestIndex = i;
+		if (!skipFrame) {
+			fastest = biggestInt;
+			fastestIndex = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+				if (bottomTimes1P[i] < fastest) {
+					fastest = bottomTimes1P[i];
+					fastestIndex = i;
+				}
 			}
-		}
-		// Replace fastest frametime with current frametime if it is slower than fastest
-		if (frameTime > fastest) {
-			bottomTimes1P[fastestIndex] = frameTime;
+			// Replace fastest frametime with current frametime if it is slower than fastest
+			if (frameTime > fastest) {
+				bottomTimes1P[fastestIndex] = frameTime;
+			}
 		}
 	}
 
@@ -2171,23 +2195,25 @@ static float CG_DrawFPS( float y ) {
 		indexBottom01P = 1;
 	}
 	{ // Draw bottom 0.1% frames
-		s = va("%ifps 0.1%%", bottom01Pfps);
+		s = va(cg_drawFPSPhysical.integer?"%ipfps 0.1%%":"%ifps 0.1%%", bottom01Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
 		if (cg_drawFPSLowest.integer)
 			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
-		fastest = biggestInt;
-		fastestIndex = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
-			if (bottomTimes01P[i] < fastest) {
-				fastest = bottomTimes01P[i];
-				fastestIndex = i;
+		if (!skipFrame) {
+			fastest = biggestInt;
+			fastestIndex = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+				if (bottomTimes01P[i] < fastest) {
+					fastest = bottomTimes01P[i];
+					fastestIndex = i;
+				}
 			}
-		}
-		// Replace fastest frametime with current frametime if it is slower than fastest
-		if (frameTime > fastest) {
-			bottomTimes01P[fastestIndex] = frameTime;
+			// Replace fastest frametime with current frametime if it is slower than fastest
+			if (frameTime > fastest) {
+				bottomTimes01P[fastestIndex] = frameTime;
+			}
 		}
 	}			
 	
@@ -2204,7 +2230,7 @@ static float CG_DrawFPS( float y ) {
 		}
 		fps = 1000 * FPS_FRAMES / total;
 
-		s = va( "%ifps", fps );
+		s = va(cg_drawFPSPhysical.integer?"%ipfps":"%ifps", fps );
 
 		//JAPRO - Clientside - Add cg_drawfps 2 - Start
 		if (jk2version != VERSION_1_02 && trap_Language_IsAsian())
@@ -6715,14 +6741,28 @@ static void CG_StrafeHelper(centity_t *cent)
 	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.predictedPlayerState.speed;
 	const int moveStyle = PM_GetMovePhysics();
 	int moveDir;
+	int currentCmdNumber;
+	int referenceFrameTime;
 	qboolean onGround;
 	usercmd_t cmd = { 0 };
+	usercmd_t oldcmd = { 0 };
 
 	if (moveStyle == MV_SIEGE)
 		return; //no strafe in siege
 
+
+	referenceFrameTime = cg.frametime;
+
 	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
-		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
+		currentCmdNumber = trap_GetCurrentCmdNumber();
+		trap_GetUserCmd(currentCmdNumber, &cmd);
+		if(cg_strafeHelper_RealPhysicsLines.integer && currentCmdNumber > 1){
+
+			trap_GetUserCmd(currentCmdNumber-1, &oldcmd);
+			if (cmd.serverTime != oldcmd.serverTime) {
+				referenceFrameTime = cmd.serverTime - oldcmd.serverTime;
+			}
+		}
 	}
 	else if (cg.snap) {
 		moveDir = cg.snap->ps.movementDir;
@@ -6804,8 +6844,9 @@ static void CG_StrafeHelper(centity_t *cent)
 		}
 	}
 
+
 	if (cg_strafeHelper_FPS.value < 1)
-		frametime = ((float)cg.frametime * 0.001f);
+		frametime = ((float)referenceFrameTime * 0.001f);
 	else if (cg_strafeHelper_FPS.value > 1000) // invalid
 		frametime = 1;
 	else frametime = 1 / cg_strafeHelper_FPS.value;
@@ -6971,7 +7012,7 @@ void CG_DrawSnapHud(void)
 		return;
 
 	speed = cg_snapHudSpeed.integer ? (float)cg_snapHudSpeed.integer : 250; //250 is base speed
-	fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : cg_com_maxfps.integer; //uses your maxfps setting by default
+	fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : (cg_com_physicsFps.integer ? cg_com_physicsFps.integer : cg_com_maxfps.integer); //uses your maxfps setting by default
 
 	if (speed != snappinghud.speed || fps != snappinghud.fps) {//set these if not set, update if changed
 		CG_UpdateSnapHudSettings(speed, fps);
