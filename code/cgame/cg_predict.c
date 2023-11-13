@@ -685,7 +685,7 @@ void CG_PredictPlayerState( void ) {
 	static int lastSnapPsCommandTime = 0;
 	const snapshot_t* baseSnap;
 	int			cmdNum, current, i;
-	playerState_t	oldPlayerState;
+	playerState_t	oldPlayerState,preSpecialPredictPlayerState;
 	qboolean	moved;
 	usercmd_t	oldestCmd;
 	usercmd_t	latestCmd;
@@ -808,6 +808,8 @@ void CG_PredictPlayerState( void ) {
 	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= (current+1) ; cmdNum++ ) {
 
 		if (cmdNum > current) {
+
+			preSpecialPredictPlayerState = *cg_pmove.ps;
 
 			// Fucky experimental prediction to try and get com_physicsfps with low values to look smooth(er)
 			if (!cg_specialPredictPhysicsFps.integer || !cg_com_physicsFps.integer) break; // This type of prediction is disabled.
@@ -962,6 +964,13 @@ void CG_PredictPlayerState( void ) {
 
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
+
+		if (cmdNum > current) {
+			// We only want the new positions from the special predict, leave animations alone to avoid misprediction glitches.
+			cg_pmove.ps->legsAnim = preSpecialPredictPlayerState.legsAnim;
+			cg_pmove.ps->torsoAnim = preSpecialPredictPlayerState.torsoAnim;
+			cg_pmove.ps->legsAnimExecute = preSpecialPredictPlayerState.legsAnimExecute;
+		}
 	}
 
 	CG_COOL_API_SetPredictedMovement(&cg.predictedPlayerState);
