@@ -1756,6 +1756,19 @@ extern	vmCvar_t		cg_com_maxfps;
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
 extern	vmCvar_t		cg_drawPlayerSprites;
+
+//snaphud start
+extern	vmCvar_t		cg_snapHud;
+extern	vmCvar_t		cg_snapHudRgba1;
+extern	vmCvar_t		cg_snapHudRgba2;
+extern	vmCvar_t		cg_snapHudY;
+extern	vmCvar_t		cg_snapHudHeight;
+extern	vmCvar_t		cg_snapHudAuto;
+extern	vmCvar_t		cg_snapHudDef;
+extern	vmCvar_t		cg_snapHudSpeed;
+extern	vmCvar_t		cg_snapHudFps;
+//snaphud end
+
 /*
 Ghoul2 Insert Start
 */
