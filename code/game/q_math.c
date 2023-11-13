@@ -548,6 +548,15 @@ float Q_rsqrt( float number )
 	return y;
 }
 
+float ET_asin(float c) {
+	if (c < -1.0) {
+		c = -1.0;
+	} else if (c > 1.0) {
+		c = 1.0;
+	}
+	return atan2(c, sqrt(1 - c*c));
+}
+
 float Q_fabs( float f ) {
 	floatint_t fi;
 	fi.f = f;
