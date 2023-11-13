@@ -689,6 +689,7 @@ void CG_PredictPlayerState( void ) {
 	qboolean	moved;
 	usercmd_t	oldestCmd;
 	usercmd_t	latestCmd;
+	usercmd_t	temporaryCmd;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
@@ -804,9 +805,46 @@ void CG_PredictPlayerState( void ) {
 
 	// run cmds
 	moved = qfalse;
-	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= current ; cmdNum++ ) {
-		// get the command
-		trap_GetUserCmd( cmdNum, &cg_pmove.cmd );
+	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= (current+1) ; cmdNum++ ) {
+
+		if (cmdNum > current) {
+
+			// Fucky experimental prediction to try and get com_physicsfps with low values to look smooth(er)
+			if (!cg_specialPredictPhysicsFps.integer || !cg_com_physicsFps.integer) break; // This type of prediction is disabled.
+			if (cg.time == latestCmd.serverTime) break; // Nothing to further predict
+			
+			if (cg_specialPredictPhysicsFps.integer) { 
+
+				trap_GetUserCmd(current, &cg_pmove.cmd);
+			}
+			if (cg_specialPredictPhysicsFps.integer & 1) { // Give more up to date view angles (nice on higher fps)
+				if (coolApi & COOL_APIFEATURE_GETTEMPORARYUSERCMD) {
+					trap_GetUserCmd(-1, &temporaryCmd);
+					if (temporaryCmd.serverTime > cg_pmove.cmd.serverTime && temporaryCmd.serverTime <= cg.time) {
+						VectorCopy(temporaryCmd.angles, cg_pmove.cmd.angles);
+
+						if (!(cg_specialPredictPhysicsFps.integer & 2)) { // If we aren't special predicting movement (since that's buggy-ish and leads to prediction errors), only force the view angles.
+							PM_UpdateViewAngles(cg_pmove.ps, &temporaryCmd);
+							if (cg_specialPredictPhysicsFpsAngleCmdTime.integer) {
+								// Stops camera from stuttering when colliding with surrounding objects, but 
+								// sadly now stutters around the player :(
+								// Dunno if this can be fixed. Maybe.
+								cg_pmove.ps->commandTime = temporaryCmd.serverTime;
+							}
+						}
+					}
+				}
+			}
+			
+			cg_pmove.cmd.serverTime = cg.time;
+			cg_pmove.cmd.generic_cmd = 0;
+			if (!(cg_specialPredictPhysicsFps.integer & 2)) break; // 2 means predict movement (buggy-ish)
+		}
+		else {
+
+			// get the command
+			trap_GetUserCmd(cmdNum, &cg_pmove.cmd);
+		}
 
 		if ( cg_pmove.pmove_fixed ) {
 			PM_UpdateViewAngles( cg_pmove.ps, &cg_pmove.cmd );
@@ -818,7 +856,7 @@ void CG_PredictPlayerState( void ) {
 		}
 
 		// don't do anything if the command was from a previous map_restart
-		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime ) {
+		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime && !(cg_specialPredictPhysicsFps.integer && cg_com_physicsFps.integer && latestCmd.serverTime < cg.time && cg_pmove.cmd.serverTime <= cg.time)) {
 			continue;
 		}
 

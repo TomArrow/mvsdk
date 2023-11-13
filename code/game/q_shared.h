@@ -2197,6 +2197,7 @@ enum {
 };
 
 #define COOL_APIFEATURE_SETPREDICTEDMOVEMENT (1<<0)
+#define COOL_APIFEATURE_GETTEMPORARYUSERCMD (1<<1)
 
 // This is a simplified playerState_t of sorts to communicate predicted playerstate stuff to the engine 
 typedef struct predictedMovement_s {
