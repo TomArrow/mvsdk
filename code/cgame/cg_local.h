@@ -1790,6 +1790,11 @@ extern	vmCvar_t		cg_snapHudSpeed;
 extern	vmCvar_t		cg_snapHudFps;
 //snaphud end
 
+
+// Stuff from vVv mod
+extern	vmCvar_t		x3_forcefieldPredictionDisable;
+
+
 /*
 Ghoul2 Insert Start
 */

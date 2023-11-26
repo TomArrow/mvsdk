@@ -114,6 +114,10 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 			continue;
 		}
 
+		// vVv force field lag fix
+		if (x3_forcefieldPredictionDisable.integer && ent->modelindex == HI_SHIELD && ent->eType == ET_SPECIAL)
+			continue;	//forcefield lag fix
+
 		if ( ent->solid == SOLID_BMODEL ) {
 			// special value for bmodel
 

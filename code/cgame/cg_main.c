@@ -717,6 +717,10 @@ vmCvar_t cg_snapHudSpeed;
 vmCvar_t cg_snapHudFps;
 //snaphud end
 
+// Stuff from vVv mod
+vmCvar_t	x3_forcefieldPredictionDisable;
+
+
 typedef struct {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
@@ -997,6 +1001,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 Ghoul2 Insert Start
 */
 	{ &cg_debugBB, "debugBB", "0", 0},
+	{ &x3_forcefieldPredictionDisable, "x3_forcefieldPredictionDisable", "0", 0}, // Remove forcefield lag at the cost of prediction
 /*
 Ghoul2 Insert End
 */
