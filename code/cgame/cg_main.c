@@ -717,8 +717,13 @@ vmCvar_t cg_snapHudSpeed;
 vmCvar_t cg_snapHudFps;
 //snaphud end
 
+
+vmCvar_t	cg_scoreboardDisconnectedPlayersDrawTime;
+vmCvar_t	cg_autoScoreboardFetchInterval;
+
 // Stuff from vVv mod
 vmCvar_t	x3_forcefieldPredictionDisable;
+vmCvar_t	x3_screenshotAfterEachRound;
 
 
 typedef struct {
@@ -800,6 +805,9 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE },
 	{ &cg_snapHudFps, "cg_snapHudFps","0", CVAR_ARCHIVE },
 	//snaphud end
+
+	{ &cg_scoreboardDisconnectedPlayersDrawTime, "cg_scoreboardDisconnectedPlayersDrawTime", "30", CVAR_ARCHIVE },
+	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },
 
 	{ &cg_swingAngles, "cg_swingAngles", "1", 0 },
 
@@ -1001,7 +1009,10 @@ static cvarTable_t cvarTable[] = { // bk001129
 Ghoul2 Insert Start
 */
 	{ &cg_debugBB, "debugBB", "0", 0},
-	{ &x3_forcefieldPredictionDisable, "x3_forcefieldPredictionDisable", "0", 0}, // Remove forcefield lag at the cost of prediction
+
+		// vVv features
+	{ &x3_forcefieldPredictionDisable, "x3_forcefieldPredictionDisable", "0", CVAR_ARCHIVE }, // Remove forcefield lag at the cost of prediction
+	{ &x3_screenshotAfterEachRound, "x3_screenshotAfterEachRound", "0", CVAR_ARCHIVE }, // take a screenshot upon end of each game, saved in screenshots/games folder
 /*
 Ghoul2 Insert End
 */

@@ -64,6 +64,7 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	clientInfo_t	*ci;
 	float		iconx;
 	float		scale;
+	qboolean	playerDisconnected = qfalse;
 
 	if ( largeFormat )
 	{
@@ -80,6 +81,12 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	}
 	
 	ci = &cgs.clientinfo[score->client];
+
+	// If this client disconnected recently and we wanna draw his stuff anyway, we must get his info from lastValidClientInfo
+	if (cg_scoreboardDisconnectedPlayersDrawTime.integer && cgs.disconnectTime[score->client] && cgs.disconnectTime[score->client] < cg.time && (cg.time - cgs.disconnectTime[score->client]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
+		ci = &cgs.lastValidClientinfo[score->client];
+		playerDisconnected = qtrue;
+	}
 
 	iconx = SB_BOTICON_X + (SB_RATING_WIDTH / 2);
 
@@ -116,6 +123,19 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		//rww - in duel, we now show wins/losses in place of "frags". This is because duel now defaults to 1 kill per round.
 	}
 
+	// show disconnected clients with a black background
+	if ( playerDisconnected )
+	{
+		float	hcolor[4];
+
+		hcolor[0] = 0.0f;
+		hcolor[1] = 0.0f;
+		hcolor[2] = 0.0f;
+
+		hcolor[3] = fade * 0.7;
+		CG_FillRect( SB_SCORELINE_X - 5, y + 2, SB_SCORELINE_WIDTH + 10, largeFormat?SB_NORMAL_HEIGHT:SB_INTER_HEIGHT, hcolor );
+	}
+	
 	// highlight your position
 	if ( score->client == cg.snap->ps.clientNum ) 
 	{
@@ -240,6 +260,7 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 	score_t	*score;
 	float	color[4];
 	int		count;
+	int		playersCountedBitmask = 0;
 	clientInfo_t	*ci;
 
 	color[0] = color[1] = color[2] = 1.0;
@@ -249,6 +270,11 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 	for ( i = 0 ; i < cg.numScores && count < maxClients ; i++ ) {
 		score = &cg.scores[i];
 		ci = &cgs.clientinfo[ score->client ];
+
+		// If this client disconnected recently, still draw his score if cg_scoreboardDisconnectedPlayersDrawTime is not 0.
+		if (cg_scoreboardDisconnectedPlayersDrawTime.integer && cgs.disconnectTime[score->client] && cgs.disconnectTime[score->client] < cg.time && (cg.time - cgs.disconnectTime[score->client]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
+			ci = &cgs.lastValidClientinfo[score->client];
+		}
 
 		if ( team != ci->team ) {
 			continue;
@@ -260,6 +286,30 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 		}
 
 		count++;
+		playersCountedBitmask |= (1 << score->client);
+	}
+
+	// If desired, go through remaining players who may have disconnected before we 
+	// even got the last scoreboard data and add them to the count
+	if (cg_scoreboardDisconnectedPlayersDrawTime.integer) {
+		for (i = 0; i < MAX_CLIENTS; i++) {
+			if (!(playersCountedBitmask & (1 << i)) && cgs.disconnectTime[i] && cgs.disconnectTime[i] < cg.time && (cg.time - cgs.disconnectTime[i]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
+				ci = &cgs.lastValidClientinfo[i];
+				score = &cgs.lastValidScoreboardEntry[i];
+				if (team != ci->team)
+				{
+					continue;
+				}
+
+				if (!countOnly)
+				{
+					score->client = i;
+					CG_DrawClientScore(y + lineHeight * count, score, color, fade, lineHeight == SB_NORMAL_HEIGHT);
+				}
+
+				count++;
+			}
+		}
 	}
 
 	return count;
@@ -269,6 +319,7 @@ int CG_GetTeamCount(team_t team, int maxClients)
 {
 	int i = 0;
 	int count = 0;
+	int playersCountedBitmask = 0;
 	clientInfo_t	*ci;
 	score_t	*score;
 
@@ -277,12 +328,33 @@ int CG_GetTeamCount(team_t team, int maxClients)
 		score = &cg.scores[i];
 		ci = &cgs.clientinfo[ score->client ];
 
+		// If this client disconnected recently, still draw his score if cg_scoreboardDisconnectedPlayersDrawTime is not 0.
+		if (cg_scoreboardDisconnectedPlayersDrawTime.integer && cgs.disconnectTime[score->client] && cgs.disconnectTime[score->client] < cg.time && (cg.time - cgs.disconnectTime[score->client]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
+			ci = &cgs.lastValidClientinfo[score->client];
+		}
+
 		if ( team != ci->team )
 		{
 			continue;
 		}
 
 		count++;
+		playersCountedBitmask |= (1 << score->client);
+	}
+
+	// If desired, go through remaining players who may have disconnected before we 
+	// even got the last scoreboard data and add them to the count
+	if (cg_scoreboardDisconnectedPlayersDrawTime.integer) {
+		for (i = 0; i < MAX_CLIENTS; i++) {
+			if (!(playersCountedBitmask & (1<<i)) && cgs.disconnectTime[i] && cgs.disconnectTime[i] < cg.time && (cg.time - cgs.disconnectTime[i]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
+				ci = &cgs.lastValidClientinfo[i];
+				if (team != ci->team)
+				{
+					continue;
+				}
+				count++;
+			}
+		}
 	}
 
 	return count;

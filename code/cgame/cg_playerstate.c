@@ -487,6 +487,27 @@ CG_TransitionPlayerState
 void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 	centity_t* cent;
 
+	if (ps->pm_type == PM_INTERMISSION && ops->pm_type != PM_INTERMISSION) {
+		//we changed into intermission mode.
+
+
+		if (x3_screenshotAfterEachRound.integer && (!cg.demoPlayback || x3_screenshotAfterEachRound.integer > 1)  /*&& !cg.minimized &&
+			CG_GetPlayingClients(TEAM_PLAYING) >= 8*/) {
+
+			// dont take the screenshot with console open
+			if (trap_Key_GetCatcher() & KEYCATCH_CONSOLE)
+				trap_SendConsoleCommand("toggleconsole instant;"); // The "instant" is for my eternal fork. But it won't interfere otherwise. You'll likely end up with a visible console tho.
+
+			trap_SendConsoleCommand("wait 4; screenshot");
+
+			// if we have the client exe, this screenshot will be saved in a folder called games inside screenshots
+			//if (x3 client detected)
+			//	trap_SendConsoleCommand(" _fw");
+
+			trap_SendConsoleCommand("\n");
+		}
+	}
+
 	// check for changing follow mode
 	if ( ps->clientNum != ops->clientNum ) {
 		cg.thisFrameTeleport = qtrue;

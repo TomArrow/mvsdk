@@ -1780,6 +1780,12 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );
 
+	// Fetch scoreboard regularly even if we are not viewing it.
+	if (cg_autoScoreboardFetchInterval.integer && !cg.demoPlayback && (cg.lastScoresReceived > cg.time || (cg.time - cg.lastScoresReceived) > (cg_autoScoreboardFetchInterval.integer * 1000)) && cg.scoresRequestTime + 2000 < cg.time) { //don't clear the scoreboard when watching a demo
+		cg.scoresRequestTime = cg.time;
+		trap_SendClientCommand("score");
+	}
+
 	//jk2pro
 	CG_DoAsync();
 

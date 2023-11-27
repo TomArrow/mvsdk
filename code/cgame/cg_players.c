@@ -1010,6 +1010,9 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	configstring = CG_ConfigString( clientNum + CS_PLAYERS );
 	if ( !configstring[0] ) {
 		memset( ci, 0, sizeof( *ci ) );
+		if (!cgs.disconnectTime[clientNum]) {
+			cgs.disconnectTime[clientNum] = cg.time;
+		}
 		return;		// player just left
 	}
 
@@ -1257,6 +1260,9 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		trap_G2API_CleanGhoul2Models(&ci->ghoul2Model);
 	}
 	*ci = newInfo;
+
+	cgs.disconnectTime[clientNum] = 0;
+	cgs.lastValidClientinfo[clientNum] = newInfo; // We may wanna show people on the scoreboard who already disconnected. Remember stuff about them.
 
 	//force a weapon change anyway, for all clients being rendered to the current client
 	while (i < MAX_CLIENTS)
@@ -3566,7 +3572,7 @@ static void CG_PlayerSplash( centity_t *cent ) {
 
 	// if the feet aren't in liquid, don't make a mark
 	// this won't handle moving water brushes, but they wouldn't draw right anyway...
-	contents = trap_CM_PointContents( end, 0 );
+	contents = CG_PointContents( end, 0 );
 	if ( !( contents & ( CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) ) {
 		return;
 	}
@@ -3575,7 +3581,7 @@ static void CG_PlayerSplash( centity_t *cent ) {
 	start[2] += 32;
 
 	// if the head isn't out of liquid, don't make a mark
-	contents = trap_CM_PointContents( start, 0 );
+	contents = CG_PointContents( start, 0 );
 	if ( contents & ( CONTENTS_SOLID | CONTENTS_WATER | CONTENTS_SLIME | CONTENTS_LAVA ) ) {
 		return;
 	}

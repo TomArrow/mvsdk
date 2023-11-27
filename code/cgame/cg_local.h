@@ -757,6 +757,7 @@ typedef struct {
 	int			teamScores[2];
 	score_t		scores[MAX_CLIENTS];
 	qboolean	showScores;
+	int			lastScoresReceived;
 	qboolean	scoreBoardShowing;
 	int			scoreFadeTime;
 	char		killerName[MAX_NAME_LENGTH];
@@ -1476,6 +1477,11 @@ Ghoul2 Insert End
 
 	clientInfo_t	clientinfo[MAX_CLIENTS];
 
+	// We may wanna draw already disconnected players on the scoreboard. Remember their stuff and their disconnect times.
+	clientInfo_t	lastValidClientinfo[MAX_CLIENTS];
+	int				disconnectTime[MAX_CLIENTS];
+	score_t			lastValidScoreboardEntry[MAX_CLIENTS];
+
 	// teamchat width is *3 because of embedded color codes
 	char			teamChatMsgs[TEAMCHAT_HEIGHT][TEAMCHAT_WIDTH*3+1];
 	int				teamChatMsgTimes[TEAMCHAT_HEIGHT];
@@ -1790,9 +1796,12 @@ extern	vmCvar_t		cg_snapHudSpeed;
 extern	vmCvar_t		cg_snapHudFps;
 //snaphud end
 
+extern	vmCvar_t		cg_scoreboardDisconnectedPlayersDrawTime;
+extern	vmCvar_t		cg_autoScoreboardFetchInterval;
 
 // Stuff from vVv mod
 extern	vmCvar_t		x3_forcefieldPredictionDisable;
+extern	vmCvar_t		x3_screenshotAfterEachRound;
 
 
 /*

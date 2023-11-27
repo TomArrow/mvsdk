@@ -91,8 +91,11 @@ static void CG_ParseScores( void ) {
 		cgs.clientinfo[ cg.scores[i].client ].powerups = powerups;
 
 		cg.scores[i].team = cgs.clientinfo[cg.scores[i].client].team;
+
+		cgs.lastValidScoreboardEntry[cg.scores[i].client] = cg.scores[i];
 	}
 	CG_SetScoreSelection(NULL);
+	cg.lastScoresReceived = cg.time;
 }
 
 /*
@@ -413,6 +416,10 @@ void CG_UpdateConfigString( int num, qboolean init )
 			break;
 		case CS_INTERMISSION:
 			cg.intermissionStarted = atoi( str );
+			if (cg.intermissionStarted && !cg.demoPlayback) { // Game just ended. Intermission will come soon. Request scoreboard data NOW before players disconnect/ragequit.
+				trap_SendClientCommand("score");
+				cg.scoresRequestTime = cg.time;
+			}
 			break;
 		case CS_FLAGSTATUS:
 			if( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY ) {
