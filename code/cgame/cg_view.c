@@ -1603,6 +1603,7 @@ static void CG_AutoFollow() {
 	static int lastBlueFlagChange = 0;
 	int i;
 	vec3_t deltaVector;
+	qboolean timePassedSinceFlagStateChange;
 
 	if (cg.demoPlayback || cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR) return;
 
@@ -1614,6 +1615,8 @@ static void CG_AutoFollow() {
 		lastBlueFlag = cgs.blueflag;
 		lastBlueFlagChange = cg.time;
 	}
+
+	timePassedSinceFlagStateChange = (cg.time - lastRedFlagChange) > 2000 && (cg.time - lastBlueFlagChange) > 2000;
 
 	if (cg.time > cg.lastAutoFollowSent && (cg.time - cg.lastAutoFollowSent) < 2000) return; // Limit the auto follow commands to once every 2 seconds
 
@@ -1638,7 +1641,7 @@ static void CG_AutoFollow() {
 			followStateChangeTimeout = 2000; // If the flag is at base, follow the other flag instead, or wait less time to follow the other flag
 		}
 		if (cg.time < cg.lastAutoFollowStateChange || (cg.time - cg.lastAutoFollowStateChange) > followStateChangeTimeout) {
-			if ((cg.time - lastRedFlagChange) > 2000 && (cg.time - lastBlueFlagChange) > 2000) {
+			if (timePassedSinceFlagStateChange) {
 				// Don't change auto follow state immediately after the flag changes its state, don't wanna hectically flip around while
 				// lots of stuff is going on.
 				cg.autoFollowState = cg.autoFollowState == AUTOFOLLOW_BLUE ? AUTOFOLLOW_RED : AUTOFOLLOW_BLUE;
@@ -1649,13 +1652,15 @@ static void CG_AutoFollow() {
 		if (cg.autoFollowState == AUTOFOLLOW_RED && cgs.redFlagCarrier) {
 			int clientNum = (cgs.redFlagCarrier - cgs.clientinfo);
 			followNum = clientNum;
-			if (cg_entities[clientNum].currentValid) {
+			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
 				int highestRetCount = -9999999;
 				int highestRetCountClient = -1;
 
+				if (!timePassedSinceFlagStateChange) return;
+
 				// Currently visible. Check for nearby rets
 				for (i = 0; i < MAX_CLIENTS; i++) {
-					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team != TEAM_RED && cg_entities[i].currentValid) {
+					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team == TEAM_RED && (cg_entities[i].currentValid || cg.predictedPlayerState.clientNum == i)) {
 						VectorSubtract(cg_entities[i].lerpOrigin, cg_entities[clientNum].lerpOrigin, deltaVector);
 						if (VectorLength(deltaVector) < 2000) {
 							if (cgs.lastValidScoreboardEntry[i].impressiveCount > highestRetCount) {
@@ -1673,13 +1678,15 @@ static void CG_AutoFollow() {
 		} else if (cg.autoFollowState == AUTOFOLLOW_BLUE && cgs.blueFlagCarrier) {
 			int clientNum = (cgs.blueFlagCarrier - cgs.clientinfo);
 			followNum = clientNum;
-			if (cg_entities[clientNum].currentValid) {
+			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
 				int highestRetCount = -9999999;
 				int highestRetCountClient = -1;
 
+				if (!timePassedSinceFlagStateChange) return;
+
 				// Currently visible. Check for nearby rets
 				for (i = 0; i < MAX_CLIENTS; i++) {
-					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team != TEAM_BLUE && cg_entities[i].currentValid) {
+					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team == TEAM_BLUE && (cg_entities[i].currentValid || cg.predictedPlayerState.clientNum == i)) {
 						VectorSubtract(cg_entities[i].lerpOrigin, cg_entities[clientNum].lerpOrigin, deltaVector);
 						if (VectorLength(deltaVector) < 2000) {
 							if (cgs.lastValidScoreboardEntry[i].impressiveCount > highestRetCount) {
