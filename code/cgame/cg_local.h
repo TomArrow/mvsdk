@@ -642,6 +642,11 @@ typedef struct {
 #define MAX_REWARDSTACK		10
 #define MAX_SOUNDBUFFER		20
 
+typedef enum autoFollowState_s {
+	AUTOFOLLOW_RED,
+	AUTOFOLLOW_BLUE
+} autoFollowState_t;
+
 //======================================================================
 
 // all cg.stepTime, cg.duckTime, cg.landTime, etc are set to cg.time when the action
@@ -924,6 +929,9 @@ Ghoul2 Insert End
 	int					lastAutoKillTime;
 	float				predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
 
+	int					lastAutoFollowSent;
+	autoFollowState_t	autoFollowState;
+	int					lastAutoFollowStateChange;
 } cg_t;
 
 #define MAX_TICS	14
@@ -1795,6 +1803,8 @@ extern	vmCvar_t		cg_snapHudDef;
 extern	vmCvar_t		cg_snapHudSpeed;
 extern	vmCvar_t		cg_snapHudFps;
 //snaphud end
+
+extern	vmCvar_t		cg_autoFollow;
 
 extern	vmCvar_t		cg_scoreboardDisconnectedPlayersDrawTime;
 extern	vmCvar_t		cg_autoScoreboardFetchInterval;

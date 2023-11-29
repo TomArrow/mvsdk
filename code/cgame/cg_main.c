@@ -717,6 +717,7 @@ vmCvar_t cg_snapHudSpeed;
 vmCvar_t cg_snapHudFps;
 //snaphud end
 
+vmCvar_t	cg_autoFollow;
 
 vmCvar_t	cg_scoreboardDisconnectedPlayersDrawTime;
 vmCvar_t	cg_autoScoreboardFetchInterval;
@@ -805,6 +806,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE },
 	{ &cg_snapHudFps, "cg_snapHudFps","0", CVAR_ARCHIVE },
 	//snaphud end
+
+	{ &cg_autoFollow, "cg_autoFollow", "0", CVAR_ARCHIVE },
 
 	{ &cg_scoreboardDisconnectedPlayersDrawTime, "cg_scoreboardDisconnectedPlayersDrawTime", "30", CVAR_ARCHIVE },
 	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },
