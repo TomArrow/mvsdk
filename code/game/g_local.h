@@ -337,6 +337,12 @@ typedef struct {
 	int			voteCount;			// to prevent people from constantly calling votes
 	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
+
+	// savepos/respos
+	vec3_t		savePosPosition;
+	vec3_t		savePosVelocity;
+	vec3_t		savePosAngle;
+	qboolean	savePosUsed;
 } clientPersistant_t;
 
 
@@ -429,10 +435,6 @@ struct gclient_s {
 
 	qboolean	fjDidJump;
 
-	vec3_t		savePosPosition;
-	vec3_t		savePosVelocity;
-	vec3_t		savePosAngle;
-	qboolean	savePosUsed;
 };
 
 

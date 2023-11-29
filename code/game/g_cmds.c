@@ -444,10 +444,10 @@ void Cmd_Savepos_f( gentity_t *ent ) {
 		return;
 	}
 
-	VectorCopy(ent->client->ps.origin,ent->client->savePosPosition);
-	VectorCopy(ent->client->ps.velocity,ent->client->savePosVelocity);
-	VectorCopy(ent->client->ps.viewangles,ent->client->savePosAngle);
-	ent->client->savePosUsed = qtrue;
+	VectorCopy(ent->client->ps.origin,ent->client->pers.savePosPosition);
+	VectorCopy(ent->client->ps.velocity,ent->client->pers.savePosVelocity);
+	VectorCopy(ent->client->ps.viewangles,ent->client->pers.savePosAngle);
+	ent->client->pers.savePosUsed = qtrue;
 	msg = "Position, velocity and angle saved.\n";
 
 	trap_SendServerCommand( ent-g_entities, va("print \"%s\"", msg));
@@ -467,10 +467,10 @@ void Cmd_Respos_f( gentity_t *ent ) {
 		return;
 	}
 
-	if ( ent->client->savePosUsed ) {
-		VectorCopy(ent->client->savePosPosition, ent->client->ps.origin);
-		VectorCopy(ent->client->savePosVelocity, ent->client->ps.velocity);
-		SetClientViewAngle(ent,ent->client->savePosAngle);
+	if ( ent->client->pers.savePosUsed ) {
+		VectorCopy(ent->client->pers.savePosPosition, ent->client->ps.origin);
+		VectorCopy(ent->client->pers.savePosVelocity, ent->client->ps.velocity);
+		SetClientViewAngle(ent,ent->client->pers.savePosAngle);
 		ent->client->ps.eFlags ^= EF_TELEPORT_BIT;
 	}
 	else {
