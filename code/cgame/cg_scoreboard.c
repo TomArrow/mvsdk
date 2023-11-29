@@ -188,7 +188,7 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 
 	if (score->ping != -1)
 	{
-		if ( ci->team != TEAM_SPECTATOR || cgs.gametype == GT_TOURNAMENT )
+		if ( ci->team != TEAM_SPECTATOR || cgs.gametype == GT_TOURNAMENT  || playerDisconnected )
 		{
 			if (cgs.gametype == GT_TOURNAMENT)
 			{
