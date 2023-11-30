@@ -290,6 +290,10 @@ clientkilled:
 		// print the text message as well
 	}
 
+	if (attacker == cg.refclient) {
+		cg.lastRefClientKill = cg.time;
+	}
+
 	// check for double client messages
 	if ( !attackerInfo || !attackerInfo->infoValid ) {
 		attacker = ENTITYNUM_WORLD;

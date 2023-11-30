@@ -39,6 +39,52 @@ static int CG_ValidOrder(const char *p) {
 	return -1;
 }
 
+static int pauseGameStartedTime = 0;	//for keeping track of duration of pauses.
+
+static void CG_PauseGameStarted(void) {
+	cg.pausedGame = qtrue;
+	pauseGameStartedTime = cg.time;
+}
+
+static void CG_PauseGameEnded(void) {
+	int dur = cg.time - pauseGameStartedTime;
+	int i, k;
+
+	if (!cg.pausedGame) return; // Demo might start inside a pause.
+	cg.pausedGame = qfalse;
+
+	if (!pauseGameStartedTime)
+		return;	//???
+
+#ifdef DEVELOPER
+	CG_Printf("^5Pause ended after %s\n", CG_MsToString(dur, 1));
+#endif
+
+	//Subtract pause time from flag hold time.
+	if (cgs.redFlagTime) {
+		cgs.redFlagTime += dur;
+
+		if (cgs.redFlagTime > cg.time)
+			cgs.redFlagTime = cg.time;
+	}
+	if (cgs.blueFlagTime) {
+		cgs.blueFlagTime += dur;
+
+		if (cgs.blueFlagTime > cg.time)
+			cgs.blueFlagTime = cg.time;
+	}
+
+
+	/*for (i = 0; i < TEAM_NUM_TEAMS; ++i) {
+		for (k = 0; k < 2; ++k) {
+			if (cg.flagtaken[i][k].active)
+				cg.flagtaken[i][k].takenTime += dur;
+		}
+	}*/
+
+	pauseGameStartedTime = 0;
+}
+
 /*
 =================
 CG_ParseScores
@@ -605,6 +651,11 @@ require a reload of all the media
 ===============
 */
 static void CG_MapRestart( void ) {
+	if (cg.demoseek & DEMOSEEK_MAPRESTART) {
+		Com_Printf("Map restart happened - no longer seeking until map restart. \n");
+		cg.demoseek &= ~DEMOSEEK_MAPRESTART;
+	}
+
 	if ( cg_showmiss.integer ) {
 		CG_Printf( "CG_MapRestart\n" );
 	}
@@ -1192,6 +1243,29 @@ void CG_CheckSVStripEdRef(char *buf, const char *str)
 	buf[b] = 0;
 }
 
+qboolean CG_StringStartsWith(const char* str, const char* check) {
+
+	if (!str || !check)
+		return qfalse;
+
+	while (*str) {
+		if (*check == 0)
+			//reached end of check, so yes
+			return qtrue;
+
+		if (*str != *check)
+			return qfalse;
+
+		++str;
+		++check;
+	}
+
+	if (*check == 0)
+		return qtrue;	// strings are equal
+
+	return qfalse;
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1318,6 +1392,37 @@ static void CG_ServerCommand( void ) {
 	if ( !strcmp( cmd, "print" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
 		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
+
+		if (CG_StringStartsWith(strEd, "Server: nt_PauseGame changed to ")) {
+
+			const int val = strEd[strlen("Server: nt_PauseGame changed to") + 1] - '0';
+
+			if (val > 0)
+				CG_PauseGameStarted();
+			else
+				CG_PauseGameEnded();
+
+		}
+		else if (CG_StringStartsWith(strEd, "Server: g_speed changed to ")) {
+
+			const int val = strEd[strlen("Server: g_speed changed to") + 1] - '0';
+
+			if (val == 0)
+				CG_PauseGameStarted();
+			else if (val == 250)
+				CG_PauseGameEnded();
+
+		}
+		else if (CG_StringStartsWith(strEd, "Game was paused.")) {
+
+			CG_PauseGameStarted();
+		}
+		
+		else if (CG_StringStartsWith(strEd, "Pause ended after")) {
+
+			CG_PauseGameEnded();
+		}
+
 		CG_Printf( "%s", strEd );
 		return;
 	}

@@ -725,6 +725,8 @@ vmCvar_t	cg_autoScoreboardFetchInterval;
 // Stuff from vVv mod
 vmCvar_t	x3_forcefieldPredictionDisable;
 vmCvar_t	x3_screenshotAfterEachRound;
+vmCvar_t	x3_demoSkipPauses;
+vmCvar_t	x3_demoSeekTimescale;
 
 
 typedef struct {
@@ -1016,6 +1018,8 @@ Ghoul2 Insert Start
 		// vVv features
 	{ &x3_forcefieldPredictionDisable, "x3_forcefieldPredictionDisable", "0", CVAR_ARCHIVE }, // Remove forcefield lag at the cost of prediction
 	{ &x3_screenshotAfterEachRound, "x3_screenshotAfterEachRound", "0", CVAR_ARCHIVE }, // take a screenshot upon end of each game, saved in screenshots/games folder
+	{ &x3_demoSkipPauses, "x3_demoSkipPauses", "0", CVAR_ARCHIVE }, // pauses (either by g_speed 0 or nt_pausegame 1) are fastforwarded through in demos
+	{ &x3_demoSeekTimescale, "x3_demoSeekTimescale", "60", CVAR_ARCHIVE }, // set the timescale used when fastforwarding with demoseek
 /*
 Ghoul2 Insert End
 */
@@ -2966,6 +2970,7 @@ Ghoul2 Insert End
 	memset( cg_weapons, 0, sizeof(cg_weapons) );
 
 	cg.clientNum = clientNum;
+	cg.refclient = clientNum;
 
 	cgs.processedSnapshotNum = serverMessageNum;
 	cgs.serverCommandSequence = serverCommandSequence;

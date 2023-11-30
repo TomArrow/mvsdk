@@ -7,6 +7,11 @@
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
 
 
+
+#define TRYSKIP_SPECTATORS		1
+#define TRYSKIP_SELF			2
+//#define CG_EZDEMO
+
 // The entire cgame module is unloaded and reloaded on each level change,
 // so there is NO persistant data between levels on the client side.
 // If you absolutely need something stored, it can either be kept
@@ -660,6 +665,14 @@ typedef struct chatBoxItem_s
 	int		lines;
 } chatBoxItem_t;
 
+// From vVv clientside
+// #define DEMOSEEK_NONE 					0x0001
+#define DEMOSEEK_MAPRESTART				1
+#define DEMOSEEK_CAPPING_ONLY			2
+#define DEMOSEEK_RETMODE				4
+#define DEMOSEEK_SPECIFIC_CLIENT_ONLY	8
+
+
 #define MAX_PREDICTED_EVENTS	16
  
 typedef struct {
@@ -762,6 +775,18 @@ typedef struct {
 	int			teamScores[2];
 	score_t		scores[MAX_CLIENTS];
 	qboolean	showScores;
+
+	// vVv
+	qboolean	pausedGame;
+	int			demofollowclient;
+	int			demoseek;		//For demo conttrolling
+	int			demoseekClientNum;		//if we only want to spec a certain client num
+
+	qboolean	refdead; 
+	int			refclient, refteam;		// not currently implemented but having the var here. important: this is the number of the client who we 'really' are following. if we're playing actively on a server, its cg.snap->ps.clientNum, however if we run a demo and forced our view to someone else, the refclient is that client. refteam is the team of that client.
+	int			lastRefClientKill;
+	// vVv end
+
 	int			lastScoresReceived;
 	qboolean	scoreBoardShowing;
 	int			scoreFadeTime;
@@ -932,6 +957,8 @@ Ghoul2 Insert End
 	int					lastAutoFollowSent;
 	autoFollowState_t	autoFollowState;
 	int					lastAutoFollowStateChange;
+
+	qboolean speccing;
 } cg_t;
 
 #define MAX_TICS	14
@@ -1812,6 +1839,8 @@ extern	vmCvar_t		cg_autoScoreboardFetchInterval;
 // Stuff from vVv mod
 extern	vmCvar_t		x3_forcefieldPredictionDisable;
 extern	vmCvar_t		x3_screenshotAfterEachRound;
+extern	vmCvar_t		x3_demoSkipPauses;
+extern	vmCvar_t		x3_demoSeekTimescale;
 
 
 /*

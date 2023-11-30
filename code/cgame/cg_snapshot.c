@@ -144,6 +144,7 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 	}
 }
 
+void CG_NewSnapshotArrived(void);
 
 /*
 ===================
@@ -215,6 +216,8 @@ static void CG_TransitionSnapshot( void ) {
 			|| cg_nopredict.integer || cg_synchronousClients.integer ) {
 			CG_TransitionPlayerState( ps, ops );
 		}
+
+		CG_NewSnapshotArrived();
 	}
 
 }
@@ -382,6 +385,310 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 	// nothing left to read
 	return NULL;
 }
+
+
+//so we dont need to check if it's predicted client every time
+qboolean CG_EntityIsValid(const int clientNum) {
+	return (qboolean)(clientNum == cg.snap->ps.clientNum || (clientNum >= 0 && cg_entities[clientNum].currentValid));
+}
+
+
+// #define MAX_PREDEMO_FRAGS 100
+
+extern const char* timescaleString;
+
+qboolean ezdemoSeeking = qfalse;
+
+#ifdef CG_EZDEMO
+static void CG_EzdemoSeek(const int pdCount) {
+	static int i = 1;	//iterates through events up till pdCount
+
+	// const int curtime = cg.snap->serverTime;
+	const int curtime = cg.time;
+	const int pretime = x3_ezdemoPreTime.integer;	//we want to skip up to the particular event X ms before it happens
+	const int protime = x3_ezdemoPostTime.integer;	// after the event happened, wait X ms before skipping forward...
+
+	static int 		client;
+	static int 		eventtime;
+	static qboolean awaitingEvent = qfalse;
+	static qboolean eventStarted = qfalse;		//so we can allow the user to alter timescale as he sees fit during the event.
+
+	if (i > pdCount) {
+		static qboolean printedMsg = qfalse;		//ARF
+
+		if (!printedMsg) {
+			Com_Printf("No more events in the demo...\n");
+			trap_SendConsoleCommand("disconnect\n");
+			printedMsg = qtrue;
+		}
+
+		return;	//no more events to seek forward to
+	}
+
+
+	if (!awaitingEvent) {
+		//i as a static var .. nice!
+		for (; i <= pdCount; ++i) {
+			char buf[32];
+			char cl[8], tm[32];
+			char* pch = NULL;
+
+			trap_Cvar_VariableStringBuffer(va("pd%i", i), buf, sizeof(buf));
+
+			pch = strchr(buf, '\\');
+
+			if (!pch) {
+				continue;	//was "break;"
+			}
+
+			// parse target servertime
+			Q_strncpyz(tm, pch + 1, sizeof(tm));
+			eventtime = atoi(tm);
+
+			//check if we're psat this time, in which case skip this element.
+			// if (time > eventtime + protime){
+			// if ( !(curtime <= eventtime - pretime) ) {
+			// if (curtime >= eventtime + protime) {
+#define OK_EXTRA_MS	30
+			if (curtime > eventtime - OK_EXTRA_MS) {
+				// CG_Printf("Skipping this element because servertime (%i) > %i. (it already happened)\n", curtime, eventtime-OK_EXTRA_MS);
+				continue;
+			}
+
+			//parse target client num
+			Q_strncpyz(cl, buf, strlen(buf) - strlen(pch) + 1);
+			client = atoi(cl);
+
+			// Com_Printf("^3took event at time %d, client %d\n", eventtime, client);
+
+			//By here, we have a valid element that has not happened yet. Break out and fastforward to it!
+			eventStarted = qfalse;
+			break;
+		}
+	}
+
+
+	if (curtime < eventtime - pretime) {
+		// if (eventtime - curtime >= pretime) {
+			//we've not yet reached this event's time. fastforward
+		const int diff = eventtime - pretime - cg.time;	//how many ms are we from this event beginning?
+		const int secs = diff / 1000;
+		int ts = 2;	//timescale value
+
+		// This is a mess, but was made so that fastforwarding doesnt take too long and is not too fast so that the event is skipped!
+		if (secs > 420) {
+			ts = 2900;
+		}
+		else if (secs > 360) {
+			ts = 1900;
+		}
+		else if (secs > 180) {
+			ts = 1600;
+		}
+		else if (secs > 160) {
+			ts = 1050;
+		}
+		else if (secs > 120) {
+			ts = 920;
+		}
+		else if (secs > 100) {
+			ts = 840;
+		}
+		else if (secs > 60) {
+			ts = 760;
+		}
+		else if (secs > 45) {
+			ts = 420;
+		}
+		else if (secs > 30) {
+			ts = 390;
+		}
+		else if (secs > 15) {
+			ts = 290;
+		}
+		else if (secs > 6) {
+			ts = 175;
+		}
+		else if (secs > 3) {
+			ts = 115;
+		}
+		else if (secs > 2) {
+			ts = 45;
+		}
+		else if (secs > 1) {
+			ts = 15;
+		}
+		else {
+			ts = 8;
+		}
+
+		//just force the timescale when skipping forward (dont allow user to set lower timescale when seeking forward to event)
+		trap_Cvar_Set(timescaleString, va("%i", ts));
+
+		// Com_Printf("Seeking forward to this event i%i, happening at time %i with client %i. (in %.2f secs)\n", i, eventtime, client, (eventtime-pretime - time) / 1000.f);
+
+		awaitingEvent = qtrue;
+		trap_Cvar_Set("s_forcevol", "0.01");
+	}
+	else if (curtime >= eventtime - pretime && curtime <= eventtime + protime) {
+		//this event is currently happening! dont fastforward, lets see it in normal motion.
+		// Com_Printf("event is currently happening.. timescale forced to 1. setting viewpos to client %i '%s'\n", client, cgs.clientinfo[client].name);
+
+		if (CG_EntityIsValid(client)) {
+
+			if (!eventStarted) {
+				if (cg.refclient != client)
+					trap_SendConsoleCommand(va("follow %i\n", client));
+
+				trap_Cvar_Set(timescaleString, va("%i", 1));
+				trap_Cvar_Set("s_forcevol", "0");
+				eventStarted = qtrue;	//allow the user to modify timescale
+			}
+
+		}
+		else if (curtime > eventtime) {
+			// Com_Printf("^5can no longer see who did this frag, fastforwarding!\n");
+			//if an event happened and we're not past posttime, and we can no longer see who did it, just skip to next event.
+			awaitingEvent = qfalse;
+			eventStarted = qfalse;
+			//the loop will now continue to find next event
+			trap_Cvar_Set(timescaleString, va("%i", 11));
+		}
+		else {
+			//cant see the guy who gets the frag yet, so fastforward A LITTLE
+			trap_Cvar_Set(timescaleString, "1.8");
+		}
+	}
+	else if (curtime > eventtime + protime) {
+		//the event happened already
+		awaitingEvent = qfalse;
+		eventStarted = qfalse;
+		//the loop will now continue to find next event
+	}
+}
+#endif
+
+qboolean skippingPause = qfalse;
+static void CG_ControlDemoSeek(void) {
+	static qboolean 	fastforwarding = qfalse;
+	int 				timescaleX;// = ClampInt(x3_demoSeekTimescale.integer, 2, 200);
+	qboolean 			dofastforward = qfalse;
+	static int			lastValidCap = 0;
+
+#ifdef CG_EZDEMO
+	static int doFragSeek = -1;
+
+	if (doFragSeek == -1)
+		doFragSeek = CG_Cvar_Get_int("pdCount");	//for the love of all, only do cvar_get 1 time...
+
+	if (doFragSeek > 0) {
+		// Com_Printf("Doing DemoFragSeek...\n");
+		ezdemoSeeking = qtrue;
+		CG_EzdemoSeek(doFragSeek);
+		return;
+	}
+#endif
+
+	if (!x3_demoSkipPauses.integer && !cg.demoseek) {
+		if (fastforwarding) { // Fix: When maprestart seekmode is used exclusively, it wont stop fast forwarding otherwise
+			trap_Cvar_Set(timescaleString, "1");
+			fastforwarding = qfalse;
+
+			//if (cg_x3clmodule)
+			//	trap_Cvar_Set("s_forcevol", "0");
+		}
+		return;	//no seeking
+	}
+
+	timescaleX = MIN(MAX(x3_demoSeekTimescale.integer, 2), 200);
+
+	if (cg.demoseek & DEMOSEEK_SPECIFIC_CLIENT_ONLY) {
+		if (cg.refclient != cg.demofollowclient)
+		{	//not the clientnum we wish, speed up.
+			dofastforward = qtrue;
+		}
+	}
+
+	if ((cg.demoseek & DEMOSEEK_RETMODE) && cg.refclient < MAX_CLIENTS) {
+		//Fastforward until:
+		// 1. our flag is taken
+		// 2. the flag carrier is currentValid and within certain distance?
+		int capper;
+		int team = cg.refteam;
+		vec3_t origin;
+
+		//if (cg.demofollowvis) {
+			VectorCopy(cg_entities[cg.demofollowclient].lerpOrigin, origin);
+		//}
+		//else 
+		{
+			VectorCopy(cg.predictedPlayerState.origin, origin);
+		}
+
+
+		capper = team == TEAM_RED ? (cgs.redFlagCarrier ? cgs.redFlagCarrier-cgs.clientinfo : -1) : (cgs.redFlagCarrier ? cgs.blueFlagCarrier - cgs.clientinfo : -1);
+
+		if (!CG_OtherTeamHasFlag() ||
+			(capper >= 0 && capper < MAX_CLIENTS && cgs.clientinfo[capper].infoValid &&
+				(!CG_EntityIsValid(capper) || Distance(cg_entities[capper].lerpOrigin, origin) > 1000))
+			) {
+			//fastforward if other team doesnt have flag or their capper isnt visible for us
+			if(fastforwarding || cg.lastRefClientKill < cg.time && (cg.time- cg.lastRefClientKill) > 2000) dofastforward = qtrue; // 2 seconds cooldown where we don't fast-forward after killing someone.
+		}
+	}
+	else if (cg.demoseek & DEMOSEEK_CAPPING_ONLY) {
+		//Speeed up the demo until we have the flag
+		//if (!CG_IsACapper(cg.refclient))
+		if (cg.refclient != (cgs.redFlagCarrier - cgs.clientinfo) && cg.refclient != (cgs.blueFlagCarrier - cgs.clientinfo)) {
+
+			if (lastValidCap < cg.time && (cg.time - lastValidCap) > 2000) dofastforward = qtrue;
+		}
+		else {
+			lastValidCap = cg.time;
+		}
+	}
+
+	if ((x3_demoSkipPauses.integer && cg.pausedGame) || (cg.demoseek & DEMOSEEK_MAPRESTART && !cg.mapRestart)) {
+		dofastforward = qtrue;
+		timescaleX = 200;	//speed up very fast until its unpaused
+
+		if (x3_demoSkipPauses.integer && cg.pausedGame)
+			skippingPause = qtrue;
+	}
+	else {
+		skippingPause = qfalse;
+	}
+
+	if (dofastforward && !fastforwarding) {
+		trap_Cvar_Set(timescaleString, va("%i", timescaleX));
+		fastforwarding = qtrue;
+
+		//if (cg_x3clmodule)
+		//	trap_Cvar_Set("s_forcevol", "0.015");
+
+	}
+	else if (!dofastforward && fastforwarding) {
+		trap_Cvar_Set(timescaleString, "1");
+		fastforwarding = qfalse;
+
+		//if (cg_x3clmodule)
+		//	trap_Cvar_Set("s_forcevol", "0");
+	}
+}
+
+void CG_NewSnapshotArrived(void) {
+
+	if ((cg.snap->ps.pm_flags & PMF_FOLLOW) || cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
+		cg.speccing = qtrue;
+	else
+		cg.speccing = qfalse;
+
+	ezdemoSeeking = qfalse;
+	if (cg.demoPlayback)
+		CG_ControlDemoSeek();
+}
+
+
 
 
 /*
