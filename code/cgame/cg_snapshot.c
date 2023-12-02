@@ -450,7 +450,7 @@ static void CG_EzdemoSeek(const int pdCount) {
 			// if ( !(curtime <= eventtime - pretime) ) {
 			// if (curtime >= eventtime + protime) {
 #define OK_EXTRA_MS	30
-			if (curtime > eventtime - OK_EXTRA_MS) {
+			if (curtime > eventtime + protime - OK_EXTRA_MS) {
 				// CG_Printf("Skipping this element because servertime (%i) > %i. (it already happened)\n", curtime, eventtime-OK_EXTRA_MS);
 				continue;
 			}
