@@ -6,7 +6,7 @@
 #include "cg_public.h"
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
 
-
+#define CG_EZDEMO
 
 #define TRYSKIP_SPECTATORS		1
 #define TRYSKIP_SELF			2
@@ -1841,6 +1841,8 @@ extern	vmCvar_t		x3_forcefieldPredictionDisable;
 extern	vmCvar_t		x3_screenshotAfterEachRound;
 extern	vmCvar_t		x3_demoSkipPauses;
 extern	vmCvar_t		x3_demoSeekTimescale;
+extern	vmCvar_t		x3_ezdemoPreTime;
+extern	vmCvar_t		x3_ezdemoPostTime;
 
 
 /*
@@ -2565,6 +2567,9 @@ void trap_MVAPI_SetVersion( mvversion_t version );                   // Level: 3
 /* Level 3 */
 void trap_R_AddRefEntityToScene2( const refEntity_t *re );           // Level: 3
 void trap_MVAPI_SetVirtualScreen( float w, float h );                // Level: 3
+
+
+int CG_Cvar_Get_int(const char* cvar);
 
 #include "../api/mvapi.h"
 #include "cg_multiversion.h"

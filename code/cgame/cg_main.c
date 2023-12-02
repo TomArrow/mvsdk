@@ -727,6 +727,8 @@ vmCvar_t	x3_forcefieldPredictionDisable;
 vmCvar_t	x3_screenshotAfterEachRound;
 vmCvar_t	x3_demoSkipPauses;
 vmCvar_t	x3_demoSeekTimescale;
+vmCvar_t	x3_ezdemoPreTime;
+vmCvar_t	x3_ezdemoPostTime;
 
 
 typedef struct {
@@ -1020,6 +1022,8 @@ Ghoul2 Insert Start
 	{ &x3_screenshotAfterEachRound, "x3_screenshotAfterEachRound", "0", CVAR_ARCHIVE }, // take a screenshot upon end of each game, saved in screenshots/games folder
 	{ &x3_demoSkipPauses, "x3_demoSkipPauses", "0", CVAR_ARCHIVE }, // pauses (either by g_speed 0 or nt_pausegame 1) are fastforwarded through in demos
 	{ &x3_demoSeekTimescale, "x3_demoSeekTimescale", "60", CVAR_ARCHIVE }, // set the timescale used when fastforwarding with demoseek
+	{ &x3_ezdemoPreTime, "x3_ezdemoPreTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see before an event in ezdemo
+	{ &x3_ezdemoPostTime, "x3_ezdemoPostTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see after an event in ezdemo
 /*
 Ghoul2 Insert End
 */
@@ -2166,6 +2170,14 @@ void CG_StartMusic( qboolean bForceStart ) {
 	Q_strncpyz( parm2, COM_Parse( (const char **)&s ), sizeof( parm2 ) );
 
 	trap_S_StartBackgroundTrack( parm1, parm2, !bForceStart );
+}
+
+int CG_Cvar_Get_int(const char* cvar) {
+	char buff[64] = { 0 };
+
+	trap_Cvar_VariableStringBuffer(cvar, buff, sizeof(buff));
+
+	return atoi(buff);
 }
 
 char *CG_GetMenuBuffer(const char *filename) {

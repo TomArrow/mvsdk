@@ -988,6 +988,10 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 	CG_LoadClientInfo( ci );
 }
 
+
+extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance
+
+
 /*
 ======================
 CG_NewClientInfo
