@@ -250,6 +250,11 @@ void trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS)
 	syscall(CG_COOL_API_SETPREDICTEDMOVEMENT, predictedPS);
 }
 
+void trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount)
+{
+	syscall(CG_COOL_API_SET_EZDEMO_BUFFER, ezDemoBuffer, ezDemoEventSize, maxEventCount, actualEventCount);
+}
+
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
 {

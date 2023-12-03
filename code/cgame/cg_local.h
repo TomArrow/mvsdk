@@ -2268,6 +2268,7 @@ int			trap_R_Font_HeightPixels(const int iFontIndex, const float scale);
 void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);
 
 void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
+void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount);
 
 /*
 qboolean	trap_Language_IsAsian(void);

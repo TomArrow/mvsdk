@@ -2898,7 +2898,7 @@ Will perform callbacks to make the loading info screen update.
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 	const char	*s;
 	int i = 0;
-	
+		
 	// MVSDK: Let's detect which version of the engine we are running in...
 	// In theory CG_ParseServerinfo is the perfect place for this, but as the first thing CG_Init does is trying to get shared memory we have to perform our check even before that...
 	if ( jk2version == VERSION_UNDEF )
@@ -2952,6 +2952,11 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 	CG_Printf("jk2version [CGame]: 1.0%i\n", jk2version);
 
 	trap_CG_RegisterSharedMemory(cg.sharedBuffer);
+
+	memset(&ezDemoBuffer, 0, sizeof(ezDemoBuffer));
+	if (coolApi & COOL_APIFEATURE_EZDEMOCGAMEBUFFER) {
+		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoBuffer.events,sizeof(ezDemoEvent_t), sizeof(ezDemoBuffer.events) / sizeof(ezDemoEvent_t),&ezDemoBuffer.eventCount);
+	}
 
 	// clear everything
 /*

@@ -2196,8 +2196,23 @@ enum {
 	FONT_LARGE
 };
 
+typedef struct ezDemoEvent_s {
+	int serverTime;
+	byte clientNum;
+	byte clientNum2;
+} ezDemoEvent_t;
+
+typedef struct ezDemoBuffer_s {
+	ezDemoEvent_t events[20000];
+	int eventCount;
+} ezDemoBuffer_t;
+
+extern ezDemoBuffer_t ezDemoBuffer;
+
 #define COOL_APIFEATURE_SETPREDICTEDMOVEMENT (1<<0)
 #define COOL_APIFEATURE_GETTEMPORARYUSERCMD (1<<1)
+
+#define COOL_APIFEATURE_EZDEMOCGAMEBUFFER (1<<3)
 
 // This is a simplified playerState_t of sorts to communicate predicted playerstate stuff to the engine 
 typedef struct predictedMovement_s {

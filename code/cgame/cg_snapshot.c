@@ -397,6 +397,8 @@ qboolean CG_EntityIsValid(const int clientNum) {
 
 extern const char* timescaleString;
 
+ezDemoBuffer_t ezDemoBuffer;
+
 qboolean ezdemoSeeking = qfalse;
 
 #ifdef CG_EZDEMO
@@ -433,17 +435,29 @@ static void CG_EzdemoSeek(const int pdCount) {
 			char cl[8], tm[32];
 			char* pch = NULL;
 
-			trap_Cvar_VariableStringBuffer(va("pd%i", i), buf, sizeof(buf));
-
-			pch = strchr(buf, '\\');
-
-			if (!pch) {
-				continue;	//was "break;"
+			if (ezDemoBuffer.eventCount) {
+				eventtime = ezDemoBuffer.events[i - 1].serverTime;
+				client = ezDemoBuffer.events[i - 1].clientNum;
 			}
+			else {
 
-			// parse target servertime
-			Q_strncpyz(tm, pch + 1, sizeof(tm));
-			eventtime = atoi(tm);
+				trap_Cvar_VariableStringBuffer(va("pd%i", i), buf, sizeof(buf));
+
+				pch = strchr(buf, '\\');
+
+				if (!pch) {
+					continue;	//was "break;"
+				}
+
+				// parse target servertime
+				Q_strncpyz(tm, pch + 1, sizeof(tm));
+				eventtime = atoi(tm);
+
+
+				//parse target client num
+				Q_strncpyz(cl, buf, strlen(buf) - strlen(pch) + 1);
+				client = atoi(cl);
+			}
 
 			//check if we're psat this time, in which case skip this element.
 			// if (time > eventtime + protime){
@@ -455,9 +469,6 @@ static void CG_EzdemoSeek(const int pdCount) {
 				continue;
 			}
 
-			//parse target client num
-			Q_strncpyz(cl, buf, strlen(buf) - strlen(pch) + 1);
-			client = atoi(cl);
 
 			// Com_Printf("^3took event at time %d, client %d\n", eventtime, client);
 
@@ -578,8 +589,14 @@ static void CG_ControlDemoSeek(void) {
 #ifdef CG_EZDEMO
 	static int doFragSeek = -1;
 
-	if (doFragSeek == -1)
-		doFragSeek = CG_Cvar_Get_int("pdCount");	//for the love of all, only do cvar_get 1 time...
+	if (doFragSeek == -1) {
+		if (ezDemoBuffer.eventCount) {
+			doFragSeek = ezDemoBuffer.eventCount;
+		}
+		else {
+			doFragSeek = CG_Cvar_Get_int("pdCount");	//for the love of all, only do cvar_get 1 time...
+		}
+	}
 
 	if (doFragSeek > 0) {
 		// Com_Printf("Doing DemoFragSeek...\n");
