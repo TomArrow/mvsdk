@@ -548,8 +548,8 @@ static void CG_EzdemoSeek(const int pdCount) {
 		if (CG_EntityIsValid(client)) {
 
 			if (!eventStarted) {
-				if (cg.refclient != client)
-					trap_SendConsoleCommand(va("follow %i\n", client));
+				//if (cg.refclient != client) // Not useful atm since we don't have the different angle stuff
+				//	trap_SendConsoleCommand(va("follow %i\n", client));
 
 				trap_Cvar_Set(timescaleString, va("%i", 1));
 				trap_Cvar_Set("s_forcevol", "0");
