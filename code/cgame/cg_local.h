@@ -1484,6 +1484,8 @@ typedef struct {
 	int				duelist1;
 	int				duelist2;
 	int				redflag, blueflag, yellowflag;	// flag status from configstrings
+	int				redflagLastChange, blueflagLastChange, yellowflagLastChange;	
+	int				anyFlagLastChange;	
 	int				flagStatus;
 
 	//new flagstatus stuff

@@ -1600,26 +1600,14 @@ ID_INLINE void CG_DoAsync(void) {
 }
 
 static void CG_AutoFollow() {
-	static int lastRedFlag = FLAG_ATBASE;
-	static int lastBlueFlag = FLAG_ATBASE;
-	static int lastRedFlagChange = 0;
-	static int lastBlueFlagChange = 0;
 	int i;
 	vec3_t deltaVector;
 	qboolean timePassedSinceFlagStateChange;
 
 	if (cg.demoPlayback || cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR) return;
 
-	if (cgs.redflag != lastRedFlag) {
-		lastRedFlag = cgs.redflag;
-		lastRedFlagChange = cg.time;
-	}
-	if (cgs.blueflag != lastBlueFlag) {
-		lastBlueFlag = cgs.blueflag;
-		lastBlueFlagChange = cg.time;
-	}
 
-	timePassedSinceFlagStateChange = (cg.time - lastRedFlagChange) > 2000 && (cg.time - lastBlueFlagChange) > 2000;
+	timePassedSinceFlagStateChange = (cg.time - cgs.anyFlagLastChange) > 2000;
 
 	if (cg.time > cg.lastAutoFollowSent && (cg.time - cg.lastAutoFollowSent) < 2000) return; // Limit the auto follow commands to once every 2 seconds
 
@@ -1652,6 +1640,8 @@ static void CG_AutoFollow() {
 			}
 		}
 
+		if (!timePassedSinceFlagStateChange) return;
+
 		if (cg.autoFollowState == AUTOFOLLOW_RED && cgs.redFlagCarrier) {
 			int clientNum = (cgs.redFlagCarrier - cgs.clientinfo);
 			followNum = clientNum;
@@ -1659,7 +1649,7 @@ static void CG_AutoFollow() {
 				int highestRetCount = -9999999;
 				int highestRetCountClient = -1;
 
-				if (!timePassedSinceFlagStateChange) return;
+				//if (!timePassedSinceFlagStateChange) return;
 
 				// Currently visible. Check for nearby rets
 				for (i = 0; i < MAX_CLIENTS; i++) {
@@ -1685,7 +1675,7 @@ static void CG_AutoFollow() {
 				int highestRetCount = -9999999;
 				int highestRetCountClient = -1;
 
-				if (!timePassedSinceFlagStateChange) return;
+				//if (!timePassedSinceFlagStateChange) return;
 
 				// Currently visible. Check for nearby rets
 				for (i = 0; i < MAX_CLIENTS; i++) {

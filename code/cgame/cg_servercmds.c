@@ -470,12 +470,25 @@ void CG_UpdateConfigString( int num, qboolean init )
 		case CS_FLAGSTATUS:
 			if( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY ) {
 				// format is rb where its red/blue, 0 is at base, 1 is taken, 2 is dropped
+				int redFlagOld = cgs.redflag;
+				int blueFlagOld = cgs.blueflag;
+				int yellowFlagOld = cgs.yellowflag;
+				cgs.anyFlagLastChange = cg.time;
 				cgs.redflag = str[0] - '0';
 				cgs.blueflag = str[1] - '0';
 				if (cgs.isCTFMod && cgs.CTF3ModeActive)
 					cgs.yellowflag = str[2] - '0';
 				else
 					cgs.yellowflag = 0;
+				if (redFlagOld != cgs.redflag) {
+					cgs.redflagLastChange = cg.time;
+				}
+				if (blueFlagOld != cgs.blueflag) {
+					cgs.blueflagLastChange = cg.time;
+				}
+				if (yellowFlagOld != cgs.yellowflag) {
+					cgs.yellowflagLastChange = cg.time;
+				}
 			}
 			break;
 		case CS_SHADERSTATE:
