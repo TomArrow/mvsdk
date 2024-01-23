@@ -1614,6 +1614,18 @@ static void CG_AutoFollow() {
 
 	if (cg.time > cg.lastAutoFollowSent && (cg.time - cg.lastAutoFollowSent) < 2000) return; // Limit the auto follow commands to once every 2 seconds
 
+	// In case we get stuck trying to follow someone who can't be followed... have a backup plan.
+	// Detect if we haven't followed anyone for 10 seconds.
+	if (cg.predictedPlayerState.persistant[PERS_TEAM] != TEAM_SPECTATOR || cg.lastTimeFollowing > cg.time) {
+		cg.lastTimeFollowing = cg.time;
+	}
+	if (cg.lastTimeFollowing + 10000 < cg.time && cg.lastAutoFollowSent > cg.lastTimeFollowing) {
+		// Seems we are failing to follow anybody. Press attack.
+		trap_SendConsoleCommand("+attack;wait 5;-attack");
+		cg.lastAutoFollowSent = cg.time;
+		return;
+	}
+
 	if (cg_autoFollow.integer > 1 && (cgs.gametype == GT_CTF || cgs.gametype == GT_CTY) && (cgs.redFlagCarrier || cgs.blueFlagCarrier || !timePassedSinceFlagStateChange)) {
 		int followStateChangeTimeout = 10000;
 		int followNum = -1;

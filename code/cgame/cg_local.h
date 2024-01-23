@@ -964,6 +964,7 @@ Ghoul2 Insert End
 	int					lastAutoFollowSent;
 	autoFollowState_t	autoFollowState;
 	int					lastAutoFollowStateChange;
+	int					lastTimeFollowing;
 
 	qboolean speccing;
 } cg_t;
