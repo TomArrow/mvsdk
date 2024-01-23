@@ -1603,9 +1603,12 @@ static void CG_AutoFollow() {
 	int i;
 	vec3_t deltaVector;
 	qboolean timePassedSinceFlagStateChange;
+	qboolean currentClientAfk;
+	qboolean thisClientAfk;
 
-	if (cg.demoPlayback || cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR) return;
+	if (cg.demoPlayback || cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || !cg.snap) return;
 
+	currentClientAfk = ((cgs.afkInfo[cg.snap->ps.clientNum].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer*1000) < cg.time) && ((cgs.afkInfo[cg.snap->ps.clientNum].lastNotSeen + cg_autoFollowUnfollowAFKReDelay.integer * 1000) < cg.time);
 
 	timePassedSinceFlagStateChange = (cg.time - cgs.anyFlagLastChange) > 2000;
 
@@ -1701,11 +1704,25 @@ static void CG_AutoFollow() {
 			cg.lastAutoFollowSent = cg.time;
 		}
 	}
-	else if(cg_autoFollow.integer > 1 || cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_SPECTATOR) {
+	else if(cg_autoFollow.integer > 1 || cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_SPECTATOR || (currentClientAfk && cg_autoFollowUnfollowAFKDelay.integer)) {
 		// FFA or cg_autoFollow 1. Just follow someone.
 		int highestScore = -9999999;
 		int highestScoreClient = -1;
 		for (i = 0; i < MAX_CLIENTS; i++) {
+			if (cg_autoFollowUnfollowAFKDelay.integer) {
+				if (currentClientAfk && i == cg.snap->ps.clientNum) continue;
+				thisClientAfk = ((cgs.afkInfo[i].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer * 1000) < cg.time)
+					&& (
+						(cgs.afkInfo[i].lastSeen < cgs.afkInfo[i].lastNotSeen
+						&& (cgs.afkInfo[i].lastSeen + cg_autoFollowUnfollowAFKSwitchBackDelay.integer * 1000) > cg.time) 
+					|| 
+						(cgs.afkInfo[i].lastSeen > cgs.afkInfo[i].lastNotSeen && 
+						((cgs.afkInfo[i].lastSeen - cgs.afkInfo[i].lastNotSeen) > (cg_autoFollowUnfollowAFKReDelay.integer * 1000)))
+					);
+				if (thisClientAfk) continue;
+			}
+
+
 			if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR) {
 				if (cgs.lastValidScoreboardEntry[i].score > highestScore) {
 					highestScore = cgs.lastValidScoreboardEntry[i].score;

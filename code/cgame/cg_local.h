@@ -441,6 +441,13 @@ typedef struct {
 	int				team;
 } score_t;
 
+typedef struct {
+	int				lastMovementDirChange;
+	int				lastMovementDir;
+	int				lastSeen;
+	int				lastNotSeen;
+} afkInfo_t;
+
 // each client has an associated clientInfo_t
 // that contains media references necessary to present the
 // client model and other color coded effects
@@ -1519,6 +1526,8 @@ Ghoul2 Insert End
 	int				disconnectTime[MAX_CLIENTS];
 	score_t			lastValidScoreboardEntry[MAX_CLIENTS];
 
+	afkInfo_t		afkInfo[MAX_CLIENTS];
+
 	// teamchat width is *3 because of embedded color codes
 	char			teamChatMsgs[TEAMCHAT_HEIGHT][TEAMCHAT_WIDTH*3+1];
 	int				teamChatMsgTimes[TEAMCHAT_HEIGHT];
@@ -1834,6 +1843,9 @@ extern	vmCvar_t		cg_snapHudFps;
 //snaphud end
 
 extern	vmCvar_t		cg_autoFollow;
+extern	vmCvar_t		cg_autoFollowUnfollowAFKDelay;
+extern	vmCvar_t		cg_autoFollowUnfollowAFKReDelay;
+extern	vmCvar_t		cg_autoFollowUnfollowAFKSwitchBackDelay;
 
 extern	vmCvar_t		cg_scoreboardDisconnectedPlayersDrawTime;
 extern	vmCvar_t		cg_autoScoreboardFetchInterval;

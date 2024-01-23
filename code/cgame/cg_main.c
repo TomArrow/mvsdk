@@ -718,6 +718,9 @@ vmCvar_t cg_snapHudFps;
 //snaphud end
 
 vmCvar_t	cg_autoFollow;
+vmCvar_t	cg_autoFollowUnfollowAFKDelay;
+vmCvar_t	cg_autoFollowUnfollowAFKReDelay;
+vmCvar_t	cg_autoFollowUnfollowAFKSwitchBackDelay;
 
 vmCvar_t	cg_scoreboardDisconnectedPlayersDrawTime;
 vmCvar_t	cg_autoScoreboardFetchInterval;
@@ -812,6 +815,9 @@ static cvarTable_t cvarTable[] = { // bk001129
 	//snaphud end
 
 	{ &cg_autoFollow, "cg_autoFollow", "0", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKDelay, "cg_autoFollowUnfollowAFKDelay", "300", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKReDelay, "cg_autoFollowUnfollowAFKReDelay", "10", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKSwitchBackDelay, "cg_autoFollowUnfollowAFKSwitchBackDelay", "600", CVAR_ARCHIVE },
 
 	{ &cg_scoreboardDisconnectedPlayersDrawTime, "cg_scoreboardDisconnectedPlayersDrawTime", "30", CVAR_ARCHIVE },
 	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },

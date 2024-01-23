@@ -298,6 +298,10 @@ snapshot_1_02_t	activeSnapshot_1_02; // MVSDK: Only used to receive the new snap
 static snapshot_t *CG_ReadNextSnapshot( void ) {
 	qboolean	r;
 	snapshot_t	*dest;
+	int			num;
+	int			clNum;
+	int			clientBitmask;
+	entityState_t* es;
 
 	if ( cg.latestSnapshotNum > cgs.processedSnapshotNum + 1000 ) {
 		CG_Printf( "WARNING: CG_ReadNextSnapshot: way out of range, %i > %i\n",
@@ -367,6 +371,36 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 				}
 			}
 			CG_AddLagometerSnapshotInfo( dest );
+
+			// AFK detection related stuff
+			clientBitmask = 0;
+			for (num = 0; num < dest->numEntities; num++)
+			{
+				es = &dest->entities[num];
+				clNum = es->number;
+				if (clNum >= 0 && clNum < MAX_CLIENTS) {
+					clientBitmask |= (1 >> clNum);
+					cgs.afkInfo[clNum].lastSeen = dest->serverTime;
+					if (cgs.afkInfo[clNum].lastMovementDir != es->angles2[YAW]) {
+						cgs.afkInfo[clNum].lastMovementDirChange = dest->serverTime;
+					}
+					cgs.afkInfo[clNum].lastMovementDir = es->angles2[YAW];
+				}
+				else {
+					//break;
+				}
+			}
+			cgs.afkInfo[dest->ps.clientNum].lastSeen = dest->serverTime;
+			if (cgs.afkInfo[dest->ps.clientNum].lastMovementDir = dest->ps.movementDir) {
+				cgs.afkInfo[dest->ps.clientNum].lastMovementDirChange = dest->serverTime;
+			}
+			cgs.afkInfo[dest->ps.clientNum].lastMovementDir = dest->ps.movementDir;
+			for (num = 0; num < MAX_CLIENTS; num++) {
+				if (!(clientBitmask & (1 << num)) && dest->ps.clientNum != num) {
+					cgs.afkInfo[num].lastNotSeen = dest->serverTime;
+				}
+			}
+
 			return dest;
 		}
 
@@ -744,6 +778,9 @@ void CG_ProcessSnapshots( void ) {
 	// If we have yet to receive a snapshot, check for it.
 	// Once we have gotten the first snapshot, cg.snap will
 	// always have valid data for the rest of the game
+	if (!cg.snap) {
+		memset(cgs.afkInfo, 0, sizeof(cgs.afkInfo));
+	}
 	while ( !cg.snap ) {
 		snap = CG_ReadNextSnapshot();
 		if ( !snap ) {
