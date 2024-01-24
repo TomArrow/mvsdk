@@ -391,7 +391,7 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 				}
 			}
 			cgs.afkInfo[dest->ps.clientNum].lastSeen = dest->serverTime;
-			if (cgs.afkInfo[dest->ps.clientNum].lastMovementDir = dest->ps.movementDir) {
+			if (cgs.afkInfo[dest->ps.clientNum].lastMovementDir != dest->ps.movementDir) {
 				cgs.afkInfo[dest->ps.clientNum].lastMovementDirChange = dest->serverTime;
 			}
 			cgs.afkInfo[dest->ps.clientNum].lastMovementDir = dest->ps.movementDir;
