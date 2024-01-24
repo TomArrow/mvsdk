@@ -1721,21 +1721,22 @@ static void CG_AutoFollow() {
 		int highestScore = -9999999;
 		int highestScoreClient = -1;
 		for (i = 0; i < MAX_CLIENTS; i++) {
-			if (cg_autoFollowUnfollowAFKDelay.integer) {
-				if (currentClientAfk && i == cg.snap->ps.clientNum) continue;
-				thisClientAfk = ((cgs.afkInfo[i].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer * 1000) < cg.time)
-					&& (
-						(cgs.afkInfo[i].lastSeen < cgs.afkInfo[i].lastNotSeen
-						&& (cgs.afkInfo[i].lastSeen + cg_autoFollowUnfollowAFKSwitchBackDelay.integer * 1000) > cg.time) 
-					|| 
-						(cgs.afkInfo[i].lastSeen > cgs.afkInfo[i].lastNotSeen && 
-						((cgs.afkInfo[i].lastSeen - cgs.afkInfo[i].lastNotSeen) > (cg_autoFollowUnfollowAFKReDelay.integer * 1000)))
-					);
-				if (thisClientAfk) continue;
-			}
-
 
 			if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR) {
+
+				if (cg_autoFollowUnfollowAFKDelay.integer) {
+					if (currentClientAfk && i == cg.snap->ps.clientNum) continue;
+					thisClientAfk = ((cgs.afkInfo[i].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer * 1000) < cg.time)
+						&& (
+							(cgs.afkInfo[i].lastSeen < cgs.afkInfo[i].lastNotSeen
+							&& (cgs.afkInfo[i].lastSeen + cg_autoFollowUnfollowAFKSwitchBackDelay.integer * 1000) > cg.time) 
+						|| 
+							(cgs.afkInfo[i].lastSeen > cgs.afkInfo[i].lastNotSeen && 
+							((cgs.afkInfo[i].lastSeen - cgs.afkInfo[i].lastNotSeen) > (cg_autoFollowUnfollowAFKReDelay.integer * 1000)))
+						);
+					if (thisClientAfk) continue;
+				}
+
 				if (cgs.lastValidScoreboardEntry[i].score > highestScore) {
 					highestScore = cgs.lastValidScoreboardEntry[i].score;
 					highestScoreClient = i;
