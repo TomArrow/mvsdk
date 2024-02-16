@@ -255,6 +255,11 @@ void trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEve
 	syscall(CG_COOL_API_SET_EZDEMO_BUFFER, ezDemoBuffer, ezDemoEventSize, maxEventCount, actualEventCount);
 }
 
+int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum)
+{
+	return syscall(CG_COOL_API_GETTIMESINCESNAPRECEIVED, snapNum);
+}
+
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
 {

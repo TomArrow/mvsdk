@@ -64,7 +64,7 @@ CG_ClipMoveToEntities
 ====================
 */
 static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-							int skipNumber, int mask, trace_t *tr ) {
+							int skipNumber, int mask, trace_t *tr, qboolean explicitlyDeluxe ) {
 	int			i, x, zd, zu;
 	trace_t		trace;
 	entityState_t	*ent;
@@ -196,6 +196,23 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 		if ( tr->allsolid ) {
 			return;
 		}
+
+		// Do a second prediction with deluxe predicted origin.
+		if ((explicitlyDeluxe || cg_deluxePlayersPredictClipMove.integer) && cent->deluxePredict.lerpOriginClipMoveFilled) {
+			trap_CM_TransformedBoxTrace(&trace, start, end,
+				mins, maxs, cmodel, mask, cent->deluxePredict.lerpOriginClipMove, angles);
+
+			if (trace.allsolid || trace.fraction < tr->fraction) {
+				trace.entityNum = ent->number;
+				*tr = trace;
+			}
+			else if (trace.startsolid) {
+				tr->startsolid = qtrue;
+			}
+			if (tr->allsolid) {
+				return;
+			}
+		}
 	}
 }
 
@@ -211,7 +228,8 @@ void	CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec
 	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask);
 	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
 	// check all other solid models
-	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t);
+	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe);
+	cg.nextCGTraceExplicitlyDeluxe = qfalse;
 
 	*result = t;
 }

@@ -2286,6 +2286,201 @@ Ghoul2 Insert End
 */
 }
 
+
+void CG_DeluxePredictLerpPlayerTrajectory(const trajectory_t* tr, int sourceTime, int targetTime, vec3_t result, qboolean gravity) {
+	float		deltaTime;
+
+	deltaTime = (targetTime - sourceTime) * 0.001;	// milliseconds to seconds
+	if (deltaTime < 0) {
+		deltaTime = 0;
+	}
+	VectorMA(tr->trBase, deltaTime, tr->trDelta, result);
+
+	if (gravity) {
+		result[2] -= 0.5 * DEFAULT_GRAVITY * deltaTime * deltaTime;		// Apply gravity too :)
+	}
+
+	
+	
+
+}
+
+/*
+=============================
+CG_InterpolateEntityPosition
+=============================
+*/
+static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
+	vec3_t		current, next;
+	float		f;
+	int			offsetHere;
+	int			averageOffset;
+	qboolean	averageOffsetValid = qfalse;
+	int			realPlayerServerTime;
+	int			targetTime;
+	int			targetTimeClipMove;
+	int			thisOffsetDelta;
+	int			timeSinceSnapshotReceived;
+	qboolean	predicting = qfalse;
+	qboolean	predictingClipMove = qfalse;
+	snapshot_t* snapToUse;
+
+	if (cg.nextSnap != NULL) {
+		snapToUse = cg.nextSnap;
+	}
+	else {
+		snapToUse = cg.snap;
+	}
+
+	if (!(coolApi & COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED)) {
+		if (cg_deluxePlayersPredictDebug.integer > 1) {
+			Com_Printf("Deluxe predict: Cannot deluxe predict without COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED\n");
+		}
+	}
+
+	if (cent->nextState.pos.trType != TR_LINEAR_STOP || (cg.demoPlayback && cg_deluxePlayersPredict.integer < 3)) {
+		if (cg_deluxePlayersPredictDebug.integer > 1) {
+			Com_Printf("Deluxe predict: cent->nextState.pos.trType != TR_LINEAR_STOP || (cg.demoPlayback && cg_deluxePlayersPredict.integer < 3): Client %d\n");
+		}
+		return qfalse;
+	}
+
+	offsetHere = snapToUse->serverTime - cent->nextState.pos.trTime;
+	if (cent->nextState.pos.trTime != cent->deluxePredict.lastCommandTime) { // Only update if the commandtime changed, so we don't calculate a wrong ping based on lost packets by this player/lag
+		if (cent->deluxePredict.offsetsIndex >= MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS) {
+			// Remove old value from rolling average total first.
+			cent->deluxePredict.offsetsRollingAverageTotal -= cent->deluxePredict.offsets[cent->deluxePredict.offsetsIndex % MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS];
+			averageOffsetValid = qtrue;
+		}
+		cent->deluxePredict.offsets[cent->deluxePredict.offsetsIndex % MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS] = offsetHere;
+		cent->deluxePredict.offsetsRollingAverageTotal += offsetHere;
+		cent->deluxePredict.offsetsIndex++;
+		cent->deluxePredict.lastCommandTime = cent->nextState.pos.trTime;
+	} else if (cent->deluxePredict.offsetsIndex >= MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS) {
+		averageOffsetValid = qtrue;
+	}
+
+	if (!averageOffsetValid) {
+		if (cg_deluxePlayersPredictDebug.integer > 4) {
+			Com_Printf("Deluxe predict: !averageOffsetValid: Client %d\n");
+		}
+		return qfalse;
+	}
+	else {
+		averageOffset = cent->deluxePredict.offsetsRollingAverageTotal / MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS;
+	}
+
+	thisOffsetDelta = averageOffset - offsetHere;
+	if (thisOffsetDelta > 0) {
+		thisOffsetDelta = 0;
+	}
+
+	realPlayerServerTime = snapToUse->serverTime + thisOffsetDelta;
+	//targetTime = cg.time; 
+	timeSinceSnapshotReceived = trap_CG_COOL_API_GetTimeSinceSnapReceived(cg.latestSnapshotNum);
+	targetTimeClipMove = targetTime = snapToUse->serverTime + timeSinceSnapshotReceived;
+
+	if (cg_deluxePlayersPredict.integer == 2 || cg_deluxePlayersPredict.integer == 4) {
+		// Predict where they will be once my packets arrive at the server.
+		targetTime += snapToUse->ping / 2;
+	}
+	if (cg_deluxePlayersPredictClipMove.integer == 2) {
+		// Predict where they will be once my packets arrive at the server.
+		targetTimeClipMove += snapToUse->ping / 2;
+	}
+
+	if (cg_deluxePlayersPredict.integer) {
+		CG_DeluxePredictLerpPlayerTrajectory(&cent->nextState.pos, realPlayerServerTime, targetTime, cent->lerpOrigin, qtrue);
+		CG_DeluxePredictLerpPlayerTrajectory(&cent->nextState.apos, realPlayerServerTime, targetTime, cent->lerpAngles, qfalse);
+
+		if (cg_deluxePlayersPredictDebug.integer > 2) {
+			Com_Printf("Deluxe predict: Client %d got predicted (cg.time %d, serverTime %d, realPlayerTime %d, targetTime %d, offset %d, averageoffset %d, timesincesnapreceived %d)\n", cent->currentState.number, cg.time, snapToUse->serverTime, realPlayerServerTime, targetTime, offsetHere, averageOffset, timeSinceSnapshotReceived);
+		}
+		predicting = qtrue;
+	}
+
+	if (cg_deluxePlayersPredictClipMove.integer && (!cg_deluxePlayersPredict.integer || targetTimeClipMove != targetTime)) {
+		CG_DeluxePredictLerpPlayerTrajectory(&cent->nextState.pos, realPlayerServerTime, targetTimeClipMove, cent->deluxePredict.lerpOriginClipMove, qtrue);
+
+		if (cg_deluxePlayersPredictDebug.integer > 2) {
+			Com_Printf("Deluxe predict: Client %d got clipmove predicted (cg.time %d, serverTime %d, realPlayerTime %d, targetTime %d, offset %d, averageoffset %d, timesincesnapreceived %d)\n", cent->currentState.number, cg.time, snapToUse->serverTime, realPlayerServerTime, targetTime, offsetHere, averageOffset, timeSinceSnapshotReceived);
+		}
+		predictingClipMove = qtrue;
+	}
+
+	cent->deluxePredict.lerpOriginClipMoveFilled = predictingClipMove;
+
+	// Check if we clipped into the floor or ceiling. Very primitive but should cover the absolute worst of ppl predict-falling into floors when hopping normally.
+	if (cg_deluxePlayersPredictClipZ.integer) {
+		trace_t trace;
+		vec3_t bmins = { -15, -15, DEFAULT_MINS_2 }, bmaxs = { 15, 15, DEFAULT_MAXS_2 }, absmin, absmax;
+		int x = 0, zd = 0, zu = 0;
+
+		if (cent->currentState.solid) {
+			x = (cent->currentState.solid & 255);
+			zd = ((cent->currentState.solid >> 8) & 255);
+			zu = ((cent->currentState.solid >> 16) & 255) - 32;
+
+			bmins[0] = bmins[1] = -x;
+			bmaxs[0] = bmaxs[1] = x;
+			bmins[2] = -zd;
+			bmaxs[2] = zu;
+		}
+
+		if (predicting) {
+			CG_Trace(&trace, cent->nextState.pos.trBase, bmins, bmaxs, cent->lerpOrigin, cg.snap->ps.clientNum, MASK_PLAYERSOLID);
+
+			if (trace.fraction < 1.0f) {
+				if (cg_deluxePlayersPredictDebug.integer) {
+					Com_Printf("Deluxe predict: Client %d got Z clipped\n", cent->currentState.number);
+				}
+				cent->lerpOrigin[2] = cent->nextState.pos.trBase[2] + trace.fraction * (cent->lerpOrigin[2] - cent->nextState.pos.trBase[2]);
+			}
+		}
+		if (predictingClipMove) {
+			CG_Trace(&trace, cent->nextState.pos.trBase, bmins, bmaxs, cent->deluxePredict.lerpOriginClipMove, cg.snap->ps.clientNum, MASK_PLAYERSOLID);
+
+			if (trace.fraction < 1.0f) {
+				if (cg_deluxePlayersPredictDebug.integer) {
+					Com_Printf("Deluxe predict clipmove: Client %d got Z clipped\n", cent->currentState.number);
+				}
+				cent->deluxePredict.lerpOriginClipMove[2] = cent->nextState.pos.trBase[2] + trace.fraction * (cent->deluxePredict.lerpOriginClipMove[2] - cent->nextState.pos.trBase[2]);
+			}
+		}
+	}
+
+	/*
+	f = cg.frameInterpolation;
+
+	// this will linearize a sine or parabolic curve, but it is important
+	// to not extrapolate player positions if more recent data is available
+	BG_EvaluateTrajectory( &cent->currentState.pos, cg.snap->serverTime, current );
+	BG_EvaluateTrajectory( &cent->nextState.pos, cg.nextSnap->serverTime, next );
+
+	cent->lerpOrigin[0] = current[0] + f * ( next[0] - current[0] );
+	cent->lerpOrigin[1] = current[1] + f * ( next[1] - current[1] );
+	cent->lerpOrigin[2] = current[2] + f * ( next[2] - current[2] );
+
+	BG_EvaluateTrajectory( &cent->currentState.apos, cg.snap->serverTime, current );
+	BG_EvaluateTrajectory( &cent->nextState.apos, cg.nextSnap->serverTime, next );
+
+	cent->lerpAngles[0] = LerpAngle( current[0], next[0], f );
+	cent->lerpAngles[1] = LerpAngle( current[1], next[1], f );
+	cent->lerpAngles[2] = LerpAngle( current[2], next[2], f );*/
+/*
+Ghoul2 Insert Start
+*/
+		// now the nasty stuff - this will interpolate all ghoul2 models bone angle overrides per model attached to this cent
+//	if (cent->currentState.ghoul2.size())
+	//{
+	//	LerpBoneAngleOverrides(cent);
+	//}
+/*
+Ghoul2 Insert End
+*/
+	return predicting;
+}
+
 /*
 ===============
 CG_CalcEntityLerpPositions
@@ -2294,8 +2489,16 @@ CG_CalcEntityLerpPositions
 */
 void CG_CalcEntityLerpPositions( centity_t *cent ) {
 
+	cent->deluxePredict.lerpOriginClipMoveFilled = qfalse;
+
+	if ((cg_deluxePlayersPredict.integer || cg_deluxePlayersPredictClipMove.integer) && cent->currentState.number < MAX_CLIENTS && cent->currentState.number != cg.snap->ps.clientNum && cent->currentState.pos.trType == TR_LINEAR_STOP) {
+		if (CG_DeluxePlayerPredict(cent)) {
+			return;
+		}
+	}
+
 	// if this player does not want to see extrapolated players
-	if ( !cg_smoothClients.integer ) {
+	if ( !cg_smoothClients.integer && !cg_deluxePlayersPredict.integer && !cg_deluxePlayersPredictClipMove.integer) {
 		// make sure the clients use TR_INTERPOLATE
 		if ( cent->currentState.number < MAX_CLIENTS ) {
 			cent->currentState.pos.trType = TR_INTERPOLATE;

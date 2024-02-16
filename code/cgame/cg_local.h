@@ -174,6 +174,8 @@ typedef enum {
 	TFP_ABSORB
 } teamForcePowers_t;
 
+#define MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS 32
+
 // centity_t have a direct corespondence with gentity_t in the game, but
 // only the entityState_t is directly communicated to the cgame
 typedef struct centity_s {
@@ -257,6 +259,21 @@ typedef struct centity_s {
 
 	int				teamPowerEffectTime;
 	teamForcePowers_t	teamPowerType;
+
+
+	// Deluxe interpolation for other players
+	struct {
+		int				lastCommandTime;
+		int				offsets[MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS]; // For calculating average time offset to apply to players' command times for prediction
+		int				offsetsIndex;
+		int				offsetsRollingAverageTotal;
+		//vec3_t			lastPosition;
+		//vec3_t			lastAngles;
+
+		vec3_t			lerpOriginClipMove;
+		qboolean		lerpOriginClipMoveFilled;
+	} deluxePredict;
+
 } centity_t;
 
 
@@ -967,6 +984,8 @@ Ghoul2 Insert End
 	int					lastTimeFollowing;
 
 	qboolean speccing;
+
+	qboolean			nextCGTraceExplicitlyDeluxe;
 } cg_t;
 
 #define MAX_TICS	14
@@ -1619,6 +1638,10 @@ extern	vmCvar_t		cg_debugEvents;
 extern	vmCvar_t		cg_debugSaber;
 extern	vmCvar_t		cg_errorDecay;
 extern	vmCvar_t		cg_nopredict;
+extern	vmCvar_t		cg_deluxePlayersPredict;
+extern	vmCvar_t		cg_deluxePlayersPredictDebug;
+extern	vmCvar_t		cg_deluxePlayersPredictClipZ;
+extern	vmCvar_t		cg_deluxePlayersPredictClipMove;
 extern	vmCvar_t		cg_specialPredictPhysicsFps;
 extern	vmCvar_t		cg_specialPredictPhysicsFpsAngleCmdTime;
 extern	vmCvar_t		cg_noPlayerAnims;
@@ -2284,6 +2307,7 @@ void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba
 
 void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
 void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount);
+int			trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum);
 
 /*
 qboolean	trap_Language_IsAsian(void);
