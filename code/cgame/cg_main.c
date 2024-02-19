@@ -800,7 +800,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_deluxePlayersPredict, "cg_deluxePlayersPredict", "0", CVAR_ARCHIVE },
 	{ &cg_deluxePlayersPredictDebug, "cg_deluxePlayersPredictDebug", "0", CVAR_TEMP },
 	{ &cg_deluxePlayersPredictClipZ, "cg_deluxePlayersPredictClipZ", "1", CVAR_ARCHIVE },
-	{ &cg_deluxePlayersPredictClipMove, "cg_deluxePlayersPredictClipMove", "2", CVAR_ARCHIVE },
+	{ &cg_deluxePlayersPredictClipMove, "cg_deluxePlayersPredictClipMove", "0", CVAR_ARCHIVE },
 	{ &cg_specialPredictPhysicsFps, "cg_specialPredictPhysicsFps", "3", CVAR_ARCHIVE },
 	{ &cg_specialPredictPhysicsFpsAngleCmdTime, "cg_specialPredictPhysicsFpsAngleCmdTime", "0", CVAR_ARCHIVE },
 	{ &cg_noPlayerAnims, "cg_noplayeranims", "0", CVAR_CHEAT },
