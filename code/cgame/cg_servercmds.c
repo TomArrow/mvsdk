@@ -182,6 +182,9 @@ static void CG_ParseServerinfo( const char *info ) {
 	char	*mapname;
 	char	*v = NULL;
 	char serverCheatDisableCvar[16]; // uni_clientFlags
+	char nwhCompareSmall[4]; // nwh
+	char nwhCompareBig[4]; // NWH
+	char manhuntCompare[8]; // Manhunt
 
 	serverCheatDisableCvar[0] = 'u';
 	serverCheatDisableCvar[1] = 'n';
@@ -199,6 +202,25 @@ static void CG_ParseServerinfo( const char *info ) {
 	serverCheatDisableCvar[13] = 'g';
 	serverCheatDisableCvar[14] = 's';
 	serverCheatDisableCvar[15] = '\0';
+
+	nwhCompareSmall[0] = 'n';
+	nwhCompareSmall[1] = 'w';
+	nwhCompareSmall[2] = 'h';
+	nwhCompareSmall[3] = '\0';
+
+	nwhCompareBig[0] = 'N';
+	nwhCompareBig[1] = 'W';
+	nwhCompareBig[2] = 'H';
+	nwhCompareBig[3] = '\0';
+
+	manhuntCompare[0] = 'M';
+	manhuntCompare[1] = 'a';
+	manhuntCompare[2] = 'n';
+	manhuntCompare[3] = 'h';
+	manhuntCompare[4] = 'u';
+	manhuntCompare[5] = 'n';
+	manhuntCompare[6] = 't';
+	manhuntCompare[7] = '\0';
 
 	v = Info_ValueForKey( info, "g_gametype" );
 	cgs.gametype = atoi( v );
@@ -230,7 +252,7 @@ static void CG_ParseServerinfo( const char *info ) {
 	if (v)
 	{
 		Q_CleanStr(v, qtrue);
-		if (strstr(v, "NWH") || strstr(v, "nwh")) {
+		if (strstr(v, nwhCompareBig) || strstr(v, nwhCompareSmall)) {
 			cgs.isNWH = qtrue;
 		}
 		if (!Q_stricmpn(v, "jk2pro", 5)) {
@@ -270,7 +292,7 @@ static void CG_ParseServerinfo( const char *info ) {
 	if (v)
 	{
 		Q_CleanStr(v, qtrue);
-		if (strstr(v, "nwh") || strstr(v, "NWH")) {
+		if (strstr(v, nwhCompareSmall) || strstr(v, nwhCompareBig)) {
 			cgs.isNWH = qtrue;
 		}
 	}
@@ -279,7 +301,7 @@ static void CG_ParseServerinfo( const char *info ) {
 	if (v)
 	{
 		Q_CleanStr(v, qtrue);
-		if (strstr(v, "Manhunt")) { // Stupid, ugly and gay.
+		if (strstr(v, manhuntCompare)) { // Stupid, ugly and gay.
 			cgs.isManhunt = qtrue;
 		}
 	}
