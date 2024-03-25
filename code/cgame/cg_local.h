@@ -1643,6 +1643,7 @@ extern	vmCvar_t		cg_debugSaber;
 extern	vmCvar_t		cg_errorDecay;
 extern	vmCvar_t		cg_nopredict;
 extern	vmCvar_t		cg_deluxePlayersPredict;
+extern	vmCvar_t		cg_deluxePlayersPredictPingCompensate;
 extern	vmCvar_t		cg_deluxePlayersPredictDebug;
 extern	vmCvar_t		cg_deluxePlayersPredictClipZ;
 extern	vmCvar_t		cg_deluxePlayersPredictClipMove;

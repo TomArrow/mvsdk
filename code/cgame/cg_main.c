@@ -482,6 +482,7 @@ vmCvar_t	cg_debugEvents;
 vmCvar_t	cg_errorDecay;
 vmCvar_t	cg_nopredict;
 vmCvar_t	cg_deluxePlayersPredict;
+vmCvar_t	cg_deluxePlayersPredictPingCompensate;
 vmCvar_t	cg_deluxePlayersPredictDebug;
 vmCvar_t	cg_deluxePlayersPredictClipZ;
 vmCvar_t	cg_deluxePlayersPredictClipMove;
@@ -800,6 +801,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_errorDecay, "cg_errordecay", "100", 0 },
 	{ &cg_nopredict, "cg_nopredict", "0", 0 },
 	{ &cg_deluxePlayersPredict, "cg_deluxePlayersPredict", "0", CVAR_ARCHIVE },
+	{ &cg_deluxePlayersPredictPingCompensate, "cg_deluxePlayersPredictPingCompensate", "1.0", CVAR_ARCHIVE },
 	{ &cg_deluxePlayersPredictDebug, "cg_deluxePlayersPredictDebug", "0", CVAR_TEMP },
 	{ &cg_deluxePlayersPredictClipZ, "cg_deluxePlayersPredictClipZ", "1", CVAR_ARCHIVE },
 	{ &cg_deluxePlayersPredictClipMove, "cg_deluxePlayersPredictClipMove", "0", CVAR_ARCHIVE },

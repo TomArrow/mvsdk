@@ -2343,6 +2343,8 @@ void CG_DeluxePredictLerpPlayerTrajectory(const trajectory_t* tr, int sourceTime
 
 }
 
+#define MAX_DELUXEPLAYERSPREDICT_PING_AVERAGE_COUNT 32
+
 /*
 =============================
 CG_InterpolateEntityPosition
@@ -2362,6 +2364,12 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 	qboolean	predicting = qfalse;
 	qboolean	predictingClipMove = qfalse;
 	snapshot_t* snapToUse;
+	static int	pingAverager[MAX_DELUXEPLAYERSPREDICT_PING_AVERAGE_COUNT];
+	static int	pingAveragerIndex = 0;
+	static int	pingAveragerRollingAverageTotal = 0;
+	qboolean	averagePingValid = qfalse;
+	int			averagePing;
+	static int	oldSnapNum = -1;
 
 	if (cg.nextSnap != NULL) {
 		snapToUse = cg.nextSnap;
@@ -2383,6 +2391,7 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 		return qfalse;
 	}
 
+	// Player offset averaging
 	offsetHere = snapToUse->serverTime - cent->nextState.pos.trTime;
 	if (cent->nextState.pos.trTime != cent->deluxePredict.lastCommandTime) { // Only update if the commandtime changed, so we don't calculate a wrong ping based on lost packets by this player/lag
 		if (cent->deluxePredict.offsetsIndex >= MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS) {
@@ -2398,15 +2407,39 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 		averageOffsetValid = qtrue;
 	}
 
+	// Ping averaging
+	if (cg.latestSnapshotNum != oldSnapNum) {
+		if (pingAveragerIndex >= MAX_DELUXEPLAYERSPREDICT_PING_AVERAGE_COUNT) {
+			// Remove old value from rolling average total first.
+			pingAveragerRollingAverageTotal -= pingAverager[pingAveragerIndex % MAX_DELUXEPLAYERSPREDICT_PING_AVERAGE_COUNT];
+			averagePingValid = qtrue;
+		}
+		pingAverager[pingAveragerIndex % MAX_DELUXEPLAYERSPREDICT_PING_AVERAGE_COUNT] = snapToUse->ping;
+		pingAveragerRollingAverageTotal += snapToUse->ping;
+		pingAveragerIndex++;
+	}
+	else if (pingAveragerIndex >= MAX_DELUXEPLAYERSPREDICT_PING_AVERAGE_COUNT) {
+		averagePingValid = qtrue;
+	}
+	oldSnapNum = cg.latestSnapshotNum;
+
 	if (!averageOffsetValid) {
 		if (cg_deluxePlayersPredictDebug.integer > 4) {
 			Com_Printf("Deluxe predict: !averageOffsetValid: Client %d\n");
 		}
 		return qfalse;
 	}
+	else if (!averagePingValid) {
+		if (cg_deluxePlayersPredictDebug.integer > 4) {
+			Com_Printf("Deluxe predict: !averagePingValid\n");
+		}
+		return qfalse;
+	}
 	else {
 		averageOffset = cent->deluxePredict.offsetsRollingAverageTotal / MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS;
+		averagePing = pingAveragerRollingAverageTotal / MAX_DELUXEPLAYERSPREDICT_PING_AVERAGE_COUNT;
 	}
+
 
 	thisOffsetDelta = averageOffset - offsetHere;
 	if (thisOffsetDelta > 0) {
@@ -2420,11 +2453,13 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 
 	if (cg_deluxePlayersPredict.integer == 2 || cg_deluxePlayersPredict.integer == 4) {
 		// Predict where they will be once my packets arrive at the server.
-		targetTime += snapToUse->ping / 2;
+		//targetTime += snapToUse->ping / 2;
+		targetTime += (int)((float)averagePing * cg_deluxePlayersPredictPingCompensate.value);
 	}
 	if (cg_deluxePlayersPredictClipMove.integer == 2) {
 		// Predict where they will be once my packets arrive at the server.
-		targetTimeClipMove += snapToUse->ping / 2;
+		//targetTimeClipMove += snapToUse->ping / 2;
+		targetTimeClipMove +=(int)( (float)averagePing * cg_deluxePlayersPredictPingCompensate.value);
 	}
 
 	if (cg_deluxePlayersPredict.integer) {
