@@ -443,6 +443,7 @@ weaponInfo_t		cg_weapons[MAX_WEAPONS];
 itemInfo_t			cg_items[MAX_ITEMS];
 
 
+vmCvar_t    cg_wallhack;
 vmCvar_t	cg_centertime;
 vmCvar_t	cg_runpitch;
 vmCvar_t	cg_runroll;
@@ -783,6 +784,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_gun_x, "cg_gunX", "0", CVAR_ARCHIVE },
 	{ &cg_gun_y, "cg_gunY", "0", CVAR_ARCHIVE },
 	{ &cg_gun_z, "cg_gunZ", "0", CVAR_ARCHIVE },
+	{ &cg_wallhack, "cg_wallhack", "0", CVAR_TEMP },
 	{ &cg_centertime, "cg_centertime", "3", CVAR_CHEAT },
 	{ &cg_runpitch, "cg_runpitch", "0", CVAR_ARCHIVE},
 	{ &cg_runroll, "cg_runroll", "0", CVAR_ARCHIVE },

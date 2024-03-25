@@ -1587,7 +1587,10 @@ Ghoul2 Insert End
 	qboolean		CTF3ModeActive;
 	qboolean		isolateDuels;
 	qboolean		isCaMod;
+	qboolean		isNWH;
+	qboolean		isManhunt;
 
+	int				uni_clientFlags; // Anti-cheat cvar set by server owners to disable cheats in UnityMod. We use the same for compatibility
 } cgs_t;
 
 //==============================================================================
@@ -1599,6 +1602,7 @@ extern	weaponInfo_t	cg_weapons[MAX_WEAPONS];
 extern	itemInfo_t		cg_items[MAX_ITEMS];
 extern	markPoly_t		cg_markPolys[MAX_MARK_POLYS];
 
+extern  vmCvar_t		cg_wallhack;
 extern	vmCvar_t		cg_centertime;
 extern	vmCvar_t		cg_runpitch;
 extern	vmCvar_t		cg_runroll;

@@ -797,6 +797,16 @@ typedef struct gitem_s {
 	char		*sounds;		// string of all sounds this item will use
 } gitem_t;
 
+
+// These are bit indexes that can be set on uni_clientFlags to disable cheats in the UnityMod client.
+// We reuse these for compatibility and to not reinvent the wheel
+typedef enum {
+	WALLHACK_DISABLE_ITEMS = 0,
+	WALLHACK_DISABLE_PLAYERS,
+} clientFlags_t;
+
+
+
 // included in both the game dll and the client
 extern	gitem_t	bg_itemlist[];
 extern	int		bg_numItems;

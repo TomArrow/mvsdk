@@ -181,6 +181,24 @@ and whenever the server updates any serverinfo flagged cvars
 static void CG_ParseServerinfo( const char *info ) {
 	char	*mapname;
 	char	*v = NULL;
+	char serverCheatDisableCvar[16]; // uni_clientFlags
+
+	serverCheatDisableCvar[0] = 'u';
+	serverCheatDisableCvar[1] = 'n';
+	serverCheatDisableCvar[2] = 'i';
+	serverCheatDisableCvar[3] = '_';
+	serverCheatDisableCvar[4] = 'c';
+	serverCheatDisableCvar[5] = 'l';
+	serverCheatDisableCvar[6] = 'i';
+	serverCheatDisableCvar[7] = 'e';
+	serverCheatDisableCvar[8] = 'n';
+	serverCheatDisableCvar[9] = 't';
+	serverCheatDisableCvar[10] = 'F';
+	serverCheatDisableCvar[11] = 'l';
+	serverCheatDisableCvar[12] = 'a';
+	serverCheatDisableCvar[13] = 'g';
+	serverCheatDisableCvar[14] = 's';
+	serverCheatDisableCvar[15] = '\0';
 
 	v = Info_ValueForKey( info, "g_gametype" );
 	cgs.gametype = atoi( v );
@@ -198,6 +216,10 @@ static void CG_ParseServerinfo( const char *info ) {
 	cgs.timelimit = atoi( Info_ValueForKey( info, "timelimit" ) );
 	cgs.maxclients = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 
+	cgs.uni_clientFlags = atoi(Info_ValueForKey(info, serverCheatDisableCvar));
+
+	cgs.isNWH = qfalse;
+	cgs.isManhunt = qfalse;
 	cgs.isJK2Pro = qfalse;
 	cgs.isCTFMod = qfalse;
 	cgs.CTF3ModeActive = qfalse;
@@ -208,6 +230,9 @@ static void CG_ParseServerinfo( const char *info ) {
 	if (v)
 	{
 		Q_CleanStr(v, qtrue);
+		if (strstr(v, "NWH") || strstr(v, "nwh")) {
+			cgs.isNWH = qtrue;
+		}
 		if (!Q_stricmpn(v, "jk2pro", 5)) {
 			cgs.isJK2Pro = qtrue;
 			cgs.isolateDuels = qtrue;
@@ -239,6 +264,29 @@ static void CG_ParseServerinfo( const char *info ) {
 			cgs.isolateDuels = qtrue;
 			cgs.isCaMod = qfalse;
 		}
+	}
+
+	v = Info_ValueForKey(info, "version");
+	if (v)
+	{
+		Q_CleanStr(v, qtrue);
+		if (strstr(v, "nwh") || strstr(v, "NWH")) {
+			cgs.isNWH = qtrue;
+		}
+	}
+
+	v = Info_ValueForKey(info, "sv_hostname");
+	if (v)
+	{
+		Q_CleanStr(v, qtrue);
+		if (strstr(v, "Manhunt")) { // Stupid, ugly and gay.
+			cgs.isManhunt = qtrue;
+		}
+	}
+
+	if (cgs.isManhunt || cgs.isNWH) {
+		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_PLAYERS);
+		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_ITEMS);
 	}
 
 	mapname = Info_ValueForKey( info, "mapname" );

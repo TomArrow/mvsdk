@@ -1445,6 +1445,11 @@ Ghoul2 Insert Start
 			ent.shaderRGBA[2] = 150;
 		}
 
+		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		trap_R_AddRefEntityToScene(&ent);
 
 		if (!doGrey)
@@ -1512,6 +1517,12 @@ Ghoul2 Insert End
 				ent.customShader = trap_R_RegisterShader("gfx/misc/mp_dark_enlight_disable");
 			}
 		}
+
+		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		trap_R_AddRefEntityToScene(&ent);
 		return;
 	}
@@ -1680,6 +1691,11 @@ Ghoul2 Insert End
 			ent.customShader = trap_R_RegisterShader("gfx/misc/mp_dark_enlight_disable");
 		}
 
+		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		trap_R_AddRefEntityToScene( &ent );
 		return;
 	}
@@ -1726,6 +1742,12 @@ Ghoul2 Insert End
 		{ //boon model uses a different blending mode for the sprite inside and doesn't look proper with this method
 			ent.renderfx |= RF_FORCE_ENT_ALPHA;
 		}
+
+		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		trap_R_AddRefEntityToScene(&ent);
 		
 		ent.renderfx &= ~RF_FORCE_ENT_ALPHA;
@@ -1767,6 +1789,11 @@ Ghoul2 Insert End
 		ent.shaderRGBA[1] = 200;
 		ent.shaderRGBA[2] = 85;
 
+		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		trap_R_AddRefEntityToScene( &ent );
 	}
 	else
@@ -1779,6 +1806,12 @@ Ghoul2 Insert End
 			ent.modelScale[2] = 0.7f;
 			ScaleModelAxis(&ent);
 		}
+
+		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
 		trap_R_AddRefEntityToScene(&ent);
 	}
 
@@ -1824,6 +1857,11 @@ Ghoul2 Insert End
 				}
 				AnglesToAxis( spinAngles, ent.axis );
 				
+				if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
+				{
+					ent.renderfx |= RF_DEPTHHACK;
+				}
+
 				trap_R_AddRefEntityToScene( &ent );
 			}
 		}
