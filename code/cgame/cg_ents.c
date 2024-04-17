@@ -2382,6 +2382,7 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 		if (cg_deluxePlayersPredictDebug.integer > 1) {
 			Com_Printf("Deluxe predict: Cannot deluxe predict without COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED\n");
 		}
+		return qfalse;
 	}
 
 	if (cent->nextState.pos.trType != TR_LINEAR_STOP || (cg.demoPlayback && cg_deluxePlayersPredict.integer < 3)) {
