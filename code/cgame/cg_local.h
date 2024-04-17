@@ -1557,6 +1557,8 @@ extern	vmCvar_t		cg_debugPosition;
 extern	vmCvar_t		cg_debugEvents;
 extern	vmCvar_t		cg_errorDecay;
 extern	vmCvar_t		cg_nopredict;
+extern	vmCvar_t		cg_specialPredictPhysicsFps;
+extern	vmCvar_t		cg_specialPredictPhysicsFpsAngleCmdTime;
 extern	vmCvar_t		cg_noPlayerAnims;
 extern	vmCvar_t		cg_showmiss;
 extern	vmCvar_t		cg_footsteps;
@@ -1753,6 +1755,7 @@ extern  vmCvar_t		cg_recordSPDemoName;
 
 extern	vmCvar_t		cg_ui_myteam;
 extern	vmCvar_t		cg_com_maxfps;
+extern	vmCvar_t		cg_com_physicsFps;
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
 extern	vmCvar_t		cg_drawPlayerSprites;
@@ -2468,6 +2471,7 @@ Ghoul2 Insert End
 */
 
 extern int mvapi;
+extern int coolApi;
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel );

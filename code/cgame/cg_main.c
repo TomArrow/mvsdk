@@ -155,14 +155,18 @@ This must be the very first function compiled into the .q3vm file
 */
 qboolean menuInJK2MV = qfalse;
 int mvapi = 0;
+int coolApi = 0;
 int Init_serverMessageNum;
 int Init_serverCommandSequence;
 int Init_clientNum;
 LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
 	int requestedMvApi = 0;
+	char coolApiFeaturesBuffer[80];
 
 	switch ( command ) {
 	case CG_INIT:
+		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		coolApi = atoi(coolApiFeaturesBuffer);
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call CG_Init if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
@@ -447,6 +451,7 @@ vmCvar_t	cg_bobroll;
 //vmCvar_t	cg_swingSpeed;
 vmCvar_t	cg_shadows;
 vmCvar_t	cg_drawTimer;
+vmCvar_t	cg_drawRamps;
 vmCvar_t	cg_drawFPS;
 vmCvar_t	cg_drawSnapshot;
 vmCvar_t	cg_draw3dIcons;
@@ -470,6 +475,8 @@ vmCvar_t	cg_debugPosition;
 vmCvar_t	cg_debugEvents;
 vmCvar_t	cg_errorDecay;
 vmCvar_t	cg_nopredict;
+vmCvar_t	cg_specialPredictPhysicsFps;
+vmCvar_t	cg_specialPredictPhysicsFpsAngleCmdTime;
 vmCvar_t	cg_noPlayerAnims;
 vmCvar_t	cg_showmiss;
 vmCvar_t	cg_footsteps;
@@ -676,6 +683,7 @@ vmCvar_t	cg_recordSPDemoName;
 
 vmCvar_t	cg_ui_myteam;
 vmCvar_t	cg_com_maxfps;
+vmCvar_t	cg_com_physicsFps;
 
 vmCvar_t	cg_mv_fixbrokenmodelsclient;
 vmCvar_t	cg_drawPlayerSprites;
@@ -749,6 +757,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_debugEvents, "cg_debugevents", "0", CVAR_CHEAT },
 	{ &cg_errorDecay, "cg_errordecay", "100", 0 },
 	{ &cg_nopredict, "cg_nopredict", "0", 0 },
+	{ &cg_specialPredictPhysicsFps, "cg_specialPredictPhysicsFps", "3", CVAR_ARCHIVE },
+	{ &cg_specialPredictPhysicsFpsAngleCmdTime, "cg_specialPredictPhysicsFpsAngleCmdTime", "0", CVAR_ARCHIVE },
 	{ &cg_noPlayerAnims, "cg_noplayeranims", "0", CVAR_CHEAT },
 	{ &cg_showmiss, "cg_showmiss", "0", 0 },
 	{ &cg_footsteps, "cg_footsteps", "1", CVAR_CHEAT },
@@ -950,6 +960,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
 	{ &cg_com_maxfps, "com_maxfps", "", 0},
+	{ &cg_com_physicsFps, "com_physicsFps", "", 0},
 
 	{ &cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE },
 	{ &cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE },
