@@ -1060,6 +1060,7 @@ extern	vmCvar_t	g_pmove_fixed;
 extern	vmCvar_t	g_pmove_msec;
 extern	vmCvar_t	g_pmove_float;
 extern	vmCvar_t	g_fixHighFPSAbuse;
+extern	vmCvar_t	g_entHUDFields;
 extern	vmCvar_t	g_rankings;
 extern	vmCvar_t	g_enableDust;
 extern	vmCvar_t	g_enableBreath;
