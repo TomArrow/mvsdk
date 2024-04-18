@@ -827,7 +827,7 @@ void CG_PredictPlayerState( void ) {
 
 	// run cmds
 	moved = qfalse;
-	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= (current+1) ; cmdNum++ ) {
+	for ( cmdNum = MAX(current - REAL_CMD_BACKUP + 1,0) ; cmdNum <= (current+1) ; cmdNum++ ) {
 
 		if (cmdNum > current) {
 
