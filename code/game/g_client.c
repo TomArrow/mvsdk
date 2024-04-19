@@ -672,6 +672,11 @@ void CopyToBodyQue( gentity_t *ent ) {
 
 	trap_UnlinkEntity (body);
 	body->s = ent->s;
+	if (g_entHUDFields.integer) {
+		body->s.generic1 = 0;
+		body->s.trickedentindex3 = 0;
+		body->s.trickedentindex4 = 0;
+	}
 
 	//avoid oddly angled corpses floating around
 	body->s.angles[PITCH] = body->s.angles[ROLL] = body->s.apos.trBase[PITCH] = body->s.apos.trBase[ROLL] = 0;
