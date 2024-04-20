@@ -1462,9 +1462,9 @@ void MoveClientToIntermission( gentity_t *ent ) {
 	ent->s.eFlags = 0;
 	ent->s.eType = ET_GENERAL;
 	if (g_entHUDFields.integer) {
-		ent->s.generic1 = 0;
-		ent->s.trickedentindex3 = 0;
-		ent->s.trickedentindex4 = 0;
+		ent->client->ps.generic1 = ent->s.generic1 = 0;
+		ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = 0;
+		ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = 0;
 	}
 	ent->s.modelindex = 0;
 	ent->s.loopSound = 0;
@@ -2715,9 +2715,9 @@ end = trap_Milliseconds();
 				if (ent->s.eType == ET_GENERAL || ent->client->ps.pm_type == PM_INTERMISSION) {
 					// We are in an intermission and players have been turned into ET_GENERAL. 
 					// Set all this stuff to 0 so we don't get glowing bodies
-					ent->s.generic1 = 0;
-					ent->s.trickedentindex3 = 0;
-					ent->s.trickedentindex4 = 0;
+					ent->client->ps.generic1 = ent->s.generic1 = 0;
+					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = 0;
+					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = 0;
 				}
 				else {
 					//ent->client->ps.fd.forcePowersActive &= ~(31 << 20);
