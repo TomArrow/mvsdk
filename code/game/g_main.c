@@ -1461,6 +1461,11 @@ void MoveClientToIntermission( gentity_t *ent ) {
 	ent->client->ps.eFlags = 0;
 	ent->s.eFlags = 0;
 	ent->s.eType = ET_GENERAL;
+	if (g_entHUDFields.integer) {
+		ent->s.generic1 = 0;
+		ent->s.trickedentindex3 = 0;
+		ent->s.trickedentindex4 = 0;
+	}
 	ent->s.modelindex = 0;
 	ent->s.loopSound = 0;
 	ent->s.event = 0;
@@ -2706,14 +2711,24 @@ end = trap_Milliseconds();
 				continue;
 			}
 			else if (ent->client) {
-				//ent->client->ps.fd.forcePowersActive &= ~(31 << 20);
-				//ent->client->ps.fd.forcePowersActive |= ((dimensionNum & 31) << 20);
-				// trickedentindex3: armor (8 bits), health (8 bits)
-				ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = ((MIN(127,MAX(-128,ent->client->ps.stats[STAT_HEALTH])) & 0xff) << 8) | (MIN(127, MAX(-128, ent->client->ps.stats[STAT_ARMOR])) & 0xff);
-				// trickedentindex4: force power (7 bits), current weapon ammo (7 bits), saberdrawanimlevel (2 bits)
-				ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = (ent->client->ps.fd.saberDrawAnimLevel & 3) << 14 | ((MAX(0, MIN(127, ent->client->ps.ammo[weaponData[ent->client->ps.weapon].ammoIndex])) & 127) << 7) | (MAX(0, MIN(127, ent->client->ps.fd.forcePower)) & 127);
-				// generic1: seeker, forcefield, bacta, sentry in inventory (1 bit each), mine count (4 bits)
-				ent->client->ps.generic1 = ent->s.generic1 = ((MAX(0, MIN(15, ent->client->ps.ammo[weaponData[WP_TRIP_MINE].ammoIndex])) & 15) << 4) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN))) << 3) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC))) << 2) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD))) << 1) | (!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)));
+
+				if (ent->s.eType == ET_GENERAL || ent->client->ps.pm_type == PM_INTERMISSION) {
+					// We are in an intermission and players have been turned into ET_GENERAL. 
+					// Set all this stuff to 0 so we don't get glowing bodies
+					ent->s.generic1 = 0;
+					ent->s.trickedentindex3 = 0;
+					ent->s.trickedentindex4 = 0;
+				}
+				else {
+					//ent->client->ps.fd.forcePowersActive &= ~(31 << 20);
+					//ent->client->ps.fd.forcePowersActive |= ((dimensionNum & 31) << 20);
+					// trickedentindex3: armor (8 bits), health (8 bits)
+					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = ((MIN(127,MAX(-128,ent->client->ps.stats[STAT_HEALTH])) & 0xff) << 8) | (MIN(127, MAX(-128, ent->client->ps.stats[STAT_ARMOR])) & 0xff);
+					// trickedentindex4: force power (7 bits), current weapon ammo (7 bits), saberdrawanimlevel (2 bits)
+					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = (ent->client->ps.fd.saberDrawAnimLevel & 3) << 14 | ((MAX(0, MIN(127, ent->client->ps.ammo[weaponData[ent->client->ps.weapon].ammoIndex])) & 127) << 7) | (MAX(0, MIN(127, ent->client->ps.fd.forcePower)) & 127);
+					// generic1: seeker, forcefield, bacta, sentry in inventory (1 bit each), mine count (4 bits)
+					ent->client->ps.generic1 = ent->s.generic1 = ((MAX(0, MIN(15, ent->client->ps.ammo[weaponData[WP_TRIP_MINE].ammoIndex])) & 15) << 4) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN))) << 3) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC))) << 2) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD))) << 1) | (!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)));
+				}
 			}
 
 			//ent->s.forcePowersActive &= ~(31 << 20);
