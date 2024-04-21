@@ -309,6 +309,7 @@ typedef struct {
 
 	playerState_t	*bgClients[MAX_CLIENTS];
 	int			checkDuelLoss;
+	int			requiredCmdMsec;
 } pmove_t;
 
 extern	pmove_t		*pm;

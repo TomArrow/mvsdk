@@ -4739,7 +4739,7 @@ void PmoveSingle (pmove_t *pmove) {
 	{
 		PM_FlyMove ();
 	}
-	else
+	else if(!pm->requiredCmdMsec || pml.msec == pm->requiredCmdMsec)
 	{
 		if (pm->ps->pm_flags & PMF_TIME_WATERJUMP) {
 			PM_WaterJumpMove();
@@ -4793,7 +4793,9 @@ void PmoveSingle (pmove_t *pmove) {
 #elif JK2_CGAME
 		else if ((cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX) //could move these checks to cg_predict, and just set pm->pmove_float accordingly?
 #endif
-			&& (pml.msec <= 4 || pml.msec > 25)) { //do nothing above 250FPS or below 40FPS
+			&& (pml.msec <= 4 || pml.msec > 25)
+			|| pm->requiredCmdMsec && pm->requiredCmdMsec != pml.msec
+			) { //do nothing above 250FPS or below 40FPS, or if a certain msec timing is demanded by the game via requiredCmdMsec (used for toggle limiting via g_fpsToggleDelay)
 		}
 		else if (pm->pmove_float == 2) { //pmove_float 2: snaps vertical velocity only, so 125/142fps jumps are still the same height?
 			vec3_t oldVelocity = { 0 };
