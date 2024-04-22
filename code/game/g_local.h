@@ -296,6 +296,9 @@ typedef struct {
 	int			acceptedSettingMsec; // msec representation of the allowed setting. if toggle limiting is enabled, the client packet timing must be equal to this
 	int			lastChange; // last time we have accepted a valid setting from the client
 	int			lastNotification; // last time we have notified the client about the need to set a different com_physicsFps value. We do le center print, but don't wanna spam it on every frame, just every 2.5 seconds or so to be constant on the client's screen
+	//int			wrongTimingToleratedCount; // Counts how many times the timing was wrong in a row, so we can allow a bit of leniency for people who get a lag.
+	//int			goodTimingCount;
+	//qboolean	lastTimingWasGood;
 } physicsFpsState_t;
 
 // the auto following clients don't follow a specific client
