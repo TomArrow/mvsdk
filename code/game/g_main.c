@@ -45,6 +45,8 @@ vmCvar_t	g_saberGhoul2Collision;
 vmCvar_t	g_saberAlwaysBoxTrace;
 vmCvar_t	g_saberBoxTraceSize;
 
+vmCvar_t	g_saberTraceReversed;
+
 vmCvar_t	g_logClientInfo;
 
 vmCvar_t	g_slowmoDuelEnd;
@@ -188,6 +190,8 @@ static cvarTable_t		gameCvarTable[] = {
 #endif
 	{ &g_saberAlwaysBoxTrace, "g_saberAlwaysBoxTrace", "0", 0, 0, qtrue  },
 	{ &g_saberBoxTraceSize, "g_saberBoxTraceSize", "2", 0, 0, qtrue  },
+
+	{ &g_saberTraceReversed, "g_saberTraceReversed", "0", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_logClientInfo, "g_logClientInfo", "0", CVAR_ARCHIVE, 0, qtrue  },
 

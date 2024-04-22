@@ -1016,6 +1016,8 @@ extern	vmCvar_t	g_saberGhoul2Collision;
 extern	vmCvar_t	g_saberAlwaysBoxTrace;
 extern	vmCvar_t	g_saberBoxTraceSize;
 
+extern	vmCvar_t	g_saberTraceReversed;
+
 extern	vmCvar_t	g_logClientInfo;
 
 extern	vmCvar_t	g_slowmoDuelEnd;

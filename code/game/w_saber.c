@@ -1576,8 +1576,12 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 		oldSaberEnd[2] = oldSaberStart[2] - (oldSaberDif[2]*trDif);
 
 		//G_TestLine(oldSaberEnd, saberEnd, 0x0000ff, 50);
-
-		trap_Trace(&tr, saberEnd, NULL, NULL, saberStart, self->s.number, (MASK_PLAYERSOLID|CONTENTS_LIGHTSABER));
+		if (g_saberTraceReversed.integer) {
+			trap_Trace(&tr, saberStart, NULL, NULL, saberEnd, self->s.number, (MASK_PLAYERSOLID | CONTENTS_LIGHTSABER));
+		}
+		else {
+			trap_Trace(&tr, saberEnd, NULL, NULL, saberStart, self->s.number, (MASK_PLAYERSOLID | CONTENTS_LIGHTSABER));
+		}
 
 		trDif++;
 
@@ -1601,8 +1605,12 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 			oldSaberEnd[2] = oldSaberStart[2] - (oldSaberDif[2]*trDif);
 
 			//G_TestLine(oldSaberEnd, saberEnd, 0x0000ff, 50);
-
-			trap_Trace(&tr, saberEnd, NULL, NULL, saberStart, self->s.number, (MASK_PLAYERSOLID|CONTENTS_LIGHTSABER));
+			if (g_saberTraceReversed.integer) {
+				trap_Trace(&tr, saberStart, NULL, NULL, saberEnd, self->s.number, (MASK_PLAYERSOLID | CONTENTS_LIGHTSABER));
+			}
+			else {
+				trap_Trace(&tr, saberEnd, NULL, NULL, saberStart, self->s.number, (MASK_PLAYERSOLID | CONTENTS_LIGHTSABER));
+			}
 
 			traceTests++;
 			trDif += 8;
@@ -1610,7 +1618,12 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 	}
 	else
 	{
-		trap_Trace(&tr, saberStart, NULL, NULL, saberEnd, self->s.number, (MASK_PLAYERSOLID|CONTENTS_LIGHTSABER));
+		if (g_saberTraceReversed.integer) {
+			trap_Trace(&tr, saberEnd, NULL, NULL, saberStart, self->s.number, (MASK_PLAYERSOLID | CONTENTS_LIGHTSABER));
+		}
+		else {
+			trap_Trace(&tr, saberStart, NULL, NULL, saberEnd, self->s.number, (MASK_PLAYERSOLID | CONTENTS_LIGHTSABER));
+		}
 	}
 
 	if (SaberAttacking(self) &&
@@ -2004,7 +2017,12 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			oldSaberEnd[1] = oldSaberStart[1] - (oldSaberDif[1]*trDif);
 			oldSaberEnd[2] = oldSaberStart[2] - (oldSaberDif[2]*trDif);
 
-			trap_Trace(&tr, saberEnd, saberTrMins, saberTrMaxs, saberStart, self->s.number, trMask);
+			if (g_saberTraceReversed.integer) {
+				trap_Trace(&tr, saberStart, saberTrMins, saberTrMaxs, saberEnd, self->s.number, trMask);
+			}
+			else {
+				trap_Trace(&tr, saberEnd, saberTrMins, saberTrMaxs, saberStart, self->s.number, trMask);
+			}
 #ifdef G2_COLLISION_ENABLED
 			VectorCopy(saberEnd, lastValidStart);
 			VectorCopy(saberStart, lastValidEnd);
@@ -2035,7 +2053,12 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 				oldSaberEnd[1] = oldSaberStart[1] - (oldSaberDif[1]*trDif);
 				oldSaberEnd[2] = oldSaberStart[2] - (oldSaberDif[2]*trDif);
 
-				trap_Trace(&tr, saberEnd, saberTrMins, saberTrMaxs, saberStart, self->s.number, trMask);
+				if (g_saberTraceReversed.integer) {
+					trap_Trace(&tr, saberStart, saberTrMins, saberTrMaxs, saberEnd, self->s.number, trMask);
+				}
+				else {
+					trap_Trace(&tr, saberEnd, saberTrMins, saberTrMaxs, saberStart, self->s.number, trMask);
+				}
 #ifdef G2_COLLISION_ENABLED
 				VectorCopy(saberEnd, lastValidStart);
 				VectorCopy(saberStart, lastValidEnd);
@@ -2050,7 +2073,12 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 		}
 		else
 		{
-			trap_Trace(&tr, saberStart, saberTrMins, saberTrMaxs, saberEnd, self->s.number, trMask);
+			if (g_saberTraceReversed.integer) {
+				trap_Trace(&tr, saberEnd, saberTrMins, saberTrMaxs, saberStart, self->s.number, trMask);
+			}
+			else {
+				trap_Trace(&tr, saberStart, saberTrMins, saberTrMaxs, saberEnd, self->s.number, trMask);
+			}
 #ifdef G2_COLLISION_ENABLED
 			VectorCopy(saberStart, lastValidStart);
 			VectorCopy(saberEnd, lastValidEnd);
