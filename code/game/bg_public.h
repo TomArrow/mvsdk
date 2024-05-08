@@ -310,6 +310,7 @@ typedef struct {
 	playerState_t	*bgClients[MAX_CLIENTS];
 	int			checkDuelLoss;
 	int			requiredCmdMsec;
+	qboolean	isSpecialPredict; // not a real predict, just for image smoothing
 } pmove_t;
 
 extern	pmove_t		*pm;

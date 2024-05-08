@@ -2413,7 +2413,7 @@ static void PM_GroundTrace( void ) {
 		}
 
 		// Thanks to Loda for making this fix and Daggo for pointing me to it.
-		if (trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f)
+		if ((trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f) && !pm->isSpecialPredict)// don't count them during special predict
 		{ // It's a ramp!
 			if (!pml.clipped)
 			{
@@ -2423,7 +2423,7 @@ static void PM_GroundTrace( void ) {
 					Com_Printf("%i:Dead ramp\n", c_pmove);
 				}
 #if JK2_CGAME
-				if (pm->ps->commandTime > cg_rampCountLastCmdTime) {
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime) { 
 					cg_deadRampsCounted++;
 				}
 #endif
@@ -2433,7 +2433,7 @@ static void PM_GroundTrace( void ) {
 					Com_Printf("%i:Good ramp\n", c_pmove);
 				}
 #if JK2_CGAME
-				if (pm->ps->commandTime > cg_rampCountLastCmdTime) {
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime) { 
 					cg_goodRampsCounted++;
 				}
 #endif

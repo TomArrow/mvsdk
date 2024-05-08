@@ -708,6 +708,7 @@ void CG_PredictPlayerState( void ) {
 	const snapshot_t* baseSnap;
 	int			cmdNum, current, i;
 	playerState_t	oldPlayerState,preSpecialPredictPlayerState;
+	qboolean	specialPredictPhysicsFpsWasApplied;
 	qboolean	moved;
 	usercmd_t	oldestCmd;
 	usercmd_t	latestCmd;
@@ -824,6 +825,7 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.pmove_float = cg_pmove_float.integer;
 
 	cg_pmove.debugLevel = cg_debugMove.integer;
+	cg_pmove.isSpecialPredict = qfalse;
 
 	// run cmds
 	moved = qfalse;
@@ -832,6 +834,7 @@ void CG_PredictPlayerState( void ) {
 		if (cmdNum > current) {
 
 			preSpecialPredictPlayerState = *cg_pmove.ps;
+			specialPredictPhysicsFpsWasApplied = qtrue;
 
 			// Fucky experimental prediction to try and get com_physicsfps with low values to look smooth(er)
 			if (!cg_specialPredictPhysicsFps.integer || !cg_com_physicsFps.integer) break; // This type of prediction is disabled.
@@ -862,6 +865,7 @@ void CG_PredictPlayerState( void ) {
 			
 			cg_pmove.cmd.serverTime = cg.time;
 			cg_pmove.cmd.generic_cmd = 0;
+			cg_pmove.isSpecialPredict = qtrue;
 			if (!(cg_specialPredictPhysicsFps.integer & 2)) break; // 2 means predict movement (buggy-ish)
 		}
 		else {
@@ -995,7 +999,7 @@ void CG_PredictPlayerState( void ) {
 		}
 	}
 
-	CG_COOL_API_SetPredictedMovement(&cg.predictedPlayerState);
+	CG_COOL_API_SetPredictedMovement(specialPredictPhysicsFpsWasApplied ? &preSpecialPredictPlayerState: &cg.predictedPlayerState);
 
 	if ( cg_showmiss.integer > 1 ) {
 		CG_Printf( "[%i : %i] ", cg_pmove.cmd.serverTime, cg.time );
