@@ -270,7 +270,7 @@ qboolean PM_PredictDeadRamp(qboolean gravity) {
 							point[2] = newPos[2] - 0.25;
 
 							pm->trace(&trace, newPos, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
-							i = j = k; // Stupid way to end the loop lol.
+							i = j = k = 2; // Stupid way to end the loop lol.
 						}
 					}
 				}

@@ -4002,8 +4002,8 @@ static void UI_LoadMovies() {
 
 #ifdef JK2MV_MENU
 int demosort(void const *a, void const *b) {
-	char const *aa = (char const *)a;
-	char const *bb = (char const *)b;
+	char const *aa = *(char const **)a;
+	char const *bb = *(char const **)b;
 
 	return strcmp(aa, bb);
 }
