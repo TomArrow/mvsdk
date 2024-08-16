@@ -672,6 +672,11 @@ void CopyToBodyQue( gentity_t *ent ) {
 
 	trap_UnlinkEntity (body);
 	body->s = ent->s;
+	if (g_entHUDFields.integer) {
+		body->s.generic1 = 0;
+		body->s.trickedentindex3 = 0;
+		body->s.trickedentindex4 = 0;
+	}
 
 	//avoid oddly angled corpses floating around
 	body->s.angles[PITCH] = body->s.angles[ROLL] = body->s.apos.trBase[PITCH] = body->s.apos.trBase[ROLL] = 0;
@@ -1107,6 +1112,66 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	}
 }
 
+static void AcceptClientPhysicsFps(gclient_t* client, int clientSetting) {
+
+	client->pers.physicsFps.lastChange = level.time;
+	client->pers.physicsFps.acceptedSetting = clientSetting;
+	client->pers.physicsFps.acceptedSettingMsec = (MAX(1, MIN(200, 1000 / MAX(1, clientSetting))));
+}
+
+static qboolean ValidateClientPhysicsFps(gclient_t* client, int clientSetting) {
+	// Do validation of the client com_physicsFps setting here.
+	// For example check if the value he set is sensible and allowed by the game settings.
+	// Return qfalse if invalid.
+
+	if (g_fixHighFPSAbuse.integer && (clientSetting >= 250 || clientSetting < 40)) {
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
+/*
+===========
+HandleClientPhysicsFps
+
+Handle com_physicsFps setting of clients.
+
+If g_fpsToggleDelay is enabled, we limit fps toggling by clients by only allowing 
+a change in the client's fps setting every X seconds (set by g_fpsToggleDelay)
+============
+*/
+void SetClientPhysicsFps(gclient_t* client, int clientSetting) {
+	client->pers.physicsFps.clientSetting = clientSetting;
+	client->pers.physicsFps.clientSettingValid = ValidateClientPhysicsFps(client,clientSetting);
+
+	if (!client->pers.physicsFps.clientSettingValid) {
+		// Tried to set an invalid setting
+		return;
+	}
+
+	if (client->pers.physicsFps.acceptedSetting == clientSetting) {
+		// Don't care, nothing changed
+		return;
+	}
+
+	if (!g_fpsToggleDelay.integer || !client->pers.physicsFps.acceptedSetting) { 
+		// Toggle limiting disabled, or no value accepted yet. Just accept.
+		AcceptClientPhysicsFps(client, clientSetting);
+		return;
+	}
+
+	if (!clientSetting) {
+		// Client has it disabled. Don't do anything.
+		return;
+	}
+
+	if ((client->pers.physicsFps.lastChange+ g_fpsToggleDelay.integer*1000) < level.time || client->pers.physicsFps.lastChange > level.time) {
+		// Change allowed.
+		// Either the minimum time delay has passed or level.time has been reset
+		AcceptClientPhysicsFps(client, clientSetting);
+	}
+}
 
 
 
@@ -1163,6 +1228,14 @@ void ClientUserinfoChanged( int clientNum ) {
 		client->pers.predictItemPickup = qfalse;
 	} else {
 		client->pers.predictItemPickup = qtrue;
+	}
+
+	// check for com_physicsFps setting
+	s = Info_ValueForKey( userinfo, "com_physicsFps" );
+	if ( atoi( s ) ) {
+		SetClientPhysicsFps(client, atoi(s));
+	} else {
+		SetClientPhysicsFps(client, 0);
 	}
 
 	// set name

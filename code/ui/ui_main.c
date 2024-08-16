@@ -4046,8 +4046,8 @@ static void UI_LoadMovies() {
 
 #ifdef JK2MV_MENU
 int demosort(void const *a, void const *b) {
-	char const **aa = (char const **)a;
-	char const **bb = (char const **)b;
+	char const *aa = *(char const **)a;
+	char const *bb = *(char const **)b;
 
 	return strcmp(*aa, *bb);
 }
@@ -4064,46 +4064,48 @@ static void UI_LoadDemos() {
 	char	*demoname;
 	int		i;
 	size_t len;
+	int compressed;
 
 	// Load "dm_15" and "dm_16" demos.
 	mvprotocol_t	protocol;
 	int		oldCount = 0;
 	uiInfo.demoCount = 0;
 
-	for ( protocol = PROTOCOL15; protocol <= PROTOCOL16; protocol++ )
-	{
-#ifndef JK2MV_MENU
-		if ( (protocol == PROTOCOL15 && jk2startversion != VERSION_1_02 && jk2startversion != VERSION_1_03)
-			|| (protocol == PROTOCOL16 && jk2startversion != VERSION_1_04)
-			|| jk2startversion == VERSION_UNDEF )
+	for (compressed = 0; compressed <= 1; compressed++) {
+		for (protocol = PROTOCOL15; protocol <= PROTOCOL16; protocol++)
 		{
-			continue;
-		}
-#endif
-		Com_sprintf(demoExt, sizeof(demoExt), "dm_%d", (int)protocol);
-
-		uiInfo.demoCount += trap_FS_GetFileList( "demos", demoExt, demolist, 4096 );
-
-		if (uiInfo.demoCount - oldCount) {
-			if (uiInfo.demoCount > MAX_DEMOS) {
-				uiInfo.demoCount = MAX_DEMOS;
-			}
-			demoname = demolist;
-			for ( i = oldCount; i < uiInfo.demoCount; i++ ) {
-				len = strlen( demoname );
 #ifndef JK2MV_MENU
-				if (!Q_stricmp(demoname +  len - strlen(demoExt), demoExt)) {
-					demoname[len-strlen(demoExt)] = '\0';
-				}
-				Q_strupr(demoname);
-#endif
-				uiInfo.demoList[i] = String_Alloc(demoname);
-				demoname += len + 1;
+			if ((protocol == PROTOCOL15 && jk2startversion != VERSION_1_02 && jk2startversion != VERSION_1_03)
+				|| (protocol == PROTOCOL16 && jk2startversion != VERSION_1_04)
+				|| jk2startversion == VERSION_UNDEF)
+			{
+				continue;
 			}
-		}
-		oldCount = uiInfo.demoCount;
-	}
+#endif
+			Com_sprintf(demoExt, sizeof(demoExt), "dm%s%d", (compressed ? "c": "_"), (int)protocol);
 
+			uiInfo.demoCount += trap_FS_GetFileList("demos", demoExt, demolist, 4096);
+
+			if (uiInfo.demoCount - oldCount) {
+				if (uiInfo.demoCount > MAX_DEMOS) {
+					uiInfo.demoCount = MAX_DEMOS;
+				}
+				demoname = demolist;
+				for (i = oldCount; i < uiInfo.demoCount; i++) {
+					len = strlen(demoname);
+#ifndef JK2MV_MENU
+					if (!Q_stricmp(demoname + len - strlen(demoExt), demoExt)) {
+						demoname[len - strlen(demoExt)] = '\0';
+					}
+					Q_strupr(demoname);
+#endif
+					uiInfo.demoList[i] = String_Alloc(demoname);
+					demoname += len + 1;
+				}
+			}
+			oldCount = uiInfo.demoCount;
+		}
+	}
 #ifdef JK2MV_MENU
 	//Sort demos by name.
 	qsort((void *)uiInfo.demoList, uiInfo.demoCount, sizeof(uiInfo.demoList[0]), demosort);

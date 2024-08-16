@@ -211,6 +211,271 @@ static void CG_VoiceTellAttacker_f( void ) {
 	trap_SendClientCommand( command );
 }
 
+
+qboolean CG_StringIsDigitsOnly(const char* buf) {
+	int i;
+	const int len = strlen(buf);
+
+	for (i = 0; i < len; ++i) {
+		if (buf[i] >= '0' && buf[i] <= '9') {
+			//its a digit 0-9, cool!
+		}
+		else {
+			return qfalse;
+		}
+	}
+
+	return qtrue;
+}
+
+
+char* stristr(const char* str, const char* charset) {
+	int i;
+
+	while (*str) {
+		for (i = 0; charset[i] && str[i]; ++i) {
+			if (toupper(charset[i]) != toupper(str[i])) {
+				break;
+			}
+		}
+		if (!charset[i]) {
+			return (char*)str;
+		}
+		str++;
+	}
+
+	return NULL;
+}
+
+int CG_FindPlayerFromString(const char* buf, int trySkip, int skipClient) {
+	int			client = -1;
+	int			k;
+
+#ifdef XDEVELOPER
+	if (x3_debug.integer) {
+		CG_Printf("CG_FindPlayerFromString '%s' %d, %d,\n", buf, trySkip, skipClient);
+	}
+#endif
+
+	if (CG_StringIsDigitsOnly(buf)) {
+
+		client = atoi(buf);
+
+		if (client >= 0 && client < MAX_CLIENTS && cgs.clientinfo[client].infoValid) {	//
+			return client;
+		}
+	}
+
+	else if (!Q_stricmp(buf, "self") || !strcmp(buf, "me")) {
+		return cg.clientNum;
+	}
+
+	// If we got here, it means our argument wasnt a (valid) clientnumber, so do substring search.
+	// NEW feature: start by doing case sensitive string compare, then case insensitive string compare, then case sensitive substring search. if this fails, do case insensitive! GENIUS!
+
+	for (k = 0; k < 8; ++k) {
+		clientInfo_t* ci;
+		int i;
+
+		for (i = 0, ci = cgs.clientinfo; i < MAX_CLIENTS; ++i, ++ci) {
+			char	nameS[256] = { 0 };
+			const char* name;
+
+			if (!ci || !ci->infoValid)
+				continue;
+
+			if (skipClient != -1) {
+
+				if (i == skipClient)
+					continue;
+			}
+
+			if ((trySkip & TRYSKIP_SPECTATORS) && ci->team == TEAM_SPECTATOR) {
+				continue;
+			} if ((trySkip & TRYSKIP_SELF) && i == cg.clientNum) {
+				continue;
+			}
+
+
+
+			if (k % 2) {
+				// for k=1,3,5,7.. we will clean the name to see if we can match then
+				Q_strncpyz(nameS, ci->name, sizeof(nameS));
+				Q_CleanStr(nameS,qtrue);
+				name = nameS;
+			}
+			else {
+				name = ci->name;
+			}
+
+			switch (k)
+			{
+			case 0:
+			case 1:
+				if (!strcmp(name, buf)) return i;			//Case sensitive string compare.
+				break;
+			case 2:
+			case 3:
+				if (!Q_stricmp(name, buf)) return i;		//Case insensitive string compare.
+				break;
+			case 4:
+			case 5:
+				if (strstr(name, buf)) return i;		//Do case sensitive substring search now.
+				break;
+			case 6:
+			case 7:
+				if (stristr(name, buf)) return i;		//case insensitive substring search now.
+				break;
+			}
+		}
+	}
+
+
+	if (trySkip > 0) {
+		return CG_FindPlayerFromString(buf, 0, skipClient);
+	}
+	else if (skipClient != -1) {
+		return CG_FindPlayerFromString(buf, trySkip, -1);
+	}
+
+	Com_Printf("Couldn't find player \"%s^7\"!\n", buf);
+
+	return -1;	// Client isnt valid
+}
+
+qboolean CG_FindClientFromConsoleArgs(int* clientvar, int tryskip, int skipclient) {
+	// Return qtrue if found match (no error); return qfalse if error! (couldn't find player)
+	char	buf[64] = { 0 };
+	int		client = -1;
+	int		i = 0;
+
+	if (trap_Argc() < 2) {
+		Com_Printf("No player name/client number specified.\n", buf);
+		return qfalse;	// Error: no argument!
+	}
+
+	trap_Args(buf, sizeof(buf));		// set buf = the argument input by the user. trap_args just copies entire argument string, i.e. all arguments, not a specific one. which means it allows spaces.
+
+	client = CG_FindPlayerFromString(buf, tryskip, skipclient);
+
+	if (client == -1)
+		return qfalse;
+
+	*clientvar = client;
+	return qtrue;
+}
+
+static const char* NOT_PLAYING_DEMO = "Not playing a demo.\n";
+
+static void CG_DemoSeekRetMode_f(void) {
+
+	if (!cg.demoPlayback) {
+		Com_Printf(NOT_PLAYING_DEMO);
+		return;
+	}
+
+	if (!(cg.demoseek & DEMOSEEK_RETMODE)) {
+		cg.demoseek |= DEMOSEEK_RETMODE;
+		Com_Printf("Demoseek Retmode activated.\n");
+	}
+	else {
+		cg.demoseek &= ~DEMOSEEK_RETMODE;
+		Com_Printf("Demoseek Retmode deactivated.\n");
+	}
+}
+
+void CG_DemoSeekToCappingOnly_f(void) {
+
+	if (!cg.demoPlayback) {
+		Com_Printf(NOT_PLAYING_DEMO);
+		return;
+	}
+
+	//Set the timescale value very high until our playerstate in a demo has the flag., used for analyzing capping demos
+	if (!(cg.demoseek & DEMOSEEK_CAPPING_ONLY)) {
+		cg.demoseek |= DEMOSEEK_CAPPING_ONLY;
+		Com_Printf("Demoseek: seeking until a capper is being followed...\n");
+
+		if (cg.demoseek & DEMOSEEK_RETMODE)
+			cg.demoseek &= ~DEMOSEEK_RETMODE;
+	}
+	else {
+		cg.demoseek &= ~DEMOSEEK_CAPPING_ONLY;
+		Com_Printf("Demoseek: No longer seeking until a capper is being followed...\n");
+	}
+}
+
+
+void CG_DemoSeekClientNum_f(void) {
+	char buf[96] = { 0 };
+	int client;
+
+	if (!cg.demoPlayback) {
+		Com_Printf(NOT_PLAYING_DEMO);
+		return;
+	}
+
+	trap_Args(buf, sizeof(buf));
+
+	if (trap_Argc() < 2 || !Q_stricmp("clear", buf) || !Q_stricmp("none", buf) || !Q_stricmp("stop", buf) || !Q_stricmp("-1", buf)) {
+		cg.demoseek &= ~DEMOSEEK_SPECIFIC_CLIENT_ONLY;
+		Com_Printf("Demoseek: No longer seeking until a certain client is being followed...\n");
+		return;
+	}
+
+	if (!CG_FindClientFromConsoleArgs(&client, TRYSKIP_SPECTATORS, -1)) return;
+
+	if (cg.demoseek & DEMOSEEK_SPECIFIC_CLIENT_ONLY && cg.demoseekClientNum == client) {
+		cg.demoseek &= ~DEMOSEEK_SPECIFIC_CLIENT_ONLY;
+		Com_Printf("Demoseek: No longer seeking until a certain client is being followed...\n");
+		return;
+	}
+
+	if (cgs.clientinfo[client].infoValid /*&& cgs.clientinfo[client].team != TEAM_SPECTATOR*/) {
+		cg.demoseek |= DEMOSEEK_SPECIFIC_CLIENT_ONLY;
+		cg.demoseekClientNum = client;
+
+		//cg.dodemofollow = qtrue;
+		//cg.demofollowvis = qfalse;
+		cg.demofollowclient = client;
+
+		Com_Printf("Now seeking demo unless (%i) %s ^7is being followed\n", client, cgs.clientinfo[client].name);
+	}
+	else {
+		Com_Printf("Client %s ^7(%i) isn't valid or is on spectator team.\n", cgs.clientinfo[client].name, client);
+	}
+}
+
+const char* timescaleString = "timescale";
+
+static void CG_DemoSeekToMapRestart_f(void) {
+
+	if (!cg.demoPlayback) {
+		Com_Printf(NOT_PLAYING_DEMO);
+		return;
+	}
+
+	if (cg.demoseek & DEMOSEEK_MAPRESTART) {
+		Com_Printf("No longer seeking until a map restart. \n");
+		cg.demoseek &= ~DEMOSEEK_MAPRESTART;
+		return;
+	}
+
+	cg.demoseek |= DEMOSEEK_MAPRESTART;
+	Com_Printf("Now seeking in demo until a map restart. \n");
+}
+
+
+static void CG_DemoSeekStop_f(void) {
+	cg.demoseekClientNum = 0;
+	cg.demoseek = 0;
+	Com_Printf("Demoseek: no longer seeking at all.\n");
+	trap_Cvar_Set(timescaleString, "1");
+}
+
+
+
+
 static void CG_NextTeamMember_f( void ) {
   CG_SelectNextPlayer();
 }
@@ -1166,6 +1431,13 @@ static consoleCommand_t	commands[] = {
 	{ "followYellowFlag", CG_FollowYellowFlag_f },
 	{ "followFastest", CG_FollowFastest_f },
 
+	{ "demoSeekRetMode", CG_DemoSeekRetMode_f},//, CMDF_X3CMD, "fast-forward until the player you're currently following is within some range of enemy capper (kinda bad)" },
+	{ "demoSeekCappingOnly", CG_DemoSeekToCappingOnly_f},//, CMDF_X3CMD, "fast-forward until the player you are following is carrying a flag" },
+	{ "demoSeekClient", CG_DemoSeekClientNum_f},//, CMDF_X3CMD, "if this player is visible, spectate him; if not, fast-forward until he is\\<client>" },
+	{ "demoSeekStop", CG_DemoSeekStop_f},//, CMDF_X3CMD, "stop any form of demo seeking" },
+	{ "demoSeekMapRestart", CG_DemoSeekToMapRestart_f},//, CMDF_X3CMD, "seek forward in demo until a map_restart happens" },
+
+
 	{ "remapShader", CG_RemapShader_f },
 	{ "listRemaps", CG_ListRemaps_f },
 
@@ -1260,6 +1532,8 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand ("vosay_team");
 	trap_AddCommand ("votell");
 	trap_AddCommand ("give");
+	trap_AddCommand ("savepos");
+	trap_AddCommand ("respos");
 	trap_AddCommand ("god");
 	trap_AddCommand ("notarget");
 	trap_AddCommand ("noclip");

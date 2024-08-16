@@ -14,6 +14,7 @@ static	centity_t	*cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
 static	int			cg_numTriggerEntities;
 static	centity_t	*cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
 
+
 /*
 ====================
 CG_BuildSolidList
@@ -63,7 +64,7 @@ CG_ClipMoveToEntities
 ====================
 */
 static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-							int skipNumber, int mask, trace_t *tr ) {
+							int skipNumber, int mask, trace_t *tr, qboolean explicitlyDeluxe ) {
 	int			i, x, zd, zu;
 	trace_t		trace;
 	entityState_t	*ent;
@@ -112,6 +113,10 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 		{ //rww - method of keeping objects from colliding in client-prediction (in case of ownership)
 			continue;
 		}
+
+		// vVv force field lag fix
+		if (x3_forcefieldPredictionDisable.integer && ent->modelindex == HI_SHIELD && ent->eType == ET_SPECIAL)
+			continue;	//forcefield lag fix
 
 		if ( ent->solid == SOLID_BMODEL ) {
 			// special value for bmodel
@@ -187,6 +192,23 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 		if ( tr->allsolid ) {
 			return;
 		}
+
+		// Do a second prediction with deluxe predicted origin.
+		if ((explicitlyDeluxe || cg_deluxePlayersPredictClipMove.integer) && cent->deluxePredict.lerpOriginClipMoveFilled) {
+			trap_CM_TransformedBoxTrace(&trace, start, end,
+				mins, maxs, cmodel, mask, cent->deluxePredict.lerpOriginClipMove, angles);
+
+			if (trace.allsolid || trace.fraction < tr->fraction) {
+				trace.entityNum = ent->number;
+				*tr = trace;
+			}
+			else if (trace.startsolid) {
+				tr->startsolid = qtrue;
+			}
+			if (tr->allsolid) {
+				return;
+			}
+		}
 	}
 }
 
@@ -202,7 +224,8 @@ void	CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec
 	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask);
 	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
 	// check all other solid models
-	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t);
+	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe);
+	cg.nextCGTraceExplicitlyDeluxe = qfalse;
 
 	*result = t;
 }
@@ -239,7 +262,7 @@ int		CG_PointContents( const vec3_t point, int passEntityNum ) {
 			continue;
 		}
 
-		contents |= trap_CM_TransformedPointContents( point, cmodel, ent->origin, ent->angles );
+		contents |= trap_CM_TransformedPointContents( point, cmodel, cent->lerpOrigin, cent->lerpAngles );
 	}
 
 	return contents;
@@ -485,7 +508,8 @@ static void CG_TouchTriggerPrediction( void ) {
 		if ( ent->eType == ET_TELEPORT_TRIGGER ) {
 			cg.hyperspace = qtrue;
 		} else if ( ent->eType == ET_PUSH_TRIGGER ) {
-			BG_TouchJumpPad( &cg.predictedPlayerState, ent );
+			//BG_TouchJumpPad( &cg.predictedPlayerState, ent );
+			BG_TouchJumpPadVelocity( &cg.predictedPlayerState, ent );
 		}
 	}
 
@@ -611,6 +635,34 @@ void CG_EntityStateToPlayerState( entityState_t *s, playerState_t *ps ) {
 	ps->generic1 = s->generic1;
 }
 
+
+void CG_COOL_API_SetPredictedMovement(playerState_t* predictedPS)
+{
+	predictedMovement_t predictedMovement;
+	if (!(coolApi & COOL_APIFEATURE_SETPREDICTEDMOVEMENT)) {
+		return;
+	}
+	predictedMovement.commandTime = predictedPS->commandTime;
+	predictedMovement.pm_type = predictedPS->pm_type;
+	predictedMovement.pm_flags = predictedPS->pm_flags;
+	predictedMovement.pm_time = predictedPS->pm_time;
+	VectorCopy(predictedPS->origin, predictedMovement.origin);
+	VectorCopy(predictedPS->velocity, predictedMovement.velocity);
+	predictedMovement.gravity = predictedPS->gravity;
+	predictedMovement.speed = predictedPS->speed;
+	predictedMovement.basespeed = predictedPS->basespeed;
+	VectorCopy(predictedPS->delta_angles, predictedMovement.delta_angles);
+	predictedMovement.groundEntityNum = predictedPS->groundEntityNum;
+	predictedMovement.movementDir = predictedPS->movementDir;
+	predictedMovement.eFlags = predictedPS->eFlags;
+	predictedMovement.clientNum = predictedPS->clientNum;
+	VectorCopy(predictedPS->viewangles, predictedMovement.viewangles);
+	predictedMovement.viewheight = predictedPS->viewheight;
+	predictedMovement.jumppad_ent = predictedPS->jumppad_ent;
+	predictedMovement.fd = predictedPS->fd;
+	trap_CG_COOL_API_SetPredictedMovement(&predictedMovement);
+}
+
 playerState_t cgSendPS[MAX_CLIENTS];
 
 /*
@@ -640,11 +692,15 @@ to ease the jerk.
 =================
 */
 void CG_PredictPlayerState( void ) {
+	static int lastSnapPsCommandTime = 0;
+	const snapshot_t* baseSnap;
 	int			cmdNum, current, i;
-	playerState_t	oldPlayerState;
+	playerState_t	oldPlayerState,preSpecialPredictPlayerState;
+	qboolean	specialPredictPhysicsFpsWasApplied;
 	qboolean	moved;
 	usercmd_t	oldestCmd;
 	usercmd_t	latestCmd;
+	usercmd_t	temporaryCmd;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
@@ -656,6 +712,11 @@ void CG_PredictPlayerState( void ) {
 		cg.validPPS = qtrue;
 		cg.predictedPlayerState = cg.snap->ps;
 	}
+
+	if (cg.snap->ps.commandTime < lastSnapPsCommandTime) {
+		cg_rampCountLastCmdTime = 0;
+	}
+	lastSnapPsCommandTime = cg.snap->ps.commandTime;
 
 	// demo playback just copies the moves
 	if ( cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer == 2 ) {
@@ -709,17 +770,38 @@ void CG_PredictPlayerState( void ) {
 	// the server time is beyond our current cg.time,
 	// because predicted player positions are going to 
 	// be ahead of everything else anyway
-	if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
-		cg.predictedPlayerState = cg.nextSnap->ps;
-		cg.physicsTime = cg.nextSnap->serverTime;
-	} else {
-		cg.predictedPlayerState = cg.snap->ps;
-		cg.physicsTime = cg.snap->serverTime;
+	if (cg_optimizedPredict.integer) {
+		// From SaberMod
+		if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
+			baseSnap = cg.nextSnap;
+		}
+		else {
+			baseSnap = cg.snap;
+		}
+
+		// don't recalculalate if base playerState hasn't changed
+		if (baseSnap->serverTime != cg.predictionBaseTime) {
+			cg.predictedPlayerState = baseSnap->ps;
+			cg.physicsTime = baseSnap->serverTime;
+			cg.predictionBaseTime = baseSnap->serverTime;
+		}
+		else {
+			// restore origin unaffected by BG_AdjustPositionForMover
+			VectorCopy(cg.predictedPlayerOrigin, cg.predictedPlayerState.origin);
+		}
+	} else{
+		if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
+			cg.predictedPlayerState = cg.nextSnap->ps;
+			cg.physicsTime = cg.nextSnap->serverTime;
+		} else {
+			cg.predictedPlayerState = cg.snap->ps;
+			cg.physicsTime = cg.snap->serverTime;
+		}
 	}
 
 	//JAPRO - Clientside - Unlock Pmove bounds - Start 
-	if ( cg_pmove_msec.integer < 2 ) {
-		trap_Cvar_Set("pmove_msec", "2");
+	if ( cg_pmove_msec.integer < 1 ) {
+		trap_Cvar_Set("pmove_msec", "1");
 	}
 	else if (cg_pmove_msec.integer > 66) {
 		trap_Cvar_Set("pmove_msec", "66");
@@ -730,11 +812,55 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.pmove_msec = cg_pmove_msec.integer;
 	cg_pmove.pmove_float = cg_pmove_float.integer;
 
+	cg_pmove.debugLevel = cg_debugMove.integer;
+	cg_pmove.isSpecialPredict = qfalse;
+
 	// run cmds
 	moved = qfalse;
-	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= current ; cmdNum++ ) {
-		// get the command
-		trap_GetUserCmd( cmdNum, &cg_pmove.cmd );
+	for ( cmdNum = MAX(current - REAL_CMD_BACKUP + 1,0) ; cmdNum <= (current+1) ; cmdNum++ ) {
+
+		if (cmdNum > current) {
+
+			preSpecialPredictPlayerState = *cg_pmove.ps;
+			specialPredictPhysicsFpsWasApplied = qtrue;
+
+			// Fucky experimental prediction to try and get com_physicsfps with low values to look smooth(er)
+			if (!cg_specialPredictPhysicsFps.integer || !cg_com_physicsFps.integer) break; // This type of prediction is disabled.
+			if (cg.time == latestCmd.serverTime) break; // Nothing to further predict
+			
+			if (cg_specialPredictPhysicsFps.integer) { 
+
+				trap_GetUserCmd(current, &cg_pmove.cmd);
+			}
+			if (cg_specialPredictPhysicsFps.integer & 1) { // Give more up to date view angles (nice on higher fps)
+				if (coolApi & COOL_APIFEATURE_GETTEMPORARYUSERCMD) {
+					trap_GetUserCmd(-1, &temporaryCmd);
+					if (temporaryCmd.serverTime > cg_pmove.cmd.serverTime && temporaryCmd.serverTime <= cg.time) {
+						VectorCopy(temporaryCmd.angles, cg_pmove.cmd.angles);
+
+						if (!(cg_specialPredictPhysicsFps.integer & 2)) { // If we aren't special predicting movement (since that's buggy-ish and leads to prediction errors), only force the view angles.
+							PM_UpdateViewAngles(cg_pmove.ps, &temporaryCmd);
+							if (cg_specialPredictPhysicsFpsAngleCmdTime.integer) {
+								// Stops camera from stuttering when colliding with surrounding objects, but 
+								// sadly now stutters around the player :(
+								// Dunno if this can be fixed. Maybe.
+								cg_pmove.ps->commandTime = temporaryCmd.serverTime;
+							}
+						}
+					}
+				}
+			}
+			
+			cg_pmove.cmd.serverTime = cg.time;
+			cg_pmove.cmd.generic_cmd = 0;
+			cg_pmove.isSpecialPredict = qtrue;
+			if (!(cg_specialPredictPhysicsFps.integer & 2)) break; // 2 means predict movement (buggy-ish)
+		}
+		else {
+
+			// get the command
+			trap_GetUserCmd(cmdNum, &cg_pmove.cmd);
+		}
 
 		if ( cg_pmove.pmove_fixed ) {
 			PM_UpdateViewAngles( cg_pmove.ps, &cg_pmove.cmd );
@@ -746,7 +872,7 @@ void CG_PredictPlayerState( void ) {
 		}
 
 		// don't do anything if the command was from a previous map_restart
-		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime ) {
+		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime && !(cg_specialPredictPhysicsFps.integer && cg_com_physicsFps.integer && latestCmd.serverTime < cg.time && cg_pmove.cmd.serverTime <= cg.time)) {
 			continue;
 		}
 
@@ -852,7 +978,16 @@ void CG_PredictPlayerState( void ) {
 
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
+
+		if (cmdNum > current) {
+			// We only want the new positions from the special predict, leave animations alone to avoid misprediction glitches.
+			cg_pmove.ps->legsAnim = preSpecialPredictPlayerState.legsAnim;
+			cg_pmove.ps->torsoAnim = preSpecialPredictPlayerState.torsoAnim;
+			cg_pmove.ps->legsAnimExecute = preSpecialPredictPlayerState.legsAnimExecute;
+		}
 	}
+
+	CG_COOL_API_SetPredictedMovement(specialPredictPhysicsFpsWasApplied ? &preSpecialPredictPlayerState: &cg.predictedPlayerState);
 
 	if ( cg_showmiss.integer > 1 ) {
 		CG_Printf( "[%i : %i] ", cg_pmove.cmd.serverTime, cg.time );
@@ -863,6 +998,11 @@ void CG_PredictPlayerState( void ) {
 			CG_Printf( "not moved\n" );
 		}
 		return;
+	}
+
+	if (cg_optimizedPredict.integer) {
+		// save origin before CG_AdjustPositionForMover
+		VectorCopy(cg.predictedPlayerState.origin, cg.predictedPlayerOrigin);
 	}
 
 	// adjust for the movement of the groundentity

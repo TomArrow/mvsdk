@@ -309,6 +309,8 @@ typedef struct {
 
 	playerState_t	*bgClients[MAX_CLIENTS];
 	int			checkDuelLoss;
+	int			requiredCmdMsec;
+	qboolean	isSpecialPredict; // not a real predict, just for image smoothing
 } pmove_t;
 
 extern	pmove_t		*pm;
@@ -797,6 +799,16 @@ typedef struct gitem_s {
 	char		*sounds;		// string of all sounds this item will use
 } gitem_t;
 
+
+// These are bit indexes that can be set on uni_clientFlags to disable cheats in the UnityMod client.
+// We reuse these for compatibility and to not reinvent the wheel
+typedef enum {
+	WALLHACK_DISABLE_ITEMS = 0,
+	WALLHACK_DISABLE_PLAYERS,
+} clientFlags_t;
+
+
+
 // included in both the game dll and the client
 extern	gitem_t	bg_itemlist[];
 extern	int		bg_numItems;
@@ -1071,6 +1083,7 @@ void	BG_EvaluateTrajectoryDelta( const trajectory_t *tr, int atTime, vec3_t resu
 void	BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t *ps );
 
 void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad );
+void	BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad);
 
 void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap );
 void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );

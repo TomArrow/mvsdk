@@ -6,6 +6,11 @@
 #include "cg_public.h"
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
 
+#define CG_EZDEMO
+
+#define TRYSKIP_SPECTATORS		1
+#define TRYSKIP_SELF			2
+//#define CG_EZDEMO
 
 // The entire cgame module is unloaded and reloaded on each level change,
 // so there is NO persistant data between levels on the client side.
@@ -169,6 +174,8 @@ typedef enum {
 	TFP_ABSORB
 } teamForcePowers_t;
 
+#define MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS 32
+
 // centity_t have a direct corespondence with gentity_t in the game, but
 // only the entityState_t is directly communicated to the cgame
 typedef struct centity_s {
@@ -179,6 +186,7 @@ typedef struct centity_s {
 
 	int				muzzleFlashTime;	// move to playerEntity?
 	int				previousEvent;
+	int				previousSaberMove;	// for cg_debugSaber
 	int				teleportFlag;
 
 	int				trailTime;		// so missile trails can handle dropped initial packets
@@ -251,6 +259,21 @@ typedef struct centity_s {
 
 	int				teamPowerEffectTime;
 	teamForcePowers_t	teamPowerType;
+
+
+	// Deluxe interpolation for other players
+	struct {
+		int				lastCommandTime;
+		int				offsets[MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS]; // For calculating average time offset to apply to players' command times for prediction
+		int				offsetsIndex;
+		int				offsetsRollingAverageTotal;
+		//vec3_t			lastPosition;
+		//vec3_t			lastAngles;
+
+		vec3_t			lerpOriginClipMove;
+		qboolean		lerpOriginClipMoveFilled;
+	} deluxePredict;
+
 } centity_t;
 
 
@@ -434,6 +457,13 @@ typedef struct {
 	qboolean	perfect;
 	int				team;
 } score_t;
+
+typedef struct {
+	int				lastMovementDirChange;
+	int				lastMovementDir;
+	int				lastSeen;
+	int				lastNotSeen;
+} afkInfo_t;
 
 // each client has an associated clientInfo_t
 // that contains media references necessary to present the
@@ -641,6 +671,11 @@ typedef struct {
 #define MAX_REWARDSTACK		10
 #define MAX_SOUNDBUFFER		20
 
+typedef enum autoFollowState_s {
+	AUTOFOLLOW_RED,
+	AUTOFOLLOW_BLUE
+} autoFollowState_t;
+
 //======================================================================
 
 // all cg.stepTime, cg.duckTime, cg.landTime, etc are set to cg.time when the action
@@ -653,6 +688,14 @@ typedef struct chatBoxItem_s
 	int		time;
 	int		lines;
 } chatBoxItem_t;
+
+// From vVv clientside
+// #define DEMOSEEK_NONE 					0x0001
+#define DEMOSEEK_MAPRESTART				1
+#define DEMOSEEK_CAPPING_ONLY			2
+#define DEMOSEEK_RETMODE				4
+#define DEMOSEEK_SPECIFIC_CLIENT_ONLY	8
+
 
 #define MAX_PREDICTED_EVENTS	16
  
@@ -704,6 +747,8 @@ typedef struct {
 	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;
+	int			predictionBaseTime; // From SaberMod: serverTime of snapshot predictedPlayerState is based on. With cg_optimizedPredict 1
+	vec3_t		predictedPlayerOrigin;	// predicted origin unaffected by BG_AdjustPositionForMover
 
 	int			eventSequence;
 	int			predictableEvents[MAX_PREDICTED_EVENTS];
@@ -754,6 +799,19 @@ typedef struct {
 	int			teamScores[2];
 	score_t		scores[MAX_CLIENTS];
 	qboolean	showScores;
+
+	// vVv
+	qboolean	pausedGame;
+	int			demofollowclient;
+	int			demoseek;		//For demo conttrolling
+	int			demoseekClientNum;		//if we only want to spec a certain client num
+
+	qboolean	refdead; 
+	int			refclient, refteam;		// not currently implemented but having the var here. important: this is the number of the client who we 'really' are following. if we're playing actively on a server, its cg.snap->ps.clientNum, however if we run a demo and forced our view to someone else, the refclient is that client. refteam is the team of that client.
+	int			lastRefClientKill;
+	// vVv end
+
+	int			lastScoresReceived;
 	qboolean	scoreBoardShowing;
 	int			scoreFadeTime;
 	char		killerName[MAX_NAME_LENGTH];
@@ -920,6 +978,14 @@ Ghoul2 Insert End
 	int					lastAutoKillTime;
 	float				predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
 
+	int					lastAutoFollowSent;
+	autoFollowState_t	autoFollowState;
+	int					lastAutoFollowStateChange;
+	int					lastTimeFollowing;
+
+	qboolean speccing;
+
+	qboolean			nextCGTraceExplicitlyDeluxe;
 } cg_t;
 
 #define MAX_TICS	14
@@ -1448,6 +1514,8 @@ typedef struct {
 	int				duelist1;
 	int				duelist2;
 	int				redflag, blueflag, yellowflag;	// flag status from configstrings
+	int				redflagLastChange, blueflagLastChange, yellowflagLastChange;	
+	int				anyFlagLastChange;	
 	int				flagStatus;
 
 	//new flagstatus stuff
@@ -1475,6 +1543,13 @@ Ghoul2 Insert End
 	vec3_t			inlineModelMidpoints[MAX_MODELS];
 
 	clientInfo_t	clientinfo[MAX_CLIENTS];
+
+	// We may wanna draw already disconnected players on the scoreboard. Remember their stuff and their disconnect times.
+	clientInfo_t	lastValidClientinfo[MAX_CLIENTS];
+	int				disconnectTime[MAX_CLIENTS];
+	score_t			lastValidScoreboardEntry[MAX_CLIENTS];
+
+	afkInfo_t		afkInfo[MAX_CLIENTS];
 
 	// teamchat width is *3 because of embedded color codes
 	char			teamChatMsgs[TEAMCHAT_HEIGHT][TEAMCHAT_WIDTH*3+1];
@@ -1515,7 +1590,10 @@ Ghoul2 Insert End
 	qboolean		CTF3ModeActive;
 	qboolean		isolateDuels;
 	qboolean		isCaMod;
+	qboolean		isNWH;
+	qboolean		isManhunt;
 
+	int				uni_clientFlags; // Anti-cheat cvar set by server owners to disable cheats in UnityMod. We use the same for compatibility
 } cgs_t;
 
 //==============================================================================
@@ -1527,6 +1605,7 @@ extern	weaponInfo_t	cg_weapons[MAX_WEAPONS];
 extern	itemInfo_t		cg_items[MAX_ITEMS];
 extern	markPoly_t		cg_markPolys[MAX_MARK_POLYS];
 
+extern  vmCvar_t		cg_wallhack;
 extern	vmCvar_t		cg_centertime;
 extern	vmCvar_t		cg_runpitch;
 extern	vmCvar_t		cg_runroll;
@@ -1536,7 +1615,9 @@ extern	vmCvar_t		cg_bobroll;
 //extern	vmCvar_t		cg_swingSpeed;
 extern	vmCvar_t		cg_shadows;
 extern	vmCvar_t		cg_drawTimer;
+extern	vmCvar_t		cg_drawRamps;
 extern	vmCvar_t		cg_drawFPS;
+extern	vmCvar_t		cg_drawFPSPhysical;
 extern	vmCvar_t		cg_drawFPSLowest;
 extern	vmCvar_t		cg_drawSnapshot;
 extern	vmCvar_t		cg_draw3dIcons;
@@ -1555,12 +1636,22 @@ extern	vmCvar_t		cg_crosshairSize;
 extern	vmCvar_t		cg_crosshairHealth;
 extern	vmCvar_t		cg_drawStatus;
 extern	vmCvar_t		cg_draw2D;
+extern	vmCvar_t		cg_drawCenterAlways;
+extern	vmCvar_t		cg_drawStrafeHelperSpeedometerAlways;
 extern	vmCvar_t		cg_animSpeed;
 extern	vmCvar_t		cg_debugAnim;
 extern	vmCvar_t		cg_debugPosition;
 extern	vmCvar_t		cg_debugEvents;
+extern	vmCvar_t		cg_debugSaber;
 extern	vmCvar_t		cg_errorDecay;
 extern	vmCvar_t		cg_nopredict;
+extern	vmCvar_t		cg_deluxePlayersPredict;
+extern	vmCvar_t		cg_deluxePlayersPredictPingCompensate;
+extern	vmCvar_t		cg_deluxePlayersPredictDebug;
+extern	vmCvar_t		cg_deluxePlayersPredictClipZ;
+extern	vmCvar_t		cg_deluxePlayersPredictClipMove;
+extern	vmCvar_t		cg_specialPredictPhysicsFps;
+extern	vmCvar_t		cg_specialPredictPhysicsFpsAngleCmdTime;
 extern	vmCvar_t		cg_noPlayerAnims;
 extern	vmCvar_t		cg_showmiss;
 extern	vmCvar_t		cg_footsteps;
@@ -1625,6 +1716,7 @@ extern	vmCvar_t		cg_strafeHelperInactiveAlpha;
 
 extern	vmCvar_t		cg_strafeHelperOffset;
 extern	vmCvar_t		cg_strafeHelper_FPS;
+extern	vmCvar_t		cg_strafeHelper_RealPhysicsLines;
 
 extern	vmCvar_t		cg_crosshairSizeScale;
 extern	vmCvar_t		cg_crosshairSaberStyleColor;
@@ -1714,6 +1806,7 @@ extern	vmCvar_t		cg_stereoSeparation;
 extern	vmCvar_t		cg_lagometer;
 extern	vmCvar_t		cg_drawEnemyInfo;
 extern	vmCvar_t		cg_synchronousClients;
+extern	vmCvar_t		cg_debugMove;
 extern	vmCvar_t		cg_teamChatTime;
 extern	vmCvar_t		cg_teamChatHeight;
 extern	vmCvar_t		cg_stats;
@@ -1723,6 +1816,7 @@ extern	vmCvar_t 		cg_buildScript;
 extern	vmCvar_t		cg_paused;
 extern	vmCvar_t		cg_blood;
 extern	vmCvar_t		cg_predictItems;
+extern	vmCvar_t		cg_optimizedPredict;
 extern	vmCvar_t		cg_deferPlayers;
 extern	vmCvar_t		cg_drawFriend;
 extern	vmCvar_t		cg_teamChatsOnly;
@@ -1758,9 +1852,45 @@ extern  vmCvar_t		cg_recordSPDemo;
 extern  vmCvar_t		cg_recordSPDemoName;
 
 extern	vmCvar_t		cg_ui_myteam;
+extern	vmCvar_t		cg_com_maxfps;
+extern	vmCvar_t		cg_com_physicsFps;
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
 extern	vmCvar_t		cg_drawPlayerSprites;
+
+extern int			cg_deadRampsCounted;
+extern int			cg_goodRampsCounted;
+extern int			cg_rampCountLastCmdTime;
+
+//snaphud start
+extern	vmCvar_t		cg_snapHud;
+extern	vmCvar_t		cg_snapHudRgba1;
+extern	vmCvar_t		cg_snapHudRgba2;
+extern	vmCvar_t		cg_snapHudY;
+extern	vmCvar_t		cg_snapHudHeight;
+extern	vmCvar_t		cg_snapHudAuto;
+extern	vmCvar_t		cg_snapHudDef;
+extern	vmCvar_t		cg_snapHudSpeed;
+extern	vmCvar_t		cg_snapHudFps;
+//snaphud end
+
+extern	vmCvar_t		cg_autoFollow;
+extern	vmCvar_t		cg_autoFollowUnfollowAFKDelay;
+extern	vmCvar_t		cg_autoFollowUnfollowAFKReDelay;
+extern	vmCvar_t		cg_autoFollowUnfollowAFKSwitchBackDelay;
+
+extern	vmCvar_t		cg_scoreboardDisconnectedPlayersDrawTime;
+extern	vmCvar_t		cg_autoScoreboardFetchInterval;
+
+// Stuff from vVv mod
+extern	vmCvar_t		x3_forcefieldPredictionDisable;
+extern	vmCvar_t		x3_screenshotAfterEachRound;
+extern	vmCvar_t		x3_demoSkipPauses;
+extern	vmCvar_t		x3_demoSeekTimescale;
+extern	vmCvar_t		x3_ezdemoPreTime;
+extern	vmCvar_t		x3_ezdemoPostTime;
+
+
 /*
 Ghoul2 Insert Start
 */
@@ -2182,6 +2312,11 @@ int			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const flo
 int			trap_R_Font_StrLenChars(const char *text);
 int			trap_R_Font_HeightPixels(const int iFontIndex, const float scale);
 void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);
+
+void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
+void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount);
+int			trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum);
+
 /*
 qboolean	trap_Language_IsAsian(void);
 qboolean	trap_Language_UsesSpaces(void);
@@ -2461,6 +2596,7 @@ Ghoul2 Insert End
 */
 
 extern int mvapi;
+extern int coolApi;
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel );
@@ -2479,6 +2615,9 @@ void trap_MVAPI_SetVersion( mvversion_t version );                   // Level: 3
 /* Level 3 */
 void trap_R_AddRefEntityToScene2( const refEntity_t *re );           // Level: 3
 void trap_MVAPI_SetVirtualScreen( float w, float h );                // Level: 3
+
+
+int CG_Cvar_Get_int(const char* cvar);
 
 #include "../api/mvapi.h"
 #include "cg_multiversion.h"

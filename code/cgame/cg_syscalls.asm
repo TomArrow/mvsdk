@@ -204,3 +204,8 @@ equ trap_MVAPI_SetVersion						-710	;MVAPI_SET_VERSION
 ; JK2MV Syscalls [CGame]
 equ trap_R_AddRefEntityToScene2					-707	;CG_MVAPI_R_ADDREFENTITYTOSCENE2
 equ trap_MVAPI_SetVirtualScreen					-708	;CG_MVAPI_SETVIRTUALSCREEN
+
+; COOL API Calls
+equ trap_CG_COOL_API_SetPredictedMovement		-1101	;CG_COOL_API_SETPREDICTEDMOVEMENT
+equ trap_CG_COOL_API_SetEzDemoBuffer			-1103	;CG_COOL_API_SET_EZDEMO_BUFFER
+equ trap_CG_COOL_API_GetTimeSinceSnapReceived	-1104	;CG_COOL_API_GETTIMESINCESNAPRECEIVED

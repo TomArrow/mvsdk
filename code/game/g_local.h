@@ -289,6 +289,18 @@ typedef struct {
 	float		lastfraggedcarrier;
 } playerTeamState_t;
 
+typedef struct {
+	int			clientSetting; // what the client hast actually set
+	qboolean	clientSettingValid; // Did the client set something that is valid in principle?
+	int			acceptedSetting; // what we have accepted as a valid setting from him 
+	int			acceptedSettingMsec; // msec representation of the allowed setting. if toggle limiting is enabled, the client packet timing must be equal to this
+	int			lastChange; // last time we have accepted a valid setting from the client
+	int			lastNotification; // last time we have notified the client about the need to set a different com_physicsFps value. We do le center print, but don't wanna spam it on every frame, just every 2.5 seconds or so to be constant on the client's screen
+	//int			wrongTimingToleratedCount; // Counts how many times the timing was wrong in a row, so we can allow a bit of leniency for people who get a lag.
+	//int			goodTimingCount;
+	//qboolean	lastTimingWasGood;
+} physicsFpsState_t;
+
 // the auto following clients don't follow a specific client
 // number, but instead follow the first two active players
 #define	FOLLOW_ACTIVE1	-1
@@ -338,6 +350,14 @@ typedef struct {
 	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
 	qboolean	botDelayed;			// Is ClientBegin still outstanding for this bot, because it was delayed?
+
+	// savepos/respos
+	vec3_t		savePosPosition;
+	vec3_t		savePosVelocity;
+	vec3_t		savePosAngle;
+	qboolean	savePosUsed;
+
+	physicsFpsState_t	physicsFps;
 } clientPersistant_t;
 
 
@@ -429,6 +449,7 @@ struct gclient_s {
 	int			forcePowerSoundDebounce; //if > level.time, don't do certain sound events again (drain sound, absorb sound, etc)
 
 	qboolean	fjDidJump;
+
 };
 
 
@@ -1058,6 +1079,7 @@ extern	vmCvar_t	g_pmove_fixed;
 extern	vmCvar_t	g_pmove_msec;
 extern	vmCvar_t	g_pmove_float;
 extern	vmCvar_t	g_fixHighFPSAbuse;
+extern	vmCvar_t	g_entHUDFields;
 extern	vmCvar_t	g_rankings;
 extern	vmCvar_t	g_enableDust;
 extern	vmCvar_t	g_enableBreath;
@@ -1065,6 +1087,8 @@ extern	vmCvar_t	g_singlePlayer;
 extern	vmCvar_t	g_dismember;
 extern	vmCvar_t	g_forceDodge;
 extern	vmCvar_t	g_timeouttospec;
+
+extern	vmCvar_t	g_fpsToggleDelay;
 
 extern	vmCvar_t	g_saberDmgVelocityScale;
 extern	vmCvar_t	g_saberDmgDelay_Idle;

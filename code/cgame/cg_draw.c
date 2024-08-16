@@ -52,6 +52,29 @@ static void CG_DrawShowPos(void); //jk2pro
 #define SPEEDOMETER_KPH				(1<<8)
 #define SPEEDOMETER_MPH				(1<<9)
 #define SPEEDOMETER_NOSPEED			(1<<10)
+
+
+#define KEY_W       0
+#define KEY_WA      1
+#define KEY_A       2
+#define KEY_AS      3
+#define KEY_S       4
+#define KEY_SD      5
+#define KEY_D       6
+#define KEY_DW      7
+#define SNAPHUD_MAXZONES	128
+
+typedef struct {
+	int			speed;
+	float		zones[SNAPHUD_MAXZONES];
+	int			count;
+	vec2_t 		m;
+	int 		fps;
+} dfsnaphud;
+dfsnaphud snappinghud;
+
+void CG_DrawSnapHud(void);
+
 //jk2pro end
 
 
@@ -1156,6 +1179,9 @@ void CG_DrawHUD(centity_t	*cent)
 			CG_DrawVerticalSpeed();
 	}
 
+	if (cg_snapHud.integer)
+		CG_DrawSnapHud();
+
 	if (cg_strafeHelper.integer)
 		CG_StrafeHelper(cent);
 
@@ -2065,19 +2091,39 @@ static float CG_DrawFPS( float y ) {
 	int		t, frameTime;
 	static const int biggestInt = ~0 ^ (1 << 31);
 	int fastest,fastestIndex;
+	int cmdNum;
+	usercmd_t cmd;
+	qboolean skipFrame;
 
-	// don't use serverTime, because that will be drifting to
-	// correct for internet lag changes, timescales, timedemos, etc
-	t = trap_Milliseconds();
+	if (!cg_drawFPSPhysical.integer) {
+		// don't use serverTime, because that will be drifting to
+		// correct for internet lag changes, timescales, timedemos, etc
+		t = trap_Milliseconds();
+	}
+	else {
+		cmdNum = trap_GetCurrentCmdNumber();
+		if (cmdNum > 0) {
+			trap_GetUserCmd(cmdNum, &cmd);
+			t = cmd.serverTime;
+			trap_GetUserCmd(cmdNum-1, &cmd);
+			previous = cmd.serverTime;
+		}
+		else { 
+			t = previous;
+		}
+	}
 	frameTime = t - previous;
+	skipFrame = (t == previous);
 	previous = t;
 
-	previousTimes[index % FPS_FRAMES] = frameTime;
-	index++; 
+	if (!skipFrame) {
+		previousTimes[index % FPS_FRAMES] = frameTime;
+		index++;
 
-	indexBottom10P++;
-	indexBottom1P++;
-	indexBottom01P++;
+		indexBottom10P++;
+		indexBottom1P++;
+		indexBottom01P++;
+	}
 
 	// Bottom 10% frames
 	if (indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
@@ -2095,23 +2141,25 @@ static float CG_DrawFPS( float y ) {
 		indexBottom10P = 1;
 	}
 	{ // Draw bottom 10% frames
-		s = va("%ifps  10%%", bottom10Pfps);
+		s = va(cg_drawFPSPhysical.integer ? "%ipfps  10%%" : "%ifps  10%%", bottom10Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
 		if(cg_drawFPSLowest.integer)
 			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
-		fastest = biggestInt;
-		fastestIndex = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
-			if (bottomTimes10P[i] < fastest) {
-				fastest = bottomTimes10P[i];
-				fastestIndex = i;
+		if (!skipFrame) {
+			fastest = biggestInt;
+			fastestIndex = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+				if (bottomTimes10P[i] < fastest) {
+					fastest = bottomTimes10P[i];
+					fastestIndex = i;
+				}
 			}
-		}
-		// Replace fastest frametime with current frametime if it is slower than fastest
-		if (frameTime > fastest) {
-			bottomTimes10P[fastestIndex] = frameTime;
+			// Replace fastest frametime with current frametime if it is slower than fastest
+			if (frameTime > fastest) {
+				bottomTimes10P[fastestIndex] = frameTime;
+			}
 		}
 	}
 
@@ -2131,23 +2179,25 @@ static float CG_DrawFPS( float y ) {
 		indexBottom1P = 1;
 	}
 	{ // Draw bottom 1% frames
-		s = va("%ifps   1%%", bottom1Pfps);
+		s = va(cg_drawFPSPhysical.integer ? "%ipfps   1%%":"%ifps   1%%", bottom1Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
 		if (cg_drawFPSLowest.integer)
 			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
-		fastest = biggestInt;
-		fastestIndex = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
-			if (bottomTimes1P[i] < fastest) {
-				fastest = bottomTimes1P[i];
-				fastestIndex = i;
+		if (!skipFrame) {
+			fastest = biggestInt;
+			fastestIndex = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+				if (bottomTimes1P[i] < fastest) {
+					fastest = bottomTimes1P[i];
+					fastestIndex = i;
+				}
 			}
-		}
-		// Replace fastest frametime with current frametime if it is slower than fastest
-		if (frameTime > fastest) {
-			bottomTimes1P[fastestIndex] = frameTime;
+			// Replace fastest frametime with current frametime if it is slower than fastest
+			if (frameTime > fastest) {
+				bottomTimes1P[fastestIndex] = frameTime;
+			}
 		}
 	}
 
@@ -2167,23 +2217,25 @@ static float CG_DrawFPS( float y ) {
 		indexBottom01P = 1;
 	}
 	{ // Draw bottom 0.1% frames
-		s = va("%ifps 0.1%%", bottom01Pfps);
+		s = va(cg_drawFPSPhysical.integer?"%ipfps 0.1%%":"%ifps 0.1%%", bottom01Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
 		if (cg_drawFPSLowest.integer)
 			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
-		fastest = biggestInt;
-		fastestIndex = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
-			if (bottomTimes01P[i] < fastest) {
-				fastest = bottomTimes01P[i];
-				fastestIndex = i;
+		if (!skipFrame) {
+			fastest = biggestInt;
+			fastestIndex = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+				if (bottomTimes01P[i] < fastest) {
+					fastest = bottomTimes01P[i];
+					fastestIndex = i;
+				}
 			}
-		}
-		// Replace fastest frametime with current frametime if it is slower than fastest
-		if (frameTime > fastest) {
-			bottomTimes01P[fastestIndex] = frameTime;
+			// Replace fastest frametime with current frametime if it is slower than fastest
+			if (frameTime > fastest) {
+				bottomTimes01P[fastestIndex] = frameTime;
+			}
 		}
 	}			
 	
@@ -2200,7 +2252,7 @@ static float CG_DrawFPS( float y ) {
 		}
 		fps = 1000 * FPS_FRAMES / total;
 
-		s = va( "%ifps", fps );
+		s = va(cg_drawFPSPhysical.integer?"%ipfps":"%ifps", fps );
 
 		//JAPRO - Clientside - Add cg_drawfps 2 - Start
 		if (jk2version != VERSION_1_02 && trap_Language_IsAsian())
@@ -2257,6 +2309,36 @@ static float CG_DrawTimer( float y ) {
 		CG_Text_Paint(cgs.screenWidth - 5 - w, y + 2, 1.0f, colorTable[CT_WHITE], s, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
 	}
 	else if (cg_drawTimer.integer == 2)
+	{
+		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
+		CG_DrawSmallString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+	}
+	else
+	{
+		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+		CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+	}
+	//JAPRO - Clientside - Show MS in map timer. - End
+
+	return y + BIGCHAR_HEIGHT + 4;
+}
+
+/*
+=================
+CG_DrawRamps
+=================
+*/
+static float CG_DrawRamps( float y ) {
+	char		*s;
+	float		w;
+	int			msec, secs, mins;
+	char		rampFixCount[20];
+
+	trap_Cvar_VariableStringBuffer("com_deadRampFixedCount", rampFixCount, sizeof(rampFixCount));
+
+	s = va("ramps: dead: %d, good:%d, fix:%d",cg_deadRampsCounted,cg_goodRampsCounted,atoi(rampFixCount));
+
+	if (cg_drawRamps.integer == 1)
 	{
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		CG_DrawSmallString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
@@ -2590,6 +2672,9 @@ static void CG_DrawUpperRight( void ) {
 	}
 	if ( cg_drawTimer.integer ) {
 		y = CG_DrawTimer( y );
+	}
+	if ( cg_drawRamps.integer ) {
+		y = CG_DrawRamps( y );
 	}
 	
 	y = CG_DrawEnemyInfo ( y );
@@ -3741,7 +3826,7 @@ static void CG_ScanForCrosshairEntity( void ) {
 	}
 
 	// if the player is in fog, don't show it
-	content = trap_CM_PointContents( trace.endpos, 0 );
+	content = CG_PointContents( trace.endpos, 0 );
 	if ( content & CONTENTS_FOG ) {
 		return;
 	}
@@ -5184,6 +5269,71 @@ static void CG_Draw2D( void ) {
 		//		Clear the fall vector to avoid that.
 		gCGHasFallVector = qfalse;
 		VectorClear( gCGFallVector );
+
+		// We still want center messages, but nothing else
+		if (cg_drawCenterAlways.integer) {
+			// don't draw center string if scoreboard is up
+			cg.scoreBoardShowing = CG_DrawScoreboard();
+			if (!cg.scoreBoardShowing) {
+				CG_DrawCenterString();
+			}
+		}
+
+		// We still want strafehelper & speedometer, but nothing else
+		if (cg_drawStrafeHelperSpeedometerAlways.integer) {
+
+			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
+
+			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE) || cg_strafeHelper.integer || (cgs.isJK2Pro && cg_raceTimer.integer > 1))
+				CG_CalculateSpeed(cent);
+
+			speedometerXPos = cg_speedometerX.value;
+
+			if (cg_hudFiles.integer)
+				speedometerXPos -= 8;
+
+			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
+				CG_Speedometer();
+
+				if ((cg_speedometer.integer & SPEEDOMETER_ACCELMETER) || (cg_strafeHelper.integer & SHELPER_ACCELMETER))
+					CG_DrawAccelMeter();
+				if (cg_speedometer.integer & SPEEDOMETER_JUMPHEIGHT)
+					CG_JumpHeight(cent);
+				if (cg_speedometer.integer & SPEEDOMETER_JUMPDISTANCE)
+					CG_JumpDistance();
+				if (cg_speedometer.integer & SPEEDOMETER_VERTICALSPEED)
+					CG_DrawVerticalSpeed();
+			}
+
+			if (cg_strafeHelper.integer)
+				CG_StrafeHelper(cent);
+
+			if (cg_strafeHelper.integer & SHELPER_CROSSHAIR) {
+				vec4_t		hcolor;
+				float		lineWidth;
+
+				if (!cg.crosshairColor[0] && !cg.crosshairColor[1] && !cg.crosshairColor[2]) { //default to white
+					hcolor[0] = 1.0f;
+					hcolor[1] = 1.0f;
+					hcolor[2] = 1.0f;
+					hcolor[3] = 1.0f;
+				}
+				else {
+					hcolor[0] = cg.crosshairColor[0];
+					hcolor[1] = cg.crosshairColor[1];
+					hcolor[2] = cg.crosshairColor[2];
+					hcolor[3] = cg.crosshairColor[3];
+				}
+
+				lineWidth = cg_strafeHelperLineWidth.value;
+				if (lineWidth < 0.25f)
+					lineWidth = 0.25f;
+				else if (lineWidth > 5)
+					lineWidth = 5;
+
+				Dzikie_CG_DrawLine(cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) - 5, cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) + 5, lineWidth, hcolor, hcolor[3], 0); //640x480, 320x240
+			}
+		}
 		return;
 	}
 
@@ -6615,14 +6765,33 @@ static void CG_StrafeHelper(centity_t *cent)
 	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.predictedPlayerState.speed;
 	const int moveStyle = PM_GetMovePhysics();
 	int moveDir;
+	int currentCmdNumber;
+	int referenceFrameTime;
+	static int referenceFrameTimeOld;
 	qboolean onGround;
 	usercmd_t cmd = { 0 };
+	usercmd_t oldcmd = { 0 };
 
 	if (moveStyle == MV_SIEGE)
 		return; //no strafe in siege
 
+
+	referenceFrameTime = cg.frametime;
+
 	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
-		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
+		currentCmdNumber = trap_GetCurrentCmdNumber();
+		trap_GetUserCmd(currentCmdNumber, &cmd);
+		if((cg_strafeHelper_RealPhysicsLines.integer || cg_com_physicsFps.integer) && currentCmdNumber > 1){
+
+			trap_GetUserCmd(currentCmdNumber-1, &oldcmd);
+			if (cmd.serverTime != oldcmd.serverTime) {
+				referenceFrameTime = cmd.serverTime - oldcmd.serverTime;
+				referenceFrameTimeOld = referenceFrameTime;
+			}
+			else {
+				referenceFrameTime = referenceFrameTimeOld;
+			}
+		}
 	}
 	else if (cg.snap) {
 		moveDir = cg.snap->ps.movementDir;
@@ -6704,8 +6873,9 @@ static void CG_StrafeHelper(centity_t *cent)
 		}
 	}
 
+
 	if (cg_strafeHelper_FPS.value < 1)
-		frametime = ((float)cg.frametime * 0.001f);
+		frametime = ((float)referenceFrameTime * 0.001f);
 	else if (cg_strafeHelper_FPS.value > 1000) // invalid
 		frametime = 1;
 	else frametime = 1 / cg_strafeHelper_FPS.value;
@@ -6753,3 +6923,171 @@ static void CG_StrafeHelper(centity_t *cent)
 		}
 	}
 }
+
+//snaphud start
+static usercmd_t CG_DirToCmd(int moveDir){
+	usercmd_t outCmd = { 0 };
+	switch(moveDir){
+		case KEY_W:
+			outCmd.forwardmove = 127;
+			outCmd.rightmove = 0;
+			break;
+		case KEY_WA:
+			outCmd.forwardmove = 127;
+			outCmd.rightmove = -127;
+			break;
+		case KEY_A:
+			outCmd.forwardmove = 0;
+			outCmd.rightmove = -127;
+			break;
+		case KEY_AS:
+			outCmd.forwardmove = -127;
+			outCmd.rightmove = -127;
+			break;
+		case KEY_S:
+			outCmd.forwardmove = -127;
+			outCmd.rightmove = 0;
+			break;
+		case KEY_SD:
+			outCmd.forwardmove = -127;
+			outCmd.rightmove = 127;
+			break;
+		case KEY_D:
+			outCmd.forwardmove = 0;
+			outCmd.rightmove = 127;
+			break;
+		case KEY_DW:
+			outCmd.forwardmove = 127;
+			outCmd.rightmove = 127;
+			break;
+		default:
+			break;
+	}
+	return outCmd;
+}
+
+void CG_FillAngleYaw(float start, float end, float viewangle, float y, float height, const float *color) {
+	float fovscale, x, width;
+	float cgamefov;
+	cgamefov = cg.refdef.fov_x;
+	fovscale = tan(DEG2RAD(cgamefov / 2));
+	x = cgs.screenWidth / 2 + tan(DEG2RAD(viewangle + start)) / fovscale*cgs.screenWidth / 2;
+	width = abs(cgs.screenWidth*(tan(DEG2RAD(viewangle + end)) - tan(DEG2RAD(viewangle + start))) / (fovscale * 2)) + 1;
+
+	trap_R_SetColor(color);
+	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 0, 0, cgs.media.whiteShader);
+	trap_R_SetColor(NULL);
+}
+
+static int QDECL sortzones(const void *a, const void *b) {
+	return *(float *)a - *(float *)b;
+}
+
+void CG_UpdateSnapHudSettings(float speed, int fps) {
+	float step;
+	snappinghud.fps = fps;
+	snappinghud.speed = speed;
+	speed /= snappinghud.fps;
+	snappinghud.count = 0;
+
+	for (step = floor(speed + 0.5) - 0.5; step>0 && snappinghud.count<SNAPHUD_MAXZONES - 2; step--) {
+		snappinghud.zones[snappinghud.count] = RAD2DEG(acos(step / speed));
+		snappinghud.count++;
+		snappinghud.zones[snappinghud.count] = RAD2DEG(asin(step / speed));
+		snappinghud.count++;
+	}
+
+	qsort(snappinghud.zones, snappinghud.count, sizeof(snappinghud.zones[0]), sortzones);
+	snappinghud.zones[snappinghud.count] = snappinghud.zones[0] + 90;
+}
+
+void CG_DrawSnapHud(void)
+{
+	int i, y, h;
+	const char *t;
+	vec2_t va = { 0 };
+	vec4_t	color[3] = { 0 };
+	float speed;
+	int fps;
+	int colorid = 0;
+	qboolean pro = qfalse;
+	struct usercmd_s inCmd = { 0 };
+
+	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback)
+	{ //real client
+		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &inCmd);
+		snappinghud.m[0] = inCmd.forwardmove;
+		snappinghud.m[1] = inCmd.rightmove;
+	}
+	else if (cg.snap)
+	{ //spectating/demo playback
+		inCmd = CG_DirToCmd(cg.snap->ps.movementDir);
+		snappinghud.m[0] = inCmd.forwardmove;
+		snappinghud.m[1] = inCmd.rightmove;
+	} else {
+		return;
+	}
+
+	if (cg.renderingThirdPerson)
+	{
+		va[YAW] = cg.predictedPlayerState.viewangles[YAW];
+	}
+	else
+	{
+		va[YAW] = cg.refdefViewAngles[YAW]; // Because in first person we can have weaponkick (I think)
+	}
+
+	if (!cg_draw2D.integer)
+		return;
+
+	speed = cg_snapHudSpeed.integer ? (float)cg_snapHudSpeed.integer : cg.predictedPlayerState.speed; //250 is base speed
+	fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : (cg_com_physicsFps.integer ? cg_com_physicsFps.integer : cg_com_maxfps.integer); //uses your maxfps setting by default
+
+	if (speed != snappinghud.speed || fps != snappinghud.fps) {//set these if not set, update if changed
+		CG_UpdateSnapHudSettings(speed, fps);
+	}
+
+	y = cg_snapHudY.value;
+	h = cg_snapHudHeight.value;
+
+	switch (cg_snapHudAuto.integer) {
+		case 0:
+			va[YAW] += cg_snapHudDef.value;
+			break;
+		case 1:
+			if ((snappinghud.m[0] != 0 && snappinghud.m[1] != 0)) {
+				va[YAW] += 45;
+			}
+			else if (snappinghud.m[0] == 0 && snappinghud.m[1] == 0) {
+				va[YAW] += cg_snapHudDef.value;
+			}
+			break;
+		case 2:
+			if (snappinghud.m[0] != 0 && snappinghud.m[1] != 0) {
+				va[YAW] += 45;
+			}
+			else if (snappinghud.m[0] == 0 && snappinghud.m[1] == 0) {
+				va[YAW] += cg_snapHudDef.value;
+			}
+			break;
+	}
+
+	t = cg_snapHudRgba2.string;
+	color[1][0] = atof(COM_Parse(&t));
+	color[1][1] = atof(COM_Parse(&t));
+	color[1][2] = atof(COM_Parse(&t));
+	color[1][3] = atof(COM_Parse(&t));
+
+	t = cg_snapHudRgba1.string;
+	color[0][0] = atof(COM_Parse(&t));
+	color[0][1] = atof(COM_Parse(&t));
+	color[0][2] = atof(COM_Parse(&t));
+	color[0][3] = atof(COM_Parse(&t));
+
+	for (i = 0; i<snappinghud.count; i++) {
+		CG_FillAngleYaw(snappinghud.zones[i], snappinghud.zones[i + 1], va[YAW], y, h, color[colorid]);
+		CG_FillAngleYaw(snappinghud.zones[i] + 90, snappinghud.zones[i + 1] + 90, va[YAW], y, h, color[colorid]);
+		colorid ^= 1;
+	}
+}
+//snaphud end

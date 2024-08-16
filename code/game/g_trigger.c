@@ -215,6 +215,15 @@ void trigger_push_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 	BG_TouchJumpPad( &other->client->ps, &self->s );
 }
 
+void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
+
+	if ( !other->client ) {
+		return;
+	}
+
+	BG_TouchJumpPadVelocity( &other->client->ps, &self->s );
+}
+
 
 /*
 =================
@@ -275,6 +284,26 @@ void SP_trigger_push( gentity_t *self ) {
 	self->touch = trigger_push_touch;
 	self->think = AimAtTarget;
 	self->nextthink = level.time + FRAMETIME;
+	trap_LinkEntity (self);
+}
+
+void SP_trigger_push_velocity( gentity_t *self ) {
+	InitTrigger (self);
+
+	// unlike other triggers, we need to send this one to the client
+	self->r.svFlags &= ~SVF_NOCLIENT;
+
+	// make sure the client precaches this sound
+	G_SoundIndex("sound/weapons/force/jump.wav");
+
+	self->s.eType = ET_PUSH_TRIGGER;
+	self->touch = trigger_push_velocity_touch;
+	self->think = AimAtTarget;
+	self->nextthink = level.time + FRAMETIME;
+	self->s.weapon = self->spawnflags;
+	self->s.angles2[0] = self->speed;
+	self->s.angles2[1] = self->speed;
+	self->s.angles2[2] = self->count;
 	trap_LinkEntity (self);
 }
 

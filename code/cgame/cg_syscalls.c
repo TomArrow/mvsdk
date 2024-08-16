@@ -245,6 +245,21 @@ void trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba,
 	syscall( CG_R_FONT_DRAWSTRING, ox, oy, text, rgba, setIndex, iCharLimit, PASSFLOAT(scale));
 }
 
+void trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS)
+{
+	syscall(CG_COOL_API_SETPREDICTEDMOVEMENT, predictedPS);
+}
+
+void trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount)
+{
+	syscall(CG_COOL_API_SET_EZDEMO_BUFFER, ezDemoBuffer, ezDemoEventSize, maxEventCount, actualEventCount);
+}
+
+int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum)
+{
+	return syscall(CG_COOL_API_GETTIMESINCESNAPRECEIVED, snapNum);
+}
+
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
 {
@@ -786,6 +801,7 @@ void trap_CG_RegisterSharedMemory_1_04(char *memory)
 {
 	syscall(CG_SET_SHARED_BUFFER, memory);
 }
+
 
 
 /* 1.02 */

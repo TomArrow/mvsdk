@@ -6,6 +6,7 @@
 // compiled for the virtual machine
 
 #include "q_shared.h"
+#include "../api/mvapi.h"
 
 /*-
  * Copyright (c) 1992, 1993
@@ -1487,6 +1488,13 @@ float logf( float a )
 float powf( float x, float y )
 {
 	return expf(logf(x) * y);
+}
+
+
+float copysignf(float number, float sign)
+{
+	uint32_t blah = ((*(uint32_t*)&number) & 0x7fffffff) | ((*(uint32_t*)&sign) & 0x80000000);
+	return *(float*)&blah;
 }
 
 #endif

@@ -1276,6 +1276,9 @@ static int CG_CalcViewValues( void ) {
 		return CG_CalcFov();
 	}
 
+	cg.refclient = ps->clientNum;
+	cg.refteam = ps->persistant[PERS_TEAM];
+
 	cg.bobcycle = ( ps->bobCycle & 128 ) >> 7;
 	cg.bobfracsin = fabs( sin( ( ps->bobCycle & 127 ) / 127.0 * M_PI ) );
 	cg.xyspeed = sqrt( ps->velocity[0] * ps->velocity[0] +
@@ -1596,6 +1599,157 @@ ID_INLINE void CG_DoAsync(void) {
 	}
 }
 
+static void CG_AutoFollow() {
+	int i;
+	vec3_t deltaVector;
+	qboolean timePassedSinceFlagStateChange;
+	qboolean currentClientAfk;
+	qboolean thisClientAfk;
+
+	if (cg.demoPlayback || cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || !cg.snap) return;
+
+	currentClientAfk = ((cgs.afkInfo[cg.snap->ps.clientNum].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer*1000) < cg.time) && ((cgs.afkInfo[cg.snap->ps.clientNum].lastNotSeen + cg_autoFollowUnfollowAFKReDelay.integer * 1000) < cg.time);
+
+	timePassedSinceFlagStateChange = (cg.time - cgs.anyFlagLastChange) > 2000;
+
+	if (cg.time > cg.lastAutoFollowSent && (cg.time - cg.lastAutoFollowSent) < 2000) return; // Limit the auto follow commands to once every 2 seconds
+
+	// In case we get stuck trying to follow someone who can't be followed... have a backup plan.
+	// Detect if we haven't followed anyone for 10 seconds.
+	if (cg.predictedPlayerState.persistant[PERS_TEAM] != TEAM_SPECTATOR || cg.lastTimeFollowing > cg.time) {
+		cg.lastTimeFollowing = cg.time;
+	}
+	if (cg.lastTimeFollowing + 10000 < cg.time && cg.lastAutoFollowSent > cg.lastTimeFollowing) {
+		// Seems we are failing to follow anybody. Press attack.
+		trap_SendConsoleCommand("+attack;wait 5;-attack");
+		cg.lastAutoFollowSent = cg.time;
+		return;
+	}
+
+	if (cg_autoFollow.integer > 1 && (cgs.gametype == GT_CTF || cgs.gametype == GT_CTY) && (cgs.redFlagCarrier || cgs.blueFlagCarrier || !timePassedSinceFlagStateChange)) {
+		int followStateChangeTimeout = 10000;
+		int followNum = -1;
+
+		// If someone has a very long flag hold, stay near him longer
+		if (cg.autoFollowState == AUTOFOLLOW_BLUE && (cg.time - cgs.blueFlagTime) > 120000
+			|| cg.autoFollowState == AUTOFOLLOW_RED && (cg.time - cgs.redFlagTime) > 120000
+			) {
+			followStateChangeTimeout = 15000;
+		} else if (cg.autoFollowState == AUTOFOLLOW_BLUE && (cg.time - cgs.blueFlagTime) > 180000
+			|| cg.autoFollowState == AUTOFOLLOW_RED && (cg.time - cgs.redFlagTime) > 180000
+			) {
+			followStateChangeTimeout = 20000;
+		}
+
+		if (cg.autoFollowState == AUTOFOLLOW_BLUE && cgs.blueflag == FLAG_ATBASE && cgs.redflag != FLAG_ATBASE
+			|| cg.autoFollowState == AUTOFOLLOW_RED && cgs.blueflag != FLAG_ATBASE && cgs.redflag == FLAG_ATBASE
+			) {
+			followStateChangeTimeout = 2000; // If the flag is at base, follow the other flag instead, or wait less time to follow the other flag
+		}
+		if (cg.time < cg.lastAutoFollowStateChange || (cg.time - cg.lastAutoFollowStateChange) > followStateChangeTimeout) {
+			if (timePassedSinceFlagStateChange) {
+				// Don't change auto follow state immediately after the flag changes its state, don't wanna hectically flip around while
+				// lots of stuff is going on.
+				cg.autoFollowState = cg.autoFollowState == AUTOFOLLOW_BLUE ? AUTOFOLLOW_RED : AUTOFOLLOW_BLUE;
+				cg.lastAutoFollowStateChange = cg.time;
+			}
+		}
+
+		if (!timePassedSinceFlagStateChange) return;
+
+		if (cg.autoFollowState == AUTOFOLLOW_RED && cgs.redFlagCarrier) {
+			int clientNum = (cgs.redFlagCarrier - cgs.clientinfo);
+			followNum = clientNum;
+			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
+				int highestRetCount = -9999999;
+				int highestRetCountClient = -1;
+
+				//if (!timePassedSinceFlagStateChange) return;
+
+				// Currently visible. Check for nearby rets
+				for (i = 0; i < MAX_CLIENTS; i++) {
+					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team == TEAM_RED && (cg_entities[i].currentValid || cg.predictedPlayerState.clientNum == i)) {
+						VectorSubtract(cg_entities[i].lerpOrigin, cg_entities[clientNum].lerpOrigin, deltaVector);
+						if (VectorLength(deltaVector) < 2000) {
+							if (cgs.lastValidScoreboardEntry[i].impressiveCount > highestRetCount) {
+								highestRetCount = cgs.lastValidScoreboardEntry[i].impressiveCount;
+								highestRetCountClient = i;
+							}
+						}
+					}
+				}
+
+				if (highestRetCountClient != -1) {
+					followNum = highestRetCountClient;
+				}
+			}
+		} else if (cg.autoFollowState == AUTOFOLLOW_BLUE && cgs.blueFlagCarrier) {
+			int clientNum = (cgs.blueFlagCarrier - cgs.clientinfo);
+			followNum = clientNum;
+			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
+				int highestRetCount = -9999999;
+				int highestRetCountClient = -1;
+
+				//if (!timePassedSinceFlagStateChange) return;
+
+				// Currently visible. Check for nearby rets
+				for (i = 0; i < MAX_CLIENTS; i++) {
+					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team == TEAM_BLUE && (cg_entities[i].currentValid || cg.predictedPlayerState.clientNum == i)) {
+						VectorSubtract(cg_entities[i].lerpOrigin, cg_entities[clientNum].lerpOrigin, deltaVector);
+						if (VectorLength(deltaVector) < 2000) {
+							if (cgs.lastValidScoreboardEntry[i].impressiveCount > highestRetCount) {
+								highestRetCount = cgs.lastValidScoreboardEntry[i].impressiveCount;
+								highestRetCountClient = i;
+							}
+						}
+					}
+				}
+
+				if (highestRetCountClient != -1) {
+					followNum = highestRetCountClient;
+				}
+			}
+		}
+		
+		if (followNum != -1 && cg.predictedPlayerState.clientNum != followNum) {
+			trap_SendClientCommand(va("follow %d", followNum));
+			cg.lastAutoFollowSent = cg.time;
+		}
+	}
+	else if(cg_autoFollow.integer > 1 || cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_SPECTATOR || (currentClientAfk && cg_autoFollowUnfollowAFKDelay.integer)) {
+		// FFA or cg_autoFollow 1. Just follow someone.
+		int highestScore = -9999999;
+		int highestScoreClient = -1;
+		for (i = 0; i < MAX_CLIENTS; i++) {
+
+			if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR) {
+
+				if (cg_autoFollowUnfollowAFKDelay.integer) {
+					if (currentClientAfk && i == cg.snap->ps.clientNum) continue;
+					thisClientAfk = ((cgs.afkInfo[i].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer * 1000) < cg.time)
+						&& (
+							(cgs.afkInfo[i].lastSeen < cgs.afkInfo[i].lastNotSeen
+							&& (cgs.afkInfo[i].lastSeen + cg_autoFollowUnfollowAFKSwitchBackDelay.integer * 1000) > cg.time) 
+						|| 
+							(cgs.afkInfo[i].lastSeen > cgs.afkInfo[i].lastNotSeen && 
+							((cgs.afkInfo[i].lastSeen - cgs.afkInfo[i].lastNotSeen) > (cg_autoFollowUnfollowAFKReDelay.integer * 1000)))
+						);
+					if (thisClientAfk) continue;
+				}
+
+				if (cgs.lastValidScoreboardEntry[i].score > highestScore) {
+					highestScore = cgs.lastValidScoreboardEntry[i].score;
+					highestScoreClient = i;
+				}
+			}
+		}
+		if (highestScoreClient != -1 && cg.predictedPlayerState.clientNum != highestScoreClient) {
+			trap_SendClientCommand(va("follow %d", highestScoreClient));
+			cg.lastAutoFollowSent = cg.time;
+		}
+	}
+}
+
 /*
 =================
 CG_DrawActiveFrame
@@ -1779,6 +1933,16 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );
+
+	// Fetch scoreboard regularly even if we are not viewing it.
+	if (cg_autoScoreboardFetchInterval.integer && !cg.demoPlayback && (cg.lastScoresReceived > cg.time || (cg.time - cg.lastScoresReceived) > (cg_autoScoreboardFetchInterval.integer * 1000)) && cg.scoresRequestTime + 2000 < cg.time) { //don't clear the scoreboard when watching a demo
+		cg.scoresRequestTime = cg.time;
+		trap_SendClientCommand("score");
+	}
+
+	if (cg_autoFollow.integer) {
+		CG_AutoFollow();
+	}
 
 	//jk2pro
 	CG_DoAsync();

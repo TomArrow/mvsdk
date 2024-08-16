@@ -83,9 +83,11 @@ double tan( double x );
 int abs( int n );
 double fabs( double x );
 double acos( double x );
+double asin( double x );
 
 float roundf(float x);
 float frexpf(float x, int *exp);
 float logf(float a);
 float powf(float x, float y);
 
+float copysignf(float x, float y);

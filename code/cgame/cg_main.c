@@ -156,14 +156,18 @@ This must be the very first function compiled into the .q3vm file
 */
 qboolean menuInJK2MV = qfalse;
 int mvapi = 0;
+int coolApi = 0;
 int Init_serverMessageNum;
 int Init_serverCommandSequence;
 int Init_clientNum;
 LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
 	int requestedMvApi = 0;
+	char coolApiFeaturesBuffer[80];
 
 	switch ( command ) {
 	case CG_INIT:
+		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		coolApi = atoi(coolApiFeaturesBuffer);
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call CG_Init if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
@@ -439,6 +443,7 @@ weaponInfo_t		cg_weapons[MAX_WEAPONS];
 itemInfo_t			cg_items[MAX_ITEMS];
 
 
+vmCvar_t    cg_wallhack;
 vmCvar_t	cg_centertime;
 vmCvar_t	cg_runpitch;
 vmCvar_t	cg_runroll;
@@ -448,7 +453,9 @@ vmCvar_t	cg_bobroll;
 //vmCvar_t	cg_swingSpeed;
 vmCvar_t	cg_shadows;
 vmCvar_t	cg_drawTimer;
+vmCvar_t	cg_drawRamps;
 vmCvar_t	cg_drawFPS;
+vmCvar_t	cg_drawFPSPhysical;
 vmCvar_t	cg_drawFPSLowest;
 vmCvar_t	cg_drawSnapshot;
 vmCvar_t	cg_draw3dIcons;
@@ -464,6 +471,8 @@ vmCvar_t	cg_crosshairX;
 vmCvar_t	cg_crosshairY;
 vmCvar_t	cg_crosshairHealth;
 vmCvar_t	cg_draw2D;
+vmCvar_t	cg_drawCenterAlways;
+vmCvar_t	cg_drawStrafeHelperSpeedometerAlways;
 vmCvar_t	cg_drawStatus;
 vmCvar_t	cg_animSpeed;
 vmCvar_t	cg_debugAnim;
@@ -472,6 +481,13 @@ vmCvar_t	cg_debugPosition;
 vmCvar_t	cg_debugEvents;
 vmCvar_t	cg_errorDecay;
 vmCvar_t	cg_nopredict;
+vmCvar_t	cg_deluxePlayersPredict;
+vmCvar_t	cg_deluxePlayersPredictPingCompensate;
+vmCvar_t	cg_deluxePlayersPredictDebug;
+vmCvar_t	cg_deluxePlayersPredictClipZ;
+vmCvar_t	cg_deluxePlayersPredictClipMove;
+vmCvar_t	cg_specialPredictPhysicsFps;
+vmCvar_t	cg_specialPredictPhysicsFpsAngleCmdTime;
 vmCvar_t	cg_noPlayerAnims;
 vmCvar_t	cg_showmiss;
 vmCvar_t	cg_footsteps;
@@ -538,6 +554,7 @@ vmCvar_t	cg_strafeHelperInactiveAlpha;
 
 vmCvar_t	cg_strafeHelperOffset;
 vmCvar_t	cg_strafeHelper_FPS;
+vmCvar_t	cg_strafeHelper_RealPhysicsLines;
 
 vmCvar_t	cg_crosshairSizeScale;
 vmCvar_t	cg_crosshairSaberStyleColor;
@@ -627,6 +644,7 @@ vmCvar_t	cg_stereoSeparation;
 vmCvar_t	cg_lagometer;
 vmCvar_t	cg_drawEnemyInfo;
 vmCvar_t	cg_synchronousClients;
+vmCvar_t	cg_debugMove;
 vmCvar_t 	cg_teamChatTime;
 vmCvar_t 	cg_teamChatHeight;
 vmCvar_t 	cg_stats;
@@ -636,6 +654,7 @@ vmCvar_t 	cg_forceMyModel;
 vmCvar_t	cg_paused;
 vmCvar_t	cg_blood;
 vmCvar_t	cg_predictItems;
+vmCvar_t	cg_optimizedPredict;
 vmCvar_t	cg_deferPlayers;
 vmCvar_t	cg_drawTeamOverlay;
 vmCvar_t	cg_teamOverlayUserinfo;
@@ -679,12 +698,47 @@ vmCvar_t	cg_recordSPDemo;
 vmCvar_t	cg_recordSPDemoName;
 
 vmCvar_t	cg_ui_myteam;
+vmCvar_t	cg_com_maxfps;
+vmCvar_t	cg_com_physicsFps;
 
 vmCvar_t	cg_mv_fixbrokenmodelsclient;
 vmCvar_t	cg_drawPlayerSprites;
 
 vmCvar_t	cg_MVSDK;
 vmCvar_t	mvsdk_cgFlags;
+
+int			cg_deadRampsCounted = 0;
+int			cg_goodRampsCounted = 0;
+int			cg_rampCountLastCmdTime = 0;
+
+//snaphud start
+vmCvar_t cg_snapHud;
+vmCvar_t cg_snapHudRgba1;
+vmCvar_t cg_snapHudRgba2;
+vmCvar_t cg_snapHudY;
+vmCvar_t cg_snapHudHeight;
+vmCvar_t cg_snapHudAuto;
+vmCvar_t cg_snapHudDef;
+vmCvar_t cg_snapHudSpeed;
+vmCvar_t cg_snapHudFps;
+//snaphud end
+
+vmCvar_t	cg_autoFollow;
+vmCvar_t	cg_autoFollowUnfollowAFKDelay;
+vmCvar_t	cg_autoFollowUnfollowAFKReDelay;
+vmCvar_t	cg_autoFollowUnfollowAFKSwitchBackDelay;
+
+vmCvar_t	cg_scoreboardDisconnectedPlayersDrawTime;
+vmCvar_t	cg_autoScoreboardFetchInterval;
+
+// Stuff from vVv mod
+vmCvar_t	x3_forcefieldPredictionDisable;
+vmCvar_t	x3_screenshotAfterEachRound;
+vmCvar_t	x3_demoSkipPauses;
+vmCvar_t	x3_demoSeekTimescale;
+vmCvar_t	x3_ezdemoPreTime;
+vmCvar_t	x3_ezdemoPostTime;
+
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -703,9 +757,13 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_stereoSeparation, "cg_stereoSeparation", "0.4", CVAR_ARCHIVE  },
 	{ &cg_shadows, "cg_shadows", "1", CVAR_ARCHIVE  },
 	{ &cg_draw2D, "cg_draw2D", "1", CVAR_ARCHIVE  },
+	{ &cg_drawCenterAlways, "cg_drawCenterAlways", "0", CVAR_ARCHIVE  },
+	{ &cg_drawStrafeHelperSpeedometerAlways, "cg_drawStrafeHelperSpeedometerAlways", "0", CVAR_ARCHIVE  },
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE  },
 	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE  },
+	{ &cg_drawRamps, "cg_drawRamps", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE  },
+	{ &cg_drawFPSPhysical, "cg_drawFPSPhysical", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPSLowest, "cg_drawFPSLowest", "1", CVAR_ARCHIVE  },
 	{ &cg_drawSnapshot, "cg_drawSnapshot", "0", CVAR_ARCHIVE  },
 	{ &cg_draw3dIcons, "cg_draw3dIcons", "0", CVAR_ARCHIVE  },
@@ -727,6 +785,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_gun_x, "cg_gunX", "0", CVAR_ARCHIVE },
 	{ &cg_gun_y, "cg_gunY", "0", CVAR_ARCHIVE },
 	{ &cg_gun_z, "cg_gunZ", "0", CVAR_ARCHIVE },
+	{ &cg_wallhack, "cg_wallhack", "0", CVAR_TEMP },
 	{ &cg_centertime, "cg_centertime", "3", CVAR_CHEAT },
 	{ &cg_runpitch, "cg_runpitch", "0", CVAR_ARCHIVE},
 	{ &cg_runroll, "cg_runroll", "0", CVAR_ARCHIVE },
@@ -736,17 +795,44 @@ static cvarTable_t cvarTable[] = { // bk001129
 	//{ &cg_swingSpeed, "cg_swingSpeed", "0.3", CVAR_CHEAT },
 	{ &cg_animSpeed, "cg_animspeed", "1", CVAR_CHEAT },
 	{ &cg_debugAnim, "cg_debuganim", "0", CVAR_CHEAT },
-	{ &cg_debugSaber, "cg_debugsaber", "0", CVAR_CHEAT },
+	{ &cg_debugSaber, "cg_debugsaber", "-1", CVAR_CHEAT },
 	{ &cg_debugPosition, "cg_debugposition", "0", CVAR_CHEAT },
 	{ &cg_debugEvents, "cg_debugevents", "0", CVAR_CHEAT },
 	{ &cg_errorDecay, "cg_errordecay", "100", 0 },
 	{ &cg_nopredict, "cg_nopredict", "0", 0 },
+	{ &cg_deluxePlayersPredict, "cg_deluxePlayersPredict", "0", CVAR_ARCHIVE },
+	{ &cg_deluxePlayersPredictPingCompensate, "cg_deluxePlayersPredictPingCompensate", "1.0", CVAR_ARCHIVE },
+	{ &cg_deluxePlayersPredictDebug, "cg_deluxePlayersPredictDebug", "0", CVAR_TEMP },
+	{ &cg_deluxePlayersPredictClipZ, "cg_deluxePlayersPredictClipZ", "1", CVAR_ARCHIVE },
+	{ &cg_deluxePlayersPredictClipMove, "cg_deluxePlayersPredictClipMove", "0", CVAR_ARCHIVE },
+	{ &cg_specialPredictPhysicsFps, "cg_specialPredictPhysicsFps", "3", CVAR_ARCHIVE },
+	{ &cg_specialPredictPhysicsFpsAngleCmdTime, "cg_specialPredictPhysicsFpsAngleCmdTime", "0", CVAR_ARCHIVE },
 	{ &cg_noPlayerAnims, "cg_noplayeranims", "0", CVAR_CHEAT },
 	{ &cg_showmiss, "cg_showmiss", "0", 0 },
 	{ &cg_footsteps, "cg_footsteps", "1", CVAR_CHEAT },
 	{ &cg_tracerChance, "cg_tracerchance", "0.4", CVAR_CHEAT },
 	{ &cg_tracerWidth, "cg_tracerwidth", "1", CVAR_CHEAT },
 	{ &cg_tracerLength, "cg_tracerlength", "100", CVAR_CHEAT },
+
+	//snaphud start
+	{ &cg_snapHud, "cg_snapHud", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba1, "cg_snapHudRgba1", "1 0 0 0.5", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba2, "cg_snapHudRgba2", "0 1 1 0.5", CVAR_ARCHIVE },
+	{ &cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE },
+	{ &cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE },
+	{ &cg_snapHudAuto, "cg_snapHudAuto", "1", CVAR_ARCHIVE },
+	{ &cg_snapHudDef, "cg_snapHudDef", "45", CVAR_ARCHIVE },
+	{ &cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudFps, "cg_snapHudFps","0", CVAR_ARCHIVE },
+	//snaphud end
+
+	{ &cg_autoFollow, "cg_autoFollow", "0", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKDelay, "cg_autoFollowUnfollowAFKDelay", "300", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKReDelay, "cg_autoFollowUnfollowAFKReDelay", "10", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKSwitchBackDelay, "cg_autoFollowUnfollowAFKSwitchBackDelay", "600", CVAR_ARCHIVE },
+
+	{ &cg_scoreboardDisconnectedPlayersDrawTime, "cg_scoreboardDisconnectedPlayersDrawTime", "30", CVAR_ARCHIVE },
+	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },
 
 	{ &cg_swingAngles, "cg_swingAngles", "1", 0 },
 
@@ -794,7 +880,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_strafeHelperInactiveAlpha, "cg_strafeHelperInactiveAlpha", "200", CVAR_ARCHIVE },
 
 	{ &cg_strafeHelperOffset, "cg_strafeHelperOffset", "75", CVAR_ARCHIVE },
-	{ &cg_strafeHelper_FPS, "cg_strafeHelper_FPS", "0", 0 },
+	{ &cg_strafeHelper_FPS, "cg_strafeHelper_FPS", "0", CVAR_ARCHIVE },
+	{ &cg_strafeHelper_RealPhysicsLines, "cg_strafeHelper_RealPhysicsLines", "1", CVAR_ARCHIVE },
 
 	{ &cg_crosshairSizeScale, "cg_crosshairSizeScale", "1", CVAR_ARCHIVE },
 	{ &cg_crosshairSaberStyleColor, "cg_crosshairSaberStyleColor", "0", CVAR_ARCHIVE },
@@ -885,6 +972,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_forceModel, "cg_forceModel", "0", CVAR_ARCHIVE  },
 	{ &cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE  },
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
+	{ &cg_optimizedPredict, "cg_optimizedPredict", "0", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
 	{ &cg_teamOverlayUserinfo, "teamoverlay", "0", CVAR_ROM | CVAR_USERINFO },
@@ -899,6 +987,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
 	{ &cg_blood, "com_blood", "1", CVAR_ARCHIVE },
 	{ &cg_synchronousClients, "g_synchronousClients", "0", 0 },	// communicated by systeminfo
+
+	{ &cg_debugMove, "cg_debugMove", "0", CVAR_TEMP },
 
 	{ &cg_redTeamName, "g_redteam", DEFAULT_REDTEAM_NAME, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_USERINFO },
 	{ &cg_blueTeamName, "g_blueteam", DEFAULT_BLUETEAM_NAME, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_USERINFO },
@@ -931,6 +1021,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_trueLightning, "cg_trueLightning", "0.0", CVAR_ARCHIVE},
 
 	{ &cg_ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
+	{ &cg_com_maxfps, "com_maxfps", "", 0},
+	{ &cg_com_physicsFps, "com_physicsFps", "", 0},
 
 	{ &cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE },
 	{ &cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE },
@@ -942,6 +1034,14 @@ static cvarTable_t cvarTable[] = { // bk001129
 Ghoul2 Insert Start
 */
 	{ &cg_debugBB, "debugBB", "0", 0},
+
+		// vVv features
+	{ &x3_forcefieldPredictionDisable, "x3_forcefieldPredictionDisable", "0", CVAR_ARCHIVE }, // Remove forcefield lag at the cost of prediction
+	{ &x3_screenshotAfterEachRound, "x3_screenshotAfterEachRound", "0", CVAR_ARCHIVE }, // take a screenshot upon end of each game, saved in screenshots/games folder
+	{ &x3_demoSkipPauses, "x3_demoSkipPauses", "0", CVAR_ARCHIVE }, // pauses (either by g_speed 0 or nt_pausegame 1) are fastforwarded through in demos
+	{ &x3_demoSeekTimescale, "x3_demoSeekTimescale", "60", CVAR_ARCHIVE }, // set the timescale used when fastforwarding with demoseek
+	{ &x3_ezdemoPreTime, "x3_ezdemoPreTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see before an event in ezdemo
+	{ &x3_ezdemoPostTime, "x3_ezdemoPostTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see after an event in ezdemo
 /*
 Ghoul2 Insert End
 */
@@ -2104,6 +2204,14 @@ void CG_StartMusic( qboolean bForceStart ) {
 	trap_S_StartBackgroundTrack( parm1, parm2, !bForceStart );
 }
 
+int CG_Cvar_Get_int(const char* cvar) {
+	char buff[64] = { 0 };
+
+	trap_Cvar_VariableStringBuffer(cvar, buff, sizeof(buff));
+
+	return atoi(buff);
+}
+
 char *CG_GetMenuBuffer(const char *filename) {
 	int	len;
 	fileHandle_t	f;
@@ -2822,7 +2930,7 @@ Will perform callbacks to make the loading info screen update.
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 	const char	*s;
 	int i = 0;
-	
+		
 	// MVSDK: Let's detect which version of the engine we are running in...
 	// In theory CG_ParseServerinfo is the perfect place for this, but as the first thing CG_Init does is trying to get shared memory we have to perform our check even before that...
 	if ( jk2version == VERSION_UNDEF )
@@ -2877,6 +2985,11 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 
 	trap_CG_RegisterSharedMemory(cg.sharedBuffer);
 
+	memset(&ezDemoBuffer, 0, sizeof(ezDemoBuffer));
+	if (coolApi & COOL_APIFEATURE_EZDEMOCGAMEBUFFER) {
+		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoBuffer.events,sizeof(ezDemoEvent_t), sizeof(ezDemoBuffer.events) / sizeof(ezDemoEvent_t),&ezDemoBuffer.eventCount);
+	}
+
 	// clear everything
 /*
 Ghoul2 Insert Start
@@ -2906,6 +3019,7 @@ Ghoul2 Insert End
 	memset( cg_weapons, 0, sizeof(cg_weapons) );
 
 	cg.clientNum = clientNum;
+	cg.refclient = clientNum;
 
 	cgs.processedSnapshotNum = serverMessageNum;
 	cgs.serverCommandSequence = serverCommandSequence;

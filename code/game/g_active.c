@@ -675,6 +675,63 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
 	return qtrue;
 }
 
+void SetClientPhysicsFps(gclient_t* client, int clientSetting);
+
+static void ClientCheckNotifyPhysicsFps(gclient_t* client) {
+	int timeToNextChange = 0;
+
+	if (!g_fpsToggleDelay.integer) {
+		return; // We are not limiting anything, don't care.
+	}
+	
+	if (client->pers.physicsFps.clientSetting && client->pers.physicsFps.clientSetting == client->pers.physicsFps.acceptedSetting) {
+
+		// All good.
+		return;
+	}
+	else if(client->pers.physicsFps.clientSettingValid) {
+
+		// If the new requested value was valid in principle, recheck if enough time has passed now to accept the client's new com_physicsFps setting.
+		if ((client->pers.physicsFps.lastChange + g_fpsToggleDelay.integer * 1000) < level.time || client->pers.physicsFps.lastChange > level.time) {
+			// Give it another try.
+			SetClientPhysicsFps(client, client->pers.physicsFps.clientSetting);
+		}
+	}
+
+	// Time to notify the client if something isn't right.
+	if ((client->pers.physicsFps.lastNotification + 1000) > level.time && client->pers.physicsFps.lastNotification < level.time) {
+		return; // Don't spam. Once every 1 second is enough to stay constant on the screen of the client
+	}
+	if (client->sess.sessionTeam == TEAM_SPECTATOR) {
+		return; // We don't enforce anything on spectators
+	}
+	if (!client->pers.physicsFps.clientSetting) {
+		trap_SendServerCommand(client - level.clients, "cp \"^2Anti-Toggle active.\n^7Please set com_physicsFps to a valid \nFPS setting you wish to play with.\n\"");
+		client->pers.physicsFps.lastNotification = level.time;
+	}
+	else if (client->pers.physicsFps.clientSetting != client->pers.physicsFps.acceptedSetting) {
+		if (!client->pers.physicsFps.clientSettingValid) {
+			// Seems like the client set an invalid value as it hasn't been accepted
+			trap_SendServerCommand(client - level.clients, "cp \"^2Anti-Toggle active.\n^1Invalid ^7com_physicsFps value detected. \nPlease set a valid value.\n\"");
+			client->pers.physicsFps.lastNotification = level.time;
+		}
+		else {
+			timeToNextChange = level.time > client->pers.physicsFps.lastChange ? g_fpsToggleDelay.integer*1000 - (level.time - client->pers.physicsFps.lastChange) : -1;
+			if (client->pers.physicsFps.acceptedSetting) {
+				trap_SendServerCommand(client - level.clients, va("cp \"^2Anti-Toggle active.\n^7Next com_physicsFps change allowed in %d seconds. \nPlease go back to %d fps.\n\"", timeToNextChange / 1000, client->pers.physicsFps.acceptedSetting));
+				client->pers.physicsFps.lastNotification = level.time;
+			}
+			else {
+				// Should never happen?
+				// Somehow we have a valid client setting, no accepted setting yet, and yet the value was not formally accepted.
+				// Only adding this for debugging in case strange things happen.
+				trap_SendServerCommand(client - level.clients, va("cp \"^2Anti-Toggle active.\n^7Anomaly detected. Please try setting com_physicsFps again \n(time to next allowed change: %d).\n\"", timeToNextChange));
+				client->pers.physicsFps.lastNotification = level.time;
+			}
+		}
+	}
+}
+
 /*
 ==================
 ClientTimerActions
@@ -1042,8 +1099,8 @@ void ClientThink_real( gentity_t *ent ) {
 		msec = 200;
 	}
 
-	if ( g_pmove_msec.integer < 8 ) {
-		trap_Cvar_Set("pmove_msec", "8");
+	if ( g_pmove_msec.integer < 1 ) {
+		trap_Cvar_Set("pmove_msec", "1");
 	}
 	else if (g_pmove_msec.integer > 33) {
 		trap_Cvar_Set("pmove_msec", "33");
@@ -1084,6 +1141,8 @@ void ClientThink_real( gentity_t *ent ) {
 	if ( !ClientInactivityTimer( client ) ) {
 		return;
 	}
+
+	ClientCheckNotifyPhysicsFps(client); // Let the client know about his need to set a different com_physicsFps value if needed
 
 	// clear the rewards if time
 	if ( level.time > client->rewardTime ) {
@@ -1323,6 +1382,10 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.animations = bgGlobalAnimations;//NULL;
 
 	pm.gametype = g_gametype.integer;
+
+	if (g_fpsToggleDelay.integer) {
+		pm.requiredCmdMsec = client->pers.physicsFps.acceptedSettingMsec ? client->pers.physicsFps.acceptedSettingMsec : -1;
+	}
 
 	VectorCopy( client->ps.origin, client->oldOrigin );
 

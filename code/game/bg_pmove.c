@@ -2327,7 +2327,6 @@ static void PM_GroundTraceMissed( void ) {
 	pml.walking = qfalse;
 }
 
-
 /*
 =============
 PM_GroundTrace
@@ -2411,6 +2410,37 @@ static void PM_GroundTrace( void ) {
 		// just hit the ground
 		if ( pm->debugLevel ) {
 			Com_Printf("%i:Land\n", c_pmove);
+		}
+
+		// Thanks to Loda for making this fix and Daggo for pointing me to it.
+		if ((trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f) && !pm->isSpecialPredict)// don't count them during special predict
+		{ // It's a ramp!
+			if (!pml.clipped)
+			{
+				// Don't actually fix this atm to not cause prediction errors.
+				//PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
+				if (pm->debugLevel) {
+					Com_Printf("%i:Dead ramp\n", c_pmove);
+				}
+#if JK2_CGAME
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime) { 
+					cg_deadRampsCounted++;
+				}
+#endif
+			}
+			else {
+				if (pm->debugLevel) {
+					Com_Printf("%i:Good ramp\n", c_pmove);
+				}
+#if JK2_CGAME
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime) { 
+					cg_goodRampsCounted++;
+				}
+#endif
+			}
+#if JK2_CGAME
+			cg_rampCountLastCmdTime = pm->ps->commandTime;
+#endif
 		}
 		
 		PM_CrashLand();
@@ -4709,7 +4739,7 @@ void PmoveSingle (pmove_t *pmove) {
 	{
 		PM_FlyMove ();
 	}
-	else
+	else if(!pm->requiredCmdMsec || pml.msec == pm->requiredCmdMsec)
 	{
 		if (pm->ps->pm_flags & PMF_TIME_WATERJUMP) {
 			PM_WaterJumpMove();
@@ -4763,7 +4793,9 @@ void PmoveSingle (pmove_t *pmove) {
 #elif JK2_CGAME
 		else if ((cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX) //could move these checks to cg_predict, and just set pm->pmove_float accordingly?
 #endif
-			&& (pml.msec <= 4 || pml.msec > 25)) { //do nothing above 250FPS or below 40FPS
+			&& (pml.msec <= 4 || pml.msec > 25)
+			|| pm->requiredCmdMsec && pm->requiredCmdMsec != pml.msec
+			) { //do nothing above 250FPS or below 40FPS, or if a certain msec timing is demanded by the game via requiredCmdMsec (used for toggle limiting via g_fpsToggleDelay)
 		}
 		else if (pm->pmove_float == 2) { //pmove_float 2: snaps vertical velocity only, so 125/142fps jumps are still the same height?
 			vec3_t oldVelocity = { 0 };

@@ -138,6 +138,7 @@ void SP_func_usable( gentity_t *ent);
 void SP_trigger_always (gentity_t *ent);
 void SP_trigger_multiple (gentity_t *ent);
 void SP_trigger_push (gentity_t *ent);
+void SP_trigger_push_velocity(gentity_t* ent);
 void SP_trigger_teleport (gentity_t *ent);
 void SP_trigger_hurt (gentity_t *ent);
 
@@ -234,6 +235,7 @@ spawn_t	spawns[] = {
 	{"trigger_always", SP_trigger_always},
 	{"trigger_multiple", SP_trigger_multiple},
 	{"trigger_push", SP_trigger_push},
+	{"trigger_push_velocity", SP_trigger_push_velocity},
 	{"trigger_teleport", SP_trigger_teleport},
 	{"trigger_hurt", SP_trigger_hurt},
 

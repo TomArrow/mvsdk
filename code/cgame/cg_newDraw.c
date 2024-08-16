@@ -274,7 +274,9 @@ clientInfo_t *CG_GetFlagCarrier(team_t flag) {
 		if (!ci || !ci->infoValid)
 			continue;
 
-		if (ci->powerups & (1 << flagBit))
+		if ((ci->powerups & (1 << flagBit) || cg_entities[w].currentValid && cg_entities[w].currentState.powerups & (1 << flagBit))
+			&& ci->team != flag && ci->team != TEAM_SPECTATOR
+			)
 			return ci;
 	}
 

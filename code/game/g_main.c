@@ -110,6 +110,7 @@ vmCvar_t	g_pmove_fixed;
 vmCvar_t	g_pmove_msec;
 vmCvar_t	g_pmove_float;
 vmCvar_t	g_fixHighFPSAbuse;
+vmCvar_t	g_entHUDFields;
 vmCvar_t	g_rankings;
 vmCvar_t	g_listEntity;
 vmCvar_t	g_redteam;
@@ -120,6 +121,8 @@ vmCvar_t	g_enableBreath;
 vmCvar_t	g_dismember;
 vmCvar_t	g_forceDodge;
 vmCvar_t	g_timeouttospec;
+
+vmCvar_t	g_fpsToggleDelay;
 
 vmCvar_t	g_saberDmgVelocityScale;
 vmCvar_t	g_saberDmgDelay_Idle;
@@ -280,6 +283,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_fixHighFPSAbuse, "g_fixHighFPSAbuse", "0", CVAR_SYSTEMINFO, 0, qtrue},
+	{ &g_entHUDFields, "g_entHUDFields", "1", CVAR_SYSTEMINFO|CVAR_ARCHIVE, 0, qtrue},
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 
@@ -287,6 +291,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_forceDodge, "g_forceDodge", "1", 0, 0, qtrue  },
 
 	{ &g_timeouttospec, "g_timeouttospec", "70", CVAR_ARCHIVE, 0, qfalse },
+
+	{ &g_fpsToggleDelay, "g_fpsToggleDelay", "0", CVAR_ARCHIVE, 0, qfalse }, // e.g. set to 300 for 300 second (5 minute) delay between allowed com_physicsFps changes by the client
 
 	{ &g_saberDmgVelocityScale, "g_saberDmgVelocityScale", "0", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberDmgDelay_Idle, "g_saberDmgDelay_Idle", "350", CVAR_ARCHIVE, 0, qtrue  },
@@ -1476,6 +1482,11 @@ void MoveClientToIntermission( gentity_t *ent ) {
 	ent->client->ps.eFlags = 0;
 	ent->s.eFlags = 0;
 	ent->s.eType = ET_GENERAL;
+	if (g_entHUDFields.integer) {
+		ent->client->ps.generic1 = ent->s.generic1 = 0;
+		ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = 0;
+		ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = 0;
+	}
 	ent->s.modelindex = 0;
 	ent->s.loopSound = 0;
 	ent->s.event = 0;
@@ -2711,6 +2722,40 @@ void G_RunFrame( int levelTime ) {
 end = trap_Milliseconds();
 
 	trap_ROFF_UpdateEntities();
+
+	if (g_entHUDFields.integer) {
+		ent = &g_entities[0];
+		//for (i = 0; i < level.num_entities; i++, ent++)
+		for (i = 0; i < MAX_CLIENTS; i++, ent++)
+		{
+			if (!ent->inuse) {
+				continue;
+			}
+			else if (ent->client) {
+
+				if (ent->s.eType == ET_GENERAL || ent->client->ps.pm_type == PM_INTERMISSION) {
+					// We are in an intermission and players have been turned into ET_GENERAL. 
+					// Set all this stuff to 0 so we don't get glowing bodies
+					ent->client->ps.generic1 = ent->s.generic1 = 0;
+					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = 0;
+					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = 0;
+				}
+				else {
+					//ent->client->ps.fd.forcePowersActive &= ~(31 << 20);
+					//ent->client->ps.fd.forcePowersActive |= ((dimensionNum & 31) << 20);
+					// trickedentindex3: armor (8 bits), health (8 bits)
+					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = ((MIN(127,MAX(-128,ent->client->ps.stats[STAT_HEALTH])) & 0xff) << 8) | (MIN(127, MAX(-128, ent->client->ps.stats[STAT_ARMOR])) & 0xff);
+					// trickedentindex4: force power (7 bits), current weapon ammo (7 bits), saberdrawanimlevel (2 bits)
+					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = (ent->client->ps.fd.saberDrawAnimLevel & 3) << 14 | ((MAX(0, MIN(127, ent->client->ps.ammo[weaponData[ent->client->ps.weapon].ammoIndex])) & 127) << 7) | (MAX(0, MIN(127, ent->client->ps.fd.forcePower)) & 127);
+					// generic1: seeker, forcefield, bacta, sentry in inventory (1 bit each), mine count (4 bits)
+					ent->client->ps.generic1 = ent->s.generic1 = ((MAX(0, MIN(15, ent->client->ps.ammo[weaponData[WP_TRIP_MINE].ammoIndex])) & 15) << 4) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN))) << 3) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC))) << 2) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD))) << 1) | (!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)));
+				}
+			}
+
+			//ent->s.forcePowersActive &= ~(31 << 20);
+			//ent->s.forcePowersActive |= ((dimensionNum & 31) << 20);
+		}
+	}
 
 start = trap_Milliseconds();
 	// perform final fixups on the players

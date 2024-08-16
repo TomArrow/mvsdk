@@ -39,6 +39,52 @@ static int CG_ValidOrder(const char *p) {
 	return -1;
 }
 
+static int pauseGameStartedTime = 0;	//for keeping track of duration of pauses.
+
+static void CG_PauseGameStarted(void) {
+	cg.pausedGame = qtrue;
+	pauseGameStartedTime = cg.time;
+}
+
+static void CG_PauseGameEnded(void) {
+	int dur = cg.time - pauseGameStartedTime;
+	int i, k;
+
+	if (!cg.pausedGame) return; // Demo might start inside a pause.
+	cg.pausedGame = qfalse;
+
+	if (!pauseGameStartedTime)
+		return;	//???
+
+#ifdef DEVELOPER
+	CG_Printf("^5Pause ended after %s\n", CG_MsToString(dur, 1));
+#endif
+
+	//Subtract pause time from flag hold time.
+	if (cgs.redFlagTime) {
+		cgs.redFlagTime += dur;
+
+		if (cgs.redFlagTime > cg.time)
+			cgs.redFlagTime = cg.time;
+	}
+	if (cgs.blueFlagTime) {
+		cgs.blueFlagTime += dur;
+
+		if (cgs.blueFlagTime > cg.time)
+			cgs.blueFlagTime = cg.time;
+	}
+
+
+	/*for (i = 0; i < TEAM_NUM_TEAMS; ++i) {
+		for (k = 0; k < 2; ++k) {
+			if (cg.flagtaken[i][k].active)
+				cg.flagtaken[i][k].takenTime += dur;
+		}
+	}*/
+
+	pauseGameStartedTime = 0;
+}
+
 /*
 =================
 CG_ParseScores
@@ -91,8 +137,11 @@ static void CG_ParseScores( void ) {
 		cgs.clientinfo[ cg.scores[i].client ].powerups = powerups;
 
 		cg.scores[i].team = cgs.clientinfo[cg.scores[i].client].team;
+
+		cgs.lastValidScoreboardEntry[cg.scores[i].client] = cg.scores[i];
 	}
 	CG_SetScoreSelection(NULL);
+	cg.lastScoresReceived = cg.time;
 }
 
 /*
@@ -132,6 +181,46 @@ and whenever the server updates any serverinfo flagged cvars
 static void CG_ParseServerinfo( const char *info ) {
 	char	*mapname;
 	char	*v = NULL;
+	char serverCheatDisableCvar[16]; // uni_clientFlags
+	char nwhCompareSmall[4]; // nwh
+	char nwhCompareBig[4]; // NWH
+	char manhuntCompare[8]; // Manhunt
+
+	serverCheatDisableCvar[0] = 'u';
+	serverCheatDisableCvar[1] = 'n';
+	serverCheatDisableCvar[2] = 'i';
+	serverCheatDisableCvar[3] = '_';
+	serverCheatDisableCvar[4] = 'c';
+	serverCheatDisableCvar[5] = 'l';
+	serverCheatDisableCvar[6] = 'i';
+	serverCheatDisableCvar[7] = 'e';
+	serverCheatDisableCvar[8] = 'n';
+	serverCheatDisableCvar[9] = 't';
+	serverCheatDisableCvar[10] = 'F';
+	serverCheatDisableCvar[11] = 'l';
+	serverCheatDisableCvar[12] = 'a';
+	serverCheatDisableCvar[13] = 'g';
+	serverCheatDisableCvar[14] = 's';
+	serverCheatDisableCvar[15] = '\0';
+
+	nwhCompareSmall[0] = 'n';
+	nwhCompareSmall[1] = 'w';
+	nwhCompareSmall[2] = 'h';
+	nwhCompareSmall[3] = '\0';
+
+	nwhCompareBig[0] = 'N';
+	nwhCompareBig[1] = 'W';
+	nwhCompareBig[2] = 'H';
+	nwhCompareBig[3] = '\0';
+
+	manhuntCompare[0] = 'M';
+	manhuntCompare[1] = 'a';
+	manhuntCompare[2] = 'n';
+	manhuntCompare[3] = 'h';
+	manhuntCompare[4] = 'u';
+	manhuntCompare[5] = 'n';
+	manhuntCompare[6] = 't';
+	manhuntCompare[7] = '\0';
 
 	v = Info_ValueForKey( info, "g_gametype" );
 	cgs.gametype = atoi( v );
@@ -149,6 +238,10 @@ static void CG_ParseServerinfo( const char *info ) {
 	cgs.timelimit = atoi( Info_ValueForKey( info, "timelimit" ) );
 	cgs.maxclients = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 
+	cgs.uni_clientFlags = atoi(Info_ValueForKey(info, serverCheatDisableCvar));
+
+	cgs.isNWH = qfalse;
+	cgs.isManhunt = qfalse;
 	cgs.isJK2Pro = qfalse;
 	cgs.isCTFMod = qfalse;
 	cgs.CTF3ModeActive = qfalse;
@@ -159,6 +252,9 @@ static void CG_ParseServerinfo( const char *info ) {
 	if (v)
 	{
 		Q_CleanStr(v, qtrue);
+		if (strstr(v, nwhCompareBig) || strstr(v, nwhCompareSmall)) {
+			cgs.isNWH = qtrue;
+		}
 		if (!Q_stricmpn(v, "jk2pro", 5)) {
 			cgs.isJK2Pro = qtrue;
 			cgs.isolateDuels = qtrue;
@@ -190,6 +286,29 @@ static void CG_ParseServerinfo( const char *info ) {
 			cgs.isolateDuels = qtrue;
 			cgs.isCaMod = qfalse;
 		}
+	}
+
+	v = Info_ValueForKey(info, "version");
+	if (v)
+	{
+		Q_CleanStr(v, qtrue);
+		if (strstr(v, nwhCompareSmall) || strstr(v, nwhCompareBig)) {
+			cgs.isNWH = qtrue;
+		}
+	}
+
+	v = Info_ValueForKey(info, "sv_hostname");
+	if (v)
+	{
+		Q_CleanStr(v, qtrue);
+		if (strstr(v, manhuntCompare)) { // Stupid, ugly and gay.
+			cgs.isManhunt = qtrue;
+		}
+	}
+
+	if (cgs.isManhunt || cgs.isNWH) {
+		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_PLAYERS);
+		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_ITEMS);
 	}
 
 	mapname = Info_ValueForKey( info, "mapname" );
@@ -413,16 +532,33 @@ void CG_UpdateConfigString( int num, qboolean init )
 			break;
 		case CS_INTERMISSION:
 			cg.intermissionStarted = atoi( str );
+			if (cg.intermissionStarted && !cg.demoPlayback) { // Game just ended. Intermission will come soon. Request scoreboard data NOW before players disconnect/ragequit.
+				trap_SendClientCommand("score");
+				cg.scoresRequestTime = cg.time;
+			}
 			break;
 		case CS_FLAGSTATUS:
 			if( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY ) {
 				// format is rb where its red/blue, 0 is at base, 1 is taken, 2 is dropped
+				int redFlagOld = cgs.redflag;
+				int blueFlagOld = cgs.blueflag;
+				int yellowFlagOld = cgs.yellowflag;
+				cgs.anyFlagLastChange = cg.time;
 				cgs.redflag = str[0] - '0';
 				cgs.blueflag = str[1] - '0';
 				if (cgs.isCTFMod && cgs.CTF3ModeActive)
 					cgs.yellowflag = str[2] - '0';
 				else
 					cgs.yellowflag = 0;
+				if (redFlagOld != cgs.redflag) {
+					cgs.redflagLastChange = cg.time;
+				}
+				if (blueFlagOld != cgs.blueflag) {
+					cgs.blueflagLastChange = cg.time;
+				}
+				if (yellowFlagOld != cgs.yellowflag) {
+					cgs.yellowflagLastChange = cg.time;
+				}
 			}
 			break;
 		case CS_SHADERSTATE:
@@ -598,6 +734,11 @@ require a reload of all the media
 ===============
 */
 static void CG_MapRestart( void ) {
+	if (cg.demoseek & DEMOSEEK_MAPRESTART) {
+		Com_Printf("Map restart happened - no longer seeking until map restart. \n");
+		cg.demoseek &= ~DEMOSEEK_MAPRESTART;
+	}
+
 	if ( cg_showmiss.integer ) {
 		CG_Printf( "CG_MapRestart\n" );
 	}
@@ -1185,6 +1326,29 @@ void CG_CheckSVStripEdRef(char *buf, const char *str)
 	buf[b] = 0;
 }
 
+qboolean CG_StringStartsWith(const char* str, const char* check) {
+
+	if (!str || !check)
+		return qfalse;
+
+	while (*str) {
+		if (*check == 0)
+			//reached end of check, so yes
+			return qtrue;
+
+		if (*str != *check)
+			return qfalse;
+
+		++str;
+		++check;
+	}
+
+	if (*check == 0)
+		return qtrue;	// strings are equal
+
+	return qfalse;
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1311,6 +1475,37 @@ static void CG_ServerCommand( void ) {
 	if ( !strcmp( cmd, "print" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
 		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
+
+		if (CG_StringStartsWith(strEd, "Server: nt_PauseGame changed to ")) {
+
+			const int val = strEd[strlen("Server: nt_PauseGame changed to") + 1] - '0';
+
+			if (val > 0)
+				CG_PauseGameStarted();
+			else
+				CG_PauseGameEnded();
+
+		}
+		else if (CG_StringStartsWith(strEd, "Server: g_speed changed to ")) {
+
+			const int val = strEd[strlen("Server: g_speed changed to") + 1] - '0';
+
+			if (val == 0)
+				CG_PauseGameStarted();
+			else if (val == 250)
+				CG_PauseGameEnded();
+
+		}
+		else if (CG_StringStartsWith(strEd, "Game was paused.")) {
+
+			CG_PauseGameStarted();
+		}
+		
+		else if (CG_StringStartsWith(strEd, "Pause ended after")) {
+
+			CG_PauseGameEnded();
+		}
+
 		CG_Printf( "%s", strEd );
 		return;
 	}
