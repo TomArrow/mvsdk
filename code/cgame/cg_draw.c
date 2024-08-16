@@ -5264,8 +5264,8 @@ static void CG_Draw2D( void ) {
 	if ( cg_draw2D.integer == 0 ) {
 		//Raz: If you fall to your death, then turn cg_draw2D off, your camera will not update
 		//		Clear the fall vector to avoid that.
-		gCGHasFallVector = qfalse;
-		VectorClear( gCGFallVector );
+		cg.hasFallVector = qfalse;
+		VectorClear( cg.fallVector );
 
 		// We still want center messages, but nothing else
 		if (cg_drawCenterAlways.integer) {

@@ -1027,7 +1027,7 @@ float frexpf( float x, int *exp )
     *binary32 = (*binary32 & ~( 0xffU << 23)) | (0x7eU << 23);
     return x;
 }
-
+/*
 static const float expftable[192] = {
 	1.401298464e-45f, 5.605193857e-45f, 1.401298464e-44f, 3.783505854e-44f,
 	1.008934894e-43f, 2.746544990e-43f, 7.468920815e-43f, 2.030481475e-42f,
@@ -1116,14 +1116,14 @@ float expf( float x )
 
 	// 11 was found experimentally, gives 1 ULP error in [0, 1] range
 
-	/*
-	sum = 1.0f;
-	float power = 1.0f;
-	for (i = 1; i < 12; i++) {
-		power *= fracX / i;
-		sum += power;
-	}
-	*/
+	
+	//sum = 1.0f;
+	//float power = 1.0f;
+	//for (i = 1; i < 12; i++) {
+	//	power *= fracX / i;
+	//	sum += power;
+	//}
+	
 
 	// optimization: Horner's scheme for computing Taylor series
 
@@ -1138,55 +1138,8 @@ float expf( float x )
 
     return result;
 }
+*/
 
-float logf( float a )
-{
-	// using floats for intermediate results decreases accuracy by few
-	// ULP due to accumulation of round-off errors. acceptable
-	float	sum;
-	float	z;
-	float	fraca;
-	int		log2a;
-	int		i;
-
-	assert(a > 0.0f);
-
-	fraca = frexpf(a, &log2a);
-
-	// fraca is in [0.5, 1) range. Decent for Taylor series but we can
-	// make it [sqrt(0.5), sqrt(2))
-
-	if (fraca < (float) M_SQRT1_2) {
-		fraca *= 2.0f;
-		log2a--;
-	}
-
-	// a = fraca * 2^log2a
-	// ln(a) = ln(fraca) + log2a * ln(2)
-
-	// Taylor series around 1
-	z = fraca - 1.0f;
-	sum = 0.0f;
-
-	// 16 iterations gives 1 ULP precision in our range. if log2a != 0
-	// it can be lower, but disregard this
-
-	/*
-	double power = - 1.0;
-
-	for (i = 1; i < 17; i++) {
-		power *= - z;
-		sum += power / i;
-	}
-	*/
-
-	// optimization: Horner's scheme for computing Taylor series
-
-	for (i = 16; i > 0; i--)
-		sum = z * ((1.0f / i) - sum);
-
-	return sum + log2a * (float) M_LN2;
-}
 
 float powf( float x, float y )
 {
@@ -1550,29 +1503,6 @@ float roundf( float x ) {
 	return (int) x;
 }
 
-// returns value of x normalized to [0.5, 1) range
-// stores exponent in exp
-float frexpf( float x, int *exp )
-{
-    unsigned int * const binary32 = (unsigned int *) &x;
-    int exponent;
-
-	// assume "floating point little endian". Can be dynamically
-	// tested but engine does the same assumption in Q_rsqrt
-    exponent = (*binary32 >> 23) & 0xff;
-    // NaN or +-infinity
-    if (exponent == 0xff)
-		return x;
-
-    // IEEE-754 exponent is biased by 127 and mantissa is normalized
-    // to [1, 2) range
-    *exp = exponent - 127 + 1;
-
-    // set exponent to -1 (0x7e) to get value in [0.5, 1) range
-    *binary32 = (*binary32 & ~( 0xffU << 23)) | (0x7eU << 23);
-    return x;
-}
-
 float expf( float x )
 {
     qboolean	invert = qfalse;
@@ -1669,11 +1599,6 @@ float logf( float a )
 		sum = z * ((1.0f / i) - sum);
 
 	return sum + log2a * (float) M_LN2;
-}
-
-float powf( float x, float y )
-{
-	return expf(logf(x) * y);
 }
 
 
