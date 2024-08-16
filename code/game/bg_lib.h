@@ -28,6 +28,9 @@ typedef char *  va_list;
 #define LONG_MAX      2147483647L   /* maximum (signed) long value */
 #define ULONG_MAX     0xffffffffUL  /* maximum unsigned long value */
 
+#define FLT_MAX        3.40282346638528859812e+38f
+#define HUGE_VALF      (FLT_MAX + 1.0f)
+
 #define M_E            2.7182818284590452354   /* e */
 #define M_LOG2E        1.4426950408889634074   /* log_2 e */
 #define M_LOG10E       0.43429448190325182765  /* log_10 e */
@@ -84,6 +87,11 @@ int abs( int n );
 double fabs( double x );
 double acos( double x );
 double asin( double x );
+float roundf( float x );
+float frexpf( float x, int *exp );
+float expf( float x );
+float logf( float a );
+float powf( float x, float y );
 
 float roundf(float x);
 float frexpf(float x, int *exp);

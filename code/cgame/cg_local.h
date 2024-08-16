@@ -175,6 +175,24 @@ typedef enum {
 } teamForcePowers_t;
 
 #define MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS 32
+typedef struct
+{
+	// Actual trail stuff
+	int		inAction;	// controls whether should we even consider starting one
+	int		duration;	// how long each trail seg stays in existence
+	int		lastTime;	// time a saber segement was last stored
+	vec3_t	base;
+	vec3_t	tip;
+
+	vec3_t	dualbase;
+	vec3_t	dualtip;
+
+	// Marks stuff
+	qboolean	haveOldPos[2];
+	vec3_t		oldPos[2];
+	vec3_t		oldNormal[2];	// store this in case we don't have a connect-the-dots situation
+							//	..then we'll need the normal to project a mark blob onto the impact point
+} saberTrail_t;
 
 // centity_t have a direct corespondence with gentity_t in the game, but
 // only the entityState_t is directly communicated to the cgame
@@ -274,6 +292,8 @@ typedef struct centity_s {
 		qboolean		lerpOriginClipMoveFilled;
 	} deluxePredict;
 
+	saberTrail_t	saberTrail;
+	int				saberHitWallSoundDebounceTime;
 } centity_t;
 
 
@@ -472,25 +492,6 @@ typedef struct {
 // usually as a result of a userinfo (name, model, etc) change
 #define	MAX_CUSTOM_SOUNDS	32
 
-typedef struct 
-{
-	// Actual trail stuff
-	int		inAction;	// controls whether should we even consider starting one
-	int		duration;	// how long each trail seg stays in existence
-	int		lastTime;	// time a saber segement was last stored
-	vec3_t	base;
-	vec3_t	tip;
-
-	vec3_t	dualbase;
-	vec3_t	dualtip;
-
-	// Marks stuff
-	qboolean	haveOldPos[2];
-	vec3_t		oldPos[2];		
-	vec3_t		oldNormal[2];	// store this in case we don't have a connect-the-dots situation
-							//	..then we'll need the normal to project a mark blob onto the impact point
-} saberTrail_t;
-
 typedef struct {
 	qboolean		infoValid;
 
@@ -570,9 +571,6 @@ typedef struct {
 	qhandle_t		bolt_motion;
 
 	qhandle_t		bolt_llumbar;
-
-	saberTrail_t	saberTrail;
-	int				saberHitWallSoundDebounceTime;
 
 	sfxHandle_t		sounds[MAX_CUSTOM_SOUNDS];
 
@@ -719,6 +717,7 @@ typedef struct {
 //	snapshot_t	activeSnapshots[2];
 
 	float		frameInterpolation;	// (float)( cg.time - cg.frame->serverTime ) / (cg.nextFrame->serverTime - cg.frame->serverTime)
+	float		predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
 
 	qboolean	mMapChange;
 
@@ -783,6 +782,9 @@ typedef struct {
 	float		constrictValue;
 	float		constrict;
 	int			doConstrict;
+
+	qboolean	hasFallVector;
+	vec3_t		fallVector;
 
 	// zoom key
 	qboolean	zoomed;
@@ -1539,8 +1541,8 @@ Ghoul2 Insert Start
 Ghoul2 Insert End
 */
 	int				numInlineModels;
-	qhandle_t		inlineDrawModel[MAX_MODELS];
-	vec3_t			inlineModelMidpoints[MAX_MODELS];
+	qhandle_t		*inlineDrawModel;
+	vec3_t			*inlineModelMidpoints;
 
 	clientInfo_t	clientinfo[MAX_CLIENTS];
 
@@ -1891,6 +1893,11 @@ extern	vmCvar_t		x3_ezdemoPreTime;
 extern	vmCvar_t		x3_ezdemoPostTime;
 
 
+extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
+extern	vmCvar_t		cg_drawPlayerSprites;
+extern	vmCvar_t		cg_developer;
+extern	vmCvar_t		cg_smoothCamera;
+extern	vmCvar_t		cg_smoothCameraFPS;
 /*
 Ghoul2 Insert Start
 */
@@ -1908,6 +1915,7 @@ const char *CG_ConfigString( int index );
 const char *CG_Argv( int arg );
 
 void QDECL CG_Printf( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
+void QDECL CG_DPrintf( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
 Q_NORETURN void QDECL CG_Error( const char *msg, ... ) __attribute__ ((format (printf, 1, 2)));
 
 void QDECL CG_SendConsoleCommand(const char *fmt, ...);
@@ -2611,6 +2619,9 @@ int trap_MVAPI_GetVersion( void );                                   // Level: 1
 int trap_FS_FLock( fileHandle_t h, flockCmd_t cmd, qboolean nb );    // Level: 3
 void trap_MVAPI_SetVersion( mvversion_t version );                   // Level: 3
 
+/* Level 4 */
+void trap_MVAPI_Print( int flags, const char *string );              // Level: 4
+
 // JK2MV Syscalls [CGame]
 /* Level 3 */
 void trap_R_AddRefEntityToScene2( const refEntity_t *re );           // Level: 3
@@ -2618,6 +2629,8 @@ void trap_MVAPI_SetVirtualScreen( float w, float h );                // Level: 3
 
 
 int CG_Cvar_Get_int(const char* cvar);
+/* Level 4 */
+qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );         // Level: 4
 
 #include "../api/mvapi.h"
 #include "cg_multiversion.h"

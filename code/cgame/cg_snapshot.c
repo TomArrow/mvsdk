@@ -64,9 +64,16 @@ static void CG_TransitionEntity( centity_t *cent ) {
 		cent->currentState.legsAnim = MV_MapAnimation104( cent->currentState.legsAnim );
 	}
 
-	// modelindex is transfered as signed 8-bit integer (byte), making submodels > 127 appear as negative numbers on the client.
-	// As a negative modelindex isn't valid for SOLID_BMODEL and leads to errors let's try to compensate the modelindex here if the server tells us to.
-	if ( cent->currentState.solid == SOLID_BMODEL && cent->currentState.modelindex < 0 && cgs.mvsdk_svFlags & MVSDK_SVFLAG_SUBMODEL_WORKAROUND ) cent->currentState.modelindex += 256;
+	if ( cent->currentState.solid == SOLID_BMODEL && cent->currentState.time2 && cgs.mvsdk_svFlags & MVSDK_SVFLAG_SUBMODEL_TIME2 )
+	{ // If the entity is a SOLID_BMODEL, has a time2 value != 0 and the server has set the MVSDK_SVFLAGS_SUBMODEL_TIME2 value use the time2 value as modelindex,
+	  // because the server wants to use a modelindex that doesn't fit into 8 bits.
+		cent->currentState.modelindex = cent->currentState.time2;
+	}
+	else if ( cent->currentState.solid == SOLID_BMODEL && cent->currentState.modelindex < 0 && cgs.mvsdk_svFlags & MVSDK_SVFLAG_SUBMODEL_WORKAROUND )
+	{ // modelindex is transfered as signed 8-bit integer (byte), making submodels > 127 appear as negative numbers on the client.
+	  // As a negative modelindex isn't valid for SOLID_BMODEL and leads to errors let's try to compensate the modelindex here if the server tells us to.
+		cent->currentState.modelindex += 256;
+	}
 
 	// reset if the entity wasn't in the last frame or was teleported
 	if ( !cent->interpolate ) {
@@ -135,9 +142,16 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 			cent->currentState.legsAnim = MV_MapAnimation104( cent->currentState.legsAnim );
 		}
 
-		// modelindex is transfered as signed 8-bit integer (byte), making submodels > 127 appear as negative numbers on the client.
-		// As a negative modelindex isn't valid for SOLID_BMODEL and leads to errors let's try to compensate the modelindex here if the server tells us to.
-		if ( cent->currentState.solid == SOLID_BMODEL && cent->currentState.modelindex < 0 && cgs.mvsdk_svFlags & MVSDK_SVFLAG_SUBMODEL_WORKAROUND ) cent->currentState.modelindex += 256;
+		if ( cent->currentState.solid == SOLID_BMODEL && cent->currentState.time2 && cgs.mvsdk_svFlags & MVSDK_SVFLAG_SUBMODEL_TIME2 )
+		{ // If the entity is a SOLID_BMODEL, has a time2 value != 0 and the server has set the MVSDK_SVFLAGS_SUBMODEL_TIME2 value use the time2 value as modelindex,
+		  // because the server wants to use a modelindex that doesn't fit into 8 bits.
+			cent->currentState.modelindex = cent->currentState.time2;
+		}
+		else if ( cent->currentState.solid == SOLID_BMODEL && cent->currentState.modelindex < 0 && cgs.mvsdk_svFlags & MVSDK_SVFLAG_SUBMODEL_WORKAROUND )
+		{ // modelindex is transfered as signed 8-bit integer (byte), making submodels > 127 appear as negative numbers on the client.
+		  // As a negative modelindex isn't valid for SOLID_BMODEL and leads to errors let's try to compensate the modelindex here if the server tells us to.
+			cent->currentState.modelindex += 256;
+		}
 
 		CG_ResetEntity( cent );
 
@@ -213,6 +227,8 @@ static void CG_TransitionSnapshot( void ) {
 		// teleporting checks are irrespective of prediction
 		if ( ( ps->eFlags ^ ops->eFlags ) & EF_TELEPORT_BIT ) {
 			cg.thisFrameTeleport = qtrue;	// will be cleared by prediction code
+		} else if ( cg_smoothCamera.integer ) {
+			cg.thisFrameTeleport = qfalse;  // clear for interpolated player with new camera damping
 		}
 		else if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
 			cg.thisFrameTeleport = qfalse; // clear for interpolated player with new camera damping
@@ -848,22 +864,19 @@ void CG_ProcessSnapshots( void ) {
 	}
 
 	// set cg.frameInterpolation
-	if (cg.nextSnap) {
+	if ( cg.nextSnap ) {
 		int		delta;
 
 		delta = (cg.nextSnap->serverTime - cg.snap->serverTime);
-		if (delta == 0) {
+		if ( delta == 0 ) {
 			cg.frameInterpolation = 0;
+		} else {
+			cg.frameInterpolation = (float)( cg.time - cg.snap->serverTime ) / delta;
 		}
-		else {
-			cg.frameInterpolation = (float)(cg.time - cg.snap->serverTime) / delta;
-		}
-	}
-	else {
-		cg.frameInterpolation = 0;	// actually, it should never be used, because
+	} else {
+		cg.frameInterpolation = 0;	// actually, it should never be used, because 
 									// no entities should be marked as interpolating
 		cg.predictedTimeFrac = 0.0f;
 	}
-
 }
 

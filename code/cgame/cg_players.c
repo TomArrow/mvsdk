@@ -247,8 +247,10 @@ retryModel:
 	{
 		modelName = "kyle";
 		skinName = "default";
-		Com_Printf("WARNING: Attempted to load an unsupported multiplayer model! (bad or missing bone, or missing animation sequence)\n");
-
+		// MVSDK: Suppress warning message for other client models
+		if (cg_developer.integer || clientNum == -1 || clientNum == cg.clientNum) {
+			Com_Printf("WARNING: Attempted to load an unsupported multiplayer model! (bad or missing bone, or missing animation sequence)\n");
+		}
 		badModel = qfalse;
 		retriedAlready = qtrue;
 	}
@@ -440,6 +442,8 @@ retryModel:
 
 		ci->bolt_lhand = trap_G2API_AddBolt(ci->ghoul2Model, 0, "*l_hand");
 		ci->bolt_head = trap_G2API_AddBolt(ci->ghoul2Model, 0, "*head_top");
+		// Try ceyebrow as fallback, because some jka models might not have a *head_top
+		if ( ci->bolt_head == -1 ) ci->bolt_head = trap_G2API_AddBolt(ci->ghoul2Model, 0, "ceyebrow");
 
 		ci->bolt_motion = trap_G2API_AddBolt(ci->ghoul2Model, 0, "Motion");
 
@@ -4323,6 +4327,7 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	float dualLen = 0.7;
 
 	saberEnt = &cg_entities[cent->currentState.saberEntityNum];
+	saberTrail = &cent->saberTrail;
 
 	if (/*cg.snap->ps.clientNum == cent->currentState.number && */
 		cgs.clientinfo[ cent->currentState.clientNum ].team != TEAM_SPECTATOR &&
@@ -4387,13 +4392,6 @@ Ghoul2 Insert Start
 		VectorCopy(axis_[0], saberEnt->currentState.apos.trBase);
 	}
 
-	client = &cgs.clientinfo[cent->currentState.number];
-
-	if (!client)
-	{ //something horrible has apparently happened
-		return;
-	}
-
 	if (cent->currentState.bolt2)
 	{
 		VectorMA( org_, saberLen*dualLen, axis_[0], end );
@@ -4419,16 +4417,29 @@ Ghoul2 Insert Start
 		VectorAdd( otherEnd, otherDir, otherEnd );
 	}
 
-	scolor = cgs.clientinfo[cent->currentState.number].icolor1;
+	if ( VALID_INDEX(cgs.clientinfo, cent->currentState.number) )
+	{ // basejk used the number value for this even though the clientNum would make more sense, so try the number first
+		client = &cgs.clientinfo[cent->currentState.number];
+	}
+	else if ( VALID_INDEX(cgs.clientinfo, cent->currentState.clientNum) )
+	{ // if the number wasn't within the clientinfo range try the clientNum
+		client = &cgs.clientinfo[cent->currentState.clientNum];
+	}
+	else
+	{ // if neither were within the range fallback to just rendering a blade
+		goto CheckTrail;
+	}
+
+	scolor = client->icolor1;
 
 	if (cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
 	{
-		if (cgs.clientinfo[cent->currentState.number].team == TEAM_RED &&
+		if (client->team == TEAM_RED &&
 			(cg_saberTeamColors.integer || scolor == SABER_BLUE))
 		{
 			scolor = SABER_RED;
 		}
-		else if (cgs.clientinfo[cent->currentState.number].team == TEAM_BLUE &&
+		else if (client->team == TEAM_BLUE &&
 			(cg_saberTeamColors.integer || scolor == SABER_RED))
 		{
 			scolor = SABER_BLUE;
@@ -4480,22 +4491,23 @@ Ghoul2 Insert Start
 			}
 			// All I need is a bool to mark whether I have a previous point to work with.
 			//....come up with something better..
-			if ( client->saberTrail.haveOldPos[i] )
+			if ( saberTrail->haveOldPos[i] )
 			{
 				if ( trace.entityNum == ENTITYNUM_WORLD )
 				{//only put marks on architecture
-					float markDistance = Distance(client->saberTrail.oldPos[i], trace.endpos);
+					float markDistance = Distance(saberTrail->oldPos[i], trace.endpos);
 					if (markDistance > 8.0f)
 					{ // Let's do some cool burn/glowing mark bits!!!
-						CG_CreateSaberMarks(client->saberTrail.oldPos[i], trace.endpos, trace.plane.normal);
+						CG_CreateSaberMarks(saberTrail->oldPos[i], trace.endpos, trace.plane.normal);
 						// stash point so we can connect-the-dots later
-						VectorCopy(trace.endpos, client->saberTrail.oldPos[i]);
-						VectorCopy(trace.plane.normal, client->saberTrail.oldNormal[i]);
-					}				
+						VectorCopy(trace.endpos, saberTrail->oldPos[i]);
+						VectorCopy(trace.plane.normal, saberTrail->oldNormal[i]);
+					}
+
 					//make a sound
-					if ( cg.time - client->saberHitWallSoundDebounceTime >= 100 )
+					if ( cg.time - cent->saberHitWallSoundDebounceTime >= 100 )
 					{//ugh, need to have a real sound debouncer... or do this game-side
-						client->saberHitWallSoundDebounceTime = cg.time;
+						cent->saberHitWallSoundDebounceTime = cg.time;
 						trap_S_StartSound ( trace.endpos, -1, CHAN_WEAPON, trap_S_RegisterSound( va("sound/weapons/saber/saberhitwall%i", Q_irand(1, 3)) ) );
 					}
 				}
@@ -4503,12 +4515,12 @@ Ghoul2 Insert Start
 			else
 			{
 				// if we impact next frame, we'll mark a slash mark
-				client->saberTrail.haveOldPos[i] = qtrue;
-//				CG_ImpactMark( cgs.media.rivetMarkShader, client->saberTrail.oldPos[i], client->saberTrail.oldNormal[i],
+				saberTrail->haveOldPos[i] = qtrue;
+//				CG_ImpactMark( cgs.media.rivetMarkShader, saberTrail->oldPos[i], saberTrail->oldNormal[i],
 //						0.0f, 1.0f, 1.0f, 1.0f, 1.0f, qfalse, 1.1f, qfalse );
 				// stash point so we can connect-the-dots later
-				VectorCopy(trace.endpos, client->saberTrail.oldPos[i]);
-				VectorCopy(trace.plane.normal, client->saberTrail.oldNormal[i]);
+				VectorCopy(trace.endpos, saberTrail->oldPos[i]);
+				VectorCopy(trace.plane.normal, saberTrail->oldNormal[i]);
 			}
 		}
 		else
@@ -4518,17 +4530,17 @@ Ghoul2 Insert Start
 				break;
 			}
 
-			if ( client->saberTrail.haveOldPos[i] )
+			if ( saberTrail->haveOldPos[i] )
 			{
 				// Hmmm, no impact this frame, but we have an old point
 				// Let's put the mark there, we should use an endcap mark to close the line, but we 
 				//	can probably just get away with a round mark
-//					CG_ImpactMark( cgs.media.rivetMarkShader, client->saberTrail.oldPos[i], client->saberTrail.oldNormal[i],
+//					CG_ImpactMark( cgs.media.rivetMarkShader, saberTrail->oldPos[i], saberTrail->oldNormal[i],
 //							0.0f, 1.0f, 1.0f, 1.0f, 1.0f, qfalse, 1.1f, qfalse );
 			}
 
 			// we aren't impacting, so turn off our mark tracking mechanism
-			client->saberTrail.haveOldPos[i] = qfalse;
+			saberTrail->haveOldPos[i] = qfalse;
 		}
 	}
 
@@ -4563,8 +4575,6 @@ CheckTrail:
 	{ //don't do the trail in this case
 		goto JustDoIt;
 	}
-
-	saberTrail = &client->saberTrail;
 
 	// if we happen to be timescaled or running in a high framerate situation, we don't want to flood
 	//	the system with very small trail slices...but perhaps doing it by distance would yield better results?
@@ -4730,7 +4740,7 @@ CheckTrail:
 
 JustDoIt:
 
-	if (client && cent->currentState.bolt2)
+	if (cent->currentState.bolt2)
 	{
 		float sideOneLen = saberLen*dualLen;
 		float sideTwoLen = dualSaberLen*dualLen;

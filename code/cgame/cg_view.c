@@ -231,6 +231,8 @@ static struct {
 	float		lastYaw;
 	int			lastTime;
 	float		lastTimeFrac;
+	qboolean	smooth;			// Use new, smooth camera damping
+	int			fps;			// FPS to emulate with smooth camera damping
 } cam;
 
 /*
@@ -246,9 +248,6 @@ cg.refdefViewAngles
 
 ===============
 */
-  
-extern qboolean gCGHasFallVector;
-extern vec3_t gCGFallVector;
 
 /*
 ===============
@@ -267,9 +266,9 @@ static void CG_CalcIdealThirdPersonViewTarget(void)
 	}
 	*/
 	// Initialize IdealTarget
-	if (gCGHasFallVector)
+	if (cg.hasFallVector)
 	{
-		VectorCopy(gCGFallVector, cam.focus);
+		VectorCopy(cg.fallVector, cam.focus);
 	}
 	else
 	{
@@ -288,6 +287,7 @@ static void CG_CalcIdealThirdPersonViewTarget(void)
 	cam.target.ideal[2] += cg_thirdPersonVertOffset.value;
 	//VectorMA(cam.focus, cg_thirdPersonVertOffset.value, cameraup, cam.target.ideal);
 }
+
 
 /*
 ===============
@@ -330,7 +330,7 @@ static void CG_CalcIdealThirdPersonViewLocation(void)
 static void CG_ResetThirdPersonViewDamp(void)
 {
 	trace_t trace;
-	vec3_t target;
+	vec3_t	target;
 
 	// Set the cam.target.ideal
 	CG_CalcIdealThirdPersonViewTarget();
@@ -346,7 +346,7 @@ static void CG_ResetThirdPersonViewDamp(void)
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
 	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, cam.target.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
-	if (trace.fraction <= 1.0)
+	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
 	}
@@ -355,7 +355,7 @@ static void CG_ResetThirdPersonViewDamp(void)
 
 	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
 	CG_Trace(&trace, target, cameramins, cameramaxs, cam.loc.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
-	if (trace.fraction <= 1.0)
+	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.loc.ideal, cam.loc.damp);
 	}
@@ -373,7 +373,7 @@ static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
 	// freeze when player is lagging
 	VectorCopy(pos->ideal, pos->prevIdeal);
 
-	if ( cg_cameraFPS.integer >= CAMERA_MIN_FPS )
+	if ( cam.smooth )
 	{
 		// FPS-independent solution thanks to semigroup property:
 		// If t1, t2 are positive time periods, dampfactor and
@@ -388,7 +388,7 @@ static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
 		float	codampfactor;
 
 		// dtime is relative: physics time / emulated time
-		dtime *= cg_cameraFPS.value / 1000.0f;
+		dtime *= cam.fps / 1000.0f;
 		invdtime = 1.0f / dtime;
 		timeadjfactor = powf(dampfactor, dtime);
 		// shift = (idealDelta / dtime) * (dampfactor / (1 - dampfactor))
@@ -428,7 +428,7 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 	}
 	else if (cg_thirdPersonTargetDamp.value > 0.0f)
 	{	
-		dampfactor = 1.0 - cg_thirdPersonTargetDamp.value;	// We must exponent the amount LEFT rather than the amount bled off
+		dampfactor = 1.0f - cg_thirdPersonTargetDamp.value;	// We must exponent the amount LEFT rather than the amount bled off
 		CG_DampPosition(&cam.target, dampfactor, dtime);
 	}
 	else
@@ -441,7 +441,8 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
 	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, target, cg.snap->ps.clientNum, MASK_CAMERACLIP);
-	if (trace.fraction < 1.0)
+
+	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
 	}
@@ -461,14 +462,16 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 
 	// Set the cam.loc.ideal
 	CG_CalcIdealThirdPersonViewLocation();
-	
+
 	// First thing we do is calculate the appropriate damping factor for the camera.
 	dampfactor = 0.0f;
 	if (cg_thirdPersonCameraDamp.value != 0.0f)
 	{
 		// Note that the camera pitch has already been capped off to 89.
 		// The higher the pitch, the larger the factor, so as you look up, it damps a lot less.
-		pitch /= 115.0f;
+
+		pitch /= 115.0f; // jk2mv has 89.0 here but im keeping it since ppl liked how eternal feels?
+
 		dampfactor = (1.0f - cg_thirdPersonCameraDamp.value) * pitch * pitch;
 
 		dampfactor += cg_thirdPersonCameraDamp.value;
@@ -480,7 +483,7 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 		}
 	}
 
-	if (dampfactor>=1.0||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
+	if (dampfactor>=1.0f||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
 	{	// No damping.
 		VectorClear(cam.loc.damp);
 		cam.lastTime = 0;
@@ -502,9 +505,9 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
 	CG_Trace(&trace, target, cameramins, cameramaxs, location, cg.snap->ps.clientNum, MASK_CAMERACLIP);
 
-	if (trace.fraction < 1.0)
+	if (trace.fraction < 1.0f)
 	{
-		VectorSubtract(trace.endpos, cam.loc.ideal, cam.loc.damp);
+		VectorSubtract( trace.endpos, cam.loc.ideal, cam.loc.damp );
 
 		//FIXME: when the trace hits movers, it gets very very jaggy... ?
 		/*
@@ -519,7 +522,7 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 				{
 					vec3_t	diff;
 					VectorSubtract( cent->lerpOrigin, gent->currentOrigin, diff );
-					VectorAdd( cameraCurLoc, diff, cameraCurLoc );
+					VectorAdd( location, diff, location );
 				}
 			}
 		}
@@ -533,8 +536,6 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 }
 
 
-
-
 /*
 ===============`
 CG_OffsetThirdPersonView
@@ -542,17 +543,27 @@ CG_OffsetThirdPersonView
 ===============
 */
 extern vmCvar_t cg_thirdPersonHorzOffset;
+
 static void CG_OffsetThirdPersonView( void )
 {
 	vec3_t	target, location, diff;
 	vec3_t	focusAngles;
 	float	dtime;
 
+	// Establish camera damping parameters
+	if (cg_smoothCameraFPS.integer) {
+		cam.fps = cg_smoothCameraFPS.integer;
+	} else if (cg_com_maxfps.integer) {
+		cam.fps = MIN(cg_com_maxfps.integer, 1000);
+	}
+
+	cam.smooth = cg_smoothCamera.integer && (cam.fps >= CAMERA_MIN_FPS);
+
 	// Set camera viewing direction.
 	VectorCopy( cg.refdefViewAngles, focusAngles );
 
 	// if dead, look at killer
-	if ( cg.snap->ps.stats[STAT_HEALTH] <= 0 ) 
+	if ( cg.snap->ps.stats[STAT_HEALTH] <= 0 )
 	{
 		focusAngles[YAW] = cg.snap->ps.stats[STAT_DEAD_YAW];
 	}
@@ -580,7 +591,7 @@ static void CG_OffsetThirdPersonView( void )
 	dtime += cg.predictedTimeFrac - cam.lastTimeFrac;
 
 	// If we went back in time for some reason, or if we just started, reset the sample.
-	if (cam.lastTime == 0 || dtime < 0.0f || cg.thisFrameTeleport )
+	if (cam.lastTime == 0 || dtime < 0.0f || cg.thisFrameTeleport)
 	{
 		CG_ResetThirdPersonViewDamp();
 	}
@@ -590,12 +601,12 @@ static void CG_OffsetThirdPersonView( void )
 		float	deltayaw;
 		float	pitch;
 
-		deltayaw = Q_fabs(focusAngles[YAW] - cam.lastYaw);
+		deltayaw = fabs(focusAngles[YAW] - cam.lastYaw);
 		if (deltayaw > 180.0f)
 		{ // Normalize this angle so that it is between 0 and 180.
 			deltayaw = Q_fabs(deltayaw - 360.0f);
 		}
-		if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
+		if (cam.smooth) {
 			if ( dtime > 0.0f ) {
 				stiffFactor = deltayaw / dtime;
 			} else {
@@ -1268,8 +1279,23 @@ static int CG_CalcViewValues( void ) {
 		}
 	}
 */
+
+	// fall vector
+	if ( ps->fallingToDeath ) {
+		if ( !cg.hasFallVector ) {
+			VectorCopy(cg.snap->ps.origin, cg.fallVector);
+			cg.hasFallVector = qtrue;
+		}
+	} else {
+		if ( cg.hasFallVector ) {
+			cg.hasFallVector = qfalse;
+			VectorClear(cg.fallVector);
+		}
+	}
+
 	// intermission view
 	if ( ps->pm_type == PM_INTERMISSION ) {
+		cg.hasFallVector = qfalse;
 		VectorCopy( ps->origin, cg.refdef.vieworg );
 		VectorCopy( ps->viewangles, cg.refdefViewAngles );
 		AnglesToAxis( cg.refdefViewAngles, cg.refdef.viewaxis );
@@ -1369,7 +1395,7 @@ void CG_AddBufferedSound( sfxHandle_t sfx ) {
 	cg.soundBuffer[cg.soundBufferIn] = sfx;
 	cg.soundBufferIn = (cg.soundBufferIn + 1) % MAX_SOUNDBUFFER;
 	if (cg.soundBufferIn == cg.soundBufferOut) {
-		cg.soundBufferOut++;
+		cg.soundBufferOut = (cg.soundBufferOut + 1) % MAX_SOUNDBUFFER;
 	}
 }
 
@@ -1891,7 +1917,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// if there are any entities flagged as sound trackers and attached to other entities, update their sound pos
 	CG_UpdateSoundTrackers();
 
-	if (gCGHasFallVector)
+	if (cg.hasFallVector)
 	{
 		vec3_t lookAng;
 
@@ -1899,7 +1925,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		VectorNormalize(lookAng);
 		vectoangles(lookAng, lookAng);
 
-		VectorCopy(gCGFallVector, cg.refdef.vieworg);
+		VectorCopy(cg.fallVector, cg.refdef.vieworg);
 		AnglesToAxis(lookAng, cg.refdef.viewaxis);
 	}
 

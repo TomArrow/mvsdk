@@ -115,6 +115,12 @@
 #define idarm32	0
 #endif
 
+#if defined(ARCH_ARM64) && !defined(Q3_VM)
+#define idarm64	1
+#else
+#define idarm64	0
+#endif
+
 #if (defined(powerc) || defined(powerpc) || defined(ppc) || defined(__ppc) || defined(__ppc__)) && !defined(Q3_VM)
 #define idppc	1
 #else
@@ -168,6 +174,9 @@
 #define Q_LITTLE_ENDIAN
 #elif idarm32
 #define ARCH_STRING "arm"
+#define Q_LITTLE_ENDIAN
+#elif idarm64
+#define ARCH_STRING "arm64"
 #define Q_LITTLE_ENDIAN
 #elif idppc
 #define ARCH_STRING "ppc"
@@ -279,10 +288,13 @@ typedef enum {
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define CTRL(a)		((a)-'a'+1)
+#define PAD(base, alignment)	(((base)+(alignment)-1) & ~((alignment)-1))
+#define PADLEN(base, alignment)	(PAD((base), (alignment)) - (base))
+#define PADP(base, alignment)	((void *) PAD((intptr_t) (base), (alignment)))
 
 #define ARRAY_LEN(x) (sizeof (x) / sizeof( *(x) ))
 
-#define VALID_INDEX(x,y) (y >= 0 && y < ARRAY_LEN(x))
+#define VALID_INDEX(x,y) (y >= 0 && (size_t)y < ARRAY_LEN(x))
 
 //
 // these aren't needed by any of the VMs.  put in another header?
