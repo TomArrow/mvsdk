@@ -610,7 +610,6 @@ vmCvar_t	cg_saberTeamColors;
 
 vmCvar_t	cg_widescreen;
 vmCvar_t	cg_fovAspectAdjust;
-//vmCvar_t	cg_cameraFPS;
 
 vmCvar_t	cg_fovViewmodel;
 vmCvar_t	cg_fovViewmodelAdjust;
@@ -941,7 +940,6 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_widescreen, "cg_widescreen", "1", CVAR_ARCHIVE },
 	{ &cg_fovAspectAdjust, "cg_fovAspectAdjust", "1", CVAR_ARCHIVE },
-	//{ &cg_cameraFPS, "cg_cameraFPS", "125", CVAR_ARCHIVE },
 
 	{ &cg_fovViewmodel, "cg_fovViewmodel", "80", CVAR_ARCHIVE },
 	{ &cg_fovViewmodelAdjust, "cg_fovViewmodelAdjust", "1", CVAR_ARCHIVE },

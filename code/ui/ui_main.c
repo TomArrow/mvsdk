@@ -4052,7 +4052,7 @@ int demosort(void const *a, void const *b) {
 	char const *aa = *(char const **)a;
 	char const *bb = *(char const **)b;
 
-	return strcmp(*aa, *bb);
+	return strcmp(aa, bb);
 }
 #endif
 
