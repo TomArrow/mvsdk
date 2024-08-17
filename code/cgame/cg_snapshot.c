@@ -230,9 +230,6 @@ static void CG_TransitionSnapshot( void ) {
 		} else if ( cg_smoothCamera.integer ) {
 			cg.thisFrameTeleport = qfalse;  // clear for interpolated player with new camera damping
 		}
-		else if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
-			cg.thisFrameTeleport = qfalse; // clear for interpolated player with new camera damping
-		}
 
 		// if we are not doing client side movement prediction for any
 		// reason, then the client events and view changes will be issued now
