@@ -309,7 +309,7 @@ int MVAPI_Init(int apilevel)
 	mvapi = apilevel;
 	if ( mvapi > MV_APILEVEL ) mvapi = MV_APILEVEL;
 
-	CG_Printf("CGame: Using MVAPI level %i (%i supported).\n", mvapi, apilevel);
+	if (cg_developer.integer) CG_Printf("CGame: Using MVAPI level %i (%i supported).\n", mvapi, apilevel);
 	return mvapi;
 }
 
@@ -479,6 +479,7 @@ vmCvar_t	cg_drawCenterAlways;
 vmCvar_t	cg_drawStrafeHelperSpeedometerAlways;
 vmCvar_t	cg_drawStatus;
 vmCvar_t	cg_animSpeed;
+vmCvar_t	cg_developer;
 vmCvar_t	cg_debugAnim;
 vmCvar_t	cg_debugSaber;
 vmCvar_t	cg_debugPosition;
@@ -801,6 +802,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_bobroll, "cg_bobroll", "0", CVAR_ARCHIVE },
 	//{ &cg_swingSpeed, "cg_swingSpeed", "0.3", CVAR_CHEAT },
 	{ &cg_animSpeed, "cg_animspeed", "1", CVAR_CHEAT },
+	{ &cg_developer, "developer", "0", 0 },
 	{ &cg_debugAnim, "cg_debuganim", "0", CVAR_CHEAT },
 	{ &cg_debugSaber, "cg_debugsaber", "-1", CVAR_CHEAT },
 	{ &cg_debugPosition, "cg_debugposition", "0", CVAR_CHEAT },
@@ -1852,9 +1854,9 @@ static void CG_RegisterGraphics( void ) {
 
 	cgs.media.tracerShader = trap_R_RegisterShader( "gfx/misc/tracer" );
 
-	Com_Printf( S_COLOR_CYAN "---------- Fx System Initialization ---------\n" );
+	if(cg_developer.integer) Com_Printf( S_COLOR_CYAN "---------- Fx System Initialization ---------\n" );
 	trap_FX_InitSystem();
-	Com_Printf( S_COLOR_CYAN "----- Fx System Initialization Complete -----\n" );
+	if (cg_developer.integer) Com_Printf( S_COLOR_CYAN "----- Fx System Initialization Complete -----\n" );
 	CG_RegisterEffects();
 
 
@@ -3012,7 +3014,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 		jk2startversion = jk2version;
 		MV_SetGameVersion(jk2version, qtrue);
 	}
-	CG_Printf("jk2version [CGame]: 1.0%i\n", jk2version);
+	if(cg_developer.integer) CG_Printf("jk2version [CGame]: 1.0%i\n", jk2version);
 
 	trap_CG_RegisterSharedMemory(cg.sharedBuffer);
 

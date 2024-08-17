@@ -715,6 +715,7 @@ int frameCount = 0;
 int startTime;
 
 vmCvar_t	ui_rankChange;
+vmCvar_t	ui_menuFileParseSpam;
 static void UI_BuildPlayerList();
 char parsedFPMessage[1024];
 extern int FPMessageTime;
@@ -1127,7 +1128,9 @@ void UI_ParseMenu(const char *menuFile) {
 	int handle;
 	pc_token_t token;
 
-	Com_Printf("Parsing menu file:%s\n", menuFile);
+	if (ui_menuFileParseSpam.integer) {
+		Com_Printf("Parsing menu file:%s\n", menuFile);
+	}
 
 	handle = trap_PC_LoadSource(menuFile);
 	if (!handle) {
@@ -8164,6 +8167,7 @@ static const cvarTable_t cvarTable[] = {
 	{ &ui_teamName, "ui_teamName", "Empire", CVAR_ARCHIVE },
 	{ &ui_opponentName, "ui_opponentName", "Rebellion", CVAR_ARCHIVE },
 	{ &ui_rankChange, "ui_rankChange", "0", CVAR_ARCHIVE },
+	{ &ui_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 	{ &ui_freeSaber, "ui_freeSaber", "0", CVAR_ARCHIVE },
 	{ &ui_forcePowerDisable, "ui_forcePowerDisable", "0", CVAR_ARCHIVE },
 	{ &ui_redteam, "ui_redteam", "Empire", CVAR_ARCHIVE },
