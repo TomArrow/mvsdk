@@ -948,7 +948,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_fkFirstJumpDuration, "cg_fkFirstJumpDuration", "0", 0 },
 	{ &cg_fkSecondJumpDelay, "cg_fkSecondJumpDelay", "0", 0 },
 
-	{ &cl_commandsize, "cl_commandsize", "64", CVAR_ARCHIVE },//Loda - FPS UNLOCK client modcode
+	{ &cl_commandsize, "cl_commandsize", "512", CVAR_ARCHIVE },//Loda - FPS UNLOCK client modcode
 
 	{ &cg_fixlean, "cg_fixlean", "0", CVAR_LATCH }, //idk man
 	{ &cg_SPRunAnim, "cg_SPRunAnim", "0", 0 },
