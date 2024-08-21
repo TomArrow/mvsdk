@@ -1243,6 +1243,9 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		if (cg.snap && cg.snap->ps.clientNum == clientNum && !forceDefer)
 		{ //rww - don't defer your own client info ever, unless really low on memory
 			CG_LoadClientInfo( &newInfo );
+			if (cg_deferPlayersDebug.integer) {
+				CG_Printf("Playermodel NOT deferred (OUR OWN): clientNum %d, %s/%s, forcedefer %d, cg_buildscript %d, cg.loading %d, ci->jk2gameplay %d, newInfo.jk2gameplay %d.\n", clientNum, newInfo.modelName, newInfo.skinName, forceDefer, cg_buildScript.integer, cg.loading, (int)ci->jk2gameplay, (int)newInfo.jk2gameplay);
+			}
 		}
 		else if ( (forceDefer || ( cg_deferPlayers.integer && !cg_buildScript.integer && !cg.loading )) && ci->jk2gameplay == newInfo.jk2gameplay ) { // DON'T DEFER on gameplay changes
 			// keep whatever they had if it won't violate team skins
@@ -1252,8 +1255,19 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 				CG_Printf( "Memory is low.  Using deferred model.\n" );
 				newInfo.deferred = qfalse;
 			}
+			if (cg_deferPlayersDebug.integer) {
+				CG_Printf("Playermodel deferred: clientNum %d, %s/%s, forcedefer %d, cg_buildscript %d, cg.loading %d, ci->jk2gameplay %d, newInfo.jk2gameplay %d.\n", clientNum, newInfo.modelName, newInfo.skinName, forceDefer, cg_buildScript.integer, cg.loading, (int)ci->jk2gameplay, (int)newInfo.jk2gameplay);
+			}
 		} else {
+			if (cg_deferPlayersDebug.integer) {
+				CG_Printf("Playermodel NOT deferred: clientNum %d, %s/%s, forcedefer %d, cg_buildscript %d, cg.loading %d, ci->jk2gameplay %d, newInfo.jk2gameplay %d.\n", clientNum,newInfo.modelName,newInfo.skinName, forceDefer, cg_buildScript.integer, cg.loading, (int)ci->jk2gameplay, (int)newInfo.jk2gameplay);
+			}
 			CG_LoadClientInfo( &newInfo );
+		}
+	}
+	else {
+		if (cg_deferPlayersDebug.integer) {
+			CG_Printf("Playermodel MATCH FOUND: clientNum %d, %s/%s, cg_buildscript %d, cg.loading %d, ci->jk2gameplay %d, newInfo.jk2gameplay %d.\n", clientNum, newInfo.modelName, newInfo.skinName, cg_buildScript.integer, cg.loading, (int)ci->jk2gameplay, (int)newInfo.jk2gameplay);
 		}
 	}
 

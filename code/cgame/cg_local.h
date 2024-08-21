@@ -1819,6 +1819,7 @@ extern	vmCvar_t		cg_blood;
 extern	vmCvar_t		cg_predictItems;
 extern	vmCvar_t		cg_optimizedPredict;
 extern	vmCvar_t		cg_deferPlayers;
+extern	vmCvar_t		cg_deferPlayersDebug;
 extern	vmCvar_t		cg_drawFriend;
 extern	vmCvar_t		cg_teamChatsOnly;
 extern	vmCvar_t		cg_noVoiceChats;
