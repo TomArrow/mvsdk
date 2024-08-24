@@ -1607,6 +1607,7 @@ extern	weaponInfo_t	cg_weapons[MAX_WEAPONS];
 extern	itemInfo_t		cg_items[MAX_ITEMS];
 extern	markPoly_t		cg_markPolys[MAX_MARK_POLYS];
 
+extern  vmCvar_t		cg_teleportDisable;
 extern  vmCvar_t		cg_wallhack;
 extern	vmCvar_t		cg_centertime;
 extern	vmCvar_t		cg_runpitch;

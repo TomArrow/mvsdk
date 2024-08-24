@@ -447,6 +447,7 @@ weaponInfo_t		cg_weapons[MAX_WEAPONS];
 itemInfo_t			cg_items[MAX_ITEMS];
 
 
+vmCvar_t    cg_teleportDisable;
 vmCvar_t    cg_wallhack;
 vmCvar_t	cg_centertime;
 vmCvar_t	cg_runpitch;
@@ -793,6 +794,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_gun_x, "cg_gunX", "0", CVAR_ARCHIVE },
 	{ &cg_gun_y, "cg_gunY", "0", CVAR_ARCHIVE },
 	{ &cg_gun_z, "cg_gunZ", "0", CVAR_ARCHIVE },
+	{ &cg_teleportDisable, "cg_teleportDisable", "0", CVAR_ARCHIVE },
 	{ &cg_wallhack, "cg_wallhack", "0", CVAR_TEMP },
 	{ &cg_centertime, "cg_centertime", "3", CVAR_CHEAT },
 	{ &cg_runpitch, "cg_runpitch", "0", CVAR_ARCHIVE},
@@ -801,12 +803,12 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_bobpitch, "cg_bobpitch", "0", CVAR_ARCHIVE },
 	{ &cg_bobroll, "cg_bobroll", "0", CVAR_ARCHIVE },
 	//{ &cg_swingSpeed, "cg_swingSpeed", "0.3", CVAR_CHEAT },
-	{ &cg_animSpeed, "cg_animspeed", "1", CVAR_CHEAT },
+	{ &cg_animSpeed, "cg_animspeed", "1", CVAR_TEMP },
 	{ &cg_developer, "developer", "0", 0 },
-	{ &cg_debugAnim, "cg_debuganim", "0", CVAR_CHEAT },
-	{ &cg_debugSaber, "cg_debugsaber", "-1", CVAR_CHEAT },
-	{ &cg_debugPosition, "cg_debugposition", "0", CVAR_CHEAT },
-	{ &cg_debugEvents, "cg_debugevents", "0", CVAR_CHEAT },
+	{ &cg_debugAnim, "cg_debuganim", "0", CVAR_TEMP },
+	{ &cg_debugSaber, "cg_debugsaber", "-1", CVAR_TEMP },
+	{ &cg_debugPosition, "cg_debugposition", "0", CVAR_TEMP },
+	{ &cg_debugEvents, "cg_debugevents", "0", CVAR_TEMP },
 	{ &cg_errorDecay, "cg_errordecay", "100", 0 },
 	{ &cg_nopredict, "cg_nopredict", "0", 0 },
 	{ &cg_deluxePlayersPredict, "cg_deluxePlayersPredict", "0", CVAR_ARCHIVE },
@@ -816,12 +818,12 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_deluxePlayersPredictClipMove, "cg_deluxePlayersPredictClipMove", "0", CVAR_ARCHIVE },
 	{ &cg_specialPredictPhysicsFps, "cg_specialPredictPhysicsFps", "3", CVAR_ARCHIVE },
 	{ &cg_specialPredictPhysicsFpsAngleCmdTime, "cg_specialPredictPhysicsFpsAngleCmdTime", "0", CVAR_ARCHIVE },
-	{ &cg_noPlayerAnims, "cg_noplayeranims", "0", CVAR_CHEAT },
+	{ &cg_noPlayerAnims, "cg_noplayeranims", "0", CVAR_TEMP },
 	{ &cg_showmiss, "cg_showmiss", "0", 0 },
-	{ &cg_footsteps, "cg_footsteps", "1", CVAR_CHEAT },
-	{ &cg_tracerChance, "cg_tracerchance", "0.4", CVAR_CHEAT },
-	{ &cg_tracerWidth, "cg_tracerwidth", "1", CVAR_CHEAT },
-	{ &cg_tracerLength, "cg_tracerlength", "100", CVAR_CHEAT },
+	{ &cg_footsteps, "cg_footsteps", "1", CVAR_TEMP },
+	{ &cg_tracerChance, "cg_tracerchance", "0.4", CVAR_TEMP },
+	{ &cg_tracerWidth, "cg_tracerwidth", "1", CVAR_TEMP },
+	{ &cg_tracerLength, "cg_tracerlength", "100", CVAR_TEMP },
 
 	//snaphud start
 	{ &cg_snapHud, "cg_snapHud", "0", CVAR_ARCHIVE },
