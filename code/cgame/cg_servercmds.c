@@ -310,6 +310,9 @@ static void CG_ParseServerinfo( const char *info ) {
 		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_PLAYERS);
 		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_ITEMS);
 	}
+	if (cg.demoPlayback) {
+		cgs.uni_clientFlags = 0;
+	}
 
 	mapname = Info_ValueForKey( info, "mapname" );
 
