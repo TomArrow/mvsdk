@@ -53,11 +53,16 @@ void CG_DB_InsertChat(const char* chatText) {
 
 void CG_DB_GetChats_f(void) {
 	int clientNum = -1;
+	int page, first;
 
 	if (!coolApi_dbVersion) {
 		CG_Printf("getchats not possible, DB API not available\n");
 		return;
 	}
 
-	trap_CG_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, "SELECT id, chat, `time` FROM chats ORDER BY time DESC LIMIT 0,10");
+	page = atoi(CG_Argv(1))-1;
+	page = MAX(page,0);
+	first = page*10;
+
+	trap_CG_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, va("SELECT id, chat, `time` FROM chats ORDER BY time DESC LIMIT %d,10",first));
 }
