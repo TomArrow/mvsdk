@@ -5,6 +5,7 @@
 
 #include "cg_local.h"
 #include "../ui/ui_shared.h"
+#include "cg_dbcmds.h"
 extern menuDef_t *menuScoreboard;
 
 
@@ -1094,6 +1095,7 @@ static void CG_ModVersion_f(void)
 	}
 }
 
+
 static void CG_Follow_f(void) {
 	int clientNum = -1;
 
@@ -1425,6 +1427,7 @@ static consoleCommand_t	commands[] = {
 
 	{ "modversion", CG_ModVersion_f },
 
+	{ "getchats", CG_DB_GetChats_f },
 	{ "follow", CG_Follow_f },
 	{ "followRedFlag", CG_FollowRedFlag_f },
 	{ "followBlueFlag", CG_FollowBlueFlag_f },

@@ -9,6 +9,7 @@
 #if !defined(CL_LIGHT_H_INC)
 	#include "cg_lights.h"
 #endif
+#include "cg_dbcmds.h"
 
 typedef struct {
 	const char *order;
@@ -1514,16 +1515,7 @@ static void CG_ServerCommand( void ) {
 	}
 
 	if ( !strcmp( cmd, "chat" ) ) {
-		if (coolApi_dbVersion && !cg.demoPlayback) {
-			const char* request;
-
-			// save it to db
-			Q_strncpyz(text, CG_Argv(1), sizeof(text));
-			if (trap_CG_COOL_API_DB_EscapeString(text, sizeof(text))) {
-				request = va("INSERT INTO chats (chat,`time`) VALUES ('%s',NOW())", text);
-				trap_CG_COOL_API_DB_AddRequest(NULL, 0, 1, request);
-			}
-		}
+		CG_DB_InsertChat(CG_Argv(1));
 		if ( !cg_teamChatsOnly.integer ) {
 			if (cg_chatSounds.integer)
 				trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
@@ -1563,16 +1555,7 @@ static void CG_ServerCommand( void ) {
 	}
 
 	if ( !strcmp( cmd, "tchat" ) ) {
-		if (coolApi_dbVersion && !cg.demoPlayback) {
-			const char* request;
-
-			// save it to db
-			Q_strncpyz(text, CG_Argv(1), sizeof(text));
-			if (trap_CG_COOL_API_DB_EscapeString(text, sizeof(text))) {
-				request = va("INSERT INTO chats (chat,`time`) VALUES ('%s',NOW())", text);
-				trap_CG_COOL_API_DB_AddRequest(NULL, 0, 1, request);
-			}
-		}
+		CG_DB_InsertChat(CG_Argv(1));
 		if (cg_chatSounds.integer)
 			trap_S_StartLocalSound( cg_chatSounds.integer == 2 ? cgs.media.teamChatSound : cgs.media.talkSound, CHAN_LOCAL_SOUND );
 		Q_strncpyz( text, CG_Argv(1), sizeof(text) );

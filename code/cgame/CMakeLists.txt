@@ -7,6 +7,7 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/api/mvapi.h"
 
 	"${SRCDir}/cgame/animtable.h"
+	"${SRCDir}/cgame/cg_dbcmds.h"
 	"${SRCDir}/cgame/cg_lights.h"
 	"${SRCDir}/cgame/cg_local.h"
 	"${SRCDir}/cgame/cg_media.h"
@@ -35,6 +36,7 @@ set(MVCGAMEHEADERS
 
 set(MVCGAMESOURCES
 	"${SRCDir}/cgame/cg_main.c" # keep this on top (qvm compiler needs VM_Main as the first compiled function)
+	"${SRCDir}/cgame/cg_dbcmds.c"
 	"${SRCDir}/cgame/cg_consolecmds.c"
 	"${SRCDir}/cgame/cg_draw.c"
 	"${SRCDir}/cgame/cg_drawtools.c"
