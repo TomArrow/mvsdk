@@ -260,6 +260,38 @@ int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum)
 	return syscall(CG_COOL_API_GETTIMESINCESNAPRECEIVED, snapNum);
 }
 
+
+
+
+qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size) {
+	return syscall(CG_COOL_API_DB_ESCAPESTRING, input, size);
+}
+qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request) {
+	return syscall(CG_COOL_API_DB_ADDREQUEST, reference, referenceLength, requestType, request);
+}
+qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength) {
+	return syscall(CG_COOL_API_DB_NEXTRESPONSE, requestType, affectedRows, status, errorMessage, errorMessageSize, reference, referenceLength);
+}
+qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength) {
+	return syscall(CG_COOL_API_DB_GETREFERENCE, reference, referenceLength);
+}
+qboolean	trap_CG_COOL_API_DB_NextRow() {
+	return syscall(CG_COOL_API_DB_NEXTROW);
+}
+int			trap_CG_COOL_API_DB_GetInt(int place) {
+	return syscall(CG_COOL_API_DB_GETINT, place);
+}
+void		trap_CG_COOL_API_DB_GetFloat(int place, float* value) {
+	return syscall(CG_COOL_API_DB_GETFLOAT, place);
+}
+qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize) {
+	return syscall(CG_COOL_API_DB_GETSTRING, place, out, outSize);
+}
+
+
+
+
+
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
 {

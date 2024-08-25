@@ -2326,6 +2326,15 @@ void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
 void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount);
 int			trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum);
 
+qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
+qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+qboolean	trap_CG_COOL_API_DB_NextRow();
+int			trap_CG_COOL_API_DB_GetInt(int place);
+void		trap_CG_COOL_API_DB_GetFloat(int place, float* value);
+qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize);
+
 /*
 qboolean	trap_Language_IsAsian(void);
 qboolean	trap_Language_UsesSpaces(void);
@@ -2606,6 +2615,7 @@ Ghoul2 Insert End
 
 extern int mvapi;
 extern int coolApi;
+extern int coolApi_dbVersion;
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel );

@@ -1801,6 +1801,14 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// update cvars
 	CG_UpdateCvars();
 
+	if (coolApi_dbVersion) {
+		int requestType;
+		int status;
+		while (trap_CG_COOL_API_DB_NextResponse(&requestType,NULL,&status,NULL,0,NULL,0)) {
+			Com_Printf("DB Request of type %d returned with status %d.\n",requestType,status);
+		}
+	}
+
 	// if we are only updating the screen as a loading
 	// pacifier, don't even try to read snapshots
 	if ( cg.infoScreenText[0] != 0 ) {

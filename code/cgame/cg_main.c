@@ -157,6 +157,7 @@ This must be the very first function compiled into the .q3vm file
 qboolean menuInJK2MV = qfalse;
 int mvapi = 0;
 int coolApi = 0;
+int coolApi_dbVersion = 0;
 qboolean submodelBypass = qfalse;
 int Init_serverMessageNum;
 int Init_serverCommandSequence;
@@ -169,6 +170,13 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 	case CG_INIT:
 		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
 		coolApi = atoi(coolApiFeaturesBuffer);
+		if (coolApi & COOL_APIFEATURE_MARIADB) {
+			trap_Cvar_VariableStringBuffer("cool_apiDBVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_dbVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else {
+			coolApi_dbVersion = 0;
+		}
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call CG_Init if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.

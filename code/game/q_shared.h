@@ -2228,6 +2228,7 @@ extern ezDemoBuffer_t ezDemoBuffer;
 
 #define COOL_APIFEATURE_EZDEMOCGAMEBUFFER (1<<3)
 #define COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED (1<<4)
+#define COOL_APIFEATURE_MARIADB (1<<5)
 
 // This is a simplified playerState_t of sorts to communicate predicted playerstate stuff to the engine 
 typedef struct predictedMovement_s {

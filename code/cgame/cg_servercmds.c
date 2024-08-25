@@ -1514,6 +1514,16 @@ static void CG_ServerCommand( void ) {
 	}
 
 	if ( !strcmp( cmd, "chat" ) ) {
+		if (coolApi_dbVersion && !cg.demoPlayback) {
+			const char* request;
+
+			// save it to db
+			Q_strncpyz(text, CG_Argv(1), sizeof(text));
+			if (trap_CG_COOL_API_DB_EscapeString(text, sizeof(text))) {
+				request = va("INSERT INTO chats (chat,`time`) VALUES ('%s',NOW())", text);
+				trap_CG_COOL_API_DB_AddRequest(NULL, 0, 1, request);
+			}
+		}
 		if ( !cg_teamChatsOnly.integer ) {
 			if (cg_chatSounds.integer)
 				trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
@@ -1553,6 +1563,16 @@ static void CG_ServerCommand( void ) {
 	}
 
 	if ( !strcmp( cmd, "tchat" ) ) {
+		if (coolApi_dbVersion && !cg.demoPlayback) {
+			const char* request;
+
+			// save it to db
+			Q_strncpyz(text, CG_Argv(1), sizeof(text));
+			if (trap_CG_COOL_API_DB_EscapeString(text, sizeof(text))) {
+				request = va("INSERT INTO chats (chat,`time`) VALUES ('%s',NOW())", text);
+				trap_CG_COOL_API_DB_AddRequest(NULL, 0, 1, request);
+			}
+		}
 		if (cg_chatSounds.integer)
 			trap_S_StartLocalSound( cg_chatSounds.integer == 2 ? cgs.media.teamChatSound : cgs.media.talkSound, CHAN_LOCAL_SOUND );
 		Q_strncpyz( text, CG_Argv(1), sizeof(text) );
