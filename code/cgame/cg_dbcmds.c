@@ -27,7 +27,14 @@ void CG_DB_CheckResponses() {
 		while (trap_CG_COOL_API_DB_NextResponse(&requestType, NULL, &status, NULL, 0, NULL, 0)) {
 			switch (requestType) {
 				default:
-					Com_Printf("DB Request of type %d returned with status %d.\n", requestType, status);
+					if (status) {
+						Com_Printf("DB Request of type %d failed with status %d.\n", requestType, status);
+					}
+					else {
+						if (cg_developer.integer) {
+							Com_Printf("DB Request of type %d returned with status %d.\n", requestType, status);
+						}
+					}
 					break;
 				case DBREQUEST_GETCHATS:
 					CG_DB_GetChatsResponse(status);

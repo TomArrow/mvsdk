@@ -433,6 +433,8 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	trace_t		trace;
 	vec3_t		mins, maxs;
 	static vec3_t	range = { 40, 40, 52 };
+	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
+	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
 
 	if ( !ent->client ) {
 		return;
@@ -443,10 +445,37 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		return;
 	}
 
-	VectorSubtract( ent->client->ps.origin, range, mins );
-	VectorAdd( ent->client->ps.origin, range, maxs );
+	
+	// if we have a past position, move from that to the current one. 
+	// teleport bit check may not be needed since there doesn't appear to be any respawn/teleport
+	// between pmove and G_TouchTriggers, but that may change and i may have overlooked sth
+	if (g_triggersRobust.integer && ent->client->prePmovePositionSet && !((ent->client->ps.eFlags ^ ent->client->prePmoveEFlags) & EF_TELEPORT_BIT)) { 
+		qboolean finished = qfalse;
+		num = 0;
+		while (!finished && num < MAX_GENTITIES) {
+			memset(&trace, 0, sizeof(trace));
+			trap_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->ps.origin, ent->client->ps.clientNum, CONTENTS_TRIGGER);
+			if (trace.fraction < 1.0f) {
+				hit = &g_entities[trace.entityNum];
+				hit->r.contents &= ~CONTENTS_TRIGGER; // exclude it from next trace.
+				touch[num++] = trace.entityNum;
+			}
+			else {
+				finished = qtrue;
+			}
+		}
+		for (i = 0; i < num; i++) {
+			hit = &g_entities[touch[i]];
+			hit->r.contents |= CONTENTS_TRIGGER; // give back the content flag.
+		}
+		
+	}
+	else {
+		VectorSubtract(ent->client->ps.origin, range, mins);
+		VectorAdd(ent->client->ps.origin, range, maxs);
 
-	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
+		num = trap_EntitiesInBox(mins, maxs, touch, MAX_GENTITIES);
+	}
 
 	// can't use ent->r.absmin, because that has a one unit pad
 	VectorAdd( ent->client->ps.origin, ent->r.mins, mins );
@@ -458,7 +487,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		if ( !hit->touch && !ent->touch ) {
 			continue;
 		}
-		if ( !( hit->r.contents & CONTENTS_TRIGGER ) ) {
+		if ( !( hit->r.contents & CONTENTS_TRIGGER ) || hit->r.contents & CONTENTS_DEFRAGTIMER) { // defrag timers are handled separately for more precision
 			continue;
 		}
 
@@ -1067,6 +1096,7 @@ void ClientThink_real( gentity_t *ent ) {
 	int			msec;
 	int			i;
 	usercmd_t	*ucmd;
+	int			oldTeleportBit;
 
 	client = ent->client;
 
@@ -1448,6 +1478,11 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 	}
 
+	// Save some value for robust trigger application
+	VectorCopy(ent->client->ps.origin,ent->client->prePmovePosition);
+	ent->client->prePmoveEFlags = ent->client->ps.eFlags;
+	ent->client->prePmovePositionSet = qtrue;
+	
 	Pmove (&pm);
 
 	if (pm.checkDuelLoss)

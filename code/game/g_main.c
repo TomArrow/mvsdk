@@ -39,6 +39,8 @@ vmCvar_t	g_saberLocking;
 vmCvar_t	g_saberLockFactor;
 vmCvar_t	g_saberTraceSaberFirst;
 
+vmCvar_t	g_triggersRobust;
+
 #ifdef G2_COLLISION_ENABLED
 vmCvar_t	g_saberGhoul2Collision;
 #endif
@@ -186,6 +188,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_saberLocking, "g_saberLocking", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberLockFactor, "g_saberLockFactor", "6", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberTraceSaberFirst, "g_saberTraceSaberFirst", "1", CVAR_ARCHIVE, 0, qtrue  },
+
+	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
 
 #ifdef G2_COLLISION_ENABLED
 	{ &g_saberGhoul2Collision, "g_saberGhoul2Collision", "0", 0, 0, qtrue  },

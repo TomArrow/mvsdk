@@ -450,6 +450,9 @@ struct gclient_s {
 
 	qboolean	fjDidJump;
 
+	vec3_t		prePmovePosition;
+	qboolean	prePmovePositionSet;
+	qboolean	prePmoveEFlags;
 };
 
 
@@ -1016,6 +1019,8 @@ extern	vmCvar_t	g_privateDuel;
 extern	vmCvar_t	g_saberLocking;
 extern	vmCvar_t	g_saberLockFactor;
 extern	vmCvar_t	g_saberTraceSaberFirst;
+
+extern	vmCvar_t	g_triggersRobust;
 
 #ifdef G2_COLLISION_ENABLED
 extern	vmCvar_t	g_saberGhoul2Collision;
