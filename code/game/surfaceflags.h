@@ -32,7 +32,7 @@
 #define	CONTENTS_DETAIL			0x08000000	// brushes not used for the bsp
 #define	CONTENTS_TRANSLUCENT	0x80000000	// don't consume surface fragments inside
 
-#define	CONTENTS_DEFRAGTIMER	0x40000000	// contains a defrag timer. special case of trigger
+#define	CONTENTS_TRIGGER_EXIT	0x40000000	// contains a defrag timer. special case of trigger
 
 #define	SURF_SKY				0x00002000	// lighting from environment map
 #define	SURF_SLICK				0x00004000	// affects game physics

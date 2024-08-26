@@ -183,6 +183,7 @@ struct gentity_s {
 	void		(*reached)(gentity_t *self);	// movers call this when hitting endpoint
 	void		(*blocked)(gentity_t *self, gentity_t *other);
 	void		(*touch)(gentity_t *self, gentity_t *other, trace_t *trace);
+	void		(*leave)(gentity_t *self, gentity_t *other, trace_t *trace); // for defrag start triggers. they start when we LEAVE the trigger
 	void		(*use)(gentity_t *self, gentity_t *other, gentity_t *activator);
 	void		(*pain)(gentity_t *self, gentity_t *attacker, int damage);
 	void		(*die)(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod);
@@ -357,6 +358,9 @@ typedef struct {
 	vec3_t		savePosAngle;
 	qboolean	savePosUsed;
 
+	int			raceStartCommandTime;
+	int			raceBestTime;
+
 	physicsFpsState_t	physicsFps;
 } clientPersistant_t;
 
@@ -453,6 +457,7 @@ struct gclient_s {
 	vec3_t		prePmovePosition;
 	qboolean	prePmovePositionSet;
 	qboolean	prePmoveEFlags;
+	int			prePmoveCommandTime;
 };
 
 
@@ -1020,6 +1025,7 @@ extern	vmCvar_t	g_saberLocking;
 extern	vmCvar_t	g_saberLockFactor;
 extern	vmCvar_t	g_saberTraceSaberFirst;
 
+extern	vmCvar_t	g_defrag;
 extern	vmCvar_t	g_triggersRobust;
 
 #ifdef G2_COLLISION_ENABLED

@@ -435,6 +435,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	static vec3_t	range = { 40, 40, 52 };
 	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
 	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+	qboolean	robustTriggerEvaluation = qfalse;
 
 	if ( !ent->client ) {
 		return;
@@ -445,49 +446,115 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		return;
 	}
 
-	
+	robustTriggerEvaluation = g_triggersRobust.integer && ent->client->prePmovePositionSet && !((ent->client->ps.eFlags ^ ent->client->prePmoveEFlags) & EF_TELEPORT_BIT);
+
 	// if we have a past position, move from that to the current one. 
 	// teleport bit check may not be needed since there doesn't appear to be any respawn/teleport
 	// between pmove and G_TouchTriggers, but that may change and i may have overlooked sth
-	if (g_triggersRobust.integer && ent->client->prePmovePositionSet && !((ent->client->ps.eFlags ^ ent->client->prePmoveEFlags) & EF_TELEPORT_BIT)) { 
+	if (robustTriggerEvaluation) {
+		int numRestore = 0;
 		qboolean finished = qfalse;
+		qboolean reverse = qfalse;
+		qboolean needExtraCheck = qfalse;
+
+		VectorAdd(ent->client->ps.origin, playerMins, mins);
+		VectorAdd(ent->client->ps.origin, playerMaxs, maxs);
 		num = 0;
 		while (!finished && num < MAX_GENTITIES) {
 			memset(&trace, 0, sizeof(trace));
-			trap_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->ps.origin, ent->client->ps.clientNum, CONTENTS_TRIGGER);
-			if (trace.fraction < 1.0f) {
+			if (reverse) {
+				// was a desperate try. pointless?
+				trap_Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER);
+			}
+			else {
+				trap_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->ps.origin, ent->client->ps.clientNum, CONTENTS_TRIGGER);
+			}
+			if (trace.fraction < 1.0f/* || trace.startsolid || trace.allsolid*/) { //startsolid and allsolid don't return a valid entityNum
 				hit = &g_entities[trace.entityNum];
 				hit->r.contents &= ~CONTENTS_TRIGGER; // exclude it from next trace.
 				touch[num++] = trace.entityNum;
 			}
 			else {
-				finished = qtrue;
+				if (reverse) {
+					finished = qtrue;
+					if (trace.allsolid) {
+						// This means after we got all we could get, there's still something left we are inside of.
+						needExtraCheck = qfalse;
+					}
+				}
+				else {
+					reverse = qtrue;
+				}
 			}
 		}
-		for (i = 0; i < num; i++) {
+		numRestore = num;
+		if (needExtraCheck) {
+			// basically do the oldschool one after all... this is needed for anything we are fully inside of.
+			int num2;
+			int	touch2[MAX_GENTITIES];
+			num2 = trap_EntitiesInBox(mins, maxs, touch2, MAX_GENTITIES); // this is guaranteed to get the remaining stuff because 
+			for (i = 0; i < num2; i++) {
+				hit = &g_entities[touch2[i]];
+				if (!(hit->r.contents & CONTENTS_TRIGGER)) { 
+					continue; // no need to worry about dupes since we removed CONTENTS_TRIGGER from the already done ones
+				}
+				if (!trap_EntityContact(mins, maxs, hit)) {
+					continue;
+				}
+				touch[num++] = touch2[i];
+				if (num == MAX_GENTITIES) break; // oh well :(
+			}
+		}
+		for (i = 0; i < numRestore; i++) {
 			hit = &g_entities[touch[i]];
 			hit->r.contents |= CONTENTS_TRIGGER; // give back the content flag.
 		}
 		
 	}
 	else {
-		VectorSubtract(ent->client->ps.origin, range, mins);
-		VectorAdd(ent->client->ps.origin, range, maxs);
+		if (g_triggersRobust.integer) {
+			VectorAdd(ent->client->ps.origin, playerMins, mins);
+			VectorAdd(ent->client->ps.origin, playerMaxs, maxs);
+		}
+		else {
+			VectorSubtract(ent->client->ps.origin, range, mins);
+			VectorAdd(ent->client->ps.origin, range, maxs);
+		}
 
 		num = trap_EntitiesInBox(mins, maxs, touch, MAX_GENTITIES);
+
+		// can't use ent->r.absmin, because that has a one unit pad
+		VectorAdd(ent->client->ps.origin, ent->r.mins, mins);
+		VectorAdd(ent->client->ps.origin, ent->r.maxs, maxs); // TODO uhm how does this relate to g_triggersrobust? think about this...
 	}
 
-	// can't use ent->r.absmin, because that has a one unit pad
-	VectorAdd( ent->client->ps.origin, ent->r.mins, mins );
-	VectorAdd( ent->client->ps.origin, ent->r.maxs, maxs );
 
 	for ( i=0 ; i<num ; i++ ) {
 		hit = &g_entities[touch[i]];
 
+		// special kind of trigger (like for defrag start timer) that starts when we leave it.
+		// requires robust trigger evaluation
+		if (hit->r.contents & CONTENTS_TRIGGER_EXIT) {
+			if (!robustTriggerEvaluation || !hit->leave) {
+				continue;
+			}
+			if (trap_EntityContact(mins, maxs, hit)) {
+				// Still in trigger, ignore. 
+				continue;
+			}
+			memset(&trace, 0, sizeof(trace)); // what is this even for?
+
+			if (hit->leave) {
+				hit->leave(hit, ent, &trace);
+			}
+			continue;
+		}
+
+		// rest is mostly normal trigger code
 		if ( !hit->touch && !ent->touch ) {
 			continue;
 		}
-		if ( !( hit->r.contents & CONTENTS_TRIGGER ) || hit->r.contents & CONTENTS_DEFRAGTIMER) { // defrag timers are handled separately for more precision
+		if ( !( hit->r.contents & CONTENTS_TRIGGER )) {
 			continue;
 		}
 
@@ -508,7 +575,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 				continue;
 			}
 		} else {
-			if ( !trap_EntityContact( mins, maxs, hit ) ) {
+			if (!robustTriggerEvaluation && !trap_EntityContact( mins, maxs, hit )) { // no need with robust trigger evaluation, we already checked via trace
 				continue;
 			}
 		}
@@ -1482,6 +1549,7 @@ void ClientThink_real( gentity_t *ent ) {
 	VectorCopy(ent->client->ps.origin,ent->client->prePmovePosition);
 	ent->client->prePmoveEFlags = ent->client->ps.eFlags;
 	ent->client->prePmovePositionSet = qtrue;
+	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
 	
 	Pmove (&pm);
 

@@ -2,6 +2,7 @@
 //
 
 #include "g_local.h"
+#include "g_defrag.h"
 
 qboolean	G_SpawnString( const char *key, const char *defaultString, char **out ) {
 	int		i;
@@ -198,6 +199,7 @@ void SP_item_botroam( gentity_t *ent )
 
 void SP_emplaced_gun( gentity_t *ent );
 
+extern void DF_target_husk(gentity_t* ent);
 spawn_t	spawns[] = {
 	// info entities don't do anything at all, but provide positional
 	// information for things controlled by other processes
@@ -254,6 +256,10 @@ spawn_t	spawns[] = {
 	{"target_position", SP_target_position},
 	{"target_location", SP_target_location},
 	{"target_push", SP_target_push},
+
+	{"target_startTimer", DF_target_husk},
+	{"target_stopTimer", DF_target_husk},
+	{"target_checkpoint", DF_target_husk},
 
 	{"light", SP_light},
 	{"path_corner", SP_path_corner},
@@ -882,7 +888,11 @@ void G_SpawnEntitiesFromString( void ) {
 	// parse ents
 	while( G_ParseSpawnVars() ) {
 		G_SpawnGEntityFromSpawnVars();
-	}	
+	}
+
+	if (g_defrag.integer) {
+		G_TurnDefragTargetsIntoTriggers();
+	}
 
 	level.spawning = qfalse;			// any future calls to G_Spawn*() will be errors
 }

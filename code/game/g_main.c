@@ -39,6 +39,7 @@ vmCvar_t	g_saberLocking;
 vmCvar_t	g_saberLockFactor;
 vmCvar_t	g_saberTraceSaberFirst;
 
+vmCvar_t	g_defrag;
 vmCvar_t	g_triggersRobust;
 
 #ifdef G2_COLLISION_ENABLED
@@ -189,6 +190,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_saberLockFactor, "g_saberLockFactor", "6", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberTraceSaberFirst, "g_saberTraceSaberFirst", "1", CVAR_ARCHIVE, 0, qtrue  },
 
+	{ &g_defrag, "g_defrag", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
 
 #ifdef G2_COLLISION_ENABLED
