@@ -1171,7 +1171,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 		if (es->eventParm)
 		{ //starting the duel
-			if (es->eventParm == 2)
+			if (es->eventParm == 2 && !(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]))
 			{
 				CG_CenterPrint( CG_GetStripEdString("SVINGAME", "BEGIN_DUEL"), 120, GIANTCHAR_WIDTH*2 );				
 				trap_S_StartLocalSound( cgs.media.countFightSound, CHAN_ANNOUNCER );

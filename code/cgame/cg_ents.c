@@ -491,6 +491,8 @@ static void CG_General( centity_t *cent ) {
 		return;
 	}
 
+	// TODO MAYBE jaPRO hide non duelers stuff
+
 	if (cent->ghoul2 && !cent->currentState.modelGhoul2 && cent->currentState.eType != ET_BODY &&
 		cent->currentState.number >= MAX_CLIENTS)
 	{ //this is a bad thing
@@ -1397,6 +1399,23 @@ static void CG_Item( centity_t *cent ) {
 	es = &cent->currentState;
 	if ( es->modelindex >= bg_numItems ) {
 		CG_Error( "Bad item index %i on entity", es->modelindex );
+	}
+
+
+	//JAPRO - Clientside - Ignore items while dueling since we cant pick them up - Start
+	/*
+	if (cg.snap && cg.snap->ps.duelInProgress)
+	{
+			return;
+	}
+	*/
+
+	if (cgs.isTommyTernal) {
+		if (cg.predictedPlayerState.duelInProgress || cg.predictedPlayerState.stats[STAT_RACEMODE]/* && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA */ )
+			return;
+	}
+	else if (cg.predictedPlayerState.duelInProgress) {
+		return;
 	}
 
 /*

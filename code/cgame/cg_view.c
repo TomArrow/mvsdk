@@ -1833,6 +1833,66 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		return;
 	}
 
+	//japro restrictions in racemode
+	// TODO actually implement cgs.restricts and stuff
+	if (cgs.isTommyTernal) {
+		if (cg.snap && cg.snap->ps.stats[STAT_RACEMODE] && !(cg.predictedPlayerState.pm_flags & PMF_FOLLOW) && (cg.predictedPlayerState.persistant[PERS_TEAM] != TEAM_SPECTATOR)) {
+			if (cgs.restricts & RESTRICT_YAW) {
+				char yawBuf[64];
+				char yawString[16] = { 0 };
+
+				yawString[0] = 'c';
+				yawString[1] = 'l';
+				yawString[2] = '_';
+				yawString[3] = 'y';
+				yawString[4] = 'a';
+				yawString[5] = 'w';
+				yawString[6] = 's';
+				yawString[7] = 'p';
+				yawString[8] = 'e';
+				yawString[9] = 'e';
+				yawString[10] = 'd';
+				yawString[11] = '\0';
+
+				trap_Cvar_VariableStringBuffer(yawString, yawBuf, sizeof(yawBuf));
+
+				if (atoi(yawBuf) != 0)
+					trap_Cvar_Set(yawString, "0");
+			}
+			if (cgs.restricts & RESTRICT_ANGLE && cg.xyspeed && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_BOTJKA) {
+				char angleBuf[64];
+				char angleString[32] = { 0 };
+
+				angleString[0] = 'c';
+				angleString[1] = 'g';
+				angleString[2] = '_';
+				angleString[3] = 't';
+				angleString[4] = 'h';
+				angleString[5] = 'i';
+				angleString[6] = 'r';
+				angleString[7] = 'd';
+				angleString[8] = 'p';
+				angleString[9] = 'e';
+				angleString[10] = 'r';
+				angleString[11] = 's';
+				angleString[12] = 'o';
+				angleString[13] = 'n';
+				angleString[14] = 'a';
+				angleString[15] = 'n';
+				angleString[16] = 'g';
+				angleString[17] = 'l';
+				angleString[18] = 'e';
+				angleString[19] = '\0';
+
+				trap_Cvar_VariableStringBuffer(angleString, angleBuf, sizeof(angleBuf));
+
+				if (atoi(angleBuf) != 0)
+					trap_Cvar_Set(angleString, "0");
+			}
+		}
+	}
+	//end
+
 	// let the client system know what our weapon and zoom settings are
 	if (cg.snap && cg.snap->ps.saberLockTime > cg.time)
 	{

@@ -6909,8 +6909,12 @@ doEssentialTwo:
 
 	if (cent->currentState.weapon == WP_STUN_BATON && cent->currentState.number == cg.snap->ps.clientNum)
 	{
-		trap_S_AddLoopingSound( cent->currentState.number, cg.refdef.vieworg, vec3_origin, 
-			trap_S_RegisterSound( "sound/weapons/baton/idle.wav" ) );
+		if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) { //We are racing
+		}
+		else {
+			trap_S_AddLoopingSound(cent->currentState.number, cg.refdef.vieworg, vec3_origin,
+				trap_S_RegisterSound("sound/weapons/baton/idle.wav"));
+		}
 	}
 
 	//NOTE: All effects that should be visible during mindtrick should go above here
@@ -7201,7 +7205,9 @@ doEssentialTwo:
 		}
 		else
 		{
-			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysalimariShader );
+			//if (!cg.predictedPlayerState.stats[STAT_RACEMODE] && !(cg_stylePlayer.integer & JAPRO_STYLE_HIDEYSALSHELL && cent->currentState.number == cg.predictedPlayerState.clientNum))
+			if (!cg.predictedPlayerState.stats[STAT_RACEMODE])// && cent->currentState.number != cg.predictedPlayerState.clientNum)
+				CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysalimariShader );
 		}
 	}
 	
@@ -7650,6 +7656,58 @@ doEssentialThree:
 		//return;
 		goto endOfCall;
 	}
+
+	// TODO maybe japro: make racers transparent to normal players and vice versa? or fuck it.
+	/* {
+		qboolean stylePlayer1 = qfalse;
+		qboolean stylePlayer2 = qfalse;
+		qboolean drawPlayer = qtrue;
+		if (cent->currentState.number != cg.snap->ps.clientNum && ((cg.predictedPlayerState.clientNum != cent->currentState.owner) || (cent->currentState.eType != ET_NPC || cent->currentState.NPC_class != CLASS_VEHICLE))) { //Never change our own appeareance
+			if (cg.snap->ps.duelInProgress) { //We are dueling
+											  //Uhh.. dont draw anyone differently since they are invis i guess and us/opponent look normal
+			}
+			else if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA) {// We are racing
+				if ((!cent->currentState.bolt1 && !(cg_stylePlayer.integer & JAPRO_STYLE_NONRACERVFXDISABLE)) //they're in FFA or they're another racer
+					|| !(cg_stylePlayer.integer & JAPRO_STYLE_RACERVFXDISABLE))
+				{
+					stylePlayer1 = qtrue;
+					stylePlayer2 = qfalse;
+					drawPlayer = qfalse;
+				}
+			}
+			else { //We are in ffa
+				if (cent->currentState.bolt1 == 1 && (cg_stylePlayer.integer & JAPRO_STYLE_VFXDUELERS)) { //They are dueling
+					stylePlayer1 = qfalse;
+					stylePlayer2 = qtrue;
+					drawPlayer = qfalse;
+				}
+				else if (cgs.serverMod == SVMOD_JAPRO && cent->currentState.bolt1 == 2 && !(cg_stylePlayer.integer & JAPRO_STYLE_RACERVFXDISABLE)) { //They are racing
+					stylePlayer1 = qtrue;
+					stylePlayer2 = qfalse;
+					drawPlayer = qfalse;
+				}
+			}
+		}
+
+		if (!(cent->currentState.powerups & (1 << PW_CLOAKED)) && (stylePlayer1 || stylePlayer2 || drawPlayer)) {
+			if (stylePlayer1) {
+				legs.renderfx &= ~RF_RGB_TINT;
+				legs.shaderRGBA[3] = 50;
+				legs.customShader = cgs.media.raceShader;
+			}
+
+			if (stylePlayer2) {
+				legs.renderfx &= ~RF_RGB_TINT;
+				legs.shaderRGBA[3] = 100;
+				legs.customShader = cgs.media.duelShader;
+			}
+
+			if (drawPlayer)
+				CG_CheckThirdPersonAlpha(cent, &legs);
+
+			trap_R_AddRefEntityToScene(&legs);
+		}
+	}*/
 
 	cent->frame_minus2 = cent->frame_minus1;
 	if (cent->frame_minus1_refreshed)

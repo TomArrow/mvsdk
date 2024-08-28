@@ -157,6 +157,8 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				PM_ClipVelocity( clipVelocity, planes[j], clipVelocity, OVERCLIP );
 				PM_ClipVelocity( endClipVelocity, planes[j], endClipVelocity, OVERCLIP );
 
+				// TODO MAYBE jaPRO player collision physics fix?
+
 				// see if it goes back into the first clip plane
 				if ( DotProduct( clipVelocity, planes[i] ) >= 0 ) {
 					continue;

@@ -198,6 +198,9 @@ static void CG_DrawZoomMask( void )
 		int val, i;
 		float off;
 
+		if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE])
+			return;
+
 		// zoom level
 		level = (float)(80.0f - cg.predictedPlayerState.zoomFov) / 80.0f;
 
@@ -1923,6 +1926,11 @@ static float CG_DrawEnemyInfo ( float y )
 	{
 		return y;
 	}
+
+	//if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE])
+	//{ //just get out of here then
+	//	return y;
+	//}
 	
 	if ( cgs.gametype == GT_JEDIMASTER )
 	{
@@ -2620,6 +2628,9 @@ static void CG_DrawInventory(int y)
 		return;
 
 	if (!cg.snap)
+		return;
+
+	if (cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE])
 		return;
 
 	if (cg.snap->ps.pm_type == PM_SPECTATOR)
@@ -3716,7 +3727,7 @@ static void CG_ScanForCrosshairEntity( void ) {
 	vec3_t		start, end;
 	int			content;
 
-	if ( cg_dynamicCrosshair.integer )
+	if ( cg_dynamicCrosshair.integer && !(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) )
 	{
 		vec3_t d_f, d_rt, d_up;
 		/*
@@ -3781,6 +3792,7 @@ static void CG_ScanForCrosshairEntity( void ) {
 		VectorMA( start, 131072, cg.refdef.viewaxis[0], end );
 	}
 
+	// TODO make non-solid players still be found?
 	CG_Trace( &trace, start, vec3_origin, vec3_origin, end, 
 		cg.snap->ps.clientNum, CONTENTS_SOLID|CONTENTS_BODY );
 
@@ -4222,6 +4234,15 @@ static qboolean CG_DrawFollow( void )
 	s = cgs.clientinfo[ cg.snap->ps.clientNum ].name;
 	x = 4.0f;
 	CG_Text_Paint(x, 27, 0.85f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+
+	// TODO MAYBE jaPRO
+	//Loda - add their movemnt style here..?f
+	//if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE])
+	//{
+	//	char styleString[256] = { 0 };
+	//	IntegerToRaceName(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE], styleString, sizeof(styleString));
+	//	CG_Text_Paint(4, 44, 0.7f, colorWhite, styleString, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+	//}
 
 	return qtrue;
 }

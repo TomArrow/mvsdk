@@ -1199,6 +1199,9 @@ saberMoveName_t PM_SaberJumpAttackMove( void )
 	VectorCopy( pm->ps->viewangles, fwdAngles );
 	fwdAngles[PITCH] = fwdAngles[ROLL] = 0;
 	AngleVectors( fwdAngles, jumpFwd, NULL, NULL );
+
+	// TODO MAYBE jaPRO thingie
+
 	VectorScale( jumpFwd, 300, pm->ps->velocity );
 	pm->ps->velocity[2] = 280;
 	PM_SetForceJumpZStart(pm->ps->origin[2]);//so we don't take damage if we land at same height

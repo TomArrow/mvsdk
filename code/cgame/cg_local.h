@@ -98,6 +98,22 @@
 //[JK2PRO - Clientside - All - Jcinfo bitvalues
 #define JK2PRO_CINFO_HIGHFPSFIX		(1<<0) //unused
 
+
+
+
+#define RESTRICT_SB					(1<<0)	//remove hackbots
+#define RESTRICT_COSBY				(1<<1)	//remove hackbots
+#define RESTRICT_LEAD				(1<<2)	//remove lead indicator
+#define RESTRICT_WH					(1<<3)	//remove brightskin wh
+#define RESTRICT_YAW				(1<<4)	//enforce yawspeed cap
+#define RESTRICT_PLUGIN				(1<<5)	//force plugin for racers
+#define RESTRICT_PLAYERLABELS		(1<<6)	//
+#define RESTRICT_FLIPKICKBIND		(1<<7)	//
+#define RESTRICT_STRAFETRAIL		(1<<8)	//force plugin for racers
+#define RESTRICT_DO					(1<<9)	//force plugin for racers
+#define RESTRICT_ANGLE				(1<<10)	//force plugin for racers
+
+
 extern int dueltypes[MAX_CLIENTS];//jk2PRO - Clientside - Fullforce Duels
 
 typedef enum {
@@ -1588,12 +1604,14 @@ Ghoul2 Insert End
 	//jk2pro
 	int				jcinfo;
 	qboolean		isJK2Pro;
+	qboolean		isTommyTernal;
 	qboolean		isCTFMod;
 	qboolean		CTF3ModeActive;
 	qboolean		isolateDuels;
 	qboolean		isCaMod;
 	qboolean		isNWH;
 	qboolean		isManhunt;
+	int				restricts;//make this a short?
 
 	int				uni_clientFlags; // Anti-cheat cvar set by server owners to disable cheats in UnityMod. We use the same for compatibility
 } cgs_t;

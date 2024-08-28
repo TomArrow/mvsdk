@@ -1669,6 +1669,9 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 		{ //no picking stuff up while in a duel, no matter what the type is
 			return qfalse;
 		}
+
+		if (ps->stats[STAT_RACEMODE] && item && (item->giTag != PW_YSALAMIRI) && (item->giTag != PW_FORCE_BOON)) // no picking up shit in racemode?
+			return qfalse; //Maybe allow spawnflags 2 to be racemode_only ?
 	}
 	else
 	{//safety return since below code assumes a non-null ps
@@ -2263,7 +2266,11 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 	}
 	else
 	{
-		s->bolt1 = 0;
+		if (ps->stats[STAT_RACEMODE])
+			s->bolt1 = 2;
+		else
+			s->bolt1 = 0;
+		//s->bolt1 = 0;
 	}
 
 	if (ps->dualBlade)

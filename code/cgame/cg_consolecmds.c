@@ -1254,6 +1254,19 @@ void CG_Do_f(void) //loda fixme
 		Com_Printf("Usage: /do <vstr> <delay>\n");
 		return;
 	}
+	
+	if (cgs.restricts & RESTRICT_DO) {
+		return;
+	}
+
+	if ((cg.clientNum == cg.predictedPlayerState.clientNum) || !cg.snap) {
+		if (cg.predictedPlayerState.stats[STAT_RACEMODE])
+			return;
+	}
+	else {
+		if (cg.snap->ps.stats[STAT_RACEMODE])
+			return;
+	}
 
 	trap_Argv(1, vstr, sizeof(vstr));
 	trap_Argv(2, delay, sizeof(delay));

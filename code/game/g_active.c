@@ -1246,7 +1246,8 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	if (client->sess.sessionTeam == TEAM_FREE && !g_defrag.integer) {
-		if (client->ps.stats[STAT_RACEMODE] || g_gametype.integer >= GT_TEAM) {
+		//if (client->ps.stats[STAT_RACEMODE] || g_gametype.integer >= GT_TEAM) {
+		if (client->sess.raceMode || g_gametype.integer >= GT_TEAM) {
 			SetTeam(ent, "spectator");// , qtrue);
 			client->sess.raceMode = qfalse;
 			client->ps.stats[STAT_RACEMODE] = qfalse;
@@ -1281,7 +1282,8 @@ void ClientThink_real( gentity_t *ent ) {
 	//else if (client->savedJumpLevel) {
 	//	client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->savedJumpLevel;
 	//}
-	if (client->ps.stats[STAT_RACEMODE]) {
+	//if (client->ps.stats[STAT_RACEMODE]) {
+	if (client->sess.raceMode) {
 		client->ps.fd.forcePowerLevel[FP_SABERATTACK] = 3; //make sure its allowed on server? or?
 	}
 
@@ -1394,7 +1396,7 @@ void ClientThink_real( gentity_t *ent ) {
 	client->ps.speed = g_speed.value;
 	client->ps.basespeed = g_speed.value; 
 	
-	if (client->sess.raceMode || client->ps.stats[STAT_RACEMODE]) {
+	if (client->sess.raceMode /* || client->ps.stats[STAT_RACEMODE]*/) {
 		client->ps.speed = 250.0f;
 		client->ps.basespeed = 250.0f;
 	}

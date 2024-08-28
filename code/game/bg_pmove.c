@@ -244,18 +244,22 @@ Q_INLINE int PM_GetMovePhysics(void)
 {
 	if (!pm || !pm->ps)
 		return MV_JKA;
-#if 0//JK2_GAME
+#if JK2_GAME
 	if (pm->ps->stats[STAT_RACEMODE])
 		return (pm->ps->stats[STAT_MOVEMENTSTYLE]);
-	else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
-		return (g_movementStyle.integer);
-	else if (g_movementStyle.integer < MV_SIEGE)
-		return 0;
-	else if (g_movementStyle.integer >= MV_NUMSTYLES)
-		return MV_JKA;
+	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
+	//	return (g_movementStyle.integer);
+	//else if (g_movementStyle.integer < MV_SIEGE)
+	//	return 0;
+	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
+	//	return MV_JKA;
 #elif JK2_CGAME
 	if (cgs.isJK2Pro) {
 		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+	}
+	if (cgs.isTommyTernal && pm->ps->stats[STAT_RACEMODE]) {
+		if (!pm) return MV_JKA; // not sure why this is needed. from japro.
+		return pm->ps->stats[STAT_MOVEMENTSTYLE];
 	}
 	//if (cgs.gametype == GT_SIEGE)
 	//	return MV_SIEGE;
@@ -1948,6 +1952,8 @@ static int PM_TryRoll( void )
 		return 0;
 	}
 
+	// TODO MAYBE jaPRO ysal stuff here?
+
 	if (pm->ps->weapon != WP_SABER || BG_HasYsalamiri(pm->gametype, pm->ps) ||
 		!BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION))
 	{ //Not using saber, or can't use jump
@@ -3000,6 +3006,10 @@ static qboolean PM_DoChargedWeapons( void )
 	trace_t		tr;
 	qboolean	charging = qfalse,
 				altFire = qfalse;
+
+
+	if (pm->ps->stats[STAT_RACEMODE])
+		return qfalse;
 
 	// If you want your weapon to be a charging weapon, just set this bit up
 	switch( pm->ps->weapon )
@@ -4095,7 +4105,7 @@ void PM_AdjustAttackStates( pmove_t *pm )
 			pm->cmd.upmove <= 0 && !pm->cmd.forwardmove && !pm->cmd.rightmove*/)
 		{
 			// We just pressed the alt-fire key
-			if ( !pm->ps->zoomMode )
+			if ( !pm->ps->zoomMode && !pm->ps->stats[STAT_RACEMODE])
 			{
 				// not already zooming, so do it now
 				pm->ps->zoomMode = 1;
@@ -4735,6 +4745,105 @@ void PmoveSingle (pmove_t *pmove) {
 
 	PM_DropTimers();
 
+
+	// TODO MAYBE jaPRO fix strafebot up.
+#if JK2_CGAME
+	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT){// && !(cgs.restricts & RESTRICT_SB)) {
+#else
+	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT) {
+#endif
+		const int moveStyle = PM_GetMovePhysics();
+#if JK2_CGAME
+		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (moveStyle == MV_BOTJKA /*|| (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
+#else
+		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (moveStyle == MV_BOTJKA /* || (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
+#endif
+		{
+			const float realCurrentSpeed = sqrt((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));
+			if (realCurrentSpeed > 0) {
+				vec3_t vel = { 0 }, velangle;
+				float optimalDeltaAngle = 0;
+				qboolean CJ = qtrue;
+				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || pm->cmd.upmove > 0)
+					CJ = qfalse;
+				//else if (moveStyle == MV_SLICK)
+				//	CJ = qfalse;
+				else if (pml.walking && pml.groundTrace.surfaceFlags & SURF_SLICK) { //Lmao fuck this bullshit. no way to tell if we are on slick i guess.
+					CJ = qfalse;
+				}
+				else if (realCurrentSpeed > pm->ps->basespeed * 1.5f) //idk this is retarded, but lets us groundframe
+					CJ = qfalse;
+
+				if (realCurrentSpeed > pm->ps->basespeed || (CJ && (realCurrentSpeed > (pm->ps->basespeed * 0.5f)))) {
+					float middleOffset = 0; //Idk
+#if JK2_GAME
+					//middleOffset = bot_strafeOffset.integer;
+					middleOffset = 0;
+#endif
+					if (CJ)
+						//if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
+						//	optimalDeltaAngle = -1; //CJ //Take into account ground accel/friction.. only cpm styles turn faster?
+						//else
+							optimalDeltaAngle = -6;
+					else {
+						float realAccel = pm_airaccelerate;
+						//if (moveStyle == MV_SP)
+						//	realAccel = pm_sp_airaccelerate;
+						//else if (moveStyle == MV_SLICK)
+						//	realAccel = pm_slick_accelerate;
+						//jetpack. 1.4f ?
+						optimalDeltaAngle = (acos((double)((pm->ps->basespeed - (realAccel * pm->ps->basespeed * pml.frametime)) / realCurrentSpeed)) * (180.0f / M_PI) - 45.0f);
+						if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
+							optimalDeltaAngle = 0;
+					}
+
+					vel[0] = pm->ps->velocity[0];
+					vel[1] = pm->ps->velocity[1];
+					vectoangles(vel, velangle);
+
+					if (pm->cmd.forwardmove > 0 && pm->cmd.rightmove > 0) {//WD
+						optimalDeltaAngle = 0 - optimalDeltaAngle;
+					}
+					else if (pm->cmd.forwardmove > 0 && pm->cmd.rightmove < 0) {//WA
+						optimalDeltaAngle = 0 + optimalDeltaAngle;
+					}
+					else if (!pm->cmd.forwardmove && pm->cmd.rightmove > 0) {//D
+						//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
+						//	optimalDeltaAngle = 0 - middleOffset; //Take into account speed.
+						//else
+							optimalDeltaAngle = 45 - optimalDeltaAngle;
+					}
+					else if (!pm->cmd.forwardmove && pm->cmd.rightmove < 0) {//A
+						//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
+						//	optimalDeltaAngle = 0 + middleOffset;
+						//else
+							optimalDeltaAngle = -45 + optimalDeltaAngle;
+					}
+					else if (pm->cmd.forwardmove > 0 && !pm->cmd.rightmove) {//W
+						if (AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0) { //Decide which W we want.  (Whatever is closest)
+							//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) //Why the f does it switch
+							//	optimalDeltaAngle = -45; //Needs good offset
+							//else
+								optimalDeltaAngle = -45 - optimalDeltaAngle;
+						}
+						else { //Right side
+							//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
+							//	optimalDeltaAngle = 45; //Needs good offset
+							//else
+								optimalDeltaAngle = 45 + optimalDeltaAngle;
+						}
+					}
+
+					velangle[YAW] += optimalDeltaAngle;
+					velangle[PITCH] = pm->ps->viewangles[PITCH];
+
+					PM_SetPMViewAngle(pm->ps, velangle, &pm->cmd);
+					AngleVectors(pm->ps->viewangles, pml.forward, pml.right, pml.up); //Have to re set this here
+				}
+			}
+		}
+	}
+
 	if (pm->ps->pm_type == PM_FLOAT)
 	{
 		PM_FlyMove ();
@@ -4780,6 +4889,14 @@ void PmoveSingle (pmove_t *pmove) {
 
 	// entering / leaving water splashes
 	PM_WaterEvents();
+
+	//Walbug fix start, if getting stuck w/o noclip is even possible.  This should maybe be after round float? im not sure..
+	// TODO MAYBE jaPRO this actually kills strafing on yavin. find better solution.
+	//if ((pm->ps->persistant[PERS_TEAM] != TEAM_SPECTATOR) && pm->ps->stats[STAT_RACEMODE] && VectorCompare(pm->ps->origin, pml.previous_origin) /*&& (VectorLengthSquared(pm->ps->velocity) > VectorLengthSquared(pml.previous_velocity))*/)
+	//	VectorClear(pm->ps->velocity); //Their velocity is increasing while their origin is not moving (wallbug), so prevent this..
+		//VectorCopy(pml.previous_velocity, pm->ps->velocity);
+	//To fix rocket wallbug, since that gets applied elsewhere, just always reset vel if origins dont match?
+	//Wallbug fix end
 
 	// snap some parts of playerstate to save network bandwidth
 	if (pm->ps->persistant[PERS_TEAM] == TEAM_SPECTATOR) {
