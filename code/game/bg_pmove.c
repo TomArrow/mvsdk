@@ -4903,7 +4903,7 @@ void PmoveSingle (pmove_t *pmove) {
 		trap_SnapVector( pm->ps->velocity );
 	}
 	else {
-		if (pm->ps->stats[STAT_RACEMODE] || pm->pmove_float > 2) {
+		if (/*pm->ps->stats[STAT_RACEMODE] || */pm->pmove_float > 2) {
 		}
 #if JK2_GAME
 		else if (g_fixHighFPSAbuse.integer
