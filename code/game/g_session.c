@@ -27,7 +27,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i", 
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i", 
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -37,7 +37,9 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.teamLeader,
 		client->sess.setForce,
 		client->sess.saberLevel,
-		client->sess.selectedFP
+		client->sess.selectedFP,
+		(int)client->sess.raceMode,
+		client->sess.movementStyle
 		);
 
 	var = va( "session%i", (int)(client - level.clients) );
@@ -71,11 +73,12 @@ void G_ReadSessionData( gclient_t *client ) {
 	int spectatorState;
 	int sessionTeam;
 	int setForce;
+	int tempRaceMode;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -85,7 +88,9 @@ void G_ReadSessionData( gclient_t *client ) {
 		&teamLeader,                   // bk010221 - format
 		&setForce,
 		&client->sess.saberLevel,
-		&client->sess.selectedFP
+		&client->sess.selectedFP,
+		&tempRaceMode,
+		&client->sess.movementStyle
 		);
 
 	// bk001205 - format issues
@@ -93,6 +98,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.spectatorState = (spectatorState_t)spectatorState;
 	client->sess.teamLeader = (qboolean)teamLeader;
 	client->sess.setForce = (qboolean)setForce;
+	client->sess.raceMode = (qboolean)tempRaceMode;
 
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;

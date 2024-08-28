@@ -570,6 +570,68 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 		return;
 	}
 
+#if 0 // japro: MAYBE do this? not sure i like it
+	if (activator->client &&
+		activator->client->sess.raceMode &&
+		(!other || !(other->spawnflags & 4)) &&
+		!(ent->spawnflags & 256) && //Let mapmaker bypass this...
+		((ent->pos2[2] - ent->pos1[2]) > 128) &&
+		(activator->client->ps.origin[2] < (ent->r.absmax[2] + 96)) &&
+		(activator->client->ps.origin[2] > (ent->r.absmax[2] - 96))) //We are in racemode, and the door/plat/ele moves upwawrds. Ideally could also check for angle == -1 or -2 but where is that..
+	{ //Turn this ele into a jumppad.  Also only do this if the trigger was not a use button
+		float height, time, strength;
+
+		//No good way to get bottom origin of the mover..? Could be weird geometry... so just assume the top of the ele model in starting position is the "bottom" of the ele.
+		/*
+		float jumpHeight;
+
+		switch (activator->client->sess.movementStyle)
+		{
+			case 0://Siege
+			case 1://JKA
+			case 2://QW
+				jumpHeight = forceJumpHeight[activator->client->ps.fd.forcePowerLevel[FP_LEVITATION]];
+				break;
+			case 3://CPM
+			case 4://Q3
+				jumpHeight = 64;//whatever
+				break;
+			case 5://PJK
+				jumpHeight = forceJumpHeight[activator->client->ps.fd.forcePowerLevel[FP_LEVITATION]];
+				break;
+			case 6://WSW
+				jumpHeight = 72;//whatever
+				break;
+			case 7://RJQ3
+			case 8://RJCPM
+				jumpHeight = 260;//whatever
+				break;
+			default:
+				jumpHeight = 0;
+				break;
+		}
+		*/
+
+		//ent->damage = 0; //Temp
+
+		//trap->Print("assumed ele starting height: %.2f, pos1: %2f, pos2: %2f, Our Height: %.2f\n", ent->r.absmax[2], ent->pos1[2], ent->pos2[2], activator->client->ps.origin[2]); //Lets assume the ele starts there...
+
+		height = ent->pos2[2] - ent->pos1[2] + 64; //Send them up a lil higher just to be safe
+		time = sqrt(height / (.5f * g_gravity.value));
+		if (!time)
+			return; //bua ?
+		strength = (height / time) * 2.0f;
+
+		activator->client->ps.velocity[0] = activator->client->ps.velocity[1] = 0; //reset our xyspeed... meh
+		if (strength > activator->client->ps.velocity[2]) //Only apply the jumppad if it would speed them up
+			activator->client->ps.velocity[2] = strength;
+
+		//trap->Print("Height: %.2f, time: %.2fstrength: %.2f\n", height, time, strength);
+
+		return;
+	}
+#endif
+
 	ent->activator = activator;
 
 	if ( ent->moverState == MOVER_POS1 ) {

@@ -101,7 +101,7 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	SetClientViewAngle( player, angles );
 
 	// kill anything at the destination
-	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR && !player->client->sess.raceMode) {
 		G_KillBox (player);
 	}
 
@@ -113,6 +113,22 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		trap_LinkEntity (player);
+	}
+
+	if (player->client->sess.raceMode) {
+		//player->client->ps.powerups[PW_YSALAMIRI] = 0; //Fuck
+		player->client->ps.powerups[PW_FORCE_BOON] = 0;
+		//if (player->client->sess.movementStyle == MV_RJQ3 || player->client->sess.movementStyle == MV_RJCPM || player->client->sess.movementStyle == MV_TRIBES) //Get rid of their rockets when they tele/noclip..?
+		//	DeletePlayerProjectiles(player);
+		//if (player->client->sess.movementStyle == MV_COOP_JKA && player->client->ps.duelInProgress) { //clean this up..
+		//	gentity_t* gripEnt;
+		//	WP_ForcePowerStop(player, FP_GRIP);
+		//
+		//	gripEnt = &g_entities[player->client->ps.duelIndex];
+		//	if (gripEnt && gripEnt->client) {
+		//		WP_ForcePowerStop(gripEnt, FP_GRIP);
+		//	}
+		//}
 	}
 }
 

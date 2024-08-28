@@ -807,7 +807,7 @@ void AddScore( gentity_t *ent, vec3_t origin, int score );
 void CalculateRanks( void );
 qboolean SpotWouldTelefrag( gentity_t *spot );
 
-void G_CenterPrint( int targetNum, int autoLineWraps, const char *message );
+void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag);
 
 extern gentity_t *gJMSaberEnt;
 

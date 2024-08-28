@@ -458,6 +458,160 @@ void Cmd_Race_f(gentity_t* ent)
 		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
 	}
 }
+static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
+	qboolean wasReset = qfalse;;
+
+	if (!ent->client)
+		return;
+	if (ent->client->pers.raceStartCommandTime)// || ent->client->pers.stats.startTimeFlag)
+		wasReset = qtrue;
+
+	if (ent->client->sess.raceMode) {
+		VectorClear(ent->client->ps.velocity);
+		ent->client->ps.duelTime = 0;
+		//if (!ent->client->pers.practice) {
+			ent->client->ps.powerups[PW_YSALAMIRI] = 0; //beh, only in racemode so wont fuck with ppl using amtele as checkpoints midcourse
+			//ent->client->ps.stats[STAT_RESTRICTIONS] = 0; //meh
+			//if (ent->client->savedJumpLevel && ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] != ent->client->savedJumpLevel) {
+			//	ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = ent->client->savedJumpLevel;
+			//	//trap->SendServerCommand(ent-g_entities, va("print \"Restored saved jumplevel (%i).\n\"", ent->client->savedJumpLevel));
+			//	ent->client->savedJumpLevel = 0;
+			//}
+		//}
+		ent->client->ps.powerups[PW_FORCE_BOON] = 0;
+		//ent->client->pers.haste = qfalse;
+		if (ent->health > 0) {
+			ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
+			ent->client->ps.stats[STAT_ARMOR] = 25;
+		}
+		//}
+		if (MovementStyleAllowsWeapons(ent->client->sess.movementStyle)) { //Get rid of their rockets when they tele/noclip..? Do this for every style..
+			DeletePlayerProjectiles(ent);
+		}
+
+		/* //already done every frame ?
+		#if _GRAPPLE
+				if (ent->client->sess.movementStyle == MV_SLICK && ent->client->hook)
+					Weapon_HookFree(ent->client->hook);
+		#endif
+		*/
+		//if (ent->client->sess.movementStyle == MV_SPEED) {
+		//	ent->client->ps.fd.forcePower = 50;
+		//}
+
+		//if (ent->client->sess.movementStyle == MV_JETPACK) {
+		//	ent->client->ps.jetpackFuel = 100;
+		//	ent->client->ps.eFlags &= ~EF_JETPACK_ACTIVE;
+		//	ent->client->ps.ammo[AMMO_DETPACK] = 4;
+		//}
+
+		//if (ent->client->pers.userName[0]) {
+		//	if (ent->client->sess.raceMode && !ent->client->pers.practice && ent->client->pers.stats.startTime) {
+		//		ent->client->pers.stats.racetime += (trap->Milliseconds() - ent->client->pers.stats.startTime) * 0.001f - ent->client->afkDuration * 0.001f;
+		//		ent->client->afkDuration = 0;
+		//	}
+		//	if (ent->client->pers.stats.racetime > 120.0f) {
+		//		G_UpdatePlaytime(0, ent->client->pers.userName, (int)(ent->client->pers.stats.racetime + 0.5f));
+		//		ent->client->pers.stats.racetime = 0.0f;
+		//	}
+		//}
+	}
+
+	ent->client->pers.raceStartCommandTime = 0;
+	//ent->client->pers.stats.coopStarted = qfalse;
+	//ent->client->pers.stats.startLevelTime = 0;
+	//ent->client->pers.stats.startTime = 0;
+	//ent->client->pers.stats.topSpeed = 0;
+	//ent->client->pers.stats.displacement = 0;
+	//ent->client->pers.stats.displacementSamples = 0;
+	//ent->client->pers.stats.startTimeFlag = 0;
+	//ent->client->pers.stats.topSpeedFlag = 0;
+	//ent->client->pers.stats.displacementFlag = 0;
+	//ent->client->pers.stats.displacementFlagSamples = 0;
+	//ent->client->ps.stats[STAT_JUMPTIME] = 0;
+	//ent->client->ps.stats[STAT_WJTIME] = 0;
+	ent->client->ps.fd.forceRageRecoveryTime = 0;
+
+	//ent->client->pers.stats.lastResetTime = level.time; //well im just not sure
+
+	//ent->client->midRunTeleCount = 0;
+	//ent->client->midRunTeleMarkCount = 0;
+
+	if (wasReset && print)
+		//trap->SendServerCommand( ent-g_entities, "print \"Timer reset!\n\""); //console spam is bad
+		trap_SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
+}
+
+static void ResetPlayerTimers(gentity_t* ent, qboolean print)
+{
+	ResetSpecificPlayerTimers(ent, print);
+	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!
+	//ent->client->ps.jetpackFuel = 100;
+
+	//if (ent->client->ps.duelInProgress && ent->client->ps.duelIndex != ENTITYNUM_NONE) {
+	//	gentity_t* duelAgainst = &g_entities[ent->client->ps.duelIndex];
+	//	if (duelAgainst && duelAgainst->client) {
+	//		if (ent->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) //Only do this for coop person that teles i guess.
+	//			WP_ForcePowerStop(ent, FP_RAGE);
+	//		if (ent->client->ps.fd.forcePowersActive & (1 << FP_SPEED))
+	//			WP_ForcePowerStop(ent, FP_SPEED);
+	//		ResetSpecificPlayerTimers(duelAgainst, print);
+	//	}
+	//}
+}
+
+static qboolean MovementStyleAllowsJumpChange(int movementStyle) {
+	return qtrue;
+}
+
+static void Cmd_JumpChange_f(gentity_t* ent)
+{
+	char jLevel[32];
+	int level;
+
+	if (!ent->client)
+		return;
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (trap_Argc() != 2) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /jump <level>\n\"");
+		return;
+	}
+
+	if (ent->client->ps.groundEntityNum == ENTITYNUM_NONE || VectorLength(ent->client->ps.velocity)) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be standing still to use this command!\n\"");
+		return;
+	}
+
+	if (!MovementStyleAllowsJumpChange(ent->client->sess.movementStyle)) {
+		char styleString[16];
+		//IntegerToRaceName(ent->client->sess.movementStyle, styleString, sizeof(styleString));
+		//trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%s)!\n\"", styleString));
+		trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%d)!\n\"", ent->client->sess.movementStyle));
+		return;
+	}
+
+	trap_Argv(1, jLevel, sizeof(jLevel));
+	level = atoi(jLevel);
+
+	if (level >= 1 && level <= 3) {
+		ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = level;
+		//AmTeleportPlayer(ent, ent->client->ps.origin, ent->client->ps.viewangles, qtrue, qtrue, qfalse); //Good
+		if (ent->client->pers.raceStartCommandTime/* || ent->client->pers.stats.startTimeFlag*/) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i): timer reset.\n\"", level));
+			ResetPlayerTimers(ent, qtrue);
+		}
+		else
+			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i).\n\"", level));
+	}
+	else
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /jump <level>\n\"");
+}
+
 
 qboolean MovementStyleAllowsWeapons(int moveStyle) {
 	return qfalse;

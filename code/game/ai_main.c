@@ -1662,6 +1662,12 @@ int PassStandardEnemyChecks(bot_state_t *bs, gentity_t *en)
 	{
 		return 0;
 	}
+	
+	if (en->client->sess.raceMode)
+		return 0;
+
+	if (en->client->ps.pm_type == PM_NOCLIP)
+		return 0;
 
 	if (en->health < 1)
 	{

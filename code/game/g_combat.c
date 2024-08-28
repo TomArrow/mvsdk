@@ -641,6 +641,10 @@ void TossClientItems( gentity_t *self ) {
 	int			i;
 	gentity_t	*drop;
 
+
+	if (self->client->sess.raceMode)//racemode
+		return;
+
 	// drop the weapon if not a gauntlet or machinegun
 	weapon = self->s.weapon;
 
@@ -1942,12 +1946,24 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				}
 				else
 				{
-					AddScore( attacker, self->r.currentOrigin, -1 );
+					if (!attacker->client->sess.raceMode)
+						AddScore(attacker, self->r.currentOrigin, -1);
 				}
 			}
 			else
 			{
 				AddScore( attacker, self->r.currentOrigin, -1 );
+				if (attacker != self) { //we did a teamkill
+					if (!attacker->client->sess.raceMode) {
+						AddScore(attacker, self->r.currentOrigin, -1);
+						//if (attacker != self && attacker->client)//JAPRO STATS
+							//attacker->client->pers.stats.teamKills++;
+					}
+				}
+				else if (g_gametype.integer != GT_FFA && (g_gametype.integer != GT_CTF)){// || !g_fixCTFScores.integer)) {//we selfkilled
+					if (!attacker->client->sess.raceMode)
+						AddScore(attacker, self->r.currentOrigin, -1); //Only take away a point if its not FFA or CTF i guess, sure
+				}
 			}
 			if (g_gametype.integer == GT_JEDIMASTER)
 			{
@@ -3079,10 +3095,37 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		damage *= 0.5;
 	}
 
+	// japro: do i need this?
+	//if ((g_gametype == GT_FFA) && !g_friendlyFire.value && (g_neutralFlag.integer && g_neutralFlag.integer < 4)) {
+	//	if (attacker && attacker->client && !attacker->client->ps.duelInProgress && !attacker->client->ps.powerups[PW_NEUTRALFLAG] && targ && targ->client && !targ->client->ps.duelInProgress && !targ->client->sess.raceMode && !targ->client->ps.powerups[PW_NEUTRALFLAG])
+	//		return;
+	//}
+
+	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress) {
+		//if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //I think this is a bug
+		//	//if (mod != MOD_BLASTER || (!targ->client || !targ->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA))
+		//	return;
+		//}
+		//else 
+		//if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_TRIBES)) //ignore self damage
+		//	return; //ignore self damage if attacker is in racemode
+		return;
+		//if (((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_TRIBES)) && targ->client && (targ != attacker)) {
+		//	return; //ignore other damage if attacker is in racemode - why is this not returning for detpacking race->outof race
+		//}
+	}
+
+	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ && mod != MOD_LAVA && (damage != Q3_INFINITE) && !targ->client->ps.duelInProgress) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
+		return; //ignore other damage if target is in racemode
+
 	// the intermission has allready been qualified for, so don't
 	// allow any extra scoring
-	if ( level.intermissionQueued ) {
-		return;
+	if ( level.intermissionQueued ) { //still let racers dmg themselves in the intermission delay time
+		if (targ->client && targ->client->sess.raceMode) {
+		}
+		else {
+			return;
+		}
 	}
 	if ( !inflictor ) {
 		inflictor = &g_entities[ENTITYNUM_WORLD];
@@ -3146,11 +3189,19 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 
 		if (mod == MOD_SABER && jk2gameplay != VERSION_1_02)
 		{
-			VectorScale (dir, (g_knockback.value * (float)knockback / mass)*g_saberDmgVelocityScale.integer, kvel);
+			if (targ->client && targ->client->sess.raceMode) {
+				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
+			}
+			else {
+				VectorScale(dir, (g_knockback.value * (float)knockback / mass) * g_saberDmgVelocityScale.integer, kvel);
+			}
 		}
 		else
 		{
-			VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
+			if (targ->client && targ->client->sess.raceMode)
+				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
+			else
+				VectorScale(dir, g_knockback.value * (float)knockback / mass, kvel);
 		}
 		VectorAdd (targ->client->ps.velocity, kvel, targ->client->ps.velocity);
 
@@ -3177,6 +3228,14 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		}
 	}
 
+	if (targ->client && targ->client->sess.raceMode && mod == MOD_SABER)
+	{ //add the shield effect and get out here (stops pain spam)
+		gentity_t* evEnt = G_TempEntity(targ->r.currentOrigin, EV_SHIELD_HIT);
+		evEnt->s.otherEntityNum = targ->s.number;
+		evEnt->s.eventParm = DirToByte(dir);
+		evEnt->s.time2 = 100;
+		return;
+	}
 	
 	if ( g_trueJedi.integer && client )
 	{//less explosive damage for jedi, more saber damage for non-jedi

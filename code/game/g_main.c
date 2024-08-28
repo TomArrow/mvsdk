@@ -464,6 +464,7 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 				PlayerSnapshotSetSolid(lastPlayerSnapshotNum == -1, playerNum);
 			}
 			lastPlayerSnapshotNum = playerNum;
+			return qtrue;
 		}
 		break;
 	}
@@ -2050,6 +2051,8 @@ and the time everyone is moved to the intermission spot, so you
 can see the last frag.
 =================
 */
+extern void Svcmd_ResetScores_f(void);
+extern void ClientRespawn(gentity_t* ent);
 void CheckExitRules( void ) {
  	int			i;
 	gclient_t	*cl;
@@ -2100,7 +2103,33 @@ void CheckExitRules( void ) {
 	if ( level.intermissionQueued ) {
 		int time = (g_singlePlayer.integer) ? SP_INTERMISSION_DELAY_TIME : INTERMISSION_DELAY_TIME;
 		if ( level.time - level.intermissionQueued >= time ) {
+			qboolean racer = qfalse;
+
 			level.intermissionQueued = 0;
+
+			if (g_defrag.integer) {
+				for (i = 0; i < level.maxclients; i++) {
+					if (g_entities[i].inuse && g_entities[i].client && g_entities[i].client->sess.raceMode && (g_entities[i].client->sess.sessionTeam != TEAM_SPECTATOR)) {
+						racer = qtrue;
+						break;
+					}
+				}
+			}
+
+			// from japro. not sure if i even need this or it makes any sense
+			if (racer) { //only do this if someoen is in racemode?
+				//PrintStats(-1);//JAPRO STATS
+				for (i = 0; i < level.maxclients; i++) {
+					if (!g_entities[i].inuse || !g_entities[i].client || g_entities[i].client->sess.raceMode || (g_entities[i].client->sess.sessionTeam == TEAM_SPECTATOR))
+						continue;
+					ClientRespawn(&g_entities[i]);	// respawn if dead... respawn if alive too?
+				}
+				Svcmd_ResetScores_f();
+			}
+			else {
+				BeginIntermission();
+			}
+			// uh? should this not NOT be called then?
 			BeginIntermission();
 		}
 		return;

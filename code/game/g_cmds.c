@@ -593,13 +593,13 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 
 	if ( client->sess.sessionTeam == TEAM_RED ) {
 		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n",
-			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEREDTEAM")) );
+			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEREDTEAM")), qtrue);
 	} else if ( client->sess.sessionTeam == TEAM_BLUE ) {
 		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n",
-		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBLUETEAM")));
+		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBLUETEAM")), qtrue);
 	} else if ( client->sess.sessionTeam == TEAM_SPECTATOR && oldTeam != TEAM_SPECTATOR ) {
 		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n",
-		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHESPECTATORS")));
+		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHESPECTATORS")), qtrue);
 	} else if ( client->sess.sessionTeam == TEAM_FREE ) {
 		if (g_gametype.integer == GT_TOURNAMENT)
 		{
@@ -622,7 +622,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 		else
 		{
 			G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n",
-			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")));
+			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")), qtrue);
 		}
 	}
 
@@ -2329,6 +2329,9 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 		return;
 	}
 
+	if (ent->client->sess.raceMode)
+		return;
+
 	//New: Don't let a player duel if he just did and hasn't waited 10 seconds yet (note: If someone challenges him, his duel timer will reset so he can accept)
 	if (ent->client->ps.fd.privateDuelTime > level.time)
 	{
@@ -2398,8 +2401,8 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 		else
 		{
 			//Print the message that a player has been challenged in private, only announce the actual duel initiation in private
-			G_CenterPrint( challenged-g_entities, 3, va("%s" S_COLOR_WHITE " %s\n", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELCHALLENGE")) );
-			G_CenterPrint( ent-g_entities, 3, va("%s %s\n", G_GetStripEdString("SVINGAME", "PLDUELCHALLENGED"), challenged->client->pers.netname) );
+			G_CenterPrint( challenged-g_entities, 3, va("%s" S_COLOR_WHITE " %s\n", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELCHALLENGE")),qfalse );
+			G_CenterPrint( ent-g_entities, 3, va("%s %s\n", G_GetStripEdString("SVINGAME", "PLDUELCHALLENGED"), challenged->client->pers.netname),qfalse );
 		}
 
 		challenged->client->ps.fd.privateDuelTime = 0; //reset the timer in case this player just got out of a duel. He should still be able to accept the challenge.

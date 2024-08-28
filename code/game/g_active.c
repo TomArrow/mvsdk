@@ -168,14 +168,16 @@ void P_WorldEffects( gentity_t *ent ) {
 			if ( envirosuit ) {
 				G_AddEvent( ent, EV_POWERUP_BATTLESUIT, 0 );
 			} else {
-				if (ent->watertype & CONTENTS_LAVA) {
-					G_Damage (ent, NULL, NULL, NULL, NULL, 
-						30*waterlevel, 0, MOD_LAVA);
-				}
+				if (!ent->client || !ent->client->sess.raceMode) { //No sizzle dmg in racemode?
+					if (ent->watertype & CONTENTS_LAVA) {
+						G_Damage(ent, NULL, NULL, NULL, NULL,
+							30 * waterlevel, 0, MOD_LAVA);
+					}
 
-				if (ent->watertype & CONTENTS_SLIME) {
-					G_Damage (ent, NULL, NULL, NULL, NULL, 
-						10*waterlevel, 0, MOD_SLIME);
+					if (ent->watertype & CONTENTS_SLIME) {
+						G_Damage(ent, NULL, NULL, NULL, NULL,
+							10 * waterlevel, 0, MOD_SLIME);
+					}
 				}
 			}
 		}
@@ -948,6 +950,9 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 					break;
 				}
 
+				if (client && client->sess.raceMode)
+					break;
+
 				if ( ent->s.eType != ET_PLAYER )
 				{
 					break;		// not in the player model
@@ -1240,6 +1245,46 @@ void ClientThink_real( gentity_t *ent ) {
 		//	return;
 	}
 
+	if (client->sess.sessionTeam == TEAM_FREE && !g_defrag.integer) {
+		if (client->ps.stats[STAT_RACEMODE] || g_gametype.integer >= GT_TEAM) {
+			SetTeam(ent, "spectator");// , qtrue);
+			client->sess.raceMode = qfalse;
+			client->ps.stats[STAT_RACEMODE] = qfalse;
+		}
+	}
+
+	//if (client->ps.stats[STAT_RACEMODE]) {//Is this really needed..
+	//	if (client->ps.stats[STAT_MOVEMENTSTYLE] == MV_OCPM) {
+	//		ucmd->serverTime = ((ucmd->serverTime + 7) / 8) * 8;
+	//	}
+	//	else {
+	//		if (msec < 3)
+	//			ucmd->serverTime = ((ucmd->serverTime + 2) / 3) * 3;//Integer math was making this bad, but is this even really needed? I guess for 125fps bhop height it is?
+	//		else if (msec > 16 && client->pers.practice)
+	//			ucmd->serverTime = ((ucmd->serverTime + 15) / 16) * 16;
+	//	}
+	//}
+	//else if (pmove_fixed.integer || client->pers.pmoveFixed)
+	//	ucmd->serverTime = ((ucmd->serverTime + pmove_msec.integer - 1) / pmove_msec.integer) * pmove_msec.integer;
+
+	//if ((client->sess.sessionTeam != TEAM_SPECTATOR) && !client->ps.stats[STAT_RACEMODE] && ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP || g_movementStyle.integer == MV_SLICK || g_movementStyle.integer == MV_TRIBES)) { //Ok,, this should be like every frame, right??
+	//	client->sess.movementStyle = g_movementStyle.integer;
+	//}
+	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.movementStyle;
+
+	//if ((g_neutralFlag.integer < 4) && client->ps.powerups[PW_NEUTRALFLAG]) {
+	//	if (client->ps.fd.forcePowerLevel[FP_LEVITATION] > 1) {
+	//		client->savedJumpLevel = client->ps.fd.forcePowerLevel[FP_LEVITATION];
+	//		client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
+	//	}
+	//}
+	//else if (client->savedJumpLevel) {
+	//	client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->savedJumpLevel;
+	//}
+	if (client->ps.stats[STAT_RACEMODE]) {
+		client->ps.fd.forcePowerLevel[FP_SABERATTACK] = 3; //make sure its allowed on server? or?
+	}
+
 	//
 	// check for exiting intermission
 	//
@@ -1263,6 +1308,55 @@ void ClientThink_real( gentity_t *ent ) {
 		{
 			ent->client->ps.eFlags &= ~EF_INVULNERABLE;
 		}
+	}
+
+	if (ent && ent->client && ent->client->sess.raceMode) {
+		const int movementStyle = ent->client->sess.movementStyle;
+		//if (movementStyle == MV_RJCPM || movementStyle == MV_RJQ3) {
+		//	ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_MELEE) + (1 << WP_SABER) + (1 << WP_ROCKET_LAUNCHER);
+		//	ent->client->ps.ammo[AMMO_ROCKETS] = 2;
+		//	if (ent->health > 0)
+		//		ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
+		//}
+		//else if (movementStyle == MV_JETPACK) {
+		//	ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_MELEE) + (1 << WP_SABER) + (1 << WP_DET_PACK);
+		//	if (!ent->client->pers.stats.startTime)
+		//		ent->client->ps.ammo[AMMO_DETPACK] = 4; //Dont drop their ammo before the course starts? qol
+		//	if (ent->health > 0)
+		//		ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
+		//}
+		//else if (movementStyle == MV_TRIBES) {
+		//	ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_MELEE) + (1 << WP_CONCUSSION);
+		//	if (!ent->client->pers.stats.startTime)
+		//		ent->client->ps.ammo[AMMO_METAL_BOLTS] = 120; //Dont drop their ammo before the course starts? qol
+		//	if (ent->health > 0)
+		//		ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
+		//}
+		//else if (movementStyle == MV_COOP_JKA) {
+		//	//ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = 1;
+		//	ent->client->ps.fd.forcePowerLevel[FP_LIGHTNING] = ent->client->ps.fd.forcePowerLevel[FP_DRAIN] = 2;
+		//	ent->client->ps.fd.forcePowerLevel[FP_SPEED] = ent->client->ps.fd.forcePowerLevel[FP_GRIP] = ent->client->ps.fd.forcePowerLevel[FP_PUSH] = ent->client->ps.fd.forcePowerLevel[FP_PULL] = 3;
+		//	ent->client->ps.fd.forcePowersKnown = (1 << FP_PULL) + (1 << FP_PUSH) + (1 << FP_SPEED) + (1 << FP_GRIP) + (1 << FP_DRAIN) + (1 << FP_LIGHTNING);
+		//	ent->client->ps.stats[STAT_WEAPONS] = (1 << 16) - 1 - (1 << WP_DET_PACK) - (1 << WP_TRIP_MINE) - (1 << WP_THERMAL); //all weapons? w/o tripmine detpack.
+		//	if (ent->health > 0)
+		//		ent->client->ps.stats[STAT_ARMOR] = ent->client->ps.stats[STAT_HEALTH] = ent->health = 999;
+		//}
+		//else 
+		{
+			client->ps.ammo[AMMO_POWERCELL] = 300;
+
+			if (movementStyle == MV_JKA){// || movementStyle == MV_SIEGE || movementStyle == MV_QW || movementStyle == MV_PJK || movementStyle == MV_SP || movementStyle == MV_SPEED || movementStyle == MV_JETPACK) {
+				ent->client->ps.stats[STAT_WEAPONS] = /*(1 << WP_MELEE) +*/ (1 << WP_SABER) + (1 << WP_DISRUPTOR) + (1 << WP_STUN_BATON);
+			}
+			else {
+				ent->client->ps.stats[STAT_WEAPONS] = /*(1 << WP_MELEE) +*/ (1 << WP_SABER) + (1 << WP_DISRUPTOR);
+			}
+		}
+
+		//if (movementStyle == MV_JETPACK || movementStyle == MV_TRIBES) //always give jetpack style a jetpack, and non jetpack styles no jetpack, maybe this should just be in clientspawn ?
+		//	ent->client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << HI_JETPACK);
+		//else
+		//	ent->client->ps.stats[STAT_HOLDABLE_ITEMS] &= ~(1 << HI_JETPACK);
 	}
 
 	// check for inactivity timer, but never drop the local client of a non-dedicated server
@@ -1298,7 +1392,12 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// set speed
 	client->ps.speed = g_speed.value;
-	client->ps.basespeed = g_speed.value;
+	client->ps.basespeed = g_speed.value; 
+	
+	if (client->sess.raceMode || client->ps.stats[STAT_RACEMODE]) {
+		client->ps.speed = 250.0f;
+		client->ps.basespeed = 250.0f;
+	}
 
 	if (ent->client->ps.duelInProgress)
 	{
@@ -1307,53 +1406,56 @@ void ClientThink_real( gentity_t *ent ) {
 		//Keep the time updated, so once this duel ends this player can't engage in a duel for another
 		//10 seconds. This will give other people a chance to engage in duels in case this player wants
 		//to engage again right after he's done fighting and someone else is waiting.
-		ent->client->ps.fd.privateDuelTime = level.time + 10000;
+		if (!ent->client->sess.raceMode) {
 
-		if (ent->client->ps.duelTime < level.time)
-		{
-			//Bring out the sabers
-			if (ent->client->ps.weapon == WP_SABER && ent->client->ps.saberHolstered &&
-				ent->client->ps.duelTime)
+			ent->client->ps.fd.privateDuelTime = level.time + 10000;
+
+			if (ent->client->ps.duelTime < level.time)
 			{
-				if (!saberOffSound || !saberOnSound)
+				//Bring out the sabers
+				if (ent->client->ps.weapon == WP_SABER && ent->client->ps.saberHolstered &&
+					ent->client->ps.duelTime)
 				{
-					saberOffSound = G_SoundIndex("sound/weapons/saber/saberoffquick.wav");
-					saberOnSound = G_SoundIndex("sound/weapons/saber/saberon.wav");
+					if (!saberOffSound || !saberOnSound)
+					{
+						saberOffSound = G_SoundIndex("sound/weapons/saber/saberoffquick.wav");
+						saberOnSound = G_SoundIndex("sound/weapons/saber/saberon.wav");
+					}
+
+					ent->client->ps.saberHolstered = qfalse;
+					G_Sound(ent, CHAN_AUTO, saberOnSound);
+
+					G_AddEvent(ent, EV_PRIVATE_DUEL, 2);
+
+					ent->client->ps.duelTime = 0;
 				}
 
-				ent->client->ps.saberHolstered = qfalse;
-				G_Sound(ent, CHAN_AUTO, saberOnSound);
-
-				G_AddEvent(ent, EV_PRIVATE_DUEL, 2);
-
-				ent->client->ps.duelTime = 0;
-			}
-
-			if (duelAgainst && duelAgainst->client && duelAgainst->inuse &&
-				duelAgainst->client->ps.weapon == WP_SABER && duelAgainst->client->ps.saberHolstered &&
-				duelAgainst->client->ps.duelTime)
-			{
-				if (!saberOffSound || !saberOnSound)
+				if (duelAgainst && duelAgainst->client && duelAgainst->inuse &&
+					duelAgainst->client->ps.weapon == WP_SABER && duelAgainst->client->ps.saberHolstered &&
+					duelAgainst->client->ps.duelTime)
 				{
-					saberOffSound = G_SoundIndex("sound/weapons/saber/saberoffquick.wav");
-					saberOnSound = G_SoundIndex("sound/weapons/saber/saberon.wav");
+					if (!saberOffSound || !saberOnSound)
+					{
+						saberOffSound = G_SoundIndex("sound/weapons/saber/saberoffquick.wav");
+						saberOnSound = G_SoundIndex("sound/weapons/saber/saberon.wav");
+					}
+
+					duelAgainst->client->ps.saberHolstered = qfalse;
+					G_Sound(duelAgainst, CHAN_AUTO, saberOnSound);
+
+					G_AddEvent(duelAgainst, EV_PRIVATE_DUEL, 2);
+
+					duelAgainst->client->ps.duelTime = 0;
 				}
-
-				duelAgainst->client->ps.saberHolstered = qfalse;
-				G_Sound(duelAgainst, CHAN_AUTO, saberOnSound);
-
-				G_AddEvent(duelAgainst, EV_PRIVATE_DUEL, 2);
-
-				duelAgainst->client->ps.duelTime = 0;
 			}
-		}
-		else
-		{
-			client->ps.speed = 0;
-			client->ps.basespeed = 0;
-			ucmd->forwardmove = 0;
-			ucmd->rightmove = 0;
-			ucmd->upmove = 0;
+			else
+			{
+				client->ps.speed = 0;
+				client->ps.basespeed = 0;
+				ucmd->forwardmove = 0;
+				ucmd->rightmove = 0;
+				ucmd->upmove = 0;
+			}
 		}
 
 		if (!duelAgainst || !duelAgainst->client || !duelAgainst->inuse ||
@@ -1371,35 +1473,37 @@ void ClientThink_real( gentity_t *ent ) {
 			G_AddEvent(duelAgainst, EV_PRIVATE_DUEL, 0);
 
 			//Winner gets full health.. providing he's still alive
-			if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
-			{
-				if (ent->health < ent->client->ps.stats[STAT_MAX_HEALTH])
+			if (!ent->client->sess.raceMode) { // did i port this right?
+				if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
 				{
-					ent->client->ps.stats[STAT_HEALTH] = ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+					if (ent->health < ent->client->ps.stats[STAT_MAX_HEALTH])
+					{
+						ent->client->ps.stats[STAT_HEALTH] = ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+					}
+
+					if (g_spawnInvulnerability.integer)
+					{
+						ent->client->ps.eFlags |= EF_INVULNERABLE;
+						ent->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
+					}
 				}
 
-				if (g_spawnInvulnerability.integer)
+				/*
+				trap_SendServerCommand( ent-g_entities, va("print \"%s" S_COLOR_WHITE " %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER")) );
+				trap_SendServerCommand( duelAgainst-g_entities, va("print \"%s" S_COLOR_WHITE " %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER")) );
+				*/
+				//Private duel announcements are now made globally because we only want one duel at a time.
+				if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
 				{
-					ent->client->ps.eFlags |= EF_INVULNERABLE;
-					ent->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
+					G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!\n", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) , qtrue);
 				}
-			}
-
-			/*
-			trap_SendServerCommand( ent-g_entities, va("print \"%s" S_COLOR_WHITE " %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER")) );
-			trap_SendServerCommand( duelAgainst-g_entities, va("print \"%s" S_COLOR_WHITE " %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER")) );
-			*/
-			//Private duel announcements are now made globally because we only want one duel at a time.
-			if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
-			{
-				G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!\n", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) );
-			}
-			else
-			{ //it was a draw, because we both managed to die in the same frame
-				G_CenterPrint( -1, 3, va("%s\n", G_GetStripEdString("SVINGAME", "PLDUELTIE")) );
+				else
+				{ //it was a draw, because we both managed to die in the same frame
+					G_CenterPrint( -1, 3, va("%s\n", G_GetStripEdString("SVINGAME", "PLDUELTIE")), qtrue);
+				}
 			}
 		}
-		else
+		else if(!ent->client->sess.raceMode)
 		{
 			vec3_t vSub;
 			float subLen = 0;
@@ -1798,7 +1902,7 @@ void ClientThink_real( gentity_t *ent ) {
 	client->latched_buttons |= client->buttons & ~client->oldbuttons;
 
 	// Did we kick someone in our pmove sequence?
-	if (client->ps.forceKickFlip)
+	if (client->ps.forceKickFlip && !client->sess.raceMode)
 	{
 		gentity_t *faceKicked = &g_entities[client->ps.forceKickFlip-1];
 
@@ -1806,7 +1910,7 @@ void ClientThink_real( gentity_t *ent ) {
 			(!faceKicked->client->ps.duelInProgress || faceKicked->client->ps.duelIndex == ent->s.number) &&
 			(!ent->client->ps.duelInProgress || ent->client->ps.duelIndex == faceKicked->s.number))
 		{
-			if ( faceKicked && faceKicked->client && faceKicked->health && faceKicked->takedamage )
+			if ( faceKicked && faceKicked->client && faceKicked->health && faceKicked->takedamage && !faceKicked->client->sess.raceMode && !faceKicked->client->noclip)
 			{//push them away and do pain
 				vec3_t oppDir;
 				int strength = (int)VectorNormalize2( client->ps.velocity, oppDir );

@@ -774,6 +774,10 @@ void G_KillBox (gentity_t *ent) {
 			continue;
 		}
 
+		if (hit->client->sess.raceMode) {
+			continue;
+		}
+
 		// nail it
 		G_Damage ( hit, ent, ent, NULL, NULL,
 			100000, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);

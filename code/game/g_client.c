@@ -240,7 +240,7 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 		other->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
 	}
 
-	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")) );
+	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")), qtrue);
 
 	other->client->ps.isJediMaster = qtrue;
 	other->client->ps.saberIndex = self->s.number;
@@ -794,6 +794,31 @@ void respawn( gentity_t *ent ) {
 	tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN );
 	tent->s.clientNum = ent->s.clientNum;
 }
+
+void ClientRespawn(gentity_t* ent) {
+
+	//MaintainBodyQueue(ent);
+
+	// i dont even know what this does :)
+	if (gEscaping)// || g_gametype == GT_POWERDUEL) 
+	{
+		ent->client->sess.sessionTeam = TEAM_SPECTATOR;
+		ent->client->sess.spectatorState = SPECTATOR_FREE;
+		ent->client->sess.spectatorClient = 0;
+
+		ent->client->pers.teamState.state = TEAM_BEGIN;
+		//AddTournamentQueue(ent->client);
+		ClientSpawn(ent);
+		//ent->client->iAmALoser = qtrue;
+		return;
+	}
+
+	trap_UnlinkEntity(ent);
+
+
+	ClientSpawn(ent);
+}
+
 
 /*
 ================
@@ -2319,7 +2344,7 @@ void ClientSpawn(gentity_t *ent) {
 		trap_LinkEntity( ent );
 	}
 
-	if (g_spawnInvulnerability.integer)
+	if (g_spawnInvulnerability.integer && !ent->client->sess.raceMode)
 	{
 		ent->client->ps.eFlags |= EF_INVULNERABLE;
 		ent->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
@@ -2446,9 +2471,12 @@ void ClientDisconnect( int clientNum ) {
 
 #define MAX_CLIENT_CENTERPRINT_LINELENGTH 50
 #define MAX_CLIENT_CENTERPRINT_LENGTH 1024
-void G_CenterPrint( int targetNum, int autoLineWraps, const char *message )
+void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag )
 {
-	if ( !autoLineWraps )
+	if (printInDefrag && g_defrag.integer) {
+		trap_SendServerCommand(targetNum, va("print \"%s\"", message));
+	}
+	else if ( !autoLineWraps )
 		trap_SendServerCommand( targetNum, va("cp \"%s\"", message) );
 	else
 	{

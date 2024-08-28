@@ -380,6 +380,59 @@ void	Svcmd_ForceTeam_f( void ) {
 	SetTeam( &g_entities[cl - level.clients], str );
 }
 
+void Svcmd_ResetScores_f(void) {
+	int i;
+	//gclient_t	*cl;
+	gentity_t* ent;
+
+	//Respawn each player for forcepower updates?
+	//bg_legalizeforcepowers
+
+	for (i = 0; i < level.numConnectedClients; i++) {
+		//cl=&level.clients[level.sortedClients[i]];
+		ent = &g_entities[level.sortedClients[i]];
+
+		if (ent->inuse && ent->client) {
+			//ent->client->ps.fd.forceDoInit = 1;
+
+			//if (ent->client->sess.sessionTeam != TEAM_SPECTATOR && !ent->client->sess.raceMode) {
+				//G_Kill( ent ); //respawn them
+			//}
+
+			ent->client->ps.persistant[PERS_SCORE] = 0;
+			ent->client->ps.persistant[PERS_HITS] = 0;
+			ent->client->ps.persistant[PERS_KILLED] = 0;
+			ent->client->ps.persistant[PERS_IMPRESSIVE_COUNT] = 0;
+			ent->client->ps.persistant[PERS_EXCELLENT_COUNT] = 0;
+			ent->client->ps.persistant[PERS_DEFEND_COUNT] = 0;
+			ent->client->ps.persistant[PERS_ASSIST_COUNT] = 0;
+			ent->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] = 0;
+			ent->client->ps.persistant[PERS_CAPTURES] = 0;
+
+			//ent->client->pers.stats.damageGiven = 0;
+			//ent->client->pers.stats.damageTaken = 0;
+			//ent->client->pers.stats.teamKills = 0;
+			//ent->client->pers.stats.kills = 0;
+			//ent->client->pers.stats.teamHealGiven = 0;
+			//ent->client->pers.stats.teamEnergizeGiven = 0;
+			//ent->client->pers.stats.enemyDrainDamage = 0;
+			//ent->client->pers.stats.teamDrainDamage = 0;
+			ent->client->accuracy_shots = 0;
+			ent->client->accuracy_hits = 0;
+
+			ent->client->ps.fd.suicides = 0;
+			//Cmd_ForceChange_f(ent);
+			//WP_InitForcePowers( ent );
+		}
+	}
+
+	level.teamScores[TEAM_RED] = 0;
+	level.teamScores[TEAM_BLUE] = 0;
+	CalculateRanks();
+	trap_SendServerCommand(-1, "print \"Scores have been reset.\n\"");
+}
+
+
 char	*ConcatArgs( int start );
 
 /*
