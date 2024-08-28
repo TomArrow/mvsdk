@@ -4958,7 +4958,7 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 				WP_ForcePowerRegenerate(self, holoregen);
 			}
 
-			self->client->ps.fd.forcePowerRegenDebounceTime = level.time + g_forceRegenTime.integer;
+			self->client->ps.fd.forcePowerRegenDebounceTime = level.time + self->client->sess.raceMode ? 0 : g_forceRegenTime.integer;
 		}
 	}
 

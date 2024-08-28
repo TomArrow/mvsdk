@@ -738,6 +738,8 @@ extern int gGAvoidDismember;
 #define DAMAGE_HALF_ABSORB			0x00000400	// half shields, half health
 #define DAMAGE_HALF_ARMOR_REDUCTION	0x00000800	// This damage doesn't whittle down armor as efficiently.
 
+#define DAMAGE_IN_RACEMODE			0x00001000	// This damage doesn't whittle down armor as efficiently.
+
 //
 // g_missile.c
 //
