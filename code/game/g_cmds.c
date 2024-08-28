@@ -692,7 +692,10 @@ void SetTeam( gentity_t *ent, char *s ) {
 			else
 			{
 			*/
-				team = PickTeam( clientNum );
+			if (g_defrag.integer)
+				team = TEAM_FREE;
+			else
+				team = PickTeam(clientNum);
 			//}
 		}
 
@@ -2104,7 +2107,7 @@ int G_ItemUsable(playerState_t *ps, int forcedUse)
 		trtest[1] = fwdorg[1] + fwd[1]*16;
 		trtest[2] = fwdorg[2] + fwd[2]*16;
 
-		trap_Trace(&tr, ps->origin, mins, maxs, trtest, ps->clientNum, MASK_PLAYERSOLID);
+		JP_Trace(&tr, ps->origin, mins, maxs, trtest, ps->clientNum, MASK_PLAYERSOLID);
 
 		if ((tr.fraction != 1 && tr.entityNum != ps->clientNum) || tr.startsolid || tr.allsolid)
 		{
@@ -2125,12 +2128,12 @@ int G_ItemUsable(playerState_t *ps, int forcedUse)
 		AngleVectors (ps->viewangles, fwd, NULL, NULL);
 		fwd[2] = 0;
 		VectorMA(ps->origin, 64, fwd, dest);
-		trap_Trace(&tr, ps->origin, mins, maxs, dest, ps->clientNum, MASK_SHOT );
+		JP_Trace(&tr, ps->origin, mins, maxs, dest, ps->clientNum, MASK_SHOT );
 		if (tr.fraction > 0.9 && !tr.startsolid && !tr.allsolid)
 		{
 			VectorCopy(tr.endpos, pos);
 			VectorSet( dest, pos[0], pos[1], pos[2] - 4096 );
-			trap_Trace( &tr, pos, mins, maxs, dest, ps->clientNum, MASK_SOLID );
+			JP_Trace( &tr, pos, mins, maxs, dest, ps->clientNum, MASK_SOLID );
 			if ( !tr.startsolid && !tr.allsolid )
 			{
 				return 1;
@@ -2345,7 +2348,7 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 	fwdOrg[1] = ent->client->ps.origin[1] + forward[1]*256;
 	fwdOrg[2] = (ent->client->ps.origin[2]+ent->client->ps.viewheight) + forward[2]*256;
 
-	trap_Trace(&tr, ent->client->ps.origin, NULL, NULL, fwdOrg, ent->s.number, MASK_PLAYERSOLID);
+	JP_Trace(&tr, ent->client->ps.origin, NULL, NULL, fwdOrg, ent->s.number, MASK_PLAYERSOLID);
 
 	if (tr.fraction != 1 && tr.entityNum < MAX_CLIENTS)
 	{
@@ -2480,7 +2483,7 @@ void Cmd_DebugSetBodyAnim_f(gentity_t *self, int flags)
 	pmv.ps = &self->client->ps;
 	pmv.animations = bgGlobalAnimations;
 	pmv.cmd = self->client->pers.cmd;
-	pmv.trace = trap_Trace;
+	pmv.trace = JP_Trace;
 	pmv.pointcontents = trap_PointContents;
 	pmv.gametype = g_gametype.integer;
 
@@ -2499,7 +2502,7 @@ void StandardSetBodyAnim(gentity_t *self, int anim, int flags)
 	pmv.ps = &self->client->ps;
 	pmv.animations = bgGlobalAnimations;
 	pmv.cmd = self->client->pers.cmd;
-	pmv.trace = trap_Trace;
+	pmv.trace = JP_Trace;
 	pmv.pointcontents = trap_PointContents;
 	pmv.gametype = g_gametype.integer;
 
@@ -2512,7 +2515,7 @@ void DismembermentTest(gentity_t *self);
 #ifdef _DEBUG
 void DismembermentByNum(gentity_t *self, int num);
 #endif
-
+extern void Cmd_Race_f(gentity_t* ent);
 /*
 =================
 ClientCommand
@@ -2655,6 +2658,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "race"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcechanged"))
 		{ //special case: still update force change
 			Cmd_ForceChanged_f (ent);
@@ -2732,6 +2739,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_FollowCycle_f (ent, -1);
 	else if (Q_stricmp (cmd, "team") == 0)
 		Cmd_Team_f (ent);
+	else if (Q_stricmp (cmd, "race") == 0)
+		Cmd_Race_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)
 		Cmd_ForceChanged_f (ent);
 	else if (Q_stricmp (cmd, "where") == 0)
@@ -2785,7 +2794,7 @@ void ClientCommand( int clientNum ) {
 		fPos[1] = ent->client->ps.origin[1] + fPos[1]*40;
 		fPos[2] = ent->client->ps.origin[2] + fPos[2]*40;
 
-		trap_Trace(&tr, ent->client->ps.origin, 0, 0, fPos, ent->s.number, ent->clipmask);
+		JP_Trace(&tr, ent->client->ps.origin, 0, 0, fPos, ent->s.number, ent->clipmask);
 
 		if (tr.entityNum < MAX_CLIENTS && tr.entityNum != ent->s.number)
 		{

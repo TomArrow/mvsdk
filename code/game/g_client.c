@@ -1761,6 +1761,14 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 		ent->bolt_Motion = trap_G2API_AddBolt(ent->client->ghoul2, 0, "Motion");
 	}
 
+	client->sess.raceMode = g_defrag.integer;
+
+	if (client->sess.raceMode)
+		client->ps.stats[STAT_RACEMODE] = 1;
+	else
+		client->ps.stats[STAT_RACEMODE] = 0;
+
+
 	// locate ent at a spawn point
 	ClientSpawn( ent );
 
@@ -1988,6 +1996,15 @@ void ClientSpawn(gentity_t *ent) {
 	ent->waterlevel = 0;
 	ent->watertype = 0;
 	ent->flags = 0;
+
+	if (!g_defrag.integer) {
+		client->sess.raceMode = qfalse;
+	}
+
+	if (client->sess.raceMode)
+		client->ps.stats[STAT_RACEMODE] = 1;
+	else
+		client->ps.stats[STAT_RACEMODE] = 0;
 	
 	VectorCopy (playerMins, ent->r.mins);
 	VectorCopy (playerMaxs, ent->r.maxs);

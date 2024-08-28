@@ -159,6 +159,8 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	// Check client
 	if (!activator->client) return;
 
+	if (!activator->client->sess.raceMode) return;
+
 	if (DF_InAnyTrigger(activator->client->ps.origin,"df_trigger_start")) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
@@ -197,6 +199,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	
 	// Check client
 	if (!activator->client) return;
+
+	if (!activator->client->sess.raceMode) return;
 
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
@@ -246,22 +250,30 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 }
 
 // Checkpoint race timer
-void DF_CheckpointTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
+void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace) // TODO Make this only trigger on first contact
 {
 	int	timeCheck, lessTime=0;
 
 	// Check client
 	if (!activator->client) return;
 
+	if (!activator->client->sess.raceMode) return;
+
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
+
+	if (level.time - activator->client->pers.raceLastCheckpointTime < 1000) return; // don't spam.
+
+	// we ideally only wanna display checkpoints if the player didn't touch them last frame.
+	// doesn't matter for finish triggers as much since they end runs the first time they are touched.
+	if (level.time - trigger->triggerLastPlayerContact[activator-g_entities] < 1000) return; 
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Checkpoint Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", activator->client->pers.netname);
 		trap_SendServerCommand(-1, va("print \"^1Warning:^7 %s ^7didn't have valid checkpoint pre-pmove info.\n\"", activator->client->pers.netname));
 	}
 	else {
-		lessTime = DF_InterpolateTouchTimeToOldPos(activator, ent, "df_trigger_checkpoint");
+		lessTime = DF_InterpolateTouchTimeToOldPos(activator, trigger, "df_trigger_checkpoint");
 	}
 
 	// Set info
@@ -269,6 +281,7 @@ void DF_CheckpointTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* tra
 
 	// Show info
 	trap_SendServerCommand(activator - g_entities, va("cp \"Checkpoint!\n^3%s\"", DF_MsToString(timeCheck)));
+	activator->client->pers.raceLastCheckpointTime = level.time;
 }
 
 void DF_target_husk(gentity_t* ent) {
@@ -283,6 +296,7 @@ void DF_trigger_start_converted(gentity_t* ent) {
 
 	ent->r.contents |= CONTENTS_TRIGGER_EXIT;
 	ent->leave = DF_StartTimer_Leave;
+	ent->triggerOnlyTraced = qtrue; // don't trigger if we are fully inside trigger brush or if robust triggers are deactivated. only when entering/leaving
 
 	trap_LinkEntity(ent);
 }
@@ -291,6 +305,7 @@ void DF_trigger_finish_converted(gentity_t* ent) {
 	InitTrigger(ent);
 
 	ent->touch = DF_FinishTimer_Touch;
+	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
 
 	trap_LinkEntity(ent);
 }
@@ -299,6 +314,7 @@ void DF_trigger_checkpoint_converted(gentity_t* ent) {
 	InitTrigger(ent);
 
 	ent->touch = DF_CheckpointTimer_Touch;
+	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
 
 	trap_LinkEntity(ent);
 }
@@ -362,5 +378,419 @@ void G_TurnDefragTargetsIntoTriggers() {
 			}
 			G_FreeEntity(target);
 		}
+	}
+}
+
+void RemoveLaserTraps(gentity_t* ent);
+void RemoveDetpacks(gentity_t* ent);
+void DeletePlayerProjectiles(gentity_t* ent);
+void Cmd_ForceChanged_f(gentity_t* ent);
+// Adapted from jaPRO
+void Cmd_Race_f(gentity_t* ent)
+{
+	if (!ent->client)
+		return;
+
+	if (ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) {
+		//trap->SendServerCommand(ent-g_entities, "print \"^5This command is not allowed!\n\"");
+		return;
+	}
+
+	if (!g_defrag.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed!\n\"");
+		ent->client->sess.raceMode = qfalse;
+		return;
+	}
+
+	if (g_gametype.integer != GT_FFA) {
+		if (g_gametype.integer >= GT_TEAM && g_defrag.integer)
+		{//this is ok
+
+			ent->s.weapon = WP_SABER; //Dont drop our weapon
+			Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
+
+			ent->client->sess.raceMode = qfalse;//Set it false here cuz we are flipping it next
+			if (ent->client->sess.sessionTeam != TEAM_FREE) {
+				SetTeam(ent, "race");// , qfalse);
+			}
+			else {
+				SetTeam(ent, "spec");// , qfalse);
+			}
+			//return;//duno..
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed in this gametype!\n\"");
+			return;
+		}
+	}
+
+	if (ent->client->sess.raceMode) {//Toggle it
+		ent->client->sess.raceMode = qfalse;
+		ent->s.weapon = WP_SABER; //Dont drop our weapon
+		Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
+		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled off.\n\"");
+	}
+	else {
+		ent->client->sess.raceMode = qtrue;
+		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled on.\n\"");
+	}
+
+	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		//char model[MAX_QPATH] = { 0 }, userinfo[MAX_INFO_STRING] = { 0 };
+		//Delete all their projectiles / saved stuff
+		RemoveLaserTraps(ent);
+		RemoveDetpacks(ent);
+		DeletePlayerProjectiles(ent);
+
+		//trap_GetUserinfo(ent - g_entities, userinfo, sizeof(userinfo));
+		//Q_strncpyz(model, Info_ValueForKey(userinfo, "model"), sizeof(model));
+
+
+		G_Kill(ent); //stop abuse
+		ent->client->ps.persistant[PERS_SCORE] = 0;
+		ent->client->ps.persistant[PERS_KILLED] = 0;
+		//ent->client->pers.stats.kills = 0;
+		//ent->client->pers.stats.damageGiven = 0;
+		//ent->client->pers.stats.damageTaken = 0;
+		ent->client->accuracy_shots = 0;
+		ent->client->accuracy_hits = 0;
+		ent->client->ps.fd.suicides = 0;
+		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
+	}
+}
+
+qboolean MovementStyleAllowsWeapons(int moveStyle) {
+	return qfalse;
+}
+
+
+/*
+==============================
+saved - used to hold ownerNums
+==============================
+*/
+static int saved[MAX_GENTITIES];
+
+
+// TODO Use some more modern approach maybe (trace, exclude & retrace) like in jk+
+/*
+static void ShouldNotCollide(int entityNum, int otherEntityNum)
+{
+	// since we are in a duel, make everyone else nonsolid
+	if (0 <= entityNum && entityNum < MAX_CLIENTS && level.clients[entityNum].ps.duelInProgress) {
+		int i = otherEntityNum;
+		//for (i = 0; i < level.num_entities; i++) { //This is numentities not max_clients because of NPCS
+			if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
+				if ((g_entities[i].inuse) &&
+					((g_entities[i].s.eType == ET_PLAYER) ||
+						//(g_entities[i].s.eType == ET_NPC) ||
+						((g_entities[i].s.eType == ET_GENERAL) &&
+							((
+							
+qtrue) &&
+								(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
+									(!(Q_stricmp(g_entities[i].classname, "detpack"))))))))
+				{
+					//saved[i] = g_entities[i].r.ownerNum;
+					//g_entities[i].r.ownerNum = entityNum;
+					return qtrue;
+				}
+			}
+		//}
+	}
+	else if (g_entities[entityNum].client && g_entities[entityNum].client->sess.raceMode) { //Have to check all entities because swoops can be racemode too :/
+		int i = otherEntityNum;
+		//for (i = 0; i < level.num_entities; i++) { ////This is numentities not max_clients because of NPCS
+			if (i != entityNum) {
+				if ((g_entities[i].inuse) &&
+					((g_entities[i].s.eType == ET_PLAYER) ||
+						//(g_entities[i].s.eType == ET_NPC) ||
+						((g_entities[i].s.eType == ET_MOVER) &&
+							(!(Q_stricmp(g_entities[i].classname, "func_door")) ||
+								(!(Q_stricmp(g_entities[i].classname, "func_plat"))))) ||
+						((g_entities[i].s.eType == ET_GENERAL) &&
+							(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
+								(!(Q_stricmp(g_entities[i].classname, "detpack")))))))
+				{
+					//saved[i] = g_entities[i].r.ownerNum;
+					//g_entities[i].r.ownerNum = entityNum;
+					return qtrue;
+				}
+			}
+		//}
+	}
+	else { // we are not dueling but make those that are nonsolid
+		int i;
+		if (g_entities[entityNum].inuse) {//Saber
+			const int saberOwner = g_entities[entityNum].r.ownerNum;//Saberowner
+			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
+				return qfalse;
+			}
+		}
+		for (i = 0; i < level.num_entities; i++) { //loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
+			if (i != entityNum) {
+				if (g_entities[i].inuse && g_entities[i].client &&
+					(g_entities[i].client->ps.duelInProgress || g_entities[i].client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
+					//saved[i] = g_entities[i].r.ownerNum;
+					//g_entities[i].r.ownerNum = entityNum;
+					return qtrue;
+				}
+			}
+		}
+	}
+	return qfalse;
+}*/
+static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
+{
+	// since we are in a duel, make everyone else nonsolid
+	//if (0 <= entityNum && entityNum < MAX_CLIENTS  && level.clients[entityNum].ps.duelInProgress) {
+	if (entity->client && entity->client->ps.duelInProgress) {
+		//int i = otherEntityNum;
+		//for (i = 0; i < level.num_entities; i++) { //This is numentities not max_clients because of NPCS
+			//if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
+			if (entity != other && (other-g_entities) != entity->client->ps.duelIndex) {
+				if ((other->inuse) &&
+					((other->s.eType == ET_PLAYER) ||
+						//(other->s.eType == ET_NPC) ||
+						((other->s.eType == ET_GENERAL) &&
+							((/*dueltypes[level.clients[entityNum].ps.clientNum] <= 1*/qtrue) &&
+								(!(Q_stricmp(other->classname, "laserTrap")) ||
+									(!(Q_stricmp(other->classname, "detpack"))))))))
+				{
+					//saved[i] = other->r.ownerNum;
+					//other->r.ownerNum = entityNum;
+					return qtrue;
+				}
+			}
+		//}
+	}
+	else if (entity->client && entity->client->sess.raceMode) { //Have to check all entities because swoops can be racemode too :/
+		//int i = otherEntityNum;
+		//for (i = 0; i < level.num_entities; i++) { ////This is numentities not max_clients because of NPCS
+			//if (i != entityNum) {
+			if (other != entity) {
+				if ((other->inuse) &&
+					((other->s.eType == ET_PLAYER) ||
+						//(other->s.eType == ET_NPC) ||
+						((other->s.eType == ET_MOVER) &&
+							(!(Q_stricmp(other->classname, "func_door")) ||
+								(!(Q_stricmp(other->classname, "func_plat"))))) ||
+						((other->s.eType == ET_GENERAL) &&
+							(!(Q_stricmp(other->classname, "laserTrap")) ||
+								(!(Q_stricmp(other->classname, "detpack")))))))
+				{
+					//saved[i] = other->r.ownerNum;
+					//other->r.ownerNum = entityNum;
+					return qtrue;
+				}
+			}
+		//}
+	}
+	else { // we are not dueling but make those that are nonsolid
+		//int i;
+		if (entity->inuse) {//Saber
+			const int saberOwner = entity->r.ownerNum;//Saberowner
+			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
+				return qfalse;
+			}
+		}
+		//for (i = 0; i < level.num_entities; i++) { //loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
+			//if (i != entityNum) {
+			if (other != entity) {
+				if (other->inuse && other->client &&
+					(other->client->ps.duelInProgress || other->client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
+					//saved[i] = other->r.ownerNum;
+					//other->r.ownerNum = entityNum;
+					return qtrue;
+				}
+			}
+		//}
+	}
+	return qfalse;
+}
+
+
+/*
+============================================
+BeginHack
+This abuses ownerNum to allow nonsolid duels
+(used by trace functions)
+============================================
+*/
+/*
+static void BeginHack(int entityNum)
+{
+	// since we are in a duel, make everyone else nonsolid
+	if (0 <= entityNum && entityNum < MAX_CLIENTS && level.clients[entityNum].ps.duelInProgress) {
+		int i;
+		for (i = 0; i < level.num_entities; i++) { //This is numentities not max_clients because of NPCS
+			if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
+				if ((g_entities[i].inuse) &&
+					((g_entities[i].s.eType == ET_PLAYER) ||
+						//(g_entities[i].s.eType == ET_NPC) ||
+						((g_entities[i].s.eType == ET_GENERAL) &&
+							((
+							//dueltypes[level.clients[entityNum].ps.clientNum] <= 1
+								qtrue) &&
+								(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
+									(!(Q_stricmp(g_entities[i].classname, "detpack"))))))))
+				{
+					saved[i] = g_entities[i].r.ownerNum;
+					g_entities[i].r.ownerNum = entityNum;
+				}
+			}
+		}
+	}
+	else if (g_entities[entityNum].client && g_entities[entityNum].client->sess.raceMode) { //Have to check all entities because swoops can be racemode too :/
+		int i;
+		for (i = 0; i < level.num_entities; i++) { ////This is numentities not max_clients because of NPCS
+			if (i != entityNum) {
+				if ((g_entities[i].inuse) &&
+					((g_entities[i].s.eType == ET_PLAYER) ||
+						//(g_entities[i].s.eType == ET_NPC) ||
+						((g_entities[i].s.eType == ET_MOVER) &&
+							(!(Q_stricmp(g_entities[i].classname, "func_door")) ||
+								(!(Q_stricmp(g_entities[i].classname, "func_plat"))))) ||
+						((g_entities[i].s.eType == ET_GENERAL) &&
+							(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
+								(!(Q_stricmp(g_entities[i].classname, "detpack")))))))
+				{
+					saved[i] = g_entities[i].r.ownerNum;
+					g_entities[i].r.ownerNum = entityNum;
+				}
+			}
+		}
+	}
+	else { // we are not dueling but make those that are nonsolid
+		int i;
+		if (g_entities[entityNum].inuse) {//Saber
+			const int saberOwner = g_entities[entityNum].r.ownerNum;//Saberowner
+			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
+				return;
+			}
+		}
+		for (i = 0; i < level.num_entities; i++) { //loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
+			if (i != entityNum) {
+				if (g_entities[i].inuse && g_entities[i].client &&
+					(g_entities[i].client->ps.duelInProgress || g_entities[i].client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
+					saved[i] = g_entities[i].r.ownerNum;
+					g_entities[i].r.ownerNum = entityNum;
+				}
+			}
+		}
+	}
+}*/
+
+/*
+==========================================
+EndHack
+This cleans up the damage BeginHack caused
+==========================================
+*/
+/*
+static void EndHack(int entityNum) { //Should be inline?
+	if (0 <= entityNum && entityNum < MAX_CLIENTS && level.clients[entityNum].ps.duelInProgress) {
+		int i;
+		for (i = 0; i < level.num_entities; i++) {
+			if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
+				if (g_entities[i].inuse &&
+					((g_entities[i].s.eType == ET_PLAYER 
+					// || g_entities[i].s.eType == ET_NPC
+					) ||
+						(((
+						//dueltypes[level.clients[entityNum].ps.clientNum] <= 1 
+						qtrue ) && (g_entities[i].s.eType == ET_GENERAL)) && (!Q_stricmp(g_entities[i].classname, "laserTrap") || !Q_stricmp(g_entities[i].classname, "detpack"))))) {
+					g_entities[i].r.ownerNum = saved[i];
+				}
+			}
+		}
+	}
+	else if (g_entities[entityNum].client && g_entities[entityNum].client->sess.raceMode) {
+		int i;
+		for (i = 0; i < level.num_entities; i++) {
+			if (i != entityNum) {
+				if ((g_entities[i].inuse && (g_entities[i].s.eType == ET_PLAYER)) ||
+					//(g_entities[i].inuse && (g_entities[i].s.eType == ET_NPC)) ||
+					((g_entities[i].s.eType == ET_MOVER) && (!Q_stricmp(g_entities[i].classname, "func_door") || !Q_stricmp(g_entities[i].classname, "func_plat"))) ||
+					((g_entities[i].s.eType == ET_GENERAL) && (!Q_stricmp(g_entities[i].classname, "laserTrap") || !Q_stricmp(g_entities[i].classname, "detpack"))))
+				{
+					g_entities[i].r.ownerNum = saved[i];
+				}
+			}
+		}
+	}
+	else {
+		int i;
+		if (g_entities[entityNum].inuse) {//Saber
+			const int saberOwner = g_entities[entityNum].r.ownerNum;//Saberowner
+			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
+				return;
+			}
+		}
+		for (i = 0; i < level.num_entities; i++) {
+			if (i != entityNum) {
+				if (g_entities[i].inuse && g_entities[i].client &&
+					(g_entities[i].client->ps.duelInProgress || g_entities[i].client->sess.raceMode)) {
+					g_entities[i].r.ownerNum = saved[i];
+				}
+			}
+		}
+	}
+}*/
+/*
+void JP_TraceOld(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
+	BeginHack(passEntityNum);
+	trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+	EndHack(passEntityNum);
+}*/
+void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
+
+	trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+	if (results->entityNum < ENTITYNUM_MAX_NORMAL)
+	{
+		gentity_t* passEnt = g_entities + passEntityNum;
+		gentity_t* ent = g_entities + results->entityNum;
+
+		if (ShouldNotCollide(passEnt, ent))
+		{
+			int contents;
+
+			contents = ent->r.contents;
+			ent->r.contents = 0;
+			JP_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+			ent->r.contents = contents;
+
+			return;
+		}
+	}
+
+	if (results->startsolid && start != end)
+	{
+		trace_t tw;
+
+		JP_Trace(&tw, start, mins, maxs, start, passEntityNum, contentmask);
+		results->startsolid = tw.startsolid;
+	}
+}
+
+static int solidValues[MAX_GENTITIES];
+void PlayerSnapshotSetSolid(qboolean saveState, int clientNum) {
+	gentity_t* ent = g_entities + clientNum;
+	gentity_t* other;
+	int i;
+	for (i = 0; i < level.num_entities; i++) {
+		other = g_entities + i;
+		solidValues[i] = other->s.solid;
+		if (ShouldNotCollide(ent,other)) {
+			other->s.solid = 0;
+		}
+	}
+}
+void PlayerSnapshotRestoreSolid() {
+	gentity_t* other;
+	int i;
+	for (i = 0; i < level.num_entities; i++) {
+		other = g_entities + i;
+		other->s.solid = solidValues[i];
 	}
 }

@@ -4,6 +4,7 @@
 // perform the server side effects of a weapon firing
 
 #include "g_local.h"
+#include "g_defrag.h"
 #include "be_aas.h"
 
 static	float	s_quadFactor;
@@ -136,7 +137,7 @@ void W_TraceSetStart( gentity_t *ent, vec3_t start, vec3_t mins, vec3_t maxs )
 	VectorCopy( ent->s.pos.trBase, eyePoint);
 	eyePoint[2] += ent->client->ps.viewheight;
 		
-	trap_Trace( &tr, eyePoint, mins, maxs, start, ent->s.number, MASK_SOLID|CONTENTS_SHOTCLIP );
+	JP_Trace( &tr, eyePoint, mins, maxs, start, ent->s.number, MASK_SOLID|CONTENTS_SHOTCLIP );
 
 	if ( tr.startsolid || tr.allsolid )
 	{
@@ -427,13 +428,13 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 
 	VectorMA( start, shotRange, forward, end );
 
-//	trap_Trace( &tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
+//	JP_Trace( &tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
 
 	ignore = ent->s.number;
 	traces = 0;
 	while ( traces < 10 )
 	{//need to loop this in case we hit a Jedi who dodges the shot
-		trap_Trace( &tr, start, NULL, NULL, end, ignore, MASK_SHOT );
+		JP_Trace( &tr, start, NULL, NULL, end, ignore, MASK_SHOT );
 
 		traceEnt = &g_entities[tr.entityNum];
 
@@ -596,7 +597,7 @@ void WP_DisruptorAltFire( gentity_t *ent )
 	{
 		VectorMA( start, shotRange, forward, end );
 
-		trap_Trace ( &tr, start, NULL, NULL, end, skip, MASK_SHOT);
+		JP_Trace ( &tr, start, NULL, NULL, end, skip, MASK_SHOT);
 
 		if ( tr.surfaceFlags & SURF_NOIMPACT ) 
 		{
@@ -795,7 +796,12 @@ static void WP_BowcasterAltFire( gentity_t *ent )
 
 	missile->damage = damage;
 	missile->dflags = DAMAGE_DEATH_KNOCKBACK;
-	missile->methodOfDeath = MOD_BOWCASTER;
+	if (ent->client->sess.raceMode) {
+		missile->damage = 5;
+		missile->methodOfDeath = MOD_TARGET_LASER; //no bowcaster alt so hijackt his :/
+	}
+	else
+		missile->methodOfDeath = MOD_BOWCASTER;
 	missile->clipmask = MASK_SHOT | CONTENTS_LIGHTSABER;
 //	missile->splashDamage = BOWCASTER_SPLASH_DAMAGE;
 //	missile->splashRadius = BOWCASTER_SPLASH_RADIUS;
@@ -863,7 +869,11 @@ static void WP_BowcasterMainFire( gentity_t *ent )
 	for (i = 0; i < count; i++ )
 	{
 		// create a range of different velocities
-		vel = BOWCASTER_VELOCITY * ( crandom() * BOWCASTER_VEL_RANGE + 1.0f );
+		if (ent->client->sess.raceMode)
+			vel = BOWCASTER_VELOCITY;
+		else
+			vel = BOWCASTER_VELOCITY * (crandom() * BOWCASTER_VEL_RANGE + 1.0f);
+		
 
 		vectoangles( forward, angs );
 
@@ -1083,6 +1093,10 @@ void DEMP2_AltRadiusDamage( gentity_t *ent )
 		{
 			continue;
 		}
+		
+		if (gent->client && gent->client->sess.raceMode != myOwner->client->sess.raceMode) { //racemode isolation for alt demp?
+			continue;
+		}
 
 		// find the distance from the edge of the bounding box
 		for ( i = 0 ; i < 3 ; i++ ) 
@@ -1214,7 +1228,7 @@ static void WP_DEMP2_AltFire( gentity_t *ent )
 
 	//damage *= ( 1 + ( count * ( count - 1 )));// yields damage of 12,36,84...gives a higher bonus for longer charge
 
-	trap_Trace( &tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
+	JP_Trace( &tr, start, NULL, NULL, end, ent->s.number, MASK_SHOT);
 
 	// we treat the trace fraction like it's a time value, meaning that the shot can travel a whopping 4096 units in 1 second
 
@@ -1314,6 +1328,32 @@ static void WP_FlechetteMainFire( gentity_t *ent )
 	}
 }
 
+void RemoveLaserTraps(gentity_t* ent)
+{
+	gentity_t* found = NULL;
+
+	while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL)
+	{//loop through all ents and blow the crap out of them!
+		if (found->parent == ent)
+		{
+			VectorCopy(found->r.currentOrigin, found->s.origin);
+			found->think = G_FreeEntity;
+			found->nextthink = level.time;
+			//	G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
+		}
+	}
+}
+
+void DeletePlayerProjectiles(gentity_t* ent) {
+	int i;
+	for (i = MAX_CLIENTS; i < MAX_GENTITIES; i++) { //can be optimized more?
+		if (g_entities[i].inuse && g_entities[i].s.eType == ET_MISSILE && (g_entities[i].r.ownerNum == ent->s.number)) { //Delete (rocket) if its ours
+			G_FreeEntity(&g_entities[i]);
+			//trap->Print("This only sometimes prints.. even if we have a missile in the air.  (its num: %i, our num: %i, weap type: %i) \n", hit->r.ownerNum, ent->s.number, hit->s.weapon);
+		}
+	}
+}
+
 //---------------------------------------------------------
 void prox_mine_think( gentity_t *ent )
 //---------------------------------------------------------
@@ -1376,7 +1416,7 @@ static void WP_TraceSetStart( gentity_t *ent, vec3_t start, vec3_t mins, vec3_t 
 		return;
 	}
 
-	trap_Trace( &tr, ent->client->ps.origin, mins, maxs, start, ent->s.number, MASK_SOLID|CONTENTS_SHOTCLIP );
+	JP_Trace( &tr, ent->client->ps.origin, mins, maxs, start, ent->s.number, MASK_SOLID|CONTENTS_SHOTCLIP );
 
 	if ( tr.startsolid || tr.allsolid )
 	{
@@ -1823,6 +1863,11 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 	bolt->dflags = 0;
 	bolt->splashDamage = TD_SPLASH_DAM;
 	bolt->splashRadius = TD_SPLASH_RAD;
+	//if (ent->client->sess.raceMode) {
+	//	bolt->damage = 140;
+	//	bolt->splashDamage = 140;
+	//	bolt->splashRadius = 192;
+	//}
 
 	bolt->s.eType = ET_MISSILE;
 	bolt->r.svFlags = SVF_USE_CURRENT_ORIGIN;
@@ -1970,7 +2015,7 @@ void laserTrapThink ( gentity_t *ent )
 
 	// Find the main impact point
 	VectorMA ( ent->s.pos.trBase, 1024, ent->movedir, end );
-	trap_Trace ( &tr, ent->r.currentOrigin, NULL, NULL, end, ent->s.number, MASK_SHOT);
+	JP_Trace ( &tr, ent->r.currentOrigin, NULL, NULL, end, ent->s.number, MASK_SHOT);
 	
 	traceEnt = &g_entities[ tr.entityNum ];
 
@@ -2364,8 +2409,6 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 	VectorSet( bolt->r.mins, -2, -2, -2 );
 	VectorSet( bolt->r.maxs, 2, 2, 2 );
 
-	bolt->health = 1;
-	bolt->takedamage = qtrue;
 	bolt->pain = DetPackPain;
 	bolt->die = DetPackDie;
 
@@ -2376,6 +2419,15 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 	G_SetOrigin(bolt, start);
 	bolt->s.pos.trType = TR_GRAVITY;
 	VectorCopy( start, bolt->s.pos.trBase );
+	if (self->client->sess.raceMode) { //put contents=mask_shot here?
+		VectorScale(dir, 300, bolt->s.pos.trDelta); //Launch at +300
+		VectorAdd(bolt->s.pos.trDelta, self->client->ps.velocity, bolt->s.pos.trDelta); //Inherit full velocity from player
+	}
+	else {
+		bolt->health = 1;
+		bolt->takedamage = qtrue;
+		VectorScale(dir, 300, bolt->s.pos.trDelta);
+	}
 	VectorScale(dir, 300, bolt->s.pos.trDelta );
 	bolt->s.pos.trTime = level.time;
 
@@ -2410,8 +2462,32 @@ void BlowDetpacks(gentity_t *ent)
 			{
 				VectorCopy( found->r.currentOrigin, found->s.origin );
 				found->think = DetPackBlow;
-				found->nextthink = level.time + 100 + random() * 200;
+				if (ent->client->sess.raceMode)
+					found->nextthink = level.time + 100; //No randomness to racemode detpacks?
+				else
+					found->nextthink = level.time + 100 + random() * 200;
 				G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
+			}
+		}
+		ent->client->ps.hasDetPackPlanted = qfalse;
+	}
+}
+
+
+void RemoveDetpacks(gentity_t* ent)
+{
+	gentity_t* found = NULL;
+
+	if (ent->client->ps.hasDetPackPlanted)
+	{
+		while ((found = G_Find(found, FOFS(classname), "detpack")) != NULL)
+		{//loop through all ents and blow the crap out of them!
+			if (found->parent == ent)
+			{
+				VectorCopy(found->r.currentOrigin, found->s.origin);
+				found->think = G_FreeEntity;
+				found->nextthink = level.time;
+				//	G_Sound( found, CHAN_BODY, G_SoundIndex("sound/weapons/detpack/warning.wav") );
 			}
 		}
 		ent->client->ps.hasDetPackPlanted = qfalse;
@@ -2441,6 +2517,11 @@ void WP_DropDetPack( gentity_t *ent, qboolean alt_fire )
 	{
 		return;
 	}
+	
+	/*if (ent->client->sess.raceMode && ent->client->sess.movementStyle == MV_JETPACK)
+	{
+		maxCount = 0;
+	}*/
 
 	//limit to 10 placed at any one time
 	//see how many there are now
@@ -2541,7 +2622,7 @@ void WP_FireStunBaton( gentity_t *ent, qboolean alt_fire )
 	VectorSet( maxs, 6, 6, 6 );
 	VectorScale( maxs, -1, mins );
 
-	trap_Trace ( &tr, muzzleStun, mins, maxs, end, ent->s.number, MASK_SHOT );
+	JP_Trace ( &tr, muzzleStun, mins, maxs, end, ent->s.number, MASK_SHOT );
 
 	if ( tr.entityNum >= ENTITYNUM_WORLD )
 	{
@@ -2733,6 +2814,13 @@ FireWeapon
 ===============
 */
 void FireWeapon( gentity_t *ent, qboolean altFire ) {
+	if (ent->client) {
+		//if (ent->client->pers.amfreeze)
+		//	return;
+		if (ent->client->sess.raceMode  && !MovementStyleAllowsWeapons(ent->client->sess.movementStyle))
+			return;
+	}
+
 	if (ent->client->ps.powerups[PW_QUAD] ) {
 		s_quadFactor = g_quadfactor.value;
 	} else {
@@ -3353,7 +3441,7 @@ void SP_emplaced_gun( gentity_t *ent )
 
 	down[2] -= 1024;
 
-	trap_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, down, ent->s.number, MASK_SOLID);
+	JP_Trace(&tr, ent->s.origin, ent->r.mins, ent->r.maxs, down, ent->s.number, MASK_SOLID);
 
 	if (tr.fraction != 1 && !tr.allsolid && !tr.startsolid)
 	{

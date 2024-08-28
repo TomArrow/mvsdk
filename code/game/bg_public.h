@@ -177,9 +177,9 @@ movement on the server game.
 extern Q_INLINE int PM_GetMovePhysics(void);
 typedef enum //movementstyle enum
 {
-	MV_SIEGE,
+	//MV_SIEGE,
 	MV_JKA,
-	MV_QW,
+	/*MV_QW,
 	MV_CPM,
 	MV_Q3,
 	MV_PJK,
@@ -191,7 +191,7 @@ typedef enum //movementstyle enum
 	MV_SPEED,
 	MV_SP,
 	MV_SLICK,
-	MV_BOTCPM,
+	MV_BOTCPM,*/
 	MV_NUMSTYLES
 } movementStyle_e;
 
@@ -348,13 +348,13 @@ typedef enum {
 	STAT_DEAD_YAW,					// look this direction when dead (FIXME: get rid of?)
 	STAT_CLIENTS_READY,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
 	STAT_MAX_HEALTH,				// health / armor limit, changable by handicap
-	STAT_DASHTIME,
-	STAT_LASTJUMPSPEED,
+	STAT_DASHTIME, // unused rn
+	STAT_LASTJUMPSPEED, // unused rn
 	STAT_RACEMODE,
-	STAT_ONLYBHOP,
+	STAT_ONLYBHOP, // unused rn
 	STAT_MOVEMENTSTYLE,
-	STAT_JUMPTIME,
-	STAT_WJTIME
+	STAT_JUMPTIME, // unused rn
+	STAT_WJTIME // unused rn
 } statIndex_t;
 
 

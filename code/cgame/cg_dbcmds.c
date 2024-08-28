@@ -71,5 +71,5 @@ void CG_DB_GetChats_f(void) {
 	page = MAX(page,0);
 	first = page*10;
 
-	trap_CG_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, va("SELECT id, chat, `time` FROM chats ORDER BY time DESC LIMIT %d,10",first));
+	trap_CG_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, va("SELECT id, chat, `time` FROM chats ORDER BY time DESC, id DESC LIMIT %d,10",first));
 }

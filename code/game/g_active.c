@@ -418,6 +418,15 @@ void ClientImpacts( gentity_t *ent, pmove_t *pm ) {
 
 }
 
+static int int_cmp(const void* a, const void* b) {
+	int* aa = (int*)a;
+	int* bb = (int*)b;
+
+	if (*aa > *bb) return 1;
+	else if (*aa == *bb) return 0;
+	else return -1;
+}
+
 /*
 ============
 G_TouchTriggers
@@ -427,8 +436,9 @@ Spectators will only interact with teleporters.
 ============
 */
 void	G_TouchTriggers( gentity_t *ent ) {
-	int			i, num;
+	int			i, num, numTraced;
 	int			touch[MAX_GENTITIES];
+	qboolean	touchViaTrace[MAX_GENTITIES];
 	gentity_t	*hit;
 	trace_t		trace;
 	vec3_t		mins, maxs;
@@ -436,6 +446,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
 	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
 	qboolean	robustTriggerEvaluation = qfalse;
+	qboolean	isTraced;
 
 	if ( !ent->client ) {
 		return;
@@ -452,42 +463,50 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	// teleport bit check may not be needed since there doesn't appear to be any respawn/teleport
 	// between pmove and G_TouchTriggers, but that may change and i may have overlooked sth
 	if (robustTriggerEvaluation) {
-		int numRestore = 0;
 		qboolean finished = qfalse;
 		qboolean reverse = qfalse;
 		qboolean needExtraCheck = qfalse;
+		qboolean startIsEnd = VectorCompare(ent->client->ps.origin, ent->client->prePmovePosition);
+
+		memset(&touchViaTrace, 0, sizeof(touchViaTrace));
 
 		VectorAdd(ent->client->ps.origin, playerMins, mins);
 		VectorAdd(ent->client->ps.origin, playerMaxs, maxs);
 		num = 0;
-		while (!finished && num < MAX_GENTITIES) {
-			memset(&trace, 0, sizeof(trace));
-			if (reverse) {
-				// was a desperate try. pointless?
-				trap_Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER);
-			}
-			else {
-				trap_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->ps.origin, ent->client->ps.clientNum, CONTENTS_TRIGGER);
-			}
-			if (trace.fraction < 1.0f/* || trace.startsolid || trace.allsolid*/) { //startsolid and allsolid don't return a valid entityNum
-				hit = &g_entities[trace.entityNum];
-				hit->r.contents &= ~CONTENTS_TRIGGER; // exclude it from next trace.
-				touch[num++] = trace.entityNum;
-			}
-			else {
+
+		// if start == end, trace will return entitynum even if startsolid apparently, and we don't wanna mark triggers as traced
+		// if we are fully in them from start to finish
+		// also waste of time to do so many traces then..
+		if(!startIsEnd){
+			while (!finished && num < MAX_GENTITIES) {
+				memset(&trace, 0, sizeof(trace));
 				if (reverse) {
-					finished = qtrue;
-					if (trace.allsolid) {
-						// This means after we got all we could get, there's still something left we are inside of.
-						needExtraCheck = qfalse;
-					}
+					JP_Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER);
 				}
 				else {
-					reverse = qtrue;
+					JP_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->ps.origin, ent->client->ps.clientNum, CONTENTS_TRIGGER);
+				}
+				if (trace.fraction < 1.0f/* || trace.startsolid || trace.allsolid*/) { //startsolid and allsolid don't return a valid entityNum
+					hit = &g_entities[trace.entityNum];
+					hit->r.contents &= ~CONTENTS_TRIGGER; // exclude it from next trace.
+					touch[num++] = trace.entityNum;
+					touchViaTrace[trace.entityNum] = qtrue;
+				}
+				else {
+					if (reverse) {
+						finished = qtrue;
+						if (trace.allsolid || trace.startsolid) {
+							// This means after we got all we could get, there's still something left we are inside of.
+							needExtraCheck = qfalse;
+						}
+					}
+					else {
+						reverse = qtrue;
+					}
 				}
 			}
 		}
-		numRestore = num;
+		numTraced = num;
 		if (needExtraCheck) {
 			// basically do the oldschool one after all... this is needed for anything we are fully inside of.
 			int num2;
@@ -505,11 +524,15 @@ void	G_TouchTriggers( gentity_t *ent ) {
 				if (num == MAX_GENTITIES) break; // oh well :(
 			}
 		}
-		for (i = 0; i < numRestore; i++) {
+
+		for (i = 0; i < numTraced; i++) {
 			hit = &g_entities[touch[i]];
 			hit->r.contents |= CONTENTS_TRIGGER; // give back the content flag.
 		}
 		
+		// put them all in the right order so it respects order of entities in map
+		qsort(touch,num,sizeof(touch[0]), int_cmp);
+
 	}
 	else {
 		if (g_triggersRobust.integer) {
@@ -528,9 +551,10 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		VectorAdd(ent->client->ps.origin, ent->r.maxs, maxs); // TODO uhm how does this relate to g_triggersrobust? think about this...
 	}
 
-
 	for ( i=0 ; i<num ; i++ ) {
 		hit = &g_entities[touch[i]];
+
+		isTraced = robustTriggerEvaluation && touchViaTrace[touch[i]];
 
 		// special kind of trigger (like for defrag start timer) that starts when we leave it.
 		// requires robust trigger evaluation
@@ -544,8 +568,10 @@ void	G_TouchTriggers( gentity_t *ent ) {
 			}
 			memset(&trace, 0, sizeof(trace)); // what is this even for?
 
-			if (hit->leave) {
-				hit->leave(hit, ent, &trace);
+			if (isTraced || !hit->triggerOnlyTraced) {
+				if (hit->leave) {
+					hit->leave(hit, ent, &trace);
+				}
 			}
 			continue;
 		}
@@ -582,8 +608,13 @@ void	G_TouchTriggers( gentity_t *ent ) {
 
 		memset( &trace, 0, sizeof(trace) );
 
-		if ( hit->touch ) {
-			hit->touch (hit, ent, &trace);
+		if (isTraced || !hit->triggerOnlyTraced) {
+
+			if (hit->touch) {
+				hit->touch(hit, ent, &trace);
+			}
+
+			hit->triggerLastPlayerContact[ent - g_entities] = level.time;
 		}
 
 		if ( ( ent->r.svFlags & SVF_BOT ) && ( ent->touch ) ) {
@@ -703,7 +734,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		if (ent->client->noclip) {
 			pm.tracemask = 0;
 		}
-		pm.trace = trap_Trace;
+		pm.trace = JP_Trace;
 		pm.pointcontents = trap_PointContents;
 
 		pm.animations = NULL;
@@ -1467,7 +1498,7 @@ void ClientThink_real( gentity_t *ent ) {
 	else {
 		pm.tracemask = MASK_PLAYERSOLID;
 	}
-	pm.trace = trap_Trace;
+	pm.trace = JP_Trace;
 	pm.pointcontents = trap_PointContents;
 	pm.debugLevel = g_debugMove.integer;
 	pm.noFootsteps = ( g_dmflags.integer & DF_NO_FOOTSTEPS ) > 0;

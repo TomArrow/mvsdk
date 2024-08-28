@@ -1013,7 +1013,7 @@ void TryUse( gentity_t *ent )
 	VectorMA( src, USE_DISTANCE, vf, dest );
 
 	//Trace ahead to find a valid target
-	trap_Trace( &trace, src, vec3_origin, vec3_origin, dest, ent->s.number, MASK_OPAQUE|CONTENTS_SOLID|CONTENTS_BODY|CONTENTS_ITEM|CONTENTS_CORPSE );
+	JP_Trace( &trace, src, vec3_origin, vec3_origin, dest, ent->s.number, MASK_OPAQUE|CONTENTS_SOLID|CONTENTS_BODY|CONTENTS_ITEM|CONTENTS_CORPSE );
 	
 	if ( trace.fraction == 1.0f || trace.entityNum < 1 )
 	{
@@ -1105,7 +1105,7 @@ qboolean G_ClearTrace( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int i
 {
 	static	trace_t	tr;
 
-	trap_Trace( &tr, start, mins, maxs, end, ignore, clipmask );
+	JP_Trace( &tr, start, mins, maxs, end, ignore, clipmask );
 
 	if ( tr.allsolid || tr.startsolid || tr.fraction < 1.0 )
 	{

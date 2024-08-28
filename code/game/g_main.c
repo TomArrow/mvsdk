@@ -2,6 +2,7 @@
 //
 
 #include "g_local.h"
+#include "g_defrag.h"
 
 #include "mvsdk_setup.h"
 
@@ -363,6 +364,9 @@ This must be the very first function compiled into the .q3vm file
 int mvapi = 0;
 qboolean mvStructConversionDisabled = qfalse;
 
+int coolApi = 0;
+int coolApi_dbVersion = 0;
+
 int Init_levelTime;
 int Init_randomSeed;
 int Init_restart;
@@ -386,9 +390,19 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 	return retValue;
 }
 intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
-int requestedMvApi = 0;
+	int requestedMvApi = 0;
+	char coolApiFeaturesBuffer[80];
 	switch ( command ) {
 	case GAME_INIT:
+		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		coolApi = atoi(coolApiFeaturesBuffer);
+		if (coolApi & COOL_APIFEATURE_MARIADB) {
+			trap_Cvar_VariableStringBuffer("cool_apiDBVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_dbVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else {
+			coolApi_dbVersion = 0;
+		}
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call G_InitGame if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
@@ -399,6 +413,9 @@ int requestedMvApi = 0;
 			Init_levelTime = arg0;
 			Init_randomSeed = arg1;
 			Init_restart = arg2;
+		}
+		if (mvapi >= 4 || coolApi & COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK) {
+			trap_MVAPI_EnablePlayerSnapshots(qtrue);
 		}
 		return requestedMvApi;
 	case MVAPI_AFTER_INIT:
@@ -433,6 +450,22 @@ int requestedMvApi = 0;
 		return BotAIStartFrame( arg0 );
 	case GAME_ROFF_NOTETRACK_CALLBACK:
 		G_ROFF_NotetrackCallback( &g_entities[arg0], (const char *)arg1 );
+	case GAME_MVAPI_PLAYERSNAPSHOT:
+		if (mvapi >= 4 || coolApi & COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK) {
+			static int lastPlayerSnapshotNum = -1;
+			int playerNum = arg0;
+			if (playerNum == -1) {
+				if (lastPlayerSnapshotNum != -1) {
+					PlayerSnapshotRestoreSolid();
+				}
+			}
+			else
+			{
+				PlayerSnapshotSetSolid(lastPlayerSnapshotNum == -1, playerNum);
+			}
+			lastPlayerSnapshotNum = playerNum;
+		}
+		break;
 	}
 
 	return -1;

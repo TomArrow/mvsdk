@@ -6755,8 +6755,8 @@ static void CG_StrafeHelper(centity_t *cent)
 	usercmd_t cmd = { 0 };
 	usercmd_t oldcmd = { 0 };
 
-	if (moveStyle == MV_SIEGE)
-		return; //no strafe in siege
+	//if (moveStyle == MV_SIEGE)
+	//	return; //no strafe in siege
 
 
 	referenceFrameTime = cg.frametime;
@@ -6807,22 +6807,22 @@ static void CG_StrafeHelper(centity_t *cent)
 
 	onGround = (qboolean)(cg.snap->ps.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
 
-	if (moveStyle == MV_WSW) {
-		pmAccel = 12.0f;
-		pmFriction = 8.0f;
-	}
-	else if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) {
-		pmAccel = 15.0f;
-		pmFriction = 8.0f;
-	}
-	else if (moveStyle == MV_SP) {
-		pmAirAccel = 4.0f;
-		pmAccel = 12.0f;
-	}
-	else if (moveStyle == MV_SLICK) {
-		pmFriction = 0.0f;//unless walking?
-		pmAccel = 30.0f;
-	}
+	//if (moveStyle == MV_WSW) {
+	//	pmAccel = 12.0f;
+	//	pmFriction = 8.0f;
+	//}
+	//else if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) {
+	//	pmAccel = 15.0f;
+	//	pmFriction = 8.0f;
+	//}
+	//else if (moveStyle == MV_SP) {
+	//	pmAirAccel = 4.0f;
+	//	pmAccel = 12.0f;
+	//}
+	//else if (moveStyle == MV_SLICK) {
+	//	pmFriction = 0.0f;//unless walking?
+	//	pmAccel = 30.0f;
+	//}
 
 	if (currentSpeed < (baseSpeed - 1))
 		return;
@@ -6844,17 +6844,18 @@ static void CG_StrafeHelper(centity_t *cent)
 			baseSpeed = vehCent->m_pVehicle->m_pVehicleInfo->speedMax;//700
 		}
 	}
-	else*/ if (moveStyle == MV_SP) {
+	else*/ 
+	//if (moveStyle == MV_SP) {
 		/*
 		if ((DotProduct(cg.predictedPlayerState.velocity, wishdir)) < 0.0f)
 		{//Encourage deceleration away from the current velocity
 		wishspeed *= 1.35f;//pm_airDecelRate - adjust basespeed
 		}
 		*/
-		if (!(cg.predictedPlayerState.pm_flags & PMF_JUMP_HELD) && cmd.upmove > 0) { //Also, wishspeed *= scale.  Scale is different cuz of upmove in air.  Only works ingame not from spec
-			baseSpeed /= 1.41421356237f; //umm.. dunno.. divide by sqrt(2)
-		}
-	}
+	//	if (!(cg.predictedPlayerState.pm_flags & PMF_JUMP_HELD) && cmd.upmove > 0) { //Also, wishspeed *= scale.  Scale is different cuz of upmove in air.  Only works ingame not from spec
+	//		baseSpeed /= 1.41421356237f; //umm.. dunno.. divide by sqrt(2)
+	//	}
+	//}
 
 
 	if (cg_strafeHelper_FPS.value < 1)
@@ -6876,17 +6877,17 @@ static void CG_StrafeHelper(centity_t *cent)
 	velocity[2] = 0;
 	vectoangles(velocity, velocityAngle); //We have the offset from our Velocity angle that we should be aiming at, so now we need to get our velocity angle.
 
-	if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_SWOOP || moveStyle == MV_BOTCPM || (moveStyle == MV_SLICK && !onGround)) {//QW, CPM, PJK, WSW, RJCPM have center line
-		if (cg_strafeHelper.integer & SHELPER_CENTER)
-			DrawStrafeLine(velocityAngle, 0, (qboolean)(cmd.forwardmove == 0 && cmd.rightmove != 0), 8); //Center
-	}
-	if (moveStyle != MV_QW && moveStyle != MV_SWOOP) { //Every style but QW has WA/WD lines
+	//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_SWOOP || moveStyle == MV_BOTCPM || (moveStyle == MV_SLICK && !onGround)) {//QW, CPM, PJK, WSW, RJCPM have center line
+	//	if (cg_strafeHelper.integer & SHELPER_CENTER)
+	//		DrawStrafeLine(velocityAngle, 0, (qboolean)(cmd.forwardmove == 0 && cmd.rightmove != 0), 8); //Center
+	//}
+	if (qtrue/*moveStyle != MV_QW && moveStyle != MV_SWOOP*/) { //Every style but QW has WA/WD lines
 		if (cg_strafeHelper.integer & SHELPER_WA)
 			DrawStrafeLine(velocityAngle, (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove < 0), 1); //WA
 		if (cg_strafeHelper.integer & SHELPER_WD)
 			DrawStrafeLine(velocityAngle, (-optimalDeltaAngle - (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove > 0), 7); //WD
 	}
-	if (moveStyle == MV_JKA || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)) { //JKA, Q3, RJQ3, Jetpack? have A/D
+	if (moveStyle == MV_JKA /*|| moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)*/) { //JKA, Q3, RJQ3, Jetpack? have A/D
 		if (cg_strafeHelper.integer & SHELPER_A)
 			DrawStrafeLine(velocityAngle, -(45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove < 0), 2); //A
 		if (cg_strafeHelper.integer & SHELPER_D)
@@ -6898,7 +6899,7 @@ static void CG_StrafeHelper(centity_t *cent)
 			DrawStrafeLine(velocityAngle, (135.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove > 0), 10); //D
 		}
 	}
-	if (moveStyle == MV_JKA || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP) {
+	if (moveStyle == MV_JKA /* || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP*/) {
 		//W only
 		if (cg_strafeHelper.integer & SHELPER_W) {
 			DrawStrafeLine(velocityAngle, (45.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0); //W

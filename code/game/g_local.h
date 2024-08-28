@@ -9,7 +9,7 @@
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
-#define	GAMEVERSION	"basemv"
+#define	GAMEVERSION	"tommyternal_mv"
 
 #define BODY_QUEUE_SIZE		8
 
@@ -248,6 +248,8 @@ struct gentity_s {
 	int			damageRedirectTo; //this entity number
 
 	gitem_t		*item;			// for bonus items
+	int			triggerLastPlayerContact[MAX_CLIENTS]; // if we are a trigger, when's the last time the player touched us?
+	qboolean	triggerOnlyTraced; // if this is true for a trigger, we can only reach it via trace (so only trigger it while entering/leaving it)
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -322,6 +324,9 @@ typedef struct {
 	qboolean	setForce;			// set to true once player is given the chance to set force powers
 	int			updateUITime;		// only update userinfo for FP/SL if < level.time
 	qboolean	teamLeader;			// true when this client is a team leader
+
+	qboolean	raceMode;
+	int			movementStyle;
 } clientSession_t;
 
 // JK2MV
@@ -360,6 +365,8 @@ typedef struct {
 
 	int			raceStartCommandTime;
 	int			raceBestTime;
+	int			raceLastCheckpointTime;
+	
 
 	physicsFpsState_t	physicsFps;
 } clientPersistant_t;
@@ -794,6 +801,7 @@ void respawn (gentity_t *ent);
 void BeginIntermission (void);
 void InitBodyQue (void);
 void ClientSpawn( gentity_t *ent );
+void G_Kill(gentity_t* ent);
 void player_die (gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod);
 void AddScore( gentity_t *ent, vec3_t origin, int score );
 void CalculateRanks( void );
@@ -1151,6 +1159,7 @@ void	trap_SetUserinfo( int num, const char *buffer );
 void	trap_GetServerinfo( char *buffer, int bufferSize );
 void	trap_SetBrushModel( gentity_t *ent, const char *name );
 void	trap_Trace( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask );
+void	JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
 int		trap_PointContents( const vec3_t point, int passEntityNum );
 qboolean trap_InPVS( const vec3_t p1, const vec3_t p2 );
 qboolean trap_InPVSIgnorePortals( const vec3_t p1, const vec3_t p2 );
