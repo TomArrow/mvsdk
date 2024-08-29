@@ -638,7 +638,7 @@ void CG_EntityStateToPlayerState( entityState_t *s, playerState_t *ps ) {
 
 void CG_COOL_API_SetPredictedMovement(playerState_t* predictedPS)
 {
-	predictedMovement_t predictedMovement;
+	predictedMovement_t predictedMovement={0}; // ={0} to shut compiler up about incomplete class type
 	if (!(coolApi & COOL_APIFEATURE_SETPREDICTEDMOVEMENT)) {
 		return;
 	}

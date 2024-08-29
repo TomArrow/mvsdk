@@ -360,7 +360,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 		}
 	}
 
-	pml.clipped = qtrue;
+	pml.clippedPre = qtrue;
 
 	stepSize = trace.endpos[2] - start_o[2];
 	// try slidemove from this position
@@ -372,6 +372,8 @@ void PM_StepSlideMove( qboolean gravity ) {
 	pre_z = prevel[2];
 
 	PM_SlideMove( gravity );
+
+	pml.clipped = qtrue;
 
 	VectorSubtract(pm->ps->velocity, prevel, prevel);
 	if (prevel[0] < 0)

@@ -6908,7 +6908,7 @@ static void CG_StrafeHelper(centity_t *cent)
 		if (cg_strafeHelper.integer & SHELPER_WD)
 			DrawStrafeLine(velocityAngle, (-optimalDeltaAngle - (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove > 0), 7); //WD
 	}
-	if (moveStyle == MV_JKA /*|| moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)*/) { //JKA, Q3, RJQ3, Jetpack? have A/D
+	if (moveStyle == MV_JK2 /*|| moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)*/) { //JKA, Q3, RJQ3, Jetpack? have A/D
 		if (cg_strafeHelper.integer & SHELPER_A)
 			DrawStrafeLine(velocityAngle, -(45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove < 0), 2); //A
 		if (cg_strafeHelper.integer & SHELPER_D)
@@ -6920,7 +6920,7 @@ static void CG_StrafeHelper(centity_t *cent)
 			DrawStrafeLine(velocityAngle, (135.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove > 0), 10); //D
 		}
 	}
-	if (moveStyle == MV_JKA /* || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP*/) {
+	if (moveStyle == MV_JK2 /* || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP*/) {
 		//W only
 		if (cg_strafeHelper.integer & SHELPER_W) {
 			DrawStrafeLine(velocityAngle, (45.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0); //W

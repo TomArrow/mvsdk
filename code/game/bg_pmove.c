@@ -243,7 +243,7 @@ float forceJumpStrength[NUM_FORCE_POWER_LEVELS] =
 Q_INLINE int PM_GetMovePhysics(void)
 {
 	if (!pm || !pm->ps)
-		return MV_JKA;
+		return MV_JK2;
 #if JK2_GAME
 	if (pm->ps->stats[STAT_RACEMODE])
 		return (pm->ps->stats[STAT_MOVEMENTSTYLE]);
@@ -252,19 +252,43 @@ Q_INLINE int PM_GetMovePhysics(void)
 	//else if (g_movementStyle.integer < MV_SIEGE)
 	//	return 0;
 	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
-	//	return MV_JKA;
+	//	return MV_JK2;
 #elif JK2_CGAME
 	if (cgs.isJK2Pro) {
 		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
 	}
 	if (cgs.isTommyTernal && pm->ps->stats[STAT_RACEMODE]) {
-		if (!pm) return MV_JKA; // not sure why this is needed. from japro.
+		if (!pm) return MV_JK2; // not sure why this is needed. from japro.
 		return pm->ps->stats[STAT_MOVEMENTSTYLE];
 	}
 	//if (cgs.gametype == GT_SIEGE)
 	//	return MV_SIEGE;
 #endif
-	return MV_JKA;
+	return MV_JK2;
+}
+
+Q_INLINE int PM_GetRunFlags(void)
+{
+	if (!pm || !pm->ps)
+		return 0;
+#if JK2_GAME
+	if (pm->ps->stats[STAT_RACEMODE])
+		return (pm->ps->stats[STAT_RUNFLAGS]);
+	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
+	//	return (g_movementStyle.integer);
+	//else if (g_movementStyle.integer < MV_SIEGE)
+	//	return 0;
+	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
+	//	return MV_JK2;
+#elif JK2_CGAME
+	if (cgs.isTommyTernal && pm->ps->stats[STAT_RACEMODE]) {
+		if (!pm) return defaultRunFlags; // not sure why this is needed. from japro.
+		return pm->ps->stats[STAT_RUNFLAGS];
+	}
+	//if (cgs.gametype == GT_SIEGE)
+	//	return MV_SIEGE;
+#endif
+	return 0;
 }
 
 int PM_GetSaberStance(void)
@@ -2424,7 +2448,11 @@ static void PM_GroundTrace( void ) {
 			if (!pml.clipped)
 			{
 				// Don't actually fix this atm to not cause prediction errors.
-				//PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
+
+				const int runFlags = PM_GetRunFlags();
+				if (runFlags & RFL_NODEADRAMPS) {
+					PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
+				}
 				if (pm->debugLevel) {
 					Com_Printf("%i:Dead ramp\n", c_pmove);
 				}
@@ -4752,11 +4780,12 @@ void PmoveSingle (pmove_t *pmove) {
 #else
 	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT) {
 #endif
-		const int moveStyle = PM_GetMovePhysics();
+		//const int moveStyle = PM_GetMovePhysics();
+		const int runFlags = PM_GetRunFlags();
 #if JK2_CGAME
-		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (moveStyle == MV_BOTJKA /*|| (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
+		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (runFlags & RFL_BOT))// (moveStyle == MV_BOTJKA /*|| (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
 #else
-		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (moveStyle == MV_BOTJKA /* || (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
+		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (runFlags & RFL_BOT))// (moveStyle == MV_BOTJKA /* || (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
 #endif
 		{
 			const float realCurrentSpeed = sqrt((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));

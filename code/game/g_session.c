@@ -39,7 +39,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.saberLevel,
 		client->sess.selectedFP,
 		(int)client->sess.raceMode,
-		client->sess.movementStyle
+		client->sess.raceStyle.movementStyle
 		);
 
 	var = va( "session%i", (int)(client - level.clients) );
@@ -90,7 +90,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&client->sess.saberLevel,
 		&client->sess.selectedFP,
 		&tempRaceMode,
-		&client->sess.movementStyle
+		&client->sess.raceStyle.movementStyle
 		);
 
 	// bk001205 - format issues

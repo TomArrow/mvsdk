@@ -33,6 +33,7 @@ typedef struct
 
 	int			seed;
 
+	qboolean	clippedPre;
 	qboolean	clipped;
 } pml_t;
 

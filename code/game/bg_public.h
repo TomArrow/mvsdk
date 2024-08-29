@@ -178,10 +178,10 @@ extern Q_INLINE int PM_GetMovePhysics(void);
 typedef enum //movementstyle enum
 {
 	//MV_SIEGE,
-	MV_JKA,
-	MV_BOTJKA,//MV_QW,
-	//MV_CPM,
-	//MV_Q3,
+	MV_JK2,
+	MV_PJK2,//MV_BOTJKA,//MV_QW, // dont make bot its own. just make bot a runflag
+	MV_JK2SP,//MV_CPM,
+	MV_SPEED,//MV_Q3,
 	//MV_PJK,
 	//MV_WSW,
 	//MV_RJQ3,
@@ -353,7 +353,7 @@ typedef enum {
 	STAT_RACEMODE,
 	STAT_PLACEHOLDER2,//STAT_ONLYBHOP, // unused rn
 	STAT_MOVEMENTSTYLE,
-	STAT_PLACEHOLDER3,//STAT_JUMPTIME, // unused rn
+	STAT_RUNFLAGS,//STAT_JUMPTIME, // unused rn
 	STAT_PLACEHOLDER4,//STAT_WJTIME // unused rn
 } statIndex_t;
 

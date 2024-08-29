@@ -1271,7 +1271,7 @@ void ClientThink_real( gentity_t *ent ) {
 	//if ((client->sess.sessionTeam != TEAM_SPECTATOR) && !client->ps.stats[STAT_RACEMODE] && ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP || g_movementStyle.integer == MV_SLICK || g_movementStyle.integer == MV_TRIBES)) { //Ok,, this should be like every frame, right??
 	//	client->sess.movementStyle = g_movementStyle.integer;
 	//}
-	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.movementStyle;
+	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
 
 	//if ((g_neutralFlag.integer < 4) && client->ps.powerups[PW_NEUTRALFLAG]) {
 	//	if (client->ps.fd.forcePowerLevel[FP_LEVITATION] > 1) {
@@ -1313,7 +1313,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	if (ent && ent->client && ent->client->sess.raceMode) {
-		const int movementStyle = ent->client->sess.movementStyle;
+		const int movementStyle = ent->client->sess.raceStyle.movementStyle;
 		//if (movementStyle == MV_RJCPM || movementStyle == MV_RJQ3) {
 		//	ent->client->ps.stats[STAT_WEAPONS] = (1 << WP_MELEE) + (1 << WP_SABER) + (1 << WP_ROCKET_LAUNCHER);
 		//	ent->client->ps.ammo[AMMO_ROCKETS] = 2;
@@ -1347,7 +1347,7 @@ void ClientThink_real( gentity_t *ent ) {
 		{
 			client->ps.ammo[AMMO_POWERCELL] = 300;
 
-			if (movementStyle == MV_JKA){// || movementStyle == MV_SIEGE || movementStyle == MV_QW || movementStyle == MV_PJK || movementStyle == MV_SP || movementStyle == MV_SPEED || movementStyle == MV_JETPACK) {
+			if (movementStyle == MV_JK2){// || movementStyle == MV_SIEGE || movementStyle == MV_QW || movementStyle == MV_PJK || movementStyle == MV_SP || movementStyle == MV_SPEED || movementStyle == MV_JETPACK) {
 				ent->client->ps.stats[STAT_WEAPONS] = /*(1 << WP_MELEE) +*/ (1 << WP_SABER) + (1 << WP_DISRUPTOR) + (1 << WP_STUN_BATON);
 			}
 			else {

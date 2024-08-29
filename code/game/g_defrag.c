@@ -24,6 +24,8 @@ static const char* q3DefragTargetNames[] = {
 	"target_checkpoint"
 };
 
+
+
 /*
 =====================================================================
 Race trigger functions
@@ -69,30 +71,7 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname)
 
 	return qfalse;
 }
-/* Outdated and boring!
-int DF_InterpolateTouchTime(gentity_t* activator, gentity_t* trigger)
-{
-	vec3_t	interpOrigin, delta;
-	int lessTime = -1;
 
-	qboolean touched = qfalse;
-	qboolean inTrigger;
-
-	VectorCopy(activator->client->ps.origin, interpOrigin);
-	VectorScale(activator->s.pos.trDelta, 0.001f, delta);
-
-	while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
-	{
-		if (inTrigger) touched = qtrue;
-
-		lessTime++;
-		VectorSubtract(interpOrigin, delta, interpOrigin);
-
-		if (lessTime >= 250) break;
-	}
-
-	return lessTime;
-}*/
 int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname) // For finish and checkpoint trigger
 {
 	vec3_t	interpOrigin, delta;
@@ -161,6 +140,11 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	if (!activator->client->sess.raceMode) return;
 
+	if (activator->client->sess.raceStateInvalidated) {
+		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
+		return;
+	}
+
 	if (DF_InAnyTrigger(activator->client->ps.origin,"df_trigger_start")) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
@@ -201,6 +185,11 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	if (!activator->client) return;
 
 	if (!activator->client->sess.raceMode) return;
+
+	if (activator->client->sess.raceStateInvalidated) {
+		//trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
+		return;
+	}
 
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
@@ -258,6 +247,11 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	if (!activator->client) return;
 
 	if (!activator->client->sess.raceMode) return;
+
+	if (activator->client->sess.raceStateInvalidated) {
+		//trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
+		return;
+	}
 
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
@@ -392,7 +386,7 @@ void Cmd_Race_f(gentity_t* ent)
 		return;
 
 	if (ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) {
-		//trap->SendServerCommand(ent-g_entities, "print \"^5This command is not allowed!\n\"");
+		trap_SendServerCommand(ent-g_entities, "print \"^5This command is not allowed when carrying a flag!\n\"");
 		return;
 	}
 
@@ -436,22 +430,15 @@ void Cmd_Race_f(gentity_t* ent)
 	}
 
 	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
-		//char model[MAX_QPATH] = { 0 }, userinfo[MAX_INFO_STRING] = { 0 };
 		//Delete all their projectiles / saved stuff
 		RemoveLaserTraps(ent);
 		RemoveDetpacks(ent);
 		DeletePlayerProjectiles(ent);
 
-		//trap_GetUserinfo(ent - g_entities, userinfo, sizeof(userinfo));
-		//Q_strncpyz(model, Info_ValueForKey(userinfo, "model"), sizeof(model));
-
 
 		G_Kill(ent); //stop abuse
 		ent->client->ps.persistant[PERS_SCORE] = 0;
 		ent->client->ps.persistant[PERS_KILLED] = 0;
-		//ent->client->pers.stats.kills = 0;
-		//ent->client->pers.stats.damageGiven = 0;
-		//ent->client->pers.stats.damageTaken = 0;
 		ent->client->accuracy_shots = 0;
 		ent->client->accuracy_hits = 0;
 		ent->client->ps.fd.suicides = 0;
@@ -466,105 +453,41 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	if (ent->client->pers.raceStartCommandTime)// || ent->client->pers.stats.startTimeFlag)
 		wasReset = qtrue;
 
+	ent->client->sess.raceStateInvalidated = qtrue;
+
 	if (ent->client->sess.raceMode) {
 		VectorClear(ent->client->ps.velocity);
 		ent->client->ps.duelTime = 0;
-		//if (!ent->client->pers.practice) {
-			ent->client->ps.powerups[PW_YSALAMIRI] = 0; //beh, only in racemode so wont fuck with ppl using amtele as checkpoints midcourse
-			//ent->client->ps.stats[STAT_RESTRICTIONS] = 0; //meh
-			//if (ent->client->savedJumpLevel && ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] != ent->client->savedJumpLevel) {
-			//	ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = ent->client->savedJumpLevel;
-			//	//trap->SendServerCommand(ent-g_entities, va("print \"Restored saved jumplevel (%i).\n\"", ent->client->savedJumpLevel));
-			//	ent->client->savedJumpLevel = 0;
-			//}
-		//}
+		ent->client->ps.powerups[PW_YSALAMIRI] = 0; //beh, only in racemode so wont fuck with ppl using amtele as checkpoints midcourse
 		ent->client->ps.powerups[PW_FORCE_BOON] = 0;
-		//ent->client->pers.haste = qfalse;
 		if (ent->health > 0) {
 			ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
 			ent->client->ps.stats[STAT_ARMOR] = 25;
 		}
-		//}
-		if (MovementStyleAllowsWeapons(ent->client->sess.movementStyle)) { //Get rid of their rockets when they tele/noclip..? Do this for every style..
+		if (MovementStyleAllowsWeapons(ent->client->sess.raceStyle.movementStyle)) { //Get rid of their rockets when they tele/noclip..? Do this for every style..
 			DeletePlayerProjectiles(ent);
 		}
 
-		/* //already done every frame ?
-		#if _GRAPPLE
-				if (ent->client->sess.movementStyle == MV_SLICK && ent->client->hook)
-					Weapon_HookFree(ent->client->hook);
-		#endif
-		*/
-		//if (ent->client->sess.movementStyle == MV_SPEED) {
-		//	ent->client->ps.fd.forcePower = 50;
-		//}
-
-		//if (ent->client->sess.movementStyle == MV_JETPACK) {
-		//	ent->client->ps.jetpackFuel = 100;
-		//	ent->client->ps.eFlags &= ~EF_JETPACK_ACTIVE;
-		//	ent->client->ps.ammo[AMMO_DETPACK] = 4;
-		//}
-
-		//if (ent->client->pers.userName[0]) {
-		//	if (ent->client->sess.raceMode && !ent->client->pers.practice && ent->client->pers.stats.startTime) {
-		//		ent->client->pers.stats.racetime += (trap->Milliseconds() - ent->client->pers.stats.startTime) * 0.001f - ent->client->afkDuration * 0.001f;
-		//		ent->client->afkDuration = 0;
-		//	}
-		//	if (ent->client->pers.stats.racetime > 120.0f) {
-		//		G_UpdatePlaytime(0, ent->client->pers.userName, (int)(ent->client->pers.stats.racetime + 0.5f));
-		//		ent->client->pers.stats.racetime = 0.0f;
-		//	}
-		//}
 	}
 
 	ent->client->pers.raceStartCommandTime = 0;
-	//ent->client->pers.stats.coopStarted = qfalse;
-	//ent->client->pers.stats.startLevelTime = 0;
-	//ent->client->pers.stats.startTime = 0;
-	//ent->client->pers.stats.topSpeed = 0;
-	//ent->client->pers.stats.displacement = 0;
-	//ent->client->pers.stats.displacementSamples = 0;
-	//ent->client->pers.stats.startTimeFlag = 0;
-	//ent->client->pers.stats.topSpeedFlag = 0;
-	//ent->client->pers.stats.displacementFlag = 0;
-	//ent->client->pers.stats.displacementFlagSamples = 0;
-	//ent->client->ps.stats[STAT_JUMPTIME] = 0;
-	//ent->client->ps.stats[STAT_WJTIME] = 0;
 	ent->client->ps.fd.forceRageRecoveryTime = 0;
 
-	//ent->client->pers.stats.lastResetTime = level.time; //well im just not sure
-
-	//ent->client->midRunTeleCount = 0;
-	//ent->client->midRunTeleMarkCount = 0;
-
 	if (wasReset && print)
-		//trap->SendServerCommand( ent-g_entities, "print \"Timer reset!\n\""); //console spam is bad
 		trap_SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
 }
 
-static void ResetPlayerTimers(gentity_t* ent, qboolean print)
+static void DF_RaceStateInvalidated(gentity_t* ent, qboolean print)
 {
 	ResetSpecificPlayerTimers(ent, print);
 	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!
-	//ent->client->ps.jetpackFuel = 100;
-
-	//if (ent->client->ps.duelInProgress && ent->client->ps.duelIndex != ENTITYNUM_NONE) {
-	//	gentity_t* duelAgainst = &g_entities[ent->client->ps.duelIndex];
-	//	if (duelAgainst && duelAgainst->client) {
-	//		if (ent->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) //Only do this for coop person that teles i guess.
-	//			WP_ForcePowerStop(ent, FP_RAGE);
-	//		if (ent->client->ps.fd.forcePowersActive & (1 << FP_SPEED))
-	//			WP_ForcePowerStop(ent, FP_SPEED);
-	//		ResetSpecificPlayerTimers(duelAgainst, print);
-	//	}
-	//}
 }
 
 static qboolean MovementStyleAllowsJumpChange(int movementStyle) {
 	return qtrue;
 }
 
-static void Cmd_JumpChange_f(gentity_t* ent)
+void Cmd_JumpChange_f(gentity_t* ent)
 {
 	char jLevel[32];
 	int level;
@@ -587,11 +510,11 @@ static void Cmd_JumpChange_f(gentity_t* ent)
 		return;
 	}
 
-	if (!MovementStyleAllowsJumpChange(ent->client->sess.movementStyle)) {
+	if (!MovementStyleAllowsJumpChange(ent->client->sess.raceStyle.movementStyle)) {
 		char styleString[16];
 		//IntegerToRaceName(ent->client->sess.movementStyle, styleString, sizeof(styleString));
 		//trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%s)!\n\"", styleString));
-		trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%d)!\n\"", ent->client->sess.movementStyle));
+		trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%d)!\n\"", ent->client->sess.raceStyle.movementStyle));
 		return;
 	}
 
@@ -599,11 +522,11 @@ static void Cmd_JumpChange_f(gentity_t* ent)
 	level = atoi(jLevel);
 
 	if (level >= 1 && level <= 3) {
-		ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = level;
-		//AmTeleportPlayer(ent, ent->client->ps.origin, ent->client->ps.viewangles, qtrue, qtrue, qfalse); //Good
-		if (ent->client->pers.raceStartCommandTime/* || ent->client->pers.stats.startTimeFlag*/) {
+		ent->client->sess.raceStyle.jumpLevel = level;
+		ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = ent->client->sess.raceStyle.jumpLevel;
+		DF_RaceStateInvalidated(ent, qtrue);
+		if (ent->client->pers.raceStartCommandTime) {
 			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i): timer reset.\n\"", level));
-			ResetPlayerTimers(ent, qtrue);
 		}
 		else
 			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i).\n\"", level));
@@ -626,106 +549,26 @@ saved - used to hold ownerNums
 static int saved[MAX_GENTITIES];
 
 
-// TODO Use some more modern approach maybe (trace, exclude & retrace) like in jk+
-/*
-static void ShouldNotCollide(int entityNum, int otherEntityNum)
-{
-	// since we are in a duel, make everyone else nonsolid
-	if (0 <= entityNum && entityNum < MAX_CLIENTS && level.clients[entityNum].ps.duelInProgress) {
-		int i = otherEntityNum;
-		//for (i = 0; i < level.num_entities; i++) { //This is numentities not max_clients because of NPCS
-			if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
-				if ((g_entities[i].inuse) &&
-					((g_entities[i].s.eType == ET_PLAYER) ||
-						//(g_entities[i].s.eType == ET_NPC) ||
-						((g_entities[i].s.eType == ET_GENERAL) &&
-							((
-							
-qtrue) &&
-								(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
-									(!(Q_stricmp(g_entities[i].classname, "detpack"))))))))
-				{
-					//saved[i] = g_entities[i].r.ownerNum;
-					//g_entities[i].r.ownerNum = entityNum;
-					return qtrue;
-				}
-			}
-		//}
-	}
-	else if (g_entities[entityNum].client && g_entities[entityNum].client->sess.raceMode) { //Have to check all entities because swoops can be racemode too :/
-		int i = otherEntityNum;
-		//for (i = 0; i < level.num_entities; i++) { ////This is numentities not max_clients because of NPCS
-			if (i != entityNum) {
-				if ((g_entities[i].inuse) &&
-					((g_entities[i].s.eType == ET_PLAYER) ||
-						//(g_entities[i].s.eType == ET_NPC) ||
-						((g_entities[i].s.eType == ET_MOVER) &&
-							(!(Q_stricmp(g_entities[i].classname, "func_door")) ||
-								(!(Q_stricmp(g_entities[i].classname, "func_plat"))))) ||
-						((g_entities[i].s.eType == ET_GENERAL) &&
-							(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
-								(!(Q_stricmp(g_entities[i].classname, "detpack")))))))
-				{
-					//saved[i] = g_entities[i].r.ownerNum;
-					//g_entities[i].r.ownerNum = entityNum;
-					return qtrue;
-				}
-			}
-		//}
-	}
-	else { // we are not dueling but make those that are nonsolid
-		int i;
-		if (g_entities[entityNum].inuse) {//Saber
-			const int saberOwner = g_entities[entityNum].r.ownerNum;//Saberowner
-			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
-				return qfalse;
-			}
-		}
-		for (i = 0; i < level.num_entities; i++) { //loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
-			if (i != entityNum) {
-				if (g_entities[i].inuse && g_entities[i].client &&
-					(g_entities[i].client->ps.duelInProgress || g_entities[i].client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
-					//saved[i] = g_entities[i].r.ownerNum;
-					//g_entities[i].r.ownerNum = entityNum;
-					return qtrue;
-				}
-			}
-		}
-	}
-	return qfalse;
-}*/
 static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 {
 	// since we are in a duel, make everyone else nonsolid
-	//if (0 <= entityNum && entityNum < MAX_CLIENTS  && level.clients[entityNum].ps.duelInProgress) {
 	if (entity->client && entity->client->ps.duelInProgress) {
-		//int i = otherEntityNum;
-		//for (i = 0; i < level.num_entities; i++) { //This is numentities not max_clients because of NPCS
-			//if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
 			if (entity != other && (other-g_entities) != entity->client->ps.duelIndex) {
 				if ((other->inuse) &&
 					((other->s.eType == ET_PLAYER) ||
-						//(other->s.eType == ET_NPC) ||
 						((other->s.eType == ET_GENERAL) &&
-							((/*dueltypes[level.clients[entityNum].ps.clientNum] <= 1*/qtrue) &&
+							((qtrue) &&
 								(!(Q_stricmp(other->classname, "laserTrap")) ||
 									(!(Q_stricmp(other->classname, "detpack"))))))))
 				{
-					//saved[i] = other->r.ownerNum;
-					//other->r.ownerNum = entityNum;
 					return qtrue;
 				}
 			}
-		//}
 	}
 	else if (entity->client && entity->client->sess.raceMode) { //Have to check all entities because swoops can be racemode too :/
-		//int i = otherEntityNum;
-		//for (i = 0; i < level.num_entities; i++) { ////This is numentities not max_clients because of NPCS
-			//if (i != entityNum) {
 			if (other != entity) {
 				if ((other->inuse) &&
 					((other->s.eType == ET_PLAYER) ||
-						//(other->s.eType == ET_NPC) ||
 						((other->s.eType == ET_MOVER) &&
 							(!(Q_stricmp(other->classname, "func_door")) ||
 								(!(Q_stricmp(other->classname, "func_plat"))))) ||
@@ -733,170 +576,30 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 							(!(Q_stricmp(other->classname, "laserTrap")) ||
 								(!(Q_stricmp(other->classname, "detpack")))))))
 				{
-					//saved[i] = other->r.ownerNum;
-					//other->r.ownerNum = entityNum;
 					return qtrue;
 				}
 			}
-		//}
 	}
 	else { // we are not dueling but make those that are nonsolid
-		//int i;
 		if (entity->inuse) {//Saber
 			const int saberOwner = entity->r.ownerNum;//Saberowner
 			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
 				return qfalse;
 			}
 		}
-		//for (i = 0; i < level.num_entities; i++) { //loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
-			//if (i != entityNum) {
-			if (other != entity) {
-				if (other->inuse && other->client &&
-					(other->client->ps.duelInProgress || other->client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
-					//saved[i] = other->r.ownerNum;
-					//other->r.ownerNum = entityNum;
-					return qtrue;
-				}
+		//loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
+		if (other != entity) {
+			if (other->inuse && other->client &&
+				(other->client->ps.duelInProgress || other->client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
+
+				return qtrue;
 			}
-		//}
+		}
 	}
 	return qfalse;
 }
 
 
-/*
-============================================
-BeginHack
-This abuses ownerNum to allow nonsolid duels
-(used by trace functions)
-============================================
-*/
-/*
-static void BeginHack(int entityNum)
-{
-	// since we are in a duel, make everyone else nonsolid
-	if (0 <= entityNum && entityNum < MAX_CLIENTS && level.clients[entityNum].ps.duelInProgress) {
-		int i;
-		for (i = 0; i < level.num_entities; i++) { //This is numentities not max_clients because of NPCS
-			if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
-				if ((g_entities[i].inuse) &&
-					((g_entities[i].s.eType == ET_PLAYER) ||
-						//(g_entities[i].s.eType == ET_NPC) ||
-						((g_entities[i].s.eType == ET_GENERAL) &&
-							((
-							//dueltypes[level.clients[entityNum].ps.clientNum] <= 1
-								qtrue) &&
-								(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
-									(!(Q_stricmp(g_entities[i].classname, "detpack"))))))))
-				{
-					saved[i] = g_entities[i].r.ownerNum;
-					g_entities[i].r.ownerNum = entityNum;
-				}
-			}
-		}
-	}
-	else if (g_entities[entityNum].client && g_entities[entityNum].client->sess.raceMode) { //Have to check all entities because swoops can be racemode too :/
-		int i;
-		for (i = 0; i < level.num_entities; i++) { ////This is numentities not max_clients because of NPCS
-			if (i != entityNum) {
-				if ((g_entities[i].inuse) &&
-					((g_entities[i].s.eType == ET_PLAYER) ||
-						//(g_entities[i].s.eType == ET_NPC) ||
-						((g_entities[i].s.eType == ET_MOVER) &&
-							(!(Q_stricmp(g_entities[i].classname, "func_door")) ||
-								(!(Q_stricmp(g_entities[i].classname, "func_plat"))))) ||
-						((g_entities[i].s.eType == ET_GENERAL) &&
-							(!(Q_stricmp(g_entities[i].classname, "laserTrap")) ||
-								(!(Q_stricmp(g_entities[i].classname, "detpack")))))))
-				{
-					saved[i] = g_entities[i].r.ownerNum;
-					g_entities[i].r.ownerNum = entityNum;
-				}
-			}
-		}
-	}
-	else { // we are not dueling but make those that are nonsolid
-		int i;
-		if (g_entities[entityNum].inuse) {//Saber
-			const int saberOwner = g_entities[entityNum].r.ownerNum;//Saberowner
-			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
-				return;
-			}
-		}
-		for (i = 0; i < level.num_entities; i++) { //loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
-			if (i != entityNum) {
-				if (g_entities[i].inuse && g_entities[i].client &&
-					(g_entities[i].client->ps.duelInProgress || g_entities[i].client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
-					saved[i] = g_entities[i].r.ownerNum;
-					g_entities[i].r.ownerNum = entityNum;
-				}
-			}
-		}
-	}
-}*/
-
-/*
-==========================================
-EndHack
-This cleans up the damage BeginHack caused
-==========================================
-*/
-/*
-static void EndHack(int entityNum) { //Should be inline?
-	if (0 <= entityNum && entityNum < MAX_CLIENTS && level.clients[entityNum].ps.duelInProgress) {
-		int i;
-		for (i = 0; i < level.num_entities; i++) {
-			if (i != entityNum && i != level.clients[entityNum].ps.duelIndex) {
-				if (g_entities[i].inuse &&
-					((g_entities[i].s.eType == ET_PLAYER 
-					// || g_entities[i].s.eType == ET_NPC
-					) ||
-						(((
-						//dueltypes[level.clients[entityNum].ps.clientNum] <= 1 
-						qtrue ) && (g_entities[i].s.eType == ET_GENERAL)) && (!Q_stricmp(g_entities[i].classname, "laserTrap") || !Q_stricmp(g_entities[i].classname, "detpack"))))) {
-					g_entities[i].r.ownerNum = saved[i];
-				}
-			}
-		}
-	}
-	else if (g_entities[entityNum].client && g_entities[entityNum].client->sess.raceMode) {
-		int i;
-		for (i = 0; i < level.num_entities; i++) {
-			if (i != entityNum) {
-				if ((g_entities[i].inuse && (g_entities[i].s.eType == ET_PLAYER)) ||
-					//(g_entities[i].inuse && (g_entities[i].s.eType == ET_NPC)) ||
-					((g_entities[i].s.eType == ET_MOVER) && (!Q_stricmp(g_entities[i].classname, "func_door") || !Q_stricmp(g_entities[i].classname, "func_plat"))) ||
-					((g_entities[i].s.eType == ET_GENERAL) && (!Q_stricmp(g_entities[i].classname, "laserTrap") || !Q_stricmp(g_entities[i].classname, "detpack"))))
-				{
-					g_entities[i].r.ownerNum = saved[i];
-				}
-			}
-		}
-	}
-	else {
-		int i;
-		if (g_entities[entityNum].inuse) {//Saber
-			const int saberOwner = g_entities[entityNum].r.ownerNum;//Saberowner
-			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
-				return;
-			}
-		}
-		for (i = 0; i < level.num_entities; i++) {
-			if (i != entityNum) {
-				if (g_entities[i].inuse && g_entities[i].client &&
-					(g_entities[i].client->ps.duelInProgress || g_entities[i].client->sess.raceMode)) {
-					g_entities[i].r.ownerNum = saved[i];
-				}
-			}
-		}
-	}
-}*/
-/*
-void JP_TraceOld(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
-	BeginHack(passEntityNum);
-	trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
-	EndHack(passEntityNum);
-}*/
 void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
 
 	trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);

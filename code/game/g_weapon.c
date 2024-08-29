@@ -2817,7 +2817,7 @@ void FireWeapon( gentity_t *ent, qboolean altFire ) {
 	if (ent->client) {
 		//if (ent->client->pers.amfreeze)
 		//	return;
-		if (ent->client->sess.raceMode  && !MovementStyleAllowsWeapons(ent->client->sess.movementStyle))
+		if (ent->client->sess.raceMode  && !MovementStyleAllowsWeapons(ent->client->sess.raceStyle.movementStyle))
 			return;
 	}
 

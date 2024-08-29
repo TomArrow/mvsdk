@@ -1859,7 +1859,8 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 				if (atoi(yawBuf) != 0)
 					trap_Cvar_Set(yawString, "0");
 			}
-			if (cgs.restricts & RESTRICT_ANGLE && cg.xyspeed && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_BOTJKA) {
+			//if (cgs.restricts & RESTRICT_ANGLE && cg.xyspeed && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_BOTJKA) {
+			if (cgs.restricts & RESTRICT_ANGLE && cg.xyspeed && !(cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_BOT)) {
 				char angleBuf[64];
 				char angleString[32] = { 0 };
 

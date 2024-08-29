@@ -25,6 +25,7 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/surfaceflags.h"
 	"${SRCDir}/game/bg_multiversion.h"
+	"${SRCDir}/game/bg_defrag_global.h"
 
 	"${SRCDir}/ui/ui_shared.h"
 
@@ -71,6 +72,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/cgame/cg_multiversion.c"
 	"${SRCDir}/cgame/cg_multiversion_syscalls.c"
 	"${SRCDir}/game/bg_multiversion.c"
+	"${SRCDir}/game/bg_defrag_global.c"
 	"${SRCDir}/game/animMappingTable.c"
 
 	"${SRCDir}/game/bg_misc.c"

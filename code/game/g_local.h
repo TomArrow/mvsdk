@@ -5,6 +5,7 @@
 #include "q_shared.h"
 #include "bg_public.h"
 #include "g_public.h"
+#include "bg_defrag_global.h"
 
 //==================================================================
 
@@ -326,7 +327,9 @@ typedef struct {
 	qboolean	teamLeader;			// true when this client is a team leader
 
 	qboolean	raceMode;
-	int			movementStyle;
+	raceStyle_t	raceStyle;
+	// noclip or sth similar was used. we cannot run or set spawns until we /kill and respawn
+	qboolean	raceStateInvalidated;	
 } clientSession_t;
 
 // JK2MV

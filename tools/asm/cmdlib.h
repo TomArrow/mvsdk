@@ -149,4 +149,9 @@ typedef struct
 } cblock_t;
 
 
+int
+memcmp (const void *m1,
+	const void *m2,
+	size_t n);
+
 #endif

@@ -5,6 +5,7 @@
 #include "../game/bg_public.h"
 #include "cg_public.h"
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
+#include "../game/bg_defrag_global.h"
 
 #define CG_EZDEMO
 
