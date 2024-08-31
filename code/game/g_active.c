@@ -446,9 +446,10 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	vec3_t		mins, maxs;
 	vec3_t		minsPrev, maxsPrev;
 	vec3_t		minsTotal, maxsTotal;
+	vec3_t		minsPlayer, maxsPlayer;
 	static vec3_t	range = { 40, 40, 52 };
-	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
-	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+	static vec3_t	playerMinsDefault = { -15, -15, DEFAULT_MINS_2 };
+	static vec3_t	playerMaxsDefault = { 15, 15, DEFAULT_MAXS_2 };
 	qboolean	robustTriggerEvaluation = qfalse;
 	qboolean	isTraced;
 
@@ -474,10 +475,15 @@ void	G_TouchTriggers( gentity_t *ent ) {
 
 		memset(&touchViaTrace, 0, sizeof(touchViaTrace));
 
-		VectorAdd(ent->client->postPmovePosition, playerMins, mins);
-		VectorAdd(ent->client->postPmovePosition, playerMaxs, maxs);
-		VectorAdd(ent->client->prePmovePosition, playerMins, minsPrev);
-		VectorAdd(ent->client->prePmovePosition, playerMaxs, maxsPrev);
+		// we want to find the smallest bounding box between last and current frame
+		// to minimize some weird crouch hacking to reach triggers with the trace trigger evaluataion
+		VectorMax(ent->client->prePmoveMins, ent->client->postPmoveMins, minsPlayer); 
+		VectorMin(ent->client->prePmoveMaxs, ent->client->postPmoveMaxs, maxsPlayer);
+
+		VectorAdd(ent->client->postPmovePosition, minsPlayer, mins);
+		VectorAdd(ent->client->postPmovePosition, maxsPlayer, maxs);
+		VectorAdd(ent->client->prePmovePosition, minsPlayer, minsPrev);
+		VectorAdd(ent->client->prePmovePosition, maxsPlayer, maxsPrev);
 		num = 0;
 
 		// if start == end, trace will return entitynum even if startsolid apparently, and we don't wanna mark triggers as traced
@@ -488,10 +494,10 @@ void	G_TouchTriggers( gentity_t *ent ) {
 			while (!finished && num < MAX_GENTITIES) {
 				memset(&trace, 0, sizeof(trace));
 				if (reverse) {
-					JP_Trace(&trace, ent->client->postPmovePosition, playerMins, playerMaxs, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER|CONTENTS_SOLID);
+					JP_Trace(&trace, ent->client->postPmovePosition, minsPlayer, maxsPlayer, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER|CONTENTS_SOLID);
 				}
 				else {
-					JP_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->postPmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
+					JP_Trace(&trace, ent->client->prePmovePosition, minsPlayer, maxsPlayer, ent->client->postPmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
 				}
 				somethingInTheWay = trace.allsolid || trace.startsolid || (trace.contents & CONTENTS_SOLID);
 				if (trace.fraction < 1.0f && !somethingInTheWay) { //startsolid and allsolid don't return a valid entityNum
@@ -552,8 +558,8 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	}
 	else {
 		if (g_triggersRobust.integer) {
-			VectorAdd(ent->client->ps.origin, playerMins, mins);
-			VectorAdd(ent->client->ps.origin, playerMaxs, maxs);
+			VectorAdd(ent->client->ps.origin, playerMinsDefault, mins);
+			VectorAdd(ent->client->ps.origin, playerMaxsDefault, maxs);
 		}
 		else {
 			VectorSubtract(ent->client->ps.origin, range, mins);
@@ -1702,6 +1708,8 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// Save some value for robust trigger application
 	VectorCopy(ent->client->ps.origin,ent->client->prePmovePosition);
+	VectorCopy(ent->r.mins,ent->client->prePmoveMins);
+	VectorCopy(ent->r.maxs,ent->client->prePmoveMaxs);
 	ent->client->prePmoveEFlags = ent->client->ps.eFlags;
 	ent->client->prePmovePositionSet = qtrue;
 	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
@@ -1709,6 +1717,8 @@ void ClientThink_real( gentity_t *ent ) {
 	Pmove (&pm);
 
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
+	VectorCopy(ent->r.mins, ent->client->postPmoveMins);
+	VectorCopy(ent->r.maxs, ent->client->postPmoveMaxs);
 
 	if (pm.checkDuelLoss)
 	{

@@ -465,7 +465,11 @@ struct gclient_s {
 	qboolean	fjDidJump;
 
 	vec3_t		prePmovePosition;
+	vec3_t		prePmoveMins;
+	vec3_t		prePmoveMaxs;
 	vec3_t		postPmovePosition; // because we might get teleported in a trigger and then get wrong interpolation when using ps.origin in a later defrag trigger
+	vec3_t		postPmoveMins;
+	vec3_t		postPmoveMaxs;
 	qboolean	prePmovePositionSet;
 	qboolean	prePmoveEFlags;
 	int			prePmoveCommandTime;
