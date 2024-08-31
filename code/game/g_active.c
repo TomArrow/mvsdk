@@ -476,6 +476,8 @@ void	G_TouchTriggers( gentity_t *ent ) {
 
 		VectorAdd(ent->client->postPmovePosition, playerMins, mins);
 		VectorAdd(ent->client->postPmovePosition, playerMaxs, maxs);
+		VectorAdd(ent->client->prePmovePosition, playerMins, minsPrev);
+		VectorAdd(ent->client->prePmovePosition, playerMaxs, maxsPrev);
 		num = 0;
 
 		// if start == end, trace will return entitynum even if startsolid apparently, and we don't wanna mark triggers as traced
@@ -517,10 +519,8 @@ void	G_TouchTriggers( gentity_t *ent ) {
 			int	touch2[MAX_GENTITIES];
 			qboolean preContact;
 			qboolean postContact;
-			VectorAdd(ent->client->prePmovePosition, playerMins, minsPrev);
-			VectorAdd(ent->client->prePmovePosition, playerMaxs, maxsPrev);
-			VectorMin(minsPrev,mins,minsTotal);
-			VectorMax(maxsPrev,maxs,maxsTotal);
+			VectorMin(minsPrev, mins, minsTotal);
+			VectorMax(maxsPrev, maxs, maxsTotal);
 			// basically do the oldschool one after all... this is needed for anything we are fully inside of or if any solids were involved
 			num2 = trap_EntitiesInBox(minsTotal, maxsTotal, touch2, MAX_GENTITIES); // this is guaranteed to get the remaining stuff because 
 			for (i = 0; i < num2; i++) {
@@ -624,7 +624,10 @@ void	G_TouchTriggers( gentity_t *ent ) {
 
 		memset( &trace, 0, sizeof(trace) );
 
-		if (isTraced || !hit->triggerOnlyTraced) {
+		if (!hit->triggerOnlyTraced || (isTraced && !trap_EntityContact(minsPrev, maxsPrev, hit))) {
+			// if trigger requires only traced, this means we should only hit this trigger when ENTERING it. aka we are in the trigger now, but weren't on last frame.
+			// so if the trigger is traced (not allsolid), and we are not in it right now, then we are exiting it, but hit->triggerOnlyTraced should only be hit when entering a trigger.
+			// hence, with robust trigger evaluation, we skip when the trigger requires traced touch and we are exiting instead of entering it. 
 
 			if (hit->touch) {
 				hit->touch(hit, ent, &trace);
