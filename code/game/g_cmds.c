@@ -441,7 +441,10 @@ argv(0) savepos
 void Cmd_Savepos_f( gentity_t *ent ) {
 	char	*msg;
 
-	if ( !CheatsOk( ent ) ) {
+	if (g_defrag.integer && ent->client->sess.raceMode) {
+		//DF_RaceStateInvalidated(ent, qtrue);
+	}
+	else if ( !CheatsOk( ent ) ) {
 		return;
 	}
 
@@ -464,7 +467,10 @@ argv(0) respos
 void Cmd_Respos_f( gentity_t *ent ) {
 	char	*msg;
 
-	if ( !CheatsOk( ent ) ) {
+	if (g_defrag.integer && ent->client->sess.raceMode) {
+		DF_RaceStateInvalidated(ent, qtrue);
+	}
+	else if ( !CheatsOk( ent ) ) {
 		return;
 	}
 

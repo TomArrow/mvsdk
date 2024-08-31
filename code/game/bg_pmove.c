@@ -865,10 +865,11 @@ static qboolean PM_CheckJump( void )
 			{//holding jump in air
 				float curHeight = pm->ps->origin[2] - pm->ps->fd.forceJumpZStart;
 				//check for max force jump level and cap off & cut z vel
+				int runFlags = PM_GetRunFlags();
 				if ( ( curHeight<=forceJumpHeight[0] ||//still below minimum jump height
 						(pm->ps->fd.forcePower&&pm->cmd.upmove>=10) ) &&////still have force power available and still trying to jump up 
 					curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] &&
-					(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04))//still below maximum jump height
+					(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04 && !(runFlags & RFL_JUMPBUGDISABLE)))//still below maximum jump height
 				{//can still go up
 					if ( curHeight > forceJumpHeight[0] )
 					{//passed normal jump height  *2?

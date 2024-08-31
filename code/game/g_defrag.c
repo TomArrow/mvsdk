@@ -457,7 +457,7 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	ent->client->sess.raceStateInvalidated = qtrue;
 
 	if (ent->client->sess.raceMode) {
-		VectorClear(ent->client->ps.velocity);
+		//VectorClear(ent->client->ps.velocity);
 		ent->client->ps.duelTime = 0;
 		ent->client->ps.powerups[PW_YSALAMIRI] = 0; //beh, only in racemode so wont fuck with ppl using amtele as checkpoints midcourse
 		ent->client->ps.powerups[PW_FORCE_BOON] = 0;
