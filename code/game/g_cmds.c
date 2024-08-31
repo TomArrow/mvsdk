@@ -1,6 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "g_local.h"
+#include "g_defrag.h"
 
 #include "../ui/menudef.h"			// for the voice chats
 
@@ -413,7 +414,10 @@ argv(0) noclip
 void Cmd_Noclip_f( gentity_t *ent ) {
 	char	*msg;
 
-	if ( !CheatsOk( ent ) ) {
+	if (g_defrag.integer && ent->client->sess.raceMode) {
+		DF_RaceStateInvalidated(ent, qtrue);
+	}
+	else if ( !CheatsOk( ent ) ) {
 		return;
 	}
 

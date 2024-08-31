@@ -444,6 +444,8 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	gentity_t	*hit;
 	trace_t		trace;
 	vec3_t		mins, maxs;
+	vec3_t		minsPrev, maxsPrev;
+	vec3_t		minsTotal, maxsTotal;
 	static vec3_t	range = { 40, 40, 52 };
 	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
 	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
@@ -468,27 +470,29 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		qboolean finished = qfalse;
 		qboolean reverse = qfalse;
 		qboolean needExtraCheck = qfalse;
-		qboolean startIsEnd = VectorCompare(ent->client->ps.origin, ent->client->prePmovePosition);
+		qboolean startIsEnd = VectorCompare(ent->client->postPmovePosition, ent->client->prePmovePosition);
 
 		memset(&touchViaTrace, 0, sizeof(touchViaTrace));
 
-		VectorAdd(ent->client->ps.origin, playerMins, mins);
-		VectorAdd(ent->client->ps.origin, playerMaxs, maxs);
+		VectorAdd(ent->client->postPmovePosition, playerMins, mins);
+		VectorAdd(ent->client->postPmovePosition, playerMaxs, maxs);
 		num = 0;
 
 		// if start == end, trace will return entitynum even if startsolid apparently, and we don't wanna mark triggers as traced
 		// if we are fully in them from start to finish
 		// also waste of time to do so many traces then..
 		if(!startIsEnd){
+			qboolean somethingInTheWay; // either something is in the way (some solid) or we are inside the trigger. either requires an extra check in classical way.
 			while (!finished && num < MAX_GENTITIES) {
 				memset(&trace, 0, sizeof(trace));
 				if (reverse) {
-					JP_Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER);
+					JP_Trace(&trace, ent->client->postPmovePosition, playerMins, playerMaxs, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER|CONTENTS_SOLID);
 				}
 				else {
-					JP_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->ps.origin, ent->client->ps.clientNum, CONTENTS_TRIGGER);
+					JP_Trace(&trace, ent->client->prePmovePosition, playerMins, playerMaxs, ent->client->postPmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
 				}
-				if (trace.fraction < 1.0f/* || trace.startsolid || trace.allsolid*/) { //startsolid and allsolid don't return a valid entityNum
+				somethingInTheWay = trace.allsolid || trace.startsolid || (trace.contents & CONTENTS_SOLID);
+				if (trace.fraction < 1.0f && !somethingInTheWay) { //startsolid and allsolid don't return a valid entityNum
 					hit = &g_entities[trace.entityNum];
 					hit->r.contents &= ~CONTENTS_TRIGGER; // exclude it from next trace.
 					touch[num++] = trace.entityNum;
@@ -497,29 +501,39 @@ void	G_TouchTriggers( gentity_t *ent ) {
 				else {
 					if (reverse) {
 						finished = qtrue;
-						if (trace.allsolid || trace.startsolid) {
-							// This means after we got all we could get, there's still something left we are inside of.
-							needExtraCheck = qfalse;
-						}
 					}
 					else {
 						reverse = qtrue;
+					}
+					if (somethingInTheWay) {
+						needExtraCheck = qtrue;
 					}
 				}
 			}
 		}
 		numTraced = num;
 		if (needExtraCheck) {
-			// basically do the oldschool one after all... this is needed for anything we are fully inside of.
 			int num2;
 			int	touch2[MAX_GENTITIES];
-			num2 = trap_EntitiesInBox(mins, maxs, touch2, MAX_GENTITIES); // this is guaranteed to get the remaining stuff because 
+			qboolean preContact;
+			qboolean postContact;
+			VectorAdd(ent->client->prePmovePosition, playerMins, minsPrev);
+			VectorAdd(ent->client->prePmovePosition, playerMaxs, maxsPrev);
+			VectorMin(minsPrev,mins,minsTotal);
+			VectorMax(maxsPrev,maxs,maxsTotal);
+			// basically do the oldschool one after all... this is needed for anything we are fully inside of or if any solids were involved
+			num2 = trap_EntitiesInBox(minsTotal, maxsTotal, touch2, MAX_GENTITIES); // this is guaranteed to get the remaining stuff because 
 			for (i = 0; i < num2; i++) {
 				hit = &g_entities[touch2[i]];
 				if (!(hit->r.contents & CONTENTS_TRIGGER)) { 
 					continue; // no need to worry about dupes since we removed CONTENTS_TRIGGER from the already done ones
 				}
-				if (!trap_EntityContact(mins, maxs, hit)) {
+				preContact = trap_EntityContact(minsPrev, maxsPrev, hit);
+				postContact = trap_EntityContact(mins, maxs, hit);
+				if (preContact!= postContact) {
+					touchViaTrace[touch2[i]] = qtrue; // sorta. really what touchviatrace is supposed to mean is, we either went in or got out. this serves that.
+				}
+				else if (!preContact) {
 					continue;
 				}
 				touch[num++] = touch2[i];
@@ -1690,6 +1704,8 @@ void ClientThink_real( gentity_t *ent ) {
 	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
 	
 	Pmove (&pm);
+
+	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
 
 	if (pm.checkDuelLoss)
 	{

@@ -3,6 +3,7 @@
 // g_combat.c
 
 #include "g_local.h"
+#include "g_defrag.h"
 
 //rww - pd
 void BotDamageNotification(gclient_t *bot, gentity_t *attacker);
@@ -1812,6 +1813,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		return;
 	}
 
+	DF_RaceStateInvalidated(self, qfalse);
+
 	if (g_slowmoDuelEnd.integer && g_gametype.integer == GT_TOURNAMENT && attacker && attacker->inuse && attacker->client)
 	{
 		if (!gDoSlowMoDuel)
@@ -2225,6 +2228,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		i = ( i + 1 ) % 3;
 	}
 
+	self->client->sess.raceStateInvalidated = qfalse; // we are respawning, reset this and allow us to do stuff again
 	trap_LinkEntity (self);
 
 }

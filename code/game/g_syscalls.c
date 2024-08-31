@@ -1062,3 +1062,9 @@ void trap_MVAPI_Print( int flags, const char *string )
 	syscall( MVAPI_PRINT, string );
 }
 
+
+
+int trap_G_COOL_API_SetBrushModelContentFlags(gentity_t* entity, int flags, coolApiSetBModelCFlagsMode_t mode)
+{
+	return syscall(G_COOL_API_SETBRUSHMODELCONTENTFLAGS, entity, flags, mode);
+}

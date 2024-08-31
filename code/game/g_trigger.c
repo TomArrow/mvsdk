@@ -12,6 +12,15 @@ void InitTrigger( gentity_t *self ) {
 	self->r.contents = CONTENTS_TRIGGER;		// replaces the -1 from trap_SetBrushModel
 	self->r.svFlags = SVF_NOCLIENT;
 
+	if (coolApi & COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS) {
+		// It can happen (ported maps from other games or other reasons) that the brushes of a trigger don't end up with 
+		// CONTENTS_TRIGGER, which means we cannot trace them.
+		// This isn't a problem with classic trigger evaluation, because only the entity's own contents is evaluated (not the contents of all its brushes)
+		// but with g_triggersRobust we need to fix this up.
+		trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_TRIGGER, COOLAPI_BMODELCFLAGS_ADD);
+		trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_SOLID, COOLAPI_BMODELCFLAGS_REMOVE); // CONTENTS_SOLID would also mess with our trigger tracing
+	}
+
 	// Tunnel high modelindex values through time2
 	MV_ModelindexToTime2( self );
 }

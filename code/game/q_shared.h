@@ -690,6 +690,10 @@ void ByteToDir( int b, vec3_t dir );
   (r)[1]=(s)[1]+(f)*((e)[1]-(s)[1]),\
   (r)[2]=(s)[2]+(f)*((e)[2]-(s)[2])) 
 
+
+#define VectorMin(a,b,c)		((c)[0]=MIN((a)[0],(b)[0]),(c)[1]=MIN((a)[1],(b)[1]),(c)[2]=MIN((a)[2],(b)[2]))
+#define VectorMax(a,b,c)		((c)[0]=MAX((a)[0],(b)[0]),(c)[1]=MAX((a)[1],(b)[1]),(c)[2]=MAX((a)[2],(b)[2]))
+
 #else
 
 #define DotProduct(x,y)			_DotProduct(x,y)
@@ -2232,6 +2236,13 @@ extern ezDemoBuffer_t ezDemoBuffer;
 #define COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED (1<<4)
 #define COOL_APIFEATURE_MARIADB (1<<5)
 #define COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK (1<<6)
+#define COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS (1<<7)
+
+typedef enum coolApiSetBModelCFlagsMode_s {
+	COOLAPI_BMODELCFLAGS_SET,
+	COOLAPI_BMODELCFLAGS_ADD,
+	COOLAPI_BMODELCFLAGS_REMOVE,
+} coolApiSetBModelCFlagsMode_t;
 
 // This is a simplified playerState_t of sorts to communicate predicted playerstate stuff to the engine 
 typedef struct predictedMovement_s {

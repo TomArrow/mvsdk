@@ -465,6 +465,7 @@ struct gclient_s {
 	qboolean	fjDidJump;
 
 	vec3_t		prePmovePosition;
+	vec3_t		postPmovePosition; // because we might get teleported in a trigger and then get wrong interpolation when using ps.origin in a later defrag trigger
 	qboolean	prePmovePositionSet;
 	qboolean	prePmoveEFlags;
 	int			prePmoveCommandTime;
@@ -712,6 +713,8 @@ qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *
 /*
 Ghoul2 Insert End
 */
+
+int trap_G_COOL_API_SetBrushModelContentFlags(gentity_t* entity, int flags, coolApiSetBModelCFlagsMode_t mode);
 
 //
 // g_combat.c
@@ -1362,6 +1365,10 @@ qboolean	trap_ROFF_Purge_Ent( int entID );
 #include "g_multiversion_syscalls.h"
 
 #define SABER_BOX_SIZE /*16.0f*/(jk2gameplay == VERSION_1_02 ? 8.0f : 16.0f) //MVSDK: Moved from w_saber.c
+
+
+extern int coolApi;
+extern int coolApi_dbVersion;
 
 extern int mvapi;
 extern qboolean mvStructConversionDisabled;

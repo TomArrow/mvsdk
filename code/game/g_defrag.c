@@ -1,7 +1,8 @@
 
 
-#include "g_defrag.h"
 #include "g_local.h"
+
+extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 
 // NOTE: For start timer, make sure we are not standing in any existing start timer before actually starting, 
 // even when leave() is already being called. Only the last left start trigger should actually trigger.
@@ -82,9 +83,9 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 	qboolean inTrigger;
 	float msecScale = 1.0f / (float)msecDelta;
 
-	VectorCopy(activator->client->ps.origin, interpOrigin);
-	VectorSubtract(activator->client->prePmovePosition, activator->client->ps.origin,delta);
-	VectorScale(activator->s.pos.trDelta, msecScale, delta);
+	VectorCopy(activator->client->postPmovePosition, interpOrigin);
+	VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition,delta);
+	VectorScale(delta, msecScale, delta);
 
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
 	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname)) || !touched)
@@ -110,9 +111,9 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 	qboolean inTrigger;
 	float msecScale = 1.0f / (float)msecDelta;
 
-	VectorCopy(activator->client->ps.origin, interpOrigin);
-	VectorSubtract(activator->client->prePmovePosition, activator->client->ps.origin,delta);
-	VectorScale(activator->s.pos.trDelta, msecScale, delta);
+	VectorCopy(activator->client->postPmovePosition, interpOrigin);
+	VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition,delta);
+	VectorScale(delta, msecScale, delta);
 
 	//while (!(inTrigger = DF_InTrigger(interpOrigin, trigger)) || !left)
 	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start")) || !left)
@@ -145,7 +146,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
-	if (DF_InAnyTrigger(activator->client->ps.origin,"df_trigger_start")) return; // we are still in some start trigger.
+	if (DF_InAnyTrigger(activator->client->postPmovePosition,"df_trigger_start")) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", activator->client->pers.netname);
@@ -477,7 +478,7 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 		trap_SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
 }
 
-static void DF_RaceStateInvalidated(gentity_t* ent, qboolean print)
+void DF_RaceStateInvalidated(gentity_t* ent, qboolean print)
 {
 	ResetSpecificPlayerTimers(ent, print);
 	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!

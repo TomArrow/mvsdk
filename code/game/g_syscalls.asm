@@ -258,3 +258,6 @@ equ trap_MVAPI_DisableStructConversion					-706	;G_MVAPI_DISABLE_STRUCT_CONVERSI
 equ trap_MVAPI_ResetServerTime							-711	;G_MVAPI_RESET_SERVER_TIME
 equ trap_MVAPI_EnablePlayerSnapshots					-712	;G_MVAPI_ENABLE_PLAYERSNAPSHOTS
 equ trap_MVAPI_EnableSubmodelBypass				        -713	;G_MVAPI_ENABLE_SUBMODELBYPASS
+
+
+equ trap_G_COOL_API_SetBrushModelContentFlags	        -1101	;G_COOL_API_SETBRUSHMODELCONTENTFLAGS

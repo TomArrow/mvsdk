@@ -426,6 +426,8 @@ Ghoul2 Insert Start
 /*
 Ghoul2 Insert End
 */
+	
+	G_COOL_API_SETBRUSHMODELCONTENTFLAGS = 1100,
 
 } gameImport_t;
 
