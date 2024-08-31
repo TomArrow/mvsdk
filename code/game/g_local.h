@@ -560,6 +560,8 @@ typedef struct {
 	gentity_t	*bodyQue[BODY_QUEUE_SIZE];
 	int			portalSequence;
 
+	raceStyle_t	mapDefaultRaceStyle;
+
 	// MVSDK
 	qboolean	bboxEncoding;
 	qboolean	modelindexTime2;

@@ -243,6 +243,7 @@ static void CG_ParseServerinfo( const char *info ) {
 
 	cgs.isNWH = qfalse;
 	cgs.isManhunt = qfalse;
+	cgs.isTommyTernal = qfalse;
 	cgs.isJK2Pro = qfalse;
 	cgs.isCTFMod = qfalse;
 	cgs.CTF3ModeActive = qfalse;
@@ -256,7 +257,18 @@ static void CG_ParseServerinfo( const char *info ) {
 		if (strstr(v, nwhCompareBig) || strstr(v, nwhCompareSmall)) {
 			cgs.isNWH = qtrue;
 		}
-		if (!Q_stricmpn(v, "jk2pro", 5)) {
+		if (!Q_stricmpn(v, "tommyternal", 11)) {
+			cgs.isTommyTernal = qtrue;
+			v = Info_ValueForKey(info, "jcinfo");
+			cgs.jcinfo = atoi(v);//[JAPRO - Clientside - All - Add gamename variable to get jcinfo from japro servers]
+			v = Info_ValueForKey(info, "g_fixHighFPSAbuse");
+			if (v && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
+				cgs.jcinfo |= JK2PRO_CINFO_HIGHFPSFIX;
+			}
+			//trap_Cvar_Set("cjp_client", "1.4JAPRO");
+		}
+		else 
+		if (!Q_stricmpn(v, "jk2pro", 5)) { // shouldnt this be ,6?
 			cgs.isJK2Pro = qtrue;
 			cgs.isolateDuels = qtrue;
 			v = Info_ValueForKey(info, "jcinfo");

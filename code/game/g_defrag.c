@@ -500,6 +500,11 @@ void Cmd_JumpChange_f(gentity_t* ent)
 		return;
 	}
 
+	if (ent->client->pers.raceStartCommandTime) {
+		Com_Printf("^7Cannot change jump settings during a run.");
+		return;
+	}
+
 	if (trap_Argc() != 2) {
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /jump <level>\n\"");
 		return;
@@ -511,7 +516,7 @@ void Cmd_JumpChange_f(gentity_t* ent)
 	}
 
 	if (!MovementStyleAllowsJumpChange(ent->client->sess.raceStyle.movementStyle)) {
-		char styleString[16];
+		//char styleString[16];
 		//IntegerToRaceName(ent->client->sess.movementStyle, styleString, sizeof(styleString));
 		//trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%s)!\n\"", styleString));
 		trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%d)!\n\"", ent->client->sess.raceStyle.movementStyle));
@@ -649,5 +654,76 @@ void PlayerSnapshotRestoreSolid() {
 	for (i = 0; i < level.num_entities; i++) {
 		other = g_entities + i;
 		other->s.solid = solidValues[i];
+	}
+}
+
+
+
+void Cmd_DF_RunSettings_f(gentity_t* ent)
+{
+	if (!ent->client) return;
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (trap_Argc() > 1) {
+
+		char arg[8] = { 0 };
+		int index, index2, flag;
+		const uint32_t mask = allowedRunFlags & ((1 << MAX_RUN_FLAGS) - 1);
+
+		if (ent->client->pers.raceStartCommandTime) {
+			Com_Printf("^7Cannot change race settings during a run.");
+			return;
+		}
+
+		trap_Argv(1, arg, sizeof(arg));
+		index = atoi(arg);
+		index2 = index;
+		flag = 1 << index;
+
+		//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
+		if (!(allowedRunFlags & flag)) {
+			Com_Printf("Run flags: Invalid flag: %i [0, %i]\n", index2, MAX_RUN_FLAGS - 1);
+			return;
+		}
+
+		//if (index == 8 || index == 9) { //Radio button these options
+		////Toggle index, and make sure everything else in this group (8,9) is turned off
+		//	int groupMask = (1 << 8) + (1 << 9);
+		//	int value = ent->client->sess.raceStyle.runFlags;
+
+		//	groupMask &= ~(1 << index); //Remove index from groupmask
+		//	value &= ~(groupMask); //Turn groupmask off
+		//	value ^= (1 << index); //Toggle index item
+
+		//	ent->client->sess.raceStyle.runFlags = value;
+		//}
+		//else 
+		{
+			ent->client->sess.raceStyle.runFlags = flag ^ ((int)ent->client->sess.raceStyle.runFlags & mask);
+			DF_RaceStateInvalidated(ent,qtrue);
+		}
+
+		Com_Printf("%s %s^7\n", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
+			? "^2Enabled" : "^1Disabled"));
+	}
+
+	{
+		qboolean isSet;
+		qboolean differentFromDefault;
+		int i = 0;
+		int differences = ent->client->sess.raceStyle.runFlags ^ level.mapDefaultRaceStyle.runFlags;
+		for (i = 0; i < MAX_RUN_FLAGS; i++) {
+			if (!(allowedRunFlags & (1 << i))) continue;
+			isSet = ent->client->sess.raceStyle.runFlags & (1 << i);
+			differentFromDefault = differences & (1 << i);
+			Com_Printf("%2d ^%d[%s] ^7%s\n", i, differentFromDefault ? 1 : 7, isSet ? "X" : " ", runFlagsNames[i].string);
+		}
+		if (differences) {
+			Com_Printf("Differences from map default are marked ^1red^7. Your runs will not be on the main leaderboard with non-default settings.\n");
+		}
 	}
 }

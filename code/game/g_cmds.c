@@ -2520,6 +2520,7 @@ void DismembermentByNum(gentity_t *self, int num);
 #endif
 extern void Cmd_Race_f(gentity_t* ent);
 extern void Cmd_JumpChange_f(gentity_t* ent);
+extern void Cmd_DF_RunSettings_f(gentity_t* ent);
 /*
 =================
 ClientCommand
@@ -2670,6 +2671,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "run"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcechanged"))
 		{ //special case: still update force change
 			Cmd_ForceChanged_f (ent);
@@ -2751,6 +2756,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Race_f(ent);
 	else if (Q_stricmp (cmd, "jump") == 0)
 		Cmd_JumpChange_f(ent);
+	else if (Q_stricmp (cmd, "run") == 0)
+		Cmd_DF_RunSettings_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)
 		Cmd_ForceChanged_f (ent);
 	else if (Q_stricmp (cmd, "where") == 0)

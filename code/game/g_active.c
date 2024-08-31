@@ -1272,6 +1272,7 @@ void ClientThink_real( gentity_t *ent ) {
 	//	client->sess.movementStyle = g_movementStyle.integer;
 	//}
 	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
+	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
 
 	//if ((g_neutralFlag.integer < 4) && client->ps.powerups[PW_NEUTRALFLAG]) {
 	//	if (client->ps.fd.forcePowerLevel[FP_LEVITATION] > 1) {
