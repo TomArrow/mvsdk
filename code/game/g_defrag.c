@@ -677,7 +677,7 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		const uint32_t mask = allowedRunFlags & ((1 << MAX_RUN_FLAGS) - 1);
 
 		if (ent->client->pers.raceStartCommandTime) {
-			Com_Printf("^7Cannot change race settings during a run.");
+			trap_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"");
 			return;
 		}
 
@@ -688,13 +688,13 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 
 		//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
 		if (!(allowedRunFlags & flag)) {
-			Com_Printf("Run flags: Invalid flag: %i [0, %i]\n", index2, MAX_RUN_FLAGS - 1);
+			trap_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1));
 			return;
 		}
 
 		if (flag & RFL_SEGMENTED && jk2version != VERSION_1_04) {
 			// We need the JK2MV 1.04 API because we need to send playerstates from game to engine and MV playerstate conversion would mess us up.
-			Com_Printf("Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n", index2, MAX_RUN_FLAGS - 1);
+			trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"", index2, MAX_RUN_FLAGS - 1));
 			return;
 		}
 
@@ -715,8 +715,8 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			DF_RaceStateInvalidated(ent,qtrue);
 		}
 
-		Com_Printf("%s %s^7\n", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
-			? "^2Enabled" : "^1Disabled"));
+		trap_SendServerCommand(ent - g_entities, va("print \"^7%s %s^7\n\"", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
+			? "^2Enabled" : "^1Disabled")));
 	}
 
 	{
@@ -728,10 +728,10 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			if (!(allowedRunFlags & (1 << i))) continue;
 			isSet = ent->client->sess.raceStyle.runFlags & (1 << i);
 			differentFromDefault = differences & (1 << i);
-			Com_Printf("%2d ^%d[%s] ^7%s\n", i, differentFromDefault ? 1 : 7, isSet ? "X" : " ", runFlagsNames[i].string);
+			trap_SendServerCommand(ent - g_entities, va("print \"%2d ^%d[%s] ^7%s\n\"", i, differentFromDefault ? 1 : 7, isSet ? "X" : " ", runFlagsNames[i].string));
 		}
 		if (differences) {
-			Com_Printf("Differences from map default are marked ^1red^7. Your runs will not be on the main leaderboard with non-default settings.\n");
+			trap_SendServerCommand(ent - g_entities, "print \"Differences from map default are marked ^1red^7. Your runs will not be on the main leaderboard with non-default settings.\n\"");
 		}
 	}
 }
