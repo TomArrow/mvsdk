@@ -376,6 +376,10 @@ void G_TurnDefragTargetsIntoTriggers() {
 	}
 }
 
+qboolean MovementStyleAllowsWeapons(int moveStyle) {
+	return qfalse;
+}
+
 void RemoveLaserTraps(gentity_t* ent);
 void RemoveDetpacks(gentity_t* ent);
 void DeletePlayerProjectiles(gentity_t* ent);
@@ -542,9 +546,6 @@ void Cmd_JumpChange_f(gentity_t* ent)
 }
 
 
-qboolean MovementStyleAllowsWeapons(int moveStyle) {
-	return qfalse;
-}
 
 
 /*
@@ -691,6 +692,12 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			return;
 		}
 
+		if (flag & RFL_SEGMENTED && jk2version != VERSION_1_04) {
+			// We need the JK2MV 1.04 API because we need to send playerstates from game to engine and MV playerstate conversion would mess us up.
+			Com_Printf("Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n", index2, MAX_RUN_FLAGS - 1);
+			return;
+		}
+
 		//if (index == 8 || index == 9) { //Radio button these options
 		////Toggle index, and make sure everything else in this group (8,9) is turned off
 		//	int groupMask = (1 << 8) + (1 << 9);
@@ -727,4 +734,59 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			Com_Printf("Differences from map default are marked ^1red^7. Your runs will not be on the main leaderboard with non-default settings.\n");
 		}
 	}
+}
+
+
+qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
+	if (!client->client) return qfalse;
+	savedPosition->ps = client->client->ps;
+	savedPosition->raceStyle = client->client->sess.raceStyle;
+	savedPosition->buttons = client->client->buttons;
+	savedPosition->oldbuttons = client->client->oldbuttons;
+	savedPosition->latched_buttons = client->client->latched_buttons;
+	return qtrue;
+}
+
+void RestorePlayerState(gentity_t* client, savedPosition_t* savedPosition) {
+	// TODO check clientspawn and clientbegin for any clues on what else to do?
+	playerState_t backupPS;
+	int delta;
+	playerState_t* storedPS = &savedPosition->ps;
+	if (!client->client) return;
+
+	backupPS = client->client->ps;
+	client->client->ps = *storedPS;
+
+	// make sure there's no weirdness
+	client->client->ps.eFlags = (client->client->ps.eFlags & ~EF_TELEPORT_BIT) | ((backupPS.eFlags & EF_TELEPORT_BIT) ^ EF_TELEPORT_BIT); // Make it teleport
+	client->client->ps.torsoAnim = (client->client->ps.torsoAnim & ~ANIM_TOGGLEBIT) | ((backupPS.torsoAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT); // Restart animation if needed
+	client->client->ps.legsAnim = (client->client->ps.legsAnim & ~ANIM_TOGGLEBIT) | ((backupPS.legsAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT); // Restart animation if needed
+	client->client->ps.externalEvent = (client->client->ps.externalEvent & ~EV_EVENT_BITS) | ((backupPS.externalEvent & EV_EVENT_BITS)); // Don't execute new events
+	client->client->ps.eventSequence = backupPS.eventSequence; // Don't execute new events
+
+	// retime
+	delta = backupPS.commandTime - storedPS->commandTime;
+	client->client->ps.commandTime = backupPS.commandTime;
+	if (storedPS->weaponChargeTime) client->client->ps.commandTime += delta;
+	if (storedPS->weaponChargeSubtractTime) client->client->ps.weaponChargeSubtractTime += delta;
+	if (storedPS->zoomTime) client->client->ps.zoomTime += delta;
+	if (storedPS->genericEnemyIndex >= 1024) client->client->ps.genericEnemyIndex += delta;
+	if (storedPS->fd.forceRageRecoveryTime) client->client->ps.fd.forceRageRecoveryTime += delta;
+	if (storedPS->rocketLockTime > 0) client->client->ps.rocketLockTime += delta;
+	if (storedPS->rocketTargetTime) client->client->ps.rocketTargetTime += delta;
+	if (storedPS->fallingToDeath) client->client->ps.fallingToDeath += delta;
+	if (storedPS->electrifyTime) client->client->ps.electrifyTime += delta;
+	if (storedPS->fd.forcePowerDebounce[FP_LEVITATION]) client->client->ps.fd.forcePowerDebounce[FP_LEVITATION] += delta;
+	if (storedPS->duelTime) client->client->ps.duelTime += delta;
+	if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
+
+	client->health = storedPS->stats[STAT_HEALTH];
+	client->client->buttons = savedPosition->buttons;
+	client->client->oldbuttons = savedPosition->oldbuttons;
+	client->client->latched_buttons = savedPosition->latched_buttons;
+
+	SetClientViewAngle(client,storedPS->viewangles);
+
+	// maybe restore oldbuttons and buttons?
+	// if ( ( ent->client->buttons & BUTTON_ATTACK ) && ! ( ent->client->oldbuttons & BUTTON_ATTACK ) )
 }

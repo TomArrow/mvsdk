@@ -361,10 +361,13 @@ typedef struct {
 	qboolean	botDelayed;			// Is ClientBegin still outstanding for this bot, because it was delayed?
 
 	// savepos/respos
-	vec3_t		savePosPosition;
-	vec3_t		savePosVelocity;
-	vec3_t		savePosAngle;
-	qboolean	savePosUsed;
+	//vec3_t		savePosPosition;
+	//vec3_t		savePosVelocity;
+	//vec3_t		savePosAngle;
+	//playerState_t	savePosPlayerState;
+	//raceStyle_t		savePosRaceStyle;
+	savedPosition_t	savedPosition;
+	qboolean		savePosUsed;
 
 	int			raceStartCommandTime;
 	int			raceBestTime;

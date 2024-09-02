@@ -118,6 +118,110 @@ void MV_SetGameVersion( mvversion_t version, qboolean setGameplay )
 	if ( setGameplay ) MV_SetGamePlay( version ); // Default gameplay of that version...
 }
 
+
+void MV_PlayerStateToEngine(playerState_t* ps) {
+	if (jk2version == VERSION_1_02 || jk2startversion == VERSION_1_02)
+	{ // Do the magic
+
+		static const size_t section3 = (size_t)((char*)&((playerState_1_02_t*)NULL)->saberIndex);
+		static const size_t section4 = (size_t)((char*)(&((playerState_1_02_t*)NULL)[1]) - (char*)&((playerState_1_02_t*)NULL)->saberIndex);
+
+
+		if (jk2startversion == VERSION_1_02)
+		{
+			/* Convert the animations */
+			/* NOTE: When converting from 1.02 to 1.04 we have to convert the playerState struct BEFORE the animations. When converting from 1.04 to 1.02 we have to convert the playerState struct AFTER the animations. */
+			ps->legsAnim = MV_MapAnimation102(ps->legsAnim);
+			ps->legsAnimExecute = MV_MapAnimation102(ps->legsAnimExecute);
+			ps->torsoAnim = MV_MapAnimation102(ps->torsoAnim);
+			ps->torsoAnimExecute = MV_MapAnimation102(ps->torsoAnimExecute);
+
+			/* Only convert forceDodgeAnim if it really is an animation (forceHandExtend being either HANDEXTEND_TAUNT or HANDEXTEND_DODGE) */
+			if (ps->forceHandExtend == HANDEXTEND_TAUNT || ps->forceHandExtend == HANDEXTEND_DODGE)
+			{
+				ps->forceDodgeAnim = MV_MapAnimation102(ps->forceDodgeAnim);
+			}
+
+			/* The following two seem to be unused, but maybe custom cgames make use of them (well, fullAnimExecute seems to not even be set at least once - could probably just leave that one out) */
+			ps->fullAnimExecute = MV_MapAnimation104(ps->fullAnimExecute);
+			ps->saberAttackSequence = MV_MapAnimation104(ps->saberAttackSequence);
+
+			/* Convert the saberblocks */
+			if (ps->saberBlocked > BLOCKED_NONE) {
+				ps->saberBlocked--;
+			}
+		}
+
+		if (jk2version == VERSION_1_02 && !mvStructConversionDisabled)
+		{ // 1.04 to 1.02
+			playerState_1_02_t tmpPs;
+			memset(&tmpPs, 0, sizeof(playerState_1_02_t));
+			/* Convert the 1.04 struct into a 1.02 struct so the engine can handle it */
+			memcpy(&tmpPs, ps, section3);
+			memcpy(&tmpPs.saberIndex, &ps->saberIndex, section4);
+			memset(ps, 0, sizeof(playerState_t));
+			memcpy(ps, &tmpPs, sizeof(playerState_1_02_t));
+		}
+	}
+	else
+	{ // No magic required for 1.03 and 1.04...
+		return;
+	}
+}
+
+void MV_PlayerStateFromEngine(playerState_t* ps) {
+
+	if (jk2version == VERSION_1_02 || jk2startversion == VERSION_1_02)
+	{ // Do the magic
+		static const size_t section1 = (size_t)((char*)&((playerState_t*)NULL)->forceRestricted);
+		static const size_t section2 = (size_t)((char*)(&((gclient_t*)NULL)->ps) + sizeof(playerState_t) - (char*)&((gclient_t*)NULL)->ps.saberIndex);
+
+		//sizeof(playerState_1_02_t); //1368
+		//sizeof(playerState_t); //1380
+
+		if (jk2version == VERSION_1_02 && !mvStructConversionDisabled)
+		{
+			playerState_1_02_t tmpPs;
+			memset(&tmpPs, 0, sizeof(playerState_1_02_t));
+			memcpy(&tmpPs, ps, sizeof(playerState_1_02_t));
+			memset(ps,0,sizeof(playerState_t));
+			/* Convert the 1.02 struct from the engine into a 1.04 struct we can handle internally */
+			memcpy(ps, &tmpPs, section1);
+			// memset( &(g_clients[i].ps.forceRestricted), 0, ((size_t)&(g_clients[i].ps.saberIndex) - (size_t)&(g_clients[i].ps.forceRestricted)) ); // We don't need this, as the engine only got the 1.02 struct. By not doing this we can these internally...
+			memcpy(&ps->saberIndex, &tmpPs.saberIndex, section2);
+		}
+
+		if (jk2startversion == VERSION_1_02)
+		{
+			/* Convert the animations */
+			/* NOTE: When converting from 1.02 to 1.04 we have to convert the playerState struct BEFORE the animations. When converting from 1.04 to 1.02 we have to convert the playerState struct AFTER the animations. */
+			ps->legsAnim = MV_MapAnimation104(ps->legsAnim);
+			ps->legsAnimExecute = MV_MapAnimation104(ps->legsAnimExecute);
+			ps->torsoAnim = MV_MapAnimation104(ps->torsoAnim);
+			ps->torsoAnimExecute = MV_MapAnimation104(ps->torsoAnimExecute);
+
+			/* Only convert forceDodgeAnim if it really is an animation (forceHandExtend being either HANDEXTEND_TAUNT or HANDEXTEND_DODGE) */
+			if (ps->forceHandExtend == HANDEXTEND_TAUNT || ps->forceHandExtend == HANDEXTEND_DODGE)
+			{
+				ps->forceDodgeAnim = MV_MapAnimation104(ps->forceDodgeAnim);
+			}
+
+			/* The following two seem to be unused, but maybe custom cgames make use of them (well, fullAnimExecute seems to not even be set at least once - could probably just leave that one out) */
+			ps->fullAnimExecute = MV_MapAnimation104(ps->fullAnimExecute);
+			ps->saberAttackSequence = MV_MapAnimation104(ps->saberAttackSequence);
+
+			/* Convert the saberblocks */
+			if (ps->saberBlocked > BLOCKED_NONE) {
+				ps->saberBlocked++;
+			}
+		}
+	}
+	else
+	{ // No magic required for 1.03 and 1.04...
+		return;
+	}
+}
+
 void MV_VersionMagic( qboolean revert )
 {
 	if ( jk2version == VERSION_1_02 || jk2startversion == VERSION_1_02 )

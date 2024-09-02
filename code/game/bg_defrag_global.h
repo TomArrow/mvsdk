@@ -43,4 +43,13 @@ typedef struct raceStyle_s {
 	short runFlags; // flags from runFlags_t => STAT_RUNFLAGS
 } raceStyle_t;
 
+
+typedef struct savedPosition_s {
+	playerState_t	ps;
+	int				buttons;
+	int				oldbuttons;
+	int				latched_buttons; 
+	raceStyle_t		raceStyle;
+} savedPosition_t;
+
 #endif

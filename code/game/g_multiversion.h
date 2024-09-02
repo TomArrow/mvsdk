@@ -20,6 +20,8 @@ extern playerState_1_02_t g_ps[MAX_CLIENTS];
 /* Functions */
 extern void MV_SetGameVersion( mvversion_t version, qboolean setGameplay );
 extern void MV_VersionMagic( qboolean revert );
+extern void MV_PlayerStateFromEngine(playerState_t* ps);
+extern void MV_PlayerStateToEngine(playerState_t* ps);
 
 /* Function pointers */
 extern qboolean	(*trap_G2API_GetBoltMatrix_NoRecNoRot)		(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
