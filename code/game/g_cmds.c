@@ -448,6 +448,10 @@ void Cmd_Savepos_f( gentity_t *ent ) {
 	char	*msg;
 	
 	if (g_defrag.integer && ent->client->sess.raceMode) {
+		if (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) { // segmented restore/save pos handled elsewhere
+			ent->client->pers.segmented.savePos = qtrue;
+			return;
+		}
 		//DF_RaceStateInvalidated(ent, qtrue);
 		if (ent->health <= 0) {
 			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MUSTBEALIVE")));
@@ -479,11 +483,15 @@ Cmd_Respos_f
 argv(0) respos
 ==================
 */
-void RestorePlayerState(gentity_t* client, savedPosition_t* savedPosition);
+void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void Cmd_Respos_f( gentity_t *ent ) {
 	char	*msg;
 
 	if (g_defrag.integer && ent->client->sess.raceMode) {
+		if (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) { // segmented restore/save pos handled elsewhere
+			ent->client->pers.segmented.respos = qtrue;
+			return;
+		}
 		DF_RaceStateInvalidated(ent, qtrue);
 		if (ent->health <= 0) {
 			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MUSTBEALIVE")));
@@ -500,7 +508,7 @@ void Cmd_Respos_f( gentity_t *ent ) {
 		//VectorCopy(ent->client->pers.savePosVelocity, ent->client->ps.velocity);
 		//SetClientViewAngle(ent,ent->client->pers.savePosAngle);
 		//ent->client->ps.eFlags ^= EF_TELEPORT_BIT;
-		RestorePlayerState(ent,&ent->client->pers.savedPosition);
+		RestorePosition(ent,&ent->client->pers.savedPosition,NULL);
 	}
 	else {
 		msg = "Cannot restore position, velocity and angle. None saved.\n";

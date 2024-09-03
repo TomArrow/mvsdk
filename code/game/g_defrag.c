@@ -210,6 +210,14 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	Q_strncpyz(timeLastStr, DF_MsToString(timeLast), sizeof(timeLastStr));
 	Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
 
+	if ((activator->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && !activator->client->pers.segmented.playbackActive) {
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in [^2%s^7]: ^1Estimate! Starting rerun now.\n\"", activator->client->pers.netname, timeLastStr));
+		activator->client->pers.segmented.playbackActive = qtrue;
+		activator->client->pers.segmented.playbackStartedTime = level.time;
+		activator->client->pers.segmented.playbackNextCmdIndex = 0;
+		return;
+	}
+
 	// Show info
 	if (timeLast == timeBest) {
 		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in [^2%s^7]\n\"", activator->client->pers.netname, timeLastStr));
@@ -692,10 +700,18 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			return;
 		}
 
-		if (flag & RFL_SEGMENTED && jk2version != VERSION_1_04) {
-			// We need the JK2MV 1.04 API because we need to send playerstates from game to engine and MV playerstate conversion would mess us up.
-			trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"", index2, MAX_RUN_FLAGS - 1));
-			return;
+		if (flag & RFL_SEGMENTED) {
+
+			if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) {
+				trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with the UserCmdStore coolAPI feature. Please use the appropriate server engine.\n\"", index2, MAX_RUN_FLAGS - 1));
+				return;
+			}
+			if (jk2version != VERSION_1_04) {
+				// TODO is this still true?
+				// We need the JK2MV 1.04 API because we need to send playerstates from game to engine and MV playerstate conversion would mess us up.
+				trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"", index2, MAX_RUN_FLAGS - 1));
+				return;
+			}
 		}
 
 		//if (index == 8 || index == 9) { //Radio button these options
@@ -739,18 +755,21 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 
 qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	if (!client->client) return qfalse;
+	memset(savedPosition, 0, sizeof(savedPosition_t));
 	savedPosition->ps = client->client->ps;
 	savedPosition->raceStyle = client->client->sess.raceStyle;
 	savedPosition->buttons = client->client->buttons;
 	savedPosition->oldbuttons = client->client->oldbuttons;
 	savedPosition->latched_buttons = client->client->latched_buttons;
+	savedPosition->raceStartCommandTime = (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) ? client->client->pers.raceStartCommandTime : 0;
 	return qtrue;
 }
 
-void RestorePlayerState(gentity_t* client, savedPosition_t* savedPosition) {
+void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum) {
 	// TODO check clientspawn and clientbegin for any clues on what else to do?
 	playerState_t backupPS;
 	int delta;
+	vec3_t oldDelta, diff2;
 	playerState_t* storedPS = &savedPosition->ps;
 	if (!client->client) return;
 
@@ -779,14 +798,188 @@ void RestorePlayerState(gentity_t* client, savedPosition_t* savedPosition) {
 	if (storedPS->fd.forcePowerDebounce[FP_LEVITATION]) client->client->ps.fd.forcePowerDebounce[FP_LEVITATION] += delta;
 	if (storedPS->duelTime) client->client->ps.duelTime += delta;
 	if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
+	if (!client->client->pers.segmented.playbackActive && client->client->sess.raceStyle.runFlags & RFL_SEGMENTED && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
+		client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
+	}
 
 	client->health = storedPS->stats[STAT_HEALTH];
 	client->client->buttons = savedPosition->buttons;
 	client->client->oldbuttons = savedPosition->oldbuttons;
 	client->client->latched_buttons = savedPosition->latched_buttons;
 
+	if (diffAccum) {
+		VectorCopy(backupPS.delta_angles, oldDelta);
+	}
+
 	SetClientViewAngle(client,storedPS->viewangles);
+
+	if(diffAccum) {
+		VectorSubtract(client->client->ps.delta_angles, oldDelta, diff2);
+		VectorAdd(diffAccum, diff2, diffAccum);
+		diffAccum[0] &= 65535;
+		diffAccum[1] &= 65535;
+		diffAccum[2] &= 65535;
+	}
 
 	// maybe restore oldbuttons and buttons?
 	// if ( ( ent->client->buttons & BUTTON_ATTACK ) && ! ( ent->client->oldbuttons & BUTTON_ATTACK ) )
+}
+
+void DF_HandleSegmentedRunPre(gentity_t* ent) {
+	gclient_t* cl;
+	usercmd_t* ucmdPtr;
+	usercmd_t ucmd;
+	int clientNum;
+	qboolean resposRequested, saveposRequested;
+	int msec;
+	if (!ent->client) return;
+	if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) return;
+
+	clientNum = ent - g_entities;
+	cl = ent->client;
+
+	if (!(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
+		trap_G_COOL_API_PlayerUserCmdClear(clientNum);
+		cl->pers.segmented.startPosUsed = qfalse;
+		cl->pers.segmented.lastPosUsed = qfalse;
+		cl->pers.segmented.msecProgress = 0;
+		return;
+	}
+
+	resposRequested = cl->pers.segmented.respos;
+	cl->pers.segmented.respos = qfalse;
+	saveposRequested = cl->pers.segmented.savePos;
+	cl->pers.segmented.savePos = qfalse;
+
+
+	if (cl->pers.segmented.playbackActive) {
+		return;
+	}
+
+	ucmdPtr = &cl->pers.cmd;
+
+	msec = ucmdPtr->serverTime - cl->ps.commandTime;
+
+	if (msec <= 0) return; // idk why this should hapen but whatever
+
+	//if (msec > 7) {
+	//	trap_SendServerCommand(ent - g_entities, "print \"msec > 7.\n\"");
+	//}
+
+	if (!cl->pers.raceStartCommandTime) {
+
+		ucmd = *ucmdPtr;
+		// Not currently in a run.
+		// Maybe reset recording of packets.
+		if (resposRequested || saveposRequested) {
+			trap_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available in segmented run mode outside of an active run.\n\"");
+		}
+		if (!VectorLength(cl->ps.velocity) && !ucmdPtr->forwardmove && !ucmdPtr->rightmove && !ucmdPtr->upmove && cl->ps.groundEntityNum == ENTITYNUM_WORLD || !cl->pers.segmented.startPosUsed) {
+			// uuuuh what about mover states etc? oh dear. i guess it wont work for maps with movers. or we do what japro does and disable movers.
+			// wait i know! we can disable movers for segmented runs. ez.
+			//if (cl->ps.groundEntityNum == ENTITYNUM_WORLD || cl->ps.groundEntityNum == ENTITYNUM_NONE) {
+				trap_G_COOL_API_PlayerUserCmdClear(clientNum);
+				VectorClear(cl->pers.segmented.anglesDiffAccum);
+				SavePosition(ent, &cl->pers.segmented.startPos);
+				cl->pers.segmented.startPosUsed = qtrue;
+				cl->pers.segmented.msecProgress = 0;
+			//}
+		}
+
+		ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
+		cl->pers.segmented.msecProgress += msec;
+		trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
+
+		// No last pos can be stored outside a run.
+		cl->pers.segmented.lastPosUsed = qfalse;
+		return;
+	}
+
+	if (resposRequested && saveposRequested) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Respos and savepos cannot be used both on the same frame during a segmented run.\n\"");
+	}
+	else if (cl->pers.raceStartCommandTime >= cl->ps.commandTime && (saveposRequested || resposRequested)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Respos and savepos cannot be used on the first frame of a segmented run.\n\"");
+	}
+	else if (saveposRequested) {
+
+		SavePosition(ent, &cl->pers.segmented.lastPos);
+		cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
+		cl->pers.segmented.lastPosUsed = qtrue;
+		cl->pers.segmented.lastPosUserCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum)-1;
+	}
+	else if(resposRequested) {
+		if (!cl->pers.segmented.lastPosUsed) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos. No past segmented run position found.\n\"");
+		}
+		else {
+
+			RestorePosition(ent, &cl->pers.segmented.lastPos,cl->pers.segmented.anglesDiffAccum);
+			cl->pers.segmented.msecProgress = cl->pers.segmented.lastPosMsecProgress;
+			trap_G_COOL_API_PlayerUserCmdRemove(clientNum, cl->pers.segmented.lastPosUserCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
+			//SavePosition(ent, &cl->pers.segmented.lastPos); // and immediately save it again because we have now changed delta_angles
+		}
+	}
+
+	//if (!cl->pers.segmented.lastPosUsed) {
+	//	ucmd = *ucmdPtr;
+	//	ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
+	//	cl->pers.segmented.msecProgress += msec;
+	//	trap_G_COOL_API_PlayerUserCmdAdd(clientNum, ucmdPtr);
+	//	return;
+	//}
+	//else 
+	{
+
+		ucmd = *ucmdPtr;
+		ucmd.angles[0] += cl->pers.segmented.anglesDiffAccum[0];
+		ucmd.angles[1] += cl->pers.segmented.anglesDiffAccum[1];
+		ucmd.angles[2] += cl->pers.segmented.anglesDiffAccum[2];
+		ucmd.angles[0] &= 65535;
+		ucmd.angles[1] &= 65535;
+		ucmd.angles[2] &= 65535;
+		ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
+		cl->pers.segmented.msecProgress += msec;
+		trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
+
+		/*
+		short		temp;
+		int			i;
+		vec3_t		viewAngles;
+		vec3_t		deltaAngles;
+		playerState_t* ps = &cl->pers.segmented.lastPos.ps;
+		// we have already restored at least once. this means that our delta_angles have changed. which means we have to adjust the usercmd.
+		ucmd = *ucmdPtr;
+
+		VectorCopy(ps->delta_angles, deltaAngles);
+
+		// from: PM_UpdateViewAngles
+		// simulate the angles we SHOULD be getting, then re-create the same outcome with our rewritten usercmd.
+		// circularly clamp the angles with deltas
+		for (i = 0; i < 3; i++) {
+			temp = ucmd.angles[i] + deltaAngles[i];
+			//if (i == PITCH) {
+				// don't let the player look up or down more than 90 degrees
+				// TODO: Oof, does this mess up our whole idea with respos/savepos because it changes delta angles?
+				//if (temp > 16000) {
+				//	deltaAngles[i] = 16000 - ucmd.angles[i];
+				//	temp = 16000;
+				//}
+				//else if (temp < -16000) {
+				//	deltaAngles[i] = -16000 - ucmd.angles[i];
+				//	temp = -16000;
+				//}
+			//}
+			viewAngles[i] = SHORT2ANGLE(temp);
+		}
+
+		// K now we know the viewangles we SHOULD be arriving at.
+		*/
+
+
+	}
+
+
+	return;
+
 }

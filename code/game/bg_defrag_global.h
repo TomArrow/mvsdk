@@ -50,6 +50,7 @@ typedef struct savedPosition_s {
 	int				oldbuttons;
 	int				latched_buttons; 
 	raceStyle_t		raceStyle;
+	int				raceStartCommandTime;
 } savedPosition_t;
 
 #endif

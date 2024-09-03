@@ -261,3 +261,8 @@ equ trap_MVAPI_EnableSubmodelBypass				        -713	;G_MVAPI_ENABLE_SUBMODELBYPA
 
 
 equ trap_G_COOL_API_SetBrushModelContentFlags	        -1101	;G_COOL_API_SETBRUSHMODELCONTENTFLAGS
+equ trap_G_COOL_API_PlayerUserCmdAdd	        		-1102	;G_COOL_API_PLAYERUSERCMD_ADD
+equ trap_G_COOL_API_PlayerUserCmdRemove	        		-1103	;G_COOL_API_PLAYERUSERCMD_REMOVE
+equ trap_G_COOL_API_PlayerUserCmdClear	        		-1104	;G_COOL_API_PLAYERUSERCMD_CLEAR
+equ trap_G_COOL_API_PlayerUserCmdGet	        		-1105	;G_COOL_API_PLAYERUSERCMD_GET
+equ trap_G_COOL_API_PlayerUserCmdGetCount        		-1106	;G_COOL_API_PLAYERUSERCMD_GETCOUNT

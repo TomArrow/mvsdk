@@ -1215,6 +1215,7 @@ If "g_synchronousClients 1" is set, this will be called exactly
 once for each server frame, which makes for smooth demo recording.
 ==============
 */
+void DF_HandleSegmentedRunPre(gentity_t* ent);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
 	pmove_t		pm;
@@ -1235,6 +1236,8 @@ void ClientThink_real( gentity_t *ent ) {
 	// mark the time, so the connection sprite can be removed
 	ucmd = &ent->client->pers.cmd;
 
+	DF_HandleSegmentedRunPre(ent);
+
 	// sanity check the command time to prevent speedup cheating
 	if ( ucmd->serverTime > level.time + 200 ) {
 		ucmd->serverTime = level.time + 200;
@@ -1243,7 +1246,7 @@ void ClientThink_real( gentity_t *ent ) {
 	if ( ucmd->serverTime < level.time - 1000 ) {
 		ucmd->serverTime = level.time - 1000;
 //		G_Printf("serverTime >>>>>\n" );
-	} 
+	}
 
 	msec = ucmd->serverTime - client->ps.commandTime;
 	// following others may result in bad times, but we still want
@@ -2061,14 +2064,14 @@ void ClientThink( int clientNum ) {
 	// phone jack if they don't get any for a while
 	ent->client->lastCmdTime = level.time;
 
-	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer ) {
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !ent->client->pers.segmented.playbackActive ) {
 		ClientThink_real( ent );
 	}
 }
 
 
 void G_RunClient( gentity_t *ent ) {
-	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer ) {
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !ent->client->pers.segmented.playbackActive ) {
 		return;
 	}
 
@@ -2078,8 +2081,48 @@ void G_RunClient( gentity_t *ent ) {
 		ent->client->pers.botDelayed = qfalse;
 	}
 
-	ent->client->pers.cmd.serverTime = level.time;
-	ClientThink_real( ent );
+	if (ent->client->pers.segmented.playbackActive) {
+		usercmd_t ucmd;
+		gclient_t* cl = ent->client;
+		if (!cl->pers.segmented.playbackNextCmdIndex) {
+			RestorePosition(ent, &cl->pers.segmented.startPos, NULL);
+			VectorCopy(cl->pers.segmented.startPos.ps.delta_angles, cl->ps.delta_angles); //keep this so we can replay properly. we won't let the person move anyway.
+		}
+		while (qtrue) {
+			qboolean success;
+			int targetServerTime;
+			success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
+			if (!success) {
+				ent->client->pers.segmented.playbackActive = qfalse; // done
+				break;
+			}
+			targetServerTime = cl->pers.segmented.playbackStartedTime + ucmd.serverTime;
+			if (targetServerTime <= level.time) {
+				cl->ps.pm_flags &= ~PMF_FOLLOW;
+				cl->pers.cmd = ucmd;
+				cl->pers.cmd.serverTime = targetServerTime;
+				if (cl->pers.segmented.playbackNextCmdIndex == 0) {
+					cl->ps.commandTime = cl->pers.segmented.playbackStartedTime;
+				}
+				ClientThink_real(ent);
+				cl->pers.segmented.playbackNextCmdIndex++;
+			}
+			else {
+				break;
+			}
+		}
+		if (ent->client->pers.segmented.playbackActive) {
+			cl->ps.pm_flags |= PMF_FOLLOW;
+		}
+		else {
+			cl->ps.pm_flags &= ~PMF_FOLLOW;
+		}
+
+	}
+	else {
+		ent->client->pers.cmd.serverTime = level.time;
+		ClientThink_real(ent);
+	}
 }
 
 

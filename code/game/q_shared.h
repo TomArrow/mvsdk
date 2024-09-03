@@ -492,6 +492,12 @@ typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
 typedef vec_t vec5_t[5];
 
+typedef int veci_t;
+typedef veci_t veci2_t[2];
+typedef veci_t veci3_t[3];
+typedef veci_t veci4_t[4];
+typedef veci_t veci5_t[5];
+
 typedef	int	fixed4_t;
 typedef	int	fixed8_t;
 typedef	int	fixed16_t;
@@ -2237,6 +2243,7 @@ extern ezDemoBuffer_t ezDemoBuffer;
 #define COOL_APIFEATURE_MARIADB (1<<5)
 #define COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK (1<<6)
 #define COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS (1<<7)
+#define COOL_APIFEATURE_G_USERCMDSTORE (1<<8)
 
 typedef enum coolApiSetBModelCFlagsMode_s {
 	COOLAPI_BMODELCFLAGS_SET,

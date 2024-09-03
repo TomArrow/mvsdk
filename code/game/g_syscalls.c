@@ -1068,3 +1068,24 @@ int trap_G_COOL_API_SetBrushModelContentFlags(gentity_t* entity, int flags, cool
 {
 	return syscall(G_COOL_API_SETBRUSHMODELCONTENTFLAGS, entity, flags, mode);
 }
+
+int trap_G_COOL_API_PlayerUserCmdAdd(int clientNum, usercmd_t* ucmd)
+{
+	return syscall(G_COOL_API_PLAYERUSERCMD_ADD, clientNum, ucmd);
+} // returns index
+int trap_G_COOL_API_PlayerUserCmdRemove(int clientNum, int from, int to)
+{
+	return syscall(G_COOL_API_PLAYERUSERCMD_REMOVE, clientNum, from, to);
+} // from and to are inclusive
+int trap_G_COOL_API_PlayerUserCmdClear(int clientNum)
+{
+	return syscall(G_COOL_API_PLAYERUSERCMD_CLEAR, clientNum);
+}
+qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd)
+{
+	return syscall(G_COOL_API_PLAYERUSERCMD_GET, clientNum, index, ucmd);
+}
+qboolean trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum)
+{
+	return syscall(G_COOL_API_PLAYERUSERCMD_GETCOUNT, clientNum);
+}

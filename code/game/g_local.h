@@ -369,9 +369,26 @@ typedef struct {
 	savedPosition_t	savedPosition;
 	qboolean		savePosUsed;
 
+
 	int			raceStartCommandTime;
 	int			raceBestTime;
 	int			raceLastCheckpointTime;
+	struct {
+		savedPosition_t	startPos;
+		qboolean		startPosUsed;
+		savedPosition_t	lastPos;
+		int				lastPosMsecProgress;
+		qboolean		lastPosUsed;
+		int				lastPosUserCmdIndex;
+		veci3_t			anglesDiffAccum; // accumulated change in usercmd angles through respos, so we can store the usercmd_t as if the resposes had never happened
+		int				commandTimeProgress;
+		qboolean		savePos;
+		qboolean		respos;
+		int				msecProgress;
+		qboolean		playbackActive;
+		int				playbackStartedTime;
+		int				playbackNextCmdIndex;
+	} segmented; // segmented run
 	
 
 	physicsFpsState_t	physicsFps;
@@ -722,6 +739,12 @@ Ghoul2 Insert End
 */
 
 int trap_G_COOL_API_SetBrushModelContentFlags(gentity_t* entity, int flags, coolApiSetBModelCFlagsMode_t mode);
+
+int trap_G_COOL_API_PlayerUserCmdAdd(int clientNum, usercmd_t* ucmd); // returns index
+int trap_G_COOL_API_PlayerUserCmdRemove(int clientNum, int from, int to); // from and to are inclusive
+int trap_G_COOL_API_PlayerUserCmdClear(int clientNum);
+qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd);
+int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum);
 
 //
 // g_combat.c
