@@ -175,6 +175,7 @@ movement on the server game.
 */
 
 extern Q_INLINE int PM_GetMovePhysics(void);
+extern Q_INLINE int PM_GetRunFlags(void);
 typedef enum //movementstyle enum
 {
 	//MV_SIEGE,

@@ -3,7 +3,7 @@
 
 const int defaultRunFlags = RFL_NODEADRAMPS;
 
-const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_NOROLLSTART | RFL_BOT | RFL_SEGMENTED | RFL_NOROLLS;
+const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_NOROLLSTART | RFL_BOT | RFL_SEGMENTED | RFL_NOROLLS |RFL_CLIMBTECH;
 
 bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Disable jumpbug" },//0

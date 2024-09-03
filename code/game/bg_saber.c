@@ -1229,6 +1229,7 @@ float PM_GroundDistance(void)
 	return VectorLength(down);
 }
 
+
 saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 {
 	saberMoveName_t newmove = LS_INVALID;
@@ -1265,6 +1266,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 	}
 	else
 	{//not moving left or right
+		const int runFlags = PM_GetRunFlags();
 		if ( pm->cmd.forwardmove > 0 )
 		{//forward= T2B slash
 			if (pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 &&
@@ -1278,6 +1280,20 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 				if (PM_SomeoneInFront(&tr))
 				{
 					newmove = PM_SaberFlipOverAttackMove(&tr);
+				}
+			}
+			else if (
+				(runFlags & RFL_CLIMBTECH) &&
+				pm->ps->fd.saberAnimLevel == FORCE_LEVEL_3 &&
+				pm->ps->velocity[2] > 100 &&
+				PM_GroundDistance() < 32 &&
+				!BG_InSpecialJump(pm->ps->legsAnim) &&
+				!BG_SaberInSpecialAttack(pm->ps->torsoAnim) 
+				//&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_FB)
+				)
+			{ //DFA (JKA)
+				{
+					newmove = PM_SaberJumpAttackMove();
 				}
 			}
 			else if (pm->ps->fd.saberAnimLevel == FORCE_LEVEL_1 &&
@@ -1822,6 +1838,7 @@ weapChecks:
 				}
 				else//if ( pm->cmd.buttons&BUTTON_ATTACK && !(pm->ps->pm_flags&PMF_ATTACK_HELD) )//only do this if just pressed attack button?
 				{//get attack move from movement command
+					const int runFlags = PM_GetRunFlags();
 					if ( jk2gameplay != VERSION_1_02 )
 					{
 						saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
@@ -1843,16 +1860,30 @@ weapChecks:
 					}
 					else
 					{
-						if ( PM_SaberKataDone_1_02() )
-						{//we came from a bounce and cannot chain to another attack because our kata is done
-							newmove = saberMoveData[curmove].chain_idle;
-						}
-						else
-						{
-							saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
+						if (runFlags & RFL_CLIMBTECH) {
+							// flip the order so we can trigger the jka dfa
+ 							saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
 							if (checkMove != LS_INVALID)
 							{
 								newmove = checkMove;
+							}
+							if (PM_SaberKataDone_1_02())
+							{//we came from a bounce and cannot chain to another attack because our kata is done
+								newmove = saberMoveData[curmove].chain_idle;
+							}
+						}
+						else {
+							if (PM_SaberKataDone_1_02())
+							{//we came from a bounce and cannot chain to another attack because our kata is done
+								newmove = saberMoveData[curmove].chain_idle;
+							}
+							else
+							{
+								saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
+								if (checkMove != LS_INVALID)
+								{
+									newmove = checkMove;
+								}
 							}
 						}
 					}

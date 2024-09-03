@@ -1361,6 +1361,9 @@ static qboolean PM_CheckJump( void )
 			if ( animLength - pm->ps->torsoTimer < 500 )
 			{//just started the saberMove
 				//check for special-case jump attacks
+
+				//const int runFlags = PM_GetMovePhysics();
+
 				if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 )
 				{//using medium attacks
 					if (PM_GroundDistance() < 32 &&
@@ -1383,7 +1386,8 @@ static qboolean PM_CheckJump( void )
 				}
 				else if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_3 )
 				{//using strong attacks
-					if ( pm->cmd.forwardmove > 0 && //going forward
+					if ( //!(runFlags & RFL_CLIMBTECH) && // using JKA dfa instead then?
+						pm->cmd.forwardmove > 0 && //going forward
 						((pm->cmd.buttons & BUTTON_ATTACK) || jk2gameplay == VERSION_1_02) && //must be holding attack still
 						PM_GroundDistance() < 32 &&
 						!BG_InSpecialJump(pm->ps->legsAnim))
