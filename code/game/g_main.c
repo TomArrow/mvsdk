@@ -456,12 +456,12 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 			int playerNum = arg0;
 			if (playerNum == -1) {
 				if (lastPlayerSnapshotNum != -1) {
-					PlayerSnapshotRestoreSolid();
+					PlayerSnapshotRestoreValues();
 				}
 			}
 			else
 			{
-				PlayerSnapshotSetSolid(lastPlayerSnapshotNum == -1, playerNum);
+				PlayerSnapshotHackValues(lastPlayerSnapshotNum == -1, playerNum);
 			}
 			lastPlayerSnapshotNum = playerNum;
 			return qtrue;

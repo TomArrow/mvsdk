@@ -249,6 +249,10 @@ saberMoveData_t	saberMoveData[LS_MOVE_MAX] = {//							NB:randomized
 	{"Reflect UL",	BOTH_P1_S1_TR,		Q_R,	Q_TL,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_BL2TR,		LS_A_TR2BL,		300	},	// LS_PARRY_UL,
 	{"Reflect LR",	BOTH_P1_S1_BR,		Q_R,	Q_BL,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_TR2BL,		LS_A_BL2TR,		300	},	// LS_PARRY_LR
 	{"Reflect LL",	BOTH_P1_S1_BL,		Q_R,	Q_BR,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_TL2BR,		LS_A_BR2TL,		300	},	// LS_PARRY_LL,
+
+	// JKA cartwheels
+	{ "DualJumpAtkL_A",BOTH_ARIAL_LEFT,	Q_R,	Q_TL,	AFLAG_ACTIVE,	100,	BLK_TIGHT,	LS_READY,		LS_A_TL2BR,		200 },	// LS_JUMPATTACK_ARIAL_LEFT
+	{ "DualJumpAtkR_A",BOTH_ARIAL_RIGHT,Q_R,	Q_TR,	AFLAG_ACTIVE,	100,	BLK_TIGHT,	LS_READY,		LS_A_TR2BL,		200 },	// LS_JUMPATTACK_ARIAL_RIGHT
 };
 
 
@@ -1233,10 +1237,63 @@ float PM_GroundDistance(void)
 saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 {
 	saberMoveName_t newmove = LS_INVALID;
+	const int runFlags = PM_GetRunFlags();
 
 	if ( pm->cmd.rightmove > 0 )
 	{//moving right
-		if ( pm->cmd.forwardmove > 0 )
+		if (//!noSpecials
+			(runFlags & RFL_CLIMBTECH)
+			//&& overrideJumpRightAttackMove != LS_NONE
+			&& pm->ps->velocity[2] > 20.0f //pm->ps->groundEntityNum != ENTITYNUM_NONE//on ground
+			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
+			&& PM_GroundDistance() < 70.0f //not too high above ground
+			&& (pm->cmd.upmove > 0 || (pm->ps->pm_flags & PMF_JUMP_HELD))//focus-holding player
+			//&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
+			)
+		{//cartwheel right
+			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF)) { //dunno why do this if they cant cart..?
+			//	BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
+			//}
+			//if (overrideJumpRightAttackMove != LS_INVALID)
+			//{//overridden with another move
+			//	return overrideJumpRightAttackMove;
+			//}
+			//else 
+			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF))
+			{
+				vec3_t right, fwdAngles;
+
+				VectorSet(fwdAngles, 0.0f, pm->ps->viewangles[YAW], 0.0f);
+
+				AngleVectors(fwdAngles, NULL, right, NULL);
+				pm->ps->velocity[0] = pm->ps->velocity[1] = 0.0f;
+				VectorMA(pm->ps->velocity, 190.0f, right, pm->ps->velocity);
+				//if (pm->ps->fd.saberAnimLevel == SS_STAFF)
+				//{
+				//	newmove = LS_BUTTERFLY_RIGHT;
+				//	pm->ps->velocity[2] = 350.0f;
+				//}
+				//else 
+				//if (allowCartwheels)
+				{
+					//PM_SetJumped( JUMP_VELOCITY, qtrue );
+					PM_AddEvent(EV_JUMP);
+					pm->ps->velocity[2] = 300.0f;
+
+					//if ( !Q_irand( 0, 1 ) )
+					//if (PM_GroundDistance() >= 25.0f)
+					if (1)
+					{
+						newmove = LS_JUMPATTACK_ARIAL_RIGHT;
+					}
+					//else
+					//{
+					//	newmove = LS_JUMPATTACK_CART_RIGHT;
+					//}
+				}
+			}
+		} 
+		else if ( pm->cmd.forwardmove > 0 )
 		{//forward right = TL2BR slash
 			newmove = LS_A_TL2BR;
 		}
@@ -1251,7 +1308,59 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 	}
 	else if ( pm->cmd.rightmove < 0 )
 	{//moving left
-		if ( pm->cmd.forwardmove > 0 )
+		if (//!noSpecials
+			(runFlags & RFL_CLIMBTECH)
+			//&& overrideJumpLeftAttackMove != LS_NONE
+			&& pm->ps->velocity[2] > 20.0f //pm->ps->groundEntityNum != ENTITYNUM_NONE//on ground
+			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
+			&& PM_GroundDistance() < 70.0f //not too high above ground
+			&& (pm->cmd.upmove > 0 || (pm->ps->pm_flags & PMF_JUMP_HELD))//focus-holding player
+			//&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
+			)
+		{//cartwheel left
+			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF)) { //dunno why do this if they cant cart..?
+			//	BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
+			//}
+
+			//if (overrideJumpLeftAttackMove != LS_INVALID)
+			//{//overridden with another move
+			//	return overrideJumpLeftAttackMove;
+			//}
+			//else 
+			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF))
+			{
+				vec3_t right, fwdAngles;
+
+				VectorSet(fwdAngles, 0.0f, pm->ps->viewangles[YAW], 0.0f);
+				AngleVectors(fwdAngles, NULL, right, NULL);
+				pm->ps->velocity[0] = pm->ps->velocity[1] = 0.0f;
+				VectorMA(pm->ps->velocity, -190.0f, right, pm->ps->velocity);
+				//if (pm->ps->fd.saberAnimLevel == SS_STAFF)
+				//{
+				//	newmove = LS_BUTTERFLY_LEFT;
+				//	pm->ps->velocity[2] = 250.0f;
+				//}
+				//else 
+				//if (allowCartwheels)
+				{
+					//PM_SetJumped( JUMP_VELOCITY, qtrue );
+					PM_AddEvent(EV_JUMP);
+					pm->ps->velocity[2] = 350.0f;
+
+					//if ( !Q_irand( 0, 1 ) )
+					//if (PM_GroundDistance() >= 25.0f)
+					if (1)
+					{
+						newmove = LS_JUMPATTACK_ARIAL_LEFT;
+					}
+					//else
+					//{
+					//	newmove = LS_JUMPATTACK_CART_LEFT;
+					//}
+				}
+			}
+		}
+		else if ( pm->cmd.forwardmove > 0 )
 		{//forward left = TR2BL slash
 			newmove = LS_A_TR2BL;
 		}
@@ -1266,13 +1375,12 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 	}
 	else
 	{//not moving left or right
-		const int runFlags = PM_GetRunFlags();
 		if ( pm->cmd.forwardmove > 0 )
 		{//forward= T2B slash
 			if (pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 &&
 				pm->ps->velocity[2] > 100 &&
 				PM_GroundDistance() < 32 &&
-				!BG_InSpecialJump(pm->ps->legsAnim) &&
+				!BG_InSpecialJump(pm->ps->legsAnim,runFlags) &&
 				(!BG_SaberInSpecialAttack(pm->ps->torsoAnim) || jk2gameplay != VERSION_1_04))
 			{ //FLIP AND DOWNWARD ATTACK
 				trace_t tr;
@@ -1287,7 +1395,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 				pm->ps->fd.saberAnimLevel == FORCE_LEVEL_3 &&
 				pm->ps->velocity[2] > 100 &&
 				PM_GroundDistance() < 32 &&
-				!BG_InSpecialJump(pm->ps->legsAnim) &&
+				!BG_InSpecialJump(pm->ps->legsAnim, runFlags) &&
 				!BG_SaberInSpecialAttack(pm->ps->torsoAnim) 
 				//&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_FB)
 				)
@@ -1983,6 +2091,7 @@ void PM_SetSaberMove(short newMove)
 	unsigned int setflags = saberMoveData[newMove].animSetFlags;
 	int	anim = saberMoveData[newMove].animToUse;
 	int parts = SETANIM_TORSO;
+	const int runFlags = PM_GetRunFlags();
 	
 	if ( newMove == LS_READY || ((newMove == LS_A_FLIP_STAB || newMove == LS_A_FLIP_SLASH) &&
 		jk2gameplay != VERSION_1_02) )
@@ -2036,6 +2145,8 @@ void PM_SetSaberMove(short newMove)
 		|| newMove == LS_A_BACK_CR
 		|| newMove == LS_A_FLIP_STAB
 		|| newMove == LS_A_FLIP_SLASH
+		|| newMove == LS_JUMPATTACK_ARIAL_LEFT // JKA cartwheel
+		|| newMove == LS_JUMPATTACK_ARIAL_RIGHT // JKA cartwheel
 		|| jk2gameplay == VERSION_1_02 )
 	{
 		setflags |= SETANIM_FLAG_OVERRIDE;
@@ -2064,13 +2175,20 @@ void PM_SetSaberMove(short newMove)
 		parts = SETANIM_TORSO;
 	}
 
-	if ( newMove == LS_A_LUNGE 
+	if (newMove == LS_JUMPATTACK_ARIAL_RIGHT || // jka cartwheel
+		newMove == LS_JUMPATTACK_ARIAL_LEFT)// jka cartwheel
+	{ //force only on legs
+		parts = SETANIM_LEGS;
+	}
+	else if ( newMove == LS_A_LUNGE
 		|| newMove == LS_A_JUMP_T__B_ 
 		|| newMove == LS_A_BACKSTAB
 		|| newMove == LS_A_BACK
 		|| newMove == LS_A_BACK_CR
 		|| newMove == LS_A_FLIP_STAB
-		|| newMove == LS_A_FLIP_SLASH )
+		|| newMove == LS_A_FLIP_SLASH 
+		|| newMove == LS_JUMPATTACK_ARIAL_LEFT// jka cartwheel
+		|| newMove == LS_JUMPATTACK_ARIAL_RIGHT)// jka cartwheel
 	{
 		parts = SETANIM_BOTH;
 	}
@@ -2084,7 +2202,7 @@ void PM_SetSaberMove(short newMove)
 			!BG_InRoll( pm->ps, pm->ps->legsAnim ) && 
 			!PM_InKnockDown( pm->ps ) && 
 			!PM_JumpingAnim( pm->ps->legsAnim ) &&
-			!BG_InSpecialJump( pm->ps->legsAnim ) &&
+			!BG_InSpecialJump( pm->ps->legsAnim, runFlags) &&
 			anim != PM_GetSaberStance() &&
 			pm->ps->groundEntityNum != ENTITYNUM_NONE &&
 			!(pm->ps->pm_flags & PMF_DUCKED))
@@ -2098,6 +2216,16 @@ void PM_SetSaberMove(short newMove)
 #else
 	PM_SetAnim(parts, anim, (jk2gameplay == VERSION_1_02 ? (setflags|SETANIM_FLAG_HOLD) : setflags), saberMoveData[newMove].blendTime);
 #endif
+
+	if (parts != SETANIM_LEGS && 
+		(pm->ps->legsAnim == BOTH_ARIAL_LEFT ||
+			pm->ps->legsAnim == BOTH_ARIAL_RIGHT)) // can this even ever be true?!
+	{
+		if (pm->ps->legsTimer > pm->ps->torsoTimer)
+		{
+			pm->ps->legsTimer = pm->ps->torsoTimer;
+		}
+	}
 
 	if ( (pm->ps->torsoAnim&~ANIM_TOGGLEBIT) == anim )
 	{//successfully changed anims

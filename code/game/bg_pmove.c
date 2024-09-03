@@ -592,7 +592,7 @@ qboolean PM_ForceJumpingUp(void)
 		return qfalse;
 	}
 
-	if ( BG_InSpecialJump( pm->ps->legsAnim ) )
+	if ( BG_InSpecialJump( pm->ps->legsAnim, PM_GetRunFlags() ) )
 	{
 		return qfalse;
 	}
@@ -785,6 +785,7 @@ PM_CheckJump
 */
 static qboolean PM_CheckJump( void ) 
 {
+	const int runFlags = PM_GetRunFlags();
 	if (pm->ps->usingATST)
 	{
 		return qfalse;
@@ -1296,7 +1297,7 @@ static qboolean PM_CheckJump( void )
 				&& pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_1
 				&& pm->ps->velocity[2] > 200
 				&& PM_GroundDistance() <= 80 //unfortunately we do not have a happy ground timer like SP (this would use up more bandwidth if we wanted prediction workign right), so we'll just use the actual ground distance.
-				&& !BG_InSpecialJump(pm->ps->legsAnim) )
+				&& !BG_InSpecialJump(pm->ps->legsAnim, runFlags) )
 			{//run up wall, flip backwards
 				vec3_t fwd, traceto, mins, maxs, fwdAngles;
 				trace_t	trace;
@@ -1367,7 +1368,7 @@ static qboolean PM_CheckJump( void )
 				if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 )
 				{//using medium attacks
 					if (PM_GroundDistance() < 32 &&
-						!BG_InSpecialJump(pm->ps->legsAnim))
+						!BG_InSpecialJump(pm->ps->legsAnim, runFlags))
 					{ //FLIP AND DOWNWARD ATTACK
 						trace_t tr;
 
@@ -1390,7 +1391,7 @@ static qboolean PM_CheckJump( void )
 						pm->cmd.forwardmove > 0 && //going forward
 						((pm->cmd.buttons & BUTTON_ATTACK) || jk2gameplay == VERSION_1_02) && //must be holding attack still
 						PM_GroundDistance() < 32 &&
-						!BG_InSpecialJump(pm->ps->legsAnim))
+						!BG_InSpecialJump(pm->ps->legsAnim, runFlags))
 					{//strong attack: jump-hack
 						PM_SetSaberMove( PM_SaberJumpAttackMove() );
 						pml.groundPlane = qfalse;
@@ -1426,7 +1427,7 @@ static qboolean PM_CheckJump( void )
 	PM_AddEvent( EV_JUMP );
 
 	//Set the animations
-	if ( pm->ps->gravity > 0 && !BG_InSpecialJump( pm->ps->legsAnim ) )
+	if ( pm->ps->gravity > 0 && !BG_InSpecialJump( pm->ps->legsAnim, runFlags) )
 	{
 		PM_JumpForDir();
 	}
@@ -2046,6 +2047,7 @@ static void PM_CrashLand( void ) {
 	float		t;
 	float		a, b, c, den;
 	qboolean	didRoll = qfalse;
+	const int	runFlags = PM_GetRunFlags();
 
 	// calculate the exact velocity on landing
 	dist = pm->ps->origin[2] - pml.previous_origin[2];
@@ -2104,7 +2106,7 @@ static void PM_CrashLand( void ) {
 		}
 	}
 
-	if (!BG_InSpecialJump(pm->ps->legsAnim) ||
+	if (!BG_InSpecialJump(pm->ps->legsAnim, runFlags) ||
 		pm->ps->legsTimer < 1 ||
 		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_WALL_RUN_LEFT ||
 		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_WALL_RUN_RIGHT)
@@ -3406,6 +3408,7 @@ static void PM_Weapon( void )
 	int		addTime;
 	int amount;
 	int		killAfterItem = 0;
+	const int	runFlags = PM_GetRunFlags();
 
 	if (pm->ps->usingATST)
 	{
@@ -3602,7 +3605,7 @@ static void PM_Weapon( void )
 		return;
 	}
 
-	if (BG_InSpecialJump(pm->ps->legsAnim) ||
+	if (BG_InSpecialJump(pm->ps->legsAnim, runFlags) ||
 		BG_InRoll(pm->ps, pm->ps->legsAnim) ||
 		PM_InRollComplete(pm->ps, pm->ps->legsAnim))
 	{

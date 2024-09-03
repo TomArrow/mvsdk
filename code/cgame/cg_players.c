@@ -57,6 +57,15 @@ sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName ) {
 }
 
 
+Q_INLINE int CG_GetRunFlags(centity_t* cent) // TODO hm. what about other players? 
+{
+	if ((cent - cg_entities) != cg.predictedPlayerState.clientNum) return 0;
+	if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
+		return cg.predictedPlayerState.stats[STAT_RUNFLAGS];
+	}
+	return 0;
+}
+
 
 /*
 =============================================================================
@@ -2438,6 +2447,7 @@ qboolean CG_InKnockDown( int anim )
 void CG_G2ClientSpineAngles_1_02( centity_t *cent, vec3_t viewAngles, const vec3_t angles, vec3_t thoracicAngles, vec3_t ulAngles, vec3_t llAngles )
 {
 	int ang = 0;
+	const int runFlags = CG_GetRunFlags(cent); // this is only for playerstate rn... fix it pls.
 
 	if (cent->isATST || cent->currentState.teamowner)
 	{
@@ -2454,8 +2464,8 @@ void CG_G2ClientSpineAngles_1_02( centity_t *cent, vec3_t viewAngles, const vec3
 	if ( !BG_FlippingAnim( cent->currentState.legsAnim ) &&
 		!BG_SpinningSaberAnim( cent->currentState.legsAnim ) &&
 		!BG_SpinningSaberAnim( cent->currentState.torsoAnim ) &&
-		!BG_InSpecialJump( cent->currentState.legsAnim ) &&
-		!BG_InSpecialJump( cent->currentState.torsoAnim ) &&
+		!BG_InSpecialJump( cent->currentState.legsAnim, runFlags) &&
+		!BG_InSpecialJump( cent->currentState.torsoAnim, runFlags) &&
 		!BG_InDeathAnim(cent->currentState.legsAnim) &&
 		!BG_InDeathAnim(cent->currentState.torsoAnim) &&
 		!CG_InRoll(cent) &&
@@ -2467,8 +2477,8 @@ void CG_G2ClientSpineAngles_1_02( centity_t *cent, vec3_t viewAngles, const vec3
 		!BG_FlippingAnim( cgs.clientinfo[cent->currentState.number].legsAnim ) &&
 		!BG_SpinningSaberAnim( cgs.clientinfo[cent->currentState.number].legsAnim ) &&
 		!BG_SpinningSaberAnim( cgs.clientinfo[cent->currentState.number].torsoAnim ) &&
-		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].legsAnim ) &&
-		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].torsoAnim ) &&
+		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].legsAnim, runFlags) &&
+		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].torsoAnim, runFlags) &&
 		!BG_InDeathAnim(cgs.clientinfo[cent->currentState.number].legsAnim) &&
 		!BG_InDeathAnim(cgs.clientinfo[cent->currentState.number].torsoAnim) &&
 		!BG_SaberInSpecialAttack(cgs.clientinfo[cent->currentState.number].torsoAnim) &&
@@ -2561,6 +2571,7 @@ void CG_G2ClientSpineAngles_1_02( centity_t *cent, vec3_t viewAngles, const vec3
 
 void CG_G2ClientSpineAngles( centity_t *cent, vec3_t viewAngles, const vec3_t angles, vec3_t thoracicAngles, vec3_t ulAngles, vec3_t llAngles )
 {
+	const int runFlags = CG_GetRunFlags(cent); // this is only for playerstate rn... fix it pls.
 //	float legDif = 0;
 //	cent->pe.torso.pitchAngle = viewAngles[PITCH];
 	viewAngles[YAW] = AngleDelta( cent->lerpAngles[YAW], angles[YAW] );
@@ -2577,8 +2588,8 @@ void CG_G2ClientSpineAngles( centity_t *cent, vec3_t viewAngles, const vec3_t an
 	if ( !BG_FlippingAnim( cent->currentState.legsAnim&~ANIM_TOGGLEBIT ) &&
 		!BG_SpinningSaberAnim( cent->currentState.legsAnim&~ANIM_TOGGLEBIT ) &&
 		!BG_SpinningSaberAnim( cent->currentState.torsoAnim&~ANIM_TOGGLEBIT ) &&
-		!BG_InSpecialJump( cent->currentState.legsAnim&~ANIM_TOGGLEBIT ) &&
-		!BG_InSpecialJump( cent->currentState.torsoAnim&~ANIM_TOGGLEBIT ) &&
+		!BG_InSpecialJump( cent->currentState.legsAnim&~ANIM_TOGGLEBIT, runFlags ) &&
+		!BG_InSpecialJump( cent->currentState.torsoAnim&~ANIM_TOGGLEBIT, runFlags ) &&
 		!BG_InDeathAnim(cent->currentState.legsAnim&~ANIM_TOGGLEBIT) &&
 		!BG_InDeathAnim(cent->currentState.torsoAnim&~ANIM_TOGGLEBIT) &&
 		!CG_InRoll(cent) &&
@@ -2598,8 +2609,8 @@ void CG_G2ClientSpineAngles( centity_t *cent, vec3_t viewAngles, const vec3_t an
 		!BG_FlippingAnim( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT ) &&
 		!BG_SpinningSaberAnim( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT ) &&
 		!BG_SpinningSaberAnim( cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT ) &&
-		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT ) &&
-		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT ) &&
+		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT, runFlags ) &&
+		!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT,runFlags ) &&
 		!BG_InDeathAnim(cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT) &&
 		!BG_InDeathAnim(cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT) &&
 		!BG_SaberInSpecialAttack(cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT) &&
@@ -2679,6 +2690,7 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 	float		degrees_negative = 0;
 	float		degrees_positive = 0;
 	vec3_t		ulAngles, llAngles, viewAngles, angles, thoracicAngles = {0,0,0};
+	const int	runFlags = CG_GetRunFlags(cent);
 
 	VectorCopy( cent->lerpAngles, headAngles );
 	headAngles[YAW] = AngleMod( headAngles[YAW] );
@@ -3011,8 +3023,8 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 			if ( !BG_FlippingAnim( cent->currentState.legsAnim&~ANIM_TOGGLEBIT ) &&
 				!BG_SpinningSaberAnim( cent->currentState.legsAnim&~ANIM_TOGGLEBIT ) &&
 				!BG_SpinningSaberAnim( cent->currentState.torsoAnim&~ANIM_TOGGLEBIT ) &&
-				!BG_InSpecialJump( cent->currentState.legsAnim&~ANIM_TOGGLEBIT ) &&
-				!BG_InSpecialJump( cent->currentState.torsoAnim&~ANIM_TOGGLEBIT ) &&
+				!BG_InSpecialJump( cent->currentState.legsAnim&~ANIM_TOGGLEBIT, runFlags ) &&
+				!BG_InSpecialJump( cent->currentState.torsoAnim&~ANIM_TOGGLEBIT, runFlags) &&
 				!BG_InDeathAnim(cent->currentState.legsAnim&~ANIM_TOGGLEBIT) &&
 				!BG_InDeathAnim(cent->currentState.torsoAnim&~ANIM_TOGGLEBIT) &&
 				!CG_InRoll(cent) &&
@@ -3024,8 +3036,8 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 				!BG_FlippingAnim( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT ) &&
 				!BG_SpinningSaberAnim( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT ) &&
 				!BG_SpinningSaberAnim( cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT ) &&
-				!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT ) &&
-				!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT ) &&
+				!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT, runFlags) &&
+				!BG_InSpecialJump( cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT, runFlags) &&
 				!BG_InDeathAnim(cgs.clientinfo[cent->currentState.number].legsAnim&~ANIM_TOGGLEBIT) &&
 				!BG_InDeathAnim(cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT) &&
 				!BG_SaberInSpecialAttack(cgs.clientinfo[cent->currentState.number].torsoAnim&~ANIM_TOGGLEBIT) &&

@@ -6,6 +6,7 @@
 
 extern bot_state_t *botstates[MAX_CLIENTS];
 extern qboolean InFront( vec3_t spot, vec3_t from, vec3_t fromAngles, float threshHold );
+extern int DF_GetRunFlags(gentity_t* ent);
 
 int saberSpinSound = 0;
 int saberOffSound = 0;
@@ -180,6 +181,7 @@ void WP_SaberInitBladeData( gentity_t *ent )
 void G_G2ClientSpineAngles_1_02( gentity_t *ent, vec3_t viewAngles, const vec3_t angles, vec3_t thoracicAngles, vec3_t ulAngles, vec3_t llAngles )
 {
 	int ang = 0;
+	const int runFlags = DF_GetRunFlags(ent);
 
 	VectorClear(ulAngles);
 	VectorClear(llAngles);
@@ -189,8 +191,8 @@ void G_G2ClientSpineAngles_1_02( gentity_t *ent, vec3_t viewAngles, const vec3_t
 	if ( !BG_FlippingAnim( ent->client->ps.legsAnim ) &&
 		!BG_SpinningSaberAnim( ent->client->ps.legsAnim ) &&
 		!BG_SpinningSaberAnim( ent->client->ps.torsoAnim ) &&
-		!BG_InSpecialJump( ent->client->ps.legsAnim ) &&
-		!BG_InSpecialJump( ent->client->ps.torsoAnim ) &&
+		!BG_InSpecialJump( ent->client->ps.legsAnim , runFlags) &&
+		!BG_InSpecialJump( ent->client->ps.torsoAnim , runFlags) &&
 		!BG_InRoll(&ent->client->ps, ent->client->ps.legsAnim) &&
 		!BG_SaberInSpecial(ent->client->ps.saberMove) &&
 		!BG_SaberInSpecialAttack(ent->client->ps.torsoAnim) &&
@@ -700,6 +702,8 @@ qboolean WP_SabersCheckLock( gentity_t *ent1, gentity_t *ent2 )
 	float dist;
 	qboolean	ent1BlockingPlayer = qfalse;
 	qboolean	ent2BlockingPlayer = qfalse;
+	const int runFlags = DF_GetRunFlags(ent1);
+	const int runFlags2 = DF_GetRunFlags(ent2);
 
 	if (!g_saberLocking.integer)
 	{
@@ -737,11 +741,11 @@ qboolean WP_SabersCheckLock( gentity_t *ent1, gentity_t *ent2 )
 		return qfalse;
 	}
 
-	if (BG_InSpecialJump(ent1->client->ps.legsAnim))
+	if (BG_InSpecialJump(ent1->client->ps.legsAnim, runFlags))
 	{
 		return qfalse;
 	}
-	if (BG_InSpecialJump(ent2->client->ps.legsAnim))
+	if (BG_InSpecialJump(ent2->client->ps.legsAnim, runFlags2))
 	{
 		return qfalse;
 	}
@@ -3352,6 +3356,7 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 	int returnAfterUpdate = 0;
 	float animSpeedScale = 1;
 	qboolean setTorso = qfalse;
+	const int runFlags = DF_GetRunFlags(self);
 
 	if (self && self->inuse && self->client)
 	{
@@ -3917,8 +3922,8 @@ finalUpdate:
 		!BG_FlippingAnim( self->client->ps.torsoAnim ) &&
 		!BG_SpinningSaberAnim( self->client->ps.legsAnim ) &&
 		!BG_SpinningSaberAnim( self->client->ps.torsoAnim ) &&
-		!BG_InSpecialJump( self->client->ps.legsAnim ) &&
-		!BG_InSpecialJump( self->client->ps.torsoAnim ) &&
+		!BG_InSpecialJump( self->client->ps.legsAnim, runFlags ) &&
+		!BG_InSpecialJump( self->client->ps.torsoAnim, runFlags ) &&
 		!BG_InRoll(&self->client->ps, self->client->ps.legsAnim) &&
 		!BG_SaberInSpecial(self->client->ps.saberMove) &&
 		!BG_SaberInSpecialAttack(self->client->ps.legsAnim) &&

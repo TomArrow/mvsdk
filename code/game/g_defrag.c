@@ -646,7 +646,9 @@ void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec
 }
 
 static int solidValues[MAX_GENTITIES];
-void PlayerSnapshotSetSolid(qboolean saveState, int clientNum) {
+static int saberMoveValues[MAX_GENTITIES];
+static int saberMoveValuesPS[MAX_GENTITIES];
+void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	gentity_t* ent = g_entities + clientNum;
 	gentity_t* other;
 	int i;
@@ -656,14 +658,34 @@ void PlayerSnapshotSetSolid(qboolean saveState, int clientNum) {
 		if (ShouldNotCollide(ent,other)) {
 			other->s.solid = 0;
 		}
+
+		// avoid issues with custom lightsaber moves on clients.
+		// it doesnt USUALLY crash but its an access past the end of the array and other compilers or sanitizers might cause a crash
+		// also, cg_debugsabers 1 causes aa crash on cgame.
+		// TODO: is sabermove used for anything else?
+		// TODO: Don't do this if client has tommyternal client?
+		saberMoveValues[i] = other->s.saberMove;
+		if (other->s.saberMove >= LS_MOVE_MAX_DEFAULT) {
+			other->s.saberMove = LS_READY;
+		}
+		if (other->client) {
+			saberMoveValuesPS[i] = other->client->ps.saberMove;
+			if (other->client->ps.saberMove >= LS_MOVE_MAX_DEFAULT) {
+				other->client->ps.saberMove = LS_READY;
+			}
+		}
 	}
 }
-void PlayerSnapshotRestoreSolid() {
+void PlayerSnapshotRestoreValues() {
 	gentity_t* other;
 	int i;
 	for (i = 0; i < level.num_entities; i++) {
 		other = g_entities + i;
 		other->s.solid = solidValues[i];
+		other->s.saberMove = saberMoveValues[i];
+		if (other->client) {
+			other->client->ps.saberMove = saberMoveValuesPS[i];
+		}
 	}
 }
 
@@ -982,4 +1004,12 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	return;
 
+}
+
+
+int DF_GetRunFlags(gentity_t* ent) {
+	if (!ent->client) {
+		return 0;
+	}
+	return ent->client->sess.raceMode ? ent->client->sess.raceStyle.runFlags : 0;
 }

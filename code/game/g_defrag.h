@@ -7,7 +7,7 @@
 
 void G_TurnDefragTargetsIntoTriggers();
 qboolean MovementStyleAllowsWeapons(int moveStyle);
-void PlayerSnapshotSetSolid(qboolean saveState, int clientNum);
-void PlayerSnapshotRestoreSolid();
+void PlayerSnapshotHackValues(qboolean saveState, int clientNum);
+void PlayerSnapshotRestoreValues();
 
 #endif

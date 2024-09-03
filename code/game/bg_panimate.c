@@ -12,7 +12,7 @@ BEGIN: Animation utility functions (sequence checking)
 ==============================================================================
 */
 //Called regardless of pm validity:
-qboolean BG_InSpecialJump( int anim )
+qboolean BG_InSpecialJump( int anim, int runFlags )
 {
 	switch ( (anim&~ANIM_TOGGLEBIT) )
 	{
@@ -29,6 +29,11 @@ qboolean BG_InSpecialJump( int anim )
 	case BOTH_BUTTERFLY_LEFT:
 	case BOTH_BUTTERFLY_RIGHT:
 		return qtrue;
+	case BOTH_ARIAL_LEFT: // jka cartwheel
+	case BOTH_ARIAL_RIGHT: // jka cartwheel
+		if (runFlags & RFL_CLIMBTECH) {
+			return qtrue;
+		}
 	}
 	return qfalse;
 }
@@ -76,6 +81,8 @@ qboolean BG_SaberInAttack( int move )
 	case LS_A_JUMP_T__B_:
 	case LS_A_FLIP_STAB:
 	case LS_A_FLIP_SLASH:
+	case LS_JUMPATTACK_ARIAL_LEFT: // jka cartwheel
+	case LS_JUMPATTACK_ARIAL_RIGHT: // jka cartwheel
 		return qtrue;
 		break;
 	}
@@ -93,6 +100,8 @@ qboolean BG_SaberInSpecial( int move )
 	case LS_A_JUMP_T__B_:
 	case LS_A_FLIP_STAB:
 	case LS_A_FLIP_SLASH:
+	case LS_JUMPATTACK_ARIAL_LEFT: // jka cartwheel
+	case LS_JUMPATTACK_ARIAL_RIGHT: // jka cartwheel
 		return qtrue;
 	}
 	return qfalse;
@@ -539,6 +548,22 @@ qboolean PM_InKnockDown( playerState_t *ps )
 	return qfalse;
 }
 
+//Called only where pm is valid (not all require pm, but some do):
+/*qboolean PM_InCartwheel(int anim)
+{
+	switch (anim)
+	{
+	case BOTH_ARIAL_LEFT:
+	case BOTH_ARIAL_RIGHT:
+	case BOTH_ARIAL_F1:
+	case BOTH_CARTWHEEL_LEFT:
+	case BOTH_CARTWHEEL_RIGHT:
+		return qtrue;
+		break;
+	}
+	return qfalse;
+}*/
+
 qboolean PM_PainAnim( int anim )
 {
 	switch ( (anim&~ANIM_TOGGLEBIT) )
@@ -940,9 +965,10 @@ void PM_ContinueLegsAnim( int anim ) {
 }
 
 void PM_ForceLegsAnim( int anim) {
-	if (BG_InSpecialJump(pm->ps->legsAnim) &&
+	const int runFlags = PM_GetRunFlags();
+	if (BG_InSpecialJump(pm->ps->legsAnim, runFlags) &&
 		pm->ps->legsTimer > 0 &&
-		!BG_InSpecialJump(anim))
+		!BG_InSpecialJump(anim, runFlags))
 	{
 		return;
 	}
@@ -1196,7 +1222,7 @@ void PM_SetAnim(int setAnimParts,int anim,int setAnimFlags, int blendTime)
 	assert(	bgGlobalAnimations[anim].firstFrame != 0 || 
 			bgGlobalAnimations[anim].numFrames != 0);
 
-	if (BG_InSpecialJump(anim))
+	if (BG_InSpecialJump(anim,PM_GetRunFlags()))
 	{
 		setAnimFlags |= SETANIM_FLAG_RESTART;
 	}

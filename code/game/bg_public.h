@@ -1028,7 +1028,10 @@ typedef enum {
 	LS_REFLECT_LR,
 	LS_REFLECT_LL,
 
-	LS_MOVE_MAX//
+	LS_MOVE_MAX_DEFAULT,// default max
+	LS_JUMPATTACK_ARIAL_LEFT= LS_MOVE_MAX_DEFAULT, // cartwheel from jka
+	LS_JUMPATTACK_ARIAL_RIGHT, // cartwheel from jka
+	LS_MOVE_MAX
 } saberMoveName_t;
 
 typedef enum {
@@ -1062,7 +1065,7 @@ extern saberMoveData_t	saberMoveData[LS_MOVE_MAX];
 qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled);
 
 //BG anim utility functions:
-qboolean BG_InSpecialJump( int anim );
+qboolean BG_InSpecialJump( int anim, int runFlags);
 qboolean BG_InSaberStandAnim( int anim );
 qboolean BG_DirectFlippingAnim( int anim );
 qboolean BG_SaberInAttack( int move );
