@@ -562,6 +562,65 @@ static void PM_Accelerate( vec3_t wishdir, float wishspeed, float accel ) {
 }
 
 
+/*
+==============
+PM_Accelerate
+
+Handles user intended acceleration
+==============
+*/
+static void PM_SickoAccelerate( vec3_t wishdir, float wishspeed, float baseAccel, float maxAccel) {
+#if 1
+	// q2 style
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+	float		baseInc, accel;
+
+	currentspeed = DotProduct (pm->ps->velocity, wishdir);
+	addspeed = wishspeed - currentspeed;
+	if (addspeed <= 0) {
+		return;
+	}
+	baseInc = pml.frametime * wishspeed;
+
+	accel = addspeed / baseInc;
+
+	if (accel > maxAccel) {
+		accel = maxAccel;
+	}
+	else if (accel < baseAccel) {
+		accel = baseAccel;
+	}
+
+	accelspeed = accel* baseInc;
+	if (accelspeed > addspeed) {
+		accelspeed = addspeed;
+	}
+	
+	for (i=0 ; i<3 ; i++) {
+		pm->ps->velocity[i] += accelspeed*wishdir[i];	
+	}
+#else
+	// proper way (avoids strafe jump maxspeed bug), but feels bad
+	vec3_t		wishVelocity;
+	vec3_t		pushDir;
+	float		pushLen;
+	float		canPush;
+
+	VectorScale( wishdir, wishspeed, wishVelocity );
+	VectorSubtract( wishVelocity, pm->ps->velocity, pushDir );
+	pushLen = VectorNormalize( pushDir );
+
+	canPush = accel*pml.frametime*wishspeed;
+	if (canPush > pushLen) {
+		canPush = pushLen;
+	}
+
+	VectorMA( pm->ps->velocity, canPush, pushDir, pm->ps->velocity );
+#endif
+}
+
+
 
 /*
 ============
@@ -1953,6 +2012,7 @@ static void PM_AirMove( void ) {
 	float		scale;
 	usercmd_t	cmd;
 	const int	runFlags = PM_GetRunFlags();
+	const int	movePhysics = PM_GetMovePhysics();
 
 	if (pm->ps->pm_type != PM_SPECTATOR)
 	{
@@ -2001,7 +2061,12 @@ static void PM_AirMove( void ) {
 	wishspeed *= scale;
 
 	// not on ground, so little effect on velocity
-	PM_Accelerate (wishdir, wishspeed, pm_airaccelerate);
+	if (movePhysics == MV_SICKO) {
+		PM_SickoAccelerate(wishdir, wishspeed, pm_airaccelerate,200.0f);
+	}
+	else {
+		PM_Accelerate(wishdir, wishspeed, pm_airaccelerate);
+	}
 
 	// we may have a ground plane that is very steep, even
 	// though we don't have a groundentity

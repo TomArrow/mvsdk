@@ -4,6 +4,27 @@
 
 #include "q_shared.h"
 
+
+typedef enum //movementstyle enum
+{
+	//MV_SIEGE,
+	MV_JK2,
+	MV_PJK2,//MV_BOTJKA,//MV_QW, // dont make bot its own. just make bot a runflag
+	MV_JK2SP,//MV_CPM,
+	MV_SPEED,//MV_Q3,
+	MV_SICKO,//MV_CLIMB,//MV_PJK,
+	//MV_WSW,
+	//MV_RJQ3,
+	//MV_RJCPM,
+	//MV_SWOOP,
+	//MV_JETPACK,
+	//MV_SPEED,
+	//MV_SP,
+	//MV_SLICK,
+	//MV_BOTCPM,
+	MV_NUMSTYLES
+} movementStyle_e;
+
 typedef struct bitInfo_s {
 	const char* string;
 } bitInfo_t;
@@ -23,9 +44,11 @@ typedef enum runFlags_s { // 0 is vanilla behavior, 1 is deviation
 
 extern const int defaultRunFlags;
 extern const int allowedRunFlags; // RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_NOROLLSTART | RFL_BOT | RFL_SEGMENTED | RFL_NOROLLS
+extern const int allowedMovementStyles;
 extern const int MAX_RUN_FLAGS;
 
 extern bitInfo_t runFlagsNames[];
+extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
 
 // can't do this: because qvm has issues compiling shorts :/
 //typedef struct raceStyle_s {
@@ -52,5 +75,7 @@ typedef struct savedPosition_s {
 	raceStyle_t		raceStyle;
 	int				raceStartCommandTime;
 } savedPosition_t;
+
+int RaceNameToInteger(char* style);
 
 #endif

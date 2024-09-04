@@ -176,25 +176,7 @@ movement on the server game.
 
 extern Q_INLINE int PM_GetMovePhysics(void);
 extern Q_INLINE int PM_GetRunFlags(void);
-typedef enum //movementstyle enum
-{
-	//MV_SIEGE,
-	MV_JK2,
-	MV_PJK2,//MV_BOTJKA,//MV_QW, // dont make bot its own. just make bot a runflag
-	MV_JK2SP,//MV_CPM,
-	MV_SPEED,//MV_Q3,
-	//MV_CLIMB,//MV_PJK,
-	//MV_WSW,
-	//MV_RJQ3,
-	//MV_RJCPM,
-	//MV_SWOOP,
-	//MV_JETPACK,
-	//MV_SPEED,
-	//MV_SP,
-	//MV_SLICK,
-	//MV_BOTCPM,
-	MV_NUMSTYLES
-} movementStyle_e;
+
 
 
 typedef struct animation_s {

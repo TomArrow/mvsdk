@@ -1382,7 +1382,7 @@ void ClientThink_real( gentity_t *ent ) {
 				ent->client->ps.stats[STAT_WEAPONS] = /*(1 << WP_MELEE) +*/ (1 << WP_SABER) + (1 << WP_DISRUPTOR) + (1 << WP_STUN_BATON);
 			}
 			else {
-				ent->client->ps.stats[STAT_WEAPONS] = /*(1 << WP_MELEE) +*/ (1 << WP_SABER) + (1 << WP_DISRUPTOR);
+				ent->client->ps.stats[STAT_WEAPONS] = /*(1 << WP_MELEE) +*/ (1 << WP_SABER) + (1 << WP_DISRUPTOR) + (1 << WP_STUN_BATON);
 			}
 		}
 

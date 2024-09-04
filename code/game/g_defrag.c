@@ -160,6 +160,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
 	activator->client->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
+	activator->client->pers.segmented.lastPosUsed = qfalse;
 
 	trap_SendServerCommand(activator - g_entities, "cp \"Race timer started!\"");
 }
@@ -1015,4 +1016,92 @@ int DF_GetRunFlags(gentity_t* ent) {
 		return 0;
 	}
 	return ent->client->sess.raceMode ? ent->client->sess.raceStyle.runFlags : 0;
+}
+
+
+
+void Cmd_MovementStyle_f(gentity_t* ent)
+{
+	char mStyle[32];
+	int newStyle;
+
+	if (!ent->client)
+		return;
+
+	if (trap_Argc() != 2) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /move <siege, jka, qw, cpm, q3, pjk, wsw, rjq3, rjcpm, swoop, jetpack, speed, sp, slick, botcpm, coop, ocpm, tribes, or surf>.\n\"");
+		return;
+	}
+
+	//Do alive check here so they can see style list?
+	if ((ent->health <= 0
+		//|| ent->client->tempSpectate >= level.time
+		|| ent->client->sess.sessionTeam == TEAM_SPECTATOR))
+	{
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MUSTBEALIVE")));
+		return;
+	}
+
+	if (!g_defrag.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"This command is not allowed in this gamemode!\n\"");
+		return;
+	}
+
+	/*
+	if (level.gametype != GT_FFA) {
+		trap_SendServerCommand(ent-g_entities, "print \"This command is not allowed in this gametype!\n\"");
+		return;
+	}
+	*/
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (VectorLength(ent->client->ps.velocity)) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be standing still to use this command!\n\"");
+		return;
+	}
+
+	trap_Argv(1, mStyle, sizeof(mStyle));
+
+	newStyle = RaceNameToInteger(mStyle);
+	//Just return if newstyle = old style?
+
+	if (!(allowedMovementStyles & (1 << newStyle))) {
+		trap_SendServerCommand(ent - g_entities, "print \"Movement style not allowed!\n\"");
+		return;
+	}
+
+	if (newStyle >= 0) {
+
+		trap_SendServerCommand(ent - g_entities, "print \"Movement style updated.\n\"");
+
+
+		ent->client->sess.raceStyle.movementStyle = newStyle;
+		DF_RaceStateInvalidated(ent,qtrue);
+
+		if (newStyle == MV_SPEED) {
+			ent->client->ps.fd.forcePower = 50;
+		}
+	}
+	else {
+		int i,index;
+		char printString[256];
+		printString[0] = '\0';
+		Q_strcat(printString, sizeof(printString), "print \"Usage: /move <");
+		index = 0;
+		for (i = 0; i < MV_NUMSTYLES; i++) {
+			if ((allowedMovementStyles & (1 << newStyle))) {
+				if (index) {
+					Q_strcat(printString, sizeof(printString), ",");
+				}
+				Q_strcat(printString, sizeof(printString), moveStyleNames[i].string);
+				index++;
+			}
+		}
+		Q_strcat(printString, sizeof(printString), ">.\n\"");
+		trap_SendServerCommand(ent - g_entities, printString);
+	}
 }
