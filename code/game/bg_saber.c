@@ -2239,6 +2239,13 @@ void PM_SetSaberMove(short newMove)
 			}
 		}
 
+		// just testing this to see if it makes cartwheel climbs easier. eh idk.
+		//if ((runFlags & RFL_CLIMBTECH) && BG_SaberInSpecial(newMove) &&
+		//	pm->ps->weaponTime < pm->ps->torsoTimer)
+		//{ //rww 01-02-03 - I think this will solve the issue of special attacks being interruptable, hopefully without side effects
+		//	pm->ps->weaponTime = pm->ps->torsoTimer;
+		//}
+
 		pm->ps->saberMove = newMove;
 		pm->ps->saberBlocking = saberMoveData[newMove].blocking;
 
