@@ -654,7 +654,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	int i;
 	for (i = 0; i < level.num_entities; i++) {
 		other = g_entities + i;
-		solidValues[i] = other->s.solid;
+		if(saveState) solidValues[i] = other->s.solid;
 		if (ShouldNotCollide(ent,other)) {
 			other->s.solid = 0;
 		}
@@ -664,12 +664,12 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		// also, cg_debugsabers 1 causes aa crash on cgame.
 		// TODO: is sabermove used for anything else?
 		// TODO: Don't do this if client has tommyternal client?
-		saberMoveValues[i] = other->s.saberMove;
+		if (saveState) saberMoveValues[i] = other->s.saberMove;
 		if (other->s.saberMove >= LS_MOVE_MAX_DEFAULT) {
 			other->s.saberMove = LS_READY;
 		}
 		if (other->client) {
-			saberMoveValuesPS[i] = other->client->ps.saberMove;
+			if (saveState) saberMoveValuesPS[i] = other->client->ps.saberMove;
 			if (other->client->ps.saberMove >= LS_MOVE_MAX_DEFAULT) {
 				other->client->ps.saberMove = LS_READY;
 			}
