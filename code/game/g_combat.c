@@ -1854,6 +1854,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	CheckAlmostCapture( self, attacker );
 
 	self->client->ps.pm_type = PM_DEAD;
+	if (self->client->sess.raceMode && (self->client->sess.raceStyle.runFlags & RFL_CLIMBTECH)) {
+		self->client->ps.pm_flags &= ~PMF_STUCK_TO_WALL;
+	}
 
 	if ( attacker ) {
 		killer = attacker->s.number;
@@ -3603,8 +3606,18 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			targ->enemy = attacker;
 			targ->die (targ, inflictor, attacker, take, mod);
 			return;
-		} else if ( targ->pain ) {
-			targ->pain (targ, attacker, take);
+		}
+		else {
+			if (g_debugMelee.integer && targ->client->sess.raceMode && (targ->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
+			{//getting hurt makes you let go of the wall
+				if (targ->client && (targ->client->ps.pm_flags & PMF_STUCK_TO_WALL))
+				{
+					G_LetGoOfWall(targ);
+				}
+			}
+			if (targ->pain) {
+				targ->pain(targ, attacker, take);
+			}
 		}
 
 		G_LogWeaponDamage(attacker->s.number, mod, take);

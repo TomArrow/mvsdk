@@ -2871,6 +2871,8 @@ void CG_InitItems(void)
 Ghoul2 Insert End
 */
 
+void CG_PmoveClientPointerUpdate();
+
 forceTicPos_t forceTicPos[] = 
 {
 	{ 11,  41,  20,  10, "gfx/hud/force_tick1", 0 },		// Left Top
@@ -3044,6 +3046,9 @@ Ghoul2 Insert Start
 //	memset( &cg, 0, sizeof( cg ) );
 	CG_Init_CG();
 	CG_InitItems();
+
+	CG_PmoveClientPointerUpdate();
+
 /*
 Ghoul2 Insert End
 */

@@ -1615,6 +1615,7 @@ Ghoul2 Insert End
 	int				restricts;//make this a short?
 
 	int				uni_clientFlags; // Anti-cheat cvar set by server owners to disable cheats in UnityMod. We use the same for compatibility
+	int				debugMelee;
 } cgs_t;
 
 //==============================================================================

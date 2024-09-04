@@ -718,6 +718,28 @@ qboolean WP_ForcePowerUsable( gentity_t *self, forcePowers_t forcePower )
 		return qfalse;
 	}
 
+	if (g_debugMelee.integer && self->client->sess.raceMode && (self->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
+	{
+		if ((self->client->ps.pm_flags & PMF_STUCK_TO_WALL))
+		{//no offensive force powers when stuck to wall
+			switch (forcePower)
+			{
+			case FP_GRIP:
+			case FP_LIGHTNING:
+			case FP_DRAIN:
+			//case FP_SABER_OFFENSE:
+			//case FP_SABER_DEFENSE:
+			case FP_SABERATTACK:
+			case FP_SABERDEFEND:
+			case FP_SABERTHROW:
+				return qfalse;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
 	return WP_ForcePowerAvailable( self, forcePower );
 }
 
@@ -2594,6 +2616,28 @@ qboolean G_InGetUpAnim(playerState_t *ps)
 	return qfalse;
 }
 
+void G_LetGoOfWall(gentity_t* ent)
+{
+	if (!ent || !ent->client)
+	{
+		return;
+	}
+	ent->client->ps.pm_flags &= ~PMF_STUCK_TO_WALL;
+	if (!ent->client->sess.raceMode || !(ent->client->sess.raceStyle.runFlags & RFL_CLIMBTECH)) {
+		return;
+	}
+	if (BG_InReboundJump(ent->client->ps.legsAnim)
+		|| BG_InReboundHold(ent->client->ps.legsAnim))
+	{
+		ent->client->ps.legsTimer = 0;
+	}
+	if (BG_InReboundJump(ent->client->ps.torsoAnim)
+		|| BG_InReboundHold(ent->client->ps.torsoAnim))
+	{
+		ent->client->ps.torsoTimer = 0;
+	}
+}
+
 extern void Touch_Button(gentity_t *ent, gentity_t *other, trace_t *trace );
 void ForceThrow( gentity_t *self, qboolean pull )
 {
@@ -2994,6 +3038,16 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				int otherPushPower = push_list[x]->client->ps.fd.forcePowerLevel[powerUse];
 				qboolean canPullWeapon = qtrue;
 				float dirLen = 0;
+
+				if (g_debugMelee.integer && push_list[x]->client->sess.raceMode && (push_list[x]->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
+				{
+					if ((push_list[x]->client->ps.pm_flags & PMF_STUCK_TO_WALL))
+					{//no resistance if stuck to wall
+						//push/pull them off the wall
+						otherPushPower = 0;
+						G_LetGoOfWall(push_list[x]);
+					}
+				}
 
 				pushPowerMod = pushPower;
 

@@ -14,6 +14,35 @@ output: origin, velocity, impacts, stairup boolean
 
 */
 
+
+qboolean PM_GroundSlideOkay(float zNormal)
+{
+	// nvm, already guarded in all calls
+	//const int runFlags = PM_GetRunFlags();
+	//if (!(runFlags & RFL_CLIMBTECH)) return qtrue;
+
+	if (zNormal > 0)
+	{
+		if (pm->ps->velocity[2] > 0)
+		{
+			if (pm->ps->legsAnim == BOTH_WALL_RUN_RIGHT
+				|| pm->ps->legsAnim == BOTH_WALL_RUN_LEFT
+				|| pm->ps->legsAnim == BOTH_WALL_RUN_RIGHT_STOP
+				|| pm->ps->legsAnim == BOTH_WALL_RUN_LEFT_STOP
+				|| pm->ps->legsAnim == BOTH_FORCEWALLRUNFLIP_START
+				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_START
+				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_ATTACK
+				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_LAND
+				|| BG_InReboundJump(pm->ps->legsAnim))
+			{
+				return qfalse;
+			}
+		}
+	}
+	return qtrue;
+}
+
+
 /*
 ==================
 PM_SlideMove
@@ -27,7 +56,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	vec3_t		dir;
 	float		d;
 	int			numplanes;
-	vec3_t		planes[MAX_CLIP_PLANES];
+	vec3_t		normal, planes[MAX_CLIP_PLANES];
 	vec3_t		primal_velocity;
 	vec3_t		clipVelocity;
 	int			i, j, k;
@@ -37,6 +66,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	float		into;
 	vec3_t		endVelocity;
 	vec3_t		endClipVelocity;
+	const int	runFlags = PM_GetRunFlags();
 	
 	VectorClear( endVelocity );
 	VectorClear( endClipVelocity );
@@ -51,9 +81,11 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		pm->ps->velocity[2] = ( pm->ps->velocity[2] + endVelocity[2] ) * 0.5;
 		primal_velocity[2] = endVelocity[2];
 		if ( pml.groundPlane ) {
-			// slide along the ground plane
-			PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
-				pm->ps->velocity, OVERCLIP );
+			if(!(runFlags & RFL_CLIMBTECH) || PM_GroundSlideOkay(pml.groundTrace.plane.normal[2])){
+				// slide along the ground plane
+				PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
+					pm->ps->velocity, OVERCLIP );
+			}
 		}
 	}
 
@@ -63,6 +95,11 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	if ( pml.groundPlane ) {
 		numplanes = 1;
 		VectorCopy( pml.groundTrace.plane.normal, planes[0] );
+		if ((runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(planes[0][2]))
+		{
+			planes[0][2] = 0;
+			VectorNormalize(planes[0]);
+		}
 	} else {
 		numplanes = 0;
 	}
@@ -105,21 +142,33 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 			return qtrue;
 		}
 
+		VectorCopy(trace.plane.normal, normal);
+
+		if ((runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
+		{//wall-running
+			//never push up off a sloped wall
+			normal[2] = 0;
+			VectorNormalize(normal);
+		}
+
 		//
 		// if this is the same plane we hit before, nudge velocity
 		// out along it, which fixes some epsilon issues with
 		// non-axial planes
 		//
-		for ( i = 0 ; i < numplanes ; i++ ) {
-			if ( DotProduct( trace.plane.normal, planes[i] ) > 0.99 ) {
-				VectorAdd( trace.plane.normal, pm->ps->velocity, pm->ps->velocity );
-				break;
+		if (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+		{//no sliding if stuck to wall!
+			for (i = 0; i < numplanes; i++) {
+				if (DotProduct(normal, planes[i]) > 0.99) {
+					VectorAdd(normal, pm->ps->velocity, pm->ps->velocity);
+					break;
+				}
+			}
+			if (i < numplanes) {
+				continue;
 			}
 		}
-		if ( i < numplanes ) {
-			continue;
-		}
-		VectorCopy (trace.plane.normal, planes[numplanes]);
+		VectorCopy (normal, planes[numplanes]);
 		numplanes++;
 
 		//
@@ -319,6 +368,11 @@ void PM_StepSlideMove( qboolean gravity ) {
 		}
 	}
 	
+	if (BG_InReboundHold(pm->ps->legsAnim))
+	{
+		gravity = qfalse;
+	}
+
 	if ( PM_SlideMove( gravity ) == 0 ) {
 		return;		// we got exactly where we wanted to go first try	
 	}

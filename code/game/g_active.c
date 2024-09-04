@@ -764,6 +764,10 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 
 		pm.animations = NULL;
 
+		//Set up bg entity data
+		pm.baseEnt = (bgEntity_t*)g_entities;
+		pm.entSize = sizeof(gentity_t);
+
 		// perform a pmove
 		Pmove (&pm);
 		// save results of pmove
@@ -1644,9 +1648,15 @@ void ClientThink_real( gentity_t *ent ) {
 
 	pm.gametype = g_gametype.integer;
 
+	pm.debugMelee = g_debugMelee.integer;
+
 	if (g_fpsToggleDelay.integer) {
 		pm.requiredCmdMsec = client->pers.physicsFps.acceptedSettingMsec ? client->pers.physicsFps.acceptedSettingMsec : -1;
 	}
+
+	//Set up bg entity data
+	pm.baseEnt = (bgEntity_t*)g_entities;
+	pm.entSize = sizeof(gentity_t);
 
 	VectorCopy( client->ps.origin, client->oldOrigin );
 

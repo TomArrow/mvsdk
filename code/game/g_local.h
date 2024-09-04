@@ -1159,6 +1159,8 @@ extern	vmCvar_t	g_saberDebugPrint;
 
 extern	vmCvar_t	g_austrian;
 
+extern	vmCvar_t	g_debugMelee;
+
 extern	vmCvar_t	g_mv_fixgalaking;
 extern	vmCvar_t	g_mv_fixbrokenmodels;
 extern	vmCvar_t	g_mv_blockchargejump;

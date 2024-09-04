@@ -267,10 +267,23 @@ extern int bgForcePowerCost[NUM_FORCE_POWERS][NUM_FORCE_POWER_LEVELS];
 #define PMF_UPDATE_ANIM		2048	// The server updated the animation, the pmove should set the ghoul2 anim to match.
 #define PMF_FOLLOW			4096	// spectate following another player
 #define PMF_SCOREBOARD		8192	// spectate as a scoreboard
+#define PMF_STUCK_TO_WALL	16384	// grabbing a wall
 
 #define	PMF_ALL_TIMES	(PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK)
 
 #define	MAXTOUCH	32
+
+typedef struct bgEntity_s
+{
+	entityState_t	s;
+
+	//Data type(s) must directly correspond to the head of the gentity and centity structures
+//#if defined(__GNUC__) || defined(__GCC__) || defined(MINGW32) || defined(MACOS_X)
+//} _bgEntity_t;
+//#else
+} bgEntity_t;
+//#endif
+
 typedef struct {
 	// state (in / out)
 	playerState_t	*ps;
@@ -297,6 +310,8 @@ typedef struct {
 
 	int			gametype;
 
+	int			debugMelee;
+
 	animation_t	*animations;
 
 	float		xyspeed;
@@ -315,6 +330,10 @@ typedef struct {
 	int			checkDuelLoss;
 	int			requiredCmdMsec;
 	qboolean	isSpecialPredict; // not a real predict, just for image smoothing
+
+	//rww - bg entitystate access method
+	bgEntity_t* baseEnt; //base address of the entity array (g_entities or cg_entities)
+	int			entSize; //size of the struct (gentity_t or centity_t) so things can be dynamic
 } pmove_t;
 
 extern	pmove_t		*pm;
@@ -1067,6 +1086,10 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber
 //BG anim utility functions:
 qboolean BG_InSpecialJump( int anim, int runFlags);
 qboolean BG_InSaberStandAnim( int anim );
+qboolean BG_InReboundJump(int anim);
+qboolean BG_InReboundHold(int anim);
+qboolean BG_InReboundRelease(int anim); 
+qboolean BG_InBackFlip(int anim);
 qboolean BG_DirectFlippingAnim( int anim );
 qboolean BG_SaberInAttack( int move );
 qboolean BG_SaberInSpecial( int move );

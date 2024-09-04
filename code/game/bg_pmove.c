@@ -15,6 +15,8 @@
 
 #define MAX_WEAPON_CHARGE_TIME 5000
 
+extern qboolean PM_GroundSlideOkay(float zNormal);
+
 pmove_t		*pm;
 pml_t		pml;
 
@@ -232,6 +234,51 @@ float forceJumpHeight[NUM_FORCE_POWER_LEVELS] =
 	384//(+stepheight+crouchdiff = 418)
 };
 
+float forceJumpHeightMax[NUM_FORCE_POWER_LEVELS] =
+{
+	66,//normal jump (32+stepheight(18)+crouchdiff(24) = 74)
+	130,//(96+stepheight(18)+crouchdiff(24) = 138)
+	226,//(192+stepheight(18)+crouchdiff(24) = 234)
+	418//(384+stepheight(18)+crouchdiff(24) = 426)
+};
+
+//rww - Get a pointer to the bgEntity by the index
+bgEntity_t* PM_BGEntForNum(int num)
+{
+	bgEntity_t* ent;
+
+	if (!pm)
+	{
+		assert(!"You cannot call PM_BGEntForNum outside of pm functions!");
+		return NULL;
+	}
+
+	if (!pm->baseEnt)
+	{
+		assert(!"Base entity address not set");
+		return NULL;
+	}
+
+	if (!pm->entSize)
+	{
+		assert(!"sizeof(ent) is 0, impossible (not set?)");
+		return NULL;
+	}
+
+	assert(num >= 0 && num < MAX_GENTITIES);
+
+	ent = (bgEntity_t*)((byte*)pm->baseEnt + pm->entSize * (num));
+
+	return ent;
+}
+
+void PM_GrabWallForJump(int anim)
+{//NOTE!!! assumes an appropriate anim is being passed in!!!
+	PM_SetAnim(SETANIM_BOTH, anim, SETANIM_FLAG_RESTART | SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD, 100);
+	PM_AddEvent(EV_JUMP);//make sound for grab
+	pm->ps->pm_flags |= PMF_STUCK_TO_WALL;
+}
+
 float forceJumpStrength[NUM_FORCE_POWER_LEVELS] = 
 {
 	JUMP_VELOCITY,//normal jump
@@ -374,6 +421,13 @@ void PM_ClipVelocity( vec3_t in, vec3_t normal, vec3_t out, float overbounce ) {
 	float	backoff;
 	float	change;
 	int		i;
+	const int runFlags = PM_GetRunFlags();
+
+	if ((runFlags & RFL_CLIMBTECH)&& (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	{//no sliding!
+		VectorCopy(in, out);
+		return;
+	}
 	
 	backoff = DotProduct (in, normal);
 	
@@ -768,6 +822,169 @@ qboolean PM_AdjustAngleForWallRun( playerState_t *ps, usercmd_t *ucmd, qboolean 
 	return qfalse;
 }
 
+#define	JUMP_OFF_WALL_SPEED	200.0f
+//nice...
+static float BG_ForceWallJumpStrength(void)
+{
+	return (forceJumpStrength[FORCE_LEVEL_3] / 2.5f);
+}
+qboolean PM_AdjustAngleForWallJump(playerState_t* ps, usercmd_t* ucmd, qboolean doMove)
+{
+	if (((BG_InReboundJump(ps->legsAnim) || BG_InReboundHold(ps->legsAnim))
+		&& (BG_InReboundJump(ps->torsoAnim) || BG_InReboundHold(ps->torsoAnim)))
+		|| (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	{//hugging wall, getting ready to jump off
+		//stick to wall, if there is one
+		vec3_t	checkDir, traceTo, mins, maxs, fwdAngles;
+		trace_t	trace;
+		float	dist = 128.0f, yawAdjust;
+
+		VectorSet(mins, pm->mins[0], pm->mins[1], 0);
+		VectorSet(maxs, pm->maxs[0], pm->maxs[1], 24);
+		VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0);
+
+		switch (ps->legsAnim)
+		{
+		case BOTH_FORCEWALLREBOUND_RIGHT:
+		case BOTH_FORCEWALLHOLD_RIGHT:
+			AngleVectors(fwdAngles, NULL, checkDir, NULL);
+			yawAdjust = -90;
+			break;
+		case BOTH_FORCEWALLREBOUND_LEFT:
+		case BOTH_FORCEWALLHOLD_LEFT:
+			AngleVectors(fwdAngles, NULL, checkDir, NULL);
+			VectorScale(checkDir, -1, checkDir);
+			yawAdjust = 90;
+			break;
+		case BOTH_FORCEWALLREBOUND_FORWARD:
+		case BOTH_FORCEWALLHOLD_FORWARD:
+			AngleVectors(fwdAngles, checkDir, NULL, NULL);
+			yawAdjust = 180;
+			break;
+		case BOTH_FORCEWALLREBOUND_BACK:
+		case BOTH_FORCEWALLHOLD_BACK:
+			AngleVectors(fwdAngles, checkDir, NULL, NULL);
+			VectorScale(checkDir, -1, checkDir);
+			yawAdjust = 0;
+			break;
+		default:
+			//WTF???
+			pm->ps->pm_flags &= ~PMF_STUCK_TO_WALL;
+			return qfalse;
+			break;
+		}
+		//if (pm->debugMelee)
+		//[JAPRO - Serverside + Clientside - Physics - Change g_debugmelee 1 so that it has kungfu moves but keeps normal wallgrab.  Create g_debugmelee 2 for kung fu moves and infinite wallgrab - Start]
+		if (pm->debugMelee > 1) // we go directly to the JAPLUS/jaPRO behavior in jk2. why not, we're porting what ppl are using
+		{//uber-skillz
+			if (ucmd->upmove > 0)
+			{//hold on until you let go manually
+				if (BG_InReboundHold(ps->legsAnim))
+				{//keep holding
+					if (ps->legsTimer < 150)
+					{
+						ps->legsTimer = 150;
+					}
+				}
+				else
+				{//if got to hold part of anim, play hold anim
+					if (ps->legsTimer <= 300)
+					{
+						ps->saberHolstered = 2;
+						PM_SetAnim(SETANIM_BOTH, BOTH_FORCEWALLRELEASE_FORWARD + (ps->legsAnim - BOTH_FORCEWALLHOLD_FORWARD), SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD, 0);
+						ps->legsTimer = ps->torsoTimer = 150;
+					}
+				}
+			}
+		}
+		//[JAPRO - Serverside + Clientside - Physics - Change g_debugmelee 1 so that it has kungfu moves but keeps normal wallgrab.  Create g_debugmelee 2 for kung fu moves and infinite wallgrab - End]
+		VectorMA(ps->origin, dist, checkDir, traceTo);
+		pm->trace(&trace, ps->origin, mins, maxs, traceTo, ps->clientNum, MASK_PLAYERSOLID);
+		if ( //ucmd->upmove <= 0 && 
+			ps->legsTimer > 100 &&
+			trace.fraction < 1.0f &&
+			fabs(trace.plane.normal[2]) <= 0.2f/*MAX_WALL_GRAB_SLOPE*/)
+		{//still a vertical wall there
+			//FIXME: don't pull around 90 turns
+			/*
+			if ( ent->s.number || !player_locked )
+			{
+				ucmd->forwardmove = 127;
+			}
+			*/
+			if (ucmd->upmove < 0)
+			{
+				ucmd->upmove = 0;
+			}
+			//align me to the wall
+			ps->viewangles[YAW] = vectoyaw(trace.plane.normal) + yawAdjust;
+			PM_SetPMViewAngle(ps, ps->viewangles, ucmd);
+			/*
+			if ( ent->client->ps.viewEntity <= 0 || ent->client->ps.viewEntity >= ENTITYNUM_WORLD )
+			{//don't clamp angles when looking through a viewEntity
+				SetClientViewAngle( ent, ent->client->ps.viewangles );
+			}
+			*/
+			ucmd->angles[YAW] = ANGLE2SHORT(ps->viewangles[YAW]) - ps->delta_angles[YAW];
+			//if ( ent->s.number || !player_locked )
+			if (1)
+			{
+				if (doMove)
+				{
+					//pull me toward the wall
+					VectorScale(trace.plane.normal, -128.0f, ps->velocity);
+				}
+			}
+			ucmd->upmove = 0;
+			ps->pm_flags |= PMF_STUCK_TO_WALL;
+			return qtrue;
+		}
+		else if (doMove
+			&& (ps->pm_flags & PMF_STUCK_TO_WALL))
+		{//jump off
+			//push off of it!
+			ps->pm_flags &= ~PMF_STUCK_TO_WALL;
+			ps->velocity[0] = ps->velocity[1] = 0;
+			VectorScale(checkDir, -JUMP_OFF_WALL_SPEED, ps->velocity);
+			ps->velocity[2] = BG_ForceWallJumpStrength();
+			ps->pm_flags |= PMF_JUMP_HELD;//PMF_JUMPING|PMF_JUMP_HELD;
+			//G_SoundOnEnt( ent, CHAN_BODY, "sound/weapons/force/jump.wav" );
+			ps->fd.forceJumpSound = 1; //this is a stupid thing, i should fix it.
+			//ent->client->ps.forcePowersActive |= (1<<FP_LEVITATION);
+			if (ps->origin[2] < ps->fd.forceJumpZStart)
+			{
+				ps->fd.forceJumpZStart = ps->origin[2];
+			}
+			//FIXME do I need this?
+
+			BG_ForcePowerDrain(ps, FP_LEVITATION, 10);
+			//no control for half a second
+			ps->pm_flags |= PMF_TIME_KNOCKBACK;
+			ps->pm_time = 500;
+			ucmd->forwardmove = 0;
+			ucmd->rightmove = 0;
+			ucmd->upmove = 127;
+
+			if (BG_InReboundHold(ps->legsAnim))
+			{//if was in hold pose, release now
+				PM_SetAnim(SETANIM_BOTH, BOTH_FORCEWALLRELEASE_FORWARD + (ps->legsAnim - BOTH_FORCEWALLHOLD_FORWARD), SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD, 0);
+			}
+			else
+			{
+				//PM_JumpForDir();
+				PM_SetAnim(SETANIM_LEGS, BOTH_FORCEJUMP1, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD | SETANIM_FLAG_RESTART, 0);
+			}
+
+			//return qtrue;
+		}
+	}
+	ps->pm_flags &= ~PMF_STUCK_TO_WALL;
+	return qfalse;
+}
+
+
+
+
 //Set the height for when a force jump was started. If it's 0, nuge it up (slight hack to prevent holding jump over slopes)
 void PM_SetForceJumpZStart(float value)
 {
@@ -785,6 +1002,7 @@ PM_CheckJump
 */
 static qboolean PM_CheckJump( void ) 
 {
+	qboolean onlyWallGrab = qfalse; // in jk 1.02, if we are in air and not wallrunning, we skip out early. but we need to go further for wallgrab. in that case ignore all but wallgrab
 	const int runFlags = PM_GetRunFlags();
 	if (pm->ps->usingATST)
 	{
@@ -1024,7 +1242,13 @@ static qboolean PM_CheckJump( void )
 				int legsAnim = (pm->ps->legsAnim&~ANIM_TOGGLEBIT);
 				if ( legsAnim != BOTH_WALL_RUN_LEFT && legsAnim != BOTH_WALL_RUN_RIGHT )
 				{//special case.. these let you jump off a wall
-					return qfalse;
+					if (runFlags & RFL_CLIMBTECH) {
+						// gotta allow for wallgrab
+						onlyWallGrab = qtrue;
+					}
+					else {
+						return qfalse;
+					}
 				}
 			}
 
@@ -1042,7 +1266,9 @@ static qboolean PM_CheckJump( void )
 	if ( pm->ps->pm_flags & PMF_JUMP_HELD ) 
 	{
 		// clear upmove so cmdscale doesn't lower running speed
-		pm->cmd.upmove = 0;
+		if(!onlyWallGrab){
+			pm->cmd.upmove = 0;
+		}
 		return qfalse;
 	}
 
@@ -1051,16 +1277,18 @@ static qboolean PM_CheckJump( void )
 		vec3_t	forward, back;
 		trace_t	trace;
 
-		AngleVectors( pm->ps->viewangles, forward, NULL, NULL );
-		VectorMA( pm->ps->origin, -8, forward, back );
-		pm->trace( &trace, pm->ps->origin, pm->mins, pm->maxs, back, pm->ps->clientNum, pm->tracemask );
+		if(!onlyWallGrab){
+			AngleVectors( pm->ps->viewangles, forward, NULL, NULL );
+			VectorMA( pm->ps->origin, -8, forward, back );
+			pm->trace( &trace, pm->ps->origin, pm->mins, pm->maxs, back, pm->ps->clientNum, pm->tracemask );
 
-		if ( trace.fraction <= 1.0f )
-		{
-			VectorMA( pm->ps->velocity, JUMP_VELOCITY*2, forward, pm->ps->velocity );
-			PM_SetAnim(SETANIM_LEGS,BOTH_FORCEJUMP1,SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_RESTART, 150);
-		}//else no surf close enough to push off of
-		pm->cmd.upmove = 0;
+			if ( trace.fraction <= 1.0f )
+			{
+				VectorMA( pm->ps->velocity, JUMP_VELOCITY*2, forward, pm->ps->velocity );
+				PM_SetAnim(SETANIM_LEGS,BOTH_FORCEJUMP1,SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_RESTART, 150);
+			}//else no surf close enough to push off of
+			pm->cmd.upmove = 0;
+		}
 	}
 	else if ( pm->cmd.upmove > 0 && pm->waterlevel < 2 &&
 		pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_0 &&
@@ -1229,6 +1457,8 @@ static qboolean PM_CheckJump( void )
 				trace_t	trace;
 				int		anim = -1;
 
+				if (onlyWallGrab) return qfalse;
+
 				VectorSet(mins, pm->mins[0], pm->mins[0], 0);
 				VectorSet(maxs, pm->maxs[0], pm->maxs[0], 24);
 				VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0);
@@ -1303,6 +1533,8 @@ static qboolean PM_CheckJump( void )
 				trace_t	trace;
 				vec3_t	idealNormal;
 
+				if (onlyWallGrab) return qfalse;
+
 				VectorSet(mins, pm->mins[0],pm->mins[1],pm->mins[2]);
 				VectorSet(maxs, pm->maxs[0],pm->maxs[1],pm->maxs[2]);
 				VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0);
@@ -1341,11 +1573,93 @@ static qboolean PM_CheckJump( void )
 						pm->ps->forceKickFlip = trace.entityNum+1; //let the server know that this person gets kicked by this client
 					}
 				}
+			} 
+			else if ( (runFlags & RFL_CLIMBTECH) &&
+					(!BG_InSpecialJump( legsAnim ,runFlags)//not in a special jump anim
+						||BG_InReboundJump( legsAnim )//we're already in a rebound
+						||BG_InBackFlip( legsAnim ) )//a backflip (needed so you can jump off a wall behind you)
+					//&& pm->ps->velocity[2] <= 0
+					&& pm->ps->velocity[2] > -1200 //not falling down very fast
+					&& !(pm->ps->pm_flags&PMF_JUMP_HELD)//have to have released jump since last press
+					&& (pm->cmd.forwardmove||pm->cmd.rightmove)//pushing in a direction
+					//&& pm->ps->forceRageRecoveryTime < pm->cmd.serverTime	//not in a force Rage recovery period
+					&& pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_2//level 3 jump or better
+					//&& WP_ForcePowerAvailable( pm->gent, FP_LEVITATION, 10 )//have enough force power to do another one
+					&& BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION)
+					&& (pm->ps->origin[2]-pm->ps->fd.forceJumpZStart) < (forceJumpHeightMax[FORCE_LEVEL_3]-(BG_ForceWallJumpStrength()/2.0f)) //can fit at least one more wall jump in (yes, using "magic numbers"... for now)
+					//&& (pm->ps->legsAnim == BOTH_JUMP1 || pm->ps->legsAnim == BOTH_INAIR1 ) )//not in a flip or spin or anything
+					)
+			{//see if we're pushing at a wall and jump off it if so
+				//if ( allowWallGrabs )
+				if ( qtrue )
+				{
+					//FIXME: make sure we have enough force power
+					//FIXME: check  to see if we can go any higher
+					//FIXME: limit to a certain number of these in a row?
+					//FIXME: maybe don't require a ucmd direction, just check all 4?
+					//FIXME: should stick to the wall for a second, then push off...
+					vec3_t checkDir, traceto, mins, maxs, fwdAngles;
+					trace_t	trace;
+					vec3_t	idealNormal;
+					int		anim = -1;
+
+					VectorSet(mins, pm->mins[0], pm->mins[1], 0.0f);
+					VectorSet(maxs, pm->maxs[0], pm->maxs[1], 24.0f);
+					VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0.0f);
+
+					if ( pm->cmd.rightmove )
+					{
+						if ( pm->cmd.rightmove > 0 )
+						{
+							anim = BOTH_FORCEWALLREBOUND_RIGHT;
+							AngleVectors( fwdAngles, NULL, checkDir, NULL );
+						}
+						else if ( pm->cmd.rightmove < 0 )
+						{
+							anim = BOTH_FORCEWALLREBOUND_LEFT;
+							AngleVectors( fwdAngles, NULL, checkDir, NULL );
+							VectorScale( checkDir, -1, checkDir );
+						}
+					}
+					else if ( pm->cmd.forwardmove > 0 )
+					{
+						anim = BOTH_FORCEWALLREBOUND_FORWARD;
+						AngleVectors( fwdAngles, checkDir, NULL, NULL );
+					}
+					else if ( pm->cmd.forwardmove < 0 )
+					{
+						anim = BOTH_FORCEWALLREBOUND_BACK;
+						AngleVectors( fwdAngles, checkDir, NULL, NULL );
+						VectorScale( checkDir, -1, checkDir );
+					}
+					if ( anim != -1 )
+					{//trace in the dir we're pushing in and see if there's a vertical wall there
+						bgEntity_t *traceEnt;
+
+						VectorMA( pm->ps->origin, 8, checkDir, traceto );
+						pm->trace( &trace, pm->ps->origin, mins, maxs, traceto, pm->ps->clientNum, CONTENTS_SOLID );//FIXME: clip brushes too?
+						VectorSubtract( pm->ps->origin, traceto, idealNormal );
+						VectorNormalize( idealNormal );
+						traceEnt = PM_BGEntForNum(trace.entityNum);
+						if ( trace.fraction < 1.0f
+							&&fabs(trace.plane.normal[2]) <= 0.2f/*MAX_WALL_GRAB_SLOPE*/
+							&&((trace.entityNum<ENTITYNUM_WORLD&&traceEnt&&traceEnt->s.solid!=SOLID_BMODEL)||DotProduct(trace.plane.normal,idealNormal)>0.7) )
+						{//there is a wall there
+							float dot = DotProduct( pm->ps->velocity, trace.plane.normal );
+							if ( dot < 1.0f )
+							{//can't be heading *away* from the wall!
+								//grab it!
+								PM_GrabWallForJump( anim );
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 
-	if ( pm->cmd.upmove > 0 
+	if ( !onlyWallGrab
+		&& pm->cmd.upmove > 0 
 		&& pm->ps->weapon == WP_SABER
 		&& (pm->ps->weaponTime > 0||pm->cmd.buttons&BUTTON_ATTACK) )
 	{//okay, we just jumped and we're in an attack
@@ -1638,6 +1952,7 @@ static void PM_AirMove( void ) {
 	float		wishspeed;
 	float		scale;
 	usercmd_t	cmd;
+	const int	runFlags = PM_GetRunFlags();
 
 	if (pm->ps->pm_type != PM_SPECTATOR)
 	{
@@ -1692,8 +2007,20 @@ static void PM_AirMove( void ) {
 	// though we don't have a groundentity
 	// slide along the steep plane
 	if ( pml.groundPlane ) {
-		PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
-			pm->ps->velocity, OVERCLIP );
+		if (runFlags & RFL_CLIMBTECH) {
+			if (!(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+			{//don't slide when stuck to a wall
+				if (PM_GroundSlideOkay(pml.groundTrace.plane.normal[2]))
+				{
+					PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
+						pm->ps->velocity, OVERCLIP);
+				}
+			}
+		}
+		else {
+			PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
+				pm->ps->velocity, OVERCLIP);
+		}
 	}
 
 	PM_StepSlideMove ( qtrue );
@@ -3915,6 +4242,150 @@ static void PM_Weapon( void )
 	{
 		PM_StartTorsoAnim( BOTH_ATTACK4 );
 	}
+	/*else if ((runFlags & RFL_CLIMBTECH) && pm->ps->weapon == WP_MELEE)// uh is this even actually climbtech?
+	{ //special anims for standard melee attacks
+		//Alternate between punches and use the anim length as weapon time.
+		if (!pm->ps->m_iVehicleNum)
+		{ //if riding a vehicle don't do this stuff at all
+			if (pm->debugMelee &&
+				(pm->cmd.buttons & BUTTON_ATTACK) &&
+				(pm->cmd.buttons & BUTTON_ALT_ATTACK))
+			{ //ok, grapple time
+#if 0 //eh, I want to try turning the saber off, but can't do that reliably for prediction..
+				qboolean icandoit = qtrue;
+				if (pm->ps->weaponTime > 0)
+				{ //weapon busy
+					icandoit = qfalse;
+				}
+				if (pm->ps->forceHandExtend != HANDEXTEND_NONE)
+				{ //force power or knockdown or something
+					icandoit = qfalse;
+				}
+				if (pm->ps->weapon != WP_SABER && pm->ps->weapon != WP_MELEE)
+				{
+					icandoit = qfalse;
+				}
+
+				if (icandoit)
+				{
+					//G_SetAnim(ent, &ent->client->pers.cmd, SETANIM_BOTH, BOTH_KYLE_GRAB, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD);
+					PM_SetAnim(SETANIM_BOTH, BOTH_KYLE_GRAB, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
+					if (pm->ps->torsoAnim == BOTH_KYLE_GRAB)
+					{ //providing the anim set succeeded..
+						pm->ps->torsoTimer += 500; //make the hand stick out a little longer than it normally would
+						if (pm->ps->legsAnim == pm->ps->torsoAnim)
+						{
+							pm->ps->legsTimer = pm->ps->torsoTimer;
+						}
+						pm->ps->weaponTime = pm->ps->torsoTimer;
+						return;
+					}
+				}
+#else
+#ifdef _GAME
+				if (pm_entSelf)
+				{
+					if (TryGrapple((gentity_t*)pm_entSelf))
+					{
+						return;
+					}
+				}
+#else
+				return;
+#endif
+#endif
+			}
+			else if (pm->debugMelee && 
+				(pm->cmd.buttons & BUTTON_ALT_ATTACK))
+			{ //kicks
+				if (!BG_KickingAnim(pm->ps->torsoAnim) &&
+					!BG_KickingAnim(pm->ps->legsAnim))
+				{
+					int kickMove = PM_KickMoveForConditions();
+					if (kickMove == LS_HILT_BASH)
+					{ //yeah.. no hilt to bash with!
+						kickMove = LS_KICK_F;
+					}
+
+					if (kickMove != -1)
+					{
+						if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
+						{//if in air, convert kick to an in-air kick
+							float gDist = PM_GroundDistance();
+							//let's only allow air kicks if a certain distance from the ground
+							//it's silly to be able to do them right as you land.
+							//also looks wrong to transition from a non-complete flip anim...
+							if ((!BG_FlippingAnim(pm->ps->legsAnim) || pm->ps->legsTimer <= 0) &&
+								gDist > 64.0f && //strict minimum
+								gDist > (-pm->ps->velocity[2]) - 64.0f //make sure we are high to ground relative to downward velocity as well
+								)
+							{
+								switch (kickMove)
+								{
+								case LS_KICK_F:
+									kickMove = LS_KICK_F_AIR;
+									break;
+								case LS_KICK_B:
+									kickMove = LS_KICK_B_AIR;
+									break;
+								case LS_KICK_R:
+									kickMove = LS_KICK_R_AIR;
+									break;
+								case LS_KICK_L:
+									kickMove = LS_KICK_L_AIR;
+									break;
+								default: //oh well, can't do any other kick move while in-air
+									kickMove = -1;
+									break;
+								}
+							}
+							else
+							{ //off ground, but too close to ground
+								kickMove = -1;
+							}
+						}
+					}
+
+					if (kickMove != -1)
+					{
+						int kickAnim = saberMoveData[kickMove].animToUse;
+
+						if (kickAnim != -1)
+						{
+							PM_SetAnim(SETANIM_BOTH, kickAnim, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
+							if (pm->ps->legsAnim == kickAnim)
+							{
+								pm->ps->weaponTime = pm->ps->legsTimer;
+								return;
+							}
+						}
+					}
+				}
+
+				//if got here then no move to do so put torso into leg idle or whatever
+				if (pm->ps->torsoAnim != pm->ps->legsAnim)
+				{
+					PM_SetAnim(SETANIM_BOTH, pm->ps->legsAnim, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
+				}
+				pm->ps->weaponTime = 0;
+				return;
+			}
+			else
+			{ //just punch
+				int desTAnim = BOTH_MELEE1;
+				if (pm->ps->torsoAnim == BOTH_MELEE1)
+				{
+					desTAnim = BOTH_MELEE2;
+				}
+				PM_StartTorsoAnim(desTAnim);
+
+				if (pm->ps->torsoAnim == desTAnim)
+				{
+					pm->ps->weaponTime = pm->ps->torsoTimer;
+				}
+			}
+		}
+	}*/
 	else
 	{
 		PM_StartTorsoAnim( WeaponAttackAnim[pm->ps->weapon] );
@@ -4510,7 +4981,9 @@ PmoveSingle
 void trap_SnapVector( float *v );
 
 void PmoveSingle (pmove_t *pmove) {
+	int runFlags;
 	pm = pmove;
+	runFlags = PM_GetRunFlags();
 
 	gPMDoSlowFall = PM_DoSlowFall();
 
@@ -4674,6 +5147,9 @@ void PmoveSingle (pmove_t *pmove) {
 
 	pml.frametime = pml.msec * 0.001;
 
+	if (runFlags & RFL_CLIMBTECH) {
+		PM_AdjustAngleForWallJump(pm->ps, &pm->cmd, qtrue);
+	}
 	PM_AdjustAngleForWallRun(pm->ps, &pm->cmd, qtrue);
 
 	if ((pm->ps->saberMove == LS_A_JUMP_T__B_ || pm->ps->saberMove == LS_A_LUNGE ||
@@ -4709,7 +5185,7 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 #endif
 
-	if ( pm->cmd.upmove < 10 ) {
+	if ( pm->cmd.upmove < 10 && (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))) {
 		// not holding jump
 		pm->ps->pm_flags &= ~PMF_JUMP_HELD;
 	}

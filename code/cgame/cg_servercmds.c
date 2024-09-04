@@ -227,6 +227,9 @@ static void CG_ParseServerinfo( const char *info ) {
 	cgs.gametype = atoi( v );
 	trap_Cvar_Set( "g_gametype", v );
 
+	// jka wallgrab related
+	cgs.debugMelee = atoi(Info_ValueForKey(info, "g_debugMelee")); //trap->Cvar_GetHiddenVarValue("g_iknowkungfu");
+
 	cgs.needpass = atoi( Info_ValueForKey( info, "needpass" ) );
 	cgs.jediVmerc = atoi( Info_ValueForKey( info, "g_jediVmerc" ) );
 	cgs.wDisable = atoi( Info_ValueForKey( info, "wdisable" ) );

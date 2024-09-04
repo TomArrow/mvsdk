@@ -665,6 +665,30 @@ void CG_COOL_API_SetPredictedMovement(playerState_t* predictedPS)
 
 playerState_t cgSendPS[MAX_CLIENTS];
 
+//Assign all the entity playerstate pointers to the corresponding one
+//so that we can access playerstate stuff in bg code (and then translate
+//it back to entitystate data)
+void CG_PmoveClientPointerUpdate()
+{
+	int i;
+
+	/*memset(&cgSendPSPool[0], 0, sizeof(cgSendPSPool));
+
+	for (i = 0; i < MAX_GENTITIES; i++)
+	{
+		cgSendPS[i] = &cgSendPSPool[i];
+
+		// These will be invalid at this point on Xbox
+		cg_entities[i].playerState = cgSendPS[i];
+	}*/
+
+	//Set up bg entity data
+	cg_pmove.baseEnt = (bgEntity_t*)cg_entities;
+	cg_pmove.entSize = sizeof(centity_t);
+
+	//cg_pmove.ghoul2 = NULL;
+}
+
 /*
 =================
 CG_PredictPlayerState
@@ -937,6 +961,8 @@ void CG_PredictPlayerState( void ) {
 		cg_pmove.animations = bgGlobalAnimations;
 
 		cg_pmove.gametype = cgs.gametype;
+
+		cg_pmove.debugMelee = cgs.debugMelee;
 
 		for ( i = 0 ; i < MAX_CLIENTS ; i++ )
 		{
