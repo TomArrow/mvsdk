@@ -1085,7 +1085,7 @@ qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* u
 {
 	return syscall(G_COOL_API_PLAYERUSERCMD_GET, clientNum, index, ucmd);
 }
-qboolean trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum)
+int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum)
 {
 	return syscall(G_COOL_API_PLAYERUSERCMD_GETCOUNT, clientNum);
 }
