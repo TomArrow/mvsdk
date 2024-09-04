@@ -658,6 +658,9 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		if (ShouldNotCollide(ent,other)) {
 			other->s.solid = 0;
 		}
+		else if (!saveState){
+			other->s.solid = solidValues[i];
+		}
 
 		// avoid issues with custom lightsaber moves on clients.
 		// it doesnt USUALLY crash but its an access past the end of the array and other compilers or sanitizers might cause a crash
