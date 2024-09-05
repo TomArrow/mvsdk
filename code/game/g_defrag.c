@@ -1029,7 +1029,7 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 		return;
 
 	if (trap_Argc() != 2) {
-		trap_SendServerCommand(ent - g_entities, "print \"Usage: /move <siege, jka, qw, cpm, q3, pjk, wsw, rjq3, rjcpm, swoop, jetpack, speed, sp, slick, botcpm, coop, ocpm, tribes, or surf>.\n\"");
+		goto showinfo;
 		return;
 	}
 
@@ -1085,15 +1085,17 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 		if (newStyle == MV_SPEED) {
 			ent->client->ps.fd.forcePower = 50;
 		}
+		return;
 	}
-	else {
+showinfo:
+	{
 		int i,index;
 		char printString[256];
 		printString[0] = '\0';
 		Q_strcat(printString, sizeof(printString), "print \"Usage: /move <");
 		index = 0;
 		for (i = 0; i < MV_NUMSTYLES; i++) {
-			if ((allowedMovementStyles & (1 << newStyle))) {
+			if ((allowedMovementStyles & (1 << i))) {
 				if (index) {
 					Q_strcat(printString, sizeof(printString), ",");
 				}

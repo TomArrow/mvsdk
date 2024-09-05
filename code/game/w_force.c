@@ -2126,6 +2126,13 @@ int WP_GetVelocityForForceJump( gentity_t *self, vec3_t jumpVel, usercmd_t *ucmd
 {
 	float pushFwd = 0, pushRt = 0;
 	vec3_t	view, forward, right;
+	const int moveStyle = self->client->sess.raceMode ? self->client->sess.raceStyle.movementStyle : MV_JK2;
+	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
+
+	if (moveStyle == MV_QUAJK) {
+		JUMP_VELOCITY_NEW = 270;
+	}
+
 	VectorCopy( self->client->ps.viewangles, view );
 	view[0] = 0;
 	AngleVectors( view, forward, right, NULL );
@@ -2172,9 +2179,9 @@ int WP_GetVelocityForForceJump( gentity_t *self, vec3_t jumpVel, usercmd_t *ucmd
 
 	G_PreDefSound(self->client->ps.origin, PDSOUND_FORCEJUMP);
 
-	if (self->client->ps.fd.forceJumpCharge < JUMP_VELOCITY+40)
+	if (self->client->ps.fd.forceJumpCharge < JUMP_VELOCITY_NEW +40)
 	{ //give him at least a tiny boost from just a tap
-		self->client->ps.fd.forceJumpCharge = JUMP_VELOCITY+400;
+		self->client->ps.fd.forceJumpCharge = JUMP_VELOCITY_NEW +400;
 	}
 
 	if (self->client->ps.velocity[2] < -30)

@@ -38,6 +38,17 @@ float	pm_waterfriction = 1.0f;
 float	pm_flightfriction = 3.0f;
 float	pm_spectatorfriction = 5.0f;
 
+//japro/dfmania movement parameters
+const float pm_vq3_duckScale = 0.25f;
+const float pm_vq3_friction = 8.0f;
+
+const float	pm_cpm_accelerate = 15.0f;
+const float	pm_cpm_airaccelerate = 1.0f;
+const float	pm_cpm_airstopaccelerate = 2.5f;
+const float	pm_cpm_airstrafeaccelerate = 70.0f;
+const float	pm_cpm_airstrafewishspeed = 30.0f;
+
+
 int		c_pmove = 0;
 
 float forceSpeedLevels[4] = 
@@ -455,7 +466,8 @@ static void PM_Friction( void ) {
 	vec3_t	vec;
 	float	*vel;
 	float	speed, newspeed, control;
-	float	drop;
+	float	drop, realfriction = pm_friction;
+	const int moveStyle = PM_GetMovePhysics();
 	
 	vel = pm->ps->velocity;
 	
@@ -472,6 +484,9 @@ static void PM_Friction( void ) {
 		return;
 	}
 
+	if (moveStyle == MV_QUAJK)
+		realfriction = pm_vq3_friction;
+
 	drop = 0;
 
 	// apply ground friction
@@ -480,7 +495,7 @@ static void PM_Friction( void ) {
 			// if getting knocked back, no friction
 			if ( ! (pm->ps->pm_flags & PMF_TIME_KNOCKBACK) ) {
 				control = speed < pm_stopspeed ? pm_stopspeed : speed;
-				drop += control*pm_friction*pml.frametime;
+				drop += control* realfriction *pml.frametime;
 			}
 		}
 	}
@@ -570,7 +585,6 @@ Handles user intended acceleration
 ==============
 */
 static void PM_SickoAccelerate( vec3_t wishdir, float wishspeed, float baseAccel, float maxAccel) {
-#if 1
 	// q2 style
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
@@ -600,24 +614,77 @@ static void PM_SickoAccelerate( vec3_t wishdir, float wishspeed, float baseAccel
 	for (i=0 ; i<3 ; i++) {
 		pm->ps->velocity[i] += accelspeed*wishdir[i];	
 	}
-#else
-	// proper way (avoids strafe jump maxspeed bug), but feels bad
-	vec3_t		wishVelocity;
-	vec3_t		pushDir;
-	float		pushLen;
-	float		canPush;
+}
+/*
+==============
+PM_Accelerate
 
-	VectorScale( wishdir, wishspeed, wishVelocity );
-	VectorSubtract( wishVelocity, pm->ps->velocity, pushDir );
-	pushLen = VectorNormalize( pushDir );
+Handles user intended acceleration
+==============
+*/
+static void PM_QuaJKAccelerate( vec3_t wishdir, float wishspeed, float baseAccel, float maxAccel, float maxAccelWishSpeed) {
+	// q2 style
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+	float		baseInc, accel;
+	float		f,finalWishSpeed;
+	float		accelAddSlow, accelAddHigh;
+	float		neededSpeedSlow, neededSpeedHigh;
 
-	canPush = accel*pml.frametime*wishspeed;
-	if (canPush > pushLen) {
-		canPush = pushLen;
+	currentspeed = DotProduct (pm->ps->velocity, wishdir);
+
+	if (currentspeed >= wishspeed) return;
+
+	accelAddSlow = baseAccel * pml.frametime * wishspeed;
+	accelAddHigh = maxAccel * pml.frametime * maxAccelWishSpeed;
+
+	neededSpeedSlow = wishspeed - accelAddSlow;
+	neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
+
+	f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+
+	if (f < 0) f = 0;
+	else if (f > 1) f = 1;
+
+	accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
+	finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
+
+	accelspeed = accel * pml.frametime * finalWishSpeed;
+
+	addspeed = finalWishSpeed - currentspeed; 
+	if (addspeed <= 0) {
+		return;
 	}
 
-	VectorMA( pm->ps->velocity, canPush, pushDir, pm->ps->velocity );
-#endif
+	/*
+	addspeed = wishspeed - currentspeed;
+	if (addspeed <= 0) {
+		return;
+	}
+
+	baseInc = pml.frametime * wishspeed;
+
+	accel = addspeed / baseInc;
+
+	if (accel > maxAccel) {
+		accel = maxAccel;
+	}
+	else if (accel < baseAccel) {
+		accel = baseAccel;
+	}
+
+	f = (accel - baseAccel) / (maxAccel - baseAccel);
+
+	finalWishSpeed = (f * maxAccelWishSpeed) + ((1.0f - f) * baseAccel);
+
+	accelspeed = accel* pml.frametime*finalWishSpeed;*/
+	if (accelspeed > addspeed) {
+		accelspeed = addspeed;
+	}
+	
+	for (i=0 ; i<3 ; i++) {
+		pm->ps->velocity[i] += accelspeed*wishdir[i];	
+	}
 }
 
 
@@ -1063,6 +1130,9 @@ static qboolean PM_CheckJump( void )
 {
 	qboolean onlyWallGrab = qfalse; // in jk 1.02, if we are in air and not wallrunning, we skip out early. but we need to go further for wallgrab. in that case ignore all but wallgrab
 	const int runFlags = PM_GetRunFlags();
+	const int moveStyle = PM_GetMovePhysics();
+	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
+
 	if (pm->ps->usingATST)
 	{
 		return qfalse;
@@ -1081,6 +1151,10 @@ static qboolean PM_CheckJump( void )
 	if ( PM_InKnockDown( pm->ps ) || BG_InRoll( pm->ps, pm->ps->legsAnim ) ) 
 	{//in knockdown
 		return qfalse;		
+	}
+
+	if (moveStyle == MV_QUAJK) {
+		JUMP_VELOCITY_NEW = 270;
 	}
 
 	if (pm->ps->groundEntityNum != ENTITYNUM_NONE || pm->ps->origin[2] < pm->ps->fd.forceJumpZStart)
@@ -1271,16 +1345,28 @@ static qboolean PM_CheckJump( void )
 					}
 
 					//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
-					pm->ps->velocity[2] = (forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]-curHeight)/forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
-					pm->ps->velocity[2] /= 10;
-					pm->ps->velocity[2] += JUMP_VELOCITY;
+					
+					if (moveStyle == MV_QUAJK) {//Forcejump rampjump
+						//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
+						float realForceJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] * (pm->ps->stats[STAT_LASTJUMPSPEED] / (float)JUMP_VELOCITY_NEW);
+
+						pm->ps->velocity[2] = (realForceJumpHeight-curHeight)/realForceJumpHeight*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
+						pm->ps->velocity[2] /= 10;//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
+
+						pm->ps->velocity[2] += pm->ps->stats[STAT_LASTJUMPSPEED];
+					}
+					else {
+						pm->ps->velocity[2] = (forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]-curHeight)/forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
+						pm->ps->velocity[2] /= 10;
+						pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
+					}
 					pm->ps->pm_flags |= PMF_JUMP_HELD;
 				}
 				else if ( curHeight > forceJumpHeight[0] && curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] - forceJumpHeight[0] )
 				{//still have some headroom, don't totally stop it
-					if ( pm->ps->velocity[2] > JUMP_VELOCITY )
+					if ( pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
 					{
-						pm->ps->velocity[2] = JUMP_VELOCITY;
+						pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
 					}
 				}
 				else
@@ -1288,9 +1374,9 @@ static qboolean PM_CheckJump( void )
 					//pm->ps->velocity[2] = 0;
 					//rww - changed for the sake of balance in multiplayer
 
-					if ( pm->ps->velocity[2] > JUMP_VELOCITY )
+					if ( pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
 					{
-						pm->ps->velocity[2] = JUMP_VELOCITY;
+						pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
 					}
 				}
 				pm->cmd.upmove = 0;
@@ -1343,7 +1429,7 @@ static qboolean PM_CheckJump( void )
 
 			if ( trace.fraction <= 1.0f )
 			{
-				VectorMA( pm->ps->velocity, JUMP_VELOCITY*2, forward, pm->ps->velocity );
+				VectorMA( pm->ps->velocity, JUMP_VELOCITY_NEW*2, forward, pm->ps->velocity );
 				PM_SetAnim(SETANIM_LEGS,BOTH_FORCEJUMP1,SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_RESTART, 150);
 			}//else no surf close enough to push off of
 			pm->cmd.upmove = 0;
@@ -1394,7 +1480,7 @@ static qboolean PM_CheckJump( void )
 			}
 			else if ( pm->cmd.forwardmove < 0 && !(pm->cmd.buttons&BUTTON_ATTACK) )
 			{//backflip
-				vertPush = JUMP_VELOCITY;
+				vertPush = JUMP_VELOCITY_NEW;
 				anim = BOTH_FLIP_BACK1;//PM_PickAnim( BOTH_FLIP_BACK1, BOTH_FLIP_BACK3 );
 			}
 
@@ -1785,7 +1871,16 @@ static qboolean PM_CheckJump( void )
 	}
 	if ( pm->cmd.upmove > 0 )
 	{//no special jumps
-		pm->ps->velocity[2] = JUMP_VELOCITY;
+		if (moveStyle == MV_QUAJK) {
+			// TODO flood protect jumps? idk
+			pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
+			if (pm->ps->velocity[2] < 270)
+				pm->ps->velocity[2] = 270;
+			pm->ps->stats[STAT_LASTJUMPSPEED] = pm->ps->velocity[2];
+		}
+		else {
+			pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
+		}
 		PM_SetForceJumpZStart(pm->ps->origin[2]);//so we don't take damage if we land at same height
 		pm->ps->pm_flags |= PMF_JUMP_HELD;
 	}
@@ -2064,6 +2159,15 @@ static void PM_AirMove( void ) {
 	if (movePhysics == MV_SICKO) {
 		PM_SickoAccelerate(wishdir, wishspeed, pm_airaccelerate,200.0f);
 	}
+	else if (movePhysics == MV_QUAJK) {
+		float		accel;
+
+		if (DotProduct(pm->ps->velocity, wishdir) < 0)
+			accel = pm_cpm_airstopaccelerate;
+		else
+			accel = pm_airaccelerate;
+		PM_QuaJKAccelerate(wishdir, wishspeed, accel,pm_cpm_airstrafeaccelerate,30.0f);
+	}
 	else {
 		PM_Accelerate(wishdir, wishspeed, pm_airaccelerate);
 	}
@@ -2108,6 +2212,7 @@ static void PM_WalkMove( void ) {
 	float		accelerate;
 	float		vel;
 	float		totalVel;
+	const int	moveStyle = PM_GetMovePhysics();
 
 	if (pm->ps->velocity[0] < 0)
 	{
@@ -2212,8 +2317,12 @@ static void PM_WalkMove( void ) {
 	// full control, which allows them to be moved a bit
 	if ( ( pml.groundTrace.surfaceFlags & SURF_SLICK ) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK ) {
 		accelerate = pm_airaccelerate;
+		if (moveStyle == MV_QUAJK)
+			accelerate = pm_cpm_accelerate;
 	} else {
 		accelerate = pm_accelerate;
+		if (moveStyle == MV_QUAJK)
+			accelerate = pm_cpm_accelerate;
 	}
 
 	PM_Accelerate (wishdir, wishspeed, accelerate);
@@ -2440,6 +2549,7 @@ static void PM_CrashLand( void ) {
 	float		a, b, c, den;
 	qboolean	didRoll = qfalse;
 	const int	runFlags = PM_GetRunFlags();
+	const int	moveStyle = PM_GetMovePhysics();
 
 	// calculate the exact velocity on landing
 	dist = pm->ps->origin[2] - pml.previous_origin[2];
@@ -2627,6 +2737,11 @@ static void PM_CrashLand( void ) {
 
 	// make sure velocity resets so we don't bounce back up again in case we miss the clear elsewhere
 	pm->ps->velocity[2] = 0;
+
+	if ((moveStyle == MV_QUAJK) && ((int)pm->ps->fd.forceJumpZStart > pm->ps->origin[2] + 1)) {
+		if (1 > (sqrt(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1])))//No xyvel
+			pm->ps->velocity[2] = -vel; //OVERBOUNCE OVER BOUNCE
+	}
 
 	// start footstep cycle over
 	pm->ps->bobCycle = 0;

@@ -1228,10 +1228,13 @@ void ClientThink_real( gentity_t *ent ) {
 	int			i;
 	usercmd_t	*ucmd;
 	int			oldTeleportBit;
+	int	moveStyle;
 
 	client = ent->client;
 
 	if ( !ent || !ent->client ) return;
+
+	moveStyle = client->sess.raceMode ? client->sess.raceStyle.movementStyle : MV_JK2;
 
 	// don't think if the client is not yet connected (and thus not yet spawned in)
 	if (client->pers.connected != CON_CONNECTED) {
@@ -1430,6 +1433,11 @@ void ClientThink_real( gentity_t *ent ) {
 	if (client->sess.raceMode /* || client->ps.stats[STAT_RACEMODE]*/) {
 		client->ps.speed = 250.0f;
 		client->ps.basespeed = 250.0f;
+	}
+
+	if (moveStyle == MV_QUAJK) {
+		client->ps.speed = 320.0f;
+		client->ps.basespeed = 320.0f;
 	}
 
 	if (ent->client->ps.duelInProgress)
