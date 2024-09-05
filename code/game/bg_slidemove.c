@@ -64,12 +64,13 @@ void PM_Q2StepSlideMove_(void)
 	vec3_t		dir;
 	float		d;
 	int			numplanes;
-	vec3_t		planes[MAX_CLIP_PLANES];
+	vec3_t		normal,planes[MAX_CLIP_PLANES];
 	vec3_t		primal_velocity;
 	int			i, j;
 	trace_t	trace;
 	vec3_t		end;
 	float		time_left;
+	const int	runFlags = PM_GetRunFlags();
 
 	numbumps = 4;
 
@@ -116,7 +117,36 @@ void PM_Q2StepSlideMove_(void)
 			break;
 		}
 
-		VectorCopy(trace.plane.normal, planes[numplanes]);
+		VectorCopy(trace.plane.normal,normal);
+
+		if ((runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
+		{//wall-running
+			//never push up off a sloped wall
+			normal[2] = 0;
+			VectorNormalize(normal);
+		}
+
+		//
+		// if this is the same plane we hit before, nudge velocity
+		// out along it, which fixes some epsilon issues with
+		// non-axial planes
+		// 
+		// TA: Copied this over from the normal jk function and it makes the movement smoother while keeping it overall nice. Nice!
+		//
+		if (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+		{//no sliding if stuck to wall!
+			for (i = 0; i < numplanes; i++) {
+				if (DotProduct(normal, planes[i]) > 0.99) {
+					VectorAdd(normal, pm->ps->velocity, pm->ps->velocity);
+					break;
+				}
+			}
+			if (i < numplanes) {
+				continue;
+			}
+		}
+
+		VectorCopy(normal, planes[numplanes]);
 		numplanes++;
 
 #if 0
@@ -315,6 +345,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	vec3_t		endVelocity;
 	vec3_t		endClipVelocity;
 	const int	runFlags = PM_GetRunFlags();
+	const int	moveStyle = PM_GetMovePhysics();
 	
 	VectorClear( endVelocity );
 	VectorClear( endClipVelocity );
@@ -482,7 +513,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 					}
 
 					// stop dead at a tripple plane interaction
-					VectorClear( pm->ps->velocity );
+					VectorClear( pm->ps->velocity ); // TODO can we make this nicer? is this why we can get stuck in sloped walls stuff?
 					return qtrue;
 				}
 			}

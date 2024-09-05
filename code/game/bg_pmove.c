@@ -2890,7 +2890,7 @@ static void PM_GroundTrace( void ) {
 			Com_Printf("%i:q2ramp\n", c_pmove);
 		}
 		pm->ps->groundEntityNum = ENTITYNUM_NONE;
-		pml.groundPlane = qfalse;
+		pml.groundPlane = qtrue;
 		pml.walking = qfalse;
 		return;
 	}
