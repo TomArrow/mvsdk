@@ -2129,7 +2129,7 @@ int WP_GetVelocityForForceJump( gentity_t *self, vec3_t jumpVel, usercmd_t *ucmd
 	const int moveStyle = self->client->sess.raceMode ? self->client->sess.raceStyle.movementStyle : MV_JK2;
 	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
 
-	if (moveStyle == MV_QUAJK) {
+	if (MovementIsQuake3Based(moveStyle)) {
 		JUMP_VELOCITY_NEW = 270;
 	}
 

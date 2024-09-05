@@ -385,9 +385,7 @@ void G_TurnDefragTargetsIntoTriggers() {
 	}
 }
 
-qboolean MovementStyleAllowsWeapons(int moveStyle) {
-	return qfalse;
-}
+
 
 void RemoveLaserTraps(gentity_t* ent);
 void RemoveDetpacks(gentity_t* ent);

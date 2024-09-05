@@ -484,7 +484,7 @@ static void PM_Friction( void ) {
 		return;
 	}
 
-	if (moveStyle == MV_QUAJK)
+	if (MovementIsQuake3Based(moveStyle))
 		realfriction = pm_vq3_friction;
 
 	drop = 0;
@@ -1153,7 +1153,7 @@ static qboolean PM_CheckJump( void )
 		return qfalse;		
 	}
 
-	if (moveStyle == MV_QUAJK) {
+	if (MovementIsQuake3Based(moveStyle)) {
 		JUMP_VELOCITY_NEW = 270;
 	}
 
@@ -1346,7 +1346,7 @@ static qboolean PM_CheckJump( void )
 
 					//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
 					
-					if (moveStyle == MV_QUAJK) {//Forcejump rampjump
+					if (MovementIsQuake3Based(moveStyle)) {//Forcejump rampjump
 						//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
 						float realForceJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] * (pm->ps->stats[STAT_LASTJUMPSPEED] / (float)JUMP_VELOCITY_NEW);
 
@@ -1871,7 +1871,7 @@ static qboolean PM_CheckJump( void )
 	}
 	if ( pm->cmd.upmove > 0 )
 	{//no special jumps
-		if (moveStyle == MV_QUAJK) {
+		if (MovementIsQuake3Based(moveStyle)) {
 			// TODO flood protect jumps? idk
 			pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
 			if (pm->ps->velocity[2] < 270)
@@ -2317,11 +2317,11 @@ static void PM_WalkMove( void ) {
 	// full control, which allows them to be moved a bit
 	if ( ( pml.groundTrace.surfaceFlags & SURF_SLICK ) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK ) {
 		accelerate = pm_airaccelerate;
-		if (moveStyle == MV_QUAJK)
+		if (MovementIsQuake3Based(moveStyle))
 			accelerate = pm_cpm_accelerate;
 	} else {
 		accelerate = pm_accelerate;
-		if (moveStyle == MV_QUAJK)
+		if (MovementIsQuake3Based(moveStyle))
 			accelerate = pm_cpm_accelerate;
 	}
 
@@ -2738,7 +2738,7 @@ static void PM_CrashLand( void ) {
 	// make sure velocity resets so we don't bounce back up again in case we miss the clear elsewhere
 	pm->ps->velocity[2] = 0;
 
-	if ((moveStyle == MV_QUAJK) && ((int)pm->ps->fd.forceJumpZStart > pm->ps->origin[2] + 1)) {
+	if ((MovementIsQuake3Based(moveStyle)) && ((int)pm->ps->fd.forceJumpZStart > pm->ps->origin[2] + 1)) {
 		if (1 > (sqrt(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1])))//No xyvel
 			pm->ps->velocity[2] = -vel; //OVERBOUNCE OVER BOUNCE
 	}
@@ -2885,7 +2885,7 @@ static void PM_GroundTrace( void ) {
 	point[1] = pm->ps->origin[1];
 	point[2] = pm->ps->origin[2] - 0.25;
 
-	if (moveStyle == MV_QUAJK && pm->ps->velocity[2] > 180) {
+	if (MovementStyleHasQuake2Ramps(moveStyle) && pm->ps->velocity[2] > 180) {
 		if (pm->debugLevel) {
 			Com_Printf("%i:q2ramp\n", c_pmove);
 		}

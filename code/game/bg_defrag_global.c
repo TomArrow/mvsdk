@@ -48,3 +48,19 @@ int RaceNameToInteger(char* style) {
 		return MV_QUAJK;
 	return -1;
 }
+qboolean MovementStyleAllowsWeapons(int moveStyle) {
+	return qfalse;
+}
+
+qboolean MovementStyleHasQuake2Ramps(int moveStyle) {
+	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO) {
+		return qtrue;
+	}
+	return qfalse;
+}
+qboolean MovementIsQuake3Based(int moveStyle) {
+	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO) {
+		return qtrue;
+	}
+	return qfalse;
+}

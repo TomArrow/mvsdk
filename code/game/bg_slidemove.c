@@ -636,7 +636,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 	const int moveStyle = PM_GetMovePhysics();
 	int NEW_STEPSIZE = STEPSIZE;
 
-	if (moveStyle == MV_QUAJK) {
+	if (MovementStyleHasQuake2Ramps(moveStyle)) {
 		PM_Q2StepSlideMove(gravity);
 		return;
 		if (pm->ps->velocity[2] > 0 && pm->cmd.upmove > 0) { // do we really need this?

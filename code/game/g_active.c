@@ -1435,7 +1435,7 @@ void ClientThink_real( gentity_t *ent ) {
 		client->ps.basespeed = 250.0f;
 	}
 
-	if (moveStyle == MV_QUAJK) {
+	if (MovementIsQuake3Based(moveStyle)) {
 		client->ps.speed = 320.0f;
 		client->ps.basespeed = 320.0f;
 	}

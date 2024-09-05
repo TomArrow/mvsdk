@@ -77,5 +77,7 @@ typedef struct savedPosition_s {
 } savedPosition_t;
 
 int RaceNameToInteger(char* style);
+qboolean MovementStyleHasQuake2Ramps(int moveStyle);
+qboolean MovementIsQuake3Based(int moveStyle);
 
 #endif
