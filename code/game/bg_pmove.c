@@ -2879,10 +2879,21 @@ PM_GroundTrace
 static void PM_GroundTrace( void ) {
 	vec3_t		point;
 	trace_t		trace;
+	const int	moveStyle = PM_GetMovePhysics();
 
 	point[0] = pm->ps->origin[0];
 	point[1] = pm->ps->origin[1];
 	point[2] = pm->ps->origin[2] - 0.25;
+
+	if (moveStyle == MV_QUAJK && pm->ps->velocity[2] > 180) {
+		if (pm->debugLevel) {
+			Com_Printf("%i:q2ramp\n", c_pmove);
+		}
+		pm->ps->groundEntityNum = ENTITYNUM_NONE;
+		pml.groundPlane = qfalse;
+		pml.walking = qfalse;
+		return;
+	}
 
 	pm->trace (&trace, pm->ps->origin, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
 	pml.groundTrace = trace;
