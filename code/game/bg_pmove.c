@@ -626,7 +626,7 @@ static void PM_QuaJKAccelerate( vec3_t wishdir, float wishspeed, float baseAccel
 	// q2 style
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
-	float		baseInc, accel;
+	float		accel;
 	float		f,finalWishSpeed;
 	float		accelAddSlow, accelAddHigh;
 	float		neededSpeedSlow, neededSpeedHigh;
@@ -716,9 +716,9 @@ static float PM_CmdScale( usercmd_t *cmd ) {
 		return 0;
 	}
 
-	total = sqrt( cmd->forwardmove * cmd->forwardmove
+	total = sqrtf( cmd->forwardmove * cmd->forwardmove
 		+ cmd->rightmove * cmd->rightmove + umove * umove );
-	scale = (float)pm->ps->speed * max / ( 127.0 * total );
+	scale = (float)pm->ps->speed * max / ( 127.0f * total );
 
 	return scale;
 }
@@ -1117,7 +1117,7 @@ void PM_SetForceJumpZStart(float value)
 	pm->ps->fd.forceJumpZStart = value;
 	if (!pm->ps->fd.forceJumpZStart && jk2gameplay == VERSION_1_04)
 	{
-		pm->ps->fd.forceJumpZStart -= 0.1;
+		pm->ps->fd.forceJumpZStart -= 0.1f;
 	}
 }
 
@@ -1532,7 +1532,7 @@ static qboolean PM_CheckJump( void )
 					VectorNormalize( idealNormal );
 				}
 
-				if ( !doTrace || (trace.fraction < 1.0f && (trace.entityNum < MAX_CLIENTS || DotProduct(trace.plane.normal,idealNormal) > 0.7)) )
+				if ( !doTrace || (trace.fraction < 1.0f && (trace.entityNum < MAX_CLIENTS || DotProduct(trace.plane.normal,idealNormal) > 0.7f)) )
 				{//there is a wall there.. or hit a client
 					int parts;
 					//move me to side
@@ -1788,7 +1788,7 @@ static qboolean PM_CheckJump( void )
 						traceEnt = PM_BGEntForNum(trace.entityNum);
 						if ( trace.fraction < 1.0f
 							&&fabs(trace.plane.normal[2]) <= 0.2f/*MAX_WALL_GRAB_SLOPE*/
-							&&((trace.entityNum<ENTITYNUM_WORLD&&traceEnt&&traceEnt->s.solid!=SOLID_BMODEL)||DotProduct(trace.plane.normal,idealNormal)>0.7) )
+							&&((trace.entityNum<ENTITYNUM_WORLD&&traceEnt&&traceEnt->s.solid!=SOLID_BMODEL)||DotProduct(trace.plane.normal,idealNormal)>0.7f) )
 						{//there is a wall there
 							float dot = DotProduct( pm->ps->velocity, trace.plane.normal );
 							if ( dot < 1.0f )
@@ -2565,7 +2565,7 @@ static void PM_CrashLand( void ) {
 		pm->ps->inAirAnim = qfalse;
 		return;
 	}
-	t = (-b - sqrt( den ) ) / ( 2 * a );
+	t = (-b - sqrtf( den ) ) / ( 2 * a );
 
 	delta = vel + t * acc;
 	delta = delta*delta * 0.0001;
@@ -2739,7 +2739,7 @@ static void PM_CrashLand( void ) {
 	pm->ps->velocity[2] = 0;
 
 	if ((MovementIsQuake3Based(moveStyle)) && ((int)pm->ps->fd.forceJumpZStart > pm->ps->origin[2] + 1)) {
-		if (1 > (sqrt(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1])))//No xyvel
+		if (1 > (sqrtf(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1])))//No xyvel
 			pm->ps->velocity[2] = -vel; //OVERBOUNCE OVER BOUNCE
 	}
 
@@ -3237,7 +3237,7 @@ static void PM_Footsteps( void ) {
 	// calculate speed and cycle to be used for
 	// all cyclic walking effects
 	//
-	pm->xyspeed = sqrt( pm->ps->velocity[0] * pm->ps->velocity[0]
+	pm->xyspeed = sqrtf( pm->ps->velocity[0] * pm->ps->velocity[0]
 		+  pm->ps->velocity[1] * pm->ps->velocity[1] );
 
 	if ( pm->ps->groundEntityNum == ENTITYNUM_NONE ) {
@@ -5053,7 +5053,7 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 	{
 		if (ps->fd.forceSpeedSmash < 1.2)
 		{
-			ps->fd.forceSpeedSmash = 1.2;
+			ps->fd.forceSpeedSmash = 1.2f;
 		}
 		if (ps->fd.forceSpeedSmash > forceSpeedLevels[ps->fd.forcePowerLevel[FP_SPEED]]) //2.8
 		{
@@ -5463,7 +5463,7 @@ void PmoveSingle (pmove_t *pmove) {
 		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (runFlags & RFL_BOT))// (moveStyle == MV_BOTJKA /* || (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
 #endif
 		{
-			const float realCurrentSpeed = sqrt((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));
+			const float realCurrentSpeed = sqrtf((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));
 			if (realCurrentSpeed > 0) {
 				vec3_t vel = { 0 }, velangle;
 				float optimalDeltaAngle = 0;

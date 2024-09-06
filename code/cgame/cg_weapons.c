@@ -1633,11 +1633,11 @@ void CG_FireWeapon( centity_t *cent, qboolean altFire ) {
 
 			if (val > 3)
 			{
-				val = 3;
+				val = 3.0f;
 			}
 			if (val < 0.2)
 			{
-				val = 0.2;
+				val = 0.2f;
 			}
 
 			val *= 2;

@@ -260,7 +260,7 @@ static void CG_DrawZoomMask( void )
 
 		CG_DrawPic( 212, 367, 200, 28, cgs.media.binocularOverlay );
 
-		color1[0] = sin( cg.time * 0.01f ) * 0.5f + 0.5f;
+		color1[0] = sinf( cg.time * 0.01f ) * 0.5f + 0.5f;
 		color1[0] = color1[0] * color1[0];
 		color1[1] = color1[0];
 		color1[2] = color1[0];
@@ -353,7 +353,7 @@ static void CG_DrawZoomMask( void )
 			color1[0] = 1.0f; 
 			color1[1] = 1.0f;
 			color1[2] = 1.0f;
-			color1[3] = 0.7f + sin( cg.time * 0.01f ) * 0.3f;
+			color1[3] = 0.7f + sinf( cg.time * 0.01f ) * 0.3f;
 
 			trap_R_SetColor( color1 );
 		}
@@ -537,12 +537,12 @@ void CG_DrawFlagModel( float x, float y, float w, float h, int team, qboolean fo
 		// offset the origin y and z to center the flag
 		trap_R_ModelBounds( cm, mins, maxs );
 
-		origin[2] = -0.5 * ( mins[2] + maxs[2] );
-		origin[1] = 0.5 * ( mins[1] + maxs[1] );
+		origin[2] = -0.5f * ( mins[2] + maxs[2] );
+		origin[1] = 0.5f * ( mins[1] + maxs[1] );
 
 		// calculate distance so the flag nearly fills the box
 		// assume heads are taller than wide
-		len = 0.5 * ( maxs[2] - mins[2] );		
+		len = 0.5f * ( maxs[2] - mins[2] );		
 		origin[0] = len / 0.268;	// len / tan( fov/2 )
 
 		angles[YAW] = 60 * sin( cg.time / 2000.0 );;
@@ -1259,7 +1259,7 @@ void CG_DrawHUD(centity_t	*cent)
 		{	// Don't draw a bias.
 			scoreStr = va("Score: %i", cg.snap->ps.persistant[PERS_SCORE]);
 		}
-		UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7);
+		UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7f);
 	}
 
 	if (cg_hudFiles.integer)
@@ -2339,7 +2339,7 @@ CG_DrawRamps
 static float CG_DrawRamps( float y ) {
 	char		*s;
 	float		w;
-	int			msec, secs, mins;
+	//int			msec, secs, mins;
 	char		rampFixCount[20];
 
 	trap_Cvar_VariableStringBuffer("com_deadRampFixedCount", rampFixCount, sizeof(rampFixCount));
@@ -2738,7 +2738,7 @@ static void CG_DrawReward( void ) {
 		iconSize *= time * (1.0/ITEM_BLOB_TIME);
 	}
 	else if (time > 0 && REWARD_TIME - time <= ITEM_BLOB_TIME) { //fade out
-		iconSize *= (REWARD_TIME - time) * (1.0/ITEM_BLOB_TIME);
+		iconSize *= (REWARD_TIME - time) * (1.0f/ITEM_BLOB_TIME);
 	}
 
 	trap_R_SetColor( color );
@@ -3306,17 +3306,17 @@ static void CG_DrawCrosshair( vec3_t worldPoint, int chEntValid ) {
 				{
 					if (crossEnt->currentState.number != cg.snap->ps.duelIndex)
 					{ //grey out crosshair for everyone but your foe if you're in a duel
-						ecolor[0] = 0.4;
-						ecolor[1] = 0.4;
-						ecolor[2] = 0.4;
+						ecolor[0] = 0.4f;
+						ecolor[1] = 0.4f;
+						ecolor[2] = 0.4f;
 					}
 				}
 				else if (crossEnt->currentState.bolt1)
 				{ //this fellow is in a duel. We just checked if we were in a duel above, so
 				  //this means we aren't and he is. Which of course means our crosshair greys out over him.
-					ecolor[0] = 0.4;
-					ecolor[1] = 0.4;
-					ecolor[2] = 0.4;
+					ecolor[0] = 0.4f;
+					ecolor[1] = 0.4f;
+					ecolor[2] = 0.4f;
 				}
 			}
 			else if (crossEnt->currentState.shouldtarget)
@@ -3462,7 +3462,7 @@ void CG_SaberClashFlare( void )
 	// Don't do clashes for things that are behind us
 	VectorSubtract( g_saberFlashPos, cg.refdef.vieworg, dif );
 
-	if ( DotProduct( dif, cg.refdef.viewaxis[0] ) < 0.2 )
+	if ( DotProduct( dif, cg.refdef.viewaxis[0] ) < 0.2f )
 	{
 		return;
 	}
@@ -3707,7 +3707,7 @@ static void CG_DrawRocketLocking( int lockEntNum, int lockTime )
 		// we are locked and loaded baby
 		if ( dif == 8 )
 		{
-			color[0] = color[1] = color[2] = sin( cg.time * 0.05f ) * 0.5f + 0.5f;
+			color[0] = color[1] = color[2] = sinf( cg.time * 0.05f ) * 0.5f + 0.5f;
 			color[3] = 1.0f; // this art is additive, so the alpha value does nothing
 
 			trap_R_SetColor( color );
@@ -3726,6 +3726,8 @@ static void CG_ScanForCrosshairEntity( void ) {
 	trace_t		trace;
 	vec3_t		start, end;
 	int			content;
+
+	if (!cg.snap) return;
 
 	if ( cg_dynamicCrosshair.integer && !(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) )
 	{
@@ -5381,11 +5383,11 @@ static void CG_Draw2D( void ) {
 			}
 			if (rageTime > 0.15)
 			{
-				rageTime = 0.15;
+				rageTime = 0.15f;
 			}
 			
 			hcolor[3] = rageTime;
-			hcolor[0] = 0.7;
+			hcolor[0] = 0.7f;
 			hcolor[1] = 0;
 			hcolor[2] = 0;
 			
@@ -5402,12 +5404,12 @@ static void CG_Draw2D( void ) {
 			if (!cgRageFadeTime)
 			{
 				cgRageFadeTime = cg.time;
-				cgRageFadeVal = 0.15;
+				cgRageFadeVal = 0.15f;
 			}
 			
 			rageTime = cgRageFadeVal;
 			
-			cgRageFadeVal -= (cg.time - cgRageFadeTime)*0.000005;
+			cgRageFadeVal -= (cg.time - cgRageFadeTime)*0.000005f;
 			
 			if (rageTime < 0)
 			{
@@ -5415,7 +5417,7 @@ static void CG_Draw2D( void ) {
 			}
 			if (rageTime > 0.15)
 			{
-				rageTime = 0.15;
+				rageTime = 0.15f;
 			}
 			
 			if (cg.snap->ps.fd.forceRageRecoveryTime > cg.time)
@@ -5424,22 +5426,22 @@ static void CG_Draw2D( void ) {
 				
 				if (checkRageRecTime < 0.15)
 				{
-					checkRageRecTime = 0.15;
+					checkRageRecTime = 0.15f;
 				}
 				
 				hcolor[3] = checkRageRecTime;
 				hcolor[0] = rageTime*4;
 				if (hcolor[0] < 0.2)
 				{
-					hcolor[0] = 0.2;
+					hcolor[0] = 0.2f;
 				}
-				hcolor[1] = 0.2;
-				hcolor[2] = 0.2;
+				hcolor[1] = 0.2f;
+				hcolor[2] = 0.2f;
 			}
 			else
 			{
 				hcolor[3] = rageTime;
-				hcolor[0] = 0.7;
+				hcolor[0] = 0.7f;
 				hcolor[1] = 0;
 				hcolor[2] = 0;
 			}
@@ -5452,10 +5454,10 @@ static void CG_Draw2D( void ) {
 			{
 				if (cg.snap->ps.fd.forceRageRecoveryTime > cg.time)
 				{
-					hcolor[3] = 0.15;
-					hcolor[0] = 0.2;
-					hcolor[1] = 0.2;
-					hcolor[2] = 0.2;
+					hcolor[3] = 0.15f;
+					hcolor[0] = 0.2f;
+					hcolor[1] = 0.2f;
+					hcolor[2] = 0.2f;
 					CG_FillRect(0, 0, cgs.screenWidth, cgs.screenHeight, hcolor);
 				}
 				cgRageTime = 0;
@@ -5474,17 +5476,17 @@ static void CG_Draw2D( void ) {
 			
 			if (rageRecTime < 0.15)//0)
 			{
-				rageRecTime = 0.15;//0;
+				rageRecTime = 0.15f;//0;
 			}
 			if (rageRecTime > 0.15)
 			{
-				rageRecTime = 0.15;
+				rageRecTime = 0.15f;
 			}
 			
 			hcolor[3] = rageRecTime;
-			hcolor[0] = 0.2;
-			hcolor[1] = 0.2;
-			hcolor[2] = 0.2;
+			hcolor[0] = 0.2f;
+			hcolor[1] = 0.2f;
+			hcolor[2] = 0.2f;
 			
 			if (!cg.renderingThirdPerson)
 			{
@@ -5499,12 +5501,12 @@ static void CG_Draw2D( void ) {
 			if (!cgRageRecFadeTime)
 			{
 				cgRageRecFadeTime = cg.time;
-				cgRageRecFadeVal = 0.15;
+				cgRageRecFadeVal = 0.15f;
 			}
 			
 			rageRecTime = cgRageRecFadeVal;
 			
-			cgRageRecFadeVal -= (cg.time - cgRageRecFadeTime)*0.000005;
+			cgRageRecFadeVal -= (cg.time - cgRageRecFadeTime)*0.000005f;
 			
 			if (rageRecTime < 0)
 			{
@@ -5512,13 +5514,13 @@ static void CG_Draw2D( void ) {
 			}
 			if (rageRecTime > 0.15)
 			{
-				rageRecTime = 0.15;
+				rageRecTime = 0.15f;
 			}
 			
 			hcolor[3] = rageRecTime;
-			hcolor[0] = 0.2;
-			hcolor[1] = 0.2;
-			hcolor[2] = 0.2;
+			hcolor[0] = 0.2f;
+			hcolor[1] = 0.2f;
+			hcolor[2] = 0.2f;
 			
 			if (!cg.renderingThirdPerson && rageRecTime)
 			{
@@ -5547,13 +5549,13 @@ static void CG_Draw2D( void ) {
 			}
 			if (absorbTime > 0.15)
 			{
-				absorbTime = 0.15;
+				absorbTime = 0.15f;
 			}
 			
 			hcolor[3] = absorbTime/2;
 			hcolor[0] = 0;
 			hcolor[1] = 0;
-			hcolor[2] = 0.7;
+			hcolor[2] = 0.7f;
 			
 			if (!cg.renderingThirdPerson)
 			{
@@ -5568,12 +5570,12 @@ static void CG_Draw2D( void ) {
 			if (!cgAbsorbFadeTime)
 			{
 				cgAbsorbFadeTime = cg.time;
-				cgAbsorbFadeVal = 0.15;
+				cgAbsorbFadeVal = 0.15f;
 			}
 			
 			absorbTime = cgAbsorbFadeVal;
 			
-			cgAbsorbFadeVal -= (cg.time - cgAbsorbFadeTime)*0.000005;
+			cgAbsorbFadeVal -= (cg.time - cgAbsorbFadeTime)*0.000005f;
 			
 			if (absorbTime < 0)
 			{
@@ -5581,13 +5583,13 @@ static void CG_Draw2D( void ) {
 			}
 			if (absorbTime > 0.15)
 			{
-				absorbTime = 0.15;
+				absorbTime = 0.15f;
 			}
 			
 			hcolor[3] = absorbTime/2;
 			hcolor[0] = 0;
 			hcolor[1] = 0;
-			hcolor[2] = 0.7;
+			hcolor[2] = 0.7f;
 			
 			if (!cg.renderingThirdPerson && absorbTime)
 			{
@@ -5616,12 +5618,12 @@ static void CG_Draw2D( void ) {
 			}
 			if (protectTime > 0.15)
 			{
-				protectTime = 0.15;
+				protectTime = 0.15f;
 			}
 			
 			hcolor[3] = protectTime/2;
 			hcolor[0] = 0;
-			hcolor[1] = 0.7;
+			hcolor[1] = 0.7f;
 			hcolor[2] = 0;
 			
 			if (!cg.renderingThirdPerson)
@@ -5637,12 +5639,12 @@ static void CG_Draw2D( void ) {
 			if (!cgProtectFadeTime)
 			{
 				cgProtectFadeTime = cg.time;
-				cgProtectFadeVal = 0.15;
+				cgProtectFadeVal = 0.15f;
 			}
 			
 			protectTime = cgProtectFadeVal;
 			
-			cgProtectFadeVal -= (cg.time - cgProtectFadeTime)*0.000005;
+			cgProtectFadeVal -= (cg.time - cgProtectFadeTime)*0.000005f;
 			
 			if (protectTime < 0)
 			{
@@ -5650,12 +5652,12 @@ static void CG_Draw2D( void ) {
 			}
 			if (protectTime > 0.15)
 			{
-				protectTime = 0.15;
+				protectTime = 0.15f;
 			}
 			
 			hcolor[3] = protectTime/2;
 			hcolor[0] = 0;
-			hcolor[1] = 0.7;
+			hcolor[1] = 0.7f;
 			hcolor[2] = 0;
 			
 			if (!cg.renderingThirdPerson && protectTime)
@@ -5690,12 +5692,12 @@ static void CG_Draw2D( void ) {
 			}
 			if (ysalTime > 0.15)
 			{
-				ysalTime = 0.15;
+				ysalTime = 0.15f;
 			}
 			
 			hcolor[3] = ysalTime/2;
-			hcolor[0] = 0.7;
-			hcolor[1] = 0.7;
+			hcolor[0] = 0.7f;
+			hcolor[1] = 0.7f;
 			hcolor[2] = 0;
 			
 			if (!cg.renderingThirdPerson)
@@ -5711,12 +5713,12 @@ static void CG_Draw2D( void ) {
 			if (!cgYsalFadeTime)
 			{
 				cgYsalFadeTime = cg.time;
-				cgYsalFadeVal = 0.15;
+				cgYsalFadeVal = 0.15f;
 			}
 			
 			ysalTime = cgYsalFadeVal;
 			
-			cgYsalFadeVal -= (cg.time - cgYsalFadeTime)*0.000005;
+			cgYsalFadeVal -= (cg.time - cgYsalFadeTime)*0.000005f;
 			
 			if (ysalTime < 0)
 			{
@@ -5724,12 +5726,12 @@ static void CG_Draw2D( void ) {
 			}
 			if (ysalTime > 0.15)
 			{
-				ysalTime = 0.15;
+				ysalTime = 0.15f;
 			}
 			
 			hcolor[3] = ysalTime/2;
-			hcolor[0] = 0.7;
-			hcolor[1] = 0.7;
+			hcolor[0] = 0.7f;
+			hcolor[1] = 0.7f;
 			hcolor[2] = 0;
 			
 			if (!cg.renderingThirdPerson && ysalTime)
@@ -5967,8 +5969,8 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 
 static void CG_CalculateSpeed(centity_t *cent) {
 	const vec_t * const velocity = (cent->currentState.clientNum == cg.clientNum ? cg.predictedPlayerState.velocity : cent->currentState.pos.trDelta);
-	//cg.currentSpeed = sqrtf(velocity[0] * velocity[0] + velocity[1] * velocity[1]); // is this right?
-	cg.currentSpeed = (float)sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]); // is this right?
+	//cg.currentSpeed = sqrt(velocity[0] * velocity[0] + velocity[1] * velocity[1]); // is this right?
+	cg.currentSpeed = (float)sqrtf(velocity[0] * velocity[0] + velocity[1] * velocity[1]); // is this right?
 }
 
 //JAPRO - Clientside - Ground Distance function for use in jump detection for movement keys - Start
@@ -6005,7 +6007,7 @@ static void CG_MovementKeys(centity_t *cent)
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
 	else
 	{
-		float xyspeed = (float)sqrt(cg.snap->ps.velocity[0] * cg.snap->ps.velocity[0] + cg.snap->ps.velocity[1] * cg.snap->ps.velocity[1]);
+		float xyspeed = (float)sqrtf(cg.snap->ps.velocity[0] * cg.snap->ps.velocity[0] + cg.snap->ps.velocity[1] * cg.snap->ps.velocity[1]);
 		float zspeed = cg.snap->ps.velocity[2];
 		static float lastZSpeed = 0.0f;
 
@@ -6114,6 +6116,7 @@ static void CG_Speedometer(void)
 	unsigned int frameTime;
 	static unsigned int index;
 	static int	previous, lastupdate;
+	float tmp;
 
 	if (cg_speedometer.integer & SPEEDOMETER_SPEEDGRAPH) {
 		rectDef_t speedgraphRect;
@@ -6182,13 +6185,15 @@ static void CG_Speedometer(void)
 		}
 		else if (cg_speedometer.integer & SPEEDOMETER_KPH)
 		{
-			Com_sprintf(speedStr2, sizeof(speedStr2), "   %.1f", currentSpeed * 0.05f);
+			tmp = currentSpeed * 0.05f;
+			Com_sprintf(speedStr2, sizeof(speedStr2), "   %.1f", tmp);
 			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 		}
 		else if (cg_speedometer.integer & SPEEDOMETER_MPH)
 		{
-			Com_sprintf(speedStr3, sizeof(speedStr3), "    %.1f", currentSpeed * 0.03106855f);
+			tmp = currentSpeed * 0.03106855f;
+			Com_sprintf(speedStr3, sizeof(speedStr3), "    %.1f", tmp);
 			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 		}
@@ -6240,7 +6245,7 @@ static void CG_DrawShowPos(void)
 	if (!ps)
 		return;
 
-	vel = (float)sqrt(cg.currentSpeed * cg.currentSpeed + ps->velocity[2] * ps->velocity[2]);
+	vel = (float)sqrtf(cg.currentSpeed * cg.currentSpeed + ps->velocity[2] * ps->velocity[2]);
 
 	Com_sprintf(showPosString, sizeof(showPosString), "pos:   %.2f   %.2f   %.2f\nang:   %.2f   %.2f\nvel:     %.2f",
 		(float)ps->origin[0], (float)ps->origin[1], (float)ps->origin[2], (float)ps->viewangles[PITCH], (float)ps->viewangles[YAW], vel);
@@ -6257,7 +6262,7 @@ static void CG_StrafeHelperSound(float difference) {
 
 void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4_t color, float alpha, float ycutoff)
 {
-	float stepx, stepy, length = (float)sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
+	float stepx, stepy, length = (float)sqrtf((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
 	int i;
 
 	if (length < 1)
@@ -6284,7 +6289,7 @@ void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4
 static void CG_DrawAccelMeter(void)
 {
 	const float optimalAccel = cg.predictedPlayerState.speed * ((float)cg.frametime / 1000.0f);
-	const float potentialSpeed = (float)sqrt(cg.previousSpeed * cg.previousSpeed - optimalAccel * optimalAccel + 2 * (250 * optimalAccel));
+	const float potentialSpeed = (float)sqrtf(cg.previousSpeed * cg.previousSpeed - optimalAccel * optimalAccel + 2 * (250 * optimalAccel));
 	float actualAccel, total, percentAccel, x;
 	const float accel = cg.currentSpeed - cg.previousSpeed;
 	static int t, i, previous, lastupdate;
@@ -6388,7 +6393,7 @@ static void CG_JumpDistance(void)
 			vec3_t distance;
 
 			VectorSubtract(cg.predictedPlayerState.origin, cg.lastGroundPosition, distance);
-			cg.lastJumpDistance = (float)sqrt(distance[0] * distance[0] + distance[1] * distance[1]); // is this right?
+			cg.lastJumpDistance = (float)sqrtf(distance[0] * distance[0] + distance[1] * distance[1]); // is this right?
 			cg.lastJumpDistanceTime = cg.time;
 		}
 
@@ -6646,10 +6651,10 @@ void Dzikie_CG_DrawSpeed(int moveDir) {
 	//	str = va( "%f %f %f", g_speed, accel, optiangle);
 	//	w = CG_Text_Width_Ext( str, 0.25f, 0, &cgs.media.limboFont1 );
 	//	CG_Text_Paint_Ext( (float)(SCREEN_WIDTH/2), (float)(SCREEN_HEIGHT/2), 0.25f, 0.25f, colorWhite, str, 0, 0, ITEM_TEXTSTYLE_SHADOWED, &cgs.media.limboFont1 );
-	Dzikie_CG_DrawLine(midx, midy, midx + length*sin(diff), midy - length*cos(diff), 1, colorRed, 0.75f, 0);
+	Dzikie_CG_DrawLine(midx, midy, midx + length*sinf(diff), midy - length*cosf(diff), 1, colorRed, 0.75f, 0);
 	Dzikie_CG_DrawLine(midx, midy, midx + cmd.rightmove, midy - cmd.forwardmove, 1, colorCyan, 0.75f, 0);
-	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sin(diff + optiangle), midy - length / 2 * cos(diff + optiangle), 1, colorRed, 0.75f, 0);
-	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sin(diff - optiangle), midy - length / 2 * cos(diff - optiangle), 1, colorRed, 0.75f, 0);
+	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sinf(diff + optiangle), midy - length / 2 * cosf(diff + optiangle), 1, colorRed, 0.75f, 0);
+	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sinf(diff - optiangle), midy - length / 2 * cosf(diff - optiangle), 1, colorRed, 0.75f, 0);
 
 
 }
@@ -6977,7 +6982,7 @@ void CG_FillAngleYaw(float start, float end, float viewangle, float y, float hei
 	cgamefov = cg.refdef.fov_x;
 	fovscale = tan(DEG2RAD(cgamefov / 2));
 	x = cgs.screenWidth / 2 + tan(DEG2RAD(viewangle + start)) / fovscale*cgs.screenWidth / 2;
-	width = abs(cgs.screenWidth*(tan(DEG2RAD(viewangle + end)) - tan(DEG2RAD(viewangle + start))) / (fovscale * 2)) + 1;
+	width = abs(cgs.screenWidth*(tanf(DEG2RAD(viewangle + end)) - tanf(DEG2RAD(viewangle + start))) / (fovscale * 2)) + 1;
 
 	trap_R_SetColor(color);
 	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 0, 0, cgs.media.whiteShader);

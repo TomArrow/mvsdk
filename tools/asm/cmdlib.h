@@ -148,6 +148,4 @@ typedef struct
 	int		count, width, height;
 } cblock_t;
 
-
-
 #endif

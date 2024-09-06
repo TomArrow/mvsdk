@@ -411,6 +411,7 @@ Cmd_Noclip_f
 argv(0) noclip
 ==================
 */
+extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 void Cmd_Noclip_f( gentity_t *ent ) {
 	char	*msg;
 
@@ -2887,7 +2888,9 @@ void ClientCommand( int clientNum ) {
 					VectorSubtract( other->client->ps.origin, ent->client->ps.origin, otherDir );
 					VectorCopy( ent->client->ps.viewangles, entAngles );
 					entAngles[YAW] = vectoyaw( otherDir );
+					DF_PreDeltaAngleChange(ent->client);
 					SetClientViewAngle( ent, entAngles );
+					DF_PostDeltaAngleChange(ent->client);
 
 					StandardSetBodyAnim(ent, BOTH_KISSER1LOOP, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_HOLDLESS);
 					ent->client->ps.saberMove = LS_NONE;
@@ -2897,7 +2900,9 @@ void ClientCommand( int clientNum ) {
 					VectorSubtract( ent->client->ps.origin, other->client->ps.origin, entDir );
 					VectorCopy( other->client->ps.viewangles, otherAngles );
 					otherAngles[YAW] = vectoyaw( entDir );
+					DF_PreDeltaAngleChange(other->client);
 					SetClientViewAngle( other, otherAngles );
+					DF_PostDeltaAngleChange(other->client);
 
 					StandardSetBodyAnim(other, BOTH_KISSEE1LOOP, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_HOLDLESS);
 					other->client->ps.saberMove = LS_NONE;

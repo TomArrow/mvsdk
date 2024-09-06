@@ -151,7 +151,7 @@ qboolean CG_ParseSurfsFile( const char *modelName, const char *skinName, char *s
 	int			len;
 	const char	*token;
 	const char	*value;
-	char		text[20000];
+	static char		text[20000];
 	char		sfilename[MAX_QPATH];
 	fileHandle_t	f;
 	
@@ -1520,7 +1520,7 @@ static void CG_SetLerpFrameAnimation( centity_t *cent, clientInfo_t *ci, lerpFra
 
 			if (fVel > 250)
 			{
-				animSpeedMult = 1.2;
+				animSpeedMult = 1.2f;
 			}
 			else if (fVel > 200)
 			{
@@ -1528,11 +1528,11 @@ static void CG_SetLerpFrameAnimation( centity_t *cent, clientInfo_t *ci, lerpFra
 			}
 			else if (fVel > 100)
 			{
-				animSpeedMult = 0.9;
+				animSpeedMult = 0.9f;
 			}
 			else if (fVel > 0)
 			{
-				animSpeedMult = 0.8;
+				animSpeedMult = 0.8f;
 			}
 			else
 			{
@@ -1581,7 +1581,7 @@ static void CG_SetLerpFrameAnimation( centity_t *cent, clientInfo_t *ci, lerpFra
 					cent->atstFootClang = cg.time + 500;
 				}
 			}
-			animSpeedMult = 0.7;
+			animSpeedMult = 0.7f;
 		}
 		else
 		{
@@ -1634,12 +1634,12 @@ static void CG_SetLerpFrameAnimation( centity_t *cent, clientInfo_t *ci, lerpFra
 		{
 			if (animSpeed < 0.3)
 			{
-				animSpeed = 0.3;
+				animSpeed = 0.3f;
 			}
 
 			if (newAnimation == BOTH_WALKBACK1)
 			{
-				animSpeed = 0.8;
+				animSpeed = 0.8f;
 			}
 
 			if (newAnimation != BOTH_DEATH1)
@@ -2153,11 +2153,11 @@ static void CG_PlayerAnimation( centity_t *cent, int *legsOld, int *legs, float 
 
 	if (cent->currentState.forcePowersActive & (1 << FP_RAGE))
 	{
-		speedScale = 1.3;
+		speedScale = 1.3f;
 	}
 	else if (cent->currentState.forcePowersActive & (1 << FP_SPEED))
 	{
-		speedScale = 1.7;
+		speedScale = 1.7f;
 	}
 	else
 	{
@@ -2179,7 +2179,7 @@ static void CG_PlayerAnimation( centity_t *cent, int *legsOld, int *legs, float 
 	}
 	else
 	{
-		speedScale = 1.7;
+		speedScale = 1.7f;
 	}
 
 	*legsOld = cent->pe.legs.oldFrame;
@@ -2751,7 +2751,7 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 	} else {
 		dest = headAngles[PITCH] * 0.75;
 	}
-	CG_SwingAngles( dest, 15, 30, 0.1, &cent->pe.torso.pitchAngle, &cent->pe.torso.pitching );
+	CG_SwingAngles( dest, 15, 30, 0.1f, &cent->pe.torso.pitchAngle, &cent->pe.torso.pitching );
 	torsoAngles[PITCH] = cent->pe.torso.pitchAngle;
 
 	// --------- roll -------------
@@ -2784,7 +2784,7 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 		vec3_t	axis[3];
 		float	side;
 
-		speed *= 0.05;
+		speed *= 0.05f;
 
 		AnglesToAxis( legsAngles, axis );
 		side = speed * DotProduct( velocity, axis[1] );
@@ -2873,7 +2873,7 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 
 	if (cent->isATST)
 	{
-		cent->pe.legs.yawSwingDif = CG_SwingAnglesATST( cent, legsAngles[YAW], 40, 360, /*cg_swingSpeed.value*/ 0.05, &cent->pe.legs.yawAngle, &cent->pe.legs.yawing );
+		cent->pe.legs.yawSwingDif = CG_SwingAnglesATST( cent, legsAngles[YAW], 40, 360, /*cg_swingSpeed.value*/ 0.05f, &cent->pe.legs.yawAngle, &cent->pe.legs.yawing );
 	}
 	else
 	{
@@ -2883,7 +2883,7 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 		}
 		else
 		{
-			CG_SwingAngles( legsAngles[YAW], 40, 90, /*cg_swingSpeed.value*/ 0.3, &cent->pe.legs.yawAngle, &cent->pe.legs.yawing );
+			CG_SwingAngles( legsAngles[YAW], 40, 90, /*cg_swingSpeed.value*/ 0.3f, &cent->pe.legs.yawAngle, &cent->pe.legs.yawing );
 		}
 	}
 	legsAngles[YAW] = cent->pe.legs.yawAngle;
@@ -4132,8 +4132,8 @@ void CG_CreateSaberMarks( vec3_t start, vec3_t end, vec3_t normal )
 			VectorScale( mid, 0.5f, mid );
 			VectorSubtract( v->xyz, mid, delta );
 
-			v->st[0] = 0.5 + DotProduct( delta, axis[1] ) * (0.05f + random() * 0.03f); 
-			v->st[1] = 0.5 + DotProduct( delta, axis[2] ) * (0.15f + random() * 0.05f);	
+			v->st[0] = 0.5f + DotProduct( delta, axis[1] ) * (0.05f + random() * 0.03f); 
+			v->st[1] = 0.5f + DotProduct( delta, axis[2] ) * (0.15f + random() * 0.05f);	
 		}
 
 		if (cg_saberDynamicMarks.integer)
@@ -4356,7 +4356,7 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	effectTrailArgStruct_t fx;
 	int scolor = 0;
 	vec3_t otherPos, otherDir, otherEnd;
-	float dualLen = 0.7;
+	float dualLen = 0.7f;
 
 	saberEnt = &cg_entities[cent->currentState.saberEntityNum];
 	saberTrail = &cent->saberTrail;
@@ -5088,12 +5088,12 @@ static void CG_G2EntSetLerpFrameAnimation( centity_t *cent, lerpFrame_t *lf, int
 		{
 			if (animSpeed < 0.3)
 			{
-				animSpeed = 0.3;
+				animSpeed = 0.3f;
 			}
 
 			if (newAnimation == BOTH_WALKBACK1)
 			{
-				animSpeed = 0.8;
+				animSpeed = 0.8f;
 			}
 
 			if (newAnimation != BOTH_DEATH1)
@@ -5377,11 +5377,11 @@ static void CG_G2EntAnimation( centity_t *cent, int *legsOld, int *legs, float *
 
 	if (cent->currentState.forcePowersActive & (1 << FP_RAGE))
 	{
-		speedScale = 1.3;
+		speedScale = 1.3f;
 	}
 	else if (cent->currentState.forcePowersActive & (1 << FP_SPEED))
 	{
-		speedScale = 1.7;
+		speedScale = 1.7f;
 	}
 	else
 	{
@@ -5396,7 +5396,7 @@ static void CG_G2EntAnimation( centity_t *cent, int *legsOld, int *legs, float *
 	}
 	else
 	{
-		speedScale = 1.7;
+		speedScale = 1.7f;
 	}
 
 	*legsOld = cent->pe.legs.oldFrame;
@@ -5523,14 +5523,14 @@ static void CG_G2AnimEntAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngl
 	} else {
 		dest = headAngles[PITCH] * 0.75;
 	}
-	CG_SwingAngles( dest, 15, 30, 0.1, &cent->pe.torso.pitchAngle, &cent->pe.torso.pitching );
+	CG_SwingAngles( dest, 15, 30, 0.1f, &cent->pe.torso.pitchAngle, &cent->pe.torso.pitching );
 	torsoAngles[PITCH] = cent->pe.torso.pitchAngle;
 
 	if ( speed ) {
 		vec3_t	axis[3];
 		float	side;
 
-		speed *= 0.05;
+		speed *= 0.05f;
 
 		AnglesToAxis( legsAngles, axis );
 		side = speed * DotProduct( velocity, axis[1] );
@@ -5920,7 +5920,7 @@ void CG_G2Animated( centity_t *cent )
 
 	if (cent->currentState.genericenemyindex > cg.time)
 	{
-		CG_DrawNoForceSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysalimariShader );
+		CG_DrawNoForceSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.ysalimariShader );
 	}
 }
 //rww - here ends the majority of my g2animent stuff.
@@ -6062,7 +6062,7 @@ void CG_Player( centity_t *cent ) {
 
 	// it is possible to see corpses from disconnected players that may
 	// not have valid clientinfo
-	if ( !ci->infoValid ) {
+	if ( !ci->infoValid || !cg.snap ) {
 		return;
 	}
 
@@ -7209,17 +7209,17 @@ doEssentialTwo:
 	{
 		if (cgs.gametype == GT_CTY && (cent->currentState.powerups & (1 << PW_REDFLAG)))
 		{
-			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysaliredShader );
+			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.ysaliredShader );
 		}
 		else if (cgs.gametype == GT_CTY && (cent->currentState.powerups & (1 << PW_BLUEFLAG)))
 		{
-			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysaliblueShader );
+			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.ysaliblueShader );
 		}
 		else
 		{
 			//if (!cg.predictedPlayerState.stats[STAT_RACEMODE] && !(cg_stylePlayer.integer & JAPRO_STYLE_HIDEYSALSHELL && cent->currentState.number == cg.predictedPlayerState.clientNum))
 			if (!cg.predictedPlayerState.stats[STAT_RACEMODE])// && cent->currentState.number != cg.predictedPlayerState.clientNum)
-				CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysalimariShader );
+				CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.ysalimariShader );
 		}
 	}
 	
@@ -7243,21 +7243,21 @@ doEssentialTwo:
 			switch (ci->team)
 			{
 				case TEAM_RED:
-					CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysaliredShader);
+					CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.ysaliredShader);
 					break;
 				case TEAM_FREE:
 					if (cgs.isCTFMod && cgs.CTF3ModeActive) {
-						CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysalimariShader);
+						CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.ysalimariShader);
 						break;
 					}
 				case TEAM_BLUE:
 				default:
-					CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.ysaliblueShader);
+					CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.ysaliblueShader);
 					break;
 			}
 		}
 		else {
-			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4, cgs.media.invulnerabilityShader );
+			CG_DrawPlayerSphere(cent, cent->lerpOrigin, 1.4f, cgs.media.invulnerabilityShader );
 		}
 	}
 stillDoSaber:

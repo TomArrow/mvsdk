@@ -381,7 +381,7 @@ void G_G2PlayerAngles( gentity_t *ent, vec3_t legs[3], vec3_t legsAngles){
 		vec3_t	axis[3];
 		float	side;
 
-		speed *= 0.05;
+		speed *= 0.05f;
 
 		AnglesToAxis( legsAngles, axis );
 		side = speed * DotProduct( velocity, axis[1] );
@@ -664,11 +664,15 @@ qboolean WP_SabersCheckLock2( gentity_t *attacker, gentity_t *defender, sabersLo
 	VectorSubtract( defender->r.currentOrigin, attacker->r.currentOrigin, defDir );
 	VectorCopy( attacker->client->ps.viewangles, attAngles );
 	attAngles[YAW] = vectoyaw( defDir );
+	DF_PreDeltaAngleChange(attacker->client);
 	SetClientViewAngle( attacker, attAngles );
+	DF_PostDeltaAngleChange(attacker->client);
 	defAngles[PITCH] = attAngles[PITCH]*-1;
 	defAngles[YAW] = AngleNormalize180( attAngles[YAW] + 180);
 	defAngles[ROLL] = 0;
+	DF_PreDeltaAngleChange(attacker->client);
 	SetClientViewAngle( defender, defAngles );
+	DF_PostDeltaAngleChange(attacker->client);
 	
 	//MATCH POSITIONS
 	diff = VectorNormalize( defDir ) - idealDist;//diff will be the total error in dist
@@ -3457,7 +3461,7 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd )
 		fVSpeed += self->client->ps.velocity[2];
 	}
 
-	fVSpeed *= 0.08;
+	fVSpeed *= 0.08f;
 
 	properOrigin[0] += addVel[0]*fVSpeed;
 	properOrigin[1] += addVel[1]*fVSpeed;

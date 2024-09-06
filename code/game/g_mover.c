@@ -147,7 +147,10 @@ qboolean	G_TryPushingEntity( gentity_t *check, gentity_t *pusher, vec3_t move, v
 		VectorAdd (check->client->ps.origin, move, check->client->ps.origin);
 		VectorAdd (check->client->ps.origin, move2, check->client->ps.origin);
 		// make sure the client's view rotates when on a rotating mover
+
+		DF_PreDeltaAngleChange(check->client);
 		check->client->ps.delta_angles[YAW] += ANGLE2SHORT(amove[YAW]);
+		DF_PostDeltaAngleChange(check->client);
 	}
 
 	// may have pushed them off an edge
@@ -316,7 +319,9 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 			VectorCopy (p->origin, p->ent->s.pos.trBase);
 			VectorCopy (p->angles, p->ent->s.apos.trBase);
 			if ( p->ent->client ) {
+				DF_PreDeltaAngleChange(p->ent->client);
 				p->ent->client->ps.delta_angles[YAW] = p->deltayaw;
+				DF_PostDeltaAngleChange(p->ent->client);
 				VectorCopy (p->origin, p->ent->client->ps.origin);
 			}
 			trap_LinkEntity (p->ent);

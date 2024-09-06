@@ -1794,6 +1794,8 @@ player_die
 ==================
 */
 extern stringID_table_t animTable[MAX_ANIMATIONS+1];
+extern void DF_SegmentedRunStatusInvalidated(gentity_t* ent);
+extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath ) {
 	gentity_t	*ent;
 	int			anim;
@@ -1813,7 +1815,12 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		return;
 	}
 
-	DF_RaceStateInvalidated(self, qfalse);
+	if (self->client->sess.raceStyle.runFlags & RFL_SEGMENTED) {
+		DF_SegmentedRunStatusInvalidated(self);
+	}
+	else {
+		DF_RaceStateInvalidated(self, qfalse);
+	}
 
 	if (g_slowmoDuelEnd.integer && g_gametype.integer == GT_TOURNAMENT && attacker && attacker->inuse && attacker->client)
 	{
@@ -2590,7 +2597,7 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 		fVSpeed += self->client->ps.velocity[2];
 	}
 
-	fVSpeed *= 0.08;
+	fVSpeed *= 0.08f;
 
 	properOrigin[0] += addVel[0]*fVSpeed;
 	properOrigin[1] += addVel[1]*fVSpeed;
@@ -3049,7 +3056,7 @@ dflags		these flags are used to control how T_Damage works
 	DAMAGE_HALF_ARMOR_REDUCTION		Any damage that shields incur is halved
 ============
 */
-
+extern void G_LetGoOfWall(gentity_t* ent);
 void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			   vec3_t dir, vec3_t point, int damage, int dflags, int mod ) {
 	gclient_t	*client;
@@ -3062,7 +3069,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	float		hamt = 0;
 	float		shieldAbsorbed = 0;
 
-	if ( !targ ) return;
+	if ( !targ || !targ->client ) return;
 
 	if (targ && targ->damageRedirect)
 	{
@@ -3465,7 +3472,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			if (targ->client->ps.fd.forcePowerLevel[FP_PROTECT] == FORCE_LEVEL_1)
 			{
 				famt = 1;
-				hamt = 0.40;
+				hamt = 0.40f;
 
 				if (maxtake > 100)
 				{
@@ -3475,7 +3482,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			else if (targ->client->ps.fd.forcePowerLevel[FP_PROTECT] == FORCE_LEVEL_2)
 			{
 				famt = 0.5;
-				hamt = 0.60;
+				hamt = 0.60f;
 
 				if (maxtake > 200)
 				{
@@ -3485,7 +3492,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			else if (targ->client->ps.fd.forcePowerLevel[FP_PROTECT] == FORCE_LEVEL_3)
 			{
 				famt = 0.25;
-				hamt = 0.80;
+				hamt = 0.80f;
 
 				if (maxtake > 400)
 				{

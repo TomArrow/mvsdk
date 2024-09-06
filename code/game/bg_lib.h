@@ -99,3 +99,9 @@ float logf(float a);
 float powf(float x, float y);
 
 float copysignf(float x, float y);
+
+#define sqrtf sqrt
+#define sinf sin
+#define cosf cos
+#define tanf tan
+#define fabsf fabs

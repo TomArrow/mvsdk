@@ -136,7 +136,7 @@ void PM_Q2StepSlideMove_(void)
 		if (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 		{//no sliding if stuck to wall!
 			for (i = 0; i < numplanes; i++) {
-				if (DotProduct(normal, planes[i]) > 0.99) {
+				if (DotProduct(normal, planes[i]) > 0.99f) {
 					VectorAdd(normal, pm->ps->velocity, pm->ps->velocity);
 					break;
 				}
@@ -196,7 +196,7 @@ void PM_Q2StepSlideMove_(void)
 		//
 		for (i = 0; i < numplanes; i++)
 		{
-			PM_ClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, 1.01);
+			PM_ClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, 1.01f);
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
@@ -438,7 +438,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		if (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 		{//no sliding if stuck to wall!
 			for (i = 0; i < numplanes; i++) {
-				if (DotProduct(normal, planes[i]) > 0.99) {
+				if (DotProduct(normal, planes[i]) > 0.99f) {
 					VectorAdd(normal, pm->ps->velocity, pm->ps->velocity);
 					break;
 				}
@@ -477,7 +477,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				if ( j == i ) {
 					continue;
 				}
-				if ( DotProduct( clipVelocity, planes[j] ) >= 0.1 ) {
+				if ( DotProduct( clipVelocity, planes[j] ) >= 0.1f ) {
 					continue;		// move doesn't interact with the plane
 				}
 
@@ -508,7 +508,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 					if ( k == i || k == j ) {
 						continue;
 					}
-					if ( DotProduct( clipVelocity, planes[k] ) >= 0.1 ) {
+					if ( DotProduct( clipVelocity, planes[k] ) >= 0.1f ) {
 						continue;		// move doesn't interact with the plane
 					}
 
@@ -695,7 +695,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 	VectorSet(up, 0, 0, 1);
 	// never step up when you still have up velocity
 	if ( pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 ||
-										DotProduct(trace.plane.normal, up) < 0.7)) {
+										DotProduct(trace.plane.normal, up) < 0.7f)) {
 
 		if (!usingspeed)
 		{
@@ -801,7 +801,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 			return;
 		}
 
-		pm->ps->fd.forceSpeedSmash -= 0.1;
+		pm->ps->fd.forceSpeedSmash -= 0.1f;
 		//we hit a wall so decrease speed
 
 		if (pm->ps->fd.forceSpeedSmash < 1)

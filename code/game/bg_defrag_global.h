@@ -67,14 +67,6 @@ typedef struct raceStyle_s {
 } raceStyle_t;
 
 
-typedef struct savedPosition_s {
-	playerState_t	ps;
-	int				buttons;
-	int				oldbuttons;
-	int				latched_buttons; 
-	raceStyle_t		raceStyle;
-	int				raceStartCommandTime;
-} savedPosition_t;
 
 int RaceNameToInteger(char* style);
 qboolean MovementStyleHasQuake2Ramps(int moveStyle);

@@ -49,7 +49,7 @@ static void CG_PauseGameStarted(void) {
 
 static void CG_PauseGameEnded(void) {
 	int dur = cg.time - pauseGameStartedTime;
-	int i, k;
+	//int i, k;
 
 	if (!cg.pausedGame) return; // Demo might start inside a pause.
 	cg.pausedGame = qfalse;

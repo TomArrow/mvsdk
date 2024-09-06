@@ -2288,7 +2288,9 @@ void ClientSpawn(gentity_t *ent) {
 	client->ps.pm_flags |= PMF_RESPAWNED;
 
 	trap_GetUsercmd( client - level.clients, &ent->client->pers.cmd );
+	DF_PreDeltaAngleChange(ent->client);
 	SetClientViewAngle( ent, spawn_angles );
+	DF_PostDeltaAngleChange(ent->client);
 
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 

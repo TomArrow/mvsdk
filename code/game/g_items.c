@@ -1841,8 +1841,8 @@ void FinishSpawningItem( gentity_t *ent ) {
 
 		//if it is directly even with the floor it will return startsolid, so raise up by 0.1
 		//and temporarily subtract 0.1 from the z maxs so that going up doesn't push into the ceiling
-		ent->s.origin[2] += 0.1;
-		ent->r.maxs[2] -= 0.1;
+		ent->s.origin[2] += 0.1f;
+		ent->r.maxs[2] -= 0.1f;
 
 		VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
 		JP_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
@@ -1853,7 +1853,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 		}
 
 		//add the 0.1 back after the trace
-		ent->r.maxs[2] += 0.1;
+		ent->r.maxs[2] += 0.1f;
 
 		// allow to ride movers
 		ent->s.groundEntityNum = tr.entityNum;

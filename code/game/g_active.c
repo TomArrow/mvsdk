@@ -1227,7 +1227,7 @@ void ClientThink_real( gentity_t *ent ) {
 	int			msec;
 	int			i;
 	usercmd_t	*ucmd;
-	int			oldTeleportBit;
+	//int			oldTeleportBit;
 	int	moveStyle;
 
 	client = ent->client;
@@ -1701,7 +1701,9 @@ void ClientThink_real( gentity_t *ent ) {
 			VectorSubtract( blockOpp->r.currentOrigin, ent->r.currentOrigin, lockDir );
 			//lockAng[YAW] = vectoyaw( defDir );
 			vectoangles(lockDir, lockAng);
+			DF_PreDeltaAngleChange(ent->client);
 			SetClientViewAngle( ent, lockAng );
+			DF_PreDeltaAngleChange(ent->client);
 		}
 
 		if ( ( ent->client->buttons & BUTTON_ATTACK ) && ! ( ent->client->oldbuttons & BUTTON_ATTACK ) )
@@ -1735,7 +1737,10 @@ void ClientThink_real( gentity_t *ent ) {
 	ent->client->prePmovePositionSet = qtrue;
 	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
 	
+
+	DF_PreDeltaAngleChange(ent->client);
 	Pmove (&pm);
+	DF_PostDeltaAngleChange(ent->client);
 
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
 	VectorCopy(ent->r.mins, ent->client->postPmoveMins);
@@ -2082,14 +2087,14 @@ void ClientThink( int clientNum ) {
 	// phone jack if they don't get any for a while
 	ent->client->lastCmdTime = level.time;
 
-	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !ent->client->pers.segmented.playbackActive ) {
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && ent->client->pers.segmented.state != SEG_REPLAY) {
 		ClientThink_real( ent );
 	}
 }
 
-
+extern void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void G_RunClient( gentity_t *ent ) {
-	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !ent->client->pers.segmented.playbackActive ) {
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && ent->client->pers.segmented.state != SEG_REPLAY ) {
 		return;
 	}
 
@@ -2099,7 +2104,7 @@ void G_RunClient( gentity_t *ent ) {
 		ent->client->pers.botDelayed = qfalse;
 	}
 
-	if (ent->client->pers.segmented.playbackActive) {
+	if (ent->client->pers.segmented.state == SEG_REPLAY) {
 		usercmd_t ucmd;
 		gclient_t* cl = ent->client;
 		if (!cl->pers.segmented.playbackNextCmdIndex) {
@@ -2111,12 +2116,13 @@ void G_RunClient( gentity_t *ent ) {
 			int targetServerTime;
 			success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
 			if (!success) {
-				ent->client->pers.segmented.playbackActive = qfalse; // done
+				trap_G_COOL_API_PlayerUserCmdClear(ent-g_entities);
+				ent->client->pers.segmented.state = SEG_DISABLED; // done
 				break;
 			}
 			targetServerTime = cl->pers.segmented.playbackStartedTime + ucmd.serverTime;
 			if (targetServerTime <= level.time) {
-				cl->ps.pm_flags &= ~PMF_FOLLOW;
+				//cl->ps.pm_flags &= ~PMF_FOLLOW;
 				cl->pers.cmd = ucmd;
 				cl->pers.cmd.serverTime = targetServerTime;
 				if (cl->pers.segmented.playbackNextCmdIndex == 0) {
@@ -2129,12 +2135,12 @@ void G_RunClient( gentity_t *ent ) {
 				break;
 			}
 		}
-		if (ent->client->pers.segmented.playbackActive) {
-			cl->ps.pm_flags |= PMF_FOLLOW;
-		}
-		else {
-			cl->ps.pm_flags &= ~PMF_FOLLOW;
-		}
+		//if (ent->client->pers.segmented.state == SEG_REPLAY) {
+		//	cl->ps.pm_flags |= PMF_FOLLOW;
+		//}
+		//else {
+		//	cl->ps.pm_flags &= ~PMF_FOLLOW;
+		//}
 
 	}
 	else {

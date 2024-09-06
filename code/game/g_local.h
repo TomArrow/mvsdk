@@ -6,6 +6,7 @@
 #include "bg_public.h"
 #include "g_public.h"
 #include "bg_defrag_global.h"
+#include "g_defrag.h"
 
 //==================================================================
 
@@ -373,22 +374,7 @@ typedef struct {
 	int			raceStartCommandTime;
 	int			raceBestTime;
 	int			raceLastCheckpointTime;
-	struct {
-		savedPosition_t	startPos;
-		qboolean		startPosUsed;
-		savedPosition_t	lastPos;
-		int				lastPosMsecProgress;
-		qboolean		lastPosUsed;
-		int				lastPosUserCmdIndex;
-		veci3_t			anglesDiffAccum; // accumulated change in usercmd angles through respos, so we can store the usercmd_t as if the resposes had never happened
-		int				commandTimeProgress;
-		qboolean		savePos;
-		qboolean		respos;
-		int				msecProgress;
-		qboolean		playbackActive;
-		int				playbackStartedTime;
-		int				playbackNextCmdIndex;
-	} segmented; // segmented run
+	segmented_t segmented; // segmented run
 	
 
 	physicsFpsState_t	physicsFps;
@@ -1439,3 +1425,6 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 #include "../api/mvapi.h"
 #include "g_multiversion.h"
 
+
+void DF_PreDeltaAngleChange(gclient_t* client);
+void DF_PostDeltaAngleChange(gclient_t* client);

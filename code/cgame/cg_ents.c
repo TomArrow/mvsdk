@@ -201,7 +201,7 @@ localEntity_t *FX_AddOrientedLine(vec3_t start, vec3_t end, vec3_t normal, float
 	le->color[1] = 1.0;
 	le->color[2] = 1.0;
 	le->color[3] = 1.0;
-	le->lifeRate = 1.0 / ( le->endTime - le->startTime );
+	le->lifeRate = 1.0f / ( le->endTime - le->startTime );
 
 	return(le);
 }
@@ -1084,7 +1084,7 @@ Ghoul2 Insert End
 		val = (1.0f - (float)(cent->currentState.time - cg.time) / 3200.0f ) * 0.3f;
 
 		ent.customShader = trap_R_RegisterShader( "gfx/effects/turretflashdie" );
-		ent.shaderRGBA[0] = (sin( cg.time * 0.04f ) * val * 0.4f + val) * 255;
+		ent.shaderRGBA[0] = (sinf( cg.time * 0.04f ) * val * 0.4f + val) * 255;
 		ent.shaderRGBA[1] = ent.shaderRGBA[2] = 0;
 
 		ent.shaderRGBA[3] = 100;
@@ -1159,7 +1159,7 @@ Ghoul2 Insert End
 
 		ent.customShader = cgs.media.solidWhite;
 		ent.renderfx = RF_RGB_TINT;
-		wv = sin( cg.time * 0.003f ) * 0.08f + 0.1f;
+		wv = sinf( cg.time * 0.003f ) * 0.08f + 0.1f;
 		ent.shaderRGBA[0] = wv * 255;
 		ent.shaderRGBA[1] = wv * 255;
 		ent.shaderRGBA[2] = wv * 0;
@@ -1196,7 +1196,7 @@ Ghoul2 Insert End
 
 		ent.customShader = cgs.media.solidWhite;
 		ent.renderfx = RF_RGB_TINT;
-		wv = sin( cg.time * 0.005f ) * 0.08f + 0.1f; //* 0.08f + 0.1f;
+		wv = sinf( cg.time * 0.005f ) * 0.08f + 0.1f; //* 0.08f + 0.1f;
 
 		if (cent->currentState.trickedentindex3 == 1)
 		{ //dark
@@ -1228,9 +1228,9 @@ Ghoul2 Insert End
 			}
 		}
 
-		ent.modelScale[0] = 1.1;
-		ent.modelScale[1] = 1.1;
-		ent.modelScale[2] = 1.1;
+		ent.modelScale[0] = 1.1f;
+		ent.modelScale[1] = 1.1f;
+		ent.modelScale[2] = 1.1f;
 
 		ent.origin[2] -= 2;
 		ScaleModelAxis(&ent);
@@ -1241,7 +1241,7 @@ Ghoul2 Insert End
 
 		org[2] += 18;
 
-		wv = sin( cg.time * 0.002f ) * 0.08f + 0.1f; //* 0.08f + 0.1f;
+		wv = sinf( cg.time * 0.002f ) * 0.08f + 0.1f; //* 0.08f + 0.1f;
 
 		VectorCopy(org, fxSArgs.origin);
 		VectorClear(fxSArgs.vel);
@@ -1557,7 +1557,7 @@ Ghoul2 Insert End
 	{
 		// items bob up and down continuously
 		scale = 0.005 + cent->currentState.number * 0.00001;
-		cent->lerpOrigin[2] += 4 + cos( ( cg.time + 1000 ) *  scale ) * 4;
+		cent->lerpOrigin[2] += 4 + cosf( ( cg.time + 1000 ) *  scale ) * 4;
 	}
 	else
 	{
@@ -2076,7 +2076,7 @@ Ghoul2 Insert End
 
 		ent.customShader = cgs.media.solidWhite;
 		ent.renderfx = RF_RGB_TINT;
-		wv = sin( cg.time * 0.003f ) * 0.08f + 0.1f;
+		wv = sinf( cg.time * 0.003f ) * 0.08f + 0.1f;
 		ent.shaderRGBA[0] = wv * 255;
 		ent.shaderRGBA[1] = wv * 255;
 		ent.shaderRGBA[2] = wv * 0;
@@ -2370,8 +2370,8 @@ CG_InterpolateEntityPosition
 =============================
 */
 static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
-	vec3_t		current, next;
-	float		f;
+	//vec3_t		current, next;
+	//float		f;
 	int			offsetHere;
 	int			averageOffset;
 	qboolean	averageOffsetValid = qfalse;
@@ -2506,7 +2506,7 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 	// Check if we clipped into the floor or ceiling. Very primitive but should cover the absolute worst of ppl predict-falling into floors when hopping normally.
 	if (cg_deluxePlayersPredictClipZ.integer) {
 		trace_t trace;
-		vec3_t bmins = { -15, -15, DEFAULT_MINS_2 }, bmaxs = { 15, 15, DEFAULT_MAXS_2 }, absmin, absmax;
+		vec3_t bmins = { -15, -15, DEFAULT_MINS_2 }, bmaxs = { 15, 15, DEFAULT_MAXS_2 };// , absmin, absmax;
 		int x = 0, zd = 0, zu = 0;
 
 		if (cent->currentState.solid) {
@@ -2765,7 +2765,7 @@ void CG_AddPacketEntities( void ) {
 
 	// the auto-rotating items will all have the same axis
 	cg.autoAngles[0] = 0;
-	cg.autoAngles[1] = ( cg.time & 2047 ) * 360 / 2048.0;
+	cg.autoAngles[1] = ( cg.time & 2047 ) * 360 / 2048.0f;
 	cg.autoAngles[2] = 0;
 
 	cg.autoAnglesFast[0] = 0;

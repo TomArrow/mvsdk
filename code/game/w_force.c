@@ -4507,7 +4507,7 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd )
 		return;
 	}
 
-	if ((self->client->ps.pm_flags & PMF_FOLLOW) && !self->client->pers.segmented.playbackActive)
+	if (self->client->ps.pm_flags & PMF_FOLLOW)
 	{ //not a "real" game client, it's a spectator following someone
 		return;
 	}

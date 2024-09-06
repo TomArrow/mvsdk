@@ -98,7 +98,9 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	player->client->ps.eFlags ^= EF_TELEPORT_BIT;
 
 	// set angles
+	DF_PreDeltaAngleChange(player->client);
 	SetClientViewAngle( player, angles );
+	DF_PostDeltaAngleChange(player->client);
 
 	// kill anything at the destination
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR && !player->client->sess.raceMode) {
@@ -571,8 +573,8 @@ void SP_misc_holocron(gentity_t *ent)
 	VectorSet( ent->r.maxs, 8, 8, 8 );
 	VectorSet( ent->r.mins, -8, -8, -8 );
 
-	ent->s.origin[2] += 0.1;
-	ent->r.maxs[2] -= 0.1;
+	ent->s.origin[2] += 0.1f;
+	ent->r.maxs[2] -= 0.1f;
 
 	VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
 	JP_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
@@ -584,7 +586,7 @@ void SP_misc_holocron(gentity_t *ent)
 	}
 
 	//add the 0.1 back after the trace
-	ent->r.maxs[2] += 0.1;
+	ent->r.maxs[2] += 0.1f;
 
 	// allow to ride movers
 //	ent->s.groundEntityNum = tr.entityNum;
@@ -849,8 +851,8 @@ void SP_misc_shield_floor_unit( gentity_t *ent )
 	VectorSet( ent->r.mins, -16, -16, 0 );
 	VectorSet( ent->r.maxs, 16, 16, 40 );
 
-	ent->s.origin[2] += 0.1;
-	ent->r.maxs[2] -= 0.1;
+	ent->s.origin[2] += 0.1f;
+	ent->r.maxs[2] -= 0.1f;
 
 	VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
 	JP_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
@@ -862,7 +864,7 @@ void SP_misc_shield_floor_unit( gentity_t *ent )
 	}
 
 	//add the 0.1 back after the trace
-	ent->r.maxs[2] += 0.1;
+	ent->r.maxs[2] += 0.1f;
 
 	// allow to ride movers
 	ent->s.groundEntityNum = tr.entityNum;

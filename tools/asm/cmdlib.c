@@ -715,7 +715,7 @@ LoadFile
 int    LoadFile( const char *filename, void **bufferptr )
 {
 	FILE	*f;
-	int    length;
+	size_t  length;
 	void    *buffer;
 
 	f = SafeOpenRead (filename);
@@ -741,7 +741,8 @@ rounds up memory allocation to 4K boundry
 int    LoadFileBlock( const char *filename, void **bufferptr )
 {
 	FILE	*f;
-	int    length, nBlock, nAllocSize;
+	int    length;
+	size_t nBlock, nAllocSize;
 	void    *buffer;
 
 	f = SafeOpenRead (filename);
@@ -780,7 +781,7 @@ int    TryLoadFile (const char *filename, void **bufferptr)
 	if (!f)
 		return -1;
 	length = Q_filelength (f);
-	buffer = malloc (length+1);
+	buffer = malloc (length+(size_t)1);
 	((char *)buffer)[length] = 0;
 	SafeRead (f, buffer, length);
 	fclose (f);

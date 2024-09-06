@@ -4403,7 +4403,7 @@ float BotWeaponCanLead(bot_state_t *bs)
 	}
 	if (weap == WP_BLASTER)
 	{
-		return 0.35;
+		return 0.35f;
 	}
 	if (weap == WP_BOWCASTER)
 	{
@@ -4411,7 +4411,7 @@ float BotWeaponCanLead(bot_state_t *bs)
 	}
 	if (weap == WP_REPEATER)
 	{
-		return 0.45;
+		return 0.45f;
 	}
 	if (weap == WP_THERMAL)
 	{
@@ -4419,11 +4419,11 @@ float BotWeaponCanLead(bot_state_t *bs)
 	}
 	if (weap == WP_DEMP2)
 	{
-		return 0.35;
+		return 0.35f;
 	}
 	if (weap == WP_ROCKET_LAUNCHER)
 	{
-		return 0.7;
+		return 0.7f;
 	}
 	
 	return 0;

@@ -12,12 +12,12 @@ extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 // target_stoptimer 
 // target_checkpoint 
 
-typedef enum q3DefragTargetType {
+typedef enum q3DefragTargetType_s {
 	TARGET_STARTTIMER,
 	TARGET_STOPTIMER,
 	TARGET_CHECKPOINT,
 	TARGET_TYPE_COUNT
-};
+} q3DefragTargetType_t;
 
 static const char* q3DefragTargetNames[] = {
 	"target_startTimer",
@@ -135,21 +135,46 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
 	int	lessTime = 0;
+	qboolean segmented = qfalse;
+	gclient_t* cl;
 	
 	// Check client
 	if (!activator->client) return;
 
-	if (!activator->client->sess.raceMode) return;
+	cl = activator->client;
 
-	if (activator->client->sess.raceStateInvalidated) {
+	if (!cl->sess.raceMode) return;
+
+	if (cl->sess.raceStateInvalidated) {
 		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
 		return;
 	}
 
-	if (DF_InAnyTrigger(activator->client->postPmovePosition,"df_trigger_start")) return; // we are still in some start trigger.
+	segmented = cl->sess.raceStyle.runFlags & RFL_SEGMENTED;
+
+	if (segmented && cl->pers.segmented.state != SEG_RECORDING && cl->pers.segmented.state != SEG_REPLAY) {
+		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Segmented run in a faulty state. Please respawn and try again.\n\"");
+		DF_RaceStateInvalidated(activator, qfalse);
+		return;
+	}
+	else if (cl->pers.segmented.state != SEG_REPLAY) {
+
+		if (segmented && cl->pers.segmented.msecProgress > 5000) {
+			trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Segmented run pre-record is over 5 seconds. Please respawn and try again.\n\"");
+			DF_RaceStateInvalidated(activator, qfalse);
+			return;
+		}
+		else if (segmented && cl->pers.segmented.msecProgress < 500) {
+			trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.\n\"");
+			DF_RaceStateInvalidated(activator, qfalse);
+			return;
+		}
+	}
+
+	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start")) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
-		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", activator->client->pers.netname);
+		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
 		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7No valid pre-pmove info.\nPlease restart.\n\"");
 		return;
 	}
@@ -159,8 +184,8 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
-	activator->client->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
-	activator->client->pers.segmented.lastPosUsed = qfalse;
+	cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
+	//cl->pers.segmented.lastPosUsed = qfalse; // already guaranteed via SEG_RECORDING check above
 
 	trap_SendServerCommand(activator - g_entities, "cp \"Race timer started!\"");
 }
@@ -211,9 +236,9 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	Q_strncpyz(timeLastStr, DF_MsToString(timeLast), sizeof(timeLastStr));
 	Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
 
-	if ((activator->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && !activator->client->pers.segmented.playbackActive) {
+	if ((activator->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && activator->client->pers.segmented.state != SEG_REPLAY) {
 		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in [^2%s^7]: ^1Estimate! Starting rerun now.\n\"", activator->client->pers.netname, timeLastStr));
-		activator->client->pers.segmented.playbackActive = qtrue;
+		activator->client->pers.segmented.state = SEG_REPLAY;
 		activator->client->pers.segmented.playbackStartedTime = level.time;
 		activator->client->pers.segmented.playbackNextCmdIndex = 0;
 		return;
@@ -489,9 +514,27 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 		trap_SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
 }
 
+void DF_ResetSegmentedRun(gentity_t* ent) {
+	ent->client->pers.segmented.state = SEG_DISABLED;
+	trap_G_COOL_API_PlayerUserCmdClear(ent - g_entities);
+}
+
+void DF_SegmentedRunStatusInvalidated(gentity_t* ent) {
+	if (!(ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
+		return;
+	}
+	if (ent->client->pers.segmented.state < SEG_RECORDING_HAVELASTPOS) {
+		DF_RaceStateInvalidated(ent,qtrue);
+	}
+	else {
+		ent->client->pers.segmented.state = SEG_RECORDING_INVALIDATED; // can only respos, not savepos.
+	}
+}
+
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print)
 {
 	ResetSpecificPlayerTimers(ent, print);
+	DF_ResetSegmentedRun(ent);
 	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!
 }
 
@@ -647,9 +690,11 @@ void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec
 static int solidValues[MAX_GENTITIES];
 static int saberMoveValues[MAX_GENTITIES];
 static int saberMoveValuesPS[MAX_GENTITIES];
+static int pmfFollowPS[MAX_GENTITIES];
 void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	gentity_t* ent = g_entities + clientNum;
 	gentity_t* other;
+	gclient_t* cl;
 	int i;
 	for (i = 0; i < level.num_entities; i++) {
 		other = g_entities + i;
@@ -671,22 +716,32 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			other->s.saberMove = LS_READY;
 		}
 		if (other->client) {
-			if (saveState) saberMoveValuesPS[i] = other->client->ps.saberMove;
-			if (other->client->ps.saberMove >= LS_MOVE_MAX_DEFAULT) {
-				other->client->ps.saberMove = LS_READY;
+			cl = other->client;
+			if (saveState) { 
+				saberMoveValuesPS[i] = cl->ps.saberMove;
+				pmfFollowPS[i] = cl->ps.pm_flags & PMF_FOLLOW;
+			}
+			if (cl->pers.segmented.state == SEG_REPLAY) {
+				cl->ps.pm_flags |= PMF_FOLLOW;
+			}
+			if (cl->ps.saberMove >= LS_MOVE_MAX_DEFAULT) {
+				cl->ps.saberMove = LS_READY;
 			}
 		}
 	}
 }
 void PlayerSnapshotRestoreValues() {
 	gentity_t* other;
+	gclient_t* cl;
 	int i;
 	for (i = 0; i < level.num_entities; i++) {
 		other = g_entities + i;
 		other->s.solid = solidValues[i];
 		other->s.saberMove = saberMoveValues[i];
 		if (other->client) {
-			other->client->ps.saberMove = saberMoveValuesPS[i];
+			cl = other->client;
+			cl->ps.saberMove = saberMoveValuesPS[i];
+			cl->ps.pm_flags = (cl->ps.pm_flags & ~PMF_FOLLOW) | pmfFollowPS[i];
 		}
 	}
 }
@@ -789,6 +844,33 @@ qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	return qtrue;
 }
 
+qboolean DF_ClientInSegmentedRunMode(gclient_t* client) {
+	return (qboolean)(client->sess.raceMode && (client->sess.raceStyle.runFlags & RFL_SEGMENTED));
+}
+
+static vec3_t dfOldDelta;
+void DF_PreDeltaAngleChange(gclient_t* client) {
+	VectorCopy(client->ps.delta_angles, dfOldDelta);
+}
+
+void DF_PostDeltaAngleChange(gclient_t* client) {
+	qboolean isinSeg;
+	if (client->ps.delta_angles[0] == dfOldDelta[0] && client->ps.delta_angles[1] == dfOldDelta[1] && client->ps.delta_angles[2] == dfOldDelta[2]) {
+		return;
+	}
+	if (!DF_ClientInSegmentedRunMode(client) || client->pers.segmented.state == SEG_DISABLED) {
+		return;
+	}
+	else {
+		vec3_t diff2;
+		VectorSubtract(client->ps.delta_angles, dfOldDelta, diff2);
+		VectorAdd(client->pers.segmented.anglesDiffAccum, diff2, client->pers.segmented.anglesDiffAccum);
+		client->pers.segmented.anglesDiffAccum[0] &= 65535;
+		client->pers.segmented.anglesDiffAccum[1] &= 65535;
+		client->pers.segmented.anglesDiffAccum[2] &= 65535;
+	}
+}
+
 void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum) {
 	// TODO check clientspawn and clientbegin for any clues on what else to do?
 	playerState_t backupPS;
@@ -822,7 +904,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	if (storedPS->fd.forcePowerDebounce[FP_LEVITATION]) client->client->ps.fd.forcePowerDebounce[FP_LEVITATION] += delta;
 	if (storedPS->duelTime) client->client->ps.duelTime += delta;
 	if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
-	if (!client->client->pers.segmented.playbackActive && client->client->sess.raceStyle.runFlags & RFL_SEGMENTED && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
+	if (client->client->pers.segmented.state != SEG_REPLAY && client->client->sess.raceStyle.runFlags & RFL_SEGMENTED && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
 		client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
 	}
 
@@ -864,8 +946,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	if (!(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		trap_G_COOL_API_PlayerUserCmdClear(clientNum);
-		cl->pers.segmented.startPosUsed = qfalse;
-		cl->pers.segmented.lastPosUsed = qfalse;
+		cl->pers.segmented.state = SEG_DISABLED;
 		cl->pers.segmented.msecProgress = 0;
 		return;
 	}
@@ -876,7 +957,11 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	cl->pers.segmented.savePos = qfalse;
 
 
-	if (cl->pers.segmented.playbackActive) {
+	if (cl->pers.segmented.state == SEG_REPLAY) {
+		if (resposRequested || saveposRequested) {
+			// TODO we shouldnt even get here. commands from client should be blocked during a replay.
+			trap_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available during the replay of a run.\n\"");
+		}
 		return;
 	}
 
@@ -898,14 +983,14 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		if (resposRequested || saveposRequested) {
 			trap_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available in segmented run mode outside of an active run.\n\"");
 		}
-		if (!VectorLength(cl->ps.velocity) && !ucmdPtr->forwardmove && !ucmdPtr->rightmove && !ucmdPtr->upmove && cl->ps.groundEntityNum == ENTITYNUM_WORLD || !cl->pers.segmented.startPosUsed) {
+		if (!VectorLength(cl->ps.velocity) && !ucmdPtr->forwardmove && !ucmdPtr->rightmove && !ucmdPtr->upmove && cl->ps.groundEntityNum == ENTITYNUM_WORLD || cl->pers.segmented.state < SEG_RECORDING) {
 			// uuuuh what about mover states etc? oh dear. i guess it wont work for maps with movers. or we do what japro does and disable movers.
 			// wait i know! we can disable movers for segmented runs. ez.
 			//if (cl->ps.groundEntityNum == ENTITYNUM_WORLD || cl->ps.groundEntityNum == ENTITYNUM_NONE) {
 				trap_G_COOL_API_PlayerUserCmdClear(clientNum);
 				VectorClear(cl->pers.segmented.anglesDiffAccum);
 				SavePosition(ent, &cl->pers.segmented.startPos);
-				cl->pers.segmented.startPosUsed = qtrue;
+				cl->pers.segmented.state = SEG_RECORDING;
 				cl->pers.segmented.msecProgress = 0;
 			//}
 		}
@@ -915,7 +1000,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
 
 		// No last pos can be stored outside a run.
-		cl->pers.segmented.lastPosUsed = qfalse;
+		cl->pers.segmented.state = SEG_RECORDING;
 		return;
 	}
 
@@ -927,13 +1012,18 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	}
 	else if (saveposRequested) {
 
-		SavePosition(ent, &cl->pers.segmented.lastPos);
-		cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
-		cl->pers.segmented.lastPosUsed = qtrue;
-		cl->pers.segmented.lastPosUserCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum)-1;
+		if (cl->pers.segmented.state == SEG_RECORDING_INVALIDATED) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use savepos. Your segmented run was interrupted, e.g. by a death. Please respos.\n\"");
+		}
+		else {
+			SavePosition(ent, &cl->pers.segmented.lastPos);
+			cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
+			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS;
+			cl->pers.segmented.lastPosUserCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1;
+		}
 	}
 	else if(resposRequested) {
-		if (!cl->pers.segmented.lastPosUsed) {
+		if (cl->pers.segmented.state < SEG_RECORDING_HAVELASTPOS) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos. No past segmented run position found.\n\"");
 		}
 		else {

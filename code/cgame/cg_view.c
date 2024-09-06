@@ -3,6 +3,7 @@
 // cg_view.c -- setup all the parameters (position, angle, etc)
 // for a 3D rendering
 #include "cg_local.h"
+#include "cg_dbcmds.h"
 
 #if !defined(CL_LIGHT_H_INC)
 	#include "cg_lights.h"
@@ -601,7 +602,7 @@ static void CG_OffsetThirdPersonView( void )
 		float	deltayaw;
 		float	pitch;
 
-		deltayaw = fabs(focusAngles[YAW] - cam.lastYaw);
+		deltayaw = fabsf(focusAngles[YAW] - cam.lastYaw);
 		if (deltayaw > 180.0f)
 		{ // Normalize this angle so that it is between 0 and 180.
 			deltayaw = Q_fabs(deltayaw - 360.0f);
@@ -936,7 +937,7 @@ qboolean CG_CalcFOVFromX( float fov_x )
 	float	fov_y;
 	qboolean	inwater;
 
-	x = cg.refdef.width / tan( fov_x / 360 * M_PI );
+	x = cg.refdef.width / tanf( fov_x / 360 * M_PI );
 	fov_y = atan2( cg.refdef.height, x );
 	fov_y = fov_y * 360 / M_PI;
 
@@ -1307,7 +1308,7 @@ static int CG_CalcViewValues( void ) {
 
 	cg.bobcycle = ( ps->bobCycle & 128 ) >> 7;
 	cg.bobfracsin = fabs( sin( ( ps->bobCycle & 127 ) / 127.0 * M_PI ) );
-	cg.xyspeed = sqrt( ps->velocity[0] * ps->velocity[0] +
+	cg.xyspeed = sqrtf( ps->velocity[0] * ps->velocity[0] +
 		ps->velocity[1] * ps->velocity[1] );
 
 	if (cg.xyspeed > 270)
@@ -1505,7 +1506,7 @@ void CG_SE_UpdateMusic(void)
 		{
 			char musMultStr[512];
 
-			cgScreenEffects.music_volume_multiplier += 0.1;
+			cgScreenEffects.music_volume_multiplier += 0.1f;
 			if (cgScreenEffects.music_volume_multiplier > 1.0)
 			{
 				cgScreenEffects.music_volume_multiplier = 1.0;
@@ -1897,11 +1898,11 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// let the client system know what our weapon and zoom settings are
 	if (cg.snap && cg.snap->ps.saberLockTime > cg.time)
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, 0.01, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue( cg.weaponSelect, 0.01f, cg.forceSelect, cg.itemSelect );
 	}
 	else if (cg.snap && cg.snap->ps.usingATST)
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, 0.2, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue( cg.weaponSelect, 0.2f, cg.forceSelect, cg.itemSelect );
 	}
 	else
 	{

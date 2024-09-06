@@ -754,7 +754,7 @@ ID_INLINE int VectorCompare( const vec3_t v1, const vec3_t v2 ) {
 }
 
 ID_INLINE vec_t VectorLength( const vec3_t v ) {
-	return (vec_t)sqrt (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+	return (vec_t)sqrtf (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
 ID_INLINE vec_t VectorLengthSquared( const vec3_t v ) {
@@ -832,7 +832,7 @@ float	Q_random( int *seed );
 float	Q_crandom( int *seed );
 
 #define random()	((rand () & 0x7fff) / ((float)0x7fff))
-#define crandom()	(2.0 * (random() - 0.5))
+#define crandom()	(2.0f * (random() - 0.5f))
 
 void vectoangles( const vec3_t value1, vec3_t angles);
 void AnglesToAxis( const vec3_t angles, vec3_t axis[3] );

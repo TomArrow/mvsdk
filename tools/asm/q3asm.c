@@ -736,7 +736,7 @@ ParseExpression
 */
 static int ParseExpression(void) {
 	/* Hand optimization, PhaethonH */
-	int		i, j;
+	size_t		i, j;
 	char	sym[MAX_LINE_LENGTH];
 	int		v;
 

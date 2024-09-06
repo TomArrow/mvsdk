@@ -282,7 +282,7 @@ int			trap_CG_COOL_API_DB_GetInt(int place) {
 	return syscall(CG_COOL_API_DB_GETINT, place);
 }
 void		trap_CG_COOL_API_DB_GetFloat(int place, float* value) {
-	return syscall(CG_COOL_API_DB_GETFLOAT, place);
+	syscall(CG_COOL_API_DB_GETFLOAT, place);
 }
 qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize) {
 	return syscall(CG_COOL_API_DB_GETSTRING, place, out, outSize);

@@ -2701,8 +2701,8 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	torsoAngles[YAW] = headAngles[YAW] + 0.25 * movementOffsets[ dir ];
 
 	// torso
-	BG_SwingAngles( torsoAngles[YAW], 25, 90, /*cg_swingSpeed.value*/ 0.3, torso_yawAngle, torso_yawing, frameTime );
-	BG_SwingAngles( legsAngles[YAW], 40, 90, /*cg_swingSpeed.value*/ 0.3, legs_yawAngle, legs_yawing, frameTime );
+	BG_SwingAngles( torsoAngles[YAW], 25, 90, /*cg_swingSpeed.value*/ 0.3f, torso_yawAngle, torso_yawing, frameTime );
+	BG_SwingAngles( legsAngles[YAW], 40, 90, /*cg_swingSpeed.value*/ 0.3f, legs_yawAngle, legs_yawing, frameTime );
 
 	torsoAngles[YAW] = *torso_yawAngle;
 	legsAngles[YAW] = *legs_yawAngle;
@@ -2715,7 +2715,7 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	} else {
 		dest = headAngles[PITCH] * 0.75;
 	}
-	BG_SwingAngles( dest, 15, 30, 0.1, torso_pitchAngle, torso_pitching, frameTime );
+	BG_SwingAngles( dest, 15, 30, 0.1f, torso_pitchAngle, torso_pitching, frameTime );
 	torsoAngles[PITCH] = *torso_pitchAngle;
 
 	// --------- roll -------------
@@ -2726,7 +2726,7 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 		vec3_t	axis[3];
 		float	side;
 
-		speed *= 0.05;
+		speed *= 0.05f;
 
 		AnglesToAxis( legsAngles, axis );
 		side = speed * DotProduct( velocity, axis[1] );

@@ -154,7 +154,8 @@ if (NOT InMV)
 		# 4996 = 'function' : was declared deprecated
 		# 4267 = 'var' : conversion from 'size_t' to 'type', possible loss of data
 		# 4305 = 'identifier' : truncation from 'type1' to 'type2'
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4018 /wd4244 /wd4996 /wd4267 /wd4305")
+		# 4013 = function undefined (should be error) 
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4018 /wd4244 /wd4996 /wd4267 /wd4305 /we4013")
 
 		# Multithreaded
 		set(CMAKE_C_FLAGS_RELEASE "/MT")

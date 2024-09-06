@@ -670,7 +670,7 @@ playerState_t cgSendPS[MAX_CLIENTS];
 //it back to entitystate data)
 void CG_PmoveClientPointerUpdate()
 {
-	int i;
+	//int i;
 
 	/*memset(&cgSendPSPool[0], 0, sizeof(cgSendPSPool));
 
