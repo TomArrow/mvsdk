@@ -791,8 +791,10 @@ void respawn( gentity_t *ent ) {
 	ClientSpawn(ent);
 
 	// add a teleportation effect
-	tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN );
-	tent->s.clientNum = ent->s.clientNum;
+	if (!ent->client->sess.raceMode) {
+		tent = G_TempEntity(ent->client->ps.origin, EV_PLAYER_TELEPORT_IN);
+		tent->s.clientNum = ent->s.clientNum;
+	}
 }
 
 void ClientRespawn(gentity_t* ent) {
@@ -1851,6 +1853,7 @@ void ClientSpawn(gentity_t *ent) {
 	int		i;
 	clientPersistant_t	saved;
 	clientSession_t		savedSess;
+	vec3_t				savedDeltaAngles;
 	int		persistant[MAX_PERSISTANT];
 	gentity_t	*spawnPoint;
 	int		flags;
@@ -1863,6 +1866,7 @@ void ClientSpawn(gentity_t *ent) {
 	void		*ghoul2save;
 	int		saveSaberNum = ENTITYNUM_NONE;
 	int		wDisable = 0;
+	qboolean	inSegmentedRun = qfalse;
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -1903,6 +1907,12 @@ void ClientSpawn(gentity_t *ent) {
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		spawnPoint = SelectSpectatorSpawnPoint ( 
 						spawn_origin, spawn_angles);
+	} else if ( client->sess.raceMode && client->sess.raceStyle.runFlags & RFL_SEGMENTED && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY ) {
+		spawnPoint = NULL;
+		inSegmentedRun = qtrue;
+		VectorCopy(client->pers.segmented.lastPos.ps.origin, spawn_origin);
+		VectorCopy(client->pers.segmented.lastPos.ps.viewangles, spawn_angles);
+		client->pers.segmented.respos = qtrue;
 	} else if (g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) {
 		// all base oriented team games use the CTF spawn points
 		spawnPoint = SelectCTFSpawnPoint ( 
@@ -1955,6 +1965,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	saved = client->pers;
 	savedSess = client->sess;
+	VectorCopy(client->ps.delta_angles, savedDeltaAngles);
 	savedPing = client->ps.ping;
 //	savedAreaBits = client->areabits;
 	accuracy_hits = client->accuracy_hits;
@@ -1971,6 +1982,8 @@ void ClientSpawn(gentity_t *ent) {
 	saveSaberNum = client->ps.saberEntityNum;
 
 	memset (client, 0, sizeof(*client)); // bk FIXME: Com_Memset?
+
+	VectorCopy(savedDeltaAngles, client->ps.delta_angles); // to make sure my segmented runs work
 
 	//rww - Don't wipe the ghoul2 instance or the animation data
 	client->ghoul2 = ghoul2save;
@@ -2287,10 +2300,12 @@ void ClientSpawn(gentity_t *ent) {
 	// the respawned flag will be cleared after the attack and jump keys come up
 	client->ps.pm_flags |= PMF_RESPAWNED;
 
-	trap_GetUsercmd( client - level.clients, &ent->client->pers.cmd );
-	DF_PreDeltaAngleChange(ent->client);
-	SetClientViewAngle( ent, spawn_angles );
-	DF_PostDeltaAngleChange(ent->client);
+	//if (!inSegmentedRun) {
+		trap_GetUsercmd(client - level.clients, &ent->client->pers.cmd);
+		DF_PreDeltaAngleChange(ent->client);
+		SetClientViewAngle(ent, spawn_angles);
+		DF_PostDeltaAngleChange(ent->client);
+	//}
 
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 
@@ -2320,7 +2335,9 @@ void ClientSpawn(gentity_t *ent) {
 		MoveClientToIntermission( ent );
 	} else {
 		// fire the targets of the spawn point
-		G_UseTargets( spawnPoint, ent );
+		if (spawnPoint) {
+			G_UseTargets(spawnPoint, ent);
+		}
 
 		// select the highest weapon number available, after any
 		// spawn given items have fired
@@ -2337,7 +2354,9 @@ void ClientSpawn(gentity_t *ent) {
 	// initialize animations and other things
 	client->ps.commandTime = level.time - 100;
 	ent->client->pers.cmd.serverTime = level.time;
-	ClientThink( ent-g_entities );
+	//if (!inSegmentedRun) {
+		ClientThink(ent - g_entities);
+	//}
 
 	// positively link the client, even if the command times are weird
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {

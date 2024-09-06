@@ -927,6 +927,8 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 		diffAccum[2] &= 65535;
 	}
 
+	trap_LinkEntity(client);
+
 	// maybe restore oldbuttons and buttons?
 	// if ( ( ent->client->buttons & BUTTON_ATTACK ) && ! ( ent->client->oldbuttons & BUTTON_ATTACK ) )
 }
@@ -1029,6 +1031,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		else {
 
 			RestorePosition(ent, &cl->pers.segmented.lastPos,cl->pers.segmented.anglesDiffAccum);
+			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS; // un-invalidate.
 			cl->pers.segmented.msecProgress = cl->pers.segmented.lastPosMsecProgress;
 			trap_G_COOL_API_PlayerUserCmdRemove(clientNum, cl->pers.segmented.lastPosUserCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
 			//SavePosition(ent, &cl->pers.segmented.lastPos); // and immediately save it again because we have now changed delta_angles
