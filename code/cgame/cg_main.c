@@ -1154,7 +1154,7 @@ void CG_WideScreenMode(qboolean on) {
 CG_UpdateWidescreen
 ===================
 */
-static void CG_UpdateWidescreen(void) {
+void CG_UpdateWidescreen(void) {
 	if (cg_widescreen.integer && mvapi >= 3) {
 		if ( cgs.glconfig.vidWidth >= cgs.glconfig.vidHeight ) {
 			cgs.screenWidth = (float)SCREEN_HEIGHT * cgs.glconfig.vidWidth / cgs.glconfig.vidHeight;

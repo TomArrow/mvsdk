@@ -1777,6 +1777,24 @@ static void CG_AutoFollow() {
 	}
 }
 
+extern void CG_UpdateWidescreen(void);
+static void CG_CheckWindowResize() {
+	vmglconfig_t glconfig;
+
+	// get the rendering configuration from the client system
+	trap_GetGlconfig(&glconfig);
+
+	if (cgs.glconfig.vidWidth == glconfig.vidWidth && cgs.glconfig.vidHeight == glconfig.vidHeight) {
+		return;
+	}
+
+	cgs.glconfig = glconfig;
+	cgs.screenXScale = cgs.glconfig.vidWidth / (float)SCREEN_WIDTH;
+	cgs.screenYScale = cgs.glconfig.vidHeight / (float)SCREEN_HEIGHT;
+
+	CG_UpdateWidescreen();
+}
+
 /*
 =================
 CG_DrawActiveFrame
@@ -1789,6 +1807,8 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
+
+	CG_CheckWindowResize();
 
 	if (cg.snap && cg_ui_myteam.integer != cg.snap->ps.persistant[PERS_TEAM]) {
 		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW || cg.snap->ps.pm_type == PM_SPECTATOR))

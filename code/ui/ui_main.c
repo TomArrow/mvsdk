@@ -729,6 +729,36 @@ const char *UI_GetStripEdString(const char *refSection, const char *refName)
 	return text;
 }
 
+static void _UI_CheckWindowResize() {
+	vmglconfig_t glconfig;
+
+	// cache redundant calulations
+	trap_GetGlconfig(&glconfig);
+
+	if (glconfig.vidWidth == uiInfo.uiDC.glconfig.vidWidth && glconfig.vidHeight == uiInfo.uiDC.glconfig.vidHeight) {
+		return;
+	}
+
+	uiInfo.uiDC.glconfig = glconfig;
+
+	UI_UpdateWidescreen();
+	// for 640x480 virtualized screen
+	uiInfo.uiDC.yscale = uiInfo.uiDC.glconfig.vidHeight * (1.0 / (float)SCREEN_HEIGHT);
+	uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth * (1.0 / (float)SCREEN_WIDTH);
+	if (uiInfo.uiDC.glconfig.vidWidth * SCREEN_HEIGHT > uiInfo.uiDC.glconfig.vidHeight * SCREEN_WIDTH) {
+		// wide screen
+		uiInfo.uiDC.bias = 0.5 * (uiInfo.uiDC.glconfig.vidWidth - (uiInfo.uiDC.glconfig.vidHeight * ((float)SCREEN_WIDTH / (float)SCREEN_HEIGHT)));
+	}
+	else {
+		// no wide screen
+		uiInfo.uiDC.bias = 0;
+	}
+
+	UI_WideScreenMode(qtrue);
+
+	Init_Display(&uiInfo.uiDC);
+}
+
 #define	UI_FPS_FRAMES	4
 static char serverInfo[MAX_INFO_STRING];
 static int serverGameType;
@@ -741,6 +771,9 @@ void _UI_Refresh( int realtime )
 	//if ( !( trap_Key_GetCatcher() & KEYCATCH_UI ) ) {
 	//	return;
 	//}
+
+	// check if window size changed
+	_UI_CheckWindowResize();
 
 	uiInfo.uiDC.frameTime = realtime - uiInfo.uiDC.realTime;
 	uiInfo.uiDC.realTime = realtime;
