@@ -25,7 +25,11 @@ static const char* q3DefragTargetNames[] = {
 	"target_checkpoint"
 };
 
+void DF_InvalidateSpawn(gentity_t* ent) {
+	if (!ent->client) return;
 
+	ent->client->pers.savedSpawnUsed = qfalse;
+}
 
 /*
 =====================================================================
@@ -585,6 +589,7 @@ void Cmd_JumpChange_f(gentity_t* ent)
 		ent->client->sess.raceStyle.jumpLevel = level;
 		ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = ent->client->sess.raceStyle.jumpLevel;
 		DF_RaceStateInvalidated(ent, qtrue);
+		//DF_InvalidateSpawn(ent);
 		if (ent->client->pers.raceStartCommandTime) {
 			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i): timer reset.\n\"", level));
 		}
@@ -808,6 +813,7 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		{
 			ent->client->sess.raceStyle.runFlags = flag ^ ((int)ent->client->sess.raceStyle.runFlags & mask);
 			DF_RaceStateInvalidated(ent,qtrue);
+			//DF_InvalidateSpawn(ent);
 		}
 
 		trap_SendServerCommand(ent - g_entities, va("print \"^7%s %s^7\n\"", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
@@ -840,6 +846,8 @@ qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	savedPosition->buttons = client->client->buttons;
 	savedPosition->oldbuttons = client->client->oldbuttons;
 	savedPosition->latched_buttons = client->client->latched_buttons;
+	VectorCopy(client->r.mins, savedPosition->mins);
+	VectorCopy(client->r.maxs, savedPosition->maxs);
 	savedPosition->raceStartCommandTime = (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) ? client->client->pers.raceStartCommandTime : 0;
 	return qtrue;
 }
@@ -908,6 +916,8 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 		client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
 	}
 
+	client->client->ps.persistant[PERS_SPAWN_COUNT] = backupPS.persistant[PERS_SPAWN_COUNT];
+
 	client->health = storedPS->stats[STAT_HEALTH];
 	client->client->buttons = savedPosition->buttons;
 	client->client->oldbuttons = savedPosition->oldbuttons;
@@ -927,6 +937,10 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 		diffAccum[2] &= 65535;
 	}
 
+	VectorCopy(client->client->ps.origin, client->r.currentOrigin);
+
+	VectorCopy(savedPosition->mins,client->r.mins);
+	VectorCopy(savedPosition->maxs, client->r.maxs);
 	trap_LinkEntity(client);
 
 	// maybe restore oldbuttons and buttons?
@@ -1122,6 +1136,7 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 
 		ent->client->sess.raceStyle.movementStyle = newStyle;
 		DF_RaceStateInvalidated(ent,qtrue);
+		//DF_InvalidateSpawn(ent);
 
 		if (newStyle == MV_SPEED) {
 			ent->client->ps.fd.forcePower = 50;
@@ -1147,4 +1162,37 @@ showinfo:
 		Q_strcat(printString, sizeof(printString), ">.\n\"");
 		trap_SendServerCommand(ent - g_entities, printString);
 	}
+}
+
+
+void DF_SaveSpawn(gentity_t* ent) {
+	if (!ent->client) return;
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (ent->client->sess.raceStateInvalidated) {
+		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before saving spawn.\n\"");
+		return;
+	}
+	
+	if (ent->client->ps.velocity[0] || ent->client->ps.velocity[1] || ent->client->ps.velocity[2] || ent->client->ps.groundEntityNum != ENTITYNUM_WORLD) {
+		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7Cannot save spawn.\nPlease stand still.\n\"");
+		return;
+	}
+
+	SavePosition(ent,&ent->client->pers.savedSpawn);
+	ent->client->pers.savedSpawnUsed = qtrue;
+	ent->client->pers.savedSpawnRaceStyle = ent->client->sess.raceStyle;
+
+	trap_SendServerCommand(ent - g_entities, va("print \"Spawnpoint saved at %f %f %f (angles %f %f %f).\n\"",
+		ent->client->ps.origin[0],
+		ent->client->ps.origin[1],
+		ent->client->ps.origin[2],
+		ent->client->ps.viewangles[0],
+		ent->client->ps.viewangles[1],
+		ent->client->ps.viewangles[2]
+	));
 }

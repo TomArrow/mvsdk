@@ -369,6 +369,9 @@ typedef struct {
 	//raceStyle_t		savePosRaceStyle;
 	savedPosition_t	savedPosition;
 	qboolean		savePosUsed;
+	savedPosition_t	savedSpawn;
+	qboolean		savedSpawnUsed;
+	raceStyle_t		savedSpawnRaceStyle;
 
 
 	int			raceStartCommandTime;
@@ -406,7 +409,7 @@ struct gclient_s {
 	int			oldbuttons;
 	int			latched_buttons;
 
-	vec3_t		oldOrigin;
+	//vec3_t		oldOrigin;
 
 	// sum up damage over an entire frame, so
 	// shotgun blasts give a single big kick

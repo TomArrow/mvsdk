@@ -13,6 +13,8 @@ typedef struct savedPosition_s {
 	int				latched_buttons;
 	raceStyle_t		raceStyle;
 	int				raceStartCommandTime;
+	vec3_t			mins;
+	vec3_t			maxs;
 } savedPosition_t;
 
 // TODO What if someone touches start trigger, then just stands around forever with start active?

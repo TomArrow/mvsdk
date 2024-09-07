@@ -1666,7 +1666,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.baseEnt = (bgEntity_t*)g_entities;
 	pm.entSize = sizeof(gentity_t);
 
-	VectorCopy( client->ps.origin, client->oldOrigin );
+	//VectorCopy( client->ps.origin, client->oldOrigin );
 
 	if (level.intermissionQueued != 0 && g_singlePlayer.integer) {
 		if ( level.time - level.intermissionQueued >= 1000  ) {

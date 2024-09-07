@@ -2563,6 +2563,7 @@ extern void Cmd_Race_f(gentity_t* ent);
 extern void Cmd_JumpChange_f(gentity_t* ent);
 extern void Cmd_DF_RunSettings_f(gentity_t* ent);
 extern void Cmd_MovementStyle_f(gentity_t* ent);
+extern void DF_SaveSpawn(gentity_t* ent);
 /*
 =================
 ClientCommand
@@ -2593,6 +2594,18 @@ void ClientCommand( int clientNum ) {
 	}
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
+
+	if (DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state >= SEG_REPLAY)
+	{
+		if (Q_stricmp(cmd, "say") 
+			&& Q_stricmp(cmd, "say_team") 
+			&& Q_stricmp(cmd, "tell")
+			&& Q_stricmp(cmd, "score")
+			) { // allow a few.
+			trap_SendServerCommand(clientNum, "print \"Cannot send commands during segmented run replay.\n\"");
+			return;
+		}
+	}
 
 	//rww - redirect bot commands
 	if (strstr(cmd, "bot_") && AcceptBotCommand(cmd, ent))
@@ -2713,6 +2726,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "savespawn"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "jump"))
 		{
 			giveError = qtrue;
@@ -2802,6 +2819,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Race_f(ent);
 	else if (Q_stricmp (cmd, "move") == 0)
 		Cmd_MovementStyle_f(ent);
+	else if (Q_stricmp (cmd, "savespawn") == 0)
+		DF_SaveSpawn(ent);
 	else if (Q_stricmp (cmd, "jump") == 0)
 		Cmd_JumpChange_f(ent);
 	else if (Q_stricmp (cmd, "run") == 0)

@@ -591,7 +591,12 @@ so, the basic time between firing is a random time between
 void func_timer_think( gentity_t *self ) {
 	G_UseTargets (self, self->activator);
 	// set time before next firing
-	self->nextthink = level.time + 1000 * ( self->wait + crandom() * self->random );
+	if (g_defrag.integer) {
+		self->nextthink = level.time + 1000 * ( self->wait );
+	}
+	else {
+		self->nextthink = level.time + 1000 * ( self->wait + crandom() * self->random );
+	}
 }
 
 void func_timer_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {

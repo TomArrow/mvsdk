@@ -74,6 +74,7 @@ int sscanf( const char *buffer, const char *fmt, ... ) __attribute__ ((format (s
 void *memmove( void *dest, const void *src, size_t count );
 void *memset( void *dest, int c, size_t count );
 void *memcpy( void *dest, const void *src, size_t count );
+int memcmp (const void *m1,	const void *m2,	size_t n);
 
 // Math functions
 double ceil( double x );

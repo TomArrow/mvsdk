@@ -1537,7 +1537,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 
 	// random can be used to vary the respawn time
 	if ( ent->random ) {
-		respawn += crandom() * ent->random;
+		respawn += (other->client && other->client->sess.raceMode)? 0: (crandom() * ent->random);
 		if ( respawn < 1 ) {
 			respawn = 1;
 		}
@@ -1681,7 +1681,7 @@ gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
 
 	AngleVectors( angles, velocity, NULL, NULL );
 	VectorScale( velocity, 150, velocity );
-	velocity[2] += 200 + crandom() * 50;
+	velocity[2] += 200 + ((ent->client && ent->client->sess.raceMode) ? 0 : (crandom() * 50));
 	
 	return LaunchItem( item, ent->s.pos.trBase, velocity );
 }

@@ -1846,6 +1846,7 @@ Initializes all non-persistant parts of playerState
 ============
 */
 extern qboolean WP_HasForcePowers( const playerState_t *ps );
+extern void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void ClientSpawn(gentity_t *ent) {
 	int		index;
 	vec3_t	spawn_origin, spawn_angles;
@@ -1867,6 +1868,8 @@ void ClientSpawn(gentity_t *ent) {
 	int		saveSaberNum = ENTITYNUM_NONE;
 	int		wDisable = 0;
 	qboolean	inSegmentedRun = qfalse;
+	qboolean	raceSpawnPossible = qfalse;
+	qboolean	useSavedSpawn = qfalse;
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -1901,18 +1904,31 @@ void ClientSpawn(gentity_t *ent) {
 		WP_InitForcePowers( ent );
 		client->ps.fd.forceDoInit = 0;
 	}
+
+	inSegmentedRun = client->sess.sessionTeam != TEAM_SPECTATOR && DF_ClientInSegmentedRunMode(client) && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY;
+
+	raceSpawnPossible = client->sess.sessionTeam != TEAM_SPECTATOR && client->sess.raceMode && client->pers.savedSpawnUsed;
+	useSavedSpawn = raceSpawnPossible && !inSegmentedRun && !memcmp(&client->sess.raceStyle, &client->pers.savedSpawnRaceStyle, sizeof(client->sess.raceStyle));
+
+	if (raceSpawnPossible && !useSavedSpawn && !inSegmentedRun) {
+		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7Your spawn point is not valid\nfor your changed race settings.\n\"");
+	}
+
 	// find a spawn point
 	// do it before setting health back up, so farthest
 	// ranging doesn't count this client
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		spawnPoint = SelectSpectatorSpawnPoint ( 
 						spawn_origin, spawn_angles);
-	} else if ( DF_ClientInSegmentedRunMode(client) && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY ) {
+	} else if (inSegmentedRun) {
 		spawnPoint = NULL;
-		inSegmentedRun = qtrue;
 		VectorCopy(client->pers.segmented.lastPos.ps.origin, spawn_origin);
 		VectorCopy(client->pers.segmented.lastPos.ps.viewangles, spawn_angles);
 		client->pers.segmented.respos = qtrue;
+	} else if (useSavedSpawn) {
+		spawnPoint = NULL;
+		VectorCopy(client->pers.savedSpawn.ps.origin, spawn_origin);
+		VectorCopy(client->pers.savedSpawn.ps.viewangles, spawn_angles);
 	} else if (g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) {
 		// all base oriented team games use the CTF spawn points
 		spawnPoint = SelectCTFSpawnPoint ( 
@@ -2300,12 +2316,12 @@ void ClientSpawn(gentity_t *ent) {
 	// the respawned flag will be cleared after the attack and jump keys come up
 	client->ps.pm_flags |= PMF_RESPAWNED;
 
-	//if (!inSegmentedRun) {
-		trap_GetUsercmd(client - level.clients, &ent->client->pers.cmd);
+	trap_GetUsercmd(client - level.clients, &ent->client->pers.cmd);
+	if(!useSavedSpawn){
 		DF_PreDeltaAngleChange(ent->client);
 		SetClientViewAngle(ent, spawn_angles);
 		DF_PostDeltaAngleChange(ent->client);
-	//}
+	}
 
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 
@@ -2354,9 +2370,7 @@ void ClientSpawn(gentity_t *ent) {
 	// initialize animations and other things
 	client->ps.commandTime = level.time - 100;
 	ent->client->pers.cmd.serverTime = level.time;
-	//if (!inSegmentedRun) {
-		ClientThink(ent - g_entities);
-	//}
+	ClientThink(ent - g_entities);
 
 	// positively link the client, even if the command times are weird
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -2377,6 +2391,10 @@ void ClientSpawn(gentity_t *ent) {
 	  // 1) follow spectators turning into free spectators at map_restart, because the client they were following has a higher client number and isn't ingame, yet
 	  // 2) follow spectators corrupting their s.number in BG_PlayerStateToEntityState, cause they get the other client's playerState in ClientEndFrame
 		ClientEndFrame( ent );
+	}
+
+	if (useSavedSpawn) {
+		RestorePosition(ent, &client->pers.savedSpawn, client->pers.segmented.anglesDiffAccum);
 	}
 
 	// clear entity state values
