@@ -1907,7 +1907,7 @@ void ClientSpawn(gentity_t *ent) {
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		spawnPoint = SelectSpectatorSpawnPoint ( 
 						spawn_origin, spawn_angles);
-	} else if ( client->sess.raceMode && client->sess.raceStyle.runFlags & RFL_SEGMENTED && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY ) {
+	} else if ( DF_ClientInSegmentedRunMode(client) && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY ) {
 		spawnPoint = NULL;
 		inSegmentedRun = qtrue;
 		VectorCopy(client->pers.segmented.lastPos.ps.origin, spawn_origin);

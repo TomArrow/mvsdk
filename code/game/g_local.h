@@ -1428,3 +1428,4 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 
 void DF_PreDeltaAngleChange(gclient_t* client);
 void DF_PostDeltaAngleChange(gclient_t* client);
+qboolean DF_ClientInSegmentedRunMode(gclient_t* client);

@@ -157,7 +157,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		DF_RaceStateInvalidated(activator, qfalse);
 		return;
 	}
-	else if (cl->pers.segmented.state != SEG_REPLAY) {
+	else if (segmented && cl->pers.segmented.state != SEG_REPLAY) {
 
 		if (segmented && cl->pers.segmented.msecProgress > 5000) {
 			trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Segmented run pre-record is over 5 seconds. Please respawn and try again.\n\"");
@@ -520,7 +520,7 @@ void DF_ResetSegmentedRun(gentity_t* ent) {
 }
 
 void DF_SegmentedRunStatusInvalidated(gentity_t* ent) {
-	if (!(ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
+	if (!ent->client->sess.raceMode || !(ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		return;
 	}
 	if (ent->client->pers.segmented.state < SEG_RECORDING_HAVELASTPOS) {
@@ -721,7 +721,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 				saberMoveValuesPS[i] = cl->ps.saberMove;
 				pmfFollowPS[i] = cl->ps.pm_flags & PMF_FOLLOW;
 			}
-			if (cl->pers.segmented.state == SEG_REPLAY) {
+			if (cl->sess.raceMode && (cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state == SEG_REPLAY) {
 				cl->ps.pm_flags |= PMF_FOLLOW;
 			}
 			if (cl->ps.saberMove >= LS_MOVE_MAX_DEFAULT) {
@@ -904,7 +904,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	if (storedPS->fd.forcePowerDebounce[FP_LEVITATION]) client->client->ps.fd.forcePowerDebounce[FP_LEVITATION] += delta;
 	if (storedPS->duelTime) client->client->ps.duelTime += delta;
 	if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
-	if (client->client->pers.segmented.state != SEG_REPLAY && client->client->sess.raceStyle.runFlags & RFL_SEGMENTED && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
+	if (client->client->pers.segmented.state != SEG_REPLAY && (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && client->client->sess.raceMode && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
 		client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
 	}
 
@@ -946,12 +946,18 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	clientNum = ent - g_entities;
 	cl = ent->client;
 
-	if (!(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
+	if (!cl->sess.raceMode || !(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		trap_G_COOL_API_PlayerUserCmdClear(clientNum);
 		cl->pers.segmented.state = SEG_DISABLED;
 		cl->pers.segmented.msecProgress = 0;
 		return;
 	}
+
+	ucmdPtr = &cl->pers.cmd;
+
+	msec = ucmdPtr->serverTime - cl->ps.commandTime;
+
+	if (msec <= 0) return; // idk why this should hapen but whatever (actually might happen after replay?)
 
 	resposRequested = cl->pers.segmented.respos;
 	cl->pers.segmented.respos = qfalse;
@@ -967,15 +973,6 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		return;
 	}
 
-	ucmdPtr = &cl->pers.cmd;
-
-	msec = ucmdPtr->serverTime - cl->ps.commandTime;
-
-	if (msec <= 0) return; // idk why this should hapen but whatever
-
-	//if (msec > 7) {
-	//	trap_SendServerCommand(ent - g_entities, "print \"msec > 7.\n\"");
-	//}
 
 	if (!cl->pers.raceStartCommandTime) {
 
@@ -1034,67 +1031,20 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS; // un-invalidate.
 			cl->pers.segmented.msecProgress = cl->pers.segmented.lastPosMsecProgress;
 			trap_G_COOL_API_PlayerUserCmdRemove(clientNum, cl->pers.segmented.lastPosUserCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
-			//SavePosition(ent, &cl->pers.segmented.lastPos); // and immediately save it again because we have now changed delta_angles
 		}
 	}
 
-	//if (!cl->pers.segmented.lastPosUsed) {
-	//	ucmd = *ucmdPtr;
-	//	ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
-	//	cl->pers.segmented.msecProgress += msec;
-	//	trap_G_COOL_API_PlayerUserCmdAdd(clientNum, ucmdPtr);
-	//	return;
-	//}
-	//else 
-	{
-
-		ucmd = *ucmdPtr;
-		ucmd.angles[0] += cl->pers.segmented.anglesDiffAccum[0];
-		ucmd.angles[1] += cl->pers.segmented.anglesDiffAccum[1];
-		ucmd.angles[2] += cl->pers.segmented.anglesDiffAccum[2];
-		ucmd.angles[0] &= 65535;
-		ucmd.angles[1] &= 65535;
-		ucmd.angles[2] &= 65535;
-		ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
-		cl->pers.segmented.msecProgress += msec;
-		trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
-
-		/*
-		short		temp;
-		int			i;
-		vec3_t		viewAngles;
-		vec3_t		deltaAngles;
-		playerState_t* ps = &cl->pers.segmented.lastPos.ps;
-		// we have already restored at least once. this means that our delta_angles have changed. which means we have to adjust the usercmd.
-		ucmd = *ucmdPtr;
-
-		VectorCopy(ps->delta_angles, deltaAngles);
-
-		// from: PM_UpdateViewAngles
-		// simulate the angles we SHOULD be getting, then re-create the same outcome with our rewritten usercmd.
-		// circularly clamp the angles with deltas
-		for (i = 0; i < 3; i++) {
-			temp = ucmd.angles[i] + deltaAngles[i];
-			//if (i == PITCH) {
-				// don't let the player look up or down more than 90 degrees
-				// TODO: Oof, does this mess up our whole idea with respos/savepos because it changes delta angles?
-				//if (temp > 16000) {
-				//	deltaAngles[i] = 16000 - ucmd.angles[i];
-				//	temp = 16000;
-				//}
-				//else if (temp < -16000) {
-				//	deltaAngles[i] = -16000 - ucmd.angles[i];
-				//	temp = -16000;
-				//}
-			//}
-			viewAngles[i] = SHORT2ANGLE(temp);
-		}
-
-		// K now we know the viewangles we SHOULD be arriving at.
-		*/
-
-
-	}
+	
+	ucmd = *ucmdPtr;
+	ucmd.angles[0] += cl->pers.segmented.anglesDiffAccum[0];
+	ucmd.angles[1] += cl->pers.segmented.anglesDiffAccum[1];
+	ucmd.angles[2] += cl->pers.segmented.anglesDiffAccum[2];
+	ucmd.angles[0] &= 65535;
+	ucmd.angles[1] &= 65535;
+	ucmd.angles[2] &= 65535;
+	ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
+	cl->pers.segmented.msecProgress += msec;
+	trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
 
 
 	return;
