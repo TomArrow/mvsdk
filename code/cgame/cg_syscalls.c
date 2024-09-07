@@ -260,6 +260,9 @@ int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum)
 	return syscall(CG_COOL_API_GETTIMESINCESNAPRECEIVED, snapNum);
 }
 
+qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
+	return syscall(CG_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
+}
 
 
 

@@ -1060,6 +1060,8 @@ int				trap_RealTime(qtime_t *qtime);
 void			trap_R_RemapShader( const char *oldShader, const char *newShader, const char *timeOffset );
 */
 
+qboolean		trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
+
 /*
 Ghoul2 Insert Start
 */
@@ -1212,7 +1214,9 @@ typedef struct postGameInfo_s {
 
 #endif
 
-extern int mvapi;
+extern int mvapi; 
+extern int coolApi;
+extern int coolApi_dbVersion;
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel, int inGameLoad );

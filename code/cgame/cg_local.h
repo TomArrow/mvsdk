@@ -2344,7 +2344,8 @@ void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba
 
 void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
 void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount);
-int			trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum);
+int			trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum); 
+qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
 
 qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
 qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);

@@ -1781,18 +1781,18 @@ extern void CG_UpdateWidescreen(void);
 static void CG_CheckWindowResize() {
 	vmglconfig_t glconfig;
 
-	// get the rendering configuration from the client system
-	trap_GetGlconfig(&glconfig);
+	if (coolApi & COOL_APIFEATURE_RESOLUTIONCHANGED) {
+		if (trap_CG_COOL_API_GlResolutionChanged(cgs.glconfig.vidWidth, cgs.glconfig.vidHeight)) {
 
-	if (cgs.glconfig.vidWidth == glconfig.vidWidth && cgs.glconfig.vidHeight == glconfig.vidHeight) {
-		return;
+			trap_GetGlconfig(&cgs.glconfig);
+			cgs.screenXScale = cgs.glconfig.vidWidth / (float)SCREEN_WIDTH;
+			cgs.screenYScale = cgs.glconfig.vidHeight / (float)SCREEN_HEIGHT;
+
+			CG_UpdateWidescreen();
+		}
 	}
 
-	cgs.glconfig = glconfig;
-	cgs.screenXScale = cgs.glconfig.vidWidth / (float)SCREEN_WIDTH;
-	cgs.screenYScale = cgs.glconfig.vidHeight / (float)SCREEN_HEIGHT;
 
-	CG_UpdateWidescreen();
 }
 
 /*

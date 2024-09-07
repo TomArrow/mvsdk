@@ -646,3 +646,7 @@ void trap_MVAPI_Print( int flags, const char *string )
 {
 	syscall( MVAPI_PRINT, string );
 }
+
+qboolean	trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
+	return syscall(UI_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
+}

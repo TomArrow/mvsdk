@@ -31,6 +31,8 @@ vmCvar_t  ui_initialized;
 qboolean menuInJK2MV = qfalse;
 qboolean isMainMenu = qfalse;
 int mvapi = 0;
+int coolApi = 0;
+int coolApi_dbVersion = 0;
 int Init_inGameLoad;
 
 void _UI_Init( qboolean );
@@ -41,6 +43,7 @@ void _UI_Refresh( int realtime );
 qboolean _UI_IsFullscreen( void );
 LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
   int requestedMvApi = 0;
+  char coolApiFeaturesBuffer[80];
   if ( jk2version == VERSION_UNDEF && command != UI_GETAPIVERSION )
   { // Shouldn't happen under normal circumstances, but we had this case while debugging on old engine binaries...
 	  Com_Printf("vmMain [UI]: first call to vmMain had a command != UI_GETAPIVERSION\n");
@@ -52,6 +55,15 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 			trap_Cvar_Set("ui_menulevel", "2");
 			return /*UI_API_VERSION*/MV_UiDetectVersion();
 	  case UI_INIT:
+		  trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		  coolApi = atoi(coolApiFeaturesBuffer);
+		  if (coolApi & COOL_APIFEATURE_MARIADB) {
+			  trap_Cvar_VariableStringBuffer("cool_apiDBVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			  coolApi_dbVersion = atoi(coolApiFeaturesBuffer);
+		  }
+		  else {
+			  coolApi_dbVersion = 0;
+		  }
 		  requestedMvApi = MVAPI_Init(arg11, arg0);
 		  
 		  if ( !requestedMvApi )
@@ -730,33 +742,31 @@ const char *UI_GetStripEdString(const char *refSection, const char *refName)
 }
 
 static void _UI_CheckWindowResize() {
-	vmglconfig_t glconfig;
 
 	// cache redundant calulations
-	trap_GetGlconfig(&glconfig);
+	if (coolApi & COOL_APIFEATURE_RESOLUTIONCHANGED) {
+		if (trap_UI_COOL_API_GlResolutionChanged(uiInfo.uiDC.glconfig.vidWidth, uiInfo.uiDC.glconfig.vidHeight)) {
 
-	if (glconfig.vidWidth == uiInfo.uiDC.glconfig.vidWidth && glconfig.vidHeight == uiInfo.uiDC.glconfig.vidHeight) {
-		return;
+			trap_GetGlconfig(&uiInfo.uiDC.glconfig);
+
+			UI_UpdateWidescreen();
+			// for 640x480 virtualized screen
+			uiInfo.uiDC.yscale = uiInfo.uiDC.glconfig.vidHeight * (1.0 / (float)SCREEN_HEIGHT);
+			uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth * (1.0 / (float)SCREEN_WIDTH);
+			if (uiInfo.uiDC.glconfig.vidWidth * SCREEN_HEIGHT > uiInfo.uiDC.glconfig.vidHeight * SCREEN_WIDTH) {
+				// wide screen
+				uiInfo.uiDC.bias = 0.5 * (uiInfo.uiDC.glconfig.vidWidth - (uiInfo.uiDC.glconfig.vidHeight * ((float)SCREEN_WIDTH / (float)SCREEN_HEIGHT)));
+			}
+			else {
+				// no wide screen
+				uiInfo.uiDC.bias = 0;
+			}
+
+			UI_WideScreenMode(qtrue);
+
+			Init_Display(&uiInfo.uiDC);
+		}
 	}
-
-	uiInfo.uiDC.glconfig = glconfig;
-
-	UI_UpdateWidescreen();
-	// for 640x480 virtualized screen
-	uiInfo.uiDC.yscale = uiInfo.uiDC.glconfig.vidHeight * (1.0 / (float)SCREEN_HEIGHT);
-	uiInfo.uiDC.xscale = uiInfo.uiDC.glconfig.vidWidth * (1.0 / (float)SCREEN_WIDTH);
-	if (uiInfo.uiDC.glconfig.vidWidth * SCREEN_HEIGHT > uiInfo.uiDC.glconfig.vidHeight * SCREEN_WIDTH) {
-		// wide screen
-		uiInfo.uiDC.bias = 0.5 * (uiInfo.uiDC.glconfig.vidWidth - (uiInfo.uiDC.glconfig.vidHeight * ((float)SCREEN_WIDTH / (float)SCREEN_HEIGHT)));
-	}
-	else {
-		// no wide screen
-		uiInfo.uiDC.bias = 0;
-	}
-
-	UI_WideScreenMode(qtrue);
-
-	Init_Display(&uiInfo.uiDC);
 }
 
 #define	UI_FPS_FRAMES	4
