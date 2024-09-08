@@ -473,6 +473,7 @@ struct gclient_s {
 
 	qboolean	fjDidJump;
 
+	// TODO how does restoreposition affect this?
 	vec3_t		prePmovePosition;
 	vec3_t		prePmoveMins;
 	vec3_t		prePmoveMaxs;
@@ -482,6 +483,9 @@ struct gclient_s {
 	qboolean	prePmovePositionSet;
 	qboolean	prePmoveEFlags;
 	int			prePmoveCommandTime;
+
+
+	int			forcePowerMicroRegenBuffer; // forcepower regen buffer multiplied by 1000. when we get above 1000, we divide by 1000 and add to forcepower and subtract from this
 };
 
 
@@ -1064,6 +1068,7 @@ extern	vmCvar_t	g_saberTraceSaberFirst;
 
 extern	vmCvar_t	g_defrag;
 extern	vmCvar_t	g_triggersRobust;
+extern	vmCvar_t	g_defragForceRegenFps;
 
 #ifdef G2_COLLISION_ENABLED
 extern	vmCvar_t	g_saberGhoul2Collision;

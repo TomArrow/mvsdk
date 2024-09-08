@@ -1612,7 +1612,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 		{//an enemy or object
 			if (ForcePowerUsableOn(self, traceEnt, FP_LIGHTNING))
 			{
-				int	dmg = Q_irand(1,2); //Q_irand( 1, 3 );
+				int	dmg = (traceEnt->client && traceEnt->client->sess.raceMode) ? 1: Q_irand(1,2); //Q_irand( 1, 3 );
 				
 				int modPowerLevel = -1;
 				
@@ -3158,6 +3158,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 							randfact = 10;
 						}
 
+						// TODO what about racemode? dont have to care i guess
 						if (!OnSameTeam(self, push_list[x]) && Q_irand(1, 10) <= randfact && canPullWeapon)
 						{
 							vec3_t uorg, vecnorm;
@@ -5007,6 +5008,7 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 	{//when not using the force, regenerate at 1 point per half second
 		if ( !self->client->ps.saberInFlight && self->client->ps.fd.forcePowerRegenDebounceTime < nowTime)
 		{
+			int regenAmt = 0;
 			if (g_gametype.integer != GT_HOLOCRON || g_MaxHolocronCarry.value)
 			{
 				//if (!g_trueJedi.integer || self->client->ps.weapon == WP_SABER)
@@ -5014,16 +5016,18 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 				{
 					if (self->client->ps.powerups[PW_FORCE_BOON])
 					{
-						WP_ForcePowerRegenerate( self, 6 );
+						regenAmt = 6;
+						//WP_ForcePowerRegenerate( self, 6 );
 					}
 					else if (self->client->ps.isJediMaster && g_gametype.integer == GT_JEDIMASTER)
 					{
-						WP_ForcePowerRegenerate( self, 4 ); //jedi master regenerates 4 times as fast
+						regenAmt = 4;
+						//WP_ForcePowerRegenerate( self, 4 ); //jedi master regenerates 4 times as fast
 					}
-					else
-					{
-						WP_ForcePowerRegenerate( self, 0 );
-					}
+					//else
+					//{
+					//	WP_ForcePowerRegenerate( self, 0 );
+					//}
 				}
 				/*
 				else if (g_trueJedi.integer && self->client->ps.weapon != WP_SABER)
@@ -5045,10 +5049,32 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 					holo++;
 				}
 
-				WP_ForcePowerRegenerate(self, holoregen);
+				regenAmt = holoregen;
+				//WP_ForcePowerRegenerate(self, holoregen);
 			}
 
-			self->client->ps.fd.forcePowerRegenDebounceTime = nowTime + self->client->sess.raceMode ? 0 : g_forceRegenTime.integer;
+			if (self->client->sess.raceMode && self->client->pers.cmd.serverTime > self->client->ps.commandTime) { // just a lil sanity check
+				// g_defragForceRegenFps.integer is basically how much we regenerate per second (as its traditionally 1 unit per server frame)
+				// We are working in micro regen (not literally micro, just meaning its smaller increments), 
+				// actually its 1000 micro force points = 1 force point. 
+				// e.g. 100fps means 100 force points per second regeneration, meaning 0.1 fp per msec, meaaning 100 micro fp per msec
+				int microRegenPerMillisecond = g_defragForceRegenFps.integer; 
+				int microRegenAmount;
+				regenAmt = regenAmt == 0 ? 1 : regenAmt;
+				//microRegenAmount = (microRegenPerMillisecond * regenAmt) * (nowTime - self->client->ps.fd.forcePowerRegenDebounceTime);
+				microRegenAmount = (microRegenPerMillisecond * regenAmt) * (self->client->pers.cmd.serverTime - self->client->ps.commandTime);
+				self->client->forcePowerMicroRegenBuffer += microRegenAmount;
+				if (self->client->forcePowerMicroRegenBuffer >= 1000) { // 1000 micro regen = 1 force point. we do that so we have more precision overall.
+					int fp = self->client->forcePowerMicroRegenBuffer / 1000;
+					self->client->forcePowerMicroRegenBuffer -= fp * 1000;
+					WP_ForcePowerRegenerate(self, fp);
+				}
+			}
+			else {
+				WP_ForcePowerRegenerate(self, regenAmt);
+			}
+
+			self->client->ps.fd.forcePowerRegenDebounceTime = nowTime + (self->client->sess.raceMode ? 0 : g_forceRegenTime.integer);
 		}
 	}
 
@@ -5124,7 +5150,8 @@ qboolean Jedi_DodgeEvasion( gentity_t *self, gentity_t *shooter, trace_t *tr, in
 
 	if (g_forceDodge.integer == 2)
 	{
-		if ( Q_irand( 1, 7 ) > self->client->ps.fd.forcePowerLevel[FP_SPEED] )
+		// dont do this check in racemode
+		if ( !self->client->sess.raceMode && Q_irand( 1, 7 ) > self->client->ps.fd.forcePowerLevel[FP_SPEED] )
 		{//more likely to fail on lower force speed level
 			return qfalse;
 		}

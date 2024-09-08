@@ -42,6 +42,7 @@ vmCvar_t	g_saberTraceSaberFirst;
 
 vmCvar_t	g_defrag;
 vmCvar_t	g_triggersRobust;
+vmCvar_t	g_defragForceRegenFps;
 
 #ifdef G2_COLLISION_ENABLED
 vmCvar_t	g_saberGhoul2Collision;
@@ -195,6 +196,7 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_defrag, "g_defrag", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_defragForceRegenFps, "g_defragForceRegenFps", "100", CVAR_ARCHIVE | CVAR_CHEAT, 0, qtrue  },
 
 #ifdef G2_COLLISION_ENABLED
 	{ &g_saberGhoul2Collision, "g_saberGhoul2Collision", "0", 0, 0, qtrue  },
