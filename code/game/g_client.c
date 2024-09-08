@@ -237,7 +237,7 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 	if (g_spawnInvulnerability.integer)
 	{
 		other->client->ps.eFlags |= EF_INVULNERABLE;
-		other->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
+		other->client->invulnerableTimer = LEVELTIME(other->client) + g_spawnInvulnerability.integer;
 	}
 
 	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")), qtrue);
@@ -1028,6 +1028,7 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	char		/**GLAName,*/ *slash;
 	char		GLAName[MAX_QPATH];
 	vec3_t	tempVec = {0,0,0};
+	int	nowTime = LEVELTIME(client);
 
 	// First things first.  If this is a ghoul2 model, then let's make sure we demolish this first.
 	if (client->ghoul2 && trap_G2_HaveWeGhoul2Models(client->ghoul2))
@@ -1116,9 +1117,9 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	trap_G2API_AddBolt(client->ghoul2, 0, "*l_hand");
 
 	// NOTE - ensure this sequence of bolt and bone accessing are always the same because the client expects them in a certain order
-	trap_G2API_SetBoneAnim(client->ghoul2, 0, "model_root", 0, 12, BONE_ANIM_OVERRIDE_LOOP, 1.0f, level.time, -1, -1);
-	trap_G2API_SetBoneAngles(client->ghoul2, 0, "upper_lumbar", tempVec, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, NULL, 0, level.time);
-	trap_G2API_SetBoneAngles(client->ghoul2, 0, "cranium", tempVec, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, NULL, 0, level.time);
+	trap_G2API_SetBoneAnim(client->ghoul2, 0, "model_root", 0, 12, BONE_ANIM_OVERRIDE_LOOP, 1.0f, nowTime, -1, -1);
+	trap_G2API_SetBoneAngles(client->ghoul2, 0, "upper_lumbar", tempVec, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, NULL, 0, nowTime);
+	trap_G2API_SetBoneAngles(client->ghoul2, 0, "cranium", tempVec, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, NULL, 0, nowTime);
 
 	if (!g2SaberInstance)
 	{
@@ -1644,8 +1645,10 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	gentity_t	*tent;
 	int			flags, i;
 	char		userinfo[MAX_INFO_VALUE], *modelname;
+	int			nowTime;
 
 	ent = g_entities + clientNum;
+	nowTime = LEVELTIME(ent->client); // TODO does that even make sense here? idk.
 	
 	// FlagEatingFix - We must ensure that powerups are cleared on ClientConnect and before team changes. Otherwise we might accidently trigger a flag duplication here.
 	for ( i = PW_REDFLAG; i <= PW_NEUTRALFLAG; i++ )
@@ -1660,10 +1663,13 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 			{
 				drop = Drop_Item( ent, item, 45 );
 				// decide how many seconds it has left
-				drop->count = ( ent->client->ps.powerups[ i ] - level.time ) / 1000;
+				drop->count = ( ent->client->ps.powerups[ i ] - nowTime ) / 1000;
 				if ( drop->count < 1 ) {
 					drop->count = 1;
 				}
+				//if ( drop->count > 1000 ) { // in case of any weird confusion with nowTime?
+				//	drop->count = 1000;
+				//}
 			}
 
 			ent->client->ps.powerups[i] = 0;
@@ -1870,6 +1876,7 @@ void ClientSpawn(gentity_t *ent) {
 	qboolean	inSegmentedRun = qfalse;
 	qboolean	raceSpawnPossible = qfalse;
 	qboolean	useSavedSpawn = qfalse;
+	int			nowTime = LEVELTIME(ent->client);
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -1894,7 +1901,7 @@ void ClientSpawn(gentity_t *ent) {
 			saberent->s.loopSound = 0;
 
 			ent->client->ps.saberInFlight = qfalse;
-			ent->client->ps.saberThrowDelay = level.time + 500;
+			ent->client->ps.saberThrowDelay = nowTime + 500;
 			ent->client->ps.saberCanThrow = qfalse;
 		}
 	}
@@ -2027,7 +2034,7 @@ void ClientSpawn(gentity_t *ent) {
 	client->ps.persistant[PERS_SPAWN_COUNT]++;
 	client->ps.persistant[PERS_TEAM] = client->sess.sessionTeam;
 
-	client->airOutTime = level.time + 12000;
+	client->airOutTime = nowTime + 12000;
 
 //	trap_GetUserinfo( index, userinfo, sizeof(userinfo) );
 	// set max health
@@ -2339,7 +2346,7 @@ void ClientSpawn(gentity_t *ent) {
 	client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 	client->ps.pm_time = 100;
 
-	client->respawnTime = level.time;
+	client->respawnTime = nowTime;
 	client->inactivityTime = level.time + g_inactivity.integer * 1000;
 	client->latched_buttons = 0;
 
@@ -2368,8 +2375,8 @@ void ClientSpawn(gentity_t *ent) {
 
 	// run a client frame to drop exactly to the floor,
 	// initialize animations and other things
-	client->ps.commandTime = level.time - 100;
-	ent->client->pers.cmd.serverTime = level.time;
+	client->ps.commandTime = nowTime - 100;
+	ent->client->pers.cmd.serverTime = nowTime;
 	ClientThink(ent - g_entities);
 
 	// positively link the client, even if the command times are weird
@@ -2382,7 +2389,7 @@ void ClientSpawn(gentity_t *ent) {
 	if (g_spawnInvulnerability.integer && !ent->client->sess.raceMode)
 	{
 		ent->client->ps.eFlags |= EF_INVULNERABLE;
-		ent->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
+		ent->client->invulnerableTimer = nowTime + g_spawnInvulnerability.integer;
 	}
 
 	// run the presend to set anything else

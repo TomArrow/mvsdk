@@ -373,7 +373,7 @@ void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 		return;
 	}
 
-	if (other->client->ps.holocronCantTouch == self->s.number && other->client->ps.holocronCantTouchTime > level.time)
+	if (other->client->ps.holocronCantTouch == self->s.number && other->client->ps.holocronCantTouchTime > LEVELTIME(other->client))
 	{
 		return;
 	}
@@ -432,7 +432,7 @@ void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 	//G_Sound(other, CHAN_AUTO, G_SoundIndex("sound/weapons/w_pkup.wav"));
 	G_AddEvent( other, EV_ITEM_PICKUP, self->s.number );
 
-	other->client->ps.holocronsCarried[self->count] = level.time;
+	other->client->ps.holocronsCarried[self->count] = LEVELTIME(other->client);
 	self->s.modelindex = 0;
 	self->enemy = other;
 
@@ -488,7 +488,7 @@ void HolocronThink(gentity_t *ent)
 		if (!ent->enemy->client->ps.holocronsCarried[ent->count])
 		{
 			ent->enemy->client->ps.holocronCantTouch = ent->s.number;
-			ent->enemy->client->ps.holocronCantTouchTime = level.time + 5000;
+			ent->enemy->client->ps.holocronCantTouchTime = LEVELTIME(ent->enemy->client) + 5000;
 
 			HolocronRespawn(ent);
 			VectorCopy(ent->enemy->client->ps.origin, ent->s.pos.trBase);

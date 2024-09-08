@@ -9,7 +9,7 @@ qboolean PM_SaberInReturn( int move );
 
 void P_SetTwitchInfo(gclient_t	*client)
 {
-	client->ps.painTime = level.time;
+	client->ps.painTime = LEVELTIME(client);
 	client->ps.painDirection ^= 1;
 }
 
@@ -27,6 +27,7 @@ void P_DamageFeedback( gentity_t *player ) {
 	gclient_t	*client;
 	float	count;
 	vec3_t	angles;
+	int nowTime = LEVELTIME(player->client);
 
 	client = player->client;
 	if ( client->ps.pm_type == PM_DEAD ) {
@@ -59,14 +60,14 @@ void P_DamageFeedback( gentity_t *player ) {
 	}
 
 	// play an apropriate pain sound
-	if ( (level.time > player->pain_debounce_time) && !(player->flags & FL_GODMODE) ) {
+	if ( (nowTime > player->pain_debounce_time) && !(player->flags & FL_GODMODE) ) {
 
 		// don't do more than two pain sounds a second
-		if ( level.time - client->ps.painTime < 500 ) {
+		if (nowTime - client->ps.painTime < 500 ) {
 			return;
 		}
 		P_SetTwitchInfo(client);
-		player->pain_debounce_time = level.time + 700;
+		player->pain_debounce_time = nowTime + 700;
 		G_AddEvent( player, EV_PAIN, player->health );
 		client->ps.damageEvent++;
 
@@ -107,15 +108,16 @@ Check for lava / slime contents and drowning
 void P_WorldEffects( gentity_t *ent ) {
 	qboolean	envirosuit;
 	int			waterlevel;
+	int			nowTime = LEVELTIME(ent->client);
 
 	if ( ent->client->noclip ) {
-		ent->client->airOutTime = level.time + 12000;	// don't need air
+		ent->client->airOutTime = nowTime + 12000;	// don't need air
 		return;
 	}
 
 	waterlevel = ent->waterlevel;
 
-	envirosuit = ent->client->ps.powerups[PW_BATTLESUIT] > level.time;
+	envirosuit = ent->client->ps.powerups[PW_BATTLESUIT] > nowTime;
 
 	//
 	// check for drowning
@@ -123,11 +125,11 @@ void P_WorldEffects( gentity_t *ent ) {
 	if ( waterlevel == 3 ) {
 		// envirosuit give air
 		if ( envirosuit ) {
-			ent->client->airOutTime = level.time + 10000;
+			ent->client->airOutTime = nowTime + 10000;
 		}
 
 		// if out of air, start drowning
-		if ( ent->client->airOutTime < level.time) {
+		if ( ent->client->airOutTime < nowTime) {
 			// drown!
 			ent->client->airOutTime += 1000;
 			if ( ent->health > 0 ) {
@@ -146,14 +148,14 @@ void P_WorldEffects( gentity_t *ent ) {
 				}
 
 				// don't play a normal pain sound
-				ent->pain_debounce_time = level.time + 200;
+				ent->pain_debounce_time = nowTime + 200;
 
 				G_Damage (ent, NULL, NULL, NULL, NULL, 
 					ent->damage, DAMAGE_NO_ARMOR, MOD_WATER);
 			}
 		}
 	} else {
-		ent->client->airOutTime = level.time + 12000;
+		ent->client->airOutTime = nowTime + 12000;
 		ent->damage = 2;
 	}
 
@@ -163,7 +165,7 @@ void P_WorldEffects( gentity_t *ent ) {
 	if (waterlevel && 
 		(ent->watertype&(CONTENTS_LAVA|CONTENTS_SLIME)) ) {
 		if (ent->health > 0
-			&& ent->pain_debounce_time <= level.time	) {
+			&& ent->pain_debounce_time <= nowTime) {
 
 			if ( envirosuit ) {
 				G_AddEvent( ent, EV_POWERUP_BATTLESUIT, 0 );
@@ -195,6 +197,7 @@ void DoImpact( gentity_t *self, gentity_t *other, qboolean damageSelf )
 	float magnitude, my_mass;
 	vec3_t	velocity;
 	int cont;
+	int nowTime = LEVELTIME(self->client);
 
 	if( self->client )
 	{
@@ -235,7 +238,7 @@ void DoImpact( gentity_t *self, gentity_t *other, qboolean damageSelf )
 		magnitude=300;
 	*/
 
-	if ( !self->client || self->client->ps.lastOnGround+300<level.time || ( self->client->ps.lastOnGround+100 < level.time && other->material >= MAT_GLASS ) )
+	if ( !self->client || self->client->ps.lastOnGround+300< nowTime || ( self->client->ps.lastOnGround+100 < nowTime && other->material >= MAT_GLASS ) )
 	{
 		vec3_t dir1, dir2;
 		float force = 0, dot;
@@ -619,7 +622,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		// use seperate code for determining if an item is picked up
 		// so you don't have to actually contact its bounding box
 		if ( hit->s.eType == ET_ITEM ) {
-			if ( !BG_PlayerTouchesItem( &ent->client->ps, &hit->s, level.time ) ) {
+			if ( !BG_PlayerTouchesItem( &ent->client->ps, &hit->s, level.time ) ) { // TODO should it be based on client's cmd serverTime for raceMode?
 				continue;
 			}
 		} else {
@@ -955,6 +958,7 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 //	qboolean	fired;
 //	gitem_t *item;
 //	gentity_t *drop;
+	int nowTime = LEVELTIME(ent->client);
 
 	client = ent->client;
 
@@ -1003,20 +1007,20 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 			break;
 		case EV_FIRE_WEAPON:
 			FireWeapon( ent, qfalse );
-			ent->client->dangerTime = level.time;
+			ent->client->dangerTime = nowTime;
 			ent->client->ps.eFlags &= ~EF_INVULNERABLE;
 			ent->client->invulnerableTimer = 0;
 			break;
 
 		case EV_ALT_FIRE:
 			FireWeapon( ent, qtrue );
-			ent->client->dangerTime = level.time;
+			ent->client->dangerTime = nowTime;
 			ent->client->ps.eFlags &= ~EF_INVULNERABLE;
 			ent->client->invulnerableTimer = 0;
 			break;
 
 		case EV_SABER_ATTACK:
-			ent->client->dangerTime = level.time;
+			ent->client->dangerTime = nowTime;
 			ent->client->ps.eFlags &= ~EF_INVULNERABLE;
 			ent->client->invulnerableTimer = 0;
 			break;
@@ -1228,11 +1232,22 @@ void ClientThink_real( gentity_t *ent ) {
 	int			i;
 	usercmd_t	*ucmd;
 	//int			oldTeleportBit;
+	int			nowTime = level.time; // when racing, make everything relative to commandtime
 	int	moveStyle;
 
 	client = ent->client;
 
 	if ( !ent || !ent->client ) return;
+
+	if(ent->client->sess.raceMode){ // in racemode we want all things to be consistent and deterministic, so we do this on every CLIENT frame and change level.time references to cmd.servertime where possible
+		if ((!level.intermissiontime) && !(ent->client->ps.pm_flags & PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
+		{
+			WP_ForcePowersUpdate(ent, &ent->client->pers.cmd);
+			WP_SaberPositionUpdate(ent, &ent->client->pers.cmd);
+		}
+	}
+
+	if (ent->client->sess.raceMode) nowTime = ent->client->pers.cmd.serverTime;
 
 	moveStyle = client->sess.raceMode ? client->sess.raceStyle.movementStyle : MV_JK2;
 
@@ -1340,7 +1355,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if (ent && ent->client && (ent->client->ps.eFlags & EF_INVULNERABLE))
 	{
-		if (ent->client->invulnerableTimer <= level.time)
+		if (ent->client->invulnerableTimer <= nowTime)
 		{
 			ent->client->ps.eFlags &= ~EF_INVULNERABLE;
 		}
@@ -1403,7 +1418,7 @@ void ClientThink_real( gentity_t *ent ) {
 	ClientCheckNotifyPhysicsFps(client); // Let the client know about his need to set a different com_physicsFps value if needed
 
 	// clear the rewards if time
-	if ( level.time > client->rewardTime ) {
+	if (nowTime > client->rewardTime ) {
 		client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
 	}
 
@@ -1525,7 +1540,7 @@ void ClientThink_real( gentity_t *ent ) {
 					if (g_spawnInvulnerability.integer)
 					{
 						ent->client->ps.eFlags |= EF_INVULNERABLE;
-						ent->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
+						ent->client->invulnerableTimer = nowTime + g_spawnInvulnerability.integer;
 					}
 				}
 
@@ -1585,7 +1600,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	//rww - moved this stuff into the pmove code so that it's predicted properly
-	//BG_AdjustClientSpeed(&client->ps, &client->pers.cmd, level.time);
+	//BG_AdjustClientSpeed(&client->ps, &client->pers.cmd, nowTime);
 
 	// set up for pmove
 	oldEventSequence = client->ps.eventSequence;
@@ -1598,7 +1613,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	if (ent->client && ent->client->ps.fallingToDeath &&
-		(level.time - FALL_FADE_TIME) > ent->client->ps.fallingToDeath)
+		(nowTime - FALL_FADE_TIME) > ent->client->ps.fallingToDeath)
 	{ //die!
 		player_die(ent, ent, ent, 100000, MOD_FALLING);
 		respawn(ent);
@@ -1607,29 +1622,29 @@ void ClientThink_real( gentity_t *ent ) {
 		G_MuteSound(ent->s.number, CHAN_VOICE); //stop screaming, because you are dead!
 	}
 
-	if (ent->client->ps.otherKillerTime > level.time &&
+	if (ent->client->ps.otherKillerTime > nowTime &&
 		ent->client->ps.groundEntityNum != ENTITYNUM_NONE &&
-		ent->client->ps.otherKillerDebounceTime < level.time)
+		ent->client->ps.otherKillerDebounceTime < nowTime)
 	{
 		ent->client->ps.otherKillerTime = 0;
 		ent->client->ps.otherKiller = ENTITYNUM_NONE;
 	}
-	else if (ent->client->ps.otherKillerTime > level.time &&
+	else if (ent->client->ps.otherKillerTime > nowTime &&
 		ent->client->ps.groundEntityNum == ENTITYNUM_NONE)
 	{
-		if (ent->client->ps.otherKillerDebounceTime < (level.time + 100))
+		if (ent->client->ps.otherKillerDebounceTime < (nowTime + 100))
 		{
-			ent->client->ps.otherKillerDebounceTime = level.time + 100;
+			ent->client->ps.otherKillerDebounceTime = nowTime + 100;
 		}
 	}
 
 //	WP_ForcePowersUpdate( ent, msec, ucmd); //update any active force powers
 //	WP_SaberPositionUpdate(ent, ucmd); //check the server-side saber point, do apprioriate server-side actions (effects are cs-only)
 
-	if ((ent->client->pers.cmd.buttons & BUTTON_USE) && ent->client->ps.useDelay < level.time)
+	if ((ent->client->pers.cmd.buttons & BUTTON_USE) && ent->client->ps.useDelay < nowTime)
 	{
 		TryUse(ent);
-		ent->client->ps.useDelay = level.time + 100;
+		ent->client->ps.useDelay = nowTime + 100;
 	}
 
 	pm.ps = &client->ps;
@@ -1689,7 +1704,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 	}
 
-	if (ent->client->ps.saberLockTime > level.time)
+	if (ent->client->ps.saberLockTime > nowTime)
 	{
 		gentity_t *blockOpp = &g_entities[ent->client->ps.saberLockEnemy];
 
@@ -1991,13 +2006,13 @@ void ClientThink_real( gentity_t *ent ) {
 						if (Q_irand(1, 10) <= 3)
 						{ //only actually knock over sometimes, but always do velocity hit
 							faceKicked->client->ps.forceHandExtend = HANDEXTEND_KNOCKDOWN;
-							faceKicked->client->ps.forceHandExtendTime = level.time + 1100;
+							faceKicked->client->ps.forceHandExtendTime = LEVELTIME(faceKicked->client) + 1100;
 							faceKicked->client->ps.forceDodgeAnim = 0; //this toggles between 1 and 0, when it's 1 we should play the get up anim
 						}
 
 						faceKicked->client->ps.otherKiller = ent->s.number;
-						faceKicked->client->ps.otherKillerTime = level.time + 5000;
-						faceKicked->client->ps.otherKillerDebounceTime = level.time + 100;
+						faceKicked->client->ps.otherKillerTime = LEVELTIME(faceKicked->client) + 5000;
+						faceKicked->client->ps.otherKillerDebounceTime = LEVELTIME(faceKicked->client) + 100;
 
 						faceKicked->client->ps.velocity[0] = oppDir[0]*(strength*40);
 						faceKicked->client->ps.velocity[1] = oppDir[1]*(strength*40);
@@ -2020,10 +2035,10 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 
 		// wait for the attack button to be pressed
-		if ( level.time > client->respawnTime && !gDoSlowMoDuel ) {
+		if (nowTime > client->respawnTime && !gDoSlowMoDuel ) {
 			// forcerespawn is to prevent users from waiting out powerups
 			if ( g_forcerespawn.integer > 0 && 
-				( level.time - client->respawnTime ) > g_forcerespawn.integer * 1000 ) {
+				(nowTime - client->respawnTime ) > g_forcerespawn.integer * 1000 ) {
 				respawn( ent );
 				return;
 			}
@@ -2035,7 +2050,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		else if (gDoSlowMoDuel)
 		{
-			client->respawnTime = level.time + 1000;
+			client->respawnTime = nowTime + 1000;
 		}
 		return;
 	}
@@ -2208,6 +2223,7 @@ while a slow client may have multiple ClientEndFrame between ClientThink.
 */
 void ClientEndFrame( gentity_t *ent ) {
 	int			i;
+	int			nowTime = LEVELTIME(ent->client);
 
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		SpectatorClientEndFrame( ent );
@@ -2216,7 +2232,7 @@ void ClientEndFrame( gentity_t *ent ) {
 
 	// turn off any expired powerups
 	for ( i = 0 ; i < MAX_POWERUPS ; i++ ) {
-		if ( ent->client->ps.powerups[ i ] < level.time ) {
+		if ( ent->client->ps.powerups[ i ] < nowTime) {
 			ent->client->ps.powerups[ i ] = 0;
 		}
 	}

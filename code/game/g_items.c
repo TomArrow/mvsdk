@@ -455,7 +455,7 @@ void ItemUse_Binoculars(gentity_t *ent)
 	else if (ent->client->ps.zoomMode == 2)
 	{
 		ent->client->ps.zoomMode = 0;
-		ent->client->ps.zoomTime = level.time;
+		ent->client->ps.zoomTime = LEVELTIME(ent->client);
 	}
 }
 
@@ -1051,10 +1051,11 @@ void ItemUse_Sentry( gentity_t *ent )
 
 void ItemUse_Seeker(gentity_t *ent)
 {
+	int nowTime = LEVELTIME(ent->client);
 	ent->client->ps.eFlags |= EF_SEEKERDRONE;
 
-	ent->client->ps.droneExistTime = level.time + 30000;
-	ent->client->ps.droneFireTime = level.time + 1500;
+	ent->client->ps.droneExistTime = nowTime + 30000;
+	ent->client->ps.droneFireTime = nowTime + 1500;
 }
 
 void ItemUse_MedPack(gentity_t *ent)

@@ -1456,7 +1456,7 @@ static void Cmd_VoiceTaunt_f( gentity_t *ent ) {
 		for(i = 0; i < MAX_CLIENTS; i++) {
 			who = g_entities + i;
 			if (who->client && who != ent && who->client->sess.sessionTeam == ent->client->sess.sessionTeam) {
-				if (who->client->rewardTime > level.time) {
+				if (who->client->rewardTime > LEVELTIME(who->client)) {
 					if (!(who->r.svFlags & SVF_BOT)) {
 						G_Voice( ent, who, SAY_TELL, VOICECHAT_PRAISE, qfalse );
 					}
@@ -2192,6 +2192,7 @@ extern int saberOnSound;
 
 void Cmd_ToggleSaber_f(gentity_t *ent)
 {
+	int		nowTime = LEVELTIME(ent->client);
 	if (!saberOffSound || !saberOnSound)
 	{
 		saberOffSound = G_SoundIndex("sound/weapons/saber/saberoffquick.wav");
@@ -2223,7 +2224,7 @@ void Cmd_ToggleSaber_f(gentity_t *ent)
 		return;
 	}
 
-	if (ent->client->ps.saberLockTime >= level.time)
+	if (ent->client->ps.saberLockTime >= nowTime)
 	{
 		return;
 	}
@@ -2324,6 +2325,7 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 {
 	trace_t tr;
 	vec3_t forward, fwdOrg;
+	int		nowTime = level.time;
 
 	if (!g_privateDuel.integer)
 	{
@@ -2350,6 +2352,10 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 	if (ent->client->ps.weapon != WP_SABER)
 	{
 		return;
+	}
+
+	if (ent->client->sess.raceMode) {
+		nowTime = ent->client->pers.cmd.serverTime;
 	}
 
 	/*
@@ -2449,7 +2455,7 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 		challenged->client->ps.fd.privateDuelTime = 0; //reset the timer in case this player just got out of a duel. He should still be able to accept the challenge.
 
 		ent->client->ps.forceHandExtend = HANDEXTEND_DUELCHALLENGE;
-		ent->client->ps.forceHandExtendTime = level.time + 1000;
+		ent->client->ps.forceHandExtendTime = nowTime + 1000;
 
 		ent->client->ps.duelIndex = challenged->s.number;
 		ent->client->ps.duelTime = level.time + 5000;
@@ -2574,10 +2580,15 @@ void ClientCommand( int clientNum ) {
 	char	cmd[MAX_TOKEN_CHARS];
 	char token[BIG_INFO_STRING]; // As the engine uses Cmd_TokenizeString2 a single parameter is theoretically not limited by MAX_TOKEN_CHARS, but by BIG_INFO_STRING
 	int i, argc;
+	int		nowTime = level.time;
 
 	ent = g_entities + clientNum;
 	if ( !ent->client || ent->client->pers.connected < CON_CONNECTED ) {
 		return;		// not fully in game yet
+	}
+
+	if (ent->client->sess.raceMode) {
+		nowTime = ent->client->pers.cmd.serverTime;
 	}
 
 	// Filter '\n' and '\r'
@@ -2989,12 +3000,12 @@ void ClientCommand( int clientNum ) {
 		ent->client->ps.forceDodgeAnim = 0;
 		if (trap_Argc() > 1)
 		{
-			ent->client->ps.forceHandExtendTime = level.time + 1100;
+			ent->client->ps.forceHandExtendTime = nowTime + 1100;
 			ent->client->ps.quickerGetup = qfalse;
 		}
 		else
 		{
-			ent->client->ps.forceHandExtendTime = level.time + 700;
+			ent->client->ps.forceHandExtendTime = nowTime + 700;
 			ent->client->ps.quickerGetup = qtrue;
 		}
 	}

@@ -4,7 +4,7 @@
 
 #include "q_shared.h"
 
-
+#define LEVELTIME(client) (((client) && (client)->sess.raceMode) ? (client)->pers.cmd.serverTime : level.time)
 
 typedef struct savedPosition_s {
 	playerState_t	ps;

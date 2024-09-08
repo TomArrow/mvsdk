@@ -332,8 +332,8 @@ void Use_target_push( gentity_t *self, gentity_t *other, gentity_t *activator ) 
 	VectorCopy (self->s.origin2, activator->client->ps.velocity);
 
 	// play fly sound every 1.5 seconds
-	if ( activator->fly_sound_debounce_time < level.time ) {
-		activator->fly_sound_debounce_time = level.time + 1500;
+	if ( activator->fly_sound_debounce_time < LEVELTIME(activator->client) ) {
+		activator->fly_sound_debounce_time = LEVELTIME(activator->client) + 1500;
 		if (self->noise_index)
 		{
 			G_Sound( activator, CHAN_AUTO, self->noise_index );
@@ -470,6 +470,7 @@ void hurt_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 
 void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	int		dflags;
+	//int		nowTime = LEVELTIME(self->client);
 
 	if ( !other->takedamage ) {
 		return;
@@ -509,12 +510,12 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	if (self->damage == -1 && other && other->client)
 	{
-		if (other->client->ps.otherKillerTime > level.time)
+		if (other->client->ps.otherKillerTime > LEVELTIME(other->client))
 		{ //we're as good as dead, so if someone pushed us into this then remember them
-			other->client->ps.otherKillerTime = level.time + 20000;
-			other->client->ps.otherKillerDebounceTime = level.time + 10000;
+			other->client->ps.otherKillerTime = LEVELTIME(other->client) + 20000;
+			other->client->ps.otherKillerDebounceTime = LEVELTIME(other->client) + 10000;
 		}
-		other->client->ps.fallingToDeath = level.time;
+		other->client->ps.fallingToDeath = LEVELTIME(other->client);
 
 		self->timestamp = 0; //do not ignore others
 		G_EntitySound(other, CHAN_VOICE, G_SoundIndex("*falling1.wav"));

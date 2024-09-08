@@ -171,6 +171,7 @@ static void WP_FireBryarPistol( gentity_t *ent, qboolean altFire )
 {
 	int damage = BRYAR_PISTOL_DAMAGE;
 	int count;
+	int nowTime = LEVELTIME(ent->client);
 
 	gentity_t	*missile = CreateMissile( muzzle, forward, BRYAR_PISTOL_VEL, 10000, ent, altFire );
 
@@ -181,7 +182,7 @@ static void WP_FireBryarPistol( gentity_t *ent, qboolean altFire )
 	{
 		float boxSize = 0;
 
-		count = ( level.time - ent->client->ps.weaponChargeTime ) / BRYAR_CHARGE_UNIT;
+		count = (nowTime - ent->client->ps.weaponChargeTime ) / BRYAR_CHARGE_UNIT;
 
 		if ( count < 1 )
 		{
@@ -540,6 +541,7 @@ void WP_DisruptorAltFire( gentity_t *ent )
 	int			count;
 	int			traces = DISRUPTOR_ALT_TRACES;
 	qboolean	fullCharge = qfalse;
+	int			nowTime = LEVELTIME(ent->client);
 
 	damage = DISRUPTOR_ALT_DAMAGE-30;
 
@@ -557,7 +559,7 @@ void WP_DisruptorAltFire( gentity_t *ent )
 		VectorCopy( ent->client->ps.origin, start );
 		start[2] += ent->client->ps.viewheight;//By eyes
 
-		count = ( level.time - ent->client->ps.weaponChargeTime ) / DISRUPTOR_CHARGE_UNIT;
+		count = (nowTime - ent->client->ps.weaponChargeTime ) / DISRUPTOR_CHARGE_UNIT;
 	}
 	else
 	{
@@ -819,6 +821,7 @@ static void WP_BowcasterMainFire( gentity_t *ent )
 	vec3_t		angs, dir;
 	gentity_t	*missile;
 	int i;
+	int nowTime = LEVELTIME(ent->client);
 
 	if (!ent->client)
 	{
@@ -826,7 +829,7 @@ static void WP_BowcasterMainFire( gentity_t *ent )
 	}
 	else
 	{
-		count = ( level.time - ent->client->ps.weaponChargeTime ) / BOWCASTER_CHARGE_UNIT;
+		count = (nowTime - ent->client->ps.weaponChargeTime ) / BOWCASTER_CHARGE_UNIT;
 	}
 
 	if ( count < 1 )
@@ -1196,12 +1199,13 @@ static void WP_DEMP2_AltFire( gentity_t *ent )
 	vec3_t	start, end;
 	trace_t	tr;
 	gentity_t *missile;
+	int nowTime = LEVELTIME(ent->client);
 
 	VectorCopy( muzzle, start );
 
 	VectorMA( start, DEMP2_ALT_RANGE, forward, end );
 
-	count = ( level.time - ent->client->ps.weaponChargeTime ) / DEMP2_CHARGE_UNIT;
+	count = (nowTime - ent->client->ps.weaponChargeTime ) / DEMP2_CHARGE_UNIT;
 
 	origcount = count;
 
@@ -1801,6 +1805,7 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 	gentity_t	*bolt;
 	vec3_t		dir, start;
 	float chargeAmount = 1.0f; // default of full charge
+	int nowTime = LEVELTIME(ent->client);
 	
 	VectorCopy( forward, dir );
 	VectorCopy( muzzle, start );
@@ -1824,7 +1829,7 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 
 	if ( ent->client )
 	{
-		chargeAmount = level.time - ent->client->ps.weaponChargeTime;
+		chargeAmount = nowTime - ent->client->ps.weaponChargeTime;
 	}
 
 	// get charge amount
@@ -2659,7 +2664,7 @@ void WP_FireStunBaton( gentity_t *ent, qboolean alt_fire )
 
 		if (tr_ent->client)
 		{ //if it's a player then use the shock effect
-			tr_ent->client->ps.electrifyTime = level.time + 700;
+			tr_ent->client->ps.electrifyTime = LEVELTIME(tr_ent->client) + 700;
 		}
 	}
 }
@@ -3131,6 +3136,7 @@ void emplaced_gun_use( gentity_t *self, gentity_t *other, trace_t *trace )
 	vec3_t anglesToOwner;
 	vec3_t vLen;
 	float ownLen = 0;
+	int nowTime = LEVELTIME(activator->client);
 
 	if ( self->health <= 0 )
 	{
@@ -3148,7 +3154,7 @@ void emplaced_gun_use( gentity_t *self, gentity_t *other, trace_t *trace )
 		return;
 	}
 
-	if (activator->client->ps.emplacedTime > level.time)
+	if (activator->client->ps.emplacedTime > nowTime)
 	{
 		return;
 	}
@@ -3390,7 +3396,7 @@ void emplaced_gun_update(gentity_t *self)
 		self->activator->client->ps.weapon = self->s.weapon;
 		self->s.weapon = oldWeap;
 		self->activator->r.ownerNum = ENTITYNUM_NONE;
-		self->activator->client->ps.emplacedTime = level.time + 1000;
+		self->activator->client->ps.emplacedTime = LEVELTIME(self->activator->client) + 1000;
 		self->activator->client->ps.emplacedIndex = 0;
 		self->activator = NULL;
 

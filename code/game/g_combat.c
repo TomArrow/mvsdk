@@ -641,7 +641,7 @@ void TossClientItems( gentity_t *self ) {
 	float		angle;
 	int			i;
 	gentity_t	*drop;
-
+	int		nowTime = LEVELTIME(self->client);
 
 	if (self->client->sess.raceMode)//racemode
 		return;
@@ -686,14 +686,14 @@ void TossClientItems( gentity_t *self ) {
 	if ( g_gametype.integer != GT_TEAM ) {
 		angle = 45;
 		for ( i = 1 ; i < PW_NUM_POWERUPS ; i++ ) {
-			if ( self->client->ps.powerups[ i ] > level.time ) {
+			if ( self->client->ps.powerups[ i ] > nowTime ) {
 				item = BG_FindItemForPowerup( i );
 				if ( !item ) {
 					continue;
 				}
 				drop = Drop_Item( self, item, angle );
 				// decide how many seconds it has left
-				drop->count = ( self->client->ps.powerups[ i ] - level.time ) / 1000;
+				drop->count = ( self->client->ps.powerups[ i ] - nowTime ) / 1000;
 				if ( drop->count < 1 ) {
 					drop->count = 1;
 				}
@@ -755,7 +755,7 @@ void body_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int d
 	{
 		self->health = GIB_HEALTH+1;
 
-		if (self->client && (level.time - self->client->respawnTime) < 2000)
+		if (self->client && (LEVELTIME(self->client) - self->client->respawnTime) < 2000)
 		{
 			doDisint = qfalse;
 		}
@@ -1804,6 +1804,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	int			i;
 	char		*killerName, *obit;
 	qboolean	wasJediMaster = qfalse;
+	int			nowTime = LEVELTIME(self->client);
 
 	if ( !self || !self->client ) return;
 
@@ -1852,7 +1853,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 	if ((self == attacker || !attacker->client) &&
 		(meansOfDeath == MOD_CRUSH || meansOfDeath == MOD_FALLING || meansOfDeath == MOD_TRIGGER_HURT || meansOfDeath == MOD_UNKNOWN) &&
-		self->client->ps.otherKillerTime > level.time)
+		self->client->ps.otherKillerTime > nowTime)
 	{
 		attacker = &g_entities[self->client->ps.otherKiller];
 	}
@@ -2025,7 +2026,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				// add the sprite over the player's head
 				attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
 				attacker->client->ps.eFlags |= EF_AWARD_GAUNTLET;
-				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
+				attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
 
 				// also play humiliation on target
 				self->client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_GAUNTLETREWARD;
@@ -2033,16 +2034,16 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 			// check for two kills in a short amount of time
 			// if this is close enough to the last kill, give a reward sound
-			if ( level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
+			if ( LEVELTIME(attacker->client) - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
 				// play excellent on player
 				attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 
 				// add the sprite over the player's head
 				attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
 				attacker->client->ps.eFlags |= EF_AWARD_EXCELLENT;
-				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
+				attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
 			}
-			attacker->client->lastKillTime = level.time;
+			attacker->client->lastKillTime = LEVELTIME(attacker->client);
 
 		}
 	} else {
@@ -2156,7 +2157,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 	// don't allow respawn until the death anim is done
 	// g_forcerespawn may force spawning at some later time
-	self->client->respawnTime = level.time + 1700;
+	self->client->respawnTime = nowTime + 1700;
 
 	// remove powerups
 	memset( self->client->ps.powerups, 0, sizeof(self->client->ps.powerups) );
@@ -2207,7 +2208,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			self->health = GIB_HEALTH+1;
 		}
 
-		self->client->respawnTime = level.time + 1000;//((self->client->animations[anim].numFrames*40)/(50.0f / self->client->animations[anim].frameLerp))+300;
+		self->client->respawnTime = nowTime + 1000;//((self->client->animations[anim].numFrames*40)/(50.0f / self->client->animations[anim].frameLerp))+300;
 
 		self->client->ps.legsAnim = 
 			( ( self->client->ps.legsAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT ) | anim;
@@ -2536,6 +2537,7 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 	vec3_t legAxis[3];
 	mdxaBone_t	boltMatrix;
 	float fVSpeed = 0;
+	int nowTime = LEVELTIME(self->client);
 
 	switch (limbType)
 	{
@@ -2610,7 +2612,7 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 	AnglesToAxis( properAngles, legAxis );
 	G_G2PlayerAngles( self, legAxis, properAngles );
 
-	trap_G2API_GetBoltMatrix(self->client->ghoul2, 0, useBolt, &boltMatrix, properAngles, properOrigin, level.time, NULL, vec3_origin);
+	trap_G2API_GetBoltMatrix(self->client->ghoul2, 0, useBolt, &boltMatrix, properAngles, properOrigin, nowTime, NULL, vec3_origin);
 
 	boltPoint[0] = boltMatrix.matrix[0][3];
 	boltPoint[1] = boltMatrix.matrix[1][3];
@@ -2618,7 +2620,7 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 
 	if ( jk2gameplay != VERSION_1_02 )
 	{
-		trap_G2API_GetBoltMatrix(self->client->ghoul2, 1, 0, &boltMatrix, properAngles, properOrigin, level.time, NULL, vec3_origin);
+		trap_G2API_GetBoltMatrix(self->client->ghoul2, 1, 0, &boltMatrix, properAngles, properOrigin, nowTime, NULL, vec3_origin);
 
 		if (self->client && limbType == G2_MODELPART_RHAND)
 		{ //Make some saber hit sparks over the severed wrist area
@@ -3068,6 +3070,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	float		famt = 0;
 	float		hamt = 0;
 	float		shieldAbsorbed = 0;
+	int			nowTime = inflictor ? LEVELTIME(inflictor->client) : level.time;
+	int			nowTimeTarg = LEVELTIME(targ->client);
 
 	if ( !targ || !targ->client ) return;
 
@@ -3222,8 +3226,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		if (attacker && attacker->client && attacker != targ)
 		{
 			targ->client->ps.otherKiller = attacker->s.number;
-			targ->client->ps.otherKillerTime = level.time + 5000;
-			targ->client->ps.otherKillerDebounceTime = level.time + 100;
+			targ->client->ps.otherKillerTime = nowTimeTarg + 5000;
+			targ->client->ps.otherKillerDebounceTime = nowTimeTarg + 100;
 		}
 		// set the timer so that the other client can't cancel
 		// out the movement immediately
@@ -3328,7 +3332,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		if (targ && targ->client && (targ->client->ps.eFlags & EF_INVULNERABLE) &&
 			attacker && attacker->client && targ != attacker)
 		{
-			if (targ->client->invulnerableTimer <= level.time)
+			if (targ->client->invulnerableTimer <= nowTimeTarg)
 			{
 				targ->client->ps.eFlags &= ~EF_INVULNERABLE;
 			}
@@ -3458,10 +3462,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			int maxtake = take;
 
 			//G_Sound(targ, CHAN_AUTO, protectHitSound);
-			if (targ->client->forcePowerSoundDebounce < level.time && jk2gameplay != VERSION_1_02)
+			if (targ->client->forcePowerSoundDebounce < nowTimeTarg && jk2gameplay != VERSION_1_02)
 			{
 				G_PreDefSound(targ->client->ps.origin, PDSOUND_PROTECTHIT);
-				targ->client->forcePowerSoundDebounce = level.time + 400;
+				targ->client->forcePowerSoundDebounce = nowTimeTarg + 400;
 			}
 
 			if ( jk2gameplay == VERSION_1_02 )
@@ -3547,9 +3551,9 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			shieldAbsorbed = 200;
 		}
 
-		if (targ->client->ps.powerups[PW_SHIELDHIT] < (level.time + shieldAbsorbed))
+		if (targ->client->ps.powerups[PW_SHIELDHIT] < (nowTimeTarg + shieldAbsorbed))
 		{
-			targ->client->ps.powerups[PW_SHIELDHIT] = level.time + shieldAbsorbed;
+			targ->client->ps.powerups[PW_SHIELDHIT] = nowTimeTarg + shieldAbsorbed;
 		}
 		//flicker for as many ms as damage was absorbed (*20)
 		//therefore 10 damage causes 1/5 of a seond of flickering, whereas

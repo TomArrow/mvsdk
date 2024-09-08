@@ -2789,10 +2789,12 @@ void G_RunFrame( int levelTime ) {
 		{
 			G_CheckClientTimeouts ( ent );
 			
-			if((!level.intermissiontime)&&!(ent->client->ps.pm_flags&PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
-			{
-				WP_ForcePowersUpdate(ent, &ent->client->pers.cmd );
-				WP_SaberPositionUpdate(ent, &ent->client->pers.cmd);
+			if (!ent->client->sess.raceMode) {
+				if((!level.intermissiontime)&&!(ent->client->ps.pm_flags&PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
+				{
+					WP_ForcePowersUpdate(ent, &ent->client->pers.cmd );
+					WP_SaberPositionUpdate(ent, &ent->client->pers.cmd );
+				}
 			}
 			G_RunClient( ent );
 			continue;

@@ -973,12 +973,12 @@ void SaberGotHit( gentity_t *self, gentity_t *other, trace_t *trace );
 void thrownSaberTouch (gentity_t *saberent, gentity_t *other, trace_t *trace);
 void MakeDeadSaber(gentity_t *ent);
 void WP_ForcePowerStop( gentity_t *self, forcePowers_t forcePower );
-void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd );
+void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd);
 int WP_SaberCanBlock(gentity_t *self, vec3_t point, int dflags, int mod, qboolean projectile, int attackStr);
 void WP_SaberInitBladeData( gentity_t *ent );
 void WP_InitForcePowers( gentity_t *ent );
 void WP_SpawnInitForcePowers( gentity_t *ent );
-void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd );
+void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd ); // robust = based on commandtime instead of level.time to make it reproducible
 int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forcePower);
 void ForceHeal( gentity_t *self );
 void ForceSpeed( gentity_t *self, int forceDuration );
