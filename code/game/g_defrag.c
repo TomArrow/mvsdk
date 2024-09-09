@@ -4,6 +4,96 @@
 
 extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 
+#define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
+#define CLF_INT(a) (size_t)( VALIDATEPTR(int,&((gclient_t*)0)->a))
+#define CLF_FLT(a) (size_t)( VALIDATEPTR(float,&((gclient_t*)0)->a))
+
+// these are fields we must compensaate when restoring position. :/ :) :( 
+// TODO check if theres more in pmove (a lot of this is just stuff in w_force and such that used to be level.time related)
+size_t clCompensateFieldOffsetsInt[] = {
+	CLF_INT(airOutTime),
+	CLF_INT(dangerTime),
+	CLF_INT(forcePowerSoundDebounce),
+	CLF_INT(invulnerableTimer),
+	CLF_INT(lastSaberStorageTime),
+	CLF_INT(ps.duelTime),
+	CLF_INT(ps.electrifyTime),
+	CLF_INT(ps.fallingToDeath),
+	CLF_INT(ps.fd.forceGripUseTime),
+	CLF_INT(ps.forceHandExtendTime),
+	CLF_INT(ps.fd.forceHealTime),
+	CLF_INT(ps.fd.forceJumpAddTime),
+	CLF_INT(ps.fd.forcePowerRegenDebounceTime),
+	CLF_INT(ps.fd.forceRageRecoveryTime),
+	CLF_INT(ps.footstepTime),
+	CLF_INT(ps.forceAllowDeactivateTime),
+	CLF_INT(ps.forceGripMoveInterval),
+	CLF_INT(ps.forceHandExtendTime),
+	CLF_INT(ps.forceRageDrainTime),
+	CLF_INT(ps.groundTime),
+	CLF_INT(ps.holdMoveTime),
+	CLF_INT(ps.lastOnGround),
+	CLF_INT(ps.otherKillerDebounceTime),
+	CLF_INT(ps.otherKillerTime),
+	CLF_INT(ps.otherSoundTime),
+	CLF_INT(ps.painTime),
+	//CLF_INT(ps.rocketLockTime), // needs special handling
+	CLF_INT(ps.saberAttackWound),
+	CLF_INT(ps.saberBlockTime),
+	CLF_INT(ps.saberDidThrowTime),
+	CLF_INT(ps.saberIdleWound),
+	CLF_INT(ps.saberLockTime),
+	CLF_INT(ps.saberThrowDelay),
+	CLF_INT(ps.useDelay),
+	CLF_INT(ps.weaponChargeTime),
+	CLF_INT(ps.weaponChargeSubtractTime),
+	CLF_INT(ps.zoomTime),
+	CLF_INT(ps.zoomLockTime),
+	CLF_INT(respawnTime),
+	CLF_INT(rewardTime),
+	CLF_INT(sess.updateUITime)
+};
+
+size_t clCompensateFieldOffsetsIntCount = sizeof(clCompensateFieldOffsetsInt) / sizeof(clCompensateFieldOffsetsInt[0]);
+
+size_t clCompensateFieldOffsetsFloat[] = {
+
+	CLF_FLT(pers.teamState.flagsince),
+	CLF_FLT(pers.teamState.lastfraggedcarrier),
+	CLF_FLT(pers.teamState.lasthurtcarrier),
+	CLF_FLT(pers.teamState.lastreturnedflag),
+	CLF_FLT(ps.fd.forceDrainTime),
+	CLF_FLT(ps.fd.forceGripBeingGripped),
+	CLF_FLT(ps.fd.forceGripSoundTime),
+	CLF_FLT(ps.fd.forceGripStarted),
+	CLF_FLT(ps.rocketTargetTime),
+	CLF_FLT(ps.droneExistTime),
+	CLF_FLT(ps.droneFireTime),
+	CLF_FLT(ps.emplacedTime),
+};
+size_t clCompensateFieldOffsetsFloatCount = sizeof(clCompensateFieldOffsetsFloat) / sizeof(clCompensateFieldOffsetsFloat[0]);
+
+
+#if SEGMENTEDDEBUG
+// using the stringizing operator to save typing...
+#define	SEGDEBCLF(x,type) #x,dbgtype_ ## type, (size_t)VALIDATEPTR(type,&((gclient_t*)0)->x),(size_t)VALIDATEPTR(type,&((segDebugVars_t*)0)->x), sizeof(type),#type
+
+debugField_t	segDebugFields[] =
+{
+	{ SEGDEBCLF(ps.legsAnim, int) },
+	{ SEGDEBCLF(ps.torsoAnim, int) },
+	{ SEGDEBCLF(ps.saberMove,int ) },
+	{ SEGDEBCLF(ps.origin, vec3_t) },
+	{ SEGDEBCLF(ps.viewangles, vec3_t) },
+	{ SEGDEBCLF(pers.cmd.angles, veci3_t) },
+	{ SEGDEBCLF(pers.cmd.buttons, int) },
+	{ SEGDEBCLF(pers.cmd.forwardmove, schar_t) },
+	{ SEGDEBCLF(pers.cmd.rightmove, schar_t) },
+	{ SEGDEBCLF(pers.cmd.upmove, schar_t) },
+};
+int segDebugFieldsCount = sizeof(segDebugFields) / sizeof(segDebugFields[0]);
+#endif
+
 // NOTE: For start timer, make sure we are not standing in any existing start timer before actually starting, 
 // even when leave() is already being called. Only the last left start trigger should actually trigger.
 
@@ -520,7 +610,10 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 
 void DF_ResetSegmentedRun(gentity_t* ent) {
 	ent->client->pers.segmented.state = SEG_DISABLED;
-	trap_G_COOL_API_PlayerUserCmdClear(ent - g_entities);
+	trap_G_COOL_API_PlayerUserCmdClear(ent - g_entities); 
+#ifdef SEGMENTEDDEBUG
+	memset(ent->client->pers.segmented.debugTime, 0, sizeof(ent->client->pers.segmented.debugTime));
+#endif
 }
 
 void DF_SegmentedRunStatusInvalidated(gentity_t* ent) {
@@ -849,6 +942,7 @@ qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	VectorCopy(client->r.mins, savedPosition->mins);
 	VectorCopy(client->r.maxs, savedPosition->maxs);
 	savedPosition->raceStartCommandTime = (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) ? client->client->pers.raceStartCommandTime : 0;
+	savedPosition->contents = client->r.contents;
 	return qtrue;
 }
 
@@ -862,11 +956,11 @@ void DF_PreDeltaAngleChange(gclient_t* client) {
 }
 
 void DF_PostDeltaAngleChange(gclient_t* client) {
-	qboolean isinSeg;
+	//qboolean isinSeg;
 	if (client->ps.delta_angles[0] == dfOldDelta[0] && client->ps.delta_angles[1] == dfOldDelta[1] && client->ps.delta_angles[2] == dfOldDelta[2]) {
 		return;
 	}
-	if (!DF_ClientInSegmentedRunMode(client) || client->pers.segmented.state == SEG_DISABLED) {
+	if (!DF_ClientInSegmentedRunMode(client) || client->pers.segmented.state == SEG_DISABLED || client->pers.segmented.state == SEG_REPLAY) {
 		return;
 	}
 	else {
@@ -884,6 +978,9 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	playerState_t backupPS;
 	int delta;
 	vec3_t oldDelta, diff2;
+	int i;
+	int* intPtr;
+	float* floatPtr;
 	playerState_t* storedPS = &savedPosition->ps;
 	if (!client->client) return;
 
@@ -892,26 +989,50 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 
 	// make sure there's no weirdness
 	client->client->ps.eFlags = (client->client->ps.eFlags & ~EF_TELEPORT_BIT) | ((backupPS.eFlags & EF_TELEPORT_BIT) ^ EF_TELEPORT_BIT); // Make it teleport
-	client->client->ps.torsoAnim = (client->client->ps.torsoAnim & ~ANIM_TOGGLEBIT) | ((backupPS.torsoAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT); // Restart animation if needed
-	client->client->ps.legsAnim = (client->client->ps.legsAnim & ~ANIM_TOGGLEBIT) | ((backupPS.legsAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT); // Restart animation if needed
+	
+	// actually, turns out we can't do this because some places in the code actuaally dont check for ANIM_TOGGLEBIT
+	// so to stay consistent we must simply keep things as they were
+	//client->client->ps.torsoAnim = (client->client->ps.torsoAnim & ~ANIM_TOGGLEBIT) | ((backupPS.torsoAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT); // Restart animation if needed
+	//client->client->ps.legsAnim = (client->client->ps.legsAnim & ~ANIM_TOGGLEBIT) | ((backupPS.legsAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT); // Restart animation if needed
+	
 	client->client->ps.externalEvent = (client->client->ps.externalEvent & ~EV_EVENT_BITS) | ((backupPS.externalEvent & EV_EVENT_BITS)); // Don't execute new events
 	client->client->ps.eventSequence = backupPS.eventSequence; // Don't execute new events
 
 	// retime
 	delta = backupPS.commandTime - storedPS->commandTime;
 	client->client->ps.commandTime = backupPS.commandTime;
-	if (storedPS->weaponChargeTime) client->client->ps.commandTime += delta;
-	if (storedPS->weaponChargeSubtractTime) client->client->ps.weaponChargeSubtractTime += delta;
-	if (storedPS->zoomTime) client->client->ps.zoomTime += delta;
+	//if (storedPS->weaponChargeTime) client->client->ps.weaponChargeTime += delta;
+	//if (storedPS->weaponChargeSubtractTime) client->client->ps.weaponChargeSubtractTime += delta;
+	//if (storedPS->zoomTime) client->client->ps.zoomTime += delta;
 	if (storedPS->genericEnemyIndex >= 1024) client->client->ps.genericEnemyIndex += delta;
-	if (storedPS->fd.forceRageRecoveryTime) client->client->ps.fd.forceRageRecoveryTime += delta;
+	//if (storedPS->fd.forceRageRecoveryTime) client->client->ps.fd.forceRageRecoveryTime += delta;
 	if (storedPS->rocketLockTime > 0) client->client->ps.rocketLockTime += delta;
-	if (storedPS->rocketTargetTime) client->client->ps.rocketTargetTime += delta;
-	if (storedPS->fallingToDeath) client->client->ps.fallingToDeath += delta;
-	if (storedPS->electrifyTime) client->client->ps.electrifyTime += delta;
-	if (storedPS->fd.forcePowerDebounce[FP_LEVITATION]) client->client->ps.fd.forcePowerDebounce[FP_LEVITATION] += delta;
-	if (storedPS->duelTime) client->client->ps.duelTime += delta;
-	if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
+	//if (storedPS->rocketTargetTime) client->client->ps.rocketTargetTime += delta;
+	//if (storedPS->fallingToDeath) client->client->ps.fallingToDeath += delta;
+	//if (storedPS->electrifyTime) client->client->ps.electrifyTime += delta;
+	//if (storedPS->fd.forcePowerDebounce[FP_LEVITATION]) client->client->ps.fd.forcePowerDebounce[FP_LEVITATION] += delta;
+	//if (storedPS->duelTime) client->client->ps.duelTime += delta;
+	//if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
+
+	// adjust integer fields
+	for (i = 0; i < clCompensateFieldOffsetsIntCount; i++) {
+		intPtr = (int*)(((byte*)client->client) + clCompensateFieldOffsetsInt[i]);
+		if (*intPtr) *intPtr += delta;
+	}
+	// adjust float fields
+	for (i = 0; i < clCompensateFieldOffsetsFloatCount; i++) {
+		floatPtr = (float*)(((byte*)client->client) + clCompensateFieldOffsetsFloat[i]);
+		if (*floatPtr) *floatPtr += (float)delta;
+	}
+	for (i = 0; i < MAX_POWERUPS; i++) {
+		if (client->client->ps.powerups[i]) client->client->ps.powerups[i] += delta;
+	}
+	for (i = 0; i < NUM_FORCE_POWERS; i++) {
+		if (client->client->ps.fd.forcePowerDebounce[i]) client->client->ps.fd.forcePowerDebounce[i] += delta;
+		if (client->client->ps.fd.forcePowerDuration[i]) client->client->ps.fd.forcePowerDuration[i] += delta;
+	}
+
+
 	if (client->client->pers.segmented.state != SEG_REPLAY && (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && client->client->sess.raceMode && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
 		client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
 	}
@@ -941,6 +1062,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 
 	VectorCopy(savedPosition->mins,client->r.mins);
 	VectorCopy(savedPosition->maxs, client->r.maxs);
+	client->r.contents = savedPosition->contents;
 	trap_LinkEntity(client);
 
 	// maybe restore oldbuttons and buttons?
@@ -962,6 +1084,9 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	if (!cl->sess.raceMode || !(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		trap_G_COOL_API_PlayerUserCmdClear(clientNum);
+#ifdef SEGMENTEDDEBUG
+		memset(ent->client->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
+#endif
 		cl->pers.segmented.state = SEG_DISABLED;
 		cl->pers.segmented.msecProgress = 0;
 		return;
@@ -971,7 +1096,10 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	msec = ucmdPtr->serverTime - cl->ps.commandTime;
 
-	if (msec <= 0) return; // idk why this should hapen but whatever (actually might happen after replay?)
+	if (msec <= 0)
+	{
+		return; // idk why this should hapen but whatever (actually might happen after replay?)
+	}
 
 	resposRequested = cl->pers.segmented.respos;
 	cl->pers.segmented.respos = qfalse;
@@ -1001,7 +1129,11 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			// wait i know! we can disable movers for segmented runs. ez.
 			//if (cl->ps.groundEntityNum == ENTITYNUM_WORLD || cl->ps.groundEntityNum == ENTITYNUM_NONE) {
 				trap_G_COOL_API_PlayerUserCmdClear(clientNum);
+#ifdef SEGMENTEDDEBUG
+				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
+#endif
 				VectorClear(cl->pers.segmented.anglesDiffAccum);
+				VectorClear(cl->pers.segmented.anglesDiffAccumActual);
 				SavePosition(ent, &cl->pers.segmented.startPos);
 				cl->pers.segmented.state = SEG_RECORDING;
 				cl->pers.segmented.msecProgress = 0;
@@ -1011,6 +1143,22 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
 		cl->pers.segmented.msecProgress += msec;
 		trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
+#ifdef SEGMENTEDDEBUG
+		{
+			int timeIndex = cl->pers.segmented.msecProgress / 100;
+			if (timeIndex >= 0 && timeIndex < 1000) {
+				int i;
+				cl->pers.segmented.debugTime[timeIndex] = cl->pers.segmented.msecProgress;
+				for (i = 0; i < segDebugFieldsCount; i++) {
+					void* ptrSrc = ((byte*)cl)+ segDebugFields[i].offset;
+					void* ptrDst = ((byte*)&cl->pers.segmented.debugVars[timeIndex])+ segDebugFields[i].offsetDebugVars;
+					memcpy(ptrDst,ptrSrc, segDebugFields[i].typeSize);
+				}
+				//VectorCopy(cl->ps.origin,cl->pers.segmented.debugOrigin[timeIndex]);
+				//VectorCopy(cl->ps.viewangles,cl->pers.segmented.debugAngles[timeIndex]);
+			}
+		}
+#endif
 
 		// No last pos can be stored outside a run.
 		cl->pers.segmented.state = SEG_RECORDING;
@@ -1033,6 +1181,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS;
 			cl->pers.segmented.lastPosUserCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1;
+			VectorClear(cl->pers.segmented.anglesDiffAccum);
 		}
 	}
 	else if(resposRequested) {
@@ -1041,7 +1190,12 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		}
 		else {
 
-			RestorePosition(ent, &cl->pers.segmented.lastPos,cl->pers.segmented.anglesDiffAccum);
+			VectorAdd(cl->pers.segmented.anglesDiffAccumActual, cl->pers.segmented.anglesDiffAccum, cl->pers.segmented.anglesDiffAccumActual);
+			cl->pers.segmented.anglesDiffAccumActual[0] &= 65535;
+			cl->pers.segmented.anglesDiffAccumActual[1] &= 65535;
+			cl->pers.segmented.anglesDiffAccumActual[2] &= 65535;
+			VectorClear(cl->pers.segmented.anglesDiffAccum);
+			RestorePosition(ent, &cl->pers.segmented.lastPos,cl->pers.segmented.anglesDiffAccumActual);
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS; // un-invalidate.
 			cl->pers.segmented.msecProgress = cl->pers.segmented.lastPosMsecProgress;
 			trap_G_COOL_API_PlayerUserCmdRemove(clientNum, cl->pers.segmented.lastPosUserCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
@@ -1050,15 +1204,31 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	
 	ucmd = *ucmdPtr;
-	ucmd.angles[0] += cl->pers.segmented.anglesDiffAccum[0];
-	ucmd.angles[1] += cl->pers.segmented.anglesDiffAccum[1];
-	ucmd.angles[2] += cl->pers.segmented.anglesDiffAccum[2];
+	ucmd.angles[0] += cl->pers.segmented.anglesDiffAccumActual[0];
+	ucmd.angles[1] += cl->pers.segmented.anglesDiffAccumActual[1];
+	ucmd.angles[2] += cl->pers.segmented.anglesDiffAccumActual[2];
 	ucmd.angles[0] &= 65535;
 	ucmd.angles[1] &= 65535;
 	ucmd.angles[2] &= 65535;
 	ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
 	cl->pers.segmented.msecProgress += msec;
 	trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
+#ifdef SEGMENTEDDEBUG
+	{
+		int timeIndex = cl->pers.segmented.msecProgress / 100;
+		if (timeIndex >= 0 && timeIndex < 1000) {
+			int i;
+			cl->pers.segmented.debugTime[timeIndex] = cl->pers.segmented.msecProgress;
+			for (i = 0; i < segDebugFieldsCount; i++) {
+				void* ptrSrc = ((byte*)cl) + segDebugFields[i].offset;
+				void* ptrDst = ((byte*)&cl->pers.segmented.debugVars[timeIndex]) + segDebugFields[i].offsetDebugVars;
+				memcpy(ptrDst, ptrSrc, segDebugFields[i].typeSize);
+			}
+			//VectorCopy(cl->ps.origin,cl->pers.segmented.debugOrigin[timeIndex]);
+			//VectorCopy(cl->ps.viewangles,cl->pers.segmented.debugAngles[timeIndex]);
+		}
+	}
+#endif
 
 
 	return;

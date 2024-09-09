@@ -1801,8 +1801,11 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	else
 		client->ps.stats[STAT_RACEMODE] = 0;
 
+	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
+	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
 
 	// locate ent at a spawn point
+	trap_GetUsercmd(client - level.clients, &ent->client->pers.cmd); // make sure LEVELTIME() inside ClientSpawn gets a valid serverTime value
 	ClientSpawn( ent );
 
 	if ( client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -1858,7 +1861,11 @@ void ClientSpawn(gentity_t *ent) {
 	vec3_t	spawn_origin, spawn_angles;
 	gclient_t	*client;
 	int		i;
+#if SEGMENTEDDEBUG
+	static clientPersistant_t	saved;
+#else
 	clientPersistant_t	saved;
+#endif
 	clientSession_t		savedSess;
 	vec3_t				savedDeltaAngles;
 	int		persistant[MAX_PERSISTANT];
@@ -1876,7 +1883,7 @@ void ClientSpawn(gentity_t *ent) {
 	qboolean	inSegmentedRun = qfalse;
 	qboolean	raceSpawnPossible = qfalse;
 	qboolean	useSavedSpawn = qfalse;
-	int			nowTime = LEVELTIME(ent->client);
+	int			nowTime = LEVELTIME(ent->client); // at the start of a client (ClientBegin) pers.cmd.serverTime is empty
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -2066,6 +2073,9 @@ void ClientSpawn(gentity_t *ent) {
 		client->ps.stats[STAT_RACEMODE] = 1;
 	else
 		client->ps.stats[STAT_RACEMODE] = 0;
+
+	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
+	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
 	
 	VectorCopy (playerMins, ent->r.mins);
 	VectorCopy (playerMaxs, ent->r.maxs);
@@ -2375,9 +2385,12 @@ void ClientSpawn(gentity_t *ent) {
 
 	// run a client frame to drop exactly to the floor,
 	// initialize animations and other things
-	client->ps.commandTime = nowTime - 100;
-	ent->client->pers.cmd.serverTime = nowTime;
-	ClientThink(ent - g_entities);
+	if (!inSegmentedRun) {
+		// dont do in racemode in segmented runs and with start spawn
+		client->ps.commandTime = nowTime - 100;
+		ent->client->pers.cmd.serverTime = nowTime;
+		ClientThink(ent - g_entities);
+	}
 
 	// positively link the client, even if the command times are weird
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {

@@ -678,7 +678,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 SetTeam
 =================
 */
-void SetTeam( gentity_t *ent, char *s ) {
+qboolean SetTeam( gentity_t *ent, char *s ) {
 	team_t				team, oldTeam;
 	gclient_t			*client;
 	int					clientNum;
@@ -819,7 +819,7 @@ void SetTeam( gentity_t *ent, char *s ) {
 	//
 	oldTeam = client->sess.sessionTeam;
 	if ( team == oldTeam && team != TEAM_SPECTATOR ) {
-		return;
+		return qfalse;
 	}
 
 	//
@@ -879,6 +879,8 @@ void SetTeam( gentity_t *ent, char *s ) {
 	
 	memset( ent->client->ps.powerups, 0, sizeof(ent->client->ps.powerups) ); // Ensure following spectators don't take flags or such into ClientBegin and trigger the FlagEatingFix (this allows us to check for powerups in the playerState to prevent flagEating when calling ClientBegin)
 	ClientBegin( clientNum, qfalse );
+
+	return team != oldTeam;
 }
 
 /*
@@ -949,9 +951,16 @@ void Cmd_Team_f( gentity_t *ent ) {
 
 	trap_Argv( 1, s, sizeof( s ) );
 
-	SetTeam( ent, s );
+	if (SetTeam(ent, s)) {
+		// team changed
+		ent->client->switchTeamTime = level.time + 5000;
+	}
+	else {
+		// same team or no change
+		// make this less annoying when we accidentally hit spectate at start of game (BUT WE ALREADY ARE ANYWAY!)
+		ent->client->switchTeamTime = level.time + 1000;
+	}
 
-	ent->client->switchTeamTime = level.time + 5000;
 }
 
 /*
@@ -2325,7 +2334,7 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 {
 	trace_t tr;
 	vec3_t forward, fwdOrg;
-	int		nowTime = level.time;
+	int		nowTime = LEVELTIME(ent->client);
 
 	if (!g_privateDuel.integer)
 	{
@@ -2352,10 +2361,6 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 	if (ent->client->ps.weapon != WP_SABER)
 	{
 		return;
-	}
-
-	if (ent->client->sess.raceMode) {
-		nowTime = ent->client->pers.cmd.serverTime;
 	}
 
 	/*
@@ -2580,15 +2585,11 @@ void ClientCommand( int clientNum ) {
 	char	cmd[MAX_TOKEN_CHARS];
 	char token[BIG_INFO_STRING]; // As the engine uses Cmd_TokenizeString2 a single parameter is theoretically not limited by MAX_TOKEN_CHARS, but by BIG_INFO_STRING
 	int i, argc;
-	int		nowTime = level.time;
+	int		nowTime = LEVELTIME((g_entities+clientNum)->client);
 
 	ent = g_entities + clientNum;
 	if ( !ent->client || ent->client->pers.connected < CON_CONNECTED ) {
 		return;		// not fully in game yet
-	}
-
-	if (ent->client->sess.raceMode) {
-		nowTime = ent->client->pers.cmd.serverTime;
 	}
 
 	// Filter '\n' and '\r'

@@ -898,11 +898,14 @@ qboolean PM_AdjustAngleForWallRun( playerState_t *ps, usercmd_t *ucmd, qboolean 
 				ucmd->upmove = 0;
 			}
 			//make me face perpendicular to the wall
+			// NOTE: Something about these 3 lines is perhaps not quite non-deterministic (or is it?) but
+			// it makes replays not work properly. Why is that?
 			ps->viewangles[YAW] = vectoyaw( trace.plane.normal )+yawAdjust;
 
 			PM_SetPMViewAngle(ps, ps->viewangles, ucmd);
 
-			ucmd->angles[YAW] = ANGLE2SHORT( ps->viewangles[YAW] ) - ps->delta_angles[YAW];
+			ucmd->angles[YAW] = ((int)(ANGLE2SHORT( ps->viewangles[YAW] ))) - (int)ps->delta_angles[YAW];
+			ucmd->angles[YAW] &= 65535;
 			if ( doMove )
 			{
 				//push me forward

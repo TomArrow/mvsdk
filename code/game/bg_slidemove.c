@@ -17,6 +17,7 @@ output: origin, velocity, impacts, stairup boolean
 
 qboolean PM_GroundSlideOkay(float zNormal)
 {
+	int legsAnim = pm->ps->legsAnim & ~ANIM_TOGGLEBIT;
 	// nvm, already guarded in all calls
 	//const int runFlags = PM_GetRunFlags();
 	//if (!(runFlags & RFL_CLIMBTECH)) return qtrue;
@@ -25,15 +26,15 @@ qboolean PM_GroundSlideOkay(float zNormal)
 	{
 		if (pm->ps->velocity[2] > 0)
 		{
-			if (pm->ps->legsAnim == BOTH_WALL_RUN_RIGHT
-				|| pm->ps->legsAnim == BOTH_WALL_RUN_LEFT
-				|| pm->ps->legsAnim == BOTH_WALL_RUN_RIGHT_STOP
-				|| pm->ps->legsAnim == BOTH_WALL_RUN_LEFT_STOP
-				|| pm->ps->legsAnim == BOTH_FORCEWALLRUNFLIP_START
+			if (legsAnim == BOTH_WALL_RUN_RIGHT
+				|| legsAnim == BOTH_WALL_RUN_LEFT
+				|| legsAnim == BOTH_WALL_RUN_RIGHT_STOP
+				|| legsAnim == BOTH_WALL_RUN_LEFT_STOP
+				|| legsAnim == BOTH_FORCEWALLRUNFLIP_START
 				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_START
 				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_ATTACK
 				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_LAND
-				|| BG_InReboundJump(pm->ps->legsAnim))
+				|| BG_InReboundJump(legsAnim))
 			{
 				return qfalse;
 			}

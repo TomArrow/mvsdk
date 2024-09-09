@@ -1232,7 +1232,7 @@ void ClientThink_real( gentity_t *ent ) {
 	int			i;
 	usercmd_t	*ucmd;
 	//int			oldTeleportBit;
-	int			nowTime = level.time; // when racing, make everything relative to commandtime
+	int			nowTime = LEVELTIME(ent->client); // when racing, make everything relative to commandtime
 	int	moveStyle;
 
 	client = ent->client;
@@ -1246,8 +1246,6 @@ void ClientThink_real( gentity_t *ent ) {
 			WP_SaberPositionUpdate(ent, &ent->client->pers.cmd);
 		}
 	}
-
-	if (ent->client->sess.raceMode) nowTime = ent->client->pers.cmd.serverTime;
 
 	moveStyle = client->sess.raceMode ? client->sess.raceStyle.movementStyle : MV_JK2;
 
@@ -2101,7 +2099,9 @@ void ClientThink( int clientNum ) {
 	gentity_t *ent;
 
 	ent = g_entities + clientNum;
-	trap_GetUsercmd( clientNum, &ent->client->pers.cmd );
+	if ((!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
+		trap_GetUsercmd(clientNum, &ent->client->pers.cmd);
+	}
 
 	// mark the time we got info, so we can display the
 	// phone jack if they don't get any for a while
@@ -2137,6 +2137,9 @@ void G_RunClient( gentity_t *ent ) {
 			success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
 			if (!success) {
 				trap_G_COOL_API_PlayerUserCmdClear(ent-g_entities);
+#ifdef SEGMENTEDDEBUG
+				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
+#endif
 				trap_GetUsercmd(ent - g_entities, &ent->client->pers.cmd);
 				SetClientViewAngle(ent,ent->client->ps.viewangles); // make a smooth transition back to player-controlled gameplay
 				ent->client->pers.segmented.state = SEG_DISABLED; // done
@@ -2145,6 +2148,97 @@ void G_RunClient( gentity_t *ent ) {
 			targetServerTime = cl->pers.segmented.playbackStartedTime + ucmd.serverTime;
 			if (targetServerTime <= level.time) {
 				cl->pers.cmd = ucmd;
+#ifdef SEGMENTEDDEBUG
+				{
+					int timeIndex = ucmd.serverTime / 100;
+					if (timeIndex >= 0 && timeIndex < 1000) {
+						if (cl->pers.segmented.debugTime[timeIndex] == ucmd.serverTime) {
+							int i;
+							for (i = 0; i < segDebugFieldsCount; i++) {
+								void* ptrSrc = ((byte*)cl) + segDebugFields[i].offset;
+								void* ptrDst = ((byte*)&cl->pers.segmented.debugVars[timeIndex]) + segDebugFields[i].offsetDebugVars;
+								if (memcmp(ptrDst, ptrSrc, segDebugFields[i].typeSize)) {
+									switch (segDebugFields[i].type) {
+									case dbgtype_float:
+									{
+										float* current = ptrSrc;
+										float* compare = ptrDst;
+										float diff;
+										diff = *current - *compare;
+										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(float) CHANGED: %f diff, %f -> %f \n\"", i, segDebugFields[i].name,
+											fabsf(diff),
+											(*current),
+											(*compare)
+										));
+									}
+									break;
+									case dbgtype_int:
+									{
+										int* current = ptrSrc;
+										int* compare = ptrDst;
+										int diff;
+										diff = *current - *compare;
+										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(%s) CHANGED: %i diff, %i -> %i \n\"", i, segDebugFields[i].name, segDebugFields[i].typeName,
+											abs(diff),
+											(*current),
+											(*compare)
+										));
+									}
+									case dbgtype_schar_t:
+									{
+										schar_t* current = ptrSrc;
+										schar_t* compare = ptrDst;
+										int diff;
+										diff = *current - *compare;
+										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(%s) CHANGED: %i diff, %i -> %i \n\"", i, segDebugFields[i].name, segDebugFields[i].typeName,
+											abs(diff),
+											(*current),
+											(*compare)
+										));
+									}
+									break;
+									case dbgtype_vec3_t:
+									{
+										vec3_t* current = ptrSrc;
+										vec3_t* compare = ptrDst;
+										vec3_t diff;
+										VectorSubtract(*current, *compare, diff);
+										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(vec3_t) CHANGED: %f diff, %f %f %f -> %f %f %f \n\"", i, segDebugFields[i].name,
+											VectorLength(diff),
+											(*current)[0],
+											(*current)[1],
+											(*current)[2],
+											(*compare)[0],
+											(*compare)[1],
+											(*compare)[2]
+										));
+									}
+									break;
+									case dbgtype_veci3_t:
+									{
+										veci3_t* current = ptrSrc;
+										veci3_t* compare = ptrDst;
+										vec3_t diff;
+										VectorSubtract(*current, *compare, diff);
+										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(veci3_t) CHANGED: %f diff, %i %i %i -> %i %i %i \n\"", i, segDebugFields[i].name,
+											VectorLength(diff),
+											(*current)[0],
+											(*current)[1],
+											(*current)[2],
+											(*compare)[0],
+											(*compare)[1],
+											(*compare)[2]
+										));
+									}
+									break;
+									}
+								}
+							}
+
+						}
+					}
+				}
+#endif
 				cl->pers.cmd.serverTime = targetServerTime;
 				if (cl->pers.segmented.playbackNextCmdIndex == 0) {
 					cl->ps.commandTime = cl->pers.segmented.playbackStartedTime;

@@ -75,7 +75,7 @@ qboolean BG_InSaberStandAnim( int anim )
 // JKA wallgrab
 qboolean BG_InReboundJump(int anim)
 {
-	switch (anim)
+	switch (anim & ~ANIM_TOGGLEBIT) // TA: just fix this? (anim_togglebit)
 	{
 	case BOTH_FORCEWALLREBOUND_FORWARD:
 	case BOTH_FORCEWALLREBOUND_LEFT:
@@ -89,7 +89,7 @@ qboolean BG_InReboundJump(int anim)
 // JKA wallgrab
 qboolean BG_InReboundHold(int anim)
 {
-	switch (anim)
+	switch (anim & ~ANIM_TOGGLEBIT) // TA: just fix this? (anim_togglebit)
 	{
 	case BOTH_FORCEWALLHOLD_FORWARD:
 	case BOTH_FORCEWALLHOLD_LEFT:
@@ -103,7 +103,7 @@ qboolean BG_InReboundHold(int anim)
 // JKA wallgrab
 qboolean BG_InReboundRelease(int anim)
 {
-	switch (anim)
+	switch (anim & ~ANIM_TOGGLEBIT) // TA: just fix this? (anim_togglebit)
 	{
 	case BOTH_FORCEWALLRELEASE_FORWARD:
 	case BOTH_FORCEWALLRELEASE_LEFT:
