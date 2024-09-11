@@ -356,6 +356,11 @@ void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 	if (MovementIsQuake3Based(moveStyle)) {
 		JUMP_VELOCITY_NEW = 270;
 	}
+	
+	if (pm->ps->groundEntityNum != ENTITYNUM_NONE || pm->ps->origin[2] < pm->ps->fd.forceJumpZStart)
+	{
+		pm->ps->fd.forcePowersActive &= ~(1 << FP_LEVITATION);
+	}
 
   	velocity[2] += JUMP_VELOCITY_NEW;
 	if (velocity[2] < JUMP_VELOCITY_NEW)
