@@ -450,9 +450,11 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		numplanes = 0;
 	}
 
-	// never turn against original velocity
-	VectorNormalize2( pm->ps->velocity, planes[numplanes] );
-	numplanes++;
+	if (moveStyle != MV_BOUNCE) {
+		// never turn against original velocity
+		VectorNormalize2(pm->ps->velocity, planes[numplanes]);
+		numplanes++;
+	}
 
 	for ( bumpcount=0 ; bumpcount < numbumps ; bumpcount++ ) {
 
