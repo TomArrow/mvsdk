@@ -14,15 +14,79 @@
 
 typedef struct savedPosition_s {
 	playerState_t	ps;
-	int				buttons;
-	int				oldbuttons;
-	int				latched_buttons;
 	raceStyle_t		raceStyle;
 	int				raceStartCommandTime;
-	vec3_t			mins;
-	vec3_t			maxs;
-	int			contents;
+
+	// entity
+	int				health;
+	qboolean		takedamage;
+	int				eventTime;
+	int				clipmask; // ?
+	int				pain_debounce_time;
+	int				fly_sound_debounce_time;
+	//int				last_move_time;			// just movers
+	//int			count; // idk
+	int				watertype;
+	int				waterlevel;
+
+	//r.
+	struct {
+		vec3_t			mins;
+		vec3_t			maxs;
+		vec3_t			currentOrigin;
+		//vec3_t			currentAngles; // not used for players?
+		//vec3_t			absmax; // done anyway by linkentity?
+		//vec3_t			absmin;
+		int				contents;
+	} r;
+
+	// cl->
+	struct {
+		int				buttons;
+		int				oldbuttons;
+		int				latched_buttons;
+		int				dangerTime;
+		qboolean		fjDidJump;
+		int				forcePowerMicroRegenBuffer;
+		int				forcePowerSoundDebounce; //if > level.time, don't do certain sound events again (drain sound, absorb sound, etc)
+		int				invulnerableTimer;
+		int				saberCycleQueue;
+		int				damage_armor;		// damage absorbed by armor
+		int				damage_blood;		// damage taken out of health
+		int				damage_knockback;	// impact damage
+		vec3_t			damage_from;		// origin for vector calculation
+		qboolean		damage_fromWorld;	// if true, don't use the damage_from vector
+		int				respawnTime;		// can respawn when time > this, force after g_forcerespwan
+		int				rewardTime;			// clear the EF_AWARD_IMPRESSIVE, etc when time > this
+		int				airOutTime; 
+		qboolean		fireHeld;			// used for hook
+		int				timeResidual; 
+		vec3_t			lastSaberDir_Always; //every getboltmatrix, set to saber dir
+		vec3_t			lastSaberBase_Always; //every getboltmatrix, set to saber base
+		int				lastSaberStorageTime; //server time that the above two values were updated (for making sure they aren't out of date)
+		qboolean		hasCurrentPosition;	//are lastSaberTip and lastSaberBase valid?
+
+		// pers.
+
+		// sess.
+		struct {
+			int				saberLevel;
+			int				selectedFP;
+			qboolean		setForce;
+			//int				updateUITime; // i dont think this is used anywhere.
+		} sess;
+	} client;
 } savedPosition_t;
+
+
+typedef struct {
+	//char* name;
+	//debugFieldType_t type;
+	size_t	offset;
+	size_t	offsetSavepos;
+	size_t	typeSize;
+	//char* typeName;
+} saveposField_t;
 
 // TODO What if someone touches start trigger, then just stands around forever with start active?
 typedef enum segmentedRunState_s {

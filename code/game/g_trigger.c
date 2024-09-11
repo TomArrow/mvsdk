@@ -469,14 +469,16 @@ void hurt_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 }
 
 void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
-	int		dflags;
-	//int		nowTime = LEVELTIME(self->client);
+	int			dflags;
+	int			nowTime = LEVELTIME(other->client);
+	qboolean	raceMode = other->client && other->client->sess.raceMode;
+	int*		timeStamp = raceMode ? &self->timestamp : &other->hurt_timestamp;
 
 	if ( !other->takedamage ) {
 		return;
 	}
 
-	if ( self->timestamp > level.time ) {
+	if (*timeStamp > nowTime) {
 		return;
 	}
 
@@ -493,9 +495,9 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	}
 
 	if ( self->spawnflags & 16 ) {
-		self->timestamp = level.time + 1000;
+		*timeStamp = nowTime + 1000;
 	} else {
-		self->timestamp = level.time + FRAMETIME;
+		*timeStamp = nowTime + FRAMETIME;
 	}
 
 	// play sound
@@ -510,14 +512,14 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	if (self->damage == -1 && other && other->client)
 	{
-		if (other->client->ps.otherKillerTime > LEVELTIME(other->client))
+		if (other->client->ps.otherKillerTime > nowTime)
 		{ //we're as good as dead, so if someone pushed us into this then remember them
-			other->client->ps.otherKillerTime = LEVELTIME(other->client) + 20000;
-			other->client->ps.otherKillerDebounceTime = LEVELTIME(other->client) + 10000;
+			other->client->ps.otherKillerTime = nowTime + 20000;
+			other->client->ps.otherKillerDebounceTime = nowTime + 10000;
 		}
-		other->client->ps.fallingToDeath = LEVELTIME(other->client);
+		other->client->ps.fallingToDeath = nowTime;
 
-		self->timestamp = 0; //do not ignore others
+		*timeStamp = 0; //do not ignore others
 		G_EntitySound(other, CHAN_VOICE, G_SoundIndex("*falling1.wav"));
 	}
 	else	
@@ -527,7 +529,7 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 		if (dmg == -1)
 		{ //so fall-to-blackness triggers destroy evertyhing
 			dmg = 99999;
-			self->timestamp = 0;
+			*timeStamp = 0;
 		}
 		if (self->activator && self->activator->inuse && self->activator->client)
 		{

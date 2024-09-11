@@ -123,10 +123,10 @@ struct gentity_s {
 
 	int			passThroughNum;		// set to index to pass through (+1) for missiles
 
-	int			aimDebounceTime;
-	int			painDebounceTime;
-	int			attackDebounceTime;
-	team_t		noDamageTeam;
+	int			aimDebounceTime;	// used only by turrets (PAS)
+	int			painDebounceTime;	// used only by turrets (PAS)
+	int			attackDebounceTime;	// used only by turrets (PAS)
+	team_t		noDamageTeam;		// used only by turrets (PAS)
 
 	int			roffid;				// if roffname != NULL then set on spawn
 
@@ -165,6 +165,7 @@ struct gentity_s {
 	char		*message;
 
 	int			timestamp;		// body queue sinking, etc
+	int			hurt_timestamp; // for racemode clients, we reverse timestamp on tar
 
 	float		angle;			// set in editor, -1 = up, -2 = down
 	char		*target;

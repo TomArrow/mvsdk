@@ -5,9 +5,120 @@
 extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
+#define VALIDATEPTRCMP(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
 #define CLF_INT(a) (size_t)( VALIDATEPTR(int,&((gclient_t*)0)->a))
 #define CLF_FLT(a) (size_t)( VALIDATEPTR(float,&((gclient_t*)0)->a))
 
+#define ENTF_INT(a) (size_t)( VALIDATEPTR(int,&((gentity_t*)0)->a))
+#define ENTF_FLT(a) (size_t)( VALIDATEPTR(float,&((gentity_t*)0)->a))
+
+// TODO investigate timeresidual
+
+#define FIELDSCLIENT()\
+		FIELDSFUNC(buttons)\
+		FIELDSFUNC(oldbuttons)\
+		FIELDSFUNC(latched_buttons)\
+		FIELDSFUNC(dangerTime)\
+		FIELDSFUNC(fjDidJump)\
+		FIELDSFUNC(forcePowerMicroRegenBuffer)\
+		FIELDSFUNC(forcePowerSoundDebounce)\
+		FIELDSFUNC(invulnerableTimer)\
+		FIELDSFUNC(saberCycleQueue)\
+		FIELDSFUNC(damage_armor)\
+		FIELDSFUNC(damage_blood)\
+		FIELDSFUNC(damage_knockback)\
+		FIELDSFUNC(damage_fromWorld)\
+		FIELDSFUNC(respawnTime)\
+		FIELDSFUNC(rewardTime)\
+		FIELDSFUNC(airOutTime)\
+		FIELDSFUNC(fireHeld)\
+		FIELDSFUNC(timeResidual)\
+		FIELDSFUNC(lastSaberStorageTime)\
+		FIELDSFUNC(hasCurrentPosition)\
+		FIELDSFUNC(sess.saberLevel)\
+		FIELDSFUNC(sess.selectedFP)\
+		FIELDSFUNC(sess.setForce)\
+		//FIELDSFUNC(sess.updateUITime)\
+
+#define FIELDSCLIENTVEC3()\
+		FIELDSFUNC(damage_from)\
+		FIELDSFUNC(lastSaberDir_Always)\
+		FIELDSFUNC(lastSaberBase_Always)\
+
+#define FIELDSENT()\
+		FIELDSFUNC(health)\
+		FIELDSFUNC(takedamage)\
+		FIELDSFUNC(eventTime)\
+		FIELDSFUNC(clipmask)\
+		FIELDSFUNC(pain_debounce_time)\
+		FIELDSFUNC(fly_sound_debounce_time)\
+		FIELDSFUNC(watertype)\
+		FIELDSFUNC(waterlevel)\
+		FIELDSFUNC(r.contents)
+
+#define FIELDSENTVEC3()\
+		FIELDSFUNC(r.mins)\
+		FIELDSFUNC(r.maxs)\
+		FIELDSFUNC(r.currentOrigin)
+
+#define TIMECOMPENSATEFIELDS()\
+		FIELDSFUNC(pain_debounce_time)\
+		FIELDSFUNC(fly_sound_debounce_time)\
+		FIELDSFUNC(eventTime)\
+		FIELDSFUNC(client->airOutTime)\
+		FIELDSFUNC(client->dangerTime)\
+		FIELDSFUNC(client->forcePowerSoundDebounce)\
+		FIELDSFUNC(client->invulnerableTimer)\
+		FIELDSFUNC(client->lastSaberStorageTime)\
+		FIELDSFUNC(client->ps.duelTime)\
+		FIELDSFUNC(client->ps.electrifyTime)\
+		FIELDSFUNC(client->ps.fallingToDeath)\
+		FIELDSFUNC(client->ps.fd.forceGripUseTime)\
+		FIELDSFUNC(client->ps.forceHandExtendTime)\
+		FIELDSFUNC(client->ps.fd.forceGripUseTime)\
+		FIELDSFUNC(client->ps.fd.forceHealTime)\
+		FIELDSFUNC(client->ps.fd.forceJumpAddTime)\
+		FIELDSFUNC(client->ps.fd.forcePowerRegenDebounceTime)\
+		FIELDSFUNC(client->ps.fd.forceRageRecoveryTime)\
+		FIELDSFUNC(client->ps.footstepTime)\
+		FIELDSFUNC(client->ps.forceAllowDeactivateTime)\
+		FIELDSFUNC(client->ps.forceGripMoveInterval)\
+		FIELDSFUNC(client->ps.forceHandExtendTime)\
+		FIELDSFUNC(client->ps.forceRageDrainTime)\
+		FIELDSFUNC(client->ps.groundTime)\
+		FIELDSFUNC(client->ps.holdMoveTime)\
+		FIELDSFUNC(client->ps.lastOnGround)\
+		FIELDSFUNC(client->ps.otherKillerDebounceTime)\
+		FIELDSFUNC(client->ps.otherKillerTime)\
+		FIELDSFUNC(client->ps.otherSoundTime)\
+		FIELDSFUNC(client->ps.painTime)\
+		FIELDSFUNC(client->ps.saberAttackWound)\
+		FIELDSFUNC(client->ps.saberBlockTime)\
+		FIELDSFUNC(client->ps.saberDidThrowTime)\
+		FIELDSFUNC(client->ps.saberIdleWound)\
+		FIELDSFUNC(client->ps.saberLockTime)\
+		FIELDSFUNC(client->ps.saberThrowDelay)\
+		FIELDSFUNC(client->ps.useDelay)\
+		FIELDSFUNC(client->ps.weaponChargeTime)\
+		FIELDSFUNC(client->ps.weaponChargeSubtractTime)\
+		FIELDSFUNC(client->ps.zoomTime)\
+		FIELDSFUNC(client->ps.zoomLockTime)\
+		FIELDSFUNC(client->respawnTime)\
+		FIELDSFUNC(client->rewardTime)\
+		FIELDSFUNC(client->pers.teamState.flagsince)\
+		FIELDSFUNC(client->pers.teamState.lastfraggedcarrier)\
+		FIELDSFUNC(client->pers.teamState.lasthurtcarrier)\
+		FIELDSFUNC(client->pers.teamState.lastreturnedflag)\
+		FIELDSFUNC(client->ps.fd.forceDrainTime)\
+		FIELDSFUNC(client->ps.fd.forceGripBeingGripped)\
+		FIELDSFUNC(client->ps.fd.forceGripSoundTime)\
+		FIELDSFUNC(client->ps.fd.forceGripStarted)\
+		FIELDSFUNC(client->ps.rocketTargetTime)\
+		FIELDSFUNC(client->ps.droneExistTime)\
+		FIELDSFUNC(client->ps.droneFireTime)\
+		FIELDSFUNC(client->ps.emplacedTime)\
+
+/*
 // these are fields we must compensaate when restoring position. :/ :) :( 
 // TODO check if theres more in pmove (a lot of this is just stuff in w_force and such that used to be level.time related)
 size_t clCompensateFieldOffsetsInt[] = {
@@ -21,6 +132,7 @@ size_t clCompensateFieldOffsetsInt[] = {
 	CLF_INT(ps.fallingToDeath),
 	CLF_INT(ps.fd.forceGripUseTime),
 	CLF_INT(ps.forceHandExtendTime),
+	CLF_INT(ps.fd.forceGripUseTime),
 	CLF_INT(ps.fd.forceHealTime),
 	CLF_INT(ps.fd.forceJumpAddTime),
 	CLF_INT(ps.fd.forcePowerRegenDebounceTime),
@@ -72,7 +184,7 @@ size_t clCompensateFieldOffsetsFloat[] = {
 	CLF_FLT(ps.emplacedTime),
 };
 size_t clCompensateFieldOffsetsFloatCount = sizeof(clCompensateFieldOffsetsFloat) / sizeof(clCompensateFieldOffsetsFloat[0]);
-
+*/
 
 #if SEGMENTEDDEBUG
 // using the stringizing operator to save typing...
@@ -237,7 +349,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	cl = activator->client;
 
-	if (!cl->sess.raceMode) return;
+	if (!cl->sess.raceMode || cl->ps.pm_type != PM_NORMAL || cl->ps.stats[STAT_HEALTH] <= 0) return;
 
 	if (cl->sess.raceStateInvalidated) {
 		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
@@ -299,13 +411,16 @@ const char* DF_MsToString(const int ms)
 // Stop race timer
 void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
+	gclient_t* cl;
 	int	timeLast, timeBest, lessTime = 0;
 	char timeLastStr[32], timeBestStr[32];
 	
 	// Check client
 	if (!activator->client) return;
 
-	if (!activator->client->sess.raceMode) return;
+	cl = activator->client;
+
+	if (!cl->sess.raceMode || cl->ps.pm_type != PM_NORMAL || cl->ps.stats[STAT_HEALTH] <= 0) return;
 
 	if (activator->client->sess.raceStateInvalidated) {
 		//trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
@@ -370,12 +485,15 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 // Checkpoint race timer
 void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace) // TODO Make this only trigger on first contact
 {
+	gclient_t* cl;
 	int	timeCheck, lessTime=0;
 
 	// Check client
 	if (!activator->client) return;
 
-	if (!activator->client->sess.raceMode) return;
+	cl = activator->client;
+
+	if (!cl->sess.raceMode || cl->ps.pm_type != PM_NORMAL || cl->ps.stats[STAT_HEALTH] <= 0) return;
 
 	if (activator->client->sess.raceStateInvalidated) {
 		//trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
@@ -936,14 +1054,47 @@ qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	memset(savedPosition, 0, sizeof(savedPosition_t));
 	savedPosition->ps = client->client->ps;
 	savedPosition->raceStyle = client->client->sess.raceStyle;
-	savedPosition->buttons = client->client->buttons;
-	savedPosition->oldbuttons = client->client->oldbuttons;
-	savedPosition->latched_buttons = client->client->latched_buttons;
-	VectorCopy(client->r.mins, savedPosition->mins);
-	VectorCopy(client->r.maxs, savedPosition->maxs);
+	//savedPosition->client.buttons = client->client->buttons;
+	//savedPosition->client.oldbuttons = client->client->oldbuttons;
+	//savedPosition->client.latched_buttons = client->client->latched_buttons;
+	//VectorCopy(client->r.mins, savedPosition->r.mins);
+	//VectorCopy(client->r.maxs, savedPosition->r.maxs);
 	savedPosition->raceStartCommandTime = (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) ? client->client->pers.raceStartCommandTime : 0;
-	savedPosition->contents = client->r.contents;
+	//savedPosition->r.contents = client->r.contents;
+
+#define FIELDSFUNC(a) savedPosition->client.a=client->client->a; // lord have mercy
+	FIELDSCLIENT()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) VectorCopy(client->client->a, savedPosition->client.a); // lord have mercy
+	FIELDSCLIENTVEC3()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) savedPosition->a=client->a; // lord have mercy
+	FIELDSENT()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) VectorCopy(client->a, savedPosition->a); // lord have mercy
+		FIELDSENTVEC3()
+#undef FIELDSFUNC
+
+
 	return qtrue;
+
+	// its after the return so it will never be reached but its still a nice check for the compiler.
+#if 1 // use this when you add new vars to check if we are copying to the right types. qvm will refuse to compile if there are mismatches
+		if (1) {
+#define FIELDSFUNC(a) VALIDATEPTRCMP(&savedPosition->client.a,&client->client->a); // lord have mercy
+			FIELDSCLIENT()
+			FIELDSCLIENTVEC3()
+#undef FIELDSFUNC
+#define FIELDSFUNC(a) VALIDATEPTRCMP(&savedPosition->a,&client->a); // lord have mercy
+			FIELDSENT()
+			FIELDSENTVEC3()
+#undef FIELDSFUNC
+				
+		}
+#endif
 }
 
 qboolean DF_ClientInSegmentedRunMode(gclient_t* client) {
@@ -987,6 +1138,24 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	backupPS = client->client->ps;
 	client->client->ps = *storedPS;
 
+
+#define FIELDSFUNC(a) client->client->a=savedPosition->client.a; // lord have mercy
+	FIELDSCLIENT()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) VectorCopy( savedPosition->client.a,client->client->a); // lord have mercy
+		FIELDSCLIENTVEC3()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) client->a=savedPosition->a; // lord have mercy
+		FIELDSENT()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) VectorCopy(savedPosition->a,client->a); // lord have mercy
+		FIELDSENTVEC3()
+#undef FIELDSFUNC
+
+
 	// make sure there's no weirdness
 	client->client->ps.eFlags = (client->client->ps.eFlags & ~EF_TELEPORT_BIT) | ((backupPS.eFlags & EF_TELEPORT_BIT) ^ EF_TELEPORT_BIT); // Make it teleport
 	
@@ -1014,8 +1183,12 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	//if (storedPS->duelTime) client->client->ps.duelTime += delta;
 	//if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
 
+#define FIELDSFUNC(a) if (client->a > 0) { client->a += delta; }
+	TIMECOMPENSATEFIELDS()
+#undef FIELDSFUNC
+
 	// adjust integer fields
-	for (i = 0; i < clCompensateFieldOffsetsIntCount; i++) {
+	/*for (i = 0; i < clCompensateFieldOffsetsIntCount; i++) {
 		intPtr = (int*)(((byte*)client->client) + clCompensateFieldOffsetsInt[i]);
 		if (*intPtr) *intPtr += delta;
 	}
@@ -1023,7 +1196,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	for (i = 0; i < clCompensateFieldOffsetsFloatCount; i++) {
 		floatPtr = (float*)(((byte*)client->client) + clCompensateFieldOffsetsFloat[i]);
 		if (*floatPtr) *floatPtr += (float)delta;
-	}
+	}*/
 	for (i = 0; i < MAX_POWERUPS; i++) {
 		if (client->client->ps.powerups[i]) client->client->ps.powerups[i] += delta;
 	}
@@ -1040,9 +1213,9 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	client->client->ps.persistant[PERS_SPAWN_COUNT] = backupPS.persistant[PERS_SPAWN_COUNT];
 
 	client->health = storedPS->stats[STAT_HEALTH];
-	client->client->buttons = savedPosition->buttons;
-	client->client->oldbuttons = savedPosition->oldbuttons;
-	client->client->latched_buttons = savedPosition->latched_buttons;
+	client->client->buttons = savedPosition->client.buttons;
+	client->client->oldbuttons = savedPosition->client.oldbuttons;
+	client->client->latched_buttons = savedPosition->client.latched_buttons;
 
 	if (diffAccum) {
 		VectorCopy(backupPS.delta_angles, oldDelta);
@@ -1060,9 +1233,9 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 
 	VectorCopy(client->client->ps.origin, client->r.currentOrigin);
 
-	VectorCopy(savedPosition->mins,client->r.mins);
-	VectorCopy(savedPosition->maxs, client->r.maxs);
-	client->r.contents = savedPosition->contents;
+	VectorCopy(savedPosition->r.mins,client->r.mins);
+	VectorCopy(savedPosition->r.maxs, client->r.maxs);
+	client->r.contents = savedPosition->r.contents;
 	trap_LinkEntity(client);
 
 	// maybe restore oldbuttons and buttons?
