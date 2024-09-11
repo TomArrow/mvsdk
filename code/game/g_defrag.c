@@ -118,73 +118,6 @@ extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 		FIELDSFUNC(client->ps.droneFireTime)\
 		FIELDSFUNC(client->ps.emplacedTime)\
 
-/*
-// these are fields we must compensaate when restoring position. :/ :) :( 
-// TODO check if theres more in pmove (a lot of this is just stuff in w_force and such that used to be level.time related)
-size_t clCompensateFieldOffsetsInt[] = {
-	CLF_INT(airOutTime),
-	CLF_INT(dangerTime),
-	CLF_INT(forcePowerSoundDebounce),
-	CLF_INT(invulnerableTimer),
-	CLF_INT(lastSaberStorageTime),
-	CLF_INT(ps.duelTime),
-	CLF_INT(ps.electrifyTime),
-	CLF_INT(ps.fallingToDeath),
-	CLF_INT(ps.fd.forceGripUseTime),
-	CLF_INT(ps.forceHandExtendTime),
-	CLF_INT(ps.fd.forceGripUseTime),
-	CLF_INT(ps.fd.forceHealTime),
-	CLF_INT(ps.fd.forceJumpAddTime),
-	CLF_INT(ps.fd.forcePowerRegenDebounceTime),
-	CLF_INT(ps.fd.forceRageRecoveryTime),
-	CLF_INT(ps.footstepTime),
-	CLF_INT(ps.forceAllowDeactivateTime),
-	CLF_INT(ps.forceGripMoveInterval),
-	CLF_INT(ps.forceHandExtendTime),
-	CLF_INT(ps.forceRageDrainTime),
-	CLF_INT(ps.groundTime),
-	CLF_INT(ps.holdMoveTime),
-	CLF_INT(ps.lastOnGround),
-	CLF_INT(ps.otherKillerDebounceTime),
-	CLF_INT(ps.otherKillerTime),
-	CLF_INT(ps.otherSoundTime),
-	CLF_INT(ps.painTime),
-	//CLF_INT(ps.rocketLockTime), // needs special handling
-	CLF_INT(ps.saberAttackWound),
-	CLF_INT(ps.saberBlockTime),
-	CLF_INT(ps.saberDidThrowTime),
-	CLF_INT(ps.saberIdleWound),
-	CLF_INT(ps.saberLockTime),
-	CLF_INT(ps.saberThrowDelay),
-	CLF_INT(ps.useDelay),
-	CLF_INT(ps.weaponChargeTime),
-	CLF_INT(ps.weaponChargeSubtractTime),
-	CLF_INT(ps.zoomTime),
-	CLF_INT(ps.zoomLockTime),
-	CLF_INT(respawnTime),
-	CLF_INT(rewardTime),
-	CLF_INT(sess.updateUITime)
-};
-
-size_t clCompensateFieldOffsetsIntCount = sizeof(clCompensateFieldOffsetsInt) / sizeof(clCompensateFieldOffsetsInt[0]);
-
-size_t clCompensateFieldOffsetsFloat[] = {
-
-	CLF_FLT(pers.teamState.flagsince),
-	CLF_FLT(pers.teamState.lastfraggedcarrier),
-	CLF_FLT(pers.teamState.lasthurtcarrier),
-	CLF_FLT(pers.teamState.lastreturnedflag),
-	CLF_FLT(ps.fd.forceDrainTime),
-	CLF_FLT(ps.fd.forceGripBeingGripped),
-	CLF_FLT(ps.fd.forceGripSoundTime),
-	CLF_FLT(ps.fd.forceGripStarted),
-	CLF_FLT(ps.rocketTargetTime),
-	CLF_FLT(ps.droneExistTime),
-	CLF_FLT(ps.droneFireTime),
-	CLF_FLT(ps.emplacedTime),
-};
-size_t clCompensateFieldOffsetsFloatCount = sizeof(clCompensateFieldOffsetsFloat) / sizeof(clCompensateFieldOffsetsFloat[0]);
-*/
 
 #if SEGMENTEDDEBUG
 // using the stringizing operator to save typing...
@@ -1049,53 +982,6 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 }
 
 
-qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
-	if (!client->client) return qfalse;
-	memset(savedPosition, 0, sizeof(savedPosition_t));
-	savedPosition->ps = client->client->ps;
-	savedPosition->raceStyle = client->client->sess.raceStyle;
-	//savedPosition->client.buttons = client->client->buttons;
-	//savedPosition->client.oldbuttons = client->client->oldbuttons;
-	//savedPosition->client.latched_buttons = client->client->latched_buttons;
-	//VectorCopy(client->r.mins, savedPosition->r.mins);
-	//VectorCopy(client->r.maxs, savedPosition->r.maxs);
-	savedPosition->raceStartCommandTime = (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) ? client->client->pers.raceStartCommandTime : 0;
-	//savedPosition->r.contents = client->r.contents;
-
-#define FIELDSFUNC(a) savedPosition->client.a=client->client->a; // lord have mercy
-	FIELDSCLIENT()
-#undef FIELDSFUNC
-
-#define FIELDSFUNC(a) VectorCopy(client->client->a, savedPosition->client.a); // lord have mercy
-	FIELDSCLIENTVEC3()
-#undef FIELDSFUNC
-
-#define FIELDSFUNC(a) savedPosition->a=client->a; // lord have mercy
-	FIELDSENT()
-#undef FIELDSFUNC
-
-#define FIELDSFUNC(a) VectorCopy(client->a, savedPosition->a); // lord have mercy
-		FIELDSENTVEC3()
-#undef FIELDSFUNC
-
-
-	return qtrue;
-
-	// its after the return so it will never be reached but its still a nice check for the compiler.
-#if 1 // use this when you add new vars to check if we are copying to the right types. qvm will refuse to compile if there are mismatches
-		if (1) {
-#define FIELDSFUNC(a) VALIDATEPTRCMP(&savedPosition->client.a,&client->client->a); // lord have mercy
-			FIELDSCLIENT()
-			FIELDSCLIENTVEC3()
-#undef FIELDSFUNC
-#define FIELDSFUNC(a) VALIDATEPTRCMP(&savedPosition->a,&client->a); // lord have mercy
-			FIELDSENT()
-			FIELDSENTVEC3()
-#undef FIELDSFUNC
-				
-		}
-#endif
-}
 
 qboolean DF_ClientInSegmentedRunMode(gclient_t* client) {
 	return (qboolean)(client->sess.raceMode && (client->sess.raceStyle.runFlags & RFL_SEGMENTED));
@@ -1122,6 +1008,49 @@ void DF_PostDeltaAngleChange(gclient_t* client) {
 		client->pers.segmented.anglesDiffAccum[1] &= 65535;
 		client->pers.segmented.anglesDiffAccum[2] &= 65535;
 	}
+}
+
+
+qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
+	if (!client->client) return qfalse;
+	memset(savedPosition, 0, sizeof(savedPosition_t));
+	savedPosition->ps = client->client->ps;
+	savedPosition->raceStyle = client->client->sess.raceStyle;
+	savedPosition->raceStartCommandTime = (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) ? client->client->pers.raceStartCommandTime : 0;
+
+#define FIELDSFUNC(a) savedPosition->client.a=client->client->a; // lord have mercy
+	FIELDSCLIENT()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) VectorCopy(client->client->a, savedPosition->client.a); // lord have mercy
+	FIELDSCLIENTVEC3()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) savedPosition->a=client->a; // lord have mercy
+	FIELDSENT()
+#undef FIELDSFUNC
+
+#define FIELDSFUNC(a) VectorCopy(client->a, savedPosition->a); // lord have mercy
+	FIELDSENTVEC3()
+#undef FIELDSFUNC
+
+
+	return qtrue;
+
+	// its after the return so it will never be reached but its still a nice check for the compiler.
+#if 1 // use this when you add new vars to check if we are copying to the right types. qvm will refuse to compile if there are mismatches
+		if (1) {
+#define FIELDSFUNC(a) VALIDATEPTRCMP(&savedPosition->client.a,&client->client->a); // lord have mercy
+			FIELDSCLIENT()
+			FIELDSCLIENTVEC3()
+#undef FIELDSFUNC
+#define FIELDSFUNC(a) VALIDATEPTRCMP(&savedPosition->a,&client->a); // lord have mercy
+			FIELDSENT()
+			FIELDSENTVEC3()
+#undef FIELDSFUNC
+				
+		}
+#endif
 }
 
 void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum) {
@@ -1170,33 +1099,13 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	// retime
 	delta = backupPS.commandTime - storedPS->commandTime;
 	client->client->ps.commandTime = backupPS.commandTime;
-	//if (storedPS->weaponChargeTime) client->client->ps.weaponChargeTime += delta;
-	//if (storedPS->weaponChargeSubtractTime) client->client->ps.weaponChargeSubtractTime += delta;
-	//if (storedPS->zoomTime) client->client->ps.zoomTime += delta;
 	if (storedPS->genericEnemyIndex >= 1024) client->client->ps.genericEnemyIndex += delta;
-	//if (storedPS->fd.forceRageRecoveryTime) client->client->ps.fd.forceRageRecoveryTime += delta;
 	if (storedPS->rocketLockTime > 0) client->client->ps.rocketLockTime += delta;
-	//if (storedPS->rocketTargetTime) client->client->ps.rocketTargetTime += delta;
-	//if (storedPS->fallingToDeath) client->client->ps.fallingToDeath += delta;
-	//if (storedPS->electrifyTime) client->client->ps.electrifyTime += delta;
-	//if (storedPS->fd.forcePowerDebounce[FP_LEVITATION]) client->client->ps.fd.forcePowerDebounce[FP_LEVITATION] += delta;
-	//if (storedPS->duelTime) client->client->ps.duelTime += delta;
-	//if (storedPS->saberLockTime) client->client->ps.saberLockTime += delta;
 
 #define FIELDSFUNC(a) if (client->a > 0) { client->a += delta; }
 	TIMECOMPENSATEFIELDS()
 #undef FIELDSFUNC
 
-	// adjust integer fields
-	/*for (i = 0; i < clCompensateFieldOffsetsIntCount; i++) {
-		intPtr = (int*)(((byte*)client->client) + clCompensateFieldOffsetsInt[i]);
-		if (*intPtr) *intPtr += delta;
-	}
-	// adjust float fields
-	for (i = 0; i < clCompensateFieldOffsetsFloatCount; i++) {
-		floatPtr = (float*)(((byte*)client->client) + clCompensateFieldOffsetsFloat[i]);
-		if (*floatPtr) *floatPtr += (float)delta;
-	}*/
 	for (i = 0; i < MAX_POWERUPS; i++) {
 		if (client->client->ps.powerups[i]) client->client->ps.powerups[i] += delta;
 	}

@@ -79,14 +79,14 @@ typedef struct savedPosition_s {
 } savedPosition_t;
 
 
-typedef struct {
-	//char* name;
-	//debugFieldType_t type;
-	size_t	offset;
-	size_t	offsetSavepos;
-	size_t	typeSize;
-	//char* typeName;
-} saveposField_t;
+//typedef struct {
+//	//char* name;
+//	//debugFieldType_t type;
+//	size_t	offset;
+//	size_t	offsetSavepos;
+//	size_t	typeSize;
+//	//char* typeName;
+//} saveposField_t;
 
 // TODO What if someone touches start trigger, then just stands around forever with start active?
 typedef enum segmentedRunState_s {
