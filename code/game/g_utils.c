@@ -832,7 +832,7 @@ void G_AddEvent( gentity_t *ent, int event, int eventParm ) {
 		ent->s.event = event | bits;
 		ent->s.eventParm = eventParm;
 	}
-	ent->eventTime = level.time;
+	ent->eventTime = LEVELTIME(ent->client);
 }
 
 /*

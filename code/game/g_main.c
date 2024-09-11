@@ -2732,7 +2732,7 @@ void G_RunFrame( int levelTime ) {
 		}
 
 		// clear events that are too old
-		if ( level.time - ent->eventTime > EVENT_VALID_MSEC ) {
+		if ( LEVELTIME(ent->client) - ent->eventTime > EVENT_VALID_MSEC ) {
 			if ( ent->s.event ) {
 				ent->s.event = 0;	// &= EV_EVENT_BITS;
 				if ( ent->client ) {
@@ -2847,7 +2847,17 @@ start = trap_Milliseconds();
 	ent = &g_entities[0];
 	for (i=0 ; i < level.maxclients ; i++, ent++ ) {
 		if ( ent->inuse ) {
-			ClientEndFrame( ent );
+			if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+				ClientEndFrame(ent,qfalse);
+			}
+		}
+	}
+	ent = &g_entities[0];
+	for (i=0 ; i < level.maxclients ; i++, ent++ ) {
+		if ( ent->inuse ) {
+			if (ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+				SpectatorClientEndFrame(ent); // put spectators in their own loop so they get the truly most updated version
+			}
 		}
 	}
 end = trap_Milliseconds();

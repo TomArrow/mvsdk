@@ -921,7 +921,9 @@ void ClientCommand( int clientNum );
 //
 void G_CheckClientTimeouts	( gentity_t *ent );
 void ClientThink			( int clientNum );
-void ClientEndFrame			( gentity_t *ent );
+void ClientEndFrame			( gentity_t *ent, qboolean forceFull);
+void ClientEndFrameInClientThink(gentity_t* ent);
+void SpectatorClientEndFrame(gentity_t* ent);
 void G_RunClient			( gentity_t *ent );
 
 //

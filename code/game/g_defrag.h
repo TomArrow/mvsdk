@@ -53,7 +53,7 @@ typedef struct savedPosition_s {
 		int				saberCycleQueue;
 		int				damage_armor;		// damage absorbed by armor
 		int				damage_blood;		// damage taken out of health
-		int				damage_knockback;	// impact damage
+		//int				damage_knockback;	// impact damage (dont see this actually used anywhere atm)
 		vec3_t			damage_from;		// origin for vector calculation
 		qboolean		damage_fromWorld;	// if true, don't use the damage_from vector
 		int				respawnTime;		// can respawn when time > this, force after g_forcerespwan

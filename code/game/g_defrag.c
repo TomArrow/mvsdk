@@ -26,7 +26,6 @@ extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 		FIELDSFUNC(saberCycleQueue)\
 		FIELDSFUNC(damage_armor)\
 		FIELDSFUNC(damage_blood)\
-		FIELDSFUNC(damage_knockback)\
 		FIELDSFUNC(damage_fromWorld)\
 		FIELDSFUNC(respawnTime)\
 		FIELDSFUNC(rewardTime)\
@@ -37,8 +36,9 @@ extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 		FIELDSFUNC(hasCurrentPosition)\
 		FIELDSFUNC(sess.saberLevel)\
 		FIELDSFUNC(sess.selectedFP)\
-		FIELDSFUNC(sess.setForce)\
-		//FIELDSFUNC(sess.updateUITime)\
+		FIELDSFUNC(sess.setForce)
+		//FIELDSFUNC(damage_knockback)\ // not used anywhere?
+		//FIELDSFUNC(sess.updateUITime)\ // not used anywhere?
 
 #define FIELDSCLIENTVEC3()\
 		FIELDSFUNC(damage_from)\

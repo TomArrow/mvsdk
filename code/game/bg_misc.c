@@ -2643,6 +2643,7 @@ static void BG_SwingAngles( float destination, float swingTolerance, float clamp
 CG_AddPainTwitch
 =================
 */
+/* Commented this out for clarity because its never used anywhere.
 #define	PAIN_TWITCH_TIME	200
 static void BG_AddPainTwitch( int painTime, int painDirection, int currentTime,  vec3_t torsoAngles ) {
 	int		t;
@@ -2701,8 +2702,12 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	torsoAngles[YAW] = headAngles[YAW] + 0.25 * movementOffsets[ dir ];
 
 	// torso
-	BG_SwingAngles( torsoAngles[YAW], 25, 90, /*cg_swingSpeed.value*/ 0.3f, torso_yawAngle, torso_yawing, frameTime );
-	BG_SwingAngles( legsAngles[YAW], 40, 90, /*cg_swingSpeed.value*/ 0.3f, legs_yawAngle, legs_yawing, frameTime );
+	BG_SwingAngles( torsoAngles[YAW], 25, 90, 
+	//cg_swingSpeed.value 
+0.3f, torso_yawAngle, torso_yawing, frameTime );
+	BG_SwingAngles( legsAngles[YAW], 40, 90,
+	//cg_swingSpeed.value
+		0.3f, legs_yawAngle, legs_yawing, frameTime );
 
 	torsoAngles[YAW] = *torso_yawAngle;
 	legsAngles[YAW] = *legs_yawAngle;
@@ -2748,3 +2753,4 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 //g2r	trap_G2API_SetBoneAngles(ghoul2, 0, "cranium", headAngles, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, modelList,0, currentTime); 
 
 }
+*/

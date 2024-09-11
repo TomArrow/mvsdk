@@ -10,7 +10,7 @@ qboolean PM_SaberInReturn( int move );
 void P_SetTwitchInfo(gclient_t	*client)
 {
 	client->ps.painTime = LEVELTIME(client);
-	client->ps.painDirection ^= 1;
+	client->ps.painDirection ^= 1; // not even sent over the network, kek
 }
 
 /*
@@ -28,6 +28,9 @@ void P_DamageFeedback( gentity_t *player ) {
 	float	count;
 	vec3_t	angles;
 	int nowTime = LEVELTIME(player->client);
+
+	// all of this stuff seems only relevant for cgame
+	// but pain_debounce_time is co-used by other stuff so lets put it in clientthink_real anyway when racemodeing
 
 	client = player->client;
 	if ( client->ps.pm_type == PM_DEAD ) {
@@ -66,8 +69,8 @@ void P_DamageFeedback( gentity_t *player ) {
 		if (nowTime - client->ps.painTime < 500 ) {
 			return;
 		}
-		P_SetTwitchInfo(client);
-		player->pain_debounce_time = nowTime + 700;
+		P_SetTwitchInfo(client); // defrag note:unless im mistaken, this is only used gameside in BG_AddPainTwitch, which is called in BG_G2PlayerAngles, which is actually never used
+		player->pain_debounce_time = nowTime + 700; // timer also used for sizzle and uh... EV_ROLL?!
 		G_AddEvent( player, EV_PAIN, player->health );
 		client->ps.damageEvent++;
 
@@ -1915,7 +1918,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// save results of pmove
 	if ( ent->client->ps.eventSequence != oldEventSequence ) {
-		ent->eventTime = level.time;
+		ent->eventTime = nowTime;
 	}
 	if (g_smoothClients.integer) {
 		BG_PlayerStateToEntityStateExtraPolate( &ent->client->ps, &ent->s, ent->client->ps.commandTime, qtrue );
@@ -1964,7 +1967,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// save results of triggers and client events
 	if (ent->client->ps.eventSequence != oldEventSequence) {
-		ent->eventTime = level.time;
+		ent->eventTime = nowTime;
 	}
 
 	// swap and latch button actions
@@ -2057,6 +2060,10 @@ void ClientThink_real( gentity_t *ent ) {
 	ClientTimerActions( ent, msec );
 
 	G_UpdateClientBroadcasts ( ent );
+
+	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		ClientEndFrameInClientThink(ent);
+	}
 }
 
 /*
@@ -2306,6 +2313,69 @@ void SpectatorClientEndFrame( gentity_t *ent ) {
 	}
 }
 
+void ClientEndFrameRaceCritical(gentity_t* ent) {
+	int i;
+	int			nowTime = LEVELTIME(ent->client);
+
+	// turn off any expired powerups
+	for (i = 0; i < MAX_POWERUPS; i++) {
+		if (ent->client->ps.powerups[i] < nowTime) {
+			ent->client->ps.powerups[i] = 0;
+		}
+	}
+
+	// save network bandwidth
+#if 0
+	if (!g_synchronousClients->integer && (ent->client->ps.pm_type == PM_NORMAL || ent->client->ps.pm_type == PM_FLOAT)) {
+		// FIXME: this must change eventually for non-sync demo recording
+		VectorClear(ent->client->ps.viewangles);
+	}
+#endif
+
+	//
+	// If the end of unit layout is displayed, don't give
+	// the player any normal movement attributes
+	//
+	if (level.intermissiontime) {
+		return;
+	}
+
+	// burn from lava, etc
+	P_WorldEffects(ent);
+
+	// apply all the damage taken this frame
+	P_DamageFeedback(ent);
+
+	// add the EF_CONNECTION flag if we haven't gotten commands recently
+	if (level.time - ent->client->lastCmdTime > 1000) {
+		ent->s.eFlags |= EF_CONNECTION;
+	}
+	else {
+		ent->s.eFlags &= ~EF_CONNECTION;
+	}
+
+	G_SetClientSound(ent);
+}
+
+void ClientEndFrameServerFrame(gentity_t* ent) {
+	// defrag: keep stuff below in a loop that is actually at the end to have up to date values.
+
+	ent->client->ps.stats[STAT_HEALTH] = ent->health;	// FIXME: get rid of ent->health...
+
+
+	// set the latest infor
+	if (g_smoothClients.integer) {
+		BG_PlayerStateToEntityStateExtraPolate(&ent->client->ps, &ent->s, ent->client->ps.commandTime, qtrue);
+	}
+	else {
+		BG_PlayerStateToEntityState(&ent->client->ps, &ent->s, qtrue);
+	}
+	SendPendingPredictableEvents(&ent->client->ps);
+
+	// set the bit for the reachability area the client is currently in
+//	i = trap_AAS_PointReachabilityAreaIndex( ent->client->ps.origin );
+//	ent->client->areabits[i >> 3] |= 1 << (i & 7);
+}
 /*
 ==============
 ClientEndFrame
@@ -2315,67 +2385,35 @@ A fast client will have multiple ClientThink for each ClientEdFrame,
 while a slow client may have multiple ClientEndFrame between ClientThink.
 ==============
 */
-void ClientEndFrame( gentity_t *ent ) {
-	int			i;
-	int			nowTime = LEVELTIME(ent->client);
+void ClientEndFrame( gentity_t *ent, qboolean forceFull) {
+	//int			i;
+	//int			nowTime = LEVELTIME(ent->client);
 
-	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
-		SpectatorClientEndFrame( ent );
-		return;
+	// this gets its own loop now.
+	//if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
+	//	SpectatorClientEndFrame( ent );
+	//	return;
+	//}
+
+	if (!ent->client->sess.raceMode || forceFull) {
+		ClientEndFrameRaceCritical(ent);
 	}
+	ClientEndFrameServerFrame(ent);
+}
 
-	// turn off any expired powerups
-	for ( i = 0 ; i < MAX_POWERUPS ; i++ ) {
-		if ( ent->client->ps.powerups[ i ] < nowTime) {
-			ent->client->ps.powerups[ i ] = 0;
-		}
+void ClientEndFrameInClientThink( gentity_t *ent ) {
+	//int			i;
+	//int			nowTime = LEVELTIME(ent->client);
+
+	// this gets its own loop now.
+	//if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
+	//	SpectatorClientEndFrame( ent );
+	//	return;
+	//}
+
+	if (ent->client->sess.raceMode) {
+		ClientEndFrameRaceCritical(ent);
 	}
-
-	// save network bandwidth
-#if 0
-	if ( !g_synchronousClients->integer && (ent->client->ps.pm_type == PM_NORMAL || ent->client->ps.pm_type == PM_FLOAT) ) {
-		// FIXME: this must change eventually for non-sync demo recording
-		VectorClear( ent->client->ps.viewangles );
-	}
-#endif
-
-	//
-	// If the end of unit layout is displayed, don't give
-	// the player any normal movement attributes
-	//
-	if ( level.intermissiontime ) {
-		return;
-	}
-
-	// burn from lava, etc
-	P_WorldEffects (ent);
-
-	// apply all the damage taken this frame
-	P_DamageFeedback (ent);
-
-	// add the EF_CONNECTION flag if we haven't gotten commands recently
-	if ( level.time - ent->client->lastCmdTime > 1000 ) {
-		ent->s.eFlags |= EF_CONNECTION;
-	} else {
-		ent->s.eFlags &= ~EF_CONNECTION;
-	}
-
-	ent->client->ps.stats[STAT_HEALTH] = ent->health;	// FIXME: get rid of ent->health...
-
-	G_SetClientSound (ent);
-
-	// set the latest infor
-	if (g_smoothClients.integer) {
-		BG_PlayerStateToEntityStateExtraPolate( &ent->client->ps, &ent->s, ent->client->ps.commandTime, qtrue );
-	}
-	else {
-		BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, qtrue );
-	}
-	SendPendingPredictableEvents( &ent->client->ps );
-
-	// set the bit for the reachability area the client is currently in
-//	i = trap_AAS_PointReachabilityAreaIndex( ent->client->ps.origin );
-//	ent->client->areabits[i >> 3] |= 1 << (i & 7);
 }
 
 
