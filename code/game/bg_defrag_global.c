@@ -70,7 +70,7 @@ qboolean MovementIsQuake3Based(int moveStyle) {
 }
 float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd) {
 	if (moveStyle == MV_BOUNCE) {
-		if (/*ps->stats[STAT_BOUNCEPOWER] &&*/ (ucmd->buttons & BUTTON_BOUNCEPOWER)) {
+		if ((ps->stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK) && (ucmd->buttons & BUTTON_BOUNCEPOWER)) {
 			return 2.0f;
 		}
 		return 1.3f;

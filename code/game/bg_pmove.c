@@ -4730,6 +4730,8 @@ PM_DropTimers
 ================
 */
 static void PM_DropTimers( void ) {
+	const int moveStyle = PM_GetMovePhysics();
+
 	// drop misc timing counter
 	if ( pm->ps->pm_time ) {
 		if ( pml.msec >= pm->ps->pm_time ) {
@@ -4753,6 +4755,27 @@ static void PM_DropTimers( void ) {
 		if ( pm->ps->torsoTimer < 0 ) {
 			pm->ps->torsoTimer = 0;
 		}
+	}
+
+	// handle bounce power
+	if (moveStyle == MV_BOUNCE) {
+		int bouncePower = pm->ps->stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK;
+		int bounceRegenTimer = (pm->ps->stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_REGENMASK) >> 9;
+		if (pm->cmd.buttons & BUTTON_BOUNCEPOWER) {
+			// using bounce power. decrease it.
+			bouncePower -= pml.msec;
+			bounceRegenTimer = BOUNCEPOWER_REGEN_MAX;
+		}
+		else {
+			bounceRegenTimer -= pml.msec;
+			if (bounceRegenTimer <= 0) {
+				bouncePower += 10;
+				bounceRegenTimer = BOUNCEPOWER_REGEN_MAX;
+			}
+		}
+		bouncePower = MAX(0,MIN(BOUNCEPOWER_MAX,bouncePower));
+		bounceRegenTimer = MAX(0,MIN(BOUNCEPOWER_REGEN_MAX, bounceRegenTimer));
+		pm->ps->stats[STAT_BOUNCEPOWER] = (bouncePower & BOUNCEPOWER_POWERMASK) | ((bounceRegenTimer << 9) & BOUNCEPOWER_REGENMASK);
 	}
 }
 

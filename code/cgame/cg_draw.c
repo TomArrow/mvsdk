@@ -15,6 +15,7 @@ static void CG_MovementKeys(centity_t *cent);
 static void CG_Speedometer(void); //jk2pro
 static void CG_StrafeHelper(centity_t *cent); //jk2pro
 static void CG_DrawAccelMeter(void); //jk2pro
+static void CG_DrawBouncePowerMeter(void); //tommyternal :)
 static void CG_JumpHeight(centity_t *cent); //jk2pro
 //static void CG_RaceTimer(centity_t *cent); //jk2pro
 static void CG_DrawSpeedGraph(rectDef_t* rect, vec4_t foreColor,
@@ -1163,6 +1164,8 @@ void CG_DrawHUD(centity_t	*cent)
 
 	if (cg_movementKeys.integer)
 		CG_MovementKeys(cent);
+
+	CG_DrawBouncePowerMeter();
 
 	speedometerXPos = cg_speedometerX.value;
 
@@ -5304,6 +5307,8 @@ static void CG_Draw2D( void ) {
 
 			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
 
+			CG_DrawBouncePowerMeter();
+
 			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE) || cg_strafeHelper.integer || (cgs.isJK2Pro && cg_raceTimer.integer > 1))
 				CG_CalculateSpeed(cent);
 
@@ -6355,6 +6360,42 @@ static void CG_DrawAccelMeter(void)
 	//CG_Text_Paint(cg_speedometerX.integer, cg_speedometerY.integer -12, cg_speedometerSize.value, colorWhite, accelPercentStr, 0.0f, 0, ITEM_ALIGN_RIGHT|ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 
 	cg.previousSpeed = cg.currentSpeed;
+}
+
+static void CG_DrawBouncePowerMeter(void)
+{
+	float x, y;
+	int bouncePower, bounceRegenTimer;
+	float bouncePowerPercentage, bouncePowerRegenPercentage;
+
+	if (!cgs.isTommyTernal || !cg.predictedPlayerState.stats[STAT_RACEMODE] || cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_BOUNCE) return;
+
+
+	bouncePower = cg.predictedPlayerState.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK;
+	bounceRegenTimer = (cg.predictedPlayerState.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_REGENMASK) >> 9;
+	bouncePowerPercentage = (float)bouncePower / (float)BOUNCEPOWER_MAX;
+	bouncePowerRegenPercentage = (float)bounceRegenTimer / (float)BOUNCEPOWER_REGEN_MAX;
+
+	x = 30;
+	y = 200;
+	CG_DrawRect(x - 0.75,
+		y - 0.75,
+		13.5,
+		51.5,
+		0.5f,
+		colorTable[CT_BLACK]);
+
+	CG_FillRect(x,
+		y+ (50-bouncePowerPercentage * 50),
+		12,
+		bouncePowerPercentage * 50,
+		colorTable[CT_CYAN]);
+	//CG_FillRect(x,
+	//	y,
+	//	2,
+	//	bouncePowerRegenPercentage * 50,
+	//	colorTable[CT_RED]);
+
 }
 
 static void CG_JumpHeight(centity_t *cent)

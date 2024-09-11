@@ -350,12 +350,12 @@ typedef enum {
 	STAT_DEAD_YAW,					// look this direction when dead (FIXME: get rid of?)
 	STAT_CLIENTS_READY,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
 	STAT_MAX_HEALTH,				// health / armor limit, changable by handicap
-	STAT_BOUNCEPOWER,//STAT_DASHTIME, // unused rn
-	STAT_LASTJUMPSPEED,//STAT_LASTJUMPSPEED, // unused rn
+	STAT_BOUNCEPOWER,//STAT_DASHTIME,  // 9 bits for current bounce power (up to 500ms), 7 bits for regenerate timer (100 ms timeout to regen 10ms)
+	STAT_LASTJUMPSPEED,//STAT_LASTJUMPSPEED, 
 	STAT_RACEMODE,
 	STAT_PLACEHOLDER2,//STAT_ONLYBHOP, // unused rn
 	STAT_MOVEMENTSTYLE,
-	STAT_RUNFLAGS,//STAT_JUMPTIME, // unused rn
+	STAT_RUNFLAGS,//STAT_JUMPTIME, 
 	STAT_PLACEHOLDER4,//STAT_WJTIME // unused rn
 } statIndex_t;
 

@@ -4,6 +4,11 @@
 
 #include "q_shared.h"
 
+#define BOUNCEPOWER_MAX 500
+#define BOUNCEPOWER_REGEN_MAX 100
+#define BOUNCEPOWER_POWERMASK ((1<<9)-1)
+#define BOUNCEPOWER_REGENMASK (((1<<7)-1)<<9)
+
 
 typedef enum //movementstyle enum
 {
