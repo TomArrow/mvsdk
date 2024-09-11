@@ -1813,6 +1813,8 @@ typedef struct playerState_1_02_s {
 
 #define BUTTON_FORCE_DRAIN		2048
 
+#define BUTTON_BOUNCEPOWER		8192
+
 #define BUTTON_STRAFEBOT		16384
 
 // Here's an interesting bit.  The bots in TA used buttons to do additional gestures.

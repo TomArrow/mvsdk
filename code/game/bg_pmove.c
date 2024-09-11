@@ -16,6 +16,7 @@
 #define MAX_WEAPON_CHARGE_TIME 5000
 
 extern qboolean PM_GroundSlideOkay(float zNormal);
+extern float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd);
 
 pmove_t		*pm;
 pml_t		pml;
@@ -807,7 +808,7 @@ qboolean PM_ForceJumpingUp(void)
 	return qfalse;
 }
 
-static void PM_JumpForDir( void )
+void PM_JumpForDir( void )
 {
 	int anim = BOTH_JUMP1;
 	if ( pm->cmd.forwardmove > 0 ) 
@@ -1988,6 +1989,8 @@ static void PM_WaterMove( void ) {
 	vec3_t	wishdir;
 	float	scale;
 	float	vel;
+	int moveStyle = PM_GetMovePhysics();
+
 
 	if ( PM_CheckWaterJump() ) {
 		PM_WaterJumpMove();
@@ -2038,7 +2041,7 @@ static void PM_WaterMove( void ) {
 		vel = VectorLength(pm->ps->velocity);
 		// slide along the ground plane
 		PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
-			pm->ps->velocity, OVERCLIP );
+			pm->ps->velocity, MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd));
 
 		VectorNormalize(pm->ps->velocity);
 		VectorScale(pm->ps->velocity, vel, pm->ps->velocity);
@@ -2111,6 +2114,7 @@ static void PM_AirMove( void ) {
 	usercmd_t	cmd;
 	const int	runFlags = PM_GetRunFlags();
 	const int	movePhysics = PM_GetMovePhysics();
+	float		overbounce = MovementOverbounceFactor(movePhysics, pm->ps, &pm->cmd);
 
 	if (pm->ps->pm_type != PM_SPECTATOR)
 	{
@@ -2185,13 +2189,13 @@ static void PM_AirMove( void ) {
 				if (PM_GroundSlideOkay(pml.groundTrace.plane.normal[2]))
 				{
 					PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-						pm->ps->velocity, OVERCLIP);
+						pm->ps->velocity, overbounce);
 				}
 			}
 		}
 		else {
 			PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
-				pm->ps->velocity, OVERCLIP);
+				pm->ps->velocity, overbounce);
 		}
 	}
 
@@ -2216,6 +2220,7 @@ static void PM_WalkMove( void ) {
 	float		vel;
 	float		totalVel;
 	const int	moveStyle = PM_GetMovePhysics();
+	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
 
 	if (pm->ps->velocity[0] < 0)
 	{
@@ -2276,8 +2281,8 @@ static void PM_WalkMove( void ) {
 	pml.right[2] = 0;
 
 	// project the forward and right directions onto the ground plane
-	PM_ClipVelocity (pml.forward, pml.groundTrace.plane.normal, pml.forward, OVERCLIP );
-	PM_ClipVelocity (pml.right, pml.groundTrace.plane.normal, pml.right, OVERCLIP );
+	PM_ClipVelocity (pml.forward, pml.groundTrace.plane.normal, pml.forward, overbounce);
+	PM_ClipVelocity (pml.right, pml.groundTrace.plane.normal, pml.right, overbounce);
 	//
 	VectorNormalize (pml.forward);
 	VectorNormalize (pml.right);
@@ -2342,7 +2347,7 @@ static void PM_WalkMove( void ) {
 
 	// slide along the ground plane
 	PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
-		pm->ps->velocity, OVERCLIP );
+		pm->ps->velocity, overbounce);
 
 	// don't decrease velocity when going up or down a slope
 	VectorNormalize(pm->ps->velocity);
@@ -2741,10 +2746,12 @@ static void PM_CrashLand( void ) {
 	// make sure velocity resets so we don't bounce back up again in case we miss the clear elsewhere
 	pm->ps->velocity[2] = 0;
 
-	if ((MovementIsQuake3Based(moveStyle)) && ((int)pm->ps->fd.forceJumpZStart > pm->ps->origin[2] + 1)) {
-		if (1 > (sqrtf(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1])))//No xyvel
-			pm->ps->velocity[2] = -vel; //OVERBOUNCE OVER BOUNCE
-	}
+	// nah lets not do this. this isnt a true q3 overbounce, not even close. more of a meme q3 overbounce version.
+	// but q3 overbounce is also kinda lame as way too finnicky. lets do sth more fun. bouncy mode maybe
+	//if ((MovementIsQuake3Based(moveStyle)) && ((int)pm->ps->fd.forceJumpZStart > pm->ps->origin[2] + 1)) {
+	//	if (1 > (sqrtf(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1])))//No xyvel
+	//		pm->ps->velocity[2] = -vel; //OVERBOUNCE OVER BOUNCE
+	////}
 
 	// start footstep cycle over
 	pm->ps->bobCycle = 0;
@@ -2874,6 +2881,8 @@ static void PM_GroundTraceMissed( void ) {
 	pml.walking = qfalse;
 }
 
+extern void PM_CheckBounceJump(vec3_t normal);
+
 /*
 =============
 PM_GroundTrace
@@ -2883,6 +2892,7 @@ static void PM_GroundTrace( void ) {
 	vec3_t		point;
 	trace_t		trace;
 	const int	moveStyle = PM_GetMovePhysics();
+	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
 
 	point[0] = pm->ps->origin[0];
 	point[1] = pm->ps->origin[1];
@@ -2979,7 +2989,8 @@ static void PM_GroundTrace( void ) {
 
 				const int runFlags = PM_GetRunFlags();
 				if (runFlags & RFL_NODEADRAMPS) {
-					PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP);
+					PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
+					PM_CheckBounceJump(trace.plane.normal); // do we need this here? not sure.
 				}
 				if (pm->debugLevel) {
 					Com_Printf("%i:Dead ramp\n", c_pmove);
