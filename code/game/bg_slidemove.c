@@ -15,6 +15,7 @@ output: origin, velocity, impacts, stairup boolean
 */
 
 extern float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd);
+vec3_t flatNormal = {0,0,1};
 
 qboolean PM_GroundSlideOkay(float zNormal)
 {
@@ -324,7 +325,7 @@ void PM_Q2StepSlideMove(qboolean gravity)
 
 
 extern void PM_JumpForDir(void);
-void PM_CheckBounceJump(vec3_t normal) {
+void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 
 	const int moveStyle = PM_GetMovePhysics();
 	const int	runFlags = PM_GetRunFlags();
@@ -356,9 +357,9 @@ void PM_CheckBounceJump(vec3_t normal) {
 		JUMP_VELOCITY_NEW = 270;
 	}
 
-	pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
-	if (pm->ps->velocity[2] < JUMP_VELOCITY_NEW)
-		pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
+  	velocity[2] += JUMP_VELOCITY_NEW;
+	if (velocity[2] < JUMP_VELOCITY_NEW)
+		velocity[2] = JUMP_VELOCITY_NEW;
 	//if (MovementIsQuake3Based(moveStyle)) {
 	//	// TODO flood protect jumps? idk
 	//	pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
@@ -370,7 +371,11 @@ void PM_CheckBounceJump(vec3_t normal) {
 	//	pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
 	//}
 	PM_SetForceJumpZStart(pm->ps->origin[2]);//so we don't take damage if we land at same height
+	pml.groundPlane = qfalse;
+	pml.walking = qfalse;
+	pml.bounceJumped = qtrue;
 	pm->ps->pm_flags |= PMF_JUMP_HELD;
+	pm->ps->groundEntityNum = ENTITYNUM_NONE;
 	PM_AddEvent(EV_JUMP);
 	
 	// make sure skims work
@@ -417,6 +422,8 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 
 	numbumps = 4;
 
+	pml.groundBounces = qfalse;
+
 	VectorCopy (pm->ps->velocity, primal_velocity);
 
 	if ( gravity ) {
@@ -429,8 +436,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				// slide along the ground plane
 				PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
 					pm->ps->velocity, overbounce);
-				// allow jump out of a bounce
-				PM_CheckBounceJump(pml.groundTrace.plane.normal);
+				pml.groundBounces = qtrue;
 			}
 		}
 	}
@@ -537,11 +543,10 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 
 			// slide along the plane
 			PM_ClipVelocity (pm->ps->velocity, planes[i], clipVelocity, overbounce);
-			PM_CheckBounceJump(planes[i]);// allow jump out of a bounce
 
 			// slide along the plane
 			PM_ClipVelocity (endVelocity, planes[i], endClipVelocity, overbounce);
-			PM_CheckBounceJump(planes[i]);// allow jump out of a bounce
+			pml.groundBounces = pml.groundBounces || planes[i][2] >= MIN_WALK_NORMAL;
 
 			// see if there is a second plane that the new move enters
 			for ( j = 0 ; j < numplanes ; j++ ) {
@@ -554,9 +559,8 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 
 				// try clipping the move to the plane
 				PM_ClipVelocity( clipVelocity, planes[j], clipVelocity, overbounce);
-				PM_CheckBounceJump(planes[j]);// allow jump out of a bounce
 				PM_ClipVelocity( endClipVelocity, planes[j], endClipVelocity, overbounce);
-				PM_CheckBounceJump(planes[j]);// allow jump out of a bounce
+				pml.groundBounces = pml.groundBounces || planes[j][2] >= MIN_WALK_NORMAL;
 
 				// TODO MAYBE jaPRO player collision physics fix?
 
@@ -893,7 +897,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 	}
 	if ( trace.fraction < 1.0 ) {
 		PM_ClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
-		PM_CheckBounceJump(trace.plane.normal);// allow jump out of a bounce
+		pml.groundBounces = pml.groundBounces || trace.plane.normal[2] >= MIN_WALK_NORMAL;
 	}
 
 #if 0

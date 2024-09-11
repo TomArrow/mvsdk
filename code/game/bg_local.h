@@ -38,6 +38,8 @@ typedef struct
 
 	qboolean	clippedPre;
 	qboolean	clipped;
+	qboolean	groundBounces;
+	qboolean	bounceJumped;
 } pml_t;
 
 extern	pml_t		pml;

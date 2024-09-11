@@ -329,6 +329,21 @@ static void CG_InterpolatePlayerState( qboolean grabAngles ) {
 			f * (next->ps.velocity[i] - prev->ps.velocity[i] );
 	}
 
+	if (cgs.isTommyTernal && next->ps.stats[STAT_RACEMODE] && next->ps.stats[STAT_MOVEMENTSTYLE] == MV_BOUNCE ) {
+		// just make it look nice and smooth *shrug*
+		int bouncePower = next->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK;
+		int bouncePowerPrev = prev->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK;
+		int bounceRegenTimer = (next->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_REGENMASK) >> 9;
+		int bounceRegenTimerPrev = (prev->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_REGENMASK) >> 9;
+
+		bouncePower = bouncePowerPrev +	f * (bouncePower - bouncePowerPrev);
+		bounceRegenTimer = bounceRegenTimerPrev +	f * (bounceRegenTimer - bounceRegenTimerPrev);
+
+		bouncePower = MAX(0, MIN(BOUNCEPOWER_MAX, bouncePower));
+		bounceRegenTimer = MAX(0, MIN(BOUNCEPOWER_REGEN_MAX, bounceRegenTimer));
+		out->stats[STAT_BOUNCEPOWER] = (bouncePower & BOUNCEPOWER_POWERMASK) | ((bounceRegenTimer << 9) & BOUNCEPOWER_REGENMASK);
+	}
+
 	cg.predictedTimeFrac = f * (next->ps.commandTime - prev->ps.commandTime);
 }
 

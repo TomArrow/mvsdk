@@ -17,6 +17,9 @@
 
 extern qboolean PM_GroundSlideOkay(float zNormal);
 extern float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd);
+extern void PM_CheckBounceJump(vec3_t normal, vec3_t velocity);
+extern vec3_t flatNormal;
+
 
 pmove_t		*pm;
 pml_t		pml;
@@ -2200,6 +2203,10 @@ static void PM_AirMove( void ) {
 	}
 
 	PM_StepSlideMove ( qtrue );
+
+	if (pml.groundBounces) {
+		PM_CheckBounceJump(flatNormal, pm->ps->velocity);
+	}
 }
 
 /*
@@ -2348,6 +2355,7 @@ static void PM_WalkMove( void ) {
 	// slide along the ground plane
 	PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
 		pm->ps->velocity, overbounce);
+	PM_CheckBounceJump(pml.groundTrace.plane.normal, pm->ps->velocity);// allow jump out of a bounce
 
 	// don't decrease velocity when going up or down a slope
 	VectorNormalize(pm->ps->velocity);
@@ -2360,6 +2368,10 @@ static void PM_WalkMove( void ) {
 	}
 
 	PM_StepSlideMove( qfalse );
+
+	if (pml.groundBounces) {
+		PM_CheckBounceJump(flatNormal, pm->ps->velocity);
+	}
 
 	//Com_Printf("velocity2 = %1.1f\n", VectorLength(pm->ps->velocity));
 }
@@ -2744,7 +2756,9 @@ static void PM_CrashLand( void ) {
 	}
 
 	// make sure velocity resets so we don't bounce back up again in case we miss the clear elsewhere
-	pm->ps->velocity[2] = 0;
+	if (!pml.bounceJumped) {
+		pm->ps->velocity[2] = 0;
+	}
 
 	// nah lets not do this. this isnt a true q3 overbounce, not even close. more of a meme q3 overbounce version.
 	// but q3 overbounce is also kinda lame as way too finnicky. lets do sth more fun. bouncy mode maybe
@@ -2881,7 +2895,6 @@ static void PM_GroundTraceMissed( void ) {
 	pml.walking = qfalse;
 }
 
-extern void PM_CheckBounceJump(vec3_t normal);
 
 /*
 =============
@@ -2964,8 +2977,10 @@ static void PM_GroundTrace( void ) {
 		return;
 	}
 
-	pml.groundPlane = qtrue;
-	pml.walking = qtrue;
+	if (!pml.bounceJumped) {
+		pml.groundPlane = qtrue;
+		pml.walking = qtrue;
+	}
 
 	// hitting solid ground will end a waterjump
 	if (pm->ps->pm_flags & PMF_TIME_WATERJUMP)
@@ -2990,7 +3005,7 @@ static void PM_GroundTrace( void ) {
 				const int runFlags = PM_GetRunFlags();
 				if (runFlags & RFL_NODEADRAMPS) {
 					PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
-					PM_CheckBounceJump(trace.plane.normal); // do we need this here? not sure.
+					PM_CheckBounceJump(trace.plane.normal, pm->ps->velocity); // do we need this here? not sure.
 				}
 				if (pm->debugLevel) {
 					Com_Printf("%i:Dead ramp\n", c_pmove);
@@ -3026,7 +3041,9 @@ static void PM_GroundTrace( void ) {
 		}
 	}
 
-	pm->ps->groundEntityNum = trace.entityNum;
+	if (!pml.bounceJumped) {
+		pm->ps->groundEntityNum = trace.entityNum;
+	}
 	pm->ps->lastOnGround = pm->cmd.serverTime;
 
 	PM_AddTouchEnt( trace.entityNum );

@@ -2050,6 +2050,7 @@ void ClientSpawn(gentity_t *ent) {
 		client->pers.maxHealth = 100;
 	}
 	// clear entity values
+	client->ps.stats[STAT_BOUNCEPOWER] = BOUNCEPOWER_MAX;
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;
 	client->ps.eFlags = flags;
 
