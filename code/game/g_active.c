@@ -529,6 +529,10 @@ void	G_TouchTriggers( gentity_t *ent ) {
 				}
 			}
 		}
+		else
+		{
+			needExtraCheck = qtrue;
+		}
 		numTraced = num;
 		if (needExtraCheck) {
 			int num2;
