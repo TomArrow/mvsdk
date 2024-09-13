@@ -484,10 +484,13 @@ struct gclient_s {
 	qboolean	prePmovePositionSet;
 	qboolean	prePmoveEFlags;
 	int			prePmoveCommandTime;
+	vec3_t		triggerMins; //mins/maxes used for evaluating triggers, for consistency. used for race triggers.
+	vec3_t		triggerMaxs; 
 
 
 	int			forcePowerMicroRegenBuffer; // forcepower regen buffer multiplied by 1000. when we get above 1000, we divide by 1000 and add to forcepower and subtract from this
 	int			triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
+	int			entityStates[MAX_GENTITIES]; // allow us to store some simplistic states about other entities, like func_usable. letting us know if the func_usable is turned on/off for this player
 };
 
 

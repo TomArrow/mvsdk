@@ -326,7 +326,7 @@ Q_INLINE int PM_GetMovePhysics(void)
 	//if (cgs.gametype == GT_SIEGE)
 	//	return MV_SIEGE;
 #endif
-	return MV_JK2;
+	return MV_JK2; // this can happen when we die in racemode too!
 }
 
 Q_INLINE int PM_GetRunFlags(void)
@@ -350,7 +350,7 @@ Q_INLINE int PM_GetRunFlags(void)
 	//if (cgs.gametype == GT_SIEGE)
 	//	return MV_SIEGE;
 #endif
-	return 0;
+	return 0; // this can happen when we die in racemode too!
 }
 
 int PM_GetSaberStance(void)

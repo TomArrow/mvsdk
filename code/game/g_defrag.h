@@ -66,6 +66,7 @@ typedef struct savedPosition_s {
 		int				lastSaberStorageTime; //server time that the above two values were updated (for making sure they aren't out of date)
 		qboolean		hasCurrentPosition;	//are lastSaberTip and lastSaberBase valid?
 		int				triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
+		int				entityStates[MAX_GENTITIES]; // allow us to store some simplistic states about other entities, like func_usable. letting us know if the func_usable is turned on/off for this player
 
 		// pers.
 
@@ -90,6 +91,9 @@ typedef struct savedPosition_s {
 //} saveposField_t;
 
 // TODO What if someone touches start trigger, then just stands around forever with start active?
+// TODO I meant for this to make the state easier to manage but it actually caused some weird bugs, like
+//		SEG_REPLAY > SEG_RECORDING_HAVELASTPOS and thus respos from invalid stored pos. 
+//		I added extra checks now but maybe come up with sth better?
 typedef enum segmentedRunState_s {
 	SEG_DISABLED,
 	SEG_RECORDING, // start position is set and we are recording

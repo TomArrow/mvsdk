@@ -192,14 +192,14 @@ qboolean DF_InTrigger(vec3_t interpOrigin, gentity_t* trigger)
 
 	return qfalse;
 }
-qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname)
+qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t playerMins, vec3_t playerMaxs) // TODO make this more efficient
 {
 	vec3_t	mins, maxs;
-	vec3_t	playerMins, playerMaxs;
+	//vec3_t	playerMins, playerMaxs;
 	gentity_t* trigger;
 
-	VectorSet(playerMins, -15, -15, DEFAULT_MINS_2);
-	VectorSet(playerMaxs, 15, 15, DEFAULT_MAXS_2);
+	//VectorSet(playerMins, -15, -15, DEFAULT_MINS_2);
+	//VectorSet(playerMaxs, 15, 15, DEFAULT_MAXS_2);
 
 	VectorAdd(interpOrigin, playerMins, mins);
 	VectorAdd(interpOrigin, playerMaxs, maxs);
@@ -227,7 +227,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 	VectorScale(delta, msecScale, delta);
 
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
-	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname)) || !touched)
+	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs)) || !touched)
 	{
 		if (inTrigger) touched = qtrue;
 
@@ -255,7 +255,7 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 	VectorScale(delta, msecScale, delta);
 
 	//while (!(inTrigger = DF_InTrigger(interpOrigin, trigger)) || !left)
-	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start")) || !left)
+	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs)) || !left)
 	{
 		if (!inTrigger) left = qtrue;
 
@@ -310,7 +310,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		}
 	}
 
-	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start")) return; // we are still in some start trigger.
+	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs)) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
@@ -700,7 +700,7 @@ void DF_SegmentedRunStatusInvalidated(gentity_t* ent) {
 	if (!ent->client->sess.raceMode || !(ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		return;
 	}
-	if (ent->client->pers.segmented.state < SEG_RECORDING_HAVELASTPOS) {
+	if (ent->client->pers.segmented.state < SEG_RECORDING_HAVELASTPOS || ent->client->pers.segmented.state >= SEG_REPLAY) { // replay can happen even if we dont have lastpos
 		DF_RaceStateInvalidated(ent,qtrue);
 	}
 	else {
@@ -804,11 +804,12 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 			if (other != entity) {
 				if ((other->inuse) &&
 					((other->s.eType == ET_PLAYER) ||
-						((other->s.eType == ET_MOVER) &&
-							(!(Q_stricmp(other->classname, "func_door")) ||
-								(!(Q_stricmp(other->classname, "func_plat"))))) ||
+					// im not sure yet. do i want doors to not be a thing for racers? limits the map choice a little bit.
+					//	((other->s.eType == ET_MOVER) &&
+					//		(!(Q_stricmp(other->classname, "func_door")) ||
+					//			(!(Q_stricmp(other->classname, "func_plat"))))) ||
 						((other->s.eType == ET_GENERAL) &&
-							(!(Q_stricmp(other->classname, "laserTrap")) ||
+							(!(Q_stricmp(other->classname, "laserTrap")) || // TODO sth more efficient than string comparison?
 								(!(Q_stricmp(other->classname, "detpack")))))))
 				{
 					return qtrue;
@@ -827,7 +828,7 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 			if (other->inuse && other->client &&
 				(other->client->ps.duelInProgress || other->client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
 
-				return qtrue;
+				return qtrue; // uh so for example func_bobbing cannot touch us, but we can touch it? is that ok?
 			}
 		}
 	}
@@ -1066,6 +1067,7 @@ qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	// to keep somewhat consistent trigger_multiple and such behavior. kinda disgusting and it wont restore any sort of
 	// changed state from trigger_multiple triggering other stuff, making movers move or whichever.
 	memcpy(savedPosition->client.triggerTimes,client->client->triggerTimes,sizeof(savedPosition->client.triggerTimes));
+	memcpy(savedPosition->client.entityStates,client->client->entityStates,sizeof(savedPosition->client.entityStates));
 
 
 	return qtrue;
@@ -1120,6 +1122,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	// to keep somewhat consistent trigger_multiple and such behavior. kinda disgusting and it wont restore any sort of
 	// changed state from trigger_multiple triggering other stuff, making movers move or whichever.
 	memcpy(client->client->triggerTimes, savedPosition->client.triggerTimes,sizeof(client->client->triggerTimes));
+	memcpy(client->client->entityStates, savedPosition->client.entityStates,sizeof(client->client->entityStates));
 
 	// make sure there's no weirdness
 	client->client->ps.eFlags = (client->client->ps.eFlags & ~EF_TELEPORT_BIT) | ((backupPS.eFlags & EF_TELEPORT_BIT) ^ EF_TELEPORT_BIT); // Make it teleport
@@ -1135,6 +1138,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	// retime
 	delta = backupPS.commandTime - storedPS->commandTime;
 	client->client->ps.commandTime = backupPS.commandTime;
+	client->client->ps.saberEntityNum = backupPS.saberEntityNum; // yea... better this way:)
 	if (storedPS->genericEnemyIndex >= 1024) client->client->ps.genericEnemyIndex += delta;
 	if (storedPS->rocketLockTime > 0) client->client->ps.rocketLockTime += delta;
 
@@ -1313,6 +1317,10 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	else if(resposRequested) {
 		if (cl->pers.segmented.state < SEG_RECORDING_HAVELASTPOS) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos. No past segmented run position found.\n\"");
+		}
+		else if (cl->pers.segmented.state >= SEG_REPLAY) {
+			// THIS SHOULD NEVER HAPPEN
+			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos during replay. WTF HOW DID WE GET HERE.\n\"");
 		}
 		else {
 

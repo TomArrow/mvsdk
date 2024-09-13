@@ -487,6 +487,9 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		VectorMax(ent->client->prePmoveMins, ent->client->postPmoveMins, minsPlayer); 
 		VectorMin(ent->client->prePmoveMaxs, ent->client->postPmoveMaxs, maxsPlayer);
 
+		VectorCopy(minsPlayer,ent->client->triggerMins);
+		VectorCopy(maxsPlayer,ent->client->triggerMaxs);
+
 		VectorAdd(ent->client->postPmovePosition, minsPlayer, mins);
 		VectorAdd(ent->client->postPmovePosition, maxsPlayer, maxs);
 		VectorAdd(ent->client->prePmovePosition, minsPlayer, minsPrev);
@@ -1323,6 +1326,7 @@ void ClientThink_real( gentity_t *ent ) {
 	//}
 	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
 	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
+	client->ps.stats[STAT_RACEMODE] = client->sess.raceMode; // can get lost sometimes after death? idk happened once but i had another bug then
 
 	//if ((g_neutralFlag.integer < 4) && client->ps.powerups[PW_NEUTRALFLAG]) {
 	//	if (client->ps.fd.forcePowerLevel[FP_LEVITATION] > 1) {
@@ -1748,7 +1752,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// Save some value for robust trigger application
 	VectorCopy(ent->client->ps.origin,ent->client->prePmovePosition);
-	VectorCopy(ent->r.mins,ent->client->prePmoveMins);
+	VectorCopy(ent->r.mins,ent->client->prePmoveMins); // this is -8 -8 -8 8 8 8 sometimes?!?!?! when rolling?
 	VectorCopy(ent->r.maxs,ent->client->prePmoveMaxs);
 	ent->client->prePmoveEFlags = ent->client->ps.eFlags;
 	ent->client->prePmovePositionSet = qtrue;
@@ -1760,8 +1764,8 @@ void ClientThink_real( gentity_t *ent ) {
 	DF_PostDeltaAngleChange(ent->client);
 
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
-	VectorCopy(ent->r.mins, ent->client->postPmoveMins);
-	VectorCopy(ent->r.maxs, ent->client->postPmoveMaxs);
+	VectorCopy(pm.mins, ent->client->postPmoveMins);
+	VectorCopy(pm.maxs, ent->client->postPmoveMaxs);
 
 	if (pm.checkDuelLoss)
 	{
