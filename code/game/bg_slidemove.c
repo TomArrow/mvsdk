@@ -200,7 +200,9 @@ void PM_Q2StepSlideMove_(void)
 		for (i = 0; i < numplanes; i++)
 		{
 			PM_ClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, 1.01f);
-			pml.clipped = qtrue; // uh am i putting this the right place? idk
+			//if (planes[i][2] >= MIN_WALK_NORMAL) {
+				pml.clipped = qtrue; // uh am i putting this the right place? idk
+			//}
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{

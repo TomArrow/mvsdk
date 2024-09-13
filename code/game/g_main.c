@@ -1568,7 +1568,7 @@ void FindIntermissionPoint( void ) {
 		VectorCopy (ent->s.angles, level.intermission_angle);
 		// if it has a target, look towards it
 		if ( ent->target ) {
-			target = G_PickTarget( ent->target );
+			target = G_PickTarget( ent->target, qtrue );
 			if ( target ) {
 				VectorSubtract( target->s.origin, level.intermission_origin, dir );
 				vectoangles( dir, level.intermission_angle );

@@ -39,6 +39,8 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 	gentity_t *rofftarget = NULL, *testent = NULL;
 	gentity_t *te;
 	int i = MAX_CLIENTS;
+	int nowTime = LEVELTIME(activator->client);
+	qboolean isRacer = activator->client && activator->client->sess.raceMode;
 
 	if (ent->teamnodmg &&
 		activator && activator->client &&
@@ -62,8 +64,15 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 	}
 
 	ent->activator = activator;
-	if ( ent->nextthink ) {
-		return;		// can't retrigger until the wait is over
+	if (isRacer) {
+		if (activator->client->triggerTimes[ent - g_entities] >= nowTime) {
+			return; // i hope this somewhat replicates the behavior accurately while keeping things deterministic?
+		}
+	}
+	else {
+		if ( ent->nextthink ) {
+			return;		// can't retrigger until the wait is over
+		}
 	}
 
 	if ( activator && activator->client ) {
@@ -124,9 +133,14 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 	}
 
 	if ( ent->wait > 0 ) {
-		ent->think = multi_wait;
-		ent->nextthink = level.time + ( ent->wait + ent->random * crandom() ) * 1000;
-	} else {
+		if (isRacer) {
+			activator->client->triggerTimes[ent-g_entities] = nowTime + (ent->wait /* + ent->random * crandom() */ ) * 1000; // no random stuff in racemode
+		}
+		else {
+			ent->think = multi_wait;
+			ent->nextthink = level.time + (ent->wait + ent->random * crandom()) * 1000;
+		}
+	} else { // why?!
 		// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
 		ent->touch = 0;
@@ -253,7 +267,7 @@ void AimAtTarget( gentity_t *self ) {
 	VectorAdd( self->r.absmin, self->r.absmax, origin );
 	VectorScale ( origin, 0.5, origin );
 
-	ent = G_PickTarget( self->target );
+	ent = G_PickTarget( self->target, !g_defrag.integer );
 	if ( !ent ) {
 		G_FreeEntity( self );
 		return;
@@ -391,7 +405,7 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 	}
 
 
-	dest = 	G_PickTarget( self->target );
+	dest = 	G_PickTarget( self->target, !other->client->sess.raceMode);
 	if (!dest) {
 		G_Printf ("Couldn't find teleporter destination\n");
 		return;

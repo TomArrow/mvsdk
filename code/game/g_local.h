@@ -251,7 +251,7 @@ struct gentity_s {
 	int			damageRedirectTo; //this entity number
 
 	gitem_t		*item;			// for bonus items
-	int			triggerLastPlayerContact[MAX_CLIENTS]; // if we are a trigger, when's the last time the player touched us?
+	int			triggerLastPlayerContact[MAX_CLIENTS]; // if we are a trigger, when's the last time the player touched us? dont use this for anything gameplay relevaant, as respos does not restore it
 	qboolean	triggerOnlyTraced; // if this is true for a trigger, we can only reach it via trace (so only trigger it while entering/leaving it)
 };
 
@@ -487,6 +487,7 @@ struct gclient_s {
 
 
 	int			forcePowerMicroRegenBuffer; // forcepower regen buffer multiplied by 1000. when we get above 1000, we divide by 1000 and add to forcepower and subtract from this
+	int			triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
 };
 
 
@@ -652,7 +653,7 @@ void	G_TeamCommand( team_t team, char *cmd );
 void	G_KillBox (gentity_t *ent);
 gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match);
 int		G_RadiusList ( vec3_t origin, float radius,	gentity_t *ignore, qboolean takeDamage, gentity_t *ent_list[MAX_GENTITIES]);
-gentity_t *G_PickTarget (char *targetname);
+gentity_t *G_PickTarget (char *targetname, qboolean allowRandom);
 void	G_UseTargets (gentity_t *ent, gentity_t *activator);
 void	G_SetMovedir ( vec3_t angles, vec3_t movedir);
 void	G_SetAngles( gentity_t *ent, vec3_t angles );

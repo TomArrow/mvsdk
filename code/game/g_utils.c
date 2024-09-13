@@ -253,7 +253,7 @@ Selects a random entity from among the targets
 */
 #define MAXCHOICES	32
 
-gentity_t *G_PickTarget (char *targetname)
+gentity_t *G_PickTarget (char *targetname, qboolean allowRandom)
 {
 	gentity_t	*ent = NULL;
 	int		num_choices = 0;
@@ -280,6 +280,9 @@ gentity_t *G_PickTarget (char *targetname)
 		G_Printf("G_PickTarget: target %s not found\n", targetname);
 		return NULL;
 	}
+	if (!allowRandom) {
+		return choice[0];
+	} 
 
 	return choice[rand() % num_choices];
 }

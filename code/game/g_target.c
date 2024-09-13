@@ -343,7 +343,7 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 
 	if (!activator->client)
 		return;
-	dest = 	G_PickTarget( self->target );
+	dest = 	G_PickTarget( self->target, !activator->client->sess.raceMode );
 	if (!dest) {
 		G_Printf ("Couldn't find teleporter destination\n");
 		return;
@@ -382,7 +382,7 @@ void target_relay_use (gentity_t *self, gentity_t *other, gentity_t *activator) 
 	if ( self->spawnflags & 4 ) {
 		gentity_t	*ent;
 
-		ent = G_PickTarget( self->target );
+		ent = G_PickTarget( self->target, !activator->client->sess.raceMode);
 		if ( ent && ent->use ) {
 			ent->use( ent, self, activator );
 		}

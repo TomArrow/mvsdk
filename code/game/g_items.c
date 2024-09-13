@@ -1537,8 +1537,8 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	}
 
 	// random can be used to vary the respawn time
-	if ( ent->random ) {
-		respawn += (other->client && other->client->sess.raceMode)? 0: (crandom() * ent->random);
+	if ( ent->random && !(other->client && other->client->sess.raceMode)) {
+		respawn += (crandom() * ent->random);
 		if ( respawn < 1 ) {
 			respawn = 1;
 		}

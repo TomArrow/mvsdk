@@ -458,6 +458,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	static vec3_t	playerMaxsDefault = { 15, 15, DEFAULT_MAXS_2 };
 	qboolean	robustTriggerEvaluation = qfalse;
 	qboolean	isTraced;
+	int			nowTime = LEVELTIME(ent->client);
 
 	if ( !ent->client ) {
 		return;
@@ -645,7 +646,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 				hit->touch(hit, ent, &trace);
 			}
 
-			hit->triggerLastPlayerContact[ent - g_entities] = level.time;
+			hit->triggerLastPlayerContact[ent - g_entities] = nowTime;
 		}
 
 		if ( ( ent->r.svFlags & SVF_BOT ) && ( ent->touch ) ) {
@@ -1004,7 +1005,7 @@ void ClientEvents( gentity_t *ent, int oldEventSequence ) {
 
 				damage = delta*0.16; //good enough for now, I guess
 
-				ent->pain_debounce_time = level.time + 200;	// no normal pain sound
+				ent->pain_debounce_time = nowTime + 200;	// no normal pain sound
 				G_Damage (ent, NULL, NULL, NULL, NULL, damage, DAMAGE_NO_ARMOR, MOD_FALLING);
 			}
 			break;

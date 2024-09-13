@@ -420,6 +420,7 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 {
 	gclient_t* cl;
 	int	timeCheck, lessTime=0;
+	int nowTime = LEVELTIME(activator->client);
 
 	// Check client
 	if (!activator->client) return;
@@ -436,11 +437,11 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
 
-	if (level.time - activator->client->pers.raceLastCheckpointTime < 1000) return; // don't spam.
+	if (nowTime - activator->client->pers.raceLastCheckpointTime < 1000) return; // don't spam.
 
 	// we ideally only wanna display checkpoints if the player didn't touch them last frame.
 	// doesn't matter for finish triggers as much since they end runs the first time they are touched.
-	if (level.time - trigger->triggerLastPlayerContact[activator-g_entities] < 1000) return; 
+	if (nowTime - trigger->triggerLastPlayerContact[activator-g_entities] < 1000) return;
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Checkpoint Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", activator->client->pers.netname);
@@ -455,7 +456,7 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 
 	// Show info
 	trap_SendServerCommand(activator - g_entities, va("cp \"Checkpoint!\n^3%s\"", DF_MsToString(timeCheck)));
-	activator->client->pers.raceLastCheckpointTime = level.time;
+	activator->client->pers.raceLastCheckpointTime = nowTime;
 }
 
 void DF_target_husk(gentity_t* ent) {
@@ -484,6 +485,34 @@ void DF_trigger_finish_converted(gentity_t* ent) {
 	trap_LinkEntity(ent);
 }
 void DF_trigger_checkpoint_converted(gentity_t* ent) {
+
+	InitTrigger(ent);
+
+	ent->touch = DF_CheckpointTimer_Touch;
+	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
+
+	trap_LinkEntity(ent);
+}
+void DF_trigger_start(gentity_t* ent) {
+
+	InitTrigger(ent);
+
+	ent->r.contents |= CONTENTS_TRIGGER_EXIT;
+	ent->leave = DF_StartTimer_Leave;
+	ent->triggerOnlyTraced = qtrue; // don't trigger if we are fully inside trigger brush or if robust triggers are deactivated. only when entering/leaving
+
+	trap_LinkEntity(ent);
+}
+void DF_trigger_finish(gentity_t* ent) {
+
+	InitTrigger(ent);
+
+	ent->touch = DF_FinishTimer_Touch;
+	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
+
+	trap_LinkEntity(ent);
+}
+void DF_trigger_checkpoint(gentity_t* ent) {
 
 	InitTrigger(ent);
 
@@ -1034,6 +1063,10 @@ qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	FIELDSENTVEC3()
 #undef FIELDSFUNC
 
+	// to keep somewhat consistent trigger_multiple and such behavior. kinda disgusting and it wont restore any sort of
+	// changed state from trigger_multiple triggering other stuff, making movers move or whichever.
+	memcpy(savedPosition->client.triggerTimes,client->client->triggerTimes,sizeof(savedPosition->client.triggerTimes));
+
 
 	return qtrue;
 
@@ -1084,6 +1117,9 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 		FIELDSENTVEC3()
 #undef FIELDSFUNC
 
+	// to keep somewhat consistent trigger_multiple and such behavior. kinda disgusting and it wont restore any sort of
+	// changed state from trigger_multiple triggering other stuff, making movers move or whichever.
+	memcpy(client->client->triggerTimes, savedPosition->client.triggerTimes,sizeof(client->client->triggerTimes));
 
 	// make sure there's no weirdness
 	client->client->ps.eFlags = (client->client->ps.eFlags & ~EF_TELEPORT_BIT) | ((backupPS.eFlags & EF_TELEPORT_BIT) ^ EF_TELEPORT_BIT); // Make it teleport
@@ -1105,6 +1141,11 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 #define FIELDSFUNC(a) if (client->a > 0) { client->a += delta; }
 	TIMECOMPENSATEFIELDS()
 #undef FIELDSFUNC
+
+	for (i = 0; i < MAX_GENTITIES; i++) {
+		// pretty disgusting to have to loop through so many numbers for this, and it not even being a proper fix
+		if (client->client->triggerTimes[i]) client->client->triggerTimes[i] += delta;
+	}
 
 	for (i = 0; i < MAX_POWERUPS; i++) {
 		if (client->client->ps.powerups[i]) client->client->ps.powerups[i] += delta;

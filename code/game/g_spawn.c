@@ -200,6 +200,9 @@ void SP_item_botroam( gentity_t *ent )
 void SP_emplaced_gun( gentity_t *ent );
 
 extern void DF_target_husk(gentity_t* ent);
+extern void DF_trigger_start(gentity_t* ent);
+extern void DF_trigger_finish(gentity_t* ent);
+extern void DF_trigger_checkpoint(gentity_t* ent);
 spawn_t	spawns[] = {
 	// info entities don't do anything at all, but provide positional
 	// information for things controlled by other processes
@@ -240,6 +243,10 @@ spawn_t	spawns[] = {
 	{"trigger_push_velocity", SP_trigger_push_velocity},
 	{"trigger_teleport", SP_trigger_teleport},
 	{"trigger_hurt", SP_trigger_hurt},
+
+	{"df_trigger_start", DF_trigger_start},
+	{"df_trigger_finish", DF_trigger_finish},
+	{"df_trigger_checkpoint", DF_trigger_checkpoint},
 
 	// targets perform no action by themselves, but must be triggered
 	// by another entity

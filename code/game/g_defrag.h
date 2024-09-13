@@ -65,6 +65,7 @@ typedef struct savedPosition_s {
 		vec3_t			lastSaberBase_Always; //every getboltmatrix, set to saber base
 		int				lastSaberStorageTime; //server time that the above two values were updated (for making sure they aren't out of date)
 		qboolean		hasCurrentPosition;	//are lastSaberTip and lastSaberBase valid?
+		int				triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
 
 		// pers.
 

@@ -193,7 +193,7 @@ void locateCamera( gentity_t *ent ) {
 	gentity_t	*target;
 	gentity_t	*owner;
 
-	owner = G_PickTarget( ent->target );
+	owner = G_PickTarget( ent->target, !g_defrag.integer );
 	if ( !owner ) {
 		G_Printf( "Couldn't find target for misc_partal_surface\n" );
 		G_FreeEntity( ent );
@@ -223,7 +223,7 @@ void locateCamera( gentity_t *ent ) {
 	VectorCopy( owner->s.origin, ent->s.origin2 );
 
 	// see if the portal_camera has a target
-	target = G_PickTarget( owner->target );
+	target = G_PickTarget( owner->target, !g_defrag.integer);
 	if ( target ) {
 		VectorSubtract( target->s.origin, owner->s.origin, dir );
 		VectorNormalize( dir );
@@ -696,7 +696,7 @@ void Use_Shooter( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 
 static void InitShooter_Finish( gentity_t *ent ) {
-	ent->enemy = G_PickTarget( ent->target );
+	ent->enemy = G_PickTarget( ent->target, qtrue/* !g_defrag.integer*/);
 	ent->think = 0;
 	ent->nextthink = 0;
 }
