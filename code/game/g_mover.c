@@ -4,6 +4,82 @@
 #include "g_local.h"
 
 
+#define ACTIVATORTIMEHELPERTIMEOLD(client) (((client) && (client)->sess.raceMode) ? (((client)->ps.commandTime > 0) ? (client)->ps.commandTime : level.time) : level.time)
+
+//#define ACTIVATORTIME(a) ((a) ? LEVELTIME((a)->client) : level.time)
+//#define ACTIVATORTIMEOLD(a) ((a) ? ACTIVATORTIMEHELPERTIMEOLD((a)->client) : level.time)
+#define ACTIVATORTIME(a) level.time
+#define ACTIVATORTIMEOLD(a) level.previousTime
+
+/*
+===============================================================================
+
+ACTIVATORS
+
+===============================================================================
+*/
+
+// TODO something to unlink activator once he is no longer touching the thing?
+// TODO what if there's weird situations like entity being its own activator and idk. will it break sth?
+
+void G_ClearEntityActivator(gentity_t* ent) {
+	if (ent->activatorReal) {
+		int activatedConfirmCount = 0;
+		// remove ourselves from any existing linkage
+		if (ent->activatorReal && ent->activatorReal->activatedEntities == ent) {
+			ent->activatorReal->activatedEntities = ent->nextActivatedEntity;
+			activatedConfirmCount++;
+		}
+		else if (ent->activatorReal && ent->activatorReal->activatedEntities) {
+			gentity_t* actEnt = ent->activatorReal->activatedEntities;
+			// go through the list quick and remove ourselves.
+			while (actEnt) {
+				assert(actEnt->activator == ent->activatorReal);		// sanity checks
+				assert(actEnt->activatorReal == ent->activatorReal);	// sanity checks
+				if (actEnt->nextActivatedEntity == ent) {
+					actEnt->nextActivatedEntity = ent->nextActivatedEntity;
+					activatedConfirmCount++;
+				}
+				actEnt = actEnt->nextActivatedEntity;
+			}
+		}
+		assert(activatedConfirmCount == 1);
+		ent->activatorReal = NULL;
+	}
+	ent->nextActivatedEntity = NULL;
+}
+
+// allow all entities linked to this activator to run on servertime again, e.g.
+// - player disconnect
+// - player lagging
+// dont do this actually, its probably unsafe, because some places might rely on activator not being a NULL pointer
+void G_ClearActivatedEntities(gentity_t* activator) {
+	gentity_t* tmpActEnt; // tmp var
+	gentity_t* actEnt = activator->activatedEntities;
+	while (actEnt) {
+		tmpActEnt = actEnt->nextActivatedEntity;
+		assert(actEnt->activator == activator);		// sanity checks
+		assert(actEnt->activatorReal == activator);	// sanity checks
+		actEnt->activatorReal = NULL;
+		actEnt->nextActivatedEntity = NULL;
+		actEnt = tmpActEnt;
+	}
+	activator->activatedEntities = NULL;
+}
+
+
+// TODO what about order of entities? preserve it? atm last activated one will run first?
+void G_SetActivator(gentity_t* ent, gentity_t* activator) {
+	G_ClearEntityActivator(ent);
+	ent->activatorReal = ent->activator = activator;
+
+	if (activator) {
+		// link ourselves into current activator.
+		ent->nextActivatedEntity = activator->activatedEntities;
+		activator->activatedEntities = ent;
+	}
+}
+
 
 /*
 ===============================================================================
@@ -342,6 +418,8 @@ void G_MoverTeam( gentity_t *ent ) {
 	vec3_t		move, amove;
 	gentity_t	*part, *obstacle;
 	vec3_t		origin, angles;
+	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	int			oldTime = ACTIVATORTIMEOLD(ent->activatorReal);
 
 	obstacle = NULL;
 
@@ -351,8 +429,8 @@ void G_MoverTeam( gentity_t *ent ) {
 	pushed_p = pushed;
 	for (part = ent ; part ; part=part->teamchain) {
 		// get current position
-		BG_EvaluateTrajectory( &part->s.pos, level.time, origin );
-		BG_EvaluateTrajectory( &part->s.apos, level.time, angles );
+		BG_EvaluateTrajectory( &part->s.pos, nowTime, origin );
+		BG_EvaluateTrajectory( &part->s.apos, nowTime, angles );
 		VectorSubtract( origin, part->r.currentOrigin, move );
 		VectorSubtract( angles, part->r.currentAngles, amove );
 		if ( !G_MoverPush( part, move, amove, &obstacle ) ) {
@@ -363,10 +441,10 @@ void G_MoverTeam( gentity_t *ent ) {
 	if (part) {
 		// go back to the previous position
 		for ( part = ent ; part ; part = part->teamchain ) {
-			part->s.pos.trTime += level.time - level.previousTime;
-			part->s.apos.trTime += level.time - level.previousTime;
-			BG_EvaluateTrajectory( &part->s.pos, level.time, part->r.currentOrigin );
-			BG_EvaluateTrajectory( &part->s.apos, level.time, part->r.currentAngles );
+			part->s.pos.trTime += nowTime - oldTime;
+			part->s.apos.trTime += nowTime - oldTime;
+			BG_EvaluateTrajectory( &part->s.pos, nowTime, part->r.currentOrigin );
+			BG_EvaluateTrajectory( &part->s.apos, nowTime, part->r.currentAngles );
 			trap_LinkEntity( part );
 		}
 
@@ -381,7 +459,7 @@ void G_MoverTeam( gentity_t *ent ) {
 	for ( part = ent ; part ; part = part->teamchain ) {
 		// call the reached function if time is at or past end point
 		if ( part->s.pos.trType == TR_LINEAR_STOP ) {
-			if ( level.time >= part->s.pos.trTime + part->s.pos.trDuration ) {
+			if (nowTime >= part->s.pos.trTime + part->s.pos.trDuration ) {
 				if ( part->reached ) {
 					part->reached( part );
 				}
@@ -429,7 +507,8 @@ SetMoverState
 */
 void SetMoverState( gentity_t *ent, moverState_t moverState, int time ) {
 	vec3_t			delta;
-	float			f;
+	float			f; 
+	int				nowTime = ACTIVATORTIME(ent->activatorReal);
 
 	ent->moverState = moverState;
 
@@ -458,7 +537,7 @@ void SetMoverState( gentity_t *ent, moverState_t moverState, int time ) {
 		ent->s.pos.trType = TR_LINEAR_STOP;
 		break;
 	}
-	BG_EvaluateTrajectory( &ent->s.pos, level.time, ent->r.currentOrigin );	
+	BG_EvaluateTrajectory( &ent->s.pos, nowTime, ent->r.currentOrigin );
 	trap_LinkEntity( ent );
 }
 
@@ -486,7 +565,8 @@ ReturnToPos1
 ================
 */
 void ReturnToPos1( gentity_t *ent ) {
-	MatchTeam( ent, MOVER_2TO1, level.time );
+	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	MatchTeam( ent, MOVER_2TO1, nowTime);
 
 	// looping sound
 	ent->s.loopSound = ent->soundLoop;
@@ -504,13 +584,14 @@ Reached_BinaryMover
 ================
 */
 void Reached_BinaryMover( gentity_t *ent ) {
+	int			nowTime = ACTIVATORTIME(ent->activatorReal);
 
 	// stop the looping sound
 	ent->s.loopSound = ent->soundLoop;
 
 	if ( ent->moverState == MOVER_1TO2 ) {
 		// reached pos2
-		SetMoverState( ent, MOVER_POS2, level.time );
+		SetMoverState( ent, MOVER_POS2, nowTime);
 
 		// play sound
 		if ( ent->soundPos2 ) {
@@ -521,22 +602,23 @@ void Reached_BinaryMover( gentity_t *ent ) {
 
 		// return to pos1 after a delay
 		ent->think = ReturnToPos1;
-		ent->nextthink = level.time + ent->wait;
+		ent->nextthink = nowTime + ent->wait;
 
 		if (ent->delay)
 		{
 			ent->think = ReturnToPos1;
-			ent->nextthink = level.time + ent->delay;
+			ent->nextthink = nowTime + ent->delay;
 		}
 
 		// fire targets
 		if ( !ent->activator ) {
-			ent->activator = ent;
+			G_SetActivator(ent, ent);
+			//ent->activator = ent;
 		}
 		G_UseTargets( ent, ent->activator );
 	} else if ( ent->moverState == MOVER_2TO1 ) {
 		// reached pos1
-		SetMoverState( ent, MOVER_POS1, level.time );
+		SetMoverState( ent, MOVER_POS1, nowTime);
 
 		// play sound
 		if ( ent->soundPos1 ) {
@@ -547,7 +629,7 @@ void Reached_BinaryMover( gentity_t *ent ) {
 
 		if (ent->delay)
 		{ //it won't go back up again this way until after the delay
-			ent->last_move_time = level.time + ent->delay;
+			ent->last_move_time = nowTime + ent->delay;
 		}
 
 		// close areaportals
@@ -567,7 +649,8 @@ Use_BinaryMover
 */
 void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 	int		total;
-	int		partial;
+	int		partial; 
+	int		nowTime;// = ACTIVATORTIME(ent->activatorReal);
 
 	// only the master should be used
 	if ( ent->flags & FL_TEAMSLAVE ) {
@@ -637,12 +720,14 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 	}
 #endif
 
-	ent->activator = activator;
+	//ent->activator = activator;
+	G_SetActivator(ent, activator); 
+	nowTime = ACTIVATORTIME(ent->activatorReal);
 
 	if ( ent->moverState == MOVER_POS1 ) {
 		// start moving 50 msec later, becase if this was player
 		// triggered, level.time hasn't been advanced yet
-		MatchTeam( ent, MOVER_1TO2, level.time + 50 );
+		MatchTeam( ent, MOVER_1TO2, nowTime + 50 );
 
 		// starting sound
 		if ( ent->sound1to2 ) {
@@ -662,19 +747,19 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 	// if all the way up, just delay before coming down
 	if ( ent->moverState == MOVER_POS2 && other && other->client ) {
 		//rww - don't delay if we're not being used by a player
-		ent->nextthink = level.time + ent->wait;
+		ent->nextthink = nowTime + ent->wait;
 		return;
 	}
 
 	// only partway down before reversing
 	if ( ent->moverState == MOVER_2TO1 ) {
 		total = ent->s.pos.trDuration;
-		partial = level.time - ent->s.pos.trTime;
+		partial = nowTime - ent->s.pos.trTime;
 		if ( partial > total ) {
 			partial = total;
 		}
 
-		MatchTeam( ent, MOVER_1TO2, level.time - ( total - partial ) );
+		MatchTeam( ent, MOVER_1TO2, nowTime - ( total - partial ) );
 
 		if ( ent->sound1to2 ) {
 			G_AddEvent( ent, EV_GENERAL_SOUND, ent->sound1to2 );
@@ -685,12 +770,12 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 	// only partway up before reversing
 	if ( ent->moverState == MOVER_1TO2 ) {
 		total = ent->s.pos.trDuration;
-		partial = level.time - ent->s.pos.trTime;
+		partial = nowTime - ent->s.pos.trTime;
 		if ( partial > total ) {
 			partial = total;
 		}
 
-		MatchTeam( ent, MOVER_2TO1, level.time - ( total - partial ) );
+		MatchTeam( ent, MOVER_2TO1, nowTime - ( total - partial ) );
 
 		if ( ent->sound2to1 ) {
 			G_AddEvent( ent, EV_GENERAL_SOUND, ent->sound2to1 );
@@ -904,6 +989,7 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 	gentity_t		*other;
 	vec3_t		mins, maxs;
 	int			i, best;
+	int			nowTime = ACTIVATORTIME(ent->activatorReal);
 
 	if ( !ent ) return;
 
@@ -947,11 +1033,12 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 	other->count = best;
 	trap_LinkEntity (other);
 
-	MatchTeam( ent, ent->moverState, level.time );
+	MatchTeam( ent, ent->moverState, nowTime);
 }
 
 void Think_MatchTeam( gentity_t *ent ) {
-	MatchTeam( ent, ent->moverState, level.time );
+	int		nowTime = ACTIVATORTIME(ent->activatorReal);
+	MatchTeam( ent, ent->moverState, nowTime);
 }
 
 
@@ -981,7 +1068,8 @@ void SP_func_door (gentity_t *ent) {
 	vec3_t	size;
 	float	lip;
 	char	*sound;
-	int		soundon = 0;
+	int		soundon = 0; 
+	int		nowTime = ACTIVATORTIME(ent->activatorReal);
 
 	G_SpawnInt("sound", "1", &soundon);
 
@@ -1043,7 +1131,7 @@ void SP_func_door (gentity_t *ent) {
 
 	InitMover( ent );
 
-	ent->nextthink = level.time + FRAMETIME;
+	ent->nextthink = nowTime + FRAMETIME;
 
 	if ( ! (ent->flags & FL_TEAMSLAVE ) ) {
 		int health;
@@ -1077,6 +1165,7 @@ Don't allow decent if a living player is on it
 ===============
 */
 void Touch_Plat( gentity_t *ent, gentity_t *other, trace_t *trace ) {
+	int			nowTime = ACTIVATORTIME(ent->activatorReal);
 	if ( !other->client || other->client->ps.stats[STAT_HEALTH] <= 0 ) {
 		return;
 	}
@@ -1085,14 +1174,14 @@ void Touch_Plat( gentity_t *ent, gentity_t *other, trace_t *trace ) {
 	{ //This means I don't care if you're touching me, I already intend to go back down on a set interval.
 		return;
 	}
-	if (other && other->client && ent->delay && ent->moverState == MOVER_POS1 && ent->nextthink >= level.time)
+	if (other && other->client && ent->delay && ent->moverState == MOVER_POS1 && ent->nextthink >= nowTime)
 	{
 		return;
 	}
 
 	// delay return-to-pos1 by one second
 	if ( ent->moverState == MOVER_POS2 ) {
-		ent->nextthink = level.time + 1000;
+		ent->nextthink = nowTime + 1000;
 	}
 }
 
@@ -1104,12 +1193,13 @@ If the plat is at the bottom position, start it going up
 ===============
 */
 void Touch_PlatCenterTrigger(gentity_t *ent, gentity_t *other, trace_t *trace ) {
+	int			nowTime = ACTIVATORTIME(ent->parent->activatorReal);
 	if ( !other->client ) {
 		return;
 	}
 
 	if ( ent->parent->moverState == MOVER_POS1 ) {
-		if (ent->parent->delay && ent->parent->last_move_time >= level.time)
+		if (ent->parent->delay && ent->parent->last_move_time >= nowTime)
 		{
 			return;
 		}
@@ -1372,7 +1462,8 @@ The wait time at a corner has completed, so start moving again
 ===============
 */
 void Think_BeginMoving( gentity_t *ent ) {
-	ent->s.pos.trTime = level.time;
+	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	ent->s.pos.trTime = nowTime;
 	ent->s.pos.trType = TR_LINEAR_STOP;
 }
 
@@ -1386,6 +1477,7 @@ void Reached_Train( gentity_t *ent ) {
 	float			speed;
 	vec3_t			move;
 	float			length;
+	int			nowTime = ACTIVATORTIME(ent->activatorReal);
 
 	// copy the apropriate values
 	next = ent->nextTrain;
@@ -1422,11 +1514,11 @@ void Reached_Train( gentity_t *ent ) {
 	ent->s.loopSound = next->soundLoop;
 
 	// start it going
-	SetMoverState( ent, MOVER_1TO2, level.time );
+	SetMoverState( ent, MOVER_1TO2, nowTime);
 
 	// if there is a "wait" value on the target, don't start moving yet
 	if ( next->wait ) {
-		ent->nextthink = level.time + next->wait * 1000;
+		ent->nextthink = nowTime + next->wait * 1000;
 		ent->think = Think_BeginMoving;
 		ent->s.pos.trType = TR_STATIONARY;
 	}
@@ -1516,7 +1608,8 @@ entities and damage them on contact as well.
 "light"		constantLight radius
 */
 void SP_func_train (gentity_t *self) {
-	VectorClear (self->s.angles);
+	int			nowTime = ACTIVATORTIME(self->activatorReal);
+	VectorClear (self->s.angles); 
 
 	if (self->spawnflags & TRAIN_BLOCK_STOPS) {
 		self->damage = 0;
@@ -1543,7 +1636,7 @@ void SP_func_train (gentity_t *self) {
 
 	// start trains on the second frame, to make sure their targets have had
 	// a chance to spawn
-	self->nextthink = level.time + FRAMETIME;
+	self->nextthink = nowTime + FRAMETIME;
 	self->think = Think_SetupTrainTargets;
 }
 
@@ -1797,11 +1890,14 @@ void BrushThink(gentity_t *self)
 
 void BreakableBrushUse(gentity_t *self, gentity_t *other, gentity_t *activator)
 {
-	self->activator = activator;
+	int			nowTime;// = ACTIVATORTIME(self->activatorReal);
+	//self->activator = activator;
+	G_SetActivator(self , activator);
+	nowTime = ACTIVATORTIME(self->activatorReal);
 	self->enemy = other;
 
 	self->think = BrushThink;
-	self->nextthink = level.time + self->wait;
+	self->nextthink = nowTime + self->wait;
 }
 
 /*QUAKED func_breakable (0 .5 .8) ? INVINCIBLE
@@ -2068,6 +2164,8 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator);
 extern gentity_t	*G_TestEntityPosition( gentity_t *ent );
 void func_wait_return_solid( gentity_t *self )
 {
+	int			nowTime = ACTIVATORTIME(self->activatorReal);
+
 	//once a frame, see if it's clear.
 	self->clipmask = CONTENTS_BODY;
 	if ( !(self->spawnflags&16) || G_TestEntityPosition( self ) == NULL )
@@ -2091,7 +2189,7 @@ void func_wait_return_solid( gentity_t *self )
 	{
 		self->clipmask = 0;
 		self->think = func_wait_return_solid;
-		self->nextthink = level.time + FRAMETIME;
+		self->nextthink = nowTime + FRAMETIME;
 	}
 }
 
@@ -2106,7 +2204,9 @@ void func_usable_think( gentity_t *self )
 }
 
 void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
-{//Toggle on and off
+{
+	int			nowTime = ACTIVATORTIME(self->activatorReal);
+	//Toggle on and off
 	//FIXME: Animation?
 	/*
 	if ( self->s.eFlags & EF_SHADER_ANIM )
@@ -2137,7 +2237,7 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 		if ( self->wait )
 		{
 			self->think = func_usable_think;
-			self->nextthink = level.time + ( self->wait * 1000 );
+			self->nextthink = nowTime + ( self->wait * 1000 );
 		}
 
 		return;

@@ -63,7 +63,8 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 		}
 	}
 
-	ent->activator = activator;
+	//ent->activator = activator;
+	G_SetActivator(ent, activator);
 	if (isRacer) {
 		if (activator->client->triggerTimes[ent - g_entities] >= nowTime) {
 			return; // i hope this somewhat replicates the behavior accurately while keeping things deterministic?
@@ -468,11 +469,13 @@ If dmg is set to -1 this brush will use the fade-kill method
 void hurt_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 	if (activator && activator->inuse && activator->client)
 	{
-		self->activator = activator;
+		//self->activator = activator;
+		G_SetActivator(self, activator);
 	}
 	else
 	{
-		self->activator = NULL;
+		//self->activator = NULL;
+		G_SetActivator(self, NULL);
 	}
 
 	if ( self->r.linked ) {
@@ -617,7 +620,8 @@ void func_timer_think( gentity_t *self ) {
 }
 
 void func_timer_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
-	self->activator = activator;
+	//self->activator = activator;
+	G_SetActivator(self, activator);
 
 	// if on, turn it off
 	if ( self->nextthink ) {
@@ -643,7 +647,9 @@ void SP_func_timer( gentity_t *self ) {
 
 	if ( self->spawnflags & 1 ) {
 		self->nextthink = level.time + FRAMETIME;
-		self->activator = self;
+
+		G_SetActivator(self, self);
+		//self->activator = self;
 	}
 
 	self->r.svFlags = SVF_NOCLIENT;

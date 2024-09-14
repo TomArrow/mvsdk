@@ -91,7 +91,8 @@ void Use_Target_Delay( gentity_t *ent, gentity_t *other, gentity_t *activator ) 
 		ent->nextthink = level.time + ( ent->wait + ent->random * crandom() ) * 1000;
 	}
 	ent->think = Think_Target_Delay;
-	ent->activator = activator;
+	//ent->activator = activator;
+	G_SetActivator(ent, activator);
 }
 
 void SP_target_delay( gentity_t *ent ) {
@@ -280,7 +281,8 @@ void target_laser_think (gentity_t *self) {
 void target_laser_on (gentity_t *self)
 {
 	if (!self->activator)
-		self->activator = self;
+		G_SetActivator(self, self);
+		//self->activator = self;
 	target_laser_think (self);
 }
 
@@ -292,7 +294,8 @@ void target_laser_off (gentity_t *self)
 
 void target_laser_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 {
-	self->activator = activator;
+	//self->activator = activator;
+	G_SetActivator(self, activator);
 	if ( self->nextthink > 0 )
 		target_laser_off (self);
 	else

@@ -2454,6 +2454,12 @@ void ClientDisconnect( int clientNum ) {
 		return;
 	}
 
+	// remove this player as the activator from any activated ents
+	// is this actually safe? what if some ent just expects the activator to be a valid ent?
+	// yea better just check activator->inuse...
+	G_ClearEntityActivator(ent); // this one not needed prolly cuz client has no activator, but lets be safe.
+	G_ClearActivatedEntities(ent); 
+
 	i = 0;
 
 	while (i < NUM_FORCE_POWERS)

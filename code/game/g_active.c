@@ -2070,6 +2070,20 @@ void ClientThink_real( gentity_t *ent ) {
 
 	G_UpdateClientBroadcasts ( ent );
 
+
+	/*
+	if (g_defrag.integer && client->sess.raceMode && ent->activatedEntities) {
+		gentity_t* actEnt = ent->activatedEntities;
+		while (actEnt) {
+			if (actEnt->s.eType == ET_MOVER) {
+				// run movers on client time
+				G_RunMover(ent);
+			}
+			actEnt = actEnt->nextActivatedEntity;
+		}
+
+	}*/
+
 	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
 		ClientEndFrameInClientThink(ent);
 	}

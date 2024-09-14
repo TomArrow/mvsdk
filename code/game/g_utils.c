@@ -609,6 +609,11 @@ void G_FreeEntity( gentity_t *ed ) {
 		return;
 	}
 
+	// clear any activation links
+	// what happens if an entity is its own activator or some weird combinations like that?
+	G_ClearEntityActivator(ed);
+	G_ClearActivatedEntities(ed); // dont do this, prolly unsafe
+
 	//rww - this may seem a bit hackish, but unfortunately we have no access
 	//to anything ghoul2-related on the server and thus must send a message
 	//to let the client know he needs to clean up all the g2 stuff for this

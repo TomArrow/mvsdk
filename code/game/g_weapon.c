@@ -361,7 +361,8 @@ void WP_FireEmplacedMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean 
 	}
 	*/
 
-	missile->activator = ignore;
+	//missile->activator = ignore;
+	G_SetActivator(missile, ignore);
 
 	missile->damage = damage;
 	missile->dflags = DAMAGE_DEATH_KNOCKBACK;
@@ -1463,7 +1464,8 @@ static void WP_CreateFlechetteBouncyThing( vec3_t start, vec3_t fwd, gentity_t *
 	
 	missile->think = WP_flechette_alt_blow;
 
-	missile->activator = self;
+	//missile->activator = self;
+	G_SetActivator(missile, self);
 
 	missile->s.weapon = WP_FLECHETTE;
 	missile->classname = "flech_alt";
@@ -2110,7 +2112,8 @@ void CreateLaserTrap( gentity_t *laserTrap, vec3_t start, gentity_t *owner )
 	laserTrap->s.pos.trType = TR_GRAVITY;
 	laserTrap->r.contents = MASK_SHOT;
 	laserTrap->parent = owner;
-	laserTrap->activator = owner;
+	//laserTrap->activator = owner;
+	G_SetActivator(laserTrap, owner);
 	laserTrap->r.ownerNum = owner->s.number;
 	VectorSet( laserTrap->r.mins, -LT_SIZE, -LT_SIZE, -LT_SIZE );
 	VectorSet( laserTrap->r.maxs, LT_SIZE, LT_SIZE, LT_SIZE );
@@ -3239,7 +3242,8 @@ void emplaced_gun_use( gentity_t *self, gentity_t *other, trace_t *trace )
 		// Lock the player
 //		activator->client->ps.eFlags |= EF_LOCKED_TO_WEAPON;
 		activator->r.ownerNum = self->s.number; // kind of dumb, but when we are locked to the weapon, we are owned by it.
-		self->activator = activator;
+		//self->activator = activator;
+		G_SetActivator(self, activator);
 //		self->delay = level.time; // can't disconnect from the thing for half a second
 
 		// Let the client know that we want to start our emplaced camera clamping
@@ -3398,7 +3402,8 @@ void emplaced_gun_update(gentity_t *self)
 		self->activator->r.ownerNum = ENTITYNUM_NONE;
 		self->activator->client->ps.emplacedTime = LEVELTIME(self->activator->client) + 1000;
 		self->activator->client->ps.emplacedIndex = 0;
-		self->activator = NULL;
+		//self->activator = NULL;
+		G_SetActivator(self, NULL);
 
 		self->s.activeForcePass = 0;
 	}

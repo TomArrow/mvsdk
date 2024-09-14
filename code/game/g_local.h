@@ -217,6 +217,11 @@ struct gentity_s {
 	gentity_t	*teamchain;		// next entity in team
 	gentity_t	*teammaster;	// master of the team
 
+	// for running movers on client time
+	gentity_t*	activatorReal; // same as activator, but gets cleared and is used for actual timing check. normal activator doesnt get cleared because places in code might rely on it not being NULL
+	gentity_t*	activatedEntities;
+	gentity_t*	nextActivatedEntity;
+
 	int			watertype;
 	int			waterlevel;
 
@@ -799,6 +804,10 @@ void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean a
 
 void G_RunMover( gentity_t *ent );
 void Touch_DoorTrigger( gentity_t *ent, gentity_t *other, trace_t *trace );
+
+void G_ClearEntityActivator(gentity_t* ent);
+void G_ClearActivatedEntities(gentity_t* activator); // dont do this, prolly unsafe
+void G_SetActivator(gentity_t* ent, gentity_t* activator);
 
 //
 // g_trigger.c
