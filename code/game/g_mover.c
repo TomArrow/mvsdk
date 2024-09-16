@@ -4,12 +4,6 @@
 #include "g_local.h"
 
 
-#define ACTIVATORTIMEHELPERTIMEOLD(client) (((client) && (client)->sess.raceMode) ? (((client)->ps.commandTime > 0) ? (client)->ps.commandTime : level.time) : level.time)
-
-//#define ACTIVATORTIME(a) ((a) ? LEVELTIME((a)->client) : level.time)
-//#define ACTIVATORTIMEOLD(a) ((a) ? ACTIVATORTIMEHELPERTIMEOLD((a)->client) : level.time)
-#define ACTIVATORTIME(a) level.time
-#define ACTIVATORTIMEOLD(a) level.previousTime
 
 /*
 ===============================================================================

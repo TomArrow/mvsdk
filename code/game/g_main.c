@@ -2604,7 +2604,7 @@ void CheckCvars( void ) {
 	}
 }
 
-#define ACTIVATORTIME(a) ((a) ? LEVELTIME((a)->client) : level.time)
+//#define ACTIVATORTIME(a) ((a) ? LEVELTIME((a)->client) : level.time)
 
 /*
 =============
@@ -2786,10 +2786,10 @@ void G_RunFrame( int levelTime ) {
 		}
 
 		if ( ent->s.eType == ET_MOVER ) {
-			//if (g_defrag.integer && ent->activatorReal && ent->activatorReal->inuse && ent->activatorReal->client && ent->activatorReal->client->sess.raceMode) {
-			//	// we run this mover on client time.
-			//}
-			//else 
+			if (g_defrag.integer && ent->activatorReal && ent->activatorReal->inuse && ent->activatorReal->client && ent->activatorReal->client->sess.raceMode) {
+				// we run this mover on client time.
+			}
+			else 
 			{
 				G_RunMover(ent);
 			}

@@ -349,7 +349,7 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 			r = trap_GetSnapshot( cgs.processedSnapshotNum, dest );
 		}
 
-		// FIXME: why would trap_GetSnapshot return a snapshot with the same server time
+		// FIXME: why would trap_GetSnapshot return a snapshot with the same server time // ta: because /devmap on a local client will still sent snaps on every frame even if level.time doesn't change
 		if ( cg.snap && r && dest->serverTime == cg.snap->serverTime ) {
 			//continue;
 		}

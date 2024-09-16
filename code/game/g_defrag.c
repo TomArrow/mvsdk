@@ -866,10 +866,76 @@ void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec
 	}
 }
 
-static int solidValues[MAX_GENTITIES];
-static int saberMoveValues[MAX_GENTITIES];
-static int saberMoveValuesPS[MAX_GENTITIES];
-static int pmfFollowPS[MAX_GENTITIES];
+
+/*
+=========================
+CG_AdjustPositionForMover
+
+Also called by client movement prediction code
+=========================
+*/
+static qboolean CG_AdjustPositionForClientTimeMover(const vec3_t in, int moverNum, /*int fromTime, int toTime, */ vec3_t out) {
+	gentity_t* gent;
+	vec3_t	oldOrigin, origin, deltaOrigin;
+	vec3_t	oldAngles, angles;
+	int fromTime, toTime;
+	int backupTrTime;
+	// vec3_t	deltaAngles;
+
+	if (moverNum <= 0 || moverNum >= ENTITYNUM_MAX_NORMAL) {
+		VectorCopy(in, out);
+		return qfalse;
+	}
+
+	gent = &g_entities[moverNum];
+	if (gent->s.eType != ET_MOVER) {
+		VectorCopy(in, out);
+		return;
+	}
+
+	fromTime = ACTIVATORTIME(gent->activatorReal);
+		//other->s.pos.trTime = level.time - (ACTIVATORTIME(other->activatorReal) - other->s.pos.trTime);
+	toTime = level.time;
+	if (fromTime == toTime) {
+		VectorCopy(in, out);
+		return;
+	}
+	backupTrTime = gent->s.pos.trTime;
+	gent->s.pos.trTime = level.time - (fromTime - gent->s.pos.trTime);
+
+	BG_EvaluateTrajectory(&gent->s.pos, fromTime, oldOrigin);
+	BG_EvaluateTrajectory(&gent->s.apos, fromTime, oldAngles);
+
+	BG_EvaluateTrajectory(&gent->s.pos, toTime, origin);
+	BG_EvaluateTrajectory(&gent->s.apos, toTime, angles);
+
+	gent->s.pos.trTime = backupTrTime;
+
+	VectorSubtract(origin, oldOrigin, deltaOrigin);
+	// VectorSubtract( angles, oldAngles, deltaAngles );
+
+	VectorAdd(in, deltaOrigin, out);
+	
+	return qtrue;
+
+	// FIXME: origin change when on a rotating object
+}
+
+
+typedef struct playerSnapshotBackupValues_s {
+	int solidValue;
+	int saberMove;
+	int saberMovePS;
+	int pmfFollowPS;
+	int	trTime;
+	vec3_t	psMoverOldPos;
+} playerSnapshotBackupValues_t;
+
+//static int solidValues[MAX_GENTITIES];
+//static int saberMoveValues[MAX_GENTITIES];
+//static int saberMoveValuesPS[MAX_GENTITIES];
+//static int pmfFollowPS[MAX_GENTITIES];
+static playerSnapshotBackupValues_t backupValues[MAX_GENTITIES];
 void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	gentity_t* ent = g_entities + clientNum;
 	gentity_t* other;
@@ -877,12 +943,22 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	int i;
 	for (i = 0; i < level.num_entities; i++) {
 		other = g_entities + i;
-		if(saveState) solidValues[i] = other->s.solid;
+		if (!other->r.linked || !other->inuse) {
+			continue;
+		}
+		if (saveState) {
+			backupValues[i].solidValue = other->s.solid;
+			if (other->s.eType == ET_MOVER) { // hackily "fix" client-timed mover prediction for cgame
+				backupValues[i].trTime = other->s.pos.trTime;
+				//other->s.pos.trTime = level.time - (ACTIVATORTIME(other->activatorReal) - other->s.pos.trTime);
+				other->s.pos.trTime += level.time - ACTIVATORTIME(other->activatorReal);
+			}
+		}
 		if (ShouldNotCollide(ent,other)) {
 			other->s.solid = 0;
 		}
 		else if (!saveState){
-			other->s.solid = solidValues[i];
+			other->s.solid = backupValues[i].solidValue;
 		}
 
 		// avoid issues with custom lightsaber moves on clients.
@@ -890,15 +966,17 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		// also, cg_debugsabers 1 causes aa crash on cgame due to accessing a broken char* pointer
 		// TODO: is sabermove used for anything else?
 		// TODO: Don't do this if client has tommyternal client?
-		if (saveState) saberMoveValues[i] = other->s.saberMove;
+		if (saveState) backupValues[i].saberMove = other->s.saberMove;
 		if (other->s.saberMove >= LS_MOVE_MAX_DEFAULT) {
 			other->s.saberMove = LS_READY;
 		}
 		if (other->client) {
 			cl = other->client;
 			if (saveState) { 
-				saberMoveValuesPS[i] = cl->ps.saberMove;
-				pmfFollowPS[i] = cl->ps.pm_flags & PMF_FOLLOW;
+				backupValues[i].saberMovePS = cl->ps.saberMove;
+				backupValues[i].pmfFollowPS = cl->ps.pm_flags & PMF_FOLLOW;
+				VectorCopy(cl->ps.origin, backupValues[i].psMoverOldPos);
+				//CG_AdjustPositionForClientTimeMover(cl->ps.origin, cl->ps.groundEntityNum, cl->ps.origin); // silly bs (that doesnt work)
 			}
 			if (cl->sess.raceMode && (cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state == SEG_REPLAY) {
 				cl->ps.pm_flags |= PMF_FOLLOW;
@@ -915,12 +993,19 @@ void PlayerSnapshotRestoreValues() {
 	int i;
 	for (i = 0; i < level.num_entities; i++) {
 		other = g_entities + i;
-		other->s.solid = solidValues[i];
-		other->s.saberMove = saberMoveValues[i];
+		if (!other->r.linked || !other->inuse) {
+			continue;
+		}
+		other->s.solid = backupValues[i].solidValue;
+		other->s.saberMove = backupValues[i].saberMove; 
+		if (other->s.eType == ET_MOVER) {
+			other->s.pos.trTime = backupValues[i].trTime;
+		}
 		if (other->client) {
 			cl = other->client;
-			cl->ps.saberMove = saberMoveValuesPS[i];
-			cl->ps.pm_flags = (cl->ps.pm_flags & ~PMF_FOLLOW) | pmfFollowPS[i];
+			cl->ps.saberMove = backupValues[i].saberMovePS;
+			cl->ps.pm_flags = (cl->ps.pm_flags & ~PMF_FOLLOW) | backupValues[i].pmfFollowPS;
+			VectorCopy(backupValues[i].psMoverOldPos, cl->ps.origin);
 		}
 	}
 }

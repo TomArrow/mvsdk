@@ -12,6 +12,15 @@
 #define LEVELTIME(client) (((client) && (client)->sess.raceMode) ? (((client)->pers.cmd.serverTime > 0) ? (client)->pers.cmd.serverTime : level.time) : level.time)
 #endif
 
+
+#define ACTIVATORTIMEHELPERTIMEOLD(client) (((client) && (client)->sess.raceMode) ? (((client)->ps.commandTime > 0) ? (client)->ps.commandTime : level.time) : level.time)
+
+#define ACTIVATORTIME(a) (((a) && (a)->inuse && g_defrag.integer) ? LEVELTIME((a)->client) : level.time)
+#define ACTIVATORTIMEOLD(a) (((a) && (a)->inuse && g_defrag.integer) ? ACTIVATORTIMEHELPERTIMEOLD((a)->client) : level.time)
+//#define ACTIVATORTIME(a) level.time
+//#define ACTIVATORTIMEOLD(a) level.previousTime
+
+
 typedef struct savedPosition_s {
 	playerState_t	ps;
 	raceStyle_t		raceStyle;
