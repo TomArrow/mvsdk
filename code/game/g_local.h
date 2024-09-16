@@ -219,6 +219,7 @@ struct gentity_s {
 
 	// for running movers on client time
 	gentity_t*	activatorReal; // same as activator, but gets cleared and is used for actual timing check. normal activator doesnt get cleared because places in code might rely on it not being NULL
+	int			activatorLevelTimeDelta; // when we touch a mover, we log the time difference between usercmd time and level.time. Then we evaluate the mover position based on usercmd time + the offset.
 	gentity_t*	activatedEntities;
 	gentity_t*	nextActivatedEntity;
 
@@ -808,6 +809,7 @@ void Touch_DoorTrigger( gentity_t *ent, gentity_t *other, trace_t *trace );
 void G_ClearEntityActivator(gentity_t* ent);
 void G_ClearActivatedEntities(gentity_t* activator); // dont do this, prolly unsafe
 void G_SetActivator(gentity_t* ent, gentity_t* activator);
+int G_ResetActivatorTimeDelta(gentity_t* ent, gentity_t* activator);
 
 //
 // g_trigger.c

@@ -61,9 +61,16 @@ void G_ClearActivatedEntities(gentity_t* activator) {
 	activator->activatedEntities = NULL;
 }
 
+int G_ResetActivatorTimeDelta(gentity_t* ent, gentity_t* activator) {
+	ent->activatorLevelTimeDelta = (activator && activator->client) ?( level.time - activator->client->pers.cmd.serverTime):0;
+	return level.time;//returns the correct time to use. at this point in time its just level.time. convenience feature.
+}
 
 // TODO what about order of entities? preserve it? atm last activated one will run first?
 void G_SetActivator(gentity_t* ent, gentity_t* activator) {
+	if (activator != ent->activatorReal && activator->client) {
+		G_ResetActivatorTimeDelta(ent, activator);
+	}
 	G_ClearEntityActivator(ent);
 	ent->activatorReal = ent->activator = activator;
 
@@ -412,8 +419,8 @@ void G_MoverTeam( gentity_t *ent ) {
 	vec3_t		move, amove;
 	gentity_t	*part, *obstacle;
 	vec3_t		origin, angles;
-	int			nowTime = ACTIVATORTIME(ent->activatorReal);
-	int			oldTime = ACTIVATORTIMEOLD(ent->activatorReal);
+	int			nowTime = MOVERTIME_ENT(ent);
+	int			oldTime = MOVERTIMEOLD_ENT(ent);
 
 	obstacle = NULL;
 
@@ -502,7 +509,7 @@ SetMoverState
 void SetMoverState( gentity_t *ent, moverState_t moverState, int time ) {
 	vec3_t			delta;
 	float			f; 
-	int				nowTime = ACTIVATORTIME(ent->activatorReal);
+	int				nowTime = MOVERTIME_ENT(ent);
 
 	ent->moverState = moverState;
 
@@ -559,8 +566,10 @@ ReturnToPos1
 ================
 */
 void ReturnToPos1( gentity_t *ent ) {
-	int			nowTime = ACTIVATORTIME(ent->activatorReal);
-	MatchTeam( ent, MOVER_2TO1, nowTime);
+
+	G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
+
+	MatchTeam( ent, MOVER_2TO1, level.time); // technically we wanna use the activator (client) time if possible but since we just did the reset, it's the same as level.time
 
 	// looping sound
 	ent->s.loopSound = ent->soundLoop;
@@ -578,13 +587,15 @@ Reached_BinaryMover
 ================
 */
 void Reached_BinaryMover( gentity_t *ent ) {
-	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	//int			nowTime = MOVERTIME_ENT(ent);  // technically we wanna use the activator (client) time if possible but since we will do a reset, it's the same as level.time
+	int				nowTime = level.time;// technically we wanna use the activator (client) time if possible but since we will do a reset, it's the same as level.time
 
 	// stop the looping sound
 	ent->s.loopSound = ent->soundLoop;
 
 	if ( ent->moverState == MOVER_1TO2 ) {
 		// reached pos2
+		G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		SetMoverState( ent, MOVER_POS2, nowTime);
 
 		// play sound
@@ -612,6 +623,7 @@ void Reached_BinaryMover( gentity_t *ent ) {
 		G_UseTargets( ent, ent->activator );
 	} else if ( ent->moverState == MOVER_2TO1 ) {
 		// reached pos1
+		G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		SetMoverState( ent, MOVER_POS1, nowTime);
 
 		// play sound
@@ -716,11 +728,13 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 	//ent->activator = activator;
 	G_SetActivator(ent, activator); 
-	nowTime = ACTIVATORTIME(ent->activatorReal);
+	nowTime = MOVERTIME_ENT(ent);
 
 	if ( ent->moverState == MOVER_POS1 ) {
 		// start moving 50 msec later, becase if this was player
 		// triggered, level.time hasn't been advanced yet
+
+		nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		MatchTeam( ent, MOVER_1TO2, nowTime + 50 );
 
 		// starting sound
@@ -747,6 +761,8 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 	// only partway down before reversing
 	if ( ent->moverState == MOVER_2TO1 ) {
+		// hmm should we update the client time here? maybe not.
+		//nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		total = ent->s.pos.trDuration;
 		partial = nowTime - ent->s.pos.trTime;
 		if ( partial > total ) {
@@ -763,6 +779,8 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 	// only partway up before reversing
 	if ( ent->moverState == MOVER_1TO2 ) {
+		// hmm should we update the client time here? maybe not.
+		//nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		total = ent->s.pos.trDuration;
 		partial = nowTime - ent->s.pos.trTime;
 		if ( partial > total ) {
@@ -983,7 +1001,7 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 	gentity_t		*other;
 	vec3_t		mins, maxs;
 	int			i, best;
-	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	int			nowTime = MOVERTIME_ENT(ent);
 
 	if ( !ent ) return;
 
@@ -1027,11 +1045,12 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 	other->count = best;
 	trap_LinkEntity (other);
 
+	nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 	MatchTeam( ent, ent->moverState, nowTime);
 }
 
 void Think_MatchTeam( gentity_t *ent ) {
-	int		nowTime = ACTIVATORTIME(ent->activatorReal);
+	int		nowTime = MOVERTIME_ENT(ent);
 	MatchTeam( ent, ent->moverState, nowTime);
 }
 
@@ -1063,7 +1082,7 @@ void SP_func_door (gentity_t *ent) {
 	float	lip;
 	char	*sound;
 	int		soundon = 0; 
-	int		nowTime = ACTIVATORTIME(ent->activatorReal);
+	int		nowTime = MOVERTIME_ENT(ent);
 
 	G_SpawnInt("sound", "1", &soundon);
 
@@ -1159,7 +1178,7 @@ Don't allow decent if a living player is on it
 ===============
 */
 void Touch_Plat( gentity_t *ent, gentity_t *other, trace_t *trace ) {
-	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	int			nowTime = MOVERTIME_ENT(ent);
 	if ( !other->client || other->client->ps.stats[STAT_HEALTH] <= 0 ) {
 		return;
 	}
@@ -1187,7 +1206,7 @@ If the plat is at the bottom position, start it going up
 ===============
 */
 void Touch_PlatCenterTrigger(gentity_t *ent, gentity_t *other, trace_t *trace ) {
-	int			nowTime = ACTIVATORTIME(ent->parent->activatorReal);
+	int			nowTime = MOVERTIME_ENT(ent->parent);
 	if ( !other->client ) {
 		return;
 	}
@@ -1456,7 +1475,7 @@ The wait time at a corner has completed, so start moving again
 ===============
 */
 void Think_BeginMoving( gentity_t *ent ) {
-	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	int			nowTime = MOVERTIME_ENT(ent);
 	ent->s.pos.trTime = nowTime;
 	ent->s.pos.trType = TR_LINEAR_STOP;
 }
@@ -1471,7 +1490,7 @@ void Reached_Train( gentity_t *ent ) {
 	float			speed;
 	vec3_t			move;
 	float			length;
-	int			nowTime = ACTIVATORTIME(ent->activatorReal);
+	int			nowTime = MOVERTIME_ENT(ent);
 
 	// copy the apropriate values
 	next = ent->nextTrain;
@@ -1602,7 +1621,7 @@ entities and damage them on contact as well.
 "light"		constantLight radius
 */
 void SP_func_train (gentity_t *self) {
-	int			nowTime = ACTIVATORTIME(self->activatorReal);
+	int			nowTime = MOVERTIME_ENT(self);
 	VectorClear (self->s.angles); 
 
 	if (self->spawnflags & TRAIN_BLOCK_STOPS) {
@@ -1887,7 +1906,7 @@ void BreakableBrushUse(gentity_t *self, gentity_t *other, gentity_t *activator)
 	int			nowTime;// = ACTIVATORTIME(self->activatorReal);
 	//self->activator = activator;
 	G_SetActivator(self , activator);
-	nowTime = ACTIVATORTIME(self->activatorReal);
+	nowTime = MOVERTIME_ENT(self);
 	self->enemy = other;
 
 	self->think = BrushThink;
@@ -2158,7 +2177,7 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator);
 extern gentity_t	*G_TestEntityPosition( gentity_t *ent );
 void func_wait_return_solid( gentity_t *self )
 {
-	int			nowTime = ACTIVATORTIME(self->activatorReal);
+	int			nowTime = MOVERTIME_ENT(self);
 
 	//once a frame, see if it's clear.
 	self->clipmask = CONTENTS_BODY;
@@ -2199,7 +2218,7 @@ void func_usable_think( gentity_t *self )
 
 void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 {
-	int			nowTime = ACTIVATORTIME(self->activatorReal);
+	int			nowTime = MOVERTIME_ENT(self); // todo need any reset here?
 	//Toggle on and off
 	//FIXME: Animation?
 	/*

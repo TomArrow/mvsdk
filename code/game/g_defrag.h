@@ -13,13 +13,16 @@
 #endif
 
 
-#define ACTIVATORTIMEHELPERTIMEOLD(client) (((client) && (client)->sess.raceMode) ? (((client)->ps.commandTime > 0) ? (client)->ps.commandTime : level.time) : level.time)
+//#define ACTIVATORTIMEHELPERTIMEOLD(client) (((client) && (client)->sess.raceMode) ? (((client)->ps.commandTime > 0) ? (client)->ps.commandTime : level.time) : level.time)
 
-#define ACTIVATORTIME(a) (((a) && (a)->inuse && g_defrag.integer) ? LEVELTIME((a)->client) : level.time)
-#define ACTIVATORTIMEOLD(a) (((a) && (a)->inuse && g_defrag.integer) ? ACTIVATORTIMEHELPERTIMEOLD((a)->client) : level.time)
+//#define ACTIVATORTIME(a) (((a) && (a)->inuse && g_defrag.integer) ? LEVELTIME((a)->client) : level.time)
+//#define ACTIVATORTIMEOLD(a) (((a) && (a)->inuse && g_defrag.integer) ? ACTIVATORTIMEHELPERTIMEOLD((a)->client) : level.time)
 //#define ACTIVATORTIME(a) level.time
 //#define ACTIVATORTIMEOLD(a) level.previousTime
 
+
+#define MOVERTIME_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->pers.cmd.serverTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->pers.cmd.serverTime+(e)->activatorLevelTimeDelta) : level.time)
+#define MOVERTIMEOLD_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->ps.commandTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->ps.commandTime+(e)->activatorLevelTimeDelta) : level.time) // is commandtime really adequate?
 
 typedef struct savedPosition_s {
 	playerState_t	ps;

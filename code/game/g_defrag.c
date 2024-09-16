@@ -879,7 +879,7 @@ static qboolean CG_AdjustPositionForClientTimeMover(const vec3_t in, int moverNu
 	vec3_t	oldOrigin, origin, deltaOrigin;
 	vec3_t	oldAngles, angles;
 	int fromTime, toTime;
-	int backupTrTime;
+	//int backupTrTime;
 	// vec3_t	deltaAngles;
 
 	if (moverNum <= 0 || moverNum >= ENTITYNUM_MAX_NORMAL) {
@@ -893,15 +893,14 @@ static qboolean CG_AdjustPositionForClientTimeMover(const vec3_t in, int moverNu
 		return;
 	}
 
-	fromTime = ACTIVATORTIME(gent->activatorReal);
-		//other->s.pos.trTime = level.time - (ACTIVATORTIME(other->activatorReal) - other->s.pos.trTime);
+	fromTime = MOVERTIME_ENT(gent);
 	toTime = level.time;
 	if (fromTime == toTime) {
 		VectorCopy(in, out);
 		return;
 	}
-	backupTrTime = gent->s.pos.trTime;
-	gent->s.pos.trTime = level.time - (fromTime - gent->s.pos.trTime);
+	//backupTrTime = gent->s.pos.trTime;
+	//gent->s.pos.trTime = level.time - (fromTime - gent->s.pos.trTime);
 
 	BG_EvaluateTrajectory(&gent->s.pos, fromTime, oldOrigin);
 	BG_EvaluateTrajectory(&gent->s.apos, fromTime, oldAngles);
@@ -909,7 +908,7 @@ static qboolean CG_AdjustPositionForClientTimeMover(const vec3_t in, int moverNu
 	BG_EvaluateTrajectory(&gent->s.pos, toTime, origin);
 	BG_EvaluateTrajectory(&gent->s.apos, toTime, angles);
 
-	gent->s.pos.trTime = backupTrTime;
+	//gent->s.pos.trTime = backupTrTime;
 
 	VectorSubtract(origin, oldOrigin, deltaOrigin);
 	// VectorSubtract( angles, oldAngles, deltaAngles );
@@ -927,7 +926,7 @@ typedef struct playerSnapshotBackupValues_s {
 	int saberMove;
 	int saberMovePS;
 	int pmfFollowPS;
-	int	trTime;
+	//int	trTime;
 	vec3_t	psMoverOldPos;
 } playerSnapshotBackupValues_t;
 
@@ -948,11 +947,10 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 		if (saveState) {
 			backupValues[i].solidValue = other->s.solid;
-			if (other->s.eType == ET_MOVER) { // hackily "fix" client-timed mover prediction for cgame
-				backupValues[i].trTime = other->s.pos.trTime;
-				//other->s.pos.trTime = level.time - (ACTIVATORTIME(other->activatorReal) - other->s.pos.trTime);
-				other->s.pos.trTime += level.time - ACTIVATORTIME(other->activatorReal);
-			}
+			//if (other->s.eType == ET_MOVER) { // hackily "fix" client-timed mover prediction for cgame
+				//backupValues[i].trTime = other->s.pos.trTime;
+				//other->s.pos.trTime += level.time - ACTIVATORTIME(other->activatorReal);
+			//}
 		}
 		if (ShouldNotCollide(ent,other)) {
 			other->s.solid = 0;
@@ -976,7 +974,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 				backupValues[i].saberMovePS = cl->ps.saberMove;
 				backupValues[i].pmfFollowPS = cl->ps.pm_flags & PMF_FOLLOW;
 				VectorCopy(cl->ps.origin, backupValues[i].psMoverOldPos);
-				//CG_AdjustPositionForClientTimeMover(cl->ps.origin, cl->ps.groundEntityNum, cl->ps.origin); // silly bs (that doesnt work)
+				CG_AdjustPositionForClientTimeMover(cl->ps.origin, cl->ps.groundEntityNum, cl->ps.origin); // silly bs (that doesnt work)
 			}
 			if (cl->sess.raceMode && (cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state == SEG_REPLAY) {
 				cl->ps.pm_flags |= PMF_FOLLOW;
@@ -998,9 +996,9 @@ void PlayerSnapshotRestoreValues() {
 		}
 		other->s.solid = backupValues[i].solidValue;
 		other->s.saberMove = backupValues[i].saberMove; 
-		if (other->s.eType == ET_MOVER) {
-			other->s.pos.trTime = backupValues[i].trTime;
-		}
+		//if (other->s.eType == ET_MOVER) {
+		//	other->s.pos.trTime = backupValues[i].trTime;
+		//}
 		if (other->client) {
 			cl = other->client;
 			cl->ps.saberMove = backupValues[i].saberMovePS;

@@ -2604,8 +2604,6 @@ void CheckCvars( void ) {
 	}
 }
 
-//#define ACTIVATORTIME(a) ((a) ? LEVELTIME((a)->client) : level.time)
-
 /*
 =============
 G_RunThink
@@ -2615,7 +2613,7 @@ Runs thinking code for this frame if necessary
 */
 void G_RunThink (gentity_t *ent) {
 	float	thinktime; 
-	int			nowTime = ent->s.eType == ET_MOVER ? ACTIVATORTIME(ent->activatorReal) : level.time;
+	int			nowTime = ent->s.eType == ET_MOVER ? MOVERTIME_ENT(ent) : level.time;
 
 	thinktime = ent->nextthink;
 	if (thinktime <= 0) {
