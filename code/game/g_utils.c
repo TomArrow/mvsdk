@@ -253,7 +253,7 @@ Selects a random entity from among the targets
 */
 #define MAXCHOICES	32
 
-gentity_t *G_PickTarget (char *targetname, qboolean allowRandom)
+gentity_t *G_PickTarget (char *targetname, qboolean allowRandom, int* numChoices)
 {
 	gentity_t	*ent = NULL;
 	int		num_choices = 0;
@@ -273,6 +273,10 @@ gentity_t *G_PickTarget (char *targetname, qboolean allowRandom)
 		choice[num_choices++] = ent;
 		if (num_choices == MAXCHOICES)
 			break;
+	}
+
+	if (numChoices) { // inform the caller how many there were
+		*numChoices = num_choices;
 	}
 
 	if (!num_choices)

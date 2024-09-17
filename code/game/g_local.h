@@ -662,7 +662,7 @@ void	G_TeamCommand( team_t team, char *cmd );
 void	G_KillBox (gentity_t *ent);
 gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match);
 int		G_RadiusList ( vec3_t origin, float radius,	gentity_t *ignore, qboolean takeDamage, gentity_t *ent_list[MAX_GENTITIES]);
-gentity_t *G_PickTarget (char *targetname, qboolean allowRandom);
+gentity_t *G_PickTarget (char *targetname, qboolean allowRandom, int* numChoices);
 void	G_UseTargets (gentity_t *ent, gentity_t *activator);
 void	G_SetMovedir ( vec3_t angles, vec3_t movedir);
 void	G_SetAngles( gentity_t *ent, vec3_t angles );

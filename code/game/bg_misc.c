@@ -2049,6 +2049,8 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 	ps->eventSequence++;
 }
 
+
+
 /*
 ========================
 BG_TouchJumpPad

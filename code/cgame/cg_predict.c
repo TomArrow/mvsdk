@@ -14,6 +14,7 @@ static	centity_t	*cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
 static	int			cg_numTriggerEntities;
 static	centity_t	*cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
 
+void CG_TeleporterTouch(playerState_t* ps, usercmd_t* ucmd, entityState_t* teleporter);
 
 /*
 ====================
@@ -521,7 +522,15 @@ static void CG_TouchTriggerPrediction( void ) {
 		}
 
 		if ( ent->eType == ET_TELEPORT_TRIGGER ) {
-			cg.hyperspace = qtrue;
+			if (cgs.isTommyTernal && ent->trickedentindex3 && (cg.predictedPlayerState.stats[STAT_RACEMODE] || ent->trickedentindex3 > 1)) {
+				// in racemode, only first teleporter target is used, so we can predict.
+				// alternatively, server can force the predict (if only one target is found for example)
+				CG_TeleporterTouch(&cg.predictedPlayerState, &cg_pmove.cmd,ent);
+				cg.teleporterPredicted = qtrue;
+			}
+			else {
+				cg.hyperspace = qtrue;
+			}
 		} else if ( ent->eType == ET_PUSH_TRIGGER ) {
 			//BG_TouchJumpPad( &cg.predictedPlayerState, ent );
 			BG_TouchJumpPadVelocity( &cg.predictedPlayerState, ent );
@@ -704,6 +713,88 @@ void CG_PmoveClientPointerUpdate()
 	//cg_pmove.ghoul2 = NULL;
 }
 
+
+
+
+/*
+==================
+SetClientViewAngle
+
+==================
+*/
+static void CG_SetClientViewAngle(playerState_t* ps, usercmd_t* ucmd, vec3_t angle) {
+	int			i;
+
+	// set the delta angle
+	for (i = 0; i < 3; i++) {
+		int		cmdAngle;
+
+		cmdAngle = ANGLE2SHORT(angle[i]);
+		ps->delta_angles[i] = cmdAngle - ucmd->angles[i];
+	}
+	VectorCopy(angle, ps->viewangles);
+}
+
+//void BG_TeleportPlayer(gentity_t* player, vec3_t origin, vec3_t angles) {
+static void CG_TeleportPlayer(playerState_t* ps, usercmd_t* ucmd, vec3_t origin, vec3_t angles) {
+	//gentity_t* tent;
+
+	if (ps->pm_flags & PMF_FOLLOW)
+	{ // Follow spectators don't need to teleport. And calling BG_PlayerStateToEntityState on them corrupts their s.number.
+		return;
+	}
+
+	VectorCopy(origin, ps->origin);
+	ps->origin[2] += 1;
+
+	// spit the player out
+	AngleVectors(angles, ps->velocity, NULL, NULL);
+	VectorScale(ps->velocity, 400, ps->velocity);
+	ps->pm_time = 160;		// hold time
+	ps->pm_flags |= PMF_TIME_KNOCKBACK;
+
+	// toggle the teleport bit so the client knows to not lerp
+	ps->eFlags ^= EF_TELEPORT_BIT;
+
+	CG_SetClientViewAngle(ps, ucmd, angles);
+
+	if (ps->stats[STAT_RACEMODE]) {
+		//player->client->ps.powerups[PW_YSALAMIRI] = 0; //Fuck
+		ps->powerups[PW_FORCE_BOON] = 0;
+		//if (player->client->sess.movementStyle == MV_RJQ3 || player->client->sess.movementStyle == MV_RJCPM || player->client->sess.movementStyle == MV_TRIBES) //Get rid of their rockets when they tele/noclip..?
+		//	DeletePlayerProjectiles(player);
+		//if (player->client->sess.movementStyle == MV_COOP_JKA && player->client->ps.duelInProgress) { //clean this up..
+		//	gentity_t* gripEnt;
+		//	WP_ForcePowerStop(player, FP_GRIP);
+		//
+		//	gripEnt = &g_entities[player->client->ps.duelIndex];
+		//	if (gripEnt && gripEnt->client) {
+		//		WP_ForcePowerStop(gripEnt, FP_GRIP);
+		//	}
+		//}
+	}
+}
+
+void CG_TeleporterTouch(playerState_t* ps, usercmd_t* ucmd, entityState_t* teleporter) {
+	int flags = teleporter->weapon;
+	if (ps->pm_type == PM_DEAD) {
+		return;
+	}
+	// Spectators only?
+	if ((flags & 1) &&
+		ps->persistant[PERS_TEAM] != TEAM_SPECTATOR) {
+		return;
+	}
+
+	/*dest = G_PickTarget(self->target, !other->client->sess.raceMode);
+	if (!dest) {
+		G_Printf("Couldn't find teleporter destination\n");
+		return;
+	}*/
+	CG_TeleportPlayer(ps, ucmd, teleporter->origin2, teleporter->angles2);
+}
+
+
 /*
 =================
 CG_PredictPlayerState
@@ -743,6 +834,7 @@ void CG_PredictPlayerState( void ) {
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
+	cg.teleporterPredicted = qfalse;	// teleporter was predicted so ignore areamask
 
 	// if this is the first frame we must guarantee
 	// predictedPlayerState is valid even if there is some

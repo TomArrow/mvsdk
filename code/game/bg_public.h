@@ -1096,6 +1096,7 @@ void	BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 
 void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad );
 void	BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad);
+void	BG_TeleporterTouch(playerState_t* ps, entityState_t* teleporter);
 
 void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap );
 void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );

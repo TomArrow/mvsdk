@@ -5960,6 +5960,12 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 		VectorMA( cg.refdef.vieworg, -separation, cg.refdef.viewaxis[1], cg.refdef.vieworg );
 	}
 
+	if (cg.teleporterPredicted) {
+		// normally, if we predict a teleport, we will get hall of mirrors because the target area is likely in a different area and wont be drawn.
+		// so just do a dirty override here. its disgusting and might cause a temporary framerate drop (?) but oh well.
+		memset(&cg.refdef.areamask, 0, sizeof(cg.refdef.areamask));
+	}
+
 	// draw 3D view
 	trap_R_RenderScene( &cg.refdef );
 

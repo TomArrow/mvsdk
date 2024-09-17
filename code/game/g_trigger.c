@@ -268,7 +268,7 @@ void AimAtTarget( gentity_t *self ) {
 	VectorAdd( self->r.absmin, self->r.absmax, origin );
 	VectorScale ( origin, 0.5, origin );
 
-	ent = G_PickTarget( self->target, !g_defrag.integer );
+	ent = G_PickTarget( self->target, !g_defrag.integer, NULL);
 	if ( !ent ) {
 		G_FreeEntity( self );
 		return;
@@ -390,6 +390,24 @@ trigger_teleport
 ==============================================================================
 */
 
+void trigger_teleporter_setupdefaulttarget(gentity_t* self) {
+	gentity_t* dest;
+	int numChoices = 0;
+	dest = G_PickTarget(self->target, qfalse, &numChoices);
+	if (!dest) {
+		G_Printf("Couldn't set up teleporter destination\n");
+		return;
+	}
+
+	// for racers, just pick the first one.
+	VectorCopy(dest->s.origin,self->s.origin2); // could use pos.trBase/apos.trBase too since better network-wise? idk.
+	VectorCopy(dest->s.angles,self->s.angles2);
+
+	if (numChoices == 1) {
+		self->s.trickedentindex3 = 2; // there's only one possible target, we can ALWAYS predict this. :)
+	}
+}
+
 void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 	gentity_t	*dest;
 
@@ -406,7 +424,7 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 	}
 
 
-	dest = 	G_PickTarget( self->target, !other->client->sess.raceMode);
+	dest = 	G_PickTarget( self->target, !other->client->sess.raceMode, NULL);
 	if (!dest) {
 		G_Printf ("Couldn't find teleporter destination\n");
 		return;
@@ -440,6 +458,12 @@ void SP_trigger_teleport( gentity_t *self ) {
 
 	self->s.eType = ET_TELEPORT_TRIGGER;
 	self->touch = trigger_teleporter_touch;
+
+	// for cgame prediction:
+	self->think = trigger_teleporter_setupdefaulttarget;
+	self->nextthink = level.time + FRAMETIME;
+	self->s.weapon = self->spawnflags;
+	self->s.trickedentindex3 = 1; // tell cgame that this one can be predicted
 
 	trap_LinkEntity (self);
 }
