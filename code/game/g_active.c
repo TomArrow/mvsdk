@@ -1470,6 +1470,10 @@ void ClientThink_real( gentity_t *ent ) {
 	if (client->sess.raceMode /* || client->ps.stats[STAT_RACEMODE]*/) {
 		client->ps.speed = 250.0f;
 		client->ps.basespeed = 250.0f;
+		client->ps.gravity = 800.0f;
+		//if (client->sess.raceStyle.movementStyle == MV_PINBALL) {
+		//	client->ps.gravity = 200.0f;
+		//}
 	}
 
 	if (MovementIsQuake3Based(moveStyle)) {

@@ -47,6 +47,113 @@ qboolean PM_GroundSlideOkay(float zNormal)
 
 
 
+/*
+==================
+PM_LimitedClipVelocity
+
+Slide off of the impacting surface
+
+Limit maximum velocity while keeping original direction components
+==================
+*/
+void PM_LimitedClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce, float maxSpeed) {
+	float	backoff;
+	float	change;
+	int		i;
+	const int runFlags = PM_GetRunFlags();
+	vec3_t	normalComponent;
+	vec3_t	nonNormalComponent;
+	float	maxLenOut;
+	float	lenOut;
+	float	lenNonNormal;
+
+	if ((runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	{//no sliding!
+		VectorCopy(in, out);
+		return;
+	}
+
+	backoff = DotProduct(in, normal);
+
+	VectorScale(normal, backoff, nonNormalComponent); // just reusing the var to not waste memory
+	VectorSubtract(in, nonNormalComponent, nonNormalComponent); // nonNormalComponent is what MUST be preserved even if we limit max velocity.
+	VectorSubtract(in, nonNormalComponent, normalComponent); // non
+	lenNonNormal = VectorLength(nonNormalComponent);
+
+	if (backoff < 0) {
+		backoff *= overbounce;
+	}
+	else {
+		backoff /= overbounce;
+	}
+
+	for (i = 0; i < 3; i++) {
+		change = normal[i] * backoff;
+		out[i] = normalComponent[i] - change;
+	}
+
+	// length(out*f+nonNormalComponent) < 100000
+	// out and nonnormal are perpendicular to each other so
+	// sqrt(lenOut*lenOut + lenNonNormal*lenNonNormal) = 100000
+	// lenOut*lenOut = 100000^2 - lenNonNormal*lenNonNormal 
+	// lenOut = sqrt(100000^2 - lenNonNormal*lenNonNormal)
+	maxLenOut = sqrtf(maxSpeed* maxSpeed - lenNonNormal* lenNonNormal);
+	if ((lenOut = VectorLength(out)) > maxLenOut) {
+		VectorScale(out,maxLenOut/lenOut, out);
+	}
+	VectorAdd(out, nonNormalComponent, out);
+}
+
+/*
+==================
+PM_LimitedClipVelocity
+
+Slide off of the impacting surface
+
+Limit maximum velocity on the normal axis while keeping original direction components
+==================
+*/
+void PM_LimitedClipVelocity2(vec3_t in, vec3_t normal, vec3_t out, float overbounce, float maxSpeedNormal) {
+	float	backoff;
+	float	change;
+	int		i;
+	const int runFlags = PM_GetRunFlags();
+	vec3_t	normalComponent;
+	vec3_t	nonNormalComponent;
+	//float	maxLenOut;
+	float	lenOut;
+	float	lenNonNormal;
+
+	if ((runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	{//no sliding!
+		VectorCopy(in, out);
+		return;
+	}
+
+	backoff = DotProduct(in, normal);
+
+	VectorScale(normal, backoff, nonNormalComponent); // just reusing the var to not waste memory
+	VectorSubtract(in, nonNormalComponent, nonNormalComponent); // nonNormalComponent is what MUST be preserved even if we limit max velocity.
+	VectorSubtract(in, nonNormalComponent, normalComponent); // non
+
+	if (backoff < 0) {
+		backoff *= overbounce;
+	}
+	else {
+		backoff /= overbounce;
+	}
+
+	for (i = 0; i < 3; i++) {
+		change = normal[i] * backoff;
+		out[i] = normalComponent[i] - change;
+	}
+
+	if ((lenOut = VectorLength(out)) > maxSpeedNormal) {
+		VectorScale(out, maxSpeedNormal /lenOut, out);
+	}
+	VectorAdd(out, nonNormalComponent, out);
+}
+
 
 /*
 ==================
@@ -73,7 +180,14 @@ void PM_Q2StepSlideMove_(void)
 	trace_t	trace;
 	vec3_t		end;
 	float		time_left;
+	float		tmp;
 	const int	runFlags = PM_GetRunFlags();
+	const int	moveStyle = PM_GetMovePhysics();
+	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps,&pm->cmd);
+
+	if (overbounce == OVERCLIP) {
+		overbounce = 1.01f; // if we arent overriding aanything, we use the q2 standard instead (1.01 instead of 1.001)
+	}
 
 	numbumps = 4;
 
@@ -199,7 +313,18 @@ void PM_Q2StepSlideMove_(void)
 		//
 		for (i = 0; i < numplanes; i++)
 		{
-			PM_ClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, 1.01f);
+			if (moveStyle == MV_PINBALL) {
+				//PM_LimitedClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,100000.0f);
+				overbounce -= planes[i][2]*0.6f* (MIN(1600.0f,fabsf(pm->ps->velocity[2]))/1600.0f); // dont let ground and ceiling bounce as as insanely much unless we have no proper speed to begin wtih.
+				PM_LimitedClipVelocity2(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,10000.0f);
+			}
+			else {
+				PM_ClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce);
+			}
+			//if (moveStyle == MV_PINBALL && (tmp=VectorLength(pm->ps->velocity)) > 100000.0f) { // this is bad, it loses non-bounce-direction almost immediately.
+			//	// limit it or we eventually get stuck in walls with velocity reaching billions
+			//	VectorScale(pm->ps->velocity, 100000.0f/ tmp, pm->ps->velocity);
+			//}
 			//if (planes[i][2] >= MIN_WALK_NORMAL) {
 				pml.clipped = qtrue; // uh am i putting this the right place? idk
 			//}
@@ -233,7 +358,7 @@ void PM_Q2StepSlideMove_(void)
 		// if velocity is against the original velocity, stop dead
 		// to avoid tiny occilations in sloping corners
 		//
-		if (DotProduct(pm->ps->velocity, primal_velocity) <= 0)
+		if (DotProduct(pm->ps->velocity, primal_velocity) <= 0 && moveStyle != MV_PINBALL)
 		{
 			VectorCopy(vec3_origin, pm->ps->velocity);
 			break;
@@ -463,7 +588,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		numplanes = 0;
 	}
 
-	if (moveStyle != MV_BOUNCE) {
+	if (moveStyle != MV_BOUNCE && moveStyle != MV_PINBALL) {
 		// never turn against original velocity
 		VectorNormalize2(pm->ps->velocity, planes[numplanes]);
 		numplanes++;

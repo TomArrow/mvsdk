@@ -2871,6 +2871,17 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 		}
 	}
 
+
+	// at ridiculously high speeds this can happen
+	// causes asasertion fail in anglesubtract
+	// idk if this is the right solution
+	if (fabsf(legsAngles[PITCH]) >= 1800) {
+		legsAngles[PITCH] = AngleNormalize180(legsAngles[PITCH]);
+	}
+	if (fabsf(legsAngles[ROLL]) >= 1800) {
+		legsAngles[ROLL] = AngleNormalize180(legsAngles[ROLL]);
+	}
+
 	if (cent->isATST)
 	{
 		cent->pe.legs.yawSwingDif = CG_SwingAnglesATST( cent, legsAngles[YAW], 40, 360, /*cg_swingSpeed.value*/ 0.05f, &cent->pe.legs.yawAngle, &cent->pe.legs.yawing );

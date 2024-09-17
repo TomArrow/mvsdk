@@ -459,6 +459,17 @@ void G_G2PlayerAngles( gentity_t *ent, vec3_t legs[3], vec3_t legsAngles){
 		}
 	}
 
+
+	// at ridiculously high speeds this can happen
+	// causes asasertion fail in anglesubtract
+	// idk if this is the right solution
+	if (fabsf(legsAngles[PITCH]) >= 1800) {
+		legsAngles[PITCH] = AngleNormalize180(legsAngles[PITCH]);
+	}
+	if (fabsf(legsAngles[ROLL]) >= 1800) {
+		legsAngles[ROLL] = AngleNormalize180(legsAngles[ROLL]);
+	}
+
 	legsAngles[YAW] = ent->client->ps.viewangles[YAW];
 
 	legsAngles[ROLL] = 0;

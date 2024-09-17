@@ -5,7 +5,7 @@
 const int defaultRunFlags = RFL_NODEADRAMPS;
 
 const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_NOROLLSTART | RFL_BOT | RFL_SEGMENTED | RFL_NOROLLS |RFL_CLIMBTECH;
-const int allowedMovementStyles = (1 << MV_JK2)| (1 << MV_SICKO)| (1 << MV_QUAJK)| (1 << MV_BOUNCE);
+const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
 
 bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Disable jumpbug" },//0
@@ -27,6 +27,7 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 	{ "Sicko" },//3
 	{ "QuaJK" },//4
 	{ "Bounce" },//5
+	{ "Pinball" },//6
 };
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
@@ -50,6 +51,8 @@ int RaceNameToInteger(char* style) {
 		return MV_QUAJK;
 	if (!Q_stricmp(style, "bounce"))
 		return MV_BOUNCE;
+	if (!Q_stricmp(style, "pinball"))
+		return MV_PINBALL;
 	return -1;
 }
 qboolean MovementStyleAllowsWeapons(int moveStyle) {
@@ -57,7 +60,7 @@ qboolean MovementStyleAllowsWeapons(int moveStyle) {
 }
 
 qboolean MovementStyleHasQuake2Ramps(int moveStyle) {
-	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO) {
+	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PINBALL) {
 		return qtrue;
 	}
 	return qfalse;
@@ -74,6 +77,9 @@ float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd
 			return 2.0f;
 		}
 		return 1.3f;
+	}
+	else if (moveStyle == MV_PINBALL) {
+		return 2.1f;
 	}
 	return 1.001f; // OVERCLIP define
 }

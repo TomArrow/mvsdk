@@ -20,7 +20,7 @@ typedef enum //movementstyle enum
 	MV_SICKO,//MV_CLIMB,//MV_PJK,
 	MV_QUAJK,//MV_WSW,
 	MV_BOUNCE,//MV_RJQ3,
-	//MV_RJCPM,
+	MV_PINBALL,//MV_RJCPM,
 	//MV_SWOOP,
 	//MV_JETPACK,
 	//MV_SPEED,

@@ -2756,7 +2756,7 @@ static void PM_CrashLand( void ) {
 	}
 
 	// make sure velocity resets so we don't bounce back up again in case we miss the clear elsewhere
-	if (!pml.bounceJumped) {
+	if (!pml.bounceJumped && moveStyle != MV_PINBALL) {
 		pm->ps->velocity[2] = 0;
 	}
 
@@ -2896,6 +2896,7 @@ static void PM_GroundTraceMissed( void ) {
 }
 
 
+extern void PM_LimitedClipVelocity2(vec3_t in, vec3_t normal, vec3_t out, float overbounce, float maxSpeedNormal);
 /*
 =============
 PM_GroundTrace
@@ -2977,7 +2978,7 @@ static void PM_GroundTrace( void ) {
 		return;
 	}
 
-	if (!pml.bounceJumped) {
+	if (!pml.bounceJumped && moveStyle != MV_PINBALL) {
 		pml.groundPlane = qtrue;
 		pml.walking = qtrue;
 	}
@@ -3004,7 +3005,14 @@ static void PM_GroundTrace( void ) {
 
 				const int runFlags = PM_GetRunFlags();
 				if (runFlags & RFL_NODEADRAMPS) {
-					PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
+					if (moveStyle == MV_PINBALL) {
+						//PM_LimitedClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,100000.0f);
+						overbounce -= trace.plane.normal[2] * 0.6f * (MIN(1600.0f, fabsf(pm->ps->velocity[2])) / 1600.0f); // dont let ground and ceiling bounce as as insanely much.
+						PM_LimitedClipVelocity2(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce, 10000.0f);
+					}
+					else {
+						PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
+					}
 					PM_CheckBounceJump(trace.plane.normal, pm->ps->velocity); // do we need this here? not sure.
 				}
 				if (pm->debugLevel) {
@@ -3041,7 +3049,7 @@ static void PM_GroundTrace( void ) {
 		}
 	}
 
-	if (!pml.bounceJumped) {
+	if (!pml.bounceJumped && moveStyle != MV_PINBALL) {
 		pm->ps->groundEntityNum = trace.entityNum;
 	}
 	pm->ps->lastOnGround = pm->cmd.serverTime;
