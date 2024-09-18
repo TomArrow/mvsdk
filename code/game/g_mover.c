@@ -595,7 +595,7 @@ void Reached_BinaryMover( gentity_t *ent ) {
 
 	if ( ent->moverState == MOVER_1TO2 ) {
 		// reached pos2
-		G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
+		nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		SetMoverState( ent, MOVER_POS2, nowTime);
 
 		// play sound
@@ -623,7 +623,7 @@ void Reached_BinaryMover( gentity_t *ent ) {
 		G_UseTargets( ent, ent->activator );
 	} else if ( ent->moverState == MOVER_2TO1 ) {
 		// reached pos1
-		G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
+		nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		SetMoverState( ent, MOVER_POS1, nowTime);
 
 		// play sound
@@ -813,6 +813,8 @@ void InitMover( gentity_t *ent ) {
 	vec3_t		color;
 	qboolean	lightSet, colorSet;
 	char		*sound;
+
+	level.nonDeterministicEntities++;
 
 	// Tunnel high modelindex values through time2
 	MV_ModelindexToTime2( ent );

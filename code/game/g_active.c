@@ -2373,14 +2373,6 @@ void ClientEndFrameRaceCritical(gentity_t* ent) {
 	// apply all the damage taken this frame
 	P_DamageFeedback(ent);
 
-	// add the EF_CONNECTION flag if we haven't gotten commands recently
-	if (level.time - ent->client->lastCmdTime > 1000) {
-		ent->s.eFlags |= EF_CONNECTION;
-	}
-	else {
-		ent->s.eFlags &= ~EF_CONNECTION;
-	}
-
 	G_SetClientSound(ent);
 }
 
@@ -2389,6 +2381,14 @@ void ClientEndFrameServerFrame(gentity_t* ent) {
 
 	ent->client->ps.stats[STAT_HEALTH] = ent->health;	// FIXME: get rid of ent->health...
 
+	// add the EF_CONNECTION flag if we haven't gotten commands recently
+	if (level.time - ent->client->lastCmdTime > 1000) {
+		ent->s.eFlags |= EF_CONNECTION;
+		G_ClearActivatedEntities(ent); // dont let this client bug out all the movers he touched while he's having connection issues
+	}
+	else {
+		ent->s.eFlags &= ~EF_CONNECTION;
+	}
 
 	// set the latest infor
 	if (g_smoothClients.integer) {

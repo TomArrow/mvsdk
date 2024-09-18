@@ -594,6 +594,9 @@ typedef struct {
 	// MVSDK
 	qboolean	bboxEncoding;
 	qboolean	modelindexTime2;
+
+	// tommyternal
+	int			nonDeterministicEntities; // if the level contains any movers or certain target_ things, show a warning to people doing segmented runs
 } level_locals_t;
 
 

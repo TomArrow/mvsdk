@@ -336,6 +336,8 @@ void SP_target_laser (gentity_t *self)
 	// let everything else get spawned before we start firing
 	self->think = target_laser_start;
 	self->nextthink = level.time + FRAMETIME;
+
+	level.nonDeterministicEntities++;
 }
 
 
@@ -396,6 +398,8 @@ void target_relay_use (gentity_t *self, gentity_t *other, gentity_t *activator) 
 
 void SP_target_relay (gentity_t *self) {
 	self->use = target_relay_use;
+
+	level.nonDeterministicEntities++;
 }
 
 

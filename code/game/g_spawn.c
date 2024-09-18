@@ -286,7 +286,7 @@ spawn_t	spawns[] = {
 #ifdef ANIMENT_SPAWNER
 	{"misc_animent_spawner", SP_misc_animent_spawner},
 	{"target_screenshake", SP_target_screenshake},
-	{"target_escapetrig", SP_target_escapetrig},
+	{"target_escapetrig", SP_target_escapetrig}, // what is this
 #endif
 
 	{"misc_holocron", SP_misc_holocron},

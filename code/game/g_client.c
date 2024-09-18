@@ -1872,6 +1872,7 @@ void ClientSpawn(gentity_t *ent) {
 	gentity_t	*spawnPoint;
 	int		flags;
 	int		savedPing;
+	int		savedCommandTime;
 //	char	*savedAreaBits;
 	int		accuracy_hits, accuracy_shots;
 	int		eventSequence;
@@ -1997,6 +1998,7 @@ void ClientSpawn(gentity_t *ent) {
 	savedSess = client->sess;
 	VectorCopy(client->ps.delta_angles, savedDeltaAngles);
 	savedPing = client->ps.ping;
+	savedCommandTime = client->ps.commandTime;
 //	savedAreaBits = client->areabits;
 	accuracy_hits = client->accuracy_hits;
 	accuracy_shots = client->accuracy_shots;
@@ -2391,6 +2393,9 @@ void ClientSpawn(gentity_t *ent) {
 		client->ps.commandTime = nowTime - 100;
 		ent->client->pers.cmd.serverTime = nowTime;
 		ClientThink(ent - g_entities);
+	}
+	else {
+		client->ps.commandTime = (savedCommandTime >0) ? savedCommandTime : nowTime; // how will things work out when fps anti toggle is active?
 	}
 
 	// positively link the client, even if the command times are weird

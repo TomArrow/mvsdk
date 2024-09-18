@@ -326,7 +326,12 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
 	//cl->pers.segmented.lastPosUsed = qfalse; // already guaranteed via SEG_RECORDING check above
 
-	trap_SendServerCommand(activator - g_entities, "cp \"Race timer started!\"");
+	if (segmented && level.nonDeterministicEntities) {
+		trap_SendServerCommand(activator - g_entities, va("cp \"Race timer started!\n^1Warning: ^7Map has %i non-deterministic\nentities. Replay/run may fail.\"", level.nonDeterministicEntities));
+	}
+	else {
+		trap_SendServerCommand(activator - g_entities, "cp \"Race timer started!\"");
+	}
 }
 const char* DF_MsToString(const int ms)
 {
@@ -1042,6 +1047,10 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		}
 
 		if (flag & RFL_SEGMENTED) {
+
+			if (level.nonDeterministicEntities) {
+				trap_SendServerCommand(ent - g_entities, va("print \"Warning: Map contains %i potentially non-deterministic entities. Segmented runs may not replay correctly and thus not count.\n\"", level.nonDeterministicEntities));
+			}
 
 			if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) {
 				trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with the UserCmdStore coolAPI feature. Please use the appropriate server engine.\n\"", index2, MAX_RUN_FLAGS - 1));
