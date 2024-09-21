@@ -1562,11 +1562,28 @@ showinfo:
 }
 
 
+// TODO need more checks?
+// TODO make this work in bouncy modes?
 void DF_SaveSpawn(gentity_t* ent) {
 	if (!ent->client) return;
 
 	if (!ent->client->sess.raceMode) {
 		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (ent->client->ps.pm_type != PM_NORMAL || ent->client->ps.stats[STAT_HEALTH] <= 0) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be alive and in a normal state to use this command!\n\"");
+		return;
+	}
+
+	if (ent->client->sess.sessionTeam == TEAM_SPECTATOR || (ent->client->ps.pm_flags & PMF_FOLLOW)) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in a team to use this command!\n\"");
+		return;
+	}
+
+	if (ent->client->ps.fd.forcePowersActive) {
+		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7You must not have any force powers activated to use this command.\n\"");
 		return;
 	}
 
@@ -1576,7 +1593,7 @@ void DF_SaveSpawn(gentity_t* ent) {
 	}
 	
 	if (ent->client->ps.velocity[0] || ent->client->ps.velocity[1] || ent->client->ps.velocity[2] || ent->client->ps.groundEntityNum != ENTITYNUM_WORLD) {
-		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7Cannot save spawn.\nPlease stand still.\n\"");
+		trap_SendServerCommand(ent - g_entities, va("cp \"^1Warning:\n^7Cannot save spawn.\nPlease stand still. \n(gen %d,\n v0 %f\n, v1 %f\n, v2 %f)\n\"", ent->client->ps.groundEntityNum, ent->client->ps.velocity[0], ent->client->ps.velocity[1], ent->client->ps.velocity[2]));
 		return;
 	}
 

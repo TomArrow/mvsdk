@@ -1816,7 +1816,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		return;
 	}
 
-	if (DF_ClientInSegmentedRunMode(self->client) && self->client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS) {
+	if (DF_ClientInSegmentedRunMode(self->client) && self->client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && meansOfDeath != MOD_SUICIDE) { // /kill, /team, /race always ends segmented run
 		DF_SegmentedRunStatusInvalidated(self);
 	}
 	else {
