@@ -493,7 +493,6 @@ void Cmd_Respos_f( gentity_t *ent ) {
 			ent->client->pers.segmented.respos = qtrue;
 			return;
 		}
-		DF_RaceStateInvalidated(ent, qtrue);
 		if (ent->health <= 0) {
 			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MUSTBEALIVE")));
 			return;
@@ -509,6 +508,7 @@ void Cmd_Respos_f( gentity_t *ent ) {
 		//VectorCopy(ent->client->pers.savePosVelocity, ent->client->ps.velocity);
 		//SetClientViewAngle(ent,ent->client->pers.savePosAngle);
 		//ent->client->ps.eFlags ^= EF_TELEPORT_BIT;
+		DF_RaceStateInvalidated(ent, qtrue);
 		RestorePosition(ent,&ent->client->pers.savedPosition,NULL);
 	}
 	else {

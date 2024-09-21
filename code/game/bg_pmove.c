@@ -476,16 +476,22 @@ static void PM_Friction( void ) {
 	vel = pm->ps->velocity;
 	
 	VectorCopy( vel, vec );
-	if ( pml.walking ) {
+	if ( pml.walking ) { 
 		vec[2] = 0;	// ignore slope movement
 	}
 
 	speed = VectorLength(vec);
 	if (speed < 1) {
-		vel[0] = 0;
-		vel[1] = 0;		// allow sinking underwater
-		// FIXME: still have z friction underwater?
-		return;
+		if (moveStyle == MV_BOUNCE && vel[2]) {
+			vec[2] = vel[2]; // otherwise we stay forever in a bouncy vel[2] state on spawn and cant savespawn
+			speed = VectorLength(vec);
+		}
+		else {
+			vel[0] = 0;
+			vel[1] = 0;		// allow sinking underwater
+			// FIXME: still have z friction underwater?
+			return;
+		}
 	}
 
 	if (MovementIsQuake3Based(moveStyle))
