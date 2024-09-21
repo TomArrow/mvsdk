@@ -482,7 +482,7 @@ static void PM_Friction( void ) {
 
 	speed = VectorLength(vec);
 	if (speed < 1) {
-		if (moveStyle == MV_BOUNCE && vel[2]) {
+		if ((moveStyle == MV_BOUNCE || moveStyle == MV_PINBALL) && vel[2]) {
 			vec[2] = vel[2]; // otherwise we stay forever in a bouncy vel[2] state on spawn and cant savespawn
 			speed = VectorLength(vec);
 		}
