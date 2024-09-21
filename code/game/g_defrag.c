@@ -72,6 +72,7 @@ extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 		FIELDSFUNC(client->lastSaberStorageTime)\
 		FIELDSFUNC(client->ps.duelTime)\
 		FIELDSFUNC(client->ps.electrifyTime)\
+		FIELDSFUNC(client->ps.externalEventTime)\
 		FIELDSFUNC(client->ps.fallingToDeath)\
 		FIELDSFUNC(client->ps.fd.forceGripUseTime)\
 		FIELDSFUNC(client->ps.forceHandExtendTime)\
