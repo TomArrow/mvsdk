@@ -2577,6 +2577,7 @@ extern void Cmd_JumpChange_f(gentity_t* ent);
 extern void Cmd_DF_RunSettings_f(gentity_t* ent);
 extern void Cmd_MovementStyle_f(gentity_t* ent);
 extern void DF_SaveSpawn(gentity_t* ent);
+extern void DF_ResetSpawn(gentity_t* ent);
 /*
 =================
 ClientCommand
@@ -2744,6 +2745,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "resetspawn"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "jump"))
 		{
 			giveError = qtrue;
@@ -2835,6 +2840,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_MovementStyle_f(ent);
 	else if (Q_stricmp (cmd, "savespawn") == 0)
 		DF_SaveSpawn(ent);
+	else if (Q_stricmp (cmd, "resetspawn") == 0)
+		DF_ResetSpawn(ent);
 	else if (Q_stricmp (cmd, "jump") == 0)
 		Cmd_JumpChange_f(ent);
 	else if (Q_stricmp (cmd, "run") == 0)

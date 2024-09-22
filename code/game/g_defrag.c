@@ -1570,7 +1570,6 @@ showinfo:
 
 
 // TODO need more checks?
-// TODO make this work in bouncy modes?
 void DF_SaveSpawn(gentity_t* ent) {
 	if (!ent->client) return;
 
@@ -1616,4 +1615,17 @@ void DF_SaveSpawn(gentity_t* ent) {
 		ent->client->ps.viewangles[1],
 		ent->client->ps.viewangles[2]
 	));
+}
+
+void DF_ResetSpawn(gentity_t* ent) {
+	if (!ent->client) return;
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	ent->client->pers.savedSpawnUsed = qfalse;
+
+	trap_SendServerCommand(ent - g_entities, "print \"Spawnpoint has been reset.\n\"");
 }
