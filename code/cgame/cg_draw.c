@@ -3798,7 +3798,7 @@ static void CG_ScanForCrosshairEntity( void ) {
 	}
 
 	// TODO make non-solid players still be found?
-	CG_Trace( &trace, start, vec3_origin, vec3_origin, end, 
+	CG_RawTrace( &trace, start, vec3_origin, vec3_origin, end, 
 		cg.snap->ps.clientNum, CONTENTS_SOLID|CONTENTS_BODY );
 
 	if (trace.entityNum < MAX_CLIENTS)
@@ -3842,7 +3842,7 @@ static void CG_ScanForCrosshairEntity( void ) {
 		return;
 	}
 
-	// if the player is in fog, don't show it
+	// if the player is in fog, don't show it - TODO does this make sense?
 	content = CG_PointContents( trace.endpos, 0 );
 	if ( content & CONTENTS_FOG ) {
 		return;

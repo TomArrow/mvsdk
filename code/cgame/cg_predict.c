@@ -50,7 +50,7 @@ void CG_BuildSolidList( void ) {
 			continue;
 		}
 
-		if ( cent->nextState.solid ) {
+		if ( cent->nextState.solid || cent->nextState.eType == ET_PLAYER && !(cent->nextState.eFlags & EF_DEAD) ) { // always put players in the list so we can trace them with rawtrace
 			cg_solidEntities[cg_numSolidEntities] = cent;
 			cg_numSolidEntities++;
 			continue;
@@ -65,7 +65,7 @@ CG_ClipMoveToEntities
 ====================
 */
 static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-							int skipNumber, int mask, trace_t *tr, qboolean explicitlyDeluxe ) {
+							int skipNumber, int mask, trace_t *tr, qboolean explicitlyDeluxe, qboolean rawTrace ) {
 	int			i, x, zd, zu;
 	trace_t		trace;
 	entityState_t	*ent;
@@ -73,10 +73,14 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 	vec3_t		bmins, bmaxs;
 	vec3_t		origin, angles;
 	centity_t	*cent;
+	static vec3_t	playerMinsDefault = { -15, -15, DEFAULT_MINS_2 };
+	static vec3_t	playerMaxsDefault = { 15, 15, DEFAULT_MAXS_2 };
 
 	for ( i = 0 ; i < cg_numSolidEntities ; i++ ) {
 		cent = cg_solidEntities[ i ];
 		ent = &cent->currentState;
+
+		if (!ent->solid && !rawTrace) continue; // we are putting nonsolid players in this array too, because we want to rawtrace them for crosshair.
 
 		if ( ent->number == skipNumber ) {
 			continue;
@@ -145,6 +149,11 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 					VectorSet( bmins, -SHIELD_HALFTHICKNESS, -negWidth, 0 );
 					VectorSet( bmaxs, SHIELD_HALFTHICKNESS, posWidth, height );
 				}
+			}
+			else if (cent->currentState.eType == ET_PLAYER && !ent->solid && rawTrace && !(cent->currentState.eFlags & EF_DEAD)) {
+				// what about dead players?
+				VectorCopy(playerMinsDefault, bmins);
+				VectorCopy(playerMaxsDefault, bmaxs);
 			}
 			else
 			{
@@ -225,7 +234,26 @@ void	CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec
 	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask);
 	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
 	// check all other solid models
-	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe);
+	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qfalse);
+	cg.nextCGTraceExplicitlyDeluxe = qfalse;
+
+	*result = t;
+}
+/*
+================
+CG_RawTrace
+
+Allow us to trace even players with solid 0
+================
+*/
+void	CG_RawTrace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask ) {
+	trace_t	t;
+
+	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask);
+	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
+	// check all other solid models
+	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qtrue);
 	cg.nextCGTraceExplicitlyDeluxe = qfalse;
 
 	*result = t;
@@ -249,6 +277,8 @@ int		CG_PointContents( const vec3_t point, int passEntityNum ) {
 		cent = cg_solidEntities[ i ];
 
 		ent = &cent->currentState;
+
+		if (!ent->solid) continue; // we are putting nonsolid players in this array too, because we want to rawtrace them for crosshair.
 
 		if ( ent->number == passEntityNum ) {
 			continue;
@@ -864,6 +894,7 @@ void CG_PredictPlayerState( void ) {
 	// prepare for pmove
 	cg_pmove.ps = &cg.predictedPlayerState;
 	cg_pmove.trace = CG_Trace;
+	cg_pmove.rawtrace = CG_RawTrace;
 	cg_pmove.pointcontents = CG_PointContents;
 	if ( cg_pmove.ps->pm_type == PM_DEAD ) {
 		cg_pmove.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;

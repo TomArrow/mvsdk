@@ -36,7 +36,11 @@ extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 		FIELDSFUNC(hasCurrentPosition)\
 		FIELDSFUNC(sess.saberLevel)\
 		FIELDSFUNC(sess.selectedFP)\
-		FIELDSFUNC(sess.setForce)
+		FIELDSFUNC(sess.setForce)\
+		FIELDSFUNC(pers.teamState.flagsince)\
+		FIELDSFUNC(pers.teamState.lastfraggedcarrier)\
+		FIELDSFUNC(pers.teamState.lasthurtcarrier)\
+		FIELDSFUNC(pers.teamState.lastreturnedflag)\
 		//FIELDSFUNC(damage_knockback)\ // not used anywhere?
 		//FIELDSFUNC(sess.updateUITime)\ // not used anywhere?
 
@@ -841,7 +845,10 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 	return qfalse;
 }
 
-
+//void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
+//{
+//	return JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask);
+//}
 void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
 
 	trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);

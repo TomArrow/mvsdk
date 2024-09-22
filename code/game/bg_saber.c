@@ -1089,7 +1089,7 @@ qboolean PM_CanBackstab(void)
 	back[1] = pm->ps->origin[1] - fwd[1]*BACK_STAB_DISTANCE;
 	back[2] = pm->ps->origin[2] - fwd[2]*BACK_STAB_DISTANCE;
 
-	pm->trace(&tr, pm->ps->origin, trmins, trmaxs, back, pm->ps->clientNum, MASK_PLAYERSOLID);
+	pm->rawtrace(&tr, pm->ps->origin, trmins, trmaxs, back, pm->ps->clientNum, MASK_PLAYERSOLID);
 
 	if (tr.fraction != 1.0 && tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS)
 	{ //We don't have real entity access here so we can't do an indepth check. But if it's a client and it's behind us, I guess that's reason enough to stab backward

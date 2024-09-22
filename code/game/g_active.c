@@ -774,6 +774,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 			pm.tracemask = 0;
 		}
 		pm.trace = JP_Trace;
+		pm.rawtrace = trap_Trace;
 		pm.pointcontents = trap_PointContents;
 
 		pm.animations = NULL;
@@ -1685,6 +1686,7 @@ void ClientThink_real( gentity_t *ent ) {
 		pm.tracemask = MASK_PLAYERSOLID;
 	}
 	pm.trace = JP_Trace;
+	pm.rawtrace = trap_Trace;
 	pm.pointcontents = trap_PointContents;
 	pm.debugLevel = g_debugMove.integer;
 	pm.noFootsteps = ( g_dmflags.integer & DF_NO_FOOTSTEPS ) > 0;

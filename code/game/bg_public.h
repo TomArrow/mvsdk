@@ -316,6 +316,9 @@ typedef struct {
 	//rww - bg entitystate access method
 	bgEntity_t* baseEnt; //base address of the entity array (g_entities or cg_entities)
 	int			entSize; //size of the struct (gentity_t or centity_t) so things can be dynamic
+
+	// raw trace that ignores racemode considerations and such. allow us to dbs anyone even in racemode as a meme.
+	void		(*rawtrace)(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask);
 } pmove_t;
 
 extern	pmove_t		*pm;

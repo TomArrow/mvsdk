@@ -397,6 +397,7 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 		return;
 	}
 
+	// uh this is the same as above?
 	if (targ->client->pers.teamState.lasthurtcarrier &&
 		nowTime - targ->client->pers.teamState.lasthurtcarrier < CTF_CARRIER_DANGER_PROTECT_TIMEOUT) {
 		// attacker is on the same team as the skull carrier and

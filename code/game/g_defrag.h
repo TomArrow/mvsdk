@@ -81,6 +81,14 @@ typedef struct savedPosition_s {
 		int				entityStates[MAX_GENTITIES]; // allow us to store some simplistic states about other entities, like func_usable. letting us know if the func_usable is turned on/off for this player
 
 		// pers.
+		struct {
+			struct {
+				float		lasthurtcarrier;
+				float		lastreturnedflag;
+				float		flagsince;
+				float		lastfraggedcarrier;
+			} teamState;
+		} pers;
 
 		// sess.
 		struct {

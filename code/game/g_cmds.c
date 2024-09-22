@@ -2539,6 +2539,7 @@ void Cmd_DebugSetBodyAnim_f(gentity_t *self, int flags)
 	pmv.animations = bgGlobalAnimations;
 	pmv.cmd = self->client->pers.cmd;
 	pmv.trace = JP_Trace;
+	pmv.rawtrace = trap_Trace;
 	pmv.pointcontents = trap_PointContents;
 	pmv.gametype = g_gametype.integer;
 
@@ -2558,6 +2559,7 @@ void StandardSetBodyAnim(gentity_t *self, int anim, int flags)
 	pmv.animations = bgGlobalAnimations;
 	pmv.cmd = self->client->pers.cmd;
 	pmv.trace = JP_Trace;
+	pmv.rawtrace = trap_Trace;
 	pmv.pointcontents = trap_PointContents;
 	pmv.gametype = g_gametype.integer;
 
