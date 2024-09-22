@@ -1507,7 +1507,7 @@ void Cmd_GameCommand_f( gentity_t *ent ) {
 	if ( player < 0 || player >= MAX_CLIENTS ) {
 		return;
 	}
-	if ( order < 0 || order > (int)ARRAY_LEN(gc_orders) ) {
+	if ( order < 0 || order >= (int)ARRAY_LEN(gc_orders) ) { // should be >= lol
 		return;
 	}
 	G_Say( ent, &g_entities[player], SAY_TELL, gc_orders[order] );
@@ -2060,6 +2060,8 @@ void Cmd_SetViewpos_f( gentity_t *ent ) {
 
 	trap_Argv( 4, buffer, sizeof( buffer ) );
 	angles[YAW] = atof( buffer );
+
+	DF_RaceStateInvalidated(ent, qtrue);
 
 	TeleportPlayer( ent, origin, angles );
 }
