@@ -3,6 +3,7 @@
 
 #include "g_local.h"
 #include "g_defrag.h"
+#include "g_dbcmds.h"
 
 #include "mvsdk_setup.h"
 
@@ -107,6 +108,7 @@ vmCvar_t	g_teamAutoJoin;
 vmCvar_t	g_teamForceBalance;
 vmCvar_t	g_banIPs;
 vmCvar_t	g_filterBan;
+vmCvar_t	g_developer;
 vmCvar_t	g_debugForward;
 vmCvar_t	g_debugRight;
 vmCvar_t	g_debugUp;
@@ -276,6 +278,8 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_allowVote, "g_allowVote", "1", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_listEntity, "g_listEntity", "0", 0, 0, qfalse },
+
+	{ &g_developer, "developer", "0", 0, 0, qfalse },
 
 #if 0
 	{ &g_debugForward, "g_debugForward", "0", 0, 0, qfalse },
@@ -2721,6 +2725,9 @@ void G_RunFrame( int levelTime ) {
 
 	// get any cvar changes
 	G_UpdateCvars();
+
+
+	G_DB_CheckResponses();
 
 	//
 	// go through all allocated objects

@@ -266,3 +266,13 @@ equ trap_G_COOL_API_PlayerUserCmdRemove	        		-1103	;G_COOL_API_PLAYERUSERCM
 equ trap_G_COOL_API_PlayerUserCmdClear	        		-1104	;G_COOL_API_PLAYERUSERCMD_CLEAR
 equ trap_G_COOL_API_PlayerUserCmdGet	        		-1105	;G_COOL_API_PLAYERUSERCMD_GET
 equ trap_G_COOL_API_PlayerUserCmdGetCount        		-1106	;G_COOL_API_PLAYERUSERCMD_GETCOUNT
+
+; COOL API DB Calls
+equ trap_G_COOL_API_DB_EscapeString						-1201	;G_COOL_API_DB_ESCAPESTRING
+equ trap_G_COOL_API_DB_AddRequest						-1202	;G_COOL_API_DB_ADDREQUEST
+equ trap_G_COOL_API_DB_NextResponse						-1203	;G_COOL_API_DB_NEXTRESPONSE
+equ trap_G_COOL_API_DB_GetReference						-1204	;G_COOL_API_DB_GETREFERENCE
+equ trap_G_COOL_API_DB_NextRow							-1205	;G_COOL_API_DB_NEXTROW
+equ trap_G_COOL_API_DB_GetInt							-1206	;G_COOL_API_DB_GETINT
+equ trap_G_COOL_API_DB_GetFloat							-1207	;G_COOL_API_DB_GETFLOAT
+equ trap_G_COOL_API_DB_GetString						-1208	;G_COOL_API_DB_GETSTRING

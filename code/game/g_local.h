@@ -753,6 +753,15 @@ int trap_G_COOL_API_PlayerUserCmdClear(int clientNum);
 qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd);
 int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum);
 
+qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
+qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	trap_G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+qboolean	trap_G_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+qboolean	trap_G_COOL_API_DB_NextRow();
+int			trap_G_COOL_API_DB_GetInt(int place);
+void		trap_G_COOL_API_DB_GetFloat(int place, float* value);
+qboolean	trap_G_COOL_API_DB_GetString(int place, char* out, int outSize);
+
 //
 // g_combat.c
 //
@@ -1129,6 +1138,7 @@ extern	vmCvar_t	g_knockback;
 extern	vmCvar_t	g_quadfactor;
 extern	vmCvar_t	g_forcerespawn;
 extern	vmCvar_t	g_inactivity;
+extern	vmCvar_t	g_developer;
 extern	vmCvar_t	g_debugMove;
 extern	vmCvar_t	g_debugAlloc;
 extern	vmCvar_t	g_debugDamage;
