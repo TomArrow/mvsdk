@@ -6,6 +6,7 @@
 #include "cg_local.h"
 #include "../ui/ui_shared.h"
 #include "cg_dbcmds.h"
+#include "../qcommon/crypt_blowfish.h"
 extern menuDef_t *menuScoreboard;
 
 
@@ -1111,6 +1112,32 @@ static void CG_Follow_f(void) {
 
 	CG_SendConsoleCommand("cmd follow %i", clientNum);
 }
+static void CG_Login_f(void) {
+	int clientNum = -1;
+	char pw[64];
+	const static char settings[64] = BCRYPT_SETTINGS;
+	char output[64];
+
+	if (trap_Argc() < 3) {
+		CG_Printf("usage /login <username> <password>\n");
+		return;
+	}
+
+	pw[0] = '\0';
+
+	trap_Argv(2,pw,sizeof(pw));
+
+	_crypt_blowfish_rn(pw, settings, output, 64);
+
+	Com_Printf("settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings,pw,output,bcrypt_errno);
+
+	//clientNum = CG_ClientNumberFromString(CG_Argv(1));
+
+	//if (clientNum < 0)
+	//	return;
+
+	//CG_SendConsoleCommand("cmd follow %i", clientNum);
+}
 
 static void CG_FollowRedFlag_f(void) {
 	int i;
@@ -1439,6 +1466,8 @@ static consoleCommand_t	commands[] = {
 	{ "clientlist", CG_ClientList_f },
 
 	{ "modversion", CG_ModVersion_f },
+
+	{ "login", CG_Login_f },
 
 	{ "getchats", CG_DB_GetChats_f },
 	{ "follow", CG_Follow_f },

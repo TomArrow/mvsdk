@@ -45,6 +45,8 @@ set(MVGAMEHEADERS
 
 	"${SRCDir}/ghoul2/g2.h"
 
+	"${SRCDir}/qcommon/crypt_blowfish.h"
+	
 	"${SRCDir}/api/mvapi.h"
 )
 
@@ -92,6 +94,8 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/g_multiversion_syscalls.c"
 	"${SRCDir}/game/bg_multiversion.c"
 	"${SRCDir}/game/animMappingTable.c"
+	
+	"${SRCDir}/qcommon/crypt_blowfish.c"
 )
 
 set(MVGAMEASM
