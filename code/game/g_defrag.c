@@ -1155,6 +1155,34 @@ void Cmd_ToggleFPS_f(gentity_t* ent)
 	DF_RaceStateInvalidated(ent, qtrue);
 }
 
+void Cmd_FloatPhysics_f(gentity_t* ent)
+{
+	if (!ent->client) return;
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (ent->client->pers.raceStartCommandTime) {
+		trap_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"");
+		return;
+	}
+
+	if (ent->client->sess.raceStyle.msec != -2) {
+		ent->client->sess.raceStyle.msec = -2;
+		trap_SendServerCommand(ent - g_entities, "print \"^7Float physics mode activated.\n\"");
+	}
+	else {
+		ent->client->sess.raceStyle.msec = 0;
+		trap_SendServerCommand(ent - g_entities, "print \"^7Float physics mode disabled.\n\"");
+	}
+
+	ResetPhysicsFpsStuff(ent);
+
+	DF_RaceStateInvalidated(ent, qtrue);
+}
+
 
 
 qboolean DF_ClientInSegmentedRunMode(gclient_t* client) {
