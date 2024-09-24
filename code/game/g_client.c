@@ -1140,17 +1140,28 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	}
 }
 
-static void AcceptClientPhysicsFps(gclient_t* client, int clientSetting) {
+extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 
+static void AcceptClientPhysicsFps(gentity_t* ent, int clientSetting) {
+	gclient_t* client = ent->client;
 	client->pers.physicsFps.lastChange = level.time;
 	client->pers.physicsFps.acceptedSetting = clientSetting;
 	client->pers.physicsFps.acceptedSettingMsec = (MAX(1, MIN(200, 1000 / MAX(1, clientSetting))));
+	if (client->sess.raceStyle.msec >= 0) { // -1 = toggle, -2 = float
+		client->sess.raceStyle.msec = client->pers.physicsFps.acceptedSettingMsec;
+		DF_RaceStateInvalidated(ent, qtrue);
+	}
 }
 
 static qboolean ValidateClientPhysicsFps(gclient_t* client, int clientSetting) {
 	// Do validation of the client com_physicsFps setting here.
 	// For example check if the value he set is sensible and allowed by the game settings.
 	// Return qfalse if invalid.
+
+	if (client->sess.raceMode) {
+		// TODO What if someone uses this to get a setting "validated" but then switches out of racemode? catch that more elegantly?
+		return clientSetting > 0 && clientSetting <=1000; // racemode allows all (just doesnt allow toggle outside toggle mode)
+	}
 
 	if (g_fixHighFPSAbuse.integer && (clientSetting >= 250 || clientSetting < 40)) {
 		return qfalse;
@@ -1169,7 +1180,10 @@ If g_fpsToggleDelay is enabled, we limit fps toggling by clients by only allowin
 a change in the client's fps setting every X seconds (set by g_fpsToggleDelay)
 ============
 */
-void SetClientPhysicsFps(gclient_t* client, int clientSetting) {
+void SetClientPhysicsFps(gentity_t* ent, int clientSetting) {
+	gclient_t* client = ent->client;
+	
+	if (!ent->client) return;
 	client->pers.physicsFps.clientSetting = clientSetting;
 	client->pers.physicsFps.clientSettingValid = ValidateClientPhysicsFps(client,clientSetting);
 
@@ -1178,15 +1192,25 @@ void SetClientPhysicsFps(gclient_t* client, int clientSetting) {
 		return;
 	}
 
-	if (client->pers.physicsFps.acceptedSetting == clientSetting) {
+	if (client->pers.physicsFps.acceptedSetting == clientSetting && (!client->sess.raceMode || client->sess.raceStyle.msec < 0 || client->sess.raceStyle.msec == client->pers.physicsFps.acceptedSettingMsec)) {
 		// Don't care, nothing changed
 		return;
 	}
 
-	if (!g_fpsToggleDelay.integer || !client->pers.physicsFps.acceptedSetting) { 
-		// Toggle limiting disabled, or no value accepted yet. Just accept.
-		AcceptClientPhysicsFps(client, clientSetting);
-		return;
+	// quick check for situations that are always ok
+	if (client->sess.raceMode) {
+		if (client->sess.raceStyle.msec < 0) { // float or toggle mode. doesnt matter then
+			// Toggle limiting disabled, or no value accepted yet. Just accept.
+			AcceptClientPhysicsFps(ent, clientSetting);
+			return;
+		}
+	}
+	else {
+		if (!g_fpsToggleDelay.integer || !client->pers.physicsFps.acceptedSetting) {
+			// Toggle limiting disabled, or no value accepted yet. Just accept.
+			AcceptClientPhysicsFps(ent, clientSetting);
+			return;
+		}
 	}
 
 	if (!clientSetting) {
@@ -1194,10 +1218,20 @@ void SetClientPhysicsFps(gclient_t* client, int clientSetting) {
 		return;
 	}
 
-	if ((client->pers.physicsFps.lastChange+ g_fpsToggleDelay.integer*1000) < level.time || client->pers.physicsFps.lastChange > level.time) {
-		// Change allowed.
-		// Either the minimum time delay has passed or level.time has been reset
-		AcceptClientPhysicsFps(client, clientSetting);
+	// mode specific checks.
+	if (client->sess.raceMode) {
+		if (!client->pers.raceStartCommandTime) {
+			// Change allowed.
+			// Client is not currently in a run.
+			AcceptClientPhysicsFps(ent, clientSetting);
+		}
+	}
+	else {
+		if ((client->pers.physicsFps.lastChange + g_fpsToggleDelay.integer * 1000) < level.time || client->pers.physicsFps.lastChange > level.time) {
+			// Change allowed.
+			// Either the minimum time delay has passed or level.time has been reset
+			AcceptClientPhysicsFps(ent, clientSetting);
+		}
 	}
 }
 
@@ -1261,9 +1295,9 @@ void ClientUserinfoChanged( int clientNum ) {
 	// check for com_physicsFps setting
 	s = Info_ValueForKey( userinfo, "com_physicsFps" );
 	if ( atoi( s ) ) {
-		SetClientPhysicsFps(client, atoi(s));
+		SetClientPhysicsFps(ent, atoi(s));
 	} else {
-		SetClientPhysicsFps(client, 0);
+		SetClientPhysicsFps(ent, 0);
 	}
 
 	// set name

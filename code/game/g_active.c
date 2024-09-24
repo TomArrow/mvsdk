@@ -846,60 +846,128 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
 	return qtrue;
 }
 
-void SetClientPhysicsFps(gclient_t* client, int clientSetting);
+void SetClientPhysicsFps(gentity_t* ent, int clientSetting);
 
-static void ClientCheckNotifyPhysicsFps(gclient_t* client) {
+static qboolean ClientCheckNotifyPhysicsFps(gentity_t* ent) {
+	gclient_t* client = ent->client;
+	const char* notification = NULL;
 	int timeToNextChange = 0;
 
-	if (!g_fpsToggleDelay.integer) {
-		return; // We are not limiting anything, don't care.
-	}
-	
-	if (client->pers.physicsFps.clientSetting && client->pers.physicsFps.clientSetting == client->pers.physicsFps.acceptedSetting) {
+	if (!client) return qfalse;
 
-		// All good.
-		return;
-	}
-	else if(client->pers.physicsFps.clientSettingValid) {
+	if (client->sess.raceMode) {
 
-		// If the new requested value was valid in principle, recheck if enough time has passed now to accept the client's new com_physicsFps setting.
-		if ((client->pers.physicsFps.lastChange + g_fpsToggleDelay.integer * 1000) < level.time || client->pers.physicsFps.lastChange > level.time) {
-			// Give it another try.
-			SetClientPhysicsFps(client, client->pers.physicsFps.clientSetting);
+		if (client->pers.physicsFps.clientSetting && client->pers.physicsFps.clientSetting == client->pers.physicsFps.acceptedSetting && (client->sess.raceStyle.msec < 0 || client->sess.raceStyle.msec == client->pers.physicsFps.acceptedSettingMsec)) {
+
+			// All good.
+			return qtrue;
 		}
-	}
+		else if(client->pers.physicsFps.clientSettingValid) {
 
-	// Time to notify the client if something isn't right.
-	if ((client->pers.physicsFps.lastNotification + 1000) > level.time && client->pers.physicsFps.lastNotification < level.time) {
-		return; // Don't spam. Once every 1 second is enough to stay constant on the screen of the client
-	}
-	if (client->sess.sessionTeam == TEAM_SPECTATOR) {
-		return; // We don't enforce anything on spectators
-	}
-	if (!client->pers.physicsFps.clientSetting) {
-		trap_SendServerCommand(client - level.clients, "cp \"^2Anti-Toggle active.\n^7Please set com_physicsFps to a valid \nFPS setting you wish to play with.\n\"");
-		client->pers.physicsFps.lastNotification = level.time;
-	}
-	else if (client->pers.physicsFps.clientSetting != client->pers.physicsFps.acceptedSetting) {
-		if (!client->pers.physicsFps.clientSettingValid) {
-			// Seems like the client set an invalid value as it hasn't been accepted
-			trap_SendServerCommand(client - level.clients, "cp \"^2Anti-Toggle active.\n^1Invalid ^7com_physicsFps value detected. \nPlease set a valid value.\n\"");
-			client->pers.physicsFps.lastNotification = level.time;
+			// If the new requested value was valid in principle, recheck if we are outside of a run now to set it
+			if (client->sess.raceStyle.msec < 0 || !client->pers.raceStartCommandTime) {
+				// Give it another try.
+				SetClientPhysicsFps(ent, client->pers.physicsFps.clientSetting);
+			}
 		}
-		else {
-			timeToNextChange = level.time > client->pers.physicsFps.lastChange ? g_fpsToggleDelay.integer*1000 - (level.time - client->pers.physicsFps.lastChange) : -1;
-			if (client->pers.physicsFps.acceptedSetting) {
-				trap_SendServerCommand(client - level.clients, va("cp \"^2Anti-Toggle active.\n^7Next com_physicsFps change allowed in %d seconds. \nPlease go back to %d fps.\n\"", timeToNextChange / 1000, client->pers.physicsFps.acceptedSetting));
-				client->pers.physicsFps.lastNotification = level.time;
+
+		if (client->sess.raceStyle.msec < 0) {
+			return qtrue; // -1 is toggle, -2 is float. Don't care, anything is allowed.
+		}
+
+		// anything below this assumes toggle mode is not active
+
+		// Time to notify the client if something isn't right.
+		//if ((client->pers.physicsFps.lastNotification + 1000) > level.time && client->pers.physicsFps.lastNotification < level.time) {
+		//	return; // Don't spam. Once every 1 second is enough to stay constant on the screen of the client
+		//}
+		if (client->sess.sessionTeam == TEAM_SPECTATOR) {
+			return qtrue; // We don't enforce anything on spectators
+		}
+		if (!client->pers.physicsFps.clientSetting) {
+			notification = "cp \"^2Toggle disabled.\n^7Please set com_physicsFps to a valid \nFPS setting you wish to play with\nor use ^2/togglefps ^7for toggle mode.\n\"";
+		}
+		else if (client->pers.physicsFps.clientSetting != client->pers.physicsFps.acceptedSetting) {
+			if (!client->pers.physicsFps.clientSettingValid) {
+				// Seems like the client set an invalid value as it hasn't been accepted
+				notification = "cp \"^2Toggle disabled.\n^1Invalid ^7com_physicsFps value detected. \nPlease set a valid value\nor use ^2/togglefps ^7for toggle mode.\n\"";
 			}
 			else {
-				// Should never happen?
-				// Somehow we have a valid client setting, no accepted setting yet, and yet the value was not formally accepted.
-				// Only adding this for debugging in case strange things happen.
-				trap_SendServerCommand(client - level.clients, va("cp \"^2Anti-Toggle active.\n^7Anomaly detected. Please try setting com_physicsFps again \n(time to next allowed change: %d).\n\"", timeToNextChange));
-				client->pers.physicsFps.lastNotification = level.time;
+				if (client->pers.physicsFps.acceptedSetting) {
+					notification = va("cp \"^2Toggle disabled.\n^7End your run to change com_physicsFps. \nPlease go back to %d fps.\n\"", client->pers.physicsFps.acceptedSetting);
+				}
+				else {
+					// Should never happen?
+					// Somehow we have a valid client setting, no accepted setting yet, and yet the value was not formally accepted.
+					// Only adding this for debugging in case strange things happen.
+					notification = va("cp \"^2Toggle disabled.\n^7Anomaly detected. Please try setting com_physicsFps again\n and respawn.\n\"");
+				}
 			}
 		}
+
+	}
+	else {
+		
+		if (!g_fpsToggleDelay.integer) {
+			return qtrue; // We are not limiting anything, don't care.
+		}
+	
+		if (client->pers.physicsFps.clientSetting && client->pers.physicsFps.clientSetting == client->pers.physicsFps.acceptedSetting) {
+
+			// All good.
+			return qtrue;
+		}
+		else if(client->pers.physicsFps.clientSettingValid) {
+
+			// If the new requested value was valid in principle, recheck if enough time has passed now to accept the client's new com_physicsFps setting.
+			if ((client->pers.physicsFps.lastChange + g_fpsToggleDelay.integer * 1000) < level.time || client->pers.physicsFps.lastChange > level.time) {
+				// Give it another try.
+				SetClientPhysicsFps(ent, client->pers.physicsFps.clientSetting);
+			}
+		}
+
+		// Time to notify the client if something isn't right.
+		//if ((client->pers.physicsFps.lastNotification + 1000) > level.time && client->pers.physicsFps.lastNotification < level.time) {
+		//	return; // Don't spam. Once every 1 second is enough to stay constant on the screen of the client
+		//}
+		if (client->sess.sessionTeam == TEAM_SPECTATOR) {
+			return qtrue; // We don't enforce anything on spectators
+		}
+		if (!client->pers.physicsFps.clientSetting) {
+			notification = "cp \"^2Anti-Toggle active.\n^7Please set com_physicsFps to a valid \nFPS setting you wish to play with.\n\"";
+		}
+		else if (client->pers.physicsFps.clientSetting != client->pers.physicsFps.acceptedSetting) {
+			if (!client->pers.physicsFps.clientSettingValid) {
+				// Seems like the client set an invalid value as it hasn't been accepted
+				notification = "cp \"^2Anti-Toggle active.\n^1Invalid ^7com_physicsFps value detected. \nPlease set a valid value.\n\"";
+			}
+			else {
+				timeToNextChange = level.time > client->pers.physicsFps.lastChange ? g_fpsToggleDelay.integer*1000 - (level.time - client->pers.physicsFps.lastChange) : -1;
+				if (client->pers.physicsFps.acceptedSetting) {
+					notification = va("cp \"^2Anti-Toggle active.\n^7Next com_physicsFps change allowed in %d seconds. \nPlease go back to %d fps.\n\"", timeToNextChange / 1000, client->pers.physicsFps.acceptedSetting);
+				}
+				else {
+					// Should never happen?
+					// Somehow we have a valid client setting, no accepted setting yet, and yet the value was not formally accepted.
+					// Only adding this for debugging in case strange things happen.
+					notification = va("cp \"^2Anti-Toggle active.\n^7Anomaly detected. Please try setting com_physicsFps again \n(time to next allowed change: %d).\n\"", timeToNextChange);
+				}
+			}
+		}
+	}
+
+	if (notification) {
+		if ((client->pers.physicsFps.lastNotification + 1000) > level.time && client->pers.physicsFps.lastNotification < level.time) {
+			return qfalse; // Don't spam. Once every 1 second is enough to stay constant on the screen of the client
+		}
+		else {
+			trap_SendServerCommand(client - level.clients, notification);
+			client->pers.physicsFps.lastNotification = level.time;
+		}
+		return qfalse;
+	}
+	else {
+		return qtrue;
 	}
 }
 
@@ -1246,6 +1314,7 @@ void ClientThink_real( gentity_t *ent ) {
 	//int			oldTeleportBit;
 	int			nowTime = LEVELTIME(ent->client); // when racing, make everything relative to commandtime
 	int	moveStyle;
+	qboolean	clientFpsOk;
 
 	client = ent->client;
 
@@ -1438,7 +1507,25 @@ void ClientThink_real( gentity_t *ent ) {
 		return;
 	}
 
-	ClientCheckNotifyPhysicsFps(client); // Let the client know about his need to set a different com_physicsFps value if needed
+	clientFpsOk = ClientCheckNotifyPhysicsFps(ent); // Let the client know about his need to set a different com_physicsFps value if needed
+
+	// race mode toggle restrictions
+	if (client->sess.raceMode && (client->sess.raceStyle.msec == 0 || client->sess.raceStyle.msec > 0 && client->sess.raceStyle.msec != msec)) {
+		// something weird/disallowed is going on with the client fps. best case scenario, it's dropped packets. 
+		if (client->pers.raceStartCommandTime) {
+			client->pers.raceDropped.msecTime += client->pers.cmd.serverTime - client->ps.commandTime;
+			client->pers.raceDropped.packetCount++;
+			if (clientFpsOk // if we are already notifying about physicsfps settings issues, ignore these errors.
+				&& (client->pers.raceDropped.lastNotification + 1000) < level.time || client->pers.raceDropped.lastNotification > level.time) {
+				trap_SendServerCommand(ent - g_entities, va("print \"^1%d ^7msec from ^1%d ^7packets soft-dropped due to wrong packet timing. Packet loss? Try a higher cl_packetdup value.\n\"", (client->pers.raceDropped.msecTime - client->pers.raceDropped.lastNotificationMsecTime), (client->pers.raceDropped.packetCount - client->pers.raceDropped.lastNotificationPacketCount)));
+				client->pers.raceDropped.lastNotification = level.time;
+				client->pers.raceDropped.lastNotificationMsecTime = client->pers.raceDropped.msecTime;
+				client->pers.raceDropped.lastNotificationPacketCount = client->pers.raceDropped.packetCount;
+			}
+		}
+		client->ps.commandTime = client->pers.cmd.serverTime;
+		return;
+	}
 
 	// clear the rewards if time
 	if (nowTime > client->rewardTime ) {

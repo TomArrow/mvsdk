@@ -385,6 +385,13 @@ typedef struct {
 	int			raceBestTime;
 	int			raceLastCheckpointTime;
 	segmented_t segmented; // segmented run
+	struct {
+		int			msecTime; // in non-toggle mode, packets get soft-"dropped" (not evaluated) if the msec value is wrong. We accumulate the loss here
+		int			packetCount;
+		int			lastNotification;
+		int			lastNotificationMsecTime;
+		int			lastNotificationPacketCount;
+	} raceDropped;
 	
 
 	physicsFpsState_t	physicsFps;

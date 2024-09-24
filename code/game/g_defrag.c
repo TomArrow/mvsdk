@@ -2,7 +2,7 @@
 
 #include "g_local.h"
 
-extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
+void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
 #define VALIDATEPTRCMP(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
@@ -331,6 +331,8 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
 	//cl->pers.segmented.lastPosUsed = qfalse; // already guaranteed via SEG_RECORDING check above
 
+	memset(&cl->pers.raceDropped,0,sizeof(cl->pers.raceDropped)); // reset info aabout packets dropped due to wrong fps timing
+
 	if (segmented && level.nonDeterministicEntities) {
 		trap_SendServerCommand(activator - g_entities, va("cp \"Race timer started!\n^1Warning: ^7Map has %i non-deterministic\nentities. Replay/run may fail.\"", level.nonDeterministicEntities));
 	}
@@ -649,6 +651,10 @@ void Cmd_Race_f(gentity_t* ent)
 		ent->client->sess.raceMode = qtrue;
 		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled on.\n\"");
 	}
+
+	// reset physicsfps because racemode has different rules for validating that.
+	ent->client->pers.physicsFps.acceptedSetting = 0;
+	ent->client->pers.physicsFps.acceptedSettingMsec = 0;
 
 	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
 		//Delete all their projectiles / saved stuff
