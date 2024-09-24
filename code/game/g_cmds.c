@@ -2580,6 +2580,7 @@ extern void Cmd_DF_RunSettings_f(gentity_t* ent);
 extern void Cmd_MovementStyle_f(gentity_t* ent);
 extern void DF_SaveSpawn(gentity_t* ent);
 extern void DF_ResetSpawn(gentity_t* ent);
+extern void Cmd_ToggleFPS_f(gentity_t* ent);
 /*
 =================
 ClientCommand
@@ -2739,6 +2740,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "togglefps"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "move"))
 		{
 			giveError = qtrue;
@@ -2838,6 +2843,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Team_f (ent);
 	else if (Q_stricmp (cmd, "race") == 0)
 		Cmd_Race_f(ent);
+	else if (Q_stricmp (cmd, "togglefps") == 0)
+		Cmd_ToggleFPS_f(ent);
 	else if (Q_stricmp (cmd, "move") == 0)
 		Cmd_MovementStyle_f(ent);
 	else if (Q_stricmp (cmd, "savespawn") == 0)

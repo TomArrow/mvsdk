@@ -672,6 +672,8 @@ void Cmd_Race_f(gentity_t* ent)
 		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
 	}
 }
+
+
 static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	qboolean wasReset = qfalse;;
 
@@ -1115,6 +1117,32 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			trap_SendServerCommand(ent - g_entities, "print \"Differences from map default are marked ^1red^7. Your runs will not be on the main leaderboard with non-default settings.\n\"");
 		}
 	}
+}
+
+void Cmd_ToggleFPS_f(gentity_t* ent)
+{
+	if (!ent->client) return;
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (ent->client->pers.raceStartCommandTime) {
+		trap_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"");
+		return;
+	}
+
+	if (ent->client->sess.raceStyle.msec != -1) {
+		ent->client->sess.raceStyle.msec = -1;
+		trap_SendServerCommand(ent - g_entities, "print \"^7Toggle mode activated.\n\"");
+	}
+	else {
+		ent->client->sess.raceStyle.msec = 0;
+		trap_SendServerCommand(ent - g_entities, "print \"^7Toggle mode disabled.\n\"");
+	}
+
+	DF_RaceStateInvalidated(ent, qtrue);
 }
 
 

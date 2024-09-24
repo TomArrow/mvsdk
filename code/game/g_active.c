@@ -1515,16 +1515,19 @@ void ClientThink_real( gentity_t *ent ) {
 		if (client->pers.raceStartCommandTime) {
 			client->pers.raceDropped.msecTime += client->pers.cmd.serverTime - client->ps.commandTime;
 			client->pers.raceDropped.packetCount++;
-			if (clientFpsOk // if we are already notifying about physicsfps settings issues, ignore these errors.
-				&& (client->pers.raceDropped.lastNotification + 1000) < level.time || client->pers.raceDropped.lastNotification > level.time) {
-				trap_SendServerCommand(ent - g_entities, va("print \"^1%d ^7msec from ^1%d ^7packets soft-dropped due to wrong packet timing. Packet loss? Try a higher cl_packetdup value.\n\"", (client->pers.raceDropped.msecTime - client->pers.raceDropped.lastNotificationMsecTime), (client->pers.raceDropped.packetCount - client->pers.raceDropped.lastNotificationPacketCount)));
-				client->pers.raceDropped.lastNotification = level.time;
-				client->pers.raceDropped.lastNotificationMsecTime = client->pers.raceDropped.msecTime;
-				client->pers.raceDropped.lastNotificationPacketCount = client->pers.raceDropped.packetCount;
-			}
 		}
 		client->ps.commandTime = client->pers.cmd.serverTime;
 		return;
+	}
+
+	if (clientFpsOk // if we are already notifying about physicsfps settings issues, ignore these errors.
+		&& (client->pers.raceDropped.msecTime != client->pers.raceDropped.lastNotificationMsecTime || client->pers.raceDropped.packetCount != client->pers.raceDropped.lastNotificationPacketCount)
+		&& ((client->pers.raceDropped.lastNotification + 1000) < level.time || client->pers.raceDropped.lastNotification > level.time)
+		) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1%d ^7msec from ^1%d ^7packets soft-dropped due to wrong packet timing. Packet loss? Try a higher cl_packetdup value.\n\"", (client->pers.raceDropped.msecTime - client->pers.raceDropped.lastNotificationMsecTime), (client->pers.raceDropped.packetCount - client->pers.raceDropped.lastNotificationPacketCount)));
+		client->pers.raceDropped.lastNotification = level.time;
+		client->pers.raceDropped.lastNotificationMsecTime = client->pers.raceDropped.msecTime;
+		client->pers.raceDropped.lastNotificationPacketCount = client->pers.raceDropped.packetCount;
 	}
 
 	// clear the rewards if time
