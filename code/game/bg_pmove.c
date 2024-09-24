@@ -353,6 +353,30 @@ Q_INLINE int PM_GetRunFlags(void)
 	return 0; // this can happen when we die in racemode too!
 }
 
+Q_INLINE int PM_GetMsecRestrict(void)
+{
+	if (!pm || !pm->ps)
+		return 0;
+#if JK2_GAME
+	if (pm->ps->stats[STAT_RACEMODE])
+		return (pm->ps->stats[STAT_MSECRESTRICT]);
+	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
+	//	return (g_movementStyle.integer);
+	//else if (g_movementStyle.integer < MV_SIEGE)
+	//	return 0;
+	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
+	//	return MV_JK2;
+#elif JK2_CGAME
+	if (cgs.isTommyTernal && pm->ps->stats[STAT_RACEMODE]) {
+		if (!pm) return 0; // not sure why this is needed. from japro.
+		return pm->ps->stats[STAT_MSECRESTRICT];
+	}
+	//if (cgs.gametype == GT_SIEGE)
+	//	return MV_SIEGE;
+#endif
+	return 0; // this can happen when we die in racemode too!
+}
+
 int PM_GetSaberStance(void)
 {
 	if ( pm->ps->dualBlade )
@@ -5241,8 +5265,10 @@ void trap_SnapVector( float *v );
 
 void PmoveSingle (pmove_t *pmove) {
 	int runFlags;
+	int msecRestrict;
 	pm = pmove;
 	runFlags = PM_GetRunFlags();
+	msecRestrict = PM_GetMsecRestrict();
 
 	gPMDoSlowFall = PM_DoSlowFall();
 
@@ -5620,7 +5646,7 @@ void PmoveSingle (pmove_t *pmove) {
 	{
 		PM_FlyMove ();
 	}
-	else if(!pm->requiredCmdMsec || pml.msec == pm->requiredCmdMsec)
+	else if((!pm->requiredCmdMsec || pml.msec == pm->requiredCmdMsec) && (pm->isSpecialPredict || msecRestrict <= 0 || msecRestrict == pml.msec))
 	{
 		if (pm->ps->pm_flags & PMF_TIME_WATERJUMP) {
 			PM_WaterJumpMove();
@@ -5675,24 +5701,27 @@ void PmoveSingle (pmove_t *pmove) {
 		trap_SnapVector( pm->ps->velocity );
 	}
 	else {
-		if (/*pm->ps->stats[STAT_RACEMODE] || */pm->pmove_float > 2) {
+		if (/*pm->ps->stats[STAT_RACEMODE] || */pm->pmove_float > 2  && !pm->ps->stats[STAT_RACEMODE] || msecRestrict == -2) {
 		}
 #if JK2_GAME
 		else if (g_fixHighFPSAbuse.integer
 #elif JK2_CGAME
 		else if ((cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX) //could move these checks to cg_predict, and just set pm->pmove_float accordingly?
 #endif
+			&& !pm->ps->stats[STAT_RACEMODE]
 			&& (pml.msec <= 4 || pml.msec > 25)
 			|| pm->requiredCmdMsec && pm->requiredCmdMsec != pml.msec
+			|| !pm->isSpecialPredict && msecRestrict > 0 && msecRestrict != pml.msec
 			) { //do nothing above 250FPS or below 40FPS, or if a certain msec timing is demanded by the game via requiredCmdMsec (used for toggle limiting via g_fpsToggleDelay)
 		}
-		else if (pm->pmove_float == 2) { //pmove_float 2: snaps vertical velocity only, so 125/142fps jumps are still the same height?
+		else if (pm->pmove_float == 2 && !pm->ps->stats[STAT_RACEMODE]) { //pmove_float 2: snaps vertical velocity only, so 125/142fps jumps are still the same height?
+			// TODO allow this option in racemode somehow too?
 			vec3_t oldVelocity = { 0 };
 			VectorCopy( pm->ps->velocity, oldVelocity );
 			trap_SnapVector( pm->ps->velocity );
 			pm->ps->velocity[2] = oldVelocity[2];
 		}
-		else if (!pm->pmove_float) {
+		else if (!pm->pmove_float || pm->ps->stats[STAT_RACEMODE] && msecRestrict > -2) {
 			trap_SnapVector( pm->ps->velocity );
 		}
 	}

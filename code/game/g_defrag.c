@@ -1127,6 +1127,21 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 	}
 }
 
+void UpdateClientRaceVars(gclient_t* client) {
+	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
+	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
+	client->ps.stats[STAT_RACEMODE] = client->sess.raceMode; // can get lost sometimes after death? idk happened once but i had another bug then
+	if (client->sess.raceMode) {
+		client->ps.stats[STAT_MSECRESTRICT] = client->sess.raceStyle.msec; 
+	}
+	else if(g_fpsToggleDelay.integer) {
+		client->ps.stats[STAT_MSECRESTRICT] = client->pers.physicsFps.acceptedSettingMsec;
+	}
+	else {
+		client->ps.stats[STAT_MSECRESTRICT] = 0;
+	}
+}
+
 void Cmd_ToggleFPS_f(gentity_t* ent)
 {
 	if (!ent->client) return;

@@ -1304,6 +1304,7 @@ once for each server frame, which makes for smooth demo recording.
 ==============
 */
 void DF_HandleSegmentedRunPre(gentity_t* ent);
+void UpdateClientRaceVars(gclient_t* client);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
 	pmove_t		pm;
@@ -1410,9 +1411,10 @@ void ClientThink_real( gentity_t *ent ) {
 	//if ((client->sess.sessionTeam != TEAM_SPECTATOR) && !client->ps.stats[STAT_RACEMODE] && ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP || g_movementStyle.integer == MV_SLICK || g_movementStyle.integer == MV_TRIBES)) { //Ok,, this should be like every frame, right??
 	//	client->sess.movementStyle = g_movementStyle.integer;
 	//}
-	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
-	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
-	client->ps.stats[STAT_RACEMODE] = client->sess.raceMode; // can get lost sometimes after death? idk happened once but i had another bug then
+	UpdateClientRaceVars(client);
+	//client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
+	//client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
+	//client->ps.stats[STAT_RACEMODE] = client->sess.raceMode; // can get lost sometimes after death? idk happened once but i had another bug then
 
 	//if ((g_neutralFlag.integer < 4) && client->ps.powerups[PW_NEUTRALFLAG]) {
 	//	if (client->ps.fd.forcePowerLevel[FP_LEVITATION] > 1) {
@@ -1791,7 +1793,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	pm.debugMelee = g_debugMelee.integer;
 
-	if (g_fpsToggleDelay.integer) {
+	if (g_fpsToggleDelay.integer && !client->sess.raceMode) { // TODO unify requiredCmdMsec and STAT_MSECRESTRICT and maybe all the other stuff related to this 
 		pm.requiredCmdMsec = client->pers.physicsFps.acceptedSettingMsec ? client->pers.physicsFps.acceptedSettingMsec : -1;
 	}
 

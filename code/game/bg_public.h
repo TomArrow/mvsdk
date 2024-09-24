@@ -356,7 +356,7 @@ typedef enum {
 	STAT_BOUNCEPOWER,//STAT_DASHTIME,  // 9 bits for current bounce power (up to 500ms), 7 bits for regenerate timer (100 ms timeout to regen 10ms)
 	STAT_LASTJUMPSPEED,//STAT_LASTJUMPSPEED, 
 	STAT_RACEMODE,
-	STAT_PLACEHOLDER2,//STAT_ONLYBHOP, // unused rn
+	STAT_MSECRESTRICT,//STAT_ONLYBHOP, // 0= no restriction. otherwise msec value thats required for movement. in racemode its the msec value of racestyle. otherwise accepted physicsfps value
 	STAT_MOVEMENTSTYLE,
 	STAT_RUNFLAGS,//STAT_JUMPTIME, 
 	STAT_PLACEHOLDER4,//STAT_WJTIME // unused rn

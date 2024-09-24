@@ -1663,7 +1663,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 }
 
 void G_WriteClientSessionData( gclient_t *client );
-
+extern void UpdateClientRaceVars(gclient_t* client);
 /*
 ===========
 ClientBegin
@@ -1830,13 +1830,14 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 
 	client->sess.raceMode = g_defrag.integer;
 
-	if (client->sess.raceMode)
-		client->ps.stats[STAT_RACEMODE] = 1;
-	else
-		client->ps.stats[STAT_RACEMODE] = 0;
+	//if (client->sess.raceMode)
+	//	client->ps.stats[STAT_RACEMODE] = 1;
+	//else
+	//	client->ps.stats[STAT_RACEMODE] = 0;
 
-	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
-	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
+	//client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
+	//client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
+	UpdateClientRaceVars(client);
 
 	// locate ent at a spawn point
 	trap_GetUsercmd(client - level.clients, &ent->client->pers.cmd); // make sure LEVELTIME() inside ClientSpawn gets a valid serverTime value
@@ -2106,13 +2107,14 @@ void ClientSpawn(gentity_t *ent) {
 		client->sess.raceMode = qfalse;
 	}
 
-	if (client->sess.raceMode)
-		client->ps.stats[STAT_RACEMODE] = 1;
-	else
-		client->ps.stats[STAT_RACEMODE] = 0;
+	//if (client->sess.raceMode)
+	//	client->ps.stats[STAT_RACEMODE] = 1;
+	//else
+	//	client->ps.stats[STAT_RACEMODE] = 0;
 
-	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
-	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
+	//client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
+	//client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
+	UpdateClientRaceVars(client);
 	
 	VectorCopy (playerMins, ent->r.mins);
 	VectorCopy (playerMaxs, ent->r.maxs);

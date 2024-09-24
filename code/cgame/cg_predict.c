@@ -858,6 +858,7 @@ void CG_PredictPlayerState( void ) {
 	playerState_t	oldPlayerState,preSpecialPredictPlayerState;
 	qboolean	specialPredictPhysicsFpsWasApplied;
 	qboolean	moved;
+	qboolean	lastCmdWasWrongFps;
 	usercmd_t	oldestCmd;
 	usercmd_t	latestCmd;
 	usercmd_t	temporaryCmd;
@@ -979,6 +980,7 @@ void CG_PredictPlayerState( void ) {
 
 	// run cmds
 	moved = qfalse;
+	lastCmdWasWrongFps = qfalse;
 	for ( cmdNum = MAX(current - REAL_CMD_BACKUP + 1,0) ; cmdNum <= (current+1) ; cmdNum++ ) {
 
 		if (cmdNum > current) {
@@ -989,6 +991,7 @@ void CG_PredictPlayerState( void ) {
 			// Fucky experimental prediction to try and get com_physicsfps with low values to look smooth(er)
 			if (!cg_specialPredictPhysicsFps.integer || !cg_com_physicsFps.integer) break; // This type of prediction is disabled.
 			if (cg.time == latestCmd.serverTime) break; // Nothing to further predict
+			if (lastCmdWasWrongFps) break; // avoid jittering if server is blocking us from moving based on wrong fps value
 			
 			if (cg_specialPredictPhysicsFps.integer) { 
 
@@ -1022,6 +1025,14 @@ void CG_PredictPlayerState( void ) {
 
 			// get the command
 			trap_GetUserCmd(cmdNum, &cg_pmove.cmd);
+		}
+
+
+		if (cgs.isTommyTernal && cg_pmove.ps->stats[STAT_MSECRESTRICT] > 0 && cg_pmove.ps->stats[STAT_MSECRESTRICT] != (cg_pmove.cmd.serverTime - cg_pmove.ps->commandTime)) {
+			lastCmdWasWrongFps = qtrue;
+		}
+		else {
+			lastCmdWasWrongFps = qfalse;
 		}
 
 		if ( cg_pmove.pmove_fixed ) {
