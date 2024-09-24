@@ -597,11 +597,20 @@ void G_TurnDefragTargetsIntoTriggers() {
 }
 
 
-
+void SetClientPhysicsFps(gentity_t* ent, int clientSetting);
 void RemoveLaserTraps(gentity_t* ent);
 void RemoveDetpacks(gentity_t* ent);
 void DeletePlayerProjectiles(gentity_t* ent);
 void Cmd_ForceChanged_f(gentity_t* ent);
+
+void ResetPhysicsFpsStuff(gentity_t* ent) {
+
+	if (!ent->client) return;
+	ent->client->pers.physicsFps.acceptedSetting = 0;
+	ent->client->pers.physicsFps.acceptedSettingMsec = 0;
+	SetClientPhysicsFps(ent, ent->client->pers.physicsFps.clientSetting); // set it again
+}
+
 // Adapted from jaPRO
 void Cmd_Race_f(gentity_t* ent)
 {
@@ -653,8 +662,7 @@ void Cmd_Race_f(gentity_t* ent)
 	}
 
 	// reset physicsfps because racemode has different rules for validating that.
-	ent->client->pers.physicsFps.acceptedSetting = 0;
-	ent->client->pers.physicsFps.acceptedSettingMsec = 0;
+	ResetPhysicsFpsStuff(ent);
 
 	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
 		//Delete all their projectiles / saved stuff
@@ -1141,6 +1149,8 @@ void Cmd_ToggleFPS_f(gentity_t* ent)
 		ent->client->sess.raceStyle.msec = 0;
 		trap_SendServerCommand(ent - g_entities, "print \"^7Toggle mode disabled.\n\"");
 	}
+
+	ResetPhysicsFpsStuff(ent);
 
 	DF_RaceStateInvalidated(ent, qtrue);
 }
