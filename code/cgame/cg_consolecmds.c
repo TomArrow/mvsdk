@@ -7,6 +7,7 @@
 #include "../ui/ui_shared.h"
 #include "cg_dbcmds.h"
 #include "../qcommon/crypt_blowfish.h"
+#include "../qcommon/levenshtein.h"
 extern menuDef_t *menuScoreboard;
 
 
@@ -1112,24 +1113,142 @@ static void CG_Follow_f(void) {
 
 	CG_SendConsoleCommand("cmd follow %i", clientNum);
 }
+
 static void CG_Login_f(void) {
 	int clientNum = -1;
+	char cmd[64];
+	char username[64];
 	char pw[64];
+	char thirdarg[64];
 	const static char settings[64] = BCRYPT_SETTINGS;
 	char output[64];
 
 	if (trap_Argc() < 3) {
-		CG_Printf("usage /login <username> <password>\n");
+		if (cgs.isTommyTernal) {
+			CG_Printf("usage /login <username> <password> [raw] (password is clientside-hashed before sending to server by default for TommyTernal servers. Pass 'raw' to override)\n");
+		}
+		else {
+			CG_Printf("usage /login <username> <password> [bcrypt] (use bcrypt to hash pw clientside before sending to server)\n");
+		}
 		return;
 	}
 
-	pw[0] = '\0';
+	trap_Argv(0, cmd, sizeof(cmd));
+	trap_Argv(1, username, sizeof(username));
+	trap_Argv(2, pw, sizeof(pw));
 
-	trap_Argv(2,pw,sizeof(pw));
+	if (cgs.isTommyTernal) {
 
-	_crypt_blowfish_rn(pw, settings, output, 64);
+		bcrypt_errno = 0;
+		_crypt_blowfish_rn(pw, settings, output, 64);
 
-	Com_Printf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings,pw,output,bcrypt_errno);
+		CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
+		
+		if (!bcrypt_errno) {
+			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" bcrypted", cmd, username, output);
+		}
+		else {
+			trap_Argv(3, thirdarg, sizeof(thirdarg));
+			if (!Q_stricmp(thirdarg,"raw")) {
+				CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" raw", cmd, username, pw);
+			}
+			else {
+				CG_Printf("Clientside bcrypt hashing of password failed. Use '/login <username> <password> raw' to send password to the server in plaintext.\n");
+			}
+		}
+	}
+	else {
+		// Allow 
+		trap_Argv(3, thirdarg, sizeof(thirdarg));
+		if (!Q_stricmp(thirdarg, "bcrypt")) {
+
+			bcrypt_errno = 0;
+			_crypt_blowfish_rn(pw, settings, output, 64);
+
+			CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
+			if (!bcrypt_errno) {
+				CG_SendConsoleCommand("cmd %s \"%s\" \"%s\"", cmd, username, output);
+			}
+			else {
+				CG_Printf("Requested clientside bcrypt hashing of password failed. Please report this issue.\n");
+			}
+		}
+		else {
+			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\"", cmd, username, pw);
+		}
+	}
+
+	//clientNum = CG_ClientNumberFromString(CG_Argv(1));
+
+	//if (clientNum < 0)
+	//	return;
+
+	//CG_SendConsoleCommand("cmd follow %i", clientNum);
+}
+
+static void CG_Register_f(void) {
+	int clientNum = -1;
+	char cmd[64];
+	char username[64];
+	char pw[64];
+	char thirdarg[64];
+	const static char settings[64] = BCRYPT_SETTINGS;
+	char output[64];
+
+	if (trap_Argc() < 3) {
+		if (cgs.isTommyTernal) {
+			CG_Printf("usage /register <username> <password> [raw] (password is clientside-hashed before sending to server by default for TommyTernal servers. Pass 'raw' to override)\n");
+		}
+		else {
+			CG_Printf("usage /register <username> <password> [bcrypt] (use bcrypt to hash pw clientside before sending to server)\n");
+		}
+		return;
+	}
+
+	trap_Argv(0, cmd, sizeof(cmd));
+	trap_Argv(1, username, sizeof(username));
+	trap_Argv(2, pw, sizeof(pw));
+
+	if (cgs.isTommyTernal) {
+
+		bcrypt_errno = 0;
+		_crypt_blowfish_rn(pw, settings, output, 64);
+
+		CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
+		
+		if (!bcrypt_errno) {
+			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" bcrypted", cmd, username, output);
+		}
+		else {
+			trap_Argv(3, thirdarg, sizeof(thirdarg));
+			if (!Q_stricmp(thirdarg,"raw")) {
+				CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" raw", cmd, username, pw);
+			}
+			else {
+				CG_Printf("Clientside bcrypt hashing of password failed. Use '/register <username> <password> raw' to send password to the server in plaintext.\n");
+			}
+		}
+	}
+	else {
+		// Allow 
+		trap_Argv(3, thirdarg, sizeof(thirdarg));
+		if (!Q_stricmp(thirdarg, "bcrypt")) {
+
+			bcrypt_errno = 0;
+			_crypt_blowfish_rn(pw, settings, output, 64);
+
+			CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
+			if (!bcrypt_errno) {
+				CG_SendConsoleCommand("cmd %s \"%s\" \"%s\"", cmd, username, output);
+			}
+			else {
+				CG_Printf("Requested clientside bcrypt hashing of password failed. Please report this issue.\n");
+			}
+		}
+		else {
+			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\"", cmd, username, pw);
+		}
+	}
 
 	//clientNum = CG_ClientNumberFromString(CG_Argv(1));
 
@@ -1468,6 +1587,7 @@ static consoleCommand_t	commands[] = {
 	{ "modversion", CG_ModVersion_f },
 
 	{ "login", CG_Login_f },
+	{ "register", CG_Register_f },
 
 	{ "getchats", CG_DB_GetChats_f },
 	{ "follow", CG_Follow_f },
@@ -1506,16 +1626,61 @@ Cmd_Argc() / Cmd_Argv()
 qboolean CG_ConsoleCommand( void ) {
 	const char	*cmd;
 	size_t		i;
+	size_t		levendist;
+	static char misspelled[MAX_STRING_CHARS] = {0};
+	static int	misspelledCount = 0;
 
 	cmd = CG_Argv(0);
 
 	for ( i = 0 ; i < sizeof( commands ) / sizeof( commands[0] ) ; i++ ) {
 		if ( !Q_stricmp( cmd, commands[i].cmd ) ) {
 			commands[i].function();
+			misspelledCount = 0;
 			return qtrue;
 		}
 	}
 
+	// check for login and register misspellings
+	if (levenshtein("login", cmd) <= 3 // suspiciously similar to login
+		&& Q_stricmp("logout",cmd) // could be logout, allow that
+		) {
+		if (!Q_stricmp("amlogin", cmd)) {
+			CG_Login_f();
+		}
+		else {
+			if (misspelledCount && !Q_stricmp(misspelled,cmd)) {
+				misspelledCount++;
+				if (misspelledCount >= 3) {
+					return qfalse; // fine, allow it.
+				}
+			}
+			else {
+				Q_strncpyz(misspelled, cmd, sizeof(misspelled));
+				misspelledCount = 1;
+			}
+			CG_Printf("Command '%s' ^1blocked ^7for your safety to avoid plaintext password leaks. Did you misspell 'login'? Repeat 2 times to force command with this spelling.\n", cmd);
+		}
+		return qtrue;
+	}
+
+	// check for login and register misspellings
+	if (levenshtein("register", cmd) <= 3 // suspiciously similar to register
+		) {
+		if (misspelledCount && !Q_stricmp(misspelled, cmd)) {
+			misspelledCount++;
+			if (misspelledCount >= 3) {
+				return qfalse; // fine, allow it.
+			}
+		}
+		else {
+			Q_strncpyz(misspelled, cmd, sizeof(misspelled));
+			misspelledCount = 1;
+		}
+		CG_Printf("Command '%s' ^1blocked ^7for your safety to avoid plaintext password leaks. Did you misspell 'register'? Repeat 2 times to force command with this spelling.\n", cmd);
+		return qtrue;
+	}
+
+	misspelledCount = 0;
 	return qfalse;
 }
 
@@ -1694,4 +1859,16 @@ void CG_InitConsoleCommands( void ) {
 	//these probably exist smehwere..
 	trap_AddCommand("amhug");
 	trap_AddCommand("amkiss");
+
+	// tommyternal
+	trap_AddCommand("run");
+	trap_AddCommand("race");
+	trap_AddCommand("jump");
+	trap_AddCommand("savespawn");
+	trap_AddCommand("resetspawn");
+	trap_AddCommand("savepos");
+	trap_AddCommand("respos");
+	trap_AddCommand("move");
+	trap_AddCommand("togglefps");
+	trap_AddCommand("floatphysics");
 }

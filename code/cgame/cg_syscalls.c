@@ -273,7 +273,7 @@ qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, in
 	return syscall(CG_COOL_API_DB_ADDREQUEST, reference, referenceLength, requestType, request);
 }
 qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType) {
-	return syscall(CG_COOL_API_DB_ADDREQUEST_TYPED, reference, referenceLength, requestType, request, (int)type);
+	return syscall(CG_COOL_API_DB_ADDREQUEST_TYPED, reference, referenceLength, requestType, request, (int)dbRequestType);
 }
 qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength) {
 	return syscall(CG_COOL_API_DB_NEXTRESPONSE, requestType, affectedRows, status, errorMessage, errorMessageSize, reference, referenceLength);

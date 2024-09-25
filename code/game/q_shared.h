@@ -2294,6 +2294,7 @@ typedef struct predictedMovement_s {
 typedef enum {
 	DBREQUEST_REQUEST,
 	DBREQUEST_BCRYPT, // this doesn't actuaally send any DB request, it just allows us to bcrypt a string on a separate thread
+	DBREQUEST_BCRYPT_DOUBLE, // this doesn't actuaally send any DB request, it just allows us to bcrypt a string on a separate thread
 } DBRequestType_t;
 
 #endif	// __Q_SHARED_H
