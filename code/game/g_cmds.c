@@ -2,6 +2,7 @@
 //
 #include "g_local.h"
 #include "g_defrag.h"
+#include "g_dbcmds.h"
 
 #include "../ui/menudef.h"			// for the voice chats
 
@@ -963,6 +964,7 @@ void Cmd_Team_f( gentity_t *ent ) {
 
 }
 
+
 /*
 =================
 Cmd_Team_f
@@ -1005,6 +1007,41 @@ argCheck:
 		//if there's an arg, assume it's a combo team command from the UI.
 		Cmd_Team_f(ent);
 	}
+}
+/*
+=================
+Cmd_Login_f
+=================
+*/
+void Cmd_LoginRegister_f( gentity_t *ent )
+{
+	static char cmd[MAX_TOKEN_CHARS];
+	static char thirdparam[MAX_TOKEN_CHARS];
+	static loginRegisterStruct_t loginData;
+	qboolean needDoubleBCrypt = qtrue;
+	trap_Argv(0, cmd, sizeof(cmd));
+	if (coolApi_dbVersion < 2) {
+		// DB API cannot do bcrypt.
+		trap_SendServerCommand(ent - g_entities, va("print \"Server %s not possible. DB version too low.\n\"", cmd));
+		return;
+	}
+	if (trap_Argc() < 3) {
+		trap_SendServerCommand(ent - g_entities, va("print \"usage /%s <username> <password>\n\"",cmd));
+		return;
+	}
+	memset(&loginData, 0, sizeof(loginData));
+	if (trap_Argc() >= 4) {
+		trap_Argv(3, thirdparam, sizeof(thirdparam));
+		if (!Q_stricmp(thirdparam, "bcrypt")) {
+			needDoubleBCrypt = qfalse; // client already bcrypted once :)
+		}
+	}
+	trap_Argv(1, loginData.username, sizeof(loginData.username));
+	trap_Argv(2, loginData.password, sizeof(loginData.password));
+	loginData.clientnum = ent - g_entities;
+	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
+	loginData.followUpType = !Q_stricmp("login", cmd) ? DBREQUEST_LOGIN : DBREQUEST_REGISTER;
+	trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW, loginData.password, needDoubleBCrypt ? DBREQUEST_BCRYPT_DOUBLE : DBREQUEST_BCRYPT);
 }
 
 /*
@@ -2769,6 +2806,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "login"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcechanged"))
 		{ //special case: still update force change
 			Cmd_ForceChanged_f (ent);
@@ -2862,6 +2903,10 @@ void ClientCommand( int clientNum ) {
 		Cmd_JumpChange_f(ent);
 	else if (Q_stricmp (cmd, "run") == 0)
 		Cmd_DF_RunSettings_f(ent);
+	else if (Q_stricmp (cmd, "login") == 0)
+		Cmd_LoginRegister_f(ent);
+	else if (Q_stricmp (cmd, "register") == 0)
+		Cmd_LoginRegister_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)
 		Cmd_ForceChanged_f (ent);
 	else if (Q_stricmp (cmd, "where") == 0)

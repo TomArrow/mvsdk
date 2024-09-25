@@ -1149,7 +1149,7 @@ static void CG_Login_f(void) {
 		CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
 		
 		if (!bcrypt_errno) {
-			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" bcrypted", cmd, username, output);
+			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" bcrypt", cmd, username, output);
 		}
 		else {
 			CG_Printf("Clientside bcrypt hashing of password failed. Use '/login <username> <password> raw' to send password to the server in plaintext.\n");
@@ -1207,7 +1207,12 @@ static void CG_Register_f(void) {
 	trap_Argv(1, username, sizeof(username));
 	trap_Argv(2, pw, sizeof(pw));
 
-	if (cgs.isTommyTernal) {
+
+	trap_Argv(3, thirdarg, sizeof(thirdarg));
+	if (!Q_stricmp(thirdarg, "raw")) {
+		CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" raw", cmd, username, pw);
+	}
+	else if (cgs.isTommyTernal) {
 
 		bcrypt_errno = 0;
 		_crypt_blowfish_rn(pw, settings, output, 64);
@@ -1215,16 +1220,10 @@ static void CG_Register_f(void) {
 		CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
 		
 		if (!bcrypt_errno) {
-			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" bcrypted", cmd, username, output);
+			CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" bcrypt", cmd, username, output);
 		}
-		else {
-			trap_Argv(3, thirdarg, sizeof(thirdarg));
-			if (!Q_stricmp(thirdarg,"raw")) {
-				CG_SendConsoleCommand("cmd %s \"%s\" \"%s\" raw", cmd, username, pw);
-			}
-			else {
-				CG_Printf("Clientside bcrypt hashing of password failed. Use '/register <username> <password> raw' to send password to the server in plaintext.\n");
-			}
+		else { 
+			CG_Printf("Clientside bcrypt hashing of password failed. Use '/register <username> <password> raw' to send password to the server in plaintext.\n");
 		}
 	}
 	else {
