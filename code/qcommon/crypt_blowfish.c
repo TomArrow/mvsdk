@@ -45,7 +45,7 @@
 
 //#include <string.h>
 
-#define QVMDEBUG
+//#define QVMDEBUG
 
 //#include <errno.h>
 int bcrypt_errno = 0;
@@ -62,12 +62,13 @@ int bcrypt_errno = 0;
 //#define BF_ASM				1
 //#define BF_SCALE			1
 //#elif defined(__x86_64__) || defined(__alpha__) || defined(__hppa__)
-//#define BF_ASM				0
-//#define BF_SCALE			1
-//#else
+#if idx64
+#define BF_ASM				0
+#define BF_SCALE			1
+#else
 #define BF_ASM				0
 #define BF_SCALE			0
-//#endif
+#endif
 
 typedef unsigned int BF_word;
 typedef signed int BF_word_signed;

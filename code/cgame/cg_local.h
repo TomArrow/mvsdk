@@ -2352,6 +2352,7 @@ qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
 
 qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
 qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
 qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
 qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
 qboolean	trap_CG_COOL_API_DB_NextRow();

@@ -1129,7 +1129,7 @@ static void CG_Login_f(void) {
 
 	_crypt_blowfish_rn(pw, settings, output, 64);
 
-	Com_Printf("settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings,pw,output,bcrypt_errno);
+	Com_Printf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings,pw,output,bcrypt_errno);
 
 	//clientNum = CG_ClientNumberFromString(CG_Argv(1));
 

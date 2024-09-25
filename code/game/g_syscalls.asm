@@ -276,3 +276,4 @@ equ trap_G_COOL_API_DB_NextRow							-1205	;G_COOL_API_DB_NEXTROW
 equ trap_G_COOL_API_DB_GetInt							-1206	;G_COOL_API_DB_GETINT
 equ trap_G_COOL_API_DB_GetFloat							-1207	;G_COOL_API_DB_GETFLOAT
 equ trap_G_COOL_API_DB_GetString						-1208	;G_COOL_API_DB_GETSTRING
+equ trap_G_COOL_API_DB_AddRequestTyped					-1209	;G_COOL_API_DB_ADDREQUEST_TYPED
