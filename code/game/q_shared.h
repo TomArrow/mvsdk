@@ -264,6 +264,7 @@ typedef int		clipHandle_t;
 #define	BIG_INFO_KEY		  8192
 #define	BIG_INFO_VALUE		8192
 
+#define NET_ADDRSTRMAXLEN	48 // maximum length of an IPv6 address string including trailing '\0'
 
 #define	MAX_QPATH			64		// max length of a quake game pathname
 #ifdef PATH_MAX
