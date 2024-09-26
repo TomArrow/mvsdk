@@ -108,6 +108,7 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 		return;
 	}
 	loginData.userFlags = trap_G_COOL_API_DB_GetInt(1);
+	loginData.userId = trap_G_COOL_API_DB_GetInt(2);
 
 	loginData.followUpType = DBREQUEST_LOGIN;
 
@@ -139,6 +140,10 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 		return;
 	}
 	Com_Printf("login successful.\n");
+
+	// fire and forget, not that important
+	trap_G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_LOGIN_UPDATELASTLOGIN,
+		va("UPDATE users SET lastlogin=NOW() WHERE id=%d", loginData->userId));
 }
 
 static void G_CreateTableResult(int status, const char* errorMessage) {
@@ -204,6 +209,7 @@ void G_DB_CheckResponses() {
 		int status;
 		while (trap_G_COOL_API_DB_NextResponse(&requestType, NULL, &status, errorMessage, sizeof(errorMessage), NULL, 0)) {
 			switch (requestType) {
+				case DBREQUEST_LOGIN_UPDATELASTLOGIN:
 				default:
 					if (status) {
 						Com_Printf("DB Request of type %d failed with status %d.\n", requestType, status);

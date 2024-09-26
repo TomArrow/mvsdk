@@ -1041,7 +1041,8 @@ void Cmd_Register_f( gentity_t *ent )
 	trap_Argv(2, loginData.password, sizeof(loginData.password));
 	loginData.clientnum = ent - g_entities;
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
-	loginData.followUpType = !Q_stricmp("login", cmd) ? DBREQUEST_LOGIN : DBREQUEST_REGISTER;
+	//loginData.followUpType = !Q_stricmp("login", cmd) ? DBREQUEST_LOGIN : DBREQUEST_REGISTER;
+	loginData.followUpType = DBREQUEST_REGISTER;
 	if (needDoubleBCrypt) {
 		trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
 			va("2|%s|random|%s", BCRYPT_SETTINGS, loginData.password) 
@@ -1094,7 +1095,7 @@ void Cmd_Login_f( gentity_t *ent )
 	loginData.clientnum = ent - g_entities;
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
 	trap_G_COOL_API_DB_AddRequest((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
-		va("SELECT password,flags FROM users WHERE username='%s'", cleanUsername));
+		va("SELECT password,flags,id FROM users WHERE username='%s'", cleanUsername));
 }
 
 /*

@@ -7,6 +7,7 @@
 typedef enum DBRequestTypes_s {
 	DBREQUEST_REGISTER,
 	DBREQUEST_LOGIN, // actual log in
+	DBREQUEST_LOGIN_UPDATELASTLOGIN,
 	DBREQUEST_BCRYPTPW, // pw bcrypt request (no actual db request)
 	DBREQUEST_CREATETABLE,
 } DBRequestTypes_t;
