@@ -302,7 +302,7 @@ float forceJumpStrength[NUM_FORCE_POWER_LEVELS] =
 	840
 };
 
-int PM_GetMovePhysics(void)
+Q_INLINE int PM_GetMovePhysics(void)
 {
 	if (!pm || !pm->ps)
 		return MV_JK2;
@@ -329,7 +329,7 @@ int PM_GetMovePhysics(void)
 	return MV_JK2; // this can happen when we die in racemode too!
 }
 
-int PM_GetRunFlags(void)
+Q_INLINE int PM_GetRunFlags(void)
 {
 	if (!pm || !pm->ps)
 		return 0;
@@ -353,7 +353,7 @@ int PM_GetRunFlags(void)
 	return 0; // this can happen when we die in racemode too!
 }
 
-int PM_GetMsecRestrict(void)
+Q_INLINE int PM_GetMsecRestrict(void)
 {
 	if (!pm || !pm->ps)
 		return 0;
