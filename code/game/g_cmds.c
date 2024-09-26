@@ -1011,7 +1011,7 @@ argCheck:
 }
 /*
 =================
-Cmd_Login_f
+Cmd_Register_f
 =================
 */
 void Cmd_Register_f( gentity_t *ent )
@@ -1052,6 +1052,49 @@ void Cmd_Register_f( gentity_t *ent )
 			va("1|random|%s", loginData.password)
 			, DBREQUESTTYPE_BCRYPT);
 	}
+}
+/*
+=================
+Cmd_Login_f
+=================
+*/
+void Cmd_Login_f( gentity_t *ent )
+{
+	static char cmd[MAX_TOKEN_CHARS];
+	static char thirdparam[MAX_TOKEN_CHARS];
+	static char	cleanUsername[MAX_STRING_CHARS];
+	static loginRegisterStruct_t loginData;
+	trap_Argv(0, cmd, sizeof(cmd));
+	if (coolApi_dbVersion < 2) {
+		// DB API cannot do bcrypt.
+		trap_SendServerCommand(ent - g_entities, va("print \"Server %s not possible. DB version too low.\n\"", cmd));
+		return;
+	}
+	if (trap_Argc() < 3) {
+		trap_SendServerCommand(ent - g_entities, va("print \"usage /%s <username> <password>\n\"",cmd));
+		return;
+	}
+	memset(&loginData, 0, sizeof(loginData));
+	loginData.needDoubleBcrypt = qtrue;
+	if (trap_Argc() >= 4) {
+		trap_Argv(3, thirdparam, sizeof(thirdparam));
+		if (!Q_stricmp(thirdparam, "bcrypt")) {
+			loginData.needDoubleBcrypt = qfalse; // client already bcrypted once :)
+		}
+	}
+	trap_Argv(1, loginData.username, sizeof(loginData.username));
+	trap_Argv(2, loginData.password, sizeof(loginData.password));
+	Q_strncpyz(cleanUsername, loginData.username, sizeof(cleanUsername));
+
+	if (!trap_G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername))) {
+		Com_Printf("Cmd_Login_f: EscapeString failed.\n");
+		trap_SendServerCommand(ent - g_entities, va("print \"/%s failed: EscapeString failed\n\"", cmd));
+		return;
+	}
+	loginData.clientnum = ent - g_entities;
+	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
+	trap_G_COOL_API_DB_AddRequest((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
+		va("SELECT password,flags FROM users WHERE username='%s'", cleanUsername));
 }
 
 /*
@@ -2913,8 +2956,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_JumpChange_f(ent);
 	else if (Q_stricmp (cmd, "run") == 0)
 		Cmd_DF_RunSettings_f(ent);
-	//else if (Q_stricmp (cmd, "login") == 0)
-	//	Cmd_LoginRegister_f(ent);
+	else if (Q_stricmp (cmd, "login") == 0)
+		Cmd_Login_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
 		Cmd_Register_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)

@@ -13,11 +13,14 @@ typedef enum DBRequestTypes_s {
 
 typedef struct loginRegisterStruct_s {
 	DBRequestTypes_t	followUpType;
-	int		userId;
-	int		ip[4];
-	int		clientnum;
-	char	username[MAX_STRING_CHARS];
-	char	password[MAX_STRING_CHARS];
+	int			userId;
+	int			ip[4];
+	int			clientnum;
+	char		username[MAX_STRING_CHARS];
+	char		password[MAX_STRING_CHARS];
+	char		dbPassword[MAX_STRING_CHARS];
+	qboolean	needDoubleBcrypt;
+	int			userFlags;
 } loginRegisterStruct_t;
 
 typedef struct referenceSimpleString_s {
