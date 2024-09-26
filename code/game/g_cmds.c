@@ -3,6 +3,7 @@
 #include "g_local.h"
 #include "g_defrag.h"
 #include "g_dbcmds.h"
+#include "../qcommon/crypt_blowfish.h"
 
 #include "../ui/menudef.h"			// for the voice chats
 
@@ -1013,7 +1014,7 @@ argCheck:
 Cmd_Login_f
 =================
 */
-void Cmd_LoginRegister_f( gentity_t *ent )
+void Cmd_Register_f( gentity_t *ent )
 {
 	static char cmd[MAX_TOKEN_CHARS];
 	static char thirdparam[MAX_TOKEN_CHARS];
@@ -1041,7 +1042,16 @@ void Cmd_LoginRegister_f( gentity_t *ent )
 	loginData.clientnum = ent - g_entities;
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
 	loginData.followUpType = !Q_stricmp("login", cmd) ? DBREQUEST_LOGIN : DBREQUEST_REGISTER;
-	trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW, loginData.password, needDoubleBCrypt ? DBREQUEST_BCRYPT_DOUBLE : DBREQUEST_BCRYPT);
+	if (needDoubleBCrypt) {
+		trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+			va("2|%s|random|%s", BCRYPT_SETTINGS, loginData.password) 
+			, DBREQUESTTYPE_BCRYPT);
+	}
+	else {
+		trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+			va("1|random|%s", loginData.password)
+			, DBREQUESTTYPE_BCRYPT);
+	}
 }
 
 /*
@@ -2903,10 +2913,10 @@ void ClientCommand( int clientNum ) {
 		Cmd_JumpChange_f(ent);
 	else if (Q_stricmp (cmd, "run") == 0)
 		Cmd_DF_RunSettings_f(ent);
-	else if (Q_stricmp (cmd, "login") == 0)
-		Cmd_LoginRegister_f(ent);
+	//else if (Q_stricmp (cmd, "login") == 0)
+	//	Cmd_LoginRegister_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
-		Cmd_LoginRegister_f(ent);
+		Cmd_Register_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)
 		Cmd_ForceChanged_f (ent);
 	else if (Q_stricmp (cmd, "where") == 0)

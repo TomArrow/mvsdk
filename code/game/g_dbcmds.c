@@ -73,11 +73,11 @@ static void G_CreateTableResult(int status, const char* errorMessage) {
 
 }
 
-static void G_PWBCryptReturned(int status) {
+static void G_PWBCryptReturned(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData;
 	gentity_t* ent;
 	if (status) {
-		Com_Printf("Password bcrypting failed with status %d.\n", status);
+		Com_Printf("Password bcrypting failed with status %d and error %s.\n", status, errorMessage);
 		return;
 	}
 	trap_G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
@@ -133,7 +133,7 @@ void G_DB_CheckResponses() {
 					}
 					break;
 				case DBREQUEST_BCRYPTPW:
-					G_PWBCryptReturned(status);
+					G_PWBCryptReturned(status, errorMessage);
 					break;
 				case DBREQUEST_REGISTER:
 					G_RegisterResult(status, errorMessage);
