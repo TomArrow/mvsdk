@@ -338,6 +338,10 @@ typedef struct {
 	raceStyle_t	raceStyle;
 	// noclip or sth similar was used. we cannot run or set spawns until we /kill and respawn
 	qboolean	raceStateInvalidated;	
+
+	int			userID;
+	int			accountFlags;
+	char		userName[11];
 } clientSession_t;
 
 // JK2MV
