@@ -1023,7 +1023,7 @@ void Cmd_Register_f( gentity_t *ent )
 	trap_Argv(0, cmd, sizeof(cmd));
 	if (coolApi_dbVersion < 2) {
 		// DB API cannot do bcrypt.
-		trap_SendServerCommand(ent - g_entities, va("print \"Server %s not possible. DB version too low.\n\"", cmd));
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Server %s not possible. DB version too low.\n\"", cmd));
 		return;
 	}
 	if (trap_Argc() < 3) {
@@ -1068,7 +1068,7 @@ void Cmd_Login_f( gentity_t *ent )
 	trap_Argv(0, cmd, sizeof(cmd));
 	if (coolApi_dbVersion < 2) {
 		// DB API cannot do bcrypt.
-		trap_SendServerCommand(ent - g_entities, va("print \"Server %s not possible. DB version too low.\n\"", cmd));
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Server %s not possible. DB version too low.\n\"", cmd));
 		return;
 	}
 	if (trap_Argc() < 3) {
