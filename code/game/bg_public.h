@@ -176,6 +176,7 @@ movement on the server game.
 
 extern Q_INLINE int PM_GetMovePhysics(void);
 extern Q_INLINE int PM_GetRunFlags(void);
+extern Q_INLINE int PM_GetMsecRestrict(void);
 
 
 
