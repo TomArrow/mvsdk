@@ -28,7 +28,7 @@ static gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	}
 	return ent;
 }
-
+/* moved to bg_misc.c
 qboolean G_DB_VerifyPassword(const char* password, int clientNumNotify) {
 	const char* s = password;
 	int len = strlen(password);
@@ -80,7 +80,7 @@ qboolean G_DB_VerifyPassword(const char* password, int clientNumNotify) {
 	}
 	return qtrue;
 }
-
+*/
 qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 	const char* s = username;
 	int len = strlen(username);

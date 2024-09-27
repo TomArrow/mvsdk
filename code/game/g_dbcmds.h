@@ -4,9 +4,6 @@
 
 #include "../game/q_shared.h"
 
-#define USERNAME_MAX_LEN 10
-#define PASSWORD_MAX_LEN 50 // bcrypt has a limit which seems to be 72 but some sources say its only 50 and im too lazy to read the bcrypt code to decide whos right. 50 is enough anyway.
-
 typedef enum DBRequestTypes_s {
 	DBREQUEST_REGISTER,
 	DBREQUEST_LOGIN, // actual log in
@@ -33,6 +30,5 @@ typedef struct referenceSimpleString_s {
 
 void G_DB_CheckResponses();
 qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify);
-qboolean G_DB_VerifyPassword(const char* password, int clientNumNotify);
 
 #endif

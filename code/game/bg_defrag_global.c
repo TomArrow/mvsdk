@@ -83,3 +83,17 @@ float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd
 	}
 	return 1.001f; // OVERCLIP define
 }
+
+
+const char* DF_MsToString(const int ms)
+{
+	int	timeSec, timeMin, timeMsec;
+
+	timeMsec = ms;
+	timeSec = timeMsec / 1000;
+	timeMsec -= timeSec * 1000;
+	timeMin = timeSec / 60;
+	timeSec -= timeMin * 60;
+
+	return !ms ? "00:00.000" : va("%02i:%02i.%03i", timeMin, timeSec, timeMsec);
+}

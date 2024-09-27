@@ -1278,6 +1278,7 @@ SortRanks
 */
 int QDECL SortRanks( const void *a, const void *b ) {
 	gclient_t	*ca, *cb;
+	int raceA, raceB;
 
 	ca = &level.clients[*(int *)a];
 	cb = &level.clients[*(int *)b];
@@ -1314,6 +1315,17 @@ int QDECL SortRanks( const void *a, const void *b ) {
 	}
 	if ( cb->sess.sessionTeam == TEAM_SPECTATOR ) {
 		return -1;
+	}
+
+	raceA = ca->pers.raceBestTime ? ca->pers.raceBestTime : INT_MAX;
+	raceB = cb->pers.raceBestTime ? cb->pers.raceBestTime : INT_MAX;
+	if (raceA
+		< raceB) {
+		return -1;
+	}
+	if (raceA
+		> raceB) {
+		return 1;
 	}
 
 	// then sort by score

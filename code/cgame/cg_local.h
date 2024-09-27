@@ -595,6 +595,8 @@ typedef struct {
 	int				torsoAnim;
 
 	mvversion_t		jk2gameplay;
+	int				jkmod_race; // jk+ and tommyternal
+	char			username[MAX_QPATH];
 } clientInfo_t;
 
 

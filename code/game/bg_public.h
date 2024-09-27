@@ -11,6 +11,10 @@
 #include "bg_weapons.h"
 #include "anims.h"
 
+#define USERNAME_MAX_LEN 10
+#define PASSWORD_MAX_LEN 50 // bcrypt has a limit which seems to be 72 but some sources say its only 50 and im too lazy to read the bcrypt code to decide whos right. 50 is enough anyway.
+
+
 #define	GAME_VERSION		"basejk-1"
 
 #define	DEFAULT_GRAVITY		800
@@ -1136,6 +1140,9 @@ extern int forcePowerDarkLight[NUM_FORCE_POWERS];
 
 #define MAX_BOTS			1024
 #define MAX_BOTS_TEXT		8192
+
+
+qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify);
 
 #include "../game/bg_multiversion.h"
 

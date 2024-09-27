@@ -1045,7 +1045,9 @@ void Cmd_Register_f( gentity_t *ent )
 		return;
 	}
 	
-	if (!G_DB_VerifyPassword(loginData.password, loginData.clientnum)) {
+	// can only verify the password structure here if it wasn't already hashed. clientside has same check but if someone decides to bypass it, nothing we can do.
+	// they just wont be able to log in without their modified client then, oh well.
+	if (needDoubleBCrypt && !BG_DB_VerifyPassword(loginData.password, loginData.clientnum)) {
 		return;
 	}
 

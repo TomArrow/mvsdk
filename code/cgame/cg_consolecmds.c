@@ -1214,6 +1214,10 @@ static void CG_Register_f(void) {
 	}
 	else if (cgs.isTommyTernal) {
 
+		if (!BG_DB_VerifyPassword(pw, -1)) {
+			return;
+		}
+
 		bcrypt_errno = 0;
 		_crypt_blowfish_rn(pw, settings, output, 64);
 

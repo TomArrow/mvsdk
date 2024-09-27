@@ -76,5 +76,9 @@ typedef struct raceStyle_s {
 int RaceNameToInteger(char* style);
 qboolean MovementStyleHasQuake2Ramps(int moveStyle);
 qboolean MovementIsQuake3Based(int moveStyle);
+const char* DF_MsToString(const int ms);
+
+
+
 
 #endif

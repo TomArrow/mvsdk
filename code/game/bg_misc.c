@@ -6,7 +6,7 @@
 #include "bg_public.h"
 
 #ifdef JK2_GAME
-#include "g_local.h"
+#include "../game/g_local.h"
 #endif
 
 #ifdef JK2_UI
@@ -2756,3 +2756,63 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 
 }
 */
+
+qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify) {
+	const char* s = password;
+	int len = strlen(password);
+	if (len > PASSWORD_MAX_LEN) {
+		if (clientNumNotify > -2) {
+#if JK2_GAME
+			trap_SendServerCommand(clientNumNotify, va("print \"^1Chosen password is too long. Maximum %d characters.\n\"", PASSWORD_MAX_LEN));
+#elif JK2_CGAME
+			CG_Printf("^1Chosen password is too long. Maximum %d characters.\n");
+#endif
+		}
+		return qfalse;
+	}
+
+	while (*s != '\0') {
+		if (*s >= 'a' && *s <= 'z'
+			|| *s >= 'A' && *s <= 'Z'
+			|| *s >= '0' && *s <= '9'
+			|| *s == '_'
+			|| *s == '-'
+			|| *s == '.'
+			|| *s == '/' // pws allow aa bit more leeway than usernames, as they will never be used plaintext, and more possible chars means more security
+			|| *s == '[' // cant allow % because netcode wont send it properly, nor ascii codes above 127
+			|| *s == ']' // cant allow " because it would break the command
+			|| *s == '(' // cant allow ^ because it would be annoying to type colored passwords
+			|| *s == ')' // cant allow ` or ~ because console may not allow to type them
+			|| *s == '<' // someone COULD of course try it with a .cfg file but let's keep things such that they can be typed ingame
+			|| *s == '>'
+			|| *s == '='
+			|| *s == ':'
+			|| *s == ';'
+			|| *s == '+'
+			|| *s == '*'
+			|| *s == '!'
+			|| *s == '#'
+			|| *s == '$'
+			|| *s == '&'
+			|| *s == '@'
+			|| *s == ','
+			|| *s == '?'
+			|| *s == '|'
+			|| *s == '\''
+			) {
+			// whitelist. ok.
+		}
+		else {
+			if (clientNumNotify > -2) {
+#if JK2_GAME
+				trap_SendServerCommand(clientNumNotify, "print \"^1Chosen password contains invalid characters. Allowed characters: A-Z a-z 0-9 _-.,/[]()<>=:;+*!#$&@'?| and no empty spaces.\n\"");
+#elif JK2_CGAME
+				Com_Printf("^1Chosen password contains invalid characters. Allowed characters: A-Z a-z 0-9 _-.,/[]()<>=:;+*!#$&@'?| and no empty spaces.\n");
+#endif
+			}
+			return qfalse;
+		}
+		s++;
+	}
+	return qtrue;
+}

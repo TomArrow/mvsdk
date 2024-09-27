@@ -340,18 +340,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		trap_SendServerCommand(activator - g_entities, "cp \"Race timer started!\"");
 	}
 }
-const char* DF_MsToString(const int ms)
-{
-	int	timeSec, timeMin, timeMsec;
 
-	timeMsec = ms;
-	timeSec = timeMsec / 1000;
-	timeMsec -= timeSec * 1000;
-	timeMin = timeSec / 60;
-	timeSec -= timeMin * 60;
-
-	return !ms ? "00:00.000" : va("%02i:%02i.%03i", timeMin, timeSec, timeMsec);
-}
 
 // Stop race timer
 void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)

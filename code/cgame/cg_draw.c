@@ -1219,7 +1219,16 @@ void CG_DrawHUD(centity_t	*cent)
 
 	if (cg_drawScore.integer) {
 		//scoreStr = va("Score: %i", cgs.clientinfo[cg.snap->ps.clientNum].score);
-		if (cg_drawScoreDefrag.integer) {
+		if (cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE] && cgs.clientinfo[cg.snap->ps.clientNum].jkmod_race) {
+			// it's actually a time in seconds.
+			if (cg.snap->ps.clientNum != cg.clientNum && cgs.clientinfo[cg.clientNum].jkmod_race) {
+				scoreStr = va("PB: %s, own: %s", DF_MsToString(cgs.clientinfo[cg.snap->ps.clientNum].jkmod_race), DF_MsToString(cgs.clientinfo[cg.clientNum].jkmod_race));
+			}
+			else {
+				scoreStr = va("PB: %s", DF_MsToString(cgs.clientinfo[cg.snap->ps.clientNum].jkmod_race));
+			}
+		}
+		else if (cg_drawScoreDefrag.integer) {
 			// it's actually a time in seconds.
 			int seconds = cg.snap->ps.persistant[PERS_SCORE];
 			int minutes = seconds / 60;

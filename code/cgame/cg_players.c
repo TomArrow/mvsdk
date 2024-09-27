@@ -1051,6 +1051,11 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	v = Info_ValueForKey(configstring, "n");
 	Q_strncpyz( newInfo.name, v, sizeof( newInfo.name ) );
 
+	if (cgs.isTommyTernal) {
+		v = Info_ValueForKey(configstring, "un");
+		Q_strncpyz(newInfo.username, v, sizeof(newInfo.username));
+	}
+
 	// colors
 	v = Info_ValueForKey( configstring, "c1" );
 	CG_ColorFromString( v, newInfo.color1 );
@@ -1230,6 +1235,10 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		CG_Printf("CGame: Setting gameplay to 1.0%i\n", newInfo.jk2gameplay);
 		MV_SetGamePlay( newInfo.jk2gameplay );
 	}
+
+	// Tr!Force: [Dimensions] Get race best time info (also works for tommyternal)
+	v = Info_ValueForKey(configstring, "jkrace");
+	newInfo.jkmod_race = atoi(v);
 
 	newInfo.ATST = wasATST;
 
