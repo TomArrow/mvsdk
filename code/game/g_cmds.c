@@ -1040,6 +1040,15 @@ void Cmd_Register_f( gentity_t *ent )
 	trap_Argv(1, loginData.username, sizeof(loginData.username));
 	trap_Argv(2, loginData.password, sizeof(loginData.password));
 	loginData.clientnum = ent - g_entities;
+
+	if (!G_DB_VerifyUsername(loginData.username, loginData.clientnum)) {
+		return;
+	}
+	
+	if (!G_DB_VerifyPassword(loginData.password, loginData.clientnum)) {
+		return;
+	}
+
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
 	//loginData.followUpType = !Q_stricmp("login", cmd) ? DBREQUEST_LOGIN : DBREQUEST_REGISTER;
 	loginData.followUpType = DBREQUEST_REGISTER;
@@ -1065,6 +1074,13 @@ void Cmd_Login_f( gentity_t *ent )
 	static char thirdparam[MAX_TOKEN_CHARS];
 	static char	cleanUsername[MAX_STRING_CHARS];
 	static loginRegisterStruct_t loginData;
+
+
+	if (ent->client->sess.login.loggedIn) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1You are already logged in as '%s'.\n\"", ent->client->sess.login.name));
+		return;
+	}
+
 	trap_Argv(0, cmd, sizeof(cmd));
 	if (coolApi_dbVersion < 2) {
 		// DB API cannot do bcrypt.
@@ -1096,6 +1112,21 @@ void Cmd_Login_f( gentity_t *ent )
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
 	trap_G_COOL_API_DB_AddRequest((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
 		va("SELECT password,flags,id FROM users WHERE username='%s'", cleanUsername));
+}
+/*
+=================
+Cmd_Logout_f
+=================
+*/
+void Cmd_Logout_f( gentity_t *ent )
+{
+	if (!ent->client->sess.login.loggedIn) {
+		trap_SendServerCommand(ent - g_entities, "print \"You are already logged out.\n\"");
+		return;
+	}
+	memset(&ent->client->sess.login, 0, sizeof(ent->client->sess.login));
+	trap_SendServerCommand(ent - g_entities, "print \"^2You were successfully logged out.\n\"");
+	ClientUserinfoChanged(ent - g_entities);
 }
 
 /*
@@ -2864,6 +2895,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "logout"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcechanged"))
 		{ //special case: still update force change
 			Cmd_ForceChanged_f (ent);
@@ -2959,6 +2994,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_DF_RunSettings_f(ent);
 	else if (Q_stricmp (cmd, "login") == 0)
 		Cmd_Login_f(ent);
+	else if (Q_stricmp (cmd, "logout") == 0)
+		Cmd_Logout_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
 		Cmd_Register_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)

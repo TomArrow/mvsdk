@@ -7,6 +7,7 @@
 #include "g_public.h"
 #include "bg_defrag_global.h"
 #include "g_defrag.h"
+#include "g_dbcmds.h"
 
 //==================================================================
 
@@ -339,9 +340,12 @@ typedef struct {
 	// noclip or sth similar was used. we cannot run or set spawns until we /kill and respawn
 	qboolean	raceStateInvalidated;	
 
-	int			userID;
-	int			accountFlags;
-	char		userName[11];
+	struct {
+		int			id;
+		int			flags;
+		char		name[USERNAME_MAX_LEN + 1];
+		qboolean	loggedIn;
+	} login;
 } clientSession_t;
 
 // JK2MV

@@ -420,7 +420,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	activator->client->pers.raceBestTime = timeLast > timeBest ? timeBest : timeLast;
 
 	// Update client
-	//ClientUserinfoChanged(activator - g_entities); // TODO why?
+	ClientUserinfoChanged(activator - g_entities);
 
 	// Reset timers
 	//activator->client->ps.duelTime = 0;

@@ -29,6 +29,102 @@ static gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	return ent;
 }
 
+qboolean G_DB_VerifyPassword(const char* password, int clientNumNotify) {
+	const char* s = password;
+	int len = strlen(password);
+	if (len > PASSWORD_MAX_LEN) {
+		if (clientNumNotify > -2) {
+			trap_SendServerCommand(clientNumNotify,va("print \"^1Chosen password is too long. Maximum %d characters.\n\"", PASSWORD_MAX_LEN));
+		}
+		return qfalse;
+	}
+	
+	while (*s != '\0') {
+		if (*s >= 'a' && *s <= 'z'
+			|| *s >= 'A' && *s <= 'Z'
+			|| *s >= '0' && *s <= '9'
+			|| *s == '_'
+			|| *s == '-'
+			|| *s == '.'
+			|| *s == '/' // pws allow aa bit more leeway than usernames, as they will never be used plaintext, and more possible chars means more security
+			|| *s == '[' // cant allow % because netcode wont send it properly, nor ascii codes above 127
+			|| *s == ']' // cant allow " because it would break the command
+			|| *s == '(' // cant allow ^ because it would be annoying to type colored passwords
+			|| *s == ')' // cant allow ` or ~ because console may not allow to type them
+			|| *s == '<' // someone COULD of course try it with a .cfg file but let's keep things such that they can be typed ingame
+			|| *s == '>'
+			|| *s == '='
+			|| *s == ':'
+			|| *s == ';'
+			|| *s == '+'
+			|| *s == '*'
+			|| *s == '!'
+			|| *s == '#'
+			|| *s == '$'
+			|| *s == '&'
+			|| *s == '@'
+			|| *s == ','
+			|| *s == '?'
+			|| *s == '|'
+			|| *s == '\''
+			) {
+			// whitelist. ok.
+		}
+		else {
+			if (clientNumNotify > -2) {
+				trap_SendServerCommand(clientNumNotify, "print \"^1Chosen password contains invalid characters. Allowed characters: A-Z a-z 0-9 _-.,/[]()<>=:;+*!#$&@'?| and no empty spaces.\n\"");
+			}
+			return qfalse;
+		}
+		s++;
+	}
+	return qtrue;
+}
+
+qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
+	const char* s = username;
+	int len = strlen(username);
+	if (len > USERNAME_MAX_LEN) {
+		if (clientNumNotify > -2) {
+			trap_SendServerCommand(clientNumNotify,va("print \"^1Chosen username is too long. Maximum %d characters.\n\"", USERNAME_MAX_LEN));
+		}
+		return qfalse;
+	}
+	
+	while (*s != '\0') {
+		if (*s >= 'a' && *s <= 'z'
+			|| *s >= 'A' && *s <= 'Z'
+			|| *s >= '0' && *s <= '9'
+			|| *s == '_'
+			|| *s == '-'
+			|| *s == '.'
+			|| *s == '/' // thought about allowing more creativity but its not unlikely ppl will just troll and use random chars?
+			|| *s == '['
+			|| *s == ']'
+			|| *s == '('
+			|| *s == ')'
+			|| *s == '<'
+			|| *s == '>'
+			|| *s == '='
+			|| *s == ':'
+			|| *s == ';'
+			|| *s == '+'
+			|| *s == '*'
+			|| *s == '@'
+			) {
+			// whitelist. ok.
+		}
+		else {
+			if (clientNumNotify > -2) {
+				trap_SendServerCommand(clientNumNotify, "print \"^1Chosen username contains invalid characters. Allowed characters: A-Z a-z 0-9 _-./[]()<>=:;+*@ and no empty spaces.\n\"");
+			}
+			return qfalse;
+		}
+		s++;
+	}
+	return qtrue;
+}
+
 static void G_DB_GetChatsResponse(int status) {
 	char			text[MAX_STRING_CHARS] = { 0 };
 	char 			time[50] = { 0 };
@@ -151,6 +247,7 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	static char		cryptedPw[MAX_STRING_CHARS];
 	const char* request = NULL;
 	gentity_t* ent = NULL;
+	gclient_t* client = NULL;
 
 	if (!(ent = DB_VerifyClient(loginData->clientnum, loginData->ip))) {
 		Com_Printf("^1Login failed, user no longer valid (#2).\n");
@@ -160,9 +257,17 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 		trap_SendServerCommand(loginData->clientnum, "print \"^1Login failed, password doesn't match.\n\"");
 		return;
 	}
+
+	client = ent->client;
+
+	Q_strncpyz(client->sess.login.name, loginData->username,sizeof(client->sess.login.name));
+	client->sess.login.id = loginData->userId;
+	client->sess.login.flags = loginData->userFlags;
+	client->sess.login.loggedIn = qtrue;
+
 	trap_SendServerCommand(loginData->clientnum, va("print \"^2Successfully logged in as '%s'.\n\"",loginData->username));
 
-
+	ClientUserinfoChanged(ent - g_entities);
 
 	// fire and forget, not that important
 	trap_G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_LOGIN_UPDATELASTLOGIN,
@@ -293,7 +398,7 @@ void G_DB_GetChats_f(void) {
 
 static void G_CreateUserTable() {
 	referenceSimpleString_t tableName;
-	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(10) UNIQUE, password VARCHAR(64), lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED)";
+	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(%d) UNIQUE, password VARCHAR(64), lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED)",USERNAME_MAX_LEN);
 	Q_strncpyz(tableName.s, "users", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }

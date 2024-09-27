@@ -1303,7 +1303,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	// set name
 	Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
 	s = Info_ValueForKey (userinfo, "name");
-	
+		
 	// NameCrashFix
 	for ( i = 0; i < (int)strlen(s); i++ )
 	{
@@ -1436,9 +1436,9 @@ void ClientUserinfoChanged( int clientNum ) {
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
 			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay );
 	} else {
-		s = va("n\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i",
-			client->pers.netname, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2, 
-			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay);
+		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i",
+			client->pers.netname, client->sess.login.name, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime);
 	}
 
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );
