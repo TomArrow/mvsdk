@@ -1460,6 +1460,34 @@ done:
 }
 
 
+static void sscanf_stringparse( const char **stringPtr,char *out ) {
+	const char	*string;
+	float sign;
+	float value;
+	int		c = '0'; // bk001211 - uninitialized use possible
+
+	string = *stringPtr;
+
+	// skip whitespace
+	while ( *string <= ' ' ) {
+		if ( !*string ) {
+			*stringPtr = string;
+			*out = '\0';
+			return;
+		}
+		string++;
+	}
+
+	while(*string != ' ' && *string != '\0'){
+		*out = *string;
+		out++;
+		string++;
+	}
+	*out = '\0';
+}
+
+
+
 /* this is really crappy */
 int sscanf( const char *buffer, const char *fmt, ... ) {
 	int		cmd;
@@ -1483,6 +1511,9 @@ int sscanf( const char *buffer, const char *fmt, ... ) {
 		case 'd':
 		case 'u':
 			**arg = _atoi( &buffer );
+			break;
+		case 's':
+			sscanf_stringparse( &buffer,(char*)*arg ); // lol
 			break;
 		case 'f':
 			*(float *)*arg = _atof( &buffer );

@@ -27,7 +27,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i", 
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s", 
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -38,8 +38,15 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.setForce,
 		client->sess.saberLevel,
 		client->sess.selectedFP,
-		(int)client->sess.raceMode,
-		client->sess.raceStyle.movementStyle
+		client->sess.raceMode,
+		client->sess.raceStyle.movementStyle,
+		client->sess.raceStyle.runFlags,
+		client->sess.raceStyle.jumpLevel,
+		client->sess.raceStateInvalidated,
+		client->sess.login.loggedIn,
+		client->sess.login.id,
+		client->sess.login.flags,
+		client->sess.login.name
 		);
 
 	var = va( "session%i", (int)(client - level.clients) );
@@ -75,11 +82,15 @@ void G_ReadSessionData( gclient_t *client ) {
 	int setForce;
 	int tempRaceMode;
 	int movementStyle;
+	int runFlags;
+	int jumpLevel;
+	int raceStateInvalidated;
+	int loggedIn;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -91,7 +102,14 @@ void G_ReadSessionData( gclient_t *client ) {
 		&client->sess.saberLevel,
 		&client->sess.selectedFP,
 		&tempRaceMode,
-		&movementStyle
+		&movementStyle,
+		&runFlags,
+		&jumpLevel,
+		&raceStateInvalidated,
+		&loggedIn,
+		&client->sess.login.id,
+		&client->sess.login.flags,
+		client->sess.login.name
 		);
 
 	// bk001205 - format issues
@@ -101,6 +119,10 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.setForce = (qboolean)setForce;
 	client->sess.raceMode = (qboolean)tempRaceMode;
 	client->sess.raceStyle.movementStyle = (byte)movementStyle;
+	client->sess.raceStyle.runFlags = (short)runFlags;
+	client->sess.raceStyle.jumpLevel = (signed char)jumpLevel;
+	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
+	client->sess.login.loggedIn = loggedIn;
 
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;

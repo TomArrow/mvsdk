@@ -357,7 +357,7 @@ const char* DF_MsToString(const int ms)
 void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
 	gclient_t* cl;
-	int	timeLast, timeBest, lessTime = 0;
+	int	timeLast, timeBest,newRaceBestTime, lessTime = 0;
 	char timeLastStr[32], timeBestStr[32];
 	
 	// Check client
@@ -417,10 +417,12 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	// Update timers
 	//activator->client->pers.raceLastTime = timeLast;
-	activator->client->pers.raceBestTime = timeLast > timeBest ? timeBest : timeLast;
-
-	// Update client
-	ClientUserinfoChanged(activator - g_entities);
+	newRaceBestTime = timeLast > timeBest ? timeBest : timeLast;
+	if (activator->client->pers.raceBestTime != newRaceBestTime) {
+		activator->client->pers.raceBestTime = newRaceBestTime;
+		// Update client
+		ClientUserinfoChanged(activator - g_entities);
+	}
 
 	// Reset timers
 	//activator->client->ps.duelTime = 0;
