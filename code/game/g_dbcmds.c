@@ -398,7 +398,13 @@ void G_DB_GetChats_f(void) {
 
 static void G_CreateUserTable() {
 	referenceSimpleString_t tableName;
-	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(%d) UNIQUE, password VARCHAR(64), lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED)",USERNAME_MAX_LEN);
+	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(%d) UNIQUE NOT NULL, password VARCHAR(64)  NOT NULL, lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED NOT NULL DEFAULT 0)",USERNAME_MAX_LEN);
 	Q_strncpyz(tableName.s, "users", sizeof(tableName.s));
+	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+}
+static void G_CreateRunsTable() {
+	referenceSimpleString_t tableName;
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT NOT NULL, course VARCHAR(100) NOT NULL, duration_ms INT UNSIGNED NOT NULL, topspeed DOUBLE NOT NULL, average DOUBLE NOT NULL, distance DOUBLE NOT NULL, style SMALLINT UNSIGNED NOT NULL, msec SMALLINT NOT NULL, jump TINYINT NOT NULL, variant SMALLINT NOT NULL, runFlags INT NOT NULL, runwhen DATETIME NOT NULL, UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), INDEX i_userid (userid), INDEX i_course (course), INDEX i_duration_ms (duration_ms), INDEX i_distance (distance), INDEX i_style (style), INDEX i_msec (msec), INDEX i_jump (jump), INDEX i_variant (variant), INDEX i_runflags (runFlags), INDEX i_runwhen (runwhen), INDEX i_runtype (style,msec,jump,variant,runFlags) )";
+	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
