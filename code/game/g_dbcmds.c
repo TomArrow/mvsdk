@@ -143,8 +143,6 @@ static void G_DB_GetChatsResponse(int status) {
 }
 
 static void G_RegisterContinue(loginRegisterStruct_t* loginData) {
-	static char		cleanUsername[MAX_STRING_CHARS];
-	static char		cleanPassword[MAX_STRING_CHARS];
 	const char*		request = NULL;
 	gentity_t* ent = NULL;
 
@@ -152,17 +150,29 @@ static void G_RegisterContinue(loginRegisterStruct_t* loginData) {
 		Com_Printf("^1Register from client %d failed, user no longer valid.\n", loginData->clientnum);
 		return;
 	}
-	Q_strncpyz(cleanUsername,loginData->username,sizeof(cleanUsername));
-	Q_strncpyz(cleanPassword,loginData->password,sizeof(cleanPassword));
-	if (!trap_G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername)) || !trap_G_COOL_API_DB_EscapeString(cleanPassword, sizeof(cleanPassword))) {
-		trap_SendServerCommand(loginData->clientnum,"print \"^1Registration failed (EscapeString failed).\n\"");
-		return;
+
+	if (coolApi_dbVersion >= 3) {
+		trap_G_COOL_API_DB_AddPreparedStatement((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER,
+			"INSERT INTO users (username,password,created) VALUES (?,?,NOW())");
+		trap_G_COOL_API_DB_PreparedBindString(loginData->username);
+		trap_G_COOL_API_DB_PreparedBindString(loginData->password);
+		trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
+	else {
+		static char		cleanUsername[MAX_STRING_CHARS];
+		static char		cleanPassword[MAX_STRING_CHARS];
+		Q_strncpyz(cleanUsername, loginData->username, sizeof(cleanUsername));
+		Q_strncpyz(cleanPassword, loginData->password, sizeof(cleanPassword));
+		if (!trap_G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername)) || !trap_G_COOL_API_DB_EscapeString(cleanPassword, sizeof(cleanPassword))) {
+			trap_SendServerCommand(loginData->clientnum, "print \"^1Registration failed (EscapeString failed).\n\"");
+			return;
+		}
 
-	request = va("INSERT INTO users (username,password,created) VALUES ('%s','%s',NOW())", cleanUsername, cleanPassword);
+		request = va("INSERT INTO users (username,password,created) VALUES ('%s','%s',NOW())", cleanUsername, cleanPassword);
 
-	// check if user already exists
-	trap_G_COOL_API_DB_AddRequest((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER, request);
+		// check if user already exists
+		trap_G_COOL_API_DB_AddRequest((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER, request);
+	}
 
 }
 
@@ -404,7 +414,17 @@ static void G_CreateUserTable() {
 }
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
-	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT NOT NULL, course VARCHAR(100) NOT NULL, duration_ms INT UNSIGNED NOT NULL, topspeed DOUBLE NOT NULL, average DOUBLE NOT NULL, distance DOUBLE NOT NULL, style SMALLINT UNSIGNED NOT NULL, msec SMALLINT NOT NULL, jump TINYINT NOT NULL, variant SMALLINT NOT NULL, runFlags INT NOT NULL, runwhen DATETIME NOT NULL, warningFlags INT NOT NULL, UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), INDEX i_userid (userid), INDEX i_course (course), INDEX i_duration_ms (duration_ms), INDEX i_distance (distance), INDEX i_style (style), INDEX i_msec (msec), INDEX i_jump (jump), INDEX i_variant (variant), INDEX i_runflags (runFlags), INDEX i_runwhen (runwhen),INDEX i_warningFlags (warningFlags), INDEX i_runtype (style,msec,jump,variant,runFlags) )";
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT NOT NULL, course VARCHAR(100) NOT NULL, duration_ms INT UNSIGNED NOT NULL, topspeed DOUBLE NOT NULL, average DOUBLE NOT NULL, distance DOUBLE NOT NULL, style SMALLINT UNSIGNED NOT NULL, msec SMALLINT NOT NULL, jump TINYINT NOT NULL, variant SMALLINT NOT NULL, runFlags INT NOT NULL, runwhen DATETIME NOT NULL, runfirst DATETIME NOT NULL, warningFlags INT NOT NULL, UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), INDEX i_userid (userid), INDEX i_course (course), INDEX i_duration_ms (duration_ms), INDEX i_distance (distance), INDEX i_style (style), INDEX i_msec (msec), INDEX i_jump (jump), INDEX i_variant (variant), INDEX i_runflags (runFlags), INDEX i_runwhen (runwhen),INDEX i_runfirst (runfirst),INDEX i_warningFlags (warningFlags), INDEX i_runtype (style,msec,jump,variant,runFlags) )";
 	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
+static void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags) {
+	// UNFINISHED DONT USE!
+	referenceSimpleString_t tableName;
+	const char* userTableRequest = va("INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
+		"VALUES ()"
+		);
+	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
+	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+}
+

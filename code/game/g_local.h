@@ -779,6 +779,15 @@ int			trap_G_COOL_API_DB_GetInt(int place);
 void		trap_G_COOL_API_DB_GetFloat(int place, float* value);
 qboolean	trap_G_COOL_API_DB_GetString(int place, char* out, int outSize);
 
+qboolean	trap_G_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	trap_G_COOL_API_DB_PreparedBindString(const char* string);
+qboolean	trap_G_COOL_API_DB_PreparedBindFloat(float number);
+qboolean	trap_G_COOL_API_DB_PreparedBindInt(int number);
+qboolean	trap_G_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
+qboolean	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+int			trap_G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
+qboolean	trap_G_COOL_API_DB_PreparedBindNull();
+
 //
 // g_combat.c
 //

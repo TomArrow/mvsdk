@@ -1074,7 +1074,6 @@ void Cmd_Login_f( gentity_t *ent )
 {
 	static char cmd[MAX_TOKEN_CHARS];
 	static char thirdparam[MAX_TOKEN_CHARS];
-	static char	cleanUsername[MAX_STRING_CHARS];
 	static loginRegisterStruct_t loginData;
 
 
@@ -1103,17 +1102,26 @@ void Cmd_Login_f( gentity_t *ent )
 	}
 	trap_Argv(1, loginData.username, sizeof(loginData.username));
 	trap_Argv(2, loginData.password, sizeof(loginData.password));
-	Q_strncpyz(cleanUsername, loginData.username, sizeof(cleanUsername));
 
-	if (!trap_G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername))) {
-		Com_Printf("Cmd_Login_f: EscapeString failed.\n");
-		trap_SendServerCommand(ent - g_entities, va("print \"/%s failed: EscapeString failed\n\"", cmd));
-		return;
-	}
 	loginData.clientnum = ent - g_entities;
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
-	trap_G_COOL_API_DB_AddRequest((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
-		va("SELECT password,flags,id FROM users WHERE username='%s'", cleanUsername));
+	if (coolApi_dbVersion >= 3) {
+		trap_G_COOL_API_DB_AddPreparedStatement((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
+			"SELECT password,flags,id FROM users WHERE username=?");
+		trap_G_COOL_API_DB_PreparedBindString(loginData.username);
+		trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else {
+		static char	cleanUsername[MAX_STRING_CHARS];
+		Q_strncpyz(cleanUsername, loginData.username, sizeof(cleanUsername));
+		if (!trap_G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername))) {
+			Com_Printf("Cmd_Login_f: EscapeString failed.\n");
+			trap_SendServerCommand(ent - g_entities, va("print \"/%s failed: EscapeString failed\n\"", cmd));
+			return;
+		}
+		trap_G_COOL_API_DB_AddRequest((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
+			va("SELECT password,flags,id FROM users WHERE username='%s'", cleanUsername));
+	}
 }
 /*
 =================
