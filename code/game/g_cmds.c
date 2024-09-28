@@ -510,8 +510,8 @@ void Cmd_Respos_f( gentity_t *ent ) {
 		//VectorCopy(ent->client->pers.savePosVelocity, ent->client->ps.velocity);
 		//SetClientViewAngle(ent,ent->client->pers.savePosAngle);
 		//ent->client->ps.eFlags ^= EF_TELEPORT_BIT;
-		DF_RaceStateInvalidated(ent, qtrue);
 		RestorePosition(ent,&ent->client->pers.savedPosition,NULL);
+		DF_RaceStateInvalidated(ent, qtrue);
 	}
 	else {
 		msg = "Cannot restore position, velocity and angle. None saved.\n";

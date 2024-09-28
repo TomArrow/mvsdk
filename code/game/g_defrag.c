@@ -287,7 +287,15 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	cl = activator->client;
 
-	if (!cl->sess.raceMode || cl->ps.pm_type != PM_NORMAL || cl->ps.stats[STAT_HEALTH] <= 0) return;
+	if (!cl->sess.raceMode 
+		|| cl->ps.pm_type != PM_NORMAL 
+		|| cl->ps.stats[STAT_HEALTH] <= 0 
+		|| cl->sess.sessionTeam != TEAM_FREE
+		//|| cl->ps.duelInProgress && !cl->sess.raceMode // irrelevant, we dont allow non-racemoders to run anyway
+		//|| cl->ps.legsAnim == BOTH_JUMPATTACK6 // jka only thing?
+		|| cl->pers.lastRaceResetTime == level.time //Dont allow a starttimer to start in the same frame as a resettimer. not like that can happen anyway?
+		|| !trap_InPVS(cl->ps.origin, cl->ps.origin) // out of bounds fix? does this need extra checks due to trace/interpolation?
+		) return;
 
 	if (cl->sess.raceStateInvalidated) {
 		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
@@ -342,6 +350,102 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 }
 
 
+//qboolean ValidRaceSettings(int restrictions, gentity_t* player)
+qboolean ValidRaceSettings(gentity_t* player)
+{ //How 2 check if cvars were valid the whole time of run.. and before? since you can get a headstart with higher g_speed before hitting start timer? :S
+	//Make most of this hardcoded into racemode..? speed, knockback, debugmelee, stepslidefix, gravity
+	int style;
+	if (!player->client)
+		return qfalse;
+
+	if (!player->client->ps.stats[STAT_RACEMODE])
+		return qfalse;
+
+	style = player->client->sess.raceStyle.movementStyle;
+
+	//if (style == MV_OCPM)
+	//	return qfalse;//temp
+
+	//if (player->client->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
+	//	return qfalse;
+	//if ((style == MV_RJQ3 || style == MV_RJCPM || style == MV_TRIBES) && g_knockback.value != 1000.0f)
+	//	return qfalse;
+
+	if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != player->client->sess.raceStyle.jumpLevel) {
+		return qfalse; // shouldnt happen
+	}
+
+	//if (style != MV_CPM && style != MV_OCPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM && style != MV_COOP_JKA && style != MV_TRIBES) { //Ignore forcejump restrictions if in onlybhop movement modes
+	//	if (restrictions & (1 << 0)) {//flags 1 = restrict to jump1
+	//		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 1 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
+	//			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course requires force jump level 1!\n\n\n\n\n\n\n\n\n\n\"");
+	//			return qfalse;
+	//		}
+	//	}
+	//	else if (restrictions & (1 << 1)) {//flags 2 = restrict to jump2
+	//		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 2 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
+	//			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course requires force jump level 2!\n\n\n\n\n\n\n\n\n\n\"");
+	//			return qfalse;
+	//		}
+	//	}
+	//	else if (restrictions & (1 << 2)) {//flags 4 = only jump3
+	//		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 3 || player->client->ps.powerups[PW_YSALAMIRI] > 0) { //Also dont allow ysal in FJ specified courses..?
+	//			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course requires force jump level 3!\n\n\n\n\n\n\n\n\n\n\"");
+	//			return qfalse;
+	//		}
+	//	}
+	//}
+	//else if (style == MV_COOP_JKA) {
+	//	if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 2 && !(restrictions & (1 << 1))) {//using jump2 but its not allowed
+	//		trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 2!\n\n\n\n\n\n\n\n\n\n\"");
+	//		return qfalse;
+	//	}
+	//	if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 3 && !(restrictions & (1 << 2))) {//using jump3 but its not allowed
+	//		trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 3!\n\n\n\n\n\n\n\n\n\n\"");
+	//		return qfalse;
+	//	}
+	//}
+
+	//if (player->client->pers.haste && !(restrictions & (1 << 3)))
+	//	return qfalse; //IF client has haste, and the course does not allow haste, dont count it.
+	//if (((style != MV_JETPACK) && (style != MV_TRIBES)) && (player->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_JETPACK)) && !(restrictions & (1 << 4))) //kinda deprecated.. maybe just never allow jetpack?
+	//	return qfalse; //IF client has jetpack, and the course does not allow jetpack, dont count it.
+	//if (style == MV_SWOOP && !player->client->ps.m_iVehicleNum)
+	//	return qfalse;
+	//if (sv_cheats.integer)
+//#ifndef DEBUG // always disallow? idk
+	if (g_cheats.integer)
+		return qfalse;
+//#endif
+	//if (!g_stepSlideFix.integer)
+	//	return qfalse;
+	//if (g_jediVmerc.integer) //umm..   ta: ??
+	//	return qfalse;
+	if (g_debugMelee.integer >= 2 && (player->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
+		return qfalse;
+	if (!g_smoothClients.integer)// why?
+		return qfalse;
+	//if (sv_fps.integer != 20 && sv_fps.integer != 30 && sv_fps.integer != 40)//Dosnt really make a difference.. but eh.... loda fixme
+	if (sv_fps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. well... but demos wouldnt be proper without it, so leave it.
+		return qfalse;
+	//if (sv_pluginKey.integer) {
+	//	if (!player->client->pers.validPlugin && player->client->pers.userName[0]) { //Meh.. only do this if they are logged in to keep the print colors working right i guess..
+	//		trap->SendServerCommand(player - g_entities, "cp \"^3Warning: a newer client plugin version\nis required!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
+	//		return qfalse;
+	//	}
+	//}
+	//if (player->client->pers.noFollow && (player->client->sess.movementStyle != MV_SIEGE) && (g_allowNoFollow.integer < 3))
+	//	return qfalse;
+	//if (player->client->pers.practice)
+	//	return qfalse;
+	//if ((restrictions & (1 << 5)) && (level.gametype == GT_CTF || level.gametype == GT_CTY))//spawnflags 32 is FFA_ONLY
+	//	return qfalse;
+	//if ((player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) && !(restrictions & (1 << 6))) //spawnflags 64 on end trigger is allow_teles
+	//	return qfalse;
+
+	return qtrue;
+}
+
 // Stop race timer
 void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
@@ -354,7 +458,16 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	cl = activator->client;
 
-	if (!cl->sess.raceMode || cl->ps.pm_type != PM_NORMAL || cl->ps.stats[STAT_HEALTH] <= 0) return;
+
+	if (!cl->sess.raceMode
+		|| cl->ps.pm_type != PM_NORMAL
+		|| cl->ps.stats[STAT_HEALTH] <= 0
+		|| cl->sess.sessionTeam != TEAM_FREE
+		//|| cl->ps.duelInProgress && !cl->sess.raceMode // irrelevant, we dont allow non-racemoders to run anyway
+		//|| cl->ps.legsAnim == BOTH_JUMPATTACK6 // jka only thing?
+		) {
+		return;
+	}
 
 	if (activator->client->sess.raceStateInvalidated) {
 		//trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
@@ -363,6 +476,11 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
+
+	if (!ValidRaceSettings(activator) || !trap_InPVS(cl->ps.origin, cl->ps.origin)) {// out of bounds fix? does this need extra checks due to trace/interpolation?
+		DF_RaceStateInvalidated(activator, qtrue);
+		return;
+	}
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Finish Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", activator->client->pers.netname);
@@ -730,6 +848,7 @@ void DF_RaceStateInvalidated(gentity_t* ent, qboolean print)
 	ResetSpecificPlayerTimers(ent, print);
 	DF_ResetSegmentedRun(ent);
 	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!
+	ent->client->pers.lastRaceResetTime = level.time;
 }
 
 static qboolean MovementStyleAllowsJumpChange(int movementStyle) {
@@ -1119,6 +1238,10 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 }
 
 void UpdateClientRaceVars(gclient_t* client) {
+	
+	if (client->sess.raceMode) { // what happens when switching out of racemode? dont care rn TODO
+		client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
+	}
 	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
 	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
 	client->ps.stats[STAT_RACEMODE] = client->sess.raceMode; // can get lost sometimes after death? idk happened once but i had another bug then

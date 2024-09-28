@@ -168,6 +168,11 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	const char		*value;
 
 	sess = &client->sess;
+	
+	sess->raceStyle.movementStyle = MV_JK2;
+	sess->raceStyle.jumpLevel = 1;
+	sess->raceStyle.runFlags = defaultRunFlags;
+	client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 
 	// initial team determination
 	if ( g_gametype.integer >= GT_TEAM ) {

@@ -390,6 +390,7 @@ typedef struct {
 
 
 	int			raceStartCommandTime;
+	int			lastRaceResetTime;
 	int			raceBestTime;
 	int			raceLastCheckpointTime;
 	segmented_t segmented; // segmented run
@@ -1189,6 +1190,7 @@ extern	vmCvar_t	g_singlePlayer;
 extern	vmCvar_t	g_dismember;
 extern	vmCvar_t	g_forceDodge;
 extern	vmCvar_t	g_timeouttospec;
+extern	vmCvar_t	sv_fps;
 
 extern	vmCvar_t	g_fpsToggleDelay;
 
