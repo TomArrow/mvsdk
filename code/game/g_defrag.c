@@ -1,6 +1,7 @@
 
 
 #include "g_local.h"
+#include "g_dbcmds.h"
 
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 
@@ -452,6 +453,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	gclient_t* cl;
 	int	timeLast, timeBest,newRaceBestTime, lessTime = 0;
 	char timeLastStr[32], timeBestStr[32];
+	int warningFlags = 0;
 	
 	// Check client
 	if (!activator->client) return;
@@ -485,6 +487,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Finish Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", activator->client->pers.netname);
 		trap_SendServerCommand(-1, va("print \"^1Warning:^7 %s ^7didn't have valid pre-pmove info.\n\"", activator->client->pers.netname));
+		warningFlags |= DF_WARNING_INVALID_PREPMOVE;
 	}
 	else {
 		lessTime = DF_InterpolateTouchTimeToOldPos(activator, ent, "df_trigger_finish");
@@ -504,6 +507,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		activator->client->pers.segmented.playbackNextCmdIndex = 0;
 		return;
 	}
+
+	G_InsertRun(activator, timeLast,0,0,0, warningFlags);
 
 	// Show info
 	if (timeLast == timeBest) {

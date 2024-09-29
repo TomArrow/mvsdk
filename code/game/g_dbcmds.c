@@ -12,6 +12,7 @@ typedef int ip_t[4];
 
 
 static void G_CreateUserTable();
+static void G_CreateRunsTable();
 
 static gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	gentity_t* ent;
@@ -251,6 +252,42 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	}
 
 }
+static void G_InsertRunResult(int status, const char* errorMessage, int affectedRows) {
+	insertUpdateRunStruct_t runData;
+	gentity_t* ent = NULL;
+
+	trap_G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
+
+	if (!(ent = DB_VerifyClient(runData.clientnum, runData.ip))) {
+		Com_Printf("^1Client %d run inserted, user no longer valid.\n", runData.clientnum);
+		//return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateRunsTable();
+		trap_SendServerCommand(-1,"print \"^1Run insertion failed due to runtable not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(-1, va("print \"^1Run insertion failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	if (affectedRows == 0) {
+		trap_SendServerCommand(-1, "print \"^1No new PB.\n\"");
+	}
+	else if (affectedRows == 1) {
+		trap_SendServerCommand(-1, "print \"^1First run.\n\"");
+	}
+	else if (affectedRows == 2) {
+		trap_SendServerCommand(-1, "print \"^1PB!\n\"");
+	}
+	else {
+		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
+	}
+
+}
 
 
 static void G_LoginContinue(loginRegisterStruct_t* loginData) {
@@ -340,7 +377,8 @@ void G_DB_CheckResponses() {
 	if (coolApi_dbVersion) {
 		int requestType;
 		int status;
-		while (trap_G_COOL_API_DB_NextResponse(&requestType, NULL, &status, errorMessage, sizeof(errorMessage), NULL, 0)) {
+		int affectedRows;
+		while (trap_G_COOL_API_DB_NextResponse(&requestType, &affectedRows, &status, errorMessage, sizeof(errorMessage), NULL, 0)) {
 			switch (requestType) {
 				case DBREQUEST_LOGIN_UPDATELASTLOGIN:
 				default:
@@ -364,6 +402,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_LOGIN:
 					G_LoginFetchDataResult(status, errorMessage);
+					break;
+				case DBREQUEST_INSERTORUPDATERUN:
+					G_InsertRunResult(status, errorMessage, affectedRows);
 					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);
@@ -414,17 +455,90 @@ static void G_CreateUserTable() {
 }
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
-	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT NOT NULL, course VARCHAR(100) NOT NULL, duration_ms INT UNSIGNED NOT NULL, topspeed DOUBLE NOT NULL, average DOUBLE NOT NULL, distance DOUBLE NOT NULL, style SMALLINT UNSIGNED NOT NULL, msec SMALLINT NOT NULL, jump TINYINT NOT NULL, variant SMALLINT NOT NULL, runFlags INT NOT NULL, runwhen DATETIME NOT NULL, runfirst DATETIME NOT NULL, warningFlags INT NOT NULL, UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), INDEX i_userid (userid), INDEX i_course (course), INDEX i_duration_ms (duration_ms), INDEX i_distance (distance), INDEX i_style (style), INDEX i_msec (msec), INDEX i_jump (jump), INDEX i_variant (variant), INDEX i_runflags (runFlags), INDEX i_runwhen (runwhen),INDEX i_runfirst (runfirst),INDEX i_warningFlags (warningFlags), INDEX i_runtype (style,msec,jump,variant,runFlags) )";
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, duration_ms INT UNSIGNED NOT NULL, topspeed DOUBLE NOT NULL, average DOUBLE NOT NULL, distance DOUBLE NOT NULL, style SMALLINT UNSIGNED NOT NULL, msec SMALLINT NOT NULL, jump TINYINT NOT NULL, variant SMALLINT NOT NULL, runFlags INT NOT NULL, runwhen DATETIME NOT NULL, runfirst DATETIME NOT NULL, warningFlags INT NOT NULL, UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), INDEX i_userid (userid), INDEX i_course (course), INDEX i_duration_ms (duration_ms), INDEX i_distance (distance), INDEX i_style (style), INDEX i_msec (msec), INDEX i_jump (jump), INDEX i_variant (variant), INDEX i_runflags (runFlags), INDEX i_runwhen (runwhen),INDEX i_runfirst (runfirst),INDEX i_warningFlags (warningFlags), INDEX i_runtype (style,msec,jump,variant,runFlags) )";
 	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
-static void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags) {
-	// UNFINISHED DONT USE!
-	referenceSimpleString_t tableName;
-	const char* userTableRequest = va("INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
-		"VALUES ()"
+
+static void G_DB_CreateTables() {
+	G_CreateUserTable();
+	G_CreateRunsTable();
+}
+
+void G_DB_Init() {
+	if (coolApi_dbVersion) {
+		G_Printf("------- DB Initialization -------\n");
+		G_DB_CreateTables();
+		G_Printf("------- DB Initialization End -------\n");
+	}
+}
+
+void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags) {
+	gclient_t* cl = ent->client;
+	insertUpdateRunStruct_t runData;
+	static char serverInfo[BIG_INFO_STRING];
+	static char course[101];
+	const char* insertOrUpdateRequest = NULL;
+	if (!cl || !cl->sess.raceMode) return;
+	memset(&runData, 0, sizeof(runData));
+
+	runData.userId = cl->sess.login.loggedIn ? cl->sess.login.id : -1;
+	runData.clientnum = ent - g_entities;
+	memcpy(runData.ip, mv_clientSessions[runData.clientnum].clientIP, sizeof(runData.ip));
+
+	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
+	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
+
+	insertOrUpdateRequest = va("INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
+		"VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)"
+		"ON DUPLICATE KEY UPDATE "
+		"duration_ms = IF(?<duration_ms,?,duration_ms),"
+		"topspeed = IF(?<duration_ms,?,topspeed),"
+		"average = IF(?<duration_ms,?,average),"
+		"distance = IF(?<duration_ms,?,distance),"
+		"runwhen = IF(?<duration_ms,NOW(),runwhen),"
+		"warningFlags = IF(?<duration_ms,?,warningFlags)"
 		);
-	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
-	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+
+
+	trap_G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
+		insertOrUpdateRequest);
+
+	// INSERT PART
+	trap_G_COOL_API_DB_PreparedBindInt(runData.userId);
+	trap_G_COOL_API_DB_PreparedBindString(course);
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(topspeed);
+	trap_G_COOL_API_DB_PreparedBindFloat(average);
+	trap_G_COOL_API_DB_PreparedBindFloat(distance);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.movementStyle);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.msec);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.jumpLevel);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.variant);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.runFlags);
+	trap_G_COOL_API_DB_PreparedBindInt(warningFlags);
+
+	// UPDATE PART
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(topspeed);
+
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(average);
+
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(distance);
+
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds); // runwhen
+
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(warningFlags);
+
+
+	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
+	//trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 

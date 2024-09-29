@@ -10,6 +10,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_LOGIN_UPDATELASTLOGIN,
 	DBREQUEST_BCRYPTPW, // pw bcrypt request (no actual db request)
 	DBREQUEST_CREATETABLE,
+	DBREQUEST_INSERTORUPDATERUN
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -24,11 +25,18 @@ typedef struct loginRegisterStruct_s {
 	int			userFlags;
 } loginRegisterStruct_t;
 
+typedef struct insertUpdateRunStruct_s {
+	int			userId;
+	int			ip[4];
+	int			clientnum;
+} insertUpdateRunStruct_t;
+
 typedef struct referenceSimpleString_s {
 	char	s[MAX_STRING_CHARS];
 }referenceSimpleString_t;
 
 void G_DB_CheckResponses();
-qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify);
+qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify); 
+void G_DB_Init();
 
 #endif

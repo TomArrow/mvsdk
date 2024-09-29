@@ -788,6 +788,9 @@ qboolean	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 int			trap_G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
 qboolean	trap_G_COOL_API_DB_PreparedBindNull();
 
+
+void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags);
+
 //
 // g_combat.c
 //
