@@ -255,6 +255,7 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 static void G_InsertRunResult(int status, const char* errorMessage, int affectedRows) {
 	insertUpdateRunStruct_t runData;
 	gentity_t* ent = NULL;
+	int fasterCount = 0;
 
 	trap_G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
 
@@ -287,6 +288,20 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
 	}
 
+	if (!trap_G_COOL_API_DB_GetMoreResults())
+	{
+		trap_SendServerCommand(-1, "print \"^1WTF NO MORE RESULTS\n\"");
+	}
+	if (!trap_G_COOL_API_DB_NextRow()) {
+		trap_SendServerCommand(-1, "print \"^1WTF NO MORE ROWS\n\"");
+	}
+	fasterCount = trap_G_COOL_API_DB_GetInt(0);
+	if (fasterCount == 0) {
+		trap_SendServerCommand(-1, "print \"^2WR!!!\n\"");
+	}
+	else {
+		trap_SendServerCommand(-1, va("print \"Place: ^2%d\n\"", fasterCount+1));
+	}
 }
 
 
@@ -497,7 +512,9 @@ void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average
 		"average = IF(?<duration_ms,?,average),"
 		"distance = IF(?<duration_ms,?,distance),"
 		"runwhen = IF(?<duration_ms,NOW(),runwhen),"
-		"warningFlags = IF(?<duration_ms,?,warningFlags)"
+		"warningFlags = IF(?<duration_ms,?,warningFlags);"
+		// No second statement. check our rank.
+		"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<NOW()))" // if someone got the same time as you, but earlier, hes in front of u
 		);
 
 
@@ -536,6 +553,16 @@ void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average
 	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
 	trap_G_COOL_API_DB_PreparedBindInt(warningFlags);
 
+	// SECONED QUERY - SELECT
+	trap_G_COOL_API_DB_PreparedBindInt(runData.userId);
+	trap_G_COOL_API_DB_PreparedBindString(course);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.movementStyle);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.msec);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.jumpLevel);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.variant);
+	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.runFlags);
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
 
 	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
