@@ -288,7 +288,12 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
 	}
 
-	if (!trap_G_COOL_API_DB_GetMoreResults())
+	if (coolApi_dbVersion < 3)
+	{
+		trap_SendServerCommand(-1, "print \"^1CANT GET MORE, DBVERSION <3\n\"");
+		return;
+	}
+	if (!trap_G_COOL_API_DB_GetMoreResults(NULL))
 	{
 		trap_SendServerCommand(-1, "print \"^1WTF NO MORE RESULTS\n\"");
 	}

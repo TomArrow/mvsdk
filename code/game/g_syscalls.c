@@ -1146,6 +1146,6 @@ int			trap_G_COOL_API_DB_GetBinary(int place, byte* out, int outSize) {
 qboolean	trap_G_COOL_API_DB_PreparedBindNull() {
 	return syscall(G_COOL_API_DB_PREPAREDBINDNULL);
 }
-qboolean	trap_G_COOL_API_DB_GetMoreResults() {
-	return syscall(G_COOL_API_DB_GETMORERESULTS);
+qboolean	trap_G_COOL_API_DB_GetMoreResults(int* affectedRows) {
+	return syscall(G_COOL_API_DB_GETMORERESULTS, affectedRows);
 }
