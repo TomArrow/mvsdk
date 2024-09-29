@@ -275,6 +275,14 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		return;
 	}
 
+	if (coolApi_dbVersion >= 3) {
+		// first query is SET @now = NOW(). skip it.
+		if (!trap_G_COOL_API_DB_GetMoreResults(&affectedRows))
+		{
+			trap_SendServerCommand(-1, "print \"^1WTF NO MORE RESULTS\n\"");
+		}
+	}
+
 	if (affectedRows == 0) {
 		trap_SendServerCommand(-1, "print \"^1No new PB.\n\"");
 	}
@@ -509,18 +517,37 @@ void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
 
-	insertOrUpdateRequest = va("INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
-		"VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)"
-		"ON DUPLICATE KEY UPDATE "
-		"duration_ms = IF(?<duration_ms,?,duration_ms),"
-		"topspeed = IF(?<duration_ms,?,topspeed),"
-		"average = IF(?<duration_ms,?,average),"
-		"distance = IF(?<duration_ms,?,distance),"
-		"runwhen = IF(?<duration_ms,NOW(),runwhen),"
-		"warningFlags = IF(?<duration_ms,?,warningFlags);"
-		// No second statement. check our rank.
-		"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<NOW()))" // if someone got the same time as you, but earlier, hes in front of u
-		);
+	if (coolApi_dbVersion >= 3) {
+		insertOrUpdateRequest =
+			"SET @now=NOW();"
+			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,@now,@now,?)"
+			"ON DUPLICATE KEY UPDATE "
+			"duration_ms = IF(?<duration_ms,?,duration_ms),"
+			"topspeed = IF(?<duration_ms,?,topspeed),"
+			"average = IF(?<duration_ms,?,average),"
+			"distance = IF(?<duration_ms,?,distance),"
+			"runwhen = IF(?<duration_ms,@now,runwhen),"
+			"warningFlags = IF(?<duration_ms,?,warningFlags);"
+			// No second statement. check our rank.
+			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<@now))"; // if someone got the same time as you, but earlier, hes in front of u
+	}
+	else {
+		insertOrUpdateRequest =
+			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)"
+			"ON DUPLICATE KEY UPDATE "
+			"duration_ms = IF(?<duration_ms,?,duration_ms),"
+			"topspeed = IF(?<duration_ms,?,topspeed),"
+			"average = IF(?<duration_ms,?,average),"
+			"distance = IF(?<duration_ms,?,distance),"
+			"runwhen = IF(?<duration_ms,NOW(),runwhen),"
+			"warningFlags = IF(?<duration_ms,?,warningFlags);"
+			// No second statement. check our rank.
+			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<NOW()))"; // if someone got the same time as you, but earlier, hes in front of u
+	}
+	
+		
 
 
 	trap_G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
