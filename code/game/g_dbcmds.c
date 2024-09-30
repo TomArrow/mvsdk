@@ -1,6 +1,6 @@
 
-#include "g_dbcmds.h"
 #include "g_local.h"
+#include "g_dbcmds.h"
 #include "../qcommon/crypt_blowfish.h"
 
 
@@ -85,6 +85,12 @@ qboolean G_DB_VerifyPassword(const char* password, int clientNumNotify) {
 qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 	const char* s = username;
 	int len = strlen(username);
+	if (len < USERNAME_MIN_LEN) {
+		if (clientNumNotify > -2) {
+			trap_SendServerCommand(clientNumNotify,va("print \"^1Chosen username is too short. Minimum %d characters.\n\"", USERNAME_MIN_LEN));
+		}
+		return qfalse;
+	}
 	if (len > USERNAME_MAX_LEN) {
 		if (clientNumNotify > -2) {
 			trap_SendServerCommand(clientNumNotify,va("print \"^1Chosen username is too long. Maximum %d characters.\n\"", USERNAME_MAX_LEN));
@@ -256,6 +262,12 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	insertUpdateRunStruct_t runData;
 	gentity_t* ent = NULL;
 	int fasterCount = 0;
+	qboolean rankAvailable = qfalse;
+	qboolean wasLoggedIn = qfalse;
+	int rank = 0;
+	qboolean newPB = qfalse;
+	qboolean firstRun = qfalse;
+	int timeStampMinus3Bill = 0;
 
 	trap_G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
 
@@ -263,6 +275,8 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		Com_Printf("^1Client %d run inserted, user no longer valid.\n", runData.clientnum);
 		//return;
 	}
+
+	wasLoggedIn = runData.userId != -1;
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
@@ -284,37 +298,37 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	}
 
 	if (affectedRows == 0) {
-		trap_SendServerCommand(-1, "print \"^1No new PB.\n\"");
+		//trap_SendServerCommand(-1, "print \"^1No new PB.\n\"");
 	}
 	else if (affectedRows == 1) {
-		trap_SendServerCommand(-1, "print \"^1First run.\n\"");
+		//trap_SendServerCommand(-1, "print \"^1First run.\n\"");
+		newPB = qtrue;
+		firstRun = qtrue;
 	}
 	else if (affectedRows == 2) {
-		trap_SendServerCommand(-1, "print \"^1PB!\n\"");
+		//trap_SendServerCommand(-1, "print \"^1PB!\n\"");
+		newPB = qtrue;
 	}
 	else {
 		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
 	}
 
-	if (coolApi_dbVersion < 3)
+	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
 	{
-		trap_SendServerCommand(-1, "print \"^1CANT GET MORE, DBVERSION <3\n\"");
-		return;
+		fasterCount = trap_G_COOL_API_DB_GetInt(0);
+		rankAvailable = qtrue;
+		rank = fasterCount + 1;
 	}
-	if (!trap_G_COOL_API_DB_GetMoreResults(NULL))
+
+	// SELECT (UNIX_TIMESTAMP(@now)-3000000000) as unixTimeMinus3bill
+	// subtracting 3 billion cuz no 64 bit support in vm
+	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
 	{
-		trap_SendServerCommand(-1, "print \"^1WTF NO MORE RESULTS\n\"");
+		timeStampMinus3Bill = trap_G_COOL_API_DB_GetInt(0);
 	}
-	if (!trap_G_COOL_API_DB_NextRow()) {
-		trap_SendServerCommand(-1, "print \"^1WTF NO MORE ROWS\n\"");
-	}
-	fasterCount = trap_G_COOL_API_DB_GetInt(0);
-	if (fasterCount == 0) {
-		trap_SendServerCommand(-1, "print \"^2WR!!!\n\"");
-	}
-	else {
-		trap_SendServerCommand(-1, va("print \"Place: ^2%d\n\"", fasterCount+1));
-	}
+
+
+
 }
 
 
@@ -501,14 +515,22 @@ void G_DB_Init() {
 	}
 }
 
-void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags) {
+qboolean G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId) {
 	gclient_t* cl = ent->client;
 	insertUpdateRunStruct_t runData;
 	static char serverInfo[BIG_INFO_STRING];
 	static char course[101];
 	const char* insertOrUpdateRequest = NULL;
-	if (!cl || !cl->sess.raceMode) return;
+	if (!cl || !cl->sess.raceMode) return qfalse;
 	memset(&runData, 0, sizeof(runData));
+
+	runData.runInfo.runId = runId;
+	runData.runInfo.milliseconds = milliseconds;
+	runData.runInfo.topspeed = topspeed;
+	runData.runInfo.average = average;
+	runData.runInfo.distance = distance;
+	runData.runInfo.warningFlags = warningFlags;
+	runData.runInfo.levelTimeFinish = levelTimeFinish;
 
 	runData.userId = cl->sess.login.loggedIn ? cl->sess.login.id : -1;
 	runData.clientnum = ent - g_entities;
@@ -516,6 +538,9 @@ void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average
 
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
+
+	// TODO add used fps settings (in case of toggle)
+	// TODO add count of savepos/respos
 
 	if (coolApi_dbVersion >= 3) {
 		insertOrUpdateRequest =
@@ -530,7 +555,8 @@ void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average
 			"runwhen = IF(?<duration_ms,@now,runwhen),"
 			"warningFlags = IF(?<duration_ms,?,warningFlags);"
 			// No second statement. check our rank.
-			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<@now))"; // if someone got the same time as you, but earlier, hes in front of u
+			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
+			"SELECT (UNIX_TIMESTAMP(@now)-3000000000) as unixTimeMinus3bill";
 	}
 	else {
 		insertOrUpdateRequest =
@@ -550,8 +576,11 @@ void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average
 		
 
 
-	trap_G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
-		insertOrUpdateRequest);
+	if(!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
+		insertOrUpdateRequest)) {
+		trap_SendServerCommand(-1, "print \"Database connection not available. Run cannot be saved.\"");
+		return qfalse;
+	}
 
 	// INSERT PART
 	trap_G_COOL_API_DB_PreparedBindInt(runData.userId);
@@ -599,5 +628,6 @@ void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average
 	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
 	//trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	return qtrue;
 }
 

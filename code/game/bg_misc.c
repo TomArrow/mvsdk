@@ -2760,12 +2760,22 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify) {
 	const char* s = password;
 	int len = strlen(password);
+	if (len < PASSWORD_MIN_LEN) {
+		if (clientNumNotify > -2) {
+#if JK2_GAME
+			trap_SendServerCommand(clientNumNotify, va("print \"^1Chosen password is too short. Minimum %d characters.\n\"", PASSWORD_MIN_LEN));
+#elif JK2_CGAME
+			CG_Printf("^1Chosen password is too short. Minimum %d characters.\n", PASSWORD_MIN_LEN);
+#endif
+		}
+		return qfalse;
+	}
 	if (len > PASSWORD_MAX_LEN) {
 		if (clientNumNotify > -2) {
 #if JK2_GAME
 			trap_SendServerCommand(clientNumNotify, va("print \"^1Chosen password is too long. Maximum %d characters.\n\"", PASSWORD_MAX_LEN));
 #elif JK2_CGAME
-			CG_Printf("^1Chosen password is too long. Maximum %d characters.\n");
+			CG_Printf("^1Chosen password is too long. Maximum %d characters.\n", PASSWORD_MAX_LEN);
 #endif
 		}
 		return qfalse;

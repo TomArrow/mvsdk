@@ -358,6 +358,49 @@ typedef struct {
 #define MAX_NETNAME			36
 #define	MAX_VOTE_COUNT		3
 
+
+typedef struct {//JAPRO - Serverside - Stats
+	//int kills;
+	//int teamKills;
+	//int damageTaken;
+	//int damageGiven;
+	//int teamDamageGiven;
+	//int	duelDamageGiven;
+
+	//int startTimeFlag;//could be float?
+	//float displacementFlag;
+	//float topSpeedFlag;
+	//int	displacementFlagSamples;
+
+	//int	startTime;//For timers that are not flags
+	//int	coopStarted;//For coop tracking ugh
+	int	startLevelTime;
+	int startLessTime;
+	float distanceTraveled;
+	float distanceTraveled2D;
+	//float displacement;
+	//int	displacementSamples;
+	float topSpeed;
+	int saveposCount;
+	int resposCount;
+	int lostMsecCount;
+	//int lastCheckpointTime;//For checkpoint floodprotect
+	//int	lastResetTime;
+	//int	lastForcedPreRecordClear;
+
+	//int	teamHealGiven;
+	//int	teamEnergizeGiven;
+	//int	enemyDrainDamage;
+	//int teamDrainDamage;
+
+	//float racetime;
+
+	//int kothTime;
+	//short lowestHP;
+	//int checkpoints;
+	//int courseID;
+} stats_t;
+
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
 typedef struct {
@@ -402,8 +445,8 @@ typedef struct {
 		int			lastNotificationPacketCount;
 	} raceDropped;
 	
-
 	physicsFpsState_t	physicsFps;
+	stats_t				stats;
 } clientPersistant_t;
 
 
@@ -790,7 +833,7 @@ qboolean	trap_G_COOL_API_DB_PreparedBindNull();
 qboolean	trap_G_COOL_API_DB_GetMoreResults(int* affectedRows);
 
 
-void G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags);
+qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
 
 //
 // g_combat.c
@@ -1127,6 +1170,7 @@ extern	vmCvar_t	g_saberLockFactor;
 extern	vmCvar_t	g_saberTraceSaberFirst;
 
 extern	vmCvar_t	g_defrag;
+extern	vmCvar_t	g_defragLastRunId;
 extern	vmCvar_t	g_triggersRobust;
 extern	vmCvar_t	g_defragForceRegenFps;
 

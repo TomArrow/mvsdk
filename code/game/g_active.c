@@ -1292,6 +1292,8 @@ void G_UpdateClientBroadcasts ( gentity_t *self )
 	G_UpdateForceSightBroadcasts ( self );
 }
 
+qboolean DF_PrePmoveValid(gentity_t* ent);
+
 /*
 ==============
 ClientThink
@@ -1880,6 +1882,14 @@ void ClientThink_real( gentity_t *ent ) {
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
 	VectorCopy(pm.mins, ent->client->postPmoveMins);
 	VectorCopy(pm.maxs, ent->client->postPmoveMaxs);
+
+	if (client->pers.raceStartCommandTime && DF_PrePmoveValid(ent)) { // is this accurate? can there be any movement outside of pmove? other than teleport, that is.
+		vec3_t displacementAdd;
+		VectorSubtract(client->postPmovePosition, client->prePmovePosition, displacementAdd);
+		client->pers.stats.distanceTraveled += VectorLength(displacementAdd);
+		displacementAdd[2] = 0;
+		client->pers.stats.distanceTraveled2D += VectorLength(displacementAdd);
+	}
 
 	if (pm.checkDuelLoss)
 	{

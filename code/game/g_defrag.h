@@ -92,6 +92,14 @@ typedef struct savedPosition_s {
 				float		flagsince;
 				float		lastfraggedcarrier;
 			} teamState;
+			struct {
+				//int	startLevelTime; // this stuff is more for demo cutting so no need to compensate.
+				//int startLessTime;
+				float distanceTraveled;
+				float distanceTraveled2D;
+				float topSpeed;
+				int lostMsecCount;
+			}stats;
 		} pers;
 
 		// sess.

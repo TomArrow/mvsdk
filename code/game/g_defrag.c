@@ -42,6 +42,10 @@ void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 		FIELDSFUNC(pers.teamState.lastfraggedcarrier)\
 		FIELDSFUNC(pers.teamState.lasthurtcarrier)\
 		FIELDSFUNC(pers.teamState.lastreturnedflag)\
+		FIELDSFUNC(pers.stats.distanceTraveled)\
+		FIELDSFUNC(pers.stats.distanceTraveled2D)\
+		FIELDSFUNC(pers.stats.topSpeed)\
+		FIELDSFUNC(pers.stats.lostMsecCount)\
 		//FIELDSFUNC(damage_knockback)\ // not used anywhere?
 		//FIELDSFUNC(sess.updateUITime)\ // not used anywhere?
 
@@ -218,9 +222,9 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t play
 	return qfalse;
 }
 
-int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname) // For finish and checkpoint trigger
+int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector) // For finish and checkpoint trigger
 {
-	vec3_t	interpOrigin, delta;
+	vec3_t	interpOrigin, oldInterpOrigin, delta;
 	int lessTime = -1;
 
 	int msecDelta = activator->client->ps.commandTime- activator->client->prePmoveCommandTime;
@@ -238,17 +242,26 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 		if (inTrigger) touched = qtrue;
 
 		lessTime++;
+		VectorCopy(interpOrigin, oldInterpOrigin);
 		VectorAdd(interpOrigin, delta, interpOrigin);
-
-		if (lessTime >= msecDelta) break;
+#if DEBUG
+		if (lessTime >= (msecDelta + 100)) break; // just to sanity test a bit
+#else
+		if (lessTime >= (msecDelta - 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have NOT been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+#endif
 	}
+#if DEBUG
+	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
+#endif
 
-	return MAX(0,lessTime-1); // -1 because the final lessTime value we were already out of the trigger, but we want the first frame IN the trigger to count
+	VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
+
+	return lessTime;
 }
-int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigger) // For start trigger
+int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigger,vec3_t displacementVector) // For start trigger
 {
 	// TODO: Make this check for ANY start triggers
-	vec3_t	interpOrigin, delta;
+	vec3_t	interpOrigin, oldInterpOrigin, delta;
 	int lessTime = -1;
 
 	int msecDelta = activator->client->ps.commandTime- activator->client->prePmoveCommandTime;
@@ -266,12 +279,22 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 		if (!inTrigger) left = qtrue;
 
 		lessTime++;
+		VectorCopy(interpOrigin,oldInterpOrigin);
 		VectorAdd(interpOrigin, delta, interpOrigin);
 
-		if (lessTime >= msecDelta) break;
+#if DEBUG
+		if (lessTime >= (msecDelta + 100)) break; // just to sanity test a bit
+#else
+		if (lessTime >= (msecDelta - 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+#endif
 	}
+#if DEBUG
+	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
+#endif
 
-	return MAX(0,lessTime-1); // -1 because the final lessTime value we were already out of the trigger, but we want the first frame IN the trigger to count
+	VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition,displacementVector);
+
+	return lessTime;
 }
 
 
@@ -281,6 +304,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
 	int	lessTime = 0;
 	qboolean segmented = qfalse;
+	vec3_t interpolationDisplacement;
 	gclient_t* cl;
 	
 	// Check client
@@ -332,8 +356,14 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 	else {
-		lessTime = DF_InterpolateTouchTimeForStartTimer(activator, ent);
+		lessTime = DF_InterpolateTouchTimeForStartTimer(activator, ent, interpolationDisplacement);
 	}
+
+	cl->pers.stats.startLevelTime = level.time;
+	cl->pers.stats.startLessTime = lessTime;
+	cl->pers.stats.distanceTraveled = VectorLength(interpolationDisplacement);
+	interpolationDisplacement[2] = 0;
+	cl->pers.stats.distanceTraveled2D = VectorLength(interpolationDisplacement);
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
@@ -447,6 +477,16 @@ qboolean ValidRaceSettings(gentity_t* player)
 	return qtrue;
 }
 
+static int DF_GetNewRunId() {
+	char s[15];
+	int num;
+	trap_Cvar_VariableStringBuffer("g_defragLastRunId", s, sizeof(s));
+	num = atoi(s);
+	num++;
+	trap_Cvar_Set("g_defragLastRunId", va("%d", num));
+	return num;
+}
+
 // Stop race timer
 void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
@@ -454,6 +494,9 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	int	timeLast, timeBest,newRaceBestTime, lessTime = 0;
 	char timeLastStr[32], timeBestStr[32];
 	int warningFlags = 0;
+	qboolean isInserting = qfalse;
+	vec3_t interpolationDisplacement;
+	int runId = 0;
 	
 	// Check client
 	if (!activator->client) return;
@@ -490,8 +533,14 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		warningFlags |= DF_WARNING_INVALID_PREPMOVE;
 	}
 	else {
-		lessTime = DF_InterpolateTouchTimeToOldPos(activator, ent, "df_trigger_finish");
+		lessTime = DF_InterpolateTouchTimeToOldPos(activator, ent, "df_trigger_finish", interpolationDisplacement);
 	}
+
+	cl->pers.stats.distanceTraveled -= VectorLength(interpolationDisplacement);
+	interpolationDisplacement[2] = 0;
+	cl->pers.stats.distanceTraveled2D -= VectorLength(interpolationDisplacement);
+
+	runId = DF_GetNewRunId();
 
 	// Set info
 	timeLast = activator->client->ps.commandTime - lessTime - activator->client->pers.raceStartCommandTime;
@@ -501,24 +550,24 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
 
 	if ((activator->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && activator->client->pers.segmented.state != SEG_REPLAY) {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in [^2%s^7]: ^1Estimate! Starting rerun now.\n\"", activator->client->pers.netname, timeLastStr));
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %d %d %d %d %d %d %d \"%f\" \"%f\" \"%f\" \"%s\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr,runId,activator-g_entities, timeLast, level.time, activator->client->ps.commandTime - lessTime,lessTime, warningFlags, 1.0f, 1.0f, 1.0f, activator->client->sess.login.loggedIn ? activator->client->sess.login.name : "!nouser!")); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username
 		activator->client->pers.segmented.state = SEG_REPLAY;
 		activator->client->pers.segmented.playbackStartedTime = level.time;
 		activator->client->pers.segmented.playbackNextCmdIndex = 0;
 		return;
 	}
 
-	G_InsertRun(activator, timeLast,0,0,0, warningFlags);
+	isInserting = G_InsertRun(activator, timeLast,0,0,0, warningFlags, level.time, runId, activator->client->ps.commandTime - lessTime);
 
 	// Show info
 	if (timeLast == timeBest) {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in [^2%s^7]\n\"", activator->client->pers.netname, timeLastStr));
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7]\n\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr));
 	}
 	else if (timeLast < timeBest) {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in [^5%s^7] which is a new personal record!\n\"", activator->client->pers.netname, timeLastStr));
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^5%s^7] which is a new personal record!\n\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr));
 	}
 	else {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in [^2%s^7] and his record was [^5%s^7]\n\"", activator->client->pers.netname, timeLastStr, timeBestStr));
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7] and his record was [^5%s^7]\n\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, timeBestStr));
 	}
 
 	// Play sound
@@ -545,6 +594,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace) // TODO Make this only trigger on first contact
 {
 	gclient_t* cl;
+	vec3_t interpolationDisplacement;
 	int	timeCheck, lessTime=0;
 	int nowTime = LEVELTIME(activator->client);
 
@@ -574,7 +624,7 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 		trap_SendServerCommand(-1, va("print \"^1Warning:^7 %s ^7didn't have valid checkpoint pre-pmove info.\n\"", activator->client->pers.netname));
 	}
 	else {
-		lessTime = DF_InterpolateTouchTimeToOldPos(activator, trigger, "df_trigger_checkpoint");
+		lessTime = DF_InterpolateTouchTimeToOldPos(activator, trigger, "df_trigger_checkpoint", interpolationDisplacement);
 	}
 
 	// Set info

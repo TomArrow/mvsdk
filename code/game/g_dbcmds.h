@@ -3,6 +3,7 @@
 #define G_DBCMDS_H
 
 #include "../game/q_shared.h"
+#include "../game/g_defrag.h"
 
 typedef enum DBRequestTypes_s {
 	DBREQUEST_REGISTER,
@@ -29,6 +30,18 @@ typedef struct insertUpdateRunStruct_s {
 	int			userId;
 	int			ip[4];
 	int			clientnum;
+
+	struct {
+		int			runId;
+		int			milliseconds;
+		float		topspeed;
+		float		average;
+		float		distance;
+		int			warningFlags;
+		int			levelTimeFinish;
+	} runInfo;
+
+	raceStyle_t	raceStyle;
 } insertUpdateRunStruct_t;
 
 typedef struct referenceSimpleString_s {
