@@ -276,7 +276,7 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		//return;
 	}
 
-	wasLoggedIn = runData.userId != -1;
+	wasLoggedIn = runData.runInfo.userId != -1;
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
@@ -497,7 +497,50 @@ static void G_CreateUserTable() {
 }
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
-	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, duration_ms INT UNSIGNED NOT NULL, topspeed DOUBLE NOT NULL, average DOUBLE NOT NULL, distance DOUBLE NOT NULL, style SMALLINT UNSIGNED NOT NULL, msec SMALLINT NOT NULL, jump TINYINT NOT NULL, variant SMALLINT NOT NULL, runFlags INT NOT NULL, runwhen DATETIME NOT NULL, runfirst DATETIME NOT NULL, warningFlags INT NOT NULL, UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), INDEX i_userid (userid), INDEX i_course (course), INDEX i_duration_ms (duration_ms), INDEX i_distance (distance), INDEX i_style (style), INDEX i_msec (msec), INDEX i_jump (jump), INDEX i_variant (variant), INDEX i_runflags (runFlags), INDEX i_runwhen (runwhen),INDEX i_runfirst (runfirst),INDEX i_warningFlags (warningFlags), INDEX i_runtype (style,msec,jump,variant,runFlags) )";
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(\
+			id BIGINT AUTO_INCREMENT PRIMARY KEY, \
+			userid BIGINT SIGNED NOT NULL, \
+			course VARCHAR(100) NOT NULL, \
+			duration_ms INT UNSIGNED NOT NULL, \
+			startLessTime INT NOT NULL, \
+			endLessTime INT NOT NULL, \
+			saveposCount INT NOT NULL, \
+			resposCount INT NOT NULL, \
+			lostMsecCount INT NOT NULL, \
+			lostCmdsCount INT NOT NULL, \
+			topspeed DOUBLE NOT NULL, \
+			average DOUBLE NOT NULL, \
+			distance DOUBLE NOT NULL, \
+			distanceXY DOUBLE NOT NULL, \
+			style SMALLINT UNSIGNED NOT NULL, \
+			msec SMALLINT NOT NULL, \
+			jump TINYINT NOT NULL, \
+			variant SMALLINT NOT NULL, \
+			runFlags INT NOT NULL, \
+			runwhen DATETIME NOT NULL, \
+			runfirst DATETIME NOT NULL, \
+			warningFlags INT NOT NULL, \
+			UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), \
+			INDEX i_userid (userid), INDEX i_course (course), \
+			INDEX i_duration_ms (duration_ms), \
+			INDEX i_distance (distance), \
+			INDEX i_style (style), \
+			INDEX i_msec (msec), \
+			INDEX i_jump (jump), \
+			INDEX i_variant (variant), \
+			INDEX i_runflags (runFlags), \
+			INDEX i_runwhen (runwhen),\
+			INDEX i_runfirst (runfirst),\
+			INDEX i_warningFlags (warningFlags), \
+			INDEX i_runtype (style,msec,jump,variant,runFlags) )";
+	// fields without index (cuz just info/debug, dont need to search/filter by it:
+	// - distanceXY
+	// - startLessTime
+	// - endLessTime
+	// - saveposCount
+	// - resposCount
+	// - lostMsecCount
+	// - lostCmdsCount
 	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
@@ -514,7 +557,7 @@ void G_DB_Init() {
 		G_Printf("------- DB Initialization End -------\n");
 	}
 }
-
+extern const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 //qboolean G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId) {
 qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	//gclient_t* cl = ent->client;
@@ -548,30 +591,44 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	if (coolApi_dbVersion >= 3) {
 		insertOrUpdateRequest =
 			"SET @now=NOW();"
-			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,@now,@now,?)"
+			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,@now,@now,?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms = IF(?<duration_ms,?,duration_ms),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
 			"average = IF(?<duration_ms,?,average),"
 			"distance = IF(?<duration_ms,?,distance),"
 			"runwhen = IF(?<duration_ms,@now,runwhen),"
-			"warningFlags = IF(?<duration_ms,?,warningFlags);"
+			"warningFlags = IF(?<duration_ms,?,warningFlags),"
+			"distanceXY = IF(?<duration_ms,?,distanceXY),"
+			"startLessTime = IF(?<duration_ms,?,startLessTime),"
+			"endLessTime = IF(?<duration_ms,?,endLessTime),"
+			"saveposCount = IF(?<duration_ms,?,saveposCount),"
+			"resposCount = IF(?<duration_ms,?,resposCount),"
+			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
+			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount);"
 			// No second statement. check our rank.
 			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
 			"SELECT (UNIX_TIMESTAMP(@now)-3000000000) as unixTimeMinus3bill";
 	}
 	else {
 		insertOrUpdateRequest =
-			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?)"
+			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms = IF(?<duration_ms,?,duration_ms),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
 			"average = IF(?<duration_ms,?,average),"
 			"distance = IF(?<duration_ms,?,distance),"
 			"runwhen = IF(?<duration_ms,NOW(),runwhen),"
-			"warningFlags = IF(?<duration_ms,?,warningFlags);"
+			"warningFlags = IF(?<duration_ms,?,warningFlags),"
+			"distanceXY = IF(?<duration_ms,?,distanceXY),"
+			"startLessTime = IF(?<duration_ms,?,startLessTime),"
+			"endLessTime = IF(?<duration_ms,?,endLessTime),"
+			"saveposCount = IF(?<duration_ms,?,saveposCount),"
+			"resposCount = IF(?<duration_ms,?,resposCount),"
+			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
+			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount);"
 			// No second statement. check our rank.
 			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<NOW()))"; // if someone got the same time as you, but earlier, hes in front of u
 	}
@@ -581,12 +638,12 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 	if(!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
 		insertOrUpdateRequest)) {
-		trap_SendServerCommand(-1, "print \"Database connection not available. Run cannot be saved.\"");
+		trap_SendServerCommand(-1, va("print \"Database connection not available. Run cannot be saved.\n\" dfrunsavefailed %s", DF_RacePrintAppendage(runInfo)));
 		return qfalse;
 	}
 
 	// INSERT PART
-	trap_G_COOL_API_DB_PreparedBindInt(runData.userId);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->userId);
 	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
@@ -598,6 +655,13 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->savePosCount);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
 
 	// UPDATE PART
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
@@ -617,8 +681,29 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
 
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
+
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
+
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
+
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->savePosCount);
+
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
+
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
+
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
+
 	// SECONED QUERY - SELECT
-	trap_G_COOL_API_DB_PreparedBindInt(runData.userId);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->userId);
 	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);

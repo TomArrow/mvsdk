@@ -538,6 +538,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	gclient_t* client = ent->client;
 	if (!client || !client->sess.raceMode) return;
 	runInfo->clientNum = ent - g_entities;
+	Q_strncpyz(runInfo->netname, client->pers.netname, sizeof(runInfo->netname));
 	if (client->sess.login.loggedIn) {
 		runInfo->userId = client->sess.login.id;
 		Q_strncpyz(runInfo->username, client->sess.login.name, sizeof(runInfo->username));
@@ -564,7 +565,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->unixTimeStampShiftedBillionCount = UNIX_TIMESTAMP_SHIFT_BILLIONS; // how much is subtracted from UNIX_TIMESTAMP() in sql before returning the value so we never overflow even a few decades into the future
 }
 
-static const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
+const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 	return va(
 		"%d " // runId
 		"%d " // clientNum

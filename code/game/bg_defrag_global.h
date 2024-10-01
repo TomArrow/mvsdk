@@ -109,8 +109,8 @@ typedef struct finishedRunInfo_s {
 	char		coursename[COURSENAME_MAX_LEN + 1];
 	char		username[USERNAME_MAX_LEN + 1];
 	int			unixTimeStampShifted;
-	int			unixTimeStampShiftedBillionCount;
-
+	int			unixTimeStampShiftedBillionCount; 
+	char		netname[MAX_NETNAME];
 } finishedRunInfo_t;
 
 

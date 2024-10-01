@@ -28,7 +28,6 @@ typedef struct loginRegisterStruct_s {
 } loginRegisterStruct_t;
 
 typedef struct insertUpdateRunStruct_s {
-	int					userId;
 	int					ip[4];
 	int					clientnum;
 

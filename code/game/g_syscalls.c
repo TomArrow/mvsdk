@@ -1134,7 +1134,7 @@ qboolean	trap_G_COOL_API_DB_PreparedBindString(const char* string) {
 	return syscall(G_COOL_API_DB_PREPAREDBINDSTRING, string);
 }
 qboolean	trap_G_COOL_API_DB_PreparedBindFloat(float number) {
-	return syscall(G_COOL_API_DB_PREPAREDBINDFLOAT, number);
+	return syscall(G_COOL_API_DB_PREPAREDBINDFLOAT, PASSFLOAT(number));
 }
 qboolean	trap_G_COOL_API_DB_PreparedBindInt(int number) {
 	return syscall(G_COOL_API_DB_PREPAREDBINDINT, number);
