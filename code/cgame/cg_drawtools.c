@@ -239,7 +239,7 @@ void CG_DrawStringExt( int x, int y, const char *string, const float *setColor,
 			s = string;
 			xx = x;
 			while ( *s ) {
-				if ( (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s)) ) {
+				if ((cgs.isTommyTernal && Q_IsColorStringNT(s)) || (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s)) ) {
 					s += 2;
 					continue;
 				}
@@ -254,7 +254,16 @@ void CG_DrawStringExt( int x, int y, const char *string, const float *setColor,
 		xx = x;
 		trap_R_SetColor( setColor );
 		while ( *s ) {
-			if ( (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s)) ) {
+			if ((cgs.isTommyTernal && Q_IsColorStringNT(s))) {
+				if ( !forceColor ) {
+					memcpy( color, g_color_table_nt[ColorIndexNT(*(s+1))], sizeof( color ) );
+					color[3] = setColor[3];
+					trap_R_SetColor( color );
+				}
+				s += 2;
+				continue;
+			}
+			else if ( (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s)) ) {
 				if ( !forceColor ) {
 					memcpy( color, g_color_table[ColorIndex(*(s+1))], sizeof( color ) );
 					color[3] = setColor[3];
@@ -307,7 +316,7 @@ int CG_DrawStrlen( const char *str ) {
 	int count = 0;
 
 	while ( *s ) {
-		if ( (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s)) ) {
+		if ((cgs.isTommyTernal && Q_IsColorStringNT(s)) || (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s)) ) {
 			s += 2;
 		} else {
 			count++;

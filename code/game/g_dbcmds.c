@@ -258,16 +258,12 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	}
 
 }
+void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank);
+
 static void G_InsertRunResult(int status, const char* errorMessage, int affectedRows) {
 	insertUpdateRunStruct_t runData;
 	gentity_t* ent = NULL;
-	int fasterCount = 0;
-	qboolean rankAvailable = qfalse;
-	qboolean wasLoggedIn = qfalse;
-	int rank = 0;
-	qboolean newPB = qfalse;
-	qboolean firstRun = qfalse;
-	int timeStampMinus3Bill = 0;
+	//evaluatedRunInfo_t eRunInfo;
 
 	trap_G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
 
@@ -275,8 +271,6 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		Com_Printf("^1Client %d run inserted, user no longer valid.\n", runData.clientnum);
 		//return;
 	}
-
-	wasLoggedIn = runData.runInfo.userId != -1;
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
@@ -299,15 +293,15 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 
 	if (affectedRows == 0) {
 		//trap_SendServerCommand(-1, "print \"^1No new PB.\n\"");
+		runData.runInfo.isPB = 0; // no new pb
 	}
 	else if (affectedRows == 1) {
 		//trap_SendServerCommand(-1, "print \"^1First run.\n\"");
-		newPB = qtrue;
-		firstRun = qtrue;
+		runData.runInfo.isPB = 1; // first run
 	}
 	else if (affectedRows == 2) {
 		//trap_SendServerCommand(-1, "print \"^1PB!\n\"");
-		newPB = qtrue;
+		runData.runInfo.isPB = 2;
 	}
 	else {
 		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
@@ -315,19 +309,17 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 
 	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
 	{
-		fasterCount = trap_G_COOL_API_DB_GetInt(0);
-		rankAvailable = qtrue;
-		rank = fasterCount + 1;
+		runData.runInfo.rank = trap_G_COOL_API_DB_GetInt(0) + 1; // SQL result returns amount of faster runs so we add 1 (0 faster runs = #1)
 	}
 
 	// SELECT (UNIX_TIMESTAMP(@now)-3000000000) as unixTimeMinus3bill
 	// subtracting 3 billion cuz no 64 bit support in vm
 	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
 	{
-		timeStampMinus3Bill = trap_G_COOL_API_DB_GetInt(0);
+		runData.runInfo.unixTimeStampShifted = trap_G_COOL_API_DB_GetInt(0);
 	}
 
-
+	PrintRaceTime(&runData.runInfo, qfalse, qtrue);
 
 }
 
@@ -609,7 +601,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount);"
 			// No second statement. check our rank.
 			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
-			"SELECT (UNIX_TIMESTAMP(@now)-3000000000) as unixTimeMinus3bill";
+			"SELECT (UNIX_TIMESTAMP(@now)-(?*1000000000)) as unixTimeMinus3bill";
 	}
 	else {
 		insertOrUpdateRequest =
@@ -712,6 +704,10 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+
+	if (coolApi_dbVersion >= 3) {
+		trap_G_COOL_API_DB_PreparedBindInt(runInfo->unixTimeStampShiftedBillionCount);
+	}
 
 	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));

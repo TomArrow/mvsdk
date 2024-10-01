@@ -256,7 +256,7 @@ static void CG_ParseServerinfo( const char *info ) {
 	v = Info_ValueForKey(info, "gamename");
 	if (v)
 	{
-		Q_CleanStr(v, qtrue);
+		Q_CleanStr(v, qtrue, cgs.isTommyTernal);
 		if (strstr(v, nwhCompareBig) || strstr(v, nwhCompareSmall)) {
 			cgs.isNWH = qtrue;
 		}
@@ -307,7 +307,7 @@ static void CG_ParseServerinfo( const char *info ) {
 	v = Info_ValueForKey(info, "version");
 	if (v)
 	{
-		Q_CleanStr(v, qtrue);
+		Q_CleanStr(v, qtrue, cgs.isTommyTernal);
 		if (strstr(v, nwhCompareSmall) || strstr(v, nwhCompareBig)) {
 			cgs.isNWH = qtrue;
 		}
@@ -316,7 +316,7 @@ static void CG_ParseServerinfo( const char *info ) {
 	v = Info_ValueForKey(info, "sv_hostname");
 	if (v)
 	{
-		Q_CleanStr(v, qtrue);
+		Q_CleanStr(v, qtrue, cgs.isTommyTernal);
 		if (strstr(v, manhuntCompare)) { // Stupid, ugly and gay.
 			cgs.isManhunt = qtrue;
 		}
@@ -653,7 +653,7 @@ static void CG_AddToTeamChat( const char *str ) {
 			ls = NULL;
 		}
 
-		if ( (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(str) : Q_IsColorString(str)) ) {
+		if ( (cgs.isTommyTernal && Q_IsColorStringNT(str)) || (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(str) : Q_IsColorString(str)) ) {
 			*p++ = *str++;
 			lastcolor = *str;
 			*p++ = *str++;

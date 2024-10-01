@@ -427,7 +427,7 @@ void G_AddRandomBot( int team ) {
 				else teamstr = "";
 				strncpy(netname, value, sizeof(netname)-1);
 				netname[sizeof(netname)-1] = '\0';
-				Q_CleanStr(netname, (qboolean)(jk2startversion == VERSION_1_02));
+				Q_CleanStr(netname, (qboolean)(jk2startversion == VERSION_1_02),qtrue);
 				trap_SendConsoleCommand( EXEC_INSERT, va("addbot %s %f %s %i\n", netname, skill, teamstr, 0) );
 				return;
 			}

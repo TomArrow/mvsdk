@@ -3,7 +3,10 @@
 #include "g_local.h"
 #include "g_dbcmds.h"
 
+// Many parts of defrag code are lifted/adapted from Triforce's JediKnightPlus and loda's japro. Thanks!
+
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
+const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
 #define VALIDATEPTRCMP(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
@@ -13,6 +16,43 @@ void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 #define ENTF_INT(a) (size_t)( VALIDATEPTR(int,&((gentity_t*)0)->a))
 #define ENTF_FLT(a) (size_t)( VALIDATEPTR(float,&((gentity_t*)0)->a))
 
+// we're using NT mod colors so lots of variety :)
+// avoids black and dark blue on normal clients and has unique colors for every clientnum otherwise
+// bit randomized too
+char clientColors[MAX_CLIENTS] = { 
+	'5',
+	'3',
+	'6',
+	'N',
+	'R',
+	'E',
+	'A',
+	'V',
+	'C',
+	'K',
+	'f',
+	's',
+	'g',
+	'U',
+	'J',
+	'c',
+	'j',
+	'S',
+	'o',
+	'I',
+	'b',
+	'u',
+	'O',
+	'1',
+	'B',
+	'2',
+	'v',
+	'i',
+	'w',
+	'r',
+	'7',
+	'Y',
+};
 
 // TODO investigate timeresidual
 
@@ -522,6 +562,142 @@ qboolean ValidRaceSettings(gentity_t* player)
 	return qtrue;
 }
 
+// japro thing. weird?
+void PlayActualGlobalSound(int soundindex) {
+	gentity_t* player;
+	int i;
+
+	//G_AddEvent(ent, EV_GLOBAL_SOUND, soundindex); //need to svf_broadcast firsT? and what ent to use ??
+
+	for (i = 0; i < MAX_CLIENTS; i++) {//Build a list of clients
+		if (!g_entities[i].inuse)
+			continue;
+		player = &g_entities[i];
+		G_Sound(player, CHAN_AUTO, soundindex);
+	}
+}
+
+void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank) {
+	int nameColor, color;
+	static char awardString[MAX_STRING_CHARS - 2] = { 0 };
+	static char messageStr[MAX_STRING_CHARS - 2] = { 0 };
+	static char fpsStr[10] = { 0 };
+
+	//Com_Printf("SOldrank %i SNewrank %i GOldrank %i GNewrank %i Addscore %.1f\n", season_oldRank, season_newRank, global_oldRank, global_newRank, addedScore);
+
+	//if (topspeed || average) { //weird hack to not play double sound coop
+	//	if (global_newRank == 1) {//WR, Play the sound
+	//		if (worldrecordnoise)
+	//			PlayActualGlobalSound(worldrecordnoise); //Only for simple PB not WR i guess..
+	//		else if (worldrecordnoise != -1) {
+	//			if (!level.wrNoise) {
+	//				level.wrNoise = G_SoundIndex("sound/chars/rosh_boss/misc/victory3"); //Maybe this should be done when df_trigger_finish is spawned cuz its still gonna hitch maybe on first wr of map? idk
+	//			}
+	//			PlayActualGlobalSound(level.wrNoise);
+	//		}
+	//	}
+	//	else if (global_newRank > 0) {//PB
+	//		if (awesomenoise)
+	//			PlayActualGlobalSound(awesomenoise);
+	//		else if (awesomenoise != -1) {
+	//			if (!level.pbNoise) {
+	//				level.pbNoise = G_SoundIndex("sound/chars/rosh/misc/taunt1");
+	//			}
+	//			PlayActualGlobalSound(level.pbNoise);
+	//		}
+	//	}
+	//}
+
+	nameColor = clientColors[runInfo->clientNum & 31];
+	//nameColor = 7 - (runInfo->clientNum % 8);//sad hack
+	//if (nameColor < 2)
+	//	nameColor = 2;
+	//else if (nameColor > 7 || nameColor == 5)
+	//	nameColor = 7;
+
+	//if (valid && loggedin)
+	if (!preliminary && runInfo->userId != -1)
+		color = 5;
+	else if (!preliminary)
+		color = 2;
+	else
+		color = 1;
+
+
+	if (!showRank) {
+		const char* runFlagsString = RunFlagsToString(runInfo->raceStyle.runFlags, level.mapDefaultRaceStyle.runFlags, 1,"^3",NULL);
+		const int runFlagsStringLen = strlen(runFlagsString);
+		Q_strncpyz(fpsStr, runInfo->raceStyle.msec == -1 ? "togl" : (runInfo->raceStyle.msec == -2 ? "flt" : (runInfo->raceStyle.msec == 0 ? "unkn" : va("%d", 1000 / runInfo->raceStyle.msec))), sizeof(fpsStr));
+
+		Q_strncpyz(messageStr, va("^3%12s^%i  ^3%7.2f^%imax ^3%7.2f^%iavg ^3%7.1fk^%idist ^3%2i^%ij ^3%4s^%ifps ^3%6s^%i style %s ^%i",
+			DF_MsToString(runInfo->milliseconds),
+			color,
+			runInfo->topspeed,
+			color,
+			runInfo->average,
+			color,
+			runInfo->distance/1000.0f,
+			color,
+			runInfo->raceStyle.jumpLevel,
+			color,
+			fpsStr,
+			color,
+			moveStyleNames[runInfo->raceStyle.movementStyle].string,
+			color,
+			runFlagsString,
+			color), sizeof(messageStr));
+		//Q_strncpyz(awardString, va("%s ^%i[^%i%s^%i]", runInfo->netname, color, runInfo->userId == -1 ? 1 : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color), sizeof(awardString));
+		//if (message)
+		//Com_sprintf(messageStr, sizeof(messageStr), "^3%-16s^%i", runInfo->coursename, color);
+		//else
+		//	Com_sprintf(messageStr, sizeof(messageStr), "^%iCompleted", color);
+
+		if (runInfo->raceStyle.runFlags & RFL_SEGMENTED) { //print number of teles?
+			//if (level.clients[clientNum].midRunTeleCount < 1)
+			//	Q_strcat(messageStr, sizeof(messageStr), " (PRO)");
+			//else
+			Q_strcat(messageStr, sizeof(messageStr), va("(^3%i^%i SP, ^3%i^%i RP) ", runInfo->savePosCount,color, runInfo->resposCount,color));
+		}
+		Q_strcat(messageStr, sizeof(messageStr), va("by^7 %s  ^%i[^%c%s^%i] ", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color));
+		
+
+		trap_SendServerCommand(-1, va("print \"%s\n\" dffinish %s", messageStr, DF_RacePrintAppendage(runInfo)));
+	}
+	else if (runInfo->rank != -1) {
+
+		if (runInfo->rank == 1) { //was 1 when it shouldnt have been.. ?
+			Q_strncpyz(awardString, va("%s ^%i[^%c%s^%i] %sbeat the ^3WORLD RECORD^%i and %s ranked ^3#%i",runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,color, runInfo->userId == -1 ? "unofficially " : "",color, runInfo->userId == -1 ? "would be " : "is now",runInfo->rank), sizeof(awardString));
+			if (runInfo->userId != -1) {
+				PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
+				//G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass"));
+			}
+		}
+		else if (runInfo->isPB) {
+			Q_strncpyz(awardString, va("%s ^%i[^%c%s^%i] got a new personal best and %s ranked ^3#%i", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color,  runInfo->userId == -1 ? "would be " : "is now", runInfo->rank), sizeof(awardString));
+		}
+
+		/*if (global_newRank > 0) { //Print global rank increased, global score added
+			if (global_newRank != global_oldRank) {//Can be from -1 to #.  What do we do in this case..
+				if (global_oldRank > 0)
+					Q_strcat(awardString, sizeof(awardString), va(" (%i->%i +%.1f)", global_oldRank, global_newRank, addedScore));
+				else
+					Q_strcat(awardString, sizeof(awardString), va(" (%i +%.1f)", global_newRank, addedScore));
+			}
+		}
+		else if (season_newRank > 0) {//Print season rank increased, global score added
+			if (season_newRank != season_oldRank) {
+				if (season_oldRank > 0)
+					Q_strcat(awardString, sizeof(awardString), va(" (%i->%i +%.1f)", season_oldRank, season_newRank, addedScore));
+				else
+					Q_strcat(awardString, sizeof(awardString), va(" (%i +%.1f)", season_newRank, addedScore));
+			}
+		}*/
+
+		trap_SendServerCommand(-1, va("print \"%s\n\" dffinish_ranked %s", awardString, DF_RacePrintAppendage(runInfo)));
+	}
+	
+}
+
 static int DF_GetNewRunId() {
 	char s[15];
 	int num;
@@ -545,7 +721,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	}
 	else {
 		runInfo->userId = -1;
-		Q_strncpyz(runInfo->username, "!nouser!", sizeof(runInfo->username));
+		Q_strncpyz(runInfo->username, "!unlogged!", sizeof(runInfo->username));
 	}
 	runInfo->raceStyle = client->sess.raceStyle;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
@@ -562,6 +738,8 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->topspeed = client->pers.stats.topSpeed;
 	runInfo->savePosCount = client->pers.stats.saveposCount;
 	runInfo->resposCount = client->pers.stats.resposCount;
+	runInfo->rank = -1;
+	runInfo->isPB = -1;
 	runInfo->unixTimeStampShiftedBillionCount = UNIX_TIMESTAMP_SHIFT_BILLIONS; // how much is subtracted from UNIX_TIMESTAMP() in sql before returning the value so we never overflow even a few decades into the future
 }
 
@@ -600,7 +778,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		"%d " // placeHolder6
 		"%d " // placeHolder7
 		"%d " // placeHolder8
-		"%d " // placeHolder9
+		"%d " // isPB
 		"%d " // placeHolder10
 		"\"%s\" " // coursename[COURSENAME_MAX_LEN + 1]
 		"\"%s\" " // username[USERNAME_MAX_LEN + 1]
@@ -639,8 +817,8 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->placeHolder6
 		,runInfo->placeHolder7
 		,runInfo->placeHolder8
-		,runInfo->placeHolder9
-		,runInfo->placeHolder10
+		,runInfo->isPB
+		,runInfo->rank
 		,runInfo->coursename
 		,runInfo->username
 		,runInfo->unixTimeStampShifted
@@ -728,8 +906,10 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//isInserting = G_InsertRun(activator, timeLast,0,0,0, warningFlags, level.time, runId, cl->ps.commandTime - lessTime);
 	isInserting = G_InsertRun(&runInfo);
 
+
+	PrintRaceTime(&runInfo, qfalse, qfalse);
 	// Show info
-	if (timeLast == timeBest) {
+	/*if (timeLast == timeBest) {
 		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7]\n\" dffinish %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo)));
 	}
 	else if (timeLast < timeBest) {
@@ -737,21 +917,24 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	}
 	else {
 		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7] and his record was [^5%s^7]\n\" dffinish %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, timeBestStr, DF_RacePrintAppendage(&runInfo)));
-	}
+	}*/
 
 	// Play sound
-	if (timeLast < timeBest) G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass")); // TODO ok but lets precache it?
+	//if (timeLast < timeBest) G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass")); // TODO ok but lets precache it?
 
 	// Show info
 	trap_SendServerCommand(activator - g_entities, "cp \"Race timer finished!\"");
 
 	// Update timers
 	//cl->pers.raceLastTime = timeLast;
-	newRaceBestTime = timeLast > timeBest ? timeBest : timeLast;
-	if (cl->pers.raceBestTime != newRaceBestTime) {
-		cl->pers.raceBestTime = newRaceBestTime;
-		// Update client
-		ClientUserinfoChanged(activator - g_entities);
+	if (RaceStyleIsMainLeaderboard(&runInfo.raceStyle,&level.mapDefaultRaceStyle)) {
+		// todo load player's best time when logging in
+		newRaceBestTime = timeLast > timeBest ? timeBest : timeLast;
+		if (cl->pers.raceBestTime != newRaceBestTime) {
+			cl->pers.raceBestTime = newRaceBestTime;
+			// Update client
+			ClientUserinfoChanged(activator - g_entities);
+		}
 	}
 
 	// Reset timers

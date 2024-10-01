@@ -947,7 +947,7 @@ void Q_strcat( char *dest, int size, const char *src ) {
 }
 
 
-int Q_PrintStrlen( const char *string, qboolean use102color ) {
+int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColors) {
 	int			len;
 	const char	*p;
 
@@ -958,7 +958,7 @@ int Q_PrintStrlen( const char *string, qboolean use102color ) {
 	len = 0;
 	p = string;
 	while( *p ) {
-		if (Q_IsColorString(p) || (use102color && Q_IsColorString_1_02(p))) {
+		if (Q_IsColorString(p) || (use102color && Q_IsColorString_1_02(p)) || (ntModColors && Q_IsColorStringNT(p))) {
 			p += 2;
 			continue;
 		}
@@ -970,7 +970,7 @@ int Q_PrintStrlen( const char *string, qboolean use102color ) {
 }
 
 
-char *Q_CleanStr( char *string, qboolean use102color ) {
+char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors) {
 	char*	d;
 	char*	s;
 	int		c;
@@ -978,7 +978,7 @@ char *Q_CleanStr( char *string, qboolean use102color ) {
 	s = string;
 	d = string;
 	while ((c = *s) != 0 ) {
-		if (Q_IsColorString(s) || (use102color && Q_IsColorString_1_02(s))) {
+		if (Q_IsColorString(s) || (use102color && Q_IsColorString_1_02(s)) || (ntModColors && Q_IsColorStringNT(s))) {
 			s++;
 		}		
 		else if ( c >= 0x20 && c <= 0x7E ) {

@@ -18,6 +18,28 @@ bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "TAS mode" },//7
 	{ "Climb tech" },//8
 };
+bitInfo_t runFlagsShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
+	{ "nojumpbug" },//0
+	{ "nodeadramps" },//1
+	{ "nowallstuck" },//2
+	{ "norollstart" },//3
+	{ "strafebot" },//4
+	{ "segmented" },//5
+	{ "norolls" },//6
+	{ "tas" },//7
+	{ "climb" },//8
+};
+bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
+	{ "njb" },//0
+	{ "ndr" },//1
+	{ "nws" },//2
+	{ "nrs" },//3
+	{ "sb" },//4
+	{ "seg" },//5
+	{ "nr" },//6
+	{ "tas" },//7
+	{ "clb" },//8
+};
 
 bitInfo_t moveStyleNames[MV_NUMSTYLES] = { 
 	{ "JK2" },//0
@@ -32,10 +54,50 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
 
+qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* defaultRaceStyle) {
+	if (raceStyle->movementStyle != MV_JK2) return qfalse;
+	if (raceStyle->msec != 7 && raceStyle->msec != 8) return qfalse;
+	if (raceStyle->jumpLevel != defaultRaceStyle->jumpLevel) return qfalse;
+	if (raceStyle->runFlags != defaultRaceStyle->runFlags) return qfalse;
+	if (raceStyle->variant != defaultRaceStyle->variant) return qfalse;
+	return qtrue;
+}
+
+const char* RunFlagsToString(int runFlags, int defaultRunFlags, int lengthFactor, const char* prefix, const char* suffix) {
+	static char s[MAX_STRING_CHARS];
+	bitInfo_t* names = runFlagsNames;
+	int i;
+	qboolean differentFromDefault;
+	qboolean isSet;
+	qboolean anyContents = qfalse;
+	int differences = runFlags ^ defaultRunFlags;
+	if (lengthFactor == 0) {
+		names = runFlagsVeryShortNames;
+	}
+	else if (lengthFactor == 1) {
+		names = runFlagsShortNames;
+	}
+	s[0] = 0;
+	for (i = 0; i < MAX_RUN_FLAGS; i++) {
+		if (!(allowedRunFlags & (1 << i))) continue;
+		isSet = runFlags & (1 << i);
+		differentFromDefault = differences & (1 << i);
+		if (!differentFromDefault) continue;
+		if (!anyContents && prefix) {
+			Q_strcat(s, sizeof(s), prefix);
+		}
+		anyContents = qtrue;
+		Q_strcat(s, sizeof(s), va("%c%s",isSet ? '+' : '-', names[i].string));
+	}
+	if (anyContents && suffix) {
+		Q_strcat(s, sizeof(s), suffix);
+	}
+	return s;
+}
 
 int RaceNameToInteger(char* style) {
 	Q_strlwr(style);
-	Q_CleanStr(style,qtrue);
+	Q_CleanStr(style,qtrue,qtrue);
 
 	if (!Q_stricmp(style, "jk2"))
 		return MV_JK2;

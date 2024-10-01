@@ -54,6 +54,8 @@ extern const int allowedMovementStyles;
 extern const int MAX_RUN_FLAGS;
 
 extern bitInfo_t runFlagsNames[];
+extern bitInfo_t runFlagsShortNames[];
+extern bitInfo_t runFlagsVeryShortNames[];
 extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
 
 // can't do this: because qvm has issues compiling shorts :/
@@ -104,8 +106,8 @@ typedef struct finishedRunInfo_s {
 	int			placeHolder6;
 	int			placeHolder7;
 	int			placeHolder8;
-	int			placeHolder9;
-	int			placeHolder10;
+	int			isPB; // 0=not PB, 1=PB (first run), 2=PB
+	int			rank;
 	char		coursename[COURSENAME_MAX_LEN + 1];
 	char		username[USERNAME_MAX_LEN + 1];
 	int			unixTimeStampShifted;
@@ -113,13 +115,22 @@ typedef struct finishedRunInfo_s {
 	char		netname[MAX_NETNAME];
 } finishedRunInfo_t;
 
+//typedef struct evaluatedRunInfo_s {
+	//int fasterCount;
+	//qboolean rankAvailable;
+	//qboolean wasLoggedIn;
+	//int rank;
+	//qboolean newPB;
+	//qboolean firstRun;
+	//int timeStampMinus3Bill;
+//} evaluatedRunInfo_t;
 
 int RaceNameToInteger(char* style);
 qboolean MovementStyleHasQuake2Ramps(int moveStyle);
 qboolean MovementIsQuake3Based(int moveStyle);
 const char* DF_MsToString(const int ms);
-
-
+const char* RunFlagsToString(int runFlags, int defaultRunFlags, int lengthFactor, const char* prefix, const char* suffix);
+qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* defaultRaceStyle);
 
 
 #endif

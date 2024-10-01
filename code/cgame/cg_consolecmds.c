@@ -304,7 +304,7 @@ int CG_FindPlayerFromString(const char* buf, int trySkip, int skipClient) {
 			if (k % 2) {
 				// for k=1,3,5,7.. we will clean the name to see if we can match then
 				Q_strncpyz(nameS, ci->name, sizeof(nameS));
-				Q_CleanStr(nameS,qtrue);
+				Q_CleanStr(nameS,qtrue,cgs.isTommyTernal);
 				name = nameS;
 			}
 			else {

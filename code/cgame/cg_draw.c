@@ -5087,7 +5087,7 @@ void CG_ChatBox_AddString(char *chatStr)
 			Q_strncpyz(msg, token, sizeof(msg));
 
 		if (cg_cleanChatbox.integer == 1) {
-			Q_CleanStr(msg, (qboolean)(jk2startversion == VERSION_1_02));
+			Q_CleanStr(msg, (qboolean)(jk2startversion == VERSION_1_02), cgs.isTommyTernal);
 		}
 		else if (cg_cleanChatbox.integer > 1) {
 			Q_RemoveLeadingColorCode(msg);

@@ -633,6 +633,10 @@ extern	vec4_t		colorDkBlue;
 #define Q_IsColorString(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= '7' && *((p)+1) >= '0' )
 #define Q_IsColorString_1_02(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE ) // 1.02 ColorStrings
 
+// stealsies from jomme/nt mod :) thanks
+#define Q_IsColorStringNT(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= 0x7F && *((p)+1) >= 0x00 )
+#define Q_IsColorCharNT(p)		( (p) <= 0x7F && (p) >= 0x00 )
+#define ColorIndexNT(c)			( (c) & 127 )
 
 #define COLOR_BLACK		'0'
 #define COLOR_RED		'1'
@@ -653,7 +657,8 @@ extern	vec4_t		colorDkBlue;
 #define S_COLOR_MAGENTA	"^6"
 #define S_COLOR_WHITE	"^7"
 
-extern vec4_t	g_color_table[8];
+extern vec4_t	g_color_table[8]; 
+extern vec4_t	g_color_table_nt[128];
 
 #define	MAKERGB( v, r, g, b ) v[0]=r;v[1]=g;v[2]=b
 #define	MAKERGBA( v, r, g, b, a ) v[0]=r;v[1]=g;v[2]=b;v[3]=a
@@ -964,9 +969,9 @@ void	Q_strncpyz( char *dest, const char *src, int destsize );
 void	Q_strcat( char *dest, int size, const char *src );
 
 // strlen that discounts Quake color sequences
-int Q_PrintStrlen( const char *string, qboolean use102color );
+int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColors);
 // removes color sequences from string
-char *Q_CleanStr( char *string, qboolean use102color );
+char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors );
 char *Q_CleanAsciiStr( char *string );
 
 const char *Q_strchrs( const char *string, const char *search );
