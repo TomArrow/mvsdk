@@ -4,6 +4,7 @@
 
 #include "../game/q_shared.h"
 #include "../game/g_defrag.h"
+#include "../game/bg_defrag_global.h"
 
 typedef enum DBRequestTypes_s {
 	DBREQUEST_REGISTER,
@@ -27,21 +28,22 @@ typedef struct loginRegisterStruct_s {
 } loginRegisterStruct_t;
 
 typedef struct insertUpdateRunStruct_s {
-	int			userId;
-	int			ip[4];
-	int			clientnum;
+	int					userId;
+	int					ip[4];
+	int					clientnum;
 
-	struct {
-		int			runId;
-		int			milliseconds;
-		float		topspeed;
-		float		average;
-		float		distance;
-		int			warningFlags;
-		int			levelTimeFinish;
-	} runInfo;
+	finishedRunInfo_t	runInfo;
+	//struct {
+	//	int			runId;
+	//	int			milliseconds;
+	//	float		topspeed;
+	//	float		average;
+	//	float		distance;
+	//	int			warningFlags;
+	//	int			levelTimeFinish;
+	//} runInfo;
 
-	raceStyle_t	raceStyle;
+	//raceStyle_t	raceStyle;
 } insertUpdateRunStruct_t;
 
 typedef struct referenceSimpleString_s {

@@ -11,6 +11,7 @@
 #include "bg_weapons.h"
 #include "anims.h"
 
+#define COURSENAME_MAX_LEN 10
 #define USERNAME_MIN_LEN 3
 #define USERNAME_MAX_LEN 10
 #define PASSWORD_MIN_LEN 6

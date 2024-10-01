@@ -1889,10 +1889,14 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if (client->pers.raceStartCommandTime && DF_PrePmoveValid(ent)) { // is this accurate? can there be any movement outside of pmove? other than teleport, that is.
 		vec3_t displacementAdd;
+		float currentXYSpeed = XYSPEED(client->ps.velocity);
 		VectorSubtract(client->postPmovePosition, client->prePmovePosition, displacementAdd);
 		client->pers.stats.distanceTraveled += VectorLength(displacementAdd);
 		displacementAdd[2] = 0;
 		client->pers.stats.distanceTraveled2D += VectorLength(displacementAdd);
+		if (currentXYSpeed > client->pers.stats.topSpeed) {
+			client->pers.stats.topSpeed = currentXYSpeed;
+		}
 	}
 
 	if (pm.checkDuelLoss)

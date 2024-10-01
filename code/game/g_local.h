@@ -359,47 +359,24 @@ typedef struct {
 #define	MAX_VOTE_COUNT		3
 
 
-typedef struct {//JAPRO - Serverside - Stats
-	//int kills;
-	//int teamKills;
-	//int damageTaken;
-	//int damageGiven;
-	//int teamDamageGiven;
-	//int	duelDamageGiven;
-
-	//int startTimeFlag;//could be float?
-	//float displacementFlag;
-	//float topSpeedFlag;
-	//int	displacementFlagSamples;
-
-	//int	startTime;//For timers that are not flags
-	//int	coopStarted;//For coop tracking ugh
+typedef struct runStats_s { // zero'd out every time we leave start timer
 	int	startLevelTime;
 	int startLessTime;
 	float distanceTraveled;
 	float distanceTraveled2D;
-	//float displacement;
-	//int	displacementSamples;
 	float topSpeed;
 	int saveposCount;
 	int resposCount;
-	int lostMsecCount;
-	//int lastCheckpointTime;//For checkpoint floodprotect
-	//int	lastResetTime;
-	//int	lastForcedPreRecordClear;
+} runStats_t;
+typedef struct raceDropped_s { // zero'd out every time we leave start timer
+	int			msecTime; // in non-toggle mode, packets get soft-"dropped" (not evaluated) if the msec value is wrong. We accumulate the loss here
+	int			packetCount;
+	int			lastNotification;
+	int			lastNotificationMsecTime;
+	int			lastNotificationPacketCount;
+} raceDropped_t ;
 
-	//int	teamHealGiven;
-	//int	teamEnergizeGiven;
-	//int	enemyDrainDamage;
-	//int teamDrainDamage;
 
-	//float racetime;
-
-	//int kothTime;
-	//short lowestHP;
-	//int checkpoints;
-	//int courseID;
-} stats_t;
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
@@ -437,16 +414,10 @@ typedef struct {
 	int			raceBestTime;
 	int			raceLastCheckpointTime;
 	segmented_t segmented; // segmented run
-	struct {
-		int			msecTime; // in non-toggle mode, packets get soft-"dropped" (not evaluated) if the msec value is wrong. We accumulate the loss here
-		int			packetCount;
-		int			lastNotification;
-		int			lastNotificationMsecTime;
-		int			lastNotificationPacketCount;
-	} raceDropped;
-	
+
 	physicsFpsState_t	physicsFps;
-	stats_t				stats;
+	runStats_t			stats;
+	raceDropped_t		raceDropped;
 } clientPersistant_t;
 
 
@@ -835,7 +806,8 @@ qboolean	trap_G_COOL_API_DB_PreparedBindNull();
 qboolean	trap_G_COOL_API_DB_GetMoreResults(int* affectedRows);
 
 
-qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
+//qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
+qboolean	G_InsertRun(finishedRunInfo_t* runInfo);
 
 //
 // g_combat.c

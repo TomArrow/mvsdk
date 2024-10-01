@@ -10,6 +10,7 @@
 #define BOUNCEPOWER_REGENMASK (((1<<7)-1)<<9)
 
 
+
 typedef enum //movementstyle enum
 {
 	//MV_SIEGE,
@@ -71,6 +72,46 @@ typedef struct raceStyle_s {
 	short runFlags; // flags from runFlags_t => STAT_RUNFLAGS
 } raceStyle_t;
 
+#define UNIX_TIMESTAMP_SHIFT_BILLIONS 3 // increase this in a few decades when unixTimeStampShifted starts overflowing
+
+#define XYSPEED(a) sqrtf((a)[0]*(a)[0]+(a)[1]*(a)[1])
+
+typedef struct finishedRunInfo_s {
+	int			runId;
+	int			clientNum;
+	int			userId;
+	int			milliseconds;
+	int			levelTimeStart;
+	int			levelTimeEnd;
+	int			endCommandTime;
+	int			startLessTime;
+	int			endLessTime;
+	int			warningFlags;
+	float		topspeed;
+	float		average; // excluding dropped time (due
+	float		distance;
+	float		distanceXY;
+	raceStyle_t raceStyle;
+	int			savePosCount;
+	int			resposCount;
+	int			lostMsecCount;
+	int			lostPacketCount;
+	int			placeHolder1;
+	int			placeHolder2;
+	int			placeHolder3;
+	int			placeHolder4;
+	int			placeHolder5;
+	int			placeHolder6;
+	int			placeHolder7;
+	int			placeHolder8;
+	int			placeHolder9;
+	int			placeHolder10;
+	char		coursename[COURSENAME_MAX_LEN + 1];
+	char		username[USERNAME_MAX_LEN + 1];
+	int			unixTimeStampShifted;
+	int			unixTimeStampShiftedBillionCount;
+
+} finishedRunInfo_t;
 
 
 int RaceNameToInteger(char* style);

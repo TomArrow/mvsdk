@@ -515,29 +515,32 @@ void G_DB_Init() {
 	}
 }
 
-qboolean G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId) {
-	gclient_t* cl = ent->client;
+//qboolean G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId) {
+qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
+	//gclient_t* cl = ent->client;
 	insertUpdateRunStruct_t runData;
-	static char serverInfo[BIG_INFO_STRING];
-	static char course[101];
+	//static char serverInfo[BIG_INFO_STRING];
+	//static char course[COURSENAME_MAX_LEN+1];
 	const char* insertOrUpdateRequest = NULL;
-	if (!cl || !cl->sess.raceMode) return qfalse;
+	//if (!cl || !cl->sess.raceMode) return qfalse;
 	memset(&runData, 0, sizeof(runData));
 
-	runData.runInfo.runId = runId;
-	runData.runInfo.milliseconds = milliseconds;
-	runData.runInfo.topspeed = topspeed;
-	runData.runInfo.average = average;
-	runData.runInfo.distance = distance;
-	runData.runInfo.warningFlags = warningFlags;
-	runData.runInfo.levelTimeFinish = levelTimeFinish;
+	//runData.runInfo.runId = runId;
+	//runData.runInfo.milliseconds = milliseconds;
+	//runData.runInfo.topspeed = topspeed;
+	//runData.runInfo.average = average;
+	//runData.runInfo.distance = distance;
+	//runData.runInfo.warningFlags = warningFlags;
+	//runData.runInfo.levelTimeEnd = levelTimeFinish;
 
-	runData.userId = cl->sess.login.loggedIn ? cl->sess.login.id : -1;
-	runData.clientnum = ent - g_entities;
+	runData.runInfo = *runInfo;
+
+	//runData.userId = cl->sess.login.loggedIn ? cl->sess.login.id : -1;
+	runData.clientnum = runInfo->clientNum;
 	memcpy(runData.ip, mv_clientSessions[runData.clientnum].clientIP, sizeof(runData.ip));
 
-	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
-	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
+	//trap_GetServerinfo(serverInfo, sizeof(serverInfo));
+	//Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
 
 	// TODO add used fps settings (in case of toggle)
 	// TODO add count of savepos/respos
@@ -584,46 +587,46 @@ qboolean G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float ave
 
 	// INSERT PART
 	trap_G_COOL_API_DB_PreparedBindInt(runData.userId);
-	trap_G_COOL_API_DB_PreparedBindString(course);
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(topspeed);
-	trap_G_COOL_API_DB_PreparedBindFloat(average);
-	trap_G_COOL_API_DB_PreparedBindFloat(distance);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.movementStyle);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.msec);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.jumpLevel);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.variant);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.runFlags);
-	trap_G_COOL_API_DB_PreparedBindInt(warningFlags);
+	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->average);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distance);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
 
 	// UPDATE PART
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(topspeed);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
 
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(average);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->average);
 
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(distance);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distance);
 
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds); // runwhen
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // runwhen
 
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(warningFlags);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
 
 	// SECONED QUERY - SELECT
 	trap_G_COOL_API_DB_PreparedBindInt(runData.userId);
-	trap_G_COOL_API_DB_PreparedBindString(course);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.movementStyle);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.msec);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.jumpLevel);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.variant);
-	trap_G_COOL_API_DB_PreparedBindInt((int)cl->sess.raceStyle.runFlags);
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(milliseconds);
+	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 
 	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));

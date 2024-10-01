@@ -94,12 +94,15 @@ typedef struct savedPosition_s {
 			} teamState;
 			struct {
 				//int	startLevelTime; // this stuff is more for demo cutting so no need to compensate.
-				//int startLessTime;
-				float distanceTraveled;
-				float distanceTraveled2D;
-				float topSpeed;
-				int lostMsecCount;
-			}stats;
+				//int	startLessTime;
+				float	distanceTraveled;
+				float	distanceTraveled2D;
+				float	topSpeed;
+			} stats;
+			struct {
+				int			msecTime; 
+				int			packetCount;
+			} raceDropped;
 		} pers;
 
 		// sess.

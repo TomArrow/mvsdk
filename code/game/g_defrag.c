@@ -13,6 +13,7 @@ void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 #define ENTF_INT(a) (size_t)( VALIDATEPTR(int,&((gentity_t*)0)->a))
 #define ENTF_FLT(a) (size_t)( VALIDATEPTR(float,&((gentity_t*)0)->a))
 
+
 // TODO investigate timeresidual
 
 #define FIELDSCLIENT()\
@@ -45,7 +46,8 @@ void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 		FIELDSFUNC(pers.stats.distanceTraveled)\
 		FIELDSFUNC(pers.stats.distanceTraveled2D)\
 		FIELDSFUNC(pers.stats.topSpeed)\
-		FIELDSFUNC(pers.stats.lostMsecCount)\
+		FIELDSFUNC(pers.raceDropped.msecTime)\
+		FIELDSFUNC(pers.raceDropped.packetCount)\
 		//FIELDSFUNC(damage_knockback)\ // not used anywhere?
 		//FIELDSFUNC(sess.updateUITime)\ // not used anywhere?
 
@@ -140,7 +142,7 @@ debugField_t	segDebugFields[] =
 	{ SEGDEBCLF(ps.saberMove,int ) },
 	{ SEGDEBCLF(ps.origin, vec3_t) },
 	{ SEGDEBCLF(ps.viewangles, vec3_t) },
-	{ SEGDEBCLF(pers.cmd.angles, veci3_t) },
+	//{ SEGDEBCLF(pers.cmd.angles, veci3_t) }, // it will change for sure, but its not a problem. stop spam.
 	{ SEGDEBCLF(pers.cmd.buttons, int) },
 	{ SEGDEBCLF(pers.cmd.forwardmove, schar_t) },
 	{ SEGDEBCLF(pers.cmd.rightmove, schar_t) },
@@ -303,7 +305,7 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 		// We now use JP_TracePrecise for trigger tracing, which doesn't use epsilon, but let's be safe anyway, just in case. If that were to happen,
 		// we'd want lessTime to end up 0 anyway, as it means we are just hitting the start trigger with the sweat molecules emanating
 		// 1 micrometer from our skin, so this is correct.
-		assert(left || inTrigger);
+		assert(left || !inTrigger);
 		left = qtrue;
 #else
 		if (!inTrigger) left = qtrue;
@@ -340,7 +342,8 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	qboolean segmented = qfalse;
 	vec3_t interpolationDisplacement;
 	gclient_t* cl;
-	
+	int resposCountSave, savePosCountSave;
+
 	// Check client
 	if (!activator->client) return;
 
@@ -393,11 +396,19 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		lessTime = DF_InterpolateTouchTimeForStartTimer(activator, ent, interpolationDisplacement);
 	}
 
+	resposCountSave = cl->pers.stats.resposCount;
+	savePosCountSave = cl->pers.stats.saveposCount;
+	memset(&cl->pers.stats, 0, sizeof(cl->pers.stats)); // reset & initialize run stats
+	if (segmented && cl->pers.segmented.state == SEG_REPLAY) { // remember the amount of savepos/respos used during segmented run
+		cl->pers.stats.resposCount = resposCountSave;
+		cl->pers.stats.saveposCount = savePosCountSave;
+	}
 	cl->pers.stats.startLevelTime = level.time;
 	cl->pers.stats.startLessTime = lessTime;
 	cl->pers.stats.distanceTraveled = VectorLength(interpolationDisplacement);
 	interpolationDisplacement[2] = 0;
 	cl->pers.stats.distanceTraveled2D = VectorLength(interpolationDisplacement);
+	cl->pers.stats.topSpeed = XYSPEED(cl->ps.velocity);
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
@@ -521,6 +532,121 @@ static int DF_GetNewRunId() {
 	return num;
 }
 
+static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int milliseconds) {
+	static char serverInfo[BIG_INFO_STRING];
+	static char course[COURSENAME_MAX_LEN + 1];
+	gclient_t* client = ent->client;
+	if (!client || !client->sess.raceMode) return;
+	runInfo->clientNum = ent - g_entities;
+	if (client->sess.login.loggedIn) {
+		runInfo->userId = client->sess.login.id;
+		Q_strncpyz(runInfo->username, client->sess.login.name, sizeof(runInfo->username));
+	}
+	else {
+		runInfo->userId = -1;
+		Q_strncpyz(runInfo->username, "!nouser!", sizeof(runInfo->username));
+	}
+	runInfo->raceStyle = client->sess.raceStyle;
+	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
+	Q_strncpyz(runInfo->coursename, Info_ValueForKey(serverInfo, "mapname"), sizeof(runInfo->coursename));
+
+	runInfo->milliseconds = milliseconds;
+	runInfo->startLessTime = client->pers.stats.startLessTime;
+	runInfo->levelTimeStart = client->pers.stats.startLevelTime;
+	runInfo->lostMsecCount = client->pers.raceDropped.msecTime;
+	runInfo->lostPacketCount = client->pers.raceDropped.packetCount;
+	runInfo->distance = client->pers.stats.distanceTraveled;
+	runInfo->distanceXY = client->pers.stats.distanceTraveled2D;
+	runInfo->average = runInfo->distanceXY / ((float)(milliseconds- runInfo->lostMsecCount)*0.001f);
+	runInfo->topspeed = client->pers.stats.topSpeed;
+	runInfo->savePosCount = client->pers.stats.saveposCount;
+	runInfo->resposCount = client->pers.stats.resposCount;
+	runInfo->unixTimeStampShiftedBillionCount = UNIX_TIMESTAMP_SHIFT_BILLIONS; // how much is subtracted from UNIX_TIMESTAMP() in sql before returning the value so we never overflow even a few decades into the future
+}
+
+static const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
+	return va(
+		"%d " // runId
+		"%d " // clientNum
+		"%d " // userId
+		"%d " // milliseconds
+		"%d " // levelTimeStart
+		"%d " // levelTimeEnd
+		"%d " // endCommandTime
+		"%d " // startLessTime
+		"%d " // endLessTime
+		"%d " // warningFlags
+		"\"%f\" " // topspeed
+		"\"%f\" " // average
+		"\"%f\" " // distance
+		"\"%f\" " // distanceXY
+
+		"%d " // raceStyle.movementStyle
+		"%d " // raceStyle.msec
+		"%d " // raceStyle.jumpLevel
+		"%d " // raceStyle.variant
+		"%d " // raceStyle.runFlags
+
+		"%d " // savePosCount
+		"%d " // resposCount
+		"%d " // lostMsecCount
+		"%d " // lostPacketCount
+		"%d " // placeHolder1
+		"%d " // placeHolder2
+		"%d " // placeHolder3
+		"%d " // placeHolder4
+		"%d " // placeHolder5
+		"%d " // placeHolder6
+		"%d " // placeHolder7
+		"%d " // placeHolder8
+		"%d " // placeHolder9
+		"%d " // placeHolder10
+		"\"%s\" " // coursename[COURSENAME_MAX_LEN + 1]
+		"\"%s\" " // username[USERNAME_MAX_LEN + 1]
+		"%d " // unixTimeStampShifted
+		"%d " // unixTimeStampShiftedBillionCount
+		,runInfo->runId
+		,runInfo->clientNum
+		,runInfo->userId
+		,runInfo->milliseconds
+		,runInfo->levelTimeStart
+		,runInfo->levelTimeEnd
+		,runInfo->endCommandTime
+		,runInfo->startLessTime
+		,runInfo->endLessTime
+		,runInfo->warningFlags
+		,runInfo->topspeed
+		,runInfo->average
+		,runInfo->distance
+		,runInfo->distanceXY
+
+		,(int)runInfo->raceStyle.movementStyle
+		,(int)runInfo->raceStyle.msec
+		,(int)runInfo->raceStyle.jumpLevel
+		,(int)runInfo->raceStyle.variant
+		,(int)runInfo->raceStyle.runFlags
+
+		,runInfo->savePosCount
+		,runInfo->resposCount
+		,runInfo->lostMsecCount
+		,runInfo->lostPacketCount
+		,runInfo->placeHolder1
+		,runInfo->placeHolder2
+		,runInfo->placeHolder3
+		,runInfo->placeHolder4
+		,runInfo->placeHolder5
+		,runInfo->placeHolder6
+		,runInfo->placeHolder7
+		,runInfo->placeHolder8
+		,runInfo->placeHolder9
+		,runInfo->placeHolder10
+		,runInfo->coursename
+		,runInfo->username
+		,runInfo->unixTimeStampShifted
+		,runInfo->unixTimeStampShiftedBillionCount
+		);
+}
+
 // Stop race timer
 void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
@@ -530,7 +656,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	int warningFlags = 0;
 	qboolean isInserting = qfalse;
 	vec3_t interpolationDisplacement;
-	int runId = 0;
+	static finishedRunInfo_t runInfo;
 	
 	// Check client
 	if (!activator->client) return;
@@ -548,13 +674,13 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
-	if (activator->client->sess.raceStateInvalidated) {
+	if (cl->sess.raceStateInvalidated) {
 		//trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
 		return;
 	}
 
 	// Check timer
-	if (!activator->client->pers.raceStartCommandTime) return;
+	if (!cl->pers.raceStartCommandTime) return;
 
 	if (!ValidRaceSettings(activator) || !trap_InPVS(cl->ps.origin, cl->ps.origin)) {// out of bounds fix? does this need extra checks due to trace/interpolation?
 		DF_RaceStateInvalidated(activator, qtrue);
@@ -562,8 +688,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	}
 
 	if (!DF_PrePmoveValid(activator)) {
-		Com_Printf("^1Defrag Finish Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", activator->client->pers.netname);
-		trap_SendServerCommand(-1, va("print \"^1Warning:^7 %s ^7didn't have valid pre-pmove info.\n\"", activator->client->pers.netname));
+		Com_Printf("^1Defrag Finish Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
+		trap_SendServerCommand(-1, va("print \"^1Warning:^7 %s ^7didn't have valid pre-pmove info.\n\"", cl->pers.netname));
 		warningFlags |= DF_WARNING_INVALID_PREPMOVE;
 	}
 	else {
@@ -574,34 +700,42 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	interpolationDisplacement[2] = 0;
 	cl->pers.stats.distanceTraveled2D -= VectorLength(interpolationDisplacement);
 
-	runId = DF_GetNewRunId();
-
 	// Set info
-	timeLast = activator->client->ps.commandTime - lessTime - activator->client->pers.raceStartCommandTime;
-	timeBest = !activator->client->pers.raceBestTime ? timeLast : activator->client->pers.raceBestTime;
+	timeLast = cl->ps.commandTime - lessTime - cl->pers.raceStartCommandTime;
+	timeBest = !cl->pers.raceBestTime ? timeLast : cl->pers.raceBestTime;
+
+	memset(&runInfo, 0, sizeof(runInfo));
+	DF_FillClientRunInfo(&runInfo, activator, timeLast); // fills various stats we collected from start trigger and across run, and some metadata
+	runInfo.runId = DF_GetNewRunId();
+	runInfo.endLessTime = lessTime;
+	runInfo.levelTimeEnd = level.time;
+	runInfo.endCommandTime = cl->ps.commandTime - lessTime;
+	runInfo.warningFlags = warningFlags;
+
 
 	Q_strncpyz(timeLastStr, DF_MsToString(timeLast), sizeof(timeLastStr));
 	Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
 
-	if ((activator->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && activator->client->pers.segmented.state != SEG_REPLAY) {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %d %d %d %d %d %d %d \"%f\" \"%f\" \"%f\" \"%s\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr,runId,activator-g_entities, timeLast, level.time, activator->client->ps.commandTime - lessTime,lessTime, warningFlags, 1.0f, 1.0f, 1.0f, activator->client->sess.login.loggedIn ? activator->client->sess.login.name : "!nouser!")); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username
-		activator->client->pers.segmented.state = SEG_REPLAY;
-		activator->client->pers.segmented.playbackStartedTime = level.time;
-		activator->client->pers.segmented.playbackNextCmdIndex = 0;
+	if ((cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state != SEG_REPLAY) {
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo))); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username
+		cl->pers.segmented.state = SEG_REPLAY;
+		cl->pers.segmented.playbackStartedTime = level.time;
+		cl->pers.segmented.playbackNextCmdIndex = 0;
 		return;
 	}
 
-	isInserting = G_InsertRun(activator, timeLast,0,0,0, warningFlags, level.time, runId, activator->client->ps.commandTime - lessTime);
+	//isInserting = G_InsertRun(activator, timeLast,0,0,0, warningFlags, level.time, runId, cl->ps.commandTime - lessTime);
+	isInserting = G_InsertRun(&runInfo);
 
 	// Show info
 	if (timeLast == timeBest) {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7]\n\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr));
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7]\n\" dffinish %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo)));
 	}
 	else if (timeLast < timeBest) {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^5%s^7] which is a new personal record!\n\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr));
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^5%s^7] which is a new personal record!\n\" dffinish %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo)));
 	}
 	else {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7] and his record was [^5%s^7]\n\"", activator->client->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, timeBestStr));
+		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7] and his record was [^5%s^7]\n\" dffinish %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, timeBestStr, DF_RacePrintAppendage(&runInfo)));
 	}
 
 	// Play sound
@@ -611,17 +745,17 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	trap_SendServerCommand(activator - g_entities, "cp \"Race timer finished!\"");
 
 	// Update timers
-	//activator->client->pers.raceLastTime = timeLast;
+	//cl->pers.raceLastTime = timeLast;
 	newRaceBestTime = timeLast > timeBest ? timeBest : timeLast;
-	if (activator->client->pers.raceBestTime != newRaceBestTime) {
-		activator->client->pers.raceBestTime = newRaceBestTime;
+	if (cl->pers.raceBestTime != newRaceBestTime) {
+		cl->pers.raceBestTime = newRaceBestTime;
 		// Update client
 		ClientUserinfoChanged(activator - g_entities);
 	}
 
 	// Reset timers
-	//activator->client->ps.duelTime = 0;
-	activator->client->pers.raceStartCommandTime = 0;
+	//cl->ps.duelTime = 0;
+	cl->pers.raceStartCommandTime = 0;
 }
 
 // Checkpoint race timer
@@ -906,7 +1040,11 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	}
 
 	ent->client->pers.raceStartCommandTime = 0;
-	ent->client->ps.fd.forceRageRecoveryTime = 0;
+	ent->client->ps.fd.forceRageRecoveryTime = 0; 
+	
+	// not like we really need to do this since it happens in start anyway
+	memset(&ent->client->pers.raceDropped, 0, sizeof(ent->client->pers.raceDropped));
+	memset(&ent->client->pers.stats, 0, sizeof(ent->client->pers.stats));
 
 	if (wasReset && print)
 		trap_SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
@@ -1717,6 +1855,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		}
 		else {
 			SavePosition(ent, &cl->pers.segmented.lastPos);
+			cl->pers.stats.saveposCount++;
 			cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS;
 			cl->pers.segmented.lastPosUserCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1;
@@ -1739,6 +1878,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			cl->pers.segmented.anglesDiffAccumActual[2] &= 65535;
 			VectorClear(cl->pers.segmented.anglesDiffAccum);
 			RestorePosition(ent, &cl->pers.segmented.lastPos,cl->pers.segmented.anglesDiffAccumActual);
+			cl->pers.stats.resposCount++;
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS; // un-invalidate.
 			cl->pers.segmented.msecProgress = cl->pers.segmented.lastPosMsecProgress;
 			trap_G_COOL_API_PlayerUserCmdRemove(clientNum, cl->pers.segmented.lastPosUserCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
