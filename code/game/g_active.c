@@ -504,10 +504,14 @@ void	G_TouchTriggers( gentity_t *ent ) {
 			while (!finished && num < MAX_GENTITIES) {
 				memset(&trace, 0, sizeof(trace));
 				if (reverse) {
-					JP_Trace(&trace, ent->client->postPmovePosition, minsPlayer, maxsPlayer, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER|CONTENTS_SOLID);
+					// use precise non-epsilon trace here or we can end up with a hit if we are technically outside the bounds of 
+					// the target brush but the brush side is within 0.125f of the ending. this makes entitycontact return false
+					// even though we hit it. it also means that traces may only find something in one direction, but not the other,
+					// because this "advantage" goes only in one direction.
+					JP_TracePrecise(&trace, ent->client->postPmovePosition, minsPlayer, maxsPlayer, ent->client->prePmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER|CONTENTS_SOLID);
 				}
 				else {
-					JP_Trace(&trace, ent->client->prePmovePosition, minsPlayer, maxsPlayer, ent->client->postPmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
+					JP_TracePrecise(&trace, ent->client->prePmovePosition, minsPlayer, maxsPlayer, ent->client->postPmovePosition, ent->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
 				}
 				somethingInTheWay = trace.allsolid || trace.startsolid || (trace.contents & CONTENTS_SOLID);
 				if (trace.fraction < 1.0f && !somethingInTheWay) { //startsolid and allsolid don't return a valid entityNum

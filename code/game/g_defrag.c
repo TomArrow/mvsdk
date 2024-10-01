@@ -239,7 +239,27 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
 	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs)) || !touched)
 	{
+#if 1
+		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
+		// DONT overlap. for a finish/checkpoint trigger, this means that touched=qtrue would never be set with the old algo, so this whole loop is pointless
+		// as lessTime will go up until it becomes so big the safety break happens.
+		// We now use JP_TracePrecise for trigger tracing, which doesn't use epsilon, but let's be safe anyway, just in case. If that were to happen,
+		// we'd want lessTime to end up 0 anyway, as it means we are just hitting the finish trigger with the sweat molecules emanating
+		// 1 micrometer from our skin, so this is correct.
+		assert(touched || inTrigger);
+		touched = qtrue;
+#else
 		if (inTrigger) touched = qtrue;
+		else if (!touched) {
+
+			trace_t trace;
+			DF_InAnyTrigger(interpOrigin, classname, activator->client->triggerMins, activator->client->triggerMaxs);
+			memset(&trace, 0, sizeof(trace));
+			JP_TracePrecise(&trace, activator->client->prePmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->postPmovePosition, activator->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
+			memset(&trace, 0, sizeof(trace));
+			JP_TracePrecise(&trace, activator->client->postPmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->prePmovePosition, activator->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
+		}
+#endif
 
 		lessTime++;
 		VectorCopy(interpOrigin, oldInterpOrigin);
@@ -276,7 +296,21 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 	//while (!(inTrigger = DF_InTrigger(interpOrigin, trigger)) || !left)
 	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs)) || !left)
 	{
+#if 1
+		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
+		// DONT overlap. for a finish/checkpoint trigger, this means that left=qtrue would never be set with the old algo, so this whole loop is pointless
+		// as lessTime will go up until it becomes so big the safety break happens.
+		// We now use JP_TracePrecise for trigger tracing, which doesn't use epsilon, but let's be safe anyway, just in case. If that were to happen,
+		// we'd want lessTime to end up 0 anyway, as it means we are just hitting the start trigger with the sweat molecules emanating
+		// 1 micrometer from our skin, so this is correct.
+		assert(left || inTrigger);
+		left = qtrue;
+#else
 		if (!inTrigger) left = qtrue;
+		else if (!left) {
+			DF_InAnyTrigger(interpOrigin, "df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs);
+		}
+#endif
 
 		lessTime++;
 		VectorCopy(interpOrigin,oldInterpOrigin);
@@ -1026,13 +1060,14 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 	return qfalse;
 }
 
-//void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
-//{
-//	return JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask);
-//}
-void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
-
-	trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean precise) {
+	
+	if (precise && (coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
+		trap_G_COOL_API_NonEpsilonTrace(results, start, mins, maxs, end, passEntityNum, contentmask);
+	}
+	else {
+		trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+	}
 	if (results->entityNum < ENTITYNUM_MAX_NORMAL)
 	{
 		gentity_t* passEnt = g_entities + passEntityNum;
@@ -1044,7 +1079,12 @@ void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec
 
 			contents = ent->r.contents;
 			ent->r.contents = 0;
-			JP_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+			if (precise && (coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
+				trap_G_COOL_API_NonEpsilonTrace(results, start, mins, maxs, end, passEntityNum, contentmask);
+			}
+			else {
+				JP_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+			}
 			ent->r.contents = contents;
 
 			return;
@@ -1060,6 +1100,19 @@ void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec
 	}
 }
 
+void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
+{
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qfalse);
+}
+// don't use this for movement and normal stuff. 
+// normal trace applies an epsilon (0.125f offset) to avoid some fuckery with vector snapping over network and i dont even know,
+// but the result is that trace fractions are reduced, to where they hit something that trap_EntityContact does NOT hit at the end position
+// so for example with trigger detection, that makes our trigger interpolation less precise. 
+// hence, for trigger tracing, use this.
+void JP_TracePrecise(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
+{
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qtrue);
+}
 
 /*
 =========================

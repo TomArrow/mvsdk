@@ -811,6 +811,8 @@ int trap_G_COOL_API_PlayerUserCmdRemove(int clientNum, int from, int to); // fro
 int trap_G_COOL_API_PlayerUserCmdClear(int clientNum);
 qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd);
 int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum);
+void trap_G_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
+void trap_G_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
 
 qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
 qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
@@ -1302,6 +1304,7 @@ void	trap_GetServerinfo( char *buffer, int bufferSize );
 void	trap_SetBrushModel( gentity_t *ent, const char *name );
 void	trap_Trace( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask );
 void	JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
+void	JP_TracePrecise(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
 int		trap_PointContents( const vec3_t point, int passEntityNum );
 qboolean trap_InPVS( const vec3_t p1, const vec3_t p2 );
 qboolean trap_InPVSIgnorePortals( const vec3_t p1, const vec3_t p2 );
