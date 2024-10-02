@@ -35,24 +35,35 @@ typedef struct bitInfo_s {
 	const char* string;
 } bitInfo_t;
 
+typedef enum mainLeaderboardType_s {
+	LB_MAIN,
+	LB_NOJUMPBUG, // main fps but nojumpbug
+	LB_CUSTOM, // other fps, segmented, etc
+	LB_CHEAT // strafebot, tas
+} mainLeaderboardType_t;
 
 
 #define SUBQUOTED(a) #a
 #define QUOTEME(a) SUBQUOTED(a)
 
+#define RUNFLAGSDBPREFIX runFlag_
+
 //#define a(a,b,c) // not really used, just to avoid compiler getting mad
 #define RUNFLAGS(a)\
-a(nojumpbug,JUMPBUGDISABLE,0)\
-a(nodeadramps,NODEADRAMPS,1)\
-a(nowallstuck,NOWALLSTUCK,2)\
-a(norollstart,NOROLLSTART,3)\
-a(strafebot,BOT,4)\
-a(segmented,SEGMENTED,5)\
-a(norolls,NOROLLS,6)\
-a(tas,TAS,7)\
-a(climb,CLIMBTECH,8)
+a(nojumpbug,JUMPBUGDISABLE,0,RUNFLAGSDBPREFIX," /*","*/ ")\
+a(nodeadramps,NODEADRAMPS,1,RUNFLAGSDBPREFIX,"","")\
+a(nowallstuck,NOWALLSTUCK,2,RUNFLAGSDBPREFIX,"","")\
+a(norollstart,NOROLLSTART,3,RUNFLAGSDBPREFIX,"","")\
+a(strafebot,BOT,4,RUNFLAGSDBPREFIX,"","")\
+a(segmented,SEGMENTED,5,RUNFLAGSDBPREFIX,"","")\
+a(norolls,NOROLLS,6,RUNFLAGSDBPREFIX,"","")\
+a(tas,TAS,7,RUNFLAGSDBPREFIX,"","")\
+a(climb,CLIMBTECH,8,RUNFLAGSDBPREFIX,"","")\
+//a(wallspawn,WALLSPAWN,9,RUNFLAGSDBPREFIX,"","")
 
-#define RUNFLAGSFUNC(a,b,c) RFL_ ## b=1<<c,
+// the "/*","*/" thing for JUMPBUGDISABLE is so we can disable it for query construction (since it doesn't need to be identical to the level's default, we still query both)
+
+#define RUNFLAGSFUNC(a,b,c,d,e,f) RFL_ ## b=1<<c,
 
 typedef enum runFlags_s {
 	RUNFLAGS(RUNFLAGSFUNC)
@@ -67,6 +78,13 @@ typedef enum runFlags_s {
 	//RFL_TAS = 1 << 7, // absolutely everything is allowed. frametime manipulation etc etc
 	RFL_CLIMBTECH = 1 << 8 // jka climb techs*/
 } runFlags_t;
+#undef RUNFLAGSFUNC
+
+#define RUNFLAGSFUNC(a,b,c,d,e,f) RFLINDEX_ ## b=c,
+
+typedef enum runFlagsIndex_s {
+	RUNFLAGS(RUNFLAGSFUNC)
+} runFlagsIndex_t;
 #undef RUNFLAGSFUNC
 
 extern const int defaultRunFlags;
@@ -152,6 +170,7 @@ qboolean MovementIsQuake3Based(int moveStyle);
 const char* DF_MsToString(const int ms);
 const char* RunFlagsToString(int runFlags, int defaultRunFlags, int lengthFactor, const char* prefix, const char* suffix);
 qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* defaultRaceStyle);
-
+mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* defaultLevelRaceStyle);
+const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle);
 
 #endif

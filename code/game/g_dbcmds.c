@@ -365,6 +365,16 @@ static void G_CreateTableResult(int status, const char* errorMessage) {
 	Com_Printf("creating table %s was successful.\n", tableName.s);
 
 }
+static void G_UpdateColumnsResult(int status, const char* errorMessage) {
+	static referenceSimpleString_t tableName;
+	trap_G_COOL_API_DB_GetReference((byte*)&tableName, sizeof(tableName));
+	if (status) {
+		Com_Printf("updating columns for table %s failed with status %d and error message %s.\n", tableName.s, status, errorMessage);
+		return;
+	}
+	Com_Printf("updating columns for table %s was successful.\n", tableName.s);
+
+}
 
 static void G_PWBCryptReturned(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData;
@@ -434,6 +444,9 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_CREATETABLE:
 					G_CreateTableResult(status, errorMessage);
 					break;
+				case DBREQUEST_UPDATECOLUMNS:
+					G_UpdateColumnsResult(status, errorMessage);
+					break;
 				case DBREQUEST_LOGIN:
 					G_LoginFetchDataResult(status, errorMessage);
 					break;
@@ -492,9 +505,15 @@ static void G_CreateRunsTable() {
 #define SUBFUNC(a) `runFlag_ ## a` TINYINT(1)
 #define SUBFUNC2(a) `runFlag_ ## a`
 #define SUBFUNC3(a)  INDEX `i_ ## runFlag_ ## a` (`runFlag_ ## a`)
-#define RUNFLAGSFUNC(a,b,c) QUOTEME(SUBFUNC(a)) " NOT NULL,"
-#define RUNFLAGSFUNC2(a,b,c) "," QUOTEME(SUBFUNC2(a))
-#define RUNFLAGSFUNC3(a,b,c) QUOTEME(SUBFUNC3(a)) ","
+#define SUBFUNC4(a)  ALTER TABLE runs ADD COLUMN IF NOT EXISTS `runFlag_ ## a` TINYINT(1)
+#define SUBFUNC5(a)  ALTER TABLE runs ADD INDEX IF NOT EXISTS `i_ ## runFlag_ ## a` (`runFlag_ ## a`)
+#define SUBFUNC6(a)  ALTER TABLE runs ALTER COLUMN `runFlag_ ## a` DROP DEFAULT
+#define RUNFLAGSFUNC(a,b,c,d,e,f) QUOTEME(SUBFUNC(a)) " NOT NULL,"
+#define RUNFLAGSFUNC2(a,b,c,d,e,f) "," QUOTEME(SUBFUNC2(a))
+#define RUNFLAGSFUNC3(a,b,c,d,e,f) QUOTEME(SUBFUNC3(a)) ","
+#define RUNFLAGSFUNC4(a,b,c,d,e,f) QUOTEME(SUBFUNC4(a)) " NOT NULL DEFAULT 0;"
+#define RUNFLAGSFUNC5(a,b,c,d,e,f) QUOTEME(SUBFUNC5(a)) ";"
+#define RUNFLAGSFUNC6(a,b,c,d,e,f) QUOTEME(SUBFUNC6(a)) ";"
 	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(\
 			id BIGINT AUTO_INCREMENT PRIMARY KEY, \
 			userid BIGINT SIGNED NOT NULL, \
@@ -534,17 +553,30 @@ static void G_CreateRunsTable() {
 			INDEX i_runwhen(runwhen), \
 			INDEX i_runfirst (runfirst),\
 			INDEX i_warningFlags (warningFlags), \
-			INDEX i_runtype (style,msec,jump,variant,runFlags) )";
+			INDEX i_runtype (style,msec,jump,variant,runFlags) );"
+			RUNFLAGS(RUNFLAGSFUNC4)
+			//RUNFLAGS(RUNFLAGSFUNC5)
+			//RUNFLAGS(RUNFLAGSFUNC6)
+			"";
+	const char* columnsUpdateRequest = ""
+			RUNFLAGS(RUNFLAGSFUNC4)
+			RUNFLAGS(RUNFLAGSFUNC5)
+			RUNFLAGS(RUNFLAGSFUNC6)
+			"";
 #undef RUNFLAGSFUNC
 #undef RUNFLAGSFUNC2
 #undef RUNFLAGSFUNC3
+#undef RUNFLAGSFUNC4
+#undef RUNFLAGSFUNC5
 #undef SUBFUNC
 #undef SUBFUNC2
 #undef SUBFUNC3
-
-	if (g_developer.integer) {
-		G_Printf("TABLE QUERY DEBUG: %s", userTableRequest);
-	}
+#undef SUBFUNC4
+#undef SUBFUNC5
+	
+	//if (g_developer.integer) {
+	//	G_Printf("TABLE QUERY DEBUG: %s", userTableRequest);
+	//}
 	// fields without index (cuz just info/debug, dont need to search/filter by it:
 	// - distanceXY
 	// - startLessTime
@@ -555,6 +587,7 @@ static void G_CreateRunsTable() {
 	// - lostCmdsCount
 	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_UPDATECOLUMNS, columnsUpdateRequest);
 }
 
 static void G_DB_CreateTables() {
@@ -574,6 +607,7 @@ extern const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	//gclient_t* cl = ent->client;
 	insertUpdateRunStruct_t runData;
+	mainLeaderboardType_t lbType;
 	//static char serverInfo[BIG_INFO_STRING];
 	//static char course[COURSENAME_MAX_LEN+1];
 	const char* insertOrUpdateRequest = NULL;
@@ -597,13 +631,12 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	//trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	//Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
 
-	// TODO add used fps settings (in case of toggle)
-	// TODO add count of savepos/respos
+	lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);
 
-#define SUBFUNC(a) `runFlag_ ## a`
-#define RUNFLAGSFUNC(a,b,c) QUOTEME(SUBFUNC(a)) "," // gotta do this cuz qvm gets confused by the comma otherwise
-#define RUNFLAGSFUNC2(a,b,c) "?,"
-#define RUNFLAGSFUNC3(a,b,c) `runFlag_ ## a`=? AND
+#define SUBFUNC(a,b) `b ## a`
+#define RUNFLAGSFUNC(a,b,c,d,e,f) QUOTEME(SUBFUNC(a,d)) "," // gotta do this cuz qvm gets confused by the comma otherwise
+#define RUNFLAGSFUNC2(a,b,c,d,e,f) "?,"
+#define RUNFLAGSFUNC3(a,b,c,d,e,f) `d ## a`=? AND
 	if (coolApi_dbVersion >= 3) {
 		insertOrUpdateRequest =
 			"SET @now=NOW();"
@@ -685,7 +718,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
 
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
-#define RUNFLAGSFUNC(a,b,c) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
+#define RUNFLAGSFUNC(a,b,c,d,e,f) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
 	RUNFLAGS(RUNFLAGSFUNC)
 #undef RUNFLAGSFUNC
 

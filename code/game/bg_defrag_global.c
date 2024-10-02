@@ -17,9 +17,10 @@ bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "No rolls" },//6
 	{ "TAS mode" },//7
 	{ "Climb tech" },//8
+//	{ "Wallspawn" },//9 // was just a test for db column generation
 };
 
-#define RUNFLAGSFUNC(a,b,c) {#a},
+#define RUNFLAGSFUNC(a,b,c,d,e,f) {#a},
 bitInfo_t runFlagsShortNames[] = {
 	RUNFLAGS(RUNFLAGSFUNC)
 };
@@ -35,6 +36,7 @@ bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "nr" },//6
 	{ "tas" },//7
 	{ "clb" },//8
+//	{ "wlsp" },//9 // was just a test for db column generation
 };
 
 bitInfo_t moveStyleNames[MV_NUMSTYLES] = { 
@@ -50,6 +52,81 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
 
+
+
+const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle) {
+	static char whereString[MAX_STRING_CHARS];
+	if (lbType == LB_CHEAT) {
+		Com_sprintf(whereString, sizeof(whereString), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0 OR `" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0)", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS]);
+		return whereString;
+	}
+	if (lbType == LB_CUSTOM) { // TODO honestly this sucks, make this readable wtf
+#define SUBFUNC(a,d)  OR d ## a != 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+#define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
+		Com_sprintf(whereString, sizeof(whereString), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+			"(msec != 7 AND msec != 8) "
+			"OR jumpLevel != %d /*%d*/ " // extra commented out %d because we can't auto-comment out JUMPBUGDISABLE one in below macro
+			RUNFLAGS(RUNFLAGSFUNC)
+			"))", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS], defaultLevelRaceStyle->jumpLevel
+			RUNFLAGS(RUNFLAGSFUNC2)
+		);
+		return whereString;
+#undef RUNFLAGSFUNC
+#undef RUNFLAGSFUNC2
+#undef SUBFUNC
+	}
+	if (lbType == LB_NOJUMPBUG) { // TODO honestly this sucks, make this readable wtf
+#define SUBFUNC(a,d)  AND d ## a = 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+#define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
+		Com_sprintf(whereString, sizeof(whereString), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+			"(msec = 7 OR msec = 8) "
+			"AND jumpLevel = %d /*%d*/ " // extra commented out %d because we can't auto-comment out JUMPBUGDISABLE one in below macro
+			RUNFLAGS(RUNFLAGSFUNC)
+			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1)", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS], defaultLevelRaceStyle->jumpLevel
+			RUNFLAGS(RUNFLAGSFUNC2)
+			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE]
+		);
+		return whereString;
+#undef RUNFLAGSFUNC
+#undef RUNFLAGSFUNC2
+#undef SUBFUNC
+	}
+	if (lbType == LB_MAIN) { // TODO honestly this sucks, make this readable wtf
+#define SUBFUNC(a,d)  AND d ## a = 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+#define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
+		Com_sprintf(whereString, sizeof(whereString), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+			"(msec = 7 OR msec = 8) "
+			"AND jumpLevel = %d /*%d*/ " // extra commented out %d because we can't auto-comment out JUMPBUGDISABLE one in below macro
+			RUNFLAGS(RUNFLAGSFUNC)
+			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0)", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS], defaultLevelRaceStyle->jumpLevel
+			RUNFLAGS(RUNFLAGSFUNC2)
+			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE]
+		);
+		return whereString;
+#undef RUNFLAGSFUNC
+#undef RUNFLAGSFUNC2
+#undef SUBFUNC
+	}
+	return "";
+}
+
+mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* defaultLevelRaceStyle) {
+	if ((raceStyle->runFlags & RFL_BOT) || (raceStyle->runFlags & RFL_TAS)) {
+		return LB_CHEAT;
+	}
+	//if (raceStyle->movementStyle != MV_JK2) return LB_CUSTOM; // TODO should be its own subcategory altogether?
+	if (raceStyle->jumpLevel != defaultLevelRaceStyle->jumpLevel) return LB_CUSTOM;
+	//if (raceStyle->variant != defaultLevelRaceStyle->variant) return LB_CUSTOM; // TODO should just be its own course kinda probably
+	if (raceStyle->msec != 7 && raceStyle->msec != 8) return LB_CUSTOM;
+	if ((raceStyle->runFlags ^ defaultLevelRaceStyle->runFlags) & ~RFL_JUMPBUGDISABLE) return LB_CUSTOM; // runFlags differ in a way beyond jumpbug disable
+	if (raceStyle->runFlags & RFL_JUMPBUGDISABLE) return LB_NOJUMPBUG;
+	return LB_MAIN;
+}
+
+// means main main, used for checking if time should appear in tab scoreboard. since there is only one main scoreboard, no flexibility thus.
 qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* defaultRaceStyle) {
 	if (raceStyle->movementStyle != MV_JK2) return qfalse;
 	if (raceStyle->msec != 7 && raceStyle->msec != 8) return qfalse;
