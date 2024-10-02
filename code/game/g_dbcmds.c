@@ -489,6 +489,12 @@ static void G_CreateUserTable() {
 }
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
+#define SUBFUNC(a) `runFlag_ ## a` TINYINT(1)
+#define SUBFUNC2(a) `runFlag_ ## a`
+#define SUBFUNC3(a)  INDEX `i_ ## runFlag_ ## a` (`runFlag_ ## a`)
+#define RUNFLAGSFUNC(a,b,c) QUOTEME(SUBFUNC(a)) " NOT NULL,"
+#define RUNFLAGSFUNC2(a,b,c) "," QUOTEME(SUBFUNC2(a))
+#define RUNFLAGSFUNC3(a,b,c) QUOTEME(SUBFUNC3(a)) ","
 	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS runs(\
 			id BIGINT AUTO_INCREMENT PRIMARY KEY, \
 			userid BIGINT SIGNED NOT NULL, \
@@ -507,24 +513,38 @@ static void G_CreateRunsTable() {
 			style SMALLINT UNSIGNED NOT NULL, \
 			msec SMALLINT NOT NULL, \
 			jump TINYINT NOT NULL, \
-			variant SMALLINT NOT NULL, \
-			runFlags INT NOT NULL, \
+			variant SMALLINT NOT NULL,"
+			RUNFLAGS(RUNFLAGSFUNC)
+			"runFlags INT NOT NULL, \
 			runwhen DATETIME NOT NULL, \
 			runfirst DATETIME NOT NULL, \
 			warningFlags INT NOT NULL, \
-			UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags), \
+			UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags"
+			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
+			"), \
 			INDEX i_userid (userid), INDEX i_course (course), \
 			INDEX i_duration_ms (duration_ms), \
 			INDEX i_distance (distance), \
 			INDEX i_style (style), \
 			INDEX i_msec (msec), \
 			INDEX i_jump (jump), \
-			INDEX i_variant (variant), \
-			INDEX i_runflags (runFlags), \
-			INDEX i_runwhen (runwhen),\
+			INDEX i_variant (variant),"
+			RUNFLAGS(RUNFLAGSFUNC3)
+			"INDEX i_runflags (runFlags), \
+			INDEX i_runwhen(runwhen), \
 			INDEX i_runfirst (runfirst),\
 			INDEX i_warningFlags (warningFlags), \
 			INDEX i_runtype (style,msec,jump,variant,runFlags) )";
+#undef RUNFLAGSFUNC
+#undef RUNFLAGSFUNC2
+#undef RUNFLAGSFUNC3
+#undef SUBFUNC
+#undef SUBFUNC2
+#undef SUBFUNC3
+
+	if (g_developer.integer) {
+		G_Printf("TABLE QUERY DEBUG: %s", userTableRequest);
+	}
 	// fields without index (cuz just info/debug, dont need to search/filter by it:
 	// - distanceXY
 	// - startLessTime
@@ -580,11 +600,19 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	// TODO add used fps settings (in case of toggle)
 	// TODO add count of savepos/respos
 
+#define SUBFUNC(a) `runFlag_ ## a`
+#define RUNFLAGSFUNC(a,b,c) QUOTEME(SUBFUNC(a)) "," // gotta do this cuz qvm gets confused by the comma otherwise
+#define RUNFLAGSFUNC2(a,b,c) "?,"
+#define RUNFLAGSFUNC3(a,b,c) `runFlag_ ## a`=? AND
 	if (coolApi_dbVersion >= 3) {
 		insertOrUpdateRequest =
 			"SET @now=NOW();"
-			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,@now,@now,?,?,?,?,?,?,?,?)"
+			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"
+			RUNFLAGS(RUNFLAGSFUNC)
+			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,"
+			RUNFLAGS(RUNFLAGSFUNC2)
+			"@now,@now,?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms = IF(?<duration_ms,?,duration_ms),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
@@ -600,13 +628,19 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount);"
 			// No second statement. check our rank.
-			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
+			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND "
+			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC3))
+			" (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
 			"SELECT (UNIX_TIMESTAMP(@now)-(?*1000000000)) as unixTimeMinus3bill";
 	}
 	else {
 		insertOrUpdateRequest =
-			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW(),?,?,?,?,?,?,?,?)"
+			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"
+			QUOTEME(RUNFLAGS(RUNFLAGSFUNC))
+			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,"
+			QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
+			"NOW(),NOW(),?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms = IF(?<duration_ms,?,duration_ms),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
@@ -622,9 +656,13 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount);"
 			// No second statement. check our rank.
-			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND (duration_ms<? OR (duration_ms=? AND runwhen<NOW()))"; // if someone got the same time as you, but earlier, hes in front of u
+			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND "
+			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC3))
+			" (duration_ms<? OR (duration_ms=? AND runwhen<NOW()))"; // if someone got the same time as you, but earlier, hes in front of u
 	}
-	
+#undef RUNFLAGSFUNC
+#undef RUNFLAGSFUNC2
+#undef RUNFLAGSFUNC3
 		
 
 
@@ -645,7 +683,12 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+#define RUNFLAGSFUNC(a,b,c) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
+	RUNFLAGS(RUNFLAGSFUNC)
+#undef RUNFLAGSFUNC
+
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
 	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
@@ -701,7 +744,12 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+
+//#define RUNFLAGSFUNC(a,b,c) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
+	//RUNFLAGS(RUNFLAGSFUNC)
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+//#undef RUNFLAGSFUNC
+
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 

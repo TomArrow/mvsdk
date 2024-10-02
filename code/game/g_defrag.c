@@ -578,7 +578,7 @@ void PlayActualGlobalSound(int soundindex) {
 }
 
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank) {
-	int nameColor, color;
+	char nameColor, color;
 	static char awardString[MAX_STRING_CHARS - 2] = { 0 };
 	static char messageStr[MAX_STRING_CHARS - 2] = { 0 };
 	static char fpsStr[10] = { 0 };
@@ -617,11 +617,11 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 
 	//if (valid && loggedin)
 	if (!preliminary && runInfo->userId != -1)
-		color = 5;
+		color = '5';
 	else if (!preliminary)
-		color = 2;
+		color = '2';
 	else
-		color = 1;
+		color = '1';
 
 
 	if (!showRank) {
@@ -629,7 +629,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		const int runFlagsStringLen = strlen(runFlagsString);
 		Q_strncpyz(fpsStr, runInfo->raceStyle.msec == -1 ? "togl" : (runInfo->raceStyle.msec == -2 ? "flt" : (runInfo->raceStyle.msec == 0 ? "unkn" : va("%d", 1000 / runInfo->raceStyle.msec))), sizeof(fpsStr));
 
-		Q_strncpyz(messageStr, va("^3%12s^%i  ^3%7.2f^%imax ^3%7.2f^%iavg ^3%7.1fk^%idist ^3%2i^%ij ^3%4s^%ifps ^3%6s^%i style %s ^%i",
+		Q_strncpyz(messageStr, va("^3%12s^%c  ^3%7.2f^%cmax ^3%7.2f^%cavg ^3%7.1fk^%cdist ^3%2i^%cj ^3%4s^%cfps ^3%6s^%c style %s ^%c",
 			DF_MsToString(runInfo->milliseconds),
 			color,
 			runInfo->topspeed,
@@ -656,9 +656,9 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			//if (level.clients[clientNum].midRunTeleCount < 1)
 			//	Q_strcat(messageStr, sizeof(messageStr), " (PRO)");
 			//else
-			Q_strcat(messageStr, sizeof(messageStr), va("(^3%i^%i SP, ^3%i^%i RP) ", runInfo->savePosCount,color, runInfo->resposCount,color));
+			Q_strcat(messageStr, sizeof(messageStr), va("(^3%i^%c SP, ^3%i^%c RP) ", runInfo->savePosCount,color, runInfo->resposCount,color));
 		}
-		Q_strcat(messageStr, sizeof(messageStr), va("by^7 %s  ^%i[^%c%s^%i] ", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color));
+		Q_strcat(messageStr, sizeof(messageStr), va("by^7 %s  ^%c[^%c%s^%c] ", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color));
 		
 
 		trap_SendServerCommand(-1, va("print \"%s\n\" dffinish %s", messageStr, DF_RacePrintAppendage(runInfo)));
@@ -666,14 +666,14 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	else if (runInfo->rank != -1) {
 
 		if (runInfo->rank == 1) { //was 1 when it shouldnt have been.. ?
-			Q_strncpyz(awardString, va("%s ^%i[^%c%s^%i] %sbeat the ^3WORLD RECORD^%i and %s ranked ^3#%i",runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,color, runInfo->userId == -1 ? "unofficially " : "",color, runInfo->userId == -1 ? "would be " : "is now",runInfo->rank), sizeof(awardString));
+			Q_strncpyz(awardString, va("%s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c and %s ranked ^3#%i",runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,color, runInfo->userId == -1 ? "unofficially " : "",color, runInfo->userId == -1 ? "would be " : "is now",runInfo->rank), sizeof(awardString));
 			if (runInfo->userId != -1) {
 				PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
 				//G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass"));
 			}
 		}
 		else if (runInfo->isPB) {
-			Q_strncpyz(awardString, va("%s ^%i[^%c%s^%i] got a new personal best and %s ranked ^3#%i", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color,  runInfo->userId == -1 ? "would be " : "is now", runInfo->rank), sizeof(awardString));
+			Q_strncpyz(awardString, va("%s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color,  runInfo->userId == -1 ? "would be " : "is now", runInfo->rank), sizeof(awardString));
 		}
 
 		/*if (global_newRank > 0) { //Print global rank increased, global score added

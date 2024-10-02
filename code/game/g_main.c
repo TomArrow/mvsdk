@@ -791,8 +791,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	G_Printf ("------- Game Initialization -------\n");
 	G_Printf ("gamename: %s\n", GAMEVERSION);
 	G_Printf ("gamedate: %s\n", __DATE__);
-
-	G_DB_Init();
 	
 	if ( jk2version == VERSION_UNDEF )
 	{ // We don't know the version of the server, yet...
@@ -836,6 +834,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	mysrand( randomSeed ); // On linux rand() behaves different than on Winodws or in a qvm, ...
 
 	G_RegisterCvars();
+
+	G_DB_Init();
 
 	G_ProcessIPBans();
 

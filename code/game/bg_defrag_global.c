@@ -18,17 +18,13 @@ bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "TAS mode" },//7
 	{ "Climb tech" },//8
 };
-bitInfo_t runFlagsShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
-	{ "nojumpbug" },//0
-	{ "nodeadramps" },//1
-	{ "nowallstuck" },//2
-	{ "norollstart" },//3
-	{ "strafebot" },//4
-	{ "segmented" },//5
-	{ "norolls" },//6
-	{ "tas" },//7
-	{ "climb" },//8
+
+#define RUNFLAGSFUNC(a,b,c) {#a},
+bitInfo_t runFlagsShortNames[] = {
+	RUNFLAGS(RUNFLAGSFUNC)
 };
+#undef RUNFLAGSFUNC
+
 bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "njb" },//0
 	{ "ndr" },//1
