@@ -926,6 +926,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	// parse the key/value pairs and spawn gentities
 	G_SpawnEntitiesFromString();
 
+	defaultRaceStyle = getDefaultRaceStyle(); // it has 16 bit values so we can't just do the initializer values in a const global :/
+	level.mapDefaultRaceStyle = defaultRaceStyle;
+
 	// general initialization
 	G_FindTeams();
 

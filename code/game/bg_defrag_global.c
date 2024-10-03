@@ -2,7 +2,9 @@
 #include "bg_public.h"
 #include "bg_local.h"
 
+
 const int defaultRunFlags = RFL_NODEADRAMPS;
+raceStyle_t defaultRaceStyle;
 
 const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_NOROLLSTART | RFL_BOT | RFL_SEGMENTED | RFL_NOROLLS |RFL_CLIMBTECH;
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
@@ -52,7 +54,16 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
 
-
+raceStyle_t getDefaultRaceStyle() {
+	raceStyle_t df;
+	memset(&df, 0, sizeof(df));
+	df.movementStyle = MV_JK2;
+	df.msec = 7;
+	df.jumpLevel = 1;
+	df.variant = 0;
+	df.runFlags = defaultRunFlags;
+	return df;
+}
 
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle) {
 	static char whereString[MAX_STRING_CHARS];
@@ -66,9 +77,9 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
 		Com_sprintf(whereString, sizeof(whereString), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec != 7 AND msec != 8) "
-			"OR jumpLevel != %d /*%d*/ " // extra commented out %d because we can't auto-comment out JUMPBUGDISABLE one in below macro
+			"OR jump != %d " 
 			RUNFLAGS(RUNFLAGSFUNC)
-			"))", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS], defaultLevelRaceStyle->jumpLevel
+			"))", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
 		);
 		return whereString;
@@ -82,11 +93,11 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
 		Com_sprintf(whereString, sizeof(whereString), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "
-			"AND jumpLevel = %d /*%d*/ " // extra commented out %d because we can't auto-comment out JUMPBUGDISABLE one in below macro
+			"AND jump = %d "
 			RUNFLAGS(RUNFLAGSFUNC)
-			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1)", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS], defaultLevelRaceStyle->jumpLevel
+			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
-			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE]
+			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE].string
 		);
 		return whereString;
 #undef RUNFLAGSFUNC
@@ -99,11 +110,11 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
 		Com_sprintf(whereString, sizeof(whereString), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "
-			"AND jumpLevel = %d /*%d*/ " // extra commented out %d because we can't auto-comment out JUMPBUGDISABLE one in below macro
+			"AND jump = %d "
 			RUNFLAGS(RUNFLAGSFUNC)
-			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0)", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS], defaultLevelRaceStyle->jumpLevel
+			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
-			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE]
+			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE].string
 		);
 		return whereString;
 #undef RUNFLAGSFUNC

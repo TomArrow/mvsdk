@@ -291,25 +291,34 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		}
 	}
 
+	runData.runInfo.pbStatus = 0;
 	if (affectedRows == 0) {
 		//trap_SendServerCommand(-1, "print \"^1No new PB.\n\"");
-		runData.runInfo.isPB = 0; // no new pb
+		// no new pb
 	}
 	else if (affectedRows == 1) {
 		//trap_SendServerCommand(-1, "print \"^1First run.\n\"");
-		runData.runInfo.isPB = 1; // first run
+		runData.runInfo.pbStatus |= PB_FIRSTRUN_SPECIFICSTYLE; // first run
 	}
 	else if (affectedRows == 2) {
 		//trap_SendServerCommand(-1, "print \"^1PB!\n\"");
-		runData.runInfo.isPB = 2;
+		runData.runInfo.pbStatus |= PB_NEWPB_SPECIFICSTYLE;
 	}
 	else {
 		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
 	}
 
+
 	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
 	{
-		runData.runInfo.rank = trap_G_COOL_API_DB_GetInt(0) + 1; // SQL result returns amount of faster runs so we add 1 (0 faster runs = #1)
+		if (!trap_G_COOL_API_DB_GetInt(0)) {// SQL result returns amount of faster runs BY OURSELVES on this LB
+			runData.runInfo.pbStatus |= PB_LB;
+		}
+	}
+
+	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
+	{
+		runData.runInfo.rankLB = trap_G_COOL_API_DB_GetInt(0) + 1; // SQL result returns amount of faster runs so we add 1 (0 faster runs = #1)
 	}
 
 	// SELECT (UNIX_TIMESTAMP(@now)-3000000000) as unixTimeMinus3bill
@@ -611,6 +620,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	//static char serverInfo[BIG_INFO_STRING];
 	//static char course[COURSENAME_MAX_LEN+1];
 	const char* insertOrUpdateRequest = NULL;
+	const char* lbSQLCondition = NULL;
 	//if (!cl || !cl->sess.raceMode) return qfalse;
 	memset(&runData, 0, sizeof(runData));
 
@@ -631,15 +641,23 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	//trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	//Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
 
+
+	if (coolApi_dbVersion < 3) {
+		trap_SendServerCommand(-1, va("print \"Database API version below < 3. Run cannot be saved.\n\" dfrunsavefailed %s", DF_RacePrintAppendage(runInfo)));
+		return qfalse;
+	}
+
 	lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);
+
 
 #define SUBFUNC(a,b) `b ## a`
 #define RUNFLAGSFUNC(a,b,c,d,e,f) QUOTEME(SUBFUNC(a,d)) "," // gotta do this cuz qvm gets confused by the comma otherwise
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) "?,"
 #define RUNFLAGSFUNC3(a,b,c,d,e,f) `d ## a`=? AND
-	if (coolApi_dbVersion >= 3) {
-		insertOrUpdateRequest =
-			"SET @now=NOW();"
+	
+	lbSQLCondition = getLeaderboardSQLConditions(lbType, &level.mapDefaultRaceStyle);
+	insertOrUpdateRequest =
+		va("SET @now=NOW();"
 			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
 			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
@@ -647,7 +665,6 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			RUNFLAGS(RUNFLAGSFUNC2)
 			"@now,@now,?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
-			"duration_ms = IF(?<duration_ms,?,duration_ms),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
 			"average = IF(?<duration_ms,?,average),"
 			"distance = IF(?<duration_ms,?,distance),"
@@ -659,40 +676,14 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"saveposCount = IF(?<duration_ms,?,saveposCount),"
 			"resposCount = IF(?<duration_ms,?,resposCount),"
 			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
-			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount);"
-			// No second statement. check our rank.
-			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND "
-			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC3))
-			" (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
-			"SELECT (UNIX_TIMESTAMP(@now)-(?*1000000000)) as unixTimeMinus3bill";
-	}
-	else {
-		insertOrUpdateRequest =
-			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"
-			QUOTEME(RUNFLAGS(RUNFLAGSFUNC))
-			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,"
-			QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
-			"NOW(),NOW(),?,?,?,?,?,?,?,?)"
-			"ON DUPLICATE KEY UPDATE "
-			"duration_ms = IF(?<duration_ms,?,duration_ms),"
-			"topspeed = IF(?<duration_ms,?,topspeed),"
-			"average = IF(?<duration_ms,?,average),"
-			"distance = IF(?<duration_ms,?,distance),"
-			"runwhen = IF(?<duration_ms,NOW(),runwhen),"
-			"warningFlags = IF(?<duration_ms,?,warningFlags),"
-			"distanceXY = IF(?<duration_ms,?,distanceXY),"
-			"startLessTime = IF(?<duration_ms,?,startLessTime),"
-			"endLessTime = IF(?<duration_ms,?,endLessTime),"
-			"saveposCount = IF(?<duration_ms,?,saveposCount),"
-			"resposCount = IF(?<duration_ms,?,resposCount),"
-			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
-			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount);"
-			// No second statement. check our rank.
-			"SELECT COUNT(userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND msec=? AND jump=? AND variant=? AND runFlags=? AND "
-			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC3))
-			" (duration_ms<? OR (duration_ms=? AND runwhen<NOW()))"; // if someone got the same time as you, but earlier, hes in front of u
-	}
+			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount),"
+			"duration_ms = IF(?<duration_ms,?,duration_ms);" // duration_ms has to be set last or else all other columns arent updated
+			// check if we had a better time on this leaderboard before. (return value of INSERT OR UPDATE only tells us if it was the best with the unique key, but leaderboards accumulate ranges of race settings, especially "custom" leaderboard and such)
+			"SELECT COUNT(id) AS countOwnFaster FROM runs WHERE userid=? AND course=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));"
+			// check our new rank.
+			"SELECT COUNT(DISTINCT userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
+			"SELECT (UNIX_TIMESTAMP(@now)-(?*1000000000)) as unixTimeMinus3bill", lbSQLCondition, lbSQLCondition);
+	
 #undef RUNFLAGSFUNC
 #undef RUNFLAGSFUNC2
 #undef RUNFLAGSFUNC3
@@ -733,9 +724,6 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 	// UPDATE PART
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
 
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
@@ -770,25 +758,44 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
 
-	// SECONED QUERY - SELECT
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+
+	// SECOND QUERY - SELECT OUR BEST TIME
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->userId);
 	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
+	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
+	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+
+	//#define RUNFLAGSFUNC(a,b,c) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
+		//RUNFLAGS(RUNFLAGSFUNC)
+		//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+	//#undef RUNFLAGSFUNC
+
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+
+	// THIRD QUERY - SELECT RANK
+	trap_G_COOL_API_DB_PreparedBindInt(runInfo->userId);
+	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
+	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
+	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
 	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
 
 //#define RUNFLAGSFUNC(a,b,c) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
 	//RUNFLAGS(RUNFLAGSFUNC)
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
 //#undef RUNFLAGSFUNC
 
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 
-	if (coolApi_dbVersion >= 3) {
+	//if (coolApi_dbVersion >= 3) {
 		trap_G_COOL_API_DB_PreparedBindInt(runInfo->unixTimeStampShiftedBillionCount);
-	}
+	//}
 
 	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));

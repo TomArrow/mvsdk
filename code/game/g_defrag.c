@@ -579,9 +579,13 @@ void PlayActualGlobalSound(int soundindex) {
 
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank) {
 	char nameColor, color;
-	static char awardString[MAX_STRING_CHARS - 2] = { 0 };
+	//static char awardString[MAX_STRING_CHARS - 2] = { 0 };
 	static char messageStr[MAX_STRING_CHARS - 2] = { 0 };
 	static char fpsStr[10] = { 0 };
+
+	//awardString[0] = 0;
+	messageStr[0] = 0;
+	fpsStr[0] = 0;
 
 	//Com_Printf("SOldrank %i SNewrank %i GOldrank %i GNewrank %i Addscore %.1f\n", season_oldRank, season_newRank, global_oldRank, global_newRank, addedScore);
 
@@ -663,17 +667,17 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 
 		trap_SendServerCommand(-1, va("print \"%s\n\" dffinish %s", messageStr, DF_RacePrintAppendage(runInfo)));
 	}
-	else if (runInfo->rank != -1) {
+	else if (runInfo->rankLB != -1) {
 
-		if (runInfo->rank == 1) { //was 1 when it shouldnt have been.. ?
-			Q_strncpyz(awardString, va("%s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c and %s ranked ^3#%i",runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,color, runInfo->userId == -1 ? "unofficially " : "",color, runInfo->userId == -1 ? "would be " : "is now",runInfo->rank), sizeof(awardString));
+		if (runInfo->rankLB == 1 && (runInfo->pbStatus & PB_LB)) { //was 1 when it shouldnt have been.. ?
+			Q_strncpyz(messageStr, va("%s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c and %s ranked ^3#%i\n",runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,color, runInfo->userId == -1 ? "unofficially " : "",color, runInfo->userId == -1 ? "would be " : "is now",runInfo->rankLB), sizeof(messageStr));
 			if (runInfo->userId != -1) {
 				PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
 				//G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass"));
 			}
 		}
-		else if (runInfo->isPB) {
-			Q_strncpyz(awardString, va("%s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color,  runInfo->userId == -1 ? "would be " : "is now", runInfo->rank), sizeof(awardString));
+		else if ((runInfo->pbStatus & PB_LB)) {
+			Q_strncpyz(messageStr, va("%s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i\n", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color,  runInfo->userId == -1 ? "would be " : "is now", runInfo->rankLB), sizeof(messageStr));
 		}
 
 		/*if (global_newRank > 0) { //Print global rank increased, global score added
@@ -693,7 +697,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			}
 		}*/
 
-		trap_SendServerCommand(-1, va("print \"%s\n\" dffinish_ranked %s", awardString, DF_RacePrintAppendage(runInfo)));
+		trap_SendServerCommand(-1, va("print \"%s\" dffinish_ranked %s", messageStr, DF_RacePrintAppendage(runInfo)));
 	}
 	
 }
@@ -738,8 +742,8 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->topspeed = client->pers.stats.topSpeed;
 	runInfo->savePosCount = client->pers.stats.saveposCount;
 	runInfo->resposCount = client->pers.stats.resposCount;
-	runInfo->rank = -1;
-	runInfo->isPB = -1;
+	runInfo->rankLB = -1;
+	runInfo->pbStatus = -1;
 	runInfo->unixTimeStampShiftedBillionCount = UNIX_TIMESTAMP_SHIFT_BILLIONS; // how much is subtracted from UNIX_TIMESTAMP() in sql before returning the value so we never overflow even a few decades into the future
 }
 
@@ -817,8 +821,8 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->placeHolder6
 		,runInfo->placeHolder7
 		,runInfo->placeHolder8
-		,runInfo->isPB
-		,runInfo->rank
+		,runInfo->pbStatus
+		,runInfo->rankLB
 		,runInfo->coursename
 		,runInfo->username
 		,runInfo->unixTimeStampShifted

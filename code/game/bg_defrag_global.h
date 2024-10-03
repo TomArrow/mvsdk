@@ -113,9 +113,17 @@ typedef struct raceStyle_s {
 	short runFlags; // flags from runFlags_t => STAT_RUNFLAGS
 } raceStyle_t;
 
+extern raceStyle_t defaultRaceStyle;
+
 #define UNIX_TIMESTAMP_SHIFT_BILLIONS 3 // increase this in a few decades when unixTimeStampShifted starts overflowing
 
 #define XYSPEED(a) sqrtf((a)[0]*(a)[0]+(a)[1]*(a)[1])
+
+typedef enum pbFlags_s { // bit flags
+	PB_FIRSTRUN_SPECIFICSTYLE = 1,
+	PB_NEWPB_SPECIFICSTYLE = 2,
+	PB_LB = 4, // Leaderboards sum up various style ranges. e.g. main LB allows 125 and 142 fps runs etc. so pb in ultra specific style is not same as lb pb
+} pbFlags_t;
 
 typedef struct finishedRunInfo_s {
 	int			runId;
@@ -145,8 +153,8 @@ typedef struct finishedRunInfo_s {
 	int			placeHolder6;
 	int			placeHolder7;
 	int			placeHolder8;
-	int			isPB; // 0=not PB, 1=PB (first run), 2=PB
-	int			rank;
+	int			pbStatus; // see pbFlags_t
+	int			rankLB;
 	char		coursename[COURSENAME_MAX_LEN + 1];
 	char		username[USERNAME_MAX_LEN + 1];
 	int			unixTimeStampShifted;
@@ -172,5 +180,6 @@ const char* RunFlagsToString(int runFlags, int defaultRunFlags, int lengthFactor
 qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* defaultRaceStyle);
 mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* defaultLevelRaceStyle);
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle);
+raceStyle_t getDefaultRaceStyle();
 
 #endif
