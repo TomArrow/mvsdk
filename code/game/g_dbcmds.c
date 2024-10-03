@@ -332,6 +332,110 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 
 }
 
+typedef struct topLeaderBoardEntry_s {
+	qboolean exists;
+	char username[USERNAME_MAX_LEN + 1];
+	int besttime, userid, runFlags, msec, jump;
+} topLeaderBoardEntry_t;
+
+// cringe :)
+static const char* topNumberStrings[] = {
+	"1",
+	"2",
+	"3",
+	"4",
+	"5",
+	"6",
+	"7",
+	"8",
+	"9",
+	"10",
+	"UL",
+};
+
+static void G_TopResult(int status, const char* errorMessage, int affectedRows) {
+	topScoresRequestStruct_t lbRequestData;
+	gentity_t* ent = NULL;
+	int currentType = -1;
+	int rank = 1;
+	int maxrank = 0;
+	int i;
+	static topLeaderBoardEntry_t entries[11][LB_TYPES_COUNT];
+	//evaluatedRunInfo_t eRunInfo;
+
+	trap_G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d run inserted, user no longer valid.\n", lbRequestData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateRunsTable();
+		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Leaderboard display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Leaderboard display failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	memset(entries, 0, sizeof(entries));
+
+	while (trap_G_COOL_API_DB_NextRow()) {
+		int type,userid,rankHere;
+		topLeaderBoardEntry_t* entry;
+		type = trap_G_COOL_API_DB_GetInt(0);
+		userid = trap_G_COOL_API_DB_GetInt(3);
+		rankHere = userid == -1 ? 10 : rank - 1;
+		entry = &entries[rankHere][type]; // unofficial go at the end.
+		entry->exists = qtrue;
+		if (userid == -1) {
+			Q_strncpyz(entry->username, "!unlogged!", sizeof(entry->username));
+		}
+		else {
+			trap_G_COOL_API_DB_GetString(1, entry->username, sizeof(entry->username));
+		}
+		entry->besttime = trap_G_COOL_API_DB_GetInt(2);
+		entry->runFlags = trap_G_COOL_API_DB_GetInt(4);
+		entry->msec = trap_G_COOL_API_DB_GetInt(5);
+		entry->jump = trap_G_COOL_API_DB_GetInt(6);
+		if (type != currentType) {
+			currentType = type;
+			rank = 1;
+			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^2Leaderboard type %d.\n\"", currentType));
+		}
+		if (userid != -1) {
+			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1#%d %-10s %10s.\n\"", rank, userid == -1 ? "!unlogged!": username, DF_MsToString(besttime)));
+			maxrank = MAX(maxrank,rank);
+			rank++;
+		}
+	}
+
+	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2%-26s%-26s%-26s%-26s\n\"", "MAIN","NOJUMPBUG","CUSTOM","CHEAT"));
+	for (i = 0; i < 11; i++) {
+		topLeaderBoardEntry_t* entriesHere = entries[i];
+		if (i >= maxrank && i < 10) continue;
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^7"
+			"%c%02s %-10s %10s "
+			"%c%02s %-10s %10s "
+			"%c%02s %-10s %10s "
+			"%c%02s %-10s %10s "
+			"\n\"",
+			!entriesHere[LB_MAIN].exists ? ' ' :'#', !entriesHere[LB_MAIN].exists ? "  " : topNumberStrings[i], entriesHere[LB_MAIN].exists ? entriesHere[LB_MAIN].username : "", !entriesHere[LB_MAIN].exists ? "" : DF_MsToString(entriesHere[LB_MAIN].besttime)
+
+			,!entriesHere[LB_NOJUMPBUG].exists ? ' ' :'#', !entriesHere[LB_NOJUMPBUG].exists ? "  " : topNumberStrings[i],entriesHere[LB_NOJUMPBUG].exists ? entriesHere[LB_NOJUMPBUG].username:"",!entriesHere[LB_NOJUMPBUG].exists ? "" : DF_MsToString(entriesHere[LB_NOJUMPBUG].besttime)
+
+			,!entriesHere[LB_CUSTOM].exists ? ' ' :'#', !entriesHere[LB_CUSTOM].exists ? "  " : topNumberStrings[i],entriesHere[LB_CUSTOM].exists ? entriesHere[LB_CUSTOM].username:"",!entriesHere[LB_CUSTOM].exists ? "" : DF_MsToString(entriesHere[LB_CUSTOM].besttime)
+
+			,!entriesHere[LB_CHEAT].exists ? ' ' :'#', !entriesHere[LB_CHEAT].exists ? "  " : topNumberStrings[i],entriesHere[LB_CHEAT].exists ? entriesHere[LB_CHEAT].username:"",!entriesHere[LB_CHEAT].exists ? "" : DF_MsToString(entriesHere[LB_CHEAT].besttime)
+			));
+	}
+
+}
+
 
 static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	static char		cryptedPw[MAX_STRING_CHARS];
@@ -461,6 +565,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_INSERTORUPDATERUN:
 					G_InsertRunResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_TOP:
+					G_TopResult(status, errorMessage, affectedRows);
 					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);
@@ -616,7 +723,6 @@ extern const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	//gclient_t* cl = ent->client;
 	insertUpdateRunStruct_t runData;
-	mainLeaderboardType_t lbType;
 	//static char serverInfo[BIG_INFO_STRING];
 	//static char course[COURSENAME_MAX_LEN+1];
 	const char* insertOrUpdateRequest = NULL;
@@ -647,7 +753,6 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		return qfalse;
 	}
 
-	lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);
 
 
 #define SUBFUNC(a,b) `b ## a`
@@ -655,7 +760,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) "?,"
 #define RUNFLAGSFUNC3(a,b,c,d,e,f) `d ## a`=? AND
 	
-	lbSQLCondition = getLeaderboardSQLConditions(lbType, &level.mapDefaultRaceStyle);
+	lbSQLCondition = getLeaderboardSQLConditions(runInfo->lbType, &level.mapDefaultRaceStyle);
 	insertOrUpdateRequest =
 		va("SET @now=NOW();"
 			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"

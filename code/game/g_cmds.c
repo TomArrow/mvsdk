@@ -1138,6 +1138,52 @@ void Cmd_Logout_f( gentity_t *ent )
 	trap_SendServerCommand(ent - g_entities, "print \"^2You were successfully logged out.\n\"");
 	ClientUserinfoChanged(ent - g_entities);
 }
+extern const char* DF_GetCourseName();
+
+/*
+=================
+Cmd_Top_f
+=================
+*/
+void Cmd_Top_f( gentity_t *ent )
+{
+	topScoresRequestStruct_t data;
+	int countLBs = 4;
+	const char* mainLBWhere = getLeaderboardSQLConditions(LB_MAIN, &level.mapDefaultRaceStyle);
+	const char* mainLBNJBWhere = getLeaderboardSQLConditions(LB_NOJUMPBUG, &level.mapDefaultRaceStyle);
+	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, &level.mapDefaultRaceStyle);
+	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, &level.mapDefaultRaceStyle);
+	const char* courseName = DF_GetCourseName();
+	if (coolApi_dbVersion < 3) {
+		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database version too low.\n\"");
+		return;
+	}
+
+#define TOPCOLUMNS "users.username,MIN(runs.duration_ms) AS besttime,runs.userid, runs.runFlags, msec, jump"
+
+	data.clientnum = ent - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	if (trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
+		va(
+			"(SELECT 0 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)" // limit 11 cuz want unofficial too, even tho we show it separately.
+			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)"
+			"UNION ALL (SELECT 2 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)"
+			"UNION ALL (SELECT 3 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)"
+			, mainLBWhere, mainLBNJBWhere, customLBWhere, cheatLBWhere))) {
+		int i;
+		for (i = 0; i < countLBs; i++) {
+			trap_G_COOL_API_DB_PreparedBindString(courseName);
+			trap_G_COOL_API_DB_PreparedBindInt((int)MV_JK2);
+			trap_G_COOL_API_DB_PreparedBindInt(0);
+		}
+		trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else {
+		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
+	}
+
+
+}
 
 /*
 =================
@@ -2909,6 +2955,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "top"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcechanged"))
 		{ //special case: still update force change
 			Cmd_ForceChanged_f (ent);
@@ -3006,6 +3056,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Login_f(ent);
 	else if (Q_stricmp (cmd, "logout") == 0)
 		Cmd_Logout_f(ent);
+	else if (Q_stricmp (cmd, "top") == 0)
+		Cmd_Top_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
 		Cmd_Register_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)

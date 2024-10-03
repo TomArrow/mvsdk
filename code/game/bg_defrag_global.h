@@ -39,7 +39,8 @@ typedef enum mainLeaderboardType_s {
 	LB_MAIN,
 	LB_NOJUMPBUG, // main fps but nojumpbug
 	LB_CUSTOM, // other fps, segmented, etc
-	LB_CHEAT // strafebot, tas
+	LB_CHEAT, // strafebot, tas
+	LB_TYPES_COUNT
 } mainLeaderboardType_t;
 
 
@@ -160,6 +161,7 @@ typedef struct finishedRunInfo_s {
 	int			unixTimeStampShifted;
 	int			unixTimeStampShiftedBillionCount; 
 	char		netname[MAX_NETNAME];
+	mainLeaderboardType_t lbType;
 } finishedRunInfo_t;
 
 //typedef struct evaluatedRunInfo_s {

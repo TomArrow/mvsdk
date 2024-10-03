@@ -13,7 +13,8 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_BCRYPTPW, // pw bcrypt request (no actual db request)
 	DBREQUEST_CREATETABLE,
 	DBREQUEST_UPDATECOLUMNS,
-	DBREQUEST_INSERTORUPDATERUN
+	DBREQUEST_INSERTORUPDATERUN,
+	DBREQUEST_TOP
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -27,6 +28,11 @@ typedef struct loginRegisterStruct_s {
 	qboolean	needDoubleBcrypt;
 	int			userFlags;
 } loginRegisterStruct_t;
+
+typedef struct topScoresRequestStruct_s {
+	int			ip[4];
+	int			clientnum;
+}topScoresRequestStruct_t;
 
 typedef struct insertUpdateRunStruct_s {
 	int					ip[4];

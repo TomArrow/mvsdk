@@ -712,9 +712,17 @@ static int DF_GetNewRunId() {
 	return num;
 }
 
-static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int milliseconds) {
+const char* DF_GetCourseName() {
 	static char serverInfo[BIG_INFO_STRING];
 	static char course[COURSENAME_MAX_LEN + 1];
+	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
+	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
+	return course;
+}
+
+static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int milliseconds) {
+	static char serverInfo[BIG_INFO_STRING];
+	//static char course[COURSENAME_MAX_LEN + 1];
 	gclient_t* client = ent->client;
 	if (!client || !client->sess.raceMode) return;
 	runInfo->clientNum = ent - g_entities;
@@ -728,6 +736,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 		Q_strncpyz(runInfo->username, "!unlogged!", sizeof(runInfo->username));
 	}
 	runInfo->raceStyle = client->sess.raceStyle;
+	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(runInfo->coursename, Info_ValueForKey(serverInfo, "mapname"), sizeof(runInfo->coursename));
 
