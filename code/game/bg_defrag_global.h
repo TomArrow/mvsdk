@@ -183,5 +183,6 @@ qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* default
 mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* defaultLevelRaceStyle);
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle);
 raceStyle_t getDefaultRaceStyle();
+char* QDECL multiva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
 #endif

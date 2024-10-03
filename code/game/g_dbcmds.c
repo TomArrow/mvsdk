@@ -416,24 +416,24 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		}
 	}
 
-	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2%-26s%-26s%-26s%-26s\n\"", "MAIN","NOJUMPBUG","CUSTOM","CHEAT"));
+#define MSECSTRING(msec) ((msec) == -1 ? "togl" : ((msec) == -2 ? "flt" : ((msec) == 0 ? "unkn" : multiva("%d", 1000 / (msec)))))
+#define LBROW(lbType) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "", !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
+
+	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","CHEAT"));
 	for (i = 0; i < 11; i++) {
 		topLeaderBoardEntry_t* entriesHere = entries[i];
 		if (i >= maxrank && i < 10) continue;
 		trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-			"^J%c%02s^7 %-10s ^u%10s "
-			"^J%c%02s^7 %-10s ^u%10s "
-			"^J%c%02s^7 %-10s ^u%10s "
-			"^J%c%02s^7 %-10s ^u%10s "
+			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
+			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
+			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
+			"^J%c%02s^7 %-10s ^c%4s ^u%10s "
 			"\n\"",
-			i==10 ? "\n":"",
-			!entriesHere[LB_MAIN].exists ? ' ' :'#', !entriesHere[LB_MAIN].exists ? "  " : topNumberStrings[i], entriesHere[LB_MAIN].exists ? entriesHere[LB_MAIN].username : "", !entriesHere[LB_MAIN].exists ? "" : DF_MsToString(entriesHere[LB_MAIN].besttime)
-
-			,!entriesHere[LB_NOJUMPBUG].exists ? ' ' :'#', !entriesHere[LB_NOJUMPBUG].exists ? "  " : topNumberStrings[i],entriesHere[LB_NOJUMPBUG].exists ? entriesHere[LB_NOJUMPBUG].username:"",!entriesHere[LB_NOJUMPBUG].exists ? "" : DF_MsToString(entriesHere[LB_NOJUMPBUG].besttime)
-
-			,!entriesHere[LB_CUSTOM].exists ? ' ' :'#', !entriesHere[LB_CUSTOM].exists ? "  " : topNumberStrings[i],entriesHere[LB_CUSTOM].exists ? entriesHere[LB_CUSTOM].username:"",!entriesHere[LB_CUSTOM].exists ? "" : DF_MsToString(entriesHere[LB_CUSTOM].besttime)
-
-			,!entriesHere[LB_CHEAT].exists ? ' ' :'#', !entriesHere[LB_CHEAT].exists ? "  " : topNumberStrings[i],entriesHere[LB_CHEAT].exists ? entriesHere[LB_CHEAT].username:"",!entriesHere[LB_CHEAT].exists ? "" : DF_MsToString(entriesHere[LB_CHEAT].besttime)
+			i==10 ? multiva("%31s^h|%32s^h|%32s^h|%32s\n","","","","") : "",
+			LBROW(LB_MAIN)
+			,LBROW(LB_NOJUMPBUG)
+			,LBROW(LB_CUSTOM)
+			,LBROW(LB_CHEAT)
 			));
 	}
 

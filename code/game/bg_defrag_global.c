@@ -238,7 +238,7 @@ const char* DF_MsToString(const int ms)
 	char* buf;
 	int	timeSec, timeMin, timeMsec;
 
-	buf = string[index & 1];
+	buf = string[index & (10-1)];
 	index++;
 
 	timeMsec = ms;
@@ -255,4 +255,32 @@ const char* DF_MsToString(const int ms)
 	}
 	return buf;
 	//return !ms ? "00:00.000" : va("%02i:%02i.%03i", timeMin, timeSec, timeMsec);
+}
+
+
+/*
+============
+va
+
+does a varargs printf into a temp buffer, so I don't need to have
+varargs versions of all text functions.
+FIXME: make this buffer size safe someday
+============
+*/
+#define MAX_MULTIVA_STRING MAX_STRING_CHARS
+#define MAX_MULTIVA_BUFFERS 20
+char* QDECL multiva(const char* format, ...) {
+	va_list		argptr;
+	static char		string[MAX_MULTIVA_BUFFERS][MAX_MULTIVA_STRING];	// in case va is called by nested functions
+	static int		index = 0;
+	char* buf;
+
+	buf = string[index & (MAX_MULTIVA_BUFFERS-1)];
+	index++;
+
+	va_start(argptr, format);
+	Q_vsnprintf(buf, MAX_MULTIVA_STRING, format, argptr);
+	va_end(argptr);
+
+	return buf;
 }
