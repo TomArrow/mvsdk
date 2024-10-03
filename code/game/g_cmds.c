@@ -1148,10 +1148,11 @@ Cmd_Top_f
 void Cmd_Top_f( gentity_t *ent )
 {
 	topScoresRequestStruct_t data;
-	int countLBs = 4;
+	int countLBs = LB_TYPES_COUNT;
 	const char* mainLBWhere = getLeaderboardSQLConditions(LB_MAIN, &level.mapDefaultRaceStyle);
 	const char* mainLBNJBWhere = getLeaderboardSQLConditions(LB_NOJUMPBUG, &level.mapDefaultRaceStyle);
 	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, &level.mapDefaultRaceStyle);
+	const char* segmentedLBWhere = getLeaderboardSQLConditions(LB_SEGMENTED, &level.mapDefaultRaceStyle);
 	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, &level.mapDefaultRaceStyle);
 	const char* courseName = DF_GetCourseName();
 	if (coolApi_dbVersion < 3) {
@@ -1175,7 +1176,8 @@ void Cmd_Top_f( gentity_t *ent )
 			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
 			"UNION ALL (SELECT 2 AS type," TOPCOLUMNS QUERY2 " )"
 			"UNION ALL (SELECT 3 AS type," TOPCOLUMNS QUERY2 " )"
-			, mainLBWhere, mainLBNJBWhere, customLBWhere, cheatLBWhere))) {
+			"UNION ALL (SELECT 4 AS type," TOPCOLUMNS QUERY2 " )"
+			, mainLBWhere, mainLBNJBWhere, customLBWhere, segmentedLBWhere, cheatLBWhere))) {
 		int i;
 		for (i = 0; i < countLBs; i++) {
 			trap_G_COOL_API_DB_PreparedBindString(courseName);

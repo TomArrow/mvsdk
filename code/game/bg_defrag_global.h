@@ -39,6 +39,7 @@ typedef enum mainLeaderboardType_s {
 	LB_MAIN,
 	LB_NOJUMPBUG, // main fps but nojumpbug
 	LB_CUSTOM, // other fps, segmented, etc
+	LB_SEGMENTED, // main fps with or without jumpbug, segmented
 	LB_CHEAT, // strafebot, tas
 	LB_TYPES_COUNT
 } mainLeaderboardType_t;

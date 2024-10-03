@@ -71,15 +71,26 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0 OR `" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0)", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS]);
 		return whereString[lbType];
 	}
+	if (lbType == LB_SEGMENTED) { // TODO honestly this sucks, make this readable wtf
+#define SUBFUNC(a,d)  OR d ## a != 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+#define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND  `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1 )", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string
+		);
+		return whereString[lbType];
+#undef RUNFLAGSFUNC
+#undef RUNFLAGSFUNC2
+#undef SUBFUNC
+	}
 	if (lbType == LB_CUSTOM) { // TODO honestly this sucks, make this readable wtf
 #define SUBFUNC(a,d)  OR d ## a != 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec != 7 AND msec != 8) "
 			"OR jump != %d " 
 			RUNFLAGS(RUNFLAGSFUNC)
-			"))", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, defaultLevelRaceStyle->jumpLevel
+			"))", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
 		);
 		return whereString[lbType];
@@ -91,11 +102,11 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define SUBFUNC(a,d)  AND d ## a = 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "
 			"AND jump = %d "
 			RUNFLAGS(RUNFLAGSFUNC)
-			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, defaultLevelRaceStyle->jumpLevel
+			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
 			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE].string
 		);
@@ -108,11 +119,11 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define SUBFUNC(a,d)  AND d ## a = 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "
 			"AND jump = %d "
 			RUNFLAGS(RUNFLAGSFUNC)
-			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, defaultLevelRaceStyle->jumpLevel
+			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
 			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE].string
 		);
@@ -128,11 +139,12 @@ mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* d
 	if ((raceStyle->runFlags & RFL_BOT) || (raceStyle->runFlags & RFL_TAS)) {
 		return LB_CHEAT;
 	}
+	if (raceStyle->runFlags & RFL_SEGMENTED) return LB_SEGMENTED;
 	//if (raceStyle->movementStyle != MV_JK2) return LB_CUSTOM; // TODO should be its own subcategory altogether?
 	if (raceStyle->jumpLevel != defaultLevelRaceStyle->jumpLevel) return LB_CUSTOM;
 	//if (raceStyle->variant != defaultLevelRaceStyle->variant) return LB_CUSTOM; // TODO should just be its own course kinda probably
 	if (raceStyle->msec != 7 && raceStyle->msec != 8) return LB_CUSTOM;
-	if ((raceStyle->runFlags ^ defaultLevelRaceStyle->runFlags) & ~RFL_JUMPBUGDISABLE) return LB_CUSTOM; // runFlags differ in a way beyond jumpbug disable
+	if ((raceStyle->runFlags ^ defaultLevelRaceStyle->runFlags) & ~(RFL_JUMPBUGDISABLE)) return LB_CUSTOM; // runFlags differ in a way beyond jumpbug disable
 	if (raceStyle->runFlags & RFL_JUMPBUGDISABLE) return LB_NOJUMPBUG;
 	return LB_MAIN;
 }
@@ -230,15 +242,15 @@ float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd
 	return 1.001f; // OVERCLIP define
 }
 
-
+#define MAX_MSTOSTRING_BUFFERS 32
 const char* DF_MsToString(const int ms)
 {
-	static char		string[10][15];	// in case va is called by nested functions
+	static char		string[MAX_MSTOSTRING_BUFFERS][15];	// in case va is called by nested functions
 	static int		index = 0;
 	char* buf;
 	int	timeSec, timeMin, timeMsec;
 
-	buf = string[index & (10-1)];
+	buf = string[index & (MAX_MSTOSTRING_BUFFERS -1)];
 	index++;
 
 	timeMsec = ms;
@@ -268,7 +280,7 @@ FIXME: make this buffer size safe someday
 ============
 */
 #define MAX_MULTIVA_STRING MAX_STRING_CHARS
-#define MAX_MULTIVA_BUFFERS 20
+#define MAX_MULTIVA_BUFFERS 32
 char* QDECL multiva(const char* format, ...) {
 	va_list		argptr;
 	static char		string[MAX_MULTIVA_BUFFERS][MAX_MULTIVA_STRING];	// in case va is called by nested functions

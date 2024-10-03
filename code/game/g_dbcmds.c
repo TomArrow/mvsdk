@@ -419,7 +419,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 #define MSECSTRING(msec) ((msec) == -1 ? "togl" : ((msec) == -2 ? "flt" : ((msec) == 0 ? "unkn" : multiva("%d", 1000 / (msec)))))
 #define LBROW(lbType) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "", !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
 
-	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","CHEAT"));
+	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-27s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
 	for (i = 0; i < 11; i++) {
 		topLeaderBoardEntry_t* entriesHere = entries[i];
 		if (i >= maxrank && i < 10) continue;
@@ -427,12 +427,14 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
 			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
 			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
+			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
 			"^J%c%02s^7 %-10s ^c%4s ^u%10s "
 			"\n\"",
-			i==10 ? multiva("%31s^h|%32s^h|%32s^h|%32s\n","","","","") : "",
+			i==10 ? multiva("%31s^h|%32s^h|%32s^h|%32s^h|%32s\n","","","","","") : "",
 			LBROW(LB_MAIN)
 			,LBROW(LB_NOJUMPBUG)
 			,LBROW(LB_CUSTOM)
+			,LBROW(LB_SEGMENTED)
 			,LBROW(LB_CHEAT)
 			));
 	}
