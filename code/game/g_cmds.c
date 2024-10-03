@@ -1159,16 +1159,22 @@ void Cmd_Top_f( gentity_t *ent )
 		return;
 	}
 
-#define TOPCOLUMNS "users.username,MIN(runs.duration_ms) AS besttime,runs.userid, runs.runFlags, msec, jump"
+#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump"
+//#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime,MIN(runwhen) OVER (PARTITION BY userid) AS earliest FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
+#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
+//#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE earliest=runwhen AND besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
+#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
 
+	// TODO what if, for freak reason, someone has two identical times in two different styles? how do i select the earlier one? or should i even care?  earliest=runwhen AND besttime=duration_ms doesnt work cuz not both are neccessarily true
+	
 	data.clientnum = ent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	if (trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
 		va(
-			"(SELECT 0 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)" // limit 11 cuz want unofficial too, even tho we show it separately.
-			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)"
-			"UNION ALL (SELECT 2 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)"
-			"UNION ALL (SELECT 3 AS type," TOPCOLUMNS " FROM runs LEFT JOIN users ON runs.userid=users.id WHERE course=? AND style=? AND variant=? AND %s GROUP BY userid ORDER BY besttime ASC LIMIT 11)"
+			"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
+			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
+			"UNION ALL (SELECT 2 AS type," TOPCOLUMNS QUERY2 " )"
+			"UNION ALL (SELECT 3 AS type," TOPCOLUMNS QUERY2 " )"
 			, mainLBWhere, mainLBNJBWhere, customLBWhere, cheatLBWhere))) {
 		int i;
 		for (i = 0; i < countLBs; i++) {
