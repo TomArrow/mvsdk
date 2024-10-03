@@ -389,6 +389,13 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		topLeaderBoardEntry_t* entry;
 		type = trap_G_COOL_API_DB_GetInt(0);
 		userid = trap_G_COOL_API_DB_GetInt(3);
+
+		if (type != currentType) {
+			currentType = type;
+			rank = 1;
+			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^2Leaderboard type %d.\n\"", currentType));
+		}
+		if (rank > 9) continue;
 		rankHere = userid == -1 ? 10 : rank - 1;
 		entry = &entries[rankHere][type]; // unofficial go at the end.
 		entry->exists = qtrue;
@@ -402,14 +409,9 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		entry->runFlags = trap_G_COOL_API_DB_GetInt(4);
 		entry->msec = trap_G_COOL_API_DB_GetInt(5);
 		entry->jump = trap_G_COOL_API_DB_GetInt(6);
-		if (type != currentType) {
-			currentType = type;
-			rank = 1;
-			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^2Leaderboard type %d.\n\"", currentType));
-		}
 		if (userid != -1) {
 			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1#%d %-10s %10s.\n\"", rank, userid == -1 ? "!unlogged!": username, DF_MsToString(besttime)));
-			maxrank = MAX(maxrank,rank);
+			maxrank = MAX(maxrank, rank);
 			rank++;
 		}
 	}
@@ -418,12 +420,13 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	for (i = 0; i < 11; i++) {
 		topLeaderBoardEntry_t* entriesHere = entries[i];
 		if (i >= maxrank && i < 10) continue;
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^7"
-			"%c%02s %-10s %10s "
-			"%c%02s %-10s %10s "
-			"%c%02s %-10s %10s "
-			"%c%02s %-10s %10s "
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
+			"^J%c%02s^7 %-10s ^u%10s "
+			"^J%c%02s^7 %-10s ^u%10s "
+			"^J%c%02s^7 %-10s ^u%10s "
+			"^J%c%02s^7 %-10s ^u%10s "
 			"\n\"",
+			i==10 ? "\n":"",
 			!entriesHere[LB_MAIN].exists ? ' ' :'#', !entriesHere[LB_MAIN].exists ? "  " : topNumberStrings[i], entriesHere[LB_MAIN].exists ? entriesHere[LB_MAIN].username : "", !entriesHere[LB_MAIN].exists ? "" : DF_MsToString(entriesHere[LB_MAIN].besttime)
 
 			,!entriesHere[LB_NOJUMPBUG].exists ? ' ' :'#', !entriesHere[LB_NOJUMPBUG].exists ? "  " : topNumberStrings[i],entriesHere[LB_NOJUMPBUG].exists ? entriesHere[LB_NOJUMPBUG].username:"",!entriesHere[LB_NOJUMPBUG].exists ? "" : DF_MsToString(entriesHere[LB_NOJUMPBUG].besttime)
