@@ -242,7 +242,7 @@ float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd
 	return 1.001f; // OVERCLIP define
 }
 
-#define MAX_MSTOSTRING_BUFFERS 32
+#define MAX_MSTOSTRING_BUFFERS 64
 const char* DF_MsToString(const int ms)
 {
 	static char		string[MAX_MSTOSTRING_BUFFERS][15];	// in case va is called by nested functions
@@ -280,7 +280,7 @@ FIXME: make this buffer size safe someday
 ============
 */
 #define MAX_MULTIVA_STRING MAX_STRING_CHARS
-#define MAX_MULTIVA_BUFFERS 32
+#define MAX_MULTIVA_BUFFERS 64
 char* QDECL multiva(const char* format, ...) {
 	va_list		argptr;
 	static char		string[MAX_MULTIVA_BUFFERS][MAX_MULTIVA_STRING];	// in case va is called by nested functions

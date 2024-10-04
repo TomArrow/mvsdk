@@ -335,7 +335,8 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 typedef struct topLeaderBoardEntry_s {
 	qboolean exists;
 	char username[USERNAME_MAX_LEN + 1];
-	int besttime, userid, runFlags, msec, jump;
+	int besttime, userid, runFlags, msec, jump, runFlagsDiff;
+	//raceStyle_t raceStyle;
 } topLeaderBoardEntry_t;
 
 // cringe :)
@@ -407,6 +408,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		}
 		entry->besttime = trap_G_COOL_API_DB_GetInt(2);
 		entry->runFlags = trap_G_COOL_API_DB_GetInt(4);
+		entry->runFlagsDiff = (entry->runFlags ^ level.mapDefaultRaceStyle.runFlags) & entry->runFlags; // show all that are active that are different from default
 		entry->msec = trap_G_COOL_API_DB_GetInt(5);
 		entry->jump = trap_G_COOL_API_DB_GetInt(6);
 		if (userid != -1) {
@@ -417,27 +419,35 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	}
 
 #define MSECSTRING(msec) ((msec) == -1 ? "togl" : ((msec) == -2 ? "flt" : ((msec) == 0 ? "unkn" : multiva("%d", 1000 / (msec)))))
-#define LBROW(lbType) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "", !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
+#define LBROW(lbType,coloration,jumpvalue) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], coloration(entriesHere[lbType]), entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "" jumpvalue(entriesHere[lbType]), !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
 
-	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-27s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
+#define JUMPVALUE(a) ,((a).jump)
+#define JUMPVALUE_EMPTY(a) 
+#define TIMECOLOR_DEFAULT(a) '7'
+#define TIMECOLOR_CHEAT(a) ((((a).runFlags & RFL_TAS)||((a).runFlags & RFL_BOT)) ? (((a).runFlags & RFL_SEGMENTED) ? 'x':'1') : '7' )
+#define TIMECOLOR_CUSTOM(a) (((a).runFlagsDiff & RFL_CLIMBTECH) ? 'E':'7')
+	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-31s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
 	for (i = 0; i < 11; i++) {
 		topLeaderBoardEntry_t* entriesHere = entries[i];
 		if (i >= maxrank && i < 10) continue;
 		trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^7 %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^7 %-10s ^c%4s ^u%10s "
+			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
+			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
+			"^J%c%02s^%c %-10s ^c%4s ^3j%-2d ^u%10s ^h| " // so middle (custom) column is 4 wider
+			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
+			"^J%c%02s^%c %-10s ^c%4s ^u%10s "
 			"\n\"",
-			i==10 ? multiva("%31s^h|%32s^h|%32s^h|%32s^h|%32s\n","","","","","") : "",
-			LBROW(LB_MAIN)
-			,LBROW(LB_NOJUMPBUG)
-			,LBROW(LB_CUSTOM)
-			,LBROW(LB_SEGMENTED)
-			,LBROW(LB_CHEAT)
+			i==10 ? multiva("%31s^h|%32s^h|%36s^h|%32s^h|%32s\n","","","","","") : "",
+			LBROW(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+			,LBROW(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+			,LBROW(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE)
+			,LBROW(LB_SEGMENTED, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+			,LBROW(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
 			));
 	}
+	
+	//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7color explanation:\n^7    %-27s      ^7%-27s      ^7%-27s      ^7%-27s^      ^7%-29s\n\"", "MAIN", "NOJUMPBUG", "CUSTOM", "SEGMENTED", "CHEAT"));
+	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation:  ^E%-12s ^1%-12s ^x%-12s\n^7for more details, request specific leaderboard\n\"","climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
 
 }
 
