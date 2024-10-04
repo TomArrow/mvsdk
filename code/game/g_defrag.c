@@ -542,7 +542,7 @@ qboolean ValidRaceSettings(gentity_t* player)
 	if (!g_smoothClients.integer)// why?
 		return qfalse;
 	//if (sv_fps.integer != 20 && sv_fps.integer != 30 && sv_fps.integer != 40)//Dosnt really make a difference.. but eh.... loda fixme
-	if (sv_fps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. well... but demos wouldnt be proper without it, so leave it.
+	if (g_sv_fps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. well... but demos wouldnt be proper without it, so leave it.
 		return qfalse;
 	//if (sv_pluginKey.integer) {
 	//	if (!player->client->pers.validPlugin && player->client->pers.userName[0]) { //Meh.. only do this if they are logged in to keep the print colors working right i guess..
