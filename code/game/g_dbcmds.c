@@ -341,15 +341,15 @@ typedef struct topLeaderBoardEntry_s {
 
 // cringe :)
 static const char* topNumberStrings[] = {
-	"1",
-	"2",
-	"3",
-	"4",
-	"5",
-	"6",
-	"7",
-	"8",
-	"9",
+	"01", // linux doesnt like padding strings with 0 so i do it myself :(
+	"02",
+	"03",
+	"04",
+	"05",
+	"06",
+	"07",
+	"08",
+	"09",
 	"10",
 	"UL",
 };
