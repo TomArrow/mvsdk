@@ -6,7 +6,7 @@
 const int defaultRunFlags = RFL_NODEADRAMPS;
 raceStyle_t defaultRaceStyle;
 
-const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_NOROLLSTART | RFL_BOT | RFL_SEGMENTED | RFL_NOROLLS |RFL_CLIMBTECH;
+const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
 
 bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
@@ -68,12 +68,13 @@ raceStyle_t getDefaultRaceStyle() {
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle) {
 	static char whereString[LB_TYPES_COUNT][MAX_STRING_CHARS];
 	if (lbType == LB_CHEAT) {
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0 OR `" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0)", runFlagsShortNames[RFLINDEX_BOT], runFlagsShortNames[RFLINDEX_TAS]);
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0 OR `" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string);
 		return whereString[lbType];
 	}
 	if (lbType == LB_SEGMENTED) { // TODO honestly this sucks, make this readable wtf
-#define SUBFUNC(a,d)  OR d ## a != 
-#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+		// WHY am i putting the "OR " and "AND " in its own quotes instead of just intoo SUBFUNC? Because QVM preprocessor thinks there shouldn't be an empty space between AND and d then. Wtf? oh well
+#define SUBFUNC(a,d)  d ## a != 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e "OR " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
 		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND  `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1 )", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string
 		);
@@ -83,8 +84,8 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #undef SUBFUNC
 	}
 	if (lbType == LB_CUSTOM) { // TODO honestly this sucks, make this readable wtf
-#define SUBFUNC(a,d)  OR d ## a != 
-#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+#define SUBFUNC(a,d)  d ## a != 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e "OR " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
 		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec != 7 AND msec != 8) "
@@ -99,8 +100,8 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #undef SUBFUNC
 	}
 	if (lbType == LB_NOJUMPBUG) { // TODO honestly this sucks, make this readable wtf
-#define SUBFUNC(a,d)  AND d ## a = 
-#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+#define SUBFUNC(a,d)  d ## a = 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e "AND " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
 		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "
@@ -116,8 +117,8 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #undef SUBFUNC
 	}
 	if (lbType == LB_MAIN) { // TODO honestly this sucks, make this readable wtf
-#define SUBFUNC(a,d)  AND d ## a = 
-#define RUNFLAGSFUNC(a,b,c,d,e,f) e QUOTEME(SUBFUNC(a,d)) "%d " f
+#define SUBFUNC(a,d)  d ## a = 
+#define RUNFLAGSFUNC(a,b,c,d,e,f) e "AND " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
 		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "

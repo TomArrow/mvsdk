@@ -433,7 +433,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^%c %-10s ^c%4s ^3j%-2d ^u%10s ^h| " // so middle (custom) column is 4 wider
+			"^J%c%02s^%c %-10s ^c%4s j%-2d ^u%10s ^h| " // so middle (custom) column is 4 wider
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s "
 			"\n\"",
