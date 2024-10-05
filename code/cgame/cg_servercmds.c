@@ -262,10 +262,11 @@ static void CG_ParseServerinfo( const char *info ) {
 		}
 		if (!Q_stricmpn(v, "tommyternal", 11)) {
 			cgs.isTommyTernal = qtrue;
+			cgs.ttFlags = Info_ValueForKey(info, "ttFlags");
 			v = Info_ValueForKey(info, "jcinfo");
 			cgs.jcinfo = atoi(v);//[JAPRO - Clientside - All - Add gamename variable to get jcinfo from japro servers]
 			v = Info_ValueForKey(info, "g_fixHighFPSAbuse");
-			if (v && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
+			if (atoi(v) && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
 				cgs.jcinfo |= JK2PRO_CINFO_HIGHFPSFIX;
 			}
 			//trap_Cvar_Set("cjp_client", "1.4JAPRO");
@@ -277,7 +278,7 @@ static void CG_ParseServerinfo( const char *info ) {
 			v = Info_ValueForKey(info, "jcinfo");
 			cgs.jcinfo = atoi(v);//[JAPRO - Clientside - All - Add gamename variable to get jcinfo from japro servers]
 			v = Info_ValueForKey(info, "g_fixHighFPSAbuse");
-			if (v && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
+			if (atoi(v) && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
 				cgs.jcinfo |= JK2PRO_CINFO_HIGHFPSFIX;
 			}
 			trap_Cvar_Set("cjp_client", "1.4JAPRO");
@@ -286,7 +287,7 @@ static void CG_ParseServerinfo( const char *info ) {
 			cgs.isCTFMod = qtrue;
 			cgs.CTF3ModeActive = (qboolean)(atoi(Info_ValueForKey(info, "g_allowFreeTeam")));
 			v = Info_ValueForKey(info, "g_block333");
-			if (v) cgs.jcinfo = atoi(v);
+			if (v) cgs.jcinfo = atoi(v); // ?!?! wut
 			if (cgs.jcinfo && cgs.jcinfo != 3) {
 				cgs.jcinfo = JK2PRO_CINFO_HIGHFPSFIX;
 			}

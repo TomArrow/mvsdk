@@ -117,6 +117,7 @@ vmCvar_t	g_smoothClients;
 vmCvar_t	g_pmove_fixed;
 vmCvar_t	g_pmove_msec;
 vmCvar_t	g_pmove_float;
+vmCvar_t	g_ttFlags;
 vmCvar_t	g_fixHighFPSAbuse;
 vmCvar_t	g_entHUDFields;
 vmCvar_t	g_rankings;
@@ -301,6 +302,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_fixHighFPSAbuse, "g_fixHighFPSAbuse", "0", CVAR_SYSTEMINFO, 0, qtrue},
+	{ &g_ttFlags, "g_ttFlags", "0", CVAR_SERVERINFO| CVAR_ROM, 0, qtrue}, // not currently used, maybe for the future to communicate special tommyternal server settings to the client
 	{ &g_entHUDFields, "g_entHUDFields", "1", CVAR_SYSTEMINFO|CVAR_ARCHIVE, 0, qtrue},
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},

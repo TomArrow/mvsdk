@@ -102,6 +102,7 @@
 
 
 
+
 #define RESTRICT_SB					(1<<0)	//remove hackbots
 #define RESTRICT_COSBY				(1<<1)	//remove hackbots
 #define RESTRICT_LEAD				(1<<2)	//remove lead indicator
@@ -1608,7 +1609,6 @@ Ghoul2 Insert End
 	//jk2pro
 	int				jcinfo;
 	qboolean		isJK2Pro;
-	qboolean		isTommyTernal;
 	qboolean		isCTFMod;
 	qboolean		CTF3ModeActive;
 	qboolean		isolateDuels;
@@ -1619,6 +1619,9 @@ Ghoul2 Insert End
 
 	int				uni_clientFlags; // Anti-cheat cvar set by server owners to disable cheats in UnityMod. We use the same for compatibility
 	int				debugMelee;
+
+	qboolean		isTommyTernal;
+	qboolean		ttFlags; // tommyternal flags
 } cgs_t;
 
 //==============================================================================

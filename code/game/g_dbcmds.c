@@ -424,7 +424,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 #define JUMPVALUE(a) ,((a).jump)
 #define JUMPVALUE_EMPTY(a) 
 #define TIMECOLOR_DEFAULT(a) '7'
-#define TIMECOLOR_CHEAT(a) ((((a).runFlags & RFL_TAS)||((a).runFlags & RFL_BOT)) ? (((a).runFlags & RFL_SEGMENTED) ? 'x':'1') : '7' )
+#define TIMECOLOR_CHEAT(a) ((((a).runFlags & RFL_TAS)||((a).runFlags & RFL_BOT)) ? (((a).runFlags & RFL_SEGMENTED) ? 'j':'1') : '7' )
 #define TIMECOLOR_CUSTOM(a) (((a).runFlagsDiff & RFL_CLIMBTECH) ? 'E':'7')
 	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-31s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
 	for (i = 0; i < 11; i++) {
@@ -447,7 +447,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	}
 	
 	//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7color explanation:\n^7    %-27s      ^7%-27s      ^7%-27s      ^7%-27s^      ^7%-29s\n\"", "MAIN", "NOJUMPBUG", "CUSTOM", "SEGMENTED", "CHEAT"));
-	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation:  ^E%-12s ^1%-12s ^x%-12s\n^7for more details, request specific leaderboard\n\"","climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
+	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation:  ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"","climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
 
 }
 

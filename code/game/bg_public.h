@@ -243,6 +243,10 @@ extern int forceMasteryPoints[NUM_FORCE_MASTERY_LEVELS];
 
 extern int bgForcePowerCost[NUM_FORCE_POWERS][NUM_FORCE_POWER_LEVELS];
 
+
+
+//#define TT_FLAG_		(1<<0) //unused
+
 // pmove->pm_flags
 #define	PMF_DUCKED			1
 #define	PMF_JUMP_HELD		2

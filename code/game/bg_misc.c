@@ -2097,6 +2097,7 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad ) {
 #define JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_Z 32
 #define JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS 64
 
+// TODO do a test of this against the other code to make sure its accurate.
 void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad) {
 	vec3_t tmpHorz, tmpVert;
 	int flags = jumppad->weapon;
