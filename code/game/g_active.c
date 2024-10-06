@@ -1298,6 +1298,13 @@ void G_UpdateClientBroadcasts ( gentity_t *self )
 
 qboolean DF_PrePmoveValid(gentity_t* ent);
 
+void UpdateClientPastFpsStats(gentity_t* ent, int msec) {
+	entityState_t* stats = &level.playerStats[ent-g_entities]->s;
+	ent->client->lastMsecValue = msec;
+	stats->pastFpsUnionArray[stats->fireflag++] = msec;
+	stats->fireflag = stats->fireflag & (PLAYERSTATS_PAST_MSEC-1);
+}
+
 /*
 ==============
 ClientThink
@@ -1515,6 +1522,8 @@ void ClientThink_real( gentity_t *ent ) {
 		return;
 	}
 
+	BG_UserCmdToUserStats(&client->pers.cmd,&level.playerStats[ent-g_entities]->s);
+
 	clientFpsOk = ClientCheckNotifyPhysicsFps(ent); // Let the client know about his need to set a different com_physicsFps value if needed
 
 	// race mode toggle restrictions
@@ -1525,7 +1534,8 @@ void ClientThink_real( gentity_t *ent ) {
 			client->pers.raceDropped.packetCount++;
 		}
 		client->ps.commandTime = client->pers.cmd.serverTime;
-		client->lastMsecValue = msec;
+		//client->lastMsecValue = msec;
+		UpdateClientPastFpsStats(ent, msec);
 		return;
 	}
 
@@ -1888,7 +1898,8 @@ void ClientThink_real( gentity_t *ent ) {
 	VectorCopy(pm.mins, ent->client->postPmoveMins);
 	VectorCopy(pm.maxs, ent->client->postPmoveMaxs);
 
-	client->lastMsecValue = msec;
+	UpdateClientPastFpsStats(ent,msec);
+	//client->lastMsecValue = msec;
 
 	if (client->pers.raceStartCommandTime && DF_PrePmoveValid(ent)) { // is this accurate? can there be any movement outside of pmove? other than teleport, that is.
 		vec3_t displacementAdd;

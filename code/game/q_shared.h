@@ -1986,6 +1986,12 @@ typedef struct {
 	vec3_t	trDelta;			// velocity, etc
 } trajectory_t;
 
+#ifdef Q3_VM
+#define ANONSTRUCT anon
+#else
+#define ANONSTRUCT
+#endif
+
 // entityState_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
@@ -2015,11 +2021,23 @@ typedef struct entityState_s {
 	int		bolt1;
 	int		bolt2;
 
-	//rww - this is necessary for determining player visibility during a jedi mindtrick
-	int		trickedentindex; //0-15
-	int		trickedentindex2; //16-32
-	int		trickedentindex3; //33-48
-	int		trickedentindex4; //49-64
+	union {
+		struct {
+			//rww - this is necessary for determining player visibility during a jedi mindtrick
+			int		trickedentindex; //0-15
+			int		trickedentindex2; //16-32
+			int		trickedentindex3; //33-48
+			int		trickedentindex4; //49-64
+		} ANONSTRUCT;
+		int	pastFpsUnionArray[4]; // fucking evil xd
+	} ANONSTRUCT;
+#ifdef Q3_VM
+#define trickedentindex anon.anon.trickedentindex
+#define trickedentindex2 anon.anon.trickedentindex2
+#define trickedentindex3 anon.anon.trickedentindex3
+#define trickedentindex4 anon.anon.trickedentindex4
+#define pastFpsUnionArray anon.pastFpsUnionArray
+#endif
 
 	float	speed;
 

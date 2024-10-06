@@ -2049,6 +2049,35 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 	ps->eventSequence++;
 }
 
+
+void BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es) {
+
+	es->constantLight = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
+	es->forcePowersActive = ((byte)ucmd->forwardmove << 24) | ((byte)ucmd->rightmove << 16) | ((byte)ucmd->upmove << 8);
+
+	// do we need angles? might be a bit wasteful.
+	VectorCopy(ucmd->angles, es->apos.trBase);
+
+	es->forceFrame = ucmd->buttons;
+}
+
+void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
+
+	ucmd->weapon = es->constantLight >> 24;
+	ucmd->forcesel = (es->constantLight >> 16) & 0xff;
+	ucmd->invensel = (es->constantLight >> 8) & 0xff;
+	ucmd->generic_cmd = (es->constantLight) & 0xff;
+
+	ucmd->forwardmove = (signed char)(es->forcePowersActive >> 24);
+	ucmd->rightmove = (signed char)((es->forcePowersActive >> 16) & 0xff);
+	ucmd->upmove = (signed char)((es->forcePowersActive >> 8) & 0xff);
+
+	// do we need angles? might be a bit wasteful.
+	VectorCopy(es->apos.trBase, ucmd->angles);
+
+	ucmd->buttons = es->forceFrame;
+}
+
 static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity) {
 	if (!referenceMsec) return gravity;
 	return roundf((float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
@@ -2101,7 +2130,6 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompens
 		VectorCopy(jumppad->origin2, ps->velocity);
 	}
 }
-
 
 
 #define JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY 1

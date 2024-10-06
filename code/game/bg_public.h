@@ -848,6 +848,8 @@ qboolean	BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 #define SABER_BLOCK_DUR 150		// number of milliseconds a block animation should take.
 
 
+#define PLAYERSTATS_PAST_MSEC	4
+
 
 // g_dmflags->integer flags
 #define	DF_NO_FALLING			8
@@ -1109,9 +1111,10 @@ void	BG_EvaluateTrajectoryDelta( const trajectory_t *tr, int atTime, vec3_t resu
 
 void	BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t *ps );
 
+void	BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es);
+void	BG_StatsToUserCmd(entityState_t* es, usercmd_t* ucmd);
 void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec);
 void	BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec);
-void	BG_TeleporterTouch(playerState_t* ps, entityState_t* teleporter);
 
 void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap );
 void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );
