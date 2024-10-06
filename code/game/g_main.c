@@ -920,6 +920,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	// reserve some spots for dead player bodies
 	InitBodyQue();
 
+	InitPlayerStats();
+
 	ClearRegisteredItems();
 
 	// initialize saga mode before spawning entities so we know

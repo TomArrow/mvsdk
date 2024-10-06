@@ -617,6 +617,33 @@ void InitBodyQue (void) {
 }
 
 /*
+===============
+InitPlayerStats
+===============
+*/
+void InitPlayerStats(void) {
+	int		i;
+	gentity_t* ent;
+
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		//if (g_defrag.integer) {
+			ent = G_Spawn();
+			ent->classname = "playerstats";
+			ent->neverFree = qtrue;
+			ent->s.eType = ET_INVISIBLE;
+			ent->s.clientNum = i;
+			ent->s.fireflag = 3; // tell tommyternal cgame that this is a player stats object :)
+			ent->r.svFlags |= SVF_BROADCAST;
+			level.playerStats[i] = ent;
+			trap_LinkEntity(ent);
+		//}
+		//else {
+		//	level.playerStats[i] = 0;
+		//}
+	}
+}
+
+/*
 =============
 BodySink
 

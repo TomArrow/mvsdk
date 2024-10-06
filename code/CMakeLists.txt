@@ -112,6 +112,8 @@ if(BuildQVMs)
 		)
 
 		add_custom_target(bins-jk2pro ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3")
+		set_target_properties(bins-jk2pro PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
+		set_target_properties(qvms PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
 		set_property(TARGET bins-jk2pro PROPERTY FOLDER "Modules")
 
 		if(WIN32 OR BuildPortableVersion)

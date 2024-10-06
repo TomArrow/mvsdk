@@ -631,6 +631,7 @@ typedef struct {
 
 	// tommyternal
 	int			nonDeterministicEntities; // if the level contains any movers or certain target_ things, show a warning to people doing segmented runs
+	gentity_t*	playerStats[MAX_CLIENTS];
 } level_locals_t;
 
 
@@ -913,6 +914,7 @@ void CopyToBodyQue( gentity_t *ent );
 void respawn (gentity_t *ent);
 void BeginIntermission (void);
 void InitBodyQue (void);
+void InitPlayerStats(void);
 void ClientSpawn( gentity_t *ent );
 void G_Kill(gentity_t* ent);
 void player_die (gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod);
