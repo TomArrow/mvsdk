@@ -526,6 +526,7 @@ struct gclient_s {
 	vec3_t		triggerMins; //mins/maxes used for evaluating triggers, for consistency. used for race triggers.
 	vec3_t		triggerMaxs; 
 
+	int			lastMsecValue;
 
 	int			forcePowerMicroRegenBuffer; // forcepower regen buffer multiplied by 1000. when we get above 1000, we divide by 1000 and add to forcepower and subtract from this
 	int			triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
@@ -1201,6 +1202,7 @@ extern	vmCvar_t	g_debugDamage;
 extern	vmCvar_t	g_weaponRespawn;
 extern	vmCvar_t	g_weaponTeamRespawn;
 extern	vmCvar_t	g_adaptRespawn;
+extern	vmCvar_t	g_mapDefaultMsec;
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;
 extern	vmCvar_t	g_warmup;

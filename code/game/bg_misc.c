@@ -2049,14 +2049,23 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 	ps->eventSequence++;
 }
 
+static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity) {
+	if (!referenceMsec) return gravity;
+	return roundf((float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
+}
 
+static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float gravity) {
+	float gravcurrent = BG_MsecToEffectiveGravity(msec, gravity);
+	float gravreference = BG_MsecToEffectiveGravity(referenceMsec, gravity);
+	return sqrtf(gravcurrent) / sqrtf(gravreference); // magically, after a few hours in excel, it turns out this is 100% accurate. a mathematician could have prolly figured that out in 2 minutes, but im not one. :)
+}
 
 /*
 ========================
 BG_TouchJumpPad
 ========================
 */
-void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad ) {
+void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec) {
 	// spectators don't use jump pads
 	if ( ps->pm_type != PM_NORMAL && ps->pm_type != PM_FLOAT ) {
 		return;
@@ -2084,7 +2093,13 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad ) {
 	ps->jumppad_ent = jumppad->number;
 	ps->jumppad_frame = ps->pmove_framecount;
 	// give the player the velocity from the jumppad
-	VectorCopy( jumppad->origin2, ps->velocity );
+	if (msecCompensate) {
+		float compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f);
+		VectorScale(jumppad->origin2, compensate, ps->velocity);
+	}
+	else {
+		VectorCopy(jumppad->origin2, ps->velocity);
+	}
 }
 
 
@@ -2098,13 +2113,18 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad ) {
 #define JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS 64
 
 // TODO do a test of this against the other code to make sure its accurate.
-void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad) {
+void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec) {
 	vec3_t tmpHorz, tmpVert;
 	int flags = jumppad->weapon;
 	float speedHorz = jumppad->angles2[0];
 	float speedVert = jumppad->angles2[2];
+	float compensate = 1.0f;
 	qboolean isFirstFrame = ps->jumppad_ent != jumppad->number;
 
+
+	if (msecCompensate) {
+		compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f);
+	}
 
 	/*
 	vec3_t	angles;
@@ -2154,6 +2174,9 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad) {
 		VectorSet(tmpVert, 0, 0, flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_Z ? copysignf(jumppad->origin2[2], ps->velocity[2]) : jumppad->origin2[2]);
 	}
 
+	if (compensate) {
+		VectorScale(tmpHorz, compensate, tmpHorz);
+	}
 	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY) {
 
 		if (isFirstFrame) {
@@ -2174,7 +2197,10 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad) {
 		ps->velocity[0] = tmpHorz[0];
 		ps->velocity[1] = tmpHorz[1];
 	}
-
+	
+	if (compensate) {
+		VectorScale(tmpVert, compensate, tmpVert);
+	}
 	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_Z) {
 
 		if (isFirstFrame) {

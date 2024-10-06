@@ -507,7 +507,7 @@ CG_TouchTriggerPrediction
 Predict push triggers and items
 =========================
 */
-static void CG_TouchTriggerPrediction( void ) {
+static void CG_TouchTriggerPrediction( int msec ) {
 	int			i;
 	trace_t		trace;
 	entityState_t	*ent;
@@ -563,7 +563,7 @@ static void CG_TouchTriggerPrediction( void ) {
 			}
 		} else if ( ent->eType == ET_PUSH_TRIGGER ) {
 			//BG_TouchJumpPad( &cg.predictedPlayerState, ent );
-			BG_TouchJumpPadVelocity( &cg.predictedPlayerState, ent );
+			BG_TouchJumpPadVelocity( &cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer);
 		}
 	}
 
@@ -854,7 +854,7 @@ to ease the jerk.
 void CG_PredictPlayerState( void ) {
 	static int lastSnapPsCommandTime = 0;
 	const snapshot_t* baseSnap;
-	int			cmdNum, current, i;
+	int			cmdNum, current, i, msec;
 	playerState_t	oldPlayerState,preSpecialPredictPlayerState;
 	qboolean	specialPredictPhysicsFpsWasApplied;
 	qboolean	moved;
@@ -1027,8 +1027,9 @@ void CG_PredictPlayerState( void ) {
 			trap_GetUserCmd(cmdNum, &cg_pmove.cmd);
 		}
 
+		msec = cg_pmove.cmd.serverTime - cg_pmove.ps->commandTime;
 
-		if (cgs.isTommyTernal && cg_pmove.ps->stats[STAT_MSECRESTRICT] > 0 && cg_pmove.ps->stats[STAT_MSECRESTRICT] != (cg_pmove.cmd.serverTime - cg_pmove.ps->commandTime)) {
+		if (cgs.isTommyTernal && cg_pmove.ps->stats[STAT_MSECRESTRICT] > 0 && cg_pmove.ps->stats[STAT_MSECRESTRICT] != msec) {
 			lastCmdWasWrongFps = qtrue;
 		}
 		else {
@@ -1149,7 +1150,7 @@ void CG_PredictPlayerState( void ) {
 		moved = qtrue;
 
 		// add push trigger movement effects
-		CG_TouchTriggerPrediction();
+		CG_TouchTriggerPrediction((cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_JUMPPADCOMPENSATE)) ? msec : 0);
 
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);

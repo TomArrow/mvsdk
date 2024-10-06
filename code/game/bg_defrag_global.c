@@ -6,7 +6,7 @@
 const int defaultRunFlags = RFL_NODEADRAMPS;
 raceStyle_t defaultRaceStyle;
 
-const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH;// | RFL_NOROLLSTART | RFL_NOROLLS;
+const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
 
 bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
@@ -19,6 +19,7 @@ bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "No rolls" },//6
 	{ "TAS mode" },//7
 	{ "Climb tech" },//8
+	{ "Jumppad FPS compensation" },//9
 //	{ "Wallspawn" },//9 // was just a test for db column generation
 };
 
@@ -38,6 +39,7 @@ bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "nr" },//6
 	{ "tas" },//7
 	{ "clb" },//8
+	{ "jpc" },//9
 //	{ "wlsp" },//9 // was just a test for db column generation
 };
 
@@ -54,11 +56,11 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
 
-raceStyle_t getDefaultRaceStyle() {
+raceStyle_t getDefaultMapRaceStyle() {
 	raceStyle_t df;
 	memset(&df, 0, sizeof(df));
 	df.movementStyle = MV_JK2;
-	df.msec = 7;
+	df.msec = 8; // this is relevant for jumppad compensation. most maps are from q3.
 	df.jumpLevel = 1;
 	df.variant = 0;
 	df.runFlags = defaultRunFlags;

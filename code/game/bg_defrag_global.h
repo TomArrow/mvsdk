@@ -61,6 +61,7 @@ a(segmented,SEGMENTED,5,RUNFLAGSDBPREFIX,"","")\
 a(norolls,NOROLLS,6,RUNFLAGSDBPREFIX,"","")\
 a(tas,TAS,7,RUNFLAGSDBPREFIX,"","")\
 a(climb,CLIMBTECH,8,RUNFLAGSDBPREFIX,"","")\
+a(jpadcomp,JUMPPADCOMPENSATE,9,RUNFLAGSDBPREFIX,"","")\
 //a(wallspawn,WALLSPAWN,9,RUNFLAGSDBPREFIX,"","")
 
 // the "/*","*/" thing for JUMPBUGDISABLE is so we can disable it for query construction (since it doesn't need to be identical to the level's default, we still query both)
@@ -183,7 +184,7 @@ const char* RunFlagsToString(int runFlags, int defaultRunFlags, int lengthFactor
 qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* defaultRaceStyle);
 mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* defaultLevelRaceStyle);
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle);
-raceStyle_t getDefaultRaceStyle();
+raceStyle_t getDefaultMapRaceStyle();
 char* QDECL multiva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
 #endif

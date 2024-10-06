@@ -1525,6 +1525,7 @@ void ClientThink_real( gentity_t *ent ) {
 			client->pers.raceDropped.packetCount++;
 		}
 		client->ps.commandTime = client->pers.cmd.serverTime;
+		client->lastMsecValue = msec;
 		return;
 	}
 
@@ -1886,6 +1887,8 @@ void ClientThink_real( gentity_t *ent ) {
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
 	VectorCopy(pm.mins, ent->client->postPmoveMins);
 	VectorCopy(pm.maxs, ent->client->postPmoveMaxs);
+
+	client->lastMsecValue = msec;
 
 	if (client->pers.raceStartCommandTime && DF_PrePmoveValid(ent)) { // is this accurate? can there be any movement outside of pmove? other than teleport, that is.
 		vec3_t displacementAdd;

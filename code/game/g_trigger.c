@@ -233,13 +233,13 @@ trigger_push
 ==============================================================================
 */
 
-void trigger_push_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
+void trigger_push_touch(gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	if ( !other->client ) {
 		return;
 	}
 
-	BG_TouchJumpPad( &other->client->ps, &self->s );
+	BG_TouchJumpPad( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? other->client->lastMsecValue : 0, level.mapDefaultRaceStyle.msec);
 }
 
 void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
@@ -248,7 +248,7 @@ void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *tr
 		return;
 	}
 
-	BG_TouchJumpPadVelocity( &other->client->ps, &self->s );
+	BG_TouchJumpPadVelocity( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? other->client->lastMsecValue : 0, level.mapDefaultRaceStyle.msec);
 }
 
 

@@ -94,6 +94,7 @@ vmCvar_t	g_weaponRespawn;
 vmCvar_t	g_weaponTeamRespawn;
 vmCvar_t	g_adaptRespawn;
 vmCvar_t	g_motd;
+vmCvar_t	g_mapDefaultMsec;
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
 vmCvar_t	g_doWarmup;
@@ -237,6 +238,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_capturelimit, "capturelimit", "8", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
+
+	{ &g_mapDefaultMsec, "g_mapDefaultMsec", "8", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 
 	{ &g_saberInterpolate, "g_saberInterpolate", "1", CVAR_ARCHIVE, 0, qtrue },
 
@@ -931,8 +934,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	// parse the key/value pairs and spawn gentities
 	G_SpawnEntitiesFromString();
 
-	defaultRaceStyle = getDefaultRaceStyle(); // it has 16 bit values so we can't just do the initializer values in a const global :/
+	defaultRaceStyle = getDefaultMapRaceStyle(); // it has 16 bit values so we can't just do the initializer values in a const global :/
 	level.mapDefaultRaceStyle = defaultRaceStyle;
+	trap_Cvar_Set("g_mapDefaultMsec",va("%d",level.mapDefaultRaceStyle.msec));
 
 	// general initialization
 	G_FindTeams();
