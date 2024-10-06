@@ -260,6 +260,9 @@ struct gentity_s {
 	gitem_t		*item;			// for bonus items
 	int			triggerLastPlayerContact[MAX_CLIENTS]; // if we are a trigger, when's the last time the player touched us? dont use this for anything gameplay relevaant, as respos does not restore it
 	qboolean	triggerOnlyTraced; // if this is true for a trigger, we can only reach it via trace (so only trigger it while entering/leaving it)
+
+
+	qboolean	isLogical;		// Determines if this ent is logical or not
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -542,6 +545,7 @@ typedef struct {
 	struct gentity_s	*gentities;
 	int			gentitySize;
 	int			num_entities;		// current number, <= MAX_GENTITIES
+	int			num_logicalents;	// current numner of logical ents, > MAX_GENTIIES, <= MAX_LOGICALENTS
 
 	int			warmupTime;			// restart match at this time
 
@@ -701,7 +705,8 @@ void	G_SetMovedir ( vec3_t angles, vec3_t movedir);
 void	G_SetAngles( gentity_t *ent, vec3_t angles );
 
 void	G_InitGentity( gentity_t *e );
-gentity_t	*G_Spawn (void);
+gentity_t	*G_Spawn (void); 
+gentity_t	*G_SpawnLogical(void);
 gentity_t *G_TempEntity( vec3_t origin, int event );
 gentity_t	*G_PlayEffect(int fxID, vec3_t org, vec3_t ang);
 gentity_t *G_ScreenShake(vec3_t org, gentity_t *target, float intensity, int duration, qboolean global);
@@ -1121,7 +1126,8 @@ int BotAIStartFrame( int time );
 
 
 extern	level_locals_t	level;
-extern	gentity_t		g_entities[MAX_GENTITIES];
+extern	gentity_t		g_entities[MAX_ENTITIESTOTAL];
+extern  gentity_t*		g_logicalents;
 
 #define	FOFS(x) ((size_t)&(((gentity_t *)0)->x))
 

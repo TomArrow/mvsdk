@@ -154,11 +154,16 @@ NULL will be returned if the end of the list is reached.
 gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match)
 {
 	char	*s;
+	int idx;
 
 	if (!from)
 		from = g_entities;
 	else
 		from++;
+
+	idx = from - g_entities;
+	if (idx >= MAX_GENTITIES)
+		goto dological;
 
 	for ( ; from < &g_entities[level.num_entities] ; from++)
 	{
@@ -168,6 +173,18 @@ gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match)
 		if (!s)
 			continue;
 		if (!Q_stricmp (s, match))
+			return from;
+	}
+	from = &g_logicalents[0]; // 1st logical entity
+dological:
+	for (; from < &g_logicalents[level.num_logicalents]; from++)
+	{
+		if (!from->inuse)
+			continue;
+		s = *(char**)((byte*)from + fieldofs);
+		if (!s)
+			continue;
+		if (!Q_stricmp(s, match))
 			return from;
 	}
 
@@ -415,7 +432,13 @@ void G_SetMovedir( vec3_t angles, vec3_t movedir ) {
 void G_InitGentity( gentity_t *e ) {
 	e->inuse = qtrue;
 	e->classname = "noclass";
-	e->s.number = e - g_entities;
+	e->s.number = e - g_entities; 
+	if (e->s.number < 1023) {
+		e->isLogical = qfalse;
+	}
+	else {
+		e->isLogical = qtrue;
+	}
 	e->r.ownerNum = ENTITYNUM_NONE;
 	e->s.modelGhoul2 = 0; //assume not
 }
@@ -524,6 +547,55 @@ gentity_t *G_Spawn( void ) {
 	return e;
 }
 
+// G_SpawnLogical: Creates a logical entity (ent nums 1024 to 4097)
+gentity_t* G_SpawnLogical(void) {
+	int			i, force;
+	gentity_t* e;
+
+	e = NULL;	// shut up warning
+	i = 0;		// shut up warning
+	for (force = 0; force < 2; force++) {
+		// if we go through all entities and can't find one to free,
+		// override the normal minimum times before use
+		e = &g_entities[MAX_GENTITIES];
+		for (i = MAX_GENTITIES; i < (MAX_GENTITIES + level.num_logicalents); i++, e++) {
+			if (e->inuse) {
+				continue;
+			}
+
+			// the first couple seconds of server time can involve a lot of
+			// freeing and allocating, so relax the replacement policy
+			if (!force && e->freetime > level.startTime + 2000 && level.time - e->freetime < 1000)
+			{
+				continue;
+			}
+
+			// reuse this slot
+			G_InitGentity(e);
+			return e;
+		}
+		if (i != MAX_ENTITIESTOTAL) {
+			break;
+		}
+	}
+	if (i == MAX_ENTITIESTOTAL/*- 1 */ ) { // ta: surely the -1 is an error?
+		/*
+		for (i = 0; i < MAX_GENTITIES; i++) {
+		trap->Print("%4i: %s\n", i, g_entities[i].classname);
+		}
+		*/
+		//G_SpewEntList();
+		//trap_Error(ERR_DROP, "G_SpawnLogical: no free entities");
+		G_Error("G_SpawnLogical: no free entities");
+	}
+
+	// open up a new slot
+	level.num_logicalents++;
+
+	G_InitGentity(e);
+	return e;
+}
+
 /*
 =================
 G_EntitiesFree
@@ -607,7 +679,9 @@ void G_FreeEntity( gentity_t *ed ) {
 		return;
 	}
 
-	trap_UnlinkEntity (ed);		// unlink from world
+	if (!ed->isLogical) {
+		trap_UnlinkEntity(ed);		// unlink from world
+	}
 
 	if ( ed->neverFree ) {
 		return;
@@ -661,13 +735,41 @@ void G_FreeEntity( gentity_t *ed ) {
 		}
 	}
 
-	memset (mv_entities + (ed - g_entities), 0, sizeof(mv_entities[0]));
+	if (!ed->isLogical) {
+		memset(mv_entities + (ed - g_entities), 0, sizeof(mv_entities[0]));
+	}
 	memset (ed, 0, sizeof(*ed));
 	ed->classname = "freed";
 	ed->freetime = level.time;
 	ed->inuse = qfalse;
-	
-	memset( &(mv_entities[ed-g_entities]), 0, sizeof(mv_entities[0]) );
+
+	/* do we need this? no idea.
+	//Logical Entities - (JKG)
+	// Ok, lets see if we can lower level.num_entities.
+	// If this entity was the last allocated slot, run back through g_entities and get the last used slots.
+	entnum = ed - g_entities;
+	if (!ed->isLogical) {
+		if (entnum == level.num_entities - 1) {
+			// Last slot, roll back
+			for (i = entnum; i >= MAX_CLIENTS; i--) {
+				if (g_entities[i].inuse)
+					break;
+			}
+			level.num_entities = i + 1;
+		}
+	}
+	else {
+		if (entnum == MAX_GENTITIES + level.num_logicalents - 1) {
+			// Last slot, roll back
+			for (i = entnum; i >= MAX_GENTITIES; i--) {
+				if (g_entities[i].inuse)
+					break;
+			}
+			level.num_logicalents = i + 1 - MAX_GENTITIES;
+		}
+
+	}
+	*/
 }
 
 /*

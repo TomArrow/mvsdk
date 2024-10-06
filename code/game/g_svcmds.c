@@ -256,6 +256,39 @@ void Svcmd_RemoveIP_f (void)
 	G_Printf ( "Didn't find %s.\n", str );
 }
 
+
+/*
+===================
+Svcmd_EntityInfo_f
+===================
+*/
+void	Svcmd_EntityInfo_f(void) {
+	int totalents;
+	int inuse;
+	int i;
+	gentity_t* e;
+
+	inuse = 0;
+	for (e = &g_entities[0], i = 0; i < level.num_entities; e++, i++) {
+		if (e->inuse) {
+			inuse++;
+		}
+	}
+	G_Printf("Normal entity slots in use: %i/%i (%i slots allocated)\n", inuse, MAX_GENTITIES, level.num_entities);
+	totalents = inuse;
+
+	inuse = 0;
+	for (e = &g_entities[MAX_GENTITIES], i = 0; i < level.num_logicalents; e++, i++) {
+		if (e->inuse) {
+			inuse++;
+		}
+	}
+	G_Printf("Logical entity slots in use: %i/%i (%i slots allocated)\n", inuse, MAX_LOGICENTITIES, level.num_logicalents);
+	totalents += inuse;
+	G_Printf("Total entity count: %i/%i\n", totalents, MAX_ENTITIESTOTAL);
+}
+
+
 /*
 ===================
 Svcmd_EntityList_f
@@ -448,6 +481,11 @@ qboolean	ConsoleCommand( void ) {
 
 	if ( Q_stricmp (cmd, "entitylist") == 0 ) {
 		Svcmd_EntityList_f();
+		return qtrue;
+	}
+
+	if ( Q_stricmp (cmd, "entityinfo") == 0 ) {
+		Svcmd_EntityInfo_f();
 		return qtrue;
 	}
 

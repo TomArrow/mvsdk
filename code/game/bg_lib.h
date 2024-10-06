@@ -101,6 +101,13 @@ float powf(float x, float y);
 
 float copysignf(float x, float y);
 
+void *
+bsearch (const void *key,
+	const void *base,
+	size_t nmemb,
+	size_t size,
+	int (*compar) (const void *, const void *));
+
 #define sqrtf sqrt
 #define sinf sin
 #define cosf cos

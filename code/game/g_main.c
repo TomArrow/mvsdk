@@ -19,7 +19,8 @@ typedef struct {
   qboolean teamShader;        // track and if changed, update shader state
 } cvarTable_t;
 
-gentity_t		g_entities[MAX_GENTITIES];
+gentity_t		g_entities[MAX_ENTITIESTOTAL];
+gentity_t*		g_logicalents = &g_entities[MAX_GENTITIES]; // Quicker access xD
 gclient_t		g_clients[MAX_CLIENTS];
 
 mvsharedEntity_t	mv_entities[MAX_GENTITIES];
@@ -877,7 +878,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	G_InitWorldSession();
 
 	// initialize all entities for this game
-	memset( g_entities, 0, MAX_GENTITIES * sizeof(g_entities[0]) );
+	memset( g_entities, 0, MAX_ENTITIESTOTAL * sizeof(g_entities[0]) );
 	level.gentities = g_entities;
 	
 	// We can initialise this even without the JK2MV API and use it in the VM, but we can only share it with the engine, if the API is available
@@ -2841,6 +2842,17 @@ void G_RunFrame( int levelTime ) {
 
 		G_RunThink( ent );
 	}
+
+	// Process logical entities
+	ent = &g_entities[MAX_GENTITIES];
+	for (i = 0; i < level.num_logicalents; i++, ent++) {
+		if (!ent->inuse) {
+			continue;
+		}
+		// Logical entities only think, nothing else
+		G_RunThink(ent);
+	}
+
 end = trap_Milliseconds();
 
 	trap_ROFF_UpdateEntities();
