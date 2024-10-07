@@ -731,6 +731,97 @@ void df_createCheckpoint(gentity_t* ent)
 }
 
 
+void DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
+	gentity_t* shield;
+
+	if (playerent->client->pers.df_checkpointData.count >= MAX_CUSTOM_CHECKPOINT_COUNT) return qfalse;
+
+	shield = G_Spawn();
+	shield->s.angles[YAW] = oldShield->s.angles[YAW];
+	shield->parent = playerent;
+
+	// Set team number.
+	shield->s.otherEntityNum2 = TEAM_FREE;
+
+	shield->s.eType = ET_SPECIAL;
+	shield->s.modelindex = HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
+	shield->classname = "df_trigger_checkpoint";
+
+	shield->r.contents = CONTENTS_TRIGGER;
+	shield->triggerOnlyTraced = qtrue;
+
+	shield->touch = DF_CheckpointTimer_Touch;
+	shield->use = 0; 
+
+	shield->s.pos.trType = TR_STATIONARY;
+	shield->s.pos.trTime = 0;
+	shield->s.pos.trDuration = 0;
+	VectorClear(shield->s.pos.trDelta);
+
+	shield->s.eFlags &= ~EF_NODRAW;
+	shield->r.svFlags &= ~SVF_NOCLIENT;
+
+	shield->r.svFlags |= SVF_SINGLECLIENT;
+	shield->r.singleClient = playerent->s.number;
+
+
+	shield->s.owner = playerent->s.number;
+	shield->s.shouldtarget = qfalse;
+
+	VectorCopy(oldShield->s.pos.trBase, shield->s.pos.trBase);
+	VectorCopy(oldShield->r.currentOrigin, shield->r.currentOrigin);
+	VectorCopy(oldShield->r.mins, shield->r.mins);
+	VectorCopy(oldShield->r.maxs, shield->r.maxs);
+
+	shield->clipmask = oldShield->clipmask;
+	shield->r.contents = oldShield->r.contents;
+	shield->s.time2 = oldShield->s.time2;
+
+	trap_LinkEntity(shield);
+
+	playerent->client->pers.df_checkpointData.checkpointNumbers[playerent->client->pers.df_checkpointData.count] = shield->s.number;
+	playerent->client->pers.df_checkpointData.count++;
+}
+
+qboolean DF_StealCheckpoints(gentity_t* playerent) {
+	int i;
+	gentity_t* shield;
+	gentity_t* sourcePlayerEnt;
+	char	arg[MAX_STRING_CHARS];
+	int sourcePlayer = -1;
+	if (trap_Argc() > 1)
+	{
+		trap_Argv(1, arg, sizeof(arg));
+
+		if (arg[0])
+		{
+			sourcePlayer = atoi(arg);
+		}
+	}
+	else
+	{
+		return;
+	}
+
+	if (sourcePlayer < 0 || sourcePlayer >= MAX_CLIENTS) {
+		return;
+	}
+
+	sourcePlayerEnt = g_entities + sourcePlayer;
+
+	if (!sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+		return;
+	}
+
+	for (i = 0; i < sourcePlayerEnt->client->pers.df_checkpointData.count; i++) {
+		shield = g_entities + sourcePlayerEnt->client->pers.df_checkpointData.checkpointNumbers[i];
+		if (shield->inuse) {
+			DF_CloneCustomCheckpoint(shield, playerent);
+		}
+	}
+
+}
+
 qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 {
 	static const gitem_t* shieldItem = NULL;
@@ -765,14 +856,10 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 			{	// shield is along the east/west axis, facing north
 				shield->s.angles[YAW] = 90;
 			}
-			//shield->think = df_createCheckpoint;
-			//shield->nextthink = level.time;	// power up after .5 seconds
-			shield->think = 0;
-			shield->nextthink = 0;
 			shield->parent = playerent;
 
 			// Set team number.
-			shield->s.otherEntityNum2 = playerent->client->sess.sessionTeam;
+			shield->s.otherEntityNum2 = TEAM_FREE;
 
 			shield->s.eType = ET_SPECIAL;
 			shield->s.modelindex = HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
@@ -789,12 +876,6 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 
 			shield->s.eFlags &= ~EF_NODRAW;
 			shield->r.svFlags &= ~SVF_NOCLIENT;
-
-
-
-
-			//trap_LinkEntity(shield);
-
 
 			shield->r.svFlags |= SVF_SINGLECLIENT;
 			shield->r.singleClient = playerent->s.number;
