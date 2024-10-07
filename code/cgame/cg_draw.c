@@ -6086,6 +6086,10 @@ static void CG_MovementKeys(centity_t *cent)
 
 	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback)
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
+	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+		BG_StatsToUserCmd(stats,&cmd);
+	}
 	else
 	{
 		float xyspeed = (float)sqrtf(cg.snap->ps.velocity[0] * cg.snap->ps.velocity[0] + cg.snap->ps.velocity[1] * cg.snap->ps.velocity[1]);
@@ -6919,6 +6923,14 @@ static void CG_StrafeHelper(centity_t *cent)
 			}
 		}
 	}
+	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+		BG_StatsToUserCmd(stats, &cmd);
+		if (cg_strafeHelper_RealPhysicsLines.integer) {
+			int statsMsec = stats->pastFpsUnionArray[(stats->fireflag-1)&(PLAYERSTATS_PAST_MSEC -1)];
+			referenceFrameTime = statsMsec;
+		}
+	}
 	else if (cg.snap) {
 		moveDir = cg.snap->ps.movementDir;
 		switch (moveDir) {
@@ -7114,7 +7126,7 @@ void CG_UpdateSnapHudSettings(float speed, int fps) {
 	float step;
 	snappinghud.fps = fps;
 	snappinghud.speed = speed;
-	speed /= snappinghud.fps;
+	speed /= snappinghud.fps; 
 	snappinghud.count = 0;
 
 	for (step = floor(speed + 0.5) - 0.5; step>0 && snappinghud.count<SNAPHUD_MAXZONES - 2; step--) {
@@ -7135,7 +7147,7 @@ void CG_DrawSnapHud(void)
 	vec2_t va = { 0 };
 	vec4_t	color[3] = { 0 };
 	float speed;
-	int fps;
+	int fps = (cg_com_physicsFps.integer ? cg_com_physicsFps.integer : cg_com_maxfps.integer);
 	int colorid = 0;
 	qboolean pro = qfalse;
 	struct usercmd_s inCmd = { 0 };
@@ -7145,6 +7157,17 @@ void CG_DrawSnapHud(void)
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &inCmd);
 		snappinghud.m[0] = inCmd.forwardmove;
 		snappinghud.m[1] = inCmd.rightmove;
+	}
+	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+		BG_StatsToUserCmd(stats, &inCmd);
+		if (cg_strafeHelper_RealPhysicsLines.integer) {
+			int statsMsec = stats->pastFpsUnionArray[(stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1)];
+			fps = statsMsec ? (1000/ statsMsec) : fps; //uses your maxfps setting by default
+			// take average to have it more stable when non-physicsfps? but will jitter when switching :/
+			//int msecSum = stats->pastFpsUnionArray[0] + stats->pastFpsUnionArray[1] + stats->pastFpsUnionArray[2] + stats->pastFpsUnionArray[3];
+
+		}
 	}
 	else if (cg.snap)
 	{ //spectating/demo playback
@@ -7168,7 +7191,7 @@ void CG_DrawSnapHud(void)
 		return;
 
 	speed = cg_snapHudSpeed.integer ? (float)cg_snapHudSpeed.integer : cg.predictedPlayerState.speed; //250 is base speed
-	fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : (cg_com_physicsFps.integer ? cg_com_physicsFps.integer : cg_com_maxfps.integer); //uses your maxfps setting by default
+	fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : fps; //uses your maxfps setting by default
 
 	if (speed != snappinghud.speed || fps != snappinghud.fps) {//set these if not set, update if changed
 		CG_UpdateSnapHudSettings(speed, fps);
