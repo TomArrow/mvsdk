@@ -314,6 +314,7 @@ typedef struct centity_s {
 	int				saberHitWallSoundDebounceTime;
 } centity_t;
 
+extern centity_t* cg_statsEntities[MAX_CLIENTS];
 
 //======================================================================
 

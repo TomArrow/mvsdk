@@ -2087,6 +2087,7 @@ static float CG_DrawSnapshot( float y ) {
 	return y + BIGCHAR_HEIGHT + 4;
 }
 
+
 /*
 ==================
 CG_DrawFPS
@@ -2096,183 +2097,213 @@ CG_DrawFPS
 #define	FPS_FRAMES_FOR_BOTTOM10P	10
 #define	FPS_FRAMES_FOR_BOTTOM1P	10
 #define	FPS_FRAMES_FOR_BOTTOM01P	10
-static float CG_DrawFPS( float y ) {
+typedef struct drawFpsData_s {
+	int	previousTimes[FPS_FRAMES];
+	int	bottomTimes10P[FPS_FRAMES_FOR_BOTTOM10P];
+	int	bottomTimes1P[FPS_FRAMES_FOR_BOTTOM1P];
+	int	bottomTimes01P[FPS_FRAMES_FOR_BOTTOM01P];
+	int	index, indexBottom10P, indexBottom1P, indexBottom01P;
+	int	previous;
+	int	bottom10Pfps, bottom1Pfps, bottom01Pfps;
+} drawFpsData_t;
+static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 	char		*s;
 	float		w;
-	static int	previousTimes[FPS_FRAMES];
-	static int	bottomTimes10P[FPS_FRAMES_FOR_BOTTOM10P];
-	static int	bottomTimes1P[FPS_FRAMES_FOR_BOTTOM1P];
-	static int	bottomTimes01P[FPS_FRAMES_FOR_BOTTOM01P];
-	static int	index, indexBottom10P, indexBottom1P, indexBottom01P;
+	static drawFpsData_t allData[2];
+	drawFpsData_t* data = physical ? allData + 1 : allData;
+	static const int biggestInt = ~0 ^ (1 << 31);
 	int		i, total;
 	int		fps;
-	static	int	previous;
-	static	int	bottom10Pfps,bottom1Pfps,bottom01Pfps;
 	int		t, frameTime;
-	static const int biggestInt = ~0 ^ (1 << 31);
 	int fastest,fastestIndex;
 	int cmdNum;
+	int charHeight;
 	usercmd_t cmd;
 	qboolean skipFrame;
+	qboolean drawFpsLowest = cg_drawFPSLowest.integer == 1 && !physical || cg_drawFPSLowest.integer == 2 && physical;
+	int lowestYOffset = (physical && cg_drawFPS.integer) ? -(y- oldY) : 0;
 
-	if (!cg_drawFPSPhysical.integer) {
+	if (!physical) {
 		// don't use serverTime, because that will be drifting to
 		// correct for internet lag changes, timescales, timedemos, etc
 		t = trap_Milliseconds();
 	}
 	else {
-		cmdNum = trap_GetCurrentCmdNumber();
-		if (cmdNum > 0) {
-			trap_GetUserCmd(cmdNum, &cmd);
-			t = cmd.serverTime;
-			trap_GetUserCmd(cmdNum-1, &cmd);
-			previous = cmd.serverTime;
+		if (!cg.demoPlayback && cg.predictedPlayerState.clientNum == cg.clientNum && !(cg.predictedPlayerState.pm_flags & PMF_FOLLOW)) {
+			cmdNum = trap_GetCurrentCmdNumber();
+			if (cmdNum > 0) {
+				trap_GetUserCmd(cmdNum, &cmd);
+				t = cmd.serverTime;
+				trap_GetUserCmd(cmdNum - 1, &cmd);
+				data->previous = cmd.serverTime;
+			}
+			else {
+				t = data->previous;
+			}
 		}
-		else { 
-			t = previous;
+		else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+			if (cg.predictedPlayerState.commandTime == data->previous) {
+				t = data->previous;
+			}
+			else {
+				entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+				int msecIndex = (stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1);
+				int msec = stats->pastFpsUnionArray[msecIndex];
+				t = cg.predictedPlayerState.commandTime;
+				data->previous = t - msec;
+				// TODO let this use all the 4 samples we get somehow?
+			}
+		}
+		else {
+			s = "---pfps";
+			w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+			CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
+			return y + BIGCHAR_HEIGHT + 4;// can't draw physical without proper info
 		}
 	}
-	frameTime = t - previous;
-	skipFrame = (t == previous);
-	previous = t;
+	frameTime = t - data->previous;
+	skipFrame = (t == data->previous);
+	data->previous = t;
 
 	if (!skipFrame) {
-		previousTimes[index % FPS_FRAMES] = frameTime;
-		index++;
+		data->previousTimes[data->index % FPS_FRAMES] = frameTime;
+		data->index++;
 
-		indexBottom10P++;
-		indexBottom1P++;
-		indexBottom01P++;
+		data->indexBottom10P++;
+		data->indexBottom1P++;
+		data->indexBottom01P++;
 	}
 
 	// Bottom 10% frames
-	if (indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
+	if (data->indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
 		//int slowest = 0;
 		total = 0;
 		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
-			total += bottomTimes10P[i];
+			total += data->bottomTimes10P[i];
 			//slowest = Q_max(bottomTimes1P[i],slowest);
 		}
 		//fps = 1000 / slowest; 
 		fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / total;
-		bottom10Pfps = fps;
+		data->bottom10Pfps = fps;
 
-		memset(bottomTimes10P, 0, sizeof(bottomTimes10P));
-		indexBottom10P = 1;
+		memset(data->bottomTimes10P, 0, sizeof(data->bottomTimes10P));
+		data->indexBottom10P = 1;
 	}
 	{ // Draw bottom 10% frames
-		s = va(cg_drawFPSPhysical.integer ? "%ipfps  10%%" : "%ifps  10%%", bottom10Pfps);
+		s = va(physical ? "%ipfps  10%%" : "%ifps  10%%", data->bottom10Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		if(cg_drawFPSLowest.integer)
-			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+		if(drawFpsLowest)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
 		if (!skipFrame) {
 			fastest = biggestInt;
 			fastestIndex = 0;
 			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
-				if (bottomTimes10P[i] < fastest) {
-					fastest = bottomTimes10P[i];
+				if (data->bottomTimes10P[i] < fastest) {
+					fastest = data->bottomTimes10P[i];
 					fastestIndex = i;
 				}
 			}
 			// Replace fastest frametime with current frametime if it is slower than fastest
 			if (frameTime > fastest) {
-				bottomTimes10P[fastestIndex] = frameTime;
+				data->bottomTimes10P[fastestIndex] = frameTime;
 			}
 		}
 	}
 
 	// Bottom 1% frames
-	if (indexBottom1P > FPS_FRAMES_FOR_BOTTOM1P * 100) {
+	if (data->indexBottom1P > FPS_FRAMES_FOR_BOTTOM1P * 100) {
 		//int slowest = 0;
 		total = 0;
 		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
-			total += bottomTimes1P[i];
+			total += data->bottomTimes1P[i];
 			//slowest = Q_max(bottomTimes1P[i],slowest);
 		}
 		//fps = 1000 / slowest; 
 		fps = 1000 * FPS_FRAMES_FOR_BOTTOM1P / total;
-		bottom1Pfps = fps;
+		data->bottom1Pfps = fps;
 
-		memset(bottomTimes1P, 0, sizeof(bottomTimes1P));
-		indexBottom1P = 1;
+		memset(data->bottomTimes1P, 0, sizeof(data->bottomTimes1P));
+		data->indexBottom1P = 1;
 	}
 	{ // Draw bottom 1% frames
-		s = va(cg_drawFPSPhysical.integer ? "%ipfps   1%%":"%ifps   1%%", bottom1Pfps);
+		s = va(physical ? "%ipfps   1%%":"%ifps   1%%", data->bottom1Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		if (cg_drawFPSLowest.integer)
-			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+		if (drawFpsLowest)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
 		if (!skipFrame) {
 			fastest = biggestInt;
 			fastestIndex = 0;
 			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
-				if (bottomTimes1P[i] < fastest) {
-					fastest = bottomTimes1P[i];
+				if (data->bottomTimes1P[i] < fastest) {
+					fastest = data->bottomTimes1P[i];
 					fastestIndex = i;
 				}
 			}
 			// Replace fastest frametime with current frametime if it is slower than fastest
 			if (frameTime > fastest) {
-				bottomTimes1P[fastestIndex] = frameTime;
+				data->bottomTimes1P[fastestIndex] = frameTime;
 			}
 		}
 	}
 
 	// Bottom 0.1% frames
-	if (indexBottom01P > FPS_FRAMES_FOR_BOTTOM01P * 1000) {
+	if (data->indexBottom01P > FPS_FRAMES_FOR_BOTTOM01P * 1000) {
 		//int slowest = 0;
 		total = 0;
 		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
-			total += bottomTimes01P[i];
+			total += data->bottomTimes01P[i];
 			//slowest = Q_max(bottomTimes1P[i],slowest);
 		}
 		//fps = 1000 / slowest; 
 		fps = 1000 * FPS_FRAMES_FOR_BOTTOM01P / total;
-		bottom01Pfps = fps;
+		data->bottom01Pfps = fps;
 
-		memset(bottomTimes01P, 0, sizeof(bottomTimes01P));
-		indexBottom01P = 1;
+		memset(data->bottomTimes01P, 0, sizeof(data->bottomTimes01P));
+		data->indexBottom01P = 1;
 	}
 	{ // Draw bottom 0.1% frames
-		s = va(cg_drawFPSPhysical.integer?"%ipfps 0.1%%":"%ifps 0.1%%", bottom01Pfps);
+		s = va(physical ?"%ipfps 0.1%%":"%ifps 0.1%%", data->bottom01Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		if (cg_drawFPSLowest.integer)
-			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+		if (drawFpsLowest)
+			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
 		if (!skipFrame) {
 			fastest = biggestInt;
 			fastestIndex = 0;
 			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
-				if (bottomTimes01P[i] < fastest) {
-					fastest = bottomTimes01P[i];
+				if (data->bottomTimes01P[i] < fastest) {
+					fastest = data->bottomTimes01P[i];
 					fastestIndex = i;
 				}
 			}
 			// Replace fastest frametime with current frametime if it is slower than fastest
 			if (frameTime > fastest) {
-				bottomTimes01P[fastestIndex] = frameTime;
+				data->bottomTimes01P[fastestIndex] = frameTime;
 			}
 		}
 	}			
 	
 
+	charHeight = BIGCHAR_HEIGHT;
 
-	if ( index > FPS_FRAMES ) {
+	if (data->index > FPS_FRAMES ) {
 		// average multiple frames together to smooth changes out a bit
 		total = 0;
 		for ( i = 0 ; i < FPS_FRAMES ; i++ ) {
-			total += previousTimes[i];
+			total += data->previousTimes[i];
 		}
 		if ( !total ) {
 			total = 1;
 		}
 		fps = 1000 * FPS_FRAMES / total;
 
-		s = va(cg_drawFPSPhysical.integer?"%ipfps":"%ifps", fps );
+		s = va(physical ?"%ipfps":"%ifps", fps );
+
 
 		//JAPRO - Clientside - Add cg_drawfps 2 - Start
 		if (jk2version != VERSION_1_02 && trap_Language_IsAsian())
@@ -2280,8 +2311,9 @@ static float CG_DrawFPS( float y ) {
 			w = CG_Text_Width(s, 1.0f, FONT_MEDIUM);
 			CG_Text_Paint(cgs.screenWidth - 5 - w, y + 2, 1.0f, colorTable[CT_WHITE], s, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM); //this is what the other cgame drawstring functions call for asian languages
 		}
-		else if (cg_drawFPS.integer == 2)
+		else if (cg_drawFPS.integer == 2 && !physical || cg_drawFPSPhysical.integer == 2 && physical)
 		{
+			charHeight = SMALLCHAR_HEIGHT;
 			w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 			CG_DrawSmallString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
 		}
@@ -2293,7 +2325,7 @@ static float CG_DrawFPS( float y ) {
 		//JAPRO - Clientside - Add cg_drawfps 2 - End
 	}
 
-	return y + BIGCHAR_HEIGHT + 4;
+	return y + charHeight + 4;
 }
 
 /*
@@ -2680,7 +2712,7 @@ CG_DrawUpperRight
 =====================
 */
 static void CG_DrawUpperRight( void ) {
-	float	y;
+	float	y, oldY;
 
 	y = 0;
 
@@ -2690,8 +2722,12 @@ static void CG_DrawUpperRight( void ) {
 	if ( cg_drawSnapshot.integer ) {
 		y = CG_DrawSnapshot( y );
 	}
+	oldY = y;
 	if ( cg_drawFPS.integer ) {
-		y = CG_DrawFPS( y );
+		y = CG_DrawFPS( y, oldY, qfalse);
+	}
+	if ( cg_drawFPSPhysical.integer ) {
+		y = CG_DrawFPS( y, oldY, qtrue);
 	}
 	if ( cg_drawTimer.integer ) {
 		y = CG_DrawTimer( y );

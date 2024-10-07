@@ -632,7 +632,7 @@ void InitPlayerStats(void) {
 			ent->neverFree = qtrue;
 			ent->s.eType = ET_INVISIBLE;
 			ent->s.clientNum = i;
-			ent->s.fireflag = 3; // tell tommyternal cgame that this is a player stats object :)
+			ent->s.modelGhoul2 = 15; // tell tommyternal cgame that this is a player stats object :)
 			ent->r.svFlags |= SVF_BROADCAST;
 			level.playerStats[i] = ent;
 			trap_LinkEntity(ent);
