@@ -7155,8 +7155,6 @@ void CG_DrawSnapHud(void)
 	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback)
 	{ //real client
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &inCmd);
-		snappinghud.m[0] = inCmd.forwardmove;
-		snappinghud.m[1] = inCmd.rightmove;
 	}
 	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
 		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
@@ -7172,11 +7170,12 @@ void CG_DrawSnapHud(void)
 	else if (cg.snap)
 	{ //spectating/demo playback
 		inCmd = CG_DirToCmd(cg.snap->ps.movementDir);
-		snappinghud.m[0] = inCmd.forwardmove;
-		snappinghud.m[1] = inCmd.rightmove;
 	} else {
 		return;
 	}
+
+	snappinghud.m[0] = inCmd.forwardmove;
+	snappinghud.m[1] = inCmd.rightmove;
 
 	if (cg.renderingThirdPerson)
 	{
