@@ -880,6 +880,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	G_InitWorldSession();
 
+	if (g_defrag.integer) {
+		AddRemap("gfx/misc/blue_portashield", "gfx/2d/bracket", level.time);
+		trap_SetConfigstring(CS_SHADERSTATE, BuildShaderStateConfig());
+	}
+
 	// initialize all entities for this game
 	memset( g_entities, 0, MAX_ENTITIESTOTAL * sizeof(g_entities[0]) );
 	level.gentities = g_entities;

@@ -961,7 +961,7 @@ static qboolean ClientCheckNotifyPhysicsFps(gentity_t* ent) {
 	}
 
 	if (notification) {
-		if ((client->pers.physicsFps.lastNotification + 1000) > level.time && client->pers.physicsFps.lastNotification < level.time) {
+		if ((client->pers.physicsFps.lastNotification + 1000) > level.time && client->pers.physicsFps.lastNotification <= level.time) {
 			return qfalse; // Don't spam. Once every 1 second is enough to stay constant on the screen of the client
 		}
 		else {

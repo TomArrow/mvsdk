@@ -7,6 +7,7 @@
 
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
+void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
 #define VALIDATEPTRCMP(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
@@ -576,6 +577,246 @@ void PlayActualGlobalSound(int soundindex) {
 		G_Sound(player, CHAN_AUTO, soundindex);
 	}
 }
+
+qboolean DF_RemoveCheckPoints(gentity_t* playerent) {
+	int i;
+	gentity_t* shield;
+
+	for (i = 0; i < playerent->client->pers.df_checkpointData.count; i++) {
+		shield = g_entities + playerent->client->pers.df_checkpointData.checkpointNumbers[i];
+		if (shield->inuse) {
+			G_FreeEntity(shield);
+		}
+	}
+
+	playerent->client->pers.df_checkpointData.count = 0;
+}
+
+// sanity check that the client still exists and knows about this checkpoint andsuch.
+void df_checkCheckpointValid(gentity_t* ent) {
+	gentity_t* owner;
+	int i;
+	int shieldNum;
+
+	if (ent->s.owner < 0 || ent->s.owner >= MAX_CLIENTS) {
+		goto freeme;
+		return;
+	}
+	owner = g_entities + ent->s.owner;
+
+	if (!owner->inuse || !owner->client || owner->client->pers.connected != CON_CONNECTED) {
+		goto freeme;
+		return;
+	}
+
+	shieldNum = ent - g_entities;
+	for (i = 0; i < owner->client->pers.df_checkpointData.count; i++) {
+		if (owner->client->pers.df_checkpointData.checkpointNumbers[i] == shieldNum) {
+
+			// ok the client is still active and still knows about this checkpoint. keep it.
+			ent->think = df_checkCheckpointValid;
+			ent->nextthink = level.time + 1000;
+			return;
+		}
+	}
+
+freeme:
+	ent->think = 0;
+	ent->nextthink = 0;
+	G_FreeEntity(ent);
+
+}
+#define SHIELD_HEALTH				250
+#define SHIELD_HEALTH_DEC			10		// 25 seconds	
+#define MAX_SHIELD_HEIGHT			254
+#define MAX_SHIELD_HALFWIDTH		255
+#define SHIELD_PLACEDIST			64
+void df_createCheckpoint(gentity_t* ent)
+{
+	trace_t		tr;
+	vec3_t		mins, maxs, end, posTraceEnd, negTraceEnd, start;
+	int			height, posWidth, negWidth, halfWidth = 0;
+	qboolean	xaxis;
+	int			paramData = 0;
+	static int	shieldID;
+
+
+
+	//mh_sendMessage(-1, "Shield Created");
+	// trace upward to find height of shield
+	VectorCopy(ent->r.currentOrigin, end);
+	end[2] += MAX_SHIELD_HEIGHT;
+	JP_Trace(&tr, ent->r.currentOrigin, NULL, NULL, end, ent->s.number, MASK_SHOT);
+	height = (int)(MAX_SHIELD_HEIGHT * tr.fraction);
+
+	// use angles to find the proper axis along which to align the shield
+	VectorSet(mins, -SHIELD_HALFTHICKNESS, -SHIELD_HALFTHICKNESS, 0);
+	VectorSet(maxs, SHIELD_HALFTHICKNESS, SHIELD_HALFTHICKNESS, height);
+	VectorCopy(ent->r.currentOrigin, posTraceEnd);
+	VectorCopy(ent->r.currentOrigin, negTraceEnd);
+
+	if ((int)(ent->s.angles[YAW]) == 0) // shield runs along y-axis
+	{
+		posTraceEnd[1] += MAX_SHIELD_HALFWIDTH;
+		negTraceEnd[1] -= MAX_SHIELD_HALFWIDTH;
+		xaxis = qfalse;
+	}
+	else  // shield runs along x-axis
+	{
+		posTraceEnd[0] += MAX_SHIELD_HALFWIDTH;
+		negTraceEnd[0] -= MAX_SHIELD_HALFWIDTH;
+		xaxis = qtrue;
+	}
+
+	// trace horizontally to find extend of shield
+	// positive trace
+	VectorCopy(ent->r.currentOrigin, start);
+	start[2] += (height >> 1);
+	JP_Trace(&tr, start, 0, 0, posTraceEnd, ent->s.number, MASK_SHOT);
+	posWidth = MAX_SHIELD_HALFWIDTH * tr.fraction;
+	// negative trace
+	JP_Trace(&tr, start, 0, 0, negTraceEnd, ent->s.number, MASK_SHOT);
+	negWidth = MAX_SHIELD_HALFWIDTH * tr.fraction;
+
+	// kef -- monkey with dimensions and place origin in center
+	halfWidth = (posWidth + negWidth) >> 1;
+	if (xaxis)
+	{
+		ent->r.currentOrigin[0] = ent->r.currentOrigin[0] - negWidth + halfWidth;
+	}
+	else
+	{
+		ent->r.currentOrigin[1] = ent->r.currentOrigin[1] - negWidth + halfWidth;
+	}
+	ent->r.currentOrigin[2] += (height >> 1);
+
+	// set entity's mins and maxs to new values, make it solid, and link it
+	if (xaxis)
+	{
+		VectorSet(ent->r.mins, -halfWidth, -SHIELD_HALFTHICKNESS, -(height >> 1));
+		VectorSet(ent->r.maxs, halfWidth, SHIELD_HALFTHICKNESS, height >> 1);
+	}
+	else
+	{
+		VectorSet(ent->r.mins, -SHIELD_HALFTHICKNESS, -halfWidth, -(height >> 1));
+		VectorSet(ent->r.maxs, SHIELD_HALFTHICKNESS, halfWidth, height);
+	}
+	ent->clipmask = 0;
+	ent->r.contents = CONTENTS_TRIGGER;
+
+
+	paramData = (xaxis << 24) | (height << 16) | (posWidth << 8) | (negWidth);
+	ent->s.time2 = paramData;
+
+
+	//ent->touch = df_touchCustomCheckpoint;
+
+
+
+
+	//ent->nextthink = 0;
+	//ent->think = 0;// CheckpointThink;
+
+	ent->think = df_checkCheckpointValid;
+	ent->nextthink = level.time + 1000;
+
+
+	trap_LinkEntity(ent);
+
+
+
+	//ShieldGoSolid(ent);
+
+	return;
+}
+
+
+qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
+{
+	static const gitem_t* shieldItem = NULL;
+	gentity_t* shield = NULL;
+	trace_t		tr;
+	vec3_t		fwd, pos, dest, mins = { -4,-4, 0 }, maxs = { 4,4,4 };
+
+	if (playerent->client->pers.df_checkpointData.count >= MAX_CUSTOM_CHECKPOINT_COUNT) return qfalse;
+
+	// can we place this in front of us?
+	AngleVectors(playerent->client->ps.viewangles, fwd, NULL, NULL);
+	fwd[2] = 0;
+	VectorMA(playerent->client->ps.origin, SHIELD_PLACEDIST, fwd, dest);
+	JP_Trace(&tr, playerent->client->ps.origin, mins, maxs, dest, playerent->s.number, MASK_SHOT);
+	if (tr.fraction > 0.9)
+	{//room in front
+		VectorCopy(tr.endpos, pos);
+		// drop to floor
+		VectorSet(dest, pos[0], pos[1], pos[2] - 100);
+		JP_Trace(&tr, pos, mins, maxs, dest, playerent->s.number, MASK_SOLID);
+		if (!tr.startsolid && !tr.allsolid)
+		{
+			// got enough room so place the portable shield
+			shield = G_Spawn();
+
+			// Figure out what direction the shield is facing.
+			if (fabs(fwd[0]) > fabs(fwd[1]))
+			{	// shield is north/south, facing east.
+				shield->s.angles[YAW] = 0;
+			}
+			else
+			{	// shield is along the east/west axis, facing north
+				shield->s.angles[YAW] = 90;
+			}
+			//shield->think = df_createCheckpoint;
+			//shield->nextthink = level.time;	// power up after .5 seconds
+			shield->think = 0;
+			shield->nextthink = 0;
+			shield->parent = playerent;
+
+			// Set team number.
+			shield->s.otherEntityNum2 = playerent->client->sess.sessionTeam;
+
+			shield->s.eType = ET_SPECIAL;
+			shield->s.modelindex = HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
+			shield->classname = "df_trigger_checkpoint";
+
+			shield->r.contents = CONTENTS_TRIGGER;
+			shield->triggerOnlyTraced = qtrue;
+
+			shield->touch = DF_CheckpointTimer_Touch;
+			// using an item causes it to respawn
+			shield->use = 0; //Use_Item;
+
+			G_SetOrigin(shield, tr.endpos);
+
+			shield->s.eFlags &= ~EF_NODRAW;
+			shield->r.svFlags &= ~SVF_NOCLIENT;
+
+
+
+
+			//trap_LinkEntity(shield);
+
+
+			shield->r.svFlags |= SVF_SINGLECLIENT;
+			shield->r.singleClient = playerent->s.number;
+
+
+			shield->s.owner = playerent->s.number;
+			shield->s.shouldtarget = qfalse;
+
+
+
+			playerent->client->pers.df_checkpointData.checkpointNumbers[playerent->client->pers.df_checkpointData.count] = shield->s.number;
+			playerent->client->pers.df_checkpointData.count++;
+
+			df_createCheckpoint(shield);
+
+			return qtrue;
+		}
+	}
+	// no room
+	return qfalse;
+}
+
 
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank) {
 	char nameColor, color;

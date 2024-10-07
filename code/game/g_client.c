@@ -2495,6 +2495,7 @@ void ClientSpawn(gentity_t *ent) {
 	BG_PlayerStateToEntityState( &client->ps, &ent->s, qtrue );
 }
 
+extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
 
 /*
 ===========
@@ -2527,6 +2528,8 @@ void ClientDisconnect( int clientNum ) {
 	// yea better just check activator->inuse...
 	G_ClearEntityActivator(ent); // this one not needed prolly cuz client has no activator, but lets be safe.
 	G_ClearActivatedEntities(ent); 
+
+	DF_RemoveCheckPoints(ent);
 
 	i = 0;
 

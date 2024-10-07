@@ -381,6 +381,9 @@ typedef struct raceDropped_s { // zero'd out every time we leave start timer
 
 
 
+#define MAX_CUSTOM_CHECKPOINT_COUNT 10
+#define MAX_TOTAL_CHECKPOINT_COUNT 200
+
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
 typedef struct {
@@ -421,8 +424,12 @@ typedef struct {
 	physicsFpsState_t	physicsFps;
 	runStats_t			stats;
 	raceDropped_t		raceDropped;
-} clientPersistant_t;
 
+	struct {
+		int checkpointNumbers[MAX_CUSTOM_CHECKPOINT_COUNT];
+		int count;
+	} df_checkpointData;
+} clientPersistant_t;
 
 // this structure is cleared on each ClientSpawn(),
 // except for 'client->pers' and 'client->sess'
@@ -531,6 +538,7 @@ struct gclient_s {
 	int			forcePowerMicroRegenBuffer; // forcepower regen buffer multiplied by 1000. when we get above 1000, we divide by 1000 and add to forcepower and subtract from this
 	int			triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
 	int			entityStates[MAX_GENTITIES]; // allow us to store some simplistic states about other entities, like func_usable. letting us know if the func_usable is turned on/off for this player
+	
 };
 
 
