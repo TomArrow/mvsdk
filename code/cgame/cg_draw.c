@@ -2112,7 +2112,7 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 	static drawFpsData_t allData[2];
 	drawFpsData_t* data = physical ? allData + 1 : allData;
 	static const int biggestInt = ~0 ^ (1 << 31);
-	int		i, total;
+	int		i, f,total;
 	int		fps;
 	int		t, frameTime;
 	int fastest,fastestIndex;
@@ -2122,6 +2122,9 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 	qboolean skipFrame;
 	qboolean drawFpsLowest = cg_drawFPSLowest.integer == 1 && !physical || cg_drawFPSLowest.integer == 2 && physical;
 	int lowestYOffset = (physical && cg_drawFPS.integer) ? -(y- oldY) : 0;
+	int frameTimeSampleCount = 0;
+	int frameTimeSamples[PLAYERSTATS_PAST_MSEC];
+	qboolean multiFrame = qfalse;
 
 	if (!physical) {
 		// don't use serverTime, because that will be drifting to
@@ -2147,10 +2150,16 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 			}
 			else {
 				entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
-				int msecIndex = (stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1);
-				int msec = stats->pastFpsUnionArray[msecIndex];
+				int msecIndex = (stats->fireflag - 1);
+				int currentTime = cg.predictedPlayerState.commandTime;
+				multiFrame = qtrue;
+				while (currentTime > data->previous && frameTimeSampleCount < PLAYERSTATS_PAST_MSEC) {
+					int msec = stats->pastFpsUnionArray[msecIndex & (PLAYERSTATS_PAST_MSEC - 1)];
+					currentTime -= msec;
+					frameTimeSamples[frameTimeSampleCount++] = msec;
+					msecIndex--; // i guess the order ends up wrong but oh well.
+				}
 				t = cg.predictedPlayerState.commandTime;
-				data->previous = t - msec;
 				// TODO let this use all the 4 samples we get somehow?
 			}
 		}
@@ -2161,132 +2170,148 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 			return y + BIGCHAR_HEIGHT + 4;// can't draw physical without proper info
 		}
 	}
-	frameTime = t - data->previous;
-	skipFrame = (t == data->previous);
-	data->previous = t;
-
-	if (!skipFrame) {
-		data->previousTimes[data->index % FPS_FRAMES] = frameTime;
-		data->index++;
-
-		data->indexBottom10P++;
-		data->indexBottom1P++;
-		data->indexBottom01P++;
+	if (multiFrame) {
+		data->previous = t;
+		skipFrame = qfalse;
+	}
+	else {
+		frameTime = t - data->previous;
+		frameTimeSamples[0] = frameTime;
+		frameTimeSampleCount = 1;
+		skipFrame = (t == data->previous);
+		data->previous = t;
 	}
 
-	// Bottom 10% frames
-	if (data->indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
-		//int slowest = 0;
-		total = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
-			total += data->bottomTimes10P[i];
-			//slowest = Q_max(bottomTimes1P[i],slowest);
+	for (f = 0; f < frameTimeSampleCount; f++) {
+		frameTime = frameTimeSamples[f];
+
+		if (!skipFrame) {
+			data->previousTimes[data->index % FPS_FRAMES] = frameTime;
+			data->index++;
+
+			data->indexBottom10P++;
+			data->indexBottom1P++;
+			data->indexBottom01P++;
 		}
-		//fps = 1000 / slowest; 
-		fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / total;
-		data->bottom10Pfps = fps;
 
-		memset(data->bottomTimes10P, 0, sizeof(data->bottomTimes10P));
-		data->indexBottom10P = 1;
+		// Bottom 10% frames
+		if (data->indexBottom10P > FPS_FRAMES_FOR_BOTTOM10P * 10) {
+			//int slowest = 0;
+			total = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+				total += data->bottomTimes10P[i];
+				//slowest = Q_max(bottomTimes1P[i],slowest);
+			}
+			//fps = 1000 / slowest; 
+			fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / total;
+			data->bottom10Pfps = fps;
+
+			memset(data->bottomTimes10P, 0, sizeof(data->bottomTimes10P));
+			data->indexBottom10P = 1;
+		}
+		{
+			if (!skipFrame) {
+				fastest = biggestInt;
+				fastestIndex = 0;
+				for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
+					if (data->bottomTimes10P[i] < fastest) {
+						fastest = data->bottomTimes10P[i];
+						fastestIndex = i;
+					}
+				}
+				// Replace fastest frametime with current frametime if it is slower than fastest
+				if (frameTime > fastest) {
+					data->bottomTimes10P[fastestIndex] = frameTime;
+				}
+			}
+		}
+
+		// Bottom 1% frames
+		if (data->indexBottom1P > FPS_FRAMES_FOR_BOTTOM1P * 100) {
+			//int slowest = 0;
+			total = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+				total += data->bottomTimes1P[i];
+				//slowest = Q_max(bottomTimes1P[i],slowest);
+			}
+			//fps = 1000 / slowest; 
+			fps = 1000 * FPS_FRAMES_FOR_BOTTOM1P / total;
+			data->bottom1Pfps = fps;
+
+			memset(data->bottomTimes1P, 0, sizeof(data->bottomTimes1P));
+			data->indexBottom1P = 1;
+		}
+		{
+
+			if (!skipFrame) {
+				fastest = biggestInt;
+				fastestIndex = 0;
+				for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
+					if (data->bottomTimes1P[i] < fastest) {
+						fastest = data->bottomTimes1P[i];
+						fastestIndex = i;
+					}
+				}
+				// Replace fastest frametime with current frametime if it is slower than fastest
+				if (frameTime > fastest) {
+					data->bottomTimes1P[fastestIndex] = frameTime;
+				}
+			}
+		}
+
+		// Bottom 0.1% frames
+		if (data->indexBottom01P > FPS_FRAMES_FOR_BOTTOM01P * 1000) {
+			//int slowest = 0;
+			total = 0;
+			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+				total += data->bottomTimes01P[i];
+				//slowest = Q_max(bottomTimes1P[i],slowest);
+			}
+			//fps = 1000 / slowest; 
+			fps = 1000 * FPS_FRAMES_FOR_BOTTOM01P / total;
+			data->bottom01Pfps = fps;
+
+			memset(data->bottomTimes01P, 0, sizeof(data->bottomTimes01P));
+			data->indexBottom01P = 1;
+		}
+		{
+
+			if (!skipFrame) {
+				fastest = biggestInt;
+				fastestIndex = 0;
+				for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
+					if (data->bottomTimes01P[i] < fastest) {
+						fastest = data->bottomTimes01P[i];
+						fastestIndex = i;
+					}
+				}
+				// Replace fastest frametime with current frametime if it is slower than fastest
+				if (frameTime > fastest) {
+					data->bottomTimes01P[fastestIndex] = frameTime;
+				}
+			}
+		}
 	}
-	{ // Draw bottom 10% frames
+
+
+	if (drawFpsLowest) {
+		// Draw bottom 10% frames
 		s = va(physical ? "%ipfps  10%%" : "%ifps  10%%", data->bottom10Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		if(drawFpsLowest)
-			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
 
-		if (!skipFrame) {
-			fastest = biggestInt;
-			fastestIndex = 0;
-			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM10P; i++) {
-				if (data->bottomTimes10P[i] < fastest) {
-					fastest = data->bottomTimes10P[i];
-					fastestIndex = i;
-				}
-			}
-			// Replace fastest frametime with current frametime if it is slower than fastest
-			if (frameTime > fastest) {
-				data->bottomTimes10P[fastestIndex] = frameTime;
-			}
-		}
-	}
-
-	// Bottom 1% frames
-	if (data->indexBottom1P > FPS_FRAMES_FOR_BOTTOM1P * 100) {
-		//int slowest = 0;
-		total = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
-			total += data->bottomTimes1P[i];
-			//slowest = Q_max(bottomTimes1P[i],slowest);
-		}
-		//fps = 1000 / slowest; 
-		fps = 1000 * FPS_FRAMES_FOR_BOTTOM1P / total;
-		data->bottom1Pfps = fps;
-
-		memset(data->bottomTimes1P, 0, sizeof(data->bottomTimes1P));
-		data->indexBottom1P = 1;
-	}
-	{ // Draw bottom 1% frames
-		s = va(physical ? "%ipfps   1%%":"%ifps   1%%", data->bottom1Pfps);
+		// Draw bottom 1% frames
+		s = va(physical ? "%ipfps   1%%" : "%ifps   1%%", data->bottom1Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		if (drawFpsLowest)
-			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
-
-		if (!skipFrame) {
-			fastest = biggestInt;
-			fastestIndex = 0;
-			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM1P; i++) {
-				if (data->bottomTimes1P[i] < fastest) {
-					fastest = data->bottomTimes1P[i];
-					fastestIndex = i;
-				}
-			}
-			// Replace fastest frametime with current frametime if it is slower than fastest
-			if (frameTime > fastest) {
-				data->bottomTimes1P[fastestIndex] = frameTime;
-			}
-		}
-	}
-
-	// Bottom 0.1% frames
-	if (data->indexBottom01P > FPS_FRAMES_FOR_BOTTOM01P * 1000) {
-		//int slowest = 0;
-		total = 0;
-		for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
-			total += data->bottomTimes01P[i];
-			//slowest = Q_max(bottomTimes1P[i],slowest);
-		}
-		//fps = 1000 / slowest; 
-		fps = 1000 * FPS_FRAMES_FOR_BOTTOM01P / total;
-		data->bottom01Pfps = fps;
-
-		memset(data->bottomTimes01P, 0, sizeof(data->bottomTimes01P));
-		data->indexBottom01P = 1;
-	}
-	{ // Draw bottom 0.1% frames
-		s = va(physical ?"%ipfps 0.1%%":"%ifps 0.1%%", data->bottom01Pfps);
+		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+		// Draw bottom 0.1% frames
+		s = va(physical ? "%ipfps 0.1%%" : "%ifps 0.1%%", data->bottom01Pfps);
 		w = CG_DrawStrlen(s) * SMALLCHAR_WIDTH;
 		//CG_DrawSmallString(cgs.screenWidth - 80 - w, y + 2 + SMALLCHAR_HEIGHT, s, 1.0f);
-		if (drawFpsLowest)
-			CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
-
-		if (!skipFrame) {
-			fastest = biggestInt;
-			fastestIndex = 0;
-			for (i = 0; i < FPS_FRAMES_FOR_BOTTOM01P; i++) {
-				if (data->bottomTimes01P[i] < fastest) {
-					fastest = data->bottomTimes01P[i];
-					fastestIndex = i;
-				}
-			}
-			// Replace fastest frametime with current frametime if it is slower than fastest
-			if (frameTime > fastest) {
-				data->bottomTimes01P[fastestIndex] = frameTime;
-			}
-		}
-	}			
+		CG_DrawStringExt(cgs.screenWidth - 150 - w, y + 2 + 8 * 2 + lowestYOffset, s, g_color_table[7], qfalse, qtrue, 8, 8, 20);
+	}
 	
 
 	charHeight = BIGCHAR_HEIGHT;
