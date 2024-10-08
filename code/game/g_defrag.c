@@ -783,12 +783,10 @@ void DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 	playerent->client->pers.df_checkpointData.count++;
 }
 
-qboolean DF_StealCheckpoints(gentity_t* playerent) {
-	int i;
-	gentity_t* shield;
-	gentity_t* sourcePlayerEnt;
+gentity_t* GetClientNumArg() {
 	char	arg[MAX_STRING_CHARS];
 	int sourcePlayer = -1;
+	gentity_t* sourcePlayerEnt;
 	if (trap_Argc() > 1)
 	{
 		trap_Argv(1, arg, sizeof(arg));
@@ -796,20 +794,61 @@ qboolean DF_StealCheckpoints(gentity_t* playerent) {
 		if (arg[0])
 		{
 			sourcePlayer = atoi(arg);
+			if (sourcePlayer >= 0 && sourcePlayer < MAX_CLIENTS) {
+				return g_entities + sourcePlayer;
+			}
 		}
 	}
-	else
-	{
+
+	return NULL;
+
+}
+
+void DF_StealSpawn(gentity_t* playerent) {
+
+	gentity_t* sourcePlayerEnt = GetClientNumArg();
+
+	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
 		return;
 	}
 
-	if (sourcePlayer < 0 || sourcePlayer >= MAX_CLIENTS) {
+	if (!sourcePlayerEnt->client->pers.savedSpawnUsed) {
 		return;
 	}
 
-	sourcePlayerEnt = g_entities + sourcePlayer;
+	playerent->client->pers.savedSpawn = sourcePlayerEnt->client->pers.savedSpawn;
+	playerent->client->pers.savedSpawn.ps.clientNum = playerent - g_entities;
+	playerent->client->pers.savedSpawnRaceStyle = sourcePlayerEnt->client->pers.savedSpawnRaceStyle;
+	playerent->client->pers.savedSpawnUsed = qtrue;
 
-	if (!sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+}
+
+void DF_StealPos(gentity_t* playerent) {
+
+	gentity_t* sourcePlayerEnt = GetClientNumArg();
+
+	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+		return;
+	}
+
+	if (!sourcePlayerEnt->client->pers.savePosUsed) {
+		return;
+	}
+
+	playerent->client->pers.savedPosition = sourcePlayerEnt->client->pers.savedPosition;
+	playerent->client->pers.savedPosition.ps.clientNum = playerent - g_entities;
+	playerent->client->pers.savePosUsed = qtrue;
+
+}
+
+void DF_StealCheckpoints(gentity_t* playerent) {
+	int i;
+	gentity_t* shield;
+	gentity_t* sourcePlayerEnt = GetClientNumArg();
+
+
+
+	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
 		return;
 	}
 

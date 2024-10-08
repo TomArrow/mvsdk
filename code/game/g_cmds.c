@@ -2770,7 +2770,10 @@ extern void Cmd_ToggleFPS_f(gentity_t* ent);
 extern void Cmd_FloatPhysics_f(gentity_t* ent);
 extern qboolean DF_CreateCustomCheckpoint(gentity_t* playerent);
 extern qboolean DF_RemoveCheckPoints(gentity_t* playerent); 
-extern qboolean DF_StealCheckpoints(gentity_t* playerent);
+extern void DF_StealCheckpoints(gentity_t* playerent);
+extern void DF_StealSpawn(gentity_t* playerent);
+extern void DF_StealPos(gentity_t* playerent);
+
 /*
 =================
 ClientCommand
@@ -2958,6 +2961,14 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "stealspawn"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "stealpos"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "resetspawn"))
 		{
 			giveError = qtrue;
@@ -3075,6 +3086,10 @@ void ClientCommand( int clientNum ) {
 		DF_RemoveCheckPoints(ent);
 	else if (Q_stricmp (cmd, "stealcheckpoints") == 0)
 		DF_StealCheckpoints(ent);
+	else if (Q_stricmp (cmd, "stealspawn") == 0)
+		DF_StealSpawn(ent);
+	else if (Q_stricmp (cmd, "stealpos") == 0)
+		DF_StealPos(ent);
 	else if (Q_stricmp (cmd, "resetspawn") == 0)
 		DF_ResetSpawn(ent);
 	else if (Q_stricmp (cmd, "jump") == 0)
