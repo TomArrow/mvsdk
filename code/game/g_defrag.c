@@ -627,6 +627,8 @@ freeme:
 	G_FreeEntity(ent);
 
 }
+
+
 #define SHIELD_HEALTH				250
 #define SHIELD_HEALTH_DEC			10		// 25 seconds	
 #define MAX_SHIELD_HEIGHT			254

@@ -1823,6 +1823,8 @@ typedef struct playerState_1_02_s {
 
 #define BUTTON_FORCE_DRAIN		2048
 
+#define BUTTON_LASERPOINTER		4096
+
 #define BUTTON_BOUNCEPOWER		8192
 
 #define BUTTON_STRAFEBOT		16384

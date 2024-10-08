@@ -1303,8 +1303,172 @@ qboolean DF_PrePmoveValid(gentity_t* ent);
 void UpdateClientPastFpsStats(gentity_t* ent, int msec) {
 	entityState_t* stats = &level.playerStats[ent-g_entities]->s;
 	ent->client->lastMsecValue = msec;
-	stats->pastFpsUnionArray[stats->fireflag++] = msec;
-	stats->fireflag = stats->fireflag & (PLAYERSTATS_PAST_MSEC-1);
+	if (stats->pastFpsUnionArray[0] != msec || // if fps is stable and unchanging, dont spam index changes, what for...
+		stats->pastFpsUnionArray[1] != msec ||
+		stats->pastFpsUnionArray[2] != msec ||
+		stats->pastFpsUnionArray[3] != msec) {
+
+		stats->pastFpsUnionArray[stats->fireflag++] = msec;
+		stats->fireflag = stats->fireflag & (PLAYERSTATS_PAST_MSEC - 1);
+	}
+}
+
+// Simplified version of PM_UpdateViewAngles. Just to see where we are looking right now without doing pmove first
+void GetUpdatedViewAngles(gentity_t* ent, vec3_t out) {
+		short		temp;
+		int		i;
+
+		//if (ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPINTERMISSION) {
+		//	return;		// no view changes at all
+		//}
+
+		//if (ps->pm_type != PM_SPECTATOR && ps->stats[STAT_HEALTH] <= 0) {
+		//	return;		// no view changes at all
+		//}
+
+		// circularly clamp the angles with deltas
+		for (i = 0; i < 3; i++) {
+			temp = ent->client->pers.cmd.angles[i] + ent->client->ps.delta_angles[i];
+			if (i == PITCH) {
+				if (temp > 16000) {
+					temp = 16000;
+				}
+				else if (temp < -16000) {
+					temp = -16000;
+				}
+			}
+			out[i] = SHORT2ANGLE(temp);
+		}
+
+}
+
+// sanity check that the client still exists and knows about this checkpoint andsuch.
+void checkLaserpointerValid(gentity_t* ent) {
+	gentity_t* owner;
+	int i;
+	int lpNum;
+
+	if (!ent->parent) {
+		goto freeme;
+		return;
+	}
+	owner = ent->parent;
+
+	if (!owner->inuse || !owner->client || owner->client->pers.connected != CON_CONNECTED) {
+		goto freeme;
+		return;
+	}
+
+	lpNum = ent - g_entities;
+	if (owner->client->pers.laserPointerNum == lpNum) {
+
+		// ok the client is still active and still knows about this checkpoint. keep it.
+		ent->think = checkLaserpointerValid;
+		ent->nextthink = level.time + 1000;
+		return;
+	}
+
+freeme:
+	ent->think = 0;
+	ent->nextthink = 0;
+	G_FreeEntity(ent);
+
+}
+
+void ClientLaserPointer(gentity_t* ent) {
+	vec3_t viewAngles,fwd,end;
+	gentity_t* lp = NULL;
+	qboolean eventflip = qfalse;
+	trace_t tr;
+	int flipDelay = 1000/g_sv_fps.integer;
+	if (ent->client->pers.laserPointerNum) {
+		lp = g_entities + ent->client->pers.laserPointerNum;
+		if (!(lp->s.eType == ET_BEAM && lp->parent == ent && lp->s.generic1 == 3)) { // hmm sth went wrong
+			lp = NULL;
+			ent->client->pers.laserPointerNum = 0;
+		}
+	}
+
+
+	GetUpdatedViewAngles(ent, viewAngles); // less delay than using ps.viewangles because pmove hasnt happened yet
+	AngleVectors(viewAngles, fwd, NULL, NULL);
+	VectorMA(ent->client->ps.origin,3000.0f, fwd, end);
+	JP_Trace(&tr, ent->client->ps.origin, NULL, NULL, end, ent->s.number, CONTENTS_SOLID | CONTENTS_BODY | CONTENTS_CORPSE);
+
+	if (tr.startsolid) {
+		if (lp) {
+			G_FreeEntity(lp);
+			ent->client->pers.laserPointerNum = 0;
+		}
+		return;
+	}
+
+	if (!lp) {
+		lp = G_Spawn();
+		ent->client->pers.laserPointerNum = lp - g_entities;
+		lp->s.eType = ET_BEAM;
+		lp->s.generic1 = 3;
+		lp->parent = ent;
+	}
+
+	VectorCopy(ent->client->ps.origin,lp->r.currentOrigin);
+	VectorCopy(ent->client->ps.origin,lp->s.pos.trBase);
+	VectorCopy(ent->client->ps.origin,lp->s.origin);
+	VectorCopy(tr.endpos,lp->s.origin2); 
+
+	eventflip = (level.time > lp->laserPointerLastEventFlip + flipDelay) || level.time < lp->laserPointerLastEventFlip;
+	if (eventflip || !lp->s.event) {
+		G_AddEvent(lp, EV_TESTLINE,0);
+		lp->laserPointerLastEventFlip = level.time;
+	}
+	/*if (lp->s.event & EV_EVENT_BIT1) {
+		if (eventflip) {
+			lp->s.event = EV_TESTLINE;
+			lp->laserPointerLastEventFlip = level.time;
+		}
+		else {
+			lp->s.event = EV_TESTLINE | EV_EVENT_BIT1;
+		}
+	}
+	else {
+		if (!eventflip) {
+			lp->s.event = EV_TESTLINE;
+		}
+		else {
+			lp->s.event = EV_TESTLINE | EV_EVENT_BIT1;
+			lp->laserPointerLastEventFlip = level.time;
+		}
+	}*/
+	lp->s.time2 = flipDelay*2;
+	lp->s.weapon = 0x0000ff;
+	lp->eventTime = level.time;
+	//lp->r.svFlags |= SVF_BROADCAST;
+	
+	ent->think = checkLaserpointerValid; // Is this really needed? can we do it better? idk
+	ent->nextthink = level.time + 1000;
+
+	trap_LinkEntity(lp);
+}
+void ClientKillLaserPointer(gentity_t* ent) {
+	if (ent->client->pers.laserPointerNum) {
+		gentity_t* lp = g_entities + ent->client->pers.laserPointerNum;
+		if (lp->s.eType == ET_BEAM && lp->parent == ent && lp->s.generic1==3) { // generic1 == 3 just means its a laserpointer *shrug*
+			G_FreeEntity(lp);
+		}
+		ent->client->pers.laserPointerNum = 0;
+	}
+}
+
+void HandleClientLaserPointer(gentity_t* ent) {
+	if (!g_defrag.integer) {
+		return;
+	}
+	if (ent->client->pers.cmd.buttons & BUTTON_LASERPOINTER) {
+		ClientLaserPointer(ent);
+	}
+	else {
+		ClientKillLaserPointer(ent);
+	}
 }
 
 /*
@@ -1444,6 +1608,8 @@ void ClientThink_real( gentity_t *ent ) {
 	if (client->sess.raceMode) {
 		client->ps.fd.forcePowerLevel[FP_SABERATTACK] = 3; //make sure its allowed on server? or?
 	}
+
+	HandleClientLaserPointer(ent); // logically should be after intermission but eh, can use some memes
 
 	//
 	// check for exiting intermission

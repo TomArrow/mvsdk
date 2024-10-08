@@ -265,6 +265,7 @@ struct gentity_s {
 	checkpointSeed_t	checkpointSeed; // custom checkpoints get this to be able to save/load from db.
 
 	qboolean	isLogical;		// Determines if this ent is logical or not
+	int			laserPointerLastEventFlip;
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -431,6 +432,8 @@ typedef struct {
 		int checkpointNumbers[MAX_CUSTOM_CHECKPOINT_COUNT];
 		int count;
 	} df_checkpointData;
+
+	int			laserPointerNum;
 } clientPersistant_t;
 
 // this structure is cleared on each ClientSpawn(),

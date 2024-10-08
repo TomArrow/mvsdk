@@ -295,61 +295,71 @@ Svcmd_EntityList_f
 ===================
 */
 void	Svcmd_EntityList_f (void) {
-	int			e;
-	gentity_t		*check;
+	int			e=0;
+	int			i;
+	int			max = level.num_entities;
+	gentity_t		*check = g_entities;
 
-	check = g_entities+1;
-	for (e = 0; e < level.num_entities ; e++, check++) {
-		if ( !check->inuse ) {
-			continue;
-		}
-		G_Printf("%3i:", e);
-		switch ( check->s.eType ) {
-		case ET_GENERAL:
-			G_Printf("ET_GENERAL          ");
-			break;
-		case ET_PLAYER:
-			G_Printf("ET_PLAYER           ");
-			break;
-		case ET_ITEM:
-			G_Printf("ET_ITEM             ");
-			break;
-		case ET_MISSILE:
-			G_Printf("ET_MISSILE          ");
-			break;
-		case ET_MOVER:
-			G_Printf("ET_MOVER            ");
-			break;
-		case ET_BEAM:
-			G_Printf("ET_BEAM             ");
-			break;
-		case ET_PORTAL:
-			G_Printf("ET_PORTAL           ");
-			break;
-		case ET_SPEAKER:
-			G_Printf("ET_SPEAKER          ");
-			break;
-		case ET_PUSH_TRIGGER:
-			G_Printf("ET_PUSH_TRIGGER     ");
-			break;
-		case ET_TELEPORT_TRIGGER:
-			G_Printf("ET_TELEPORT_TRIGGER ");
-			break;
-		case ET_INVISIBLE:
-			G_Printf("ET_INVISIBLE        ");
-			break;
-		case ET_GRAPPLE:
-			G_Printf("ET_GRAPPLE          ");
-			break;
-		default:
-			G_Printf("%3i                 ", check->s.eType);
-			break;
-		}
+	for (i = 0; i < 2; i++) {
+		if (i) {
+			check = &g_entities[MAX_GENTITIES];
+			e = MAX_GENTITIES;
+			max = MAX_GENTITIES+ level.num_logicalents;
 
-		if ( check->classname ) {
-			G_Printf("%s", check->classname);
+			G_Printf("\nLogical:\n");
 		}
-		G_Printf("\n");
+		for (; e < max; e++, check++) {
+			if (!check->inuse) {
+				continue;
+			}
+			G_Printf("%3i:", e);
+			switch (check->s.eType) {
+			case ET_GENERAL:
+				G_Printf("ET_GENERAL          ");
+				break;
+			case ET_PLAYER:
+				G_Printf("ET_PLAYER           ");
+				break;
+			case ET_ITEM:
+				G_Printf("ET_ITEM             ");
+				break;
+			case ET_MISSILE:
+				G_Printf("ET_MISSILE          ");
+				break;
+			case ET_MOVER:
+				G_Printf("ET_MOVER            ");
+				break;
+			case ET_BEAM:
+				G_Printf("ET_BEAM             ");
+				break;
+			case ET_PORTAL:
+				G_Printf("ET_PORTAL           ");
+				break;
+			case ET_SPEAKER:
+				G_Printf("ET_SPEAKER          ");
+				break;
+			case ET_PUSH_TRIGGER:
+				G_Printf("ET_PUSH_TRIGGER     ");
+				break;
+			case ET_TELEPORT_TRIGGER:
+				G_Printf("ET_TELEPORT_TRIGGER ");
+				break;
+			case ET_INVISIBLE:
+				G_Printf("ET_INVISIBLE        ");
+				break;
+			case ET_GRAPPLE:
+				G_Printf("ET_GRAPPLE          ");
+				break;
+			default:
+				G_Printf("%3i                 ", check->s.eType);
+				break;
+			}
+
+			if (check->classname) {
+				G_Printf("%s", check->classname);
+			}
+			G_Printf("\n");
+		}
 	}
 }
 
