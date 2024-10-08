@@ -1743,8 +1743,6 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand ("vosay_team");
 	trap_AddCommand ("votell");
 	trap_AddCommand ("give");
-	trap_AddCommand ("savepos");
-	trap_AddCommand ("respos");
 	trap_AddCommand ("god");
 	trap_AddCommand ("notarget");
 	trap_AddCommand ("noclip");
@@ -1872,4 +1870,11 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("move");
 	trap_AddCommand("togglefps");
 	trap_AddCommand("floatphysics");
+	trap_AddCommand("checkpoint");
+	trap_AddCommand("removecheckpoints");
+	trap_AddCommand("stealcheckpoints");
+	trap_AddCommand("stealspawn");
+	trap_AddCommand("stealpos");
+	trap_AddCommand("top");
+	trap_AddCommand("logout");
 }

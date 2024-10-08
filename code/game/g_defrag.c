@@ -731,7 +731,7 @@ void df_createCheckpoint(gentity_t* ent)
 }
 
 
-void DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
+qboolean DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 	gentity_t* shield;
 
 	if (playerent->client->pers.df_checkpointData.count >= MAX_CUSTOM_CHECKPOINT_COUNT) return qfalse;
@@ -781,6 +781,8 @@ void DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 
 	playerent->client->pers.df_checkpointData.checkpointNumbers[playerent->client->pers.df_checkpointData.count] = shield->s.number;
 	playerent->client->pers.df_checkpointData.count++;
+
+	return qtrue;
 }
 
 gentity_t* GetClientNumArg() {
@@ -804,15 +806,47 @@ gentity_t* GetClientNumArg() {
 
 }
 
+void DF_StealStyle(gentity_t* playerent) {
+
+	gentity_t* sourcePlayerEnt = GetClientNumArg();
+	int tmpMsec = playerent->client->sess.raceStyle.msec;
+
+	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Please specify a valid client number whose style you wish to steal.\n\"");
+		return;
+	}
+
+	if (!playerent->client->sess.raceMode) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Cannot steal style outside of racemode.\n\"");
+		return;
+	}
+	if (!sourcePlayerEnt->client->sess.raceMode) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Specified client is not in racemode.\n\"");
+		return;
+	}
+
+	if (sourcePlayerEnt->client->sess.raceStyle.msec > 0 && sourcePlayerEnt->client->sess.raceStyle.msec != tmpMsec) {
+		trap_SendServerCommand(playerent - g_entities, va("print \"Style stolen. You must manually set your com_physicsFps to %d.\n\"",(1000/ sourcePlayerEnt->client->sess.raceStyle.msec)));
+	}
+	else {
+		trap_SendServerCommand(playerent - g_entities, "print \"Style stolen.\n\"");
+	}
+	playerent->client->sess.raceStyle = sourcePlayerEnt->client->sess.raceStyle;
+	playerent->client->sess.raceStyle.msec = tmpMsec;
+	DF_RaceStateInvalidated(playerent, qtrue);
+
+}
 void DF_StealSpawn(gentity_t* playerent) {
 
 	gentity_t* sourcePlayerEnt = GetClientNumArg();
 
 	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Please specify a valid client number whose spawns you wish to steal.\n\"");
 		return;
 	}
 
 	if (!sourcePlayerEnt->client->pers.savedSpawnUsed) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Specified client does not have a saved spawn.\n\"");
 		return;
 	}
 
@@ -821,6 +855,14 @@ void DF_StealSpawn(gentity_t* playerent) {
 	playerent->client->pers.savedSpawnRaceStyle = sourcePlayerEnt->client->pers.savedSpawnRaceStyle;
 	playerent->client->pers.savedSpawnUsed = qtrue;
 
+	if (memcmp(&playerent->client->sess.raceStyle, &sourcePlayerEnt->client->sess.raceStyle,sizeof(playerent->client->sess.raceStyle))) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Spawn stolen. Racestyle differs - trying to steal racestyle too.\n\"");
+		DF_StealStyle(playerent);
+	}
+	else {
+		trap_SendServerCommand(playerent - g_entities, "print \"Spawn stolen.\n\"");
+	}
+
 }
 
 void DF_StealPos(gentity_t* playerent) {
@@ -828,11 +870,25 @@ void DF_StealPos(gentity_t* playerent) {
 	gentity_t* sourcePlayerEnt = GetClientNumArg();
 
 	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Please specify a valid client number whose position you wish to steal.\n\"");
 		return;
 	}
 
 	if (!sourcePlayerEnt->client->pers.savePosUsed) {
+		if ((sourcePlayerEnt->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && sourcePlayerEnt->client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS) {
+			trap_SendServerCommand(playerent - g_entities, "print \"Specified client does not have a saved position. Segmented run saved positions can't be stolen.\n\"");
+		}
+		else {
+			trap_SendServerCommand(playerent - g_entities, "print \"Specified client does not have a saved position.\n\"");
+		}
 		return;
+	}
+
+	if ((sourcePlayerEnt->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && sourcePlayerEnt->client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Saved position stolen. Note that the specified client is in segmented race mode and segmented savepos positions cannot be stolen, so you may have gotten a different position than you wanted.\n\"");
+	}
+	else {
+		trap_SendServerCommand(playerent - g_entities, "print \"Saved position stolen.\n\"");
 	}
 
 	playerent->client->pers.savedPosition = sourcePlayerEnt->client->pers.savedPosition;
@@ -845,18 +901,31 @@ void DF_StealCheckpoints(gentity_t* playerent) {
 	int i;
 	gentity_t* shield;
 	gentity_t* sourcePlayerEnt = GetClientNumArg();
-
+	int stolenChecks = 0;
 
 
 	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+		trap_SendServerCommand(playerent - g_entities, "print \"Please specify a valid client number whose checkpoints you wish to steal.\n\"");
 		return;
 	}
 
 	for (i = 0; i < sourcePlayerEnt->client->pers.df_checkpointData.count; i++) {
 		shield = g_entities + sourcePlayerEnt->client->pers.df_checkpointData.checkpointNumbers[i];
 		if (shield->inuse) {
-			DF_CloneCustomCheckpoint(shield, playerent);
+			if (DF_CloneCustomCheckpoint(shield, playerent)) {
+				stolenChecks++;
+			}
+			else {
+				trap_SendServerCommand(playerent - g_entities, "print \"^1Checkpoint limit reached. Can't steal or generate any more checkpoints.\n\"");
+				break;
+			}
 		}
+	}
+	if (stolenChecks) {
+		trap_SendServerCommand(playerent - g_entities, va("print \"%d checkpoints stolen.\n\"",stolenChecks));
+	}
+	else {
+		trap_SendServerCommand(playerent - g_entities, "print \"^1No checkpoints stolen.\n\"");
 	}
 
 }
