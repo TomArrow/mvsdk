@@ -1877,4 +1877,6 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("stealpos");
 	trap_AddCommand("top");
 	trap_AddCommand("logout");
+	trap_AddCommand("savecheckpoints");
+	trap_AddCommand("loadcheckpoints");
 }

@@ -14,7 +14,9 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_CREATETABLE,
 	DBREQUEST_UPDATECOLUMNS,
 	DBREQUEST_INSERTORUPDATERUN,
-	DBREQUEST_TOP
+	DBREQUEST_TOP,
+	DBREQUEST_SAVECHECKPOINTS,
+	DBREQUEST_LOADCHECKPOINTS,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -33,6 +35,10 @@ typedef struct topScoresRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
 }topScoresRequestStruct_t;
+typedef struct checkPointSaveRequestStruct_s {
+	int			ip[4];
+	int			clientnum;
+}checkPointSaveRequestStruct_t;
 
 typedef struct insertUpdateRunStruct_s {
 	int					ip[4];

@@ -13,9 +13,16 @@ typedef int ip_t[4];
 
 static void G_CreateUserTable();
 static void G_CreateRunsTable();
+static void G_CreateCheckpointsTable();
 
 static gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	gentity_t* ent;
+
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS) {
+		Com_Printf("DB_VerifyClient: client number %d invalid.\n", clientNum);
+		return NULL;
+	}
+	
 	ent = g_entities + clientNum;
 
 	if (!ent->client) {
@@ -332,6 +339,88 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 
 }
 
+static void G_SaveCheckpointsResult(int status, const char* errorMessage, int affectedRows) {
+	checkPointSaveRequestStruct_t data;
+	gentity_t* ent = NULL;
+	//evaluatedRunInfo_t eRunInfo;
+	int deleted=0, inserted=0;
+
+	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Client %d checkpoints saved, user no longer valid.\n", data.clientnum);
+		//return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateCheckpointsTable();
+		trap_SendServerCommand(ent-g_entities,"print \"^1Checkpoint saving failed due to checkpoints table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Checkpoint saving failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	deleted = affectedRows;
+
+	if (coolApi_dbVersion >= 3) {
+		// first query is SET @now = NOW(). skip it.
+		if (!trap_G_COOL_API_DB_GetMoreResults(&inserted))
+		{
+			trap_SendServerCommand(ent - g_entities, "print \"^1WTF NO MORE RESULTS\n\"");
+		}
+	}
+
+	trap_SendServerCommand(ent - g_entities, va("print \"^2%d checkpoints saved to user account, %d old saved checkpoints deleted.\n\"", inserted, deleted));
+
+}
+qboolean DF_CreateCustomCheckpointFromPos(vec3_t trEndpos, float anglesYaw, gentity_t* playerent);
+static void G_LoadCheckpointsResult(int status, const char* errorMessage, int affectedRows) {
+	checkPointSaveRequestStruct_t data;
+	gentity_t* ent = NULL;
+	//evaluatedRunInfo_t eRunInfo;
+	int loaded =0;
+	vec3_t trEndpos;
+	float yaw;
+
+	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Client %d checkpoints loaded, user no longer valid.\n", data.clientnum);
+		//return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateCheckpointsTable();
+		trap_SendServerCommand(ent-g_entities,"print \"^1Checkpoint loading failed due to checkpoints table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Checkpoint loading failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	while (trap_G_COOL_API_DB_NextRow()) {
+		trap_G_COOL_API_DB_GetFloat(0,&trEndpos[0]);
+		trap_G_COOL_API_DB_GetFloat(1,&trEndpos[1]);
+		trap_G_COOL_API_DB_GetFloat(2,&trEndpos[2]);
+		trap_G_COOL_API_DB_GetFloat(3,&yaw);
+		if (!DF_CreateCustomCheckpointFromPos(trEndpos, yaw, ent)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Checkpoint limit reached. Can't load any more checkpoints.\n\"");
+			break;
+		}
+		else {
+			loaded++;
+		}
+	}
+
+	trap_SendServerCommand(ent - g_entities, va("print \"^2%d checkpoints loaded from user account.\n\"", loaded));
+
+}
+
 typedef struct topLeaderBoardEntry_s {
 	qboolean exists;
 	char username[USERNAME_MAX_LEN + 1];
@@ -584,6 +673,12 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_TOP:
 					G_TopResult(status, errorMessage, affectedRows);
 					break;
+				case DBREQUEST_SAVECHECKPOINTS:
+					G_SaveCheckpointsResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_LOADCHECKPOINTS:
+					G_LoadCheckpointsResult(status, errorMessage, affectedRows);
+					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);
 				//	break;
@@ -622,13 +717,100 @@ void G_DB_GetChats_f(void) {
 	trap_G_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, va("SELECT id, chat, `time` FROM chats ORDER BY time DESC, id DESC LIMIT %d,10",first));
 }
 */
+extern const char* DF_GetCourseName();
+void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
+	static const char requestBase[] = "DELETE FROM checkpoints WHERE course=? AND userid=?;INSERT INTO checkpoints (userid,course,number,x,y,z,yaw) VALUES ";
+	static const char checkPointValues[] = "(?,?,?,?,?,?,?)";
+	static char request[sizeof(requestBase) + (sizeof(checkPointValues)+1)*MAX_CUSTOM_CHECKPOINT_COUNT+1];
+	const char* coursename = NULL;
+	static checkPointSaveRequestStruct_t data;
+	int i;
+	if (coolApi_dbVersion < 3) {
+		trap_SendServerCommand(playerent-g_entities,"print \"DB version too low to save checkpoints.\n\"");
+		return;
+	}
+	if (!playerent->client->pers.df_checkpointData.count) {
+		trap_SendServerCommand(playerent-g_entities,"print \"No checkpoints found for saving.\n\"");
+		return;
+	}
+	if (!playerent->client->sess.login.loggedIn) {
+		trap_SendServerCommand(playerent-g_entities,"print \"Can't save checkpoints unless logged in.\n\"");
+		return;
+	}
+	request[0] = 0;
+	Q_strcat(request, sizeof(request), requestBase);
+	Q_strcat(request, sizeof(request), checkPointValues);
+	for (i = 1; i < playerent->client->pers.df_checkpointData.count; i++) {
+		Q_strcat(request, sizeof(request), va(",%s",checkPointValues));
+	}
+	memset(&data, 0, sizeof(data));
+	data.clientnum = playerent - g_entities;
+	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
 
+	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_SAVECHECKPOINTS,request)) {
+		trap_SendServerCommand(playerent - g_entities, "print \"DB connection not available to save checkpoints.\n\"");
+		return;
+	}
+	coursename = DF_GetCourseName();
 
+	// DELETE
+	trap_G_COOL_API_DB_PreparedBindString(coursename);
+	trap_G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
+
+	// INSERT
+	for (i = 0; i < playerent->client->pers.df_checkpointData.count; i++) {
+		gentity_t* check = g_entities + playerent->client->pers.df_checkpointData.checkpointNumbers[i];
+		trap_G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
+		trap_G_COOL_API_DB_PreparedBindString(coursename);
+		trap_G_COOL_API_DB_PreparedBindInt(i);
+		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[0]);
+		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[1]);
+		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[2]);
+		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.anglesYaw);
+	}
+
+	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+}
+void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
+	static checkPointSaveRequestStruct_t data;
+	int i;
+	const char* coursename = NULL;
+	if (coolApi_dbVersion < 3) {
+		trap_SendServerCommand(playerent-g_entities,"print \"DB version too low to load checkpoints.\n\"");
+		return;
+	}
+	if (!playerent->client->sess.login.loggedIn) {
+		trap_SendServerCommand(playerent-g_entities,"print \"Can't load checkpoints unless logged in.\n\"");
+		return;
+	}
+	memset(&data, 0, sizeof(data));
+	data.clientnum = playerent - g_entities;
+	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
+
+	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data), DBREQUEST_LOADCHECKPOINTS, "SELECT x,y,z,yaw FROM checkpoints WHERE course=? AND userid=? ORDER BY number ASC")) {
+		trap_SendServerCommand(playerent - g_entities, "print \"DB connection not available to load checkpoints.\n\"");
+		return;
+	}
+
+	coursename = DF_GetCourseName();
+
+	trap_G_COOL_API_DB_PreparedBindString(coursename);
+	trap_G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
+
+	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+}
 
 static void G_CreateUserTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(%d) UNIQUE NOT NULL, password VARCHAR(64)  NOT NULL, lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED NOT NULL DEFAULT 0)",USERNAME_MAX_LEN);
 	Q_strncpyz(tableName.s, "users", sizeof(tableName.s));
+	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+}
+
+static void G_CreateCheckpointsTable() {
+	referenceSimpleString_t tableName;
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS checkpoints(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, number TINYINT(2) SIGNED NOT NULL, x DOUBLE NOT NULL, y DOUBLE NOT NULL, z DOUBLE NOT NULL, yaw DOUBLE NOT NULL, UNIQUE KEY checkpoint_unique (userid,course,number), INDEX i_user_map (userid,course), INDEX i_number(number))";
+	Q_strncpyz(tableName.s, "checkpoints", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 static void G_CreateRunsTable() {
@@ -724,6 +906,7 @@ static void G_CreateRunsTable() {
 static void G_DB_CreateTables() {
 	G_CreateUserTable();
 	G_CreateRunsTable();
+	G_CreateCheckpointsTable();
 }
 
 void G_DB_Init() {

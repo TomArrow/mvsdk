@@ -1119,7 +1119,7 @@ int			trap_G_COOL_API_DB_GetInt(int place) {
 	return syscall(G_COOL_API_DB_GETINT, place);
 }
 void		trap_G_COOL_API_DB_GetFloat(int place, float* value) {
-	syscall(G_COOL_API_DB_GETFLOAT, place);
+	syscall(G_COOL_API_DB_GETFLOAT, place, value);
 }
 qboolean	trap_G_COOL_API_DB_GetString(int place, char* out, int outSize) {
 	return syscall(G_COOL_API_DB_GETSTRING, place, out, outSize);

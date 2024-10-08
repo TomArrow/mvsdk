@@ -776,6 +776,7 @@ qboolean DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 	VectorCopy(oldShield->r.maxs, shield->r.maxs);
 
 	shield->clipmask = oldShield->clipmask;
+	shield->checkpointSeed = oldShield->checkpointSeed;
 	shield->r.contents = oldShield->r.contents;
 	shield->s.time2 = oldShield->s.time2;
 
@@ -935,7 +936,14 @@ void DF_StealCheckpoints(gentity_t* playerent) {
 qboolean DF_CreateCustomCheckpointFromPos(vec3_t trEndpos,float anglesYaw, gentity_t* playerent)
 {
 	// got enough room so place the portable shield
-	gentity_t* shield = G_Spawn();
+	gentity_t* shield;
+
+	if (playerent->client->pers.df_checkpointData.count >= MAX_CUSTOM_CHECKPOINT_COUNT) return qfalse;
+
+	shield = G_Spawn();
+
+	VectorCopy(trEndpos, shield->checkpointSeed.trEndpos);
+	shield->checkpointSeed.anglesYaw = anglesYaw;
 
 	// Figure out what direction the shield is facing.
 	shield->s.angles[YAW] = anglesYaw;
@@ -1011,42 +1019,6 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 			}
 
 			DF_CreateCustomCheckpointFromPos(tr.endpos,anglesYaw,playerent);
-			/*
-			shield->parent = playerent;
-
-			// Set team number.
-			shield->s.otherEntityNum2 = TEAM_FREE;
-
-			shield->s.eType = ET_SPECIAL;
-			shield->s.modelindex = HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
-			shield->classname = "df_trigger_checkpoint";
-
-			shield->r.contents = CONTENTS_TRIGGER;
-			shield->triggerOnlyTraced = qtrue;
-			shield->triggerClientSpecific = qtrue;
-
-			shield->touch = DF_CheckpointTimer_Touch;
-			// using an item causes it to respawn
-			shield->use = 0; //Use_Item;
-
-			G_SetOrigin(shield, tr.endpos);
-
-			shield->s.eFlags &= ~EF_NODRAW;
-			shield->r.svFlags &= ~SVF_NOCLIENT;
-
-			shield->r.svFlags |= SVF_SINGLECLIENT;
-			shield->r.singleClient = playerent->s.number;
-
-
-			shield->s.owner = playerent->s.number;
-			shield->s.shouldtarget = qfalse;
-
-
-
-			playerent->client->pers.df_checkpointData.checkpointNumbers[playerent->client->pers.df_checkpointData.count] = shield->s.number;
-			playerent->client->pers.df_checkpointData.count++;
-
-			df_createCheckpoint(shield);*/
 
 			return qtrue;
 		}

@@ -24,6 +24,13 @@
 #define MOVERTIME_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->pers.cmd.serverTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->pers.cmd.serverTime+(e)->activatorLevelTimeDelta) : level.time)
 #define MOVERTIMEOLD_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->ps.commandTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->ps.commandTime+(e)->activatorLevelTimeDelta) : level.time) // is commandtime really adequate?
 
+
+
+typedef struct checkpointSeed_s {
+	vec3_t	trEndpos;
+	float	anglesYaw;
+} checkpointSeed_t;
+
 typedef enum dfWarningFlags_s {
 	DF_WARNING_INVALID_PREPMOVE = (1 << 0),
 } dfWarningFlags_t;

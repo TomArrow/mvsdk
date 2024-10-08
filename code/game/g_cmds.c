@@ -2773,6 +2773,8 @@ extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
 extern void DF_StealCheckpoints(gentity_t* playerent);
 extern void DF_StealSpawn(gentity_t* playerent);
 extern void DF_StealPos(gentity_t* playerent);
+extern void G_DB_SaveUserCheckpoints(gentity_t* playerent);
+extern void G_DB_LoadUserCheckpoints(gentity_t* playerent);
 
 /*
 =================
@@ -2961,6 +2963,14 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "savecheckpoints"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "loadcheckpoints"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "stealspawn"))
 		{
 			giveError = qtrue;
@@ -3086,6 +3096,10 @@ void ClientCommand( int clientNum ) {
 		DF_RemoveCheckPoints(ent);
 	else if (Q_stricmp (cmd, "stealcheckpoints") == 0)
 		DF_StealCheckpoints(ent);
+	else if (Q_stricmp (cmd, "savecheckpoints") == 0)
+		G_DB_SaveUserCheckpoints(ent);
+	else if (Q_stricmp (cmd, "loadcheckpoints") == 0)
+		G_DB_LoadUserCheckpoints(ent);
 	else if (Q_stricmp (cmd, "stealspawn") == 0)
 		DF_StealSpawn(ent);
 	else if (Q_stricmp (cmd, "stealpos") == 0)
