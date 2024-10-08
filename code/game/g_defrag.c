@@ -932,12 +932,55 @@ void DF_StealCheckpoints(gentity_t* playerent) {
 
 }
 
+qboolean DF_CreateCustomCheckpointFromPos(vec3_t trEndpos,float anglesYaw, gentity_t* playerent)
+{
+	// got enough room so place the portable shield
+	gentity_t* shield = G_Spawn();
+
+	// Figure out what direction the shield is facing.
+	shield->s.angles[YAW] = anglesYaw;
+	shield->parent = playerent;
+
+	// Set team number.
+	shield->s.otherEntityNum2 = TEAM_FREE;
+
+	shield->s.eType = ET_SPECIAL;
+	shield->s.modelindex = HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
+	shield->classname = "df_trigger_checkpoint";
+
+	shield->r.contents = CONTENTS_TRIGGER;
+	shield->triggerOnlyTraced = qtrue;
+	shield->triggerClientSpecific = qtrue;
+
+	shield->touch = DF_CheckpointTimer_Touch;
+	// using an item causes it to respawn
+	shield->use = 0; //Use_Item;
+
+	G_SetOrigin(shield, trEndpos);
+
+	shield->s.eFlags &= ~EF_NODRAW;
+	shield->r.svFlags &= ~SVF_NOCLIENT;
+
+	shield->r.svFlags |= SVF_SINGLECLIENT;
+	shield->r.singleClient = playerent->s.number;
+
+
+	shield->s.owner = playerent->s.number;
+	shield->s.shouldtarget = qfalse;
+
+	playerent->client->pers.df_checkpointData.checkpointNumbers[playerent->client->pers.df_checkpointData.count] = shield->s.number;
+	playerent->client->pers.df_checkpointData.count++;
+
+	df_createCheckpoint(shield);
+
+	return qtrue;
+}
+
 qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 {
-	static const gitem_t* shieldItem = NULL;
-	gentity_t* shield = NULL;
 	trace_t		tr;
 	vec3_t		fwd, pos, dest, mins = { -4,-4, 0 }, maxs = { 4,4,4 };
+	float		anglesYaw;
 
 	if (playerent->client->pers.df_checkpointData.count >= MAX_CUSTOM_CHECKPOINT_COUNT) return qfalse;
 
@@ -955,17 +998,20 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 		if (!tr.startsolid && !tr.allsolid)
 		{
 			// got enough room so place the portable shield
-			shield = G_Spawn();
+			//shield = G_Spawn();
 
 			// Figure out what direction the shield is facing.
 			if (fabs(fwd[0]) > fabs(fwd[1]))
 			{	// shield is north/south, facing east.
-				shield->s.angles[YAW] = 0;
+				anglesYaw = 0;
 			}
 			else
 			{	// shield is along the east/west axis, facing north
-				shield->s.angles[YAW] = 90;
+				anglesYaw = 90;
 			}
+
+			DF_CreateCustomCheckpointFromPos(tr.endpos,anglesYaw,playerent);
+			/*
 			shield->parent = playerent;
 
 			// Set team number.
@@ -1000,7 +1046,7 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 			playerent->client->pers.df_checkpointData.checkpointNumbers[playerent->client->pers.df_checkpointData.count] = shield->s.number;
 			playerent->client->pers.df_checkpointData.count++;
 
-			df_createCheckpoint(shield);
+			df_createCheckpoint(shield);*/
 
 			return qtrue;
 		}
