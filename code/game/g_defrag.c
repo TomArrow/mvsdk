@@ -245,7 +245,7 @@ qboolean DF_InTrigger(vec3_t interpOrigin, gentity_t* trigger)
 
 	return qfalse;
 }
-qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t playerMins, vec3_t playerMaxs) // TODO make this more efficient
+qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t playerMins, vec3_t playerMaxs, gentity_t* activator) // TODO make this more efficient
 {
 	vec3_t	mins, maxs;
 	//vec3_t	playerMins, playerMaxs;
@@ -259,6 +259,7 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t play
 
 	trigger = NULL;
 	while ((trigger = G_Find(trigger, FOFS(classname), classname)) != NULL) {
+		if (trigger->triggerClientSpecific && trigger->parent != activator) continue;
 		if (trap_EntityContact(mins, maxs, trigger)) return qtrue;
 	}
 
@@ -280,7 +281,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 	VectorScale(delta, msecScale, delta);
 
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
-	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs)) || !touched)
+	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs, activator)) || !touched)
 	{
 #if 1
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
@@ -337,7 +338,7 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 	VectorScale(delta, msecScale, delta);
 
 	//while (!(inTrigger = DF_InTrigger(interpOrigin, trigger)) || !left)
-	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs)) || !left)
+	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator)) || !left)
 	{
 #if 1
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
@@ -426,7 +427,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		}
 	}
 
-	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs)) return; // we are still in some start trigger.
+	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator)) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
@@ -749,6 +750,7 @@ qboolean DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 
 	shield->r.contents = CONTENTS_TRIGGER;
 	shield->triggerOnlyTraced = qtrue;
+	shield->triggerClientSpecific = qtrue;
 
 	shield->touch = DF_CheckpointTimer_Touch;
 	shield->use = 0; 
@@ -975,6 +977,7 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 
 			shield->r.contents = CONTENTS_TRIGGER;
 			shield->triggerOnlyTraced = qtrue;
+			shield->triggerClientSpecific = qtrue;
 
 			shield->touch = DF_CheckpointTimer_Touch;
 			// using an item causes it to respawn

@@ -594,6 +594,8 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	for ( i=0 ; i<num ; i++ ) {
 		hit = &g_entities[touch[i]];
 
+		if (hit->triggerClientSpecific && hit->parent != ent) continue; // custom checkpoints
+
 		isTraced = robustTriggerEvaluation && touchViaTrace[touch[i]];
 
 		// special kind of trigger (like for defrag start timer) that starts when we leave it.

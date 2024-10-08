@@ -260,6 +260,7 @@ struct gentity_s {
 	gitem_t		*item;			// for bonus items
 	int			triggerLastPlayerContact[MAX_CLIENTS]; // if we are a trigger, when's the last time the player touched us? dont use this for anything gameplay relevaant, as respos does not restore it
 	qboolean	triggerOnlyTraced; // if this is true for a trigger, we can only reach it via trace (so only trigger it while entering/leaving it)
+	qboolean	triggerClientSpecific; // only works for a specific player (parent)
 
 
 	qboolean	isLogical;		// Determines if this ent is logical or not
