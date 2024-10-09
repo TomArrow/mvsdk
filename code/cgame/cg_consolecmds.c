@@ -1644,6 +1644,7 @@ qboolean CG_ConsoleCommand( void ) {
 	// check for login and register misspellings
 	if (levenshtein("login", cmd) <= 3 // suspiciously similar to login
 		&& Q_stricmp("logout",cmd) // could be logout, allow that
+		&& Q_stricmp("admin",cmd) // could be admin, allow that
 		) {
 		if (!Q_stricmp("amlogin", cmd)) {
 			CG_Login_f();
@@ -1879,4 +1880,6 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("logout");
 	trap_AddCommand("savecheckpoints");
 	trap_AddCommand("loadcheckpoints");
+	trap_AddCommand("lasers");
+	trap_AddCommand("solo");
 }

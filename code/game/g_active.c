@@ -1409,12 +1409,21 @@ void ClientLaserPointer(gentity_t* ent) {
 		lp->s.eType = ET_BEAM;
 		lp->s.generic1 = 3;
 		lp->parent = ent;
+		lp->s.owner = ent - g_entities;
 	}
 
 	VectorCopy(ent->client->ps.origin,lp->r.currentOrigin);
 	VectorCopy(ent->client->ps.origin,lp->s.pos.trBase);
 	VectorCopy(ent->client->ps.origin,lp->s.origin);
 	VectorCopy(tr.endpos,lp->s.origin2); 
+
+	// these dont need to be that precise. snap them to save network bandwidth.
+	trap_SnapVector(lp->s.pos.trBase);
+	trap_SnapVector(lp->s.origin);
+	trap_SnapVector(lp->s.origin2);
+
+
+	//mv_entities[ent->client->pers.laserPointerNum].snapshotIgnore;
 
 	eventflip = (level.time >= lp->laserPointerLastEventFlip + flipDelay) || level.time < lp->laserPointerLastEventFlip;
 	if (eventflip || !lp->s.event) {

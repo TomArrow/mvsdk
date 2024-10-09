@@ -1009,6 +1009,48 @@ argCheck:
 		Cmd_Team_f(ent);
 	}
 }
+gentity_t* GetClientNumArg();
+void Cmd_Ignore_f(gentity_t* ent) {
+	gentity_t* client = GetClientNumArg();
+	int clientnum;
+	if (!client) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Invalid client number specified.\n\"");
+		return;
+	}
+	clientnum = client - g_entities;
+	ent->client->sess.ignore = ent->client->sess.ignore ^ (1 << clientnum);
+	if (ent->client->sess.ignore & (1 << clientnum)) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Ignoring client %d now.\n\"",clientnum));
+	}
+	else {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Not ignoring client %d anymore.\n\"", clientnum));
+	}
+}
+void Cmd_Lasers_f(gentity_t* ent) {
+	if (!ent->client->sess.hideLasers) {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^1Hiding laserpointers now.\n\"");
+		ent->client->sess.hideLasers = qtrue;
+	}
+	else {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^1Showing laserpointers now.\n\"");
+		ent->client->sess.hideLasers = qfalse;
+	}
+}
+void Cmd_Solo_f(gentity_t* ent) {
+	if (!ent->client->sess.solo) {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^1Hiding other players now.\n\"");
+		ent->client->sess.solo = qtrue;
+	}
+	else {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^1Showing other players now.\n\"");
+		ent->client->sess.solo = qfalse;
+	}
+}
+
 /*
 =================
 Cmd_Register_f
@@ -1331,6 +1373,9 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, cons
 		return;
 	}
 	if ( mode == SAY_TEAM  && !OnSameTeam(ent, other) ) {
+		return;
+	}
+	if ( other->client->sess.ignore & (1 << (ent-g_entities))) {
 		return;
 	}
 	// no chatting to players in tournements
@@ -3003,6 +3048,18 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "lasers"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "solo"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "ignore"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcechanged"))
 		{ //special case: still update force change
 			Cmd_ForceChanged_f (ent);
@@ -3118,6 +3175,12 @@ void ClientCommand( int clientNum ) {
 		Cmd_Top_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
 		Cmd_Register_f(ent);
+	else if (Q_stricmp (cmd, "lasers") == 0)
+		Cmd_Lasers_f(ent);
+	else if (Q_stricmp (cmd, "solo") == 0)
+		Cmd_Solo_f(ent);
+	else if (Q_stricmp (cmd, "ignore") == 0)
+		Cmd_Ignore_f(ent);
 	else if (Q_stricmp (cmd, "forcechanged") == 0)
 		Cmd_ForceChanged_f (ent);
 	else if (Q_stricmp (cmd, "where") == 0)

@@ -346,6 +346,10 @@ typedef struct {
 	// noclip or sth similar was used. we cannot run or set spawns until we /kill and respawn
 	qboolean	raceStateInvalidated;	
 
+	qboolean		hideLasers;
+	qboolean		solo;
+	unsigned int	ignore;      // contains bits of all clients to be ignored, 0 - no one ignored, 0xFFFFFFFF - ignore all
+
 	struct {
 		int			id;
 		int			flags;

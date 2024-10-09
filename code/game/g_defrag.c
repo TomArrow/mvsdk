@@ -1961,6 +1961,7 @@ typedef struct playerSnapshotBackupValues_s {
 	int saberMove;
 	int saberMovePS;
 	int pmfFollowPS;
+	//int event;
 	//int	trTime;
 	vec3_t	psMoverOldPos;
 } playerSnapshotBackupValues_t;
@@ -1973,25 +1974,41 @@ static playerSnapshotBackupValues_t backupValues[MAX_GENTITIES];
 void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	gentity_t* ent = g_entities + clientNum;
 	gentity_t* other;
-	gclient_t* cl;
+	gclient_t* cl = ent->client;
+	gclient_t* ocl;
+	entityState_t* es;
+	playerSnapshotBackupValues_t* backup = backupValues;
+	mvsharedEntity_t* mvEnt = mv_entities;
 	int i;
-	for (i = 0; i < level.num_entities; i++) {
+	for (i = 0; i < level.num_entities; i++, backup++, mvEnt++) {
 		other = g_entities + i;
 		if (!other->r.linked || !other->inuse) {
 			continue;
 		}
+		es = &other->s;
 		if (saveState) {
-			backupValues[i].solidValue = other->s.solid;
-			//if (other->s.eType == ET_MOVER) { // hackily "fix" client-timed mover prediction for cgame
-				//backupValues[i].trTime = other->s.pos.trTime;
-				//other->s.pos.trTime += level.time - ACTIVATORTIME(other->activatorReal);
+			backup->solidValue = es->solid;
+			//backup->event = es->event;
+			//if (es->eType == ET_MOVER) { // hackily "fix" client-timed mover prediction for cgame
+				//backup->trTime = es->pos.trTime;
+				//es->pos.trTime += level.time - ACTIVATORTIME(other->activatorReal);
 			//}
 		}
 		if (ShouldNotCollide(ent,other)) {
-			other->s.solid = 0;
+			es->solid = 0;
 		}
 		else if (!saveState){
-			other->s.solid = backupValues[i].solidValue;
+			es->solid = backup->solidValue;
+		}
+
+		if (es->eType == ET_BEAM && other->parent != ent && es->generic1 == 3) {
+			mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
+			//if (ent->client->sess.hideLasers) {
+			//	es->event = 0;
+			//}
+			//else if (!saveState) {
+			//	es->event = backup->event;
+			//}
 		}
 
 		// avoid issues with custom lightsaber moves on clients.
@@ -1999,23 +2016,25 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		// also, cg_debugsabers 1 causes aa crash on cgame due to accessing a broken char* pointer
 		// TODO: is sabermove used for anything else?
 		// TODO: Don't do this if client has tommyternal client?
-		if (saveState) backupValues[i].saberMove = other->s.saberMove;
-		if (other->s.saberMove >= LS_MOVE_MAX_DEFAULT) {
-			other->s.saberMove = LS_READY;
+		if (saveState) backup->saberMove = es->saberMove;
+		if (es->saberMove >= LS_MOVE_MAX_DEFAULT) {
+			es->saberMove = LS_READY;
 		}
 		if (other->client) {
-			cl = other->client;
+			ocl = other->client;
+
+			mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
 			if (saveState) { 
-				backupValues[i].saberMovePS = cl->ps.saberMove;
-				backupValues[i].pmfFollowPS = cl->ps.pm_flags & PMF_FOLLOW;
-				VectorCopy(cl->ps.origin, backupValues[i].psMoverOldPos);
-				CG_AdjustPositionForClientTimeMover(cl->ps.origin, cl->ps.groundEntityNum, cl->ps.origin); // silly bs (that doesnt work)
+				backup->saberMovePS = ocl->ps.saberMove;
+				backup->pmfFollowPS = ocl->ps.pm_flags & PMF_FOLLOW;
+				VectorCopy(ocl->ps.origin, backup->psMoverOldPos);
+				CG_AdjustPositionForClientTimeMover(ocl->ps.origin, ocl->ps.groundEntityNum, ocl->ps.origin); // silly bs (that doesnt work)
 			}
-			if (cl->sess.raceMode && (cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state == SEG_REPLAY) {
-				cl->ps.pm_flags |= PMF_FOLLOW;
+			if (ocl->sess.raceMode && (ocl->sess.raceStyle.runFlags & RFL_SEGMENTED) && ocl->pers.segmented.state == SEG_REPLAY) {
+				ocl->ps.pm_flags |= PMF_FOLLOW;
 			}
-			if (cl->ps.saberMove >= LS_MOVE_MAX_DEFAULT) {
-				cl->ps.saberMove = LS_READY;
+			if (ocl->ps.saberMove >= LS_MOVE_MAX_DEFAULT) {
+				ocl->ps.saberMove = LS_READY;
 			}
 		}
 	}
@@ -2023,22 +2042,26 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 void PlayerSnapshotRestoreValues() {
 	gentity_t* other;
 	gclient_t* cl;
+	entityState_t* es;
+	playerSnapshotBackupValues_t* backup = backupValues;
 	int i;
-	for (i = 0; i < level.num_entities; i++) {
+	for (i = 0; i < level.num_entities; i++, backup++) {
 		other = g_entities + i;
 		if (!other->r.linked || !other->inuse) {
 			continue;
 		}
-		other->s.solid = backupValues[i].solidValue;
-		other->s.saberMove = backupValues[i].saberMove; 
-		//if (other->s.eType == ET_MOVER) {
-		//	other->s.pos.trTime = backupValues[i].trTime;
+		es = &other->s;
+		es->solid = backup->solidValue;
+		es->saberMove = backup->saberMove; 
+		//es->event = backup->event; 
+		//if (es->eType == ET_MOVER) {
+		//	es->pos.trTime = backup->trTime;
 		//}
 		if (other->client) {
 			cl = other->client;
-			cl->ps.saberMove = backupValues[i].saberMovePS;
-			cl->ps.pm_flags = (cl->ps.pm_flags & ~PMF_FOLLOW) | backupValues[i].pmfFollowPS;
-			VectorCopy(backupValues[i].psMoverOldPos, cl->ps.origin);
+			cl->ps.saberMove = backup->saberMovePS;
+			cl->ps.pm_flags = (cl->ps.pm_flags & ~PMF_FOLLOW) | backup->pmfFollowPS;
+			VectorCopy(backup->psMoverOldPos, cl->ps.origin);
 		}
 	}
 }
