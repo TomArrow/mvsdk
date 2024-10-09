@@ -1416,30 +1416,12 @@ void ClientLaserPointer(gentity_t* ent) {
 	VectorCopy(ent->client->ps.origin,lp->s.origin);
 	VectorCopy(tr.endpos,lp->s.origin2); 
 
-	eventflip = (level.time > lp->laserPointerLastEventFlip + flipDelay) || level.time < lp->laserPointerLastEventFlip;
+	eventflip = (level.time >= lp->laserPointerLastEventFlip + flipDelay) || level.time < lp->laserPointerLastEventFlip;
 	if (eventflip || !lp->s.event) {
 		G_AddEvent(lp, EV_TESTLINE,0);
 		lp->laserPointerLastEventFlip = level.time;
 	}
-	/*if (lp->s.event & EV_EVENT_BIT1) {
-		if (eventflip) {
-			lp->s.event = EV_TESTLINE;
-			lp->laserPointerLastEventFlip = level.time;
-		}
-		else {
-			lp->s.event = EV_TESTLINE | EV_EVENT_BIT1;
-		}
-	}
-	else {
-		if (!eventflip) {
-			lp->s.event = EV_TESTLINE;
-		}
-		else {
-			lp->s.event = EV_TESTLINE | EV_EVENT_BIT1;
-			lp->laserPointerLastEventFlip = level.time;
-		}
-	}*/
-	lp->s.time2 = flipDelay*2;
+	lp->s.time2 = flipDelay*4;
 	lp->s.weapon = 0x0000ff;
 	lp->eventTime = level.time;
 	//lp->r.svFlags |= SVF_BROADCAST;
