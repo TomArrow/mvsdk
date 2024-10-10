@@ -91,7 +91,8 @@ typedef enum runFlagsIndex_s {
 #undef RUNFLAGSFUNC
 
 extern const int defaultRunFlags;
-extern const int allowedRunFlags; // RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_NOROLLSTART | RFL_BOT | RFL_SEGMENTED | RFL_NOROLLS
+extern const int allowedRunFlags; // RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
+extern const int allowedMapDefaultRunFlags; //  RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
 extern const int allowedMovementStyles;
 extern const int MAX_RUN_FLAGS;
 
@@ -111,7 +112,7 @@ extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
 typedef struct raceStyle_s {
 	byte movementStyle; // jk2. maybe some day pjk2 => STAT_MOVEMENTSTYLE
 	short msec; // -1 if toggle, -2 if float (ignore float for now, its cringe anyway)
-	signed char jumpLevel; // 0=no force, -1 = ysal, -2 = ?
+	signed char jumpLevel; // 0=no force, -1 = ysal, -2 = ?, 4=jumpcharge?
 	short variant; // when we have map variants (invis walls and such). 0 =default (ignore for now)
 	short runFlags; // flags from runFlags_t => STAT_RUNFLAGS
 } raceStyle_t;

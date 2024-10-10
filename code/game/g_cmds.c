@@ -1181,6 +1181,7 @@ void Cmd_Logout_f( gentity_t *ent )
 	ClientUserinfoChanged(ent - g_entities);
 }
 extern const char* DF_GetCourseName();
+extern void Cmd_DF_MapDefaults_f(gentity_t* ent);
 
 /*
 =================
@@ -3052,6 +3053,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "mapdefaults"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "solo"))
 		{
 			giveError = qtrue;
@@ -3177,6 +3182,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Register_f(ent);
 	else if (Q_stricmp (cmd, "lasers") == 0)
 		Cmd_Lasers_f(ent);
+	else if (Q_stricmp (cmd, "mapdefaults") == 0)
+		Cmd_DF_MapDefaults_f(ent);
 	else if (Q_stricmp (cmd, "solo") == 0)
 		Cmd_Solo_f(ent);
 	else if (Q_stricmp (cmd, "ignore") == 0)

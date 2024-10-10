@@ -14,6 +14,7 @@ typedef int ip_t[4];
 static void G_CreateUserTable();
 static void G_CreateRunsTable();
 static void G_CreateCheckpointsTable();
+static void G_CreateMapRaceDefaultsTable();
 
 static gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	gentity_t* ent;
@@ -336,6 +337,32 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	}
 
 	PrintRaceTime(&runData.runInfo, qfalse, qtrue);
+
+}
+static void G_InsertMapDefaultsResult(int status, const char* errorMessage, int affectedRows) {
+	insertUpdateMapRaceDefaultsStruct_t data;
+	gentity_t* ent = NULL;
+	//evaluatedRunInfo_t eRunInfo;
+
+	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Map defaults by client %d inserted, user no longer valid.\n", data.clientnum);
+		//return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateMapRaceDefaultsTable();
+		trap_SendServerCommand(ent - g_entities,"print \"^1Map defaults insertion failed due to map defaults table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Map defaults insertion failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	trap_SendServerCommand(ent - g_entities, va("print \"^1Map defaults (%s) for %s were updated\n\"",data.what,data.course));
 
 }
 
@@ -670,6 +697,9 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_INSERTORUPDATERUN:
 					G_InsertRunResult(status, errorMessage, affectedRows);
 					break;
+				case DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS:
+					G_InsertMapDefaultsResult(status, errorMessage, affectedRows);
+					break;
 				case DBREQUEST_TOP:
 					G_TopResult(status, errorMessage, affectedRows);
 					break;
@@ -813,6 +843,17 @@ static void G_CreateCheckpointsTable() {
 	Q_strncpyz(tableName.s, "checkpoints", sizeof(tableName.s));
 	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
+static void G_CreateMapRaceDefaultsTable() {
+	referenceSimpleString_t tableName;
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS mapdefaults(\
+			course VARCHAR(100) NOT NULL PRIMARY KEY, \
+			msec SMALLINT NOT NULL, \
+			jump TINYINT NOT NULL, \
+			variant SMALLINT NOT NULL,\
+			runFlags INT NOT NULL)";
+	Q_strncpyz(tableName.s, "mapdefaults", sizeof(tableName.s));
+	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+}
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
 #define SUBFUNC(a) `runFlag_ ## a` TINYINT(1)
@@ -907,6 +948,7 @@ static void G_DB_CreateTables() {
 	G_CreateUserTable();
 	G_CreateRunsTable();
 	G_CreateCheckpointsTable();
+	G_CreateMapRaceDefaultsTable();
 }
 
 void G_DB_Init() {

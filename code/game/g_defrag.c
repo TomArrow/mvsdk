@@ -2068,6 +2068,225 @@ void PlayerSnapshotRestoreValues() {
 
 
 
+void Cmd_DF_MapDefaults_f(gentity_t* ent)
+{
+	insertUpdateMapRaceDefaultsStruct_t	data;
+	if (!ent->client) return;
+
+
+	if (trap_Argc() > 2) {
+		char arg1[12] = { 0 };
+
+
+		if (!(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_CHANGEMAPDEFAULTRACESTYLE)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1You don't have permission to change map racestyle defaults.\n\"");
+			return;
+		}
+
+		trap_Argv(1, arg1, sizeof(arg1));
+
+		memset(&data, 0, sizeof(data));
+		data.clientnum = ent - g_entities;
+		memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+		Q_strncpyz(data.course, DF_GetCourseName(), sizeof(data.course));
+			
+		if (!Q_stricmp("run", arg1)) {
+
+			char arg2[8] = { 0 };
+			int index, index2, flag;
+			const uint32_t mask = allowedMapDefaultRunFlags & ((1 << MAX_RUN_FLAGS) - 1);
+
+			trap_Argv(2, arg2, sizeof(arg2));
+			index = atoi(arg2);
+			index2 = index;
+			flag = 1 << index;
+
+			//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
+			if (~allowedMapDefaultRunFlags & flag) {
+				trap_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1));
+				return;
+			}
+
+			// segmented is never a map default.
+			/*if (flag & RFL_SEGMENTED) {
+
+				if (level.nonDeterministicEntities) {
+					trap_SendServerCommand(ent - g_entities, va("print \"Warning: Map contains %i potentially non-deterministic entities. Segmented runs may not replay correctly and thus not count.\n\"", level.nonDeterministicEntities));
+				}
+
+				if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) {
+					trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with the UserCmdStore coolAPI feature. Please use the appropriate server engine.\n\"", index2, MAX_RUN_FLAGS - 1));
+					return;
+				}
+				if (jk2version != VERSION_1_04) {
+					// TODO is this still true?
+					// We need the JK2MV 1.04 API because we need to send playerstates from game to engine and MV playerstate conversion would mess us up.
+					trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"", index2, MAX_RUN_FLAGS - 1));
+					return;
+				}
+			}*/
+
+			{
+				level.mapDefaultRaceStyle.runFlags = flag ^ ((int)level.mapDefaultRaceStyle.runFlags & mask);
+			}
+
+			trap_SendServerCommand(ent - g_entities, va("print \"^7Map defaults: %s %s^7\n\"", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
+				? "^2Enabled" : "^1Disabled")));
+
+			Q_strncpyz(data.what, "Run flags", sizeof(data.what));
+
+			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"ON DUPLICATE KEY UPDATE "
+				"runFlags=?"
+			);
+			trap_G_COOL_API_DB_PreparedBindString(data.course);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+
+			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+		} else if (!Q_stricmp("jump", arg1)) {
+
+			char arg2[8] = { 0 };
+			int newjump;
+
+			trap_Argv(2, arg2, sizeof(arg2));
+			newjump = atoi(arg2);
+
+			if (newjump < -1 || newjump > 3) {
+				trap_SendServerCommand(ent - g_entities, va("print \"Jump level %d is not valid. Range is -1(ysal) to 3\n\"", newjump));
+				return;
+			}
+
+			if(level.mapDefaultRaceStyle.jumpLevel == newjump){
+				trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated to %d. No change.\n\"", newjump));
+				return;
+			}
+			level.mapDefaultRaceStyle.jumpLevel = newjump;
+
+			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated to %d.\n\"", newjump));
+
+			Q_strncpyz(data.what, "Jump level", sizeof(data.what));
+
+			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"ON DUPLICATE KEY UPDATE "
+				"jump=?"
+			);
+			trap_G_COOL_API_DB_PreparedBindString(data.course);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
+
+			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+		} else if (!Q_stricmp("variant", arg1)) {
+
+			char arg2[8] = { 0 };
+			int newvariant;
+
+			trap_Argv(2, arg2, sizeof(arg2));
+			newvariant = atoi(arg2);
+
+			if (newvariant != 0) { // topdo check if variant exists?
+				trap_SendServerCommand(ent - g_entities, va("print \"Variant %d is not valid. Range is 0 right now.\"", newvariant));
+				return;
+			}
+
+			if(level.mapDefaultRaceStyle.variant == newvariant){
+				trap_SendServerCommand(ent - g_entities, va("print \"Variant updated to %d. No change.\n\"", newvariant));
+				return;
+			}
+			level.mapDefaultRaceStyle.variant = newvariant;
+
+			trap_SendServerCommand(ent - g_entities, va("print \"Variant updated to %d.\n\"", newvariant));
+
+			Q_strncpyz(data.what, "Variant", sizeof(data.what));
+
+			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"ON DUPLICATE KEY UPDATE "
+				"variant=?"
+			);
+			trap_G_COOL_API_DB_PreparedBindString(data.course);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
+
+			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+		} else if (!Q_stricmp("fps", arg1)) {
+
+			char arg2[8] = { 0 };
+			int newfps,newmsec;
+
+			trap_Argv(2, arg2, sizeof(arg2));
+			if (!Q_stricmp(arg2, "float")) {
+				newfps = -2;
+			}
+			else {
+				newfps = atoi(arg2);
+			}
+
+			if (newfps < 1 && newfps != -2 || newfps > 1000) { // topdo check if variant exists?
+				trap_SendServerCommand(ent - g_entities, va("print \"Fps %d is not valid. Range is 1 to 1000, or 'float' (you can write -2 instead).\"", newfps));
+				return;
+			}
+
+			newmsec = newfps == -2 ? -2 : (1000 / newfps);
+
+			if(level.mapDefaultRaceStyle.msec == newmsec){
+				trap_SendServerCommand(ent - g_entities, va("print \"Msec updated to %d. No change.\n\"", newmsec));
+				return;
+			}
+			level.mapDefaultRaceStyle.msec = newmsec;
+
+			trap_SendServerCommand(ent - g_entities, va("print \"Msec updated to %d.\n\"", newmsec));
+
+			Q_strncpyz(data.what, "Msec", sizeof(data.what));
+
+			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"ON DUPLICATE KEY UPDATE "
+				"msec=?"
+			);
+			trap_G_COOL_API_DB_PreparedBindString(data.course);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+
+			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
+
+			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+		}
+	}
+
+	{
+		qboolean isSet;
+		qboolean differentFromDefault;
+		int i = 0;
+		int differences = defaultRaceStyle.runFlags ^ level.mapDefaultRaceStyle.runFlags;
+		for (i = 0; i < MAX_RUN_FLAGS; i++) {
+			if (!(allowedMapDefaultRunFlags & (1 << i))) continue;
+			isSet = level.mapDefaultRaceStyle.runFlags & (1 << i);
+			differentFromDefault = differences & (1 << i);
+			trap_SendServerCommand(ent - g_entities, va("print \"%2d ^%d[%s] ^7%s\n\"", i, differentFromDefault ? 1 : 7, isSet ? "X" : " ", runFlagsNames[i].string));
+		}
+		if (differences) {
+			trap_SendServerCommand(ent - g_entities, "print \"Differences from default are marked ^1red^7 for convenience.\n\"");
+		}
+	}
+}
+
 void Cmd_DF_RunSettings_f(gentity_t* ent)
 {
 	if (!ent->client) return;
@@ -2094,7 +2313,7 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		flag = 1 << index;
 
 		//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
-		if (!(allowedRunFlags & flag)) {
+		if (~allowedRunFlags & flag) {
 			trap_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1));
 			return;
 		}

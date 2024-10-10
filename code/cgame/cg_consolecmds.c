@@ -1882,4 +1882,5 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("loadcheckpoints");
 	trap_AddCommand("lasers");
 	trap_AddCommand("solo");
+	trap_AddCommand("mapdefaults");
 }

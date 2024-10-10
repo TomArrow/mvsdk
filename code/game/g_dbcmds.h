@@ -17,6 +17,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_TOP,
 	DBREQUEST_SAVECHECKPOINTS,
 	DBREQUEST_LOADCHECKPOINTS,
+	DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -57,6 +58,12 @@ typedef struct insertUpdateRunStruct_s {
 
 	//raceStyle_t	raceStyle;
 } insertUpdateRunStruct_t;
+typedef struct insertUpdateMapRaceDefaultsStruct_s {
+	int					ip[4];
+	int					clientnum;
+	char				what[10]; // lazy lol
+	char				course[COURSENAME_MAX_LEN + 1]; // lazy lol
+} insertUpdateMapRaceDefaultsStruct_t;
 
 typedef struct referenceSimpleString_s {
 	char	s[MAX_STRING_CHARS];

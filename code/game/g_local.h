@@ -97,6 +97,8 @@ extern void *g2SaberInstance;
 extern qboolean gEscaping;
 extern int gEscapeTime;
 
+#define TT_ACCOUNTFLAG_A_CHANGEMAPDEFAULTRACESTYLE		(1<<0)
+
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
