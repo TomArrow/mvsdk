@@ -2066,11 +2066,51 @@ void PlayerSnapshotRestoreValues() {
 	}
 }
 
+void DF_SetMapDefaults(raceStyle_t rs) {
+	int i;
+	gentity_t* client;
+	int oldMsec;
+	// TODO we wanna update the individual settings of players IF their old defaults were equal to the old map default?
+	// but kind of a pita. just apply for now.
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		client = (g_entities + i);
+		if (!client->client) continue;
+		DF_RaceStateInvalidated(client,qtrue);
+		oldMsec = client->client->sess.raceStyle.msec;
+		client->client->sess.raceStyle = rs;
+		client->client->sess.raceStyle.msec = oldMsec;
+	}
+	//if (level.mapDefaultRaceStyle.jumpLevel != rs.jumpLevel) {
 
+	//}
+	trap_SendServerCommand(-1, "cp \"^2Map defaults loaded/\nchanged. Runs reset.\"");
+	trap_SendServerCommand(-1, "print \"^2Map defaults loaded/changed. Runs reset.\n\"");
+
+	level.mapDefaultRaceStyle = rs;
+	//level.mapDefaultsConfirmed = qtrue;
+}
+
+void DF_LoadMapDefaults() {
+	insertUpdateMapRaceDefaultsStruct_t	data;
+	memset(&data, 0, sizeof(data));
+	Q_strncpyz(data.course, DF_GetCourseName(), sizeof(data.course));
+
+	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_LOADMAPRACEDEFAULTS,
+		"SELECT msec,jump,variant,runFlags FROM mapdefaults WHERE course=?"
+	)) {
+		trap_SendServerCommand(-1, "print \"^1Map defaults could not be loaded. Leaderboard may not display correctly.\n\"");
+		level.mapDefaultsLoadFailed = qtrue;
+		return;
+	}
+	trap_G_COOL_API_DB_PreparedBindString(data.course);
+
+	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+}
 
 void Cmd_DF_MapDefaults_f(gentity_t* ent)
 {
 	insertUpdateMapRaceDefaultsStruct_t	data;
+	raceStyle_t rs = level.mapDefaultRaceStyle;
 	if (!ent->client) return;
 
 
@@ -2127,7 +2167,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 			}*/
 
 			{
-				level.mapDefaultRaceStyle.runFlags = flag ^ ((int)level.mapDefaultRaceStyle.runFlags & mask);
+				rs.runFlags = flag ^ ((int)rs.runFlags & mask);
 			}
 
 			trap_SendServerCommand(ent - g_entities, va("print \"^7Map defaults: %s %s^7\n\"", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
@@ -2141,12 +2181,12 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"runFlags=?"
 			);
 			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
 			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 		} else if (!Q_stricmp("jump", arg1)) {
@@ -2162,11 +2202,11 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				return;
 			}
 
-			if(level.mapDefaultRaceStyle.jumpLevel == newjump){
+			if(rs.jumpLevel == newjump){
 				trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated to %d. No change.\n\"", newjump));
 				return;
 			}
-			level.mapDefaultRaceStyle.jumpLevel = newjump;
+			rs.jumpLevel = newjump;
 
 			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated to %d.\n\"", newjump));
 
@@ -2178,12 +2218,12 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"jump=?"
 			);
 			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 
 			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 		} else if (!Q_stricmp("variant", arg1)) {
@@ -2199,11 +2239,11 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				return;
 			}
 
-			if(level.mapDefaultRaceStyle.variant == newvariant){
+			if(rs.variant == newvariant){
 				trap_SendServerCommand(ent - g_entities, va("print \"Variant updated to %d. No change.\n\"", newvariant));
 				return;
 			}
-			level.mapDefaultRaceStyle.variant = newvariant;
+			rs.variant = newvariant;
 
 			trap_SendServerCommand(ent - g_entities, va("print \"Variant updated to %d.\n\"", newvariant));
 
@@ -2215,12 +2255,12 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"variant=?"
 			);
 			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
 
 			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 		} else if (!Q_stricmp("fps", arg1)) {
@@ -2243,11 +2283,11 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			newmsec = newfps == -2 ? -2 : (1000 / newfps);
 
-			if(level.mapDefaultRaceStyle.msec == newmsec){
+			if(rs.msec == newmsec){
 				trap_SendServerCommand(ent - g_entities, va("print \"Msec updated to %d. No change.\n\"", newmsec));
 				return;
 			}
-			level.mapDefaultRaceStyle.msec = newmsec;
+			rs.msec = newmsec;
 
 			trap_SendServerCommand(ent - g_entities, va("print \"Msec updated to %d.\n\"", newmsec));
 
@@ -2259,15 +2299,17 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"msec=?"
 			);
 			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.runFlags);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(level.mapDefaultRaceStyle.msec);
+			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
 
 			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 		}
+
+		DF_SetMapDefaults(rs);
 	}
 
 	{

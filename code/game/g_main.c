@@ -941,7 +941,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	defaultRaceStyle = getDefaultMapRaceStyle(); // it has 16 bit values so we can't just do the initializer values in a const global :/
 	level.mapDefaultRaceStyle = defaultRaceStyle;
+	level.mapDefaultsConfirmed = qfalse;
 	trap_Cvar_Set("g_mapDefaultMsec",va("%d",level.mapDefaultRaceStyle.msec));
+	if (g_defrag.integer) {
+		DF_LoadMapDefaults();
+	}
 
 	// general initialization
 	G_FindTeams();
@@ -2763,6 +2767,12 @@ void G_RunFrame( int levelTime ) {
 
 
 	G_DB_CheckResponses();
+
+	if (g_defrag.integer && !level.mapDefaultsConfirmed && !level.mapDefaultsLoadFailed && (level.time > (level.mapDefaultsProblemLastAnnounced+1000)|| level.time < level.mapDefaultsProblemLastAnnounced)) {
+		trap_SendServerCommand(-1,"cp \"^1Loading map defaults...\"");
+		trap_SendServerCommand(-1,"print \"^1Loading map defaults...\n\"");
+		level.mapDefaultsProblemLastAnnounced = level.time;
+	}
 
 	//
 	// go through all allocated objects

@@ -2,6 +2,7 @@
 #ifndef G_DEFRAG_H
 #define G_DEFRAG_H
 
+#include "bg_defrag_global.h"
 #include "q_shared.h"
 
 #define SEGMENTEDDEBUG 1
@@ -229,7 +230,8 @@ void PlayerSnapshotRestoreValues();
 //void DF_ResetSegmentedRun(gentity_t* ent);
 //void DF_SegmentedRunStatusInvalidated(gentity_t* ent); // call when something non-deterministic happens (like death). prevents savepos from being used
 
-
+void DF_LoadMapDefaults();
+void DF_SetMapDefaults(raceStyle_t rs);
 
 
 #endif

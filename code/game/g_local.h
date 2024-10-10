@@ -644,6 +644,9 @@ typedef struct {
 	int			portalSequence;
 
 	raceStyle_t	mapDefaultRaceStyle;
+	qboolean	mapDefaultsConfirmed;
+	qboolean	mapDefaultsLoadFailed;
+	int			mapDefaultsProblemLastAnnounced;
 
 	// MVSDK
 	qboolean	bboxEncoding;

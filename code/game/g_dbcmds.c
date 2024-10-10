@@ -15,6 +15,7 @@ static void G_CreateUserTable();
 static void G_CreateRunsTable();
 static void G_CreateCheckpointsTable();
 static void G_CreateMapRaceDefaultsTable();
+extern const char* DF_GetCourseName();
 
 static gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	gentity_t* ent;
@@ -366,6 +367,61 @@ static void G_InsertMapDefaultsResult(int status, const char* errorMessage, int 
 
 }
 
+static void G_LoadMapDefaultsResult(int status, const char* errorMessage, int affectedRows) {
+	insertUpdateMapRaceDefaultsStruct_t data;
+	const char* currentCoursename;
+	//evaluatedRunInfo_t eRunInfo;
+
+	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateMapRaceDefaultsTable();
+		trap_SendServerCommand(-1,"print \"^1Map defaults load failed due to map defaults table not existing. Attempting to create. Please try again shortly.\n\"");
+		level.mapDefaultsLoadFailed = qfalse; // we dont have a defdault so its ok
+		level.mapDefaultsConfirmed = qtrue;
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(-1, va("print \"^1Map defaults load failed with status %d and error message %s.\n\"", status, errorMessage));
+		level.mapDefaultsLoadFailed = qtrue;
+		level.mapDefaultsConfirmed = qfalse;
+		return;
+	}
+
+	currentCoursename = DF_GetCourseName();
+	if (Q_stricmp(currentCoursename, data.course)) {
+		if (currentCoursename[0]) {
+			trap_SendServerCommand(-1, "print \"^1Map defaults load failed; course name changed (?). Retrying.\n\"");
+			DF_LoadMapDefaults();
+		}
+		else {
+			trap_SendServerCommand(-1, "print \"^1Map defaults load failed;  current coursename empty?!?!!?\n\"");
+		}
+		return;
+	}
+
+	if (!trap_G_COOL_API_DB_NextRow()) {
+		trap_SendServerCommand(-1, "print \"^1Map defaults load failed; no defaults found.\n\"");
+		level.mapDefaultsLoadFailed = qfalse; // we dont have a defdault so its ok
+		level.mapDefaultsConfirmed = qtrue;
+		return;
+	}
+	else {
+		raceStyle_t rs;
+		rs.movementStyle = MV_JK2;
+		rs.msec = trap_G_COOL_API_DB_GetInt(0);
+		rs.jumpLevel = trap_G_COOL_API_DB_GetInt(1);
+		rs.variant = trap_G_COOL_API_DB_GetInt(2);
+		rs.runFlags = trap_G_COOL_API_DB_GetInt(3);
+		DF_SetMapDefaults(rs);
+		level.mapDefaultsLoadFailed = qfalse;
+		level.mapDefaultsConfirmed = qtrue;
+		trap_SendServerCommand(-1, va("print \"^2Map defaults for %s were loaded.\n\"", data.course));
+	}
+
+}
+
 static void G_SaveCheckpointsResult(int status, const char* errorMessage, int affectedRows) {
 	checkPointSaveRequestStruct_t data;
 	gentity_t* ent = NULL;
@@ -700,6 +756,9 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS:
 					G_InsertMapDefaultsResult(status, errorMessage, affectedRows);
 					break;
+				case DBREQUEST_LOADMAPRACEDEFAULTS:
+					G_LoadMapDefaultsResult(status, errorMessage, affectedRows);
+					break;
 				case DBREQUEST_TOP:
 					G_TopResult(status, errorMessage, affectedRows);
 					break;
@@ -747,7 +806,6 @@ void G_DB_GetChats_f(void) {
 	trap_G_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, va("SELECT id, chat, `time` FROM chats ORDER BY time DESC, id DESC LIMIT %d,10",first));
 }
 */
-extern const char* DF_GetCourseName();
 void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
 	static const char requestBase[] = "DELETE FROM checkpoints WHERE course=? AND userid=?;INSERT INTO checkpoints (userid,course,number,x,y,z,yaw) VALUES ";
 	static const char checkPointValues[] = "(?,?,?,?,?,?,?)";
