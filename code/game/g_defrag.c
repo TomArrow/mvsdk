@@ -8,6 +8,7 @@
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace);
+void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
 #define VALIDATEPTRCMP(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
@@ -838,6 +839,7 @@ void DF_StealStyle(gentity_t* playerent) {
 	}
 	playerent->client->sess.raceStyle = sourcePlayerEnt->client->sess.raceStyle;
 	playerent->client->sess.raceStyle.msec = tmpMsec;
+	playerent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 	DF_RaceStateInvalidated(playerent, qtrue);
 
 }
@@ -1735,7 +1737,7 @@ static qboolean MovementStyleAllowsJumpChange(int movementStyle) {
 void Cmd_JumpChange_f(gentity_t* ent)
 {
 	char jLevel[32];
-	int level;
+	int levelint;
 
 	if (!ent->client)
 		return;
@@ -1769,10 +1771,11 @@ void Cmd_JumpChange_f(gentity_t* ent)
 	}
 
 	trap_Argv(1, jLevel, sizeof(jLevel));
-	level = atoi(jLevel);
+	levelint = atoi(jLevel);
 
-	if (level >= 1 && level <= 3) {
-		ent->client->sess.raceStyle.jumpLevel = level;
+	if (levelint >= 1 && levelint <= 3) {
+		ent->client->sess.raceStyle.jumpLevel = levelint;
+		ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 		ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = ent->client->sess.raceStyle.jumpLevel;
 		DF_RaceStateInvalidated(ent, qtrue);
 		//DF_InvalidateSpawn(ent);
@@ -2075,18 +2078,19 @@ void DF_SetMapDefaults(raceStyle_t rs) {
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		client = (g_entities + i);
 		if (!client->client) continue;
-		DF_RaceStateInvalidated(client,qtrue);
-		oldMsec = client->client->sess.raceStyle.msec;
-		client->client->sess.raceStyle = rs;
-		client->client->sess.raceStyle.msec = oldMsec;
+		DF_CarryClientOverToNewRaceStyle(client,&rs);
+		//oldMsec = client->client->sess.raceStyle.msec;
+		//client->client->sess.raceStyle = rs;
+		//client->client->sess.raceStyle.msec = oldMsec;
+
+		//client->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 	}
 	//if (level.mapDefaultRaceStyle.jumpLevel != rs.jumpLevel) {
 
 	//}
-	trap_SendServerCommand(-1, "cp \"^2Map defaults loaded/\nchanged. Runs reset.\"");
-	trap_SendServerCommand(-1, "print \"^2Map defaults loaded/changed. Runs reset.\n\"");
 
 	level.mapDefaultRaceStyle = rs;
+	trap_Cvar_Set("g_mapDefaultMsec", va("%d", level.mapDefaultRaceStyle.msec));
 	//level.mapDefaultsConfirmed = qtrue;
 }
 
@@ -2392,6 +2396,7 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		//else 
 		{
 			ent->client->sess.raceStyle.runFlags = flag ^ ((int)ent->client->sess.raceStyle.runFlags & mask);
+			ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 			DF_RaceStateInvalidated(ent,qtrue);
 			//DF_InvalidateSpawn(ent);
 		}
@@ -2486,6 +2491,7 @@ void Cmd_FloatPhysics_f(gentity_t* ent)
 		ent->client->sess.raceStyle.msec = 0;
 		trap_SendServerCommand(ent - g_entities, "print \"^7Float physics mode disabled.\n\"");
 	}
+	ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 
 	ResetPhysicsFpsStuff(ent);
 
@@ -2860,7 +2866,53 @@ int DF_GetRunFlags(gentity_t* ent) {
 	return ent->client->sess.raceMode ? ent->client->sess.raceStyle.runFlags : 0;
 }
 
+void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs) {
+	clientSession_t* sess;
+	if (!ent->client || ent->client->pers.connected != CON_CONNECTED || !ent->client->sess.raceMode) return;
 
+	sess = &ent->client->sess;
+
+	if (!memcmp(newRs, &sess->mapStyleBaseline, sizeof(raceStyle_t))) return; // no change
+
+	if (memcmp(newRs, &sess->raceStyle,sizeof(raceStyle_t))) {
+		int playerCustomRunFlagBits = sess->raceStyle.runFlags ^ sess->mapStyleBaseline.runFlags;
+		int newRunFlags = (sess->raceStyle.runFlags & playerCustomRunFlagBits) | (newRs->runFlags & ~playerCustomRunFlagBits);
+		int newJumpLevel = sess->raceStyle.jumpLevel;
+
+		// the value changed from the previous map settings this client saw, and the client didn't have any custom setting
+		if (newRs->jumpLevel != sess->mapStyleBaseline.jumpLevel && sess->raceStyle.jumpLevel == sess->mapStyleBaseline.jumpLevel) {
+			newJumpLevel = newRs->jumpLevel;
+		}
+
+		if (sess->raceStyle.jumpLevel != newJumpLevel ||
+			sess->raceStyle.runFlags != newRunFlags ||
+			sess->raceStyle.variant != newRs->variant ) {
+
+			DF_RaceStateInvalidated(ent, qtrue);
+
+			sess->raceStyle.jumpLevel = newJumpLevel;
+			sess->raceStyle.runFlags = newRunFlags;
+			sess->raceStyle.variant = newRs->variant;
+
+			trap_SendServerCommand(ent - g_entities, "cp \"^2Map defaults loaded/\nchanged. Run reset.\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed. Run reset.\n\"");
+		}
+		else {
+
+			trap_SendServerCommand(ent - g_entities, "cp \"^2Map defaults loaded/\nchanged.\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"");
+		}
+
+
+	}
+	else {
+		trap_SendServerCommand(ent - g_entities, "cp \"^2Map defaults loaded/\nchanged.\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"");
+	}
+
+	sess->mapStyleBaseline = *newRs;
+
+}
 
 void Cmd_MovementStyle_f(gentity_t* ent)
 {
@@ -2922,6 +2974,7 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 
 
 		ent->client->sess.raceStyle.movementStyle = newStyle;
+		ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 		DF_RaceStateInvalidated(ent,qtrue);
 		//DF_InvalidateSpawn(ent);
 

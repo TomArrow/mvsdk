@@ -345,7 +345,9 @@ typedef struct {
 
 	qboolean	raceMode;
 	raceStyle_t	raceStyle;
-	// noclip or sth similar was used. we cannot run or set spawns until we /kill and respawn
+	raceStyle_t	mapStyleBaseline;	// The racestyle these settings are relative to. So that when we update a map style, we can update only the values that the player didn't customize.
+	// noclip or sth similar was used. we cannot run or set spawns until we /kill and respawn. Only jump level and runFlags are relevant here. msec and style never gets overwritten, variant gets always overwritten
+
 	qboolean	raceStateInvalidated;	
 
 	qboolean		hideLasers;
@@ -647,6 +649,8 @@ typedef struct {
 	qboolean	mapDefaultsConfirmed;
 	qboolean	mapDefaultsLoadFailed;
 	int			mapDefaultsProblemLastAnnounced;
+
+	//raceStyle_t	mapDefaultRaceStyleOld;
 
 	// MVSDK
 	qboolean	bboxEncoding;

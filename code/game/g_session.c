@@ -6,6 +6,8 @@
 #define LevelTimeDiff( timeVal )		( timeVal > level.time ? timeVal - level.time : 0 )
 #define RestoreLevelTimeDiff( timeVal )	( timeVal = timeVal ? level.time + timeVal : 0 )
 
+extern void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs);
+
 /*
 =======================================================================
 
@@ -27,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s", 
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s", 
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -42,6 +44,8 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.raceStyle.movementStyle,
 		client->sess.raceStyle.runFlags,
 		client->sess.raceStyle.jumpLevel,
+		client->sess.mapStyleBaseline.runFlags,
+		client->sess.mapStyleBaseline.jumpLevel,
 		client->sess.raceStateInvalidated,
 		client->sess.login.loggedIn,
 		client->sess.login.id,
@@ -84,13 +88,15 @@ void G_ReadSessionData( gclient_t *client ) {
 	int movementStyle;
 	int runFlags;
 	int jumpLevel;
+	int baseRunFlags;
+	int baseJumpLevel;
 	int raceStateInvalidated;
 	int loggedIn;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -105,6 +111,8 @@ void G_ReadSessionData( gclient_t *client ) {
 		&movementStyle,
 		&runFlags,
 		&jumpLevel,
+		&baseRunFlags,
+		&baseJumpLevel,
 		&raceStateInvalidated,
 		&loggedIn,
 		&client->sess.login.id,
@@ -121,11 +129,15 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.raceStyle.movementStyle = (byte)movementStyle;
 	client->sess.raceStyle.runFlags = (short)runFlags;
 	client->sess.raceStyle.jumpLevel = (signed char)jumpLevel;
+	client->sess.mapStyleBaseline.runFlags = (short)baseRunFlags;
+	client->sess.mapStyleBaseline.jumpLevel = (signed char)baseJumpLevel;
 	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
 	client->sess.login.loggedIn = loggedIn;
 
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;
+
+	DF_CarryClientOverToNewRaceStyle(g_entities+(client-g_clients),&level.mapDefaultRaceStyle);
 }
 
 /*
@@ -163,16 +175,21 @@ G_InitSessionData
 Called on a first-time connect
 ================
 */
+extern void UpdateClientRaceVars(gclient_t* client);
 void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	clientSession_t	*sess;
 	const char		*value;
 
 	sess = &client->sess;
 	
-	sess->raceStyle.movementStyle = MV_JK2;
-	sess->raceStyle.jumpLevel = 1;
-	sess->raceStyle.runFlags = defaultRunFlags;
-	client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
+	//sess->raceStyle.movementStyle = MV_JK2;
+	//sess->raceStyle.jumpLevel = 1;
+	//sess->raceStyle.runFlags = defaultRunFlags;
+	sess->raceMode = g_defrag.integer; // TODO what about changing g_defrag live, should we take some care? idk
+	sess->mapStyleBaseline = level.mapDefaultRaceStyle;
+	sess->raceStyle = sess->mapStyleBaseline;
+	UpdateClientRaceVars(client);
+	//client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 
 	// initial team determination
 	if ( g_gametype.integer >= GT_TEAM ) {
