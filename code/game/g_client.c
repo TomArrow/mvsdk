@@ -1691,6 +1691,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 
 void G_WriteClientSessionData( gclient_t *client );
 extern void UpdateClientRaceVars(gclient_t* client);
+void DF_SetRaceMode(gentity_t* ent, qboolean value);
 /*
 ===========
 ClientBegin
@@ -1855,7 +1856,13 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 		ent->bolt_Motion = trap_G2API_AddBolt(ent->client->ghoul2, 0, "Motion");
 	}
 
-	client->sess.raceMode = g_defrag.integer;
+	//if (client->sess.raceMode && !g_defrag.integer) {
+	//	client->sess.raceMode = g_defrag.integer;
+	//	Cmd_ForceChanged_f(ent);
+	//} else {
+	//	client->sess.raceMode = g_defrag.integer;
+	//}
+	DF_SetRaceMode(ent,g_defrag.integer);
 
 	//if (client->sess.raceMode)
 	//	client->ps.stats[STAT_RACEMODE] = 1;
@@ -2131,7 +2138,14 @@ void ClientSpawn(gentity_t *ent) {
 	ent->flags = 0;
 
 	if (!g_defrag.integer) {
-		client->sess.raceMode = qfalse;
+		DF_SetRaceMode(ent,qfalse);
+		//if (client->sess.raceMode) {
+		//	client->sess.raceMode = qfalse;
+		//	Cmd_ForceChanged_f(ent);
+		//}
+		//else {
+		//	client->sess.raceMode = qfalse;
+		//}
 	}
 
 	//if (client->sess.raceMode)

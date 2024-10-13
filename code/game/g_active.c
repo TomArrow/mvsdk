@@ -1475,6 +1475,7 @@ once for each server frame, which makes for smooth demo recording.
 */
 void DF_HandleSegmentedRunPre(gentity_t* ent);
 void UpdateClientRaceVars(gclient_t* client);
+void DF_SetRaceMode(gentity_t* ent, qboolean value);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
 	pmove_t		pm;
@@ -1559,8 +1560,10 @@ void ClientThink_real( gentity_t *ent ) {
 		//if (client->ps.stats[STAT_RACEMODE] || g_gametype.integer >= GT_TEAM) {
 		if (client->sess.raceMode || g_gametype.integer >= GT_TEAM) {
 			SetTeam(ent, "spectator");// , qtrue);
-			client->sess.raceMode = qfalse;
-			client->ps.stats[STAT_RACEMODE] = qfalse;
+			DF_SetRaceMode(ent,qfalse);
+			//client->sess.raceMode = qfalse;
+			//Cmd_ForceChanged_f(ent);
+			//client->ps.stats[STAT_RACEMODE] = qfalse;
 		}
 	}
 

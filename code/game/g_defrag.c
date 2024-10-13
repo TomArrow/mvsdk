@@ -9,6 +9,7 @@ void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace);
 void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs);
+void UpdateClientRaceVars(gclient_t* client);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
 #define VALIDATEPTRCMP(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
@@ -490,8 +491,19 @@ qboolean ValidRaceSettings(gentity_t* player)
 	//if ((style == MV_RJQ3 || style == MV_RJCPM || style == MV_TRIBES) && g_knockback.value != 1000.0f)
 	//	return qfalse;
 
-	if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != player->client->sess.raceStyle.jumpLevel) {
+	if (player->client->sess.raceStyle.jumpLevel >= 0) {
+
+		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != player->client->sess.raceStyle.jumpLevel) {
+			return qfalse; // shouldnt happen
+		}
+	}
+	else if (player->client->sess.raceStyle.jumpLevel < -1){
 		return qfalse; // shouldnt happen
+	}
+	else {
+		if (player->client->ps.powerups[PW_YSALAMIRI] != INT_MAX) {
+			return qfalse; // shouldnt happen
+		}
 	}
 
 	//if (style != MV_CPM && style != MV_OCPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM && style != MV_COOP_JKA && style != MV_TRIBES) { //Ignore forcejump restrictions if in onlybhop movement modes
@@ -1595,55 +1607,12 @@ void ResetPhysicsFpsStuff(gentity_t* ent) {
 	SetClientPhysicsFps(ent, ent->client->pers.physicsFps.clientSetting); // set it again
 }
 
-// Adapted from jaPRO
-void Cmd_Race_f(gentity_t* ent)
-{
-	if (!ent->client)
-		return;
-
-	if (ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) {
-		trap_SendServerCommand(ent-g_entities, "print \"^5This command is not allowed when carrying a flag!\n\"");
-		return;
-	}
-
-	if (!g_defrag.integer) {
-		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed!\n\"");
-		ent->client->sess.raceMode = qfalse;
-		return;
-	}
-
-	if (g_gametype.integer != GT_FFA) {
-		if (g_gametype.integer >= GT_TEAM && g_defrag.integer)
-		{//this is ok
-
-			ent->s.weapon = WP_SABER; //Dont drop our weapon
-			Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
-
-			ent->client->sess.raceMode = qfalse;//Set it false here cuz we are flipping it next
-			if (ent->client->sess.sessionTeam != TEAM_FREE) {
-				SetTeam(ent, "race");// , qfalse);
-			}
-			else {
-				SetTeam(ent, "spec");// , qfalse);
-			}
-			//return;//duno..
-		}
-		else {
-			trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed in this gametype!\n\"");
-			return;
-		}
-	}
-
-	if (ent->client->sess.raceMode) {//Toggle it
-		ent->client->sess.raceMode = qfalse;
-		ent->s.weapon = WP_SABER; //Dont drop our weapon
-		Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
-		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled off.\n\"");
-	}
-	else {
-		ent->client->sess.raceMode = qtrue;
-		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled on.\n\"");
-	}
+void DF_SetRaceMode(gentity_t* ent, qboolean value) {
+	value = (qboolean)!!value;
+	if (ent->client->sess.raceMode == value) return;
+	ent->client->sess.raceMode = value;
+	ent->s.weapon = WP_SABER; //Dont drop our weapon
+	if(!value) Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S//Delete all their projectiles / saved stuff
 
 	// reset physicsfps because racemode has different rules for validating that.
 	ResetPhysicsFpsStuff(ent);
@@ -1663,6 +1632,82 @@ void Cmd_Race_f(gentity_t* ent)
 		ent->client->ps.fd.suicides = 0;
 		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
 	}
+	UpdateClientRaceVars(ent->client);
+}
+
+// Adapted from jaPRO
+void Cmd_Race_f(gentity_t* ent)
+{
+	if (!ent->client)
+		return;
+
+	if (ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) {
+		trap_SendServerCommand(ent-g_entities, "print \"^5This command is not allowed when carrying a flag!\n\"");
+		return;
+	}
+
+	if (!g_defrag.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed!\n\"");
+		DF_SetRaceMode(ent, qfalse);
+		//ent->client->sess.raceMode = qfalse;
+		//Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
+		return;
+	}
+
+	if (g_gametype.integer != GT_FFA) { // TA: What the heck is this?!
+		if (g_gametype.integer >= GT_TEAM && g_defrag.integer)
+		{//this is ok
+
+			ent->s.weapon = WP_SABER; //Dont drop our weapon
+			Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
+
+			ent->client->sess.raceMode = qfalse;//Set it false here cuz we are flipping it next // TA: (wut? oh.)
+			if (ent->client->sess.sessionTeam != TEAM_FREE) {
+				SetTeam(ent, "race");// , qfalse);
+			}
+			else {
+				SetTeam(ent, "spec");// , qfalse);
+			}
+			//return;//duno..
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed in this gametype!\n\"");
+			return;
+		}
+	}
+
+	if (ent->client->sess.raceMode) {//Toggle it
+		//ent->client->sess.raceMode = qfalse;
+		//ent->s.weapon = WP_SABER; //Dont drop our weapon
+		//Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
+		DF_SetRaceMode(ent, qfalse);
+		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled off.\n\"");
+	}
+	else {
+		//ent->client->sess.raceMode = qtrue;
+		DF_SetRaceMode(ent, qtrue);
+		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled on.\n\"");
+	}
+
+
+	// reset physicsfps because racemode has different rules for validating that.
+	//ResetPhysicsFpsStuff(ent);
+
+	//if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+	//	//Delete all their projectiles / saved stuff
+	//	RemoveLaserTraps(ent);
+	//	RemoveDetpacks(ent);
+	//	DeletePlayerProjectiles(ent);
+
+
+	//	G_Kill(ent); //stop abuse
+	//	ent->client->ps.persistant[PERS_SCORE] = 0;
+	//	ent->client->ps.persistant[PERS_KILLED] = 0;
+	//	ent->client->accuracy_shots = 0;
+	//	ent->client->accuracy_hits = 0;
+	//	ent->client->ps.fd.suicides = 0;
+	//	ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
+	//}
 }
 
 
@@ -1773,17 +1818,23 @@ void Cmd_JumpChange_f(gentity_t* ent)
 	trap_Argv(1, jLevel, sizeof(jLevel));
 	levelint = atoi(jLevel);
 
-	if (levelint >= 1 && levelint <= 3) {
+	if (levelint >= -1 && levelint <= 3) {
 		ent->client->sess.raceStyle.jumpLevel = levelint;
 		ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
-		ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = ent->client->sess.raceStyle.jumpLevel;
+		ent->client->ps.fd.forcePowerLevel[FP_LEVITATION] = MAX(0,ent->client->sess.raceStyle.jumpLevel);
+		if (ent->client->sess.raceStyle.jumpLevel == -1) {
+			ent->client->ps.powerups[PW_YSALAMIRI] = INT_MAX;
+		}
+		else {
+			ent->client->ps.powerups[PW_YSALAMIRI] = 0;
+		}
 		DF_RaceStateInvalidated(ent, qtrue);
 		//DF_InvalidateSpawn(ent);
 		if (ent->client->pers.raceStartCommandTime) {
-			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i): timer reset.\n\"", level));
+			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i): timer reset.\n\"", levelint));
 		}
 		else
-			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i).\n\"", level));
+			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i).\n\"", levelint));
 	}
 	else
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /jump <level>\n\"");
@@ -2425,7 +2476,13 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 void UpdateClientRaceVars(gclient_t* client) {
 	
 	if (client->sess.raceMode) { // what happens when switching out of racemode? dont care rn TODO
-		client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
+		client->ps.fd.forcePowerLevel[FP_LEVITATION] = MAX(0,client->sess.raceStyle.jumpLevel);
+		if (client->sess.raceStyle.jumpLevel == -1) {
+			client->ps.powerups[PW_YSALAMIRI] = INT_MAX;
+		}
+		else {
+			client->ps.powerups[PW_YSALAMIRI] = 0;
+		}
 	}
 	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
 	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;

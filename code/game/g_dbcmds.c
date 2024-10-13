@@ -591,10 +591,10 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	}
 
 #define MSECSTRING(msec) ((msec) == -1 ? "togl" : ((msec) == -2 ? "flt" : ((msec) == 0 ? "unkn" : multiva("%d", 1000 / (msec)))))
-#define LBROW(lbType,coloration,jumpvalue) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], coloration(entriesHere[lbType]), entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "" jumpvalue(entriesHere[lbType]), !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
+#define LBROW(lbType,coloration,jumpvalue) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], coloration(entriesHere[lbType]), entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "" jumpvalue(entriesHere[lbType],lbType), !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
 
-#define JUMPVALUE(a) ,((a).jump)
-#define JUMPVALUE_EMPTY(a) 
+#define JUMPVALUE(a,b) ,entriesHere[b].exists ? 'j':' ' ,((a).jump)
+#define JUMPVALUE_EMPTY(a,b) 
 #define TIMECOLOR_DEFAULT(a) '7'
 #define TIMECOLOR_CHEAT(a) ((((a).runFlags & RFL_TAS)||((a).runFlags & RFL_BOT)) ? (((a).runFlags & RFL_SEGMENTED) ? 'j':'1') : '7' )
 #define TIMECOLOR_CUSTOM(a) (((a).runFlagsDiff & RFL_CLIMBTECH) ? 'E':'7')
@@ -605,7 +605,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^%c %-10s ^c%4s j%-2d ^u%10s ^h| " // so middle (custom) column is 4 wider
+			"^J%c%02s^%c %-10s ^c%4s %c%-2d ^u%10s ^h| " // so middle (custom) column is 4 wider
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
 			"^J%c%02s^%c %-10s ^c%4s ^u%10s "
 			"\n\"",
