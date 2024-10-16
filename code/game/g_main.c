@@ -1827,6 +1827,12 @@ void LogExit( const char *string ) {
 	int				i, numSorted;
 	gclient_t		*cl;
 	qboolean		won = qtrue;
+
+	if (g_defrag.integer) { // no game ending in defrag.
+		G_LogPrintf("Exit (stopped due to defrag): %s\n", string);
+		return;
+	}
+
 	G_LogPrintf( "Exit: %s\n", string );
 
 	level.intermissionQueued = level.time;
