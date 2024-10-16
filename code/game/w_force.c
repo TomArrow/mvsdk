@@ -622,12 +622,12 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 	}
 
 	//Dueling fighters cannot use force powers on others, with the exception of force push when locked with each other
-	if (attacker && attacker->client && attacker->client->ps.duelInProgress)
+	if (attacker && attacker->client && (attacker->client->ps.duelInProgress || attacker->client->sess.raceMode))
 	{
 		return 0;
 	}
 
-	if (other && other->client && other->client->ps.duelInProgress)
+	if (other && other->client && (other->client->ps.duelInProgress || other->client->sess.raceMode))
 	{
 		return 0;
 	}
@@ -672,6 +672,10 @@ qboolean WP_ForcePowerInUse( gentity_t *self, forcePowers_t forcePower )
 qboolean WP_ForcePowerUsable( gentity_t *self, forcePowers_t forcePower )
 {
 	int		nowTime = LEVELTIME(self->client);
+
+	if (self->client && self->client->sess.raceMode)
+		return qfalse;
+
 	if (BG_HasYsalamiri(g_gametype.integer, &self->client->ps))
 	{
 		return qfalse;
@@ -3255,7 +3259,15 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				}
 				else 
 				{
-					G_ReflectMissile( self, push_list[x], forward );
+					if (g_defrag.integer) {
+						gentity_t* owner = &g_entities[push_list[x]->r.ownerNum];
+						if (owner->client && owner->client->sess.raceMode) {
+						}
+						else
+							G_ReflectMissile(self, push_list[x], forward);
+					}
+					else
+						G_ReflectMissile( self, push_list[x], forward );
 				}
 			}
 			else if ( !Q_stricmp( "func_door", push_list[x]->classname ) && (push_list[x]->spawnflags&2) )
