@@ -407,6 +407,11 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
 		return;
 	}
+	if (cl->sess.raceStateSoftInvalidated) {
+		DF_RaceStateInvalidated(activator,qfalse);
+		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is soft-invalidated.\nPlease respawn before running.\n\"");
+		return;
+	}
 
 	segmented = cl->sess.raceStyle.runFlags & RFL_SEGMENTED;
 

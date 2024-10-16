@@ -430,6 +430,10 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 		return;
 	}
 
+	//if (!other->client->pers.raceStartCommandTime) {
+		other->client->sess.raceStateSoftInvalidated = qtrue;
+	//}
+
 	TeleportPlayer( other, dest->s.origin, dest->s.angles );
 }
 

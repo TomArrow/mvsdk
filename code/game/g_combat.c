@@ -2240,6 +2240,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 
 	self->client->sess.raceStateInvalidated = qfalse; // we are respawning, reset this and allow us to do stuff again
+	self->client->sess.raceStateSoftInvalidated = qfalse; // we are respawning, reset this and allow us to run again
 	trap_LinkEntity (self);
 
 }

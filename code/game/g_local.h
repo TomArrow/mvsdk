@@ -349,6 +349,7 @@ typedef struct {
 	// noclip or sth similar was used. we cannot run or set spawns until we /kill and respawn. Only jump level and runFlags are relevant here. msec and style never gets overwritten, variant gets always overwritten
 
 	qboolean	raceStateInvalidated;	
+	qboolean	raceStateSoftInvalidated;	// can still set spawn but not start run. used to prevent teleport starts.
 
 	qboolean		hideLasers;
 	qboolean		solo;
