@@ -1476,6 +1476,29 @@ void ClientUserinfoChanged( int clientNum ) {
 	}
 }
 
+// super simplified versin of clientuserinfochanged, allowing for faster toggle
+qboolean ClientPhysicsFpsChanged( int clientNum ) {
+	gentity_t *ent;
+	gclient_t* client;
+	char	*s;
+	char	userinfo[MAX_INFO_STRING];
+
+	ent = g_entities + clientNum;
+	client = ent->client;
+
+	trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
+
+	// check for com_physicsFps setting
+	s = Info_ValueForKey( userinfo, "com_physicsFps" );
+	if ( atoi( s ) ) {
+		SetClientPhysicsFps(ent, atoi(s));
+	} else {
+		SetClientPhysicsFps(ent, 0);
+	}
+	
+	return qtrue;
+}
+
 
 /*
 ===========

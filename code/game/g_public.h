@@ -841,5 +841,6 @@ typedef enum {
 
 	GAME_ROFF_NOTETRACK_CALLBACK,	// int entnum, char *notetrack
 
+	GAME_COOL_API_PHYSICSFPSUPDATE,
 } gameExport_t;
 

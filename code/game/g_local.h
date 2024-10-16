@@ -1022,6 +1022,7 @@ void MV_ModelindexToTime2( gentity_t *ent );
 //
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot );
 void ClientUserinfoChanged( int clientNum );
+qboolean ClientPhysicsFpsChanged( int clientNum );
 void ClientDisconnect( int clientNum );
 void ClientBegin( int clientNum, qboolean allowTeamReset );
 void ClientCommand( int clientNum );
