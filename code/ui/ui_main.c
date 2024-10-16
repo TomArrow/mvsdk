@@ -33,6 +33,10 @@ qboolean isMainMenu = qfalse;
 int mvapi = 0;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
+
+vmCvar_t coolApi_supported_ui;
+int coolApi_supported_ui_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE;
+
 int Init_inGameLoad;
 
 void _UI_Init( qboolean );
@@ -64,6 +68,10 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 		  else {
 			  coolApi_dbVersion = 0;
 		  }
+
+		  trap_Cvar_Register(&coolApi_supported_ui, "coolApi_supported_ui", va("%d", coolApi_supported_ui_int), CVAR_ROM);
+		  trap_Cvar_Set("coolApi_supported_ui", va("%d", coolApi_supported_ui_int));
+
 		  requestedMvApi = MVAPI_Init(arg11, arg0);
 		  
 		  if ( !requestedMvApi )

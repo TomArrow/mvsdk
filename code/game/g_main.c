@@ -385,6 +385,8 @@ qboolean mvStructConversionDisabled = qfalse;
 
 int coolApi = 0;
 int coolApi_dbVersion = 0;
+vmCvar_t coolApi_supported_game;
+int coolApi_supported_game_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE;
 
 int Init_levelTime;
 int Init_randomSeed;
@@ -422,6 +424,10 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		else {
 			coolApi_dbVersion = 0;
 		}
+
+		trap_Cvar_Register(&coolApi_supported_game, "coolApi_supported_game", va("%d", coolApi_supported_game_int), CVAR_ROM);
+		trap_Cvar_Set("coolApi_supported_game", va("%d", coolApi_supported_game_int));
+
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call G_InitGame if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
