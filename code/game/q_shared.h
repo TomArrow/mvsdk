@@ -634,8 +634,8 @@ extern	vec4_t		colorDkBlue;
 #define Q_IsColorString_1_02(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE ) // 1.02 ColorStrings
 
 // stealsies from jomme/nt mod :) thanks
-#define Q_IsColorStringNT(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= 0x7F && *((p)+1) >= 0x00 )
-#define Q_IsColorCharNT(p)		( (p) <= 0x7F && (p) >= 0x00 )
+#define Q_IsColorStringNT(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= 0x7F && *((p)+1) >= '0' ) // changed from >= 0x00 to '0' compared to NT
+#define Q_IsColorCharNT(p)		( (p) <= 0x7F && (p) >= '0' ) // changed from >= 0x00 to '0' compared to NT
 #define ColorIndexNT(c)			( (c) & 127 )
 
 #define COLOR_BLACK		'0'
