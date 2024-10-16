@@ -2286,13 +2286,15 @@ int CheckArmor (gentity_t *ent, int damage, int dflags)
 	if (!save)
 		return 0;
 
-	if (dflags & DAMAGE_HALF_ARMOR_REDUCTION)		// Armor isn't whittled so easily by sniper shots.
-	{
-		client->ps.stats[STAT_ARMOR] -= (int)(save*ARMOR_REDUCTION_FACTOR);
-	}
-	else
-	{
-		client->ps.stats[STAT_ARMOR] -= save;
+	if(!client->sess.raceMode || !(dflags & FAKE_DAMAGE_IN_RACEMODE)){
+		if (dflags & DAMAGE_HALF_ARMOR_REDUCTION)		// Armor isn't whittled so easily by sniper shots.
+		{
+			client->ps.stats[STAT_ARMOR] -= (int)(save*ARMOR_REDUCTION_FACTOR);
+		}
+		else
+		{
+			client->ps.stats[STAT_ARMOR] -= save;
+		}
 	}
 
 	return save;
@@ -3133,7 +3135,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		//}
 	}
 
-	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ && mod != MOD_LAVA && (damage != Q3_INFINITE) && !targ->client->ps.duelInProgress && !(dflags& DAMAGE_IN_RACEMODE)) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
+	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ /* && mod != MOD_LAVA */ && !(dflags & FAKE_DAMAGE_IN_RACEMODE) && (damage != Q3_INFINITE) && !targ->client->ps.duelInProgress && !(dflags & DAMAGE_IN_RACEMODE)) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
 		return; //ignore other damage if target is in racemode
 
 	// the intermission has allready been qualified for, so don't
@@ -3563,11 +3565,12 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	}
 
 	// do the damage
-	if (take) {
+	if (take && (!targ->client->sess.raceMode || !(dflags & FAKE_DAMAGE_IN_RACEMODE))) {
 		if (targ->client && (targ->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) && (inflictor->client || attacker->client))
 		{
 			take /= (targ->client->ps.fd.forcePowerLevel[FP_RAGE]+1);
 		}
+
 		targ->health = targ->health - take;
 		if ( targ->client ) {
 			targ->client->ps.stats[STAT_HEALTH] = targ->health;
