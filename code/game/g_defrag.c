@@ -1053,6 +1053,8 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	//static char awardString[MAX_STRING_CHARS - 2] = { 0 };
 	static char messageStr[MAX_STRING_CHARS - 2] = { 0 };
 	static char fpsStr[10] = { 0 };
+	const char* type = preliminary ? "dfsegprelim" : (showRank ? "dffinish_ranked" : "dffinish");
+	const char* prefix = "";
 
 	//awardString[0] = 0;
 	messageStr[0] = 0;
@@ -1099,18 +1101,36 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			color = 'V';
 		}
 	}
-	else if (!preliminary)
-		color = '2';
-	else
-		color = '1';
+	else if (!preliminary) {
+		if (runInfo->lbType == LB_MAIN) {
+			color = '2';
+		}
+		else {
+			color = 'b';
+		}
+	}
+	else {
+		if (runInfo->lbType == LB_MAIN) {
+			color = '1';
+		}
+		else {
+			color = 'Y';
+		}
+	}
 
+	if (preliminary) {
+		prefix = miniva("^%c[SEGMENTED-PRELIMINARY]^7 ",color);
+	}
 
 	if (!showRank) {
 		const char* runFlagsString = RunFlagsToString(runInfo->raceStyle.runFlags, level.mapDefaultRaceStyle.runFlags, 1,"^3",NULL);
 		const int runFlagsStringLen = strlen(runFlagsString);
 		Q_strncpyz(fpsStr, runInfo->raceStyle.msec == -1 ? "togl" : (runInfo->raceStyle.msec == -2 ? "flt" : (runInfo->raceStyle.msec == 0 ? "unkn" : va("%d", 1000 / runInfo->raceStyle.msec))), sizeof(fpsStr));
 
-		Q_strncpyz(messageStr, va("^3%12s^%c  ^3%7.2f^%cmax ^3%7.2f^%cavg ^3%7.1fk^%cdist ^3%2i^%cj ^3%4s^%cfps ^3%6s^%c style %s ^%c",
+		Q_strncpyz(messageStr, va("%s^%c%12s ^3%12s^%c  ^3%7.2f^%cmax ^3%7.2f^%cavg ^3%7.1fk^%cdist ^3%2i^%cj ^3%4s^%cfps ^3%6s^%c style %s ^%c",
+			prefix,
+			color,
+			miniva("[%s]",leaderboardNames[runInfo->lbType]),
 			DF_MsToString(runInfo->milliseconds),
 			color,
 			runInfo->topspeed,
@@ -1142,12 +1162,23 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		Q_strcat(messageStr, sizeof(messageStr), va("by^7 %s  ^%c[^%c%s^%c] ", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color));
 		
 
-		trap_SendServerCommand(-1, va("print \"%s\n\" dffinish %s", messageStr, DF_RacePrintAppendage(runInfo)));
+		trap_SendServerCommand(-1, va("print \"%s\n\" %s %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
 	}
 	else if (runInfo->rankLB != -1) {
 
 		if (runInfo->rankLB == 1 && (runInfo->pbStatus & PB_LB)) { //was 1 when it shouldnt have been.. ?
-			Q_strncpyz(messageStr, va("%s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c and %s ranked ^3#%i\n",runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,color, runInfo->userId == -1 ? "unofficially " : "",color, runInfo->userId == -1 ? "would be " : "is now",runInfo->rankLB), sizeof(messageStr));
+			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c and %s ranked ^3#%i\n",
+				prefix,
+				color,
+				miniva("[%s]", leaderboardNames[runInfo->lbType]),
+				runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,
+				runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,
+				color, 
+				runInfo->userId == -1 ? "unofficially " : "",
+				color, 
+				runInfo->userId == -1 ? "would be " : "is now",
+				runInfo->rankLB), 
+				sizeof(messageStr));
 			if (runInfo->userId != -1) {
 				//G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass"));
 				if (runInfo->lbType == LB_MAIN) {
@@ -1159,7 +1190,18 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			}
 		}
 		else if ((runInfo->pbStatus & PB_LB)) {
-			Q_strncpyz(messageStr, va("%s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i\n", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color,  runInfo->userId == -1 ? "would be " : "is now", runInfo->rankLB), sizeof(messageStr));
+			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i\n",
+				prefix,
+				color,
+				miniva("[%s]", leaderboardNames[runInfo->lbType]), 
+				runInfo->netname, 
+				color, 
+				runInfo->userId == -1 ? '1' : nameColor, 
+				runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,
+				color,  
+				runInfo->userId == -1 ? "would be " : "is now", 
+				runInfo->rankLB), 
+				sizeof(messageStr));
 			if (runInfo->rankLB <= 10 && runInfo->lbType == LB_MAIN) {
 				if (ent) {
 					G_ScreenShake(vec3_origin, ent, 5.0f, 800, qfalse);
@@ -1184,7 +1226,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			}
 		}*/
 
-		trap_SendServerCommand(-1, va("print \"%s\" dffinish_ranked %s", messageStr, DF_RacePrintAppendage(runInfo)));
+		trap_SendServerCommand(-1, va("print \"%s\" %s %s", messageStr,type, DF_RacePrintAppendage(runInfo)));
 	}
 	
 }
@@ -1398,7 +1440,9 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
 
 	if ((cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state != SEG_REPLAY) {
-		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo))); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username
+		//trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo))); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username
+
+		PrintRaceTime(&runInfo, qtrue, qfalse, activator);
 		cl->pers.segmented.state = SEG_REPLAY;
 		cl->pers.segmented.playbackStartedTime = level.time;
 		cl->pers.segmented.playbackNextCmdIndex = 0;
@@ -1409,7 +1453,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	isInserting = G_InsertRun(&runInfo);
 
 
-	PrintRaceTime(&runInfo, qfalse, qfalse);
+	PrintRaceTime(&runInfo, qfalse, qfalse, activator);
 	// Show info
 	/*if (timeLast == timeBest) {
 		trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the race in %f units in [^2%s^7]\n\" dffinish %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo)));

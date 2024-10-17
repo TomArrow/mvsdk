@@ -10,7 +10,7 @@ const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL
 const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
 
-bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
+bitInfo_t runFlagsNames[] = { 
 	{ "Disable jumpbug" },//0
 	{ "Prevent dead ramps" },//1
 	{ "No wall stuck" },//2
@@ -23,6 +23,16 @@ bitInfo_t runFlagsNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Jumppad FPS compensation" },//9
 //	{ "Wallspawn" },//9 // was just a test for db column generation
 };
+
+bitInfo_t leaderboardNames[LB_TYPES_COUNT] = {
+	{ "Main" },//0
+	{ "NoJumpBug" },//1
+	{ "Custom" },//2
+	{ "Segmented" },//3
+	{ "Cheat" },//4
+};
+
+
 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) {#a},
 bitInfo_t runFlagsShortNames[] = {
@@ -296,6 +306,34 @@ char* QDECL multiva(const char* format, ...) {
 
 	va_start(argptr, format);
 	Q_vsnprintf(buf, MAX_MULTIVA_STRING, format, argptr);
+	va_end(argptr);
+
+	return buf;
+}
+
+
+/*
+============
+va
+
+does a varargs printf into a temp buffer, so I don't need to have
+varargs versions of all text functions.
+FIXME: make this buffer size safe someday
+============
+*/
+#define MAX_MINIVA_STRING 32
+#define MAX_MINIVA_BUFFERS 2048
+char* QDECL miniva(const char* format, ...) {
+	va_list		argptr;
+	static char		string[MAX_MINIVA_BUFFERS][MAX_MINIVA_STRING];	// in case va is called by nested functions
+	static int		index = 0;
+	char* buf;
+
+	buf = string[index & (MAX_MINIVA_BUFFERS -1)];
+	index++;
+
+	va_start(argptr, format);
+	Q_vsnprintf(buf, MAX_MINIVA_STRING, format, argptr);
 	va_end(argptr);
 
 	return buf;

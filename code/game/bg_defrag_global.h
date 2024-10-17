@@ -100,6 +100,7 @@ extern bitInfo_t runFlagsNames[];
 extern bitInfo_t runFlagsShortNames[];
 extern bitInfo_t runFlagsVeryShortNames[];
 extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
+extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 
 // can't do this: because qvm has issues compiling shorts :/
 //typedef struct raceStyle_s {
@@ -187,5 +188,6 @@ mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* d
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle);
 raceStyle_t getDefaultMapRaceStyle();
 char* QDECL multiva(const char* format, ...) __attribute__((format(printf, 1, 2)));
+char* QDECL miniva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
 #endif

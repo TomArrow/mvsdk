@@ -337,7 +337,7 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		runData.runInfo.unixTimeStampShifted = trap_G_COOL_API_DB_GetInt(0);
 	}
 
-	PrintRaceTime(&runData.runInfo, qfalse, qtrue);
+	PrintRaceTime(&runData.runInfo, qfalse, qtrue,ent);
 
 }
 static void G_InsertMapDefaultsResult(int status, const char* errorMessage, int affectedRows) {
