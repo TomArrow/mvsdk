@@ -828,6 +828,8 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 	// execute the team change
 	//
 
+	DF_RaceStateInvalidated(ent, qfalse);
+
 	// if the player was dead leave the body
 	if ( client->ps.stats[STAT_HEALTH] <= 0 ) {
 		CopyToBodyQue(ent);

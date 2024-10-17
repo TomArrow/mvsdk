@@ -803,7 +803,9 @@ respawn
 void respawn( gentity_t *ent ) {
 	gentity_t	*tent;
 
-	CopyToBodyQue (ent);
+	if (!ent->client->sess.raceMode) {
+		CopyToBodyQue(ent);
+	}
 
 	if (gEscaping)
 	{
