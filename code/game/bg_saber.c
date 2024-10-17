@@ -91,6 +91,17 @@ void BG_ForcePowerDrain( playerState_t *ps, forcePowers_t forcePower, int overri
 	}
 }
 
+qboolean BG_EnoughForcePowerForMove(int cost)
+{
+	if (pm->ps->fd.forcePower < cost)
+	{
+		PM_AddEvent(EV_NOAMMO);
+		return qfalse;
+	}
+
+	return qtrue;
+}
+
 // Silly, but I'm replacing these macros so they are shorter!
 #define AFLAG_IDLE	(SETANIM_FLAG_NORMAL)
 #define AFLAG_ACTIVE (/*SETANIM_FLAG_OVERRIDE | */SETANIM_FLAG_HOLD | SETANIM_FLAG_HOLDLESS)
@@ -1233,6 +1244,10 @@ float PM_GroundDistance(void)
 	return VectorLength(down);
 }
 
+#define SABER_ALT_ATTACK_POWER		50//75?
+#define SABER_ALT_ATTACK_POWER_LR	10//30?
+#define SABER_ALT_ATTACK_POWER_FB	25//30/50?
+
 
 saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 {
@@ -1248,11 +1263,11 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
 			&& PM_GroundDistance() < 70.0f //not too high above ground
 			&& (pm->cmd.upmove > 0 || (pm->ps->pm_flags & PMF_JUMP_HELD))//focus-holding player
-			//&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
+			&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
 			)
 		{//cartwheel right
 			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF)) { //dunno why do this if they cant cart..?
-			//	BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
+				BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
 			//}
 			//if (overrideJumpRightAttackMove != LS_INVALID)
 			//{//overridden with another move
@@ -1315,11 +1330,11 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
 			&& PM_GroundDistance() < 70.0f //not too high above ground
 			&& (pm->cmd.upmove > 0 || (pm->ps->pm_flags & PMF_JUMP_HELD))//focus-holding player
-			//&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
+			&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
 			)
 		{//cartwheel left
 			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF)) { //dunno why do this if they cant cart..?
-			//	BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
+				BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
 			//}
 
 			//if (overrideJumpLeftAttackMove != LS_INVALID)
@@ -1397,11 +1412,16 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 				PM_GroundDistance() < 32 &&
 				!BG_InSpecialJump(pm->ps->legsAnim, runFlags) &&
 				!BG_SaberInSpecialAttack(pm->ps->torsoAnim) 
-				//&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_FB)
+				&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_FB)
 				)
 			{ //DFA (JKA)
 				{
 					newmove = PM_SaberJumpAttackMove();
+					if (newmove != LS_A_T2B
+						&& newmove != LS_NONE)
+					{
+						BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_FB);
+					}
 				}
 			}
 			else if (pm->ps->fd.saberAnimLevel == FORCE_LEVEL_1 &&
