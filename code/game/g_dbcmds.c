@@ -17,7 +17,7 @@ static void G_CreateCheckpointsTable();
 static void G_CreateMapRaceDefaultsTable();
 extern const char* DF_GetCourseName();
 
-static gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
+gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	gentity_t* ent;
 
 	if (clientNum < 0 || clientNum >= MAX_CLIENTS) {
@@ -267,7 +267,7 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	}
 
 }
-void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank);
+void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank, gentity_t* ent);
 
 static void G_InsertRunResult(int status, const char* errorMessage, int affectedRows) {
 	insertUpdateRunStruct_t runData;

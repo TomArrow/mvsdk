@@ -1048,8 +1048,7 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 	return qfalse;
 }
 
-
-void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank) {
+void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank, gentity_t* ent) {
 	char nameColor, color;
 	//static char awardString[MAX_STRING_CHARS - 2] = { 0 };
 	static char messageStr[MAX_STRING_CHARS - 2] = { 0 };
@@ -1144,12 +1143,22 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		if (runInfo->rankLB == 1 && (runInfo->pbStatus & PB_LB)) { //was 1 when it shouldnt have been.. ?
 			Q_strncpyz(messageStr, va("%s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c and %s ranked ^3#%i\n",runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,color, runInfo->userId == -1 ? "unofficially " : "",color, runInfo->userId == -1 ? "would be " : "is now",runInfo->rankLB), sizeof(messageStr));
 			if (runInfo->userId != -1) {
-				PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
 				//G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass"));
+				if (runInfo->lbType == LB_MAIN) {
+					PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
+					if (ent) {
+						G_ScreenShake(vec3_origin, ent, 5.0f, 800, qfalse);
+					}
+				}
 			}
 		}
 		else if ((runInfo->pbStatus & PB_LB)) {
 			Q_strncpyz(messageStr, va("%s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i\n", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color,  runInfo->userId == -1 ? "would be " : "is now", runInfo->rankLB), sizeof(messageStr));
+			if (runInfo->rankLB <= 10 && runInfo->lbType == LB_MAIN) {
+				if (ent) {
+					G_ScreenShake(vec3_origin, ent, 5.0f, 800, qfalse);
+				}
+			}
 		}
 
 		/*if (global_newRank > 0) { //Print global rank increased, global score added
@@ -1269,6 +1278,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		"\"%s\" " // username[USERNAME_MAX_LEN + 1]
 		"%d " // unixTimeStampShifted
 		"%d " // unixTimeStampShiftedBillionCount
+		"%d " // lbType
 		,runInfo->runId
 		,runInfo->clientNum
 		,runInfo->userId
@@ -1308,6 +1318,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->username
 		,runInfo->unixTimeStampShifted
 		,runInfo->unixTimeStampShiftedBillionCount
+		,runInfo->lbType
 		);
 }
 
