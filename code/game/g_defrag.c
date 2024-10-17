@@ -1091,8 +1091,14 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	//	nameColor = 7;
 
 	//if (valid && loggedin)
-	if (!preliminary && runInfo->userId != -1)
-		color = '5';
+	if (!preliminary && runInfo->userId != -1) {
+		if (runInfo->lbType == LB_MAIN) {
+			color = '5';
+		}
+		else {
+			color = 'V';
+		}
+	}
 	else if (!preliminary)
 		color = '2';
 	else
