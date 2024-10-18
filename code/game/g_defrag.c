@@ -2147,7 +2147,12 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 
 		if (es->eType == ET_BEAM && other->parent != ent && es->generic1 == 3) {
 			//mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
-			mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = followedClient->sess.solo || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner)); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps
+			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
+				mvEnt->snapshotIgnoreRealClient[clientNum] = (cl->sess.solo && other->parent != followedEnt) || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner)); // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
+			}
+			else {
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = other->parent != followedEnt && (followedClient->sess.solo || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner))); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps
+			}
 			//if (ent->client->sess.hideLasers) {
 			//	es->event = 0;
 			//}
@@ -2169,7 +2174,12 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			ocl = other->client;
 
 			//mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
-			mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo;
+			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
+				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
+			}
+			else {
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo;
+			}
 			if (saveState) { 
 				backup->saberMovePS = ocl->ps.saberMove;
 				backup->pmfFollowPS = ocl->ps.pm_flags & PMF_FOLLOW;

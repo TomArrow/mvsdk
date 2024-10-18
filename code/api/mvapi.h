@@ -104,6 +104,8 @@ typedef struct {
     uint8_t     snapshotIgnore[32];
     uint8_t     snapshotEnforce[32];
     uint32_t    mvFlags;
+	uint8_t     snapshotIgnoreRealClient[32]; // TommyTernal
+	uint8_t     snapshotEnforceRealClient[32]; // TommyTernal
 } mvsharedEntity_t;
 
 // ------------------------------------------ UI ------------------------------------------- //
