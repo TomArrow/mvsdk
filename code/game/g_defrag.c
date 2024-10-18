@@ -2120,6 +2120,9 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	entityState_t* es;
 	playerSnapshotBackupValues_t* backup = backupValues;
 	mvsharedEntity_t* mvEnt = mv_entities;
+	int followedClientNum = (cl->sess.spectatorState == SPECTATOR_FOLLOW && cl->sess.spectatorClient >= 0 && cl->sess.spectatorClient < MAX_CLIENTS) ? cl->sess.spectatorClient : clientNum;
+	gentity_t* followedEnt = g_entities + followedClientNum;
+	gclient_t* followedClient = followedEnt->client;
 	int i;
 	for (i = 0; i < level.num_entities; i++, backup++, mvEnt++) {
 		other = g_entities + i;
@@ -2143,7 +2146,8 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 
 		if (es->eType == ET_BEAM && other->parent != ent && es->generic1 == 3) {
-			mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
+			//mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
+			mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = followedClient->sess.solo || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner)); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps
 			//if (ent->client->sess.hideLasers) {
 			//	es->event = 0;
 			//}
@@ -2164,7 +2168,8 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		if (other->client) {
 			ocl = other->client;
 
-			mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
+			//mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
+			mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo;
 			if (saveState) { 
 				backup->saberMovePS = ocl->ps.saberMove;
 				backup->pmfFollowPS = ocl->ps.pm_flags & PMF_FOLLOW;
