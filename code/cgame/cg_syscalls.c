@@ -295,6 +295,36 @@ qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize) {
 }
 
 
+// dbApi v3
+
+qboolean	trap_CG_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request) {
+	return syscall(CG_COOL_API_DB_ADDPREPAREDSTATEMENT, reference, referenceLength, requestType, request);
+}
+qboolean	trap_CG_COOL_API_DB_PreparedBindString(const char* string) {
+	return syscall(CG_COOL_API_DB_PREPAREDBINDSTRING, string);
+}
+qboolean	trap_CG_COOL_API_DB_PreparedBindFloat(float number) {
+	return syscall(CG_COOL_API_DB_PREPAREDBINDFLOAT, PASSFLOAT(number));
+}
+qboolean	trap_CG_COOL_API_DB_PreparedBindInt(int number) {
+	return syscall(CG_COOL_API_DB_PREPAREDBINDINT, number);
+}
+qboolean	trap_CG_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength) {
+	return syscall(CG_COOL_API_DB_PREPAREDBINDBINARY, data, dataLength);
+}
+qboolean	trap_CG_COOL_API_DB_FinishAndSendPreparedStatement() {
+	return syscall(CG_COOL_API_DB_FINISHANDSENDPREPAREDSTATEMENT);
+}
+int			trap_CG_COOL_API_DB_GetBinary(int place, byte* out, int outSize) {
+	return syscall(CG_COOL_API_DB_GETBINARY, place, out, outSize);
+}
+qboolean	trap_CG_COOL_API_DB_PreparedBindNull() {
+	return syscall(CG_COOL_API_DB_PREPAREDBINDNULL);
+}
+qboolean	trap_CG_COOL_API_DB_GetMoreResults(int* affectedRows) {
+	return syscall(CG_COOL_API_DB_GETMORERESULTS, affectedRows);
+}
+
 
 
 

@@ -2357,15 +2357,36 @@ void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEv
 int			trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum); 
 qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
 
-qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
-qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
-qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
-qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
-qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
-qboolean	trap_CG_COOL_API_DB_NextRow();
-int			trap_CG_COOL_API_DB_GetInt(int place);
-void		trap_CG_COOL_API_DB_GetFloat(int place, float* value);
-qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize);
+//qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
+//qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+//qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
+//qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+//qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+//qboolean	trap_CG_COOL_API_DB_NextRow();
+//int			trap_CG_COOL_API_DB_GetInt(int place);
+//void		trap_CG_COOL_API_DB_GetFloat(int place, float* value);
+//qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize);
+
+
+qboolean	CG_COOL_API_DB_EscapeString(char* input, int size);
+qboolean	CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
+qboolean	CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+qboolean	CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+qboolean	CG_COOL_API_DB_NextRow();
+int			CG_COOL_API_DB_GetInt(int place);
+void		CG_COOL_API_DB_GetFloat(int place, float* value);
+qboolean	CG_COOL_API_DB_GetString(int place, char* out, int outSize);
+
+qboolean	CG_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	CG_COOL_API_DB_PreparedBindString(const char* string);
+qboolean	CG_COOL_API_DB_PreparedBindFloat(float number);
+qboolean	CG_COOL_API_DB_PreparedBindInt(int number);
+qboolean	CG_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
+qboolean	CG_COOL_API_DB_FinishAndSendPreparedStatement();
+int			CG_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
+qboolean	CG_COOL_API_DB_PreparedBindNull();
+qboolean	CG_COOL_API_DB_GetMoreResults(int* affectedRows);
 
 /*
 qboolean	trap_Language_IsAsian(void);

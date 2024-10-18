@@ -2,6 +2,8 @@
 #ifndef CG_DBCMDS_H
 #define CG_DBCMDS_H
 
+#include "../game/q_shared.h"
+
 typedef enum DBRequestTypes_s {
 	DBREQUEST_CHATSAVE,
 	DBREQUEST_GETCHATS,

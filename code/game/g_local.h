@@ -819,25 +819,45 @@ int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum);
 void trap_G_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
 void trap_G_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
 
-qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
-qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
-qboolean	trap_G_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
-qboolean	trap_G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
-qboolean	trap_G_COOL_API_DB_GetReference(byte* reference, int referenceLength);
-qboolean	trap_G_COOL_API_DB_NextRow();
-int			trap_G_COOL_API_DB_GetInt(int place);
-void		trap_G_COOL_API_DB_GetFloat(int place, float* value);
-qboolean	trap_G_COOL_API_DB_GetString(int place, char* out, int outSize);
+//qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
+//qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+//qboolean	trap_G_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
+//qboolean	trap_G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+//qboolean	trap_G_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+//qboolean	trap_G_COOL_API_DB_NextRow();
+//int			trap_G_COOL_API_DB_GetInt(int place);
+//void		trap_G_COOL_API_DB_GetFloat(int place, float* value);
+//qboolean	trap_G_COOL_API_DB_GetString(int place, char* out, int outSize);
+//
+//qboolean	trap_G_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request);
+//qboolean	trap_G_COOL_API_DB_PreparedBindString(const char* string);
+//qboolean	trap_G_COOL_API_DB_PreparedBindFloat(float number);
+//qboolean	trap_G_COOL_API_DB_PreparedBindInt(int number);
+//qboolean	trap_G_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
+//qboolean	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+//int			trap_G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
+//qboolean	trap_G_COOL_API_DB_PreparedBindNull();
+//qboolean	trap_G_COOL_API_DB_GetMoreResults(int* affectedRows);
 
-qboolean	trap_G_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request);
-qboolean	trap_G_COOL_API_DB_PreparedBindString(const char* string);
-qboolean	trap_G_COOL_API_DB_PreparedBindFloat(float number);
-qboolean	trap_G_COOL_API_DB_PreparedBindInt(int number);
-qboolean	trap_G_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
-qboolean	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
-int			trap_G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
-qboolean	trap_G_COOL_API_DB_PreparedBindNull();
-qboolean	trap_G_COOL_API_DB_GetMoreResults(int* affectedRows);
+qboolean	G_COOL_API_DB_EscapeString(char* input, int size);
+qboolean	G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	G_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
+qboolean	G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+qboolean	G_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+qboolean	G_COOL_API_DB_NextRow();
+int			G_COOL_API_DB_GetInt(int place);
+void		G_COOL_API_DB_GetFloat(int place, float* value);
+qboolean	G_COOL_API_DB_GetString(int place, char* out, int outSize);
+
+qboolean	G_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	G_COOL_API_DB_PreparedBindString(const char* string);
+qboolean	G_COOL_API_DB_PreparedBindFloat(float number);
+qboolean	G_COOL_API_DB_PreparedBindInt(int number);
+qboolean	G_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
+qboolean	G_COOL_API_DB_FinishAndSendPreparedStatement();
+int			G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
+qboolean	G_COOL_API_DB_PreparedBindNull();
+qboolean	G_COOL_API_DB_GetMoreResults(int* affectedRows);
 
 
 //qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);

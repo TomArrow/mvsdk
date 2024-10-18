@@ -1099,12 +1099,12 @@ void Cmd_Register_f( gentity_t *ent )
 	//loginData.followUpType = !Q_stricmp("login", cmd) ? DBREQUEST_LOGIN : DBREQUEST_REGISTER;
 	loginData.followUpType = DBREQUEST_REGISTER;
 	if (needDoubleBCrypt) {
-		trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
 			va("2|%s|random|%s", BCRYPT_SETTINGS, loginData.password) 
 			, DBREQUESTTYPE_BCRYPT);
 	}
 	else {
-		trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
 			va("1|random|%s", loginData.password)
 			, DBREQUESTTYPE_BCRYPT);
 	}
@@ -1150,20 +1150,20 @@ void Cmd_Login_f( gentity_t *ent )
 	loginData.clientnum = ent - g_entities;
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
 	if (coolApi_dbVersion >= 3) {
-		trap_G_COOL_API_DB_AddPreparedStatement((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
+		G_COOL_API_DB_AddPreparedStatement((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
 			"SELECT password,flags,id FROM users WHERE username=?");
-		trap_G_COOL_API_DB_PreparedBindString(loginData.username);
-		trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+		G_COOL_API_DB_PreparedBindString(loginData.username);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
 	else {
 		static char	cleanUsername[MAX_STRING_CHARS];
 		Q_strncpyz(cleanUsername, loginData.username, sizeof(cleanUsername));
-		if (!trap_G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername))) {
+		if (!G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername))) {
 			Com_Printf("Cmd_Login_f: EscapeString failed.\n");
 			trap_SendServerCommand(ent - g_entities, va("print \"/%s failed: EscapeString failed\n\"", cmd));
 			return;
 		}
-		trap_G_COOL_API_DB_AddRequest((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
+		G_COOL_API_DB_AddRequest((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
 			va("SELECT password,flags,id FROM users WHERE username='%s'", cleanUsername));
 	}
 }
@@ -1215,7 +1215,7 @@ void Cmd_Top_f( gentity_t *ent )
 	
 	data.clientnum = ent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
-	if (trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
+	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
 		va(
 			"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
 			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
@@ -1225,11 +1225,11 @@ void Cmd_Top_f( gentity_t *ent )
 			, mainLBWhere, mainLBNJBWhere, customLBWhere, segmentedLBWhere, cheatLBWhere))) {
 		int i;
 		for (i = 0; i < countLBs; i++) {
-			trap_G_COOL_API_DB_PreparedBindString(courseName);
-			trap_G_COOL_API_DB_PreparedBindInt((int)MV_JK2);
-			trap_G_COOL_API_DB_PreparedBindInt(0);
+			G_COOL_API_DB_PreparedBindString(courseName);
+			G_COOL_API_DB_PreparedBindInt((int)MV_JK2);
+			G_COOL_API_DB_PreparedBindInt(0);
 		}
-		trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
 	else {
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");

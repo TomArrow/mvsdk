@@ -149,11 +149,11 @@ static void G_DB_GetChatsResponse(int status) {
 		return;
 	}
 	Com_Printf("^2Recent chats:\n");
-	while (trap_G_COOL_API_DB_NextRow()) {
+	while (G_COOL_API_DB_NextRow()) {
 		
-		int id = trap_G_COOL_API_DB_GetInt(0);
-		trap_G_COOL_API_DB_GetString(1, text,sizeof(text));
-		trap_G_COOL_API_DB_GetString(2, time,sizeof(time));
+		int id = G_COOL_API_DB_GetInt(0);
+		G_COOL_API_DB_GetString(1, text,sizeof(text));
+		G_COOL_API_DB_GetString(2, time,sizeof(time));
 		Com_Printf("^2%d ^7[%s] %s\n",id, time, text);
 	}
 }
@@ -168,18 +168,18 @@ static void G_RegisterContinue(loginRegisterStruct_t* loginData) {
 	}
 
 	if (coolApi_dbVersion >= 3) {
-		trap_G_COOL_API_DB_AddPreparedStatement((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER,
+		G_COOL_API_DB_AddPreparedStatement((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER,
 			"INSERT INTO users (username,password,created) VALUES (?,?,NOW())");
-		trap_G_COOL_API_DB_PreparedBindString(loginData->username);
-		trap_G_COOL_API_DB_PreparedBindString(loginData->password);
-		trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+		G_COOL_API_DB_PreparedBindString(loginData->username);
+		G_COOL_API_DB_PreparedBindString(loginData->password);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
 	else {
 		static char		cleanUsername[MAX_STRING_CHARS];
 		static char		cleanPassword[MAX_STRING_CHARS];
 		Q_strncpyz(cleanUsername, loginData->username, sizeof(cleanUsername));
 		Q_strncpyz(cleanPassword, loginData->password, sizeof(cleanPassword));
-		if (!trap_G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername)) || !trap_G_COOL_API_DB_EscapeString(cleanPassword, sizeof(cleanPassword))) {
+		if (!G_COOL_API_DB_EscapeString(cleanUsername, sizeof(cleanUsername)) || !G_COOL_API_DB_EscapeString(cleanPassword, sizeof(cleanPassword))) {
 			trap_SendServerCommand(loginData->clientnum, "print \"^1Registration failed (EscapeString failed).\n\"");
 			return;
 		}
@@ -187,7 +187,7 @@ static void G_RegisterContinue(loginRegisterStruct_t* loginData) {
 		request = va("INSERT INTO users (username,password,created) VALUES ('%s','%s',NOW())", cleanUsername, cleanPassword);
 
 		// check if user already exists
-		trap_G_COOL_API_DB_AddRequest((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER, request);
+		G_COOL_API_DB_AddRequest((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER, request);
 	}
 
 }
@@ -196,7 +196,7 @@ static void G_RegisterResult(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData; 
 	gentity_t* ent = NULL;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
 	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
 		Com_Printf("^1Register from client %d failed, user no longer valid.\n", loginData.clientnum);
 		return;
@@ -224,7 +224,7 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	static char password[MAX_STRING_CHARS];
 	gentity_t* ent = NULL;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
 
 	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
 		Com_Printf("^1Login from client %d failed, user no longer valid.\n", loginData.clientnum);
@@ -242,26 +242,26 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 		return;
 	}
 
-	if (!trap_G_COOL_API_DB_NextRow()) {
+	if (!G_COOL_API_DB_NextRow()) {
 		trap_SendServerCommand(loginData.clientnum, "print \"^1Login failed, username not found.\n\"");
 		return;
 	}
-	if (!trap_G_COOL_API_DB_GetString(0, loginData.dbPassword, sizeof(loginData.dbPassword))) {
+	if (!G_COOL_API_DB_GetString(0, loginData.dbPassword, sizeof(loginData.dbPassword))) {
 		trap_SendServerCommand(loginData.clientnum, "print \"^1Login failed, error retrieving password.\n\"");
 		return;
 	}
-	loginData.userFlags = trap_G_COOL_API_DB_GetInt(1);
-	loginData.userId = trap_G_COOL_API_DB_GetInt(2);
+	loginData.userFlags = G_COOL_API_DB_GetInt(1);
+	loginData.userId = G_COOL_API_DB_GetInt(2);
 
 	loginData.followUpType = DBREQUEST_LOGIN;
 
 	if (loginData.needDoubleBcrypt) {
-		trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
 			va("2|%s|%s|%s", BCRYPT_SETTINGS, loginData.dbPassword, loginData.password)
 			, DBREQUESTTYPE_BCRYPT);
 	}
 	else {
-		trap_G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
 			va("1|%s|%s",loginData.dbPassword, loginData.password)
 			, DBREQUESTTYPE_BCRYPT);
 	}
@@ -274,7 +274,7 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	gentity_t* ent = NULL;
 	//evaluatedRunInfo_t eRunInfo;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
+	G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
 
 	if (!(ent = DB_VerifyClient(runData.clientnum, runData.ip))) {
 		Com_Printf("^1Client %d run inserted, user no longer valid.\n", runData.clientnum);
@@ -294,7 +294,7 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 
 	if (coolApi_dbVersion >= 3) {
 		// first query is SET @now = NOW(). skip it.
-		if (!trap_G_COOL_API_DB_GetMoreResults(&affectedRows))
+		if (!G_COOL_API_DB_GetMoreResults(&affectedRows))
 		{
 			trap_SendServerCommand(-1, "print \"^1WTF NO MORE RESULTS\n\"");
 		}
@@ -318,23 +318,23 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	}
 
 
-	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
+	if (coolApi_dbVersion >= 3 && G_COOL_API_DB_GetMoreResults(NULL) && G_COOL_API_DB_NextRow())
 	{
-		if (!trap_G_COOL_API_DB_GetInt(0)) {// SQL result returns amount of faster runs BY OURSELVES on this LB
+		if (!G_COOL_API_DB_GetInt(0)) {// SQL result returns amount of faster runs BY OURSELVES on this LB
 			runData.runInfo.pbStatus |= PB_LB;
 		}
 	}
 
-	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
+	if (coolApi_dbVersion >= 3 && G_COOL_API_DB_GetMoreResults(NULL) && G_COOL_API_DB_NextRow())
 	{
-		runData.runInfo.rankLB = trap_G_COOL_API_DB_GetInt(0) + 1; // SQL result returns amount of faster runs so we add 1 (0 faster runs = #1)
+		runData.runInfo.rankLB = G_COOL_API_DB_GetInt(0) + 1; // SQL result returns amount of faster runs so we add 1 (0 faster runs = #1)
 	}
 
 	// SELECT (UNIX_TIMESTAMP(@now)-3000000000) as unixTimeMinus3bill
 	// subtracting 3 billion cuz no 64 bit support in vm
-	if (coolApi_dbVersion >= 3 && trap_G_COOL_API_DB_GetMoreResults(NULL) && trap_G_COOL_API_DB_NextRow())
+	if (coolApi_dbVersion >= 3 && G_COOL_API_DB_GetMoreResults(NULL) && G_COOL_API_DB_NextRow())
 	{
-		runData.runInfo.unixTimeStampShifted = trap_G_COOL_API_DB_GetInt(0);
+		runData.runInfo.unixTimeStampShifted = G_COOL_API_DB_GetInt(0);
 	}
 
 	PrintRaceTime(&runData.runInfo, qfalse, qtrue,ent);
@@ -345,7 +345,7 @@ static void G_InsertMapDefaultsResult(int status, const char* errorMessage, int 
 	gentity_t* ent = NULL;
 	//evaluatedRunInfo_t eRunInfo;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Map defaults by client %d inserted, user no longer valid.\n", data.clientnum);
@@ -372,7 +372,7 @@ static void G_LoadMapDefaultsResult(int status, const char* errorMessage, int af
 	const char* currentCoursename;
 	//evaluatedRunInfo_t eRunInfo;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
@@ -401,7 +401,7 @@ static void G_LoadMapDefaultsResult(int status, const char* errorMessage, int af
 		return;
 	}
 
-	if (!trap_G_COOL_API_DB_NextRow()) {
+	if (!G_COOL_API_DB_NextRow()) {
 		trap_SendServerCommand(-1, "print \"^1Map defaults load failed; no defaults found.\n\"");
 		level.mapDefaultsLoadFailed = qfalse; // we dont have a defdault so its ok
 		level.mapDefaultsConfirmed = qtrue;
@@ -410,10 +410,10 @@ static void G_LoadMapDefaultsResult(int status, const char* errorMessage, int af
 	else {
 		raceStyle_t rs;
 		rs.movementStyle = MV_JK2;
-		rs.msec = trap_G_COOL_API_DB_GetInt(0);
-		rs.jumpLevel = trap_G_COOL_API_DB_GetInt(1);
-		rs.variant = trap_G_COOL_API_DB_GetInt(2);
-		rs.runFlags = trap_G_COOL_API_DB_GetInt(3);
+		rs.msec = G_COOL_API_DB_GetInt(0);
+		rs.jumpLevel = G_COOL_API_DB_GetInt(1);
+		rs.variant = G_COOL_API_DB_GetInt(2);
+		rs.runFlags = G_COOL_API_DB_GetInt(3);
 		DF_SetMapDefaults(rs);
 		level.mapDefaultsLoadFailed = qfalse;
 		level.mapDefaultsConfirmed = qtrue;
@@ -428,7 +428,7 @@ static void G_SaveCheckpointsResult(int status, const char* errorMessage, int af
 	//evaluatedRunInfo_t eRunInfo;
 	int deleted=0, inserted=0;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d checkpoints saved, user no longer valid.\n", data.clientnum);
@@ -450,7 +450,7 @@ static void G_SaveCheckpointsResult(int status, const char* errorMessage, int af
 
 	if (coolApi_dbVersion >= 3) {
 		// first query is SET @now = NOW(). skip it.
-		if (!trap_G_COOL_API_DB_GetMoreResults(&inserted))
+		if (!G_COOL_API_DB_GetMoreResults(&inserted))
 		{
 			G_SendServerCommand(ent - g_entities, "print \"^1WTF NO MORE RESULTS\n\"",qtrue);
 		}
@@ -468,7 +468,7 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 	vec3_t trEndpos;
 	float yaw;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d checkpoints loaded, user no longer valid.\n", data.clientnum);
@@ -486,11 +486,11 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 		return;
 	}
 
-	while (trap_G_COOL_API_DB_NextRow()) {
-		trap_G_COOL_API_DB_GetFloat(0,&trEndpos[0]);
-		trap_G_COOL_API_DB_GetFloat(1,&trEndpos[1]);
-		trap_G_COOL_API_DB_GetFloat(2,&trEndpos[2]);
-		trap_G_COOL_API_DB_GetFloat(3,&yaw);
+	while (G_COOL_API_DB_NextRow()) {
+		G_COOL_API_DB_GetFloat(0,&trEndpos[0]);
+		G_COOL_API_DB_GetFloat(1,&trEndpos[1]);
+		G_COOL_API_DB_GetFloat(2,&trEndpos[2]);
+		G_COOL_API_DB_GetFloat(3,&yaw);
 		if (!DF_CreateCustomCheckpointFromPos(trEndpos, yaw, ent)) {
 			G_SendServerCommand(ent - g_entities, "print \"^1Checkpoint limit reached. Can't load any more checkpoints.\n\"",qtrue);
 			break;
@@ -536,7 +536,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	static topLeaderBoardEntry_t entries[11][LB_TYPES_COUNT];
 	//evaluatedRunInfo_t eRunInfo;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d run inserted, user no longer valid.\n", lbRequestData.clientnum);
@@ -557,11 +557,11 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 
 	memset(entries, 0, sizeof(entries));
 
-	while (trap_G_COOL_API_DB_NextRow()) {
+	while (G_COOL_API_DB_NextRow()) {
 		int type,userid,rankHere;
 		topLeaderBoardEntry_t* entry;
-		type = trap_G_COOL_API_DB_GetInt(0);
-		userid = trap_G_COOL_API_DB_GetInt(3);
+		type = G_COOL_API_DB_GetInt(0);
+		userid = G_COOL_API_DB_GetInt(3);
 
 		if (type != currentType) {
 			currentType = type;
@@ -576,13 +576,13 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 			Q_strncpyz(entry->username, "!unlogged!", sizeof(entry->username));
 		}
 		else {
-			trap_G_COOL_API_DB_GetString(1, entry->username, sizeof(entry->username));
+			G_COOL_API_DB_GetString(1, entry->username, sizeof(entry->username));
 		}
-		entry->besttime = trap_G_COOL_API_DB_GetInt(2);
-		entry->runFlags = trap_G_COOL_API_DB_GetInt(4);
+		entry->besttime = G_COOL_API_DB_GetInt(2);
+		entry->runFlags = G_COOL_API_DB_GetInt(4);
 		entry->runFlagsDiff = (entry->runFlags ^ level.mapDefaultRaceStyle.runFlags) & entry->runFlags; // show all that are active that are different from default
-		entry->msec = trap_G_COOL_API_DB_GetInt(5);
-		entry->jump = trap_G_COOL_API_DB_GetInt(6);
+		entry->msec = G_COOL_API_DB_GetInt(5);
+		entry->jump = G_COOL_API_DB_GetInt(6);
 		if (userid != -1) {
 			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1#%d %-10s %10s.\n\"", rank, userid == -1 ? "!unlogged!": username, DF_MsToString(besttime)));
 			maxrank = MAX(maxrank, rank);
@@ -652,13 +652,13 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	ClientUserinfoChanged(ent - g_entities);
 
 	// fire and forget, not that important
-	trap_G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_LOGIN_UPDATELASTLOGIN,
+	G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_LOGIN_UPDATELASTLOGIN,
 		va("UPDATE users SET lastlogin=NOW() WHERE id=%d", loginData->userId));
 }
 
 static void G_CreateTableResult(int status, const char* errorMessage) {
 	static referenceSimpleString_t tableName;
-	trap_G_COOL_API_DB_GetReference((byte*)&tableName, sizeof(tableName));
+	G_COOL_API_DB_GetReference((byte*)&tableName, sizeof(tableName));
 	if (status) {
 		Com_Printf("creating table %s failed with status %d and error message %s.\n", tableName.s, status, errorMessage);
 		return;
@@ -668,7 +668,7 @@ static void G_CreateTableResult(int status, const char* errorMessage) {
 }
 static void G_UpdateColumnsResult(int status, const char* errorMessage) {
 	static referenceSimpleString_t tableName;
-	trap_G_COOL_API_DB_GetReference((byte*)&tableName, sizeof(tableName));
+	G_COOL_API_DB_GetReference((byte*)&tableName, sizeof(tableName));
 	if (status) {
 		Com_Printf("updating columns for table %s failed with status %d and error message %s.\n", tableName.s, status, errorMessage);
 		return;
@@ -681,7 +681,7 @@ static void G_PWBCryptReturned(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData;
 	gentity_t* ent;
 
-	trap_G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
 
 	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
 		Com_Printf("^1bcrypt succeeded, but user no longer valid (#2).\n");
@@ -692,8 +692,8 @@ static void G_PWBCryptReturned(int status, const char* errorMessage) {
 		trap_SendServerCommand(loginData.clientnum,va("print \"^1Password bcrypting failed with status %d and error %s.\n\"", status, errorMessage));
 		return;
 	}
-	if (trap_G_COOL_API_DB_NextRow()) {
-		if (!trap_G_COOL_API_DB_GetString(0, loginData.password, sizeof(loginData.password))) {
+	if (G_COOL_API_DB_NextRow()) {
+		if (!G_COOL_API_DB_GetString(0, loginData.password, sizeof(loginData.password))) {
 			trap_SendServerCommand(loginData.clientnum, "print \"^1Failed to get bcrypted password from DB API.\n\"");
 			return;
 		}
@@ -723,7 +723,7 @@ void G_DB_CheckResponses() {
 		int requestType;
 		int status;
 		int affectedRows;
-		while (trap_G_COOL_API_DB_NextResponse(&requestType, &affectedRows, &status, errorMessage, sizeof(errorMessage), NULL, 0)) {
+		while (G_COOL_API_DB_NextResponse(&requestType, &affectedRows, &status, errorMessage, sizeof(errorMessage), NULL, 0)) {
 			switch (requestType) {
 				case DBREQUEST_LOGIN_UPDATELASTLOGIN:
 				default:
@@ -785,9 +785,9 @@ void G_DB_InsertChat(const char* chatText) {
 
 	// save it to db
 	Q_strncpyz(text, chatText, sizeof(text));
-	if (trap_G_COOL_API_DB_EscapeString(text, sizeof(text))) {
+	if (G_COOL_API_DB_EscapeString(text, sizeof(text))) {
 		request = va("INSERT INTO chats (chat,`time`) VALUES ('%s',NOW())", text);
-		trap_G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_CHATSAVE, request);
+		G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_CHATSAVE, request);
 	}
 }
 
@@ -804,7 +804,7 @@ void G_DB_GetChats_f(void) {
 	page = MAX(page,0);
 	first = page*10;
 
-	trap_G_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, va("SELECT id, chat, `time` FROM chats ORDER BY time DESC, id DESC LIMIT %d,10",first));
+	G_COOL_API_DB_AddRequest(NULL,0, DBREQUEST_GETCHATS, va("SELECT id, chat, `time` FROM chats ORDER BY time DESC, id DESC LIMIT %d,10",first));
 }
 */
 void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
@@ -836,29 +836,29 @@ void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
 	data.clientnum = playerent - g_entities;
 	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
 
-	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_SAVECHECKPOINTS,request)) {
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_SAVECHECKPOINTS,request)) {
 		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to save checkpoints.\n\"",qtrue);
 		return;
 	}
 	coursename = DF_GetCourseName();
 
 	// DELETE
-	trap_G_COOL_API_DB_PreparedBindString(coursename);
-	trap_G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
+	G_COOL_API_DB_PreparedBindString(coursename);
+	G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
 
 	// INSERT
 	for (i = 0; i < playerent->client->pers.df_checkpointData.count; i++) {
 		gentity_t* check = g_entities + playerent->client->pers.df_checkpointData.checkpointNumbers[i];
-		trap_G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
-		trap_G_COOL_API_DB_PreparedBindString(coursename);
-		trap_G_COOL_API_DB_PreparedBindInt(i);
-		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[0]);
-		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[1]);
-		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[2]);
-		trap_G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.anglesYaw);
+		G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
+		G_COOL_API_DB_PreparedBindString(coursename);
+		G_COOL_API_DB_PreparedBindInt(i);
+		G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[0]);
+		G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[1]);
+		G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.trEndpos[2]);
+		G_COOL_API_DB_PreparedBindFloat(check->checkpointSeed.anglesYaw);
 	}
 
-	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
 }
 void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 	static checkPointSaveRequestStruct_t data;
@@ -876,31 +876,31 @@ void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 	data.clientnum = playerent - g_entities;
 	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
 
-	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data), DBREQUEST_LOADCHECKPOINTS, "SELECT x,y,z,yaw FROM checkpoints WHERE course=? AND userid=? ORDER BY number ASC")) {
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data), DBREQUEST_LOADCHECKPOINTS, "SELECT x,y,z,yaw FROM checkpoints WHERE course=? AND userid=? ORDER BY number ASC")) {
 		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to load checkpoints.\n\"",qtrue);
 		return;
 	}
 
 	coursename = DF_GetCourseName();
 
-	trap_G_COOL_API_DB_PreparedBindString(coursename);
-	trap_G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
+	G_COOL_API_DB_PreparedBindString(coursename);
+	G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);
 
-	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
 }
 
 static void G_CreateUserTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(%d) UNIQUE NOT NULL, password VARCHAR(64)  NOT NULL, lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED NOT NULL DEFAULT 0)",USERNAME_MAX_LEN);
 	Q_strncpyz(tableName.s, "users", sizeof(tableName.s));
-	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 
 static void G_CreateCheckpointsTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS checkpoints(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, number TINYINT(2) SIGNED NOT NULL, x DOUBLE NOT NULL, y DOUBLE NOT NULL, z DOUBLE NOT NULL, yaw DOUBLE NOT NULL, UNIQUE KEY checkpoint_unique (userid,course,number), INDEX i_user_map (userid,course), INDEX i_number(number))";
 	Q_strncpyz(tableName.s, "checkpoints", sizeof(tableName.s));
-	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 static void G_CreateMapRaceDefaultsTable() {
 	referenceSimpleString_t tableName;
@@ -911,7 +911,7 @@ static void G_CreateMapRaceDefaultsTable() {
 			variant SMALLINT NOT NULL,\
 			runFlags INT NOT NULL)";
 	Q_strncpyz(tableName.s, "mapdefaults", sizeof(tableName.s));
-	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
@@ -999,8 +999,8 @@ static void G_CreateRunsTable() {
 	// - lostMsecCount
 	// - lostCmdsCount
 	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
-	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
-	trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_UPDATECOLUMNS, columnsUpdateRequest);
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_UPDATECOLUMNS, columnsUpdateRequest);
 }
 
 static void G_DB_CreateTables() {
@@ -1094,116 +1094,226 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		
 
 
-	if(!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
+	if(!G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
 		insertOrUpdateRequest)) {
 		trap_SendServerCommand(-1, va("print \"Database connection not available. Run cannot be saved.\n\" dfrunsavefailed %s", DF_RacePrintAppendage(runInfo)));
 		return qfalse;
 	}
 
 	// INSERT PART
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->userId);
-	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->average);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distance);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+	G_COOL_API_DB_PreparedBindInt(runInfo->userId);
+	G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->average);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->distance);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
 
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
-#define RUNFLAGSFUNC(a,b,c,d,e,f) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+#define RUNFLAGSFUNC(a,b,c,d,e,f) G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
 	RUNFLAGS(RUNFLAGSFUNC)
 #undef RUNFLAGSFUNC
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->savePosCount);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
+	G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
+	G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
+	G_COOL_API_DB_PreparedBindInt(runInfo->savePosCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
 
 	// UPDATE PART
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->average);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->average);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distance);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->distance);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // runwhen
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // runwhen
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->savePosCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->savePosCount);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 
 	// SECOND QUERY - SELECT OUR BEST TIME
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->userId);
-	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
-	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
-	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+	G_COOL_API_DB_PreparedBindInt(runInfo->userId);
+	G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
+	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
+	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
 
-	//#define RUNFLAGSFUNC(a,b,c) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
+	//#define RUNFLAGSFUNC(a,b,c) G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
 		//RUNFLAGS(RUNFLAGSFUNC)
-		//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+		//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
 	//#undef RUNFLAGSFUNC
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 
 	// THIRD QUERY - SELECT RANK
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->userId);
-	trap_G_COOL_API_DB_PreparedBindString(runInfo->coursename);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
-	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
-	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
-	trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
+	G_COOL_API_DB_PreparedBindInt(runInfo->userId);
+	G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
+	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
+	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
+	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.variant);
 
-//#define RUNFLAGSFUNC(a,b,c) trap_G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
+//#define RUNFLAGSFUNC(a,b,c) G_COOL_API_DB_PreparedBindInt((int)!!((int)runInfo->raceStyle.runFlags & RFL_ ## b));
 	//RUNFLAGS(RUNFLAGSFUNC)
-	//trap_G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
+	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.runFlags);
 //#undef RUNFLAGSFUNC
 
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
-	trap_G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 
 	//if (coolApi_dbVersion >= 3) {
-		trap_G_COOL_API_DB_PreparedBindInt(runInfo->unixTimeStampShiftedBillionCount);
+		G_COOL_API_DB_PreparedBindInt(runInfo->unixTimeStampShiftedBillionCount);
 	//}
 
-	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
 	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
-	//trap_G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	//G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 	return qtrue;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
+qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	trap_G_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
+qboolean	trap_G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+qboolean	trap_G_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+qboolean	trap_G_COOL_API_DB_NextRow();
+int			trap_G_COOL_API_DB_GetInt(int place);
+void		trap_G_COOL_API_DB_GetFloat(int place, float* value);
+qboolean	trap_G_COOL_API_DB_GetString(int place, char* out, int outSize);
+
+qboolean	trap_G_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request);
+qboolean	trap_G_COOL_API_DB_PreparedBindString(const char* string);
+qboolean	trap_G_COOL_API_DB_PreparedBindFloat(float number);
+qboolean	trap_G_COOL_API_DB_PreparedBindInt(int number);
+qboolean	trap_G_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
+qboolean	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+int			trap_G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
+qboolean	trap_G_COOL_API_DB_PreparedBindNull();
+qboolean	trap_G_COOL_API_DB_GetMoreResults(int* affectedRows);
+
+qboolean	G_COOL_API_DB_EscapeString(char* input, int size) {
+	if (!coolApi_dbVersion) return qfalse;
+	return trap_G_COOL_API_DB_EscapeString(input, size);
+}
+qboolean	G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request) {
+	if (!coolApi_dbVersion) return qfalse;
+	return trap_G_COOL_API_DB_AddRequest( reference, referenceLength, requestType, request);
+}
+qboolean	G_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType){
+	if (coolApi_dbVersion < 2) return qfalse;
+	return trap_G_COOL_API_DB_AddRequestTyped( reference, referenceLength, requestType, request, (int)dbRequestType);
+}
+qboolean	G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength) {
+	if (!coolApi_dbVersion) return qfalse;
+	return trap_G_COOL_API_DB_NextResponse( requestType, affectedRows, status, errorMessage, errorMessageSize, reference, referenceLength);
+}
+qboolean	G_COOL_API_DB_GetReference(byte* reference, int referenceLength) {
+	if (!coolApi_dbVersion) return qfalse;
+	return trap_G_COOL_API_DB_GetReference(reference, referenceLength);
+}
+qboolean	G_COOL_API_DB_NextRow() {
+	if (!coolApi_dbVersion) return qfalse;
+	return trap_G_COOL_API_DB_NextRow();
+}
+int			G_COOL_API_DB_GetInt(int place) {
+	if (!coolApi_dbVersion) return 0;
+	return trap_G_COOL_API_DB_GetInt( place);
+}
+void		G_COOL_API_DB_GetFloat(int place, float* value) {
+	if (!coolApi_dbVersion) {
+		*value = 0;
+		return;
+	}
+	trap_G_COOL_API_DB_GetFloat( place, value);
+}
+qboolean	G_COOL_API_DB_GetString(int place, char* out, int outSize) {
+	if (!coolApi_dbVersion) return qfalse;
+	return trap_G_COOL_API_DB_GetString( place, out, outSize);
+}
+
+// dbApi v3
+
+qboolean	G_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request) {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_AddPreparedStatement( reference, referenceLength, requestType, request);
+}
+qboolean	G_COOL_API_DB_PreparedBindString(const char* string) {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_PreparedBindString( string);
+}
+qboolean	G_COOL_API_DB_PreparedBindFloat(float number) {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_PreparedBindFloat( number);
+}
+qboolean	G_COOL_API_DB_PreparedBindInt(int number) {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_PreparedBindInt( number);
+}
+qboolean	G_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength) {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_PreparedBindBinary( data, dataLength);
+}
+qboolean	G_COOL_API_DB_FinishAndSendPreparedStatement() {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+}
+int			G_COOL_API_DB_GetBinary(int place, byte* out, int outSize) {
+	if (coolApi_dbVersion < 3) return 0;
+	return trap_G_COOL_API_DB_GetBinary( place, out, outSize);
+}
+qboolean	G_COOL_API_DB_PreparedBindNull() {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_PreparedBindNull();
+}
+qboolean	G_COOL_API_DB_GetMoreResults(int* affectedRows) {
+	if (coolApi_dbVersion < 3) return qfalse;
+	return trap_G_COOL_API_DB_GetMoreResults( affectedRows);
+}

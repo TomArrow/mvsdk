@@ -2252,16 +2252,16 @@ void DF_LoadMapDefaults() {
 	memset(&data, 0, sizeof(data));
 	Q_strncpyz(data.course, DF_GetCourseName(), sizeof(data.course));
 
-	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_LOADMAPRACEDEFAULTS,
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_LOADMAPRACEDEFAULTS,
 		"SELECT msec,jump,variant,runFlags FROM mapdefaults WHERE course=?"
 	)) {
 		trap_SendServerCommand(-1, "print \"^1Map defaults could not be loaded. Leaderboard may not display correctly.\n\"");
 		level.mapDefaultsLoadFailed = qtrue;
 		return;
 	}
-	trap_G_COOL_API_DB_PreparedBindString(data.course);
+	G_COOL_API_DB_PreparedBindString(data.course);
 
-	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
 }
 
 void Cmd_DF_MapDefaults_f(gentity_t* ent)
@@ -2332,20 +2332,20 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Run flags", sizeof(data.what));
 
-			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"runFlags=?"
 			);
-			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
+			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindInt(rs.msec);
+			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			G_COOL_API_DB_PreparedBindInt(rs.variant);
+			G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
+			G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+			G_COOL_API_DB_FinishAndSendPreparedStatement();
 		} else if (!Q_stricmp("jump", arg1)) {
 
 			char arg2[8] = { 0 };
@@ -2369,20 +2369,20 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Jump level", sizeof(data.what));
 
-			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"jump=?"
 			);
-			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
+			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindInt(rs.msec);
+			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			G_COOL_API_DB_PreparedBindInt(rs.variant);
+			G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 
-			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+			G_COOL_API_DB_FinishAndSendPreparedStatement();
 		} else if (!Q_stricmp("variant", arg1)) {
 
 			char arg2[8] = { 0 };
@@ -2406,20 +2406,20 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Variant", sizeof(data.what));
 
-			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"variant=?"
 			);
-			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
+			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindInt(rs.msec);
+			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			G_COOL_API_DB_PreparedBindInt(rs.variant);
+			G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
+			G_COOL_API_DB_PreparedBindInt(rs.variant);
 
-			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+			G_COOL_API_DB_FinishAndSendPreparedStatement();
 		} else if (!Q_stricmp("fps", arg1)) {
 
 			char arg2[8] = { 0 };
@@ -2450,20 +2450,20 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Msec", sizeof(data.what));
 
-			trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"msec=?"
 			);
-			trap_G_COOL_API_DB_PreparedBindString(data.course);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.variant);
-			trap_G_COOL_API_DB_PreparedBindInt(rs.runFlags);
+			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindInt(rs.msec);
+			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
+			G_COOL_API_DB_PreparedBindInt(rs.variant);
+			G_COOL_API_DB_PreparedBindInt(rs.runFlags);
 
-			trap_G_COOL_API_DB_PreparedBindInt(rs.msec);
+			G_COOL_API_DB_PreparedBindInt(rs.msec);
 
-			trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
+			G_COOL_API_DB_FinishAndSendPreparedStatement();
 		}
 
 		DF_SetMapDefaults(rs);
