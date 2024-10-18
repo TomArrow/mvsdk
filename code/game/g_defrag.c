@@ -386,12 +386,15 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	qboolean segmented = qfalse;
 	vec3_t interpolationDisplacement;
 	gclient_t* cl;
+	mainLeaderboardType_t lbType;
 	int resposCountSave, savePosCountSave;
 
 	// Check client
 	if (!activator->client) return;
 
 	cl = activator->client;
+
+	lbType = classifyLeaderBoard(&cl->sess.raceStyle, &level.mapDefaultRaceStyle);
 
 	if (!cl->sess.raceMode 
 		|| cl->ps.pm_type != PM_NORMAL 
@@ -404,31 +407,31 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		) return;
 
 	if (cl->sess.raceStateInvalidated) {
-		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before running.\n\"");
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
 		return;
 	}
 	if (cl->sess.raceStateSoftInvalidated) {
 		DF_RaceStateInvalidated(activator,qfalse);
-		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Your race state is soft-invalidated.\nPlease respawn before running.\n\"");
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
 		return;
 	}
 
 	segmented = cl->sess.raceStyle.runFlags & RFL_SEGMENTED;
 
 	if (segmented && cl->pers.segmented.state != SEG_RECORDING && cl->pers.segmented.state != SEG_REPLAY) {
-		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Segmented run in a faulty state. Please respawn and try again.\n\"");
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run in a faulty state. Please respawn and try again.",qfalse,qtrue,qtrue);
 		DF_RaceStateInvalidated(activator, qfalse);
 		return;
 	}
 	else if (segmented && cl->pers.segmented.state != SEG_REPLAY) {
 
 		if (segmented && cl->pers.segmented.msecProgress > 5000) {
-			trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Segmented run pre-record is over 5 seconds. Please respawn and try again.\n\"");
+			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is over 5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse);
 			DF_RaceStateInvalidated(activator, qfalse);
 			return;
 		}
 		else if (segmented && cl->pers.segmented.msecProgress < 500) {
-			trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.\n\"");
+			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse);
 			DF_RaceStateInvalidated(activator, qfalse);
 			return;
 		}
@@ -438,7 +441,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
-		trap_SendServerCommand(activator - g_entities, "cp \"^1Warning:\n^7No valid pre-pmove info.\nPlease restart.\n\"");
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7No valid pre-pmove info. Please restart.",qfalse,qtrue,qfalse);
 		return;
 	}
 	else {
@@ -466,11 +469,14 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	memset(&cl->pers.raceDropped,0,sizeof(cl->pers.raceDropped)); // reset info aabout packets dropped due to wrong fps timing
 
-	if (segmented && level.nonDeterministicEntities) {
-		trap_SendServerCommand(activator - g_entities, va("cp \"Race timer started!\n^1Warning: ^7Map has %i non-deterministic\nentities. Replay/run may fail.\"", level.nonDeterministicEntities));
+	if (!cl->sess.login.loggedIn) {
+		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O', level.nonDeterministicEntities), qfalse, qtrue, qfalse);
+	}
+	else if (segmented && level.nonDeterministicEntities) {
+		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started! ^1Warning: ^7Map has %i non-deterministic entities. Replay/run may fail.", lbType == LB_MAIN ? '7' : 'O', level.nonDeterministicEntities),qfalse, qtrue,qfalse);
 	}
 	else {
-		trap_SendServerCommand(activator - g_entities, "cp \"Race timer started!\"");
+		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started!", lbType == LB_MAIN ? '7' : 'O'),qfalse,qtrue,qfalse);
 	}
 }
 
@@ -849,10 +855,10 @@ void DF_StealStyle(gentity_t* playerent) {
 	}
 
 	if (sourcePlayerEnt->client->sess.raceStyle.msec > 0 && sourcePlayerEnt->client->sess.raceStyle.msec != tmpMsec) {
-		trap_SendServerCommand(playerent - g_entities, va("print \"Style stolen. You must manually set your com_physicsFps to %d.\n\"",(1000/ sourcePlayerEnt->client->sess.raceStyle.msec)));
+		G_SendServerCommand(playerent - g_entities, va("print \"Style stolen. You must manually set your com_physicsFps to %d.\n\"",(1000/ sourcePlayerEnt->client->sess.raceStyle.msec)),qtrue);
 	}
 	else {
-		trap_SendServerCommand(playerent - g_entities, "print \"Style stolen.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"Style stolen.\n\"",qtrue);
 	}
 	playerent->client->sess.raceStyle = sourcePlayerEnt->client->sess.raceStyle;
 	playerent->client->sess.raceStyle.msec = tmpMsec;
@@ -880,11 +886,11 @@ void DF_StealSpawn(gentity_t* playerent) {
 	playerent->client->pers.savedSpawnUsed = qtrue;
 
 	if (memcmp(&playerent->client->sess.raceStyle, &sourcePlayerEnt->client->sess.raceStyle,sizeof(playerent->client->sess.raceStyle))) {
-		trap_SendServerCommand(playerent - g_entities, "print \"Spawn stolen. Racestyle differs - trying to steal racestyle too.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"Spawn stolen. Racestyle differs - trying to steal racestyle too.\n\"",qtrue);
 		DF_StealStyle(playerent);
 	}
 	else {
-		trap_SendServerCommand(playerent - g_entities, "print \"Spawn stolen.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"Spawn stolen.\n\"",qtrue);
 	}
 
 }
@@ -909,10 +915,10 @@ void DF_StealPos(gentity_t* playerent) {
 	}
 
 	if ((sourcePlayerEnt->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && sourcePlayerEnt->client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS) {
-		trap_SendServerCommand(playerent - g_entities, "print \"Saved position stolen. Note that the specified client is in segmented race mode and segmented savepos positions cannot be stolen, so you may have gotten a different position than you wanted.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"Saved position stolen. Note that the specified client is in segmented race mode and segmented savepos positions cannot be stolen, so you may have gotten a different position than you wanted.\n\"",qtrue);
 	}
 	else {
-		trap_SendServerCommand(playerent - g_entities, "print \"Saved position stolen.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"Saved position stolen.\n\"",qtrue);
 	}
 
 	playerent->client->pers.savedPosition = sourcePlayerEnt->client->pers.savedPosition;
@@ -940,16 +946,16 @@ void DF_StealCheckpoints(gentity_t* playerent) {
 				stolenChecks++;
 			}
 			else {
-				trap_SendServerCommand(playerent - g_entities, "print \"^1Checkpoint limit reached. Can't steal or generate any more checkpoints.\n\"");
+				G_SendServerCommand(playerent - g_entities, "print \"^1Checkpoint limit reached. Can't steal or generate any more checkpoints.\n\"",qtrue);
 				break;
 			}
 		}
 	}
 	if (stolenChecks) {
-		trap_SendServerCommand(playerent - g_entities, va("print \"%d checkpoints stolen.\n\"",stolenChecks));
+		G_SendServerCommand(playerent - g_entities, va("print \"%d checkpoints stolen.\n\"",stolenChecks),qtrue);
 	}
 	else {
-		trap_SendServerCommand(playerent - g_entities, "print \"^1No checkpoints stolen.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"^1No checkpoints stolen.\n\"",qtrue);
 	}
 
 }
@@ -1163,6 +1169,9 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		
 
 		trap_SendServerCommand(-1, va("print \"%s\n\" %s %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
+
+		if(ent && !preliminary)
+			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 	}
 	else if (runInfo->rankLB != -1) {
 
@@ -1188,6 +1197,9 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 					}
 				}
 			}
+
+			if(ent && !preliminary)
+				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 		}
 		else if ((runInfo->pbStatus & PB_LB)) {
 			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i\n",
@@ -1202,11 +1214,19 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				runInfo->userId == -1 ? "would be " : "is now", 
 				runInfo->rankLB), 
 				sizeof(messageStr));
-			if (runInfo->rankLB <= 10 && runInfo->lbType == LB_MAIN) {
-				if (ent) {
-					G_ScreenShake(vec3_origin, ent, 5.0f, 800, qfalse);
-				}
+			if (runInfo->rankLB <= 10 && runInfo->lbType == LB_MAIN && ent && !preliminary) {
+				G_ScreenShake(vec3_origin, ent, 5.0f, 800, qfalse);
+				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 			}
+			if (runInfo->rankLB <= 10 && ent && !preliminary) {
+				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+			}
+			else if(ent && !preliminary){
+				G_CenterPrint(ent - g_entities, 3, va("^5%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+			}
+		}
+		else if(ent && !preliminary){
+			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 		}
 
 		/*if (global_newRank > 0) { //Print global rank increased, global score added
@@ -1375,7 +1395,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
 	gclient_t* cl;
 	int	timeLast, timeBest,newRaceBestTime, lessTime = 0;
-	char timeLastStr[32], timeBestStr[32];
+	char timeLastStr[32];// , timeBestStr[32];
 	int warningFlags = 0;
 	qboolean isInserting = qfalse;
 	vec3_t interpolationDisplacement;
@@ -1437,7 +1457,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 
 	Q_strncpyz(timeLastStr, DF_MsToString(timeLast), sizeof(timeLastStr));
-	Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
+	//Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
 
 	if ((cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state != SEG_REPLAY) {
 		//trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo))); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username
@@ -1469,7 +1489,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//if (timeLast < timeBest) G_Sound(activator, CHAN_AUTO, G_SoundIndex("sound/movers/sec_panel_pass")); // TODO ok but lets precache it?
 
 	// Show info
-	trap_SendServerCommand(activator - g_entities, "cp \"Race timer finished!\"");
+	//G_CenterPrint(activator - g_entities,3, "Race timer finished!",qfalse,qtrue,qfalse);
 
 	// Update timers
 	//cl->pers.raceLastTime = timeLast;
@@ -1529,7 +1549,7 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	timeCheck = activator->client->ps.commandTime - lessTime - activator->client->pers.raceStartCommandTime;
 
 	// Show info
-	trap_SendServerCommand(activator - g_entities, va("cp \"Checkpoint!\n^3%s\"", DF_MsToString(timeCheck)));
+	G_CenterPrint(activator - g_entities,3, va("Checkpoint!\n^3%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
 	activator->client->pers.raceLastCheckpointTime = nowTime;
 }
 
@@ -1747,12 +1767,12 @@ void Cmd_Race_f(gentity_t* ent)
 		//ent->s.weapon = WP_SABER; //Dont drop our weapon
 		//Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
 		DF_SetRaceMode(ent, qfalse);
-		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled off.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled off.\n\"",qtrue);
 	}
 	else {
 		//ent->client->sess.raceMode = qtrue;
 		DF_SetRaceMode(ent, qtrue);
-		trap_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled on.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled on.\n\"",qtrue);
 	}
 
 
@@ -1810,7 +1830,8 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	memset(&ent->client->pers.stats, 0, sizeof(ent->client->pers.stats));
 
 	if (wasReset && print)
-		trap_SendServerCommand(ent - g_entities, "cp \"Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n\"");
+		G_CenterPrint(ent - g_entities,3, "Timer reset!",qfalse,qtrue,qfalse);
+		//G_CenterPrint(ent - g_entities,3, "Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n",qfalse,qtrue,qfalse);
 }
 
 void DF_ResetSegmentedRun(gentity_t* ent) {
@@ -1897,10 +1918,10 @@ void Cmd_JumpChange_f(gentity_t* ent)
 		DF_RaceStateInvalidated(ent, qtrue);
 		//DF_InvalidateSpawn(ent);
 		if (ent->client->pers.raceStartCommandTime) {
-			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i): timer reset.\n\"", levelint));
+			G_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i): timer reset.\n\"", levelint),qtrue);
 		}
 		else
-			trap_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i).\n\"", levelint));
+			G_SendServerCommand(ent - g_entities, va("print \"Jumplevel updated (%i).\n\"", levelint),qtrue);
 	}
 	else
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /jump <level>\n\"");
@@ -2466,7 +2487,7 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		const uint32_t mask = allowedRunFlags & ((1 << MAX_RUN_FLAGS) - 1);
 
 		if (ent->client->pers.raceStartCommandTime) {
-			trap_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"",qtrue);
 			return;
 		}
 
@@ -2477,24 +2498,24 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 
 		//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
 		if (~allowedRunFlags & flag) {
-			trap_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1));
+			G_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
 			return;
 		}
 
 		if (flag & RFL_SEGMENTED) {
 
 			if (level.nonDeterministicEntities) {
-				trap_SendServerCommand(ent - g_entities, va("print \"Warning: Map contains %i potentially non-deterministic entities. Segmented runs may not replay correctly and thus not count.\n\"", level.nonDeterministicEntities));
+				G_SendServerCommand(ent - g_entities, va("print \"Warning: Map contains %i potentially non-deterministic entities. Segmented runs may not replay correctly and thus not count.\n\"", level.nonDeterministicEntities),qtrue);
 			}
 
 			if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) {
-				trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with the UserCmdStore coolAPI feature. Please use the appropriate server engine.\n\"", index2, MAX_RUN_FLAGS - 1));
+				G_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with the UserCmdStore coolAPI feature. Please use the appropriate server engine.\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
 				return;
 			}
 			if (jk2version != VERSION_1_04) {
 				// TODO is this still true?
 				// We need the JK2MV 1.04 API because we need to send playerstates from game to engine and MV playerstate conversion would mess us up.
-				trap_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"", index2, MAX_RUN_FLAGS - 1));
+				G_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
 				return;
 			}
 		}
@@ -2518,8 +2539,8 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			//DF_InvalidateSpawn(ent);
 		}
 
-		trap_SendServerCommand(ent - g_entities, va("print \"^7%s %s^7\n\"", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
-			? "^2Enabled" : "^1Disabled")));
+		G_SendServerCommand(ent - g_entities, va("print \"^7%s %s^7\n\"", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
+			? "^2Enabled" : "^1Disabled")),qtrue);
 	}
 
 	{
@@ -2574,17 +2595,17 @@ void Cmd_ToggleFPS_f(gentity_t* ent)
 	}
 
 	if (ent->client->pers.raceStartCommandTime) {
-		trap_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"",qtrue);
 		return;
 	}
 
 	if (ent->client->sess.raceStyle.msec != -1) {
 		ent->client->sess.raceStyle.msec = -1;
-		trap_SendServerCommand(ent - g_entities, "print \"^7Toggle mode activated.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^7Toggle mode activated.\n\"",qtrue);
 	}
 	else {
 		ent->client->sess.raceStyle.msec = 0;
-		trap_SendServerCommand(ent - g_entities, "print \"^7Toggle mode disabled.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^7Toggle mode disabled.\n\"",qtrue);
 	}
 
 	ResetPhysicsFpsStuff(ent);
@@ -2602,17 +2623,17 @@ void Cmd_FloatPhysics_f(gentity_t* ent)
 	}
 
 	if (ent->client->pers.raceStartCommandTime) {
-		trap_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^7Cannot change race settings during a run.\n\"",qtrue);
 		return;
 	}
 
 	if (ent->client->sess.raceStyle.msec != -2) {
 		ent->client->sess.raceStyle.msec = -2;
-		trap_SendServerCommand(ent - g_entities, "print \"^7Float physics mode activated.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^7Float physics mode activated.\n\"",qtrue);
 	}
 	else {
 		ent->client->sess.raceStyle.msec = 0;
-		trap_SendServerCommand(ent - g_entities, "print \"^7Float physics mode disabled.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^7Float physics mode disabled.\n\"",qtrue);
 	}
 	ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 
@@ -2847,7 +2868,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	if (cl->pers.segmented.state == SEG_REPLAY) {
 		if (resposRequested || saveposRequested) {
 			// TODO we shouldnt even get here. commands from client should be blocked during a replay.
-			trap_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available during the replay of a run.\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available during the replay of a run.\n\"",qtrue);
 		}
 		return;
 	}
@@ -2859,7 +2880,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		// Not currently in a run.
 		// Maybe reset recording of packets.
 		if (resposRequested || saveposRequested) {
-			trap_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available in segmented run mode outside of an active run.\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available in segmented run mode outside of an active run.\n\"",qtrue);
 		}
 		if (!VectorLength(cl->ps.velocity) && !ucmdPtr->forwardmove && !ucmdPtr->rightmove && !ucmdPtr->upmove && cl->ps.groundEntityNum == ENTITYNUM_WORLD || cl->pers.segmented.state < SEG_RECORDING 
 			|| cl->pers.segmented.anglesDiffAccum[0] || cl->pers.segmented.anglesDiffAccum[1] || cl->pers.segmented.anglesDiffAccum[2] // just a sanity check
@@ -2906,15 +2927,15 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	}
 
 	if (resposRequested && saveposRequested) {
-		trap_SendServerCommand(ent - g_entities, "print \"^1Respos and savepos cannot be used both on the same frame during a segmented run.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^1Respos and savepos cannot be used both on the same frame during a segmented run.\n\"",qtrue);
 	}
 	else if (cl->pers.raceStartCommandTime >= cl->ps.commandTime && (saveposRequested || resposRequested)) {
-		trap_SendServerCommand(ent - g_entities, "print \"^1Respos and savepos cannot be used on the first frame of a segmented run.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"^1Respos and savepos cannot be used on the first frame of a segmented run.\n\"",qtrue);
 	}
 	else if (saveposRequested) {
 
 		if (cl->pers.segmented.state == SEG_RECORDING_INVALIDATED) {
-			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use savepos. Your segmented run was interrupted, e.g. by a death. Please respos.\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"^1Cannot use savepos. Your segmented run was interrupted, e.g. by a death. Please respos.\n\"",qtrue);
 		}
 		else {
 			SavePosition(ent, &cl->pers.segmented.lastPos);
@@ -2927,11 +2948,11 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	}
 	else if(resposRequested) {
 		if (cl->pers.segmented.state < SEG_RECORDING_HAVELASTPOS) {
-			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos. No past segmented run position found.\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos. No past segmented run position found.\n\"",qtrue);
 		}
 		else if (cl->pers.segmented.state >= SEG_REPLAY) {
 			// THIS SHOULD NEVER HAPPEN
-			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos during replay. WTF HOW DID WE GET HERE.\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos during replay. WTF HOW DID WE GET HERE.\n\"",qtrue);
 		}
 		else {
 
@@ -3017,20 +3038,20 @@ void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs) {
 			sess->raceStyle.runFlags = newRunFlags;
 			sess->raceStyle.variant = newRs->variant;
 
-			trap_SendServerCommand(ent - g_entities, "cp \"^2Map defaults loaded/\nchanged. Run reset.\"");
-			trap_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed. Run reset.\n\"");
+			G_CenterPrint(ent - g_entities,3, "^2Map defaults loaded/changed. Run reset.",qfalse,qtrue,qtrue);
+			G_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed. Run reset.\n\"",qtrue);
 		}
-		else {
+		else if(sess->spectatorState != SPECTATOR_FOLLOW || sess->spectatorClient < 0) {
 
-			trap_SendServerCommand(ent - g_entities, "cp \"^2Map defaults loaded/\nchanged.\"");
-			trap_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"");
+			G_CenterPrint(ent - g_entities,3, "^2Map defaults loaded/changed.", qfalse,qtrue,qtrue);
+			G_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"", qtrue);
 		}
 
 
 	}
-	else {
-		trap_SendServerCommand(ent - g_entities, "cp \"^2Map defaults loaded/\nchanged.\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"");
+	else if (sess->spectatorState != SPECTATOR_FOLLOW || sess->spectatorClient < 0) {
+		G_CenterPrint(ent - g_entities, 3,"^2Map defaults loaded/changed.", qfalse,qtrue,qtrue);
+		G_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"", qtrue);
 	}
 
 	sess->mapStyleBaseline = *newRs;
@@ -3093,7 +3114,7 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 
 	if (newStyle >= 0) {
 
-		trap_SendServerCommand(ent - g_entities, "print \"Movement style updated.\n\"");
+		G_SendServerCommand(ent - g_entities, "print \"Movement style updated.\n\"",qtrue);
 
 
 		ent->client->sess.raceStyle.movementStyle = newStyle;
@@ -3148,17 +3169,17 @@ void DF_SaveSpawn(gentity_t* ent) {
 	}
 
 	if (ent->client->ps.fd.forcePowersActive) {
-		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7You must not have any force powers activated to use this command.\n\"");
+		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7You must not have any force powers activated to save spawn.",qfalse,qtrue,qtrue);
 		return;
 	}
 
 	if (ent->client->sess.raceStateInvalidated) {
-		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7Your race state is invalidated.\nPlease respawn before saving spawn.\n\"");
+		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before saving spawn.",qfalse,qtrue,qtrue);
 		return;
 	}
 	
 	if (ent->client->ps.velocity[0] || ent->client->ps.velocity[1] || ent->client->ps.velocity[2] || ent->client->ps.groundEntityNum != ENTITYNUM_WORLD) {
-		trap_SendServerCommand(ent - g_entities, va("cp \"^1Warning:\n^7Cannot save spawn.\nPlease stand still. \n(gen %d,\n v0 %f\n, v1 %f\n, v2 %f)\n\"", ent->client->ps.groundEntityNum, ent->client->ps.velocity[0], ent->client->ps.velocity[1], ent->client->ps.velocity[2]));
+		G_CenterPrint(ent - g_entities,3, va("^1Warning: ^7Cannot save spawn. Please stand still. (gen %d, v0 %f, v1 %f, v2 %f)", ent->client->ps.groundEntityNum, ent->client->ps.velocity[0], ent->client->ps.velocity[1], ent->client->ps.velocity[2]),qfalse,qtrue,qtrue);
 		return;
 	}
 
@@ -3166,14 +3187,14 @@ void DF_SaveSpawn(gentity_t* ent) {
 	ent->client->pers.savedSpawnUsed = qtrue;
 	ent->client->pers.savedSpawnRaceStyle = ent->client->sess.raceStyle;
 
-	trap_SendServerCommand(ent - g_entities, va("print \"Spawnpoint saved at %f %f %f (angles %f %f %f).\n\"",
+	G_SendServerCommand(ent - g_entities, va("print \"Spawnpoint saved at %f %f %f (angles %f %f %f).\n\"",
 		ent->client->ps.origin[0],
 		ent->client->ps.origin[1],
 		ent->client->ps.origin[2],
 		ent->client->ps.viewangles[0],
 		ent->client->ps.viewangles[1],
 		ent->client->ps.viewangles[2]
-	));
+	),qtrue);
 }
 
 void DF_ResetSpawn(gentity_t* ent) {
@@ -3186,5 +3207,5 @@ void DF_ResetSpawn(gentity_t* ent) {
 
 	ent->client->pers.savedSpawnUsed = qfalse;
 
-	trap_SendServerCommand(ent - g_entities, "print \"Spawnpoint has been reset.\n\"");
+	G_SendServerCommand(ent - g_entities, "print \"Spawnpoint has been reset.\n\"",qtrue);
 }

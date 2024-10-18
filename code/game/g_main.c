@@ -2784,8 +2784,8 @@ void G_RunFrame( int levelTime ) {
 	G_DB_CheckResponses();
 
 	if (g_defrag.integer && !level.mapDefaultsConfirmed && !level.mapDefaultsLoadFailed && (level.time > (level.mapDefaultsProblemLastAnnounced+1000)|| level.time < level.mapDefaultsProblemLastAnnounced)) {
-		trap_SendServerCommand(-1,"cp \"^1Loading map defaults...\"");
-		trap_SendServerCommand(-1,"print \"^1Loading map defaults...\n\"");
+		G_CenterPrint(-1,3,"^1Loading map defaults...",qfalse,qfalse,qtrue);
+		//trap_SendServerCommand(-1,"print \"^1Loading map defaults...\n\"");
 		level.mapDefaultsProblemLastAnnounced = level.time;
 	}
 

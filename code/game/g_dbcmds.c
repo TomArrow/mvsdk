@@ -363,7 +363,7 @@ static void G_InsertMapDefaultsResult(int status, const char* errorMessage, int 
 		return;
 	}
 
-	trap_SendServerCommand(ent - g_entities, va("print \"^1Map defaults (%s) for %s were updated\n\"",data.what,data.course));
+	trap_SendServerCommand(-1, va("print \"^1Map defaults (%s) for %s were updated\n\"",data.what,data.course));
 
 }
 
@@ -438,11 +438,11 @@ static void G_SaveCheckpointsResult(int status, const char* errorMessage, int af
 	if (status == 1146) {
 		// table doesn't exist. create it.
 		G_CreateCheckpointsTable();
-		trap_SendServerCommand(ent-g_entities,"print \"^1Checkpoint saving failed due to checkpoints table not existing. Attempting to create. Please try again shortly.\n\"");
+		G_SendServerCommand(ent-g_entities,"print \"^1Checkpoint saving failed due to checkpoints table not existing. Attempting to create. Please try again shortly.\n\"",qtrue);
 		return;
 	}
 	else if (status) {
-		trap_SendServerCommand(ent - g_entities, va("print \"^1Checkpoint saving failed with status %d and error message %s.\n\"", status, errorMessage));
+		G_SendServerCommand(ent - g_entities, va("print \"^1Checkpoint saving failed with status %d and error message %s.\n\"", status, errorMessage),qtrue);
 		return;
 	}
 
@@ -452,11 +452,11 @@ static void G_SaveCheckpointsResult(int status, const char* errorMessage, int af
 		// first query is SET @now = NOW(). skip it.
 		if (!trap_G_COOL_API_DB_GetMoreResults(&inserted))
 		{
-			trap_SendServerCommand(ent - g_entities, "print \"^1WTF NO MORE RESULTS\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"^1WTF NO MORE RESULTS\n\"",qtrue);
 		}
 	}
 
-	trap_SendServerCommand(ent - g_entities, va("print \"^2%d checkpoints saved to user account, %d old saved checkpoints deleted.\n\"", inserted, deleted));
+	G_SendServerCommand(ent - g_entities, va("print \"^2%d checkpoints saved to user account, %d old saved checkpoints deleted.\n\"", inserted, deleted),qtrue);
 
 }
 qboolean DF_CreateCustomCheckpointFromPos(vec3_t trEndpos, float anglesYaw, gentity_t* playerent);
@@ -478,11 +478,11 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 	if (status == 1146) {
 		// table doesn't exist. create it.
 		G_CreateCheckpointsTable();
-		trap_SendServerCommand(ent-g_entities,"print \"^1Checkpoint loading failed due to checkpoints table not existing. Attempting to create. Please try again shortly.\n\"");
+		G_SendServerCommand(ent-g_entities,"print \"^1Checkpoint loading failed due to checkpoints table not existing. Attempting to create. Please try again shortly.\n\"",qtrue);
 		return;
 	}
 	else if (status) {
-		trap_SendServerCommand(ent - g_entities, va("print \"^1Checkpoint loading failed with status %d and error message %s.\n\"", status, errorMessage));
+		G_SendServerCommand(ent - g_entities, va("print \"^1Checkpoint loading failed with status %d and error message %s.\n\"", status, errorMessage),qtrue);
 		return;
 	}
 
@@ -492,7 +492,7 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 		trap_G_COOL_API_DB_GetFloat(2,&trEndpos[2]);
 		trap_G_COOL_API_DB_GetFloat(3,&yaw);
 		if (!DF_CreateCustomCheckpointFromPos(trEndpos, yaw, ent)) {
-			trap_SendServerCommand(ent - g_entities, "print \"^1Checkpoint limit reached. Can't load any more checkpoints.\n\"");
+			G_SendServerCommand(ent - g_entities, "print \"^1Checkpoint limit reached. Can't load any more checkpoints.\n\"",qtrue);
 			break;
 		}
 		else {
@@ -500,7 +500,7 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 		}
 	}
 
-	trap_SendServerCommand(ent - g_entities, va("print \"^2%d checkpoints loaded from user account.\n\"", loaded));
+	G_SendServerCommand(ent - g_entities, va("print \"^2%d checkpoints loaded from user account.\n\"", loaded),qtrue);
 
 }
 
@@ -647,6 +647,7 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	client->sess.login.loggedIn = qtrue;
 
 	trap_SendServerCommand(loginData->clientnum, va("print \"^2Successfully logged in as '%s'.\n\"",loginData->username));
+	//trap_SendServerCommand(-1, va("print \"^2%s ^7logged in as '%s'.\n\"",client ? client->pers.netname : "", loginData->username));
 
 	ClientUserinfoChanged(ent - g_entities);
 
@@ -814,15 +815,15 @@ void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
 	static checkPointSaveRequestStruct_t data;
 	int i;
 	if (coolApi_dbVersion < 3) {
-		trap_SendServerCommand(playerent-g_entities,"print \"DB version too low to save checkpoints.\n\"");
+		G_SendServerCommand(playerent-g_entities,"print \"DB version too low to save checkpoints.\n\"",qtrue);
 		return;
 	}
 	if (!playerent->client->pers.df_checkpointData.count) {
-		trap_SendServerCommand(playerent-g_entities,"print \"No checkpoints found for saving.\n\"");
+		G_SendServerCommand(playerent-g_entities,"print \"No checkpoints found for saving.\n\"",qtrue);
 		return;
 	}
 	if (!playerent->client->sess.login.loggedIn) {
-		trap_SendServerCommand(playerent-g_entities,"print \"Can't save checkpoints unless logged in.\n\"");
+		G_SendServerCommand(playerent-g_entities,"print \"Can't save checkpoints unless logged in.\n\"",qtrue);
 		return;
 	}
 	request[0] = 0;
@@ -836,7 +837,7 @@ void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
 	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
 
 	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_SAVECHECKPOINTS,request)) {
-		trap_SendServerCommand(playerent - g_entities, "print \"DB connection not available to save checkpoints.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to save checkpoints.\n\"",qtrue);
 		return;
 	}
 	coursename = DF_GetCourseName();
@@ -864,11 +865,11 @@ void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 	int i;
 	const char* coursename = NULL;
 	if (coolApi_dbVersion < 3) {
-		trap_SendServerCommand(playerent-g_entities,"print \"DB version too low to load checkpoints.\n\"");
+		G_SendServerCommand(playerent-g_entities,"print \"DB version too low to load checkpoints.\n\"",qtrue);
 		return;
 	}
 	if (!playerent->client->sess.login.loggedIn) {
-		trap_SendServerCommand(playerent-g_entities,"print \"Can't load checkpoints unless logged in.\n\"");
+		G_SendServerCommand(playerent-g_entities,"print \"Can't load checkpoints unless logged in.\n\"",qtrue);
 		return;
 	}
 	memset(&data, 0, sizeof(data));
@@ -876,7 +877,7 @@ void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
 
 	if (!trap_G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data), DBREQUEST_LOADCHECKPOINTS, "SELECT x,y,z,yaw FROM checkpoints WHERE course=? AND userid=? ORDER BY number ASC")) {
-		trap_SendServerCommand(playerent - g_entities, "print \"DB connection not available to load checkpoints.\n\"");
+		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to load checkpoints.\n\"",qtrue);
 		return;
 	}
 

@@ -240,7 +240,7 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 		other->client->invulnerableTimer = LEVELTIME(other->client) + g_spawnInvulnerability.integer;
 	}
 
-	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")), qtrue);
+	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")), qtrue, qfalse,qtrue);
 
 	other->client->ps.isJediMaster = qtrue;
 	other->client->ps.saberIndex = self->s.number;
@@ -2020,7 +2020,7 @@ void ClientSpawn(gentity_t *ent) {
 	useSavedSpawn = raceSpawnPossible && !inSegmentedRun && !memcmp(&client->sess.raceStyle, &client->pers.savedSpawnRaceStyle, sizeof(client->sess.raceStyle));
 
 	if (raceSpawnPossible && !useSavedSpawn && !inSegmentedRun) {
-		trap_SendServerCommand(ent - g_entities, "cp \"^1Warning:\n^7Your spawn point is not valid\nfor your changed race settings.\n\"");
+		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your spawn point is not valid for your changed race settings.",qfalse,qtrue,qtrue);
 	}
 
 	// find a spawn point
@@ -2650,15 +2650,35 @@ void ClientDisconnect( int clientNum ) {
 	G_ClearClientLog(clientNum);
 }
 
+void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers) {
+	int i;
+	gentity_t* other;
+	trap_SendServerCommand(targetnum, cmd);
+	if (targetnum == -1 || !alsoFollowers) {
+		return;
+	}
+	
+	for (i = 0; i < level.maxclients; i++) {
+		other = g_entities + i;
+		if (!other->client || other->client->sess.spectatorState != SPECTATOR_FOLLOW || other->client->sess.spectatorClient != targetnum) continue; // can !other->client happen? no idea lazy to think about it.
+		trap_SendServerCommand(i, cmd);
+	}
+}
+
 #define MAX_CLIENT_CENTERPRINT_LINELENGTH 50
 #define MAX_CLIENT_CENTERPRINT_LENGTH 1024
-void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag )
+void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint )
 {
+	int len = strlen(message);
 	if (printInDefrag && g_defrag.integer) {
-		trap_SendServerCommand(targetNum, va("print \"%s\"", message));
+		G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
 	}
-	else if ( !autoLineWraps )
-		trap_SendServerCommand( targetNum, va("cp \"%s\"", message) );
+	else if (!autoLineWraps || len <= MAX_CLIENT_CENTERPRINT_LINELENGTH) {
+		if (alwaysPrint) {
+			G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+		}
+		G_SendServerCommand(targetNum, va("cp \"%s\"", message), alsoFollowers);
+	}
 	else
 	{
 		char newMessage[MAX_CLIENT_CENTERPRINT_LENGTH];
@@ -2674,9 +2694,13 @@ void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qbool
 		int reset;
 		int isMultiLang;
 
+		if (alwaysPrint) {
+			G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+		}
+
 		*newMessage = 0;
 
-		while ( *lineStart && (size_t)(lineStart-message) < strlen(message) )
+		while ( *lineStart && (size_t)(lineStart-message) < len)
 		{
 			if ( *newMessage ) Q_strcat( newMessage, sizeof(newMessage), "\n" );
 
@@ -2791,7 +2815,7 @@ void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qbool
 			lineStart = lineEnd + 1;
 			lineEnd = lineStart;
 		}
-		trap_SendServerCommand( targetNum, va("cp \"%s\"", newMessage) );
+		G_SendServerCommand( targetNum, va("cp \"%s\"", newMessage), alsoFollowers );
 	}
 }
 

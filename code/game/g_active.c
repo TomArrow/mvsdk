@@ -846,7 +846,7 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
 		}
 		if ( level.time > client->inactivityTime - 10000 && !client->inactivityWarning ) {
 			client->inactivityWarning = qtrue;
-			trap_SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\n\"" );
+			G_SendServerCommand( client - level.clients, "cp \"Ten seconds until inactivity drop!\n\"" ,qtrue);
 		}
 	}
 	return qtrue;
@@ -967,7 +967,7 @@ static qboolean ClientCheckNotifyPhysicsFps(gentity_t* ent) {
 			return qfalse; // Don't spam. Once every 1 second is enough to stay constant on the screen of the client
 		}
 		else {
-			trap_SendServerCommand(client - level.clients, notification);
+			G_SendServerCommand(client - level.clients, notification,qtrue);
 			client->pers.physicsFps.lastNotification = level.time;
 		}
 		return qfalse;
@@ -1705,7 +1705,7 @@ void ClientThink_real( gentity_t *ent ) {
 		&& (client->pers.raceDropped.msecTime != client->pers.raceDropped.lastNotificationMsecTime || client->pers.raceDropped.packetCount != client->pers.raceDropped.lastNotificationPacketCount)
 		&& ((client->pers.raceDropped.lastNotification + 1000) < level.time || client->pers.raceDropped.lastNotification > level.time)
 		) {
-		trap_SendServerCommand(ent - g_entities, va("print \"^1%d ^7msec from ^1%d ^7packets soft-dropped due to wrong packet timing. Packet loss? Try a higher cl_packetdup value.\n\"", (client->pers.raceDropped.msecTime - client->pers.raceDropped.lastNotificationMsecTime), (client->pers.raceDropped.packetCount - client->pers.raceDropped.lastNotificationPacketCount)));
+		G_SendServerCommand(ent - g_entities, va("print \"^1%d ^7msec from ^1%d ^7packets soft-dropped due to wrong packet timing. Packet loss? Try a higher cl_packetdup value.\n\"", (client->pers.raceDropped.msecTime - client->pers.raceDropped.lastNotificationMsecTime), (client->pers.raceDropped.packetCount - client->pers.raceDropped.lastNotificationPacketCount)),qtrue);
 		client->pers.raceDropped.lastNotification = level.time;
 		client->pers.raceDropped.lastNotificationMsecTime = client->pers.raceDropped.msecTime;
 		client->pers.raceDropped.lastNotificationPacketCount = client->pers.raceDropped.packetCount;
@@ -1849,11 +1849,11 @@ void ClientThink_real( gentity_t *ent ) {
 				//Private duel announcements are now made globally because we only want one duel at a time.
 				if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
 				{
-					G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!\n", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) , qtrue);
+					G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) , qtrue,qfalse,qtrue);
 				}
 				else
 				{ //it was a draw, because we both managed to die in the same frame
-					G_CenterPrint( -1, 3, va("%s\n", G_GetStripEdString("SVINGAME", "PLDUELTIE")), qtrue);
+					G_CenterPrint( -1, 3, va("%s", G_GetStripEdString("SVINGAME", "PLDUELTIE")), qtrue, qfalse,qtrue);
 				}
 			}
 		}
@@ -2487,11 +2487,11 @@ void G_RunClient( gentity_t *ent ) {
 										float* compare = ptrDst;
 										float diff;
 										diff = *current - *compare;
-										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(float) CHANGED: %f diff, %f -> %f \n\"", i, segDebugFields[i].name,
+										G_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(float) CHANGED: %f diff, %f -> %f \n\"", i, segDebugFields[i].name,
 											fabsf(diff),
 											(*current),
 											(*compare)
-										));
+										),qtrue);
 									}
 									break;
 									case dbgtype_int:
@@ -2500,11 +2500,11 @@ void G_RunClient( gentity_t *ent ) {
 										int* compare = ptrDst;
 										int diff;
 										diff = *current - *compare;
-										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(%s) CHANGED: %i diff, %i -> %i \n\"", i, segDebugFields[i].name, segDebugFields[i].typeName,
+										G_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(%s) CHANGED: %i diff, %i -> %i \n\"", i, segDebugFields[i].name, segDebugFields[i].typeName,
 											abs(diff),
 											(*current),
 											(*compare)
-										));
+										),qtrue);
 									}
 									case dbgtype_schar_t:
 									{
@@ -2512,11 +2512,11 @@ void G_RunClient( gentity_t *ent ) {
 										schar_t* compare = ptrDst;
 										int diff;
 										diff = *current - *compare;
-										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(%s) CHANGED: %i diff, %i -> %i \n\"", i, segDebugFields[i].name, segDebugFields[i].typeName,
+										G_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(%s) CHANGED: %i diff, %i -> %i \n\"", i, segDebugFields[i].name, segDebugFields[i].typeName,
 											abs(diff),
 											(*current),
 											(*compare)
-										));
+										),qtrue);
 									}
 									break;
 									case dbgtype_vec3_t:
@@ -2525,7 +2525,7 @@ void G_RunClient( gentity_t *ent ) {
 										vec3_t* compare = ptrDst;
 										vec3_t diff;
 										VectorSubtract(*current, *compare, diff);
-										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(vec3_t) CHANGED: %f diff, %f %f %f -> %f %f %f \n\"", i, segDebugFields[i].name,
+										G_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(vec3_t) CHANGED: %f diff, %f %f %f -> %f %f %f \n\"", i, segDebugFields[i].name,
 											VectorLength(diff),
 											(*current)[0],
 											(*current)[1],
@@ -2533,7 +2533,7 @@ void G_RunClient( gentity_t *ent ) {
 											(*compare)[0],
 											(*compare)[1],
 											(*compare)[2]
-										));
+										), qtrue);
 									}
 									break;
 									case dbgtype_veci3_t:
@@ -2542,7 +2542,7 @@ void G_RunClient( gentity_t *ent ) {
 										veci3_t* compare = ptrDst;
 										vec3_t diff;
 										VectorSubtract(*current, *compare, diff);
-										trap_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(veci3_t) CHANGED: %f diff, %i %i %i -> %i %i %i \n\"", i, segDebugFields[i].name,
+										G_SendServerCommand(ent - g_entities, va("print \"^1SEGDEBUG: ^%d%s^7(veci3_t) CHANGED: %f diff, %i %i %i -> %i %i %i \n\"", i, segDebugFields[i].name,
 											VectorLength(diff),
 											(*current)[0],
 											(*current)[1],
@@ -2550,7 +2550,7 @@ void G_RunClient( gentity_t *ent ) {
 											(*compare)[0],
 											(*compare)[1],
 											(*compare)[2]
-										));
+										),qtrue);
 									}
 									break;
 									}
