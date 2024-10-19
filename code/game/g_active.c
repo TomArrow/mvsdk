@@ -1685,6 +1685,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	BG_UserCmdToUserStats(&client->pers.cmd,&level.playerStats[ent-g_entities]->s);
+	BG_RaceStyleToUserStats(&client->sess.raceStyle,&level.playerStats[ent-g_entities]->s);
 
 	clientFpsOk = ClientCheckNotifyPhysicsFps(ent); // Let the client know about his need to set a different com_physicsFps value if needed
 

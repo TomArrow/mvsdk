@@ -10,12 +10,8 @@
 
 #include "bg_weapons.h"
 #include "anims.h"
+#include "bg_defrag_global.h"
 
-#define COURSENAME_MAX_LEN 10
-#define USERNAME_MIN_LEN 3
-#define USERNAME_MAX_LEN 10
-#define PASSWORD_MIN_LEN 6
-#define PASSWORD_MAX_LEN 50 // bcrypt has a limit which seems to be 72 but some sources say its only 50 and im too lazy to read the bcrypt code to decide whos right. 50 is enough anyway.
 
 
 #define	GAME_VERSION		"basejk-1"
@@ -1113,6 +1109,11 @@ void	BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 
 void	BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es);
 void	BG_StatsToUserCmd(entityState_t* es, usercmd_t* ucmd);
+
+void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es);
+void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs);
+
+
 void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec);
 void	BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec);
 

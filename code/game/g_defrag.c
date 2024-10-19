@@ -2194,6 +2194,20 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			}
 		}
 	}
+	if (saveState) {
+		// only do this once, its not client-specific
+		for (i = 0; i < MAX_CLIENTS; i++) {
+			if (level.playerStats[i]) { // only send player stats of active clients, dont be wasteful
+				if ((g_entities+i)->inuse) {
+					// client active
+					level.playerStats[i]->r.svFlags |= SVF_BROADCAST;
+				}
+				else {
+					level.playerStats[i]->r.svFlags &= ~SVF_BROADCAST;
+				}
+			}
+		}
+	}
 }
 void PlayerSnapshotRestoreValues() {
 	gentity_t* other;

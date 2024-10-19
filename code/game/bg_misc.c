@@ -4,6 +4,7 @@
 
 #include "q_shared.h"
 #include "bg_public.h"
+#include "bg_local.h"
 
 #ifdef JK2_GAME
 #include "../game/g_local.h"
@@ -2076,6 +2077,31 @@ void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
 	VectorCopy(es->apos.trBase, ucmd->angles);
 
 	ucmd->buttons = es->forceFrame;
+}
+
+
+#define SHORT2USHORT(a) ((a)<0 ? ((a)+65535 +1) : (a)) // since q3vm dooesnt like ushort :/
+#define USHORT2SHORT(a) ((a)>32767? ((a)-65535 -1) : (a)) // controlled unsigned->signed conversion
+
+void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es) {
+	es->bolt1 = rs->movementStyle;
+#ifdef Q3_VM
+	es->torsoAnim = SHORT2USHORT(rs->msec); // can be negative. is this conversion safe?
+#else
+	es->torsoAnim = (unsigned short)rs->msec; // can be negative. is this conversion safe?
+#endif
+	es->modelindex = rs->jumpLevel; // can be negative
+	es->powerups = rs->variant;
+	es->legsAnim = rs->runFlags;
+}
+
+void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs) {
+
+	rs->movementStyle = es->bolt1;
+	rs->msec = USHORT2SHORT(es->torsoAnim); // can be negative. is this conversion safe?
+	rs->jumpLevel = es->modelindex; // can be negative
+	rs->variant = es->powerups;
+	rs->runFlags = es->legsAnim;
 }
 
 static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity) {
