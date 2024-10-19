@@ -2258,6 +2258,8 @@ void DF_SetMapDefaults(raceStyle_t rs) {
 
 	level.mapDefaultRaceStyle = rs;
 	trap_Cvar_Set("g_mapDefaultMsec", va("%d", level.mapDefaultRaceStyle.msec));
+	trap_Cvar_Set("g_mapDefaultJump", va("%d", level.mapDefaultRaceStyle.jumpLevel));
+	trap_Cvar_Set("g_mapDefaultRunFlags", va("%d", level.mapDefaultRaceStyle.runFlags));
 	//level.mapDefaultsConfirmed = qtrue;
 }
 

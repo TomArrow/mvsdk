@@ -1834,7 +1834,11 @@ extern	vmCvar_t		cg_thirdPersonHorzOffset;
 extern	vmCvar_t		cg_stereoSeparation;
 extern	vmCvar_t		cg_lagometer;
 extern	vmCvar_t		cg_drawEnemyInfo;
+
 extern	vmCvar_t		cg_mapDefaultMsec;
+extern	vmCvar_t		cg_mapDefaultJump;
+extern	vmCvar_t		cg_mapDefaultRunFlags;
+
 extern	vmCvar_t		cg_synchronousClients;
 extern	vmCvar_t		cg_debugMove;
 extern	vmCvar_t		cg_teamChatTime;

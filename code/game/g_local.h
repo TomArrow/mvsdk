@@ -1252,7 +1252,11 @@ extern	vmCvar_t	g_debugDamage;
 extern	vmCvar_t	g_weaponRespawn;
 extern	vmCvar_t	g_weaponTeamRespawn;
 extern	vmCvar_t	g_adaptRespawn;
+
 extern	vmCvar_t	g_mapDefaultMsec;
+extern	vmCvar_t	g_mapDefaultJump;
+extern	vmCvar_t	g_mapDefaultRunFlags;
+
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;
 extern	vmCvar_t	g_warmup;

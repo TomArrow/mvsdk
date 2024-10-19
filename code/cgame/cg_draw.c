@@ -4294,11 +4294,21 @@ CG_DrawFollow
 static qboolean CG_DrawFollow( void ) 
 {
 	const char	*s;
-	float		x;
+	float		x,y;
+	qboolean raceMode = cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE];
+	qboolean drawName = qtrue;
+	int			movementStyle;
+	raceStyle_t	raceStyle;
+	qboolean	fullRaceStyleKnown = qfalse;
+	int			leaderboardType;
+	const char* runFlagsString = NULL;
 
-	if ( !(cg.snap->ps.pm_flags & PMF_FOLLOW) && !(cg.demoPlayback && cg_drawDemoName.integer) )
+	if ( !(cg.snap->ps.pm_flags & PMF_FOLLOW) && !(cg.demoPlayback && cg_drawDemoName.integer))
 	{
-		return qfalse;
+		drawName = qfalse;
+		if (!raceMode) {
+			return qfalse;
+		}
 	}
 
 	//s = "following";
@@ -4306,18 +4316,88 @@ static qboolean CG_DrawFollow( void )
 	//x = 0.5f * (cgs.screenWidth - CG_Text_Width(s, 1.0f, FONT_MEDIUM));
 	//CG_Text_Paint(x , 60, 1.0f, colorWhite, s, 0, 0, 0, FONT_MEDIUM);
 
-	s = cgs.clientinfo[ cg.snap->ps.clientNum ].name;
-	x = 4.0f;
-	CG_Text_Paint(x, 27, 0.85f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+	y = 0;
 
-	// TODO MAYBE jaPRO
+	y += 27;
+
+	if (drawName) {
+		s = cgs.clientinfo[cg.snap->ps.clientNum].name;
+		x = 4.0f;
+		CG_Text_Paint(x, y, 0.85f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		y += 17;
+	}
+
+	if (!cgs.isTommyTernal || !cg.predictedPlayerState.stats[STAT_RACEMODE]) {
+		return drawName;
+	}
+
+	if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+		BG_StatsToRaceStyle(stats, &raceStyle);
+		movementStyle = raceStyle.movementStyle;
+		leaderboardType = stats->activeForcePass;
+		if (leaderboardType < 0 || leaderboardType >= LB_TYPES_COUNT) {
+			leaderboardType = -1;
+		}
+		fullRaceStyleKnown = qtrue;
+	}
+	else {
+		movementStyle = cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+		if (movementStyle < 0 || movementStyle > MV_NUMSTYLES) {
+			movementStyle = -1;
+		}
+	}
+
 	//Loda - add their movemnt style here..?f
-	//if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE])
+	//if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] >= 0 && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] < MV_NUMSTYLES)
 	//{
-	//	char styleString[256] = { 0 };
-	//	IntegerToRaceName(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE], styleString, sizeof(styleString));
-	//	CG_Text_Paint(4, 44, 0.7f, colorWhite, styleString, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		//char styleString[256] = { 0 };
+		//IntegerToRaceName(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE], styleString, sizeof(styleString));
+		//CG_Text_Paint(4, y, 0.7f, colorWhite, styleString, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(4, y, 0.7f, colorWhite, movementStyle == -1 ? "Unknown style": moveStyleNames[movementStyle].string, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		y += 14;
 	//}
+
+	if (!fullRaceStyleKnown) {
+		return qtrue;
+	}
+
+	if (leaderboardType != -1) {
+		CG_Text_Paint(4, y, 0.7f, leaderboardType == LB_MAIN ? colorWhite : g_color_table_nt['O'], leaderboardNames[leaderboardType].string, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		y += 14;
+	}
+
+	if (raceStyle.msec > 0) {
+		CG_Text_Paint(4, y, 0.5f, colorWhite, va("%d fps", 1000/raceStyle.msec), 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		y += 10;
+	}else if (raceStyle.msec == -1) {
+		CG_Text_Paint(4, y, 0.5f, colorYellow, "fps toggle", 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		y += 10;
+	}else if (raceStyle.msec == -2) {
+		CG_Text_Paint(4, y, 0.5f, colorWhite, "float physics", 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		y += 10;
+	}
+	else {
+		CG_Text_Paint(4, y, 0.5f, colorRed, "unknown fps", 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		y += 10;
+	}
+
+	if (leaderboardType != LB_MAIN && leaderboardType != LB_NOJUMPBUG) {
+		if (raceStyle.jumpLevel != cg_mapDefaultJump.integer) {
+			CG_Text_Paint(4, y, 0.5f, colorYellow, va("j%d",raceStyle.jumpLevel), 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+			y += 10;
+		}
+		runFlagsString = RunFlagsToString(raceStyle.runFlags, cg_mapDefaultRunFlags.integer, 1, NULL, NULL);
+		if (strlen(runFlagsString)) {
+			CG_Text_Paint(4, y, 0.5f, colorYellow, runFlagsString, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+			y += 10;
+		}
+		if (raceStyle.variant) {
+			CG_Text_Paint(4, y, 0.5f, colorWhite, va("variant %d", raceStyle.variant), 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+			y += 10;
+		}
+	}
+	
 
 	return qtrue;
 }
