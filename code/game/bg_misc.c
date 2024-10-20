@@ -2084,24 +2084,29 @@ void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
 #define USHORT2SHORT(a) ((a)>32767? ((a)-65535 -1) : (a)) // controlled unsigned->signed conversion
 
 void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es) {
+	unsigned int ushortMsec, ushortRunFlags;
 	es->bolt1 = rs->movementStyle;
 #ifdef Q3_VM
-	es->torsoAnim = SHORT2USHORT(rs->msec); // can be negative. is this conversion safe?
+	ushortMsec = SHORT2USHORT(rs->msec); // can be negative. is this conversion safe?
+	ushortRunFlags = SHORT2USHORT(rs->runFlags); // can be negative. is this conversion safe?
 #else
-	es->torsoAnim = (unsigned short)rs->msec; // can be negative. is this conversion safe?
+	ushortMsec = (unsigned short)rs->msec; // can be negative. is this conversion safe?
+	ushortRunFlags = (unsigned short)rs->runFlags; // can be negative since im forced to use signed short. is this conversion safe?
 #endif
 	es->modelindex = rs->jumpLevel; // can be negative
 	es->powerups = rs->variant;
-	es->legsAnim = rs->runFlags;
+	es->apos.trDuration = (ushortMsec & 65535) << 16 | (ushortRunFlags & 65535); // wanted to use torsoAnim and legsAnim but MV remaps fuck it
 }
 
 void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs) {
 
 	rs->movementStyle = es->bolt1;
-	rs->msec = USHORT2SHORT(es->torsoAnim); // can be negative. is this conversion safe?
+	//rs->msec = USHORT2SHORT(es->torsoAnim); // can be negative. is this conversion safe?
+	rs->msec = USHORT2SHORT((es->apos.trDuration >> 16) & 65535); // can be negative. is this conversion safe?
 	rs->jumpLevel = es->modelindex; // can be negative
 	rs->variant = es->powerups;
-	rs->runFlags = es->legsAnim;
+	//rs->runFlags = es->legsAnim;
+	rs->runFlags = USHORT2SHORT(es->apos.trDuration & 65535);
 }
 
 static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity) {
