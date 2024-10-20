@@ -982,6 +982,8 @@ Ghoul2 Insert End
 	qboolean	forceHUDActive;				// Flag to show force hud is off/on
 
 	unsigned int		displacement, displacementSamples; //Speedometer, racetimer stuff
+	int					startSpeed;
+	int					lastRaceTime;
 	float				maxSpeed, currentSpeed, previousSpeed;
 	vec3_t				lastGroundPosition;
 	int					lastGroundTime, lastJumpHeightTime, lastJumpDistanceTime;

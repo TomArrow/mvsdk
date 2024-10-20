@@ -464,7 +464,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
-	cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
+	cl->ps.duelTime = cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
 	//cl->pers.segmented.lastPosUsed = qfalse; // already guaranteed via SEG_RECORDING check above
 
 	memset(&cl->pers.raceDropped,0,sizeof(cl->pers.raceDropped)); // reset info aabout packets dropped due to wrong fps timing
@@ -1505,7 +1505,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	// Reset timers
 	//cl->ps.duelTime = 0;
-	cl->pers.raceStartCommandTime = 0;
+	cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
 }
 
 // Checkpoint race timer
@@ -1822,7 +1822,7 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 
 	}
 
-	ent->client->pers.raceStartCommandTime = 0;
+	ent->client->ps.duelTime = ent->client->pers.raceStartCommandTime = 0;
 	ent->client->ps.fd.forceRageRecoveryTime = 0; 
 	
 	// not like we really need to do this since it happens in start anyway
@@ -2709,6 +2709,7 @@ qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition) {
 	savedPosition->ps = client->client->ps;
 	savedPosition->raceStyle = client->client->sess.raceStyle;
 	savedPosition->raceStartCommandTime = (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) ? client->client->pers.raceStartCommandTime : 0;
+	savedPosition->ps.duelTime = savedPosition->raceStartCommandTime;
 
 #define FIELDSFUNC(a) savedPosition->client.a=client->client->a; // lord have mercy
 	FIELDSCLIENT()
@@ -2823,7 +2824,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 
 
 	if (client->client->pers.segmented.state != SEG_REPLAY && (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && client->client->sess.raceMode && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
-		client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
+		client->client->ps.duelTime = client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
 	}
 
 	client->client->ps.persistant[PERS_SPAWN_COUNT] = backupPS.persistant[PERS_SPAWN_COUNT];

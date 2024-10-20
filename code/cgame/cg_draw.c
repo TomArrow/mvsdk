@@ -1144,6 +1144,82 @@ static void CG_DrawSimpleForcePower(const centity_t *cent)
 }
 
 
+
+void DF_RaceTimer(void)
+{
+	if (!(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) || !cg.predictedPlayerState.duelTime) {
+		cg.startSpeed = 0;
+		cg.displacement = 0;
+		cg.maxSpeed = 0;
+		cg.displacementSamples = 0;
+		return;
+	}
+
+	{
+		char timerStr[48] = { 0 };
+		char startStr[48] = { 0 };
+		vec4_t colorStartSpeed = { 1, 1, 1, 1 };
+
+		const int time = (cg.time - cg.predictedPlayerState.duelTime);
+		const int minutes = (time / 1000) / 60;
+		const int seconds = (time / 1000) % 60;
+		const int milliseconds = (time % 1000);
+
+		if (time < cg.lastRaceTime) {
+			cg.startSpeed = 0;
+			cg.displacement = 0;
+			cg.maxSpeed = 0;
+			cg.displacementSamples = 0;
+		}
+
+		if (cg_raceTimer.integer > 1) {// || cg_raceStart.integer) {
+			if (time > 0) {
+				if (!cg.startSpeed)
+					cg.startSpeed = (int)cg.currentSpeed;//(int)(state.speedometer.speed);
+					//if (state.cgaz.v > (float)cg.maxSpeed)
+					if (cg.currentSpeed > (float)cg.maxSpeed)
+						cg.maxSpeed = (int)cg.currentSpeed;
+						//cg.maxSpeed = (int)(state.speedometer.speed);
+				cg.displacement += (int)cg.currentSpeed;//(int)state.speedometer.speed;
+				cg.displacementSamples++;
+			}
+		}
+
+		cg.lastRaceTime = time;
+		if (cg_raceTimer.integer != 0) {
+			if (cg_raceTimer.integer < 3)
+				Com_sprintf(timerStr, sizeof(timerStr), "%i:%02i.%i\n", minutes, seconds, milliseconds / 100);
+			else
+				Com_sprintf(timerStr, sizeof(timerStr), "%i:%02i.%03i\n", minutes, seconds, milliseconds);
+
+			if (cg_raceTimer.integer > 1) {
+				if (cg.displacementSamples)
+					Q_strcat(timerStr, sizeof(timerStr), va("Max: %i\nAvg: %i", (int)((float)cg.maxSpeed + 0.5f),
+						cg.displacement / cg.displacementSamples));
+				if (time < 3000)// && !cg_raceStart.integer)
+					Q_strcat(timerStr, sizeof(timerStr), va("\nStart: %i", cg.startSpeed));
+
+			}
+
+			//CG_Text_Paint((float)cg_raceTimerX.integer * cgs.widthRatioCoef, (float)cg_raceTimerY.integer, cg_raceTimerSize.value, colorTable[CT_WHITE],
+			CG_Text_Paint((float)cg_raceTimerX.integer, (float)cg_raceTimerY.integer, cg_raceTimerSize.value, colorTable[CT_WHITE],
+				timerStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		}
+		//if (cg_raceStart.integer)
+		//{
+		//	if (cg_startGoal.value && (cg_startGoal.value <= (float)cg.startSpeed)) {
+		//		float startColor = 1 / (((float)cg.startSpeed / state.cgaz.s) * ((float)cg.startSpeed / state.cgaz.s));
+		//		colorStartSpeed[0] = startColor;
+		//		colorStartSpeed[1] = 1;
+		//		colorStartSpeed[2] = startColor;
+		//	}
+		//	Com_sprintf(startStr, sizeof(startStr), "Start: %i", cg.startSpeed);
+		//	CG_Text_Paint((float)cg_raceStartX.integer * cgs.widthRatioCoef, (float)cg_raceStartY.integer, cg_raceTimerSize.value, colorStartSpeed, startStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		//}
+	}
+}
+
+
 /*
 ================
 CG_DrawHUD
@@ -1190,6 +1266,9 @@ void CG_DrawHUD(centity_t	*cent)
 
 	if (cg_strafeHelper.integer)
 		CG_StrafeHelper(cent);
+
+	if (cg_raceTimer.integer)// || cg_raceStart.integer)
+		DF_RaceTimer();
 
 	if (cg_strafeHelper.integer & SHELPER_CROSSHAIR) {
 		vec4_t		hcolor;
@@ -5398,6 +5477,7 @@ ID_INLINE void CG_ChatBox_DrawStrings(void) //o, ID_INLINE is static Q_INLINE
 	}
 }
 
+
 static void CG_Draw2D( void ) {
 	float			inTime = cg.invenSelectTime+WEAPON_SELECT_TIME;
 	float			wpTime = cg.weaponSelectTime+WEAPON_SELECT_TIME;
@@ -5482,6 +5562,9 @@ static void CG_Draw2D( void ) {
 
 			if (cg_strafeHelper.integer)
 				CG_StrafeHelper(cent);
+
+			if (cg_raceTimer.integer)// || cg_raceStart.integer)
+				DF_RaceTimer();
 
 			if (cg_strafeHelper.integer & SHELPER_CROSSHAIR) {
 				vec4_t		hcolor;

@@ -1570,7 +1570,7 @@ void PM_WeaponLightsaber(void)
 
 		if (pm->ps->weaponTime < 1 && ((pm->cmd.buttons & BUTTON_ALT_ATTACK) || (pm->cmd.buttons & BUTTON_ATTACK)))
 		{
-			if (pm->ps->duelTime < pm->cmd.serverTime)
+			if (pm->ps->duelTime < pm->cmd.serverTime && !pm->ps->stats[STAT_RACEMODE]) // is this the correct way to account for racemode?
 			{
 				pm->ps->saberHolstered = qfalse;
 				PM_AddEvent(EV_SABER_UNHOLSTER);
