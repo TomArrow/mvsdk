@@ -1185,6 +1185,206 @@ void Cmd_Logout_f( gentity_t *ent )
 extern const char* DF_GetCourseName();
 extern void Cmd_DF_MapDefaults_f(gentity_t* ent);
 
+extern int JP_ClientNumberFromString(gentity_t* to, const char* s);
+
+//[JAPRO - Serverside - All - Amtele Function - Start]
+void Cmd_Amtele_f(gentity_t* ent)
+{
+	gentity_t* teleporter;// = NULL;
+	char client1[MAX_NETNAME], client2[MAX_NETNAME];
+	char x[32], y[32], z[32], yaw[32];
+	int clientid1 = -1, clientid2 = -1;
+	vec3_t	angles = { 0, 0, 0 }, origin;
+	qboolean droptofloor = qfalse, race = qfalse;
+	int allowed;
+
+	if (!ent->client)
+		return;
+	if (ent->client->sess.sessionTeam == TEAM_SPECTATOR && (ent->client->ps.pm_flags & PMF_FOLLOW)) //lazy
+		return;
+	if (!ent->client->sess.raceMode)
+		return;
+
+
+	if (ent->client->sess.raceMode) {
+		droptofloor = qtrue;
+		race = qtrue;
+	}
+
+	if (trap_Argc() > 6)
+	{
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /amTele or /amTele <client> or /amTele <client> <client> or /amTele <X> <Y> <Z> <YAW> or /amTele <player> <X> <Y> <Z> <YAW>.\n\"");
+		return;
+	}
+
+	//if (trap_Argc() == 1)//Amtele to telemark
+	//{
+	//	if (ent->client->pers.telemarkOrigin[0] != 0 || ent->client->pers.telemarkOrigin[1] != 0 || ent->client->pers.telemarkOrigin[2] != 0 || ent->client->pers.telemarkAngle != 0)
+	//	{
+	//		angles[YAW] = ent->client->pers.telemarkAngle;
+	//		angles[PITCH] = ent->client->pers.telemarkPitchAngle;
+	//		AmTeleportPlayer(ent, ent->client->pers.telemarkOrigin, angles, droptofloor, race, qfalse);
+	//	}
+	//	else
+	//		trap_SendServerCommand(ent - g_entities, "print \"No telemark set!\n\"");
+	//	return;
+	//}
+
+	if (trap_Argc() == 2)//Amtele to player
+	{
+		trap_Argv(1, client1, sizeof(client1));
+		clientid1 = JP_ClientNumberFromString(ent, client1);
+
+		if (clientid1 == -1 || clientid1 == -2)
+			return;
+
+		if (/*g_entities[clientid1].client->pers.noFollow ||*/ g_entities[clientid1].client->sess.sessionTeam == TEAM_SPECTATOR) {
+			//if (!G_AdminAllowed(ent, JAPRO_ACCOUNTFLAG_A_SEEHIDDEN, qfalse, qfalse, NULL))
+				return;
+		}
+
+		origin[0] = g_entities[clientid1].client->ps.origin[0];
+		origin[1] = g_entities[clientid1].client->ps.origin[1];
+		origin[2] = g_entities[clientid1].client->ps.origin[2] + 96;
+		DF_RaceStateInvalidated(ent, qtrue);
+		TeleportPlayer(ent, origin, angles);// , droptofloor, race, qfalse);
+		return;
+	}
+
+	//if (trap_Argc() == 3)//Amtele player to player
+	//{
+	//	trap_Argv(1, client1, sizeof(client1));
+	//	trap_Argv(2, client2, sizeof(client2));
+	//	clientid1 = JP_ClientNumberFromString(ent, client1);
+	//	clientid2 = JP_ClientNumberFromString(ent, client2);
+
+	//	if (clientid1 == -1 || clientid1 == -2 || clientid2 == -1 || clientid2 == -2)
+	//		return;
+
+	//	if (g_entities[clientid2].client->pers.noFollow || g_entities[clientid2].client->sess.sessionTeam == TEAM_SPECTATOR) {
+	//		if (!G_AdminAllowed(ent, JAPRO_ACCOUNTFLAG_A_SEEHIDDEN, qfalse, qfalse, NULL))
+	//			return;
+	//	}
+
+	//	if (!G_AdminUsableOn(ent->client, g_entities[clientid1].client, JAPRO_ACCOUNTFLAG_A_ADMINTELE)) {
+	//		if (g_entities[clientid1].client->ps.clientNum != ent->client->ps.clientNum)
+	//			return;
+	//		else
+	//			trap_SendServerCommand(ent - g_entities, "print \"You are not authorized to use this command on this player (amTele).\n\"");
+	//	}
+
+	//	teleporter = &g_entities[clientid1];
+
+	//	origin[0] = g_entities[clientid2].client->ps.origin[0];
+	//	origin[1] = g_entities[clientid2].client->ps.origin[1];
+	//	origin[2] = g_entities[clientid2].client->ps.origin[2] + 96;
+
+	//	AmTeleportPlayer(teleporter, origin, angles, droptofloor, qfalse, qfalse);
+	//	return;
+	//}
+
+	if (trap_Argc() == 4)//|| trap_Argc() == 5)//Amtele to origin (if no angle specified, default 0?)
+	{
+		trap_Argv(1, x, sizeof(x));
+		trap_Argv(2, y, sizeof(y));
+		trap_Argv(3, z, sizeof(z));
+
+		origin[0] = atoi(x);
+		origin[1] = atoi(y);
+		origin[2] = atoi(z);
+
+		/*if (trap_Argc() == 5)
+		{
+			trap_Argv(4, yaw, sizeof(yaw));
+			angles[YAW] = atoi(yaw);
+		}*/
+
+		DF_RaceStateInvalidated(ent, qtrue);
+		TeleportPlayer(ent, origin, angles);// , droptofloor, race, qfalse);
+		return;
+	}
+
+	//if (trap_Argc() == 5)//Amtele to angles + origin, OR Amtele player to origin
+	//{
+	//	trap_Argv(1, client1, sizeof(client1));
+	//	clientid1 = JP_ClientNumberFromString(ent, client1);
+
+	//	if (clientid1 == -1 || clientid1 == -2)//Amtele to origin + angles
+	//	{
+	//		trap_Argv(1, x, sizeof(x));
+	//		trap_Argv(2, y, sizeof(y));
+	//		trap_Argv(3, z, sizeof(z));
+
+	//		origin[0] = atoi(x);
+	//		origin[1] = atoi(y);
+	//		origin[2] = atoi(z);
+
+	//		trap_Argv(4, yaw, sizeof(yaw));
+	//		angles[YAW] = atoi(yaw);
+
+	//		AmTeleportPlayer(ent, origin, angles, droptofloor, race, qfalse);
+	//	}
+
+	//	else//Amtele other player to origin
+	//	{
+	//		if (!G_AdminUsableOn(ent->client, g_entities[clientid1].client, JAPRO_ACCOUNTFLAG_A_ADMINTELE)) {
+	//			if (g_entities[clientid1].client->ps.clientNum != ent->client->ps.clientNum)
+	//				return;
+	//			else
+	//				trap_SendServerCommand(ent - g_entities, "print \"You are not authorized to use this command on this player (amTele).\n\"");
+	//		}
+
+	//		teleporter = &g_entities[clientid1];
+
+	//		trap_Argv(2, x, sizeof(x));
+	//		trap_Argv(3, y, sizeof(y));
+	//		trap_Argv(4, z, sizeof(z));
+
+	//		origin[0] = atoi(x);
+	//		origin[1] = atoi(y);
+	//		origin[2] = atoi(z);
+
+	//		AmTeleportPlayer(teleporter, origin, angles, droptofloor, qfalse, qfalse);
+	//	}
+	//	return;
+
+	//}
+
+	//if (trap_Argc() == 6)//Amtele player to angles + origin
+	//{
+	//	trap_Argv(1, client1, sizeof(client1));
+	//	clientid1 = JP_ClientNumberFromString(ent, client1);
+
+	//	if (clientid1 == -1 || clientid1 == -2)
+	//		return;
+
+	//	if (!G_AdminUsableOn(ent->client, g_entities[clientid1].client, JAPRO_ACCOUNTFLAG_A_ADMINTELE)) {
+	//		if (g_entities[clientid1].client->ps.clientNum != ent->client->ps.clientNum)
+	//			return;
+	//		else
+	//			trap_SendServerCommand(ent - g_entities, "print \"You are not authorized to use this command on this player (amTele).\n\"");
+	//	}
+
+	//	teleporter = &g_entities[clientid1];
+
+	//	trap_Argv(2, x, sizeof(x));
+	//	trap_Argv(3, y, sizeof(y));
+	//	trap_Argv(4, z, sizeof(z));
+
+	//	origin[0] = atoi(x);
+	//	origin[1] = atoi(y);
+	//	origin[2] = atoi(z);
+
+	//	trap_Argv(5, yaw, sizeof(yaw));
+	//	angles[YAW] = atoi(yaw);
+
+	//	AmTeleportPlayer(teleporter, origin, angles, droptofloor, qfalse, qfalse);
+	//	return;
+	//}
+
+	
+}
+
 /*
 =================
 Cmd_Top_f
@@ -3047,6 +3247,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "amtele"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "top"))
 		{
 			giveError = qtrue;
@@ -3178,6 +3382,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Login_f(ent);
 	else if (Q_stricmp (cmd, "logout") == 0)
 		Cmd_Logout_f(ent);
+	else if (Q_stricmp (cmd, "amtele") == 0)
+		Cmd_Amtele_f(ent);
 	else if (Q_stricmp (cmd, "top") == 0)
 		Cmd_Top_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)

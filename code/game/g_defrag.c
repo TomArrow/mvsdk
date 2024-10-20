@@ -3241,3 +3241,126 @@ void DF_ResetSpawn(gentity_t* ent) {
 
 	G_SendServerCommand(ent - g_entities, "print \"Spawnpoint has been reset.\n\"",qtrue);
 }
+
+
+void lowerString(char* s) {
+	if (!s) return;
+	while (*s) {
+		*s = tolower(*s);
+		s++;
+	}
+}
+
+/*
+==================
+ClientNumberFromString
+
+Returns a player number for either a number or name string
+Returns -1 if invalid
+==================
+*/
+int JP_ClientNumberFromString(gentity_t* to, const char* s)
+{
+	gclient_t* cl;
+	int			idnum, i, match = -1;
+	char		s2[MAX_STRING_CHARS];
+	char		n2[MAX_STRING_CHARS];
+	idnum = atoi(s);
+
+
+	//redo
+	/*
+	if (!Q_stricmp(s, "0")) {
+		cl = &level.clients[idnum];
+		if ( cl->pers.connected != CON_CONNECTED ) {
+			trap_SendServerCommand( to-g_entities, va("print \"Client '%i' is not active\n\"", idnum));
+			return -1;
+		}
+		return 0;
+	}
+	if (idnum && idnum < 32) {
+		cl = &level.clients[idnum];
+		if ( cl->pers.connected != CON_CONNECTED ) {
+			trap_SendServerCommand( to-g_entities, va("print \"Client '%i' is not active\n\"", idnum));
+			return -1;
+		}
+		return idnum;
+	}
+	*/
+	//end redo
+
+	// numeric values are just slot numbers
+	if (s[0] >= '0' && s[0] <= '9' && strlen(s) == 1) //changed this to only recognize numbers 0-31 as client numbers, otherwise interpret as a name, in which case sanitize2 it and accept partial matches (return error if multiple matches)
+	{
+		idnum = atoi(s);
+		cl = &level.clients[idnum];
+		if (cl->pers.connected != CON_CONNECTED) {
+			trap_SendServerCommand(to - g_entities, va("print \"Client '%i' is not active\n\"", idnum));
+			return -1;
+		}
+		return idnum;
+	}
+
+	if ((s[0] == '1' || s[0] == '2') && (s[1] >= '0' && s[1] <= '9' && strlen(s) == 2))  //changed and to or ..
+	{
+		idnum = atoi(s);
+		cl = &level.clients[idnum];
+		if (cl->pers.connected != CON_CONNECTED) {
+			trap_SendServerCommand(to - g_entities, va("print \"Client '%i' is not active\n\"", idnum));
+			return -1;
+		}
+		return idnum;
+	}
+
+	if (s[0] == '3' && (s[1] >= '0' && s[1] <= '1' && strlen(s) == 2))
+	{
+		idnum = atoi(s);
+		cl = &level.clients[idnum];
+		if (cl->pers.connected != CON_CONNECTED) {
+			trap_SendServerCommand(to - g_entities, va("print \"Client '%i' is not active\n\"", idnum));
+			return -1;
+		}
+		return idnum;
+	}
+
+
+
+
+	// check for a name match
+	//SanitizeString2(s, s2); // TODO adapt the jka code a bit for more robustness?
+	Q_strncpyz(s2, s, sizeof(s2));
+    Q_CleanStr(s2, (qboolean)(jk2startversion == VERSION_1_02), qtrue);
+	lowerString(s2);
+	for (idnum = 0, cl = level.clients; idnum < level.maxclients; idnum++, cl++) {
+		if (cl->pers.connected != CON_CONNECTED) {
+			continue;
+		}
+		//SanitizeString2(cl->pers.netname, n2);
+		Q_strncpyz(n2, cl->pers.netname, sizeof(n2));
+		Q_CleanStr(n2, (qboolean)(jk2startversion == VERSION_1_02), qtrue);
+		lowerString(n2);
+
+		for (i = 0; i < level.numConnectedClients; i++)
+		{
+			cl = &level.clients[level.sortedClients[i]];
+			//SanitizeString2(cl->pers.netname, n2);
+			Q_strncpyz(n2, cl->pers.netname, sizeof(n2));
+			Q_CleanStr(n2, (qboolean)(jk2startversion == VERSION_1_02), qtrue);
+			lowerString(n2);
+			if (strstr(n2, s2))
+			{
+				if (match != -1)
+				{ //found more than one match
+					trap_SendServerCommand(to - g_entities, va("print \"More than one user '%s' on the server\n\"", s));
+					return -2;
+				}
+				match = level.sortedClients[i];
+			}
+		}
+		if (match != -1)//uhh
+			return match;
+	}
+	if (!atoi(s)) //Uhh.. well.. whatever. fixes amtele spam problem when teleporting to x y z yaw
+		trap_SendServerCommand(to - g_entities, va("print \"User '%s' is not on the server\n\"", s));
+	return -1;
+}
