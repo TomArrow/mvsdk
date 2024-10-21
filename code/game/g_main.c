@@ -1025,6 +1025,8 @@ void G_ShutdownGame( int restart ) {
 		trap_FS_FCloseFile( level.logFile );
 	}
 
+	DF_HandleUnfinishedDemos();
+
 	// write all the client session data so we can get it back
 	G_WriteSessionData();
 

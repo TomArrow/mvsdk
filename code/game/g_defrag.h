@@ -233,5 +233,7 @@ void PlayerSnapshotRestoreValues();
 void DF_LoadMapDefaults();
 void DF_SetMapDefaults(raceStyle_t rs);
 
+void DF_HandleUnfinishedDemos();
+
 
 #endif

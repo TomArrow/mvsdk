@@ -400,6 +400,21 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 
 
 
+void DF_HandleUnfinishedDemos() {
+	int i;
+	gentity_t* ent = g_entities;
+	for (i = 0; i < level.maxclients; i++,ent++) {
+		if (!ent->inuse) continue;
+		if (ent->client->pers.recordingDemo && !ent->client->pers.keepDemoMaybe) {
+
+			ent->client->pers.recordingDemo = qfalse;
+			ent->client->pers.demoStoppedTime = level.time;
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", i, ent->client->pers.tempDemoName, i));
+		}
+	}
+}
+
+
 // Start race timer
 void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {

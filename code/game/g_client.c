@@ -2570,6 +2570,13 @@ void ClientDisconnect( int clientNum ) {
 
 	DF_RemoveCheckPoints(ent);
 
+	if (ent->client->pers.recordingDemo && !ent->client->pers.keepDemoMaybe) {
+
+		ent->client->pers.recordingDemo = qfalse;
+		ent->client->pers.demoStoppedTime = level.time;
+		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", i, ent->client->pers.tempDemoName, i));
+	}
+
 	i = 0;
 
 	while (i < NUM_FORCE_POWERS)
