@@ -443,6 +443,14 @@ typedef struct {
 	} df_checkpointData;
 
 	int			laserPointerNum;
+
+	qboolean	recordingDemo;//japro autodemo for defrag... :S
+	qboolean	keepDemoMaybe;//japro autodemo for defrag... :S
+	//qboolean	keepDemo;//japro autodemo for defrag... :S
+	char		tempDemoName[MAX_QPATH];
+	//char		demoName[MAX_QPATH];
+	int			demoStoppedTime;
+	int			stopRecordingTime;
 } clientPersistant_t;
 
 // this structure is cleared on each ClientSpawn(),
@@ -497,6 +505,7 @@ struct gclient_s {
 	// timers
 	int			respawnTime;		// can respawn when time > this, force after g_forcerespwan
 	int			inactivityTime;		// kick players when time > this
+	int			lastHereTime;		//japro to optimize bots / autorecord
 	qboolean	inactivityWarning;	// qtrue if the five seoond warning has been given
 	int			rewardTime;			// clear the EF_AWARD_IMPRESSIVE, etc when time > this
 
@@ -1204,6 +1213,8 @@ extern	vmCvar_t	g_saberTraceSaberFirst;
 
 extern	vmCvar_t	g_defrag;
 extern	vmCvar_t	g_defragLastRunId;
+extern	vmCvar_t	g_defragLastDemoId;
+extern	vmCvar_t	g_defragAutoDemo;
 extern	vmCvar_t	g_triggersRobust;
 extern	vmCvar_t	g_defragForceRegenFps;
 

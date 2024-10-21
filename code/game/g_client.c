@@ -2660,7 +2660,7 @@ void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers)
 	
 	for (i = 0; i < level.maxclients; i++) {
 		other = g_entities + i;
-		if (!other->client || other->client->sess.spectatorState != SPECTATOR_FOLLOW || other->client->sess.spectatorClient != targetnum) continue; // can !other->client happen? no idea lazy to think about it.
+		if (!other->client || !other->inuse || other->client->sess.spectatorState != SPECTATOR_FOLLOW || other->client->sess.spectatorClient != targetnum) continue; // can !other->client happen? no idea lazy to think about it.
 		trap_SendServerCommand(i, cmd);
 	}
 }

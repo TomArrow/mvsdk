@@ -221,6 +221,27 @@ void DF_InvalidateSpawn(gentity_t* ent) {
 	ent->client->pers.savedSpawnUsed = qfalse;
 }
 
+
+static int DF_GetNewRunId() {
+	char s[15];
+	int num;
+	trap_Cvar_VariableStringBuffer("g_defragLastRunId", s, sizeof(s));
+	num = atoi(s);
+	num++;
+	trap_Cvar_Set("g_defragLastRunId", va("%d", num));
+	return num;
+}
+
+static int DF_GetNewDemoId() {
+	char s[15];
+	int num;
+	trap_Cvar_VariableStringBuffer("g_defragLastDemoId", s, sizeof(s));
+	num = atoi(s);
+	num++;
+	trap_Cvar_Set("g_defragLastDemoId", va("%d", num));
+	return num;
+}
+
 /*
 =====================================================================
 Race trigger functions
@@ -469,6 +490,61 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	memset(&cl->pers.raceDropped,0,sizeof(cl->pers.raceDropped)); // reset info aabout packets dropped due to wrong fps timing
 
+
+
+	//if (GetTimeMS() - cl->pers.stats.startTime < 500)//Some built in floodprotect per player?
+		//return;
+	//if (cl->pers.stats.startTime) //Instead of floodprotect, dont let player start a timer if they already have one.  Mapmakers should then put reset timers over the start area.
+		//return;
+
+	//trap->Print("Actual trigger touch! time: %i\n", GetTimeMS());
+
+	if (cl->pers.recordingDemo && cl->pers.keepDemoMaybe) {
+		//We are still recording a demo that we want to keep? -shouldn't ever happen?
+		//Stop and rename it
+		//trap_SendServerCommand( player-g_entities, "chat \"RECORDING STOPPED (at startline), HIGHSCORE\"");
+		//trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo temp/%s races/%s\n", cl->ps.clientNum, cl->pers.oldDemoName, cl->pers.demoName));
+		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", cl->ps.clientNum));
+		cl->pers.recordingDemo = qfalse;
+		cl->pers.demoStoppedTime = level.time;
+	}
+
+	//in rename demo, also make sure demo is stopped before renaming? that way we dont have to have the ;wait 20; here
+
+	//if ((g_defragAutoDemo.integer) && (!cl->pers.noFollow || (cl->sess.movementStyle == MV_SIEGE) || (g_allowNoFollow.integer > 2)) && !(cl->pers.practice) && cl->sess.raceMode && !sv_cheats.integer && cl->pers.userName[0]) {
+	if ((g_defragAutoDemo.integer) && cl->sess.raceMode && !g_cheats.integer) {
+		if (!cl->pers.recordingDemo) { //Start the new demo
+			int demoId = DF_GetNewDemoId();
+
+			Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
+			cl->pers.recordingDemo = qtrue;
+			//trap_SendServerCommand( player-g_entities, "chat \"RECORDING STARTED\"");
+			//trap_SendConsoleCommand(EXEC_APPEND, va("svrecord %s/%s %i\n", cl->sess.login.loggedIn ? "temp":"tempanon", cl->sess.login.loggedIn ? cl->sess.login.name : miniva("anon%d",activator-g_entities), cl->ps.clientNum));
+
+
+
+			trap_SendConsoleCommand(EXEC_APPEND, va("svrecord \"%s\" %i\n", cl->pers.tempDemoName, cl->ps.clientNum));
+		}
+		else { //Check if we should "restart" the demo
+			if (!cl->pers.stats.startLevelTime || (level.time - cl->pers.stats.startLevelTime > 5000 || level.time < cl->pers.stats.startLevelTime)) { //we can just use starttime ?
+				int demoId = DF_GetNewDemoId(); 
+				char		tempDemoName[MAX_QPATH];
+
+				Com_sprintf(tempDemoName, sizeof(tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
+				cl->pers.recordingDemo = qtrue;
+				cl->pers.demoStoppedTime = level.time;
+				//trap_SendServerCommand( player-g_entities, "chat \"RECORDING RESTARTED\"");
+				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\";svrecord \"%s\" %i\n", cl->ps.clientNum, cl->pers.tempDemoName, cl->ps.clientNum, tempDemoName, cl->ps.clientNum));
+				Q_strncpyz(cl->pers.tempDemoName, tempDemoName,sizeof(cl->pers.tempDemoName));
+				//trap_SendConsoleCommand( EXEC_APPEND, va("svrecord temp/%s %i\n", cl->pers.userName, cl->ps.clientNum));
+			}
+		}
+	}
+
+	//cl->lastStartTime = level.time;
+	cl->pers.keepDemoMaybe = qfalse;
+
+
 	if (!cl->sess.login.loggedIn) {
 		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O', level.nonDeterministicEntities), qfalse, qtrue, qfalse);
 	}
@@ -486,73 +562,74 @@ qboolean ValidRaceSettings(gentity_t* player)
 { //How 2 check if cvars were valid the whole time of run.. and before? since you can get a headstart with higher g_speed before hitting start timer? :S
 	//Make most of this hardcoded into racemode..? speed, knockback, debugmelee, stepslidefix, gravity
 	int style;
-	if (!player->client)
+	gclient_t* cl = player->client;
+	if (!cl)
 		return qfalse;
 
-	if (!player->client->ps.stats[STAT_RACEMODE])
+	if (!cl->ps.stats[STAT_RACEMODE])
 		return qfalse;
 
-	style = player->client->sess.raceStyle.movementStyle;
+	style = cl->sess.raceStyle.movementStyle;
 
 	//if (style == MV_OCPM)
 	//	return qfalse;//temp
 
-	//if (player->client->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
+	//if (cl->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
 	//	return qfalse;
 	//if ((style == MV_RJQ3 || style == MV_RJCPM || style == MV_TRIBES) && g_knockback.value != 1000.0f)
 	//	return qfalse;
 
-	if (player->client->sess.raceStyle.jumpLevel >= 0) {
+	if (cl->sess.raceStyle.jumpLevel >= 0) {
 
-		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != player->client->sess.raceStyle.jumpLevel) {
+		if (cl->ps.fd.forcePowerLevel[FP_LEVITATION] != cl->sess.raceStyle.jumpLevel) {
 			return qfalse; // shouldnt happen
 		}
 	}
-	else if (player->client->sess.raceStyle.jumpLevel < -1){
+	else if (cl->sess.raceStyle.jumpLevel < -1){
 		return qfalse; // shouldnt happen
 	}
 	else {
-		if (player->client->ps.powerups[PW_YSALAMIRI] != INT_MAX) {
+		if (cl->ps.powerups[PW_YSALAMIRI] != INT_MAX) {
 			return qfalse; // shouldnt happen
 		}
 	}
 
 	//if (style != MV_CPM && style != MV_OCPM && style != MV_Q3 && style != MV_WSW && style != MV_RJQ3 && style != MV_RJCPM && style != MV_JETPACK && style != MV_SWOOP && style != MV_JETPACK && style != MV_SLICK && style != MV_BOTCPM && style != MV_COOP_JKA && style != MV_TRIBES) { //Ignore forcejump restrictions if in onlybhop movement modes
 	//	if (restrictions & (1 << 0)) {//flags 1 = restrict to jump1
-	//		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 1 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
+	//		if (cl->ps.fd.forcePowerLevel[FP_LEVITATION] != 1 || cl->ps.powerups[PW_YSALAMIRI] > 0) {
 	//			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course requires force jump level 1!\n\n\n\n\n\n\n\n\n\n\"");
 	//			return qfalse;
 	//		}
 	//	}
 	//	else if (restrictions & (1 << 1)) {//flags 2 = restrict to jump2
-	//		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 2 || player->client->ps.powerups[PW_YSALAMIRI] > 0) {
+	//		if (cl->ps.fd.forcePowerLevel[FP_LEVITATION] != 2 || cl->ps.powerups[PW_YSALAMIRI] > 0) {
 	//			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course requires force jump level 2!\n\n\n\n\n\n\n\n\n\n\"");
 	//			return qfalse;
 	//		}
 	//	}
 	//	else if (restrictions & (1 << 2)) {//flags 4 = only jump3
-	//		if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] != 3 || player->client->ps.powerups[PW_YSALAMIRI] > 0) { //Also dont allow ysal in FJ specified courses..?
+	//		if (cl->ps.fd.forcePowerLevel[FP_LEVITATION] != 3 || cl->ps.powerups[PW_YSALAMIRI] > 0) { //Also dont allow ysal in FJ specified courses..?
 	//			trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course requires force jump level 3!\n\n\n\n\n\n\n\n\n\n\"");
 	//			return qfalse;
 	//		}
 	//	}
 	//}
 	//else if (style == MV_COOP_JKA) {
-	//	if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 2 && !(restrictions & (1 << 1))) {//using jump2 but its not allowed
+	//	if (cl->ps.fd.forcePowerLevel[FP_LEVITATION] == 2 && !(restrictions & (1 << 1))) {//using jump2 but its not allowed
 	//		trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 2!\n\n\n\n\n\n\n\n\n\n\"");
 	//		return qfalse;
 	//	}
-	//	if (player->client->ps.fd.forcePowerLevel[FP_LEVITATION] == 3 && !(restrictions & (1 << 2))) {//using jump3 but its not allowed
+	//	if (cl->ps.fd.forcePowerLevel[FP_LEVITATION] == 3 && !(restrictions & (1 << 2))) {//using jump3 but its not allowed
 	//		trap->SendServerCommand(player - g_entities, "cp \"^3Warning: this course does not allow force jump level 3!\n\n\n\n\n\n\n\n\n\n\"");
 	//		return qfalse;
 	//	}
 	//}
 
-	//if (player->client->pers.haste && !(restrictions & (1 << 3)))
+	//if (cl->pers.haste && !(restrictions & (1 << 3)))
 	//	return qfalse; //IF client has haste, and the course does not allow haste, dont count it.
-	//if (((style != MV_JETPACK) && (style != MV_TRIBES)) && (player->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_JETPACK)) && !(restrictions & (1 << 4))) //kinda deprecated.. maybe just never allow jetpack?
+	//if (((style != MV_JETPACK) && (style != MV_TRIBES)) && (cl->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_JETPACK)) && !(restrictions & (1 << 4))) //kinda deprecated.. maybe just never allow jetpack?
 	//	return qfalse; //IF client has jetpack, and the course does not allow jetpack, dont count it.
-	//if (style == MV_SWOOP && !player->client->ps.m_iVehicleNum)
+	//if (style == MV_SWOOP && !cl->ps.m_iVehicleNum)
 	//	return qfalse;
 	//if (sv_cheats.integer)
 //#ifndef DEBUG // always disallow? idk
@@ -563,7 +640,7 @@ qboolean ValidRaceSettings(gentity_t* player)
 	//	return qfalse;
 	//if (g_jediVmerc.integer) //umm..   ta: ??
 	//	return qfalse;
-	if (g_debugMelee.integer >= 2 && (player->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
+	if (g_debugMelee.integer >= 2 && (cl->sess.raceStyle.runFlags & RFL_CLIMBTECH))
 		return qfalse;
 	if (!g_smoothClients.integer)// why?
 		return qfalse;
@@ -571,18 +648,18 @@ qboolean ValidRaceSettings(gentity_t* player)
 	if (g_sv_fps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. well... but demos wouldnt be proper without it, so leave it.
 		return qfalse;
 	//if (sv_pluginKey.integer) {
-	//	if (!player->client->pers.validPlugin && player->client->pers.userName[0]) { //Meh.. only do this if they are logged in to keep the print colors working right i guess..
+	//	if (!cl->pers.validPlugin && cl->pers.userName[0]) { //Meh.. only do this if they are logged in to keep the print colors working right i guess..
 	//		trap->SendServerCommand(player - g_entities, "cp \"^3Warning: a newer client plugin version\nis required!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway
 	//		return qfalse;
 	//	}
 	//}
-	//if (player->client->pers.noFollow && (player->client->sess.movementStyle != MV_SIEGE) && (g_allowNoFollow.integer < 3))
+	//if (cl->pers.noFollow && (cl->sess.movementStyle != MV_SIEGE) && (g_allowNoFollow.integer < 3))
 	//	return qfalse;
-	//if (player->client->pers.practice)
+	//if (cl->pers.practice)
 	//	return qfalse;
 	//if ((restrictions & (1 << 5)) && (level.gametype == GT_CTF || level.gametype == GT_CTY))//spawnflags 32 is FFA_ONLY
 	//	return qfalse;
-	//if ((player->client->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) && !(restrictions & (1 << 6))) //spawnflags 64 on end trigger is allow_teles
+	//if ((cl->ps.stats[STAT_RESTRICTIONS] & JAPRO_RESTRICT_ALLOWTELES) && !(restrictions & (1 << 6))) //spawnflags 64 on end trigger is allow_teles
 	//	return qfalse;
 
 	return qtrue;
@@ -1251,15 +1328,6 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	
 }
 
-static int DF_GetNewRunId() {
-	char s[15];
-	int num;
-	trap_Cvar_VariableStringBuffer("g_defragLastRunId", s, sizeof(s));
-	num = atoi(s);
-	num++;
-	trap_Cvar_Set("g_defragLastRunId", va("%d", num));
-	return num;
-}
 
 const char* DF_GetCourseName() {
 	static char serverInfo[BIG_INFO_STRING];
@@ -1288,6 +1356,13 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(runInfo->coursename, Info_ValueForKey(serverInfo, "mapname"), sizeof(runInfo->coursename));
+
+	if (client->pers.recordingDemo) {
+		Q_strncpyz(runInfo->tempDemoName, client->pers.tempDemoName, sizeof(runInfo->tempDemoName));
+	}
+	else {
+		runInfo->tempDemoName[0] = '\0';
+	}
 
 	runInfo->milliseconds = milliseconds;
 	runInfo->startLessTime = client->pers.stats.startLessTime;
@@ -1472,6 +1547,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//isInserting = G_InsertRun(activator, timeLast,0,0,0, warningFlags, level.time, runId, cl->ps.commandTime - lessTime);
 	isInserting = G_InsertRun(&runInfo);
 
+	cl->pers.keepDemoMaybe = qtrue;
+	cl->pers.stopRecordingTime = level.time + 10000;
 
 	PrintRaceTime(&runInfo, qfalse, qfalse, activator);
 	// Show info
@@ -1506,6 +1583,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	// Reset timers
 	//cl->ps.duelTime = 0;
 	cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
+	cl->pers.stats.startLevelTime = 0;
 }
 
 // Checkpoint race timer
@@ -1823,6 +1901,7 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	}
 
 	ent->client->ps.duelTime = ent->client->pers.raceStartCommandTime = 0;
+	ent->client->pers.stats.startLevelTime = 0; 
 	ent->client->ps.fd.forceRageRecoveryTime = 0; 
 	
 	// not like we really need to do this since it happens in start anyway

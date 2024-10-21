@@ -337,6 +337,28 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		runData.runInfo.unixTimeStampShifted = G_COOL_API_DB_GetInt(0);
 	}
 
+	if (runData.runInfo.tempDemoName[0]) {
+		if ((runData.runInfo.pbStatus & PB_FIRSTRUN_SPECIFICSTYLE) || (runData.runInfo.pbStatus & PB_NEWPB_SPECIFICSTYLE)) {
+			if (runData.runInfo.userId == -1) {
+				trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"races_unlogged/%s-%s\"\n", runData.runInfo.tempDemoName
+					, runData.runInfo.coursename
+					, DF_DemoRaceStyleNamePart(&runData.runInfo.raceStyle)
+				));
+			}
+			else {
+				trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"races/%s/%s-%s-%s\"\n", runData.runInfo.tempDemoName, runData.runInfo.username
+					,runData.runInfo.username
+					,runData.runInfo.coursename
+					,DF_DemoRaceStyleNamePart(&runData.runInfo.raceStyle)
+					));
+			}
+		}
+		else {
+			// "delete" it.
+			trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"trash/trash%d\"\n", runData.runInfo.tempDemoName, runData.runInfo.clientNum));
+		}
+	}
+
 	PrintRaceTime(&runData.runInfo, qfalse, qtrue,ent);
 
 }

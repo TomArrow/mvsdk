@@ -166,6 +166,7 @@ typedef struct finishedRunInfo_s {
 	int			unixTimeStampShiftedBillionCount; 
 	char		netname[MAX_NETNAME];
 	mainLeaderboardType_t lbType;
+	char		tempDemoName[MAX_QPATH];
 } finishedRunInfo_t;
 
 //typedef struct evaluatedRunInfo_s {
@@ -189,5 +190,6 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 raceStyle_t getDefaultMapRaceStyle();
 char* QDECL multiva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 char* QDECL miniva(const char* format, ...) __attribute__((format(printf, 1, 2)));
+const char* DF_DemoRaceStyleNamePart(raceStyle_t* rs);
 
 #endif

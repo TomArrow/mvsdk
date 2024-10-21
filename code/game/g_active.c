@@ -2438,7 +2438,49 @@ void ClientThink( int clientNum ) {
 
 extern void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void G_RunClient( gentity_t *ent ) {
-	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
+	qboolean areSegReplaying = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
+
+	//If racemode , do forceclientupdaterate hardcoded at like 4/5 hz ?
+
+	// force client updates if they're not sending packets at roughly 4hz
+
+	if (ent->client->pers.recordingDemo) { //(ent->client->ps.pm_flags & PMF_FOLLOW) ?
+		if (g_cheats.integer || !ent->client->sess.raceMode || (ent->client->sess.sessionTeam == TEAM_SPECTATOR)) {
+			//Their demo is bad, dont keep telling game to keep it
+		}
+		else if (!areSegReplaying && (!ent->client->pers.stats.startLevelTime ||
+			((ent->client->lastHereTime < level.time - 60 * 60 * 1000) && (level.time - ent->client->pers.demoStoppedTime > 10000)))
+			//  || (trap_Milliseconds() - ent->client->pers.stats.startTime > 240 * 60 * 1000)) // just give up on races longer than 4 hours lmao
+			)
+		{
+			//Their demo is bad, dont keep telling game to keep it
+		}
+		else
+			ent->client->pers.stopRecordingTime = level.time + 10000; //Their demo is good! tell game not to delete it yet
+	}
+
+	if (ent->client->pers.recordingDemo && (ent->client->pers.stopRecordingTime < level.time)) {
+		ent->client->pers.recordingDemo = qfalse;
+		ent->client->pers.demoStoppedTime = level.time;
+
+		if (ent->client->pers.keepDemoMaybe) {
+			//trap_SendServerCommand( ent-g_entities, "chat \"RECORDING STOPPED (timeout), HIGHSCORE\"");
+			//trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo temp/%s races/%s\n", ent->s.number, ent->client->pers.oldDemoName, ent->client->pers.demoName));
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", ent->s.number));
+		}
+		else {
+			//trap_SendServerCommand( ent-g_entities, va("chat \"RECORDING STOPPED for client %i\"", ent->client->ps.clientNum));
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", ent->s.number, ent->client->pers.tempDemoName, ent->s.number));
+		}
+	}
+	
+	if (ent->client->pers.cmd.forwardmove || ent->client->pers.cmd.rightmove || ent->client->pers.cmd.upmove || (ent->client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
+		ent->client->lastHereTime = level.time;
+	}
+
+
+	//if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying) {
 		return;
 	}
 
@@ -2448,7 +2490,8 @@ void G_RunClient( gentity_t *ent ) {
 		ent->client->pers.botDelayed = qfalse;
 	}
 
-	if (DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY) {
+	//if (DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY) {
+	if (areSegReplaying) {
 		usercmd_t ucmd;
 		gclient_t* cl = ent->client;
 		if (!cl->pers.segmented.playbackNextCmdIndex) {

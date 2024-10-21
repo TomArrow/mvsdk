@@ -44,6 +44,8 @@ vmCvar_t	g_saberTraceSaberFirst;
 
 vmCvar_t	g_defrag;
 vmCvar_t	g_defragLastRunId;
+vmCvar_t	g_defragLastDemoId;
+vmCvar_t	g_defragAutoDemo;
 vmCvar_t	g_triggersRobust;
 vmCvar_t	g_defragForceRegenFps;
 
@@ -206,7 +208,9 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_saberTraceSaberFirst, "g_saberTraceSaberFirst", "1", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_defrag, "g_defrag", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
+	{ &g_defragAutoDemo, "g_defragAutoDemo", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragLastRunId, "g_defragLastRunId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
+	{ &g_defragLastDemoId, "g_defragLastDemoId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragForceRegenFps, "g_defragForceRegenFps", "100", CVAR_ARCHIVE | CVAR_CHEAT, 0, qtrue  },
 
