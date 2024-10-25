@@ -2574,7 +2574,7 @@ void ClientDisconnect( int clientNum ) {
 
 		ent->client->pers.recordingDemo = qfalse;
 		ent->client->pers.demoStoppedTime = level.time;
-		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", i, ent->client->pers.tempDemoName, i));
+		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", ent-g_entities, ent->client->pers.tempDemoName, ent - g_entities));
 	}
 
 	i = 0;
