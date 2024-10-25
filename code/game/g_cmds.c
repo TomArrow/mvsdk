@@ -2081,6 +2081,8 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	int		i;
 	char	arg1[MAX_STRING_TOKENS];
 	char	arg2[MAX_STRING_TOKENS];
+	//int		clientPermissions;
+	qboolean	canVoteBesideMap = qfalse;
 
 	if ( !g_allowVote.integer ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE")) );
@@ -2099,6 +2101,9 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOSPECVOTE")) );
 		return;
 	}
+
+	canVoteBesideMap = g_allowVote.integer > 1 || ent->client->sess.login.loggedIn && (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_VOTEBESIDESMAP);
+	//clientPermissions = ent->client->sess.login.loggedIn ? ent->client->sess.login.flags : 0;
 
 	// make sure it is a valid command to vote on
 	trap_Argv( 1, arg1, sizeof( arg1 ) );
@@ -2131,7 +2136,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	}
 
 	// special case for g_gametype, check for bad values
-	if ( !Q_stricmp( arg1, "g_gametype" ) )
+	if ( !Q_stricmp( arg1, "g_gametype" ) && canVoteBesideMap)
 	{
 		i = atoi( arg2 );
 		if( i == GT_SINGLE_PLAYER || i < GT_FFA || i >= GT_MAX_GAME_TYPE) {
@@ -2167,7 +2172,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 		}
 	}
-	else if ( !Q_stricmp ( arg1, "clientkick" ) )
+	else if ( !Q_stricmp ( arg1, "clientkick" ) && canVoteBesideMap)
 	{
 		int n = atoi ( arg2 );
 
@@ -2186,7 +2191,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		Com_sprintf ( level.voteString, sizeof(level.voteString ), "%s %s", arg1, arg2 );
 		Com_sprintf ( level.voteDisplayString, sizeof(level.voteDisplayString), "kick %s", g_entities[n].client->pers.netname );
 	}
-	else if ( !Q_stricmp ( arg1, "kick" ) )
+	else if ( !Q_stricmp ( arg1, "kick" ) && canVoteBesideMap)
 	{
 		int clientid = G_ClientNumberFromName ( arg2 );
 
@@ -2204,7 +2209,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		Com_sprintf ( level.voteString, sizeof(level.voteString ), "clientkick %d", clientid );
 		Com_sprintf ( level.voteDisplayString, sizeof(level.voteDisplayString), "kick %s", g_entities[clientid].client->pers.netname );
 	}
-	else if ( !Q_stricmp( arg1, "nextmap" ) ) 
+	else if ( !Q_stricmp( arg1, "nextmap" ) && canVoteBesideMap)
 	{
 		char	s[MAX_STRING_CHARS];
 
@@ -2216,7 +2221,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		Com_sprintf( level.voteString, sizeof( level.voteString ), "vstr nextmap");
 		Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 	} 
-	else
+	else if(canVoteBesideMap)
 	{
 		if ( !Q_stricmp( arg1, "g_doWarmup" ) || !Q_stricmp( arg1, "timelimit" ) || !Q_stricmp( arg1, "fraglimit" ) )
 		{

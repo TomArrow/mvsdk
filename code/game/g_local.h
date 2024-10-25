@@ -98,6 +98,7 @@ extern qboolean gEscaping;
 extern int gEscapeTime;
 
 #define TT_ACCOUNTFLAG_A_CHANGEMAPDEFAULTRACESTYLE		(1<<0)
+#define TT_ACCOUNTFLAG_A_VOTEBESIDESMAP					(1<<1)
 
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
