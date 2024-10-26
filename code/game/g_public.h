@@ -27,6 +27,8 @@
 #define SVF_OWNERNOTSHARED		0x00001000	// If it's owned by something and another thing owned by that something
 											// hits it, it will still touch
 
+#define SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD		0x00002000
+
 #define SVF_GLASS_BRUSH			0x08000000	// Ent is a glass brush
 
 //===============================================================
@@ -435,7 +437,7 @@ Ghoul2 Insert End
 	G_COOL_API_PLAYERUSERCMD_GETCOUNT = 1105,
 	G_COOL_API_NONEPSILONTRACE = 1106,
 	G_COOL_API_NONEPSILONTRACE_CAPSULE = 1107,
-
+	G_COOL_API_SENDBACKUCMD_GAMEGENERATED = 1108,
 
 	G_COOL_API_DB_ESCAPESTRING = 1200,
 	G_COOL_API_DB_ADDREQUEST = 1201,

@@ -2510,6 +2510,10 @@ void G_RunClient( gentity_t *ent ) {
 				trap_GetUsercmd(ent - g_entities, &ent->client->pers.cmd);
 				SetClientViewAngle(ent,ent->client->ps.viewangles); // make a smooth transition back to player-controlled gameplay
 				ent->client->pers.segmented.state = SEG_DISABLED; // done
+				if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+					// during replay, we are providing usercmds for server to send to spectators and player for demos
+					ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
+				}
 				break;
 			}
 			targetServerTime = cl->pers.segmented.playbackStartedTime + ucmd.serverTime;
@@ -2609,6 +2613,10 @@ void G_RunClient( gentity_t *ent ) {
 				cl->pers.cmd.serverTime = targetServerTime;
 				if (cl->pers.segmented.playbackNextCmdIndex == 0) {
 					cl->ps.commandTime = cl->pers.segmented.playbackStartedTime;
+				}
+				if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+					// during replay, we are providing usercmds for server to send to spectators and player for demos
+					trap_G_COOL_API_SendBackUCMD_GameGenerated(ent-g_entities,&cl->pers.cmd);
 				}
 				ClientThink_real(ent);
 				cl->pers.segmented.playbackNextCmdIndex++;

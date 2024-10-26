@@ -828,6 +828,7 @@ qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* u
 int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum);
 void trap_G_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
 void trap_G_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
+void trap_G_COOL_API_SendBackUCMD_GameGenerated(int clientNum, usercmd_t* ucmd);
 
 //qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
 //qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);

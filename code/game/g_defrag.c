@@ -1567,6 +1567,10 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		cl->pers.segmented.state = SEG_REPLAY;
 		cl->pers.segmented.playbackStartedTime = level.time;
 		cl->pers.segmented.playbackNextCmdIndex = 0;
+		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+			// during replay, we are providing usercmds for server to send to spectators and player for demos
+			activator->r.svFlags |= SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
+		}
 		return;
 	}
 
@@ -2979,6 +2983,10 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	if (!cl->sess.raceMode || !(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		trap_G_COOL_API_PlayerUserCmdClear(clientNum);
+		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+			// during replay, we are providing usercmds for server to send to spectators and player for demos
+			ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
+		}
 #ifdef SEGMENTEDDEBUG
 		memset(ent->client->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif
@@ -3007,7 +3015,16 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			// TODO we shouldnt even get here. commands from client should be blocked during a replay.
 			G_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available during the replay of a run.\n\"",qtrue);
 		}
+		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+			// during replay, we are providing usercmds for server to send to spectators and player for demos
+			ent->r.svFlags |= SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
+		}
 		return;
+	}
+
+	if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+		// during replay, we are providing usercmds for server to send to spectators and player for demos
+		ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
 	}
 
 
