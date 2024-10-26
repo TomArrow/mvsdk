@@ -222,6 +222,7 @@ static void G_RegisterResult(int status, const char* errorMessage) {
 static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData;
 	static char password[MAX_STRING_CHARS];
+	static char tmpUsername[sizeof(loginData.username)];
 	gentity_t* ent = NULL;
 
 	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
@@ -252,6 +253,14 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	}
 	loginData.userFlags = G_COOL_API_DB_GetInt(1);
 	loginData.userId = G_COOL_API_DB_GetInt(2);
+	if (!G_COOL_API_DB_GetString(3, tmpUsername, sizeof(tmpUsername))) {
+		// override username with how its written in DB (cuz can match different case but wanna have demo files named consistently)
+		trap_SendServerCommand(loginData.clientnum, "print \"^1WTF COULDN'T GRAB USERNAME, SHOULDN'T HAPPEN!!!.\n\"");
+		Com_Printf("^1WTF COULDN'T GRAB USERNAME, SHOULDN'T HAPPEN!!!.\n");
+	}
+	else {
+		Q_strncpyz(loginData.username, tmpUsername,sizeof(loginData.username));
+	}
 
 	loginData.followUpType = DBREQUEST_LOGIN;
 

@@ -1347,8 +1347,13 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 const char* DF_GetCourseName() {
 	static char serverInfo[BIG_INFO_STRING];
 	static char course[COURSENAME_MAX_LEN + 1];
+	char* s = course;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
+	while (*s) { // make it lowercase
+		*s = tolower(*s);
+		s++;
+	}
 	return course;
 }
 
@@ -1356,6 +1361,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	static char serverInfo[BIG_INFO_STRING];
 	//static char course[COURSENAME_MAX_LEN + 1];
 	gclient_t* client = ent->client;
+	char* s;
 	if (!client || !client->sess.raceMode) return;
 	runInfo->clientNum = ent - g_entities;
 	Q_strncpyz(runInfo->netname, client->pers.netname, sizeof(runInfo->netname));
@@ -1371,6 +1377,11 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(runInfo->coursename, Info_ValueForKey(serverInfo, "mapname"), sizeof(runInfo->coursename));
+	s = runInfo->coursename;
+	while (*s) {
+		*s = tolower(*s);
+		s++;
+	}
 
 	if (client->pers.recordingDemo) {
 		Q_strncpyz(runInfo->tempDemoName, client->pers.tempDemoName, sizeof(runInfo->tempDemoName));

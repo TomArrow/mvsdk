@@ -1151,7 +1151,7 @@ void Cmd_Login_f( gentity_t *ent )
 	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
 	if (coolApi_dbVersion >= 3) {
 		G_COOL_API_DB_AddPreparedStatement((byte*)&loginData, sizeof(loginData), DBREQUEST_LOGIN,
-			"SELECT password,flags,id FROM users WHERE username=?");
+			"SELECT password,flags,id,username FROM users WHERE username=?");
 		G_COOL_API_DB_PreparedBindString(loginData.username);
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
