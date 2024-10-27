@@ -253,13 +253,28 @@ qboolean DF_PrePmoveValid(gentity_t* ent) {
 	// TODO lower limit from 10000? Just basic sanity check anyway
 	return cmdDelta > 0 && cmdDelta < 10000 && ent->client->prePmovePositionSet && !((ent->client->ps.eFlags ^ ent->client->prePmoveEFlags) & EF_TELEPORT_BIT);
 }
-qboolean DF_InTrigger(vec3_t interpOrigin, gentity_t* trigger)
+//qboolean DF_InTrigger(vec3_t interpOrigin, gentity_t* trigger)
+//{
+//	vec3_t	mins, maxs;
+//	vec3_t	playerMins, playerMaxs;
+//
+//	VectorSet(playerMins, -15, -15, DEFAULT_MINS_2);
+//	VectorSet(playerMaxs, 15, 15, DEFAULT_MAXS_2);
+//
+//	VectorAdd(interpOrigin, playerMins, mins);
+//	VectorAdd(interpOrigin, playerMaxs, maxs);
+//
+//	if (trap_EntityContact(mins, maxs, trigger)) return qtrue;
+//
+//	return qfalse;
+//}
+qboolean DF_InTrigger(vec3_t interpOrigin, gentity_t* trigger, vec3_t playerMins, vec3_t playerMaxs)
 {
 	vec3_t	mins, maxs;
-	vec3_t	playerMins, playerMaxs;
+	//vec3_t	playerMins, playerMaxs;
 
-	VectorSet(playerMins, -15, -15, DEFAULT_MINS_2);
-	VectorSet(playerMaxs, 15, 15, DEFAULT_MAXS_2);
+	//VectorSet(playerMins, -15, -15, DEFAULT_MINS_2);
+	//VectorSet(playerMaxs, 15, 15, DEFAULT_MAXS_2);
 
 	VectorAdd(interpOrigin, playerMins, mins);
 	VectorAdd(interpOrigin, playerMaxs, maxs);
@@ -305,6 +320,62 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
 	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs, activator)) || !touched)
+	{
+#if 1
+		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
+		// DONT overlap. for a finish/checkpoint trigger, this means that touched=qtrue would never be set with the old algo, so this whole loop is pointless
+		// as lessTime will go up until it becomes so big the safety break happens.
+		// We now use JP_TracePrecise for trigger tracing, which doesn't use epsilon, but let's be safe anyway, just in case. If that were to happen,
+		// we'd want lessTime to end up 0 anyway, as it means we are just hitting the finish trigger with the sweat molecules emanating
+		// 1 micrometer from our skin, so this is correct.
+		assert(touched || inTrigger);
+		touched = qtrue;
+#else
+		if (inTrigger) touched = qtrue;
+		else if (!touched) {
+
+			trace_t trace;
+			DF_InAnyTrigger(interpOrigin, classname, activator->client->triggerMins, activator->client->triggerMaxs);
+			memset(&trace, 0, sizeof(trace));
+			JP_TracePrecise(&trace, activator->client->prePmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->postPmovePosition, activator->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
+			memset(&trace, 0, sizeof(trace));
+			JP_TracePrecise(&trace, activator->client->postPmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->prePmovePosition, activator->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
+		}
+#endif
+
+		lessTime++;
+		VectorCopy(interpOrigin, oldInterpOrigin);
+		VectorAdd(interpOrigin, delta, interpOrigin);
+#if DEBUG
+		if (lessTime >= (msecDelta + 100)) break; // just to sanity test a bit
+#else
+		if (lessTime >= (msecDelta - 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have NOT been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+#endif
+	}
+#if DEBUG
+	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
+#endif
+
+	VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
+
+	return lessTime;
+}
+int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* trigger, vec3_t displacementVector) // For finish and checkpoint trigger
+{
+	vec3_t	interpOrigin, oldInterpOrigin, delta;
+	int lessTime = -1;
+
+	int msecDelta = activator->client->ps.commandTime- activator->client->prePmoveCommandTime;
+	qboolean touched = qfalse;
+	qboolean inTrigger;
+	float msecScale = 1.0f / (float)msecDelta;
+
+	VectorCopy(activator->client->postPmovePosition, interpOrigin);
+	VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition,delta);
+	VectorScale(delta, msecScale, delta);
+
+	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
+	while ((inTrigger = DF_InTrigger(interpOrigin, trigger,activator->client->triggerMins,activator->client->triggerMaxs)) || !touched)
 	{
 #if 1
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
@@ -1622,7 +1693,10 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	gclient_t* cl;
 	vec3_t interpolationDisplacement;
 	int	timeCheck, lessTime=0;
+	checkpointTime_t* bestTime;
 	int nowTime = LEVELTIME(activator->client);
+
+	if (trigger->parent && trigger->parent != activator) return; // belongs to someone else
 
 	// Check client
 	if (!activator->client) return;
@@ -1639,7 +1713,7 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
 
-	if (nowTime - activator->client->pers.raceLastCheckpointTime < 1000) return; // don't spam.
+	//if (nowTime - activator->client->pers.raceLastCheckpointTime < 1000) return; // don't spam. // already handled via triggerLastPlayerContact and this way checkpoints can be less than 1s apart if needed.
 
 	// we ideally only wanna display checkpoints if the player didn't touch them last frame.
 	// doesn't matter for finish triggers as much since they end runs the first time they are touched.
@@ -1650,15 +1724,42 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 		trap_SendServerCommand(-1, va("print \"^1Warning:^7 %s ^7didn't have valid checkpoint pre-pmove info.\n\"", activator->client->pers.netname));
 	}
 	else {
-		lessTime = DF_InterpolateTouchTimeToOldPos(activator, trigger, "df_trigger_checkpoint", interpolationDisplacement);
+		//lessTime = DF_InterpolateTouchTimeToOldPos(activator, trigger, "df_trigger_checkpoint", interpolationDisplacement);
+		lessTime = DF_InterpolateTouchTimeToOldPosThisTrigger(activator, trigger, interpolationDisplacement);
 	}
 
 	// Set info
 	timeCheck = activator->client->ps.commandTime - lessTime - activator->client->pers.raceStartCommandTime;
 
+	bestTime = ((cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state < SEG_REPLAY) ? &trigger->checkpointTimesSegNonReplay[activator - g_entities] : &trigger->checkpointTimes[activator - g_entities]; // in segmented run mode, non-replay checkpoint times 
+
+	if (bestTime->time == 0)
+	{
+		G_CenterPrint(activator-g_entities,3, va("^2Checkpoint activated\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
+		bestTime->time = timeCheck;
+		bestTime->raceStyle = cl->sess.raceStyle;
+	}
+	else if (memcmp(&bestTime->raceStyle, &cl->sess.raceStyle,sizeof(bestTime->raceStyle))) // last time logged on this checkpoint was a different style
+	{
+		G_CenterPrint(activator-g_entities,3, va("^2Style changed, checkpoint reset\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
+		bestTime->time = timeCheck;
+		bestTime->raceStyle = cl->sess.raceStyle;
+	}
+	else if (timeCheck <= bestTime->time)
+	{
+		G_CenterPrint(activator - g_entities, 3, va("%s\n^2+%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
+		bestTime->time = timeCheck;
+		bestTime->raceStyle = cl->sess.raceStyle;
+	}
+	else
+	{
+		G_CenterPrint(activator - g_entities,3, va("%s\n^1-%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
+
+	}
+
 	// Show info
-	G_CenterPrint(activator - g_entities,3, va("Checkpoint!\n^3%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
-	activator->client->pers.raceLastCheckpointTime = nowTime;
+	//G_CenterPrint(activator - g_entities,3, va("Checkpoint!\n^3%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
+	//activator->client->pers.raceLastCheckpointTime = nowTime; // already handled via triggerLastPlayerContact and this way checkpoints can be less than 1s apart if needed.
 }
 
 void DF_target_husk(gentity_t* ent) {

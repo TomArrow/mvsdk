@@ -124,6 +124,11 @@ extern raceStyle_t defaultRaceStyle;
 
 #define XYSPEED(a) sqrtf((a)[0]*(a)[0]+(a)[1]*(a)[1])
 
+typedef struct checkpointTime_s {
+	int time;
+	raceStyle_t raceStyle;
+} checkpointTime_t;
+
 typedef enum pbFlags_s { // bit flags
 	PB_FIRSTRUN_SPECIFICSTYLE = 1,
 	PB_NEWPB_SPECIFICSTYLE = 2,

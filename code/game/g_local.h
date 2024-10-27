@@ -267,6 +267,9 @@ struct gentity_s {
 	qboolean	triggerClientSpecific; // only works for a specific player (parent)
 	checkpointSeed_t	checkpointSeed; // custom checkpoints get this to be able to save/load from db.
 
+	checkpointTime_t	checkpointTimes[MAX_CLIENTS];
+	checkpointTime_t	checkpointTimesSegNonReplay[MAX_CLIENTS];
+
 	qboolean	isLogical;		// Determines if this ent is logical or not
 	int			laserPointerLastEventFlip;
 };
