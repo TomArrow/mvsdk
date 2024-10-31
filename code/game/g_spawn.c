@@ -101,6 +101,9 @@ field_t fields[] = {
 	{"targetShaderName", FOFS(targetShaderName), F_LSTRING},
 	{"targetShaderNewName", FOFS(targetShaderNewName), F_LSTRING},
 
+	{"courseid", FOFS(courseID), F_INT},
+	//{"objective", FOFS(objective), F_INT},
+
 	{NULL}
 };
 
@@ -268,6 +271,8 @@ spawn_t	spawns[] = {
 	{"target_startTimer", qtrue, DF_target_husk},
 	{"target_stopTimer", qtrue, DF_target_husk},
 	{"target_checkpoint", qtrue, DF_target_husk},
+
+	{"Twi_timer", qfalse, DF_target_husk},
 
 	{"light", qtrue, SP_light}, // in jka it can't be logical cuz it does stuff. here it can.
 	{"path_corner", qtrue, SP_path_corner},
@@ -478,11 +483,22 @@ void G_SpawnGEntityFromSpawnVars( void ) {
 	gentity_t	*ent;
 	char		*s, *value, *gametypeName;
 	static char *gametypeNames[] = {"ffa", "holocron", "jedimaster", "duel", "single", "team", "saga", "ctf", "cty"};
+	qboolean	isTwiTimer = qfalse;
 
 	//// get the next free entity
 	//ent = G_Spawn();
 
-	G_SpawnString("classname", NULL, &value);
+	value = NULL;
+	for (i = 0; i < level.numSpawnVars; i++) {
+		if (!Q_stricmp(level.spawnVars[i][0], "Twi_timer"))
+		{
+			isTwiTimer = qtrue;
+			value = "Twi_timer";
+		}
+	}
+	if (!value) {
+		G_SpawnString("classname", NULL, &value);
+	}
 	if (!value) {
 		return;	// Dont even bother spawning an ent without a classname
 	}
@@ -510,6 +526,10 @@ void G_SpawnGEntityFromSpawnVars( void ) {
 
 	for ( i = 0 ; i < level.numSpawnVars ; i++ ) {
 		G_ParseField( level.spawnVars[i][0], level.spawnVars[i][1], ent );
+	}
+
+	if (isTwiTimer) {
+		ent->classname = "Twi_timer";
 	}
 
 	// check for "notsingle" flag
@@ -955,7 +975,7 @@ void G_SpawnEntitiesFromString( void ) {
 	}
 
 	if (g_defrag.integer) {
-		G_TurnDefragTargetsIntoTriggers();
+		G_ConvertDefragTriggerTypes();
 	}
 
 	level.spawning = qfalse;			// any future calls to G_Spawn*() will be errors

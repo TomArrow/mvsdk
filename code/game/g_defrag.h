@@ -223,7 +223,7 @@ typedef struct segmented_s {
 
 
 
-void G_TurnDefragTargetsIntoTriggers();
+void G_ConvertDefragTriggerTypes();
 qboolean MovementStyleAllowsWeapons(int moveStyle);
 void PlayerSnapshotHackValues(qboolean saveState, int clientNum);
 void PlayerSnapshotRestoreValues();

@@ -283,7 +283,7 @@ qboolean DF_InTrigger(vec3_t interpOrigin, gentity_t* trigger, vec3_t playerMins
 
 	return qfalse;
 }
-qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t playerMins, vec3_t playerMaxs, gentity_t* activator) // TODO make this more efficient
+qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t playerMins, vec3_t playerMaxs, gentity_t* activator, int courseId) // TODO make this more efficient
 {
 	vec3_t	mins, maxs;
 	//vec3_t	playerMins, playerMaxs;
@@ -297,7 +297,7 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t play
 
 	trigger = NULL;
 	while ((trigger = G_Find(trigger, FOFS(classname), classname)) != NULL) {
-		if (trigger->triggerClientSpecific && trigger->parent != activator) continue;
+		if (courseId >=0 && trigger->courseID != courseId || trigger->triggerClientSpecific && trigger->parent != activator) continue;
 		if (trap_EntityContact(mins, maxs, trigger)) return qtrue;
 	}
 
@@ -319,7 +319,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 	VectorScale(delta, msecScale, delta);
 
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
-	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs, activator)) || !touched)
+	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs, activator, trigger->courseID)) || !touched)
 	{
 #if 1
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
@@ -432,7 +432,7 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 	VectorScale(delta, msecScale, delta);
 
 	//while (!(inTrigger = DF_InTrigger(interpOrigin, trigger)) || !left)
-	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator)) || !left)
+	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator, trigger->courseID)) || !left)
 	{
 #if 1
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
@@ -544,7 +544,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		}
 	}
 
-	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator)) return; // we are still in some start trigger.
+	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator, -1)) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
@@ -568,6 +568,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	interpolationDisplacement[2] = 0;
 	cl->pers.stats.distanceTraveled2D = VectorLength(interpolationDisplacement);
 	cl->pers.stats.topSpeed = XYSPEED(cl->ps.velocity);
+	cl->pers.stats.courseId = ent->courseID;
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
@@ -610,9 +611,10 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 
 			trap_SendConsoleCommand(EXEC_APPEND, va("svrecord \"%s\" %i\n", cl->pers.tempDemoName, cl->ps.clientNum));
+			cl->pers.demoStartedTime = level.time;
 		}
 		else { //Check if we should "restart" the demo
-			if (!cl->pers.stats.startLevelTime || (level.time - cl->pers.stats.startLevelTime > 5000 || level.time < cl->pers.stats.startLevelTime)) { //we can just use starttime ?
+			if (!cl->pers.stats.startLevelTime && (!cl->pers.demoStartedTime || (level.time > (cl->pers.demoStartedTime + 1000) || level.time < cl->pers.demoStartedTime)) || (level.time - cl->pers.stats.startLevelTime > 5000 || level.time < cl->pers.stats.startLevelTime)) { // don't restart demo unless (if already within run) 5 seconds have passed since touching start trigger or (if not already within run) the demo started recording at least 1 second ago. to avoid restarting demo 100 times per second.
 				int demoId = DF_GetNewDemoId(); 
 				char		tempDemoName[MAX_QPATH];
 
@@ -622,6 +624,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 				//trap_SendServerCommand( player-g_entities, "chat \"RECORDING RESTARTED\"");
 				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\";svrecord \"%s\" %i\n", cl->ps.clientNum, cl->pers.tempDemoName, cl->ps.clientNum, tempDemoName, cl->ps.clientNum));
 				Q_strncpyz(cl->pers.tempDemoName, tempDemoName,sizeof(cl->pers.tempDemoName));
+				cl->pers.demoStartedTime = level.time;
 				//trap_SendConsoleCommand( EXEC_APPEND, va("svrecord temp/%s %i\n", cl->pers.userName, cl->ps.clientNum));
 			}
 		}
@@ -1428,7 +1431,7 @@ const char* DF_GetCourseName() {
 	return course;
 }
 
-static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int milliseconds) {
+static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int milliseconds, gentity_t* endtrigger) {
 	static char serverInfo[BIG_INFO_STRING];
 	//static char course[COURSENAME_MAX_LEN + 1];
 	gclient_t* client = ent->client;
@@ -1449,6 +1452,18 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(runInfo->coursename, Info_ValueForKey(serverInfo, "mapname"), sizeof(runInfo->coursename));
 	s = runInfo->coursename;
+	while (*s) {
+		*s = tolower(*s);
+		s++;
+	}
+
+	if (endtrigger->message) {
+		Q_strncpyz(runInfo->subcoursename, endtrigger->message, sizeof(runInfo->subcoursename));
+	}
+	else {
+		runInfo->subcoursename[0] = '\0';
+	}
+	s = runInfo->subcoursename;
 	while (*s) {
 		*s = tolower(*s);
 		s++;
@@ -1597,6 +1612,26 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	// Check timer
 	if (!cl->pers.raceStartCommandTime) return;
 
+
+	if (ent->spawnflags & SF_FINISHTIMER_REQUIRE_SPECIFIC_STARTTRIGGER && ent->courseID != cl->pers.stats.courseId) {
+		//if (time > 2000 && (cl->randomLastCenterprint < level.time)) {
+		//	trap_SendServerCommand(player - g_entities, "cp \"^3Warning: you are on the wrong course!\n\n\n\n\n\n\n\n\n\n\""); //Print the checkpoint(s) its missing?
+		//	cl->randomLastCenterprint = level.time + 1000;
+		//}
+		// just silently ignore this. who needs this error message, its just confusing.
+		return;
+	}
+	//Com_Printf("Flag: %i, Objective %i, player objectives %i\n", restrictions, trigger->objective, player->client->pers.stats.checkpoints);
+		//If player has MORe checkpoints than the end trigger requires, that also fails.  Fix this?
+	if (ent->spawnflags & SF_FINISHTIMER_REQUIRE_CHECKPOINTS && (ent->objective & cl->pers.stats.checkpoints) != ent->objective) {
+		//if (/*time > 2000 &&*/ (cl->randomLastCenterprint < level.time)) {//sad hack to avoid spamming people who just start run(trigger on opposite side of start)
+		//	G_CenterPrint(activator - g_entities,3, "^3Warning: you are missing some required checkpoints!",qfalse,qtrue,qfalse); //Print the checkpoint(s) its missing?
+		//	cl->randomLastCenterprint = level.time + 1000;
+		//}
+		// just silently ignore this. who needs this error message, its just confusing/annoying.
+		return;
+	}
+
 	if (!ValidRaceSettings(activator) || !trap_InPVS(cl->ps.origin, cl->ps.origin)) {// out of bounds fix? does this need extra checks due to trace/interpolation?
 		DF_RaceStateInvalidated(activator, qtrue);
 		return;
@@ -1620,7 +1655,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	timeBest = !cl->pers.raceBestTime ? timeLast : cl->pers.raceBestTime;
 
 	memset(&runInfo, 0, sizeof(runInfo));
-	DF_FillClientRunInfo(&runInfo, activator, timeLast); // fills various stats we collected from start trigger and across run, and some metadata
+	DF_FillClientRunInfo(&runInfo, activator, timeLast, ent); // fills various stats we collected from start trigger and across run, and some metadata
 	runInfo.runId = DF_GetNewRunId();
 	runInfo.endLessTime = lessTime;
 	runInfo.levelTimeEnd = level.time;
@@ -1713,6 +1748,36 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	// Check timer
 	if (!activator->client->pers.raceStartCommandTime) return;
 
+	if (trigger->spawnflags & SF_CHECKPOINT_RESET_PLAYER_TIMER) { //Instead of a checkpoint, make it reset their time (they went out of bounds or something)
+		DF_RaceStateInvalidated(activator, qtrue);
+		// make it a soft reset. can still save a spawn after.
+		// this can't be used to cheat yourself out of an invalidated state because we already check above that raceStateInvalidated is false.
+		activator->client->sess.raceStateInvalidated = qfalse; 
+		return;
+	}
+	if (!(trigger->spawnflags & SF_CHECKPOINT_UNSET_CHECKPOINT) && trigger->objective > 0 && ((cl->pers.stats.checkpoints & trigger->objective) == trigger->objective)) {
+		return;
+	}
+	if (trigger->objective > 0) {  //Bitvalue of the checkpoint Todo, need to print times
+		int i, val;
+
+		if (trigger->spawnflags & SF_CHECKPOINT_UNSET_CHECKPOINT) {
+			cl->pers.stats.checkpoints &= ~trigger->objective;
+			return; //Todo, notify the client or?
+		}
+		else
+			cl->pers.stats.checkpoints |= trigger->objective;
+		
+		// japro maybe add back in later idk
+		//for (i = 0; i < 32; i++) {
+		//	val = (1 << i);
+		//	if (val == trigger->objective) {
+		//		mandatoryCheckpoint = i + 1;
+		//		break;
+		//	}
+		//}
+	}
+
 	//if (nowTime - activator->client->pers.raceLastCheckpointTime < 1000) return; // don't spam. // already handled via triggerLastPlayerContact and this way checkpoints can be less than 1s apart if needed.
 
 	// we ideally only wanna display checkpoints if the player didn't touch them last frame.
@@ -1804,14 +1869,20 @@ void DF_trigger_start(gentity_t* ent) {
 	ent->leave = DF_StartTimer_Leave;
 	ent->triggerOnlyTraced = qtrue; // don't trigger if we are fully inside trigger brush or if robust triggers are deactivated. only when entering/leaving
 
+	level.dfStartTriggerTypes |= (1 << DFTRIG_NT_JAPRO);
+
 	trap_LinkEntity(ent);
 }
 void DF_trigger_finish(gentity_t* ent) {
 
 	InitTrigger(ent);
 
+	G_SpawnInt("objective", "0", &ent->objective); // japro checkpoints
+
 	ent->touch = DF_FinishTimer_Touch;
 	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
+
+	level.dfEndTriggerTypes |= (1 << DFTRIG_NT_JAPRO);
 
 	trap_LinkEntity(ent);
 }
@@ -1822,6 +1893,8 @@ void DF_trigger_checkpoint(gentity_t* ent) {
 	ent->touch = DF_CheckpointTimer_Touch;
 	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
 
+	level.dfCheckPointTriggerTypes |= (1 << DFTRIG_NT_JAPRO);
+
 	trap_LinkEntity(ent);
 }
 
@@ -1831,19 +1904,30 @@ void DF_trigger_checkpoint(gentity_t* ent) {
 //
 //
 // Basically, this function is fucking evil
-void G_TurnDefragTargetsIntoTriggers() {
+void G_ConvertDefragTriggerTypes() {
 	gentity_t*	target;
 	gentity_t*	trigger;
 	qboolean	anyTriggerFound = qfalse;
-	int i;
+	int i,index;
 	char* oldModel;
+	char* oldType;
+
+	//if ((level.dfStartTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfEndTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfCheckPointTriggerTypes & (1<<DFTRIG_NT_JAPRO)) ) {
+	if (level.dfStartTriggerTypes && level.dfEndTriggerTypes && level.dfCheckPointTriggerTypes ) {
+		//return; // got all we need, highest rank type triggers. the checkpoint one maybe doesnt need to be checked? idk.
+		return; // got all we need, triggers of every type
+	}
 
 	target = NULL;
 
 	for (i = 0; i < TARGET_TYPE_COUNT; i++) {
 		// Go through all target types
 
-		// First find all relevant targets
+		if (i == TARGET_STARTTIMER && level.dfStartTriggerTypes || i == TARGET_STOPTIMER && level.dfEndTriggerTypes || i == TARGET_CHECKPOINT && level.dfCheckPointTriggerTypes) {
+			continue; // already got this type covered.
+		}
+
+		// Q3 style triggers
 		while ((target = G_Find(target, FOFS(classname), q3DefragTargetNames[i])) != NULL) {
 			trigger = NULL;
 			if (!target->targetname) {
@@ -1867,15 +1951,21 @@ void G_TurnDefragTargetsIntoTriggers() {
 					case TARGET_STARTTIMER:
 						trigger->classname = "df_trigger_start";
 						DF_trigger_start_converted(trigger);
+						level.dfStartTriggerTypes |= (1 << DFTRIG_Q3);
+						G_Printf("DEFRAG: ^2Q3 %s at %s converted.\n", target->classname, vtos(target->s.origin));
 						break;
 					case TARGET_STOPTIMER:
 						trigger->classname = "df_trigger_finish";
 						DF_trigger_finish_converted(trigger);
+						level.dfEndTriggerTypes |= (1 << DFTRIG_Q3);
+						G_Printf("DEFRAG: ^2Q3 %s at %s converted.\n", target->classname, vtos(target->s.origin));
 						break;
 					default:
 					case TARGET_CHECKPOINT:
 						trigger->classname = "df_trigger_checkpoint";
 						DF_trigger_checkpoint_converted(trigger);
+						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3);
+						G_Printf("DEFRAG: ^2Q3 %s at %s converted.\n", target->classname, vtos(target->s.origin));
 						break;
 				}
 			}
@@ -1884,6 +1974,111 @@ void G_TurnDefragTargetsIntoTriggers() {
 			}
 			G_FreeEntity(target);
 		}
+
+		if (i == TARGET_STARTTIMER && level.dfStartTriggerTypes || i == TARGET_STOPTIMER && level.dfEndTriggerTypes || i == TARGET_CHECKPOINT && level.dfCheckPointTriggerTypes) {
+			continue; // already got this type covered.
+		}
+
+		// twi_timer
+		if (i != TARGET_CHECKPOINT) { // dunno how twi mod handles checkpoints
+			trigger = NULL;
+			while ((trigger = G_Find(trigger, FOFS(classname), "Twi_timer")) != NULL) {
+				if (!trigger->model) {
+					continue;
+				}
+				if ((trigger->spawnflags & 1) && i != TARGET_STOPTIMER || !(trigger->spawnflags & 1) && i != TARGET_STARTTIMER) {
+					continue; // spawnflag 1 means endtimer
+				}
+				// TODO Is the value of Twi_timer supposed to be the subcourse name?
+				oldModel = trigger->model;
+				oldType = trigger->classname;
+				G_FreeEntity(trigger);
+				G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
+				trigger->model = oldModel; 
+				switch (i) { // reusing japro classnames for compatibility
+					case TARGET_STARTTIMER:
+						trigger->classname = "df_trigger_start";
+						DF_trigger_start_converted(trigger);
+						level.dfStartTriggerTypes |= (1 << DFTRIG_TWITIMER);
+						G_Printf("DEFRAG: ^2Twi %s converted to df_trigger_start.\n", oldType);
+						break;
+					case TARGET_STOPTIMER:
+						trigger->classname = "df_trigger_finish";
+						DF_trigger_finish_converted(trigger);
+						level.dfEndTriggerTypes |= (1 << DFTRIG_TWITIMER);
+						G_Printf("DEFRAG: ^2Twi %s converted to df_trigger_finish.\n", oldType);
+						break;
+					default:
+					case TARGET_CHECKPOINT: // wont ever be hit atm, dunno how twi does checkpoints
+						trigger->classname = "df_trigger_checkpoint";
+						DF_trigger_checkpoint_converted(trigger);
+						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_TWITIMER);
+						G_Printf("DEFRAG: ^2Twi %s converted to df_trigger_checkpoint.\n", oldType);
+						break;
+				}
+			}
+			
+		}
+
+		if (i == TARGET_STARTTIMER && level.dfStartTriggerTypes || i == TARGET_STOPTIMER && level.dfEndTriggerTypes || i == TARGET_CHECKPOINT && level.dfCheckPointTriggerTypes) {
+			continue; // already got this type covered.
+		}
+
+		// trigger_multiple
+		if (i != TARGET_CHECKPOINT) { // dunno how twi mod handles checkpoints
+			trigger = NULL;
+			index = (level.dfStartTriggerTypes & (1 << DFTRIG_TRIGMULT))  ? 0 : -1; // start already found so now the index is automatically 1 higher already.
+			while ((trigger = G_Find(trigger, FOFS(classname), "trigger_multiple")) != NULL) {
+				if (!trigger->model) {
+					continue;
+				}
+				if (trigger->roffname || trigger->target) {
+					continue; // this is most likely a normal trigger, not an abused timer type trigger_multiple.
+				}
+				index++;
+				if (index == 1 && i != TARGET_STOPTIMER || index == 0 && i != TARGET_STARTTIMER) {
+					continue; // index 0 = first trigger_multiple. means start timer. 
+				}
+
+				oldModel = trigger->model;
+				oldType = trigger->classname;
+				G_FreeEntity(trigger);
+				G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
+				trigger->model = oldModel;
+				switch (i) { // reusing japro classnames for compatibility
+				case TARGET_STARTTIMER:
+					trigger->classname = "df_trigger_start";
+					DF_trigger_start_converted(trigger);
+					level.dfStartTriggerTypes |= (1 << DFTRIG_TRIGMULT);
+					G_Printf("DEFRAG: ^2%s converted to df_trigger_start.\n", oldType);
+					break;
+				case TARGET_STOPTIMER:
+					trigger->classname = "df_trigger_finish";
+					DF_trigger_finish_converted(trigger);
+					level.dfEndTriggerTypes |= (1 << DFTRIG_TRIGMULT);
+					G_Printf("DEFRAG: ^2%s converted to df_trigger_finish.\n", oldType);
+					break;
+				default:
+				case TARGET_CHECKPOINT: // wont ever be hit atm, dunno how that trigger_multiple "system" does checkpoints
+					trigger->classname = "df_trigger_checkpoint";
+					DF_trigger_checkpoint_converted(trigger);
+					level.dfCheckPointTriggerTypes |= (1 << DFTRIG_TRIGMULT);
+					G_Printf("DEFRAG: ^2%s converted to df_trigger_checkpoint.\n", oldType);
+					break;
+				}
+			}
+
+		}
+	}
+
+	if (!level.dfStartTriggerTypes) {
+		G_Printf("DEFRAG: ^1No start timers found.\n");
+	}
+	if (!level.dfEndTriggerTypes) {
+		G_Printf("DEFRAG: ^1No end timers found.\n");
+	}
+	if (!level.dfCheckPointTriggerTypes) {
+		G_Printf("DEFRAG: ^3No map checkpoints found.\n");
 	}
 }
 
@@ -2479,13 +2674,14 @@ void DF_LoadMapDefaults() {
 	Q_strncpyz(data.course, DF_GetCourseName(), sizeof(data.course));
 
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_LOADMAPRACEDEFAULTS,
-		"SELECT msec,jump,variant,runFlags FROM mapdefaults WHERE course=?"
+		"SELECT msec,jump,variant,runFlags FROM mapdefaults WHERE course=? AND subcourse=?"
 	)) {
 		trap_SendServerCommand(-1, "print \"^1Map defaults could not be loaded. Leaderboard may not display correctly.\n\"");
 		level.mapDefaultsLoadFailed = qtrue;
 		return;
 	}
 	G_COOL_API_DB_PreparedBindString(data.course);
+	G_COOL_API_DB_PreparedBindString(""); // subcourse
 
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 }
@@ -2559,11 +2755,12 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 			Q_strncpyz(data.what, "Run flags", sizeof(data.what));
 
 			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
-				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"runFlags=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindString(""); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);
@@ -2596,11 +2793,12 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 			Q_strncpyz(data.what, "Jump level", sizeof(data.what));
 
 			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
-				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"jump=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindString(""); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);
@@ -2633,11 +2831,12 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 			Q_strncpyz(data.what, "Variant", sizeof(data.what));
 
 			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
-				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"variant=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindString(""); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);
@@ -2677,11 +2876,12 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 			Q_strncpyz(data.what, "Msec", sizeof(data.what));
 
 			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
-				"INSERT INTO mapdefaults (course,msec,jump,variant,runFlags) VALUES (?,?,?,?,?)"
+				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"msec=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
+			G_COOL_API_DB_PreparedBindString(""); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);

@@ -232,6 +232,7 @@ struct gentity_s {
 	int			waterlevel;
 
 	int			noise_index;
+	int			courseID;
 
 	// timing variables
 	float		wait;
@@ -386,6 +387,8 @@ typedef struct runStats_s { // zero'd out every time we leave start timer
 	float topSpeed;
 	int saveposCount;
 	int resposCount;
+	int courseId;
+	int checkpoints;
 } runStats_t;
 typedef struct raceDropped_s { // zero'd out every time we leave start timer
 	int			msecTime; // in non-toggle mode, packets get soft-"dropped" (not evaluated) if the msec value is wrong. We accumulate the loss here
@@ -453,6 +456,7 @@ typedef struct {
 	//qboolean	keepDemo;//japro autodemo for defrag... :S
 	char		tempDemoName[MAX_QPATH];
 	//char		demoName[MAX_QPATH];
+	int			demoStartedTime;
 	int			demoStoppedTime;
 	int			stopRecordingTime;
 } clientPersistant_t;
@@ -566,6 +570,7 @@ struct gclient_s {
 	int			triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
 	int			entityStates[MAX_GENTITIES]; // allow us to store some simplistic states about other entities, like func_usable. letting us know if the func_usable is turned on/off for this player
 	
+	int			randomLastCenterprint;
 };
 
 
@@ -673,6 +678,10 @@ typedef struct {
 	// tommyternal
 	int			nonDeterministicEntities; // if the level contains any movers or certain target_ things, show a warning to people doing segmented runs
 	gentity_t*	playerStats[MAX_CLIENTS];
+
+	int			dfStartTriggerTypes;			//bitmask of dfTriggerTypes_t
+	int			dfEndTriggerTypes;				//bitmask of dfTriggerTypes_t
+	int			dfCheckPointTriggerTypes;		//bitmask of dfTriggerTypes_t
 } level_locals_t;
 
 

@@ -1407,7 +1407,7 @@ void Cmd_Top_f( gentity_t *ent )
 
 #define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump"
 //#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime,MIN(runwhen) OVER (PARTITION BY userid) AS earliest FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
-#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
+#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE course=? AND subcourse=? AND style=? AND variant=? AND %s ) runs_pre"
 //#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE earliest=runwhen AND besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
 #define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
 
@@ -1426,6 +1426,7 @@ void Cmd_Top_f( gentity_t *ent )
 		int i;
 		for (i = 0; i < countLBs; i++) {
 			G_COOL_API_DB_PreparedBindString(courseName);
+			G_COOL_API_DB_PreparedBindString("");// subcourse
 			G_COOL_API_DB_PreparedBindInt((int)MV_JK2);
 			G_COOL_API_DB_PreparedBindInt(0);
 		}

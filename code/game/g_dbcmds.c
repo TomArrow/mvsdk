@@ -936,11 +936,13 @@ static void G_CreateCheckpointsTable() {
 static void G_CreateMapRaceDefaultsTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS mapdefaults(\
-			course VARCHAR(100) NOT NULL PRIMARY KEY, \
+			course VARCHAR(100) NOT NULL, \
+			subcourse VARCHAR(100) NOT NULL, \
 			msec SMALLINT NOT NULL, \
 			jump TINYINT NOT NULL, \
 			variant SMALLINT NOT NULL,\
-			runFlags INT NOT NULL)";
+			runFlags INT NOT NULL,\
+			PRIMARY KEY(course,subcourse))";
 	Q_strncpyz(tableName.s, "mapdefaults", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
@@ -962,6 +964,7 @@ static void G_CreateRunsTable() {
 			id BIGINT AUTO_INCREMENT PRIMARY KEY, \
 			userid BIGINT SIGNED NOT NULL, \
 			course VARCHAR(100) NOT NULL, \
+			subcourse VARCHAR(100) NOT NULL, \
 			duration_ms INT UNSIGNED NOT NULL, \
 			startLessTime INT NOT NULL, \
 			endLessTime INT NOT NULL, \
@@ -982,10 +985,10 @@ static void G_CreateRunsTable() {
 			runwhen DATETIME NOT NULL, \
 			runfirst DATETIME NOT NULL, \
 			warningFlags INT NOT NULL, \
-			UNIQUE KEY user_runtype (userid,course,style,msec,jump,variant,runFlags"
+			UNIQUE KEY user_runtype (userid,course,subcourse,style,msec,jump,variant,runFlags"
 			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
 			"), \
-			INDEX i_userid (userid), INDEX i_course (course), \
+			INDEX i_userid (userid), INDEX i_course_subcourse (course,subcourse), INDEX i_course (course), INDEX i_subcourse (subcourse), \
 			INDEX i_duration_ms (duration_ms), \
 			INDEX i_distance (distance), \
 			INDEX i_style (style), \
@@ -1093,10 +1096,10 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	lbSQLCondition = getLeaderboardSQLConditions(runInfo->lbType, &level.mapDefaultRaceStyle);
 	insertOrUpdateRequest =
 		va("SET @now=NOW();"
-			"INSERT INTO runs (userid,course,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"
+			"INSERT INTO runs (userid,course,subcourse,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
 			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
 			"@now,@now,?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
@@ -1114,9 +1117,9 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount),"
 			"duration_ms = IF(?<duration_ms,?,duration_ms);" // duration_ms has to be set last or else all other columns arent updated
 			// check if we had a better time on this leaderboard before. (return value of INSERT OR UPDATE only tells us if it was the best with the unique key, but leaderboards accumulate ranges of race settings, especially "custom" leaderboard and such)
-			"SELECT COUNT(id) AS countOwnFaster FROM runs WHERE userid=? AND course=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));"
+			"SELECT COUNT(id) AS countOwnFaster FROM runs WHERE userid=? AND course=? AND subcourse=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));"
 			// check our new rank.
-			"SELECT COUNT(DISTINCT userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
+			"SELECT COUNT(DISTINCT userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND subcourse=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
 			"SELECT (UNIX_TIMESTAMP(@now)-(?*1000000000)) as unixTimeMinus3bill", lbSQLCondition, lbSQLCondition);
 	
 #undef RUNFLAGSFUNC
@@ -1134,6 +1137,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	// INSERT PART
 	G_COOL_API_DB_PreparedBindInt(runInfo->userId);
 	G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	G_COOL_API_DB_PreparedBindString(runInfo->subcoursename);
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->average);
@@ -1199,6 +1203,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	// SECOND QUERY - SELECT OUR BEST TIME
 	G_COOL_API_DB_PreparedBindInt(runInfo->userId);
 	G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	G_COOL_API_DB_PreparedBindString(runInfo->subcoursename);
 	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
 	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
 	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);
@@ -1215,6 +1220,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	// THIRD QUERY - SELECT RANK
 	G_COOL_API_DB_PreparedBindInt(runInfo->userId);
 	G_COOL_API_DB_PreparedBindString(runInfo->coursename);
+	G_COOL_API_DB_PreparedBindString(runInfo->subcoursename);
 	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
 	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.msec);
 	//G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.jumpLevel);

@@ -102,6 +102,22 @@ extern bitInfo_t runFlagsVeryShortNames[];
 extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
 extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 
+
+
+#define SF_FINISHTIMER_JUMP1_ONLY							(1<<0)	// japro, irrelevant for us
+#define SF_FINISHTIMER_JUMP2_ONLY							(1<<1)	// japro, irrelevant for us
+#define SF_FINISHTIMER_JUMP3_ONLY							(1<<2)	// japro, irrelevant for us
+#define SF_FINISHTIMER_ALLOW_HASTE							(1<<3)	// japro, irrelevant for us
+#define SF_FINISHTIMER_ALLOW_JETPACK						(1<<4)	// japro, irrelevant for us
+#define SF_FINISHTIMER_NOT_IN_CTF							(1<<5)	// japro, irrelevant for us
+#define SF_FINISHTIMER_ALLOW_MIDMAP_TELES					(1<<6)	// japro, irrelevant for us
+#define SF_FINISHTIMER_REQUIRE_CHECKPOINTS					(1<<7)
+#define SF_FINISHTIMER_REQUIRE_SPECIFIC_STARTTRIGGER		(1<<8)
+
+#define SF_CHECKPOINT_UNUSED								(1<<0)
+#define SF_CHECKPOINT_RESET_PLAYER_TIMER					(1<<1)
+#define SF_CHECKPOINT_UNSET_CHECKPOINT						(1<<2)
+
 // can't do this: because qvm has issues compiling shorts :/
 //typedef struct raceStyle_s {
 //	byte movementStyle; // jk2. maybe some day pjk2 => STAT_MOVEMENTSTYLE
@@ -135,6 +151,14 @@ typedef enum pbFlags_s { // bit flags
 	PB_LB = 4, // Leaderboards sum up various style ranges. e.g. main LB allows 125 and 142 fps runs etc. so pb in ultra specific style is not same as lb pb
 } pbFlags_t;
 
+typedef enum dfTriggerTypes_s {
+	DFTRIG_TRIGMULT,	// acrobat maps. first trigger_multiple is start, second is end
+	DFTRIG_TWITIMER,	// one version of acrobat_metal uses this
+	DFTRIG_Q3,			// Quake 3 style timers
+	DFTRIG_NT_JAPRO,	// NT mod/ japro triggrs
+	DFTRIG_TYPES_COUNT
+} dfTriggerTypes_t;
+
 typedef struct finishedRunInfo_s {
 	int			runId;
 	int			clientNum;
@@ -166,6 +190,7 @@ typedef struct finishedRunInfo_s {
 	int			pbStatus; // see pbFlags_t
 	int			rankLB;
 	char		coursename[COURSENAME_MAX_LEN + 1];
+	char		subcoursename[COURSENAME_MAX_LEN + 1];
 	char		username[USERNAME_MAX_LEN + 1];
 	int			unixTimeStampShifted;
 	int			unixTimeStampShiftedBillionCount; 
