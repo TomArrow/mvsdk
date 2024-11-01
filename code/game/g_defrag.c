@@ -1299,7 +1299,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		const int runFlagsStringLen = strlen(runFlagsString);
 		Q_strncpyz(fpsStr, runInfo->raceStyle.msec == -1 ? "togl" : (runInfo->raceStyle.msec == -2 ? "flt" : (runInfo->raceStyle.msec == 0 ? "unkn" : va("%d", 1000 / runInfo->raceStyle.msec))), sizeof(fpsStr));
 
-		Q_strncpyz(messageStr, va("%s^%c%12s ^3%12s^%c  ^3%7.2f^%cmax ^3%7.2f^%cavg ^3%7.1fk^%cdist ^3%2i^%cj ^3%4s^%cfps ^3%6s^%c style %s ^%c",
+		Q_strncpyz(messageStr, va("%s^%c%12s ^3%12s^%c  ^3%7.2f^%cmax ^3%7.2f^%cavg ^3%7.1fk^%cdist ^3%2i^%cj ^3%4s^%cfps ^3%6s^%c style %s ^%c%s",
 			prefix,
 			color,
 			miniva("[%s]",leaderboardNames[runInfo->lbType]),
@@ -1318,7 +1318,8 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			moveStyleNames[runInfo->raceStyle.movementStyle].string,
 			color,
 			runFlagsString,
-			color), sizeof(messageStr));
+			color,
+			runInfo->subcoursename[0] ? miniva("(^3%s^%c) ", runInfo->subcoursename, color) : ""), sizeof(messageStr));
 		//Q_strncpyz(awardString, va("%s ^%i[^%i%s^%i]", runInfo->netname, color, runInfo->userId == -1 ? 1 : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color), sizeof(awardString));
 		//if (message)
 		//Com_sprintf(messageStr, sizeof(messageStr), "^3%-16s^%i", runInfo->coursename, color);
@@ -1342,7 +1343,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	else if (runInfo->rankLB != -1) {
 
 		if (runInfo->rankLB == 1 && (runInfo->pbStatus & PB_LB)) { //was 1 when it shouldnt have been.. ?
-			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c and %s ranked ^3#%i\n",
+			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c%s and %s ranked ^3#%i\n",
 				prefix,
 				color,
 				miniva("[%s]", leaderboardNames[runInfo->lbType]),
@@ -1350,7 +1351,8 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,
 				color, 
 				runInfo->userId == -1 ? "unofficially " : "",
-				color, 
+				color,
+				runInfo->subcoursename[0] ? miniva(" (^3%s^%c)", runInfo->subcoursename, color) : "",
 				runInfo->userId == -1 ? "would be " : "is now",
 				runInfo->rankLB), 
 				sizeof(messageStr));
@@ -1368,7 +1370,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 		}
 		else if ((runInfo->pbStatus & PB_LB)) {
-			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] got a new personal best and %s ranked ^3#%i\n",
+			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] got a new personal best%s and %s ranked ^3#%i\n",
 				prefix,
 				color,
 				miniva("[%s]", leaderboardNames[runInfo->lbType]), 
@@ -1376,7 +1378,8 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				color, 
 				runInfo->userId == -1 ? '1' : nameColor, 
 				runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,
-				color,  
+				color,
+				runInfo->subcoursename[0] ? miniva(" (^3%s^%c)", runInfo->subcoursename, color) : "",
 				runInfo->userId == -1 ? "would be " : "is now", 
 				runInfo->rankLB), 
 				sizeof(messageStr));
@@ -1528,12 +1531,13 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		"%d " // placeHolder7
 		"%d " // placeHolder8
 		"%d " // isPB
-		"%d " // placeHolder10
+		"%d " // rankLB
 		"\"%s\" " // coursename[COURSENAME_MAX_LEN + 1]
 		"\"%s\" " // username[USERNAME_MAX_LEN + 1]
 		"%d " // unixTimeStampShifted
 		"%d " // unixTimeStampShiftedBillionCount
 		"%d " // lbType
+		"\"%s\" " // subcoursename[COURSENAME_MAX_LEN + 1]
 		,runInfo->runId
 		,runInfo->clientNum
 		,runInfo->userId
@@ -1574,6 +1578,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->unixTimeStampShifted
 		,runInfo->unixTimeStampShiftedBillionCount
 		,runInfo->lbType
+		,runInfo->subcoursename
 		);
 }
 
@@ -1889,6 +1894,8 @@ void DF_trigger_finish(gentity_t* ent) {
 void DF_trigger_checkpoint(gentity_t* ent) {
 
 	InitTrigger(ent);
+
+	G_SpawnInt("objective", "0", &ent->objective); // japro checkpoints
 
 	ent->touch = DF_CheckpointTimer_Touch;
 	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving

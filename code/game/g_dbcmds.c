@@ -276,6 +276,32 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	}
 
 }
+
+const char* G_GenerateRunDemoName(finishedRunInfo_t* runInfo) {
+	static char name[MAX_QPATH];
+	static char sanitizedCourseName[sizeof(runInfo->coursename)];
+	static char sanitizedSubCourseName[sizeof(runInfo->subcoursename)];
+	static char sanitizedUsername[sizeof(runInfo->subcoursename)];
+	sanitizeFilename(runInfo->coursename, sanitizedCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
+	sanitizeFilename(runInfo->subcoursename, sanitizedSubCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
+	if (runInfo->userId == -1) {
+
+		Com_sprintf(name, sizeof(name), "races_unlogged/%s%s-%s"
+			, sanitizedCourseName
+			, sanitizedSubCourseName[0] ? miniva("(%s)", sanitizedSubCourseName) : ""
+			, DF_DemoRaceStyleNamePart(&runInfo->raceStyle));
+	}
+	else {
+		sanitizeFilename(runInfo->username, sanitizedUsername, qfalse); // take care of possible special cahrs the filesystem may not like
+		Com_sprintf(name, sizeof(name), "races/%s/%s-%s%s-%s", sanitizedUsername
+			, sanitizedUsername
+			, sanitizedCourseName
+			, sanitizedSubCourseName[0] ? miniva("(%s)", sanitizedSubCourseName) : ""
+			, DF_DemoRaceStyleNamePart(&runInfo->raceStyle));
+	}
+	return name;
+}
+
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank, gentity_t* ent);
 
 static void G_InsertRunResult(int status, const char* errorMessage, int affectedRows) {
@@ -348,19 +374,25 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 
 	if (runData.runInfo.tempDemoName[0]) {
 		if ((runData.runInfo.pbStatus & PB_FIRSTRUN_SPECIFICSTYLE) || (runData.runInfo.pbStatus & PB_NEWPB_SPECIFICSTYLE)) {
-			if (runData.runInfo.userId == -1) {
-				trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"races_unlogged/%s-%s\"\n", runData.runInfo.tempDemoName
-					, runData.runInfo.coursename
-					, DF_DemoRaceStyleNamePart(&runData.runInfo.raceStyle)
-				));
-			}
-			else {
-				trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"races/%s/%s-%s-%s\"\n", runData.runInfo.tempDemoName, runData.runInfo.username
-					,runData.runInfo.username
-					,runData.runInfo.coursename
-					,DF_DemoRaceStyleNamePart(&runData.runInfo.raceStyle)
-					));
-			}
+			//if (runData.runInfo.userId == -1) {
+			//	trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"races_unlogged/%s%s-%s\"\n", runData.runInfo.tempDemoName
+			//		, runData.runInfo.coursename
+			//		, runData.runInfo.subcoursename[0] ? miniva("(%s)", runData.runInfo.subcoursename) : ""
+			//		, DF_DemoRaceStyleNamePart(&runData.runInfo.raceStyle)
+			//	));
+			//}
+			//else {
+			//	trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"races/%s/%s-%s%s-%s\"\n", runData.runInfo.tempDemoName, runData.runInfo.username
+			//		,runData.runInfo.username
+			//		,runData.runInfo.coursename
+			//		, runData.runInfo.subcoursename[0] ? miniva("(%s)", runData.runInfo.subcoursename) : ""
+			//		,DF_DemoRaceStyleNamePart(&runData.runInfo.raceStyle)
+			//		));
+			//}
+
+			trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"%s\"\n", runData.runInfo.tempDemoName
+				, G_GenerateRunDemoName(&runData.runInfo)
+			));
 		}
 		else {
 			// "delete" it.

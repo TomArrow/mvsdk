@@ -2337,4 +2337,7 @@ typedef enum {
 	DBREQUESTTYPE_BCRYPT, // this doesn't actuaally send any DB request, it just allows us to bcrypt a string on a separate thread
 } DBRequestType_t;
 
+void sanitizeFilename(const char* input, char* output, qboolean allowExtension);
+
+
 #endif	// __Q_SHARED_H

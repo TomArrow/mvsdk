@@ -1508,3 +1508,40 @@ int Q_irand(int value1, int value2)
 //====================================================================
 
 
+
+void sanitizeFilename(const char* input, char* output, qboolean allowExtension) {
+
+	char* lastDot = NULL;
+	const char* inputStart = input;
+	while (*input) {
+		if (*input == '.' && input != inputStart) { // Even tho we allow extensions (dots), we don't allow the dot at the start of the filename.
+			lastDot = output;
+		}
+		if ((*input == 32) // Don't allow ! exclamation mark. Linux doesn't like that.
+			|| (*input >= 35 && *input < 42)
+			|| (*input >= 43 && *input < 46)
+			|| (*input >= 48 && *input < 58)
+			|| (*input >= 59 && *input < 60)
+			|| (*input == 61)
+			|| (*input >= 64 && *input < 92)
+			|| (*input >= 93 && *input < 96) // Don't allow `. Linux doesn't like that either, at least not in shell scripts.
+			|| (*input >= 97 && *input < 124)
+			|| (*input >= 125 && *input < 127)
+			) {
+			*output++ = *input;
+		}
+		else if (*input == '|') {
+			*output++ = 'I';
+		}
+		else {
+			*output++ = '-';
+		}
+		input++;
+	}
+	*output = 0;
+
+	if (allowExtension && lastDot) {
+		*lastDot = '.';
+	}
+}
+
