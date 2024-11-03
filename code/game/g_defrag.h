@@ -235,5 +235,4 @@ void DF_SetMapDefaults(raceStyle_t rs);
 
 void DF_HandleUnfinishedDemos();
 
-
 #endif

@@ -567,6 +567,81 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 
 }
 
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style);
+
+static void G_TopMapSearchResult(int status, const char* errorMessage, int affectedRows) {
+	topRequestStruct_t data;
+	gentity_t* ent = NULL;
+	//evaluatedRunInfo_t eRunInfo;
+	int loaded =0;
+	vec3_t trEndpos;
+	static char courseName[COURSENAME_MAX_LEN + 1];
+	static char subCourseName[COURSENAME_MAX_LEN + 1];
+	int resultsFound = 0;
+	int diff, diff2;
+
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Client %d top map search results returned, user no longer valid.\n", data.clientnum);
+		//return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateRunsTable();
+		G_SendServerCommand(ent-g_entities,"print \"^1Searching maps for top results failed due to runs table not existing. Attempting to create. Please try again shortly.\n\"",qtrue);
+		return;
+	}
+	else if (status) {
+		G_SendServerCommand(ent - g_entities, va("print \"^1Searching maps for top results failed with status %d and error message %s.\n\"", status, errorMessage),qtrue);
+		return;
+	}
+
+	G_SendServerCommand(ent - g_entities, "print \"Your top result request matches the following maps/courses:\n\"", qtrue);
+
+
+	// first query is SET @now = NOW(). skip it.
+	if (!G_COOL_API_DB_GetMoreResults(&affectedRows))
+	{
+		trap_SendServerCommand(-1, "print \"^1WTF NO MORE RESULTS\n\"");
+		return;
+	}
+
+	while (G_COOL_API_DB_NextRow()) {
+		G_COOL_API_DB_GetString(0, courseName,sizeof(courseName));
+		G_COOL_API_DB_GetString(1, subCourseName,sizeof(subCourseName));
+		diff = G_COOL_API_DB_GetInt(2);
+		diff2 = G_COOL_API_DB_GetInt(3);
+		if (!resultsFound) {
+			DF_TopRequest(ent, courseName, subCourseName, data.page, data.style);
+		}
+		if (!subCourseName[0]) {
+			if (g_developer.integer) {
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s (diff %d %d)\n\"", resultsFound ? "" : "->", courseName, diff, diff2), qtrue);
+			}
+			else {
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s\n\"", resultsFound ? "" : "->", courseName), qtrue);
+			}
+		}
+		else {
+			if (g_developer.integer) {
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s/%s  (diff %d %d)\n\"", resultsFound ? "" : "->", courseName, subCourseName, diff, diff2), qtrue);
+			}
+			else {
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s/%s\n\"", resultsFound ? "" : "->", courseName, subCourseName), qtrue);
+			}
+		}
+		resultsFound++;
+
+	}
+	if (!resultsFound) {
+		G_SendServerCommand(ent - g_entities, "print \"^1Nothing.\n\"", qtrue);
+	}
+
+
+}
+
 typedef struct topLeaderBoardEntry_s {
 	qboolean exists;
 	char username[USERNAME_MAX_LEN + 1];
@@ -831,6 +906,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_LOADCHECKPOINTS:
 					G_LoadCheckpointsResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_TOPMAPSEARCH:
+					G_TopMapSearchResult(status, errorMessage, affectedRows);
 					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);

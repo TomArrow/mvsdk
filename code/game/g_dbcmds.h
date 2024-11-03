@@ -15,6 +15,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_UPDATECOLUMNS,
 	DBREQUEST_INSERTORUPDATERUN,
 	DBREQUEST_TOP,
+	DBREQUEST_TOPMAPSEARCH,
 	DBREQUEST_SAVECHECKPOINTS,
 	DBREQUEST_LOADCHECKPOINTS,
 	DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
@@ -69,6 +70,18 @@ typedef struct insertUpdateMapRaceDefaultsStruct_s {
 typedef struct referenceSimpleString_s {
 	char	s[MAX_STRING_CHARS];
 }referenceSimpleString_t;
+
+typedef enum topRequestType_s {
+	TOPREQUEST_ALL
+} topRequestType_t;
+
+typedef struct topRequestStruct_s {
+	int					ip[4];
+	int					clientnum;
+	topRequestType_t	type;
+	int					page;
+	movementStyle_e		style;
+} topRequestStruct_t;
 
 void G_DB_CheckResponses();
 qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify); 

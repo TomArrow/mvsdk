@@ -1385,6 +1385,41 @@ void Cmd_Amtele_f(gentity_t* ent)
 	
 }
 
+
+qboolean atoi_real(const char* string) {
+	size_t i;
+	if (*string) return qfalse;
+	for (i = 0; string[i] != '\0'; ++i) {
+		if (string[i] < '0' || string[i] > '9') {
+			return qfalse;
+		}
+	}
+	return qtrue;
+}
+
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style);
+
+void DF_PrintSubCoursesToPlayer(gentity_t* ent) {
+	int i;
+	for (i = 0; i < level.numCourses; i++) { //32 max
+		if (level.courseName[i] && level.courseName[i][0])
+			trap_SendServerCommand(ent - g_entities, va("print \"  ^5%i ^7- ^3%s\n\"", i + 1, level.courseName[i]));
+	}
+}
+
+void DF_PrintUnspecifiedCourseErrorToPlayer(gentity_t* ent) {
+
+	if (level.numCourses != 1) {
+		if (level.numCourses) {
+			trap_SendServerCommand(ent - g_entities, "print \"This map has multiple courses, you might have to specify one of the following with /top <mapname> <subcoursename> <style (optional)> <page (optional)>.\n\"");
+			DF_PrintSubCoursesToPlayer(ent);
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"This map appears to have no courses, you might have to specify one of the following with /top <mapname> <subcoursename> <style (optional)> <page (optional)>.\n\"");
+		}
+	}
+}
+
 /*
 =================
 Cmd_Top_f
@@ -1392,6 +1427,122 @@ Cmd_Top_f
 */
 void Cmd_Top_f( gentity_t *ent )
 {
+	topRequestStruct_t data;
+	qboolean mainCourseNameFound = qfalse;
+	qboolean subCourseNameFound = qfalse;
+	const int args = trap_Argc();
+	int i,t;
+	//int style = MV_JK2;
+	//int page = 1;
+	//int style = -1, page = -1, start = 0, input, i;
+	char inputString[COURSENAME_MAX_LEN+1];
+	char courseName[COURSENAME_MAX_LEN + 1] = { 0 };
+	char subcourseName[COURSENAME_MAX_LEN + 1] = { 0 };
+	const char* thisMapName = DF_GetCourseName();
+
+	data.page = 1;
+	data.style = MV_JK2;
+
+	if (args <= 1) {
+		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
+		DF_TopRequest(ent, thisMapName, "", data.page, data.style);
+		return;
+	}
+
+	for (i = 1; i < args; i++) {
+		trap_Argv(i, inputString, sizeof(inputString));
+		if (atoi_real(inputString)) {
+			//BUG - atoi(inputstring) returns true for values like "18percent" where it should return false..
+			data.page = atoi(inputString);
+		} else if ((t = RaceNameToInteger(inputString)) != -1) {
+			data.style = t;
+		}
+		else {
+			if (!mainCourseNameFound) {
+				Q_strncpyz(courseName, inputString, sizeof(courseName));
+				mainCourseNameFound = qtrue;
+			}
+			else {
+				Q_strncpyz(subcourseName, inputString, sizeof(subcourseName));
+				subCourseNameFound = qtrue;
+			}
+		}
+	}
+
+	if (!mainCourseNameFound) {
+		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
+		DF_TopRequest(ent, thisMapName, "", data.page, data.style);
+		return;
+	}
+	else if (!subCourseNameFound){
+		if (!Q_stricmp(courseName, thisMapName) && level.emptyNameCourseExists) {
+			DF_TopRequest(ent, thisMapName, "", data.page, data.style);
+			return;
+		}
+
+		// check if its a subcourse of the current map
+		// if someone specifies exactly, we can avoid one DB call to find fitting maps
+		for (i = 0; i < level.numCourses; i++) { //32 max
+			if (!Q_stricmp(level.courseName[i], courseName)) {
+				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style);
+				return;
+			}
+		}
+	}
+	else if(!Q_stricmp(courseName, thisMapName)){
+		// check if its a subcourse of the current map
+		// if someone specifies exactly, we can avoid one DB call to find fitting maps
+		for (i = 0; i < level.numCourses; i++) { //32 max
+			if (!Q_stricmp(level.courseName[i], subcourseName)) {
+				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style);
+				return;
+			}
+		}
+	}
+
+	data.clientnum = ent - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+
+	if (mainCourseNameFound && subCourseNameFound) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOPMAPSEARCH,
+			"SET @search = ?,@subsearch=?;"
+			"SELECT course,subcourse " 
+			",instr(course,@search) +instr(REVERSE(course),REVERSE(@search))-2 AS diff "
+			",instr(subcourse,@subsearch) +instr(REVERSE(subcourse),REVERSE(@subsearch))-2 AS diff2 "
+			"FROM runs GROUP BY course,subcourse HAVING instr(course, @search) AND instr(subcourse, @subsearch) "
+			"ORDER BY diff+diff2" // order stuff nicely and logically. best match comes first
+		)) {
+			return;
+		}
+		G_COOL_API_DB_PreparedBindString(courseName);
+		G_COOL_API_DB_PreparedBindString(subcourseName);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOPMAPSEARCH, 
+			"SET @search = ?;"
+			"SELECT course,subcourse " 
+			",instr(course,@search) +instr(REVERSE(course),REVERSE(@search))-2 AS diff "
+			",instr(subcourse,@search) +instr(REVERSE(subcourse),REVERSE(@search))-2 AS diff2 "
+			"FROM runs GROUP BY course,subcourse HAVING instr(course, @search) OR instr(subcourse, @search) "
+			"ORDER BY CASE " // order stuff nicely and logically. best match comes first
+			"WHEN diff = -2 AND diff2 != -2 THEN diff2 "
+			"WHEN diff2 = -2 AND diff != -2 THEN diff "
+			"ELSE IF(diff<diff2,diff,diff2) "
+			"END"
+		)) {
+			return;
+		}
+		G_COOL_API_DB_PreparedBindString(courseName);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+
+
+
+	//DF_TopRequest(ent, thisMapName,"");
+
+
+	/*
 	topScoresRequestStruct_t data;
 	int countLBs = LB_TYPES_COUNT;
 	const char* mainLBWhere = getLeaderboardSQLConditions(LB_MAIN, &level.mapDefaultRaceStyle);
@@ -1435,7 +1586,7 @@ void Cmd_Top_f( gentity_t *ent )
 	else {
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
 	}
-
+	*/
 
 }
 

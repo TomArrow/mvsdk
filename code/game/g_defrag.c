@@ -1220,6 +1220,63 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 	return qfalse;
 }
 
+/*
+=================
+Cmd_Top_f
+=================
+*/
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style)
+{
+	topScoresRequestStruct_t data;
+	int countLBs = LB_TYPES_COUNT;
+	const char* mainLBWhere = getLeaderboardSQLConditions(LB_MAIN, &level.mapDefaultRaceStyle);
+	const char* mainLBNJBWhere = getLeaderboardSQLConditions(LB_NOJUMPBUG, &level.mapDefaultRaceStyle);
+	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, &level.mapDefaultRaceStyle);
+	const char* segmentedLBWhere = getLeaderboardSQLConditions(LB_SEGMENTED, &level.mapDefaultRaceStyle);
+	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, &level.mapDefaultRaceStyle);
+	//const char* courseName = DF_GetCourseName();
+	if (coolApi_dbVersion < 3) {
+		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database version too low.\n\"");
+		return;
+	}
+
+	page = MAX(0, page - 1);
+
+#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump"
+	//#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime,MIN(runwhen) OVER (PARTITION BY userid) AS earliest FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
+#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE course=? AND subcourse=? AND style=? AND variant=? AND %s ) runs_pre"
+//#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE earliest=runwhen AND besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
+#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT ?,11"
+
+	// TODO what if, for freak reason, someone has two identical times in two different styles? how do i select the earlier one? or should i even care?  earliest=runwhen AND besttime=duration_ms doesnt work cuz not both are neccessarily true
+
+	data.clientnum = ent - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
+		va(
+			"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
+			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
+			"UNION ALL (SELECT 2 AS type," TOPCOLUMNS QUERY2 " )"
+			"UNION ALL (SELECT 3 AS type," TOPCOLUMNS QUERY2 " )"
+			"UNION ALL (SELECT 4 AS type," TOPCOLUMNS QUERY2 " )"
+			, mainLBWhere, mainLBNJBWhere, customLBWhere, segmentedLBWhere, cheatLBWhere))) {
+		int i;
+		for (i = 0; i < countLBs; i++) {
+			G_COOL_API_DB_PreparedBindString(coursename);
+			G_COOL_API_DB_PreparedBindString(subcoursename);// subcourse
+			G_COOL_API_DB_PreparedBindInt(style);
+			G_COOL_API_DB_PreparedBindInt(0);
+			G_COOL_API_DB_PreparedBindInt(page*10);
+		}
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else {
+		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
+	}
+
+
+}
+
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank, gentity_t* ent) {
 	char nameColor, color;
 	//static char awardString[MAX_STRING_CHARS - 2] = { 0 };
@@ -1836,6 +1893,36 @@ void DF_target_husk(gentity_t* ent) {
 	// do nothing. we just wanna be able to find it and replace it.
 }
 
+static void DF_RegisterSubCourse(const char* subcourse) {
+	static char subCourseName[COURSENAME_MAX_LEN+1];
+	int i;
+
+	if (subcourse) {
+		Q_strncpyz(subCourseName, subcourse, sizeof(subCourseName));
+	}
+	else {
+		subCourseName[0] = '\0';
+		level.emptyNameCourseExists = qtrue;
+	}
+
+	for (i = 0; i < level.numCourses; i++) {
+		if (!Q_stricmp(subCourseName, level.courseName[i])) {
+			return;
+		}
+	}
+
+	if (level.numCourses >= MAX_COURSE_COUNT) {
+		Com_Printf("^1More than %d subcourses found. Skipping '%s' for /top display.\n", MAX_COURSE_COUNT, subCourseName);
+		return;
+	}
+
+	Q_strncpyz(level.courseName[level.numCourses], subCourseName, sizeof(level.courseName[0]));
+	//Q_strlwr(level.courseName[level.numCourses]); // what for. let it be how it is, this isn't dependent on user input like /map cmd
+	//Q_CleanStr(level.courseName[level.numCourses]); // we sanitize filenames already. should be fine.
+	level.numCourses++;
+
+}
+
 
 extern void InitTrigger(gentity_t* self);
 void DF_trigger_start_converted(gentity_t* ent) {
@@ -1854,6 +1941,8 @@ void DF_trigger_finish_converted(gentity_t* ent) {
 
 	ent->touch = DF_FinishTimer_Touch;
 	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
+
+	DF_RegisterSubCourse("");
 
 	trap_LinkEntity(ent);
 }
@@ -1888,6 +1977,8 @@ void DF_trigger_finish(gentity_t* ent) {
 	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
 
 	level.dfEndTriggerTypes |= (1 << DFTRIG_NT_JAPRO);
+
+	DF_RegisterSubCourse(ent->message);
 
 	trap_LinkEntity(ent);
 }

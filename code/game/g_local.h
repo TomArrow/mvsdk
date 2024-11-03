@@ -682,6 +682,11 @@ typedef struct {
 	int			dfStartTriggerTypes;			//bitmask of dfTriggerTypes_t
 	int			dfEndTriggerTypes;				//bitmask of dfTriggerTypes_t
 	int			dfCheckPointTriggerTypes;		//bitmask of dfTriggerTypes_t
+
+
+	char		courseName[MAX_COURSE_COUNT][COURSENAME_MAX_LEN + 1];//japro defrag
+	int			numCourses;
+	qboolean	emptyNameCourseExists;
 } level_locals_t;
 
 
