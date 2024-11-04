@@ -1227,14 +1227,16 @@ Cmd_Top_f
 */
 void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style)
 {
-	topScoresRequestStruct_t data;
+	topScoresRequestStruct_t data = { 0 };
 	int countLBs = LB_TYPES_COUNT;
 	const char* mainLBWhere = getLeaderboardSQLConditions(LB_MAIN, &level.mapDefaultRaceStyle);
 	const char* mainLBNJBWhere = getLeaderboardSQLConditions(LB_NOJUMPBUG, &level.mapDefaultRaceStyle);
 	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, &level.mapDefaultRaceStyle);
 	const char* segmentedLBWhere = getLeaderboardSQLConditions(LB_SEGMENTED, &level.mapDefaultRaceStyle);
 	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, &level.mapDefaultRaceStyle);
-	//const char* courseName = DF_GetCourseName();
+
+	data.clientnum = ent - g_entities;
+
 	if (coolApi_dbVersion < 3) {
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database version too low.\n\"");
 		return;
@@ -1250,7 +1252,6 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 
 	// TODO what if, for freak reason, someone has two identical times in two different styles? how do i select the earlier one? or should i even care?  earliest=runwhen AND besttime=duration_ms doesnt work cuz not both are neccessarily true
 
-	data.clientnum = ent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
 		va(
@@ -1272,6 +1273,66 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 	}
 	else {
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
+	}
+
+
+}
+/*
+=================
+DF_TimeRequest
+=================
+*/
+void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int style)
+{
+	timeRequestStruct_t data={ 0 };
+	mainLeaderboardType_t lbType = LB_MAIN;
+	raceStyle_t* raceStyle = &ent->client->sess.raceStyle;
+	gclient_t* cl = ent->client;
+
+	if (cl->sess.raceMode) {
+		lbType = classifyLeaderBoard(raceStyle, &level.mapDefaultRaceStyle);
+	}
+	const char* lbWhere = getLeaderboardSQLConditions(lbType, &level.mapDefaultRaceStyle);
+
+	data.clientnum = ent - g_entities;
+	if (!cl->sess.login.loggedIn) {
+		trap_SendServerCommand(data.clientnum, "print \"Cannot request time when not logged in.\n\"");
+		return;
+	}
+	if (coolApi_dbVersion < 3) {
+		trap_SendServerCommand(data.clientnum, "print \"Time request failed, database version too low.\n\"");
+		return;
+	}
+
+	data.style = style;
+	data.raceStyle = cl->sess.raceStyle;
+	data.lbType = lbType;
+	Q_strncpyz(data.course, coursename, sizeof(data.course));
+	Q_strncpyz(data.subcourse, subcoursename, sizeof(data.subcourse));
+
+#define TOPCOLUMNS "runs_pre.besttime,runs_pre.runFlags, msec, jump"
+	//#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime,MIN(runwhen) OVER (PARTITION BY userid) AS earliest FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
+#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE course=? AND subcourse=? AND style=? AND variant=? AND userid=? AND %s ) runs_pre"
+//#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE earliest=runwhen AND besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
+#define QUERY2 " FROM " RUNSPRE " WHERE besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 1"
+
+	// TODO what if, for freak reason, someone has two identical times in two different styles? how do i select the earlier one? or should i even care?  earliest=runwhen AND besttime=duration_ms doesnt work cuz not both are neccessarily true
+
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TIME,
+		va(
+			"SELECT " TOPCOLUMNS QUERY2 
+			, lbWhere))) {
+		int i;
+		G_COOL_API_DB_PreparedBindString(coursename);
+		G_COOL_API_DB_PreparedBindString(subcoursename);// subcourse
+		G_COOL_API_DB_PreparedBindInt(style);
+		G_COOL_API_DB_PreparedBindInt(raceStyle->variant);
+		G_COOL_API_DB_PreparedBindInt(cl->sess.login.id);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else {
+		trap_SendServerCommand(data.clientnum, "print \"Time request failed, database connection not available.\n\"");
 	}
 
 
@@ -1644,7 +1705,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
 	gclient_t* cl;
 	int	timeLast, timeBest,newRaceBestTime, lessTime = 0;
-	char timeLastStr[32];// , timeBestStr[32];
+	//char timeLastStr[32];// , timeBestStr[32];
 	int warningFlags = 0;
 	qboolean isInserting = qfalse;
 	vec3_t interpolationDisplacement;
@@ -1724,8 +1785,9 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	runInfo.endCommandTime = cl->ps.commandTime - lessTime;
 	runInfo.warningFlags = warningFlags;
 
+	Q_strncpyz(cl->pers.lastSubcourseFinishedName, runInfo.subcoursename, sizeof(cl->pers.lastSubcourseFinishedName));
 
-	Q_strncpyz(timeLastStr, DF_MsToString(timeLast), sizeof(timeLastStr));
+	//Q_strncpyz(timeLastStr, DF_MsToString(timeLast), sizeof(timeLastStr));
 	//Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
 
 	if ((cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state != SEG_REPLAY) {
@@ -1874,13 +1936,13 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	}
 	else if (timeCheck <= bestTime->time)
 	{
-		G_CenterPrint(activator - g_entities, 3, va("%s\n^2+%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities, 3, va("%s\n^2-%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 	}
 	else
 	{
-		G_CenterPrint(activator - g_entities,3, va("%s\n^1-%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities,3, va("%s\n^1+%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
 
 	}
 

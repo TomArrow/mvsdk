@@ -16,6 +16,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_INSERTORUPDATERUN,
 	DBREQUEST_TOP,
 	DBREQUEST_TOPMAPSEARCH,
+	DBREQUEST_TIME,
 	DBREQUEST_SAVECHECKPOINTS,
 	DBREQUEST_LOADCHECKPOINTS,
 	DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
@@ -38,6 +39,15 @@ typedef struct topScoresRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
 }topScoresRequestStruct_t;
+typedef struct timeRequestStruct_s {
+	int			ip[4];
+	int			clientnum;
+	raceStyle_t	raceStyle;
+	int			lbType;
+	char		course[COURSENAME_MAX_LEN + 1];
+	char		subcourse[COURSENAME_MAX_LEN + 1];
+	int			style;
+}timeRequestStruct_t;
 typedef struct checkPointSaveRequestStruct_s {
 	int			ip[4];
 	int			clientnum;

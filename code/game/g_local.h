@@ -459,6 +459,7 @@ typedef struct {
 	int			demoStartedTime;
 	int			demoStoppedTime;
 	int			stopRecordingTime;
+	char		lastSubcourseFinishedName[COURSENAME_MAX_LEN + 1];
 } clientPersistant_t;
 
 // this structure is cleared on each ClientSpawn(),

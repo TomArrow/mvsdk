@@ -1420,6 +1420,17 @@ void DF_PrintUnspecifiedCourseErrorToPlayer(gentity_t* ent) {
 	}
 }
 
+
+void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int style);
+/*
+=================
+Cmd_Time_f
+=================
+*/
+void Cmd_Time_f(gentity_t* ent) {
+	DF_TimeRequest(ent,DF_GetCourseName(),ent->client->pers.lastSubcourseFinishedName,ent->client->sess.raceStyle.movementStyle);
+}
+
 /*
 =================
 Cmd_Top_f
@@ -3412,6 +3423,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "time"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "lasers"))
 		{
 			giveError = qtrue;
@@ -3543,6 +3558,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Amtele_f(ent);
 	else if (Q_stricmp (cmd, "top") == 0)
 		Cmd_Top_f(ent);
+	else if (Q_stricmp (cmd, "time") == 0)
+		Cmd_Time_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
 		Cmd_Register_f(ent);
 	else if (Q_stricmp (cmd, "lasers") == 0)

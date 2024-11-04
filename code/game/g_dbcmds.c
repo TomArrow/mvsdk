@@ -677,7 +677,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
-		Com_Printf("^1Client %d run inserted, user no longer valid.\n", lbRequestData.clientnum);
+		Com_Printf("^1Client %d top results returned, user no longer valid.\n", lbRequestData.clientnum);
 		return;
 	}
 
@@ -758,6 +758,53 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	
 	//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7color explanation:\n^7    %-27s      ^7%-27s      ^7%-27s      ^7%-27s^      ^7%-29s\n\"", "MAIN", "NOJUMPBUG", "CUSTOM", "SEGMENTED", "CHEAT"));
 	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation:  ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"","climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
+
+}
+
+static void G_TimeResult(int status, const char* errorMessage, int affectedRows) {
+	timeRequestStruct_t lbRequestData;
+	gentity_t* ent = NULL;
+
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d time returned, user no longer valid.\n", lbRequestData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateRunsTable();
+		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Time display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Time display failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+	while (G_COOL_API_DB_NextRow()) {
+		int time;
+		time = G_COOL_API_DB_GetInt(0);
+		if (!Q_stricmp(DF_GetCourseName(), lbRequestData.course)) {
+			if (lbRequestData.subcourse[0]) {
+				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on subcourse %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.subcourse, DF_MsToString(time)));
+			}
+			else
+			{
+				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, DF_MsToString(time)));
+			}
+		}
+		else {
+			if (lbRequestData.subcourse[0]) {
+				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on %s/%s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.course, lbRequestData.subcourse, DF_MsToString(time)));
+			}
+			else
+			{
+				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.course, DF_MsToString(time)));
+			}
+		}
+	}
 
 }
 
@@ -900,6 +947,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_TOP:
 					G_TopResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_TIME:
+					G_TimeResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_SAVECHECKPOINTS:
 					G_SaveCheckpointsResult(status, errorMessage, affectedRows);
