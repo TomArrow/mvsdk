@@ -3171,6 +3171,12 @@ void UpdateClientRaceVars(gclient_t* client) {
 		else {
 			client->ps.powerups[PW_YSALAMIRI] = 0;
 		}
+		if (client->pers.raceStartCommandTime) {
+			client->ps.persistant[PERS_SCORE] = (client->ps.commandTime - client->pers.raceStartCommandTime)/ 1000;
+		}
+		else {
+			client->ps.persistant[PERS_SCORE] = 0;
+		}
 	}
 	client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
 	client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
