@@ -1920,13 +1920,14 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 
 	// broadcast the death event to everyone
-	ent = G_TempEntity( self->r.currentOrigin, EV_OBITUARY );
-	ent->s.eventParm = meansOfDeath;
-	ent->s.otherEntityNum = self->s.number;
-	ent->s.otherEntityNum2 = killer;
-	ent->r.svFlags = SVF_BROADCAST;	// send to everyone
-	ent->s.isJediMaster = wasJediMaster;
-
+	if (!self->client->sess.raceMode || self != attacker || meansOfDeath != MOD_SUICIDE) {
+		ent = G_TempEntity(self->r.currentOrigin, EV_OBITUARY);
+		ent->s.eventParm = meansOfDeath;
+		ent->s.otherEntityNum = self->s.number;
+		ent->s.otherEntityNum2 = killer;
+		ent->r.svFlags = SVF_BROADCAST;	// send to everyone
+		ent->s.isJediMaster = wasJediMaster;
+	}
 	self->enemy = attacker;
 
 	self->client->ps.persistant[PERS_KILLED]++;
