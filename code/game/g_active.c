@@ -851,6 +851,39 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
 	}
 	return qtrue;
 }
+/*
+=================
+ClientInactivitySpecTimer
+
+Returns qfalse if the client is put to spec
+=================
+*/
+qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
+	gclient_t* client = ent->client;
+	if (!g_inactivityToSpec.integer || client->sess.sessionTeam == TEAM_SPECTATOR || level.intermissiontime) {
+		// give everyone some time, so if the operator sets g_inactivity during
+		// gameplay, everyone isn't kicked
+		client->inactivityToSpecTime = level.time + 60 * 1000;
+	}
+	else if (client->pers.cmd.forwardmove ||
+		client->pers.cmd.rightmove ||
+		client->pers.cmd.upmove ||
+		(client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
+		client->inactivityToSpecTime = level.time + g_inactivityToSpec.integer * 1000;
+	}
+	else {
+		if (level.time > client->inactivityToSpecTime) {
+			SetTeam(ent, "s");
+			return qfalse;
+		}
+
+		if (level.time > client->inactivityToSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
+			client->randomLastCenterprint = level.time;
+			G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!",(client->inactivityToSpecTime- level.time)/1000), qfalse, qtrue, qfalse);
+		}
+	}
+	return qtrue;
+}
 
 void SetClientPhysicsFps(gentity_t* ent, int clientSetting);
 
@@ -1487,6 +1520,7 @@ void ClientThink_real( gentity_t *ent ) {
 	int			nowTime = LEVELTIME(ent->client); // when racing, make everything relative to commandtime
 	int	moveStyle;
 	qboolean	clientFpsOk;
+	qboolean	inactivityToSpec = qfalse;
 
 	client = ent->client;
 
@@ -1605,6 +1639,8 @@ void ClientThink_real( gentity_t *ent ) {
 
 	HandleClientLaserPointer(ent); // logically should be after intermission but eh, can use some memes
 
+	inactivityToSpec = !ClientInactivitySpecTimer(ent);
+
 	//
 	// check for exiting intermission
 	//
@@ -1681,6 +1717,9 @@ void ClientThink_real( gentity_t *ent ) {
 
 	// check for inactivity timer, but never drop the local client of a non-dedicated server
 	if ( !ClientInactivityTimer( client ) ) {
+		return;
+	}
+	if (inactivityToSpec) {
 		return;
 	}
 

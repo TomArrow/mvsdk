@@ -514,6 +514,7 @@ struct gclient_s {
 	// timers
 	int			respawnTime;		// can respawn when time > this, force after g_forcerespwan
 	int			inactivityTime;		// kick players when time > this
+	int			inactivityToSpecTime;		// spec players when time > this
 	int			lastHereTime;		//japro to optimize bots / autorecord
 	qboolean	inactivityWarning;	// qtrue if the five seoond warning has been given
 	int			rewardTime;			// clear the EF_AWARD_IMPRESSIVE, etc when time > this
@@ -1276,6 +1277,7 @@ extern	vmCvar_t	g_knockback;
 extern	vmCvar_t	g_quadfactor;
 extern	vmCvar_t	g_forcerespawn;
 extern	vmCvar_t	g_inactivity;
+extern	vmCvar_t	g_inactivityToSpec;
 extern	vmCvar_t	g_developer;
 extern	vmCvar_t	g_debugMove;
 extern	vmCvar_t	g_debugAlloc;
