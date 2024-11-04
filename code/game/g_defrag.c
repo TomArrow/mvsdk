@@ -772,15 +772,19 @@ void PlayActualGlobalSound(int soundindex) {
 qboolean DF_RemoveCheckPoints(gentity_t* playerent) {
 	int i;
 	gentity_t* shield;
+	int removed = 0;
 
 	for (i = 0; i < playerent->client->pers.df_checkpointData.count; i++) {
 		shield = g_entities + playerent->client->pers.df_checkpointData.checkpointNumbers[i];
 		if (shield->inuse) {
 			G_FreeEntity(shield);
+			removed++;
 		}
 	}
 
 	playerent->client->pers.df_checkpointData.count = 0;
+
+	return (qboolean)(removed > 0);
 }
 
 // sanity check that the client still exists and knows about this checkpoint andsuch.
@@ -983,7 +987,7 @@ qboolean DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 gentity_t* GetClientNumArg() {
 	char	arg[MAX_STRING_CHARS];
 	int sourcePlayer = -1;
-	gentity_t* sourcePlayerEnt;
+	//gentity_t* sourcePlayerEnt;
 	if (trap_Argc() > 1)
 	{
 		trap_Argv(1, arg, sizeof(arg));
@@ -1275,7 +1279,9 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
 	}
 
-
+#undef TOPCOLUMNS
+#undef RUNSPRE
+#undef QUERY2
 }
 /*
 =================
@@ -1288,11 +1294,12 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 	mainLeaderboardType_t lbType = LB_MAIN;
 	raceStyle_t* raceStyle = &ent->client->sess.raceStyle;
 	gclient_t* cl = ent->client;
+	const char* lbWhere = NULL;
 
 	if (cl->sess.raceMode) {
 		lbType = classifyLeaderBoard(raceStyle, &level.mapDefaultRaceStyle);
 	}
-	const char* lbWhere = getLeaderboardSQLConditions(lbType, &level.mapDefaultRaceStyle);
+	lbWhere = getLeaderboardSQLConditions(lbType, &level.mapDefaultRaceStyle);
 
 	data.clientnum = ent - g_entities;
 	if (!cl->sess.login.loggedIn) {
@@ -1323,7 +1330,7 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 		va(
 			"SELECT " TOPCOLUMNS QUERY2 
 			, lbWhere))) {
-		int i;
+		//int i;
 		G_COOL_API_DB_PreparedBindString(coursename);
 		G_COOL_API_DB_PreparedBindString(subcoursename);// subcourse
 		G_COOL_API_DB_PreparedBindInt(style);
@@ -1335,7 +1342,9 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 		trap_SendServerCommand(data.clientnum, "print \"Time request failed, database connection not available.\n\"");
 	}
 
-
+#undef TOPCOLUMNS
+#undef RUNSPRE
+#undef QUERY2
 }
 
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank, gentity_t* ent) {
@@ -1883,7 +1892,7 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 		return;
 	}
 	if (trigger->objective > 0) {  //Bitvalue of the checkpoint Todo, need to print times
-		int i, val;
+		//int i;// , val;
 
 		if (trigger->spawnflags & SF_CHECKPOINT_UNSET_CHECKPOINT) {
 			cl->pers.stats.checkpoints &= ~trigger->objective;
@@ -2631,14 +2640,14 @@ static qboolean CG_AdjustPositionForClientTimeMover(const vec3_t in, int moverNu
 	gent = &g_entities[moverNum];
 	if (gent->s.eType != ET_MOVER) {
 		VectorCopy(in, out);
-		return;
+		return qfalse;
 	}
 
 	fromTime = MOVERTIME_ENT(gent);
 	toTime = level.time;
 	if (fromTime == toTime) {
 		VectorCopy(in, out);
-		return;
+		return qfalse;
 	}
 	//backupTrTime = gent->s.pos.trTime;
 	//gent->s.pos.trTime = level.time - (fromTime - gent->s.pos.trTime);
@@ -2804,7 +2813,7 @@ void PlayerSnapshotRestoreValues() {
 void DF_SetMapDefaults(raceStyle_t rs) {
 	int i;
 	gentity_t* client;
-	int oldMsec;
+	//int oldMsec;
 	// TODO we wanna update the individual settings of players IF their old defaults were equal to the old map default?
 	// but kind of a pita. just apply for now.
 	for (i = 0; i < MAX_CLIENTS; i++) {
@@ -3333,8 +3342,8 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	int delta;
 	vec3_t oldDelta, diff2;
 	int i;
-	int* intPtr;
-	float* floatPtr;
+	//int* intPtr;
+	//float* floatPtr;
 	playerState_t* storedPS = &savedPosition->ps;
 	if (!client->client) return;
 
