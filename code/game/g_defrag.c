@@ -569,6 +569,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	cl->pers.stats.distanceTraveled2D = VectorLength(interpolationDisplacement);
 	cl->pers.stats.topSpeed = XYSPEED(cl->ps.velocity);
 	cl->pers.stats.courseId = ent->courseID;
+	cl->pers.stats.startTriggerSpeed = XYSPEED(cl->ps.velocity);
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
@@ -1656,7 +1657,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		"%d " // placeHolder5
 		"%d " // placeHolder6
 		"%d " // placeHolder7
-		"%d " // placeHolder8
+		"\"%f\" " // startTriggerSpeed
 		"%d " // isPB
 		"%d " // rankLB
 		"\"%s\" " // coursename[COURSENAME_MAX_LEN + 1]
@@ -1697,7 +1698,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->placeHolder5
 		,runInfo->placeHolder6
 		,runInfo->placeHolder7
-		,runInfo->placeHolder8
+		,runInfo->startTriggerSpeed
 		,runInfo->pbStatus
 		,runInfo->rankLB
 		,runInfo->coursename

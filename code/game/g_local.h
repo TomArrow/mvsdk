@@ -389,6 +389,7 @@ typedef struct runStats_s { // zero'd out every time we leave start timer
 	int resposCount;
 	int courseId;
 	int checkpoints;
+	float startTriggerSpeed;
 } runStats_t;
 typedef struct raceDropped_s { // zero'd out every time we leave start timer
 	int			msecTime; // in non-toggle mode, packets get soft-"dropped" (not evaluated) if the msec value is wrong. We accumulate the loss here

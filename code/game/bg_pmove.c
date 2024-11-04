@@ -449,6 +449,36 @@ void PM_AddTouchEnt( int entityNum ) {
 }
 
 
+
+/*
+==================
+PM_ClipVelocity
+
+Slide off of the impacting object
+returns the blocked flags (1 = floor, 2 = step / wall)
+
+This is the Q2 version of it. I'm not actually using it atm, not even for the Q2 ramps. Just for reference.
+==================
+*/
+#define	STOP_EPSILON	0.1
+
+void PM_ClipVelocityQ2(vec3_t in, vec3_t normal, vec3_t out, float overbounce)
+{
+	float	backoff;
+	float	change;
+	int		i;
+
+	backoff = DotProduct(in, normal) * overbounce;
+
+	for (i = 0; i < 3; i++)
+	{
+		change = normal[i] * backoff;
+		out[i] = in[i] - change;
+		if (out[i] > -STOP_EPSILON && out[i] < STOP_EPSILON)
+			out[i] = 0;
+	}
+}
+
 /*
 ==================
 PM_ClipVelocity
@@ -3027,11 +3057,13 @@ static void PM_GroundTrace( void ) {
 		}
 
 		// Thanks to Loda for making this fix and Daggo for pointing me to it.
-		if ((trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f) && !pm->isSpecialPredict)// don't count them during special predict
+		if ((trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f))// don't count them during special predict
 		{ // It's a ramp!
 			if (!pml.clipped)
 			{
-				// Don't actually fix this atm to not cause prediction errors.
+				// TODO should we do more checks here to make sure it behaves same as normal clip would? 
+				// the trace.plane.normal[2] != 1.0f check in particular seems sus no? since the slidemove stuff
+				// works more with various dot products to determine whether to clip etc. oh well. fuck it.
 
 				const int runFlags = PM_GetRunFlags();
 				if (runFlags & RFL_NODEADRAMPS) {
@@ -3044,12 +3076,18 @@ static void PM_GroundTrace( void ) {
 						PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
 					}
 					PM_CheckBounceJump(trace.plane.normal, pm->ps->velocity); // do we need this here? not sure.
+
+					if (pm->debugLevel) {
+						Com_Printf("%i:Dead ramp fixed\n", c_pmove);
+					}
 				}
-				if (pm->debugLevel) {
-					Com_Printf("%i:Dead ramp\n", c_pmove);
+				else {
+					if (pm->debugLevel) {
+						Com_Printf("%i:Dead ramp\n", c_pmove);
+					}
 				}
 #if JK2_CGAME
-				if (pm->ps->commandTime > cg_rampCountLastCmdTime) { 
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime && !pm->isSpecialPredict) {
 					cg_deadRampsCounted++;
 				}
 #endif
@@ -3059,13 +3097,13 @@ static void PM_GroundTrace( void ) {
 					Com_Printf("%i:Good ramp\n", c_pmove);
 				}
 #if JK2_CGAME
-				if (pm->ps->commandTime > cg_rampCountLastCmdTime) { 
+				if (pm->ps->commandTime > cg_rampCountLastCmdTime && !pm->isSpecialPredict) {
 					cg_goodRampsCounted++;
 				}
 #endif
 			}
 #if JK2_CGAME
-			cg_rampCountLastCmdTime = pm->ps->commandTime;
+			if(!pm->isSpecialPredict) cg_rampCountLastCmdTime = pm->ps->commandTime;
 #endif
 		}
 		

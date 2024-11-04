@@ -186,7 +186,7 @@ typedef struct finishedRunInfo_s {
 	int			placeHolder5;
 	int			placeHolder6;
 	int			placeHolder7;
-	int			placeHolder8;
+	float		startTriggerSpeed;
 	int			pbStatus; // see pbFlags_t
 	int			rankLB;
 	char		coursename[COURSENAME_MAX_LEN + 1];

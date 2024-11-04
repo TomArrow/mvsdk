@@ -1133,6 +1133,7 @@ static void G_CreateRunsTable() {
 			lostMsecCount INT NOT NULL, \
 			lostCmdsCount INT NOT NULL, \
 			topspeed DOUBLE NOT NULL, \
+			startTriggerSpeed DOUBLE NOT NULL, \
 			average DOUBLE NOT NULL, \
 			distance DOUBLE NOT NULL, \
 			distanceXY DOUBLE NOT NULL, \
@@ -1256,14 +1257,15 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	lbSQLCondition = getLeaderboardSQLConditions(runInfo->lbType, &level.mapDefaultRaceStyle);
 	insertOrUpdateRequest =
 		va("SET @now=NOW();"
-			"INSERT INTO runs (userid,course,subcourse,duration_ms,topspeed,average,distance,style,msec,jump,variant,runFlags,"
+			"INSERT INTO runs (userid,course,subcourse,duration_ms,topspeed,startTriggerSpeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
 			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
 			"@now,@now,?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
 			"topspeed = IF(?<duration_ms,?,topspeed),"
+			"startTriggerSpeed = IF(?<duration_ms,?,startTriggerSpeed),"
 			"average = IF(?<duration_ms,?,average),"
 			"distance = IF(?<duration_ms,?,distance),"
 			"runwhen = IF(?<duration_ms,@now,runwhen),"
@@ -1300,6 +1302,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	G_COOL_API_DB_PreparedBindString(runInfo->subcoursename);
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->startTriggerSpeed);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->average);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->distance);
 	G_COOL_API_DB_PreparedBindInt((int)runInfo->raceStyle.movementStyle);
@@ -1324,6 +1327,9 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	// UPDATE PART
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
+
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindFloat(runInfo->startTriggerSpeed);
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->average);
