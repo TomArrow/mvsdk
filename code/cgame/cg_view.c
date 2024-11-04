@@ -1690,6 +1690,7 @@ static void CG_AutoFollow() {
 			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
 				int highestRetCount = -9999999;
 				int highestRetCountClient = -1;
+				int currentRetCount = cg.predictedPlayerState.clientNum != cg.clientNum ? cg.predictedPlayerState.persistant[PERS_IMPRESSIVE_COUNT] : INT_MIN;
 
 				//if (!timePassedSinceFlagStateChange) return;
 
@@ -1706,7 +1707,7 @@ static void CG_AutoFollow() {
 					}
 				}
 
-				if (highestRetCountClient != -1) {
+				if (highestRetCountClient != -1 && highestRetCount > currentRetCount) {
 					followNum = highestRetCountClient;
 				}
 			}
@@ -1716,6 +1717,7 @@ static void CG_AutoFollow() {
 			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
 				int highestRetCount = -9999999;
 				int highestRetCountClient = -1;
+				int currentRetCount = cg.predictedPlayerState.clientNum != cg.clientNum ? cg.predictedPlayerState.persistant[PERS_IMPRESSIVE_COUNT] : INT_MIN;
 
 				//if (!timePassedSinceFlagStateChange) return;
 
@@ -1732,7 +1734,7 @@ static void CG_AutoFollow() {
 					}
 				}
 
-				if (highestRetCountClient != -1) {
+				if (highestRetCountClient != -1 && highestRetCount > currentRetCount) {
 					followNum = highestRetCountClient;
 				}
 			}
@@ -1747,6 +1749,7 @@ static void CG_AutoFollow() {
 		// FFA or cg_autoFollow 1. Just follow someone.
 		int highestScore = -9999999;
 		int highestScoreClient = -1;
+		int currentScore = cg.predictedPlayerState.clientNum != cg.clientNum ? cg.predictedPlayerState.persistant[PERS_SCORE] : INT_MIN;
 		for (i = 0; i < MAX_CLIENTS; i++) {
 
 			if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR) {
@@ -1770,7 +1773,7 @@ static void CG_AutoFollow() {
 				}
 			}
 		}
-		if (highestScoreClient != -1 && cg.predictedPlayerState.clientNum != highestScoreClient) {
+		if (highestScoreClient != -1 && cg.predictedPlayerState.clientNum != highestScoreClient && highestScore > currentScore) {
 			trap_SendClientCommand(va("follow %d", highestScoreClient));
 			cg.lastAutoFollowSent = cg.time;
 		}
