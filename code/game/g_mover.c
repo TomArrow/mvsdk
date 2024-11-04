@@ -2067,6 +2067,11 @@ void GlassDie(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int da
 		return;
 	}
 
+	if (g_defrag.integer) {
+		self->health = 1;
+		return; // dont destroy glass in defrag. want runs to be consistent
+	}
+
 	self->bolt_Head = 1;
 
 	dif[0] = (self->r.absmax[0]+self->r.absmin[0])/2;
@@ -2112,8 +2117,10 @@ void GlassPain(gentity_t *self, gentity_t *attacker, int damage)
 	//Make "cracking" sound?
 }
 
-void GlassUse(gentity_t *self, gentity_t *other, gentity_t *activator)
+void GlassUse(gentity_t *self, gentity_t *other, gentity_t *activator) 
 {
+	// TODO Defrag allow this? Since GlassDie is blocked in defrag..
+
 	vec3_t temp1, temp2;
 
 	//no direct object to blame for the break, so fill the values with whatever

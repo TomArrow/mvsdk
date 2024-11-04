@@ -3077,7 +3077,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	int			nowTime = inflictor ? LEVELTIME(inflictor->client) : level.time;
 	int			nowTimeTarg = LEVELTIME(targ->client);
 
-	if ( !targ || !targ->client ) return;
+	if ( !targ /*|| !targ->client */) return;
 
 	if (targ && targ->damageRedirect)
 	{
@@ -3567,7 +3567,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	}
 
 	// do the damage
-	if (take && (!targ->client->sess.raceMode || !(dflags & FAKE_DAMAGE_IN_RACEMODE))) {
+	if (take && (!(targ->client && targ->client->sess.raceMode) || !(dflags & FAKE_DAMAGE_IN_RACEMODE))) {
 		if (targ->client && (targ->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) && (inflictor->client || attacker->client))
 		{
 			take /= (targ->client->ps.fd.forcePowerLevel[FP_RAGE]+1);
@@ -3624,7 +3624,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			return;
 		}
 		else {
-			if (g_debugMelee.integer && targ->client->sess.raceMode && (targ->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
+			if (g_debugMelee.integer && targ->client && targ->client->sess.raceMode && (targ->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
 			{//getting hurt makes you let go of the wall
 				if (targ->client && (targ->client->ps.pm_flags & PMF_STUCK_TO_WALL))
 				{
