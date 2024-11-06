@@ -145,6 +145,26 @@ typedef struct checkpointTime_s {
 	raceStyle_t raceStyle;
 } checkpointTime_t;
 
+
+typedef enum rollStatus_s {
+	ROLL_NONE,
+	ROLL_STARTED,
+	ROLL_AIR,
+	ROLL_ENDED
+} rollStatus_t;
+
+typedef struct rollState_s {
+	rollStatus_t	status;
+	qboolean		rollStartedInAir;
+	qboolean		lastFrameWasRoll;	// wwhether we are rolling before pmove
+	float			lastSpeed;			// XY velocity before pmove
+	int				lastClientSpeed;	// ps->speed before pmove
+	int				lastClientTime;		// commandtime before pmove
+	int				airClientSpeed;		// last ps->speed before roll ended
+	float			rollSpeed;			// last XY velocity before roll ended
+	int				lastRollEndedTime;	// last commandtime before roll ended
+} rollState_t;
+
 typedef enum pbFlags_s { // bit flags
 	PB_FIRSTRUN_SPECIFICSTYLE = 1,
 	PB_NEWPB_SPECIFICSTYLE = 2,

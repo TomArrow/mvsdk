@@ -1495,6 +1495,8 @@ void HandleClientLaserPointer(gentity_t* ent) {
 	}
 }
 
+void DF_CheckRollSpeed(gentity_t* ent);
+
 /*
 ==============
 ClientThink
@@ -1777,11 +1779,11 @@ void ClientThink_real( gentity_t *ent ) {
 	client->ps.gravity = g_gravity.value;
 
 	// set speed
-	client->ps.speed = g_speed.value;
+	//client->ps.speed = g_speed.value;
 	client->ps.basespeed = g_speed.value; 
 	
 	if (client->sess.raceMode /* || client->ps.stats[STAT_RACEMODE]*/) {
-		client->ps.speed = 250.0f;
+		//client->ps.speed = 250.0f;
 		client->ps.basespeed = 250.0f;
 		client->ps.gravity = 800.0f;
 		//if (client->sess.raceStyle.movementStyle == MV_PINBALL) {
@@ -1790,7 +1792,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	if (MovementIsQuake3Based(moveStyle)) {
-		client->ps.speed = 320.0f;
+		//client->ps.speed = 320.0f;
 		client->ps.basespeed = 320.0f;
 	}
 
@@ -2092,10 +2094,13 @@ void ClientThink_real( gentity_t *ent ) {
 	ent->client->prePmovePositionSet = qtrue;
 	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
 	
-
+	pm.roll = ent->client->pers.roll;
 	DF_PreDeltaAngleChange(ent->client);
 	Pmove (&pm);
 	DF_PostDeltaAngleChange(ent->client);
+	ent->client->pers.roll = pm.roll;
+
+	DF_CheckRollSpeed(ent);
 
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
 	VectorCopy(pm.mins, ent->client->postPmoveMins);

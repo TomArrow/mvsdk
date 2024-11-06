@@ -765,6 +765,7 @@ typedef struct {
 	qboolean	teleporterPredicted;				// true if prediction has hit a trigger_teleport
 	playerState_t	predictedPlayerState;
 	centity_t		predictedPlayerEntity;
+	rollState_t		roll;
 	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;

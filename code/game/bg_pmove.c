@@ -5408,6 +5408,11 @@ void PmoveSingle (pmove_t *pmove) {
 		}
 	}
 
+	pm->roll.lastSpeed = XYSPEED(pm->ps->velocity);
+	pm->roll.lastClientSpeed = pm->ps->speed;
+	pm->roll.lastFrameWasRoll = BG_InRoll(pm->ps, pm->ps->legsAnim);
+	pm->roll.lastClientTime = pm->ps->commandTime;
+
 	BG_AdjustClientSpeed(pm->ps, &pm->cmd, pm->cmd.serverTime);
 
 	if ( pm->ps->stats[STAT_HEALTH] <= 0 ) {
@@ -5706,6 +5711,24 @@ void PmoveSingle (pmove_t *pmove) {
 	PM_GroundTrace();
 	PM_SetWaterLevel();
 
+	if (pm->roll.status == ROLL_NONE && BG_InRoll(pm->ps, pm->ps->legsAnim)) {
+		pm->roll.status = ROLL_STARTED;
+		pm->roll.rollStartedInAir = pm->ps->groundEntityNum == ENTITYNUM_NONE; // shouldnt really happen but lets be safe
+	}
+	else if (pm->roll.status == ROLL_STARTED && !BG_InRoll(pm->ps, pm->ps->legsAnim)) {
+		pm->roll.status = ROLL_NONE;
+	}
+	else if (pm->roll.status == ROLL_STARTED && pm->roll.lastFrameWasRoll && BG_InRoll(pm->ps, pm->ps->legsAnim) && pm->ps->groundEntityNum == ENTITYNUM_NONE) {
+		pm->roll.status = ROLL_AIR;
+		pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
+	}
+	else if (pm->roll.status == ROLL_AIR && pm->roll.lastFrameWasRoll && (!BG_InRoll(pm->ps,pm->ps->legsAnim) || pm->ps->groundEntityNum != ENTITYNUM_NONE)) {
+		pm->roll.status = ROLL_ENDED;
+		pm->roll.rollSpeed = pm->roll.lastSpeed;
+		pm->roll.lastRollEndedTime = pm->roll.lastClientTime;
+	}
+
+
 	if (pm->cmd.forcesel != (byte)-1 && (pm->ps->fd.forcePowersKnown & (1 << pm->cmd.forcesel)))
 	{
 		pm->ps->fd.forcePowerSelected = pm->cmd.forcesel;
@@ -5800,6 +5823,10 @@ void Pmove (pmove_t *pmove) {
 	}
 
 	pmove->ps->pmove_framecount = (pmove->ps->pmove_framecount+1) & ((1<<PS_PMOVEFRAMECOUNTBITS)-1);
+
+	if (pmove->roll.status == ROLL_ENDED) {
+		pmove->roll.status = ROLL_NONE;
+	}
 
 	// chop the move up if it is too long, to prevent framerate
 	// dependent behavior

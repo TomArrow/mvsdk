@@ -3963,3 +3963,10 @@ int JP_ClientNumberFromString(gentity_t* to, const char* s)
 		trap_SendServerCommand(to - g_entities, va("print \"User '%s' is not on the server\n\"", s));
 	return -1;
 }
+
+void DF_CheckRollSpeed(gentity_t* ent) {
+	rollState_t* roll = &ent->client->pers.roll;
+	if (roll->status == ROLL_ENDED) {
+		G_CenterPrint(ent-g_entities,3,va("Roll Speed: ^3%.2f^7ups, flyoff speedmult: %d",roll->rollSpeed,roll->airClientSpeed), qfalse, qtrue, qfalse);
+	}
+}

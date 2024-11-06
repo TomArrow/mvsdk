@@ -1145,7 +1145,9 @@ void CG_PredictPlayerState( void ) {
 			}
 		}
 
+		cg_pmove.roll = cg.roll;
 		Pmove (&cg_pmove);
+		cg.roll = cg_pmove.roll;
 
 		for ( i = 0 ; i < MAX_CLIENTS ; i++ )
 		{
