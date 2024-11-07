@@ -106,6 +106,8 @@ typedef struct savedPosition_s {
 				float	distanceTraveled;
 				float	distanceTraveled2D;
 				float	topSpeed;
+				int		checkpoints;
+				rollState_t roll;
 			} stats;
 			struct {
 				int			msecTime; 

@@ -154,10 +154,18 @@ typedef enum rollStatus_s {
 	ROLL_ENDED // finalized value
 } rollStatus_t;
 
+typedef enum rollType_s {
+	ROLLTYPE_FRONT,
+	ROLLTYPE_BACK,
+	ROLLTYPE_LEFT,
+	ROLLTYPE_RIGHT,
+} rollType_t;
+
 typedef struct rollState_s {
 	rollStatus_t	status;
 	qboolean		rollStartedInAir;
 	qboolean		lastFrameWasRoll;	// wwhether we are rolling before pmove
+	rollType_t		rollType;
 	float			lastSpeed;			// XY velocity before pmove
 	int				lastClientSpeed;	// ps->speed before pmove
 	int				lastClientTime;		// commandtime before pmove
@@ -206,8 +214,8 @@ typedef struct finishedRunInfo_s {
 	int			placeHolder3;
 	int			placeHolder4;
 	int			placeHolder5;
-	int			placeHolder6;
-	int			placeHolder7;
+	float		rollSpeed;
+	int			rollTakeoffClientSpeed;
 	float		startTriggerSpeed;
 	int			pbStatus; // see pbFlags_t
 	int			rankLB;

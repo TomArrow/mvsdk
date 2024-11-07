@@ -5300,6 +5300,7 @@ void PM_CheckRollEnd() {
 		case ROLL_NONE:
 			if (inRoll) {
 				pm->roll.status = ROLL_STARTED;
+				pm->roll.rollType = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT )- BOTH_ROLL_F;
 				pm->roll.rollSpeed = 0;
 				pm->roll.rollStartedInAir = pm->ps->groundEntityNum == ENTITYNUM_NONE; // shouldnt really happen but lets be safe
 			}

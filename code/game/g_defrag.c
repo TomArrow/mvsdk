@@ -89,6 +89,8 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(pers.stats.distanceTraveled)\
 		FIELDSFUNC(pers.stats.distanceTraveled2D)\
 		FIELDSFUNC(pers.stats.topSpeed)\
+		FIELDSFUNC(pers.stats.checkpoints)\
+		FIELDSFUNC(pers.stats.roll)\
 		FIELDSFUNC(pers.raceDropped.msecTime)\
 		FIELDSFUNC(pers.raceDropped.packetCount)\
 		//FIELDSFUNC(damage_knockback)\ // not used anywhere?
@@ -164,6 +166,7 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(client->pers.teamState.lastfraggedcarrier)\
 		FIELDSFUNC(client->pers.teamState.lasthurtcarrier)\
 		FIELDSFUNC(client->pers.teamState.lastreturnedflag)\
+		FIELDSFUNC(client->pers.stats.roll.lastRollEndedTime)\
 		FIELDSFUNC(client->ps.fd.forceDrainTime)\
 		FIELDSFUNC(client->ps.fd.forceGripBeingGripped)\
 		FIELDSFUNC(client->ps.fd.forceGripSoundTime)\
@@ -495,6 +498,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	gclient_t* cl;
 	mainLeaderboardType_t lbType;
 	int resposCountSave, savePosCountSave;
+	rollState_t rollStateSave;
 
 	// Check client
 	if (!activator->client) return;
@@ -557,6 +561,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	resposCountSave = cl->pers.stats.resposCount;
 	savePosCountSave = cl->pers.stats.saveposCount;
+	rollStateSave = cl->pers.stats.roll;
 	memset(&cl->pers.stats, 0, sizeof(cl->pers.stats)); // reset & initialize run stats
 	if (segmented && cl->pers.segmented.state == SEG_REPLAY) { // remember the amount of savepos/respos used during segmented run
 		cl->pers.stats.resposCount = resposCountSave;
@@ -575,6 +580,12 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
 	cl->ps.duelTime = cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
 	//cl->pers.segmented.lastPosUsed = qfalse; // already guaranteed via SEG_RECORDING check above
+
+
+	if ((cl->pers.raceStartCommandTime - rollStateSave.lastRollEndedTime) < 1000) {
+		// roll ended less than 1 second before run start, its probably part of the run. can we do this smarter?
+		cl->pers.stats.roll = rollStateSave;
+	}
 
 	memset(&cl->pers.raceDropped,0,sizeof(cl->pers.raceDropped)); // reset info aabout packets dropped due to wrong fps timing
 
@@ -1618,6 +1629,13 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->topspeed = client->pers.stats.topSpeed;
 	runInfo->savePosCount = client->pers.stats.saveposCount;
 	runInfo->resposCount = client->pers.stats.resposCount;
+	if (client->pers.stats.roll.status == ROLL_ENDED) {
+		runInfo->rollSpeed = client->pers.stats.roll.rollSpeed;
+		runInfo->rollTakeoffClientSpeed = client->pers.stats.roll.finalAirClientSpeed;
+	}
+	else {
+		runInfo->rollTakeoffClientSpeed = runInfo->rollSpeed = 0;
+	}
 	runInfo->rankLB = -1;
 	runInfo->pbStatus = -1;
 	runInfo->unixTimeStampShiftedBillionCount = UNIX_TIMESTAMP_SHIFT_BILLIONS; // how much is subtracted from UNIX_TIMESTAMP() in sql before returning the value so we never overflow even a few decades into the future
@@ -1655,8 +1673,8 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		"%d " // placeHolder3
 		"%d " // placeHolder4
 		"%d " // placeHolder5
-		"%d " // placeHolder6
-		"%d " // placeHolder7
+		"\"%f\" " // rollSpeed
+		"%d " // rollTakeoffClientSpeed
 		"\"%f\" " // startTriggerSpeed
 		"%d " // isPB
 		"%d " // rankLB
@@ -1696,8 +1714,8 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->placeHolder3
 		,runInfo->placeHolder4
 		,runInfo->placeHolder5
-		,runInfo->placeHolder6
-		,runInfo->placeHolder7
+		,runInfo->rollSpeed
+		,runInfo->rollTakeoffClientSpeed
 		,runInfo->startTriggerSpeed
 		,runInfo->pbStatus
 		,runInfo->rankLB
@@ -3966,7 +3984,20 @@ int JP_ClientNumberFromString(gentity_t* to, const char* s)
 
 void DF_CheckRollSpeed(gentity_t* ent) {
 	rollState_t* roll = &ent->client->pers.roll;
+	rollState_t* statsRoll = &ent->client->pers.stats.roll;
 	if (roll->status == ROLL_ENDED) {
 		G_CenterPrint(ent-g_entities,3,va("Roll Speed: ^3%.2f^7ups, flyoff speedmult: %d",roll->rollSpeed,roll->finalAirClientSpeed), qfalse, qtrue, qfalse);
+		if (ent->client->pers.raceStartCommandTime) {
+			if (statsRoll->status == ROLL_NONE) {
+				*statsRoll = *roll;
+			}
+			else if(statsRoll->lastRollEndedTime < ent->client->pers.raceStartCommandTime && (roll->lastRollEndedTime- ent->client->pers.raceStartCommandTime) < 2000) {
+				// last logged roll was before run and this one is within 2 seconds inside run. use this one then.
+				*statsRoll = *roll;
+			}
+		}
+		else {
+			*statsRoll = *roll;
+		}
 	}
 }
