@@ -5293,6 +5293,58 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 	}
 }
 
+void PM_CheckRollEnd() {
+	qboolean inRoll = BG_InRoll(pm->ps, pm->ps->legsAnim);
+
+	switch (pm->roll.status) {
+		case ROLL_NONE:
+			if (inRoll) {
+				pm->roll.status = ROLL_STARTED;
+				pm->roll.rollSpeed = 0;
+				pm->roll.rollStartedInAir = pm->ps->groundEntityNum == ENTITYNUM_NONE; // shouldnt really happen but lets be safe
+			}
+			break;
+		case ROLL_STARTED:
+			if (!inRoll) {
+				pm->roll.status = ROLL_NONE;
+			}
+			else if (pm->roll.lastFrameWasRoll && inRoll && pm->ps->groundEntityNum == ENTITYNUM_NONE) {
+				pm->roll.status = ROLL_AIR;
+				pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
+			}
+			break;
+		case ROLL_AIR:
+			if (!inRoll) {
+				pm->roll.status = ROLL_ENDED;
+				if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
+					pm->roll.rollSpeed = pm->roll.lastSpeed;
+					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
+				}
+				pm->roll.lastRollEndedTime = pm->roll.lastClientTime;
+			}
+			else if (pm->ps->groundEntityNum != ENTITYNUM_NONE) {
+				pm->roll.status = ROLL_TOUCH;
+				if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
+					pm->roll.rollSpeed = pm->roll.lastSpeed;
+					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
+				}
+			}
+			break;
+		case ROLL_TOUCH:
+			if (!inRoll) {
+				pm->roll.status = ROLL_ENDED;
+				pm->roll.lastRollEndedTime = pm->roll.lastClientTime;
+			}
+			else if (pm->ps->groundEntityNum == ENTITYNUM_NONE) {
+				pm->roll.status = ROLL_AIR;
+				pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
+			}
+			break;
+		case ROLL_ENDED:
+			break;
+	}
+}
+
 /*
 ================
 PmoveSingle
@@ -5711,22 +5763,7 @@ void PmoveSingle (pmove_t *pmove) {
 	PM_GroundTrace();
 	PM_SetWaterLevel();
 
-	if (pm->roll.status == ROLL_NONE && BG_InRoll(pm->ps, pm->ps->legsAnim)) {
-		pm->roll.status = ROLL_STARTED;
-		pm->roll.rollStartedInAir = pm->ps->groundEntityNum == ENTITYNUM_NONE; // shouldnt really happen but lets be safe
-	}
-	else if (pm->roll.status == ROLL_STARTED && !BG_InRoll(pm->ps, pm->ps->legsAnim)) {
-		pm->roll.status = ROLL_NONE;
-	}
-	else if (pm->roll.status == ROLL_STARTED && pm->roll.lastFrameWasRoll && BG_InRoll(pm->ps, pm->ps->legsAnim) && pm->ps->groundEntityNum == ENTITYNUM_NONE) {
-		pm->roll.status = ROLL_AIR;
-		pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
-	}
-	else if (pm->roll.status == ROLL_AIR && pm->roll.lastFrameWasRoll && (!BG_InRoll(pm->ps,pm->ps->legsAnim) || pm->ps->groundEntityNum != ENTITYNUM_NONE)) {
-		pm->roll.status = ROLL_ENDED;
-		pm->roll.rollSpeed = pm->roll.lastSpeed;
-		pm->roll.lastRollEndedTime = pm->roll.lastClientTime;
-	}
+	PM_CheckRollEnd();
 
 
 	if (pm->cmd.forcesel != (byte)-1 && (pm->ps->fd.forcePowersKnown & (1 << pm->cmd.forcesel)))

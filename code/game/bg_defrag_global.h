@@ -150,7 +150,8 @@ typedef enum rollStatus_s {
 	ROLL_NONE,
 	ROLL_STARTED,
 	ROLL_AIR,
-	ROLL_ENDED
+	ROLL_TOUCH, // temporary ended (touched ground)
+	ROLL_ENDED // finalized value
 } rollStatus_t;
 
 typedef struct rollState_s {
@@ -161,6 +162,7 @@ typedef struct rollState_s {
 	int				lastClientSpeed;	// ps->speed before pmove
 	int				lastClientTime;		// commandtime before pmove
 	int				airClientSpeed;		// last ps->speed before roll ended
+	int				finalAirClientSpeed;// last ps->speed before roll ended (of the roll segment that determined speed)
 	float			rollSpeed;			// last XY velocity before roll ended
 	int				lastRollEndedTime;	// last commandtime before roll ended
 } rollState_t;
