@@ -164,6 +164,7 @@ typedef enum rollType_s {
 typedef struct rollState_s {
 	rollStatus_t	status;
 	qboolean		rollDisqualified;	// if roll is disqualified for the rollympics (touching a teleport, mover or jumppad, or isn't main LB with jk2 movement style, or has more than 1 segment, or has slide)
+	qboolean		segmentDisqualified;	// this is if an air segment has a slide. that and following air segments will disqualify the roll from rollympics
 	qboolean		rollStartedInAir;
 	qboolean		lastFrameWasRoll;	// wwhether we are rolling before pmove
 	rollType_t		rollType;

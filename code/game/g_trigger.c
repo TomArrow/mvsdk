@@ -239,6 +239,8 @@ void trigger_push_touch(gentity_t *self, gentity_t *other, trace_t *trace ) {
 		return;
 	}
 
+	other->client->pers.roll.segmentDisqualified = qtrue;
+
 	BG_TouchJumpPad( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? other->client->lastMsecValue : 0, level.mapDefaultRaceStyle.msec);
 }
 
@@ -247,6 +249,8 @@ void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *tr
 	if ( !other->client ) {
 		return;
 	}
+
+	other->client->pers.roll.segmentDisqualified = qtrue;
 
 	BG_TouchJumpPadVelocity( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? other->client->lastMsecValue : 0, level.mapDefaultRaceStyle.msec);
 }
@@ -422,7 +426,6 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 		other->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		return;
 	}
-
 
 	dest = 	G_PickTarget( self->target, !other->client->sess.raceMode, NULL);
 	if (!dest) {

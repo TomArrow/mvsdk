@@ -3035,7 +3035,7 @@ static void PM_GroundTrace( void ) {
 		pm->ps->groundEntityNum = ENTITYNUM_NONE;
 		pml.groundPlane = qtrue;
 		pml.walking = qfalse;
-		pm->roll.rollDisqualified = qtrue; // we are sliding, giving us extra speed. disqualify the roll.
+		pm->roll.segmentDisqualified = qtrue; // we are sliding, giving us extra speed. disqualify the roll.
 		return;
 	}
 
@@ -5303,6 +5303,7 @@ void PM_CheckRollEnd() {
 			if (inRoll) {
 				pm->roll.status = ROLL_STARTED;
 				pm->roll.rollDisqualified = qfalse;
+				pm->roll.segmentDisqualified = qfalse;
 				pm->roll.rollAirTime = -1;
 				pm->roll.rollType = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT )- BOTH_ROLL_F;
 				pm->roll.rollSpeed = 0;
@@ -5337,6 +5338,9 @@ void PM_CheckRollEnd() {
 					pm->roll.rollSpeed = pm->roll.lastSpeed;
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
 					pm->roll.rollAirTime = airDuration;
+					if (pm->roll.segmentDisqualified) {
+						pm->roll.rollDisqualified = qtrue;
+					}
 					if (pm->debugLevel > 1) {
 						Com_Printf("%i:ROLL_AIR->ROLL_ENDED %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
 					}
@@ -5355,6 +5359,9 @@ void PM_CheckRollEnd() {
 					pm->roll.rollSpeed = pm->roll.lastSpeed;
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
 					pm->roll.rollAirTime = airDuration;
+					if (pm->roll.segmentDisqualified) {
+						pm->roll.rollDisqualified = qtrue;
+					}
 					if (pm->debugLevel > 1) {
 						Com_Printf("%i:ROLL_AIR->ROLL_TOUCH %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
 					}
@@ -5377,7 +5384,7 @@ void PM_CheckRollEnd() {
 			else if (pm->ps->groundEntityNum == ENTITYNUM_NONE) {
 				pm->roll.status = ROLL_AIR;
 				pm->roll.rollAirStarted = pm->ps->commandTime;
-				pm->roll.rollDisqualified = qtrue;
+				pm->roll.segmentDisqualified = qtrue;
 				pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
 				if (pm->debugLevel > 1) {
 					Com_Printf("%i:ROLL_TOUCH->ROLL_AIR\n", c_pmove);
@@ -5713,26 +5720,28 @@ void PmoveSingle (pmove_t *pmove) {
 
 				if (realCurrentSpeed > pm->ps->basespeed || (CJ && (realCurrentSpeed > (pm->ps->basespeed * 0.5f)))) {
 					float middleOffset = 0; //Idk
+					float realAccel = CJ ? pm_accelerate : pm_airaccelerate;
 #if JK2_GAME
 					//middleOffset = bot_strafeOffset.integer;
 					middleOffset = 0;
 #endif
-					if (CJ)
+					if (CJ) {//CJ)
 						//if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
 						//	optimalDeltaAngle = -1; //CJ //Take into account ground accel/friction.. only cpm styles turn faster?
 						//else
 							optimalDeltaAngle = -6;
+						//optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime)) / (realCurrentSpeed /** (1 - pm_friction * (pml.frametime))*/))) * (180.0f / M_PI) - 45.0f;
+					}
 					else {
-						float realAccel = pm_airaccelerate;
 						//if (moveStyle == MV_SP)
 						//	realAccel = pm_sp_airaccelerate;
 						//else if (moveStyle == MV_SLICK)
 						//	realAccel = pm_slick_accelerate;
 						//jetpack. 1.4f ?
-						optimalDeltaAngle = (acos((double)((pm->ps->basespeed - (realAccel * pm->ps->basespeed * pml.frametime)) / realCurrentSpeed)) * (180.0f / M_PI) - 45.0f);
-						if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
-							optimalDeltaAngle = 0;
+						optimalDeltaAngle = (acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime)) / realCurrentSpeed)) * (180.0f / M_PI) - 45.0f);
 					}
+					if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360 || fpclassify(optimalDeltaAngle) == FP_NAN)
+						optimalDeltaAngle = 0;
 
 					vel[0] = pm->ps->velocity[0];
 					vel[1] = pm->ps->velocity[1];
@@ -5773,6 +5782,10 @@ void PmoveSingle (pmove_t *pmove) {
 
 					velangle[YAW] += optimalDeltaAngle;
 					velangle[PITCH] = pm->ps->viewangles[PITCH];
+
+					assert(!_isnanf(velangle[PITCH]));
+					assert(!_isnanf(velangle[YAW]));
+					assert(!_isnanf(velangle[ROLL]));
 
 					PM_SetPMViewAngle(pm->ps, velangle, &pm->cmd);
 					AngleVectors(pm->ps->viewangles, pml.forward, pml.right, pml.up); //Have to re set this here

@@ -2415,6 +2415,8 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 
 	}
 
+	ent->client->pers.roll.segmentDisqualified = qtrue;
+
 	ent->client->ps.duelTime = ent->client->pers.raceStartCommandTime = 0;
 	ent->client->pers.stats.startLevelTime = 0; 
 	ent->client->ps.fd.forceRageRecoveryTime = 0; 
@@ -3987,7 +3989,7 @@ void DF_CheckRollSpeed(gentity_t* ent) {
 	rollState_t* roll = &ent->client->pers.roll;
 	rollState_t* statsRoll = &ent->client->pers.stats.roll;
 	if (roll->status == ROLL_ENDED) {
-		G_CenterPrint(ent-g_entities,3,va("Roll Speed: ^3%.2f^7ups, flyoff speedmult: %d, time: %d",roll->rollSpeed,roll->finalAirClientSpeed,roll->rollAirTime), qfalse, qtrue, qfalse);
+		G_CenterPrint(ent-g_entities,3,va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d",roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime), qfalse, qtrue, qfalse);
 		if (ent->client->pers.raceStartCommandTime) {
 			if (statsRoll->status == ROLL_NONE) {
 				*statsRoll = *roll;

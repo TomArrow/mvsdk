@@ -1838,3 +1838,44 @@ bsearch (const void *key,
 
 
 #endif
+
+
+// adapted from newlib
+
+typedef union
+{
+  float value;
+  unsigned int word;
+} ieee_float_shape_type;
+
+/* Get a 32 bit int from a float.  */
+
+#define GET_FLOAT_WORD(i,d)					\
+do {								\
+  ieee_float_shape_type gf_u;					\
+  gf_u.value = (d);						\
+  (i) = gf_u.word;						\
+} while (0)
+
+
+
+int
+fpclassify (float x)
+{
+  unsigned int w;
+
+  GET_FLOAT_WORD(w,x);
+  
+  if (w == 0x00000000 || w == 0x80000000)
+    return FP_ZERO;
+  else if ((w >= 0x00800000 && w <= 0x7f7fffff) ||
+           (w >= 0x80800000 && w <= 0xff7fffff))
+    return FP_NORMAL;
+  else if ((w >= 0x00000001 && w <= 0x007fffff) ||
+           (w >= 0x80000001 && w <= 0x807fffff))
+    return FP_SUBNORMAL;
+  else if (w == 0x7f800000 || w == 0xff800000)
+    return FP_INFINITE;
+  else
+    return FP_NAN;
+}
