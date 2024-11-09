@@ -5302,7 +5302,7 @@ void PM_CheckRollEnd() {
 		case ROLL_NONE:
 			if (inRoll) {
 				pm->roll.status = ROLL_STARTED;
-				pm->roll.rollDisqualified = qfalse;
+				pm->roll.rollDisqualified = pm->roll.lastSpeed > 325.0f; // seems that with normal (not ultra low) fps and vsnap we can reach a maximum groundpeed of absolutely maximally 325. so, allow rollympics participation for rolls out of standing basically.
 				pm->roll.segmentDisqualified = qfalse;
 				pm->roll.rollAirTime = -1;
 				pm->roll.rollType = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT )- BOTH_ROLL_F;
@@ -5730,7 +5730,7 @@ void PmoveSingle (pmove_t *pmove) {
 						//	optimalDeltaAngle = -1; //CJ //Take into account ground accel/friction.. only cpm styles turn faster?
 						//else
 							//optimalDeltaAngle = -6;
-						optimalDeltaAngle = acos((double)((pm->ps->basespeed - (realAccel * pm->ps->basespeed * pml.frametime)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime))))) * (180.0f / M_PI) - 45.0f;
+						optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime))))) * (180.0f / M_PI) - 45.0f;
 					}
 					else {
 						//if (moveStyle == MV_SP)
