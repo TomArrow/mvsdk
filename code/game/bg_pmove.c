@@ -5729,8 +5729,8 @@ void PmoveSingle (pmove_t *pmove) {
 						//if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
 						//	optimalDeltaAngle = -1; //CJ //Take into account ground accel/friction.. only cpm styles turn faster?
 						//else
-							optimalDeltaAngle = -6;
-						//optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime)) / (realCurrentSpeed /** (1 - pm_friction * (pml.frametime))*/))) * (180.0f / M_PI) - 45.0f;
+							//optimalDeltaAngle = -6;
+						optimalDeltaAngle = acos((double)((pm->ps->basespeed - (realAccel * pm->ps->basespeed * pml.frametime)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime))))) * (180.0f / M_PI) - 45.0f;
 					}
 					else {
 						//if (moveStyle == MV_SP)
@@ -5740,8 +5740,10 @@ void PmoveSingle (pmove_t *pmove) {
 						//jetpack. 1.4f ?
 						optimalDeltaAngle = (acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime)) / realCurrentSpeed)) * (180.0f / M_PI) - 45.0f);
 					}
-					if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360 || fpclassify(optimalDeltaAngle) == FP_NAN)
+					if (/*optimalDeltaAngle < 0 || optimalDeltaAngle > 360 || */fpclassify(optimalDeltaAngle) == FP_NAN)
 						optimalDeltaAngle = 0;
+
+					optimalDeltaAngle = AngleNormalize180(optimalDeltaAngle);
 
 					vel[0] = pm->ps->velocity[0];
 					vel[1] = pm->ps->velocity[1];
