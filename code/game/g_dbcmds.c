@@ -14,6 +14,7 @@ typedef int ip_t[4];
 static void G_CreateUserTable();
 static void G_CreateRunsTable();
 static void G_CreateCheckpointsTable();
+static void G_CreateSubContestsTable();
 static void G_CreateMapRaceDefaultsTable();
 extern const char* DF_GetCourseName();
 
@@ -1093,6 +1094,12 @@ static void G_CreateCheckpointsTable() {
 	Q_strncpyz(tableName.s, "checkpoints", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
+static void G_CreateSubContestsTable() {
+	referenceSimpleString_t tableName;
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS subcontests(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, type SMALLINT NOT NULL, value DOUBLE NOT NULL, recordwhen DATETIME NOT NULL, msec SMALLINT NOT NULL, extraValue1 DOUBLE,extraValue2 DOUBLE,extraValue3 INTEGER,extraValue4 INTEGER, UNIQUE KEY user_type (userid,type),INDEX i_value(value))";
+	Q_strncpyz(tableName.s, "subcontests", sizeof(tableName.s));
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+}
 static void G_CreateMapRaceDefaultsTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS mapdefaults(\
@@ -1204,6 +1211,7 @@ static void G_DB_CreateTables() {
 	G_CreateUserTable();
 	G_CreateRunsTable();
 	G_CreateCheckpointsTable();
+	G_CreateSubContestsTable();
 	G_CreateMapRaceDefaultsTable();
 }
 

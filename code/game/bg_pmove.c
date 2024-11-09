@@ -3035,6 +3035,7 @@ static void PM_GroundTrace( void ) {
 		pm->ps->groundEntityNum = ENTITYNUM_NONE;
 		pml.groundPlane = qtrue;
 		pml.walking = qfalse;
+		pm->roll.rollDisqualified = qtrue; // we are sliding, giving us extra speed. disqualify the roll.
 		return;
 	}
 
@@ -5295,23 +5296,36 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 
 void PM_CheckRollEnd() {
 	qboolean inRoll = BG_InRoll(pm->ps, pm->ps->legsAnim);
+	int airDuration = 0;
 
 	switch (pm->roll.status) {
 		case ROLL_NONE:
 			if (inRoll) {
 				pm->roll.status = ROLL_STARTED;
+				pm->roll.rollDisqualified = qfalse;
+				pm->roll.rollAirTime = 0;
 				pm->roll.rollType = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT )- BOTH_ROLL_F;
 				pm->roll.rollSpeed = 0;
 				pm->roll.rollStartedInAir = pm->ps->groundEntityNum == ENTITYNUM_NONE; // shouldnt really happen but lets be safe
+				if (pm->debugLevel > 1) {
+					Com_Printf("%i:ROLL_NONE->ROLL_STARTED\n", c_pmove);
+				}
 			}
 			break;
 		case ROLL_STARTED:
 			if (!inRoll) {
 				pm->roll.status = ROLL_NONE;
+				if (pm->debugLevel > 1) {
+					Com_Printf("%i:ROLL_STARTED->ROLL_NONE\n", c_pmove);
+				}
 			}
 			else if (pm->roll.lastFrameWasRoll && inRoll && pm->ps->groundEntityNum == ENTITYNUM_NONE) {
 				pm->roll.status = ROLL_AIR;
+				pm->roll.rollAirStarted = pm->ps->commandTime;
 				pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
+				if (pm->debugLevel > 1) {
+					Com_Printf("%i:ROLL_STARTED->ROLL_AIR\n", c_pmove);
+				}
 			}
 			break;
 		case ROLL_AIR:
@@ -5320,6 +5334,14 @@ void PM_CheckRollEnd() {
 				if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
 					pm->roll.rollSpeed = pm->roll.lastSpeed;
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
+					if (pm->debugLevel > 1) {
+						Com_Printf("%i:ROLL_AIR->ROLL_ENDED %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
+					}
+				}
+				else {
+					if (pm->debugLevel > 1) {
+						Com_Printf("%i:ROLL_AIR->ROLL_ENDED %.2f %d\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
+					}
 				}
 				pm->roll.lastRollEndedTime = pm->roll.lastClientTime;
 			}
@@ -5328,6 +5350,14 @@ void PM_CheckRollEnd() {
 				if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
 					pm->roll.rollSpeed = pm->roll.lastSpeed;
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
+					if (pm->debugLevel > 1) {
+						Com_Printf("%i:ROLL_AIR->ROLL_TOUCH %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
+					}
+				}
+				else {
+					if (pm->debugLevel > 1) {
+						Com_Printf("%i:ROLL_AIR->ROLL_TOUCH %.2f %d\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
+					}
 				}
 			}
 			break;
@@ -5335,10 +5365,18 @@ void PM_CheckRollEnd() {
 			if (!inRoll) {
 				pm->roll.status = ROLL_ENDED;
 				pm->roll.lastRollEndedTime = pm->roll.lastClientTime;
+				if (pm->debugLevel > 1) {
+					Com_Printf("%i:ROLL_TOUCH->ROLL_ENDED\n", c_pmove);
+				}
 			}
 			else if (pm->ps->groundEntityNum == ENTITYNUM_NONE) {
 				pm->roll.status = ROLL_AIR;
+				pm->roll.rollAirStarted = pm->ps->commandTime;
+				pm->roll.rollDisqualified = qtrue;
 				pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
+				if (pm->debugLevel > 1) {
+					Com_Printf("%i:ROLL_TOUCH->ROLL_AIR\n", c_pmove);
+				}
 			}
 			break;
 		case ROLL_ENDED:

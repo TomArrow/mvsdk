@@ -163,6 +163,7 @@ typedef enum rollType_s {
 
 typedef struct rollState_s {
 	rollStatus_t	status;
+	qboolean		rollDisqualified;	// if roll is disqualified for the rollympics (touching a teleport, mover or jumppad, or isn't main LB with jk2 movement style, or has more than 1 segment, or has slide)
 	qboolean		rollStartedInAir;
 	qboolean		lastFrameWasRoll;	// wwhether we are rolling before pmove
 	rollType_t		rollType;
@@ -172,6 +173,8 @@ typedef struct rollState_s {
 	int				airClientSpeed;		// last ps->speed before roll ended
 	int				finalAirClientSpeed;// last ps->speed before roll ended (of the roll segment that determined speed)
 	float			rollSpeed;			// last XY velocity before roll ended
+	int				rollAirTime;
+	int				rollAirStarted;
 	int				lastRollEndedTime;	// last commandtime before roll ended
 } rollState_t;
 
