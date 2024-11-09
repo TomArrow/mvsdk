@@ -5303,7 +5303,7 @@ void PM_CheckRollEnd() {
 			if (inRoll) {
 				pm->roll.status = ROLL_STARTED;
 				pm->roll.rollDisqualified = qfalse;
-				pm->roll.rollAirTime = 0;
+				pm->roll.rollAirTime = -1;
 				pm->roll.rollType = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT )- BOTH_ROLL_F;
 				pm->roll.rollSpeed = 0;
 				pm->roll.rollStartedInAir = pm->ps->groundEntityNum == ENTITYNUM_NONE; // shouldnt really happen but lets be safe
@@ -5329,11 +5329,14 @@ void PM_CheckRollEnd() {
 			}
 			break;
 		case ROLL_AIR:
+			airDuration = MAX(0,pm->ps->commandTime - pm->roll.rollAirStarted);
 			if (!inRoll) {
 				pm->roll.status = ROLL_ENDED;
-				if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
+				//if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
+				if (airDuration > pm->roll.rollAirTime) { // longest air segment counts
 					pm->roll.rollSpeed = pm->roll.lastSpeed;
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
+					pm->roll.rollAirTime = airDuration;
 					if (pm->debugLevel > 1) {
 						Com_Printf("%i:ROLL_AIR->ROLL_ENDED %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
 					}
@@ -5347,9 +5350,11 @@ void PM_CheckRollEnd() {
 			}
 			else if (pm->ps->groundEntityNum != ENTITYNUM_NONE) {
 				pm->roll.status = ROLL_TOUCH;
-				if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
+				//if (pm->roll.lastSpeed > pm->roll.rollSpeed) {
+				if (airDuration > pm->roll.rollAirTime) {
 					pm->roll.rollSpeed = pm->roll.lastSpeed;
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
+					pm->roll.rollAirTime = airDuration;
 					if (pm->debugLevel > 1) {
 						Com_Printf("%i:ROLL_AIR->ROLL_TOUCH %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
 					}

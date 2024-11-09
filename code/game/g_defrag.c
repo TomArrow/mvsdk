@@ -167,6 +167,7 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(client->pers.teamState.lasthurtcarrier)\
 		FIELDSFUNC(client->pers.teamState.lastreturnedflag)\
 		FIELDSFUNC(client->pers.stats.roll.lastRollEndedTime)\
+		FIELDSFUNC(client->pers.stats.roll.rollAirStarted)\
 		FIELDSFUNC(client->ps.fd.forceDrainTime)\
 		FIELDSFUNC(client->ps.fd.forceGripBeingGripped)\
 		FIELDSFUNC(client->ps.fd.forceGripSoundTime)\
@@ -3986,7 +3987,7 @@ void DF_CheckRollSpeed(gentity_t* ent) {
 	rollState_t* roll = &ent->client->pers.roll;
 	rollState_t* statsRoll = &ent->client->pers.stats.roll;
 	if (roll->status == ROLL_ENDED) {
-		G_CenterPrint(ent-g_entities,3,va("Roll Speed: ^3%.2f^7ups, flyoff speedmult: %d",roll->rollSpeed,roll->finalAirClientSpeed), qfalse, qtrue, qfalse);
+		G_CenterPrint(ent-g_entities,3,va("Roll Speed: ^3%.2f^7ups, flyoff speedmult: %d, time: %d",roll->rollSpeed,roll->finalAirClientSpeed,roll->rollAirTime), qfalse, qtrue, qfalse);
 		if (ent->client->pers.raceStartCommandTime) {
 			if (statsRoll->status == ROLL_NONE) {
 				*statsRoll = *roll;
