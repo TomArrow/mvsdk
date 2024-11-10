@@ -840,6 +840,7 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 	subContestLeaderboardRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
 	int rank = 1;
+	int index = 0;
 
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
 
@@ -866,7 +867,7 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 		static char coursename[COURSENAME_MAX_LEN + 1];
 		static char when[20];
 		static char username[USERNAME_MAX_LEN + 1];
-		if (rank == 1) {
+		if (!index) {
 			trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2ROLLYMPICS\n"));
 		}
 		userid = G_COOL_API_DB_GetInt(0);
@@ -886,6 +887,7 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 		if (userid != -1) {
 			rank++;
 		}
+		index++;
 	}
 
 	

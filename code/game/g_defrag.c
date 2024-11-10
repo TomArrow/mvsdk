@@ -4055,10 +4055,10 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 		insertUpdateSubContestStruct_t data;
 		ent->client->sess.subcontestVals[subcontest].value = value;
 		if (params->type == SUBCONTEST_TYPE_MAXVAL) {
-			query = "SET @now=NOW();" SUBCONTESTINSERT_1 SUBCONTESTINSERT_2(MAXVALCONDITION) SUBCONTESTGETRANK(MAXVALCONDITION);
+			query = "SET @now=NOW();" SUBCONTESTINSERT_1 SUBCONTESTINSERT_2(MAXVALCONDITION) SUBCONTESTGETRANK(MINVALCONDITION);
 		}
 		else if (params->type == SUBCONTEST_TYPE_MINVAL) {
-			query = "SET @now=NOW();" SUBCONTESTINSERT_1 SUBCONTESTINSERT_2(MINVALCONDITION) SUBCONTESTGETRANK(MINVALCONDITION);
+			query = "SET @now=NOW();" SUBCONTESTINSERT_1 SUBCONTESTINSERT_2(MINVALCONDITION) SUBCONTESTGETRANK(MAXVALCONDITION);
 		}
 
 		data.clientnum = ent - g_entities;
