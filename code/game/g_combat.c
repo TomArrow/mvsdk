@@ -1920,7 +1920,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 
 	// broadcast the death event to everyone
-	if (!self->client->sess.raceMode || self != attacker || meansOfDeath != MOD_SUICIDE) {
+	if (!self->client->sess.raceMode || (self != attacker && attacker != ENTITYNUM_WORLD)/* || meansOfDeath != MOD_SUICIDE*/) {
 		ent = G_TempEntity(self->r.currentOrigin, EV_OBITUARY);
 		ent->s.eventParm = meansOfDeath;
 		ent->s.otherEntityNum = self->s.number;
