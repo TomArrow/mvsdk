@@ -21,7 +21,8 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_LOADCHECKPOINTS,
 	DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 	DBREQUEST_LOADMAPRACEDEFAULTS,
-	DBREQUEST_INSERTORUPDATESUBCONTEST
+	DBREQUEST_INSERTORUPDATESUBCONTEST,
+	DBREQUEST_SUBCONTESTLEADERBOARD,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -79,6 +80,12 @@ typedef struct insertUpdateSubContestStruct_s {
 	int					userid;
 	subContests_t		contest;
 } insertUpdateSubContestStruct_t;
+
+typedef struct subContestLeaderboardRequestStruct_s {
+	int					ip[4];
+	int					clientnum;
+	subContests_t		contest;
+} subContestLeaderboardRequestStruct_t;
 
 typedef struct insertUpdateMapRaceDefaultsStruct_s {
 	int					ip[4];

@@ -1605,6 +1605,16 @@ void Cmd_Top_f( gentity_t *ent )
 
 /*
 =================
+Cmd_Rollympics_f
+=================
+*/
+void Cmd_Rollympics_f( gentity_t *ent )
+{
+	DF_RequestSubContestLeaderboard(ent,SUBCONTESTS_ROLLYMPICS);
+}
+
+/*
+=================
 Cmd_Follow_f
 =================
 */
@@ -3425,6 +3435,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "rollympics"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "time"))
 		{
 			giveError = qtrue;
@@ -3560,6 +3574,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Amtele_f(ent);
 	else if (Q_stricmp (cmd, "top") == 0)
 		Cmd_Top_f(ent);
+	else if (Q_stricmp (cmd, "rollympics") == 0)
+		Cmd_Rollympics_f(ent);
 	else if (Q_stricmp (cmd, "time") == 0)
 		Cmd_Time_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)

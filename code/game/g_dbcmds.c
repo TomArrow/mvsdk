@@ -836,6 +836,61 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation:  ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"","climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
 
 }
+static void G_SubContestLBResult(int status, const char* errorMessage, int affectedRows) {
+	subContestLeaderboardRequestStruct_t lbRequestData;
+	gentity_t* ent = NULL;
+	int rank = 1;
+
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d subcontest results returned, user no longer valid.\n", lbRequestData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateSubContestsTable();
+		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Subcontest display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Subcontest display failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	while (G_COOL_API_DB_NextRow()) {
+		int userid,msec,extraValue3,extraValue4;
+		float value,extraValue1,extraValue2;
+		static char coursename[COURSENAME_MAX_LEN + 1];
+		static char when[20];
+		static char username[USERNAME_MAX_LEN + 1];
+		if (rank == 1) {
+			trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2ROLLYMPICS\n"));
+		}
+		userid = G_COOL_API_DB_GetInt(0);
+		G_COOL_API_DB_GetString(1, username, sizeof(username));
+		G_COOL_API_DB_GetFloat(2, &value);
+		G_COOL_API_DB_GetString(3, when, sizeof(when));
+		G_COOL_API_DB_GetString(4, coursename, sizeof(coursename));
+		msec = G_COOL_API_DB_GetInt(5);
+		G_COOL_API_DB_GetFloat(6, &extraValue1);
+		G_COOL_API_DB_GetFloat(7, &extraValue2);
+		extraValue3 = G_COOL_API_DB_GetInt(8);
+		extraValue4 = G_COOL_API_DB_GetInt(9);
+
+
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^3%-3s ^7%-10s  ^3%4.2f^7ups ^3%6s^7fps ^3%s ^7on ^3%s\n\"",userid==-1 ? "" : miniva("#%d",rank), userid==-1 ?"!unlogged!" : username, value, MSECSTRING(msec), when, coursename));
+
+		if (userid != -1) {
+			rank++;
+		}
+	}
+
+	
+
+}
 
 static void G_TimeResult(int status, const char* errorMessage, int affectedRows) {
 	timeRequestStruct_t lbRequestData;
@@ -1027,6 +1082,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_TOP:
 					G_TopResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_SUBCONTESTLEADERBOARD:
+					G_SubContestLBResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_TIME:
 					G_TimeResult(status, errorMessage, affectedRows);

@@ -3988,8 +3988,6 @@ int JP_ClientNumberFromString(gentity_t* to, const char* s)
 		trap_SendServerCommand(to - g_entities, va("print \"User '%s' is not on the server\n\"", s));
 	return -1;
 }
-
-
 void DF_SetSubContestDefaults(gclient_t* client) {
 	int i;
 	for (i = 0; i < SUBCONTESTS_COUNT; i++) {
@@ -4016,6 +4014,39 @@ void DF_SetSubContestDefaults(gclient_t* client) {
 "value = IF(" a ",?,value);"
 
 #define SUBCONTESTGETRANK(a) "SELECT COUNT(DISTINCT userid) AS countFaster FROM subcontests WHERE userid !=? AND userid != -1 AND type=? AND (" a " OR (value=? AND recordwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
+
+#define MAXVALSORT "value DESC"
+#define MINVALSORT "value ASC"
+
+#define SUBCONTESTTOPLIST(a) "SELECT userid,users.username,value,recordwhen,course,msec,extraValue1,extraValue2,extraValue3,extraValue4 FROM subcontests LEFT JOIN users ON users.id=subcontests.userid WHERE type=? ORDER BY " a " LIMIT 11;" 
+
+
+
+void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest) {
+	subContestLeaderboardRequestStruct_t data;
+	subContestParams_t* params = &subContestParams[contest];
+	const char* query = NULL;
+	if (params->type == SUBCONTEST_TYPE_MAXVAL) {
+		query = SUBCONTESTTOPLIST(MAXVALSORT);
+	}
+	else if (params->type == SUBCONTEST_TYPE_MINVAL) {
+		query = SUBCONTESTTOPLIST(MINVALSORT);
+	}
+
+	data.clientnum = ent - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	data.contest = contest;
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_SUBCONTESTLEADERBOARD, query)) {
+		return;
+	}
+
+	G_COOL_API_DB_PreparedBindInt(contest);
+
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+
+}
+
 
 void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4) {
 	subContestParams_t* params = &subContestParams[subcontest];

@@ -1885,4 +1885,5 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("solo");
 	trap_AddCommand("mapdefaults");
 	trap_AddCommand("amtele");
+	trap_AddCommand("rollympics");
 }
