@@ -366,6 +366,8 @@ typedef struct {
 		char		name[USERNAME_MAX_LEN + 1];
 		qboolean	loggedIn;
 	} login;
+
+	subContestState_t subcontestVals[SUBCONTESTS_COUNT];
 } clientSession_t;
 
 // JK2MV
@@ -1620,3 +1622,4 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 void DF_PreDeltaAngleChange(gclient_t* client);
 void DF_PostDeltaAngleChange(gclient_t* client);
 qboolean DF_ClientInSegmentedRunMode(gclient_t* client);
+void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4);

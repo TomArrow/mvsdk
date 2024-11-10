@@ -224,6 +224,25 @@ typedef struct segmented_s {
 
 
 
+typedef enum subContests_s {
+	SUBCONTESTS_ROLLYMPICS,
+	SUBCONTESTS_COUNT
+} subContests_t;
+
+typedef enum subContestType_s {
+	SUBCONTEST_TYPE_MAXVAL,
+	SUBCONTEST_TYPE_MINVAL
+} subContestType_t;
+
+typedef struct subContestParams_s {
+	subContestType_t type;
+} subContestParams_t;
+
+typedef struct subContestState_s {
+	float			value;
+} subContestState_t;
+
+extern subContestParams_t subContestParams[SUBCONTESTS_COUNT];
 
 void G_ConvertDefragTriggerTypes();
 qboolean MovementStyleAllowsWeapons(int moveStyle);

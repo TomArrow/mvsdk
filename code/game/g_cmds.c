@@ -14,6 +14,7 @@ int AcceptBotCommand(char *cmd, gentity_t *pl);
 void BG_CycleInven(playerState_t *ps, int direction);
 void BG_CycleForce(playerState_t *ps, int direction);
 
+extern void DF_SetSubContestDefaults(gclient_t* client);
 /*
 ==================
 DeathmatchScoreboardMessage
@@ -1179,6 +1180,7 @@ void Cmd_Logout_f( gentity_t *ent )
 		return;
 	}
 	memset(&ent->client->sess.login, 0, sizeof(ent->client->sess.login));
+	DF_SetSubContestDefaults(ent->client);
 	trap_SendServerCommand(ent - g_entities, "print \"^2You were successfully logged out.\n\"");
 	ClientUserinfoChanged(ent - g_entities);
 }

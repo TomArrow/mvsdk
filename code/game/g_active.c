@@ -2100,6 +2100,10 @@ void ClientThink_real( gentity_t *ent ) {
 	DF_PostDeltaAngleChange(ent->client);
 	ent->client->pers.roll = pm.roll;
 
+	if (ent->client->sess.raceStateInvalidated) {
+		ent->client->pers.roll.rollDisqualified = qtrue;
+	}
+
 	DF_CheckRollSpeed(ent);
 
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);

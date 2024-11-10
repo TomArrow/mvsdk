@@ -198,6 +198,10 @@ debugField_t	segDebugFields[] =
 int segDebugFieldsCount = sizeof(segDebugFields) / sizeof(segDebugFields[0]);
 #endif
 
+subContestParams_t subContestParams[SUBCONTESTS_COUNT] = {
+	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_ROLLYMPICS
+};
+
 // NOTE: For start timer, make sure we are not standing in any existing start timer before actually starting, 
 // even when leave() is already being called. Only the last left start trigger should actually trigger.
 
@@ -1481,7 +1485,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 	}
 	else if (runInfo->rankLB != -1) {
-
+		// todo what if i DONT get a pb but its still wr compared to other users?
 		if (runInfo->rankLB == 1 && (runInfo->pbStatus & PB_LB)) { //was 1 when it shouldnt have been.. ?
 			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] %sbeat the ^3WORLD RECORD^%c%s and %s ranked ^3#%i\n",
 				prefix,
@@ -3985,16 +3989,123 @@ int JP_ClientNumberFromString(gentity_t* to, const char* s)
 	return -1;
 }
 
+
+void DF_SetSubContestDefaults(gclient_t* client) {
+	int i;
+	for (i = 0; i < SUBCONTESTS_COUNT; i++) {
+		if (subContestParams[i].type == SUBCONTEST_TYPE_MINVAL) {
+			client->sess.subcontestVals[i].value = INT_MAX;
+		} else if (subContestParams[i].type == SUBCONTEST_TYPE_MAXVAL) {
+			client->sess.subcontestVals[i].value = 0;
+		}
+	}
+}
+
+#define SUBCONTESTINSERT_1 "INSERT INTO subcontests (userid, course, type, value, recordwhen, msec, extraValue1, extraValue2, extraValue3, extraValue4) VALUES (?, ?, ?, ?, @now, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
+
+#define MAXVALCONDITION "?>value"
+#define MINVALCONDITION "?<value"
+
+#define SUBCONTESTINSERT_2(a) "course = IF(" a ",?,course),"\
+"recordwhen = IF(" a ",@now,recordwhen),"\
+"msec = IF(" a ",?,msec),"\
+"extraValue1 = IF(" a ",?,extraValue1),"\
+"extraValue2 = IF(" a ",?,extraValue2),"\
+"extraValue3 = IF(" a ",?,extraValue3),"\
+"extraValue4 = IF(" a ",?,extraValue4),"\
+"value = IF(" a ",?,value);"
+
+#define SUBCONTESTGETRANK(a) "SELECT COUNT(DISTINCT userid) AS countFaster FROM subcontests WHERE userid !=? AND userid != -1 AND type=? AND (" a " OR (value=? AND recordwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
+
+void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4) {
+	subContestParams_t* params = &subContestParams[subcontest];
+	if (params->type == SUBCONTEST_TYPE_MAXVAL && value > ent->client->sess.subcontestVals[subcontest].value || params->type == SUBCONTEST_TYPE_MINVAL && value < ent->client->sess.subcontestVals[subcontest].value) {
+		const char* query = NULL;
+		insertUpdateSubContestStruct_t data;
+		ent->client->sess.subcontestVals[subcontest].value = value;
+		if (params->type == SUBCONTEST_TYPE_MAXVAL) {
+			query = "SET @now=NOW();" SUBCONTESTINSERT_1 SUBCONTESTINSERT_2(MAXVALCONDITION) SUBCONTESTGETRANK(MAXVALCONDITION);
+		}
+		else if (params->type == SUBCONTEST_TYPE_MINVAL) {
+			query = "SET @now=NOW();" SUBCONTESTINSERT_1 SUBCONTESTINSERT_2(MINVALCONDITION) SUBCONTESTGETRANK(MINVALCONDITION);
+		}
+
+		data.clientnum = ent - g_entities;
+		memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+		data.value = value;
+		data.userid = ent->client->sess.login.loggedIn ? ent->client->sess.login.id : -1;
+		data.contest = subcontest;
+
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATESUBCONTEST,query)) {
+			return;
+		}
+
+		// insert
+		G_COOL_API_DB_PreparedBindInt(data.userid);
+		G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+		G_COOL_API_DB_PreparedBindInt(subcontest);
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindInt(ent->client->sess.raceStyle.msec);
+		G_COOL_API_DB_PreparedBindFloat(extraParam1);
+		G_COOL_API_DB_PreparedBindFloat(extraParam2);
+		G_COOL_API_DB_PreparedBindInt(extraParam3);
+		G_COOL_API_DB_PreparedBindInt(extraParam4);
+
+		// or update
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+
+		G_COOL_API_DB_PreparedBindFloat(value); //date
+
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindInt(ent->client->sess.raceStyle.msec);
+
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindFloat(extraParam1);
+
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindFloat(extraParam2);
+
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindInt(extraParam3);
+
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindInt(extraParam4);
+
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindFloat(value);
+
+		// get rank
+		G_COOL_API_DB_PreparedBindInt(data.userid);
+		G_COOL_API_DB_PreparedBindInt(subcontest);
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindFloat(value);
+
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+}
+
+
+
 void DF_CheckRollSpeed(gentity_t* ent) {
 	rollState_t* roll = &ent->client->pers.roll;
 	rollState_t* statsRoll = &ent->client->pers.stats.roll;
 	if (roll->status == ROLL_ENDED) {
-		G_CenterPrint(ent-g_entities,3,va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d",roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime), qfalse, qtrue, qfalse);
+		G_CenterPrint(ent - g_entities, 3, va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d", roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime), qfalse, qtrue, qfalse);
+		if (!roll->rollDisqualified && !ent->client->sess.raceStateInvalidated) {
+			raceStyle_t defaults = defaultRaceStyle;
+			raceStyle_t clientRs = ent->client->sess.raceStyle;
+			defaults.runFlags = (defaults.runFlags & ~allowedRollRunFlags) | (clientRs.runFlags & allowedRollRunFlags); // allowedRollRunFlags are ones we don't care about, so we just take whatever the client has
+			if (classifyLeaderBoard(&clientRs,&defaults) == LB_MAIN) {
+				defaults.msec = clientRs.msec;
+				DF_SetPlayerSubContestValue(ent, SUBCONTESTS_ROLLYMPICS, roll->rollSpeed, 0, 0, roll->finalAirClientSpeed, roll->rollAirTime);
+			}
+		}
 		if (ent->client->pers.raceStartCommandTime) {
 			if (statsRoll->status == ROLL_NONE) {
 				*statsRoll = *roll;
 			}
-			else if(statsRoll->lastRollEndedTime < ent->client->pers.raceStartCommandTime && (roll->lastRollEndedTime- ent->client->pers.raceStartCommandTime) < 2000) {
+			else if (statsRoll->lastRollEndedTime < ent->client->pers.raceStartCommandTime && (roll->lastRollEndedTime - ent->client->pers.raceStartCommandTime) < 2000) {
 				// last logged roll was before run and this one is within 2 seconds inside run. use this one then.
 				*statsRoll = *roll;
 			}

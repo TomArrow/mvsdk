@@ -7,7 +7,7 @@
 #define RestoreLevelTimeDiff( timeVal )	( timeVal = timeVal ? level.time + timeVal : 0 )
 
 extern void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs);
-
+extern void DF_SetSubContestDefaults(gclient_t* client);
 /*
 =======================================================================
 
@@ -138,6 +138,8 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;
 
 	DF_CarryClientOverToNewRaceStyle(g_entities+(client-g_clients),&level.mapDefaultRaceStyle);
+
+	DF_SetSubContestDefaults(client); // would be nicer to keep it but lets just set defaults who cares. means a few more db requests that could be avoided, but it wont cause any issues beyond that, maybe TODO someday
 }
 
 /*
@@ -253,6 +255,8 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 
 	sess->spectatorState = SPECTATOR_FREE;
 	sess->spectatorOrder = 0;
+
+	DF_SetSubContestDefaults( client );
 
 	G_WriteClientSessionData( client );
 }

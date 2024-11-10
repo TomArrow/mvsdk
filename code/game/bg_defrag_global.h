@@ -91,6 +91,7 @@ typedef enum runFlagsIndex_s {
 #undef RUNFLAGSFUNC
 
 extern const int defaultRunFlags;
+extern const int allowedRollRunFlags; // RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS;
 extern const int allowedRunFlags; // RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
 extern const int allowedMapDefaultRunFlags; //  RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
 extern const int allowedMovementStyles;

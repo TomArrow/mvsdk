@@ -16,7 +16,8 @@ static void G_CreateRunsTable();
 static void G_CreateCheckpointsTable();
 static void G_CreateSubContestsTable();
 static void G_CreateMapRaceDefaultsTable();
-extern const char* DF_GetCourseName();
+extern const char* DF_GetCourseName(); 
+extern void DF_SetSubContestDefaults(gclient_t* client);
 
 gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	gentity_t* ent;
@@ -402,6 +403,80 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	}
 
 	PrintRaceTime(&runData.runInfo, qfalse, qtrue,ent);
+
+}
+static void G_InsertSubcontestResult(int status, const char* errorMessage, int affectedRows) {
+	insertUpdateSubContestStruct_t runData;
+	gentity_t* ent = NULL;
+	int pbStatus = 0;
+	int rank = 0;
+	//evaluatedRunInfo_t eRunInfo;
+
+	G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
+
+	if (!(ent = DB_VerifyClient(runData.clientnum, runData.ip))) {
+		Com_Printf("^1Client %d subcontest inserted, user no longer valid.\n", runData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateSubContestsTable();
+		trap_SendServerCommand(-1,"print \"^1Subcontest insertion failed due to subcontest table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(-1, va("print \"^1Subcontest insertion failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	if (coolApi_dbVersion >= 3) {
+		// first query is SET @now = NOW(). skip it.
+		if (!G_COOL_API_DB_GetMoreResults(&affectedRows))
+		{
+			trap_SendServerCommand(-1, "print \"^1WTF NO MORE RESULTS\n\"");
+		}
+	}
+
+	pbStatus = 0;
+	if (affectedRows == 0) {
+		//trap_SendServerCommand(-1, "print \"^1No new PB.\n\"");
+		// no new pb
+	}
+	else if (affectedRows == 1) {
+		//trap_SendServerCommand(-1, "print \"^1First run.\n\"");
+		pbStatus |= PB_FIRSTRUN_SPECIFICSTYLE; // first run
+	}
+	else if (affectedRows == 2) {
+		//trap_SendServerCommand(-1, "print \"^1PB!\n\"");
+		pbStatus |= PB_NEWPB_SPECIFICSTYLE;
+	}
+	else {
+		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
+	}
+
+
+	if (coolApi_dbVersion >= 3 && G_COOL_API_DB_GetMoreResults(NULL) && G_COOL_API_DB_NextRow())
+	{
+		rank = G_COOL_API_DB_GetInt(0) + 1; // SQL result returns amount of faster runs so we add 1 (0 faster runs = #1)
+	}
+
+	if (rank == 1 && pbStatus) {
+		if (runData.userid == -1) {
+			switch (runData.contest) {
+			case SUBCONTESTS_ROLLYMPICS:
+				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the best logged roll with ^3%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
+				break;
+			}
+		}
+		else {
+			switch (runData.contest) {
+			case SUBCONTESTS_ROLLYMPICS:
+				trap_SendServerCommand(-1, va("print \"%s ^7now holds the fastest roll record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
+				break;
+			}
+		}
+	}
 
 }
 static void G_InsertMapDefaultsResult(int status, const char* errorMessage, int affectedRows) {
@@ -831,6 +906,7 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	client->sess.login.id = loginData->userId;
 	client->sess.login.flags = loginData->userFlags;
 	client->sess.login.loggedIn = qtrue;
+	DF_SetSubContestDefaults(client);
 
 	trap_SendServerCommand(loginData->clientnum, va("print \"^2Successfully logged in as '%s'.\n\"",loginData->username));
 	//trap_SendServerCommand(-1, va("print \"^2%s ^7logged in as '%s'.\n\"",client ? client->pers.netname : "", loginData->username));
@@ -939,6 +1015,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_INSERTORUPDATERUN:
 					G_InsertRunResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_INSERTORUPDATESUBCONTEST:
+					G_InsertSubcontestResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS:
 					G_InsertMapDefaultsResult(status, errorMessage, affectedRows);
