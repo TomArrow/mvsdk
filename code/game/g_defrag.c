@@ -1877,6 +1877,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//cl->ps.duelTime = 0;
 	cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
 	cl->pers.stats.startLevelTime = 0;
+	cl->sess.raceStateSoftInvalidated = qtrue; // require respawn before starting a run again. but still allow saving spawns and such
 }
 
 // Checkpoint race timer
@@ -2743,6 +2744,15 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 		else if (!saveState){
 			es->solid = backup->solidValue;
+		}
+
+		if (es->eFlags & EF_PLAYER_EVENT) {
+			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
+				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
+			}
+			else {
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo;
+			}
 		}
 
 		if (es->eType == ET_BEAM && other->parent != ent && es->generic1 == 3) {
