@@ -778,7 +778,7 @@ void PlayActualGlobalSound(int soundindex) {
 
 	//G_AddEvent(ent, EV_GLOBAL_SOUND, soundindex); //need to svf_broadcast firsT? and what ent to use ??
 
-	for (i = 0; i < MAX_CLIENTS; i++) {//Build a list of clients
+	for (i = 0; i < level.maxclients; i++) {//Build a list of clients
 		if (!g_entities[i].inuse)
 			continue;
 		player = &g_entities[i];
@@ -810,7 +810,7 @@ void df_checkCheckpointValid(gentity_t* ent) {
 	int i;
 	int shieldNum;
 
-	if (ent->s.owner < 0 || ent->s.owner >= MAX_CLIENTS) {
+	if (ent->s.owner < 0 || ent->s.owner >= level.maxclients) {
 		goto freeme;
 		return;
 	}
@@ -1012,7 +1012,7 @@ gentity_t* GetClientNumArg() {
 		if (arg[0])
 		{
 			sourcePlayer = atoi(arg);
-			if (sourcePlayer >= 0 && sourcePlayer < MAX_CLIENTS) {
+			if (sourcePlayer >= 0 && sourcePlayer < level.maxclients) {
 				return g_entities + sourcePlayer;
 			}
 		}
