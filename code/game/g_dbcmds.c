@@ -93,6 +93,10 @@ qboolean G_DB_VerifyPassword(const char* password, int clientNumNotify) {
 	return qtrue;
 }
 */
+
+// we will be creating folders based on usernames so we have to make sure we dont allow any usernames
+// that could cause filesystem issues.
+// ideally the names also dont cause any issues when printed/sent as commands
 qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 	const char* s = username;
 	int len = strlen(username);
@@ -108,6 +112,13 @@ qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 		}
 		return qfalse;
 	}
+
+	if (*s == '-' || *s == '.') {
+		if (clientNumNotify > -2) {
+			trap_SendServerCommand(clientNumNotify, va("print \"^1Usernames cannot start with - or a dot.\n\"", USERNAME_MAX_LEN));
+		}
+		return qfalse;
+	}
 	
 	while (*s != '\0') {
 		if (*s >= 'a' && *s <= 'z'
@@ -115,31 +126,58 @@ qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 			|| *s >= '0' && *s <= '9'
 			|| *s == '_'
 			|| *s == '-'
-			|| *s == '.'
-			|| *s == '/' // thought about allowing more creativity but its not unlikely ppl will just troll and use random chars?
+			//|| *s == '.' // could mess with filenames/paths (checkdirtraversal)
+			//|| *s == '/' // could mess with filenames (as it is a folder separator)
 			|| *s == '['
 			|| *s == ']'
 			|| *s == '('
 			|| *s == ')'
-			|| *s == '<'
-			|| *s == '>'
+			//|| *s == '<'	// demonames: windows wont allow this in filenames
+			//|| *s == '>'	// demonames: windows wont allow this in filenames
 			|| *s == '='
-			|| *s == ':'
+			//|| *s == ':'	// demonames: windows wont allow this in filenames
 			|| *s == ';'
 			|| *s == '+'
-			|| *s == '*'
+			//|| *s == '*'	// demonames: windows wont allow this in filenames
 			|| *s == '@'
 			) {
 			// whitelist. ok.
 		}
 		else {
 			if (clientNumNotify > -2) {
-				trap_SendServerCommand(clientNumNotify, "print \"^1Chosen username contains invalid characters. Allowed characters: A-Z a-z 0-9 _-./[]()<>=:;+*@ and no empty spaces.\n\"");
+				trap_SendServerCommand(clientNumNotify, "print \"^1Chosen username contains invalid characters. Allowed characters: A-Z a-z 0-9 _-[]()=;+@ and no empty spaces.\n\"");
 			}
 			return qfalse;
 		}
 		s++;
 	}
+	s--;
+	if (*s == ' ' || *s == '.') { // well technically we dont allow either of these chars anyway so meh
+		if (clientNumNotify > -2) {
+			trap_SendServerCommand(clientNumNotify, "print \"^1Username must not end with a space or dot.\n\"");
+		}
+		return qfalse;
+	}
+
+	// these are special reserved windows file/folder names that will cause mayhem if we allow them or best case, we end up losing the demos
+	if (len ==3 && 
+		(!Q_stricmp(username,"CON")
+		|| !Q_stricmp(username, "PRN")
+		|| !Q_stricmp(username, "AUX")
+		|| !Q_stricmp(username, "NUL"))
+
+		|| len == 4 && username[3] >= '0' && username[3] <= '9' &&
+		(!Q_stricmpn(username,"COM",3)
+			|| !Q_stricmpn(username, "LPT", 3))
+
+		|| !Q_stricmp(username, "CLOCK$")
+		) {
+		if (clientNumNotify > -2) {
+			trap_SendServerCommand(clientNumNotify, "print \"^1Your chosen username is not valid because it is a reserved keyword.\n\"");
+		}
+		return qfalse;
+	}
+
 	return qtrue;
 }
 

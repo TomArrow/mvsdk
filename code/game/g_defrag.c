@@ -4002,7 +4002,7 @@ void DF_SetSubContestDefaults(gclient_t* client) {
 	int i;
 	for (i = 0; i < SUBCONTESTS_COUNT; i++) {
 		if (subContestParams[i].type == SUBCONTEST_TYPE_MINVAL) {
-			client->sess.subcontestVals[i].value = INT_MAX;
+			client->sess.subcontestVals[i].value = HUGE_VALF;
 		} else if (subContestParams[i].type == SUBCONTEST_TYPE_MAXVAL) {
 			client->sess.subcontestVals[i].value = 0;
 		}
