@@ -166,6 +166,7 @@ qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 		|| !Q_stricmp(username, "AUX")
 		|| !Q_stricmp(username, "NUL"))
 
+		// COM0-COM9, LPT0-LPT9
 		|| len == 4 && username[3] >= '0' && username[3] <= '9' &&
 		(!Q_stricmpn(username,"COM",3)
 			|| !Q_stricmpn(username, "LPT", 3))
@@ -326,14 +327,14 @@ const char* G_GenerateRunDemoName(finishedRunInfo_t* runInfo) {
 	sanitizeFilename(runInfo->subcoursename, sanitizedSubCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
 	if (runInfo->userId == -1) {
 
-		Com_sprintf(name, sizeof(name), "races_unlogged/%s%s-%s"
+		Com_sprintf(name, sizeof(name), "races/unlogged/%s%s-%s"
 			, sanitizedCourseName
 			, sanitizedSubCourseName[0] ? miniva("(%s)", sanitizedSubCourseName) : ""
 			, DF_DemoRaceStyleNamePart(&runInfo->raceStyle));
 	}
 	else {
 		sanitizeFilename(runInfo->username, sanitizedUsername, qfalse); // take care of possible special cahrs the filesystem may not like
-		Com_sprintf(name, sizeof(name), "races/%s/%s-%s%s-%s", sanitizedUsername
+		Com_sprintf(name, sizeof(name), "races/logged/%s/%s-%s%s-%s", sanitizedUsername
 			, sanitizedUsername
 			, sanitizedCourseName
 			, sanitizedSubCourseName[0] ? miniva("(%s)", sanitizedSubCourseName) : ""
