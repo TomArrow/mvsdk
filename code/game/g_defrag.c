@@ -1012,7 +1012,7 @@ gentity_t* GetClientNumArg() {
 		if (arg[0])
 		{
 			sourcePlayer = atoi(arg);
-			if (sourcePlayer >= 0 && sourcePlayer < level.maxclients) {
+			if (sourcePlayer >= 0 && sourcePlayer < MAX_CLIENTS) {
 				return g_entities + sourcePlayer;
 			}
 		}
