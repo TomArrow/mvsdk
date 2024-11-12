@@ -586,6 +586,14 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	cl->ps.duelTime = cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
 	//cl->pers.segmented.lastPosUsed = qfalse; // already guaranteed via SEG_RECORDING check above
 
+	if (segmented) {
+		if (cl->pers.segmented.state != SEG_REPLAY) {
+			cl->pers.segmented.totalStartCommandTime = cl->pers.raceStartCommandTime;
+		} // else keep the old value
+	}
+	else {
+		cl->pers.segmented.totalStartCommandTime = 0;
+	}
 
 	if ((cl->pers.raceStartCommandTime - rollStateSave.lastRollEndedTime) < 1000) {
 		// roll ended less than 1 second before run start, its probably part of the run. can we do this smarter?
@@ -1718,7 +1726,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->placeHolder2
 		,runInfo->placeHolder3
 		,runInfo->placeHolder4
-		,runInfo->placeHolder5
+		,runInfo->millisecondsSegmentedTotal
 		,runInfo->rollSpeed
 		,runInfo->rollTakeoffClientSpeed
 		,runInfo->startTriggerSpeed
@@ -1738,6 +1746,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
 	gclient_t* cl;
 	int	timeLast, timeBest,newRaceBestTime, lessTime = 0;
+	int timeSegmentedTotal = 0;
 	//char timeLastStr[32];// , timeBestStr[32];
 	int warningFlags = 0;
 	qboolean isInserting = qfalse;
@@ -1807,16 +1816,28 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	cl->pers.stats.distanceTraveled2D -= VectorLength(interpolationDisplacement);
 
 	// Set info
+	if (cl->sess.raceStyle.runFlags & RFL_SEGMENTED) {
+		if (cl->pers.segmented.state == SEG_REPLAY) {
+			timeSegmentedTotal = cl->pers.segmented.totalDurationMinusReplay;
+		}
+		else {
+			timeSegmentedTotal = cl->pers.segmented.totalDurationMinusReplay = cl->ps.commandTime - lessTime - cl->pers.segmented.totalStartCommandTime;
+		}
+	}
+	else {
+		timeSegmentedTotal = 0;
+	}
 	timeLast = cl->ps.commandTime - lessTime - cl->pers.raceStartCommandTime;
 	timeBest = !cl->pers.raceBestTime ? timeLast : cl->pers.raceBestTime;
 
 	memset(&runInfo, 0, sizeof(runInfo));
 	DF_FillClientRunInfo(&runInfo, activator, timeLast, ent); // fills various stats we collected from start trigger and across run, and some metadata
-	runInfo.runId = DF_GetNewRunId();
+	runInfo.runId = DF_GetNewRunId(); // what was the point of this again? oh yeah to associate results.
 	runInfo.endLessTime = lessTime;
 	runInfo.levelTimeEnd = level.time;
 	runInfo.endCommandTime = cl->ps.commandTime - lessTime;
 	runInfo.warningFlags = warningFlags;
+	runInfo.millisecondsSegmentedTotal = timeSegmentedTotal;
 
 	Q_strncpyz(cl->pers.lastSubcourseFinishedName, runInfo.subcoursename, sizeof(cl->pers.lastSubcourseFinishedName));
 

@@ -1311,7 +1311,8 @@ static void G_CreateRunsTable() {
 			course VARCHAR(100) NOT NULL, \
 			subcourse VARCHAR(100) NOT NULL, \
 			duration_ms INT UNSIGNED NOT NULL, \
-			startLessTime INT NOT NULL, \
+			duration_ms_segmented_total INT UNSIGNED NOT NULL, \
+			startLessTime INT UNSIGNED NOT NULL, \
 			endLessTime INT NOT NULL, \
 			saveposCount INT NOT NULL, \
 			resposCount INT NOT NULL, \
@@ -1445,13 +1446,14 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	lbSQLCondition = getLeaderboardSQLConditions(runInfo->lbType, &level.mapDefaultRaceStyle);
 	insertOrUpdateRequest =
 		va("SET @now=NOW();"
-			"INSERT INTO runs (userid,course,subcourse,duration_ms,topspeed,startTriggerSpeed,rollSpeed,rollTakeoffClientSpeed,average,distance,style,msec,jump,variant,runFlags,"
+			"INSERT INTO runs (userid,course,subcourse,duration_ms,duration_ms_segmented_total,topspeed,startTriggerSpeed,rollSpeed,rollTakeoffClientSpeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
 			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
-			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
+			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
 			"@now,@now,?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
+			"duration_ms_segmented_total = IF(?<duration_ms,?,duration_ms_segmented_total),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
 			"startTriggerSpeed = IF(?<duration_ms,?,startTriggerSpeed),"
 			"rollSpeed = IF(?<duration_ms,?,rollSpeed),"
@@ -1491,6 +1493,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	G_COOL_API_DB_PreparedBindString(runInfo->coursename);
 	G_COOL_API_DB_PreparedBindString(runInfo->subcoursename);
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->millisecondsSegmentedTotal);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->startTriggerSpeed);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->rollSpeed);
@@ -1517,6 +1520,9 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
 
 	// UPDATE PART
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->millisecondsSegmentedTotal);
+
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->topspeed);
 

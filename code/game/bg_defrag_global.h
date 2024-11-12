@@ -218,7 +218,7 @@ typedef struct finishedRunInfo_s {
 	int			placeHolder2;
 	int			placeHolder3;
 	int			placeHolder4;
-	int			placeHolder5;
+	int			millisecondsSegmentedTotal;
 	float		rollSpeed;
 	int			rollTakeoffClientSpeed;
 	float		startTriggerSpeed;

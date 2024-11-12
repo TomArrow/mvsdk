@@ -213,6 +213,9 @@ typedef struct segmented_s {
 	// playback
 	int					playbackStartedTime;
 	int					playbackNextCmdIndex;
+	
+	int					totalStartCommandTime;
+	int					totalDurationMinusReplay;
 
 #if SEGMENTEDDEBUG
 	//vec3_t				debugOrigin[1000]; // every 1/10 of a second we make a backup here and later we compare
