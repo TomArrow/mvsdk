@@ -2529,6 +2529,9 @@ void G_RunClient( gentity_t *ent ) {
 
 	//if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
 	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying) {
+		entityState_t* stats = &level.playerStats[ent - g_entities]->s;
+		stats->apos.trTime = 0;
+		stats->frame = 0;
 		return;
 	}
 
@@ -2547,9 +2550,18 @@ void G_RunClient( gentity_t *ent ) {
 			VectorCopy(cl->pers.segmented.startPos.ps.delta_angles, cl->ps.delta_angles); //keep this so we can replay properly. we won't let the person move anyway.
 		}
 		while (qtrue) {
-			qboolean success;
+			qboolean success=qtrue;
+			ucmd.serverTime = -1;
 			int targetServerTime;
-			success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
+			while (success && ucmd.serverTime == -1) { // -1 is just a marker for cuts
+				success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
+				if (success && ucmd.serverTime == -1) {
+					entityState_t* stats = &level.playerStats[ent - g_entities]->s;
+					stats->apos.trTime = cl->pers.segmented.playbackNextCmdIndex == 0 ? cl->pers.segmented.playbackStartedTime : cl->ps.commandTime;
+					stats->frame = cl->pers.segmented.playbackNextCmdIndex == 0 ? 1 : stats->frame + 1;
+					cl->pers.segmented.playbackNextCmdIndex++;
+				}
+			}
 			if (!success) {
 				trap_G_COOL_API_PlayerUserCmdClear(ent-g_entities);
 #ifdef SEGMENTEDDEBUG
@@ -2676,6 +2688,10 @@ void G_RunClient( gentity_t *ent ) {
 
 	}
 	else {
+		entityState_t* stats = &level.playerStats[ent - g_entities]->s;
+		stats->apos.trTime = 0;
+		stats->frame = 0;
+	
 		ent->client->pers.cmd.serverTime = level.time;
 		ClientThink_real(ent);
 	}

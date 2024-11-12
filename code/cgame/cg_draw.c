@@ -1156,7 +1156,7 @@ void DF_RaceTimer(void)
 	}
 
 	{
-		char timerStr[48] = { 0 };
+		char timerStr[100] = { 0 };
 		char startStr[48] = { 0 };
 		vec4_t colorStartSpeed = { 1, 1, 1, 1 };
 
@@ -1199,6 +1199,31 @@ void DF_RaceTimer(void)
 				if (time < 3000)// && !cg_raceStart.integer)
 					Q_strcat(timerStr, sizeof(timerStr), va("\nStart: %i", cg.startSpeed));
 
+			}
+
+			if (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_SEGMENTED && (cg.predictedPlayerState.pm_flags & PMF_FOLLOW)) {
+
+				if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+					entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+					int lastSegmentedReset = stats->apos.trTime;
+					if (stats->frame > 0) {
+						Q_strcat(timerStr, sizeof(timerStr), va("\n^2SEGMENTED REPLAY (%d SPs)", stats->frame));
+					}
+					else {
+						Q_strcat(timerStr, sizeof(timerStr), "\n^2SEGMENTED REPLAY");
+					}
+					if (lastSegmentedReset != 0 && cg.predictedPlayerState.commandTime > lastSegmentedReset /*&& (cg.predictedPlayerState.commandTime - lastSegmentedReset) < 1000*/) {
+						const int time2 = (cg.predictedPlayerState.commandTime - lastSegmentedReset);
+						const int minutes2 = (time2 / 1000) / 60;
+						const int seconds2 = (time2 / 1000) % 60;
+						const int milliseconds2 = (time2 % 1000);
+
+						Q_strcat(timerStr, sizeof(timerStr), va("\n^3Last SP: ^%c-%i:%02i.%03i", time2 < 1000 ? '1' : '3', minutes2, seconds2, milliseconds2));
+					}
+				}
+				else {
+					Q_strcat(timerStr, sizeof(timerStr), "\n^2SEGMENTED REPLAY");
+				}
 			}
 
 			//CG_Text_Paint((float)cg_raceTimerX.integer * cgs.widthRatioCoef, (float)cg_raceTimerY.integer, cg_raceTimerSize.value, colorTable[CT_WHITE],

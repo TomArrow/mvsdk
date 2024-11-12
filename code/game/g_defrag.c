@@ -3626,6 +3626,13 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		}
 		else {
 			SavePosition(ent, &cl->pers.segmented.lastPos);
+			{
+				// mark this as a cut
+				usercmd_t cutmarker;
+				memset(&cutmarker, 0, sizeof(cutmarker));
+				cutmarker.serverTime = -1;
+				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker);
+			}
 			cl->pers.stats.saveposCount++;
 			cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS;
