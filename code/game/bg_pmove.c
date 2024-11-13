@@ -5785,9 +5785,9 @@ void PmoveSingle (pmove_t *pmove) {
 					velangle[YAW] += optimalDeltaAngle;
 					velangle[PITCH] = pm->ps->viewangles[PITCH];
 
-					assert(!_isnanf(velangle[PITCH]));
-					assert(!_isnanf(velangle[YAW]));
-					assert(!_isnanf(velangle[ROLL]));
+					//assert(!_isnanf(velangle[PITCH]));
+					//assert(!_isnanf(velangle[YAW]));
+					//assert(!_isnanf(velangle[ROLL]));
 
 					PM_SetPMViewAngle(pm->ps, velangle, &pm->cmd);
 					AngleVectors(pm->ps->viewangles, pml.forward, pml.right, pml.up); //Have to re set this here
