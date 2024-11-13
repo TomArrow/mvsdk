@@ -314,8 +314,8 @@ void MV_VersionMagic( qboolean revert )
 					}
 
 					/* The following two seem to be unused, but maybe custom cgames make use of them (well, fullAnimExecute seems to not even be set at least once - could probably just leave that one out) */
-					ps->fullAnimExecute = MV_MapAnimation104( ps->fullAnimExecute );
-					ps->saberAttackSequence = MV_MapAnimation104( ps->saberAttackSequence );
+					ps->fullAnimExecute = MV_MapAnimation102( ps->fullAnimExecute );
+					ps->saberAttackSequence = MV_MapAnimation102( ps->saberAttackSequence );
 
 					/* Convert the saberblocks */
 					if (ps->saberBlocked > BLOCKED_NONE) {
