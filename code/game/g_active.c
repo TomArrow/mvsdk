@@ -2551,8 +2551,8 @@ void G_RunClient( gentity_t *ent ) {
 		}
 		while (qtrue) {
 			qboolean success=qtrue;
-			ucmd.serverTime = -1;
 			int targetServerTime;
+			ucmd.serverTime = -1;
 			while (success && ucmd.serverTime == -1) { // -1 is just a marker for cuts
 				success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
 				if (success && ucmd.serverTime == -1) {
