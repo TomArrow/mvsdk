@@ -2221,7 +2221,7 @@ void CheckExitRules( void ) {
 		}
 	}
 
-	if ( g_timelimit.integer && !level.warmupTime ) {
+	if ( g_timelimit.integer && !level.warmupTime && !g_defrag.integer) {
 		if ( level.time - level.startTime >= g_timelimit.integer*60000 ) {
 //			trap_SendServerCommand( -1, "print \"Timelimit hit.\n\"");
 			trap_SendServerCommand( -1, va("print \"%s.\n\"",G_GetStripEdString("SVINGAME", "TIMELIMIT_HIT")));
@@ -2234,7 +2234,7 @@ void CheckExitRules( void ) {
 		return;
 	}
 
-	if ( g_gametype.integer < GT_CTF && g_fraglimit.integer ) {
+	if ( g_gametype.integer < GT_CTF && g_fraglimit.integer && !g_defrag.integer) {
 		if ( level.teamScores[TEAM_RED] >= g_fraglimit.integer ) {
 			trap_SendServerCommand( -1, va("print \"Red %s\n\"", G_GetStripEdString("SVINGAME", "HIT_THE_KILL_LIMIT")) );
 			LogExit( "Kill limit hit." );
