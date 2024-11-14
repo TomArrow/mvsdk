@@ -1513,7 +1513,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				if (runInfo->lbType == LB_MAIN) {
 					PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
 					if (ent) {
-						G_ScreenShake(vec3_origin, ent, 5.0f, 800, qfalse);
+						G_ScreenShake(ent->client->ps.origin, ent, 5.0f, 800, qfalse);
 					}
 				}
 			}
@@ -1536,7 +1536,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				runInfo->rankLB), 
 				sizeof(messageStr));
 			if (runInfo->rankLB <= 10 && runInfo->lbType == LB_MAIN && ent && !preliminary) {
-				G_ScreenShake(vec3_origin, ent, 5.0f, 800, qfalse);
+				G_ScreenShake(ent->client->ps.origin, ent, 5.0f, 800, qfalse);
 				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 			}
 			if (runInfo->rankLB <= 10 && ent && !preliminary) {
