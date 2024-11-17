@@ -34,6 +34,10 @@ typedef struct checkpointSeed_s {
 
 typedef enum dfWarningFlags_s {
 	DF_WARNING_INVALID_PREPMOVE = (1 << 0),
+	DF_WARNING_INTERPOLATION_FAIL_START_OVER = (1 << 1),
+	DF_WARNING_INTERPOLATION_FAIL_START_EQUAL = (1 << 2),
+	DF_WARNING_INTERPOLATION_FAIL_END_OVER = (1 << 3),
+	DF_WARNING_INTERPOLATION_FAIL_END_EQUAL = (1 << 4),
 } dfWarningFlags_t;
 
 typedef struct savedPosition_s {

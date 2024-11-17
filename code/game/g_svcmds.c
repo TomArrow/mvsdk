@@ -117,6 +117,8 @@ static void UpdateIPBans (void)
 	trap_Cvar_Set( "g_banIPs", iplist );
 }
 
+
+
 /*
 =================
 G_FilterPacket
@@ -200,6 +202,60 @@ void G_ProcessIPBans(void)
 	}
 }
 
+
+/*
+=================
+SvCmd_TestTrace_f
+=================
+*/
+void SvCmd_TestTrace_f() {
+	vec3_t		origin, origin2;
+	vec3_t		mins, maxs;
+	qboolean	precise;
+	int			contents;
+	char		buffer[MAX_TOKEN_CHARS];
+	int			i;
+	trace_t		trace;
+
+	if (trap_Argc() != 15) {
+		Com_Printf("usage: testtrace x y z x y z mins[0] mins[1] mins[2] maxs[0] maxs[1] maxs[2] contents precise(0 1)\n");
+		return;
+	}
+
+	for (i = 0; i < 3; i++) {
+		trap_Argv(i + 1, buffer, sizeof(buffer));
+		origin[i] = atof(buffer);
+	}
+	for (i = 0; i < 3; i++) {
+		trap_Argv(i + 4, buffer, sizeof(buffer));
+		origin2[i] = atof(buffer);
+	}
+	for (i = 0; i < 3; i++) {
+		trap_Argv(i + 7, buffer, sizeof(buffer));
+		mins[i] = atof(buffer);
+	}
+	for (i = 0; i < 3; i++) {
+		trap_Argv(i + 10, buffer, sizeof(buffer));
+		maxs[i] = atof(buffer);
+	}
+
+	trap_Argv(13, buffer, sizeof(buffer));
+	contents = atoi(buffer);
+
+	trap_Argv(14, buffer, sizeof(buffer));
+	precise = atoi(buffer);
+
+	memset(&trace, 0, sizeof(trace_t));
+	if (precise) {
+		JP_TracePrecise(&trace,origin,mins,maxs,origin2,-1,contents);
+	}
+	else {
+		JP_Trace(&trace, origin, mins, maxs, origin2, -1, contents);
+	}
+
+	Com_Printf("startsolid: %d, allsolid: %d, contents: %d, endpos: %f %f %f, entitynum %d, fraction %f, normal: %f %f %f\n",trace.startsolid,trace.allsolid,trace.contents,trace.endpos[0], trace.endpos[1], trace.endpos[2],trace.entityNum,trace.fraction,trace.plane.normal[0],trace.plane.normal[1],trace.plane.normal[2]);
+
+}
 
 /*
 =================
@@ -488,6 +544,11 @@ qboolean	ConsoleCommand( void ) {
 	char	cmd[MAX_TOKEN_CHARS];
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
+
+	if ( Q_stricmp (cmd, "testtrace") == 0 ) {
+		SvCmd_TestTrace_f();
+		return qtrue;
+	}
 
 	if ( Q_stricmp (cmd, "entitylist") == 0 ) {
 		Svcmd_EntityList_f();

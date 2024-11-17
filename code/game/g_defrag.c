@@ -312,7 +312,7 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t play
 	return qfalse;
 }
 
-int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector) // For finish and checkpoint trigger
+int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector, int* warningFlags) // For finish and checkpoint trigger
 {
 	vec3_t	interpOrigin, oldInterpOrigin, delta;
 	int lessTime = -1;
@@ -329,7 +329,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
 	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs, activator, trigger->courseID)) || !touched)
 	{
-#if 1
+#if 0
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
 		// DONT overlap. for a finish/checkpoint trigger, this means that touched=qtrue would never be set with the old algo, so this whole loop is pointless
 		// as lessTime will go up until it becomes so big the safety break happens.
@@ -340,6 +340,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 		touched = qtrue;
 #else
 		if (inTrigger) touched = qtrue;
+#if 0 // this was just debug shit
 		else if (!touched) {
 
 			trace_t trace;
@@ -350,6 +351,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 			JP_TracePrecise(&trace, activator->client->postPmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->prePmovePosition, activator->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
 		}
 #endif
+#endif
 
 		lessTime++;
 		VectorCopy(interpOrigin, oldInterpOrigin);
@@ -357,14 +359,34 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 #if DEBUG
 		if (lessTime >= (msecDelta + 100)) break; // just to sanity test a bit
 #else
-		if (lessTime >= (msecDelta - 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have NOT been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+		if (lessTime >= (msecDelta + 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have NOT been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+		// changed this from -1 to +1, so we can produce a warningFlag. we will fix it anyway with a check further down.
 #endif
 	}
-#if DEBUG
-	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
-#endif
+//#if DEBUG
+	//assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
+//#endif
 
-	VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
+	// lessTime should always be lower than msecDelta in a logical world. But... the world isnt always logical.
+	// e.g. we can fly a millimeter past a trigger and the intersection area is so small that the millisecond delta steps fail to ever register it here (but trace can)
+	// or other stuff?
+	// well.. we'll just "punish" the client by giving worst possible lessTime (maximum time addition) since we can't know what really happened here unfortunately.
+	// should be pretty rare at least.
+	if (lessTime > msecDelta) {
+		lessTime = 0;
+		VectorClear(displacementVector);
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_OVER;
+		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_OVER: %d\n", activator - g_entities,lessTime);
+	}
+	else if (lessTime == msecDelta) {
+		lessTime = 0;
+		VectorClear(displacementVector);
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_EQUAL;
+		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_EQUAL\n", activator - g_entities);
+	}
+	else {
+		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
+	}
 
 	return lessTime;
 }
@@ -385,7 +407,7 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
 	while ((inTrigger = DF_InTrigger(interpOrigin, trigger,activator->client->triggerMins,activator->client->triggerMaxs)) || !touched)
 	{
-#if 1
+#if 0
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
 		// DONT overlap. for a finish/checkpoint trigger, this means that touched=qtrue would never be set with the old algo, so this whole loop is pointless
 		// as lessTime will go up until it becomes so big the safety break happens.
@@ -396,6 +418,7 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 		touched = qtrue;
 #else
 		if (inTrigger) touched = qtrue;
+#if 0
 		else if (!touched) {
 
 			trace_t trace;
@@ -406,6 +429,7 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 			JP_TracePrecise(&trace, activator->client->postPmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->prePmovePosition, activator->client->ps.clientNum, CONTENTS_TRIGGER | CONTENTS_SOLID);
 		}
 #endif
+#endif
 
 		lessTime++;
 		VectorCopy(interpOrigin, oldInterpOrigin);
@@ -413,18 +437,36 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 #if DEBUG
 		if (lessTime >= (msecDelta + 100)) break; // just to sanity test a bit
 #else
-		if (lessTime >= (msecDelta - 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have NOT been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+		if (lessTime >= (msecDelta +1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have NOT been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+		// changed this from -1 to +1, so we can produce a warningFlag. we will fix it anyway with a check further down.
 #endif
 	}
-#if DEBUG
-	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
-#endif
-
-	VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
+//#if DEBUG
+//	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
+//#endif
+// 
+	// lessTime should always be lower than msecDelta in a logical world. But... the world isnt always logical.
+	// e.g. we can fly a millimeter past a trigger and the intersection area is so small that the millisecond delta steps fail to ever register it here (but trace can)
+	// or other stuff?
+	// well.. we'll just "punish" the client by giving worst possible lessTime (maximum time addition) since we can't know what really happened here unfortunately.
+	// should be pretty rare at least.
+	if (lessTime > msecDelta) {
+		lessTime = 0;
+		VectorClear(displacementVector);
+		Com_Printf("^1client %d, checkpoint interpolation over: %d\n", activator - g_entities, lessTime);
+	}
+	else if (lessTime == msecDelta) {
+		lessTime = 0;
+		VectorClear(displacementVector);
+		Com_Printf("^1client %d, checkpoint interpolation equal\n", activator - g_entities);
+	}
+	else {
+		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
+	}
 
 	return lessTime;
 }
-int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigger,vec3_t displacementVector) // For start trigger
+int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigger,vec3_t displacementVector,int* warningFlags) // For start trigger
 {
 	// TODO: Make this check for ANY start triggers
 	vec3_t	interpOrigin, oldInterpOrigin, delta;
@@ -465,14 +507,34 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 #if DEBUG
 		if (lessTime >= (msecDelta + 100)) break; // just to sanity test a bit
 #else
-		if (lessTime >= (msecDelta - 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+		if (lessTime >= (msecDelta + 1)) break; // if we were forced to go back msecDelta, that would put as at the pre-pmove position. But since race triggers are traced, we are guaranteed to have been in it at the time, so the only way lessTime could be msecDelta or more is if there was some error in the code or floating point imprecision
+
+		// changed this from -1 to +1, so we can produce a warningFlag. we will fix it anyway with a check further down.
 #endif
 	}
-#if DEBUG
-	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
-#endif
+//#if DEBUG
+//	assert(lessTime <= msecDelta); // float imprecision could MAYBE, in a freak situation, put as at msecDelta, but definitely no further.
+//#endif
 
-	VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition,displacementVector);
+	// lessTime should always be lower than msecDelta in a logical world. But... the world isnt always logical.
+	// e.g. we can fly a millimeter past a trigger and the intersection area is so small that the millisecond delta steps fail to ever register it here (but trace can)
+	// or other stuff?
+	// well.. we'll just "punish" the client by giving worst possible lessTime (maximum time addition) since we can't know what really happened here unfortunately.
+	// should be pretty rare at least.
+	if (lessTime > msecDelta) {
+		lessTime = msecDelta;
+		VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition, displacementVector);
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_OVER;
+		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_OVER: %d\n", activator - g_entities, lessTime);
+	}
+	else if (lessTime == msecDelta) {
+		VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition, displacementVector);
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_EQUAL;
+		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_EQUAL\n", activator - g_entities);
+	}
+	else {
+		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
+	}
 
 	return lessTime;
 }
@@ -504,6 +566,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	mainLeaderboardType_t lbType;
 	int resposCountSave, savePosCountSave;
 	rollState_t rollStateSave;
+	int warningFlags = 0;
 
 	// Check client
 	if (!activator->client) return;
@@ -561,7 +624,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 	else {
-		lessTime = DF_InterpolateTouchTimeForStartTimer(activator, ent, interpolationDisplacement);
+		lessTime = DF_InterpolateTouchTimeForStartTimer(activator, ent, interpolationDisplacement, &warningFlags);
 	}
 
 	resposCountSave = cl->pers.stats.resposCount;
@@ -580,6 +643,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	cl->pers.stats.topSpeed = XYSPEED(cl->ps.velocity);
 	cl->pers.stats.courseId = ent->courseID;
 	cl->pers.stats.startTriggerSpeed = XYSPEED(cl->ps.velocity);
+	cl->pers.stats.warningFlags = warningFlags;
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
@@ -1536,7 +1600,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				runInfo->rankLB), 
 				sizeof(messageStr));
 			if (runInfo->rankLB <= 10 && runInfo->lbType == LB_MAIN && ent && !preliminary) {
-				G_ScreenShake(ent->client->ps.origin, ent, 5.0f, 800, qfalse);
+				G_ScreenShake(ent->client->ps.origin, ent, 2.5f, 800, qfalse); // pb: shake a bit less. in NT, the distinction wasnt in intensity but WR would shake everyone. but lets not confuse other players who might be on track for WR too
 				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 			}
 			if (runInfo->rankLB <= 10 && ent && !preliminary) {
@@ -1802,13 +1866,15 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
+	warningFlags = cl->pers.stats.warningFlags;
+
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Finish Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
 		trap_SendServerCommand(-1, va("print \"^1Warning:^7 %s ^7didn't have valid pre-pmove info.\n\"", cl->pers.netname));
 		warningFlags |= DF_WARNING_INVALID_PREPMOVE;
 	}
 	else {
-		lessTime = DF_InterpolateTouchTimeToOldPos(activator, ent, "df_trigger_finish", interpolationDisplacement);
+		lessTime = DF_InterpolateTouchTimeToOldPos(activator, ent, "df_trigger_finish", interpolationDisplacement, &warningFlags);
 	}
 
 	cl->pers.stats.distanceTraveled -= VectorLength(interpolationDisplacement);

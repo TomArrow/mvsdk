@@ -392,6 +392,7 @@ typedef struct runStats_s { // zero'd out every time we leave start timer
 	float startTriggerSpeed;
 	int courseId;
 	int checkpoints;
+	int warningFlags;
 	rollState_t roll;
 } runStats_t;
 typedef struct raceDropped_s { // zero'd out every time we leave start timer
