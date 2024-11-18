@@ -413,7 +413,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 
 	memset(&trace, 0, sizeof(trace));
 	JP_TracePrecise(&trace, activator->client->prePmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->postPmovePosition, clientNum, CONTENTS_TRIGGER);
-	if (trace.entityNum <= ENTITYNUM_MAX_NORMAL)
+	if (trace.entityNum < ENTITYNUM_MAX_NORMAL)
 	{
 		gentity_t* ent = g_entities + trace.entityNum;
 		float lessTimePrecise;
@@ -561,7 +561,7 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 
 	memset(&trace, 0, sizeof(trace));
 	JP_TracePrecise(&trace, activator->client->prePmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->postPmovePosition, clientNum, CONTENTS_TRIGGER);
-	if (trace.entityNum <= ENTITYNUM_MAX_NORMAL)
+	if (trace.entityNum < ENTITYNUM_MAX_NORMAL)
 	{
 		gentity_t* ent = g_entities + trace.entityNum;
 		float lessTimePrecise;
@@ -699,7 +699,7 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 
 	memset(&trace, 0, sizeof(trace));
 	JP_TracePrecise(&trace, activator->client->postPmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->prePmovePosition, clientNum, CONTENTS_TRIGGER);
-	if (trace.entityNum <= ENTITYNUM_MAX_NORMAL)
+	if (trace.entityNum < ENTITYNUM_MAX_NORMAL)
 	{
 		gentity_t* ent = g_entities + trace.entityNum;
 		float lessTimePrecise;
@@ -2893,7 +2893,7 @@ static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins
 	else {
 		trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
 	}
-	if (results->entityNum <= ENTITYNUM_MAX_NORMAL)
+	if (results->entityNum < ENTITYNUM_MAX_NORMAL)
 	{
 		gentity_t* passEnt = g_entities + passEntityNum;
 		gentity_t* ent = g_entities + results->entityNum;
