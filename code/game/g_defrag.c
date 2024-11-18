@@ -305,14 +305,22 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t play
 
 	trigger = NULL;
 	while ((trigger = G_Find(trigger, FOFS(classname), classname)) != NULL) {
-		if (courseId >=0 && trigger->courseID != courseId || trigger->triggerClientSpecific && trigger->parent != activator) continue;
+		if (/*courseId >=0 &&*/ trigger->courseID != courseId || trigger->triggerClientSpecific && trigger->parent != activator) continue;
 		if (trap_EntityContact(mins, maxs, trigger)) return qtrue;
 	}
 
 	return qfalse;
 }
 
-int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector, int* warningFlags) // For finish and checkpoint trigger
+
+#if DEBUG
+#define DEBUGTRACETRIGGER 1
+#else
+#define DEBUGTRACETRIGGER 0
+#endif
+
+
+int DF_InterpolateTouchTimeToOldPosOld(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector, int* warningFlags) // For finish and checkpoint trigger
 {
 	vec3_t	interpOrigin, oldInterpOrigin, delta;
 	int lessTime = -1;
@@ -376,13 +384,13 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 		lessTime = 0;
 		VectorClear(displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_OVER;
-		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_OVER: %d\n", activator - g_entities,lessTime);
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_OVER: %d\n\"", activator - g_entities,lessTime));
 	}
 	else if (lessTime == msecDelta) {
 		lessTime = 0;
 		VectorClear(displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_EQUAL;
-		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_EQUAL\n", activator - g_entities);
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_EQUAL: %d\n\"", activator - g_entities, lessTime));
 	}
 	else {
 		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
@@ -390,7 +398,78 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 
 	return lessTime;
 }
-int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* trigger, vec3_t displacementVector) // For finish and checkpoint trigger
+
+
+//int DF_InterpolateTouchTimeToOldPos(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean precise) {
+int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector, int* warningFlags) {
+	trace_t trace;
+	int clientNum = activator - g_entities;
+	int msecDelta = activator->client->ps.commandTime - activator->client->prePmoveCommandTime;
+	if (!(coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
+		// fallback to old method
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_FALLBACK_NOPRECISE;
+		return DF_InterpolateTouchTimeToOldPosOld(activator, trigger, classname, displacementVector, warningFlags);
+	}
+
+	memset(&trace, 0, sizeof(trace));
+	JP_TracePrecise(&trace, activator->client->prePmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->postPmovePosition, clientNum, CONTENTS_TRIGGER);
+	if (trace.entityNum <= ENTITYNUM_MAX_NORMAL)
+	{
+		gentity_t* ent = g_entities + trace.entityNum;
+		float lessTimePrecise;
+		int lessTime;
+
+		if (Q_stricmp(ent->classname,classname) || ent->courseID != trigger->courseID)
+		{
+			int contents;
+
+			contents = ent->r.contents;
+			ent->r.contents = 0;
+			lessTime = DF_InterpolateTouchTimeToOldPos(activator,trigger,classname,displacementVector,warningFlags);
+			ent->r.contents = contents;
+
+			return lessTime;
+		}
+
+		if (trace.startsolid || trace.allsolid) {
+			*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_FALLBACK_STARTSOLID;
+			return DF_InterpolateTouchTimeToOldPosOld(activator, trigger, classname, displacementVector, warningFlags);
+		}
+		else if (trace.fraction >= 1.0) {
+			*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_FALLBACK_FRACTION1;
+			return DF_InterpolateTouchTimeToOldPosOld(activator, trigger, classname, displacementVector, warningFlags);
+		}
+
+		lessTimePrecise = (float)msecDelta * (1.0f - trace.fraction);
+		lessTime = (int)lessTimePrecise;
+#if DEBUGTRACETRIGGER
+		{
+			int lessTimeCheck = DF_InterpolateTouchTimeToOldPosOld(activator, trigger, classname, displacementVector, warningFlags);
+			if (lessTime != lessTimeCheck) {
+
+				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeToOldPos: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", activator - g_entities, lessTime, lessTimeCheck, lessTimePrecise));
+			}
+		}
+#endif
+		return lessTime;
+
+	}
+	else {
+		// uh weird, no hit? try old method?
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_FALLBACK_NOHIT;
+		return DF_InterpolateTouchTimeToOldPosOld(activator, trigger, classname, displacementVector, warningFlags);
+	}
+
+	//if (results->startsolid && start != end)
+	//{
+	//	trace_t tw;
+
+	//	JP_Trace(&tw, start, mins, maxs, start, passEntityNum, contentmask);
+	//	results->startsolid = tw.startsolid;
+	//}
+}
+
+int DF_InterpolateTouchTimeToOldPosThisTriggerOld(gentity_t* activator, gentity_t* trigger, vec3_t displacementVector) // For finish and checkpoint trigger
 {
 	vec3_t	interpOrigin, oldInterpOrigin, delta;
 	int lessTime = -1;
@@ -453,12 +532,13 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 	if (lessTime > msecDelta) {
 		lessTime = 0;
 		VectorClear(displacementVector);
-		Com_Printf("^1client %d, checkpoint interpolation over: %d\n", activator - g_entities, lessTime);
+
+		trap_SendServerCommand(-1, va("print \"^1client %d, checkpoint interpolation over: %d\n\"", activator - g_entities, lessTime));
 	}
 	else if (lessTime == msecDelta) {
 		lessTime = 0;
 		VectorClear(displacementVector);
-		Com_Printf("^1client %d, checkpoint interpolation equal\n", activator - g_entities);
+		trap_SendServerCommand(-1, va("print \"^1client %d, checkpoint interpolation equal\n\"", activator - g_entities, lessTime));
 	}
 	else {
 		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
@@ -466,7 +546,73 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 
 	return lessTime;
 }
-int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigger,vec3_t displacementVector,int* warningFlags) // For start trigger
+
+
+//int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector, int* warningFlags) {
+int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* trigger, vec3_t displacementVector) {
+	trace_t trace;
+	int clientNum = activator - g_entities;
+	int msecDelta = activator->client->ps.commandTime - activator->client->prePmoveCommandTime;
+	if (!(coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
+		// fallback to old method
+		//*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_FALLBACK_NOPRECISE;
+		return DF_InterpolateTouchTimeToOldPosThisTriggerOld(activator, trigger,  displacementVector);
+	}
+
+	memset(&trace, 0, sizeof(trace));
+	JP_TracePrecise(&trace, activator->client->prePmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->postPmovePosition, clientNum, CONTENTS_TRIGGER);
+	if (trace.entityNum <= ENTITYNUM_MAX_NORMAL)
+	{
+		gentity_t* ent = g_entities + trace.entityNum;
+		float lessTimePrecise;
+		int lessTime;
+
+		if (ent != trigger)
+		{
+			int contents;
+
+			contents = ent->r.contents;
+			ent->r.contents = 0;
+			lessTime = DF_InterpolateTouchTimeToOldPosThisTrigger(activator, trigger, displacementVector);
+			ent->r.contents = contents;
+
+			return lessTime;
+		}
+
+		if (trace.startsolid || trace.allsolid) {
+			//*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_FALLBACK_STARTSOLID;
+			return DF_InterpolateTouchTimeToOldPosThisTriggerOld(activator, trigger,  displacementVector);
+		}
+		else if (trace.fraction >= 1.0) {
+			//*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_FALLBACK_FRACTION1;
+			return DF_InterpolateTouchTimeToOldPosThisTriggerOld(activator, trigger, displacementVector);
+		}
+
+		lessTimePrecise = (float)msecDelta * (1.0f - trace.fraction);
+		lessTime = (int)lessTimePrecise;
+#if DEBUGTRACETRIGGER
+		{
+			int lessTimeCheck = DF_InterpolateTouchTimeToOldPosThisTriggerOld(activator, trigger, displacementVector);
+			if (lessTime != lessTimeCheck) {
+
+				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeToOldPosThisTrigger: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", activator - g_entities, lessTime, lessTimeCheck, lessTimePrecise));
+			}
+		}
+#endif
+		return lessTime;
+
+	}
+	else {
+		// uh weird, no hit? try old method?
+		//*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_FALLBACK_NOHIT;
+		return DF_InterpolateTouchTimeToOldPosThisTriggerOld(activator, trigger, displacementVector);
+	}
+
+}
+
+
+
+int DF_InterpolateTouchTimeForStartTimerOld(gentity_t* activator, gentity_t* trigger,vec3_t displacementVector,int* warningFlags) // For start trigger
 {
 	// TODO: Make this check for ANY start triggers
 	vec3_t	interpOrigin, oldInterpOrigin, delta;
@@ -525,12 +671,12 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 		lessTime = msecDelta;
 		VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition, displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_OVER;
-		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_OVER: %d\n", activator - g_entities, lessTime);
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_OVER: %d\n\"", activator - g_entities, lessTime));
 	}
 	else if (lessTime == msecDelta) {
 		VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition, displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_EQUAL;
-		Com_Printf("^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_EQUAL\n", activator - g_entities);
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_EQUAL\n\"", activator - g_entities, lessTime));
 	}
 	else {
 		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
@@ -539,6 +685,68 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 	return lessTime;
 }
 
+
+//int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, const char* classname, vec3_t displacementVector, int* warningFlags) {
+int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigger, vec3_t displacementVector, int* warningFlags){
+	trace_t trace;
+	int clientNum = activator - g_entities;
+	int msecDelta = activator->client->ps.commandTime - activator->client->prePmoveCommandTime;
+	if (!(coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
+		// fallback to old method
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_FALLBACK_NOPRECISE;
+		return DF_InterpolateTouchTimeForStartTimerOld(activator, trigger, displacementVector, warningFlags);
+	}
+
+	memset(&trace, 0, sizeof(trace));
+	JP_TracePrecise(&trace, activator->client->postPmovePosition, activator->client->triggerMins, activator->client->triggerMaxs, activator->client->prePmovePosition, clientNum, CONTENTS_TRIGGER);
+	if (trace.entityNum <= ENTITYNUM_MAX_NORMAL)
+	{
+		gentity_t* ent = g_entities + trace.entityNum;
+		float lessTimePrecise;
+		int lessTime;
+
+		if (Q_stricmp(ent->classname, "df_trigger_start") || ent->courseID != trigger->courseID)
+		{
+			int contents;
+
+			contents = ent->r.contents;
+			ent->r.contents = 0;
+			lessTime = DF_InterpolateTouchTimeForStartTimer(activator, trigger, displacementVector, warningFlags);
+			ent->r.contents = contents;
+
+			return lessTime;
+		}
+
+		if (trace.startsolid || trace.allsolid) {
+			*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_FALLBACK_STARTSOLID;
+			return DF_InterpolateTouchTimeForStartTimerOld(activator, trigger, displacementVector, warningFlags);
+		}
+		else if (trace.fraction >= 1.0) {
+			*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_FALLBACK_FRACTION1;
+			return DF_InterpolateTouchTimeForStartTimerOld(activator, trigger, displacementVector, warningFlags);
+		}
+
+		lessTimePrecise = (float)msecDelta * trace.fraction;
+		lessTime = (int)lessTimePrecise;
+#if DEBUGTRACETRIGGER
+		{
+			int lessTimeCheck = DF_InterpolateTouchTimeForStartTimerOld(activator, trigger, displacementVector, warningFlags);
+			if (lessTime != lessTimeCheck) {
+
+				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeForStartTimer: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", activator - g_entities, lessTime, lessTimeCheck, lessTimePrecise));
+			}
+		}
+#endif
+		return lessTime;
+
+	}
+	else {
+		// uh weird, no hit? try old method?
+		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_FALLBACK_NOHIT;
+		return DF_InterpolateTouchTimeForStartTimerOld(activator, trigger, displacementVector, warningFlags);
+	}
+
+}
 
 
 void DF_HandleUnfinishedDemos() {
@@ -2685,7 +2893,7 @@ static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins
 	else {
 		trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
 	}
-	if (results->entityNum < ENTITYNUM_MAX_NORMAL)
+	if (results->entityNum <= ENTITYNUM_MAX_NORMAL)
 	{
 		gentity_t* passEnt = g_entities + passEntityNum;
 		gentity_t* ent = g_entities + results->entityNum;
@@ -2696,12 +2904,13 @@ static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins
 
 			contents = ent->r.contents;
 			ent->r.contents = 0;
-			if (precise && (coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
-				trap_G_COOL_API_NonEpsilonTrace(results, start, mins, maxs, end, passEntityNum, contentmask);
-			}
-			else {
-				JP_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
-			}
+			//if (precise && (coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
+			//	trap_G_COOL_API_NonEpsilonTrace(results, start, mins, maxs, end, passEntityNum, contentmask);
+			//}
+			//else {
+			//	JP_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
+			//}
+			JP_TraceReal(results,start,mins,maxs,end,passEntityNum,contentmask,precise);
 			ent->r.contents = contents;
 
 			return;
