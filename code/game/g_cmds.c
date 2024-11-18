@@ -1110,6 +1110,67 @@ void Cmd_Register_f( gentity_t *ent )
 			, DBREQUESTTYPE_BCRYPT);
 	}
 }
+
+/*
+=================
+Cmd_ChangePassword_f
+=================
+*/
+void Cmd_ChangePassword_f( gentity_t *ent )
+{
+	static char cmd[MAX_TOKEN_CHARS];
+	static char secondparam[MAX_TOKEN_CHARS];
+	static loginRegisterStruct_t loginData;
+	qboolean needDoubleBCrypt = qtrue;
+	trap_Argv(0, cmd, sizeof(cmd));
+	if (coolApi_dbVersion < 2) {
+		// DB API cannot do bcrypt.
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Server %s not possible. DB version too low.\n\"", cmd));
+		return;
+	}
+	if (!ent->client->sess.login.loggedIn) {
+		// DB API cannot do bcrypt.
+		trap_SendServerCommand(ent - g_entities, va("print \"^1%s not possible. You are not logged in.\n\"", cmd));
+		return;
+	}
+	if (trap_Argc() < 2) {
+		trap_SendServerCommand(ent - g_entities, va("print \"usage /%s <password>\n\"",cmd));
+		return;
+	}
+	memset(&loginData, 0, sizeof(loginData));
+	if (trap_Argc() >= 3) {
+		trap_Argv(2, secondparam, sizeof(secondparam));
+		if (!Q_stricmp(secondparam, "bcrypt")) {
+			needDoubleBCrypt = qfalse; // client already bcrypted once :)
+		}
+	}
+	trap_Argv(1, loginData.password, sizeof(loginData.password));
+
+	Q_strncpyz(loginData.username, ent->client->sess.login.name, sizeof(loginData.username));
+	loginData.userId = ent->client->sess.login.id;
+	loginData.clientnum = ent - g_entities;
+		
+	// can only verify the password structure here if it wasn't already hashed. clientside has same check but if someone decides to bypass it, nothing we can do.
+	// they just wont be able to log in without their modified client then, oh well.
+	if (needDoubleBCrypt && !BG_DB_VerifyPassword(loginData.password, loginData.clientnum)) {
+		return;
+	}
+
+	memcpy(loginData.ip,mv_clientSessions[loginData.clientnum].clientIP,sizeof(loginData.ip));
+	//loginData.followUpType = !Q_stricmp("login", cmd) ? DBREQUEST_LOGIN : DBREQUEST_REGISTER;
+	loginData.followUpType = DBREQUEST_CHANGEPASSWORD;
+	if (needDoubleBCrypt) {
+		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+			va("2|%s|random|%s", BCRYPT_SETTINGS, loginData.password) 
+			, DBREQUESTTYPE_BCRYPT);
+	}
+	else {
+		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+			va("1|random|%s", loginData.password)
+			, DBREQUESTTYPE_BCRYPT);
+	}
+}
+
 /*
 =================
 Cmd_Login_f
@@ -3443,6 +3504,14 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "register"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "changepassword"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "lasers"))
 		{
 			giveError = qtrue;
@@ -3580,6 +3649,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Time_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
 		Cmd_Register_f(ent);
+	else if (Q_stricmp (cmd, "changepassword") == 0)
+		Cmd_ChangePassword_f(ent);
 	else if (Q_stricmp (cmd, "lasers") == 0)
 		Cmd_Lasers_f(ent);
 	else if (Q_stricmp (cmd, "mapdefaults") == 0)

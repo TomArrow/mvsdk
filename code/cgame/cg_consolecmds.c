@@ -1259,6 +1259,80 @@ static void CG_Register_f(void) {
 	//CG_SendConsoleCommand("cmd follow %i", clientNum);
 }
 
+
+static void CG_ChangePassword_f(void) {
+	int clientNum = -1;
+	char cmd[64];
+	char pw[64];
+	char secondarg[64];
+	const static char settings[64] = BCRYPT_SETTINGS;
+	char output[64];
+
+	if (trap_Argc() < 2) {
+		if (cgs.isTommyTernal) {
+			CG_Printf("usage /changepassword <password> [raw] (password is clientside-hashed before sending to server by default for TommyTernal servers. Pass 'raw' to override)\n");
+		}
+		else {
+			CG_Printf("usage /changepassword <password> [bcrypt] (use bcrypt to hash pw clientside before sending to server)\n");
+		}
+		return;
+	}
+
+	trap_Argv(0, cmd, sizeof(cmd));
+	trap_Argv(1, pw, sizeof(pw));
+
+
+	trap_Argv(2, secondarg, sizeof(secondarg));
+	if (!Q_stricmp(secondarg, "raw")) {
+		CG_SendConsoleCommand("cmd %s \"%s\" raw", cmd, pw);
+	}
+	else if (cgs.isTommyTernal) {
+
+		if (!BG_DB_VerifyPassword(pw, -1)) {
+			return;
+		}
+
+		bcrypt_errno = 0;
+		_crypt_blowfish_rn(pw, settings, output, 64);
+
+		CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
+		
+		if (!bcrypt_errno) {
+			CG_SendConsoleCommand("cmd %s \"%s\" bcrypt", cmd, output);
+		}
+		else { 
+			CG_Printf("Clientside bcrypt hashing of password failed. Use '/changepassword <password> raw' to send password to the server in plaintext.\n");
+		}
+	}
+	else {
+		// Allow 
+		trap_Argv(2, secondarg, sizeof(secondarg));
+		if (!Q_stricmp(secondarg, "bcrypt")) {
+
+			bcrypt_errno = 0;
+			_crypt_blowfish_rn(pw, settings, output, 64);
+
+			CG_DPrintf("cg bcrypt; settings: %s\nRaw pw: %s, bcrypt: %s, bcrypt_errno: %d\n", settings, pw, output, bcrypt_errno);
+			if (!bcrypt_errno) {
+				CG_SendConsoleCommand("cmd %s \"%s\"", cmd, output);
+			}
+			else {
+				CG_Printf("Requested clientside bcrypt hashing of password failed. Please report this issue.\n");
+			}
+		}
+		else {
+			CG_SendConsoleCommand("cmd %s \"%s\"", cmd, pw);
+		}
+	}
+
+	//clientNum = CG_ClientNumberFromString(CG_Argv(1));
+
+	//if (clientNum < 0)
+	//	return;
+
+	//CG_SendConsoleCommand("cmd follow %i", clientNum);
+}
+
 static void CG_FollowRedFlag_f(void) {
 	int i;
 	clientInfo_t	*ci;
@@ -1589,6 +1663,7 @@ static consoleCommand_t	commands[] = {
 
 	{ "login", CG_Login_f },
 	{ "register", CG_Register_f },
+	{ "changepassword", CG_ChangePassword_f },
 
 	{ "getchats", CG_DB_GetChats_f },
 	{ "follow", CG_Follow_f },
@@ -1679,6 +1754,23 @@ qboolean CG_ConsoleCommand( void ) {
 			misspelledCount = 1;
 		}
 		CG_Printf("Command '%s' ^1blocked ^7for your safety to avoid plaintext password leaks. Did you misspell 'register'? Repeat 2 times to force command with this spelling.\n", cmd);
+		return qtrue;
+	}
+
+	// check for login and register misspellings
+	if (levenshtein("changepassword", cmd) <= 3 // suspiciously similar to changepassword
+		) {
+		if (misspelledCount && !Q_stricmp(misspelled, cmd)) {
+			misspelledCount++;
+			if (misspelledCount >= 3) {
+				return qfalse; // fine, allow it.
+			}
+		}
+		else {
+			Q_strncpyz(misspelled, cmd, sizeof(misspelled));
+			misspelledCount = 1;
+		}
+		CG_Printf("Command '%s' ^1blocked ^7for your safety to avoid plaintext password leaks. Did you misspell 'changepassword'? Repeat 2 times to force command with this spelling.\n", cmd);
 		return qtrue;
 	}
 
@@ -1885,5 +1977,6 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("solo");
 	trap_AddCommand("mapdefaults");
 	trap_AddCommand("amtele");
+	trap_AddCommand("rollympics");
 	trap_AddCommand("rollympics");
 }

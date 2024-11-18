@@ -233,6 +233,30 @@ static void G_RegisterContinue(loginRegisterStruct_t* loginData) {
 
 }
 
+static void G_ChangePasswordContinue(loginRegisterStruct_t* loginData) {
+	const char*		request = NULL;
+	gentity_t* ent = NULL;
+
+	if (!(ent = DB_VerifyClient(loginData->clientnum, loginData->ip))) {
+		Com_Printf("^1Change password from client %d failed, user no longer valid.\n", loginData->clientnum);
+		return;
+	}
+	if (ent->client->sess.login.id != loginData->userId) {
+		trap_SendServerCommand(loginData->clientnum, "print \"^1Password change failed, no longer logged in as same user.\n\"");
+		return;
+	}
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_CHANGEPASSWORD,
+		"UPDATE users SET password=? WHERE id=?")) {
+		trap_SendServerCommand(loginData->clientnum, "print \"^1Password change failed for unspecified reason.\n\"");
+		return;
+	}
+	G_COOL_API_DB_PreparedBindString(loginData->password);
+	G_COOL_API_DB_PreparedBindInt(loginData->userId);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+
+}
+
 static void G_RegisterResult(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData; 
 	gentity_t* ent = NULL;
@@ -257,6 +281,28 @@ static void G_RegisterResult(int status, const char* errorMessage) {
 		return;
 	}
 	trap_SendServerCommand(loginData.clientnum, va("print \"^2Registration successful. You can now log in as '%s'.\n\"", loginData.username));
+
+}
+static void G_ChangePasswordResult(int status, const char* errorMessage) {
+	static loginRegisterStruct_t loginData; 
+	gentity_t* ent = NULL;
+
+	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
+		Com_Printf("^1Change password from client %d failed, user no longer valid.\n", loginData.clientnum);
+		return;
+	}
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		trap_SendServerCommand(loginData.clientnum, "print \"^1Change password failed due to usertable not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(loginData.clientnum, va("print \"^1Change password failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+	trap_SendServerCommand(loginData.clientnum, va("print \"^2Change password. You can now log in with your new password.\n\"", loginData.username));
 
 }
 
@@ -1063,6 +1109,9 @@ static void G_PWBCryptReturned(int status, const char* errorMessage) {
 			case DBREQUEST_LOGIN:
 				G_LoginContinue(&loginData);
 				break;
+			case DBREQUEST_CHANGEPASSWORD:
+				G_ChangePasswordContinue(&loginData);
+				break;
 		}
 
 		if (g_developer.integer) {
@@ -1099,6 +1148,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_REGISTER:
 					G_RegisterResult(status, errorMessage);
+					break;
+				case DBREQUEST_CHANGEPASSWORD:
+					G_ChangePasswordResult(status, errorMessage);
 					break;
 				case DBREQUEST_CREATETABLE:
 					G_CreateTableResult(status, errorMessage);
