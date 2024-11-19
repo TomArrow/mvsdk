@@ -6,6 +6,7 @@
 #include "../qcommon/crypt_blowfish.h"
 
 #include "../ui/menudef.h"			// for the voice chats
+#include "../qcommon/levenshtein.h"
 
 //rww - for getting bot commands...
 int AcceptBotCommand(char *cmd, gentity_t *pl);
@@ -1840,9 +1841,32 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	// don't let text be too long for malicious reasons
 	char		text[MAX_SAY_TEXT];
 	char		location[64];
+	int			pseudoArgC;
+	const char* pseudoCmd;
+	const char* pseudoArg1;
 
 	if ( g_gametype.integer < GT_TEAM && mode == SAY_TEAM ) {
 		mode = SAY_ALL;
+	}
+
+	BG_Cmd_TokenizeString(chatText); // vm-side cmd parsing :/
+	pseudoArgC = BG_Cmd_Argc();
+	pseudoCmd = BG_Cmd_Argv(0);
+	pseudoArg1 = BG_Cmd_Argv(1);
+	if (pseudoArgC >= 2) {
+		if ((
+			(levenshtein("login",pseudoCmd) <= 2 && Q_stricmp("logout", pseudoCmd) && Q_stricmp("admin", pseudoCmd))  // allow "admin"/"logout" tho.
+			|| levenshtein("register",pseudoCmd) <= 2
+			) && pseudoArgC >=3 && pseudoArgC <= 5) {
+			G_LogPrintf("clientSay accidental credentials? (mode %d): %s : %s %s ****** %s\n", mode, ent->client->pers.netname, pseudoCmd, pseudoArg1, BG_Cmd_ArgsFrom(3));
+			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed your account credentials in chat, so your message was blocked.", qfalse, qfalse, qtrue);
+			return;
+		}
+		else if (levenshtein("changepassword", pseudoCmd) <= 3 && pseudoArgC >= 2 && pseudoArgC <= 4) {
+			G_LogPrintf("clientSay accidental credentials? (mode %d): %s : %s ****** %s\n", mode, ent->client->pers.netname, pseudoCmd, BG_Cmd_ArgsFrom(2));
+			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed a password in chat, so your message was blocked.", qfalse, qfalse, qtrue);
+			return;
+		}
 	}
 
 	switch ( mode ) {

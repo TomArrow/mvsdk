@@ -542,6 +542,9 @@ void AddScore( gentity_t *ent, vec3_t origin, int score ) {
 	if ( !ent->client ) {
 		return;
 	}
+	if ( ent->client->sess.raceMode ) { // dont affect points by dying or such. racemode has current racetimer as score
+		return;
+	}
 	// no scoring during pre-match warmup
 	if ( level.warmupTime ) {
 		return;

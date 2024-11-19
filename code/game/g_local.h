@@ -6,6 +6,7 @@
 #include "bg_public.h"
 #include "g_public.h"
 #include "bg_defrag_global.h"
+#include "bg_cmd.h"
 #include "g_defrag.h"
 #include "g_dbcmds.h"
 

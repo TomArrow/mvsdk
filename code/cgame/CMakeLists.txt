@@ -22,6 +22,7 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/game/bg_public.h"
 	"${SRCDir}/game/bg_saga.h"
 	"${SRCDir}/game/bg_weapons.h"
+	"${SRCDir}/game/bg_cmd.h"
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/surfaceflags.h"
 	"${SRCDir}/game/bg_multiversion.h"
@@ -84,6 +85,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/game/bg_saber.c"
 	"${SRCDir}/game/bg_slidemove.c"
 	"${SRCDir}/game/bg_weapons.c"
+	"${SRCDir}/game/bg_cmd.c"
 	"${SRCDir}/game/q_math.c"
 	"${SRCDir}/game/q_shared.c"
 	
