@@ -1623,7 +1623,7 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 
 
 void DF_PreDeltaAngleChange(gclient_t* client);
-void DF_PostDeltaAngleChange(gclient_t* client);
+void DF_PostDeltaAngleChange(gclient_t* client, qboolean setResettable);
 qboolean DF_ClientInSegmentedRunMode(gclient_t* client);
 void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4);
 void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest);

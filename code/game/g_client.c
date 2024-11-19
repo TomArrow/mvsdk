@@ -2442,7 +2442,7 @@ void ClientSpawn(gentity_t *ent) {
 	if(!useSavedSpawn){
 		DF_PreDeltaAngleChange(ent->client);
 		SetClientViewAngle(ent, spawn_angles);
-		DF_PostDeltaAngleChange(ent->client);
+		DF_PostDeltaAngleChange(ent->client,qtrue);
 	}
 
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {

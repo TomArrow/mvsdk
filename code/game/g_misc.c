@@ -102,7 +102,7 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	// set angles
 	DF_PreDeltaAngleChange(player->client);
 	SetClientViewAngle( player, angles );
-	DF_PostDeltaAngleChange(player->client);
+	DF_PostDeltaAngleChange(player->client, qtrue);
 
 	// kill anything at the destination
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR && !player->client->sess.raceMode) {

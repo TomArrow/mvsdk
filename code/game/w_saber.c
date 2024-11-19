@@ -684,13 +684,13 @@ qboolean WP_SabersCheckLock2( gentity_t *attacker, gentity_t *defender, sabersLo
 	attAngles[YAW] = vectoyaw( defDir );
 	DF_PreDeltaAngleChange(attacker->client);
 	SetClientViewAngle( attacker, attAngles );
-	DF_PostDeltaAngleChange(attacker->client);
+	DF_PostDeltaAngleChange(attacker->client, qtrue);
 	defAngles[PITCH] = attAngles[PITCH]*-1;
 	defAngles[YAW] = AngleNormalize180( attAngles[YAW] + 180);
 	defAngles[ROLL] = 0;
 	DF_PreDeltaAngleChange(attacker->client);
 	SetClientViewAngle( defender, defAngles );
-	DF_PostDeltaAngleChange(attacker->client);
+	DF_PostDeltaAngleChange(attacker->client, qtrue);
 	
 	//MATCH POSITIONS
 	diff = VectorNormalize( defDir ) - idealDist;//diff will be the total error in dist

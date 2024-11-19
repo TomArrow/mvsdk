@@ -227,7 +227,7 @@ qboolean	G_TryPushingEntity( gentity_t *check, gentity_t *pusher, vec3_t move, v
 
 		DF_PreDeltaAngleChange(check->client);
 		check->client->ps.delta_angles[YAW] += ANGLE2SHORT(amove[YAW]);
-		DF_PostDeltaAngleChange(check->client);
+		DF_PostDeltaAngleChange(check->client,qtrue);
 	}
 
 	// may have pushed them off an edge
@@ -402,7 +402,7 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 			if ( p->ent->client ) {
 				DF_PreDeltaAngleChange(p->ent->client);
 				p->ent->client->ps.delta_angles[YAW] = p->deltayaw;
-				DF_PostDeltaAngleChange(p->ent->client);
+				DF_PostDeltaAngleChange(p->ent->client, qtrue);
 				VectorCopy (p->origin, p->ent->client->ps.origin);
 			}
 			trap_LinkEntity (p->ent);

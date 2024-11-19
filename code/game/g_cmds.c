@@ -3767,7 +3767,7 @@ void ClientCommand( int clientNum ) {
 					entAngles[YAW] = vectoyaw( otherDir );
 					DF_PreDeltaAngleChange(ent->client);
 					SetClientViewAngle( ent, entAngles );
-					DF_PostDeltaAngleChange(ent->client);
+					DF_PostDeltaAngleChange(ent->client, qtrue);
 
 					StandardSetBodyAnim(ent, BOTH_KISSER1LOOP, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_HOLDLESS);
 					ent->client->ps.saberMove = LS_NONE;
@@ -3779,7 +3779,7 @@ void ClientCommand( int clientNum ) {
 					otherAngles[YAW] = vectoyaw( entDir );
 					DF_PreDeltaAngleChange(other->client);
 					SetClientViewAngle( other, otherAngles );
-					DF_PostDeltaAngleChange(other->client);
+					DF_PostDeltaAngleChange(other->client, qtrue);
 
 					StandardSetBodyAnim(other, BOTH_KISSEE1LOOP, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_HOLDLESS);
 					other->client->ps.saberMove = LS_NONE;

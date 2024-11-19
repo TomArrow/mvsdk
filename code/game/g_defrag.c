@@ -3601,7 +3601,7 @@ void DF_PreDeltaAngleChange(gclient_t* client) {
 	VectorCopy(client->ps.delta_angles, dfOldDelta);
 }
 
-void DF_PostDeltaAngleChange(gclient_t* client) {
+void DF_PostDeltaAngleChange(gclient_t* client, qboolean setResettable) {
 	//qboolean isinSeg;
 	if (client->ps.delta_angles[0] == dfOldDelta[0] && client->ps.delta_angles[1] == dfOldDelta[1] && client->ps.delta_angles[2] == dfOldDelta[2]) {
 		return;
@@ -3616,6 +3616,9 @@ void DF_PostDeltaAngleChange(gclient_t* client) {
 		client->pers.segmented.anglesDiffAccum[0] &= 65535;
 		client->pers.segmented.anglesDiffAccum[1] &= 65535;
 		client->pers.segmented.anglesDiffAccum[2] &= 65535;
+		if (setResettable) {
+			client->pers.segmented.anglesDiffResettable = qtrue; // for segmented strafebot runs
+		}
 	}
 }
 
@@ -3800,6 +3803,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 #endif
 		cl->pers.segmented.state = SEG_DISABLED;
 		cl->pers.segmented.msecProgress = 0;
+		cl->pers.segmented.anglesDiffResettable = qfalse;
 		return;
 	}
 
@@ -3845,8 +3849,9 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			G_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available in segmented run mode outside of an active run.\n\"",qtrue);
 		}
 		if (!VectorLength(cl->ps.velocity) && !ucmdPtr->forwardmove && !ucmdPtr->rightmove && !ucmdPtr->upmove && cl->ps.groundEntityNum == ENTITYNUM_WORLD || cl->pers.segmented.state < SEG_RECORDING 
-			|| cl->pers.segmented.anglesDiffAccum[0] || cl->pers.segmented.anglesDiffAccum[1] || cl->pers.segmented.anglesDiffAccum[2] // just a sanity check
-			|| cl->pers.segmented.anglesDiffAccumActual[0] || cl->pers.segmented.anglesDiffAccumActual[1] || cl->pers.segmented.anglesDiffAccumActual[2] // just a sanity check
+			|| (cl->sess.raceStyle.runFlags & RFL_BOT) && cl->pers.segmented.anglesDiffResettable // i think this captures the shit below?
+			|| (( cl->pers.segmented.anglesDiffAccum[0] || cl->pers.segmented.anglesDiffAccum[1] || cl->pers.segmented.anglesDiffAccum[2] // just a sanity check
+			|| cl->pers.segmented.anglesDiffAccumActual[0] || cl->pers.segmented.anglesDiffAccumActual[1] || cl->pers.segmented.anglesDiffAccumActual[2]) && !(cl->sess.raceStyle.runFlags & RFL_BOT)) // just a sanity check
 			) {
 			// uuuuh what about mover states etc? oh dear. i guess it wont work for maps with movers. or we do what japro does and disable movers.
 			// wait i know! we can disable movers for segmented runs. ez.
@@ -3860,6 +3865,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 				SavePosition(ent, &cl->pers.segmented.startPos);
 				cl->pers.segmented.state = SEG_RECORDING;
 				cl->pers.segmented.msecProgress = 0;
+				cl->pers.segmented.anglesDiffResettable = qfalse;
 			//}
 		}
 

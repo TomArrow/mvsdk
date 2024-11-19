@@ -2097,7 +2097,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.roll = ent->client->pers.roll;
 	DF_PreDeltaAngleChange(ent->client);
 	Pmove (&pm);
-	DF_PostDeltaAngleChange(ent->client);
+	DF_PostDeltaAngleChange(ent->client,!(ent->client->sess.raceStyle.runFlags & RFL_BOT)); // qfalse if strafebot
 	ent->client->pers.roll = pm.roll;
 
 	if (ent->client->sess.raceStateInvalidated) {
