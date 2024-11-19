@@ -1261,6 +1261,7 @@ extern	vmCvar_t	g_saberDamageScale;
 
 extern	vmCvar_t	g_useWhileThrowing;
 
+extern	vmCvar_t	g_alwaysAllowTeamChat;
 extern	vmCvar_t	g_forceRegenTime;
 extern	vmCvar_t	g_spawnInvulnerability;
 extern	vmCvar_t	g_forcePowerDisable;

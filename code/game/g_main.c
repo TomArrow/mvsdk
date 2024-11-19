@@ -63,6 +63,7 @@ vmCvar_t	g_saberDamageScale;
 
 vmCvar_t	g_useWhileThrowing;
 
+vmCvar_t	g_alwaysAllowTeamChat;
 vmCvar_t	g_forceRegenTime;
 vmCvar_t	g_spawnInvulnerability;
 vmCvar_t	g_forcePowerDisable;
@@ -229,6 +230,7 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_useWhileThrowing, "g_useWhileThrowing", "1", 0, 0, qtrue  },
 
+	{ &g_alwaysAllowTeamChat, "g_alwaysAllowTeamChat", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_forceRegenTime, "g_forceRegenTime", "200", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_spawnInvulnerability, "g_spawnInvulnerability", "3000", CVAR_ARCHIVE, 0, qtrue  },

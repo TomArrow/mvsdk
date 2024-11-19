@@ -1812,7 +1812,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, cons
 	if ( other->client->pers.connected != CON_CONNECTED ) {
 		return;
 	}
-	if ( mode == SAY_TEAM  && !OnSameTeam(ent, other) ) {
+	if ( mode == SAY_TEAM  && !(OnSameTeam(ent, other) || g_alwaysAllowTeamChat.integer && (ent->client->sess.sessionTeam == TEAM_SPECTATOR || g_alwaysAllowTeamChat.integer >=2) && ent->client->sess.sessionTeam == other->client->sess.sessionTeam) ) {
 		return;
 	}
 	if ( other->client->sess.ignore & (1 << (ent-g_entities))) {
@@ -1845,7 +1845,7 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	const char* pseudoCmd;
 	const char* pseudoArg1;
 
-	if ( g_gametype.integer < GT_TEAM && mode == SAY_TEAM ) {
+	if ( g_gametype.integer < GT_TEAM && mode == SAY_TEAM && !(g_alwaysAllowTeamChat.integer && ent->client->sess.sessionTeam == TEAM_SPECTATOR || g_alwaysAllowTeamChat.integer >= 2) ) {
 		mode = SAY_ALL;
 	}
 
