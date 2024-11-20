@@ -807,6 +807,7 @@ typedef struct topLeaderBoardEntry_s {
 	qboolean exists;
 	char username[USERNAME_MAX_LEN + 1];
 	int besttime, userid, runFlags, msec, jump, runFlagsDiff;
+	qboolean mainLBCompatible;
 	//raceStyle_t raceStyle;
 } topLeaderBoardEntry_t;
 
@@ -882,6 +883,18 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		entry->runFlagsDiff = (entry->runFlags ^ level.mapDefaultRaceStyle.runFlags) & entry->runFlags; // show all that are active that are different from default
 		entry->msec = G_COOL_API_DB_GetInt(5);
 		entry->jump = G_COOL_API_DB_GetInt(6);
+		if (type == LB_SEGMENTED) {
+			static raceStyle_t raceStyle;
+			memset(&raceStyle,0,sizeof(raceStyle));
+			raceStyle.msec = entry->msec;
+			raceStyle.runFlags = entry->runFlags;
+			raceStyle.jumpLevel = entry->jump;
+			raceStyle.runFlags &= ~RFL_SEGMENTED;
+			entry->mainLBCompatible = classifyLeaderBoard(&raceStyle,&level.mapDefaultRaceStyle) == LB_MAIN;
+		}
+		else {
+			entry->mainLBCompatible = qfalse;
+		}
 		if (userid != -1) {
 			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1#%d %-10s %10s.\n\"", rank, userid == -1 ? "!unlogged!": username, DF_MsToString(besttime)));
 			maxrank = MAX(maxrank, rank);
@@ -897,6 +910,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 #define TIMECOLOR_DEFAULT(a) '7'
 #define TIMECOLOR_CHEAT(a) ((((a).runFlags & RFL_TAS)||((a).runFlags & RFL_BOT)) ? (((a).runFlags & RFL_SEGMENTED) ? 'j':'1') : '7' )
 #define TIMECOLOR_CUSTOM(a) (((a).runFlagsDiff & RFL_CLIMBTECH) ? 'E':'7')
+#define TIMECOLOR_SEGMENTED(a) ((a).mainLBCompatible ? '2':'7')
 	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-31s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
 	for (i = 0; i < 11; i++) {
 		topLeaderBoardEntry_t* entriesHere = entries[i];
@@ -912,13 +926,13 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 			LBROW(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
 			,LBROW(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
 			,LBROW(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE)
-			,LBROW(LB_SEGMENTED, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+			,LBROW(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY)
 			,LBROW(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
 			));
 	}
 	
 	//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7color explanation:\n^7    %-27s      ^7%-27s      ^7%-27s      ^7%-27s^      ^7%-29s\n\"", "MAIN", "NOJUMPBUG", "CUSTOM", "SEGMENTED", "CHEAT"));
-	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation:  ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"","climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
+	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation: ^2%-12s ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"", "main leaderboard compatible settings", "climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
 
 }
 static void G_SubContestLBResult(int status, const char* errorMessage, int affectedRows) {
