@@ -772,7 +772,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	vec3_t interpolationDisplacement;
 	gclient_t* cl;
 	mainLeaderboardType_t lbType;
-	int resposCountSave, savePosCountSave;
+	int resposCountSave, savePosCountSave, startLevelTimeSave;
 	rollState_t rollStateSave;
 	int warningFlags = 0;
 
@@ -838,12 +838,13 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	resposCountSave = cl->pers.stats.resposCount;
 	savePosCountSave = cl->pers.stats.saveposCount;
 	rollStateSave = cl->pers.stats.roll;
+	startLevelTimeSave = cl->pers.stats.startLevelTime;
 	memset(&cl->pers.stats, 0, sizeof(cl->pers.stats)); // reset & initialize run stats
 	if (segmented && cl->pers.segmented.state == SEG_REPLAY) { // remember the amount of savepos/respos used during segmented run
 		cl->pers.stats.resposCount = resposCountSave;
 		cl->pers.stats.saveposCount = savePosCountSave;
 	}
-	cl->pers.stats.startLevelTime = level.time;
+	cl->pers.stats.startLevelTime = startLevelTimeSave;
 	cl->pers.stats.startLessTime = lessTime;
 	cl->pers.stats.distanceTraveled = VectorLength(interpolationDisplacement);
 	interpolationDisplacement[2] = 0;
@@ -926,6 +927,9 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 			}
 		}
 	}
+
+
+	cl->pers.stats.startLevelTime = level.time;
 
 	//cl->lastStartTime = level.time;
 	cl->pers.keepDemoMaybe = qfalse;
