@@ -134,6 +134,8 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
 	client->sess.login.loggedIn = loggedIn;
 
+	client->sess.raceStyle.msec = 7; // just default to this *shrug*
+
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;
 
@@ -190,6 +192,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess->raceMode = g_defrag.integer; // TODO what about changing g_defrag live, should we take some care? idk
 	sess->mapStyleBaseline = level.mapDefaultRaceStyle;
 	sess->raceStyle = sess->mapStyleBaseline;
+	sess->raceStyle.msec = 7; // make old client versions work nicely? maybe? probably wont work but whatever
 	UpdateClientRaceVars(client);
 	//client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 

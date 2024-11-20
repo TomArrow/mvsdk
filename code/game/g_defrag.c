@@ -3987,7 +3987,7 @@ int DF_GetRunFlags(gentity_t* ent) {
 
 void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs) {
 	clientSession_t* sess;
-	if (!ent->client || ent->client->pers.connected != CON_CONNECTED || !ent->client->sess.raceMode) return;
+	if (!ent->client || ent->client->pers.connected == CON_DISCONNECTED || !ent->client->sess.raceMode) return;
 
 	sess = &ent->client->sess;
 
