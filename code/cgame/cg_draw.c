@@ -2335,7 +2335,7 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 				//slowest = Q_max(bottomTimes1P[i],slowest);
 			}
 			//fps = 1000 / slowest; 
-			fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / total;
+			fps = 1000 * FPS_FRAMES_FOR_BOTTOM10P / MAX(1,total);
 			data->bottom10Pfps = fps;
 
 			memset(data->bottomTimes10P, 0, sizeof(data->bottomTimes10P));
@@ -2367,7 +2367,7 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 				//slowest = Q_max(bottomTimes1P[i],slowest);
 			}
 			//fps = 1000 / slowest; 
-			fps = 1000 * FPS_FRAMES_FOR_BOTTOM1P / total;
+			fps = 1000 * FPS_FRAMES_FOR_BOTTOM1P / MAX(1, total);
 			data->bottom1Pfps = fps;
 
 			memset(data->bottomTimes1P, 0, sizeof(data->bottomTimes1P));
@@ -2400,7 +2400,7 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 				//slowest = Q_max(bottomTimes1P[i],slowest);
 			}
 			//fps = 1000 / slowest; 
-			fps = 1000 * FPS_FRAMES_FOR_BOTTOM01P / total;
+			fps = 1000 * FPS_FRAMES_FOR_BOTTOM01P / MAX(1, total);
 			data->bottom01Pfps = fps;
 
 			memset(data->bottomTimes01P, 0, sizeof(data->bottomTimes01P));
