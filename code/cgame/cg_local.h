@@ -119,6 +119,7 @@
 
 extern int dueltypes[MAX_CLIENTS];//jk2PRO - Clientside - Fullforce Duels
 
+
 typedef enum {
 	FOOTSTEP_NORMAL,
 	FOOTSTEP_METAL,
@@ -739,7 +740,6 @@ typedef struct {
 //	snapshot_t	activeSnapshots[2];
 
 	float		frameInterpolation;	// (float)( cg.time - cg.frame->serverTime ) / (cg.nextFrame->serverTime - cg.frame->serverTime)
-	float		predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
 
 	qboolean	mMapChange;
 
@@ -806,9 +806,6 @@ typedef struct {
 	float		constrictValue;
 	float		constrict;
 	int			doConstrict;
-
-	qboolean	hasFallVector;
-	vec3_t		fallVector;
 
 	// zoom key
 	qboolean	zoomed;
@@ -1932,12 +1929,9 @@ extern	vmCvar_t		x3_demoSeekTimescale;
 extern	vmCvar_t		x3_ezdemoPreTime;
 extern	vmCvar_t		x3_ezdemoPostTime;
 
-
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
 extern	vmCvar_t		cg_drawPlayerSprites;
 extern	vmCvar_t		cg_developer;
-extern	vmCvar_t		cg_smoothCamera;
-extern	vmCvar_t		cg_smoothCameraFPS;
 /*
 Ghoul2 Insert Start
 */

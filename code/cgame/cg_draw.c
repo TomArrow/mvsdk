@@ -5227,6 +5227,9 @@ int cgYsalTime = 0;
 int cgYsalFadeTime = 0;
 float cgYsalFadeVal = 0;
 
+qboolean gCGHasFallVector = qfalse;
+vec3_t gCGFallVector;
+
 /*
 =================
 CG_Draw2D
@@ -5573,8 +5576,8 @@ static void CG_Draw2D( void ) {
 	if ( cg_draw2D.integer == 0 ) {
 		//Raz: If you fall to your death, then turn cg_draw2D off, your camera will not update
 		//		Clear the fall vector to avoid that.
-		cg.hasFallVector = qfalse;
-		VectorClear( cg.fallVector );
+		//cg.hasFallVector = qfalse;
+		//VectorClear( cg.fallVector );
 
 		// We still want center messages, but nothing else
 		if (cg_drawCenterAlways.integer) {
@@ -6167,6 +6170,20 @@ static void CG_Draw2D( void ) {
 		hcolor[2] = 0;
 
 		CG_FillRect(0, 0, cgs.screenWidth, cgs.screenHeight, hcolor);
+
+		if (!gCGHasFallVector)
+		{
+			VectorCopy(cg.snap->ps.origin, gCGFallVector);
+			gCGHasFallVector = qtrue;
+		}
+	}
+	else
+	{
+		if (gCGHasFallVector)
+		{
+			gCGHasFallVector = qfalse;
+			VectorClear(gCGFallVector);
+		}
 	}
 
 	CG_DrawVote();

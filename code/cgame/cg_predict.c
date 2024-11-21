@@ -383,7 +383,6 @@ static void CG_InterpolatePlayerState( qboolean grabAngles ) {
 		out->stats[STAT_BOUNCEPOWER] = (bouncePower & BOUNCEPOWER_POWERMASK) | ((bounceRegenTimer << 9) & BOUNCEPOWER_REGENMASK);
 	}
 
-	cg.predictedTimeFrac = f * (next->ps.commandTime - prev->ps.commandTime);
 }
 
 /*
@@ -1202,7 +1201,7 @@ void CG_PredictPlayerState( void ) {
 		}
 	}
 
-	cg.predictedTimeFrac = 0.0f;
+	//cg.predictedTimeFrac = 0.0f;
 
 	// fire events and other transition triggered things
 	CG_TransitionPlayerState( &cg.predictedPlayerState, &oldPlayerState );
