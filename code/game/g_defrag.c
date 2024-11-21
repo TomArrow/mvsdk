@@ -1530,15 +1530,15 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 Cmd_Top_f
 =================
 */
-void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific)
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific, raceStyle_t* thisMapDefaultRaceStyle)
 {
 	topScoresRequestStruct_t data = { 0 };
 	int countLBs = LB_TYPES_COUNT;
-	const char* mainLBWhere = getLeaderboardSQLConditions(LB_MAIN, &level.mapDefaultRaceStyle);
-	const char* mainLBNJBWhere = getLeaderboardSQLConditions(LB_NOJUMPBUG, &level.mapDefaultRaceStyle);
-	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, &level.mapDefaultRaceStyle);
-	const char* segmentedLBWhere = getLeaderboardSQLConditions(LB_SEGMENTED, &level.mapDefaultRaceStyle);
-	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, &level.mapDefaultRaceStyle);
+	const char* mainLBWhere = getLeaderboardSQLConditions(LB_MAIN, thisMapDefaultRaceStyle);
+	const char* mainLBNJBWhere = getLeaderboardSQLConditions(LB_NOJUMPBUG, thisMapDefaultRaceStyle);
+	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, thisMapDefaultRaceStyle);
+	const char* segmentedLBWhere = getLeaderboardSQLConditions(LB_SEGMENTED, thisMapDefaultRaceStyle);
+	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, thisMapDefaultRaceStyle);
 
 	data.clientnum = ent - g_entities;
 	data.type = type;
@@ -1551,7 +1551,7 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 
 	page = MAX(0, page - 1);
 
-#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump"
+#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump, topspeed, average, runwhen, saveposCount, resposCount, duration_ms_segmented_total"
 	//#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime,MIN(runwhen) OVER (PARTITION BY userid) AS earliest FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
 #define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE course=? AND subcourse=? AND style=? AND variant=? AND %s ) runs_pre"
 //#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE earliest=runwhen AND besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
@@ -1560,27 +1560,54 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 	// TODO what if, for freak reason, someone has two identical times in two different styles? how do i select the earlier one? or should i even care?  earliest=runwhen AND besttime=duration_ms doesnt work cuz not both are neccessarily true
 
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
-	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
-		va(
-			"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
-			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
-			"UNION ALL (SELECT 2 AS type," TOPCOLUMNS QUERY2 " )"
-			"UNION ALL (SELECT 3 AS type," TOPCOLUMNS QUERY2 " )"
-			"UNION ALL (SELECT 4 AS type," TOPCOLUMNS QUERY2 " )"
-			, mainLBWhere, mainLBNJBWhere, customLBWhere, segmentedLBWhere, cheatLBWhere))) {
-		int i;
-		for (i = 0; i < countLBs; i++) {
-			G_COOL_API_DB_PreparedBindString(coursename);
-			G_COOL_API_DB_PreparedBindString(subcoursename);// subcourse
-			G_COOL_API_DB_PreparedBindInt(style);
-			G_COOL_API_DB_PreparedBindInt(0);
-			G_COOL_API_DB_PreparedBindInt(page*10);
+	//if (type == TOPREQUEST_SPECIFICLB) {
+	//	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
+	//		va(
+	//			"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
+	//			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
+	//			"UNION ALL (SELECT 2 AS type," TOPCOLUMNS QUERY2 " )"
+	//			"UNION ALL (SELECT 3 AS type," TOPCOLUMNS QUERY2 " )"
+	//			"UNION ALL (SELECT 4 AS type," TOPCOLUMNS QUERY2 " )"
+	//			, mainLBWhere, mainLBNJBWhere, customLBWhere, segmentedLBWhere, cheatLBWhere))) {
+	//		int i;
+	//		for (i = 0; i < countLBs; i++) {
+	//			G_COOL_API_DB_PreparedBindString(coursename);
+	//			G_COOL_API_DB_PreparedBindString(subcoursename);// subcourse
+	//			G_COOL_API_DB_PreparedBindInt(style);
+	//			G_COOL_API_DB_PreparedBindInt(0);
+	//			G_COOL_API_DB_PreparedBindInt(page * 10);
+	//		}
+	//		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	//	}
+	//	else {
+	//		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
+	//	}
+	//}
+	//else 
+	{
+		if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
+			va(
+				"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
+				"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
+				"UNION ALL (SELECT 2 AS type," TOPCOLUMNS QUERY2 " )"
+				"UNION ALL (SELECT 3 AS type," TOPCOLUMNS QUERY2 " )"
+				"UNION ALL (SELECT 4 AS type," TOPCOLUMNS QUERY2 " )"
+				, mainLBWhere, mainLBNJBWhere, customLBWhere, segmentedLBWhere, cheatLBWhere))) {
+			int i;
+			for (i = 0; i < countLBs; i++) {
+				G_COOL_API_DB_PreparedBindString(coursename);
+				G_COOL_API_DB_PreparedBindString(subcoursename);// subcourse
+				G_COOL_API_DB_PreparedBindInt(style);
+				G_COOL_API_DB_PreparedBindInt(0);
+				G_COOL_API_DB_PreparedBindInt(page * 10);
+			}
+			G_COOL_API_DB_FinishAndSendPreparedStatement();
 		}
-		G_COOL_API_DB_FinishAndSendPreparedStatement();
+		else {
+			trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
+		}
 	}
-	else {
-		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
-	}
+	
 
 #undef TOPCOLUMNS
 #undef RUNSPRE

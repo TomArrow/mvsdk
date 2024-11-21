@@ -1461,7 +1461,7 @@ qboolean atoi_real(const char* string) {
 	return qtrue;
 }
 
-void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific);
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific, raceStyle_t* thisMapDefaultRaceStyle);
 
 void DF_PrintSubCoursesToPlayer(gentity_t* ent) {
 	int i;
@@ -1543,7 +1543,7 @@ void Cmd_Top_f( gentity_t *ent )
 
 	if (args <= 1) {
 		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
-		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific);
+		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific,&level.mapDefaultRaceStyle);
 		return;
 	}
 
@@ -1569,12 +1569,12 @@ void Cmd_Top_f( gentity_t *ent )
 
 	if (!mainCourseNameFound) {
 		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
-		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific);
+		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
 		return;
 	}
 	else if (!subCourseNameFound){
 		if (!Q_stricmp(courseName, thisMapName) && level.emptyNameCourseExists) {
-			DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific);
+			DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
 			return;
 		}
 
@@ -1582,7 +1582,7 @@ void Cmd_Top_f( gentity_t *ent )
 		// if someone specifies exactly, we can avoid one DB call to find fitting maps
 		for (i = 0; i < level.numCourses; i++) { //32 max
 			if (!Q_stricmp(level.courseName[i], courseName)) {
-				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style, data.type, data.lbTypeIfSpecific);
+				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
 				return;
 			}
 		}
@@ -1592,7 +1592,7 @@ void Cmd_Top_f( gentity_t *ent )
 		// if someone specifies exactly, we can avoid one DB call to find fitting maps
 		for (i = 0; i < level.numCourses; i++) { //32 max
 			if (!Q_stricmp(level.courseName[i], subcourseName)) {
-				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style, data.type, data.lbTypeIfSpecific);
+				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
 				return;
 			}
 		}
@@ -1604,10 +1604,13 @@ void Cmd_Top_f( gentity_t *ent )
 	if (mainCourseNameFound && subCourseNameFound) {
 		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOPMAPSEARCH,
 			"SET @search = ?,@subsearch=?;"
-			"SELECT course,subcourse " 
-			",instr(course,@search) +instr(REVERSE(course),REVERSE(@search))-2 AS diff "
-			",instr(subcourse,@subsearch) +instr(REVERSE(subcourse),REVERSE(@subsearch))-2 AS diff2 "
-			"FROM runs GROUP BY course,subcourse HAVING instr(course, @search) AND instr(subcourse, @subsearch) "
+			"SELECT runs.course,runs.subcourse " 
+			",instr(runs.course,@search) +instr(REVERSE(runs.course),REVERSE(@search))-2 AS diff "
+			",instr(runs.subcourse,@subsearch) +instr(REVERSE(runs.subcourse),REVERSE(@subsearch))-2 AS diff2 "
+			",ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.runFlags"
+			"FROM runs "
+			"LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
+			"GROUP BY runs.course,runs.subcourse HAVING instr(runs.course, @search) AND instr(runs.subcourse, @subsearch) "
 			"ORDER BY diff+diff2" // order stuff nicely and logically. best match comes first
 		)) {
 			return;
@@ -1619,10 +1622,13 @@ void Cmd_Top_f( gentity_t *ent )
 	else {
 		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOPMAPSEARCH, 
 			"SET @search = ?;"
-			"SELECT course,subcourse " 
-			",instr(course,@search) +instr(REVERSE(course),REVERSE(@search))-2 AS diff "
-			",instr(subcourse,@search) +instr(REVERSE(subcourse),REVERSE(@search))-2 AS diff2 "
-			"FROM runs GROUP BY course,subcourse HAVING instr(course, @search) OR instr(subcourse, @search) "
+			"SELECT runs.course,runs.subcourse " 
+			",instr(runs.course,@search) +instr(REVERSE(runs.course),REVERSE(@search))-2 AS diff "
+			",instr(runs.subcourse,@search) +instr(REVERSE(runs.subcourse),REVERSE(@search))-2 AS diff2 "
+			",ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.runFlags "
+			"FROM runs "
+			"LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
+			"GROUP BY runs.course,runs.subcourse HAVING instr(runs.course, @search) OR instr(runs.subcourse, @search) "
 			"ORDER BY CASE " // order stuff nicely and logically. best match comes first
 			"WHEN diff = -2 AND diff2 != -2 THEN diff2 "
 			"WHEN diff2 = -2 AND diff != -2 THEN diff "

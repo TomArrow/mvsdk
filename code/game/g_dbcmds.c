@@ -728,7 +728,7 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 
 }
 
-void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific);
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific, raceStyle_t* thisMapDefaultRaceStyle);
 
 static void G_TopMapSearchResult(int status, const char* errorMessage, int affectedRows) {
 	topRequestStruct_t data;
@@ -740,6 +740,8 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 	static char subCourseName[COURSENAME_MAX_LEN + 1];
 	int resultsFound = 0;
 	int diff, diff2;
+	int mapDefaultsFound;
+	raceStyle_t mapDefaultRaceStyle;
 
 	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
 
@@ -775,7 +777,14 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 		diff = G_COOL_API_DB_GetInt(2);
 		diff2 = G_COOL_API_DB_GetInt(3);
 		if (!resultsFound) {
-			DF_TopRequest(ent, courseName, subCourseName, data.page, data.style,data.type,data.lbTypeIfSpecific);
+			mapDefaultsFound = !G_COOL_API_DB_GetInt(4);
+			if (mapDefaultsFound) {
+				memset(&mapDefaultRaceStyle, 0, sizeof(mapDefaultRaceStyle));
+				mapDefaultRaceStyle.msec = G_COOL_API_DB_GetInt(5);
+				mapDefaultRaceStyle.jumpLevel = G_COOL_API_DB_GetInt(6);
+				mapDefaultRaceStyle.runFlags = G_COOL_API_DB_GetInt(7);
+			}
+			DF_TopRequest(ent, courseName, subCourseName, data.page, data.style,data.type,data.lbTypeIfSpecific,mapDefaultsFound ? &mapDefaultRaceStyle : &defaultRaceStyle);
 		}
 		if (!subCourseName[0]) {
 			if (g_developer.integer) {
@@ -805,10 +814,13 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 
 typedef struct topLeaderBoardEntry_s {
 	qboolean exists;
-	char username[USERNAME_MAX_LEN + 1];
 	int besttime, userid, runFlags, msec, jump, runFlagsDiff;
 	qboolean mainLBCompatible;
 	//raceStyle_t raceStyle;
+	float topSpeed, average;
+	int savePosCount, resposCount, duration_ms_segmented_total;
+	char username[USERNAME_MAX_LEN + 1];
+	char time[25];
 } topLeaderBoardEntry_t;
 
 // cringe :)
@@ -863,6 +875,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		type = G_COOL_API_DB_GetInt(0);
 		userid = G_COOL_API_DB_GetInt(3);
 
+		if (lbRequestData.type == TOPREQUEST_SPECIFICLB && type != lbRequestData.lbTypeIfSpecific) continue;
 		if (type != currentType) {
 			currentType = type;
 			rank = 1;
@@ -883,6 +896,12 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		entry->runFlagsDiff = (entry->runFlags ^ level.mapDefaultRaceStyle.runFlags) & entry->runFlags; // show all that are active that are different from default
 		entry->msec = G_COOL_API_DB_GetInt(5);
 		entry->jump = G_COOL_API_DB_GetInt(6);
+		G_COOL_API_DB_GetFloat(7,&entry->topSpeed);
+		G_COOL_API_DB_GetFloat(8,&entry->average);
+		G_COOL_API_DB_GetString(9,entry->time,sizeof(entry->time));
+		entry->savePosCount = G_COOL_API_DB_GetInt(10);
+		entry->resposCount = G_COOL_API_DB_GetInt(11);
+		entry->duration_ms_segmented_total = G_COOL_API_DB_GetInt(12);
 		if (type == LB_SEGMENTED) {
 			static raceStyle_t raceStyle;
 			memset(&raceStyle,0,sizeof(raceStyle));
@@ -905,6 +924,10 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 #define MSECSTRING(msec) ((msec) == -1 ? "togl" : ((msec) == -2 ? "flt" : ((msec) == 0 ? "unkn" : multiva("%d", 1000 / (msec)))))
 #define LBROW(lbType,coloration,jumpvalue) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], coloration(entriesHere[lbType]), entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "" jumpvalue(entriesHere[lbType],lbType), !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
 
+#define LBROWFULL_STRING "  ^c%11s  %11s  %s"
+
+#define LBROWFULL(lbType,coloration,jumpvalue) LBROW(lbType,coloration,jumpvalue),!entriesHere[lbType].exists ? "" :miniva("%.2favg",entriesHere[lbType].average),!entriesHere[lbType].exists ? "" :miniva("%.2ftop",entriesHere[lbType].topSpeed),!entriesHere[lbType].exists ? "" :entriesHere[lbType].time
+
 #define JUMPVALUE(a,b) ,entriesHere[b].exists ? 'j':' ' ,(entriesHere[b].exists ? miniva("%-2d",(a).jump) : "  ")
 #define JUMPVALUE_EMPTY(a,b) 
 #define TIMECOLOR_DEFAULT(a) '7'
@@ -925,43 +948,43 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 			switch (lbRequestData.lbTypeIfSpecific) {
 			case LB_MAIN:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
 					"\n\"",
 					i == 10 ? "\n" : "",
-					LBROW(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+					LBROWFULL(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
 				));
 				break;
 			case LB_NOJUMPBUG:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
 					"\n\"",
 					i == 10 ? "\n" : "",
-					LBROW(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+					LBROWFULL(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
 				));
 				break;
 			case LB_CUSTOM:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s ^c%s"
+					"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s" LBROWFULL_STRING "  ^c%s"
 					"\n\"",
 					i == 10 ? "\n" : "",
-					LBROW(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE),
-					RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, level.mapDefaultRaceStyle.runFlags, 1, NULL, NULL)
+					LBROWFULL(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE),
+					!entriesHere[LB_CUSTOM].exists? "" : RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, level.mapDefaultRaceStyle.runFlags, 1, NULL, NULL)
 				));
 				break;
 			case LB_SEGMENTED:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
 					"\n\"",
 					i == 10 ? "\n" : "",
-					LBROW(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY)
+					LBROWFULL(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY)
 				));
 				break;
 			case LB_CHEAT:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
 					"\n\"",
 					i == 10 ? "\n" : "",
-					LBROW(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
+					LBROWFULL(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
 				));
 				break;
 			}
@@ -986,6 +1009,9 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	
 	//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7color explanation:\n^7    %-27s      ^7%-27s      ^7%-27s      ^7%-27s^      ^7%-29s\n\"", "MAIN", "NOJUMPBUG", "CUSTOM", "SEGMENTED", "CHEAT"));
 	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation: ^2%-12s ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"", "main leaderboard compatible settings", "climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
+	if (lbRequestData.type != TOPREQUEST_SPECIFICLB) {
+		trap_SendServerCommand(lbRequestData.clientnum, "print \"^7Specific leaderboard commands: ^c/topmain^7, ^c/topnojumpbug^7, ^c/topcustom^7, ^c/topsegmented^7, ^c/topcheat\n\"");
+	}
 
 }
 static void G_SubContestLBResult(int status, const char* errorMessage, int affectedRows) {
