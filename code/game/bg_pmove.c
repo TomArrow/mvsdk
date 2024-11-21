@@ -5720,9 +5720,9 @@ void PmoveSingle (pmove_t *pmove) {
 
 	// TODO MAYBE jaPRO fix strafebot up.
 #if JK2_CGAME
-	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT){// && !(cgs.restricts & RESTRICT_SB)) {
+	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT && !pm->isSpecialPredict){// && !(cgs.restricts & RESTRICT_SB)) {
 #else
-	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT) {
+	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT && !pm->isSpecialPredict) {
 #endif
 		//const int moveStyle = PM_GetMovePhysics();
 		const int runFlags = PM_GetRunFlags();
