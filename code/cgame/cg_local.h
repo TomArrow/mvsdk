@@ -1653,6 +1653,7 @@ extern	vmCvar_t		cg_drawRamps;
 extern	vmCvar_t		cg_drawFPS;
 extern	vmCvar_t		cg_drawFPSPhysical;
 extern	vmCvar_t		cg_drawFPSLowest;
+extern	vmCvar_t		cg_drawStrafeBotFactor;
 extern	vmCvar_t		cg_drawSnapshot;
 extern	vmCvar_t		cg_draw3dIcons;
 extern	vmCvar_t		cg_drawIcons;

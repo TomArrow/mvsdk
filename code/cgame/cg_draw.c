@@ -6,6 +6,7 @@
 #include "cg_local.h"
 
 #include "../ui/ui_shared.h"
+#include "../qcommon/fp16.h"
 
 qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y);
 qboolean CG_CalcMuzzlePoint( int entityNum, vec3_t muzzle );
@@ -24,6 +25,7 @@ static void CG_JumpDistance(void); //jk2pro
 static void CG_DrawVerticalSpeed(void); //jk2pro
 static void CG_DrawYawSpeed(void); //jk2pro
 static void CG_DrawShowPos(void); //jk2pro
+static void CG_DrawStrafeBotFactor(); //tommyternal :)
 
 //jk2pro
 #define SHELPER_SUPEROLDSTYLE	(1<<0)
@@ -1268,6 +1270,9 @@ void CG_DrawHUD(centity_t	*cent)
 
 	CG_DrawBouncePowerMeter();
 
+	if(cg_drawStrafeBotFactor.integer)
+		CG_DrawStrafeBotFactor();
+
 	speedometerXPos = cg_speedometerX.value;
 
 	if (cg_hudFiles.integer)
@@ -2189,6 +2194,29 @@ static float CG_DrawSnapshot( float y ) {
 	CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
 
 	return y + BIGCHAR_HEIGHT + 4;
+}
+
+/*
+==================
+CG_DrawStrafeBotFactor
+==================
+*/
+static void CG_DrawStrafeBotFactor() {
+
+	float strafeFactor;
+	float w;
+	const char* s = NULL;
+	entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+	if (!stats || !cg_drawStrafeBotFactor.integer || !cg.predictedPlayerState.stats[STAT_RACEMODE] || !(cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_BOT)) {
+		return;
+	}
+	strafeFactor= fp16_ieee_to_fp32_value(USHORT2SHORT(stats->apos.trBase[2])) + 1.0f;
+
+	s = va("sf: %.4f", strafeFactor);
+	//w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
+	//CG_DrawBigString(cgs.screenWidth/2 - w/2, cgs.screenHeight/2+20, s, 1.0f);
+	w = CG_Text_Width(s, 0.75f, FONT_NONE);
+	CG_Text_Paint(cgs.screenWidth / 2 - w / 2, cgs.screenHeight / 2 + 40, 0.75f, colorWhite, s, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 }
 
 
