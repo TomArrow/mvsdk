@@ -47,6 +47,7 @@ set(MVGAMEHEADERS
 	"${SRCDir}/ghoul2/g2.h"
 
 	"${SRCDir}/qcommon/crypt_blowfish.h"
+	"${SRCDir}/qcommon/fp16.h"
 	"${SRCDir}/qcommon/levenshtein.h"
 	
 	"${SRCDir}/api/mvapi.h"
@@ -99,6 +100,7 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/animMappingTable.c"
 	
 	"${SRCDir}/qcommon/crypt_blowfish.c"
+	"${SRCDir}/qcommon/fp16.c"
 	"${SRCDir}/qcommon/levenshtein.c"
 )
 

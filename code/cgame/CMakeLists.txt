@@ -34,6 +34,7 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/qcommon/tags.h"
 	
 	"${SRCDir}/qcommon/crypt_blowfish.h"
+	"${SRCDir}/qcommon/fp16.h"
 	"${SRCDir}/qcommon/levenshtein.h"
 
 	"${SRCDir}/ghoul2/g2.h"
@@ -90,6 +91,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/game/q_shared.c"
 	
 	"${SRCDir}/qcommon/crypt_blowfish.c"
+	"${SRCDir}/qcommon/fp16.c"
 	"${SRCDir}/qcommon/levenshtein.c"
 	
 	"${SRCDir}/ui/ui_shared.c"

@@ -5708,6 +5708,7 @@ void PmoveSingle (pmove_t *pmove) {
 				vec3_t vel = { 0 }, velangle;
 				float optimalDeltaAngle = 0;
 				qboolean CJ = qtrue;
+				float strafeFactor = 1.0f; // TODO make this adjustable (this is what giz does with x3_autostrafefact to control strafe turn speed)
 				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || pm->cmd.upmove > 0)
 					CJ = qfalse;
 				//else if (moveStyle == MV_SLICK)
@@ -5730,7 +5731,7 @@ void PmoveSingle (pmove_t *pmove) {
 						//	optimalDeltaAngle = -1; //CJ //Take into account ground accel/friction.. only cpm styles turn faster?
 						//else
 							//optimalDeltaAngle = -6;
-						optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime))))) * (180.0f / M_PI) - 45.0f;
+						optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime))))) * (180.0f / M_PI) - 45.0f;
 					}
 					else {
 						//if (moveStyle == MV_SP)
@@ -5738,7 +5739,7 @@ void PmoveSingle (pmove_t *pmove) {
 						//else if (moveStyle == MV_SLICK)
 						//	realAccel = pm_slick_accelerate;
 						//jetpack. 1.4f ?
-						optimalDeltaAngle = (acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime)) / realCurrentSpeed)) * (180.0f / M_PI) - 45.0f);
+						optimalDeltaAngle = (acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / realCurrentSpeed)) * (180.0f / M_PI) - 45.0f);
 					}
 					if (/*optimalDeltaAngle < 0 || optimalDeltaAngle > 360 || */fpclassify(optimalDeltaAngle) == FP_NAN)
 						optimalDeltaAngle = 0;

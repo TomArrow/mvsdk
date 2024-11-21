@@ -119,3 +119,6 @@ bsearch (const void *key,
 #define FP_ZERO        2
 #define FP_SUBNORMAL   3
 #define FP_NORMAL      4
+
+#define INT32_C(x)	(x##L)
+#define UINT32_C(x)	(x##UL)

@@ -2080,8 +2080,6 @@ void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
 }
 
 
-#define SHORT2USHORT(a) ((a)<0 ? ((a)+65535 +1) : (a)) // since q3vm dooesnt like ushort :/
-#define USHORT2SHORT(a) ((a)>32767? ((a)-65535 -1) : (a)) // controlled unsigned->signed conversion
 
 void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es) {
 	unsigned int ushortMsec, ushortRunFlags;

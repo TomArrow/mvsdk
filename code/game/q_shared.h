@@ -1241,6 +1241,9 @@ typedef enum {
 #define	ANGLE2SHORT(x)	((int)((x)*65536/360) & 65535)
 #define	SHORT2ANGLE(x)	((x)*(360.0/65536))
 
+#define SHORT2USHORT(a) ((a)<0 ? ((a)+65535 +1) : (a)) // since q3vm dooesnt like ushort :/
+#define USHORT2SHORT(a) ((a)>32767? ((a)-65535 -1) : (a)) // controlled unsigned->signed conversion
+
 #define	SNAPFLAG_RATE_DELAYED	1
 #define	SNAPFLAG_NOT_ACTIVE		2	// snapshot used during connection and for zombies
 #define SNAPFLAG_SERVERCOUNT	4	// toggled every map_restart so transitions can be detected
