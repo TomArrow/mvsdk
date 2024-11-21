@@ -5776,7 +5776,7 @@ void PmoveSingle (pmove_t *pmove) {
 						optimalDeltaAngle = 0;
 					}
 
-					if (!calculationFailed && (!pm->isSpecialPredict || strafeFactor >= 1.0f && strafeFactor <= 2.0f)) { // high strafe factors create stuttering with special predict
+					if (!calculationFailed && (!pm->isSpecialPredict || strafeFactor >= 1.0f && strafeFactor <= 1.1f)) { // high strafe factors create stuttering with special predict
 						optimalDeltaAngle = AngleNormalize180(optimalDeltaAngle);
 
 						vel[0] = pm->ps->velocity[0];
