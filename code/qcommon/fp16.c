@@ -48,7 +48,7 @@ static int count_leading_zeros_32(unsigned int x)
  *
  * @note The implementation doesn't use any floating-point operations.
  */
-static uint32_t fp16_ieee_to_fp32_bits(uint32_t h) {
+uint32_t fp16_ieee_to_fp32_bits(uint32_t h) {
 	/*
 	 * Extend the half-precision floating-point number to 32 bits and shift to the upper part of the 32-bit word:
 	 *      +---+-----+------------+-------------------+
@@ -126,7 +126,7 @@ static uint32_t fp16_ieee_to_fp32_bits(uint32_t h) {
  * @note The implementation relies on IEEE-like (no assumption about rounding mode and no operations on denormals)
  * floating-point operations and bitcasts between integer and floating-point variables.
  */
-static float fp16_ieee_to_fp32_value(short hShort) {
+float fp16_ieee_to_fp32_value(short hShort) {
 
 	const uint32_t h = SHORT2USHORT(hShort);
 	/*
@@ -241,7 +241,7 @@ static float fp16_ieee_to_fp32_value(short hShort) {
  * @note The implementation relies on IEEE-like (no assumption about rounding mode and no operations on denormals)
  * floating-point operations and bitcasts between integer and floating-point variables.
  */
-static short fp16_ieee_from_fp32_value(float f) {
+short fp16_ieee_from_fp32_value(float f) {
 	uint32_t bits, exp_bits, mantissa_bits, nonsign;
 	uint32_t result;
 	const float scale_to_inf = fp32_from_bits(UINT32_C(0x77800000));

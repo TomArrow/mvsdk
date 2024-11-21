@@ -4,6 +4,7 @@
 // for a 3D rendering
 #include "cg_local.h"
 #include "cg_dbcmds.h"
+#include "../qcommon/fp16.h"
 
 #if !defined(CL_LIGHT_H_INC)
 	#include "cg_lights.h"
@@ -1931,6 +1932,17 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	{
 		trap_SetUserCmdValue( cg.weaponSelect, cg.zoomSensitivity, cg.forceSelect, cg.itemSelect );
 	}
+
+	if(coolApi & COOL_APIFEATURE_SETUSERANGLES) {
+		if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_BOT)) {
+			short convertedValue = fp16_ieee_from_fp32_value(cg_strafebotFactor.value-1.0f);
+			trap_CG_COOL_API_SetUserAngles(0, 0, convertedValue, 4); // we tunnel the strafebot offset value through roll. roll is fkin useless anyway. :)
+		}
+		else {
+			trap_CG_COOL_API_SetUserAngles(0, 0, 0, 0);
+		}
+	}
+
 
 	// this counter will be bumped for every valid scene we generate
 	cg.clientFrame++;

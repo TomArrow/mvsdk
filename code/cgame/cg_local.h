@@ -1839,6 +1839,8 @@ extern	vmCvar_t		cg_stereoSeparation;
 extern	vmCvar_t		cg_lagometer;
 extern	vmCvar_t		cg_drawEnemyInfo;
 
+extern	vmCvar_t		cg_strafebotFactor;
+
 extern	vmCvar_t		cg_mapDefaultMsec;
 extern	vmCvar_t		cg_mapDefaultJump;
 extern	vmCvar_t		cg_mapDefaultRunFlags;
@@ -2364,6 +2366,7 @@ void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
 void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount);
 int			trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum); 
 qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
+void		trap_CG_COOL_API_SetUserAngles(int pitch, int yaw, int roll, int angleSet);
 
 //qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
 //qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);

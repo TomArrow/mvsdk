@@ -6,6 +6,7 @@
 #include "q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
+#include "../qcommon/fp16.h"
 
 #ifdef JK2_GAME
 #include "g_local.h"
@@ -5407,11 +5408,17 @@ void trap_SnapVector( float *v );
 void PmoveSingle (pmove_t *pmove) {
 	int runFlags;
 	int msecRestrict;
+	int oldCmdRoll;
 	pm = pmove;
 	runFlags = PM_GetRunFlags();
 	msecRestrict = PM_GetMsecRestrict();
 
 	gPMDoSlowFall = PM_DoSlowFall();
+
+	oldCmdRoll = pm->cmd.angles[ROLL];
+	if (runFlags & RFL_BOT) {
+		pm->cmd.angles[ROLL] = 0;
+	}
 
 	// this counter lets us debug movement problems with a journal
 	// by setting a conditional breakpoint fot the previous frame
@@ -5600,21 +5607,31 @@ void PmoveSingle (pmove_t *pmove) {
 	// update the viewangles
 	PM_UpdateViewAngles( pm->ps, &pm->cmd );
 
-#ifdef JK2_GAME
-	if ( g_mv_blockspeedhack.integer )
-	{
+	if (runFlags & RFL_BOT) {
+		// in strafebot mode, we tunnel strafebot factor through ROLL value
 		float oldRoll = pm->ps->viewangles[ROLL];
 		pm->ps->viewangles[ROLL] = 0;
-		AngleVectors (pm->ps->viewangles, pml.forward, pml.right, pml.up);
+		AngleVectors(pm->ps->viewangles, pml.forward, pml.right, pml.up);
 		pm->ps->viewangles[ROLL] = oldRoll;
 	}
-	else
-	{
-#endif
-	AngleVectors (pm->ps->viewangles, pml.forward, pml.right, pml.up);
+	else {
+
 #ifdef JK2_GAME
-	}
+		if ( g_mv_blockspeedhack.integer )
+		{
+			float oldRoll = pm->ps->viewangles[ROLL];
+			pm->ps->viewangles[ROLL] = 0;
+			AngleVectors (pm->ps->viewangles, pml.forward, pml.right, pml.up);
+			pm->ps->viewangles[ROLL] = oldRoll;
+		}
+		else
+		{
 #endif
+		AngleVectors (pm->ps->viewangles, pml.forward, pml.right, pml.up);
+#ifdef JK2_GAME
+		}
+#endif
+	}
 
 	if ( pm->cmd.upmove < 10 && (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))) {
 		// not holding jump
@@ -5645,20 +5662,32 @@ void PmoveSingle (pmove_t *pmove) {
 		PM_CheckDuck ();
 		PM_FlyMove ();
 		PM_DropTimers ();
+		if (runFlags & RFL_BOT) {
+			pm->cmd.angles[ROLL] = oldCmdRoll;
+		}
 		return;
 	}
 
 	if ( pm->ps->pm_type == PM_NOCLIP ) {
 		PM_NoclipMove ();
-		PM_DropTimers ();
+		PM_DropTimers (); 
+		if (runFlags & RFL_BOT) {
+			pm->cmd.angles[ROLL] = oldCmdRoll;
+		}
 		return;
 	}
 
 	if (pm->ps->pm_type == PM_FREEZE) {
+		if (runFlags & RFL_BOT) {
+			pm->cmd.angles[ROLL] = oldCmdRoll;
+		}
 		return;		// no movement at all
 	}
 
 	if ( pm->ps->pm_type == PM_INTERMISSION || pm->ps->pm_type == PM_SPINTERMISSION) {
+		if (runFlags & RFL_BOT) {
+			pm->cmd.angles[ROLL] = oldCmdRoll;
+		}
 		return;		// no movement at all
 	}
 
@@ -5708,7 +5737,7 @@ void PmoveSingle (pmove_t *pmove) {
 				vec3_t vel = { 0 }, velangle;
 				float optimalDeltaAngle = 0;
 				qboolean CJ = qtrue;
-				float strafeFactor = 1.0f; // TODO make this adjustable (this is what giz does with x3_autostrafefact to control strafe turn speed)
+				float strafeFactor = fp16_ieee_to_fp32_value(USHORT2SHORT(oldCmdRoll))+1.0f;  // USHORT2SHORT to normalize to short range since fp16 conversion relies on it
 				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || pm->cmd.upmove > 0)
 					CJ = qfalse;
 				//else if (moveStyle == MV_SLICK)
@@ -5722,6 +5751,7 @@ void PmoveSingle (pmove_t *pmove) {
 				if (realCurrentSpeed > pm->ps->basespeed || (CJ && (realCurrentSpeed > (pm->ps->basespeed * 0.5f)))) {
 					float middleOffset = 0; //Idk
 					float realAccel = CJ ? pm_accelerate : pm_airaccelerate;
+					qboolean calculationFailed = qfalse;
 #if JK2_GAME
 					//middleOffset = bot_strafeOffset.integer;
 					middleOffset = 0;
@@ -5741,57 +5771,61 @@ void PmoveSingle (pmove_t *pmove) {
 						//jetpack. 1.4f ?
 						optimalDeltaAngle = (acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / realCurrentSpeed)) * (180.0f / M_PI) - 45.0f);
 					}
-					if (/*optimalDeltaAngle < 0 || optimalDeltaAngle > 360 || */fpclassify(optimalDeltaAngle) == FP_NAN)
+					if (/*optimalDeltaAngle < 0 || optimalDeltaAngle > 360 || */fpclassify(optimalDeltaAngle) == FP_NAN) {
+						calculationFailed = qtrue;
 						optimalDeltaAngle = 0;
+					}
 
-					optimalDeltaAngle = AngleNormalize180(optimalDeltaAngle);
+					if (!calculationFailed) {
+						optimalDeltaAngle = AngleNormalize180(optimalDeltaAngle);
 
-					vel[0] = pm->ps->velocity[0];
-					vel[1] = pm->ps->velocity[1];
-					vectoangles(vel, velangle);
+						vel[0] = pm->ps->velocity[0];
+						vel[1] = pm->ps->velocity[1];
+						vectoangles(vel, velangle);
 
-					if (pm->cmd.forwardmove > 0 && pm->cmd.rightmove > 0) {//WD
-						optimalDeltaAngle = 0 - optimalDeltaAngle;
-					}
-					else if (pm->cmd.forwardmove > 0 && pm->cmd.rightmove < 0) {//WA
-						optimalDeltaAngle = 0 + optimalDeltaAngle;
-					}
-					else if (!pm->cmd.forwardmove && pm->cmd.rightmove > 0) {//D
-						//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
-						//	optimalDeltaAngle = 0 - middleOffset; //Take into account speed.
-						//else
-							optimalDeltaAngle = 45 - optimalDeltaAngle;
-					}
-					else if (!pm->cmd.forwardmove && pm->cmd.rightmove < 0) {//A
-						//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
-						//	optimalDeltaAngle = 0 + middleOffset;
-						//else
-							optimalDeltaAngle = -45 + optimalDeltaAngle;
-					}
-					else if (pm->cmd.forwardmove > 0 && !pm->cmd.rightmove) {//W
-						if (AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0) { //Decide which W we want.  (Whatever is closest)
-							//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) //Why the f does it switch
-							//	optimalDeltaAngle = -45; //Needs good offset
-							//else
-								optimalDeltaAngle = -45 - optimalDeltaAngle;
+						if (pm->cmd.forwardmove > 0 && pm->cmd.rightmove > 0) {//WD
+							optimalDeltaAngle = 0 - optimalDeltaAngle;
 						}
-						else { //Right side
+						else if (pm->cmd.forwardmove > 0 && pm->cmd.rightmove < 0) {//WA
+							optimalDeltaAngle = 0 + optimalDeltaAngle;
+						}
+						else if (!pm->cmd.forwardmove && pm->cmd.rightmove > 0) {//D
 							//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
-							//	optimalDeltaAngle = 45; //Needs good offset
+							//	optimalDeltaAngle = 0 - middleOffset; //Take into account speed.
 							//else
-								optimalDeltaAngle = 45 + optimalDeltaAngle;
+							optimalDeltaAngle = 45 - optimalDeltaAngle;
 						}
+						else if (!pm->cmd.forwardmove && pm->cmd.rightmove < 0) {//A
+							//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
+							//	optimalDeltaAngle = 0 + middleOffset;
+							//else
+							optimalDeltaAngle = -45 + optimalDeltaAngle;
+						}
+						else if (pm->cmd.forwardmove > 0 && !pm->cmd.rightmove) {//W
+							if (AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0) { //Decide which W we want.  (Whatever is closest)
+								//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) //Why the f does it switch
+								//	optimalDeltaAngle = -45; //Needs good offset
+								//else
+								optimalDeltaAngle = -45 - optimalDeltaAngle;
+							}
+							else { //Right side
+								//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
+								//	optimalDeltaAngle = 45; //Needs good offset
+								//else
+								optimalDeltaAngle = 45 + optimalDeltaAngle;
+							}
+						}
+
+						velangle[YAW] += optimalDeltaAngle;
+						velangle[PITCH] = pm->ps->viewangles[PITCH];
+
+						//assert(!_isnanf(velangle[PITCH]));
+						//assert(!_isnanf(velangle[YAW]));
+						//assert(!_isnanf(velangle[ROLL]));
+
+						PM_SetPMViewAngle(pm->ps, velangle, &pm->cmd);
+						AngleVectors(pm->ps->viewangles, pml.forward, pml.right, pml.up); //Have to re set this here
 					}
-
-					velangle[YAW] += optimalDeltaAngle;
-					velangle[PITCH] = pm->ps->viewangles[PITCH];
-
-					//assert(!_isnanf(velangle[PITCH]));
-					//assert(!_isnanf(velangle[YAW]));
-					//assert(!_isnanf(velangle[ROLL]));
-
-					PM_SetPMViewAngle(pm->ps, velangle, &pm->cmd);
-					AngleVectors(pm->ps->viewangles, pml.forward, pml.right, pml.up); //Have to re set this here
 				}
 			}
 		}
@@ -5887,6 +5921,10 @@ void PmoveSingle (pmove_t *pmove) {
 	if (gPMDoSlowFall)
 	{
 		pm->ps->gravity *= 2;
+	}
+
+	if (runFlags & RFL_BOT) {
+		pm->cmd.angles[ROLL] = oldCmdRoll;
 	}
 }
 
