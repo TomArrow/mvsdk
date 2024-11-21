@@ -1969,6 +1969,13 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("stealspawn");
 	trap_AddCommand("stealpos");
 	trap_AddCommand("top");
+	trap_AddCommand("topmain");
+	trap_AddCommand("topnjb");
+	trap_AddCommand("topnojumpbug");
+	trap_AddCommand("topcustom");
+	trap_AddCommand("topsegmented");
+	trap_AddCommand("topseg");
+	trap_AddCommand("topcheat");
 	trap_AddCommand("time");
 	trap_AddCommand("logout");
 	trap_AddCommand("savecheckpoints");

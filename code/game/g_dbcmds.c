@@ -728,7 +728,7 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 
 }
 
-void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style);
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific);
 
 static void G_TopMapSearchResult(int status, const char* errorMessage, int affectedRows) {
 	topRequestStruct_t data;
@@ -775,7 +775,7 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 		diff = G_COOL_API_DB_GetInt(2);
 		diff2 = G_COOL_API_DB_GetInt(3);
 		if (!resultsFound) {
-			DF_TopRequest(ent, courseName, subCourseName, data.page, data.style);
+			DF_TopRequest(ent, courseName, subCourseName, data.page, data.style,data.type,data.lbTypeIfSpecific);
 		}
 		if (!subCourseName[0]) {
 			if (g_developer.integer) {
@@ -911,24 +911,77 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 #define TIMECOLOR_CHEAT(a) ((((a).runFlags & RFL_TAS)||((a).runFlags & RFL_BOT)) ? (((a).runFlags & RFL_SEGMENTED) ? 'j':'1') : '7' )
 #define TIMECOLOR_CUSTOM(a) (((a).runFlagsDiff & RFL_CLIMBTECH) ? 'E':'7')
 #define TIMECOLOR_SEGMENTED(a) ((a).mainLBCompatible ? '2':'7')
-	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-31s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
+	if (lbRequestData.type == TOPREQUEST_SPECIFICLB) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s\n\"", leaderboardNames[lbRequestData.lbTypeIfSpecific]));
+	} 
+	else {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-31s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
+	}
 	for (i = 0; i < 11; i++) {
 		topLeaderBoardEntry_t* entriesHere = entries[i];
 		if (i >= maxrank && i < 10) continue;
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s ^h| " // so middle (custom) column is 4 wider
-			"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-			"^J%c%02s^%c %-10s ^c%4s ^u%10s "
-			"\n\"",
-			i==10 ? multiva("%31s^h|%32s^h|%36s^h|%32s^h|%32s\n","","","","","") : "",
-			LBROW(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
-			,LBROW(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
-			,LBROW(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE)
-			,LBROW(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY)
-			,LBROW(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
-			));
+
+		if(lbRequestData.type == TOPREQUEST_SPECIFICLB){
+			switch (lbRequestData.lbTypeIfSpecific) {
+			case LB_MAIN:
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"\n\"",
+					i == 10 ? "\n" : "",
+					LBROW(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+				));
+				break;
+			case LB_NOJUMPBUG:
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"\n\"",
+					i == 10 ? "\n" : "",
+					LBROW(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+				));
+				break;
+			case LB_CUSTOM:
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
+					"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s ^c%s"
+					"\n\"",
+					i == 10 ? "\n" : "",
+					LBROW(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE),
+					RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, level.mapDefaultRaceStyle.runFlags, 1, NULL, NULL)
+				));
+				break;
+			case LB_SEGMENTED:
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"\n\"",
+					i == 10 ? "\n" : "",
+					LBROW(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY)
+				));
+				break;
+			case LB_CHEAT:
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s"
+					"\n\"",
+					i == 10 ? "\n" : "",
+					LBROW(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
+				));
+				break;
+			}
+		}
+		else {
+			trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
+				"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
+				"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
+				"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s ^h| " // so middle (custom) column is 4 wider
+				"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
+				"^J%c%02s^%c %-10s ^c%4s ^u%10s "
+				"\n\"",
+				i==10 ? multiva("%31s^h|%32s^h|%36s^h|%32s^h|%32s\n","","","","","") : "",
+				LBROW(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+				,LBROW(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
+				,LBROW(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE)
+				,LBROW(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY)
+				,LBROW(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
+				));
+		}
 	}
 	
 	//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7color explanation:\n^7    %-27s      ^7%-27s      ^7%-27s      ^7%-27s^      ^7%-29s\n\"", "MAIN", "NOJUMPBUG", "CUSTOM", "SEGMENTED", "CHEAT"));

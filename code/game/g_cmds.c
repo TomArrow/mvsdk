@@ -1461,7 +1461,7 @@ qboolean atoi_real(const char* string) {
 	return qtrue;
 }
 
-void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style);
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific);
 
 void DF_PrintSubCoursesToPlayer(gentity_t* ent) {
 	int i;
@@ -1513,14 +1513,37 @@ void Cmd_Top_f( gentity_t *ent )
 	char inputString[COURSENAME_MAX_LEN+1];
 	char courseName[COURSENAME_MAX_LEN + 1] = { 0 };
 	char subcourseName[COURSENAME_MAX_LEN + 1] = { 0 };
+	char cmd[MAX_TOKEN_CHARS];
 	const char* thisMapName = DF_GetCourseName();
 
 	data.page = 1;
 	data.style = MV_JK2;
 
+	data.type = TOPREQUEST_ALL;
+	data.lbTypeIfSpecific = LB_MAIN; // just to shut the compiler up
+
+	trap_Argv(0, cmd, sizeof(cmd));
+
+	if (!Q_stricmp(cmd,"topmain")) {
+		data.type = TOPREQUEST_SPECIFICLB;
+		data.lbTypeIfSpecific = LB_MAIN;
+	} else if (!Q_stricmp(cmd,"topnjb") || !Q_stricmp(cmd, "topnojumpbug")) {
+		data.type = TOPREQUEST_SPECIFICLB;
+		data.lbTypeIfSpecific = LB_NOJUMPBUG;
+	} else if (!Q_stricmp(cmd,"topcustom")) {
+		data.type = TOPREQUEST_SPECIFICLB;
+		data.lbTypeIfSpecific = LB_CUSTOM;
+	} else if (!Q_stricmp(cmd,"topsegmented") || !Q_stricmp(cmd, "topseg")) {
+		data.type = TOPREQUEST_SPECIFICLB;
+		data.lbTypeIfSpecific = LB_SEGMENTED;
+	} else if (!Q_stricmp(cmd,"topcheat")) {
+		data.type = TOPREQUEST_SPECIFICLB;
+		data.lbTypeIfSpecific = LB_CHEAT;
+	}
+
 	if (args <= 1) {
 		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
-		DF_TopRequest(ent, thisMapName, "", data.page, data.style);
+		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific);
 		return;
 	}
 
@@ -1546,12 +1569,12 @@ void Cmd_Top_f( gentity_t *ent )
 
 	if (!mainCourseNameFound) {
 		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
-		DF_TopRequest(ent, thisMapName, "", data.page, data.style);
+		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific);
 		return;
 	}
 	else if (!subCourseNameFound){
 		if (!Q_stricmp(courseName, thisMapName) && level.emptyNameCourseExists) {
-			DF_TopRequest(ent, thisMapName, "", data.page, data.style);
+			DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific);
 			return;
 		}
 
@@ -1559,7 +1582,7 @@ void Cmd_Top_f( gentity_t *ent )
 		// if someone specifies exactly, we can avoid one DB call to find fitting maps
 		for (i = 0; i < level.numCourses; i++) { //32 max
 			if (!Q_stricmp(level.courseName[i], courseName)) {
-				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style);
+				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style, data.type, data.lbTypeIfSpecific);
 				return;
 			}
 		}
@@ -1569,7 +1592,7 @@ void Cmd_Top_f( gentity_t *ent )
 		// if someone specifies exactly, we can avoid one DB call to find fitting maps
 		for (i = 0; i < level.numCourses; i++) { //32 max
 			if (!Q_stricmp(level.courseName[i], subcourseName)) {
-				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style);
+				DF_TopRequest(ent, thisMapName, level.courseName[i], data.page, data.style, data.type, data.lbTypeIfSpecific);
 				return;
 			}
 		}
@@ -3516,7 +3539,7 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
-		else if (!Q_stricmp(cmd, "top"))
+		else if (!Q_stricmp(cmd, "top") || Q_stricmp(cmd, "topmain") == 0 || Q_stricmp(cmd, "topnojumpbug") == 0  || Q_stricmp(cmd, "topnjb") == 0 || Q_stricmp(cmd, "topcustom") == 0 || Q_stricmp(cmd, "topseg") == 0  || Q_stricmp(cmd, "topsegmented") == 0 || Q_stricmp(cmd, "topcheat") == 0)
 		{
 			giveError = qtrue;
 		}
@@ -3665,7 +3688,7 @@ void ClientCommand( int clientNum ) {
 		Cmd_Logout_f(ent);
 	else if (Q_stricmp (cmd, "amtele") == 0)
 		Cmd_Amtele_f(ent);
-	else if (Q_stricmp (cmd, "top") == 0)
+	else if (Q_stricmp (cmd, "top") == 0 || Q_stricmp(cmd, "topmain") == 0 || Q_stricmp(cmd, "topnojumpbug") == 0|| Q_stricmp(cmd, "topnjb") == 0 || Q_stricmp(cmd, "topcustom") == 0 || Q_stricmp(cmd, "topsegmented") == 0 || Q_stricmp(cmd, "topseg") == 0 || Q_stricmp(cmd, "topcheat") == 0)
 		Cmd_Top_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)
 		Cmd_Rollympics_f(ent);

@@ -38,9 +38,18 @@ typedef struct loginRegisterStruct_s {
 	int			userFlags;
 } loginRegisterStruct_t;
 
+
+typedef enum topRequestType_s {
+	TOPREQUEST_ALL,
+	TOPREQUEST_SPECIFICLB,
+} topRequestType_t;
+
+
 typedef struct topScoresRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
+	topRequestType_t		type;
+	mainLeaderboardType_t	lbTypeIfSpecific;
 }topScoresRequestStruct_t;
 typedef struct timeRequestStruct_s {
 	int			ip[4];
@@ -99,16 +108,13 @@ typedef struct referenceSimpleString_s {
 	char	s[MAX_STRING_CHARS];
 }referenceSimpleString_t;
 
-typedef enum topRequestType_s {
-	TOPREQUEST_ALL
-} topRequestType_t;
-
 typedef struct topRequestStruct_s {
-	int					ip[4];
-	int					clientnum;
-	topRequestType_t	type;
-	int					page;
-	movementStyle_e		style;
+	int						ip[4];
+	int						clientnum;
+	topRequestType_t		type;
+	mainLeaderboardType_t	lbTypeIfSpecific;
+	int						page;
+	movementStyle_e			style;
 } topRequestStruct_t;
 
 void G_DB_CheckResponses();

@@ -1530,7 +1530,7 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 Cmd_Top_f
 =================
 */
-void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style)
+void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific)
 {
 	topScoresRequestStruct_t data = { 0 };
 	int countLBs = LB_TYPES_COUNT;
@@ -1541,6 +1541,8 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, &level.mapDefaultRaceStyle);
 
 	data.clientnum = ent - g_entities;
+	data.type = type;
+	data.lbTypeIfSpecific = lbTypeIfSpecific;
 
 	if (coolApi_dbVersion < 3) {
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database version too low.\n\"");
