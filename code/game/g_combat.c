@@ -1892,7 +1892,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		obit = modNames[ meansOfDeath ];
 	}
 
-	if (!self->client->sess.raceMode || (self != attacker && attacker && attacker != &g_entities[ENTITYNUM_WORLD] || g_developer.integer)/* || meansOfDeath != MOD_SUICIDE*/) {
+	if (!self->client->sess.raceMode || (self != attacker && attacker && (attacker - g_entities) < MAX_CLIENTS || g_developer.integer)/* || meansOfDeath != MOD_SUICIDE*/) {
 		G_LogPrintf("Kill: %i %i %i: %s killed %s by %s\n",
 			killer, self->s.number, meansOfDeath, killerName,
 			self->client->pers.netname, obit);
@@ -1925,7 +1925,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 
 	// broadcast the death event to everyone
-	if (!self->client->sess.raceMode || (self != attacker && attacker && attacker != &g_entities[ENTITYNUM_WORLD])/* || meansOfDeath != MOD_SUICIDE*/) {
+	if (!self->client->sess.raceMode || (self != attacker && attacker && (attacker - g_entities)<MAX_CLIENTS)/* || meansOfDeath != MOD_SUICIDE*/) {
 		ent = G_TempEntity(self->r.currentOrigin, EV_OBITUARY);
 		ent->s.eventParm = meansOfDeath;
 		ent->s.otherEntityNum = self->s.number;
