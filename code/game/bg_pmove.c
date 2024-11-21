@@ -5720,9 +5720,9 @@ void PmoveSingle (pmove_t *pmove) {
 
 	// TODO MAYBE jaPRO fix strafebot up.
 #if JK2_CGAME
-	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT && !pm->isSpecialPredict){// && !(cgs.restricts & RESTRICT_SB)) {
+	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT){// && !(cgs.restricts & RESTRICT_SB)) {
 #else
-	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT && !pm->isSpecialPredict) {
+	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT) {
 #endif
 		//const int moveStyle = PM_GetMovePhysics();
 		const int runFlags = PM_GetRunFlags();
@@ -5776,7 +5776,7 @@ void PmoveSingle (pmove_t *pmove) {
 						optimalDeltaAngle = 0;
 					}
 
-					if (!calculationFailed) {
+					if (!calculationFailed && (!pm->isSpecialPredict || strafeFactor >= 1.0f && strafeFactor <= 2.0f)) { // high strafe factors create stuttering with special predict
 						optimalDeltaAngle = AngleNormalize180(optimalDeltaAngle);
 
 						vel[0] = pm->ps->velocity[0];
