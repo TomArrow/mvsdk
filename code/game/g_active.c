@@ -2569,6 +2569,7 @@ void G_RunClient( gentity_t *ent ) {
 #endif
 				trap_GetUsercmd(ent - g_entities, &ent->client->pers.cmd);
 				SetClientViewAngle(ent,ent->client->ps.viewangles); // make a smooth transition back to player-controlled gameplay
+				ent->client->ps.commandTime = ent->client->pers.cmd.serverTime; // done
 				ent->client->pers.segmented.state = SEG_DISABLED; // done
 				if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
 					// during replay, we are providing usercmds for server to send to spectators and player for demos
