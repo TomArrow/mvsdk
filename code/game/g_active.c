@@ -2575,6 +2575,8 @@ void G_RunClient( gentity_t *ent ) {
 					// during replay, we are providing usercmds for server to send to spectators and player for demos
 					ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
 				}
+				ent->s.eFlags &= ~EF_SEGMENTEDREPLAY;
+				cl->ps.eFlags &= ~EF_SEGMENTEDREPLAY;
 				break;
 			}
 			targetServerTime = cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset + ucmd.serverTime;

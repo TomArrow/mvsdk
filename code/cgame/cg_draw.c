@@ -1203,7 +1203,7 @@ void DF_RaceTimer(void)
 
 			}
 
-			if (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_SEGMENTED && (cg.predictedPlayerState.pm_flags & PMF_FOLLOW)) {
+			if (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_SEGMENTED && ((cg.predictedPlayerState.eFlags & EF_SEGMENTEDREPLAY)|| cg_statsEntities[cg.predictedPlayerState.clientNum] && cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState.frame || (cg.predictedPlayerState.pm_flags & PMF_FOLLOW) && cg.clientNum == cg.predictedPlayerState.clientNum)) {
 
 				if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
 					entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;

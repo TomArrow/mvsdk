@@ -439,6 +439,7 @@ typedef enum {
 #define EF_DROPPEDWEAPON	0x01000000		// it's a dropped weapon
 #define EF_DISINTEGRATION	0x02000000		// being disintegrated by the disruptor
 #define EF_INVULNERABLE		0x04000000		// just spawned in or whatever, so is protected
+#define EF_SEGMENTEDREPLAY	0x08000000		// is in a segmented replay
 
 
 

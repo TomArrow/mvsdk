@@ -2163,6 +2163,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 			// during replay, we are providing usercmds for server to send to spectators and player for demos
 			activator->r.svFlags |= SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
 		}
+		ent->s.eFlags |= EF_SEGMENTEDREPLAY;
+		cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
 		return;
 	}
 
@@ -3832,6 +3834,9 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			// during replay, we are providing usercmds for server to send to spectators and player for demos
 			ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
 		}
+		ent->s.eFlags &= ~EF_SEGMENTEDREPLAY;
+		cl->ps.eFlags &= ~EF_SEGMENTEDREPLAY;
+
 #ifdef SEGMENTEDDEBUG
 		memset(ent->client->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif
@@ -3865,6 +3870,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			// during replay, we are providing usercmds for server to send to spectators and player for demos
 			ent->r.svFlags |= SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
 		}
+		ent->s.eFlags |= EF_SEGMENTEDREPLAY;
+		cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
 		return;
 	}
 
@@ -3872,6 +3879,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		// during replay, we are providing usercmds for server to send to spectators and player for demos
 		ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
 	}
+	ent->s.eFlags &= ~EF_SEGMENTEDREPLAY;
+	cl->ps.eFlags &= ~EF_SEGMENTEDREPLAY;
 
 
 	if (!cl->pers.raceStartCommandTime) {
