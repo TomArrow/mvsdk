@@ -224,6 +224,7 @@ typedef struct segmented_s {
 
 	// playback
 	int					playbackStartedTime;
+	int					playbackStartedCommandTimeOffset;
 	int					playbackNextCmdIndex;
 	
 	int					totalStartCommandTime;

@@ -2557,7 +2557,7 @@ void G_RunClient( gentity_t *ent ) {
 				success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
 				if (success && ucmd.serverTime == -1) {
 					entityState_t* stats = &level.playerStats[ent - g_entities]->s;
-					stats->apos.trTime = cl->pers.segmented.playbackNextCmdIndex == 0 ? cl->pers.segmented.playbackStartedTime : cl->ps.commandTime;
+					stats->apos.trTime = cl->pers.segmented.playbackNextCmdIndex == 0 ? cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset : cl->ps.commandTime;
 					stats->frame = cl->pers.segmented.playbackNextCmdIndex == 0 ? 1 : stats->frame + 1;
 					cl->pers.segmented.playbackNextCmdIndex++;
 				}
@@ -2569,7 +2569,7 @@ void G_RunClient( gentity_t *ent ) {
 #endif
 				trap_GetUsercmd(ent - g_entities, &ent->client->pers.cmd);
 				SetClientViewAngle(ent,ent->client->ps.viewangles); // make a smooth transition back to player-controlled gameplay
-				ent->client->ps.commandTime = ent->client->pers.cmd.serverTime; // done
+				//ent->client->ps.commandTime = ent->client->pers.cmd.serverTime; // fuck it, we apply the offset at the start now so... whatever.
 				ent->client->pers.segmented.state = SEG_DISABLED; // done
 				if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
 					// during replay, we are providing usercmds for server to send to spectators and player for demos
@@ -2577,8 +2577,8 @@ void G_RunClient( gentity_t *ent ) {
 				}
 				break;
 			}
-			targetServerTime = cl->pers.segmented.playbackStartedTime + ucmd.serverTime;
-			if (targetServerTime <= level.time) {
+			targetServerTime = cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset + ucmd.serverTime;
+			if (targetServerTime <= (level.time + cl->pers.segmented.playbackStartedCommandTimeOffset)) {
 				cl->pers.cmd = ucmd;
 #ifdef SEGMENTEDDEBUG
 				{
@@ -2673,7 +2673,7 @@ void G_RunClient( gentity_t *ent ) {
 #endif
 				cl->pers.cmd.serverTime = targetServerTime;
 				if (cl->pers.segmented.playbackNextCmdIndex == 0) {
-					cl->ps.commandTime = cl->pers.segmented.playbackStartedTime;
+					cl->ps.commandTime = cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset; // shouldn't change anything? but be safe.
 				}
 				if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
 					// during replay, we are providing usercmds for server to send to spectators and player for demos

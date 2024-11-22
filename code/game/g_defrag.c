@@ -2157,6 +2157,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		PrintRaceTime(&runInfo, qtrue, qfalse, activator);
 		cl->pers.segmented.state = SEG_REPLAY;
 		cl->pers.segmented.playbackStartedTime = level.time;
+		cl->pers.segmented.playbackStartedCommandTimeOffset = cl->ps.commandTime - level.time;
 		cl->pers.segmented.playbackNextCmdIndex = 0;
 		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
 			// during replay, we are providing usercmds for server to send to spectators and player for demos
