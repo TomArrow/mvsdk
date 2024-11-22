@@ -3821,6 +3821,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	usercmd_t ucmd;
 	int clientNum;
 	qboolean resposRequested, saveposRequested;
+	qboolean strafeBotActive;
 	int msec;
 	if (!ent->client) return;
 	if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) return;
@@ -3845,6 +3846,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		cl->pers.segmented.anglesDiffResettable = qfalse;
 		return;
 	}
+
+	strafeBotActive = !!(cl->sess.raceStyle.runFlags & RFL_BOT);
 
 	ucmdPtr = &cl->pers.cmd;
 
@@ -3991,10 +3994,13 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	ucmd = *ucmdPtr;
 	ucmd.angles[0] += cl->pers.segmented.anglesDiffAccumActual[0];
 	ucmd.angles[1] += cl->pers.segmented.anglesDiffAccumActual[1];
-	ucmd.angles[2] += cl->pers.segmented.anglesDiffAccumActual[2];
 	ucmd.angles[0] &= 65535;
 	ucmd.angles[1] &= 65535;
-	ucmd.angles[2] &= 65535;
+	if (!strafeBotActive) {
+		// in strafebot mode, roll is used for strafefactor packed as fp16, so dont touch this.
+		ucmd.angles[2] += cl->pers.segmented.anglesDiffAccumActual[2];
+		ucmd.angles[2] &= 65535; 
+	}
 	ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
 	cl->pers.segmented.msecProgress += msec;
 	trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
