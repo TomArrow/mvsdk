@@ -227,8 +227,9 @@ static void CG_TransitionSnapshot( void ) {
 		// teleporting checks are irrespective of prediction
 		if ( ( ps->eFlags ^ ops->eFlags ) & EF_TELEPORT_BIT ) {
 			cg.thisFrameTeleport = qtrue;	// will be cleared by prediction code
-		} else if ( cg_smoothCamera.integer ) {
-			cg.thisFrameTeleport = qfalse;  // clear for interpolated player with new camera damping
+		}
+		else if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
+			cg.thisFrameTeleport = qfalse; // clear for interpolated player with new camera damping
 		}
 
 		// if we are not doing client side movement prediction for any

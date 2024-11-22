@@ -739,7 +739,6 @@ typedef struct {
 //	snapshot_t	activeSnapshots[2];
 
 	float		frameInterpolation;	// (float)( cg.time - cg.frame->serverTime ) / (cg.nextFrame->serverTime - cg.frame->serverTime)
-	float		predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
 
 	qboolean	mMapChange;
 
@@ -1004,7 +1003,7 @@ Ghoul2 Insert End
 	short				numFKFrames;
 	short				numJumps;
 	int					lastAutoKillTime;
-	//float				predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
+	float				predictedTimeFrac;	// frameInterpolation * (next->commandTime - prev->commandTime)
 
 	int					lastAutoFollowSent;
 	autoFollowState_t	autoFollowState;
@@ -1802,6 +1801,7 @@ extern	vmCvar_t		cg_autoKillWhenFalling;
 
 extern	vmCvar_t		cg_widescreen;
 extern	vmCvar_t		cg_fovAspectAdjust;
+extern	vmCvar_t		cg_cameraFPS;
 
 extern	vmCvar_t		cg_fovViewmodel;
 extern	vmCvar_t		cg_fovViewmodelAdjust;
