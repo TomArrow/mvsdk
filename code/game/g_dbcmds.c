@@ -365,7 +365,7 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 }
 
 const char* G_GenerateRunDemoName(finishedRunInfo_t* runInfo) {
-	static char name[MAX_QPATH];
+	static char name[MAX_OSPATH];
 	static char sanitizedCourseName[sizeof(runInfo->coursename)];
 	static char sanitizedSubCourseName[sizeof(runInfo->subcoursename)];
 	static char sanitizedUsername[sizeof(runInfo->subcoursename)];

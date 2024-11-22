@@ -914,7 +914,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		else { //Check if we should "restart" the demo
 			if (!cl->pers.stats.startLevelTime && (!cl->pers.demoStartedTime || (level.time > (cl->pers.demoStartedTime + 1000) || level.time < cl->pers.demoStartedTime)) || (level.time - cl->pers.stats.startLevelTime > 5000 || level.time < cl->pers.stats.startLevelTime)) { // don't restart demo unless (if already within run) 5 seconds have passed since touching start trigger or (if not already within run) the demo started recording at least 1 second ago. to avoid restarting demo 100 times per second.
 				int demoId = DF_GetNewDemoId(); 
-				char		tempDemoName[MAX_QPATH];
+				char		tempDemoName[MAX_OSPATH];
 
 				Com_sprintf(tempDemoName, sizeof(tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
 				cl->pers.recordingDemo = qtrue;
