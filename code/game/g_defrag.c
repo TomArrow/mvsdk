@@ -1947,6 +1947,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->topspeed = client->pers.stats.topSpeed;
 	runInfo->savePosCount = client->pers.stats.saveposCount;
 	runInfo->resposCount = client->pers.stats.resposCount;
+	runInfo->startTriggerSpeed = client->pers.stats.startTriggerSpeed;
 	if (client->pers.stats.roll.status == ROLL_ENDED) {
 		runInfo->rollSpeed = client->pers.stats.roll.rollSpeed;
 		runInfo->rollTakeoffClientSpeed = client->pers.stats.roll.finalAirClientSpeed;
