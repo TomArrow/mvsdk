@@ -742,6 +742,7 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 	int diff, diff2;
 	int mapDefaultsFound;
 	raceStyle_t mapDefaultRaceStyle;
+	qboolean afterRun = qfalse; // TODO send to spectators if following guy who just got PB/WR?
 
 	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
 
@@ -753,15 +754,15 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 	if (status == 1146) {
 		// table doesn't exist. create it.
 		G_CreateRunsTable();
-		G_SendServerCommand(ent-g_entities,"print \"^1Searching maps for top results failed due to runs table not existing. Attempting to create. Please try again shortly.\n\"",qtrue);
+		G_SendServerCommand(ent-g_entities,"print \"^1Searching maps for top results failed due to runs table not existing. Attempting to create. Please try again shortly.\n\"", afterRun);
 		return;
 	}
 	else if (status) {
-		G_SendServerCommand(ent - g_entities, va("print \"^1Searching maps for top results failed with status %d and error message %s.\n\"", status, errorMessage),qtrue);
+		G_SendServerCommand(ent - g_entities, va("print \"^1Searching maps for top results failed with status %d and error message %s.\n\"", status, errorMessage), afterRun);
 		return;
 	}
 
-	G_SendServerCommand(ent - g_entities, "print \"Your top result request matches the following maps/courses:\n\"", qtrue);
+	G_SendServerCommand(ent - g_entities, "print \"Your top result request matches the following maps/courses:\n\"", afterRun);
 
 
 	// first query is SET @now = NOW(). skip it.
