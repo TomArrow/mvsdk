@@ -180,6 +180,15 @@ typedef struct rollState_s {
 	int				lastRollEndedTime;	// last commandtime before roll ended
 } rollState_t;
 
+
+#define MAX_FPSMEASURE_FRAMECOUNT 32
+#define MAX_FPSMEASURE_SHORT_FRAMECOUNT 8
+
+typedef struct fpsMeasure_s {
+	short frameTimes[MAX_FPSMEASURE_FRAMECOUNT];
+	int index;
+} fpsMeasure_t;
+
 typedef enum pbFlags_s { // bit flags
 	PB_FIRSTRUN_SPECIFICSTYLE = 1,
 	PB_NEWPB_SPECIFICSTYLE = 2,
@@ -232,6 +241,7 @@ typedef struct finishedRunInfo_s {
 	char		netname[MAX_NETNAME];
 	mainLeaderboardType_t lbType;
 	char		tempDemoName[MAX_QPATH];
+	char		fpsString[255];
 } finishedRunInfo_t;
 
 //typedef struct evaluatedRunInfo_s {
@@ -256,5 +266,17 @@ raceStyle_t getDefaultMapRaceStyle();
 char* QDECL multiva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 char* QDECL miniva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 const char* DF_DemoRaceStyleNamePart(raceStyle_t* rs);
+
+
+
+#define FPSTABLE_SIZE 64 // i already checked, we need roughly 62-63 entries for unqiuely settable fps. just do a bit higher for overflow values. this isnt really depending on any factors, its just how it is, but i can't really give a math formula for WHY it is like that. it just is.
+
+#define FPSTABLE_MAX_MEASURED_MSECVALUE 1000
+#define FPSTABLE_OVERFLOW_MSECVALUE FPSTABLE_MAX_MEASURED_MSECVALUE+1
+
+extern int	fpsTableMsecToIndex[FPSTABLE_OVERFLOW_MSECVALUE + 1];
+extern int	fpsTableIndexToMsec[FPSTABLE_SIZE];
+
+void		InitFpsTable();
 
 #endif

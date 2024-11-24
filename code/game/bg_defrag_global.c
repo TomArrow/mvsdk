@@ -33,8 +33,6 @@ bitInfo_t leaderboardNames[LB_TYPES_COUNT] = {
 	{ "Cheat" },//4
 };
 
-
-
 #define RUNFLAGSFUNC(a,b,c,d,e,f) {#a},
 bitInfo_t runFlagsShortNames[] = {
 	RUNFLAGS(RUNFLAGSFUNC)
@@ -344,3 +342,34 @@ char* QDECL miniva(const char* format, ...) {
 
 	return buf;
 }
+
+
+
+
+
+int		fpsTableMsecToIndex[FPSTABLE_OVERFLOW_MSECVALUE + 1];
+int		fpsTableIndexToMsec[FPSTABLE_SIZE];
+
+// we wanna be able to store used fps (msec) settings, but there's only a number of values (62 or 63 I think) that can actually be set,
+// because for example there are no values between 142 and 125 fps since msec values are integers and 142 is 7 and 125 is 8.
+// so in cases where we wanna track how often each fps value was used, we can have a small 64 value array instead of a 1000 value array. less memory, faster to null and copy (e.g. in segmented run)
+void	InitFpsTable() {
+	int i;
+	int index = 0;
+	int lastMsec = -1;
+	int msec;
+	fpsTableMsecToIndex[0] = fpsTableIndexToMsec[0] = 0; // well, 0 msec should never happen, shrug. but just fill it with something to not have freak errors
+	for (i = 1; i <= FPSTABLE_MAX_MEASURED_MSECVALUE; i++) {
+		msec = 1000 /(1000 / i);
+		if (msec != lastMsec) index++;
+		lastMsec = msec;
+		fpsTableMsecToIndex[i] = index;
+		fpsTableIndexToMsec[index] = msec;
+	}
+	index++;
+	fpsTableMsecToIndex[FPSTABLE_OVERFLOW_MSECVALUE] = index;
+	for (; index < FPSTABLE_SIZE; index++) {
+		fpsTableIndexToMsec[index] = FPSTABLE_OVERFLOW_MSECVALUE; // this "loop" actually just runs once, since i set the array to the needed size. bit random that i can't explain why it has to be exactly that size but it just is that way. wish i could come up with a math formula to do this mapping instead of LUTs
+	}
+}
+

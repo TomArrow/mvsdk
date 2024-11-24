@@ -1335,6 +1335,7 @@ qboolean DF_PrePmoveValid(gentity_t* ent);
 
 void UpdateClientPastFpsStats(gentity_t* ent, int msec) {
 	entityState_t* stats = &level.playerStats[ent-g_entities]->s;
+	fpsMeasure_t* fpsMeasure = &ent->client->pers.fpsMeasure;
 	ent->client->lastMsecValue = msec;
 	if (stats->pastFpsUnionArray[0] != msec || // if fps is stable and unchanging, dont spam index changes, what for...
 		stats->pastFpsUnionArray[1] != msec ||
@@ -1344,6 +1345,32 @@ void UpdateClientPastFpsStats(gentity_t* ent, int msec) {
 		stats->pastFpsUnionArray[stats->fireflag++] = msec;
 		stats->fireflag = stats->fireflag & (PLAYERSTATS_PAST_MSEC - 1);
 	}
+
+	fpsMeasure->frameTimes[fpsMeasure->index++ % MAX_FPSMEASURE_FRAMECOUNT] = msec;
+	if (fpsMeasure->index < MAX_FPSMEASURE_FRAMECOUNT) return;
+	if (ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime) {
+		int i;
+		int total = 0, totalShort = 0;
+		int guess, guessShort;
+		for (i = 0; i < MAX_FPSMEASURE_FRAMECOUNT; i++) {
+			total += fpsMeasure->frameTimes[i];
+		}
+		for (i = fpsMeasure->index - MAX_FPSMEASURE_SHORT_FRAMECOUNT; i < fpsMeasure->index; i++) {
+			totalShort += fpsMeasure->frameTimes[i % MAX_FPSMEASURE_FRAMECOUNT];
+		}
+		guess = (int)(roundf((float)total / (float)MAX_FPSMEASURE_FRAMECOUNT) + 0.5f);
+		guessShort = (int)(roundf((float)totalShort / (float)MAX_FPSMEASURE_SHORT_FRAMECOUNT) + 0.5f);
+		if (guess == guessShort) {
+			// we compare a short sequence average to a long sequence average and thus combine their strengths and reduce their weaknesses
+			// long sequence is reliable (can even be 0% error if client fps is stable) but fps toggles will cause ~2-5% false readings during the transition
+			// short sequences are more dynamic but have an error rate above 0%, up to 5% typically (assuming stable-ish framerate in client again)
+			// When we compare the long and short average, we reduce the overall error rate to something like 0.1-0.2% per fps toggle.
+			// We lose some samples that might have been good but false readings are significantly reduced.
+			ent->client->pers.stats.fpsStats.msecCounts[fpsTableMsecToIndex[MAX(0, MIN(FPSTABLE_OVERFLOW_MSECVALUE, guess))]]++;
+			ent->client->pers.stats.fpsStats.totalCount++;
+		}
+	}
+
 }
 
 // Simplified version of PM_UpdateViewAngles. Just to see where we are looking right now without doing pmove first

@@ -47,6 +47,11 @@ typedef enum dfWarningFlags_s {
 	DF_WARNING_INTERPOLATION_FAIL_END_FALLBACK_FRACTION1 = (1 << 11),
 } dfWarningFlags_t;
 
+typedef struct runFpsStats_s {
+	int		msecCounts[FPSTABLE_SIZE];
+	int		totalCount;
+} runFpsStats_t;
+
 typedef struct savedPosition_s {
 	playerState_t	ps;
 	raceStyle_t		raceStyle;
@@ -119,6 +124,7 @@ typedef struct savedPosition_s {
 				float	topSpeed;
 				int		checkpoints;
 				rollState_t roll;
+				runFpsStats_t	fpsStats;
 			} stats;
 			struct {
 				int			msecTime; 

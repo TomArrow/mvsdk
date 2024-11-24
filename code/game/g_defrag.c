@@ -91,6 +91,7 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(pers.stats.topSpeed)\
 		FIELDSFUNC(pers.stats.checkpoints)\
 		FIELDSFUNC(pers.stats.roll)\
+		FIELDSFUNC(pers.stats.fpsStats)\
 		FIELDSFUNC(pers.raceDropped.msecTime)\
 		FIELDSFUNC(pers.raceDropped.packetCount)\
 		//FIELDSFUNC(damage_knockback)\ // not used anywhere?
@@ -1876,6 +1877,9 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 
 		trap_SendServerCommand(-1, va("print \"%s\" %s %s", messageStr,type, DF_RacePrintAppendage(runInfo)));
 	}
+
+
+	trap_SendServerCommand(-1, va("print \"^2%s\n\"", runInfo->fpsString));
 	
 }
 
@@ -1892,6 +1896,18 @@ const char* DF_GetCourseName() {
 	}
 	return course;
 }
+
+void DF_MakeUsedFpsString(runFpsStats_t* fps, char* buf, int bufSize) {
+	int i,value,index=0;
+	buf[0] = '\0';
+	for (i = 0; i < FPSTABLE_SIZE; i++) {
+		value = 100 * fps->msecCounts[i] / fps->totalCount;
+		if (value < 1) continue;
+		Q_strcat(buf, bufSize, miniva("%c%d:%d", index == 0 ? ' ' : ':', 1000/fpsTableIndexToMsec[i], value));
+		index++;
+	}
+}
+
 
 static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int milliseconds, gentity_t* endtrigger) {
 	static char serverInfo[BIG_INFO_STRING];
@@ -1950,6 +1966,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->savePosCount = client->pers.stats.saveposCount;
 	runInfo->resposCount = client->pers.stats.resposCount;
 	runInfo->startTriggerSpeed = client->pers.stats.startTriggerSpeed;
+	DF_MakeUsedFpsString(&client->pers.stats.fpsStats, runInfo->fpsString, sizeof(runInfo->fpsString));
 	if (client->pers.stats.roll.status == ROLL_ENDED) {
 		runInfo->rollSpeed = client->pers.stats.roll.rollSpeed;
 		runInfo->rollTakeoffClientSpeed = client->pers.stats.roll.finalAirClientSpeed;

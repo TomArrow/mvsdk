@@ -395,6 +395,7 @@ typedef struct runStats_s { // zero'd out every time we leave start timer
 	int checkpoints;
 	int warningFlags;
 	rollState_t roll;
+	runFpsStats_t fpsStats;
 } runStats_t;
 typedef struct raceDropped_s { // zero'd out every time we leave start timer
 	int			msecTime; // in non-toggle mode, packets get soft-"dropped" (not evaluated) if the msec value is wrong. We accumulate the loss here
@@ -408,6 +409,7 @@ typedef struct raceDropped_s { // zero'd out every time we leave start timer
 
 #define MAX_CUSTOM_CHECKPOINT_COUNT 10
 #define MAX_TOTAL_CHECKPOINT_COUNT 200
+
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
@@ -466,6 +468,8 @@ typedef struct {
 	int			demoStoppedTime;
 	int			stopRecordingTime;
 	char		lastSubcourseFinishedName[COURSENAME_MAX_LEN + 1];
+
+	fpsMeasure_t	fpsMeasure;
 
 	rollState_t roll;
 } clientPersistant_t;
