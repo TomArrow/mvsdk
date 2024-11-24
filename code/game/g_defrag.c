@@ -1897,13 +1897,35 @@ const char* DF_GetCourseName() {
 	return course;
 }
 
+typedef struct fpsEntry_s {
+	int fps;
+	int count;
+} fpsEntry_t;
+
+int compareFpsEntry(const void* a, const void* b) {
+	return ((fpsEntry_t*)b)->count - ((fpsEntry_t*)a)->count;
+}
+
 void DF_MakeUsedFpsString(runFpsStats_t* fps, char* buf, int bufSize) {
 	int i,value,index=0;
-	buf[0] = '\0';
+	int count = 0;
+	fpsEntry_t entries[FPSTABLE_SIZE];
+
 	for (i = 0; i < FPSTABLE_SIZE; i++) {
 		value = 100 * fps->msecCounts[i] / fps->totalCount;
+		if (value < 1) continue; 
+		entries[count].fps = 1000 / fpsTableIndexToMsec[i];
+		entries[count].count = fps->msecCounts[i];
+		count++;
+	}
+
+	qsort(entries, count, sizeof(fpsEntry_t), compareFpsEntry);
+
+	buf[0] = '\0';
+	for (i = 0; i < count; i++) {
+		value = 100 * entries[i].count / fps->totalCount;
 		if (value < 1) continue;
-		Q_strcat(buf, bufSize, miniva("%c%d:%d", index == 0 ? ' ' : ':', 1000/fpsTableIndexToMsec[i], value));
+		Q_strcat(buf, bufSize, miniva("%c%d:%d", index == 0 ? ' ' : ':', entries[i].fps, value));
 		index++;
 	}
 }
