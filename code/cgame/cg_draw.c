@@ -2262,7 +2262,8 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 	int FPS_FRAMES = MIN(FPS_FRAMES_MAX,MAX(1,cg_drawFPSSamples.integer));
 	int shouldFps = (cg_com_physicsFps.integer && physical )? cg_com_physicsFps.integer : cg_com_maxfps.integer;
 	int shouldMsec = 1000 / shouldFps;
-	float guessedMsec = 0.0f;
+	int guessedMsec = 0;
+	int shortCount = MIN(FPS_FRAMES, MAX(0,cg_drawFPSShorterCheckSim.integer));
 
 	if (!physical) {
 		// don't use serverTime, because that will be drifting to
@@ -2467,9 +2468,20 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 
 		if (cg_drawFPSMisses.integer) {
 			int missCount = 0;
-			guessedMsec = roundf((float)total / (float)FPS_FRAMES);
-			if (data->indexMisses >= MISS_FRAMES) data->indexMisses = 0;
-			data->misses[data->indexMisses++] = shouldMsec != (int)(guessedMsec+0.5f);
+			int totalShort = 0;
+			int guessedMsecShort = 0;
+			if (shortCount) {
+				for (i = data->index-shortCount; i < data->index; i++) {
+					totalShort += data->previousTimes[i % FPS_FRAMES];
+				}
+				guessedMsecShort = (int)(roundf((float)totalShort / (float)shortCount) + 0.5f);
+			}
+
+			guessedMsec = (int)(roundf((float)total / (float)FPS_FRAMES) + 0.5f);
+			if (!shortCount || guessedMsecShort == guessedMsec) { // a technique we will be using on the server for fps detection. short average must match long one. to avoid misdetects on transitions. e.g. 32 samples and 8 short sequence samples
+				if (data->indexMisses >= MISS_FRAMES) data->indexMisses = 0;
+				data->misses[data->indexMisses++] = shouldMsec != guessedMsec;
+			}
 
 			for (i = 0; i < MISS_FRAMES; i++) {
 				missCount += data->misses[i];
