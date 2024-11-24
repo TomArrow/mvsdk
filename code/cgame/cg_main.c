@@ -472,6 +472,8 @@ vmCvar_t	cg_shadows;
 vmCvar_t	cg_drawTimer;
 vmCvar_t	cg_drawRamps;
 vmCvar_t	cg_drawFPS;
+vmCvar_t	cg_drawFPSMisses;
+vmCvar_t	cg_drawFPSSamples;
 vmCvar_t	cg_drawFPSPhysical;
 vmCvar_t	cg_drawFPSLowest;
 vmCvar_t	cg_drawStrafeBotFactor;
@@ -792,6 +794,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawTimer, "cg_drawTimer", "0", CVAR_ARCHIVE  },
 	{ &cg_drawRamps, "cg_drawRamps", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPS, "cg_drawFPS", "0", CVAR_ARCHIVE  },
+	{ &cg_drawFPSMisses, "cg_drawFPSMisses", "0", CVAR_ARCHIVE  },
+	{ &cg_drawFPSSamples, "cg_drawFPSSamples", "16", CVAR_ARCHIVE  },
 	{ &cg_drawFPSPhysical, "cg_drawFPSPhysical", "0", CVAR_ARCHIVE  },
 	{ &cg_drawFPSLowest, "cg_drawFPSLowest", "1", CVAR_ARCHIVE  },
 	{ &cg_drawStrafeBotFactor, "cg_drawStrafeBotFactor", "1", CVAR_ARCHIVE  },

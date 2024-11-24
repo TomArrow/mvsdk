@@ -1651,6 +1651,8 @@ extern	vmCvar_t		cg_shadows;
 extern	vmCvar_t		cg_drawTimer;
 extern	vmCvar_t		cg_drawRamps;
 extern	vmCvar_t		cg_drawFPS;
+extern	vmCvar_t		cg_drawFPSMisses;
+extern	vmCvar_t		cg_drawFPSSamples;
 extern	vmCvar_t		cg_drawFPSPhysical;
 extern	vmCvar_t		cg_drawFPSLowest;
 extern	vmCvar_t		cg_drawStrafeBotFactor;

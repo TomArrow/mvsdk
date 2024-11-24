@@ -193,7 +193,7 @@ qboolean G_DoesMapSupportGametype(const char *mapname, int gametype)
 	}
 
 	if (!g_defrag.integer && gametype == GT_FFA) {
-		return qtrue; // fair? no map that doesnt support ffa is there? it would have to have no spawn at all.
+		return qtrue; // fair? no map that doesnt support ffa is there? it would have to have no spawn at all. wait, will we even get this far if it has no arena file?
 	}
 
 	type = Info_ValueForKey(g_arenaInfos[thisLevel], "type");

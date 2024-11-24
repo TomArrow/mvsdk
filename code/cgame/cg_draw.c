@@ -2225,16 +2225,18 @@ static void CG_DrawStrafeBotFactor() {
 CG_DrawFPS
 ==================
 */
-#define	FPS_FRAMES	16
+#define	FPS_FRAMES_MAX	128
 #define	FPS_FRAMES_FOR_BOTTOM10P	10
 #define	FPS_FRAMES_FOR_BOTTOM1P	10
 #define	FPS_FRAMES_FOR_BOTTOM01P	10
+#define MISS_FRAMES 1000
 typedef struct drawFpsData_s {
-	int	previousTimes[FPS_FRAMES];
+	int	previousTimes[FPS_FRAMES_MAX];
+	qboolean misses[MISS_FRAMES];
 	int	bottomTimes10P[FPS_FRAMES_FOR_BOTTOM10P];
 	int	bottomTimes1P[FPS_FRAMES_FOR_BOTTOM1P];
 	int	bottomTimes01P[FPS_FRAMES_FOR_BOTTOM01P];
-	int	index, indexBottom10P, indexBottom1P, indexBottom01P;
+	int	index, indexMisses, indexBottom10P, indexBottom1P, indexBottom01P;
 	int	previous;
 	int	bottom10Pfps, bottom1Pfps, bottom01Pfps;
 } drawFpsData_t;
@@ -2257,6 +2259,10 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 	int frameTimeSampleCount = 0;
 	int frameTimeSamples[PLAYERSTATS_PAST_MSEC];
 	qboolean multiFrame = qfalse;
+	int FPS_FRAMES = MIN(FPS_FRAMES_MAX,MAX(1,cg_drawFPSSamples.integer));
+	int shouldFps = (cg_com_physicsFps.integer && physical )? cg_com_physicsFps.integer : cg_com_maxfps.integer;
+	int shouldMsec = 1000 / shouldFps;
+	float guessedMsec = 0.0f;
 
 	if (!physical) {
 		// don't use serverTime, because that will be drifting to
@@ -2459,7 +2465,22 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 		}
 		fps = 1000 * FPS_FRAMES / total;
 
-		s = va(physical ?"%ipfps":"%ifps", fps );
+		if (cg_drawFPSMisses.integer) {
+			int missCount = 0;
+			guessedMsec = roundf((float)total / (float)FPS_FRAMES);
+			if (data->indexMisses >= MISS_FRAMES) data->indexMisses = 0;
+			data->misses[data->indexMisses++] = shouldMsec != (int)(guessedMsec+0.5f);
+
+			for (i = 0; i < MISS_FRAMES; i++) {
+				missCount += data->misses[i];
+			}
+
+			s = va(physical ? "%ipfps (%.1f%% miss)" : "%ifps (%.1f%% miss)", fps, 100.0f*((float)missCount/(float)MISS_FRAMES));
+		}
+		else {
+			s = va(physical ? "%ipfps" : "%ifps", fps);
+		}
+
 
 
 		//JAPRO - Clientside - Add cg_drawfps 2 - Start
