@@ -1879,7 +1879,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	}
 
 
-	trap_SendServerCommand(-1, va("print \"^2%s\n\"", runInfo->fpsString));
+	//trap_SendServerCommand(-1, va("print \"^2%s\n\"", runInfo->fpsString));
 	
 }
 
