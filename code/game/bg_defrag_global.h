@@ -241,7 +241,7 @@ typedef struct finishedRunInfo_s {
 	char		netname[MAX_NETNAME];
 	mainLeaderboardType_t lbType;
 	char		tempDemoName[MAX_QPATH];
-	char		fpsString[255];
+	char		fpsString[255+1];
 } finishedRunInfo_t;
 
 //typedef struct evaluatedRunInfo_s {
