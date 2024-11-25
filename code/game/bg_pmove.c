@@ -5735,6 +5735,8 @@ void PmoveSingle (pmove_t *pmove) {
 			const float realCurrentSpeed = sqrtf((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));
 			if (realCurrentSpeed > 0) {
 				vec3_t vel = { 0 }, velangle;
+				float optimalAngle1 = 0; // option A
+				float optimalAngle2 = 0; // option B
 				float optimalDeltaAngle = 0;
 				qboolean CJ = qtrue;
 				float strafeFactor = fp16_ieee_to_fp32_value(USHORT2SHORT(oldCmdRoll))+1.0f;  // USHORT2SHORT to normalize to short range since fp16 conversion relies on it
@@ -5793,16 +5795,33 @@ void PmoveSingle (pmove_t *pmove) {
 							//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
 							//	optimalDeltaAngle = 0 - middleOffset; //Take into account speed.
 							//else
-							optimalDeltaAngle = 45 - optimalDeltaAngle;
+							//optimalDeltaAngle = 45 - optimalDeltaAngle;
+							//if ((AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW] + 90.0f) < 0 || pm->unalteredCmd.forwardmove > 0) && pm->unalteredCmd.forwardmove <= 0) {
+							if (pm->unalteredCmd.forwardmove <= 0) { // only do backwards strafe if explicitly W is pressed during roll
+								optimalDeltaAngle = 45 - optimalDeltaAngle;
+							}
+							else {
+								optimalDeltaAngle = 135.0f + optimalDeltaAngle;
+							}
 						}
 						else if (!pm->cmd.forwardmove && pm->cmd.rightmove < 0) {//A
 							//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
 							//	optimalDeltaAngle = 0 + middleOffset;
 							//else
-							optimalDeltaAngle = -45 + optimalDeltaAngle;
+							//optimalDeltaAngle = -45 + optimalDeltaAngle;
+							//if ((AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]-90.0f) < 0 || pm->unalteredCmd.forwardmove > 0) && pm->unalteredCmd.forwardmove <= 0) {
+							if (pm->unalteredCmd.forwardmove <= 0) { // only do backwards strafe if explicitly W is pressed during roll
+								optimalDeltaAngle = -45 + optimalDeltaAngle;
+							}
+							else { 
+								optimalDeltaAngle = 225.0f - optimalDeltaAngle; 
+							}
 						}
 						else if (pm->cmd.forwardmove > 0 && !pm->cmd.rightmove) {//W
-							if ((AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0 || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { //Decide which W we want.  (Whatever is closest)
+							//optimalAngle1 = abs(AngleSubtract(velangle[YAW] - 45 - optimalDeltaAngle, pm->ps->viewangles[YAW]));
+							//optimalAngle2 = abs(AngleSubtract(velangle[YAW] + 45 + optimalDeltaAngle, pm->ps->viewangles[YAW]));
+							if ((AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0 || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { //Decide which W we want.  (Whatever is closest). this is broken for CJ (just walking basically). not sure i can fix it, but its not a huge deal i guess
+							//if ((optimalAngle1 < optimalAngle2 || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { //Decide which W we want.  (Whatever is closest)
 								//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) //Why the f does it switch
 								//	optimalDeltaAngle = -45; //Needs good offset
 								//else
@@ -5814,6 +5833,14 @@ void PmoveSingle (pmove_t *pmove) {
 								//else
 								optimalDeltaAngle = 45 + optimalDeltaAngle; //leftwards
 							}
+						}
+						else if (pm->cmd.forwardmove < 0 && !pm->cmd.rightmove) {//S // TODO
+							//if ((AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]-180.0f) > 0 || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { 
+							//	optimalDeltaAngle = -45 - optimalDeltaAngle; //rightwards
+							//}
+							//else { 
+							//	optimalDeltaAngle = 45 + optimalDeltaAngle; //leftwards
+							//}
 						}
 
 						velangle[YAW] += optimalDeltaAngle;
