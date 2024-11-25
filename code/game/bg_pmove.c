@@ -5745,8 +5745,8 @@ void PmoveSingle (pmove_t *pmove) {
 				else if (pml.walking && pml.groundTrace.surfaceFlags & SURF_SLICK) { //Lmao fuck this bullshit. no way to tell if we are on slick i guess.
 					CJ = qfalse;
 				}
-				else if (realCurrentSpeed > pm->ps->basespeed * 1.5f) //idk this is retarded, but lets us groundframe
-					CJ = qfalse;
+				//else if (realCurrentSpeed > pm->ps->basespeed * 1.5f) //idk this is retarded, but lets us groundframe (TA: WHAT?)
+				//	CJ = qfalse;
 
 				if (realCurrentSpeed > pm->ps->basespeed || (CJ && (realCurrentSpeed > (pm->ps->basespeed * 0.5f)))) {
 					float middleOffset = 0; //Idk
@@ -5802,17 +5802,17 @@ void PmoveSingle (pmove_t *pmove) {
 							optimalDeltaAngle = -45 + optimalDeltaAngle;
 						}
 						else if (pm->cmd.forwardmove > 0 && !pm->cmd.rightmove) {//W
-							if (AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0) { //Decide which W we want.  (Whatever is closest)
+							if ((AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0 || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { //Decide which W we want.  (Whatever is closest)
 								//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) //Why the f does it switch
 								//	optimalDeltaAngle = -45; //Needs good offset
 								//else
-								optimalDeltaAngle = -45 - optimalDeltaAngle;
+								optimalDeltaAngle = -45 - optimalDeltaAngle; //rightwards
 							}
 							else { //Right side
 								//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
 								//	optimalDeltaAngle = 45; //Needs good offset
 								//else
-								optimalDeltaAngle = 45 + optimalDeltaAngle;
+								optimalDeltaAngle = 45 + optimalDeltaAngle; //leftwards
 							}
 						}
 
@@ -5958,6 +5958,8 @@ void Pmove (pmove_t *pmove) {
 	}
 
 	pmove->ps->pmove_framecount = (pmove->ps->pmove_framecount+1) & ((1<<PS_PMOVEFRAMECOUNTBITS)-1);
+
+	pmove->unalteredCmd = pmove->cmd; // so we can decide which direction to roll with strafebot (as roll overwrites keys that arent part of its direction)
 
 	if (pmove->roll.status == ROLL_ENDED) {
 		pmove->roll.status = ROLL_NONE;
