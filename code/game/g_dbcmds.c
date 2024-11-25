@@ -1480,6 +1480,7 @@ static void G_CreateRunsTable() {
 			runwhen DATETIME NOT NULL, \
 			runfirst DATETIME NOT NULL, \
 			warningFlags INT NOT NULL, \
+			fpsString VARCHAR(255) NOT NULL, \
 			UNIQUE KEY user_runtype (userid,course,subcourse,style,msec,jump,variant,runFlags"
 			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
 			"), \
@@ -1594,10 +1595,10 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		va("SET @now=NOW();"
 			"INSERT INTO runs (userid,course,subcourse,duration_ms,duration_ms_segmented_total,topspeed,startTriggerSpeed,rollSpeed,rollTakeoffClientSpeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
-			"runwhen,runfirst,warningFlags, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
+			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
 			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
-			"@now,@now,?,?,?,?,?,?,?,?)"
+			"@now,@now,?,?,?,?,?,?,?,?,?)"
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms_segmented_total = IF(?<duration_ms,?,duration_ms_segmented_total),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
@@ -1608,6 +1609,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"distance = IF(?<duration_ms,?,distance),"
 			"runwhen = IF(?<duration_ms,@now,runwhen),"
 			"warningFlags = IF(?<duration_ms,?,warningFlags),"
+			"fpsString = IF(?<duration_ms,?,fpsString),"
 			"distanceXY = IF(?<duration_ms,?,distanceXY),"
 			"startLessTime = IF(?<duration_ms,?,startLessTime),"
 			"endLessTime = IF(?<duration_ms,?,endLessTime),"
@@ -1657,6 +1659,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 #undef RUNFLAGSFUNC
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
+	G_COOL_API_DB_PreparedBindString(runInfo->fpsString);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);
 	G_COOL_API_DB_PreparedBindInt(runInfo->startLessTime);
 	G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
@@ -1691,6 +1694,9 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindInt(runInfo->warningFlags);
+
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindString(runInfo->fpsString);
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindFloat(runInfo->distanceXY);

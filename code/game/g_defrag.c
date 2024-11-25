@@ -1925,7 +1925,7 @@ void DF_MakeUsedFpsString(runFpsStats_t* fps, char* buf, int bufSize) {
 	for (i = 0; i < count; i++) {
 		value = 100 * entries[i].count / fps->totalCount;
 		if (value < 1) continue;
-		Q_strcat(buf, bufSize, miniva("%c%d:%d", index == 0 ? ' ' : ':', entries[i].fps, value));
+		Q_strcat(buf, bufSize, miniva("%c%d:%d%%", index == 0 ? ' ' : ',', entries[i].fps, value));
 		index++;
 	}
 }
