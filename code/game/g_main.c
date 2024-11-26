@@ -176,6 +176,8 @@ vmCvar_t	g_botTeamAutoBalance;
 vmCvar_t	g_MVSDK;
 
 vmCvar_t	g_userCmdBuffer;
+vmCvar_t	g_blockIdenticalUserSnaps;
+vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 
 int gDuelist1 = -1;
 int gDuelist2 = -1;
@@ -379,6 +381,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_botTeamAutoBalance, "g_botTeamAutoBalance", "1", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_userCmdBuffer, "g_userCmdBuffer", "1", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_blockIdenticalUserSnaps, "g_blockIdenticalUserSnaps", "1", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_blockIdenticalUserSnapsMinFps, "g_blockIdenticalUserSnapsMinFps", "30", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_MVSDK, "g_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_SERVERINFO, 0, qfalse },
 };
@@ -408,7 +412,8 @@ qboolean mvStructConversionDisabled = qfalse;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
 vmCvar_t coolApi_supported_game;
-int coolApi_supported_game_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE | COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE | COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS | COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED;
+int coolApi_supported_game_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE | COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE | COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS | COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED | COOL_APIFEATURE_VMCUSTOMFLAGS;
+int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY;
 
 int Init_levelTime;
 int Init_randomSeed;
@@ -449,6 +454,7 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 
 		trap_Cvar_Register(&coolApi_supported_game, "coolApi_supported_game", va("%d", coolApi_supported_game_int), CVAR_ROM);
 		trap_Cvar_Set("coolApi_supported_game", va("%d", coolApi_supported_game_int));
+		trap_Cvar_Set("coolApi_supported_game_vmflags", va("%d", coolApi_supported_game_vmflags_int));
 
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
@@ -510,7 +516,16 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 			}
 			else
 			{
+				gclient_t* client = (g_entities + playerNum)->client;
+				int maxMsecDelay = MIN(200,1000/MAX(1,g_blockIdenticalUserSnapsMinFps.integer));
+				if (g_blockIdenticalUserSnaps.integer && client && (client->sess.sessionTeam != TEAM_SPECTATOR || !client->anyClientMovedSinceSnapshot) && client->lastSnapshotSentCommandTime == client->ps.commandTime && level.time > client->lastSnapshotSent && (level.time-client->lastSnapshotSent) < maxMsecDelay) {
+					// smooth demos a bit by not sending useless repeated packets, unless it would be come TOO stuttery
+					return qfalse;
+				}
 				PlayerSnapshotHackValues(lastPlayerSnapshotNum == -1, playerNum);
+				client->lastSnapshotSentCommandTime = client->ps.commandTime;
+				client->lastSnapshotSent = level.time;
+				client->anyClientMovedSinceSnapshot = qfalse;
 			}
 			lastPlayerSnapshotNum = playerNum;
 			return qtrue;

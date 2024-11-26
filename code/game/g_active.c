@@ -1550,6 +1550,7 @@ void DF_SetRaceMode(gentity_t* ent, qboolean value);
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
+	gentity_t	*otherClientEnt;
 	pmove_t		pm;
 	int			oldEventSequence;
 	int			msec;
@@ -1564,6 +1565,15 @@ void ClientThink_real( gentity_t *ent ) {
 	client = ent->client;
 
 	if ( !ent || !ent->client ) return;
+
+	for (i = 0; i < level.maxclients; i++) {
+		otherClientEnt = g_entities + i;
+		// this is for snapshot limiting (avoiding dupe snapshots when no commandtime update has happened for smoother demos)
+		// if we are in follow mode, we wont set it for ourselves otherwise we might override the snapshot limiting. it will think something moved,
+		// but it was just us as spectator sending usercmds that did nothing relevant.
+		if (!otherClientEnt->client || !otherClientEnt->inuse || (otherClientEnt == ent && ent->client->sess.spectatorState == SPECTATOR_FOLLOW)) continue;
+		otherClientEnt->client->anyClientMovedSinceSnapshot = qtrue;
+	}
 
 	if (ent->client->sess.rollAngleInvalidated) {
 		if (!ent->client->pers.cmd.angles[ROLL]) {
