@@ -233,8 +233,6 @@ static struct {
 	float		lastYaw;
 	int			lastTime;
 	float		lastTimeFrac;
-	qboolean	smooth;			// Use new, smooth camera damping
-	int			fps;			// FPS to emulate with smooth camera damping
 } cam;
 
 /*
@@ -375,7 +373,7 @@ static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
 	// freeze when player is lagging
 	VectorCopy(pos->ideal, pos->prevIdeal);
 
-	if ( cam.smooth )
+	if ( cg_cameraFPS.integer >= CAMERA_MIN_FPS )
 	{
 		// FPS-independent solution thanks to semigroup property:
 		// If t1, t2 are positive time periods, dampfactor and
@@ -390,7 +388,7 @@ static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
 		float	codampfactor;
 
 		// dtime is relative: physics time / emulated time
-		dtime *= cam.fps / 1000.0f;
+		dtime *= cg_cameraFPS.value / 1000.0f;
 		invdtime = 1.0f / dtime;
 		timeadjfactor = powf(dampfactor, dtime);
 		// shift = (idealDelta / dtime) * (dampfactor / (1 - dampfactor))
@@ -524,7 +522,7 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 				{
 					vec3_t	diff;
 					VectorSubtract( cent->lerpOrigin, gent->currentOrigin, diff );
-					VectorAdd( location, diff, location );
+					VectorAdd( cameraCurLoc, diff, cameraCurLoc );
 				}
 			}
 		}
@@ -552,14 +550,6 @@ static void CG_OffsetThirdPersonView( void )
 	vec3_t	focusAngles;
 	float	dtime;
 
-	// Establish camera damping parameters
-	if (cg_smoothCameraFPS.integer) {
-		cam.fps = cg_smoothCameraFPS.integer;
-	} else if (cg_com_maxfps.integer) {
-		cam.fps = MIN(cg_com_maxfps.integer, 1000);
-	}
-
-	cam.smooth = cg_smoothCamera.integer && (cam.fps >= CAMERA_MIN_FPS);
 
 	// Set camera viewing direction.
 	VectorCopy( cg.refdefViewAngles, focusAngles );
@@ -603,12 +593,12 @@ static void CG_OffsetThirdPersonView( void )
 		float	deltayaw;
 		float	pitch;
 
-		deltayaw = fabsf(focusAngles[YAW] - cam.lastYaw);
+		deltayaw = Q_fabs(focusAngles[YAW] - cam.lastYaw);
 		if (deltayaw > 180.0f)
 		{ // Normalize this angle so that it is between 0 and 180.
 			deltayaw = Q_fabs(deltayaw - 360.0f);
 		}
-		if (cam.smooth) {
+		if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
 			if ( dtime > 0.0f ) {
 				stiffFactor = deltayaw / dtime;
 			} else {

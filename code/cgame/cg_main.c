@@ -627,6 +627,7 @@ vmCvar_t	cg_saberTeamColors;
 
 vmCvar_t	cg_widescreen;
 vmCvar_t	cg_fovAspectAdjust;
+vmCvar_t	cg_cameraFPS;
 
 vmCvar_t	cg_fovViewmodel;
 vmCvar_t	cg_fovViewmodelAdjust;
@@ -733,8 +734,6 @@ vmCvar_t	cg_com_physicsFps;
 vmCvar_t	cg_mv_fixbrokenmodelsclient;
 vmCvar_t	cg_drawPlayerSprites;
 //vmCvar_t	cg_developer;
-vmCvar_t	cg_smoothCamera;
-vmCvar_t	cg_smoothCameraFPS;
 
 vmCvar_t	cg_MVSDK;
 vmCvar_t	mvsdk_cgFlags;
@@ -971,6 +970,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_widescreen, "cg_widescreen", "1", CVAR_ARCHIVE },
 	{ &cg_fovAspectAdjust, "cg_fovAspectAdjust", "1", CVAR_ARCHIVE },
+	{ &cg_cameraFPS, "cg_cameraFPS", "125", CVAR_ARCHIVE },
 
 	{ &cg_fovViewmodel, "cg_fovViewmodel", "80", CVAR_ARCHIVE },
 	{ &cg_fovViewmodelAdjust, "cg_fovViewmodelAdjust", "1", CVAR_ARCHIVE },
@@ -1069,8 +1069,6 @@ static cvarTable_t cvarTable[] = { // bk001129
 	//{ &cg_developer, "cg_developer", "0", CVAR_TEMP},
 	{ &cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE },
 	{ &cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE },
-	{ &cg_smoothCamera, "cg_smoothCamera", "1", CVAR_ARCHIVE },
-	{ &cg_smoothCameraFPS, "cg_smoothCameraFPS", "125", CVAR_ARCHIVE },
 
 	{ &cg_MVSDK, "cg_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_USERINFO },
 
