@@ -1611,7 +1611,7 @@ void Cmd_Top_f( gentity_t *ent )
 			"SELECT runs.course,runs.subcourse " 
 			",instr(runs.course,@search) +instr(REVERSE(runs.course),REVERSE(@search))-2 AS diff "
 			",instr(runs.subcourse,@subsearch) +instr(REVERSE(runs.subcourse),REVERSE(@subsearch))-2 AS diff2 "
-			",ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.runFlags"
+			",ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.runFlags "
 			"FROM runs "
 			"LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
 			"GROUP BY runs.course,runs.subcourse HAVING instr(runs.course, @search) AND instr(runs.subcourse, @subsearch) "
