@@ -421,6 +421,12 @@ typedef struct {
 	qboolean	predictItemPickup;	// based on cg_predictItems userinfo
 	qboolean	pmoveFixed;			//
 	char		netname[MAX_NETNAME];
+
+	// name dedupe
+	char		wantedNameColor[MAX_NETNAME];
+	char		wantedNameBlank[MAX_NETNAME];
+	int			nameNumber;
+
 	int			maxHealth;			// for handicapping
 	int			enterTime;			// level.time the client entered the game
 	playerTeamState_t teamState;	// status in teamplay games
@@ -440,7 +446,6 @@ typedef struct {
 	savedPosition_t	savedSpawn;
 	qboolean		savedSpawnUsed;
 	raceStyle_t		savedSpawnRaceStyle;
-
 
 	int			raceStartCommandTime;
 	int			lastRaceResetTime;
@@ -1335,6 +1340,8 @@ extern	vmCvar_t	g_timeouttospec;
 extern	vmCvar_t	g_sv_fps;
 
 extern	vmCvar_t	g_fpsToggleDelay;
+
+extern	vmCvar_t	g_allowNameDupes;
 
 extern	vmCvar_t	g_saberDmgVelocityScale;
 extern	vmCvar_t	g_saberDmgDelay_Idle;

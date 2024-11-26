@@ -144,6 +144,8 @@ vmCvar_t	g_sv_fps;
 
 vmCvar_t	g_fpsToggleDelay;
 
+vmCvar_t	g_allowNameDupes;
+
 vmCvar_t	g_saberDmgVelocityScale;
 vmCvar_t	g_saberDmgDelay_Idle;
 vmCvar_t	g_saberDmgDelay_Wound;
@@ -332,6 +334,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_sv_fps, "sv_fps", "100", 0, 0, qfalse },
 
 	{ &g_fpsToggleDelay, "g_fpsToggleDelay", "0", CVAR_ARCHIVE, 0, qfalse }, // e.g. set to 300 for 300 second (5 minute) delay between allowed com_physicsFps changes by the client
+
+	{ &g_allowNameDupes, "g_allowNameDupes", "0", CVAR_ARCHIVE, 0, qfalse },
 
 	{ &g_saberDmgVelocityScale, "g_saberDmgVelocityScale", "0", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberDmgDelay_Idle, "g_saberDmgDelay_Idle", "350", CVAR_ARCHIVE, 0, qtrue  },

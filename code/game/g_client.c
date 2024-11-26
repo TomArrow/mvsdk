@@ -1266,6 +1266,22 @@ void SetClientPhysicsFps(gentity_t* ent, int clientSetting) {
 
 
 
+void NameDedupe_SanitizeString(char* in, char* out) {
+	while (*in) {
+		if (*in == 94) {
+			in += 2;		// skip color code
+			continue;
+		}
+		if (*in < 32) {
+			in++;
+			continue;
+		}
+		*out++ = tolower(*in++);
+	}
+
+	*out = 0;
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -1363,6 +1379,64 @@ void ClientUserinfoChanged( int clientNum ) {
 		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
 			Q_strncpyz( client->pers.netname, "scoreboard", sizeof(client->pers.netname) );
 		}
+	}
+
+	// thanks to anonymous donor
+	if (!g_allowNameDupes.integer)
+	{
+		int i;
+		char		temp[64];
+		char		temp2[64];
+		client->pers.nameNumber = 0;
+
+		for (i = strlen(client->pers.netname) - 1; i >= 0; i--)
+		{
+			if (client->pers.netname[i] == ' ')
+				client->pers.netname[i] = '\0';
+			else
+				break;
+		}
+
+		NameDedupe_SanitizeString(client->pers.netname, temp);
+		Q_strncpyz(client->pers.wantedNameColor, client->pers.netname, sizeof(client->pers.wantedNameColor));
+		Q_strncpyz(client->pers.wantedNameBlank, temp, sizeof(client->pers.wantedNameBlank));
+
+		if (strlen(client->pers.netname) < sizeof(client->pers.netname) - 11)
+		{
+			for (i = 0; i < level.maxclients; i++)
+			{
+				if (g_entities[i].client == NULL)
+					continue;
+				if (!g_entities[i].inuse) {
+					continue;
+				}
+				if (i == clientNum)
+					continue;
+				if (!Q_stricmp(g_entities[i].client->pers.wantedNameBlank, client->pers.wantedNameBlank))
+				{
+					if (g_entities[i].client->pers.nameNumber == client->pers.nameNumber)
+					{
+						client->pers.nameNumber = client->pers.nameNumber + 1;
+						i = 0;
+					}
+				}
+				NameDedupe_SanitizeString(client->pers.netname, temp);
+				NameDedupe_SanitizeString(g_entities[i].client->pers.netname, temp2);
+				if (!Q_stricmp(temp2, temp))
+				{
+					client->pers.nameNumber = client->pers.nameNumber + 1;
+					i = 0;
+				}
+				if (client->pers.nameNumber)
+				{
+					Q_strncpyz(temp, client->pers.wantedNameColor, sizeof(temp));
+					Q_strcat(temp, sizeof(temp), va("^7[^2%i^7]", client->pers.nameNumber));
+					Q_strncpyz(client->pers.netname, temp, sizeof(client->pers.netname));
+				}
+			}
+		}
+
+
 	}
 
 	if ( client->pers.connected == CON_CONNECTED ) {
