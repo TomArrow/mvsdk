@@ -1167,7 +1167,7 @@ void DF_RaceTimer(void)
 		const int seconds = (time / 1000) % 60;
 		const int milliseconds = (time % 1000);
 
-		if (time < cg.lastRaceTime) {
+		if (time < cg.lastRaceTime && (!(cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_SEGMENTED) || time < 1000)) { // in segmented mode, don't reset these stats when we respos (shitty dumb workaround but ok for now, TODO better later)
 			cg.startSpeed = 0;
 			cg.displacement = 0;
 			cg.maxSpeed = 0;
