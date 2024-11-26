@@ -3,6 +3,15 @@
 
 #include "g_local.h"
 
+userCmdBuffer_t		userCmdBuffer[MAX_CLIENTS];
+
+void G_UserCmdBuffer_NewFrame() {
+	int i;
+	for (i = 0; i < level.maxclients; i++) {
+		userCmdBuffer[i].msecThisFrame = 0;
+	}
+}
+
 qboolean PM_SaberInTransition( int move );
 qboolean PM_SaberInStart( int move );
 qboolean PM_SaberInReturn( int move );
@@ -2496,6 +2505,92 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 	}
 }
 
+// we implement a buffering here to smooth out demos if ppl have extreme lag (causing a LOT of packets to get executed at once)
+qboolean G_GetUserCmd(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance) {
+	usercmd_t* newCmd = &userCmdBuffer[clientNum].buf[userCmdBuffer[clientNum].nextBufferIndex % USERCMD_BUFFER_MAX];
+	usercmd_t* oldCmd = NULL;
+	int maxFrameAdvance = level.frameTimeMsec ? ((level.frameTimeMsec*5) > USERCMD_BUFFER_MAX_FRAMEADVANCE_MAX ? MAX(level.frameTimeMsec*2, USERCMD_BUFFER_MAX_FRAMEADVANCE_MAX) : (level.frameTimeMsec * 5)) : INT_MAX;
+	qboolean didAdvance = qfalse;
+	int currentServerTime;
+
+	if (!g_userCmdBuffer.integer && userCmdBuffer[clientNum].nextBufferIndex <= 1) {
+		trap_GetUsercmd(clientNum, ucmd);
+		return qfalse;
+	}
+
+	if (userCmdBuffer[clientNum].nextBufferIndex > 0) {
+		oldCmd = &userCmdBuffer[clientNum].buf[(userCmdBuffer[clientNum].nextBufferIndex - 1) % USERCMD_BUFFER_MAX];
+	}
+	else {
+		didAdvance = qtrue;
+	}
+
+	// first check if there's a new cmd available so we don't lose it
+	trap_GetUsercmd(clientNum, newCmd);
+	if (!oldCmd || newCmd->serverTime != oldCmd->serverTime) {
+		// they are different -> it's a new one. save it.
+		userCmdBuffer[clientNum].nextBufferIndex++;
+	}
+
+	currentServerTime = newCmd->serverTime;
+
+
+	if ((userCmdBuffer[clientNum].nextBufferIndex - userCmdBuffer[clientNum].nextToExecute) > USERCMD_BUFFER_MAX) {
+		// overflowed
+		G_SendServerCommand(clientNum, "print \"^1Server usercmd buffer overflowed. Very bad internet?\n\"", qtrue);
+		G_Printf("^1Usercmd buffer overflowed for client %d.\n", clientNum);
+		userCmdBuffer[clientNum].nextToExecute = userCmdBuffer[clientNum].nextBufferIndex - USERCMD_BUFFER_MAX;
+		didAdvance = qtrue;
+	}
+
+
+	// check if we want to & can advance
+	if (!didAdvance && advance && userCmdBuffer[clientNum].nextToExecute < (userCmdBuffer[clientNum].nextBufferIndex-1)) {
+		int nextMsec;
+		oldCmd = &userCmdBuffer[clientNum].buf[(userCmdBuffer[clientNum].nextToExecute) % USERCMD_BUFFER_MAX]; // we just keep reusing these pointers like dirty animals :)
+		newCmd = &userCmdBuffer[clientNum].buf[(userCmdBuffer[clientNum].nextToExecute+1) % USERCMD_BUFFER_MAX];
+		nextMsec = newCmd->serverTime - oldCmd->serverTime;
+		if (nextMsec <= 0 // something weird is happening. best not to interfere, just go
+			|| !userCmdBuffer[clientNum].msecThisFrame // no cmds have been executed this frame yet, just go
+			|| (userCmdBuffer[clientNum].msecThisFrame + nextMsec) < maxFrameAdvance // we still have some room to squeeze it in this frame, go.
+			|| (currentServerTime- oldCmd->serverTime) > USERCMD_BUFFER_MAX_DELAY // delay is too big, just go
+			|| (userCmdBuffer[clientNum].nextBufferIndex - userCmdBuffer[clientNum].nextToExecute) > USERCMD_BUFFER_MAX_BLOCKING // let's keep ~10% as buffer so we never overflow. just go.
+			|| !g_userCmdBuffer.integer
+			) {
+			userCmdBuffer[clientNum].nextToExecute++;
+			userCmdBuffer[clientNum].msecThisFrame += nextMsec;
+			didAdvance = qtrue;
+		}
+		else {
+			if (g_developer.integer > 1) {
+				G_Printf("^1frame advance delayed (%s) for client %d; level.time %d, msecThisFrame %d, nextMsec %d, delay %d, buffer size %d, nextToExecute %d\n", advance == GETUSERCMD_ADVANCERUNCLIENT ? "RunClient" : "ClientThink", clientNum, level.time, userCmdBuffer[clientNum].msecThisFrame, nextMsec, (currentServerTime - oldCmd->serverTime), userCmdBuffer[clientNum].nextBufferIndex - userCmdBuffer[clientNum].nextToExecute, userCmdBuffer[clientNum].nextToExecute);
+			}
+		}
+	}
+
+
+	newCmd = &userCmdBuffer[clientNum].buf[userCmdBuffer[clientNum].nextToExecute % USERCMD_BUFFER_MAX]; // whatever, just reuse the pointer for this;
+
+	if (didAdvance || !advance) { // if we wanted to advance, but didn't, act like nothing happened.
+		*ucmd = *newCmd;
+	}
+
+	if (userCmdBuffer[clientNum].nextToExecute && userCmdBuffer[clientNum].nextToExecute == (userCmdBuffer[clientNum].nextBufferIndex - 1)) {
+		// ok we got nothing buffered rn, reset everything a bit.
+		//if (g_developer.integer > 2) {
+		//	G_Printf("^2resetting command buffer for client %d\n", clientNum);
+		//}
+		// is this needed?
+		if (userCmdBuffer[clientNum].nextToExecute % USERCMD_BUFFER_MAX) {
+			userCmdBuffer[clientNum].buf[0] = *newCmd;
+		}
+		userCmdBuffer[clientNum].nextToExecute = 0;
+		userCmdBuffer[clientNum].nextBufferIndex = 1;
+	}
+
+	return didAdvance;
+}
+
 /*
 ==================
 ClientThink
@@ -2504,25 +2599,39 @@ A new command has arrived from the client
 ==================
 */
 void ClientThink( int clientNum ) {
-	gentity_t *ent;
+	gentity_t *ent = g_entities + clientNum;
+	qboolean segmentedReplay = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
 
-	ent = g_entities + clientNum;
-	if ((!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
-		trap_GetUsercmd(clientNum, &ent->client->pers.cmd);
-	}
+	//if (!segmentedReplay) {
+	//	canRun = G_GetUserCmd(clientNum, &ent->client->pers.cmd,qtrue);
+	//}
 
 	// mark the time we got info, so we can display the
 	// phone jack if they don't get any for a while
 	ent->client->lastCmdTime = level.time;
 
-	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
-		ClientThink_real( ent );
+	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !segmentedReplay) {
+		int index = 0;
+		while (G_GetUserCmd(clientNum, &ent->client->pers.cmd, GETUSERCMD_ADVANCECLIENTTHINK) || !g_userCmdBuffer.integer && !index) {
+			ClientThink_real(ent);
+			index++;
+		}
 	}
 }
 
 extern void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void G_RunClient( gentity_t *ent ) {
 	qboolean areSegReplaying = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
+
+	// check if we should execute a few client frames that got buffered
+	if (!(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying && g_userCmdBuffer.integer) {
+		while (G_GetUserCmd(ent - g_entities, &ent->client->pers.cmd, GETUSERCMD_ADVANCERUNCLIENT)) {
+			if (g_developer.integer > 1) {
+				G_Printf("^3executing buffered cmd for client %d\n", ent-g_entities);
+			}
+			ClientThink_real(ent);
+		}
+	}
 
 	//If racemode , do forceclientupdaterate hardcoded at like 4/5 hz ?
 
@@ -2562,11 +2671,11 @@ void G_RunClient( gentity_t *ent ) {
 		ent->client->lastHereTime = level.time;
 	}
 
-
 	//if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
 	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying) {
 		entityState_t* stats = &level.playerStats[ent - g_entities]->s;
 		stats->apos.trTime = 0;
+		stats->pos.trTime = 0;
 		stats->frame = 0;
 		return;
 	}
@@ -2617,7 +2726,7 @@ void G_RunClient( gentity_t *ent ) {
 #ifdef SEGMENTEDDEBUG
 				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif
-				trap_GetUsercmd(ent - g_entities, &ent->client->pers.cmd);
+				G_GetUserCmd(ent - g_entities, &ent->client->pers.cmd, GETUSERCMD_NOADVANCE);
 				SetClientViewAngle(ent,ent->client->ps.viewangles); // make a smooth transition back to player-controlled gameplay
 				//ent->client->ps.commandTime = ent->client->pers.cmd.serverTime; // fuck it, we apply the offset at the start now so... whatever.
 				ent->client->pers.segmented.state = SEG_DISABLED; // done
@@ -2743,6 +2852,7 @@ void G_RunClient( gentity_t *ent ) {
 	else {
 		entityState_t* stats = &level.playerStats[ent - g_entities]->s;
 		stats->apos.trTime = 0;
+		stats->pos.trTime = 0;
 		stats->frame = 0;
 	
 		ent->client->pers.cmd.serverTime = level.time;

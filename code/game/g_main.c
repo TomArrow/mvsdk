@@ -175,6 +175,8 @@ vmCvar_t	g_botTeamAutoBalance;
 
 vmCvar_t	g_MVSDK;
 
+vmCvar_t	g_userCmdBuffer;
+
 int gDuelist1 = -1;
 int gDuelist2 = -1;
 
@@ -375,6 +377,8 @@ static cvarTable_t		gameCvarTable[] = {
 
 	// Bots reset their teams on map_restart and map change on basejk. This is often undesired, so let the host decide.
 	{ &g_botTeamAutoBalance, "g_botTeamAutoBalance", "1", CVAR_ARCHIVE, 0, qtrue },
+
+	{ &g_userCmdBuffer, "g_userCmdBuffer", "1", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_MVSDK, "g_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_SERVERINFO, 0, qfalse },
 };
@@ -879,6 +883,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	memset( &level, 0, sizeof( level ) );
 	level.time = levelTime;
 	level.startTime = levelTime;
+	level.frameTimeMsec = 0;
+
+	memset( &userCmdBuffer, 0, sizeof(userCmdBuffer));
 
 	level.snd_fry = G_SoundIndex("sound/player/fry.wav");	// FIXME standing in lava / slime
 
@@ -2716,6 +2723,8 @@ int g_TimeSinceLastFrame = 0;
 qboolean gDoSlowMoDuel = qfalse;
 int gSlowMoDuelTime = 0;
 
+void G_UserCmdBuffer_NewFrame();
+
 /*
 ================
 G_RunFrame
@@ -2795,7 +2804,7 @@ void G_RunFrame( int levelTime ) {
 	level.framenum++;
 	level.previousTime = level.time;
 	level.time = levelTime;
-	msec = level.time - level.previousTime;
+	level.frameTimeMsec = msec = level.time - level.previousTime;
 
 	g_TimeSinceLastFrame = (level.time - g_LastFrameTime);
 
@@ -3009,6 +3018,8 @@ end = trap_Milliseconds();
 			gQueueScoreMessage = 0;
 		}
 	}
+
+	G_UserCmdBuffer_NewFrame();
 
 	g_LastFrameTime = level.time;
 

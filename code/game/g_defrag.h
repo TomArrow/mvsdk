@@ -247,6 +247,22 @@ typedef struct segmented_s {
 } segmented_t;
 
 
+// User CMD Buffer
+// to smooth out ppl who lag and send a lot of cmds at the same time
+// guarantee a certain fps of granularity, kinda
+#define	USERCMD_BUFFER_MAX 1024
+#define USERCMD_BUFFER_CRITICAL_ZONE 128
+#define USERCMD_BUFFER_MAX_DELAY 800
+#define USERCMD_BUFFER_MAX_FRAMEADVANCE_MAX 100
+#define USERCMD_BUFFER_MAX_BLOCKING (USERCMD_BUFFER_MAX-USERCMD_BUFFER_CRITICAL_ZONE)
+typedef struct userCmdBuffer_s {
+	usercmd_t	buf[USERCMD_BUFFER_MAX];
+	int			nextBufferIndex;
+	int			nextToExecute;
+	int			msecThisFrame;
+} userCmdBuffer_t;
+
+extern userCmdBuffer_t		userCmdBuffer[MAX_CLIENTS]; 
 
 typedef enum subContests_s {
 	SUBCONTESTS_ROLLYMPICS,

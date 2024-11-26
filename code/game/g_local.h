@@ -101,6 +101,13 @@ extern int gEscapeTime;
 #define TT_ACCOUNTFLAG_A_CHANGEMAPDEFAULTRACESTYLE		(1<<0)
 #define TT_ACCOUNTFLAG_A_VOTEBESIDESMAP					(1<<1)
 
+typedef enum getUserCmdType_s
+{
+	GETUSERCMD_NOADVANCE,
+	GETUSERCMD_ADVANCECLIENTTHINK,
+	GETUSERCMD_ADVANCERUNCLIENT,
+} getUserCmdType_t;
+
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
@@ -619,6 +626,8 @@ typedef struct {
 	int			time;					// in msec
 	int			previousTime;			// so movers can back up when blocked
 
+	int			frameTimeMsec;
+
 	int			startTime;				// level.time the map was started
 
 	int			teamScores[TEAM_NUM_TEAMS];
@@ -1105,6 +1114,7 @@ void ClientEndFrame			( gentity_t *ent, qboolean forceFull);
 void ClientEndFrameInClientThink(gentity_t* ent);
 void SpectatorClientEndFrame(gentity_t* ent);
 void G_RunClient			( gentity_t *ent );
+qboolean G_GetUserCmd			(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance);
 
 //
 // g_team.c
@@ -1365,6 +1375,8 @@ extern	vmCvar_t	g_mv_forcePowerDisableMode;
 
 extern	vmCvar_t	g_submodelWorkaround;
 extern	vmCvar_t	g_botTeamAutoBalance;
+
+extern	vmCvar_t	g_userCmdBuffer;
 
 void	trap_Printf( const char *fmt );
 Q_NORETURN void	trap_Error( const char *fmt );

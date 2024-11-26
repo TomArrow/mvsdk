@@ -1659,6 +1659,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		return "Banned.";
 	}
 
+	memset( &userCmdBuffer[clientNum],0,sizeof(userCmdBuffer[clientNum]));
 	memset( &mv_clientSessions[clientNum], 0, sizeof(mv_clientSessions[clientNum]) );
 	if ( (ent->r.svFlags & SVF_BOT) || isBot || !Q_stricmp(value, "localhost") )
 	{ // Bots and localhost get 127.0.0.1
@@ -1984,7 +1985,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	UpdateClientRaceVars(client);
 
 	// locate ent at a spawn point
-	trap_GetUsercmd(client - level.clients, &ent->client->pers.cmd); // make sure LEVELTIME() inside ClientSpawn gets a valid serverTime value
+	G_GetUserCmd(client - level.clients, &ent->client->pers.cmd, GETUSERCMD_NOADVANCE); // make sure LEVELTIME() inside ClientSpawn gets a valid serverTime value
 	ClientSpawn( ent );
 
 	if ( client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -2523,7 +2524,7 @@ void ClientSpawn(gentity_t *ent) {
 	// the respawned flag will be cleared after the attack and jump keys come up
 	client->ps.pm_flags |= PMF_RESPAWNED;
 
-	trap_GetUsercmd(client - level.clients, &ent->client->pers.cmd);
+	G_GetUserCmd(client - level.clients, &ent->client->pers.cmd, GETUSERCMD_NOADVANCE);
 	if(!useSavedSpawn){
 		DF_PreDeltaAngleChange(ent->client);
 		SetClientViewAngle(ent, spawn_angles);
