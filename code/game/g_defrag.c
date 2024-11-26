@@ -2487,7 +2487,6 @@ void G_ConvertDefragTriggerTypes() {
 	}
 
 	target = NULL;
-
 	for (i = 0; i < TARGET_TYPE_COUNT; i++) {
 		// Go through all target types
 
@@ -2495,6 +2494,7 @@ void G_ConvertDefragTriggerTypes() {
 			continue; // already got this type covered.
 		}
 
+		target = NULL;
 		// Q3 style triggers
 		while ((target = G_Find(target, FOFS(classname), q3DefragTargetNames[i])) != NULL) {
 			trigger = NULL;
@@ -2597,11 +2597,25 @@ void G_ConvertDefragTriggerTypes() {
 			trigger = NULL;
 			index = (level.dfStartTriggerTypes & (1 << DFTRIG_TRIGMULT))  ? 0 : -1; // start already found so now the index is automatically 1 higher already.
 			while ((trigger = G_Find(trigger, FOFS(classname), "trigger_multiple")) != NULL) {
+				qboolean disgustingType = qfalse;
 				if (!trigger->model) {
 					continue;
 				}
 				if (trigger->roffname || trigger->target) {
-					continue; // this is most likely a normal trigger, not an abused timer type trigger_multiple.
+					qboolean targetFound = qfalse;
+					if (trigger->target) {
+						// disgusting, but some mappers fucking just did trigger_multiple as start/end triggers with meaningless (non-existing) targets. im so mad.
+						target = NULL;
+						if ((target = G_Find(target, FOFS(targetname), trigger->target)) != NULL) {
+							targetFound = qtrue;
+						}
+					}
+					if (targetFound) {
+						continue; // this is most likely a normal trigger, not an abused timer type trigger_multiple.
+					}
+					else {
+						disgustingType = qtrue;
+					}
 				}
 				index++;
 				if (index == 1 && i != TARGET_STOPTIMER || index == 0 && i != TARGET_STARTTIMER) {
@@ -2618,20 +2632,20 @@ void G_ConvertDefragTriggerTypes() {
 					trigger->classname = "df_trigger_start";
 					DF_trigger_start_converted(trigger);
 					level.dfStartTriggerTypes |= (1 << DFTRIG_TRIGMULT);
-					G_Printf("DEFRAG: ^2%s converted to df_trigger_start.\n", oldType);
+					G_Printf("DEFRAG: ^2%s converted to df_trigger_start%s.\n", oldType, disgustingType? " (disgusting type)" : "");
 					break;
 				case TARGET_STOPTIMER:
 					trigger->classname = "df_trigger_finish";
 					DF_trigger_finish_converted(trigger);
 					level.dfEndTriggerTypes |= (1 << DFTRIG_TRIGMULT);
-					G_Printf("DEFRAG: ^2%s converted to df_trigger_finish.\n", oldType);
+					G_Printf("DEFRAG: ^2%s converted to df_trigger_finish%s.\n", oldType, disgustingType ? " (disgusting type)" : "");
 					break;
 				default:
 				case TARGET_CHECKPOINT: // wont ever be hit atm, dunno how that trigger_multiple "system" does checkpoints
 					trigger->classname = "df_trigger_checkpoint";
 					DF_trigger_checkpoint_converted(trigger);
 					level.dfCheckPointTriggerTypes |= (1 << DFTRIG_TRIGMULT);
-					G_Printf("DEFRAG: ^2%s converted to df_trigger_checkpoint.\n", oldType);
+					G_Printf("DEFRAG: ^2%s converted to df_trigger_checkpoint%s.\n", oldType, disgustingType ? " (disgusting type)" : "");
 					break;
 				}
 			}
