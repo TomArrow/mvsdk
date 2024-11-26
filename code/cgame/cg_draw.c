@@ -1208,6 +1208,7 @@ void DF_RaceTimer(void)
 				if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
 					entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
 					int lastSegmentedReset = stats->apos.trTime;
+					int resposCount = stats->pos.trTime;
 					if (stats->frame > 0) {
 						Q_strcat(timerStr, sizeof(timerStr), va("\n^2SEGMENTED REPLAY (%d SPs)", stats->frame));
 					}
@@ -1221,6 +1222,9 @@ void DF_RaceTimer(void)
 						const int milliseconds2 = (time2 % 1000);
 
 						Q_strcat(timerStr, sizeof(timerStr), va("\n^3Last SP: ^%c-%i:%02i.%03i", time2 < 1000 ? '1' : '3', minutes2, seconds2, milliseconds2));
+						if (resposCount) {
+							Q_strcat(timerStr, sizeof(timerStr), va(" (%d RPs)",resposCount));
+						}
 					}
 				}
 				else {

@@ -2580,9 +2580,22 @@ void G_RunClient( gentity_t *ent ) {
 			qboolean success=qtrue;
 			int targetServerTime;
 			ucmd.serverTime = -1;
-			while (success && ucmd.serverTime == -1) { // -1 is just a marker for cuts
+			while (success && (ucmd.serverTime == -1 || ucmd.serverTime == -2)) { // -1 is just a marker for cuts
 				success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
-				if (success && ucmd.serverTime == -1) {
+				if (success && (ucmd.serverTime == -1 || ucmd.serverTime == -2)) {
+					entityState_t* stats = &level.playerStats[ent - g_entities]->s;
+					switch (ucmd.serverTime) {
+					case -1:
+						stats->apos.trTime = cl->pers.segmented.playbackNextCmdIndex == 0 ? cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset : cl->ps.commandTime;
+						stats->frame = cl->pers.segmented.playbackNextCmdIndex == 0 ? 1 : stats->frame + 1;
+						stats->pos.trTime = 0;
+						break;
+					case -2:
+						stats->pos.trTime = ucmd.buttons; // this isnt time. this is count of respos of this point. will usually follow right after the -1 one.
+						break;
+					}
+					cl->pers.segmented.playbackNextCmdIndex++;
+				} else if (success && ucmd.serverTime == -2) {
 					entityState_t* stats = &level.playerStats[ent - g_entities]->s;
 					stats->apos.trTime = cl->pers.segmented.playbackNextCmdIndex == 0 ? cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset : cl->ps.commandTime;
 					stats->frame = cl->pers.segmented.playbackNextCmdIndex == 0 ? 1 : stats->frame + 1;
@@ -2591,6 +2604,7 @@ void G_RunClient( gentity_t *ent ) {
 			}
 			if (!success) {
 				trap_G_COOL_API_PlayerUserCmdClear(ent-g_entities);
+				cl->pers.segmented.lastPosResposCount = 0;
 #ifdef SEGMENTEDDEBUG
 				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif

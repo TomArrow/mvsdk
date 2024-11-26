@@ -225,6 +225,7 @@ typedef struct segmented_s {
 	savedPosition_t		lastPos;
 	int					lastPosMsecProgress;
 	int					lastPosUserCmdIndex;
+	int					lastPosResposCount;
 	veci3_t				anglesDiffAccum; // accumulated change in usercmd angles through any means since last savepos
 	veci3_t				anglesDiffAccumActual; // accumulated change in usercmd angles caused by respos, so we can store the usercmd_t as if the resposes had never happened
 	qboolean			anglesDiffResettable; // if anglesDiff changed through respawn or such, allow us to restart the segmented recording. but dont do it on pmove angle changes maybe... or? i mean it works fine with just checking accum. but breaks strafebot. make exception for strafebot.

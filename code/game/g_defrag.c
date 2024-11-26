@@ -2826,6 +2826,7 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 void DF_ResetSegmentedRun(gentity_t* ent) {
 	ent->client->pers.segmented.state = SEG_DISABLED;
 	trap_G_COOL_API_PlayerUserCmdClear(ent - g_entities); 
+	ent->client->pers.segmented.lastPosResposCount = 0;
 #ifdef SEGMENTEDDEBUG
 	memset(ent->client->pers.segmented.debugTime, 0, sizeof(ent->client->pers.segmented.debugTime));
 #endif
@@ -3888,6 +3889,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	if (!cl->sess.raceMode || !(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		trap_G_COOL_API_PlayerUserCmdClear(clientNum);
+		cl->pers.segmented.lastPosResposCount = 0;
 		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
 			// during replay, we are providing usercmds for server to send to spectators and player for demos
 			ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
@@ -3969,6 +3971,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 				cl->pers.segmented.state = SEG_RECORDING;
 				cl->pers.segmented.msecProgress = 0;
 				cl->pers.segmented.anglesDiffResettable = qfalse;
+				cl->pers.segmented.lastPosResposCount = 0;
 			//}
 		}
 
@@ -4019,6 +4022,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			}
 			cl->pers.stats.saveposCount++;
 			cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
+			cl->pers.segmented.lastPosResposCount = 0;
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS;
 			cl->pers.segmented.lastPosUserCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1;
 			VectorClear(cl->pers.segmented.anglesDiffAccum);
@@ -4041,9 +4045,18 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			VectorClear(cl->pers.segmented.anglesDiffAccum);
 			RestorePosition(ent, &cl->pers.segmented.lastPos,cl->pers.segmented.anglesDiffAccumActual);
 			cl->pers.stats.resposCount++;
+			cl->pers.segmented.lastPosResposCount++;
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS; // un-invalidate.
 			cl->pers.segmented.msecProgress = cl->pers.segmented.lastPosMsecProgress;
 			trap_G_COOL_API_PlayerUserCmdRemove(clientNum, cl->pers.segmented.lastPosUserCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
+			{
+				// save how many times we respos'd this cut
+				usercmd_t cutmarker2;
+				memset(&cutmarker2, 0, sizeof(cutmarker2));
+				cutmarker2.serverTime = -2;
+				cutmarker2.buttons = cl->pers.segmented.lastPosResposCount;
+				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker2);
+			}
 		}
 	}
 

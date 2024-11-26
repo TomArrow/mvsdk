@@ -41,7 +41,7 @@ typedef struct raceStyle_s {
 
 netField_t	entityStateFields15[] =
 {
-	{ NETF(pos.trTime), 32 },
+	{ NETF(pos.trTime), 32 }, // respos count of last cut mark in segmented
 	{ NETF(pos.trBase[0]), 0 },
 	{ NETF(pos.trBase[1]), 0 },
 	{ NETF(pos.trDelta[0]), 0 },
