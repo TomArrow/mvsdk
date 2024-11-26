@@ -233,6 +233,9 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 				CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i", score->score),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 			}
 		}
+		else if (ci->team == TEAM_SPECTATOR && defragScoreboard) {
+			CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 0.9f * scale, colorWhite, ci->username, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+		}
 		
 		if (cgs.gametype == GT_CTF)
 		{
