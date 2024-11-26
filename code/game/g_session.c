@@ -29,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s", 
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s", 
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -41,11 +41,12 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.saberLevel,
 		client->sess.selectedFP,
 		client->sess.raceMode,
-		client->sess.raceStyle.movementStyle,
-		client->sess.raceStyle.runFlags,
-		client->sess.raceStyle.jumpLevel,
-		client->sess.mapStyleBaseline.runFlags,
-		client->sess.mapStyleBaseline.jumpLevel,
+		(int)client->sess.raceStyle.movementStyle,
+		(int)client->sess.raceStyle.runFlags,
+		(int)client->sess.raceStyle.jumpLevel,
+		(int)client->sess.raceStyle.msec,
+		(int)client->sess.mapStyleBaseline.runFlags,
+		(int)client->sess.mapStyleBaseline.jumpLevel,
 		client->sess.raceStateInvalidated,
 		client->sess.login.loggedIn,
 		client->sess.login.id,
@@ -88,6 +89,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	int movementStyle;
 	int runFlags;
 	int jumpLevel;
+	int msec;
 	int baseRunFlags;
 	int baseJumpLevel;
 	int raceStateInvalidated;
@@ -96,7 +98,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -111,6 +113,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&movementStyle,
 		&runFlags,
 		&jumpLevel,
+		&msec,
 		&baseRunFlags,
 		&baseJumpLevel,
 		&raceStateInvalidated,
@@ -129,12 +132,13 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.raceStyle.movementStyle = (byte)movementStyle;
 	client->sess.raceStyle.runFlags = (short)runFlags;
 	client->sess.raceStyle.jumpLevel = (signed char)jumpLevel;
+	client->sess.raceStyle.msec = (short)msec;
 	client->sess.mapStyleBaseline.runFlags = (short)baseRunFlags;
 	client->sess.mapStyleBaseline.jumpLevel = (signed char)baseJumpLevel;
 	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
 	client->sess.login.loggedIn = loggedIn;
 
-	client->sess.raceStyle.msec = 7; // just default to this *shrug*
+	//client->sess.raceStyle.msec = 7; // just default to this *shrug*// Nope, keep it so we remember floatphysics/toggle
 
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;

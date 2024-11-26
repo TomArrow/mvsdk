@@ -3961,7 +3961,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			|| (cl->sess.raceStyle.runFlags & RFL_BOT) && cl->pers.segmented.anglesDiffResettable // i think this captures the shit below?
 			|| (( cl->pers.segmented.anglesDiffAccum[0] || cl->pers.segmented.anglesDiffAccum[1] || cl->pers.segmented.anglesDiffAccum[2] // just a sanity check
 			|| cl->pers.segmented.anglesDiffAccumActual[0] || cl->pers.segmented.anglesDiffAccumActual[1] || cl->pers.segmented.anglesDiffAccumActual[2]) && !(cl->sess.raceStyle.runFlags & RFL_BOT)) // just a sanity check
-			|| cl->sess.rollAngleInvalidated
+			|| cl->sess.rollAngleInvalidated || cl->sess.raceStateInvalidated // just to be safe(r)
 			) {
 			// uuuuh what about mover states etc? oh dear. i guess it wont work for maps with movers. or we do what japro does and disable movers.
 			// wait i know! we can disable movers for segmented runs. ez.
