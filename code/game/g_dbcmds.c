@@ -17,6 +17,7 @@ static void G_CreateCheckpointsTable();
 static void G_CreateSubContestsTable();
 static void G_CreateMapRaceDefaultsTable();
 extern const char* DF_GetCourseName(); 
+const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
 gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
@@ -1073,6 +1074,10 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 
 }
 
+
+void DF_RequestPlayerDefaultTime(gentity_t* ent);
+
+
 static void G_TimeResult(int status, const char* errorMessage, int affectedRows) {
 	timeRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
@@ -1095,32 +1100,46 @@ static void G_TimeResult(int status, const char* errorMessage, int affectedRows)
 		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Time display failed with status %d and error message %s.\n\"", status, errorMessage));
 		return;
 	}
-	while (G_COOL_API_DB_NextRow()) {
+	
+	if (Q_stricmp(lbRequestData.course, DF_GetCourseName()) && lbRequestData.forUserInfo) {
+		// this isn't the correct course.
+		Com_Printf("^1Coursename changed, requested time not useful. Requesting new pb for client %d",ent-g_entities);
+		DF_RequestPlayerDefaultTime(ent);
+		return;
+	}
+
+	if (G_COOL_API_DB_NextRow()) {
 		int time;
 		time = G_COOL_API_DB_GetInt(0);
-		if (!Q_stricmp(DF_GetCourseName(), lbRequestData.course)) {
-			if (lbRequestData.subcourse[0]) {
-				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on subcourse %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.subcourse, DF_MsToString(time)));
-			}
-			else
-			{
-				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, DF_MsToString(time)));
-			}
+
+		if (lbRequestData.forUserInfo) {
+			ent->client->pers.raceBestTime = time;
+			ClientUserinfoChanged(ent - g_entities);
 		}
 		else {
-			if (lbRequestData.subcourse[0]) {
-				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on %s/%s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.course, lbRequestData.subcourse, DF_MsToString(time)));
+
+			if (!Q_stricmp(DF_GetCourseName(), lbRequestData.course)) {
+				if (lbRequestData.subcourse[0]) {
+					trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on subcourse %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.subcourse, DF_MsToString(time)));
+				}
+				else
+				{
+					trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, DF_MsToString(time)));
+				}
 			}
-			else
-			{
-				trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.course, DF_MsToString(time)));
+			else {
+				if (lbRequestData.subcourse[0]) {
+					trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on %s/%s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.course, lbRequestData.subcourse, DF_MsToString(time)));
+				}
+				else
+				{
+					trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.course, DF_MsToString(time)));
+				}
 			}
 		}
 	}
 
 }
-
-
 static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	static char		cryptedPw[MAX_STRING_CHARS];
 	const char* request = NULL;
@@ -1142,7 +1161,10 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	client->sess.login.id = loginData->userId;
 	client->sess.login.flags = loginData->userFlags;
 	client->sess.login.loggedIn = qtrue;
+	client->pers.raceBestTime = 0;
 	DF_SetSubContestDefaults(client);
+
+	DF_RequestPlayerDefaultTime(ent);
 
 	trap_SendServerCommand(loginData->clientnum, va("print \"^2Successfully logged in as '%s'.\n\"",loginData->username));
 	//trap_SendServerCommand(-1, va("print \"^2%s ^7logged in as '%s'.\n\"",client ? client->pers.netname : "", loginData->username));

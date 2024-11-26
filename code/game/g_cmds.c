@@ -1247,6 +1247,7 @@ void Cmd_Logout_f( gentity_t *ent )
 	memset(&ent->client->sess.login, 0, sizeof(ent->client->sess.login));
 	DF_SetSubContestDefaults(ent->client);
 	trap_SendServerCommand(ent - g_entities, "print \"^2You were successfully logged out.\n\"");
+	ent->client->pers.raceBestTime = 0;
 	ClientUserinfoChanged(ent - g_entities);
 }
 extern const char* DF_GetCourseName();
@@ -1488,14 +1489,14 @@ void DF_PrintUnspecifiedCourseErrorToPlayer(gentity_t* ent) {
 }
 
 
-void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int style);
+void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int style, qboolean forUserinfo);
 /*
 =================
 Cmd_Time_f
 =================
 */
 void Cmd_Time_f(gentity_t* ent) {
-	DF_TimeRequest(ent,DF_GetCourseName(),ent->client->pers.lastSubcourseFinishedName,ent->client->sess.raceStyle.movementStyle);
+	DF_TimeRequest(ent,DF_GetCourseName(),ent->client->pers.lastSubcourseFinishedName,ent->client->sess.raceStyle.movementStyle,qfalse);
 }
 
 /*

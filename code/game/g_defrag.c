@@ -1615,12 +1615,14 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 #undef RUNSPRE
 #undef QUERY2
 }
+
+
 /*
 =================
 DF_TimeRequest
 =================
 */
-void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int style)
+void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int style, qboolean forUserinfo)
 {
 	timeRequestStruct_t data={ 0 };
 	mainLeaderboardType_t lbType = LB_MAIN;
@@ -1628,7 +1630,7 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 	gclient_t* cl = ent->client;
 	const char* lbWhere = NULL;
 
-	if (cl->sess.raceMode) {
+	if (cl->sess.raceMode && !forUserinfo) {
 		lbType = classifyLeaderBoard(raceStyle, &level.mapDefaultRaceStyle);
 	}
 	lbWhere = getLeaderboardSQLConditions(lbType, &level.mapDefaultRaceStyle);
@@ -1643,9 +1645,10 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 		return;
 	}
 
+	data.forUserInfo = forUserinfo;
 	data.style = style;
 	data.raceStyle = cl->sess.raceStyle;
-	data.lbType = lbType;
+	data.lbType = forUserinfo ? MV_JK2 : lbType;
 	Q_strncpyz(data.course, coursename, sizeof(data.course));
 	Q_strncpyz(data.subcourse, subcoursename, sizeof(data.subcourse));
 
@@ -1677,6 +1680,46 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 #undef TOPCOLUMNS
 #undef RUNSPRE
 #undef QUERY2
+}
+
+
+const char* DF_GetCourseName() {
+	static char serverInfo[BIG_INFO_STRING];
+	static char course[COURSENAME_MAX_LEN + 1];
+	char* s = course;
+	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
+	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
+	while (*s) { // make it lowercase
+		*s = tolower(*s);
+		s++;
+	}
+	return course;
+}
+
+
+const char* DF_GetMainSubcourseName() {
+	int i;
+	static char subcourse[COURSENAME_MAX_LEN + 1];
+	subcourse[0] = '\0';
+	if (level.numCourses >= 1) {
+		for (i = 0; i < level.numCourses; i++) {
+			if (!level.courseName[i][0]) {
+				// if we find an empty name subcourse, we default to that one.
+				subcourse[0] = '\0';
+				break;
+			}
+			else if (i == 0) {
+				Q_strncpyz(subcourse, level.courseName[i], sizeof(subcourse));
+			}
+		}
+	}
+	return subcourse;
+}
+
+
+void DF_RequestPlayerDefaultTime(gentity_t* ent) {
+
+	DF_TimeRequest(ent, DF_GetCourseName(), DF_GetMainSubcourseName(), MV_JK2, qtrue);
 }
 
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank, gentity_t* ent) {
@@ -1884,19 +1927,6 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	
 }
 
-
-const char* DF_GetCourseName() {
-	static char serverInfo[BIG_INFO_STRING];
-	static char course[COURSENAME_MAX_LEN + 1];
-	char* s = course;
-	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
-	Q_strncpyz(course, Info_ValueForKey(serverInfo, "mapname"), sizeof(course));
-	while (*s) { // make it lowercase
-		*s = tolower(*s);
-		s++;
-	}
-	return course;
-}
 
 typedef struct fpsEntry_s {
 	int fps;
@@ -2237,7 +2267,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	// Update timers
 	//cl->pers.raceLastTime = timeLast;
-	if (RaceStyleIsMainLeaderboard(&runInfo.raceStyle,&level.mapDefaultRaceStyle)) {
+	if (RaceStyleIsMainLeaderboard(&runInfo.raceStyle,&level.mapDefaultRaceStyle) && !Q_stricmp(DF_GetMainSubcourseName(),runInfo.subcoursename)) {
 		// todo load player's best time when logging in
 		newRaceBestTime = timeLast > timeBest ? timeBest : timeLast;
 		if (cl->pers.raceBestTime != newRaceBestTime) {
@@ -3276,7 +3306,7 @@ void DF_LoadMapDefaults() {
 		return;
 	}
 	G_COOL_API_DB_PreparedBindString(data.course);
-	G_COOL_API_DB_PreparedBindString(""); // subcourse
+	G_COOL_API_DB_PreparedBindString(DF_GetMainSubcourseName()); // subcourse
 
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 }

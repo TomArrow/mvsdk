@@ -69,6 +69,9 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	trap_Cvar_Set( var, s );
 }
 
+
+void DF_RequestPlayerDefaultTime(gentity_t* ent);
+
 /*
 ================
 G_ReadSessionData
@@ -143,7 +146,11 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;
 
-	DF_CarryClientOverToNewRaceStyle(g_entities+(client-g_clients),&level.mapDefaultRaceStyle);
+	DF_CarryClientOverToNewRaceStyle(g_entities+(client-g_clients),&level.mapDefaultRaceStyle); 
+	
+	if (client->sess.login.loggedIn) {
+		DF_RequestPlayerDefaultTime(g_entities + (client - g_clients));
+	}
 
 	DF_SetSubContestDefaults(client); // would be nicer to keep it but lets just set defaults who cares. means a few more db requests that could be avoided, but it wont cause any issues beyond that, maybe TODO someday
 }

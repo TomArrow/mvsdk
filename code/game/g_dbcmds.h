@@ -59,6 +59,7 @@ typedef struct timeRequestStruct_s {
 	char		course[COURSENAME_MAX_LEN + 1];
 	char		subcourse[COURSENAME_MAX_LEN + 1];
 	int			style;
+	qboolean	forUserInfo;
 }timeRequestStruct_t;
 typedef struct checkPointSaveRequestStruct_s {
 	int			ip[4];
