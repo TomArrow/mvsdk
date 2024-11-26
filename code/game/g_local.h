@@ -356,6 +356,7 @@ typedef struct {
 
 	qboolean	raceStateInvalidated;	
 	qboolean	raceStateSoftInvalidated;	// can still set spawn but not start run. used to prevent teleport starts.
+	qboolean	rollAngleInvalidated; // when we switch to or from strafebot mode... invalidate our roll angle since we are using it to tunnel. (this means we will only allow 0 until we get an actual 0, for safety)
 
 	qboolean		hideLasers;
 	qboolean		solo;

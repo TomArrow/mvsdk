@@ -3572,6 +3572,10 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			ent->client->sess.raceStyle.runFlags = flag ^ ((int)ent->client->sess.raceStyle.runFlags & mask);
 			ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 			DF_RaceStateInvalidated(ent,qtrue);
+			if ((flag & RFL_BOT) && !(ent->client->sess.raceStyle.runFlags & RFL_BOT)) {
+				// strafebot was turned off.
+				ent->client->sess.rollAngleInvalidated = qtrue;
+			}
 			//DF_InvalidateSpawn(ent);
 		}
 
@@ -3957,6 +3961,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			|| (cl->sess.raceStyle.runFlags & RFL_BOT) && cl->pers.segmented.anglesDiffResettable // i think this captures the shit below?
 			|| (( cl->pers.segmented.anglesDiffAccum[0] || cl->pers.segmented.anglesDiffAccum[1] || cl->pers.segmented.anglesDiffAccum[2] // just a sanity check
 			|| cl->pers.segmented.anglesDiffAccumActual[0] || cl->pers.segmented.anglesDiffAccumActual[1] || cl->pers.segmented.anglesDiffAccumActual[2]) && !(cl->sess.raceStyle.runFlags & RFL_BOT)) // just a sanity check
+			|| cl->sess.rollAngleInvalidated
 			) {
 			// uuuuh what about mover states etc? oh dear. i guess it wont work for maps with movers. or we do what japro does and disable movers.
 			// wait i know! we can disable movers for segmented runs. ez.

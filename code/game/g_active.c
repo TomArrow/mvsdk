@@ -1537,7 +1537,8 @@ once for each server frame, which makes for smooth demo recording.
 */
 void DF_HandleSegmentedRunPre(gentity_t* ent);
 void UpdateClientRaceVars(gclient_t* client);
-void DF_SetRaceMode(gentity_t* ent, qboolean value);
+void DF_SetRaceMode(gentity_t* ent, qboolean value); 
+void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
 	pmove_t		pm;
@@ -1554,6 +1555,14 @@ void ClientThink_real( gentity_t *ent ) {
 	client = ent->client;
 
 	if ( !ent || !ent->client ) return;
+
+	if (ent->client->sess.rollAngleInvalidated) {
+		if (!ent->client->pers.cmd.angles[ROLL]) {
+			ent->client->sess.rollAngleInvalidated = qfalse;
+			DF_RaceStateInvalidated(ent, qtrue);
+		}
+		ent->client->pers.cmd.angles[ROLL] = 0;
+	}
 
 	if(ent->client->sess.raceMode){ // in racemode we want all things to be consistent and deterministic, so we do this on every CLIENT frame and change level.time references to cmd.servertime where possible
 		if ((!level.intermissiontime) && !(ent->client->ps.pm_flags & PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)

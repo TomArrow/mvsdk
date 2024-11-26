@@ -783,6 +783,13 @@ SetClientViewAngle
 */
 void SetClientViewAngle( gentity_t *ent, vec3_t angle ) {
 	int			i;
+	int			oldRoll;
+	qboolean	strafebot = ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_BOT) || ent->client->sess.rollAngleInvalidated;
+
+	if (strafebot) {
+		oldRoll = ent->client->pers.cmd.angles[ROLL];
+		ent->client->pers.cmd.angles[ROLL] = 0;
+	}
 
 	// set the delta angle
 	for (i=0 ; i<3 ; i++) {
@@ -793,6 +800,10 @@ void SetClientViewAngle( gentity_t *ent, vec3_t angle ) {
 	}
 	VectorCopy( angle, ent->s.angles );
 	VectorCopy (ent->s.angles, ent->client->ps.viewangles);
+
+	if (strafebot) {
+		ent->client->pers.cmd.angles[ROLL] = oldRoll;
+	}
 }
 
 /*
