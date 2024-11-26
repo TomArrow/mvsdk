@@ -138,6 +138,7 @@ typedef struct savedPosition_s {
 			int				selectedFP;
 			qboolean		setForce;
 			//int				updateUITime; // i dont think this is used anywhere.
+			qboolean		raceStateSoftInvalidated;	// can still set spawn but not start run. used to prevent teleport starts.
 		} sess;
 	} client;
 } savedPosition_t;

@@ -82,6 +82,7 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(sess.saberLevel)\
 		FIELDSFUNC(sess.selectedFP)\
 		FIELDSFUNC(sess.setForce)\
+		FIELDSFUNC(sess.raceStateSoftInvalidated)\
 		FIELDSFUNC(pers.teamState.flagsince)\
 		FIELDSFUNC(pers.teamState.lastfraggedcarrier)\
 		FIELDSFUNC(pers.teamState.lasthurtcarrier)\
@@ -4250,6 +4251,7 @@ void DF_SaveSpawn(gentity_t* ent) {
 	}
 
 	SavePosition(ent,&ent->client->pers.savedSpawn);
+	ent->client->pers.savedSpawn.client.sess.raceStateSoftInvalidated = qfalse; // for a spawn we will reset this.
 	ent->client->pers.savedSpawnUsed = qtrue;
 	ent->client->pers.savedSpawnRaceStyle = ent->client->sess.raceStyle;
 
