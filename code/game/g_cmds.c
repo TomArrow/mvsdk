@@ -454,7 +454,9 @@ void Cmd_Savepos_f( gentity_t *ent ) {
 	
 	if (g_defrag.integer && ent->client->sess.raceMode) {
 		if (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) { // segmented restore/save pos handled elsewhere
-			ent->client->pers.segmented.savePos = qtrue;
+			if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+				ent->client->pers.segmented.savePos = qtrue;
+			}
 			return;
 		}
 		//DF_RaceStateInvalidated(ent, qtrue);
@@ -474,6 +476,7 @@ void Cmd_Savepos_f( gentity_t *ent ) {
 	//ent->client->pers.savePosPlayerState = ent->client->ps;
 	//ent->client->pers.savePosRaceStyle = ent->client->sess.raceStyle;
 	if (SavePosition(ent, &ent->client->pers.savedPosition)) {
+		ent->client->pers.savedPosition.ps.clientNum = ent-g_entities; // in case we do savepos from spec (yes its allowed because respos invalidates race state anyway)
 		ent->client->pers.savePosUsed = qtrue;
 	}
 	msg = "Position, velocity and angle saved.\n";
