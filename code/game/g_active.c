@@ -869,7 +869,7 @@ Returns qfalse if the client is put to spec
 */
 qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 	gclient_t* client = ent->client;
-	if (!g_inactivityToSpec.integer || client->sess.sessionTeam == TEAM_SPECTATOR || level.intermissiontime) {
+	if (g_inactivityToSpec.integer <= 0 || client->sess.sessionTeam == TEAM_SPECTATOR || level.intermissiontime) {
 		// give everyone some time, so if the operator sets g_inactivity during
 		// gameplay, everyone isn't kicked
 		client->inactivityToSpecTime = level.time + 60 * 1000;
@@ -2496,7 +2496,7 @@ Checks whether a client has exceded any timeouts and act accordingly
 void G_CheckClientTimeouts ( gentity_t *ent )
 {
 	// Only timeout supported right now is the timeout to spectator mode
-	if ( !g_timeouttospec.integer )
+	if ( g_timeouttospec.integer <= 0 ) // one may accidentally set 9999999999999 and cause overflow and that would lead to unintended consequences
 	{
 		return;
 	}

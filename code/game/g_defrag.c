@@ -2437,6 +2437,13 @@ void DF_trigger_start_converted(gentity_t* ent) {
 }
 void DF_trigger_finish_converted(gentity_t* ent) {
 
+	if (!ent->model) {
+		// broken dumb trigger (srsly i dont get what some ppl are thinking)
+		G_FreeEntity(ent);
+		G_Printf("DEFRAG: ^1Broken %s (no model), deleting. WTF\n", ent->classname);
+		return;
+	}
+
 	InitTrigger(ent);
 
 	ent->touch = DF_FinishTimer_Touch;
@@ -2448,6 +2455,13 @@ void DF_trigger_finish_converted(gentity_t* ent) {
 }
 void DF_trigger_checkpoint_converted(gentity_t* ent) {
 
+	if (!ent->model) {
+		// broken dumb trigger (srsly i dont get what some ppl are thinking)
+		G_FreeEntity(ent);
+		G_Printf("DEFRAG: ^1Broken %s (no model), deleting. WTF\n", ent->classname);
+		return;
+	}
+
 	InitTrigger(ent);
 
 	ent->touch = DF_CheckpointTimer_Touch;
@@ -2456,6 +2470,13 @@ void DF_trigger_checkpoint_converted(gentity_t* ent) {
 	trap_LinkEntity(ent);
 }
 void DF_trigger_start(gentity_t* ent) {
+
+	if (!ent->model) {
+		// broken dumb trigger (srsly i dont get what some ppl are thinking)
+		G_FreeEntity(ent);
+		G_Printf("DEFRAG: ^1Broken %s (no model), deleting. WTF\n",ent->classname);
+		return;
+	}
 
 	InitTrigger(ent);
 
