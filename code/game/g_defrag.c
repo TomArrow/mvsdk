@@ -4641,3 +4641,26 @@ void DF_CheckRollSpeed(gentity_t* ent) {
 		}
 	}
 }
+
+void ClientDisconnectFinish(int clientNum, gentity_t* ent);
+
+qboolean DF_KeepClientZombie(gentity_t* ent) {
+	qboolean isReplaying; 
+
+	if (!ent->client) return qfalse;
+
+	isReplaying = ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state == SEG_REPLAY;
+
+	if (ent->client && (isReplaying || ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe && !ent->client->pers.raceStartCommandTime)) { // we are either in a replay or at the end of a run still recording.
+		ent->client->clientIsZombified = qtrue;
+		return qtrue;
+	}
+	else {
+		if (ent->client->clientIsZombified) {
+			ent->client->clientIsZombified = qfalse;
+			ClientDisconnectFinish(ent-g_entities,ent);
+		}
+		return qfalse;
+	}
+}
+

@@ -2642,6 +2642,35 @@ void ClientThink( int clientNum ) {
 	}
 }
 
+
+static void ForceClientUpdate(gentity_t* ent) {
+
+	ent->client->lastCmdTime = level.time;
+
+	// fill with seemingly valid data
+	//ent->client->pers.cmd.serverTime = level.time;
+
+	//ent->client->pers.cmd.buttons = 0;
+	//ent->client->pers.cmd.forwardmove = ent->client->pers.cmd.rightmove = ent->client->pers.cmd.upmove = 0;
+
+	//ent->client->pers.cmd.buttons = ent->client->pers.lastCmd.buttons;
+	//ent->client->pers.cmd.forwardmove = ent->client->pers.lastCmd.forwardmove;
+	//ent->client->pers.cmd.rightmove = ent->client->pers.lastCmd.rightmove;
+	//ent->client->pers.cmd.upmove = ent->client->pers.lastCmd.upmove;
+
+	if (ent->client->sess.raceMode && ent->client->sess.raceStyle.msec > 0) {
+		while (ent->client->ps.commandTime < (level.time+ent->client->pers.segmented.playbackStartedCommandTimeOffset)) {
+			ent->client->pers.cmd.serverTime = ent->client->ps.commandTime + ent->client->sess.raceStyle.msec;
+			ClientThink_real(ent);
+		}
+	}
+	else {
+		ent->client->pers.cmd.serverTime = level.time;
+		ClientThink_real(ent);
+	}
+
+}
+
 extern void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void G_RunClient( gentity_t *ent ) {
 	qboolean areSegReplaying = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
@@ -2700,6 +2729,9 @@ void G_RunClient( gentity_t *ent ) {
 		stats->apos.trTime = 0;
 		stats->pos.trTime = 0;
 		stats->frame = 0;
+		if (ent->client->clientIsZombified) {
+			ForceClientUpdate(ent); // client is officially disconnected. we are likely just after a segmented run replay. just move him a lil bit.
+		}
 		return;
 	}
 

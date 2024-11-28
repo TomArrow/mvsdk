@@ -2623,6 +2623,105 @@ void ClientSpawn(gentity_t *ent) {
 
 extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
 
+void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
+	gentity_t* tent;
+	int			i;
+
+	// remove this player as the activator from any activated ents
+	// is this actually safe? what if some ent just expects the activator to be a valid ent?
+	// yea better just check activator->inuse...
+	G_ClearEntityActivator(ent); // this one not needed prolly cuz client has no activator, but lets be safe.
+	G_ClearActivatedEntities(ent);
+
+	DF_RemoveCheckPoints(ent);
+
+	if (ent->client->pers.recordingDemo && !ent->client->pers.keepDemoMaybe) {
+
+		ent->client->pers.recordingDemo = qfalse;
+		ent->client->pers.demoStoppedTime = level.time;
+		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", ent - g_entities, ent->client->pers.tempDemoName, ent - g_entities));
+	}
+
+	i = 0;
+
+	while (i < NUM_FORCE_POWERS)
+	{
+		if (ent->client->ps.fd.forcePowersActive & (1 << i))
+		{
+			WP_ForcePowerStop(ent, i);
+		}
+		i++;
+	}
+
+	i = TRACK_CHANNEL_1;
+
+	while (i < NUM_TRACK_CHANNELS)
+	{
+		if (ent->client->ps.fd.killSoundEntIndex[i - 50] && ent->client->ps.fd.killSoundEntIndex[i - 50] < MAX_GENTITIES && ent->client->ps.fd.killSoundEntIndex[i - 50] > 0)
+		{
+			G_MuteSound(ent->client->ps.fd.killSoundEntIndex[i - 50], CHAN_VOICE);
+		}
+		i++;
+	}
+	i = 0;
+
+	// stop any following clients
+	for (i = 0; i < level.maxclients; i++) {
+		if (level.clients[i].sess.sessionTeam == TEAM_SPECTATOR
+			&& level.clients[i].sess.spectatorState == SPECTATOR_FOLLOW
+			&& level.clients[i].sess.spectatorClient == clientNum) {
+			StopFollowing(&g_entities[i]);
+		}
+	}
+
+	// send effect if they were completely connected
+	if (ent->client->pers.connected == CON_CONNECTED
+		&& ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		tent = G_TempEntity(ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT);
+		tent->s.clientNum = ent->s.clientNum;
+
+		// They don't get to take powerups with them!
+		// Especially important for stuff like CTF flags
+		TossClientItems(ent);
+	}
+
+	G_LogPrintf("ClientDisconnect: %i\n", clientNum);
+
+	// if we are playing in tourney mode, give a win to the other player and clear his frags for this round
+	if ((g_gametype.integer == GT_TOURNAMENT)
+		&& !level.intermissiontime
+		&& !level.warmupTime) {
+		if (level.sortedClients[1] == clientNum) {
+			level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE] = 0;
+			level.clients[level.sortedClients[0]].sess.wins++;
+			ClientUserinfoChanged(level.sortedClients[0]);
+		}
+		else if (level.sortedClients[0] == clientNum) {
+			level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE] = 0;
+			level.clients[level.sortedClients[1]].sess.wins++;
+			ClientUserinfoChanged(level.sortedClients[1]);
+		}
+	}
+
+	trap_UnlinkEntity(ent);
+	ent->s.modelindex = 0;
+	ent->inuse = qfalse;
+	ent->classname = "disconnected";
+	ent->client->pers.connected = CON_DISCONNECTED;
+	ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
+	ent->client->sess.sessionTeam = TEAM_FREE;
+
+	trap_SetConfigstring(CS_PLAYERS + clientNum, "");
+
+	CalculateRanks();
+
+	if (ent->r.svFlags & SVF_BOT) {
+		BotAIShutdownClient(clientNum, qfalse);
+	}
+
+	G_ClearClientLog(clientNum);
+}
+
 /*
 ===========
 ClientDisconnect
@@ -2649,99 +2748,11 @@ void ClientDisconnect( int clientNum ) {
 		return;
 	}
 
-	// remove this player as the activator from any activated ents
-	// is this actually safe? what if some ent just expects the activator to be a valid ent?
-	// yea better just check activator->inuse...
-	G_ClearEntityActivator(ent); // this one not needed prolly cuz client has no activator, but lets be safe.
-	G_ClearActivatedEntities(ent); 
-
-	DF_RemoveCheckPoints(ent);
-
-	if (ent->client->pers.recordingDemo && !ent->client->pers.keepDemoMaybe) {
-
-		ent->client->pers.recordingDemo = qfalse;
-		ent->client->pers.demoStoppedTime = level.time;
-		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", ent-g_entities, ent->client->pers.tempDemoName, ent - g_entities));
+	if (DF_KeepClientZombie(ent)) {
+		return;
 	}
 
-	i = 0;
-
-	while (i < NUM_FORCE_POWERS)
-	{
-		if (ent->client->ps.fd.forcePowersActive & (1 << i))
-		{
-			WP_ForcePowerStop(ent, i);
-		}
-		i++;
-	}
-
-	i = TRACK_CHANNEL_1;
-
-	while (i < NUM_TRACK_CHANNELS)
-	{
-		if (ent->client->ps.fd.killSoundEntIndex[i-50] && ent->client->ps.fd.killSoundEntIndex[i-50] < MAX_GENTITIES && ent->client->ps.fd.killSoundEntIndex[i-50] > 0)
-		{
-			G_MuteSound(ent->client->ps.fd.killSoundEntIndex[i-50], CHAN_VOICE);
-		}
-		i++;
-	}
-	i = 0;
-
-	// stop any following clients
-	for ( i = 0 ; i < level.maxclients ; i++ ) {
-		if ( level.clients[i].sess.sessionTeam == TEAM_SPECTATOR
-			&& level.clients[i].sess.spectatorState == SPECTATOR_FOLLOW
-			&& level.clients[i].sess.spectatorClient == clientNum ) {
-			StopFollowing( &g_entities[i] );
-		}
-	}
-
-	// send effect if they were completely connected
-	if ( ent->client->pers.connected == CON_CONNECTED 
-		&& ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT );
-		tent->s.clientNum = ent->s.clientNum;
-
-		// They don't get to take powerups with them!
-		// Especially important for stuff like CTF flags
-		TossClientItems( ent );
-	}
-
-	G_LogPrintf( "ClientDisconnect: %i\n", clientNum );
-
-	// if we are playing in tourney mode, give a win to the other player and clear his frags for this round
-	if ( (g_gametype.integer == GT_TOURNAMENT )
-		&& !level.intermissiontime
-		&& !level.warmupTime ) {
-		if ( level.sortedClients[1] == clientNum ) {
-			level.clients[ level.sortedClients[0] ].ps.persistant[PERS_SCORE] = 0;
-			level.clients[ level.sortedClients[0] ].sess.wins++;
-			ClientUserinfoChanged( level.sortedClients[0] );
-		}
-		else if ( level.sortedClients[0] == clientNum ) {
-			level.clients[ level.sortedClients[1] ].ps.persistant[PERS_SCORE] = 0;
-			level.clients[ level.sortedClients[1] ].sess.wins++;
-			ClientUserinfoChanged( level.sortedClients[1] );
-		}
-	}
-
-	trap_UnlinkEntity (ent);
-	ent->s.modelindex = 0;
-	ent->inuse = qfalse;
-	ent->classname = "disconnected";
-	ent->client->pers.connected = CON_DISCONNECTED;
-	ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
-	ent->client->sess.sessionTeam = TEAM_FREE;
-
-	trap_SetConfigstring( CS_PLAYERS + clientNum, "");
-
-	CalculateRanks();
-
-	if ( ent->r.svFlags & SVF_BOT ) {
-		BotAIShutdownClient( clientNum, qfalse );
-	}
-
-	G_ClearClientLog(clientNum);
+	ClientDisconnectFinish(clientNum, ent);
 }
 
 void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers) {

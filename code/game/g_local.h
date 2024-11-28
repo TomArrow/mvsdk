@@ -603,6 +603,8 @@ struct gclient_s {
 	int			entityStates[MAX_GENTITIES]; // allow us to store some simplistic states about other entities, like func_usable. letting us know if the func_usable is turned on/off for this player
 	
 	int			randomLastCenterprint;
+
+	qboolean	clientIsZombified; // technically disconnected but we're necromancing and keeping him around to finish a segmented replay
 };
 
 
@@ -1659,3 +1661,4 @@ void DF_PostDeltaAngleChange(gclient_t* client, qboolean setResettable);
 qboolean DF_ClientInSegmentedRunMode(gclient_t* client);
 void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4);
 void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest);
+qboolean DF_KeepClientZombie(gentity_t* ent);
