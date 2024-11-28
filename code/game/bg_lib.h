@@ -124,3 +124,4 @@ bsearch (const void *key,
 #define UINT32_C(x)	(x##UL)
 
 #define ERANGE          34
+
