@@ -1609,7 +1609,7 @@ int safeatoi(const char* nptr, char** endptr, int base, int* error)
 	 */
 	do {
 		c = *s++;
-	} while (isspace(c));
+	} while (c == ' ');
 	if (c == '-') {
 		neg = 1;
 		c = *s++;
@@ -1646,10 +1646,12 @@ int safeatoi(const char* nptr, char** endptr, int base, int* error)
 	cutlim = cutoff % (unsigned int)base;
 	cutoff /= (unsigned int)base;
 	for (acc = 0, any = 0;; c = *s++) {
-		if (isdigit(c))
+		if (c >= '0' && c <= '9')
 			c -= '0';
-		else if (isalpha(c))
-			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else if (c >= 'A' && c <= 'Z')
+			c -= 'A' - 10;
+		else if (c >= 'a' && c <= 'z')
+			c -= 'a' - 10;
 		else
 			break;
 		if (c >= base)
