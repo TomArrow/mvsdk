@@ -122,3 +122,5 @@ bsearch (const void *key,
 
 #define INT32_C(x)	(x##L)
 #define UINT32_C(x)	(x##UL)
+
+#define ERANGE          34
