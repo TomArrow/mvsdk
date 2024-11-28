@@ -1253,3 +1253,30 @@ float Q_pown(float base, int exp)
 
 	return result;
 }
+
+// clamps to INT_MIN and INT_MAX
+int clampedIntMult(int a, int b) {
+	int res = a * b;
+	if (b != 0 && res / b != a) {
+		// overflowed
+		if ((a >= 0) != (b >= 0)) {
+			return INT_MIN;
+		}
+		else {
+			return INT_MAX;
+		}
+	}
+	return res;
+}
+
+int clampedIntAdd(int a, int b) {
+	if (b > 0 && INT_MAX - b < a) {
+		return INT_MAX;
+	}
+	else if (b < 0 && INT_MIN - b > a) {
+		return INT_MIN;
+	}
+
+	return a + b;
+}
+

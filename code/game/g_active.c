@@ -869,27 +869,40 @@ Returns qfalse if the client is put to spec
 */
 qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 	gclient_t* client = ent->client;
+	qboolean wasInactive = client->markedAsInactive;
+	client->markedAsInactive = qfalse;
 	if (g_inactivityToSpec.integer <= 0 || client->sess.sessionTeam == TEAM_SPECTATOR || level.intermissiontime) {
 		// give everyone some time, so if the operator sets g_inactivity during
 		// gameplay, everyone isn't kicked
-		client->inactivityToSpecTime = level.time + 60 * 1000;
+		client->inactivityToSpecTime = clampedIntAdd(level.time, 60 * 1000);
 	}
 	else if (client->pers.cmd.forwardmove ||
 		client->pers.cmd.rightmove ||
 		client->pers.cmd.upmove ||
 		(client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
-		client->inactivityToSpecTime = level.time + g_inactivityToSpec.integer * 1000;
+		client->inactivityToSpecTime = clampedIntAdd( level.time , clampedIntMult(g_inactivityToSpec.integer, 1000));
 	}
 	else {
-		if (level.time > client->inactivityToSpecTime) {
-			SetTeam(ent, "s");
-			return qfalse;
+		if (ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime && !g_inactivityToSpecRacers.integer) {
+			// dont spec ppl in the middle of a run, but mark them as inactive
+			if (level.time > client->inactivityToSpecTime) {
+				client->markedAsInactive = qtrue;
+			}
 		}
+		else {
+			if (level.time > client->inactivityToSpecTime) {
+				SetTeam(ent, "s");
+				return qfalse;
+			}
 
-		if (level.time > client->inactivityToSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
-			client->randomLastCenterprint = level.time;
-			G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!",(client->inactivityToSpecTime- level.time)/1000), qfalse, qtrue, qfalse);
+			if (level.time > client->inactivityToSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
+				client->randomLastCenterprint = level.time;
+				G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!", (client->inactivityToSpecTime - level.time) / 1000), qfalse, qtrue, qfalse);
+			}
 		}
+	}
+	if (client->markedAsInactive != wasInactive) {
+		CalculateRanks(); // need to let the game know this client won't vote :)
 	}
 	return qtrue;
 }
@@ -2509,7 +2522,7 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 
 	// See how long its been since a command was received by the client and if its 
 	// longer than the timeout to spectator then force this client into spectator mode
-	if ( level.time - ent->client->pers.cmd.serverTime > g_timeouttospec.integer * 1000 )
+	if ( level.time - ent->client->pers.cmd.serverTime > clampedIntMult(g_timeouttospec.integer ,1000) )
 	{
 		SetTeam ( ent, "spectator" );
 	}

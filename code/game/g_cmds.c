@@ -2569,6 +2569,10 @@ void Cmd_Vote_f( gentity_t *ent ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTEASSPEC")) );
 		return;
 	}
+	if ( ent->client->markedAsInactive ) {
+		trap_SendServerCommand( ent-g_entities, "print \"You cannot vote as you are afk.\n\"" );
+		return;
+	}
 
 	trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "PLVOTECAST")) );
 
