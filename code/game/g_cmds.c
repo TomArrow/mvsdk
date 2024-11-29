@@ -1519,6 +1519,7 @@ void Cmd_Top_f( gentity_t *ent )
 	char subcourseName[COURSENAME_MAX_LEN + 1] = { 0 };
 	char cmd[MAX_TOKEN_CHARS];
 	const char* thisMapName = DF_GetCourseName();
+	const char* mainSubCourseName = DF_GetMainSubcourseName();
 
 	data.page = 1;
 	data.style = MV_JK2;
@@ -1547,7 +1548,7 @@ void Cmd_Top_f( gentity_t *ent )
 
 	if (args <= 1) {
 		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
-		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific,&level.mapDefaultRaceStyle);
+		DF_TopRequest(ent, thisMapName, mainSubCourseName, data.page, data.style, data.type, data.lbTypeIfSpecific,&level.mapDefaultRaceStyle);
 		return;
 	}
 
@@ -1573,12 +1574,19 @@ void Cmd_Top_f( gentity_t *ent )
 
 	if (!mainCourseNameFound) {
 		DF_PrintUnspecifiedCourseErrorToPlayer(ent);
-		DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
+		DF_TopRequest(ent, thisMapName, mainSubCourseName, data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
 		return;
 	}
 	else if (!subCourseNameFound){
 		if (!Q_stricmp(courseName, thisMapName) && level.emptyNameCourseExists) {
-			DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
+			//if (level.emptyNameCourseExists) {
+			//	DF_TopRequest(ent, thisMapName, "", data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
+			//}
+			//else if (level.numCourses == 1) {
+			//	DF_TopRequest(ent, thisMapName, mainSubCourseName, data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
+			//	DF_TopRequest(ent, thisMapName, mainSubCourseName, data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
+			//} // DF_GetMainSubcourseName does the same thing anway
+			DF_TopRequest(ent, thisMapName, mainSubCourseName, data.page, data.style, data.type, data.lbTypeIfSpecific, &level.mapDefaultRaceStyle);
 			return;
 		}
 
