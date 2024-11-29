@@ -1251,6 +1251,7 @@ void Cmd_Logout_f( gentity_t *ent )
 	ClientUserinfoChanged(ent - g_entities);
 }
 extern const char* DF_GetCourseName();
+extern const char* DF_GetMainSubcourseName();
 extern void Cmd_DF_MapDefaults_f(gentity_t* ent);
 
 extern int JP_ClientNumberFromString(gentity_t* to, const char* s);
