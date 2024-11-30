@@ -2497,6 +2497,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 
 		if (DF_GetSegmentedRunnerCount()) {
 			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
+			return;
 		}
 
 		if (!G_DoesMapSupportGametype(arg2, trap_Cvar_VariableIntegerValue("g_gametype")))
@@ -2558,6 +2559,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 
 		if (DF_GetSegmentedRunnerCount()) {
 			trap_SendServerCommand(ent - g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"");
+			return;
 		}
 
 		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
