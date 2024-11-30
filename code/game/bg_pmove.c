@@ -5409,9 +5409,11 @@ void PmoveSingle (pmove_t *pmove) {
 	int runFlags;
 	int msecRestrict;
 	int oldCmdRoll;
+	int moveStyle;
 	pm = pmove;
 	runFlags = PM_GetRunFlags();
 	msecRestrict = PM_GetMsecRestrict();
+	moveStyle = PM_GetMovePhysics();
 
 	gPMDoSlowFall = PM_DoSlowFall();
 
@@ -5732,7 +5734,7 @@ void PmoveSingle (pmove_t *pmove) {
 		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (runFlags & RFL_BOT))// (moveStyle == MV_BOTJKA /* || (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
 #endif
 		{
-			const float realCurrentSpeed = sqrtf((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));
+			float realCurrentSpeed = sqrtf((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));
 			if (realCurrentSpeed > 0) {
 				vec3_t vel = { 0 }, velangle;
 				float optimalAngle1 = 0; // option A
@@ -5759,11 +5761,72 @@ void PmoveSingle (pmove_t *pmove) {
 					middleOffset = 0;
 #endif
 					if (CJ) {//CJ)
+						static qboolean doSlopes = qtrue; // so i can change it in debugger. HEHE
+						qboolean isSlope = pml.groundTrace.plane.normal[2] != 1.0f;
 						//if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
 						//	optimalDeltaAngle = -1; //CJ //Take into account ground accel/friction.. only cpm styles turn faster?
 						//else
 							//optimalDeltaAngle = -6;
-						optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime))))) * (180.0f / M_PI) - 45.0f;
+
+						if (isSlope) {
+							pm->cmd.rightmove = 0; // slopes make us slower if we dont go W only!!!
+						}
+						if (isSlope && doSlopes) {
+							// sloped ground behaves differently. simulate the projection onto the slope from walkmove
+							// maybe todo: duckscale
+							int i;
+							vec3_t velNorm,forwardTmp, forwardFlat;
+							float		angle; 
+							float		inverseAngleScaleFactor;
+							float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
+
+							realCurrentSpeed = VectorLength(pm->ps->velocity); //sloped ground movement needs 3d speed
+							optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime)))));
+
+							VectorCopy(pm->ps->velocity, velNorm);
+							VectorNormalize(velNorm);
+							VectorCopy(velNorm, forwardTmp);
+							//AngleVectors(velNorm,forwardTmp,0,0);
+
+							// project moves down to flat plane
+							forwardTmp[2] = 0;
+
+							// project the forward and right directions onto the ground plane
+							PM_ClipVelocity(forwardTmp, pml.groundTrace.plane.normal, forwardTmp, overbounce);
+							//
+							VectorNormalize(forwardTmp);
+							// when going up or down slopes the wish velocity should Not be zero
+
+							angle = DotProduct(forwardTmp, velNorm);
+							angle = acos(angle);
+
+							if (angle >= optimalDeltaAngle) {
+								optimalDeltaAngle = 0; 
+							}
+							else {
+								optimalDeltaAngle = sqrtf(optimalDeltaAngle* optimalDeltaAngle- angle* angle);
+								// this is the optimal delta angle ON the slope plane
+								// now we need to translate it to our horizontal angle
+								VectorCopy(forwardTmp, forwardFlat);
+								forwardFlat[2] = 0;
+								VectorNormalize(forwardFlat);
+								
+								inverseAngleScaleFactor = DotProduct(forwardTmp, forwardFlat);
+
+								if (inverseAngleScaleFactor <= 0) {
+									optimalDeltaAngle = 0; 
+									calculationFailed = qtrue;
+								}
+								else {
+									optimalDeltaAngle = ((M_PI/2.0f) - inverseAngleScaleFactor * ((M_PI / 2.0f) - optimalDeltaAngle));
+								}
+
+							}
+						}
+						else {
+							optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime)))));
+						}
+						optimalDeltaAngle = optimalDeltaAngle * (180.0f / M_PI) - 45.0f;
 					}
 					else {
 						//if (moveStyle == MV_SP)
