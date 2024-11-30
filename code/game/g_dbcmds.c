@@ -858,6 +858,7 @@ typedef struct topLeaderBoardEntry_s {
 	int savePosCount, resposCount, duration_ms_segmented_total;
 	char username[USERNAME_MAX_LEN + 1];
 	char time[25];
+	char fpsString[40];
 } topLeaderBoardEntry_t;
 
 // cringe :)
@@ -939,6 +940,10 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		entry->savePosCount = G_COOL_API_DB_GetInt(10);
 		entry->resposCount = G_COOL_API_DB_GetInt(11);
 		entry->duration_ms_segmented_total = G_COOL_API_DB_GetInt(12);
+		if (entry->msec == -1) {
+			G_COOL_API_DB_GetString(13, entry->fpsString, sizeof(entry->fpsString));
+			Q_strncpyz(entry->fpsString, DF_FormatFpsString(entry->fpsString), sizeof(entry->fpsString));
+		}
 		if (type == LB_SEGMENTED) {
 			static raceStyle_t raceStyle;
 			memset(&raceStyle,0,sizeof(raceStyle));
@@ -1001,27 +1006,32 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 				break;
 			case LB_CUSTOM:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s" LBROWFULL_STRING "  ^c%s"
+					"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE),
-					!entriesHere[LB_CUSTOM].exists? "" : RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, level.mapDefaultRaceStyle.runFlags, 1, NULL, NULL)
+					!entriesHere[LB_CUSTOM].exists? "" : RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, defaultRunFlags /*level.mapDefaultRaceStyle.runFlags*/, 1, NULL, NULL), // todo make it relative to the relevant map
+					(!entriesHere[LB_CUSTOM].exists || entriesHere[LB_CUSTOM].msec != -1) ? "" : multiva(" fps:", entriesHere[LB_CUSTOM].fpsString)
 				));
 				break;
 			case LB_SEGMENTED:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
 					"\n\"",
 					i == 10 ? "\n" : "",
-					LBROWFULL(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY)
+					LBROWFULL(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY),
+					!entriesHere[LB_SEGMENTED].exists ? "" : miniva("(%dSP/%dRP/%s)", entriesHere[LB_SEGMENTED].savePosCount, entriesHere[LB_SEGMENTED].resposCount, DF_MsToString(entriesHere[LB_SEGMENTED].duration_ms_segmented_total)),
+					(!entriesHere[LB_SEGMENTED].exists || entriesHere[LB_SEGMENTED].msec != -1) ? "" : multiva(" fps:", entriesHere[LB_SEGMENTED].fpsString)
 				));
 				break;
 			case LB_CHEAT:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
+					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
 					"\n\"",
 					i == 10 ? "\n" : "",
-					LBROWFULL(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY)
+					LBROWFULL(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY),
+					(!entriesHere[LB_CHEAT].exists || !(entriesHere[LB_CHEAT].runFlags & RFL_SEGMENTED)) ? "" : miniva("(%dSP/%dRP/%s)", entriesHere[LB_CHEAT].savePosCount, entriesHere[LB_CHEAT].resposCount, DF_MsToString(entriesHere[LB_CHEAT].duration_ms_segmented_total)),
+					(!entriesHere[LB_CHEAT].exists || entriesHere[LB_CHEAT].msec != -1) ? "" : multiva(" fps:%s", entriesHere[LB_CHEAT].fpsString)
 				));
 				break;
 			}

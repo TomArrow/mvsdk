@@ -295,5 +295,6 @@ void DF_LoadMapDefaults();
 void DF_SetMapDefaults(raceStyle_t rs);
 
 void DF_HandleUnfinishedDemos();
+const char* DF_FormatFpsString(char* rawFpsString);
 
 #endif

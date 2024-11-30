@@ -1532,6 +1532,50 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 	return qfalse;
 }
 
+const char* DF_FormatFpsString(char* rawFpsString) {
+	static char fpsString[40];
+	char* start;
+	char* end = rawFpsString;
+	int fps;
+	int percent;
+	fpsString[0] = '\0';
+	int index = 0;
+
+	while (*end == ' ') {
+		end++;
+	}
+	start = end;
+	while (qtrue) {
+
+		while (*end >= '0' && *end <= '9') {
+			end++;
+		}
+		if (*end != ':') break;
+		*end = '\0';
+		fps = atoi(start);
+		end++;
+		start = end;
+		while (*end >= '0' && *end <= '9') {
+			end++;
+		}
+		if (*end != '%') break;
+		*end = '\0';
+		percent = atoi(start);
+		end++;
+		if (percent >= 5) {
+			Q_strcat(fpsString, sizeof(fpsString), miniva("%s%d:%d*/.", index != 0 ? "," : "", fps, percent));
+		}
+		if (strlen(fpsString) >= 30) {
+			break;
+		}
+		if (*end != ',') break;
+		end++;
+		if (!*end) break;
+		start = end;
+	}
+	return fpsString;
+}
+
 /*
 =================
 Cmd_Top_f
@@ -1558,7 +1602,7 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 
 	page = MAX(0, page - 1);
 
-#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump, topspeed, average, runwhen, saveposCount, resposCount, duration_ms_segmented_total"
+#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump, topspeed, average, runwhen, saveposCount, resposCount, duration_ms_segmented_total, fpsString"
 	//#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime,MIN(runwhen) OVER (PARTITION BY userid) AS earliest FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
 #define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE course=? AND subcourse=? AND style=? AND variant=? AND %s ) runs_pre"
 //#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE earliest=runwhen AND besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
