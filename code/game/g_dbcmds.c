@@ -814,6 +814,36 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 
 }
 
+void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists);
+
+static void G_ArenaGenMapListResult(int status, const char* errorMessage, int affectedRows) {
+	static char courseName[COURSENAME_MAX_LEN + 1];
+	int resultsFound = 0;
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateRunsTable();
+		G_SendServerCommand(-1,"print \"^1Searching maps for arena generation failed due to runs table not existing. Attempting to create. Please try again shortly.\n\"",qfalse);
+		return;
+	}
+	else if (status) {
+		G_SendServerCommand(-1, va("print \"^1Searching maps for arena generation failed with status %d and error message %s.\n\"", status, errorMessage),qfalse);
+		return;
+	}
+
+
+	while (G_COOL_API_DB_NextRow()) {
+		G_COOL_API_DB_GetString(0, courseName,sizeof(courseName));
+		resultsFound++;
+		G_AutoGenerateArena(courseName, qtrue);
+	}
+	if (!resultsFound) {
+		G_SendServerCommand(-1, "print \"^1No maps found for arena generation.\n\"", qtrue);
+	}
+
+
+}
+
 typedef struct topLeaderBoardEntry_s {
 	qboolean exists;
 	int besttime, userid, runFlags, msec, jump, runFlagsDiff;
@@ -1306,6 +1336,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_TOPMAPSEARCH:
 					G_TopMapSearchResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_ARENAGENMAPLIST:
+					G_ArenaGenMapListResult(status, errorMessage, affectedRows);
 					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);

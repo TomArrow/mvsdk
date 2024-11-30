@@ -48,6 +48,10 @@ vmCvar_t	g_defragLastDemoId;
 vmCvar_t	g_defragAutoDemo;
 vmCvar_t	g_triggersRobust;
 vmCvar_t	g_defragForceRegenFps;
+vmCvar_t	g_defragArenaAutoGen;
+
+vmCvar_t	g_arenaAutoGen;
+
 
 #ifdef G2_COLLISION_ENABLED
 vmCvar_t	g_saberGhoul2Collision;
@@ -222,6 +226,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_defragLastDemoId, "g_defragLastDemoId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragForceRegenFps, "g_defragForceRegenFps", "100", CVAR_ARCHIVE | CVAR_CHEAT, 0, qtrue  },
+	{ &g_defragArenaAutoGen, "g_defragArenaAutoGen", "1", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena files when a course is finished running, if none exists
+	{ &g_arenaAutoGen, "g_arenaAutoGen", "0", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena file upon successful spawn in map, if none exists
 
 #ifdef G2_COLLISION_ENABLED
 	{ &g_saberGhoul2Collision, "g_saberGhoul2Collision", "0", 0, 0, qtrue  },
@@ -2716,6 +2722,67 @@ void CheckCvars( void ) {
 	}
 }
 
+
+extern const char* DF_GetCourseName();
+/*
+=============
+G_AutoGenerateArena
+=============
+*/
+void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
+{
+	vmCvar_t		mapname;
+	int				len = 0;
+	fileHandle_t	f;
+	static char		arenaText[MAX_ARENAS_TEXT];
+	int				arenaTextLength;
+	int				arenaFileIndex = 0;
+	const char*		tmp;
+
+	if (checkBspExists) {
+		int i;
+
+		if (G_DoesMapHaveArena(thisMapName)) {
+			G_SendServerCommand(-1, va("print \"^1Arena auto generation skipped, %s already has arena info.\n\"", thisMapName), qtrue);
+			return;
+		}
+
+		tmp = va("maps/%s.bsp", thisMapName);
+		trap_FS_FOpenFile(tmp, &f, FS_READ);
+		if (!f) {
+			G_SendServerCommand(-1, va("print \"^1Arena auto generation skipped, cannot find/open %s.\n\"",tmp), qtrue);
+			return;
+		}
+		trap_FS_FCloseFile(f);
+
+	}
+
+	Q_strncpyz(arenaText,va("{\nmap \"%s\"\nlongname \"%s\"\ntype \"ffa\"\n}\n", thisMapName,level.message[0] ? level.message : thisMapName),sizeof(arenaText));
+
+	arenaTextLength = strlen(arenaText);
+	while (((len=trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena",arenaFileIndex), &f, FS_APPEND)) + arenaTextLength + 2) > MAX_ARENAS_TEXT){
+		if (!f) {
+
+			G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/_autoGenArenas%d.arena.\n\"", arenaFileIndex), qtrue);
+			return;
+		}
+		trap_FS_FCloseFile(f);
+		arenaFileIndex++;
+	}
+	if (!f) {
+
+		G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/_autoGenArenas%d.arena.\n\"", arenaFileIndex), qtrue);
+		return;
+	}
+	else {
+		G_SendServerCommand(-1, va("print \"^3Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
+	}
+
+	trap_FS_Write(arenaText,arenaTextLength,f);
+
+	trap_FS_FCloseFile(f);
+}
+
 /*
 =============
 G_RunThink
@@ -2763,6 +2830,7 @@ void G_RunFrame( int levelTime ) {
 	gentity_t	*ent;
 	int			msec;
 	int start, end;
+	int			activeRunnerCount = 0;
 
 	if (gDoSlowMoDuel)
 	{
@@ -2929,10 +2997,26 @@ void G_RunFrame( int levelTime ) {
 				}
 			}
 			G_RunClient( ent );
+
+			if (ent->client->sess.raceMode && 
+				( ent->client->pers.raceStartCommandTime // actively running
+				|| (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state > SEG_RECORDING // replaying
+				|| ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe // run finished recently. lets not lag demo
+				)
+				) {
+				activeRunnerCount++;
+			}
+
 			continue;
 		}
 
 		G_RunThink( ent );
+	}
+
+	if (!activeRunnerCount && !level.hasArenaInfo && level.mustGenerateArena) {
+		G_AutoGenerateArena(DF_GetCourseName(),qfalse);
+		level.mustGenerateArena = qfalse;
+		level.hasArenaInfo = qtrue;
 	}
 
 	// Process logical entities

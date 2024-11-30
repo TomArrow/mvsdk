@@ -2167,6 +2167,10 @@ void ClientSpawn(gentity_t *ent) {
 	}
 	client->pers.teamState.state = TEAM_ACTIVE;
 
+	if (g_arenaAutoGen.integer && !level.hasArenaInfo) {
+		level.mustGenerateArena = qtrue;
+	}
+
 	// toggle the teleport bit so the client knows to not lerp
 	// and never clear the voted flag
 	flags = ent->client->ps.eFlags & (EF_TELEPORT_BIT | EF_VOTED | EF_TEAMVOTED);

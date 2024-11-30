@@ -1682,6 +1682,22 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 #undef QUERY2
 }
 
+int DF_GetSegmentedRunnerCount() {
+	int segReplays = 0;
+	gentity_t* oEnt;
+	int i;
+
+	for (i = 0; i < level.maxclients; i++) {
+		oEnt = g_entities + i;
+
+		// extend this to any segmented runner? but how to avoid trolling?
+		if (oEnt->client->sess.raceMode && (oEnt->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && oEnt->client->pers.segmented.state == SEG_REPLAY) {
+			segReplays++;
+		}
+	}
+	return segReplays;
+}
+
 
 const char* DF_GetCourseName() {
 	static char serverInfo[BIG_INFO_STRING];
@@ -2223,6 +2239,10 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	//Q_strncpyz(timeLastStr, DF_MsToString(timeLast), sizeof(timeLastStr));
 	//Q_strncpyz(timeBestStr, DF_MsToString(timeBest), sizeof(timeBestStr));
+
+	if (g_defragArenaAutoGen.integer && !level.hasArenaInfo) {
+		level.mustGenerateArena = qtrue;
+	}
 
 	if ((cl->sess.raceStyle.runFlags & RFL_SEGMENTED) && cl->pers.segmented.state != SEG_REPLAY) {
 		//trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo))); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username

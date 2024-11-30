@@ -206,6 +206,33 @@ qboolean G_DoesMapSupportGametype(const char *mapname, int gametype)
 
 	return qfalse;
 }
+qboolean G_DoesMapHaveArena(const char *mapname)
+{
+	int			n = 0;
+	char		*type = NULL;
+
+	if (!g_arenaInfos[0])
+	{
+		return qfalse;
+	}
+
+	if (!mapname || !mapname[0])
+	{
+		return qfalse;
+	}
+
+	for( n = 0; n < g_numArenas; n++ )
+	{
+		type = Info_ValueForKey( g_arenaInfos[n], "map" );
+
+		if (Q_stricmp(mapname, type) == 0)
+		{
+			return qtrue;
+			break;
+		}
+	}
+	return qfalse;
+}
 
 //rww - auto-obtain nextmap. I could've sworn Q3 had something like this, but I guess not.
 const char *G_RefreshNextMap(int gametype, qboolean forced)
@@ -236,6 +263,7 @@ const char *G_RefreshNextMap(int gametype, qboolean forced)
 		if (Q_stricmp(mapname.string, type) == 0)
 		{
 			thisLevel = n;
+			level.hasArenaInfo = qtrue;
 			break;
 		}
 	}
@@ -282,6 +310,35 @@ const char *G_RefreshNextMap(int gametype, qboolean forced)
 	return Info_ValueForKey( g_arenaInfos[desiredMap], "map" );
 }
 
+
+void G_CheckMapHasArenaInfo()
+{
+	int			n = 0;
+	char* type = NULL;
+	vmCvar_t	mapname;
+
+	level.hasArenaInfo = qfalse;
+
+	if (!g_arenaInfos[0])
+	{
+		return NULL;
+	}
+
+	trap_Cvar_Register(&mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM);
+	for (n = 0; n < g_numArenas; n++)
+	{
+		type = Info_ValueForKey(g_arenaInfos[n], "map");
+
+		if (Q_stricmp(mapname.string, type) == 0)
+		{
+			level.hasArenaInfo = qtrue;
+			return;
+		}
+	}
+
+	G_Printf("^3Map is missing an arena info.\n");
+}
+
 /*
 ===============
 G_LoadArenas
@@ -321,7 +378,9 @@ static void G_LoadArenas( void ) {
 		Info_SetValueForKey( g_arenaInfos[n], "num", va( "%i", n ) );
 	}
 
-	G_RefreshNextMap(g_gametype.integer, qfalse);
+	G_CheckMapHasArenaInfo();
+
+	G_RefreshNextMap(g_gametype.integer, qfalse); // this also sets level.hasArenaInfo
 }
 
 

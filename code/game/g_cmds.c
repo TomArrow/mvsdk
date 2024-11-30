@@ -2374,6 +2374,42 @@ int G_ClientNumberFromStrippedName ( const char* name )
 	return -1;
 }
 
+void Cmd_GenArena_f(gentity_t* ent) {
+	qboolean allRace = qfalse;
+	char	arg1[10];
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_ARENAGEN)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1You do not have permission to use this command.\n\"");
+		return;
+	}
+
+	if (trap_Argc() < 2) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: genArena [allrace|this].\n\"");
+		return;
+	}
+	trap_Argv(1, arg1, sizeof(arg1));
+
+	if (!Q_stricmp(arg1, "this")) {
+		if (!level.hasArenaInfo) {
+			level.mustGenerateArena = qtrue;
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"This map already has an arena info.\n\"");
+			return;
+		}
+	}
+	else if (!Q_stricmp(arg1, "allrace")) {
+		G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_ARENAGENMAPLIST, "SELECT DISTINCT course FROM runs");
+	}
+	else {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: genArena [allrace|this].\n\"");
+		return;
+	}
+
+}
+
+extern int DF_GetSegmentedRunnerCount();
+
 /*
 ==================
 Cmd_CallVote_f
@@ -2457,6 +2493,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		// special case for map changes, we want to reset the nextmap setting
 		// this allows a player to change maps, but not upset the map rotation
 		char	s[MAX_STRING_CHARS];
+		
+
+		if (DF_GetSegmentedRunnerCount()) {
+			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
+		}
 
 		if (!G_DoesMapSupportGametype(arg2, trap_Cvar_VariableIntegerValue("g_gametype")))
 		{
@@ -2514,6 +2555,10 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	else if ( !Q_stricmp( arg1, "nextmap" ) && canVoteBesideMap)
 	{
 		char	s[MAX_STRING_CHARS];
+
+		if (DF_GetSegmentedRunnerCount()) {
+			trap_SendServerCommand(ent - g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"");
+		}
 
 		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 		if (!*s) {
@@ -3611,6 +3656,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "genArena"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "vote"))
 		{
 			giveError = qtrue;
@@ -3735,6 +3784,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Where_f (ent);
 	else if (Q_stricmp (cmd, "callvote") == 0)
 		Cmd_CallVote_f (ent);
+	else if (Q_stricmp (cmd, "genArena") == 0)
+		Cmd_GenArena_f(ent);
 	else if (Q_stricmp (cmd, "vote") == 0)
 		Cmd_Vote_f (ent);
 	else if (Q_stricmp (cmd, "callteamvote") == 0)

@@ -100,6 +100,7 @@ extern int gEscapeTime;
 
 #define TT_ACCOUNTFLAG_A_CHANGEMAPDEFAULTRACESTYLE		(1<<0)
 #define TT_ACCOUNTFLAG_A_VOTEBESIDESMAP					(1<<1)
+#define TT_ACCOUNTFLAG_A_ARENAGEN						(1<<2)
 
 typedef enum getUserCmdType_s
 {
@@ -723,6 +724,9 @@ typedef struct {
 	char		courseName[MAX_COURSE_COUNT][COURSENAME_MAX_LEN + 1];//japro defrag
 	int			numCourses;
 	qboolean	emptyNameCourseExists;
+	qboolean	hasArenaInfo;
+	qboolean	mustGenerateArena;
+	char		message[MAX_STRING_CHARS]; // map message (some maps provide it and its like a long level name, can use for arena auto gen
 } level_locals_t;
 
 
@@ -1167,6 +1171,7 @@ void Svcmd_AddBot_f( void );
 void Svcmd_BotList_f( void );
 void BotInterbreedEndMatch( void );
 qboolean G_DoesMapSupportGametype(const char *mapname, int gametype);
+qboolean G_DoesMapHaveArena(const char* mapname);
 const char *G_RefreshNextMap(int gametype, qboolean forced);
 
 // w_force.c / w_saber.c
@@ -1273,6 +1278,9 @@ extern	vmCvar_t	g_defragLastDemoId;
 extern	vmCvar_t	g_defragAutoDemo;
 extern	vmCvar_t	g_triggersRobust;
 extern	vmCvar_t	g_defragForceRegenFps;
+extern	vmCvar_t	g_defragArenaAutoGen;
+
+extern	vmCvar_t	g_arenaAutoGen;
 
 #ifdef G2_COLLISION_ENABLED
 extern	vmCvar_t	g_saberGhoul2Collision;

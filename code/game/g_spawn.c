@@ -894,6 +894,8 @@ void SP_worldspawn( void )
 	G_SpawnString( "message", "", &text );
 	trap_SetConfigstring( CS_MESSAGE, text );				// map specific message
 
+	Q_strncpyz(level.message, text, sizeof(level.message));
+
 	trap_SetConfigstring( CS_MOTD, g_motd.string );		// message of the day
 
 	G_SpawnString( "gravity", "800", &text );
