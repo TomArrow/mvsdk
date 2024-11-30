@@ -1010,6 +1010,10 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	DF_SetMapDefaults(defaultRaceStyle);
 	level.mapDefaultsConfirmed = qfalse;
 	level.mapDefaultsLoadFailed = qfalse;
+	level.hasArenaInfo = qfalse;
+	level.mustGenerateArena = qfalse;
+	level.allRaceGenerationAlreadyCalled = qfalse;
+	level.arenasLoaded = qfalse;
 	if (g_defrag.integer) {
 		DF_LoadMapDefaults();
 	}
@@ -2739,11 +2743,21 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 	int				arenaFileIndex = 0;
 	const char*		tmp;
 
+	if (!level.arenasLoaded) {
+		G_SendServerCommand(-1, va("print \"^1Can't generate arena, arenas weren't loaded (can't avoid dupes).\n\"", thisMapName), qtrue);
+		return;
+	}
+
+
 	if (checkBspExists) {
 		int i;
 
+		if (!Q_stricmp(thisMapName, DF_GetCourseName()) && level.hasArenaInfo) {
+			G_SendServerCommand(-1, va("print \"^3Arena auto generation skipped, %s already has arena info.\n\"", thisMapName), qtrue);
+		}
+
 		if (G_DoesMapHaveArena(thisMapName)) {
-			G_SendServerCommand(-1, va("print \"^1Arena auto generation skipped, %s already has arena info.\n\"", thisMapName), qtrue);
+			G_SendServerCommand(-1, va("print \"^3Arena auto generation skipped, %s already has arena info.\n\"", thisMapName), qtrue);
 			return;
 		}
 
@@ -2775,7 +2789,7 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 		return;
 	}
 	else {
-		G_SendServerCommand(-1, va("print \"^3Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
+		G_SendServerCommand(-1, va("print \"^2Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
 	}
 
 	trap_FS_Write(arenaText,arenaTextLength,f);

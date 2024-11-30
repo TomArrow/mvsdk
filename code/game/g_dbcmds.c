@@ -820,6 +820,10 @@ static void G_ArenaGenMapListResult(int status, const char* errorMessage, int af
 	static char courseName[COURSENAME_MAX_LEN + 1];
 	int resultsFound = 0;
 
+	if (level.allRaceGenerationAlreadyCalled) {
+		G_SendServerCommand(-1, "print \"^1Allrace arena generation already called once during this map.\n\"", qfalse);
+	}
+
 	if (status == 1146) {
 		// table doesn't exist. create it.
 		G_CreateRunsTable();
@@ -836,6 +840,7 @@ static void G_ArenaGenMapListResult(int status, const char* errorMessage, int af
 		G_COOL_API_DB_GetString(0, courseName,sizeof(courseName));
 		resultsFound++;
 		G_AutoGenerateArena(courseName, qtrue);
+		level.allRaceGenerationAlreadyCalled = qtrue;
 	}
 	if (!resultsFound) {
 		G_SendServerCommand(-1, "print \"^1No maps found for arena generation.\n\"", qtrue);

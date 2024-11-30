@@ -726,6 +726,8 @@ typedef struct {
 	qboolean	emptyNameCourseExists;
 	qboolean	hasArenaInfo;
 	qboolean	mustGenerateArena;
+	qboolean	allRaceGenerationAlreadyCalled;
+	qboolean	arenasLoaded;
 	char		message[MAX_STRING_CHARS]; // map message (some maps provide it and its like a long level name, can use for arena auto gen
 } level_locals_t;
 

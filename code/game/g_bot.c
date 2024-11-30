@@ -378,6 +378,8 @@ static void G_LoadArenas( void ) {
 		Info_SetValueForKey( g_arenaInfos[n], "num", va( "%i", n ) );
 	}
 
+	level.arenasLoaded = qtrue;
+
 	G_CheckMapHasArenaInfo();
 
 	G_RefreshNextMap(g_gametype.integer, qfalse); // this also sets level.hasArenaInfo
