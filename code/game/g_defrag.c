@@ -1538,8 +1538,8 @@ const char* DF_FormatFpsString(char* rawFpsString) {
 	char* end = rawFpsString;
 	int fps;
 	int percent;
-	fpsString[0] = '\0';
 	int index = 0;
+	fpsString[0] = '\0';
 
 	while (*end == ' ') {
 		end++;
