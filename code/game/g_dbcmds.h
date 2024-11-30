@@ -9,6 +9,7 @@
 typedef enum DBRequestTypes_s {
 	DBREQUEST_REGISTER,
 	DBREQUEST_LOGIN, // actual log in
+	DBREQUEST_FORCEDLOGIN, // actual log in
 	DBREQUEST_LOGIN_UPDATELASTLOGIN,
 	DBREQUEST_BCRYPTPW, // pw bcrypt request (no actual db request)
 	DBREQUEST_CREATETABLE,
@@ -37,6 +38,9 @@ typedef struct loginRegisterStruct_s {
 	char		dbPassword[MAX_STRING_CHARS];
 	qboolean	needDoubleBcrypt;
 	int			userFlags;
+	qboolean	isAdminForcedLogin;
+	int			ipAdmin[4];
+	int			clientnumAdmin;
 } loginRegisterStruct_t;
 
 

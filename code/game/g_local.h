@@ -101,6 +101,7 @@ extern int gEscapeTime;
 #define TT_ACCOUNTFLAG_A_CHANGEMAPDEFAULTRACESTYLE		(1<<0)
 #define TT_ACCOUNTFLAG_A_VOTEBESIDESMAP					(1<<1)
 #define TT_ACCOUNTFLAG_A_ARENAGEN						(1<<2)
+#define TT_ACCOUNTFLAG_A_USERSFORCELOGIN				(1<<3)
 
 typedef enum getUserCmdType_s
 {
@@ -375,6 +376,7 @@ typedef struct {
 		int			flags;
 		char		name[USERNAME_MAX_LEN + 1];
 		qboolean	loggedIn;
+		qboolean	forceLoggedIn;
 	} login;
 
 	subContestState_t subcontestVals[SUBCONTESTS_COUNT];

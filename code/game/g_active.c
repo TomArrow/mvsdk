@@ -1793,6 +1793,11 @@ void ClientThink_real( gentity_t *ent ) {
 		return;
 	}
 
+	if (client->sess.login.forceLoggedIn && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
+		client->randomLastCenterprint = level.time;
+		G_CenterPrint(client - level.clients, 3, "^3You were force-logged in by an admin. Please change your password with /changepassword, log out and log in again.", qfalse, qtrue, qfalse);
+	}
+
 	BG_UserCmdToUserStats(&client->pers.cmd,&level.playerStats[ent-g_entities]->s);
 	BG_RaceStyleToUserStats(&client->sess.raceStyle,&level.playerStats[ent-g_entities]->s);
 	level.playerStats[ent - g_entities]->s.activeForcePass = classifyLeaderBoard(&client->sess.raceStyle,&level.mapDefaultRaceStyle );

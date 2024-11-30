@@ -1233,6 +1233,62 @@ void Cmd_Login_f( gentity_t *ent )
 			va("SELECT password,flags,id FROM users WHERE username='%s'", cleanUsername));
 	}
 }
+
+
+void Cmd_ForceLogin_f(gentity_t* ent) {
+	qboolean allRace = qfalse;
+	char	arg1[3];
+	int		clientnum;
+	gentity_t* otherClient = NULL;
+	loginRegisterStruct_t data;
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_USERSFORCELOGIN)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1You do not have permission to use this command.\n\"");
+		return;
+	}
+
+	if (trap_Argc() < 3) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: forcelogin <clientnum> <username>\n\"");
+		return;
+	}
+	trap_Argv(1, arg1, sizeof(arg1));
+
+	clientnum = atoi(arg1);
+
+	if (clientnum < 0 || clientnum >= level.maxclients) {
+		trap_SendServerCommand(ent - g_entities, "print \"Invalid clientnum. Usage: forcelogin <clientnum> <username>\n\"");
+		return;
+	}
+
+	otherClient = g_entities + clientnum;
+
+	if (!otherClient->inuse || !otherClient->client || otherClient->client->pers.connected != CON_CONNECTED) {
+		trap_SendServerCommand(ent - g_entities, "print \"Target client not in a valid state. Must be fully connected and active.\n\"");
+		return;
+	}
+
+	if (otherClient != ent && otherClient->client->sess.login.loggedIn) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Target client is already logged in as %s. He must log out first.\n\"", otherClient->client->sess.login.name));
+		return;
+	}
+
+	memset(&data, 0, sizeof(data));
+	data.clientnum = otherClient - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	data.clientnumAdmin = ent - g_entities;
+	memcpy(data.ipAdmin, mv_clientSessions[data.clientnumAdmin].clientIP, sizeof(data.ipAdmin));
+	trap_Argv(2, data.username, sizeof(data.username));
+
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_FORCEDLOGIN, "SELECT flags,id,username FROM users WHERE username=?")) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1DB Error performing force login request.\n\"");
+		return;
+	}
+	G_COOL_API_DB_PreparedBindString(data.username);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+
+}
+
 /*
 =================
 Cmd_Logout_f
@@ -3426,6 +3482,19 @@ void ClientCommand( int clientNum ) {
 		}
 	}
 
+	if (ent->client->sess.login.forceLoggedIn) {
+		if (Q_stricmp(cmd, "say")
+			&& Q_stricmp(cmd, "say_team")
+			&& Q_stricmp(cmd, "tell")
+			&& Q_stricmp(cmd, "score")
+			&& Q_stricmp(cmd, "changepassword")
+			&& Q_stricmp(cmd, "logout")
+			) { // allow a few.
+			trap_SendServerCommand(clientNum, "print \"^3You cannot send most commands because you were force-logged in by an admin. Please change your password with /changepassword, logout and log in again.\n\"");
+			return;
+		}
+	}
+
 	//rww - redirect bot commands
 	if (strstr(cmd, "bot_") && AcceptBotCommand(cmd, ent))
 	{
@@ -3662,6 +3731,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "forcelogin"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "vote"))
 		{
 			giveError = qtrue;
@@ -3788,6 +3861,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_CallVote_f (ent);
 	else if (Q_stricmp (cmd, "genArena") == 0)
 		Cmd_GenArena_f(ent);
+	else if (Q_stricmp (cmd, "forcelogin") == 0)
+		Cmd_ForceLogin_f(ent);
 	else if (Q_stricmp (cmd, "vote") == 0)
 		Cmd_Vote_f (ent);
 	else if (Q_stricmp (cmd, "callteamvote") == 0)

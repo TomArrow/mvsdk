@@ -799,6 +799,10 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
 		return;
 	}
+	if (cl->sess.login.forceLoggedIn) {
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7You were force-logged in by admin and cannot run. Please change your password with /changepassword, logout and log in again.",qfalse,qtrue,qtrue);
+		return;
+	}
 	if (cl->sess.raceStateSoftInvalidated) {
 		DF_RaceStateInvalidated(activator,qfalse);
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
@@ -960,6 +964,7 @@ qboolean ValidRaceSettings(gentity_t* player)
 
 	if (!cl->ps.stats[STAT_RACEMODE])
 		return qfalse;
+
 
 	style = cl->sess.raceStyle.movementStyle;
 
@@ -1986,7 +1991,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	if (!client || !client->sess.raceMode) return;
 	runInfo->clientNum = ent - g_entities;
 	Q_strncpyz(runInfo->netname, client->pers.netname, sizeof(runInfo->netname));
-	if (client->sess.login.loggedIn) {
+	if (client->sess.login.loggedIn && !client->sess.login.forceLoggedIn) {
 		runInfo->userId = client->sess.login.id;
 		Q_strncpyz(runInfo->username, client->sess.login.name, sizeof(runInfo->username));
 	}

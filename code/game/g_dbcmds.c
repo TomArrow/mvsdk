@@ -1196,6 +1196,7 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	client->sess.login.id = loginData->userId;
 	client->sess.login.flags = loginData->userFlags;
 	client->sess.login.loggedIn = qtrue;
+	client->sess.login.forceLoggedIn = qfalse;
 	client->pers.raceBestTime = 0;
 	DF_SetSubContestDefaults(client);
 
@@ -1209,6 +1210,80 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	// fire and forget, not that important
 	G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_LOGIN_UPDATELASTLOGIN,
 		va("UPDATE users SET lastlogin=NOW() WHERE id=%d", loginData->userId));
+}
+
+static void G_ForceLoginContinue(int status, const char* errorMessage, int affectedRows) {
+	static char		cryptedPw[MAX_STRING_CHARS];
+	const char* request = NULL;
+	gentity_t* ent = NULL;
+	gclient_t* client = NULL;
+	gentity_t* adminEnt = NULL;
+	loginRegisterStruct_t data;
+	char usernameDb[USERNAME_MAX_LEN + 1];
+
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(adminEnt = DB_VerifyClient(data.clientnumAdmin, data.ipAdmin))) {
+		Com_Printf("^1Client %d force login as %s returned, admin no longer valid.\n", data.clientnum, data.username);
+	}
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		if (adminEnt) {
+			trap_SendServerCommand(data.clientnumAdmin, va("print \"^1Client %d force login as %s returned, user no longer valid.\n\"", data.clientnum, data.username));
+		}
+		else {
+			Com_Printf("^1Client %d force login as %s returned, user no longer valid.\n", data.clientnum, data.username);
+		}
+		return;
+	}
+
+	if (!G_COOL_API_DB_NextRow()) {
+		if (adminEnt) {
+			trap_SendServerCommand(data.clientnumAdmin, va("print \"^1Client %d force login as %s returned, username not found.\n\"", data.clientnum, data.username));
+		}
+		else {
+			Com_Printf("^1Client %d force login as %s returned, username not found.\n", data.clientnum, data.username);
+		}
+		return;
+	} 
+	//flags, id, username
+	data.userFlags = G_COOL_API_DB_GetInt(0);
+	data.userId = G_COOL_API_DB_GetInt(1);
+	G_COOL_API_DB_GetString(2, usernameDb,sizeof(usernameDb));
+
+	if (Q_stricmp(usernameDb, data.username)) {
+		if (adminEnt) {
+			trap_SendServerCommand(data.clientnumAdmin, va("print \"^1Client %d force login as %s returned, DB username %s does not match WTF.\n\"", data.clientnum, data.username, usernameDb));
+		}
+		else {
+			Com_Printf("^1Client %d force login as %s returned, DB username %s does not match WTF.\n", data.clientnum, data.username, usernameDb);
+		}
+		return;
+	}
+
+	client = ent->client;
+
+	Q_strncpyz(client->sess.login.name, usernameDb,sizeof(client->sess.login.name));
+	client->sess.login.id = data.userId;
+	client->sess.login.flags = data.userFlags;
+	client->sess.login.loggedIn = qtrue;
+	client->sess.login.forceLoggedIn = qtrue;
+	client->pers.raceBestTime = 0;
+	DF_SetSubContestDefaults(client);
+
+	DF_RequestPlayerDefaultTime(ent);
+
+	trap_SendServerCommand(data.clientnum, va("print \"^3You were force-logged in by an admin as '%s'. Change your password with /changepassword, then log out and log in again.\n\"", usernameDb));
+	//trap_SendServerCommand(-1, va("print \"^2%s ^7logged in as '%s'.\n\"",client ? client->pers.netname : "", loginData->username));
+
+	if (adminEnt) {
+		trap_SendServerCommand(data.clientnumAdmin, va("print \"^3Client %d was force-logged in as %s.\n\"", data.clientnum,  usernameDb));
+	}
+
+	ClientUserinfoChanged(ent - g_entities);
+
+	// fire and forget, not that important
+	//G_COOL_API_DB_AddRequest(NULL, 0, DBREQUEST_LOGIN_UPDATELASTLOGIN,
+	//	va("UPDATE users SET lastlogin=NOW() WHERE id=%d", data.userId));
 }
 
 static void G_CreateTableResult(int status, const char* errorMessage) {
@@ -1344,6 +1419,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_ARENAGENMAPLIST:
 					G_ArenaGenMapListResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_FORCEDLOGIN:
+					G_ForceLoginContinue(status, errorMessage, affectedRows);
 					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);
