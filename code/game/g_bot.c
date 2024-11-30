@@ -321,7 +321,7 @@ void G_CheckMapHasArenaInfo()
 
 	if (!g_arenaInfos[0])
 	{
-		return NULL;
+		return;
 	}
 
 	trap_Cvar_Register(&mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM);
