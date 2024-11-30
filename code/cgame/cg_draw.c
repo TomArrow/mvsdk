@@ -2265,7 +2265,7 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 	qboolean multiFrame = qfalse;
 	int FPS_FRAMES = MIN(FPS_FRAMES_MAX,MAX(1,cg_drawFPSSamples.integer));
 	int shouldFps = (cg_com_physicsFps.integer && physical )? cg_com_physicsFps.integer : cg_com_maxfps.integer;
-	int shouldMsec = 1000 / shouldFps;
+	int shouldMsec = 1000 / MAX(1,shouldFps);
 	int guessedMsec = 0;
 	int shortCount = MIN(FPS_FRAMES, MAX(0,cg_drawFPSShorterCheckSim.integer));
 
