@@ -5768,8 +5768,8 @@ void PmoveSingle (pmove_t *pmove) {
 						//else
 							//optimalDeltaAngle = -6;
 
-						if (isSlope) {
-							pm->cmd.rightmove = 0; // slopes make us slower if we dont go W only!!!
+						if (isSlope && pm->cmd.forwardmove) {
+							pm->cmd.rightmove = 0; // slopes make us slower if we dont go W only!!! (allow A/D tho)
 						}
 						if (isSlope && doSlopes) {
 							// sloped ground behaves differently. simulate the projection onto the slope from walkmove
