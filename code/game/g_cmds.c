@@ -1763,6 +1763,63 @@ void Cmd_Top_f( gentity_t *ent )
 
 }
 
+extern int				g_numArenas;
+extern char*			g_arenaInfos[MAX_ARENAS];
+void Cmd_Maplist_f(gentity_t* ent) {
+
+	int			mapsinmessage = 0;
+	char*		type = NULL;
+	char		mapListString[1024];
+	char		currentMapString[1024];
+	char		currentMap[COURSENAME_MAX_LEN+1];
+	qboolean	first = qtrue;
+	int			n = 0;
+	//int			milliseconds = 0;
+	int			mapsInFrame = 0;
+
+	Q_strncpyz(mapListString, "", sizeof(mapListString));
+	trap_SendServerCommand(ent - g_entities, va("print \"^2----------^7INSTALLED MAPS^2---------\n\"",type));
+
+	for (n = 0; n < g_numArenas; n++) {
+
+		type = Info_ValueForKey(g_arenaInfos[n], "map");
+
+		if (strlen(type) < 1 || !Q_stricmp(type, "<NULL>")) {
+
+			if (n == (g_numArenas - 1)) {
+				mapsInFrame += 5;
+				trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
+				if (mapsInFrame >= 300) {
+					mapsInFrame = 0;
+					//milliseconds += 100;
+				}
+				Q_strncpyz(mapListString, "", sizeof(mapListString));
+				mapsinmessage = 0;
+			}
+			continue;
+		}
+
+		Q_strncpyz(currentMap, type, 24);
+		Com_sprintf(currentMapString, sizeof(currentMapString), "^7[^2%03i^7] %-24s", n , currentMap);
+		Q_strcat(mapListString,sizeof(mapListString),currentMapString);
+
+		mapsinmessage = mapsinmessage + 1;
+
+		if ((mapsinmessage >= 5) || (n == (g_numArenas - 1))) {
+			mapsInFrame += 5;
+			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
+			if (mapsInFrame >= 300) {
+				mapsInFrame = 0;
+				//milliseconds += 100;
+			}
+
+			Q_strncpyz(mapListString, "", sizeof(mapListString));
+			mapsinmessage = 0;
+		}
+	}
+
+}
+
 /*
 =================
 Cmd_Rollympics_f
@@ -2511,6 +2568,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	if ( !Q_stricmp( arg1, "map_restart" ) ) {
 	} else if ( !Q_stricmp( arg1, "nextmap" ) ) {
 	} else if ( !Q_stricmp( arg1, "map" ) ) {
+	} else if ( !Q_stricmp( arg1, "mapnum" ) ) {
 	} else if ( !Q_stricmp( arg1, "g_gametype" ) ) {
 	} else if ( !Q_stricmp( arg1, "kick" ) ) {
 	} else if ( !Q_stricmp( arg1, "clientkick" ) ) {
@@ -2569,6 +2627,46 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s" S_COLOR_WHITE "; set nextmap \"%s\"", arg1, arg2, s );
 		} else {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", arg1, arg2 );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
+		}
+	}
+	else if ( !Q_stricmp( arg1, "mapnum" ) ) 
+	{
+		// special case for map changes, we want to reset the nextmap setting
+		// this allows a player to change maps, but not upset the map rotation
+		char			s[MAX_STRING_CHARS];
+		char			mapname[MAX_STRING_CHARS];
+		int				mapnum = atoi(arg2);
+
+		if (mapnum < 0 || mapnum >= g_numArenas) {
+			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum.\n\"");
+		}
+
+		Q_strncpyz(mapname,Info_ValueForKey(g_arenaInfos[mapnum], "map"),sizeof(mapname));
+
+		if (!mapname || !mapname[0]) {
+			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum (wtf?!).\n\"");
+			return;
+		}
+
+		if (DF_GetSegmentedRunnerCount()) {
+			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
+			return;
+		}
+
+		if (!G_DoesMapSupportGametype(mapname, trap_Cvar_VariableIntegerValue("g_gametype")))
+		{
+			//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
+			trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE_MAPNOTSUPPORTEDBYGAME")) );
+			return;
+		}
+
+		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
+		if (*s) {
+			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s" S_COLOR_WHITE "; set nextmap \"%s\"", "map", mapname, s );
+		} else {
+			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 		}
 	}
@@ -3682,6 +3780,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "maplist"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "rollympics"))
 		{
 			giveError = qtrue;
@@ -3837,6 +3939,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Amtele_f(ent);
 	else if (Q_stricmp (cmd, "top") == 0 || Q_stricmp(cmd, "topmain") == 0 || Q_stricmp(cmd, "topnojumpbug") == 0|| Q_stricmp(cmd, "topnjb") == 0 || Q_stricmp(cmd, "topcustom") == 0 || Q_stricmp(cmd, "topsegmented") == 0 || Q_stricmp(cmd, "topseg") == 0 || Q_stricmp(cmd, "topcheat") == 0)
 		Cmd_Top_f(ent);
+	else if (Q_stricmp(cmd, "maplist") == 0)
+		Cmd_Maplist_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)
 		Cmd_Rollympics_f(ent);
 	else if (Q_stricmp (cmd, "time") == 0)

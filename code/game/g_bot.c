@@ -10,7 +10,7 @@ static char		*g_botInfos[MAX_BOTS];
 
 
 int				g_numArenas;
-static char		*g_arenaInfos[MAX_ARENAS];
+char			*g_arenaInfos[MAX_ARENAS];
 
 
 #define BOT_BEGIN_DELAY_BASE		2000
@@ -46,7 +46,7 @@ float trap_Cvar_VariableValue( const char *var_name ) {
 G_ParseInfos
 ===============
 */
-int G_ParseInfos( char *buf, int max, char *infos[] ) {
+int G_ParseInfos( char *buf, int max, char *infos[], const char* bspList, int bspCount) {
 	char	*token;
 	int		count;
 	char	key[MAX_TOKEN_CHARS];
@@ -87,6 +87,28 @@ int G_ParseInfos( char *buf, int max, char *infos[] ) {
 			}
 			Info_SetValueForKey( info, key, token );
 		}
+
+		// check that the bsp exists
+		if (bspList) {
+			const char* bspptr = bspList;
+			int bspLen;
+			int i;
+			const char* mapName = va("%s.bsp",Info_ValueForKey(info, "map"));
+			if (!strstr(mapName, "/")) { // that bsp list only returns files in the maps folder, not subfolders. just allow it then whatever
+				qboolean found = qfalse;
+				for (i = 0; i < bspCount; i++, bspptr += bspLen + 1) {
+					bspLen = strlen(bspptr);
+					if (!Q_stricmp(bspptr, mapName)) {
+						found = qtrue;
+						break;
+					}
+				}
+				if (!found) {
+					continue; // skip this map, it doesn't exist anymore
+				}
+			}
+		}
+
 		//NOTE: extra space for arena number
 		infos[count] = G_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
 		if (infos[count]) {
@@ -102,7 +124,7 @@ int G_ParseInfos( char *buf, int max, char *infos[] ) {
 G_LoadArenasFromFile
 ===============
 */
-static void G_LoadArenasFromFile( char *filename ) {
+static void G_LoadArenasFromFile( char *filename, const char* bspList, int bspCount ) {
 	int				len;
 	fileHandle_t	f;
 	char			buf[MAX_ARENAS_TEXT];
@@ -122,7 +144,7 @@ static void G_LoadArenasFromFile( char *filename ) {
 	buf[len] = 0;
 	trap_FS_FCloseFile( f );
 
-	g_numArenas += G_ParseInfos( buf, MAX_ARENAS - g_numArenas, &g_arenaInfos[g_numArenas] );
+	g_numArenas += G_ParseInfos( buf, MAX_ARENAS - g_numArenas, &g_arenaInfos[g_numArenas], bspList,bspCount );
 }
 
 int G_GetMapTypeBits(char *type)
@@ -339,6 +361,15 @@ void G_CheckMapHasArenaInfo()
 	G_Printf("^3Map is missing an arena info.\n");
 }
 
+int arenasort(void const* a, void const* b) {
+	char const* aa = *(char const**)a;
+	char const* bb = *(char const**)b;
+	const char* map1 = Info_ValueForKey(aa, "map");
+	const char* map2 = Info_ValueForKey(bb, "map");
+
+	return strcmp(map1,map2);
+}
+
 /*
 ===============
 G_LoadArenas
@@ -346,21 +377,25 @@ G_LoadArenas
 */
 static void G_LoadArenas( void ) {
 	int			numdirs;
+	int			numBsps;
 	vmCvar_t	arenasFile;
 	char		filename[128];
-	char		dirlist[1024];
+	static char	dirlistBsp[4096];
+	static char	dirlist[4096];
 	char*		dirptr;
 	int			i, n;
 	int			dirlen;
 
 	g_numArenas = 0;
 
+	numBsps = trap_FS_GetFileList("maps", ".bsp", dirlistBsp, 4096);
+
 	trap_Cvar_Register( &arenasFile, "g_arenasFile", "", CVAR_INIT|CVAR_ROM );
 	if( *arenasFile.string ) {
-		G_LoadArenasFromFile(arenasFile.string);
+		G_LoadArenasFromFile(arenasFile.string, dirlistBsp, numBsps);
 	}
 	else {
-		G_LoadArenasFromFile("scripts/arenas.txt");
+		G_LoadArenasFromFile("scripts/arenas.txt", dirlistBsp, numBsps);
 	}
 
 	// get all arenas from .arena files
@@ -370,7 +405,7 @@ static void G_LoadArenas( void ) {
 		dirlen = strlen(dirptr);
 		strcpy(filename, "scripts/");
 		strcat(filename, dirptr);
-		G_LoadArenasFromFile(filename);
+		G_LoadArenasFromFile(filename, dirlistBsp, numBsps);
 	}
 	trap_Printf( va( "%i arenas parsed\n", g_numArenas ) );
 	
@@ -379,6 +414,8 @@ static void G_LoadArenas( void ) {
 	}
 
 	level.arenasLoaded = qtrue;
+
+	qsort((void*)g_arenaInfos, g_numArenas, sizeof(g_arenaInfos[0]), arenasort);
 
 	G_CheckMapHasArenaInfo();
 
@@ -1144,7 +1181,7 @@ static void G_LoadBotsFromFile( char *filename ) {
 	buf[len] = 0;
 	trap_FS_FCloseFile( f );
 
-	g_numBots += G_ParseInfos( buf, MAX_BOTS - g_numBots, &g_botInfos[g_numBots] );
+	g_numBots += G_ParseInfos( buf, MAX_BOTS - g_numBots, &g_botInfos[g_numBots] , NULL, 0 );
 }
 
 /*

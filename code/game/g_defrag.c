@@ -2636,7 +2636,7 @@ void G_ConvertDefragTriggerTypes() {
 	char* oldType;
 	const char* typeString = NULL;
 	q3CourseType_t q3CourseType = Q3COURSE_UNIVERSAL;
-	qboolean specificQ3SpawnTypeOverride = qtrue;
+	qboolean specificQ3SpawnTypeOverride = qfalse;
 
 	//if ((level.dfStartTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfEndTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfCheckPointTriggerTypes & (1<<DFTRIG_NT_JAPRO)) ) {
 	if (level.dfStartTriggerTypes && level.dfEndTriggerTypes && level.dfCheckPointTriggerTypes ) {
