@@ -891,6 +891,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 		}
 		else {
 			if (level.time > client->inactivityToSpecTime) {
+				G_Printf("^3g_inactivityToSpec: Sending client %d to spec.\n", ent - g_entities);
 				SetTeam(ent, "s");
 				return qfalse;
 			}
@@ -902,6 +903,8 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 		}
 	}
 	if (client->markedAsInactive != wasInactive) {
+
+		G_Printf("^3g_inactivityToSpec: Client %d inactivity status changed to %d.\n", ent - g_entities, client->markedAsInactive);
 		CalculateRanks(); // need to let the game know this client won't vote :)
 	}
 	return qtrue;
@@ -2529,6 +2532,7 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 	// longer than the timeout to spectator then force this client into spectator mode
 	if ( level.time - ent->client->pers.cmd.serverTime > clampedIntMult(g_timeouttospec.integer ,1000) )
 	{
+		G_Printf("^3g_timeouttospec: Sending client %d to spec. %d time delta.\n",ent-g_entities, level.time - ent->client->pers.cmd.serverTime);
 		SetTeam ( ent, "spectator" );
 	}
 }
