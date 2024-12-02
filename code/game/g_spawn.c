@@ -102,6 +102,8 @@ field_t fields[] = {
 	{"targetShaderNewName", FOFS(targetShaderNewName), F_LSTRING},
 
 	{"courseid", FOFS(courseID), F_INT},
+	{"notvq3", FOFS(notVQ3), F_INT},
+	{"notcpm", FOFS(notCPM), F_INT},
 	//{"objective", FOFS(objective), F_INT},
 
 	{NULL}

@@ -219,6 +219,12 @@ typedef enum q3DefragTargetType_s {
 	TARGET_TYPE_COUNT
 } q3DefragTargetType_t;
 
+typedef enum q3CourseType_s {
+	Q3COURSE_UNIVERSAL,
+	Q3COURSE_CPMONLY,
+	Q3COURSE_VQ3ONLY,
+}q3CourseType_t;
+
 static const char* q3DefragTargetNames[] = {
 	"target_startTimer",
 	"target_stopTimer",
@@ -794,6 +800,14 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		|| cl->pers.lastRaceResetTime == level.time //Dont allow a starttimer to start in the same frame as a resettimer. not like that can happen anyway?
 		|| !trap_InPVS(cl->ps.origin, cl->ps.origin) // out of bounds fix? does this need extra checks due to trace/interpolation?
 		) return;
+
+	if (cl->pers.raceStartCommandTime && cl->pers.stats.courseId != ent->courseID) {
+		// we are already in a run on another course
+		if (g_developer.integer) {
+			G_Printf("^3DF_StartTimer_Leave: client %d already on a different course.\n",activator-g_entities);
+		}
+		return;
+	}
 
 	if (cl->sess.raceStateInvalidated) {
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
@@ -2436,18 +2450,28 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 		G_CenterPrint(activator-g_entities,3, va("^2Checkpoint activated\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
+		bestTime->courseId = cl->pers.stats.courseId;
+	}
+	else if (bestTime->courseId != cl->pers.stats.courseId) // last time logged on this checkpoint was a different course
+	{
+		G_CenterPrint(activator-g_entities,3, va("^2Different course, checkpoint reset\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
+		bestTime->time = timeCheck;
+		bestTime->raceStyle = cl->sess.raceStyle;
+		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (memcmp(&bestTime->raceStyle, &cl->sess.raceStyle,sizeof(bestTime->raceStyle))) // last time logged on this checkpoint was a different style
 	{
 		G_CenterPrint(activator-g_entities,3, va("^2Style changed, checkpoint reset\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
+		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (timeCheck <= bestTime->time)
 	{
 		G_CenterPrint(activator - g_entities, 3, va("%s\n^2-%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
+		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else
 	{
@@ -2520,7 +2544,7 @@ void DF_trigger_finish_converted(gentity_t* ent) {
 	ent->touch = DF_FinishTimer_Touch;
 	ent->triggerOnlyTraced = qtrue;  // don't trigger if we are fully inside trigger brush. only when entering/leaving
 
-	DF_RegisterSubCourse("");
+	DF_RegisterSubCourse(ent->message);
 
 	trap_LinkEntity(ent);
 }
@@ -2588,6 +2612,8 @@ void DF_trigger_checkpoint(gentity_t* ent) {
 	trap_LinkEntity(ent);
 }
 
+
+
 // q3 defrag targets are dependent on a separate trigger brush, which makes
 // tracking accurate times more difficult. so we are going to remove the trigger brushes
 // and the targets and replace them with proper defrag spawns.
@@ -2601,6 +2627,8 @@ void G_ConvertDefragTriggerTypes() {
 	int i,index;
 	char* oldModel;
 	char* oldType;
+	const char* typeString = NULL;
+	q3CourseType_t q3CourseType = Q3COURSE_UNIVERSAL;
 
 	//if ((level.dfStartTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfEndTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfCheckPointTriggerTypes & (1<<DFTRIG_NT_JAPRO)) ) {
 	if (level.dfStartTriggerTypes && level.dfEndTriggerTypes && level.dfCheckPointTriggerTypes ) {
@@ -2634,28 +2662,53 @@ void G_ConvertDefragTriggerTypes() {
 				}
 				anyTriggerFound = qtrue;
 				oldModel = trigger->model;
+
+				q3CourseType = Q3COURSE_UNIVERSAL;
+				typeString = NULL;
+				if (target->notVQ3 || trigger->notVQ3)
+				{
+					typeString = "cpmcourse";
+					q3CourseType = Q3COURSE_CPMONLY;
+				}
+				else if (target->notCPM || trigger->notCPM)
+				{
+					typeString = "vq3course";
+					q3CourseType = Q3COURSE_VQ3ONLY;
+				}
+
 				G_FreeEntity(trigger);
 				G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
 				trigger->model = oldModel; 
+
+
+				trigger->courseID = q3CourseType;
+				trigger->spawnflags |= SF_FINISHTIMER_REQUIRE_SPECIFIC_STARTTRIGGER;
+
 				switch (i) { // reusing japro classnames for compatibility
 					case TARGET_STARTTIMER:
 						trigger->classname = "df_trigger_start";
 						DF_trigger_start_converted(trigger);
 						level.dfStartTriggerTypes |= (1 << DFTRIG_Q3);
-						G_Printf("DEFRAG: ^2Q3 %s at %s converted.\n", target->classname, vtos(target->s.origin));
+						G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
 						break;
 					case TARGET_STOPTIMER:
 						trigger->classname = "df_trigger_finish";
+						if (q3CourseType && typeString) {
+							trigger->message = typeString;
+						}
+						else {
+							trigger->message = "";
+						}
 						DF_trigger_finish_converted(trigger);
 						level.dfEndTriggerTypes |= (1 << DFTRIG_Q3);
-						G_Printf("DEFRAG: ^2Q3 %s at %s converted.\n", target->classname, vtos(target->s.origin));
+						G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
 						break;
 					default:
 					case TARGET_CHECKPOINT:
 						trigger->classname = "df_trigger_checkpoint";
 						DF_trigger_checkpoint_converted(trigger);
 						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3);
-						G_Printf("DEFRAG: ^2Q3 %s at %s converted.\n", target->classname, vtos(target->s.origin));
+						G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
 						break;
 				}
 			}

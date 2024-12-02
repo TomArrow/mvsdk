@@ -144,6 +144,7 @@ extern raceStyle_t defaultRaceStyle;
 typedef struct checkpointTime_s {
 	int time;
 	raceStyle_t raceStyle;
+	int courseId;
 } checkpointTime_t;
 
 

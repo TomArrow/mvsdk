@@ -244,6 +244,9 @@ struct gentity_s {
 	int			noise_index;
 	int			courseID;
 
+	int			notVQ3; // q3 defrag thing
+	int			notCPM; // q3 defrag thing
+
 	// timing variables
 	float		wait;
 	float		random;
