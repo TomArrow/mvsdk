@@ -178,6 +178,7 @@ struct gentity_s {
 	vec3_t		pos1, pos2;
 
 	char		*message;
+	char		*overrideMessage;
 
 	int			timestamp;		// body queue sinking, etc
 	int			hurt_timestamp; // for racemode clients, we reverse timestamp on tar
@@ -283,6 +284,8 @@ struct gentity_s {
 
 	checkpointTime_t	checkpointTimes[MAX_CLIENTS];
 	checkpointTime_t	checkpointTimesSegNonReplay[MAX_CLIENTS];
+	
+	const char*	specialType; // for ez finding with G_Find
 
 	qboolean	isLogical;		// Determines if this ent is logical or not
 	int			laserPointerLastEventFlip;
@@ -406,6 +409,7 @@ typedef struct runStats_s { // zero'd out every time we leave start timer
 	int resposCount;
 	float startTriggerSpeed;
 	int courseId;
+	char overrideMessage[COURSENAME_MAX_LEN + 1]; // on some maps we may wanna do this via start trigger
 	int checkpoints;
 	int warningFlags;
 	rollState_t roll;
@@ -730,6 +734,7 @@ typedef struct {
 	int			numCourses;
 	qboolean	emptyNameCourseExists;
 	qboolean	hasArenaInfo;
+	qboolean	hasQ3StyleSpecificSpawns;
 	qboolean	mustGenerateArena;
 	qboolean	allRaceGenerationAlreadyCalled;
 	qboolean	arenasLoaded;

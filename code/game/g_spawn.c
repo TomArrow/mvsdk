@@ -104,6 +104,7 @@ field_t fields[] = {
 	{"courseid", FOFS(courseID), F_INT},
 	{"notvq3", FOFS(notVQ3), F_INT},
 	{"notcpm", FOFS(notCPM), F_INT},
+	{"overrideMessage", FOFS(overrideMessage), F_LSTRING},
 	//{"objective", FOFS(objective), F_INT},
 
 	{NULL}

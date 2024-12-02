@@ -20,6 +20,7 @@ Targets will be fired when someone spawns in on them.
 void SP_info_player_deathmatch( gentity_t *ent ) {
 	int		i;
 
+	ent->specialType = "playerspawn";
 	G_SpawnInt( "nobots", "0", &i);
 	if ( i ) {
 		ent->flags |= FL_NO_BOTS;
@@ -27,6 +28,10 @@ void SP_info_player_deathmatch( gentity_t *ent ) {
 	G_SpawnInt( "nohumans", "0", &i );
 	if ( i ) {
 		ent->flags |= FL_NO_HUMANS;
+	}
+	if (ent->notVQ3 || ent->notCPM) {
+		G_Printf("^3Q3 style specific spawn found: %s, notvq3 %d, notcpm %d\n",ent->classname,ent->notVQ3,ent->notCPM);
+		level.hasQ3StyleSpecificSpawns = qtrue;
 	}
 }
 
