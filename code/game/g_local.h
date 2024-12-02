@@ -177,8 +177,8 @@ struct gentity_s {
 	gentity_t	*prevTrain;
 	vec3_t		pos1, pos2;
 
-	char		*message;
-	char		*overrideMessage;
+	const char	*message;
+	const char	*overrideMessage;
 
 	int			timestamp;		// body queue sinking, etc
 	int			hurt_timestamp; // for racemode clients, we reverse timestamp on tar

@@ -2791,7 +2791,7 @@ void G_ConvertDefragTriggerTypes() {
 					case TARGET_STARTTIMER:
 						trigger->classname = "df_trigger_start";
 						if (specificQ3SpawnTypeOverride && typeString) {
-							trigger->overrideMessage = typeString;
+							trigger->overrideMessage = typeString; // ugh, is that cast safe. not rly?
 							DF_RegisterSubCourse(trigger->overrideMessage);
 						}
 						DF_trigger_start_converted(trigger);
