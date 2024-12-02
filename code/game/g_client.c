@@ -2322,7 +2322,7 @@ void ClientSpawn(gentity_t *ent) {
 			client->ps.stats[STAT_WEAPONS] |= (1 << WP_STUN_BATON);
 		}
 
-		if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL))
+		if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL) && (!g_defrag.integer || !(client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER))))
 		{
 			client->ps.weapon = WP_BRYAR_PISTOL;
 		}
@@ -2414,7 +2414,12 @@ void ClientSpawn(gentity_t *ent) {
 				client->ps.stats[STAT_WEAPONS] &= ~(1 << WP_SABER);
 				client->ps.stats[STAT_WEAPONS] |= (1 << WP_STUN_BATON);
 				client->ps.ammo[AMMO_POWERCELL] = ammoData[AMMO_POWERCELL].max;
-				client->ps.weapon = WP_BRYAR_PISTOL;
+				if (g_defrag.integer && (client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER))) {
+					client->ps.weapon = WP_SABER;
+				}
+				else {
+					client->ps.weapon = WP_BRYAR_PISTOL;
+				}
 			}
 		}
 		else
@@ -2452,7 +2457,7 @@ void ClientSpawn(gentity_t *ent) {
 				client->ps.stats[STAT_WEAPONS] |= (1 << WP_STUN_BATON);
 			}
 
-			if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL))
+			if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL) && (!g_defrag.integer || !(client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER))))
 			{
 				client->ps.weapon = WP_BRYAR_PISTOL;
 			}
