@@ -2533,6 +2533,10 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 	}
 }
 
+qboolean G_ResetUserCmdStore(int clientNum) {
+	userCmdBuffer[clientNum].nextBufferIndex = userCmdBuffer[clientNum].nextToExecute = userCmdBuffer[clientNum].msecThisFrame = 0;
+}
+
 // we implement a buffering here to smooth out demos if ppl have extreme lag (causing a LOT of packets to get executed at once)
 qboolean G_GetUserCmd(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance) {
 	usercmd_t* newCmd = &userCmdBuffer[clientNum].buf[userCmdBuffer[clientNum].nextBufferIndex % USERCMD_BUFFER_MAX];
@@ -2786,6 +2790,7 @@ void G_RunClient( gentity_t *ent ) {
 #ifdef SEGMENTEDDEBUG
 				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif
+				G_ResetUserCmdStore(ent - g_entities); // clear this so it doesn't execute very old ones now.
 				G_GetUserCmd(ent - g_entities, &ent->client->pers.cmd, GETUSERCMD_NOADVANCE);
 				SetClientViewAngle(ent,ent->client->ps.viewangles); // make a smooth transition back to player-controlled gameplay
 				//ent->client->ps.commandTime = ent->client->pers.cmd.serverTime; // fuck it, we apply the offset at the start now so... whatever.
