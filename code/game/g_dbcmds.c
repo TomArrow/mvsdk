@@ -1011,7 +1011,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE),
 					!entriesHere[LB_CUSTOM].exists? "" : RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, defaultRunFlags /*level.mapDefaultRaceStyle.runFlags*/, 1, NULL, NULL), // todo make it relative to the relevant map
-					(!entriesHere[LB_CUSTOM].exists || entriesHere[LB_CUSTOM].msec != -1) ? "" : multiva(" fps:", entriesHere[LB_CUSTOM].fpsString)
+					(!entriesHere[LB_CUSTOM].exists || entriesHere[LB_CUSTOM].msec != -1) ? "" : multiva(" fps:%s", entriesHere[LB_CUSTOM].fpsString)
 				));
 				break;
 			case LB_SEGMENTED:
@@ -1021,7 +1021,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY),
 					!entriesHere[LB_SEGMENTED].exists ? "" : miniva("(%dSP/%dRP/%s)", entriesHere[LB_SEGMENTED].savePosCount, entriesHere[LB_SEGMENTED].resposCount, DF_MsToString(entriesHere[LB_SEGMENTED].duration_ms_segmented_total)),
-					(!entriesHere[LB_SEGMENTED].exists || entriesHere[LB_SEGMENTED].msec != -1) ? "" : multiva(" fps:", entriesHere[LB_SEGMENTED].fpsString)
+					(!entriesHere[LB_SEGMENTED].exists || entriesHere[LB_SEGMENTED].msec != -1) ? "" : multiva(" fps:%s", entriesHere[LB_SEGMENTED].fpsString)
 				));
 				break;
 			case LB_CHEAT:
