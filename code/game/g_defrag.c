@@ -2307,6 +2307,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		}
 		ent->s.eFlags |= EF_SEGMENTEDREPLAY;
 		cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
+		cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
+		cl->pers.stats.startLevelTime = 0;
 		return;
 	}
 
