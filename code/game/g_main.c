@@ -2774,7 +2774,7 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 	Q_strncpyz(arenaText,va("{\nmap \"%s\"\nlongname \"%s\"\ntype \"ffa\"\n}\n", thisMapName,level.message[0] ? level.message : thisMapName),sizeof(arenaText));
 
 	arenaTextLength = strlen(arenaText);
-	while (((len=trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena",arenaFileIndex), &f, FS_APPEND)) + arenaTextLength + 2) > MAX_ARENAS_TEXT){
+	while (((len=trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena",arenaFileIndex), &f, FS_READ)) + arenaTextLength + 2) > MAX_ARENAS_TEXT){
 		if (!f) {
 
 			G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/_autoGenArenas%d.arena.\n\"", arenaFileIndex), qtrue);
@@ -2789,7 +2789,15 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 		return;
 	}
 	else {
-		G_SendServerCommand(-1, va("print \"^2Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
+		trap_FS_FCloseFile(f); // we need to close and reopen it. the first open was in FS_READ mode to get the filesize. second open is in FS_APPEND mode.
+		trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena", arenaFileIndex), &f, FS_APPEND);
+		if (!f) {
+			G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot re-open scripts/_autoGenArenas%d.arena.\n\"", arenaFileIndex), qtrue);
+			return;
+		}
+		else {
+			G_SendServerCommand(-1, va("print \"^2Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
+		}
 	}
 
 	trap_FS_Write(arenaText,arenaTextLength,f);
