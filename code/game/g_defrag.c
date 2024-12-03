@@ -2261,6 +2261,23 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
+	if (ent->ttFlags & TTFLAGS_FINISHTIMER_SCOREREQUIRE) { // cl->pers.stats.score is specific to runs! not our normal score
+		if (cl->pers.stats.score < ent->checkpointScore) {
+			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
+				cl->randomLastCenterprint = level.time;
+				G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too low: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse);
+			}
+			return;
+		}
+		else if (ent->ttFlags & TTFLAGS_FINISHTIMER_SCOREREQUIRE_MATCH && cl->pers.stats.score != ent->checkpointScore) {
+			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
+				cl->randomLastCenterprint = level.time;
+				G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score does not match: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse);
+			}
+			return;
+		}
+	}
+
 	if (!ValidRaceSettings(activator) || !trap_InPVS(cl->ps.origin, cl->ps.origin)) {// out of bounds fix? does this need extra checks due to trace/interpolation?
 		DF_RaceStateInvalidated(activator, qtrue);
 		return;
@@ -2384,6 +2401,7 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 	int	timeCheck, lessTime=0;
 	checkpointTime_t* bestTime;
 	int nowTime = LEVELTIME(activator->client);
+	char scoreAddExtraText[50];
 
 	if (trigger->parent && trigger->parent != activator) return; // belongs to someone else
 
@@ -2447,6 +2465,15 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 		lessTime = DF_InterpolateTouchTimeToOldPosThisTrigger(activator, trigger, interpolationDisplacement);
 	}
 
+	scoreAddExtraText[0] = '\0';
+	if (trigger->checkpointScore) {
+		if (!(trigger->ttFlags & TTFLAGS_CHECKPOINTTIMER_SCOREONCE) || !cl->entityStates[trigger -g_entities]) {
+			cl->pers.stats.score += trigger->checkpointScore;
+			Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint score ^%c%s%d: %d", trigger->checkpointScore > 0 ? '3' : '1', trigger->checkpointScore > 0 ? "+" : "", trigger->checkpointScore, cl->pers.stats.score), sizeof(scoreAddExtraText));
+			cl->entityStates[trigger - g_entities] = 1;
+		}
+	}
+
 	// Set info
 	timeCheck = activator->client->ps.commandTime - lessTime - activator->client->pers.raceStartCommandTime;
 
@@ -2454,35 +2481,35 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 
 	if (bestTime->time == 0)
 	{
-		G_CenterPrint(activator-g_entities,3, va("^2Checkpoint activated\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator-g_entities,3, va("^2Checkpoint activated\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (bestTime->courseId != cl->pers.stats.courseId) // last time logged on this checkpoint was a different course
 	{
-		G_CenterPrint(activator-g_entities,3, va("^2Different course, checkpoint reset\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator-g_entities,3, va("^2Different course, checkpoint reset\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (memcmp(&bestTime->raceStyle, &cl->sess.raceStyle,sizeof(bestTime->raceStyle))) // last time logged on this checkpoint was a different style
 	{
-		G_CenterPrint(activator-g_entities,3, va("^2Style changed, checkpoint reset\n%s", DF_MsToString(timeCheck)),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator-g_entities,3, va("^2Style changed, checkpoint reset\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (timeCheck <= bestTime->time)
 	{
-		G_CenterPrint(activator - g_entities, 3, va("%s\n^2-%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities, 3, va("%s\n^2-%s%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time)), scoreAddExtraText),qfalse,qtrue,qfalse);
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else
 	{
-		G_CenterPrint(activator - g_entities,3, va("%s\n^1+%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time))),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities,3, va("%s\n^1+%s%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time)), scoreAddExtraText),qfalse,qtrue,qfalse);
 
 	}
 
@@ -2619,7 +2646,245 @@ void DF_trigger_checkpoint(gentity_t* ent) {
 	trap_LinkEntity(ent);
 }
 
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_REMOVER		(1<<0)
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT		(1<<2)
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_RESET		(1<<3)
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH		(1<<4)
 
+qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3DefragTargetType_t targetType, qboolean* anyTriggerFound, int depth ) {
+	char* oldModel;
+	q3CourseType_t q3CourseType = Q3COURSE_UNIVERSAL;
+	qboolean specificQ3SpawnTypeOverride = qfalse;
+	const char* typeString = NULL;
+	gentity_t* otherTarget = NULL;
+	const char* oldClass;
+	int oldWait;
+
+	if (!trigger->r.bmodel || !(trigger->r.contents & CONTENTS_TRIGGER) || !trigger->model) {
+		// check if this is a target_fragsfilter or such
+		gentity_t* trueTrigger = NULL;
+
+		if (depth > 10) {
+			// we might be stuck in a loop
+			G_Printf("DEFRAG: ^1%s referenced by %s, but we have reached maximum depth. Possible recursion? Quitting.\n", target->classname, trigger->classname);
+			return qfalse;
+		}
+
+		if (!Q_stricmp(trigger->classname, "target_fragsFilter") && targetType == TARGET_STOPTIMER) {
+			if (trigger->targetname && trigger->targetname[0]) {
+				qboolean anyMatch = qfalse;
+				// Then find all triggers that do something with them
+				while ((trueTrigger = G_Find(trueTrigger, FOFS(target), trigger->targetname)) != NULL) {
+
+					anyMatch = qtrue;
+					if (G_Q3DefragTriggerConvert(trueTrigger, target, targetType, anyTriggerFound, depth+1)) {
+						trueTrigger->checkpointScore = trigger->count;
+						trueTrigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE;
+						if (trigger->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT) {
+							trueTrigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE_SILENT;
+						}
+						if (trigger->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH) {
+							trueTrigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE_MATCH;
+						}
+						G_Printf("DEFRAG: ^3%s referenced by %s successfully converted at depth %d.\n", target->classname, trigger->classname, depth+1);
+					}
+				}
+				if (!anyMatch) {
+					G_Printf("DEFRAG: ^1%s referenced by %s, but latter is not referenced by anything.\n", target->classname, trigger->classname);
+				}
+			}
+			else {
+				G_Printf("DEFRAG: ^1%s referenced by %s, but latter has no targetname.\n", target->classname, trigger->classname);
+			}
+		}
+		else {
+			G_Printf("DEFRAG: ^1%s referenced by %s, not implemented.\n",target->classname,trigger->classname);
+		}
+
+		G_FreeEntity(trigger);
+
+		return qfalse;
+	}
+	*anyTriggerFound = qtrue;
+	oldModel = trigger->model;
+
+	q3CourseType = Q3COURSE_UNIVERSAL;
+	if (target->notVQ3 || trigger->notVQ3)
+	{
+		q3CourseType = Q3COURSE_CPMONLY;
+	}
+	else if (target->notCPM || trigger->notCPM)
+	{
+		q3CourseType = Q3COURSE_VQ3ONLY;
+	}
+
+	if (targetType == TARGET_STARTTIMER && level.hasQ3StyleSpecificSpawns && !q3CourseType) {
+		// this is REALLY disgusting. 
+		gentity_t* spawn = NULL;
+		float spawnDistances[Q3COURSE_TYPECOUNT] = { HUGE_VALF,HUGE_VALF, HUGE_VALF };
+		float distance;
+		vec3_t triggerCenter, distanceVec;
+		int type, type2, clo;
+		q3CourseType_t q3SpawnType = Q3COURSE_UNIVERSAL;
+
+		VectorAdd(trigger->r.absmin, trigger->r.absmax, triggerCenter);
+		VectorScale(triggerCenter, 0.5f, triggerCenter);
+
+		// Check distances to various types of spawns. YIKES
+		while ((spawn = G_Find(spawn, FOFS(specialType), "playerspawn")) != NULL) {
+			if (trap_InPVSIgnorePortals(triggerCenter, spawn->s.origin)) {
+				q3SpawnType = spawn->notCPM ? Q3COURSE_VQ3ONLY : (spawn->notVQ3 ? Q3COURSE_CPMONLY : Q3COURSE_UNIVERSAL);
+				VectorSubtract(triggerCenter, spawn->s.origin, distanceVec);
+				distance = VectorLength(distanceVec);
+				if (spawnDistances[q3SpawnType] > distance) {
+					spawnDistances[q3SpawnType] = distance;
+				}
+			}
+		}
+
+		// rofl.. so bad.
+		q3SpawnType = Q3COURSE_UNIVERSAL; // reuse this var.
+		if (spawnDistances[Q3COURSE_VQ3ONLY] < spawnDistances[Q3COURSE_CPMONLY] && spawnDistances[Q3COURSE_VQ3ONLY] < spawnDistances[Q3COURSE_UNIVERSAL]) {
+			q3SpawnType = Q3COURSE_VQ3ONLY;
+			if (spawnDistances[Q3COURSE_CPMONLY] != HUGE_VALF) {
+				if (spawnDistances[Q3COURSE_VQ3ONLY] * 2 > spawnDistances[Q3COURSE_CPMONLY]) {
+					G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50% of the distance to a cpm-only spawn.\n");
+				}
+				else {
+					G_Printf("DEFRAG: ^3VQ3-only spawn closest to startTimer but cpm-only spawn found in PVS.\n");
+				}
+			}
+			if (spawnDistances[Q3COURSE_UNIVERSAL] != HUGE_VALF) {
+				if (spawnDistances[Q3COURSE_VQ3ONLY] * 2 > spawnDistances[Q3COURSE_UNIVERSAL]) {
+					G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50% of the distance to a universal spawn.\n");
+				}
+				else {
+					G_Printf("DEFRAG: ^3VQ3-only spawn closest to startTimer but universal spawn found in PVS.\n");
+				}
+			}
+		}
+		else if (spawnDistances[Q3COURSE_CPMONLY] < spawnDistances[Q3COURSE_VQ3ONLY] && spawnDistances[Q3COURSE_CPMONLY] < spawnDistances[Q3COURSE_UNIVERSAL]) {
+			q3SpawnType = Q3COURSE_CPMONLY;
+			if (spawnDistances[Q3COURSE_VQ3ONLY] != HUGE_VALF) {
+				if (spawnDistances[Q3COURSE_CPMONLY] * 2 > spawnDistances[Q3COURSE_VQ3ONLY]) {
+					G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50% of the distance to a vq3-only spawn.\n");
+				}
+				else {
+					G_Printf("DEFRAG: ^3CPM-only spawn closest to startTimer but vq3-only spawn found in PVS.\n");
+				}
+			}
+			if (spawnDistances[Q3COURSE_UNIVERSAL] != HUGE_VALF) {
+				if (spawnDistances[Q3COURSE_CPMONLY] * 2 > spawnDistances[Q3COURSE_UNIVERSAL]) {
+					G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50% of the distance to a universal spawn.\n");
+				}
+				else {
+					G_Printf("DEFRAG: ^3CPM-only spawn closest to startTimer but universal spawn found in PVS.\n");
+				}
+			}
+		}
+		else if (spawnDistances[Q3COURSE_UNIVERSAL] < spawnDistances[Q3COURSE_VQ3ONLY] && spawnDistances[Q3COURSE_UNIVERSAL] < spawnDistances[Q3COURSE_CPMONLY]) {
+			q3SpawnType = Q3COURSE_UNIVERSAL;
+			if (spawnDistances[Q3COURSE_VQ3ONLY] != HUGE_VALF) {
+				if (spawnDistances[Q3COURSE_UNIVERSAL] * 2 > spawnDistances[Q3COURSE_VQ3ONLY]) {
+					G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50% of the distance to a vq3-only spawn.\n");
+				}
+				else {
+					G_Printf("DEFRAG: ^3Universal spawn closest to startTimer but vq3-only spawn found in PVS.\n");
+				}
+			}
+			if (spawnDistances[Q3COURSE_CPMONLY] != HUGE_VALF) {
+				if (spawnDistances[Q3COURSE_UNIVERSAL] * 2 > spawnDistances[Q3COURSE_CPMONLY]) {
+					G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50% of the distance to a cpm-only spawn.\n");
+				}
+				else {
+					G_Printf("DEFRAG: ^3Universal spawn closest to startTimer but cpm-only spawn found in PVS.\n");
+				}
+			}
+		}
+
+		q3CourseType = q3SpawnType;
+		if (q3CourseType) {
+			specificQ3SpawnTypeOverride = qtrue;
+		}
+	}
+
+	typeString = NULL;
+	if (q3CourseType == Q3COURSE_CPMONLY) {
+		typeString = "cpmcourse";
+	}
+	else if (q3CourseType == Q3COURSE_VQ3ONLY) {
+		typeString = "vq3course";
+	}
+
+	oldClass = trigger->classname;
+	oldWait = trigger->wait;
+
+	G_FreeEntity(trigger);
+	G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
+	trigger->model = oldModel;
+
+
+	otherTarget = NULL;
+	// check for other targets that might be relevant.
+	// e.g. target_score for checkpoints
+	while ((otherTarget = G_Find(otherTarget, FOFS(targetname), target->targetname)) != NULL) {
+
+		if (otherTarget == target) {
+			continue;
+		}
+		if (!Q_stricmp(otherTarget->classname, "target_score")) {
+			//checkpointScore
+			trigger->checkpointScore = otherTarget->count ? otherTarget->count : 1;
+			if (oldWait < 0) {
+				trigger->ttFlags |= TTFLAGS_CHECKPOINTTIMER_SCOREONCE;
+			}
+			G_Printf("DEFRAG: ^1%s which references %s also references %s. Applying.\n", oldClass, target->classname, otherTarget->classname);
+		}
+		else {
+			G_Printf("DEFRAG: ^1%s which references %s also references %s. Not implemented.\n", oldClass, target->classname, otherTarget->classname);
+		}
+
+	}
+
+	trigger->courseID = q3CourseType;
+	if (q3CourseType || !level.hasQ3StyleSpecificSpawns) {
+		trigger->spawnflags |= SF_FINISHTIMER_REQUIRE_SPECIFIC_STARTTRIGGER;
+	}
+
+	switch (targetType) { // reusing japro classnames for compatibility
+	case TARGET_STARTTIMER:
+		trigger->classname = "df_trigger_start";
+		if (specificQ3SpawnTypeOverride && typeString) {
+			trigger->overrideMessage = typeString; // ugh, is that cast safe. not rly?
+			DF_RegisterSubCourse(trigger->overrideMessage);
+		}
+		DF_trigger_start_converted(trigger);
+		level.dfStartTriggerTypes |= (1 << DFTRIG_Q3);
+		G_Printf("DEFRAG: ^2Q3 %s (%s%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", specificQ3SpawnTypeOverride ? "-SPAWNOVERRIDE" : "", vtos(target->s.origin));
+		break;
+	case TARGET_STOPTIMER:
+		trigger->classname = "df_trigger_finish";
+		if (q3CourseType && typeString) {
+			trigger->message = typeString;
+		}
+		else {
+			trigger->message = NULL;
+		}
+		DF_trigger_finish_converted(trigger, q3CourseType && typeString || !level.hasQ3StyleSpecificSpawns);
+		level.dfEndTriggerTypes |= (1 << DFTRIG_Q3);
+		G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
+		break;
+	default:
+	case TARGET_CHECKPOINT:
+		trigger->classname = "df_trigger_checkpoint";
+		DF_trigger_checkpoint_converted(trigger);
+		level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3);
+		G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
+		break;
+	}
+
+	return qtrue;
+}
 
 // q3 defrag targets are dependent on a separate trigger brush, which makes
 // tracking accurate times more difficult. so we are going to remove the trigger brushes
@@ -2634,9 +2899,6 @@ void G_ConvertDefragTriggerTypes() {
 	int i,index;
 	char* oldModel;
 	char* oldType;
-	const char* typeString = NULL;
-	q3CourseType_t q3CourseType = Q3COURSE_UNIVERSAL;
-	qboolean specificQ3SpawnTypeOverride = qfalse;
 
 	//if ((level.dfStartTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfEndTriggerTypes & (1<<DFTRIG_NT_JAPRO)) && (level.dfCheckPointTriggerTypes & (1<<DFTRIG_NT_JAPRO)) ) {
 	if (level.dfStartTriggerTypes && level.dfEndTriggerTypes && level.dfCheckPointTriggerTypes ) {
@@ -2665,159 +2927,7 @@ void G_ConvertDefragTriggerTypes() {
 			// Then find all triggers that do something with them
 			while ((trigger = G_Find(trigger, FOFS(target), target->targetname)) != NULL) {
 
-				if (!trigger->r.bmodel || !(trigger->r.contents & CONTENTS_TRIGGER) || !trigger->model) {
-					continue;
-				}
-				anyTriggerFound = qtrue;
-				oldModel = trigger->model;
-
-				q3CourseType = Q3COURSE_UNIVERSAL;
-				if (target->notVQ3 || trigger->notVQ3)
-				{
-					q3CourseType = Q3COURSE_CPMONLY;
-				}
-				else if (target->notCPM || trigger->notCPM)
-				{
-					q3CourseType = Q3COURSE_VQ3ONLY;
-				}
-
-				if (i == TARGET_STARTTIMER && level.hasQ3StyleSpecificSpawns && !q3CourseType) {
-					// this is REALLY disgusting. 
-					gentity_t* spawn = NULL;
-					float spawnDistances[Q3COURSE_TYPECOUNT] = {HUGE_VALF,HUGE_VALF, HUGE_VALF };
-					float distance;
-					vec3_t triggerCenter, distanceVec;
-					int type,type2,clo;
-					q3CourseType_t q3SpawnType = Q3COURSE_UNIVERSAL;
-
-					VectorAdd(trigger->r.absmin, trigger->r.absmax,triggerCenter);
-					VectorScale(triggerCenter, 0.5f, triggerCenter);
-
-					// Check distances to various types of spawns. YIKES
-					while ((spawn = G_Find(spawn, FOFS(specialType), "playerspawn")) != NULL) {
-						if (trap_InPVSIgnorePortals(triggerCenter,spawn->s.origin)) {
-							q3SpawnType = spawn->notCPM ? Q3COURSE_VQ3ONLY :(spawn->notVQ3 ? Q3COURSE_CPMONLY : Q3COURSE_UNIVERSAL);
-							VectorSubtract(triggerCenter, spawn->s.origin, distanceVec);
-							distance = VectorLength(distanceVec);
-							if (spawnDistances[q3SpawnType] > distance) {
-								spawnDistances[q3SpawnType] = distance;
-							}
-						}
-					}
-
-					// rofl.. so bad.
-					q3SpawnType = Q3COURSE_UNIVERSAL; // reuse this var.
-					if (spawnDistances[Q3COURSE_VQ3ONLY] < spawnDistances[Q3COURSE_CPMONLY] && spawnDistances[Q3COURSE_VQ3ONLY] < spawnDistances[Q3COURSE_UNIVERSAL]) {
-						q3SpawnType = Q3COURSE_VQ3ONLY;
-						if (spawnDistances[Q3COURSE_CPMONLY] != HUGE_VALF) {
-							if (spawnDistances[Q3COURSE_VQ3ONLY] * 2 > spawnDistances[Q3COURSE_CPMONLY]) {
-								G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50% of the distance to a cpm-only spawn.\n");
-							}
-							else {
-								G_Printf("DEFRAG: ^3VQ3-only spawn closest to startTimer but cpm-only spawn found in PVS.\n");
-							}
-						}
-						if (spawnDistances[Q3COURSE_UNIVERSAL] != HUGE_VALF) {
-							if (spawnDistances[Q3COURSE_VQ3ONLY] * 2 > spawnDistances[Q3COURSE_UNIVERSAL]) {
-								G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50% of the distance to a universal spawn.\n");
-							}
-							else {
-								G_Printf("DEFRAG: ^3VQ3-only spawn closest to startTimer but universal spawn found in PVS.\n");
-							}
-						}
-					} else if (spawnDistances[Q3COURSE_CPMONLY] < spawnDistances[Q3COURSE_VQ3ONLY] && spawnDistances[Q3COURSE_CPMONLY] < spawnDistances[Q3COURSE_UNIVERSAL]) {
-						q3SpawnType = Q3COURSE_CPMONLY;
-						if (spawnDistances[Q3COURSE_VQ3ONLY] != HUGE_VALF) {
-							if (spawnDistances[Q3COURSE_CPMONLY] * 2 > spawnDistances[Q3COURSE_VQ3ONLY]) {
-								G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50% of the distance to a vq3-only spawn.\n");
-							}
-							else {
-								G_Printf("DEFRAG: ^3CPM-only spawn closest to startTimer but vq3-only spawn found in PVS.\n");
-							}
-						}
-						if (spawnDistances[Q3COURSE_UNIVERSAL] != HUGE_VALF) {
-							if (spawnDistances[Q3COURSE_CPMONLY] * 2 > spawnDistances[Q3COURSE_UNIVERSAL]) {
-								G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50% of the distance to a universal spawn.\n");
-							}
-							else {
-								G_Printf("DEFRAG: ^3CPM-only spawn closest to startTimer but universal spawn found in PVS.\n");
-							}
-						}
-					}else if (spawnDistances[Q3COURSE_UNIVERSAL] < spawnDistances[Q3COURSE_VQ3ONLY] && spawnDistances[Q3COURSE_UNIVERSAL] < spawnDistances[Q3COURSE_CPMONLY]) {
-						q3SpawnType = Q3COURSE_UNIVERSAL;
-						if (spawnDistances[Q3COURSE_VQ3ONLY] != HUGE_VALF) {
-							if (spawnDistances[Q3COURSE_UNIVERSAL] * 2 > spawnDistances[Q3COURSE_VQ3ONLY]) {
-								G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50% of the distance to a vq3-only spawn.\n");
-							}
-							else {
-								G_Printf("DEFRAG: ^3Universal spawn closest to startTimer but vq3-only spawn found in PVS.\n");
-							}
-						}
-						if (spawnDistances[Q3COURSE_CPMONLY] != HUGE_VALF) {
-							if (spawnDistances[Q3COURSE_UNIVERSAL] * 2 > spawnDistances[Q3COURSE_CPMONLY]) {
-								G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50% of the distance to a cpm-only spawn.\n");
-							}
-							else {
-								G_Printf("DEFRAG: ^3Universal spawn closest to startTimer but cpm-only spawn found in PVS.\n");
-							}
-						}
-					}
-
-					q3CourseType = q3SpawnType;
-					if (q3CourseType) {
-						specificQ3SpawnTypeOverride = qtrue;
-					}
-				}
-
-				typeString = NULL;
-				if (q3CourseType == Q3COURSE_CPMONLY) {
-					typeString = "cpmcourse";
-				}
-				else if (q3CourseType == Q3COURSE_VQ3ONLY) {
-					typeString = "vq3course";
-				}
-
-				G_FreeEntity(trigger);
-				G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
-				trigger->model = oldModel; 
-
-
-				trigger->courseID = q3CourseType;
-				if (q3CourseType || !level.hasQ3StyleSpecificSpawns) {
-					trigger->spawnflags |= SF_FINISHTIMER_REQUIRE_SPECIFIC_STARTTRIGGER;
-				}
-
-				switch (i) { // reusing japro classnames for compatibility
-					case TARGET_STARTTIMER:
-						trigger->classname = "df_trigger_start";
-						if (specificQ3SpawnTypeOverride && typeString) {
-							trigger->overrideMessage = typeString; // ugh, is that cast safe. not rly?
-							DF_RegisterSubCourse(trigger->overrideMessage);
-						}
-						DF_trigger_start_converted(trigger);
-						level.dfStartTriggerTypes |= (1 << DFTRIG_Q3);
-						G_Printf("DEFRAG: ^2Q3 %s (%s%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", specificQ3SpawnTypeOverride ? "-SPAWNOVERRIDE" : "", vtos(target->s.origin));
-						break;
-					case TARGET_STOPTIMER:
-						trigger->classname = "df_trigger_finish";
-						if (q3CourseType && typeString) {
-							trigger->message = typeString;
-						}
-						else {
-							trigger->message = NULL;
-						}
-						DF_trigger_finish_converted(trigger, q3CourseType&& typeString || !level.hasQ3StyleSpecificSpawns);
-						level.dfEndTriggerTypes |= (1 << DFTRIG_Q3);
-						G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
-						break;
-					default:
-					case TARGET_CHECKPOINT:
-						trigger->classname = "df_trigger_checkpoint";
-						DF_trigger_checkpoint_converted(trigger);
-						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3);
-						G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
-						break;
-				}
+				G_Q3DefragTriggerConvert(trigger,target,i,&anyTriggerFound,0);
 			}
 			if (!anyTriggerFound) {
 				G_Printf("DEFRAG: ^1untargeted %s at %s (targetname %s)\n", target->classname, vtos(target->s.origin),target->targetname);

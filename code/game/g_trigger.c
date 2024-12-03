@@ -65,7 +65,10 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 
 	//ent->activator = activator;
 	G_SetActivator(ent, activator);
-	if (isRacer) {
+	if (g_defrag.integer && ent->wait < 0 && activator->client->entityStates[ent - g_entities]) { // once per respawn in defrag.
+		return;
+	}
+	else if (isRacer) {
 		if (activator->client->triggerTimes[ent - g_entities] >= nowTime) {
 			return; // i hope this somewhat replicates the behavior accurately while keeping things deterministic?
 		}
@@ -144,9 +147,16 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 	} else { // why?!
 		// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
-		ent->touch = 0;
-		ent->nextthink = level.time + FRAMETIME;
-		ent->think = G_FreeEntity;
+		if (g_defrag.integer) {
+			if (activator->client) {
+				activator->client->entityStates[ent - g_entities] = 1;
+			}
+		}
+		else {
+			ent->touch = 0;
+			ent->nextthink = level.time + FRAMETIME;
+			ent->think = G_FreeEntity;
+		}
 	}
 }
 

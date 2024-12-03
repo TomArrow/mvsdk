@@ -105,6 +105,7 @@ field_t fields[] = {
 	{"notvq3", FOFS(notVQ3), F_INT},
 	{"notcpm", FOFS(notCPM), F_INT},
 	{"overrideMessage", FOFS(overrideMessage), F_LSTRING},
+	{"ttFlags", FOFS(ttFlags), F_INT},
 	//{"objective", FOFS(objective), F_INT},
 
 	{NULL}
@@ -157,7 +158,8 @@ void SP_target_speaker (gentity_t *ent);
 void SP_target_print (gentity_t *ent);
 void SP_target_laser (gentity_t *self);
 void SP_target_character (gentity_t *ent);
-void SP_target_score( gentity_t *ent );
+void SP_target_score( gentity_t *ent ); 
+void DF_target_fragsFilter_husk(gentity_t* ent);
 void SP_target_teleporter( gentity_t *ent );
 void SP_target_relay (gentity_t *ent);
 void SP_target_kill (gentity_t *ent);
@@ -270,6 +272,8 @@ spawn_t	spawns[] = {
 	{"target_position", qtrue, SP_target_position},
 	{"target_location", qtrue, SP_target_location},
 	{"target_push", qtrue, SP_target_push},
+
+	{"target_fragsFilter", qtrue, DF_target_fragsFilter_husk},
 
 	{"target_startTimer", qtrue, DF_target_husk},
 	{"target_stopTimer", qtrue, DF_target_husk},

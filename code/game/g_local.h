@@ -127,6 +127,7 @@ struct gentity_s {
 
 	char		*classname;			// set in QuakeEd
 	int			spawnflags;			// set in QuakeEd
+	int			ttFlags;			// tommyternal flags :)
 
 	int			teamnodmg;			// set in QuakeEd
 
@@ -289,6 +290,8 @@ struct gentity_s {
 
 	qboolean	isLogical;		// Determines if this ent is logical or not
 	int			laserPointerLastEventFlip;
+
+	int			checkpointScore; // when stats.score for defrag run must be a certain value
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -411,6 +414,7 @@ typedef struct runStats_s { // zero'd out every time we leave start timer
 	int courseId;
 	char overrideMessage[COURSENAME_MAX_LEN + 1]; // on some maps we may wanna do this via start trigger
 	int checkpoints;
+	int score; // target_score uses this in defrag mode
 	int warningFlags;
 	rollState_t roll;
 	runFpsStats_t fpsStats;

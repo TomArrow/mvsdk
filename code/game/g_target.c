@@ -116,6 +116,10 @@ void SP_target_delay( gentity_t *ent ) {
 The activator is given this many points.
 */
 void Use_Target_Score (gentity_t *ent, gentity_t *other, gentity_t *activator) {
+	if (ent->client && ent->client->sess.raceMode) {
+		ent->client->pers.stats.score += ent->count; // checkpoint score, kinda.
+		return;
+	}
 	AddScore( activator, ent->r.currentOrigin, ent->count );
 }
 
@@ -124,6 +128,11 @@ void SP_target_score( gentity_t *ent ) {
 		ent->count = 1;
 	}
 	ent->use = Use_Target_Score;
+}
+
+
+void DF_target_fragsFilter_husk(gentity_t* ent) {
+	G_SpawnInt("frags", "1", &ent->count);
 }
 
 
