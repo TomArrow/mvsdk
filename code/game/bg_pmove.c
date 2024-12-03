@@ -5768,7 +5768,7 @@ void PmoveSingle (pmove_t *pmove) {
 						//else
 							//optimalDeltaAngle = -6;
 
-						if (isSlope && pm->cmd.forwardmove) {
+						if (isSlope && pm->cmd.forwardmove > 0) {
 							pm->cmd.rightmove = 0; // slopes make us slower if we dont go W only!!! (allow A/D tho)
 						}
 						if (isSlope && doSlopes) {
