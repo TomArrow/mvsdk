@@ -108,6 +108,8 @@ vmCvar_t	g_mapDefaultMsec;
 vmCvar_t	g_mapDefaultJump;
 vmCvar_t	g_mapDefaultRunFlags;
 
+vmCvar_t	g_strafebotSlopeHandling;
+
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
 vmCvar_t	g_doWarmup;
@@ -266,6 +268,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_mapDefaultMsec, "g_mapDefaultMsec", "8", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 	{ &g_mapDefaultJump, "g_mapDefaultJump", "1", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 	{ &g_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO | CVAR_ROM, 0, qfalse},
+
+	{ &g_strafebotSlopeHandling, "g_strafebotSlopeHandling", "1", CVAR_SYSTEMINFO | CVAR_CHEAT, 0, qfalse},
 
 	{ &g_saberInterpolate, "g_saberInterpolate", "1", CVAR_ARCHIVE, 0, qtrue },
 

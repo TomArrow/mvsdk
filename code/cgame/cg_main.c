@@ -672,6 +672,8 @@ vmCvar_t	cg_mapDefaultMsec;
 vmCvar_t	cg_mapDefaultJump;
 vmCvar_t	cg_mapDefaultRunFlags;
 
+vmCvar_t	cg_strafebotSlopeHandling;
+
 vmCvar_t	cg_synchronousClients;
 vmCvar_t	cg_debugMove;
 vmCvar_t 	cg_teamChatTime;
@@ -1025,9 +1027,10 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_buildScript, "com_buildScript", "0", 0 },	// force loading of all possible data amd error on failures
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
 	{ &cg_blood, "com_blood", "1", CVAR_ARCHIVE },
-	{ &cg_mapDefaultMsec, "g_mapDefaultMsec", "0", 0 },	// communicated by systeminfo
-	{ &cg_mapDefaultJump, "g_mapDefaultJump", "0", 0 },	// communicated by systeminfo
-	{ &cg_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", 0 },	// communicated by systeminfo
+	{ &cg_mapDefaultMsec, "g_mapDefaultMsec", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
+	{ &cg_mapDefaultJump, "g_mapDefaultJump", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
+	{ &cg_strafebotSlopeHandling, "g_strafebotSlopeHandling", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
+	{ &cg_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_synchronousClients, "g_synchronousClients", "0", 0 },	// communicated by systeminfo
 
 	{ &cg_debugMove, "cg_debugMove", "0", CVAR_TEMP },

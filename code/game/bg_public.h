@@ -329,7 +329,12 @@ typedef struct {
 	// raw trace that ignores racemode considerations and such. allow us to dbs anyone even in racemode as a meme.
 	void		(*rawtrace)(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask);
 
-	rollState_t	roll;
+	rollState_t		roll;
+	antiLoopState_t antiLoop;
+
+	float			accelMiss;
+	float			wishSpeed;
+	qboolean		handleStrafebotSlopes;
 } pmove_t;
 
 extern	pmove_t		*pm;

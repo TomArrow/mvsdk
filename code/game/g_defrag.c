@@ -2838,7 +2838,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			if (oldWait < 0) {
 				trigger->ttFlags |= TTFLAGS_CHECKPOINTTIMER_SCOREONCE;
 			}
-			G_Printf("DEFRAG: ^1%s which references %s also references %s. Applying.\n", oldClass, target->classname, otherTarget->classname);
+			G_Printf("DEFRAG: ^3%s which references %s also references %s. Applying.\n", oldClass, target->classname, otherTarget->classname);
 		}
 		else {
 			G_Printf("DEFRAG: ^1%s which references %s also references %s. Not implemented.\n", oldClass, target->classname, otherTarget->classname);

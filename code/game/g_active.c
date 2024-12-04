@@ -2170,6 +2170,7 @@ void ClientThink_real( gentity_t *ent ) {
 	ent->client->prePmovePositionSet = qtrue;
 	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
 	
+	pm.handleStrafebotSlopes = g_strafebotSlopeHandling.integer;
 	pm.roll = ent->client->pers.roll;
 	DF_PreDeltaAngleChange(ent->client);
 	Pmove (&pm);

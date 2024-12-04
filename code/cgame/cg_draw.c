@@ -26,6 +26,7 @@ static void CG_DrawVerticalSpeed(void); //jk2pro
 static void CG_DrawYawSpeed(void); //jk2pro
 static void CG_DrawShowPos(void); //jk2pro
 static void CG_DrawStrafeBotFactor(); //tommyternal :)
+static void CG_DrawAccelMiss(); //tommyternal :)
 
 //jk2pro
 #define SHELPER_SUPEROLDSTYLE	(1<<0)
@@ -55,6 +56,7 @@ static void CG_DrawStrafeBotFactor(); //tommyternal :)
 #define SPEEDOMETER_KPH				(1<<8)
 #define SPEEDOMETER_MPH				(1<<9)
 #define SPEEDOMETER_NOSPEED			(1<<10)
+#define SPEEDOMETER_ACCELMISS		(1<<11)
 
 
 #define KEY_W       0
@@ -1285,6 +1287,8 @@ void CG_DrawHUD(centity_t	*cent)
 	if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
 		CG_Speedometer();
 
+		if ((cg_speedometer.integer & SPEEDOMETER_ACCELMISS))
+			CG_DrawAccelMiss();
 		if ((cg_speedometer.integer & SPEEDOMETER_ACCELMETER) || (cg_strafeHelper.integer & SHELPER_ACCELMETER))
 			CG_DrawAccelMeter();
 		if (cg_speedometer.integer & SPEEDOMETER_JUMPHEIGHT)
@@ -5640,6 +5644,8 @@ static void CG_Draw2D( void ) {
 			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
 				CG_Speedometer();
 
+				if ((cg_speedometer.integer & SPEEDOMETER_ACCELMISS))
+					CG_DrawAccelMiss();
 				if ((cg_speedometer.integer & SPEEDOMETER_ACCELMETER) || (cg_strafeHelper.integer & SHELPER_ACCELMETER))
 					CG_DrawAccelMeter();
 				if (cg_speedometer.integer & SPEEDOMETER_JUMPHEIGHT)
@@ -6752,6 +6758,16 @@ static void CG_JumpHeight(centity_t *cent)
 	speedometerXPos += 42;
 
 	cg.lastZSpeed = velocity[2];
+}
+
+static void CG_DrawAccelMiss()
+{
+	char accelMissString[32] = { 0 };
+
+	Com_sprintf(accelMissString, sizeof(accelMissString), "%.3f%% (ws %0.1f)", 100.0f*cg.accelMiss,cg.wishSpeed);
+	CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], accelMissString, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+
+	speedometerXPos += 42;
 }
 
 static void CG_JumpDistance(void)

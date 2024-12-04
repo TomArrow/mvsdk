@@ -766,6 +766,7 @@ typedef struct {
 	playerState_t	predictedPlayerState;
 	centity_t		predictedPlayerEntity;
 	rollState_t		roll;
+	antiLoopState_t antiLoop;
 	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;
@@ -992,6 +993,7 @@ Ghoul2 Insert End
 	float				lastZSpeed, lastGroundSpeed, lastJumpHeight, lastJumpDistance, lastYawSpeed;
 	int					lastCheckPointPrintTime;
 	int					timerStartTime;
+	float				accelMiss,wishSpeed;
 	vec4_t				strafeHelperActiveColor;
 	vec4_t				crosshairColor;
 	//char				logStrafeTrailFilename[MAX_QPATH];
@@ -1848,6 +1850,8 @@ extern	vmCvar_t		cg_strafebotFactor;
 extern	vmCvar_t		cg_mapDefaultMsec;
 extern	vmCvar_t		cg_mapDefaultJump;
 extern	vmCvar_t		cg_mapDefaultRunFlags;
+
+extern	vmCvar_t		cg_strafebotSlopeHandling;
 
 extern	vmCvar_t		cg_synchronousClients;
 extern	vmCvar_t		cg_debugMove;

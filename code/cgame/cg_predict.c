@@ -1146,8 +1146,11 @@ void CG_PredictPlayerState( void ) {
 		}
 
 		cg_pmove.roll = cg.roll;
+		cg_pmove.handleStrafebotSlopes = cg_strafebotSlopeHandling.integer;
 		Pmove (&cg_pmove);
 		cg.roll = cg_pmove.roll;
+		cg.accelMiss = cg_pmove.accelMiss;
+		cg.wishSpeed = cg_pmove.wishSpeed;
 
 		for ( i = 0 ; i < MAX_CLIENTS ; i++ )
 		{

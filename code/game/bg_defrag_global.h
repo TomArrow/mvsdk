@@ -187,6 +187,17 @@ typedef struct rollState_s {
 	int				lastRollEndedTime;	// last commandtime before roll ended
 } rollState_t;
 
+typedef enum startTriggerEventType_s {
+	STARTTRIGGEREVENT_NONE,
+	STARTTRIGGEREVENT_ENTER,
+	STARTTRIGGEREVENT_LEAVE,
+} startTriggerEventType_t;
+
+typedef struct antiLoopState_s {
+	float						yawAngleChangeSinceBaseSpeed;
+	startTriggerEventType_t		lastStartTriggerEvent;
+	vec3_t						lastStartTriggerEventAngle;
+} antiLoopState_t;
 
 #define MAX_FPSMEASURE_FRAMECOUNT 32
 #define MAX_FPSMEASURE_SHORT_FRAMECOUNT 8

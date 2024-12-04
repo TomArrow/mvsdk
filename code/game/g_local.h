@@ -498,6 +498,7 @@ typedef struct {
 
 	fpsMeasure_t	fpsMeasure;
 
+	antiLoopState_t antiLoop;
 	rollState_t roll;
 } clientPersistant_t;
 
@@ -1351,6 +1352,8 @@ extern	vmCvar_t	g_adaptRespawn;
 extern	vmCvar_t	g_mapDefaultMsec;
 extern	vmCvar_t	g_mapDefaultJump;
 extern	vmCvar_t	g_mapDefaultRunFlags;
+
+extern	vmCvar_t	g_strafebotSlopeHandling;
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

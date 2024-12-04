@@ -610,10 +610,15 @@ static void PM_Accelerate( vec3_t wishdir, float wishspeed, float accel ) {
 
 	currentspeed = DotProduct (pm->ps->velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
+
+	accelspeed = accel * pml.frametime * wishspeed;
+
+	pm->accelMiss = (addspeed- accelspeed) / accelspeed;
+	pm->wishSpeed = wishspeed;
+
 	if (addspeed <= 0) {
 		return;
 	}
-	accelspeed = accel*pml.frametime*wishspeed;
 	if (accelspeed > addspeed) {
 		accelspeed = addspeed;
 	}
@@ -5761,7 +5766,7 @@ void PmoveSingle (pmove_t *pmove) {
 					middleOffset = 0;
 #endif
 					if (CJ) {//CJ)
-						static qboolean doSlopes = qtrue; // so i can change it in debugger. HEHE
+						qboolean doSlopes = pm->handleStrafebotSlopes; // so i can change it in debugger. HEHE
 						qboolean isSlope = pml.groundTrace.plane.normal[2] != 1.0f;
 						//if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM)
 						//	optimalDeltaAngle = -1; //CJ //Take into account ground accel/friction.. only cpm styles turn faster?
@@ -5775,10 +5780,11 @@ void PmoveSingle (pmove_t *pmove) {
 							// sloped ground behaves differently. simulate the projection onto the slope from walkmove
 							// maybe todo: duckscale
 							int i;
-							vec3_t velNorm,forwardTmp, forwardFlat;
+							vec3_t velNorm,forwardTmp,rightTmp, forwardFlat, accelVec;
 							float		angle; 
 							float		inverseAngleScaleFactor;
 							float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
+							float		forward, right;
 
 							realCurrentSpeed = VectorLength(pm->ps->velocity); //sloped ground movement needs 3d speed
 							optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime)))));
@@ -5807,6 +5813,27 @@ void PmoveSingle (pmove_t *pmove) {
 								optimalDeltaAngle = sqrtf(optimalDeltaAngle* optimalDeltaAngle- angle* angle);
 								// this is the optimal delta angle ON the slope plane
 								// now we need to translate it to our horizontal angle
+								
+								CrossProduct(pml.groundTrace.plane.normal, forwardTmp, rightTmp);
+								
+								forward = sin(optimalDeltaAngle);
+								right = cos(optimalDeltaAngle);
+
+								VectorScale(forwardTmp,forward, accelVec);
+								VectorMA(accelVec, right, rightTmp, accelVec);
+
+								accelVec[2] = 0;
+								VectorNormalize(accelVec);
+
+								VectorCopy(velNorm, forwardTmp);
+								forwardTmp[2] = 0;
+								VectorNormalize(forwardTmp);
+
+								angle = DotProduct(accelVec, forwardTmp);
+
+								optimalDeltaAngle = angle;
+
+								/*
 								VectorCopy(forwardTmp, forwardFlat);
 								forwardFlat[2] = 0;
 								VectorNormalize(forwardFlat);
@@ -5819,7 +5846,7 @@ void PmoveSingle (pmove_t *pmove) {
 								}
 								else {
 									optimalDeltaAngle = ((M_PI/2.0f) - inverseAngleScaleFactor * ((M_PI / 2.0f) - optimalDeltaAngle));
-								}
+								}*/
 
 							}
 						}
@@ -6028,8 +6055,11 @@ Can be called by either the server or the client
 */
 void Pmove (pmove_t *pmove) {
 	int			finalTime;
+	int			zeroahaha = 0.0f;
 
 	finalTime = pmove->cmd.serverTime;
+
+	pmove->accelMiss = 1.0f/zeroahaha; // putting NaN in there.
 
 	if ( finalTime < pmove->ps->commandTime ) {
 		return;	// should not happen
