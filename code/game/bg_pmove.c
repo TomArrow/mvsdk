@@ -5795,7 +5795,7 @@ void PmoveSingle (pmove_t *pmove) {
 							//AngleVectors(velNorm,forwardTmp,0,0);
 
 							// project moves down to flat plane
-							forwardTmp[2] = 0;
+							//forwardTmp[2] = 0;
 
 							// project the forward and right directions onto the ground plane
 							PM_ClipVelocity(forwardTmp, pml.groundTrace.plane.normal, forwardTmp, overbounce);
@@ -5818,6 +5818,7 @@ void PmoveSingle (pmove_t *pmove) {
 								
 								forward = sin(optimalDeltaAngle);
 								right = cos(optimalDeltaAngle);
+								right *= pm->unalteredCmd.rightmove >= 0 ? 1.0f : -1.0f;
 
 								VectorScale(forwardTmp,forward, accelVec);
 								VectorMA(accelVec, right, rightTmp, accelVec);
