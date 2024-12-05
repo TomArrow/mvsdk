@@ -5761,10 +5761,17 @@ void PmoveSingle (pmove_t *pmove) {
 					float middleOffset = 0; //Idk
 					float realAccel = CJ ? pm_accelerate : pm_airaccelerate;
 					qboolean calculationFailed = qfalse;
+					qboolean wSuggestsRightWard;
 #if JK2_GAME
 					//middleOffset = bot_strafeOffset.integer;
 					middleOffset = 0;
 #endif
+
+					vel[0] = pm->ps->velocity[0];
+					vel[1] = pm->ps->velocity[1];
+					vectoangles(vel, velangle); 
+					wSuggestsRightWard = AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0;
+
 					if (CJ) {//CJ)
 						qboolean doSlopes = pm->handleStrafebotSlopes; // so i can change it in debugger. HEHE
 						qboolean isSlope = pml.groundTrace.plane.normal[2] != 1.0f;
@@ -5810,29 +5817,36 @@ void PmoveSingle (pmove_t *pmove) {
 								optimalDeltaAngle = 0; 
 							}
 							else {
+								float deprojectFactor;
+
 								optimalDeltaAngle = sqrtf(optimalDeltaAngle* optimalDeltaAngle- angle* angle);
 								// this is the optimal delta angle ON the slope plane
 								// now we need to translate it to our horizontal angle
 								
-								CrossProduct(pml.groundTrace.plane.normal, forwardTmp, rightTmp);
+								CrossProduct(forwardTmp, pml.groundTrace.plane.normal, rightTmp); 
 								
-								forward = sin(optimalDeltaAngle);
-								right = cos(optimalDeltaAngle);
-								right *= pm->unalteredCmd.rightmove >= 0 ? 1.0f : -1.0f;
+								forward = cos(optimalDeltaAngle);
+								right = sin(optimalDeltaAngle);
+								right *= ((wSuggestsRightWard || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) ? 1.0f : -1.0f;
 
 								VectorScale(forwardTmp,forward, accelVec);
 								VectorMA(accelVec, right, rightTmp, accelVec);
 
-								accelVec[2] = 0;
+								//accelVec[2] = 0;
+								deprojectFactor = accelVec[2] / pml.groundTrace.plane.normal[2];
+								VectorMA(accelVec, -deprojectFactor, pml.groundTrace.plane.normal, accelVec);
+
 								VectorNormalize(accelVec);
 
 								VectorCopy(velNorm, forwardTmp);
 								forwardTmp[2] = 0;
 								VectorNormalize(forwardTmp);
 
+
 								angle = DotProduct(accelVec, forwardTmp);
 
-								optimalDeltaAngle = angle;
+								optimalDeltaAngle = acos(angle);
+								//optimalDeltaAngle = angle;
 
 								/*
 								VectorCopy(forwardTmp, forwardFlat);
@@ -5872,10 +5886,6 @@ void PmoveSingle (pmove_t *pmove) {
 					if (!calculationFailed && (!pm->isSpecialPredict || strafeFactor >= 1.0f && (strafeFactor <= 1.1f || strafeFactor <= 2.0f && !CJ))) { // strafe factors create stuttering with special predict unless very low. might have to adjust this when cpm etc. in air it can tolerate a bit more
 						optimalDeltaAngle = AngleNormalize180(optimalDeltaAngle);
 
-						vel[0] = pm->ps->velocity[0];
-						vel[1] = pm->ps->velocity[1];
-						vectoangles(vel, velangle);
-
 						if (pm->cmd.forwardmove > 0 && pm->cmd.rightmove > 0) {//WD
 							optimalDeltaAngle = 0 - optimalDeltaAngle;
 						}
@@ -5911,7 +5921,7 @@ void PmoveSingle (pmove_t *pmove) {
 						else if (pm->cmd.forwardmove > 0 && !pm->cmd.rightmove) {//W
 							//optimalAngle1 = abs(AngleSubtract(velangle[YAW] - 45 - optimalDeltaAngle, pm->ps->viewangles[YAW]));
 							//optimalAngle2 = abs(AngleSubtract(velangle[YAW] + 45 + optimalDeltaAngle, pm->ps->viewangles[YAW]));
-							if ((AngleSubtract(velangle[YAW], pm->ps->viewangles[YAW]) > 0 || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { //Decide which W we want.  (Whatever is closest). this is broken for CJ (just walking basically). not sure i can fix it, but its not a huge deal i guess
+							if ((wSuggestsRightWard || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { //Decide which W we want.  (Whatever is closest). this is broken for CJ (just walking basically). not sure i can fix it, but its not a huge deal i guess
 							//if ((optimalAngle1 < optimalAngle2 || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) { //Decide which W we want.  (Whatever is closest)
 								//if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) //Why the f does it switch
 								//	optimalDeltaAngle = -45; //Needs good offset
