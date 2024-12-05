@@ -1223,25 +1223,40 @@ static void AddFloat( char **buf_p, char * const buf_end, float fval, int width,
 	float	signedVal;
 	char	*buf;
 	int		val;
+	qboolean	isNaN = (qboolean)(fpclassify(fval) == FP_NAN);
+	qboolean	isInfinite = (qboolean)(fpclassify(fval) == FP_INFINITE);
 
-	// get the sign
-	signedVal = fval;
-	if ( fval < 0 ) {
-		fval = -fval;
-	}
-
-	// write the float number
 	digits = 0;
-	val = (int)fval;
-	do {
-		text[digits++] = '0' + val % 10;
-		val /= 10;
-	} while ( val );
+	if(isNaN){
+		text[digits++] = 'n';
+		text[digits++] = 'a';
+		text[digits++] = 'n';
+	} else if(isInfinite){
+		if ( fval < 0 ) {
+			text[digits++] = '-';
+		}
+		text[digits++] = 'i';
+		text[digits++] = 'n';
+		text[digits++] = 'f';
+	} else {
+		// get the sign
+		signedVal = fval;
+		if ( fval < 0 ) {
+			fval = -fval;
+		}
 
-	if ( signedVal < 0 ) {
-		text[digits++] = '-';
-	} else if ( flags & SIGN ) {
-		text[digits++] = '+';
+		// write the float number
+		val = (int)fval;
+		do {
+			text[digits++] = '0' + val % 10;
+			val /= 10;
+		} while ( val );
+
+		if ( signedVal < 0 ) {
+			text[digits++] = '-';
+		} else if ( flags & SIGN ) {
+			text[digits++] = '+';
+		}
 	}
 
 	buf = *buf_p;
@@ -1261,28 +1276,30 @@ static void AddFloat( char **buf_p, char * const buf_end, float fval, int width,
 		buf++;
 	}
 
-	if (prec < 0)
-		prec = 6;
-	// write the fraction
-	digits = 0;
-	while (digits < prec) {
-		fval -= (int) fval;
-		fval *= 10.0;
-		val = (int) fval;
-		text[digits++] = '0' + val % 10;
-	}
-
-	if (digits > 0) {
-		if (buf < buf_end) {
-			*buf = '.';
+	if(!isNaN){
+		if (prec < 0)
+			prec = 6;
+		// write the fraction
+		digits = 0;
+		while (digits < prec) {
+			fval -= (int) fval;
+			fval *= 10.0;
+			val = (int) fval;
+			text[digits++] = '0' + val % 10;
 		}
-		buf++;
 
-		for (prec = 0; prec < digits; prec++) {
+		if (digits > 0) {
 			if (buf < buf_end) {
-				*buf = text[prec];
+				*buf = '.';
 			}
 			buf++;
+
+			for (prec = 0; prec < digits; prec++) {
+				if (buf < buf_end) {
+					*buf = text[prec];
+				}
+				buf++;
+			}
 		}
 	}
 

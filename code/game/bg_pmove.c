@@ -5788,48 +5788,56 @@ void PmoveSingle (pmove_t *pmove) {
 							// maybe todo: duckscale
 							int i;
 							vec3_t velNorm,forwardTmp,rightTmp, forwardFlat, accelVec;
-							float		angle; 
+							float		angle,angle2,angleTmp,angleTmp2; 
 							float		inverseAngleScaleFactor;
 							float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
 							float		forward, right;
+							float deprojectFactor;
 
 							realCurrentSpeed = VectorLength(pm->ps->velocity); //sloped ground movement needs 3d speed
-							optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime)))));
+							angleTmp = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime)))));
 
-							VectorCopy(pm->ps->velocity, velNorm);
-							VectorNormalize(velNorm);
-							VectorCopy(velNorm, forwardTmp);
-							//AngleVectors(velNorm,forwardTmp,0,0);
-
-							// project moves down to flat plane
-							//forwardTmp[2] = 0;
-
-							// project the forward and right directions onto the ground plane
-							PM_ClipVelocity(forwardTmp, pml.groundTrace.plane.normal, forwardTmp, overbounce);
-							//
-							VectorNormalize(forwardTmp);
-							// when going up or down slopes the wish velocity should Not be zero
-
-							angle = DotProduct(forwardTmp, velNorm);
-							angle = acos(angle);
-
-							if (angle >= optimalDeltaAngle) {
-								optimalDeltaAngle = 0; 
+							if (fpclassify(angleTmp) == FP_NAN) {
+								calculationFailed = qtrue;
+								optimalDeltaAngle = 0;
 							}
 							else {
-								float deprojectFactor;
 
-								optimalDeltaAngle = sqrtf(optimalDeltaAngle* optimalDeltaAngle- angle* angle);
+								VectorCopy(pm->ps->velocity, velNorm);
+								VectorNormalize(velNorm);
+								VectorCopy(velNorm, forwardTmp);
+								//AngleVectors(velNorm,forwardTmp,0,0);
+
+								// project moves down to flat plane
+								//forwardTmp[2] = 0;
+
+								// project the forward and right directions onto the ground plane
+								PM_ClipVelocity(forwardTmp, pml.groundTrace.plane.normal, forwardTmp, overbounce);
+								//
+								VectorNormalize(forwardTmp);
+								// when going up or down slopes the wish velocity should Not be zero
+
+								angle = DotProduct(forwardTmp, velNorm);
+								angle = MAX(-1.0f, MIN(1.0f, angle)); // floating point imprecision can lead to 1.00000002f (not exactly that, just the idea) and then acos is NaN
+								angle = acos(angle);
+
+								if (angle >= angleTmp) {
+									angleTmp2 = 0;
+								}
+								else {
+									angleTmp2 = sqrtf(angleTmp * angleTmp - angle* angle);
+								}
+
 								// this is the optimal delta angle ON the slope plane
 								// now we need to translate it to our horizontal angle
-								
-								CrossProduct(forwardTmp, pml.groundTrace.plane.normal, rightTmp); 
-								
-								forward = cos(optimalDeltaAngle);
-								right = sin(optimalDeltaAngle);
+
+								CrossProduct(forwardTmp, pml.groundTrace.plane.normal, rightTmp);
+
+								forward = cos(angleTmp2);
+								right = sin(angleTmp2);
 								right *= ((wSuggestsRightWard || pm->unalteredCmd.rightmove > 0) && pm->unalteredCmd.rightmove >= 0) ? 1.0f : -1.0f;
 
-								VectorScale(forwardTmp,forward, accelVec);
+								VectorScale(forwardTmp, forward, accelVec);
 								VectorMA(accelVec, right, rightTmp, accelVec);
 
 								//accelVec[2] = 0;
@@ -5843,26 +5851,15 @@ void PmoveSingle (pmove_t *pmove) {
 								VectorNormalize(forwardTmp);
 
 
-								angle = DotProduct(accelVec, forwardTmp);
+								angle2 = DotProduct(accelVec, forwardTmp);
+								angle2 = MAX(-1.0f, MIN(1.0f, angle2));
 
-								optimalDeltaAngle = acos(angle);
-								//optimalDeltaAngle = angle;
+								optimalDeltaAngle = acos(angle2);
 
-								/*
-								VectorCopy(forwardTmp, forwardFlat);
-								forwardFlat[2] = 0;
-								VectorNormalize(forwardFlat);
-								
-								inverseAngleScaleFactor = DotProduct(forwardTmp, forwardFlat);
-
-								if (inverseAngleScaleFactor <= 0) {
-									optimalDeltaAngle = 0; 
+								if (fpclassify(optimalDeltaAngle) == FP_NAN) {
 									calculationFailed = qtrue;
+									optimalDeltaAngle = 0;
 								}
-								else {
-									optimalDeltaAngle = ((M_PI/2.0f) - inverseAngleScaleFactor * ((M_PI / 2.0f) - optimalDeltaAngle));
-								}*/
-
 							}
 						}
 						else {
@@ -5881,6 +5878,12 @@ void PmoveSingle (pmove_t *pmove) {
 					if (/*optimalDeltaAngle < 0 || optimalDeltaAngle > 360 || */fpclassify(optimalDeltaAngle) == FP_NAN) {
 						calculationFailed = qtrue;
 						optimalDeltaAngle = 0;
+
+						if (pmove->debugLevel > 20) {
+
+							Com_Printf("strafebot: optimalDeltaAngle is NAN", pmove->accelMiss);
+						}
+
 					}
 
 					if (!calculationFailed && (!pm->isSpecialPredict || strafeFactor >= 1.0f && (strafeFactor <= 1.1f || strafeFactor <= 2.0f && !CJ))) { // strafe factors create stuttering with special predict unless very low. might have to adjust this when cpm etc. in air it can tolerate a bit more
@@ -6070,7 +6073,16 @@ void Pmove (pmove_t *pmove) {
 
 	finalTime = pmove->cmd.serverTime;
 
-	pmove->accelMiss = 1.0f/zeroahaha; // putting NaN in there.
+#ifdef Q3_VM
+	pmove->accelMiss =0.0f/0.0f; // putting NaN in there.
+#else
+	pmove->accelMiss = 0.0f / zeroahaha; // putting NaN in there.
+#endif
+
+	if (pmove->debugLevel> 30) {
+
+		Com_Printf("accelmiss nonvalue is %f", pmove->accelMiss);
+	}
 
 	if ( finalTime < pmove->ps->commandTime ) {
 		return;	// should not happen
