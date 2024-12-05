@@ -2149,7 +2149,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		"%d " // placeHolder2
 		"%d " // placeHolder3
 		"%d " // placeHolder4
-		"%d " // placeHolder5
+		"%d " // millisecondsSegmentedTotal
 		"\"%f\" " // rollSpeed
 		"%d " // rollTakeoffClientSpeed
 		"\"%f\" " // startTriggerSpeed

@@ -1629,6 +1629,7 @@ static void G_CreateRunsTable() {
 			runfirst DATETIME NOT NULL, \
 			warningFlags INT NOT NULL, \
 			fpsString VARCHAR(255) NOT NULL, \
+			server VARCHAR(255) NOT NULL, \
 			UNIQUE KEY user_runtype (userid,course,subcourse,style,msec,jump,variant,runFlags"
 			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
 			"), \
@@ -1733,6 +1734,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 
 
+#define GETCONNECTIONIP "(select host from information_schema.processlist WHERE ID=connection_id())"
 #define SUBFUNC(a,b) `b ## a`
 #define RUNFLAGSFUNC(a,b,c,d,e,f) QUOTEME(SUBFUNC(a,d)) "," // gotta do this cuz qvm gets confused by the comma otherwise
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) "?,"
@@ -1743,10 +1745,10 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		va("SET @now=NOW();"
 			"INSERT INTO runs (userid,course,subcourse,duration_ms,duration_ms_segmented_total,topspeed,startTriggerSpeed,rollSpeed,rollTakeoffClientSpeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
-			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount)"
+			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount,server)"
 			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
-			"@now,@now,?,?,?,?,?,?,?,?,?)"
+			"@now,@now,?,?,?,?,?,?,?,?,?," GETCONNECTIONIP ")"
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms_segmented_total = IF(?<duration_ms,?,duration_ms_segmented_total),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
@@ -1765,6 +1767,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"resposCount = IF(?<duration_ms,?,resposCount),"
 			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount),"
+			"server = IF(?<duration_ms," GETCONNECTIONIP ",server),"
 			"duration_ms = IF(?<duration_ms,?,duration_ms);" // duration_ms has to be set last or else all other columns arent updated
 			// check if we had a better time on this leaderboard before. (return value of INSERT OR UPDATE only tells us if it was the best with the unique key, but leaderboards accumulate ranges of race settings, especially "custom" leaderboard and such)
 			"SELECT COUNT(id) AS countOwnFaster FROM runs WHERE userid=? AND course=? AND subcourse=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));"
@@ -1866,6 +1869,8 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
+
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // server (value is hardcoded)
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
