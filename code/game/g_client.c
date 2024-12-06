@@ -2008,6 +2008,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	CalculateRanks();
 
 	G_ClearClientLog(clientNum);
+
+	trap_SendServerCommand(clientNum, "print \"Welcome. Type ^2/help^7 for info about commands and how to play.\n\"");
 }
 
 static qboolean AllForceDisabled(int force)
