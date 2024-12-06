@@ -2633,6 +2633,11 @@ void ClientSpawn(gentity_t *ent) {
 
 	// clear entity state values
 	BG_PlayerStateToEntityState( &client->ps, &ent->s, qtrue );
+
+	if (!inSegmentedRun) {
+		DF_RaceStateInvalidated(ent,qfalse);
+		ent->client->sess.raceStateInvalidated = qfalse;
+	}
 }
 
 extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
