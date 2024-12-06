@@ -3901,6 +3901,8 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 void Cmd_DF_RunSettings_f(gentity_t* ent)
 {
+	qboolean strafebotButtonMessage = qfalse;
+	qboolean segmentedRunMessage = qfalse;
 	if (!ent->client) return;
 
 	if (!ent->client->sess.raceMode) {
@@ -3931,6 +3933,10 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		}
 
 		if (flag & RFL_SEGMENTED) {
+
+			if (!(ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
+				segmentedRunMessage = qtrue;
+			}
 
 			if (level.nonDeterministicEntities) {
 				G_SendServerCommand(ent - g_entities, va("print \"Warning: Map contains %i potentially non-deterministic entities. Segmented runs may not replay correctly and thus not count.\n\"", level.nonDeterministicEntities),qtrue);
@@ -3964,15 +3970,27 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			ent->client->sess.raceStyle.runFlags = flag ^ ((int)ent->client->sess.raceStyle.runFlags & mask);
 			ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 			DF_RaceStateInvalidated(ent,qtrue);
-			if ((flag & RFL_BOT) && !(ent->client->sess.raceStyle.runFlags & RFL_BOT)) {
-				// strafebot was turned off.
-				ent->client->sess.rollAngleInvalidated = qtrue;
-			}
+			if (flag & RFL_BOT ) {
+				if (!(ent->client->sess.raceStyle.runFlags & RFL_BOT)) {
+					// strafebot was turned off.
+					ent->client->sess.rollAngleInvalidated = qtrue;
+				}
+				else {
+					strafebotButtonMessage = qtrue;
+				}
+			} 
 			//DF_InvalidateSpawn(ent);
 		}
 
 		G_SendServerCommand(ent - g_entities, va("print \"^7%s %s^7\n\"", runFlagsNames[index2].string, ((ent->client->sess.raceStyle.runFlags & flag)
 			? "^2Enabled" : "^1Disabled")),qtrue);
+
+		if (segmentedRunMessage) {
+			trap_SendServerCommand(ent - g_entities, "print \"You have activated segmented run mode. Please consult ^2/help seg^7 if you encounter any problems or have any questions about how it works.\n\"");
+		}
+		if (strafebotButtonMessage) {
+			trap_SendServerCommand(ent - g_entities, "print \"You have activated strafebot mode. Please bind ^2/+strafebot^7 (^2/+button14^7 if you don't use TommyTernal client) to a key to activate the strafebot itself, or enter it in console (same as keeping the button pressed)\n\"");
+		}
 	}
 
 	{
@@ -4553,6 +4571,7 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 {
 	char mStyle[32];
 	int newStyle;
+	qboolean bounceButtonMessage = qfalse;
 
 	if (!ent->client)
 		return;
@@ -4607,7 +4626,9 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 
 		G_SendServerCommand(ent - g_entities, "print \"Movement style updated.\n\"",qtrue);
 
-
+		if (newStyle == MV_BOUNCE) {
+			bounceButtonMessage = qtrue;
+		}
 		ent->client->sess.raceStyle.movementStyle = newStyle;
 		ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 		DF_RaceStateInvalidated(ent,qtrue);
@@ -4616,6 +4637,12 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 		if (newStyle == MV_SPEED) {
 			ent->client->ps.fd.forcePower = 50;
 		}
+
+		if (bounceButtonMessage) {
+
+			trap_SendServerCommand(ent - g_entities, "print \"You are playing in bounce movement style now. Please bind ^2/+bouncepower^7 (^2/+button13^7 if you don't use TommyTernal client) to a key. While pressing the key, you have extra bounce intensity to reflect off walls, floors, etc. This lasts for up to half a second at a time. If you use TommyTernal client, you will see a bar showing how much of this extra bounce power you have left.\n\"");
+		}
+
 		return;
 	}
 showinfo:

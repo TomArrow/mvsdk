@@ -910,6 +910,122 @@ void StopFollowing( gentity_t *ent ) {
 	ent->client->ps.weapon = WP_NONE;
 }
 
+
+/*
+=================
+Cmd_Help_f
+=================
+*/
+void Cmd_Help_f(gentity_t* ent) {
+	char arg1[20];
+
+	if (trap_Argc() > 1) {
+		trap_Argv(1,arg1,sizeof(arg1));
+		if (!Q_stricmpn(arg1, "seg", 3)) {
+
+			trap_SendServerCommand(ent - g_entities, "print \"^2SEGMENTED RUN HELP\n\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^7In a segmented run, you can save and restore your position at any time after your timer has started. Your timer is restored as well. After you finish your run, a replay of your run is played and your time is saved.\n\"");
+
+			trap_SendServerCommand(ent - g_entities, "print \"\n^7Segmented run commands:\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2/run 5^7 - Enables/disables segmented running\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state (only works after your timer starts)\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state (only works in a run after using savepos)\n\"");
+
+			trap_SendServerCommand(ent - g_entities, "print \"\n^1Important rules:\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^11.^7 If you touch the start timer again during your run, your run ends\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^12.^7 Executing ^2/kill^7 (selfkill) command ends your segmented run. Unbind this for long runs for your own sanity\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^13.^7 Every time you fall into a death trigger on the map, you MUST call ^2/respos^7 again manually (even if it looks like it's working fine), otherwise your segmented state gets corrupted\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^14.^7 Before starting a run, stand still for a few short moments, this resets the usercommand recording for the replay to make things go smooth\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^15.^7 If you get the error that the recording is under 0.5 seconds and thus too short, try to move (e.g. walk/jump) for a second before actually starting your run\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^16.^7 If you get the error that the recording is over 5 seconds and thus too long, make sure you followed rule 4\n\"");
+
+
+			trap_SendServerCommand(ent - g_entities, "print \"\n^3Please note that due to this feature being a bit experimental, there is a small chance of the replay failing and your run not being added to the leaderboards. This is exaggerated on maps with elevators/doors and complicated trigger logic.\n\"");
+
+			return;
+		}
+	}
+
+	trap_SendServerCommand(ent - g_entities, "print \"^2HELP\n\"");
+	trap_SendServerCommand(ent-g_entities,"print \"^7Call ^7/help seg^2 to get help specific to segmented runs.\n\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^7Available commands:\n\n\"");
+
+	if (g_defrag.integer) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^2/race^7 - Call to %s racemode.\"", ent->client->sess.raceMode ? "exit/enter":"enter/exit")); 
+	}
+
+
+	trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7 - Call a vote to switch to a map (call with map name)\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote mapnum^7 - Call a vote to switch to a map (call with map number from ^2/maplist^7)\n\"");
+
+	trap_SendServerCommand(ent - g_entities, "print \"\n^7Account commands:\n\"");
+
+	trap_SendServerCommand(ent - g_entities, "print \"^2/register^7 - Call with username and password to create an account\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/login^7 - Call with username and password to log into an existing account\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/changepassword^7 - Call with a new password while logged in to change your password.\n\"");
+
+
+	trap_SendServerCommand(ent - g_entities, "print \"\n^7Visual/personal tweak commands:\n\"");
+
+	trap_SendServerCommand(ent - g_entities, "print \"^2/lasers^7 - Turn off or on the display of laserpointers by other players\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/solo^7 - Hide or unhide other players\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/logout^7 - Log out of your account.\n\"");
+
+	if (ent->client->sess.raceMode) {
+
+		trap_SendServerCommand(ent - g_entities, "print \"\n^7Race style commands:\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/move^7 - Set your movement style (call without argument to see options)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/run^7 - Race style settings (segmented, strafebot, etc.)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/jump^7 - Call with -1 to 3 to set jump level (0 = no force, -1 = ysalamir)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/togglefps^7 - Turn fps toggle mode on or off (also needed for clients without com_physicsFps)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/floatphysics^7 - Turn float physics mode (no velocity snap) on or off \n\"");
+
+		trap_SendServerCommand(ent - g_entities, "print \"\n^7Race commands:\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). Use ^2/kill^7 to respawn\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state including position, velocity and angles\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/stealpos^7 - Steal saved position from another player (call with client number from ^2/clientlist^7)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/amtele^7 - Call with a client number or name to teleport to a player.\n\"");
+
+		trap_SendServerCommand(ent - g_entities, "print \"\n^7Checkpoint commands:\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/checkpoint^7 - Add a custom checkpoint at your current position\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/removecheckpoints^7 - Remove all custom checkpoints\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/stealcheckpoints^7 - Steal custom checkpoints from another player (call with client number from ^2/clientlist^7)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/savecheckpoints^7 - Save your custom checkpoints for this map (only if you are logged in. Does not save times.)\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/loadcheckpoints^7 - Load your custom checkpoints for this map\n\"");
+
+		trap_SendServerCommand(ent - g_entities, "print \"\n^7Statistics commands:\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/time^7 - Check and publicly print your personal best for your current race settings\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/latest^7 - Show latest runs\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/rollympics^7 - Show fastest roll records\n\"");
+	}
+
+	trap_SendServerCommand(ent - g_entities, "print \"\n^7Client binds (named binds work in TommyTernal client):\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/+laserpointer^7 (^2/+button12^7) - Activates laserpointer in your current view direction to show stuff to others. Works even in spec (use ^2/lasers^7 to hide these)\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/+bouncepower^7 (^2/+button13^7) - Activates stronger bounce in bounce movement style for up to half a second\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"");
+
+
+	if (ent->client->sess.login.loggedIn && ent->client->sess.login.flags) {
+		trap_SendServerCommand(ent - g_entities, "print \"\n^7Admin commands:\n\"");
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_CHANGEMAPDEFAULTRACESTYLE) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/mapdefaults^7 - Change map defaults\n\"");
+		}
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_ARENAGEN) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/genArena^7 - call with 'this' or 'allrace' to generate arenas for current map or all maps that have been ran\n\"");
+		}
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_USERSFORCELOGIN) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/forcelogin^7 - call with client number and account name to force login a player so he can change his password\n\"");
+		}
+	}
+}
+
 /*
 =================
 Cmd_Team_f
@@ -3742,6 +3858,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "help"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "togglefps"))
 		{
 			giveError = qtrue;
@@ -3941,6 +4061,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Team_f (ent);
 	else if (Q_stricmp (cmd, "race") == 0)
 		Cmd_Race_f(ent);
+	else if (Q_stricmp (cmd, "help") == 0)
+		Cmd_Help_f(ent);
 	else if (Q_stricmp (cmd, "togglefps") == 0)
 		Cmd_ToggleFPS_f(ent);
 	else if (Q_stricmp (cmd, "floatphysics") == 0)

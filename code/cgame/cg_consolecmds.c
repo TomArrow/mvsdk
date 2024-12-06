@@ -1987,4 +1987,7 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("amtele");
 	trap_AddCommand("rollympics");
 	trap_AddCommand("latest");
+	trap_AddCommand("help");
+	trap_AddCommand("ignore");
+	trap_AddCommand("maplist");
 }
