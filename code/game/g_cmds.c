@@ -947,7 +947,7 @@ void Cmd_Help_f(gentity_t* ent) {
 	}
 
 	trap_SendServerCommand(ent - g_entities, "print \"^2HELP\n\"");
-	trap_SendServerCommand(ent-g_entities,"print \"^7Call ^7/help seg^2 to get help specific to segmented runs.\n\n\"");
+	trap_SendServerCommand(ent-g_entities,"print \"^7Call ^2/help seg^7 to get help specific to segmented runs.\n\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^7Available commands:\n\n\"");
 
 	if (g_defrag.integer) {
