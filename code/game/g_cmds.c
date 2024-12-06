@@ -965,6 +965,7 @@ void Cmd_Help_f(gentity_t* ent) {
 	trap_SendServerCommand(ent - g_entities, "print \"^2/register^7 - Call with username and password to create an account\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/login^7 - Call with username and password to log into an existing account\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/changepassword^7 - Call with a new password while logged in to change your password.\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/logout^7 - Log out of your account.\n\"");
 
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Visual/personal tweak commands:\n\"");
@@ -972,7 +973,6 @@ void Cmd_Help_f(gentity_t* ent) {
 	trap_SendServerCommand(ent - g_entities, "print \"^2/lasers^7 - Turn off or on the display of laserpointers by other players\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/solo^7 - Hide or unhide other players\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/logout^7 - Log out of your account.\n\"");
 
 	if (ent->client->sess.raceMode) {
 
