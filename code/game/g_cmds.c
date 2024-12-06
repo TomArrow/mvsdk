@@ -1820,6 +1820,40 @@ void Cmd_Maplist_f(gentity_t* ent) {
 
 }
 
+void Cmd_Latest_f(gentity_t* ent) {
+	int clientNum = -1;
+	int page, first;
+	latestRunsRequestStruct_t data;
+	char pageNum[10];
+
+	if (!coolApi_dbVersion) {
+		trap_SendServerCommand(ent-g_entities,"print \"^1latest not possible, DB API not available\n\"");
+		return;
+	}
+
+	data.clientnum = ent - g_entities;
+	memcpy(&data.ip, &mv_clientSessions[data.clientnum], sizeof(data.ip));
+
+	if (trap_Argc() > 1) {
+		trap_Argv(1, pageNum, sizeof(pageNum));
+		page = atoi(pageNum) - 1;
+	}
+	else {
+		page = 0;
+	}
+	page = MAX(page, 0);
+	first = page * 10;
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, "SELECT runs.userid,users.username,runs.course,runs.subcourse,runs.style,runs.msec,runs.jump,runs.variant,runs.runflags,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,runs.duration_ms,runs.runwhen FROM runs LEFT JOIN users ON (users.id = runs.userid) LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) ORDER BY runs.runwhen DESC  LIMIT ?,10")) {
+		trap_SendServerCommand(ent-g_entities,"print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
+		return;
+	}
+
+	G_COOL_API_DB_PreparedBindInt(first);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+
+}
+
 /*
 =================
 Cmd_Rollympics_f
@@ -3780,6 +3814,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "latest"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "maplist"))
 		{
 			giveError = qtrue;
@@ -3939,6 +3977,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Amtele_f(ent);
 	else if (Q_stricmp (cmd, "top") == 0 || Q_stricmp(cmd, "topmain") == 0 || Q_stricmp(cmd, "topnojumpbug") == 0|| Q_stricmp(cmd, "topnjb") == 0 || Q_stricmp(cmd, "topcustom") == 0 || Q_stricmp(cmd, "topsegmented") == 0 || Q_stricmp(cmd, "topseg") == 0 || Q_stricmp(cmd, "topcheat") == 0)
 		Cmd_Top_f(ent);
+	else if (Q_stricmp(cmd, "latest") == 0)
+		Cmd_Latest_f(ent);
 	else if (Q_stricmp(cmd, "maplist") == 0)
 		Cmd_Maplist_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)

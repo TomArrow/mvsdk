@@ -1061,6 +1061,105 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	}
 
 }
+static void G_LatestRunsResult(int status, const char* errorMessage, int affectedRows) {
+	latestRunsRequestStruct_t lbRequestData;
+	gentity_t* ent = NULL;
+	int resultIndex = 0;
+	//evaluatedRunInfo_t eRunInfo;
+
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d latest results returned, user no longer valid.\n", lbRequestData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateRunsTable();
+		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Latest results display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Latest results failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	trap_SendServerCommand(ent - g_entities, "print \"Latest runs:\n\"");
+
+	while (G_COOL_API_DB_NextRow()) {
+		int userid,duration_ms;
+		qboolean mapDefaultsFound;
+		raceStyle_t raceStyle;
+		raceStyle_t mapDefaultRaceStyle;
+		char username[USERNAME_MAX_LEN+1];
+		char course[USERNAME_MAX_LEN+1];
+		char subcourse[USERNAME_MAX_LEN+1];
+		char runwhen[30];
+		mainLeaderboardType_t lbType;
+
+		if (resultIndex == 0) {
+			trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %-10s %-23s %-4s %-4s %-10s %-20s %s\n\""
+				, '2'
+				, ""
+				, "STYLE"
+				, "USERNAME"
+				, "DATE"
+				, "FPS"
+				, "JUMP"
+				, "TIME"
+				, "MAP/COURSE"
+				, "RUNFLAGS"
+			));
+		}
+
+		userid = G_COOL_API_DB_GetInt(0);
+		if (userid == -1) {
+			Q_strncpyz(username, "!unlogged!", sizeof(username));
+		}
+		else {
+			G_COOL_API_DB_GetString(1, username, sizeof(username));
+		}
+		G_COOL_API_DB_GetString(2, course, sizeof(course));
+		G_COOL_API_DB_GetString(3, subcourse, sizeof(subcourse));
+		raceStyle.movementStyle = G_COOL_API_DB_GetInt(4);
+		raceStyle.msec = G_COOL_API_DB_GetInt(5);
+		raceStyle.jumpLevel = G_COOL_API_DB_GetInt(6);
+		raceStyle.variant = G_COOL_API_DB_GetInt(7);
+		raceStyle.runFlags = G_COOL_API_DB_GetInt(8);
+		mapDefaultsFound = !G_COOL_API_DB_GetInt(9);
+		if (!mapDefaultsFound) {
+			memcpy(&mapDefaultRaceStyle, &defaultRaceStyle, sizeof(mapDefaultRaceStyle));
+		}
+		else {
+			mapDefaultRaceStyle.movementStyle = raceStyle.movementStyle;
+			mapDefaultRaceStyle.msec = G_COOL_API_DB_GetInt(10);
+			mapDefaultRaceStyle.jumpLevel = G_COOL_API_DB_GetInt(11);
+			mapDefaultRaceStyle.variant = G_COOL_API_DB_GetInt(12);
+			mapDefaultRaceStyle.runFlags = G_COOL_API_DB_GetInt(13);
+		}
+		duration_ms = G_COOL_API_DB_GetInt(14);
+		G_COOL_API_DB_GetString(15, runwhen, sizeof(runwhen));
+
+		lbType = classifyLeaderBoard(&raceStyle, &mapDefaultRaceStyle);
+
+		trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %-10s %-23s %-4s %-4d %-10s %-20s %s\n\""
+			, lbType == LB_MAIN ? '7' : 'O'
+			, miniva("[%s]", leaderboardNames[lbType])
+			, raceStyle.movementStyle < MV_NUMSTYLES ? moveStyleNames[raceStyle.movementStyle].string : "UNKNOWN"
+			, username
+			, runwhen
+			, MSECSTRING(raceStyle.msec)
+			, raceStyle.jumpLevel
+			, DF_MsToString(duration_ms)
+			, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
+			, RunFlagsToString(raceStyle.runFlags,mapDefaultRaceStyle.runFlags,0,NULL,NULL)
+		));
+		resultIndex++;
+	}
+
+}
 static void G_SubContestLBResult(int status, const char* errorMessage, int affectedRows) {
 	subContestLeaderboardRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
@@ -1411,6 +1510,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_TOP:
 					G_TopResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_GETLATESTRUNS:
+					G_LatestRunsResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_SUBCONTESTLEADERBOARD:
 					G_SubContestLBResult(status, errorMessage, affectedRows);
