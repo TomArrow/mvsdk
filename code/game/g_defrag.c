@@ -4254,6 +4254,9 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	if (client->client->pers.segmented.state != SEG_REPLAY && (client->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && client->client->sess.raceMode && client->client->pers.raceStartCommandTime && savedPosition->raceStartCommandTime) {
 		client->client->ps.duelTime = client->client->pers.raceStartCommandTime = client->client->ps.commandTime - (storedPS->commandTime- savedPosition->raceStartCommandTime);
 	}
+	else {
+		client->client->ps.duelTime = client->client->pers.raceStartCommandTime = 0;
+	}
 
 	client->client->ps.persistant[PERS_SPAWN_COUNT] = backupPS.persistant[PERS_SPAWN_COUNT];
 

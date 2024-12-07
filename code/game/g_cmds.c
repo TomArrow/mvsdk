@@ -477,6 +477,8 @@ void Cmd_Savepos_f( gentity_t *ent ) {
 	//ent->client->pers.savePosRaceStyle = ent->client->sess.raceStyle;
 	if (SavePosition(ent, &ent->client->pers.savedPosition)) {
 		ent->client->pers.savedPosition.ps.clientNum = ent-g_entities; // in case we do savepos from spec (yes its allowed because respos invalidates race state anyway)
+		ent->client->pers.savedPosition.ps.pm_flags &= ~PMF_FOLLOW; // in case we do savepos from follow (yes its allowed because respos invalidates race state anyway)
+		ent->client->pers.savedPosition.raceStartCommandTime = ent->client->pers.savedPosition.ps.duelTime = ent->client->pers.savedPosition.ps.duelInProgress = ent->client->pers.savedPosition.ps.duelIndex = 0;
 		ent->client->pers.savePosUsed = qtrue;
 	}
 	msg = "Position, velocity and angle saved.\n";
@@ -497,7 +499,9 @@ void Cmd_Respos_f( gentity_t *ent ) {
 
 	if (g_defrag.integer && ent->client->sess.raceMode) {
 		if (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) { // segmented restore/save pos handled elsewhere
-			ent->client->pers.segmented.respos = qtrue;
+			if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+				ent->client->pers.segmented.respos = qtrue;
+			}
 			return;
 		}
 		if (ent->health <= 0) {
@@ -509,12 +513,22 @@ void Cmd_Respos_f( gentity_t *ent ) {
 		return;
 	}
 
-
 	if ( ent->client->pers.savePosUsed ) {
 		//VectorCopy(ent->client->pers.savePosPosition, ent->client->ps.origin);
 		//VectorCopy(ent->client->pers.savePosVelocity, ent->client->ps.velocity);
 		//SetClientViewAngle(ent,ent->client->pers.savePosAngle);
 		//ent->client->ps.eFlags ^= EF_TELEPORT_BIT;
+
+		if ((ent->client->sess.sessionTeam == TEAM_SPECTATOR) != (ent->client->pers.savedPosition.ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)) {
+			if (ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+				trap_SendServerCommand(ent - g_entities, "print \"Your saved position is not a spectator position and you are in spec.\n\"");
+			}
+			else {
+				trap_SendServerCommand(ent - g_entities, "print \"Your saved position is a spectator position and you are not in spec.\n\"");
+			}
+			return;
+		}
+
 		RestorePosition(ent,&ent->client->pers.savedPosition,NULL);
 		DF_RaceStateInvalidated(ent, qtrue);
 	}
@@ -985,7 +999,7 @@ void Cmd_Help_f(gentity_t* ent) {
 
 		trap_SendServerCommand(ent - g_entities, "print \"\n^7Race commands:\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). Use ^2/kill^7 to respawn\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state including position, velocity and angles\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state including position, velocity and angles. Works also from spec.\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/stealpos^7 - Steal saved position from another player (call with client number from ^2/clientlist^7)\n\"");
