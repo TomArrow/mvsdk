@@ -1094,8 +1094,8 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		raceStyle_t raceStyle;
 		raceStyle_t mapDefaultRaceStyle;
 		char username[USERNAME_MAX_LEN+1];
-		char course[USERNAME_MAX_LEN+1];
-		char subcourse[USERNAME_MAX_LEN+1];
+		char course[COURSENAME_MAX_LEN+1];
+		char subcourse[COURSENAME_MAX_LEN +1];
 		char runwhen[30];
 		mainLeaderboardType_t lbType;
 
