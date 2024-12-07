@@ -2580,13 +2580,19 @@ void ClientSpawn(gentity_t *ent) {
 			G_UseTargets(spawnPoint, ent);
 		}
 
-		// select the highest weapon number available, after any
-		// spawn given items have fired
 		client->ps.weapon = 1;
-		for ( i = WP_NUM_WEAPONS - 1 ; i > 0 ; i-- ) {
-			if ( client->ps.stats[STAT_WEAPONS] & ( 1 << i ) ) {
-				client->ps.weapon = i;
-				break;
+		if ((client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER)) && (client->sess.raceMode || g_startWeaponAlwaysSaber.integer)) { // TA: Always prefer saber
+			client->ps.weapon = WP_SABER;
+		}
+		else {
+			// select the highest weapon number available, after any
+			// spawn given items have fired
+			// TA: this is chaotic. ps.weapon is set like 3 times in this whole function or more wtf. first with logic, then hard to bryar, and then here
+			for (i = WP_NUM_WEAPONS - 1; i > 0; i--) {
+				if (client->ps.stats[STAT_WEAPONS] & (1 << i)) {
+					client->ps.weapon = i;
+					break;
+				}
 			}
 		}
 	}

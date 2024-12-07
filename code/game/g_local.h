@@ -1338,6 +1338,7 @@ extern	vmCvar_t	g_speed;
 extern	vmCvar_t	g_knockback;
 extern	vmCvar_t	g_quadfactor;
 extern	vmCvar_t	g_forcerespawn;
+extern	vmCvar_t	g_startWeaponAlwaysSaber;
 extern	vmCvar_t	g_inactivity;
 extern	vmCvar_t	g_inactivityToSpec;
 extern	vmCvar_t	g_inactivityToSpecRacers;
