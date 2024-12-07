@@ -2781,27 +2781,26 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 	while (((len=trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena",arenaFileIndex), &f, FS_READ)) + arenaTextLength + 2) > MAX_ARENAS_TEXT){
 		if (!f) {
 
-			G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/_autoGenArenas%d.arena.\n\"", arenaFileIndex), qtrue);
-			return;
+			// file doesnt exist yet. good. wait, we would prolly never get here then. oh well
+			break;
 		}
 		trap_FS_FCloseFile(f);
+		f = NULL;
 		arenaFileIndex++;
 	}
-	if (!f) {
+	if (f) {
+		trap_FS_FCloseFile(f); // we need to close and reopen it. the first open was in FS_READ mode to get the filesize. second open is in FS_APPEND mode. if the file doesnt yet exist thats fine, we will create it.
+		f = NULL;
+	}
 
-		G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/_autoGenArenas%d.arena.\n\"", arenaFileIndex), qtrue);
+	trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena", arenaFileIndex), &f, FS_APPEND);
+
+	if (!f) {
+		G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/_autoGenArenas%d.arena for writing.\n\"", arenaFileIndex), qtrue);
 		return;
 	}
 	else {
-		trap_FS_FCloseFile(f); // we need to close and reopen it. the first open was in FS_READ mode to get the filesize. second open is in FS_APPEND mode.
-		trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena", arenaFileIndex), &f, FS_APPEND);
-		if (!f) {
-			G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot re-open scripts/_autoGenArenas%d.arena.\n\"", arenaFileIndex), qtrue);
-			return;
-		}
-		else {
-			G_SendServerCommand(-1, va("print \"^2Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
-		}
+		G_SendServerCommand(-1, va("print \"^2Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
 	}
 
 	trap_FS_Write(arenaText,arenaTextLength,f);

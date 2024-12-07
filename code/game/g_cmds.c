@@ -951,7 +951,7 @@ void Cmd_Help_f(gentity_t* ent) {
 	trap_SendServerCommand(ent - g_entities, "print \"^7Available commands:\n\n\"");
 
 	if (g_defrag.integer) {
-		trap_SendServerCommand(ent - g_entities, va("print \"^2/race^7 - Call to %s racemode.\"", ent->client->sess.raceMode ? "exit/enter":"enter/exit")); 
+		trap_SendServerCommand(ent - g_entities, va("print \"^2/race^7 - Call to %s racemode.\n\"", ent->client->sess.raceMode ? "exit/enter":"enter/exit")); 
 	}
 
 
