@@ -2785,12 +2785,12 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 			break;
 		}
 		trap_FS_FCloseFile(f);
-		f = NULL;
+		f = 0;
 		arenaFileIndex++;
 	}
 	if (f) {
 		trap_FS_FCloseFile(f); // we need to close and reopen it. the first open was in FS_READ mode to get the filesize. second open is in FS_APPEND mode. if the file doesnt yet exist thats fine, we will create it.
-		f = NULL;
+		f = 0;
 	}
 
 	trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena", arenaFileIndex), &f, FS_APPEND);
