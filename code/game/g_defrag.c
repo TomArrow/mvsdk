@@ -1947,7 +1947,8 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				if (runInfo->lbType == LB_MAIN) {
 					PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
 					if (ent) {
-						G_ScreenShake(ent->client->ps.origin, ent, 5.0f, 800, qfalse);
+						gentity_t* shakeEnt = G_ScreenShake(ent->client->ps.origin, NULL, 5.0f, 800, qtrue);
+						shakeEnt->parent = ent;
 					}
 				}
 			}
@@ -3537,20 +3538,24 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			}
 		}
 
-		if (es->eType == ET_BEAM && other->parent != ent && es->generic1 == 3) {
-			//mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
+		if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex) { // dont send global screenshakes to active players unless they are not in a run
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = (cl->sess.solo && other->parent != followedEnt) || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner)); // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
+				mvEnt->snapshotIgnoreRealClient[clientNum] = cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime;
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = other->parent != followedEnt && (followedClient->sess.solo || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner))); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = followedClient->sess.sessionTeam != TEAM_SPECTATOR && other->parent != followedEnt && followedClient->pers.raceStartCommandTime;
 			}
-			//if (ent->client->sess.hideLasers) {
-			//	es->event = 0;
-			//}
-			//else if (!saveState) {
-			//	es->event = backup->event;
-			//}
+		}
+
+		// TODO rethink this. see comments below.
+		if (es->eType == ET_BEAM &&/* other->parent != ent &&*/ es->generic1 == 3) {
+			//mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
+			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
+				mvEnt->snapshotIgnoreRealClient[clientNum] = other->parent != ent && ((cl->sess.solo && other->parent != followedEnt) || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner))); // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
+			}
+			else { // wait wtf. why so complicated? we can respect wishes of this player no? since it gets updated on each target client anyway
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = other->parent != followedEnt && (followedClient->sess.solo || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner))); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
+			}
 		}
 
 		// avoid issues with custom lightsaber moves on clients.
