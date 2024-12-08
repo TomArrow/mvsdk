@@ -123,6 +123,7 @@ typedef struct savedPosition_s {
 				float	distanceTraveled2D;
 				float	topSpeed;
 				int		checkpoints;
+				int score; // target_score uses this in defrag mode
 				rollState_t roll;
 				runFpsStats_t	fpsStats;
 			} stats;

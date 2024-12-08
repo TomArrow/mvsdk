@@ -91,6 +91,7 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(pers.stats.distanceTraveled2D)\
 		FIELDSFUNC(pers.stats.topSpeed)\
 		FIELDSFUNC(pers.stats.checkpoints)\
+		FIELDSFUNC(pers.stats.score)\
 		FIELDSFUNC(pers.stats.roll)\
 		FIELDSFUNC(pers.stats.fpsStats)\
 		FIELDSFUNC(pers.raceDropped.msecTime)\
