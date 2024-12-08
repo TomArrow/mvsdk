@@ -128,6 +128,11 @@ static void G_LoadArenasFromFile( char *filename, const char* bspList, int bspCo
 	int				len;
 	fileHandle_t	f;
 	char			buf[MAX_ARENAS_TEXT];
+	int				countHere;
+
+	if (g_developer.integer) {
+		trap_Printf(va("Arenas: opening %s; ", filename));
+	}
 
 	len = trap_FS_FOpenFile( filename, &f, FS_READ );
 	if ( !f ) {
@@ -144,7 +149,12 @@ static void G_LoadArenasFromFile( char *filename, const char* bspList, int bspCo
 	buf[len] = 0;
 	trap_FS_FCloseFile( f );
 
-	g_numArenas += G_ParseInfos( buf, MAX_ARENAS - g_numArenas, &g_arenaInfos[g_numArenas], bspList,bspCount );
+	countHere = G_ParseInfos(buf, MAX_ARENAS - g_numArenas, &g_arenaInfos[g_numArenas], bspList, bspCount);
+	g_numArenas += countHere;
+
+	if (g_developer.integer) {
+		trap_Printf(va("%d arenas found\n", countHere));
+	}
 }
 
 int G_GetMapTypeBits(char *type)
