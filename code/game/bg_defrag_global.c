@@ -283,7 +283,7 @@ const char* DF_MsToString(const int ms)
 }
 
 const char* DF_DemoRaceStyleNamePart(raceStyle_t* rs) {
-	return va("v%d_%s_%s_j%d%s", rs->variant, moveStyleNames[rs->movementStyle],
+	return va("v%d_%s_%s_j%d%s", rs->variant, moveStyleNames[rs->movementStyle].string,
 		rs->msec == -1 ? "togglefps" : (rs->msec == -2 ? "floatphysics" : miniva("%dfps", 1000 / rs->msec))
 		, rs->jumpLevel, RunFlagsToString(rs->runFlags, 0, 0, "_", NULL));
 }

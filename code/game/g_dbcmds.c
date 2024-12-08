@@ -977,7 +977,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 #define TIMECOLOR_CUSTOM(a) (((a).runFlagsDiff & RFL_CLIMBTECH) ? 'E':'7')
 #define TIMECOLOR_SEGMENTED(a) ((a).mainLBCompatible ? '2':'7')
 	if (lbRequestData.type == TOPREQUEST_SPECIFICLB) {
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s\n\"", leaderboardNames[lbRequestData.lbTypeIfSpecific]));
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s\n\"", leaderboardNames[lbRequestData.lbTypeIfSpecific].string));
 	} 
 	else {
 		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-31s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
@@ -1146,7 +1146,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 
 		trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %-10s %-23s %-4s %-4d %-10s %-20s %s\n\""
 			, lbType == LB_MAIN ? '7' : 'O'
-			, miniva("[%s]", leaderboardNames[lbType])
+			, miniva("[%s]", leaderboardNames[lbType].string)
 			, raceStyle.movementStyle < MV_NUMSTYLES ? moveStyleNames[raceStyle.movementStyle].string : "UNKNOWN"
 			, username
 			, runwhen
