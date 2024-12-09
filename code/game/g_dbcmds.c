@@ -1093,7 +1093,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		qboolean mapDefaultsFound;
 		raceStyle_t raceStyle;
 		raceStyle_t mapDefaultRaceStyle;
-		char username[USERNAME_MAX_LEN+1];
+		char username[USERNAME_MAX_LEN+1+10]; // some extra buffer for !unlogged! colored
 		char course[COURSENAME_MAX_LEN+1];
 		char subcourse[COURSENAME_MAX_LEN +1];
 		char runwhen[30];
@@ -1147,9 +1147,10 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		}
 		else {
 			G_COOL_API_DB_GetString(1, username, sizeof(username));
+			Com_sprintf(username, sizeof(username), "%-10s", username);
 		}
 
-		trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %-10s %-23s %-4s %-4d %-10s %-20s %s\n\""
+		trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %s %-23s %-4s %-4d %-10s %-20s %s\n\""
 			, colorChar
 			, miniva("[%s]", leaderboardNames[lbType].string)
 			, raceStyle.movementStyle < MV_NUMSTYLES ? moveStyleNames[raceStyle.movementStyle].string : "UNKNOWN"
