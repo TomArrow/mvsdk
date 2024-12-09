@@ -998,7 +998,7 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"^2/floatphysics^7 - Turn float physics mode (no velocity snap) on or off \n\"");
 
 		trap_SendServerCommand(ent - g_entities, "print \"\n^7Race commands:\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). Use ^2/kill^7 to respawn\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). ^3This also saves your currently selected weapon.^7 Use ^2/kill^7 to respawn\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state including position, velocity and angles. Works also from spec.\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"");
