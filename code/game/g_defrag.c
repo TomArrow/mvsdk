@@ -93,6 +93,7 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(pers.stats.checkpoints)\
 		FIELDSFUNC(pers.stats.score)\
 		FIELDSFUNC(pers.stats.roll)\
+		FIELDSFUNC(pers.stats.q3RallyState)\
 		FIELDSFUNC(pers.stats.fpsStats)\
 		FIELDSFUNC(pers.raceDropped.msecTime)\
 		FIELDSFUNC(pers.raceDropped.packetCount)\
@@ -816,7 +817,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
-	if ((ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE) && cl->pers.raceStartCommandTime && cl->pers.stats.score) {
+	if ((ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE) && cl->pers.raceStartCommandTime && cl->pers.stats.q3RallyState.active && cl->pers.stats.q3RallyState.directionInited) {
 		// don't retrigger runs that already went through checkpoints
 		return;
 	}
@@ -890,6 +891,10 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	if (ent->overrideMessage && ent->overrideMessage[0]) {
 		Q_strncpyz(cl->pers.stats.overrideMessage, ent->overrideMessage,sizeof(cl->pers.stats.overrideMessage));
 	}
+	if (ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE) {
+		cl->pers.stats.q3RallyState.active = qtrue;
+	}
+
 
 	// Set timers
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
@@ -2100,6 +2105,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	else if (client->pers.stats.overrideMessage[0]) {
 		Q_strncpyz(runInfo->subcoursename, client->pers.stats.overrideMessage, sizeof(runInfo->subcoursename));
 	}
+	else if (client->pers.stats.q3RallyState.active && client->pers.stats.q3RallyState.isReverse) {
+		Q_strncpyz(runInfo->subcoursename, "reverse", sizeof(runInfo->subcoursename));
+	}
 	else {
 		runInfo->subcoursename[0] = '\0';
 	}
@@ -2284,15 +2292,35 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
+	if (ent->ttFlags & TTFLAGS_FINISHTIMER_Q3RALLYSTYLE && cl->pers.stats.q3RallyState.active) {
+		if (!cl->pers.stats.q3RallyState.directionInited) {
+			return; // we just went through start trigger
+		}
+		else if(cl->pers.stats.q3RallyState.isReverse && cl->pers.stats.q3RallyState.lastCheckpoint != 1) {
+			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
+				cl->randomLastCenterprint = level.time;
+				G_CenterPrint(activator - g_entities, 3, va("^1You haven't passed all checkpoints yet (reverse direction): %d/%d", level.q3r_numCheckpoints-cl->pers.stats.q3RallyState.lastCheckpoint+1, level.q3r_numCheckpoints), qfalse, qtrue, qfalse);
+				return;
+			}
+		}
+		else if(!cl->pers.stats.q3RallyState.isReverse && cl->pers.stats.q3RallyState.lastCheckpoint != level.q3r_numCheckpoints) {
+			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
+				cl->randomLastCenterprint = level.time;
+				G_CenterPrint(activator - g_entities, 3, va("^1You haven't passed all checkpoints yet: %d/%d", cl->pers.stats.q3RallyState.lastCheckpoint, level.q3r_numCheckpoints), qfalse, qtrue, qfalse);
+				return;
+			}
+		}
+	}
+
 	// TODO implement silent flag?
 	if (ent->ttFlags & TTFLAGS_FINISHTIMER_SCOREREQUIRE) { // cl->pers.stats.score is specific to runs! not our normal score
 		if (cl->pers.stats.score < ent->checkpointScore) {
-			if (cl->pers.stats.score || !(ent->ttFlags & TTFLAGS_FINISHTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother the player when hes starting/ending
+			//if (cl->pers.stats.score || !(ent->ttFlags & TTFLAGS_FINISHTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother the player when hes starting/ending. nvm we do separate handling now
 				if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
 					cl->randomLastCenterprint = level.time;
 					G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too low: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse);
 				}
-			}
+			//}
 			return;
 		}
 		else if (ent->ttFlags & TTFLAGS_FINISHTIMER_SCOREREQUIRE_MATCH && cl->pers.stats.score != ent->checkpointScore) {
@@ -2498,6 +2526,40 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 			cl->pers.stats.score += trigger->checkpointScore;
 			Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint score ^%c%s%d: %d", trigger->checkpointScore > 0 ? '3' : '1', trigger->checkpointScore > 0 ? "+" : "", trigger->checkpointScore, cl->pers.stats.score), sizeof(scoreAddExtraText));
 			cl->entityStates[trigger - g_entities] = 1;
+		}
+	}
+	
+	if ((trigger->ttFlags & TTFLAGS_CHECKPOINTTIMER_Q3RALLYSTYLE) && cl->pers.stats.q3RallyState.active) {
+		if (!cl->pers.stats.q3RallyState.directionInited) {
+			if (trigger->number == level.q3r_numCheckpoints) {
+				cl->pers.stats.q3RallyState.isReverse = qtrue;
+				cl->pers.stats.q3RallyState.directionInited = qtrue;
+				cl->pers.stats.q3RallyState.lastCheckpoint = trigger->number;
+				Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint ^%c%d^%c/%d\n^3[reverse]", '3', 1, '7',level.q3r_numCheckpoints), sizeof(scoreAddExtraText));
+			}
+			else if (trigger->number == 1) {
+				cl->pers.stats.q3RallyState.isReverse = qfalse;
+				cl->pers.stats.q3RallyState.directionInited = qtrue;
+				cl->pers.stats.q3RallyState.lastCheckpoint = trigger->number;
+				Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint ^%c%d^%c/%d", '3', 1, '7', level.q3r_numCheckpoints), sizeof(scoreAddExtraText));
+			}
+			else {
+				Q_strncpyz(scoreAddExtraText, "\n^1You missed a checkpoint!", sizeof(scoreAddExtraText));
+			}
+		}
+		else if (cl->pers.stats.q3RallyState.lastCheckpoint == trigger->number) {
+			// just touched it twice, ignore.
+		}
+		else if(cl->pers.stats.q3RallyState.isReverse && trigger->number == (cl->pers.stats.q3RallyState.lastCheckpoint-1)) {
+			Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint ^%c%d^%c/%d\n^3[reverse]", trigger->number == 1 ? '2':'3', level.q3r_numCheckpoints-trigger->number+1, trigger->number == 1 ? '2' : '7', level.q3r_numCheckpoints), sizeof(scoreAddExtraText));
+			cl->pers.stats.q3RallyState.lastCheckpoint = trigger->number;
+		}
+		else if(!cl->pers.stats.q3RallyState.isReverse && trigger->number == (cl->pers.stats.q3RallyState.lastCheckpoint+1)) {
+			Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint ^%c%d^%c/%d", trigger->number == level.q3r_numCheckpoints ? '2':'3', trigger->number, trigger->number == 1 ? '2' : '7', level.q3r_numCheckpoints), sizeof(scoreAddExtraText));
+			cl->pers.stats.q3RallyState.lastCheckpoint = trigger->number;
+		}
+		else {
+			Q_strncpyz(scoreAddExtraText, "\n^1You missed a checkpoint!", sizeof(scoreAddExtraText));
 		}
 	}
 
@@ -3015,10 +3077,15 @@ void G_ConvertDefragTriggerTypes() {
 		// twi_timer
 		if (level.q3r_numCheckpoints && level.q3r_hasStartFinish) { // dunno how twi mod handles checkpoints
 			const char* typeToFind = i == TARGET_CHECKPOINT ? "rally_checkpoint" : "rally_startfinish";
+			int oldNumber;
 			trigger = NULL;
 			while ((trigger = G_Find(trigger, FOFS(classname), typeToFind)) != NULL) {
 				if (!trigger->model) {
 					continue;
+				}
+				// 
+				if (i == TARGET_STOPTIMER && level.q3r_numCheckpoints > 1) {
+					DF_RegisterSubCourse("reverse");
 				}
 
 				if (i == TARGET_STARTTIMER) {
@@ -3027,6 +3094,7 @@ void G_ConvertDefragTriggerTypes() {
 					// since we still need to find and convert this trigger again later... copy for the start trigger
 
 					triggerCopy->model = trigger->model;
+					triggerCopy->number = trigger->number;
 					triggerCopy->classname = "df_trigger_start";
 					DF_trigger_start_converted(triggerCopy);
 					level.dfStartTriggerTypes |= (1 << DFTRIG_Q3RALLY);
@@ -3037,9 +3105,11 @@ void G_ConvertDefragTriggerTypes() {
 					// TODO Is the value of Twi_timer supposed to be the subcourse name?
 					oldModel = trigger->model;
 					oldType = trigger->classname;
+					oldNumber = trigger->number;
 					G_FreeEntity(trigger);
 					G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
 					trigger->model = oldModel;
+					trigger->number = oldNumber;
 					switch (i) { // reusing japro classnames for compatibility
 					/*case TARGET_STARTTIMER:
 						trigger->classname = "df_trigger_start";
@@ -3051,8 +3121,8 @@ void G_ConvertDefragTriggerTypes() {
 						trigger->classname = "df_trigger_finish";
 						DF_trigger_finish_converted(trigger, qtrue);
 						level.dfEndTriggerTypes |= (1 << DFTRIG_Q3RALLY);
-						trigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE; 
-						trigger->checkpointScore = level.q3r_numCheckpoints;
+						//trigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE; 
+						//trigger->checkpointScore = level.q3r_numCheckpoints;
 						trigger->ttFlags |= TTFLAGS_FINISHTIMER_Q3RALLYSTYLE; // dont throw error if no checkpoints hit at all
 						G_Printf("DEFRAG: ^2Q3R %s converted to df_trigger_finish.\n", oldType);
 						break;
@@ -3061,8 +3131,9 @@ void G_ConvertDefragTriggerTypes() {
 						trigger->classname = "df_trigger_checkpoint";
 						DF_trigger_checkpoint_converted(trigger);
 						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3RALLY);
-						trigger->checkpointScore = 1;
-						trigger->ttFlags |= TTFLAGS_CHECKPOINTTIMER_SCOREONCE;
+						//trigger->checkpointScore = 1;
+						trigger->ttFlags |= TTFLAGS_CHECKPOINTTIMER_Q3RALLYSTYLE;
+						//trigger->ttFlags |= TTFLAGS_CHECKPOINTTIMER_SCOREONCE;
 						G_Printf("DEFRAG: ^2Q3R %s converted to df_trigger_checkpoint.\n", oldType);
 						break;
 					}

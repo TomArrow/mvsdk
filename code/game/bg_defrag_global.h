@@ -118,6 +118,7 @@ extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 #define TTFLAGS_STARTTIMER_Q3RALLYSTYLE						(1<<0)	// don't retrigger if any checkpointscore to avoid killing the run when done
 
 #define TTFLAGS_CHECKPOINTTIMER_SCOREONCE					(1<<0)	// add checkpointScore only once per respawn
+#define TTFLAGS_CHECKPOINTTIMER_Q3RALLYSTYLE				(1<<1)	// q3 rally style checkpoint
 
 #define TTFLAGS_FINISHTIMER_SCOREREQUIRE					(1<<0)	// to make q3_fragsFilter work. must have minimum score
 #define TTFLAGS_FINISHTIMER_SCOREREQUIRE_SILENT				(1<<1)  // no messages if fail
@@ -189,6 +190,14 @@ typedef struct rollState_s {
 	int				rollAirStarted;
 	int				lastRollEndedTime;	// last commandtime before roll ended
 } rollState_t;
+
+// for q3 rally maps
+typedef struct q3TrackStatus_s {
+	qboolean	active;				// is q3rally mode
+	qboolean	directionInited;	// set when passing first checkpoint
+	qboolean	isReverse;
+	int			lastCheckpoint;
+} q3TrackStatus_t;
 
 typedef enum startTriggerEventType_s {
 	STARTTRIGGEREVENT_NONE,

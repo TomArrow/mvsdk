@@ -125,6 +125,7 @@ typedef struct savedPosition_s {
 				int		checkpoints;
 				int score; // target_score uses this in defrag mode
 				rollState_t roll;
+				q3TrackStatus_t q3RallyState;
 				runFpsStats_t	fpsStats;
 			} stats;
 			struct {
