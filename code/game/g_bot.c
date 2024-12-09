@@ -93,7 +93,8 @@ int G_ParseInfos( char *buf, int max, char *infos[], const char* bspList, int bs
 			const char* bspptr = bspList;
 			int bspLen;
 			int i;
-			const char* mapName = va("%s.bsp",Info_ValueForKey(info, "map"));
+			const char* mapNameRaw =Info_ValueForKey(info, "map");
+			const char* mapName = va("%s.bsp", mapNameRaw);
 			if (!strstr(mapName, "/")) { // that bsp list only returns files in the maps folder, not subfolders. just allow it then whatever
 				qboolean found = qfalse;
 				for (i = 0; i < bspCount; i++, bspptr += bspLen + 1) {
@@ -106,6 +107,10 @@ int G_ParseInfos( char *buf, int max, char *infos[], const char* bspList, int bs
 				if (!found) {
 					continue; // skip this map, it doesn't exist anymore
 				}
+			}
+
+			if (g_defrag.integer && (!Q_stricmp(mapNameRaw, "artus_detention") || !Q_stricmp(mapNameRaw, "artus_mine") || !Q_stricmp(mapNameRaw, "artus_topside") || !Q_stricmp(mapNameRaw, "bespin_platform") || !Q_stricmp(mapNameRaw, "bespin_streets") || !Q_stricmp(mapNameRaw, "bespin_undercity") || !Q_stricmp(mapNameRaw, "cairn_assembly") || !Q_stricmp(mapNameRaw, "cairn_bay") || !Q_stricmp(mapNameRaw, "cairn_dock1") || !Q_stricmp(mapNameRaw, "cairn_reactor") || !Q_stricmp(mapNameRaw, "ctf_bespin") || !Q_stricmp(mapNameRaw, "ctf_imperial") || !Q_stricmp(mapNameRaw, "ctf_ns_streets") || !Q_stricmp(mapNameRaw, "ctf_yavin") || !Q_stricmp(mapNameRaw, "doom_comm") || !Q_stricmp(mapNameRaw, "doom_detention") || !Q_stricmp(mapNameRaw, "doom_shields") || !Q_stricmp(mapNameRaw, "duel_bay") || !Q_stricmp(mapNameRaw, "duel_bespin") || !Q_stricmp(mapNameRaw, "duel_carbon") || !Q_stricmp(mapNameRaw, "duel_hangar") || !Q_stricmp(mapNameRaw, "duel_jedi") || !Q_stricmp(mapNameRaw, "duel_pit") || !Q_stricmp(mapNameRaw, "duel_temple") || !Q_stricmp(mapNameRaw, "duel_training") || !Q_stricmp(mapNameRaw, "ffa_bespin") || !Q_stricmp(mapNameRaw, "ffa_deathstar") || !Q_stricmp(mapNameRaw, "ffa_imperial") || !Q_stricmp(mapNameRaw, "ffa_ns_hideout") || !Q_stricmp(mapNameRaw, "ffa_ns_streets") || !Q_stricmp(mapNameRaw, "ffa_raven") || !Q_stricmp(mapNameRaw, "ffa_yavin") || !Q_stricmp(mapNameRaw, "kejim_base") || !Q_stricmp(mapNameRaw, "kejim_post") || !Q_stricmp(mapNameRaw, "ns_hideout") || !Q_stricmp(mapNameRaw, "ns_starpad") || !Q_stricmp(mapNameRaw, "ns_streets") || !Q_stricmp(mapNameRaw, "pit") || !Q_stricmp(mapNameRaw, "valley") || !Q_stricmp(mapNameRaw, "yavin_canyon") || !Q_stricmp(mapNameRaw, "yavin_courtyard") || !Q_stricmp(mapNameRaw, "yavin_final") || !Q_stricmp(mapNameRaw, "yavin_swamp") || !Q_stricmp(mapNameRaw, "yavin_temple") || !Q_stricmp(mapNameRaw, "yavin_trial"))) {
+				continue; // dont show base maps in the list for defrag 
 			}
 		}
 
