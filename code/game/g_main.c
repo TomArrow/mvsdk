@@ -2732,7 +2732,7 @@ void CheckCvars( void ) {
 	}
 }
 
-
+#define AUTOGEN_ARENA_NAME "0autoGenArenas"
 extern const char* DF_GetCourseName();
 /*
 =============
@@ -2780,7 +2780,7 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 	Q_strncpyz(arenaText,va("{\nmap \"%s\"\nlongname \"%s\"\ntype \"ffa\"\n}\n", thisMapName,level.message[0] ? level.message : thisMapName),sizeof(arenaText));
 
 	arenaTextLength = strlen(arenaText);
-	while (((len=trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena",arenaFileIndex), &f, FS_READ)) + arenaTextLength + 2) > MAX_ARENAS_TEXT){
+	while (((len=trap_FS_FOpenFile(va("scripts/" AUTOGEN_ARENA_NAME "%d.arena",arenaFileIndex), &f, FS_READ)) + arenaTextLength + 2) > MAX_ARENAS_TEXT){
 		if (!f) {
 
 			// file doesnt exist yet. good. wait, we would prolly never get here then. oh well
@@ -2795,14 +2795,14 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 		f = 0;
 	}
 
-	trap_FS_FOpenFile(va("scripts/_autoGenArenas%d.arena", arenaFileIndex), &f, FS_APPEND);
+	trap_FS_FOpenFile(va("scripts/" AUTOGEN_ARENA_NAME "%d.arena", arenaFileIndex), &f, FS_APPEND);
 
 	if (!f) {
-		G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/_autoGenArenas%d.arena for writing.\n\"", arenaFileIndex), qtrue);
+		G_SendServerCommand(-1, va("print \"^1Arena auto generation failed, cannot open scripts/" AUTOGEN_ARENA_NAME "%d.arena for writing.\n\"", arenaFileIndex), qtrue);
 		return;
 	}
 	else {
-		G_SendServerCommand(-1, va("print \"^2Generating arena for %s (length %d) in scripts/_autoGenArenas%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
+		G_SendServerCommand(-1, va("print \"^2Generating arena for %s (length %d) in scripts/" AUTOGEN_ARENA_NAME "%d.arena (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
 	}
 
 	trap_FS_Write(arenaText,arenaTextLength,f);
