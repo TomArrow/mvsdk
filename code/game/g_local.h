@@ -292,6 +292,9 @@ struct gentity_s {
 	int			laserPointerLastEventFlip;
 
 	int			checkpointScore; // when stats.score for defrag run must be a certain value
+
+	int			number; // q3 rally map support
+	int			laps; // q3 rally map support
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -471,6 +474,7 @@ typedef struct {
 
 	int			raceStartCommandTime;
 	int			lastRaceResetTime;
+	int			lastRaceFinishTime;
 	int			raceBestTime;
 	int			raceLastCheckpointTime;
 	segmented_t segmented; // segmented run
@@ -744,6 +748,17 @@ typedef struct {
 	qboolean	allRaceGenerationAlreadyCalled;
 	qboolean	arenasLoaded;
 	char		message[MAX_STRING_CHARS]; // map message (some maps provide it and its like a long level name, can use for arena auto gen
+
+	// q3 rally map support
+	//int			startRaceTime;
+	//int			finishRaceTime;
+	//int			winnerNumber;
+	qboolean	q3r_trackIsReversable;
+	int			q3r_numberOfLaps;
+
+	// map variables
+	qboolean	q3r_hasStartFinish;
+	int			q3r_numCheckpoints;
 } level_locals_t;
 
 

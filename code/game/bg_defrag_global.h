@@ -115,11 +115,14 @@ extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 #define SF_FINISHTIMER_REQUIRE_CHECKPOINTS					(1<<7)
 #define SF_FINISHTIMER_REQUIRE_SPECIFIC_STARTTRIGGER		(1<<8)
 
+#define TTFLAGS_STARTTIMER_Q3RALLYSTYLE						(1<<0)	// don't retrigger if any checkpointscore to avoid killing the run when done
+
 #define TTFLAGS_CHECKPOINTTIMER_SCOREONCE					(1<<0)	// add checkpointScore only once per respawn
 
 #define TTFLAGS_FINISHTIMER_SCOREREQUIRE					(1<<0)	// to make q3_fragsFilter work. must have minimum score
 #define TTFLAGS_FINISHTIMER_SCOREREQUIRE_SILENT				(1<<1)  // no messages if fail
 #define TTFLAGS_FINISHTIMER_SCOREREQUIRE_MATCH				(1<<2)  // must match exactly (can't be over)
+#define TTFLAGS_FINISHTIMER_Q3RALLYSTYLE					(1<<3)	// don't retrigger.
 
 #define SF_CHECKPOINT_UNUSED								(1<<0)
 #define SF_CHECKPOINT_RESET_PLAYER_TIMER					(1<<1)
@@ -215,6 +218,7 @@ typedef enum pbFlags_s { // bit flags
 
 typedef enum dfTriggerTypes_s {
 	DFTRIG_TRIGMULT,	// acrobat maps. first trigger_multiple is start, second is end
+	DFTRIG_Q3RALLY,		// q3 rally maps :)
 	DFTRIG_TWITIMER,	// one version of acrobat_metal uses this
 	DFTRIG_Q3,			// Quake 3 style timers
 	DFTRIG_NT_JAPRO,	// NT mod/ japro triggrs

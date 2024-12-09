@@ -816,6 +816,11 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
+	if ((ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE) && cl->pers.raceStartCommandTime && cl->pers.stats.score) {
+		// don't retrigger runs that already went through checkpoints
+		return;
+	}
+
 	if (cl->sess.raceStateInvalidated) {
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
 		return;
@@ -826,7 +831,9 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	}
 	if (cl->sess.raceStateSoftInvalidated) {
 		DF_RaceStateInvalidated(activator,qfalse);
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
+		if (cl->pers.lastRaceFinishTime + 1000 < level.time || level.time < cl->pers.lastRaceFinishTime || !(ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother player with message directly after run finished
+			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue);
+		}
 		return;
 	}
 
@@ -888,6 +895,8 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//activator->client->ps.duelTime = activator->client->ps.commandTime - lessTime;
 	cl->ps.duelTime = cl->pers.raceStartCommandTime = activator->client->ps.commandTime - lessTime;
 	//cl->pers.segmented.lastPosUsed = qfalse; // already guaranteed via SEG_RECORDING check above
+
+	cl->pers.lastRaceFinishTime = 0;
 
 	if (segmented) {
 		if (cl->pers.segmented.state != SEG_REPLAY) {
@@ -2275,11 +2284,14 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
+	// TODO implement silent flag?
 	if (ent->ttFlags & TTFLAGS_FINISHTIMER_SCOREREQUIRE) { // cl->pers.stats.score is specific to runs! not our normal score
 		if (cl->pers.stats.score < ent->checkpointScore) {
-			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
-				cl->randomLastCenterprint = level.time;
-				G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too low: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse);
+			if (cl->pers.stats.score || !(ent->ttFlags & TTFLAGS_FINISHTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother the player when hes starting/ending
+				if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
+					cl->randomLastCenterprint = level.time;
+					G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too low: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse);
+				}
 			}
 			return;
 		}
@@ -2404,6 +2416,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//cl->ps.duelTime = 0;
 	cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
 	cl->pers.stats.startLevelTime = 0;
+	cl->pers.lastRaceFinishTime = level.time;
 	cl->sess.raceStateSoftInvalidated = qtrue; // require respawn before starting a run again. but still allow saving spawns and such
 }
 
@@ -2998,10 +3011,76 @@ void G_ConvertDefragTriggerTypes() {
 			continue; // already got this type covered.
 		}
 
+		// q3 rally timers
+		// twi_timer
+		if (level.q3r_numCheckpoints && level.q3r_hasStartFinish) { // dunno how twi mod handles checkpoints
+			const char* typeToFind = i == TARGET_CHECKPOINT ? "rally_checkpoint" : "rally_startfinish";
+			trigger = NULL;
+			while ((trigger = G_Find(trigger, FOFS(classname), typeToFind)) != NULL) {
+				if (!trigger->model) {
+					continue;
+				}
+
+				if (i == TARGET_STARTTIMER) {
+					gentity_t* triggerCopy = G_Spawn();
+					// since we have to reuse rally_startfinish, we must just initialize a fresh entity for either start or finish.
+					// since we still need to find and convert this trigger again later... copy for the start trigger
+
+					triggerCopy->model = trigger->model;
+					triggerCopy->classname = "df_trigger_start";
+					DF_trigger_start_converted(triggerCopy);
+					level.dfStartTriggerTypes |= (1 << DFTRIG_Q3RALLY);
+					G_Printf("DEFRAG: ^2Q3R %s converted (via copy) to df_trigger_start.\n", trigger->classname);
+					triggerCopy->ttFlags |= TTFLAGS_STARTTIMER_Q3RALLYSTYLE;
+				}
+				else {
+					// TODO Is the value of Twi_timer supposed to be the subcourse name?
+					oldModel = trigger->model;
+					oldType = trigger->classname;
+					G_FreeEntity(trigger);
+					G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
+					trigger->model = oldModel;
+					switch (i) { // reusing japro classnames for compatibility
+					/*case TARGET_STARTTIMER:
+						trigger->classname = "df_trigger_start";
+						DF_trigger_start_converted(trigger);
+						level.dfStartTriggerTypes |= (1 << DFTRIG_Q3RALLY);
+						G_Printf("DEFRAG: ^2Q3R %s converted to df_trigger_start.\n", oldType);
+						break;*/
+					case TARGET_STOPTIMER:
+						trigger->classname = "df_trigger_finish";
+						DF_trigger_finish_converted(trigger, qtrue);
+						level.dfEndTriggerTypes |= (1 << DFTRIG_Q3RALLY);
+						trigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE; 
+						trigger->checkpointScore = level.q3r_numCheckpoints;
+						trigger->ttFlags |= TTFLAGS_FINISHTIMER_Q3RALLYSTYLE; // dont throw error if no checkpoints hit at all
+						G_Printf("DEFRAG: ^2Q3R %s converted to df_trigger_finish.\n", oldType);
+						break;
+					default:
+					case TARGET_CHECKPOINT: // wont ever be hit atm, dunno how twi does checkpoints
+						trigger->classname = "df_trigger_checkpoint";
+						DF_trigger_checkpoint_converted(trigger);
+						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3RALLY);
+						trigger->checkpointScore = 1;
+						trigger->ttFlags |= TTFLAGS_CHECKPOINTTIMER_SCOREONCE;
+						G_Printf("DEFRAG: ^2Q3R %s converted to df_trigger_checkpoint.\n", oldType);
+						break;
+					}
+				}
+
+			}
+
+		}
+
+
+		if (i == TARGET_STARTTIMER && level.dfStartTriggerTypes || i == TARGET_STOPTIMER && level.dfEndTriggerTypes || i == TARGET_CHECKPOINT && level.dfCheckPointTriggerTypes) {
+			continue; // already got this type covered.
+		}
+
 		// trigger_multiple
 		if (i != TARGET_CHECKPOINT) { // dunno how twi mod handles checkpoints
 			trigger = NULL;
-			index = (level.dfStartTriggerTypes & (1 << DFTRIG_TRIGMULT))  ? 0 : -1; // start already found so now the index is automatically 1 higher already.
+			index = (level.dfStartTriggerTypes & (1 << DFTRIG_TRIGMULT)) ? 0 : -1; // start already found so now the index is automatically 1 higher already.
 			while ((trigger = G_Find(trigger, FOFS(classname), "trigger_multiple")) != NULL) {
 				qboolean disgustingType = qfalse;
 				if (!trigger->model) {
@@ -3038,7 +3117,7 @@ void G_ConvertDefragTriggerTypes() {
 					trigger->classname = "df_trigger_start";
 					DF_trigger_start_converted(trigger);
 					level.dfStartTriggerTypes |= (1 << DFTRIG_TRIGMULT);
-					G_Printf("DEFRAG: ^2%s converted to df_trigger_start%s.\n", oldType, disgustingType? " (disgusting type)" : "");
+					G_Printf("DEFRAG: ^2%s converted to df_trigger_start%s.\n", oldType, disgustingType ? " (disgusting type)" : "");
 					break;
 				case TARGET_STOPTIMER:
 					trigger->classname = "df_trigger_finish";
@@ -3057,6 +3136,7 @@ void G_ConvertDefragTriggerTypes() {
 			}
 
 		}
+
 	}
 
 	if (!level.dfStartTriggerTypes) {
@@ -5052,4 +5132,314 @@ qboolean DF_KeepClientZombie(gentity_t* ent) {
 		return qfalse;
 	}
 }
+
+
+
+
+// q3 rally map support
+// code copied/adapted from q3rally
+
+#define CHECKPOINT_SOUNDS		1
+#define CHECKPOINT_MESSAGES		2
+
+void Q3R_Touch_StartFinish(gentity_t* self, gentity_t* other, trace_t* trace) {
+	char* place;
+
+	if (!other->client) {
+		return;
+	}
+
+	// this isnt actually used in this way. im just keeping the code here so i can remember the logic
+
+	//if (g_developer.integer)
+	//	G_Printf("Client %i touched the startfinish line.  Checkpoint number %i\n", other->s.clientNum, self->number);
+
+	//if (other->currentLap > level.numberOfLaps && level.numberOfLaps) {
+	//	return;
+	//}
+
+	//if (self->number == other->number) {
+	//	other->currentLap++;
+	//	// increment lap
+	//	if (other->currentLap > level.numberOfLaps && level.numberOfLaps) {
+	//		other->client->finishRaceTime = level.time;
+	//		other->s.weapon = WP_NONE;
+	//		other->takedamage = qfalse;
+
+	//		trap_SendServerCommand(-1, va("raceFinishTime %i %i", other->s.clientNum, other->client->finishRaceTime));
+
+	//		if (!level.finishRaceTime) {
+	//			other->client->ps.stats[STAT_POSITION] = 1; // make sure the player is first
+
+	//			level.winnerNumber = other->s.clientNum;
+	//			level.finishRaceTime = level.time;
+	//			trap_SendServerCommand(-1, va("print \"%s won the race!\n\"", other->client->pers.netname));
+	//			trap_SendServerCommand(level.winnerNumber, "cp \"You won the race!\n\"");
+	//		}
+	//		else {
+	//			switch (other->client->ps.stats[STAT_POSITION]) {
+	//			case 1:
+	//				place = "first";
+	//				break;
+	//			case 2:
+	//				place = "second";
+	//				break;
+	//			case 3:
+	//				place = "third";
+	//				break;
+	//			case 4:
+	//				place = "forth";
+	//				break;
+	//			case 5:
+	//				place = "fifth";
+	//				break;
+	//			case 6:
+	//				place = "sixth";
+	//				break;
+	//			case 7:
+	//				place = "seventh";
+	//				break;
+	//			case 8:
+	//				place = "eighth";
+	//				break;
+	//			default:
+	//				place = NULL;
+	//				Com_Printf("Unknown placing: %i\n", other->client->ps.stats[STAT_POSITION]);
+	//				break;
+	//			}
+
+	//			if (other->client->ps.stats[STAT_POSITION] <= 8) {
+	//				trap_SendServerCommand(-1, va("print \"%s finished the race in %s place!\n\"", other->client->pers.netname, place));
+	//			}
+	//			else {
+	//				trap_SendServerCommand(-1, va("print \"%s finished the race!\n\"", other->client->pers.netname));
+	//			}
+	//		}
+	//	}
+	//	else {
+	//		other->number = 1;
+	//		other->client->ps.stats[STAT_NEXT_CHECKPOINT] = other->number;
+	//		other->client->ps.stats[STAT_FRAC_TO_NEXT_CHECKPOINT] = FLOAT2SHORT(0.1f);
+	//		//			Com_Printf( "resetting frac, sf\n" );
+	//		trap_SendServerCommand(other->client->ps.clientNum, va("newLapTime %i %i\n", other->currentLap, level.time));
+	//	}
+
+
+	//	if (other->currentLap == level.numberOfLaps) {
+	//		trap_SendServerCommand(other->s.number, "cp \"Final lap\n\"");
+	//		Rally_Sound(self, EV_GLOBAL_SOUND, CHAN_ANNOUNCER, G_SoundIndex("sound/rally/race/finallap.wav"));
+	//	}
+	//	else {
+	//		Rally_Sound(self, EV_GLOBAL_SOUND, CHAN_ANNOUNCER, G_SoundIndex("sound/rally/race/checkpoint.wav"));
+	//	}
+	//}
+}
+
+void Q3R_Think_StartFinish(gentity_t* self) {
+	gentity_t* ent;
+	int		checkpoints;
+
+	// FIXME: only do this a couple times after a client joins
+	// send checkpoint to clients
+/*
+	if ((level.time / 2000) % 2)
+		self->r.svFlags |= SVF_BROADCAST;
+	else
+		self->r.svFlags |= SVF_NOCLIENT;
+
+	self->nextthink = level.time + 2000;
+*/
+// if there is a target use its origin and angles instead
+
+
+	//if (self->target) {
+	//	ent = G_PickTarget(self->target,!g_defrag.integer,NULL);
+	//	if (ent) {
+	//		VectorCopy(ent->s.origin, self->s.origin);
+	//		VectorCopy(ent->s.angles, self->s.angles);
+	//		self->s.frame = 1;
+
+	//		G_FreeEntity(ent);
+	//	}
+	//	self->target = 0;
+	//}
+
+	//if (self->s.origin2[0] == 0.0f &&
+	//	self->s.origin2[1] == 0.0f &&
+	//	self->s.origin2[2] == 0.0f &&
+	//	(self->s.origin[0] != 0.0f ||
+	//		self->s.origin[1] != 0.0f ||
+	//		self->s.origin[2] != 0.0f))
+	//	VectorCopy(self->s.origin, self->s.origin2);
+
+	// TA: do this count directly in rally_checkpoint spawn.
+
+	//checkpoints = 0;
+
+	//ent = NULL;
+	//while ((ent = G_Find(ent, FOFS(classname), "rally_checkpoint")) != NULL) checkpoints++;
+	//level.numCheckpoints = checkpoints;
+	//if (g_trackReversed.integer && level.trackIsReversable) {
+	//	ent = NULL;
+	//	while ((ent = G_Find(ent, FOFS(classname), "rally_checkpoint")) != NULL) {
+	//		ent->number = level.numCheckpoints - ent->number;
+	//	}
+	//}
+
+	//self->number = level.numCheckpoints;
+	//self->s.weapon = self->number;
+}
+
+
+void Q3R_SP_rally_startfinish(gentity_t* ent) {
+
+	InitTrigger(ent);
+	trap_LinkEntity(ent);
+	// this is just a placeholder, we will convert it to normal defrag triggers. just keeping commented code so i know what its supposed to be doing
+	level.q3r_numberOfLaps = ent->laps;
+	level.q3r_hasStartFinish = qtrue;
+
+	//ent->classname = "rally_checkpoint";
+
+	//trap_SetBrushModel(ent, ent->model);
+
+	//if (!g_laplimit.integer) {
+	//	level.numberOfLaps = ent->laps;
+	//	trap_Cvar_Set("laplimit", va("%d", level.numberOfLaps));
+	//}
+	//else
+	//	level.numberOfLaps = g_laplimit.integer;
+
+	//// STONELANCE - April 23, 2002 temp for testing bezier curve stuff
+	//ent->r.svFlags |= SVF_BROADCAST;
+	////
+	//ent->s.eType = ET_CHECKPOINT;
+
+	//ent->touch = Touch_StartFinish;
+	//ent->think = Think_StartFinish;
+	//ent->nextthink = level.time + 100;
+	//ent->s.frame = 0;
+
+	//trap_LinkEntity(ent);
+}
+
+//
+// rally_checkpoint
+//
+
+void Q3R_Touch_Checkpoint(gentity_t* self, gentity_t* other, trace_t* trace) {
+	if (!other->client) {
+		return;
+	}
+
+
+	// this is just a placeholder, we will convert it to normal defrag triggers. just keeping commented code so i know what its supposed to be doing
+	// 
+	//if (g_developer.integer)
+	//	G_Printf("Client %i touched checkpoint number %i\n", other->s.clientNum, self->number);
+
+	//if (self->number == other->number) {
+	//	other->number++;	// FIXME: get rid of number? use s.weapon instead?
+	//	other->client->ps.stats[STAT_NEXT_CHECKPOINT] = other->number;
+	//	other->client->ps.stats[STAT_FRAC_TO_NEXT_CHECKPOINT] = FLOAT2SHORT(0.1f);
+	//	//		Com_Printf( "resetting frac, cp\n" );
+
+	//	if (self->spawnflags & CHECKPOINT_SOUNDS)
+	//		Rally_Sound(self, EV_GLOBAL_SOUND, CHAN_ANNOUNCER, G_SoundIndex("sound/rally/race/checkpoint.wav"));
+
+	//	if (self->spawnflags & CHECKPOINT_MESSAGES && self->s.otherEntityNum != -1 &&
+	//		self->s.otherEntityNum != other->s.number)
+	//	{
+	//		if (g_entities[self->s.otherEntityNum].client->ps.stats[STAT_POSITION] < other->client->ps.stats[STAT_POSITION])
+	//		{
+	//			trap_SendServerCommand(other->s.number,
+	//				va("print \"%s is ahead by %i seconds\n\"",
+	//					g_entities[self->s.otherEntityNum].client->pers.netname,
+	//					(level.time - self->updateTime) / 1000));
+	//		}
+	//	}
+
+	//	self->s.otherEntityNum = other->s.number;
+	//	self->updateTime = level.time;
+	//}
+}
+
+
+void Q3R_Think_Checkpoint(gentity_t* self) {
+	gentity_t* ent;
+
+	// this is just a placeholder, we will convert it to normal defrag triggers. just keeping commented code so i know what its supposed to be doing
+	/*
+		// FIXME: only do this a couple times after a client joins
+		// send checkpoint to clients
+		if ((level.time / 2000) % 2){
+			Com_Printf("Broadcast %d\n", self->s.number);
+			self->r.svFlags |= SVF_BROADCAST;
+			trap_LinkEntity (ent);
+		}
+		else{
+			Com_Printf("Noclient\n");
+			self->r.svFlags |= SVF_NOCLIENT;
+			trap_LinkEntity (ent);
+		}
+
+		self->nextthink = level.time + 2000;
+	*/
+
+	// the following is not commented in q3r, the above is tho
+
+	// if there is a target use its origin and angles instead
+	//if (self->target) {
+	//	ent = G_PickTarget(self->target,!g_defrag.integer,NULL);
+	//	if (ent) {
+	//		VectorCopy(ent->s.origin, self->s.origin);
+	//		VectorCopy(ent->s.angles, self->s.angles);
+	//		self->s.frame = 1;
+
+	//		G_FreeEntity(ent);
+	//	}
+	//	self->target = 0;
+	//}
+
+	//if (self->s.origin2[0] == 0.0f &&
+	//	self->s.origin2[1] == 0.0f &&
+	//	self->s.origin2[2] == 0.0f &&
+	//	(self->s.origin[0] != 0.0f ||
+	//		self->s.origin[1] != 0.0f ||
+	//		self->s.origin[2] != 0.0f))
+	//	VectorCopy(self->s.origin, self->s.origin2);
+
+	//self->s.weapon = self->number;
+}
+
+//	spawnflag 1 enable messages, spawn flag 2 enable sound, 3 is enable both
+void Q3R_SP_rally_checkpoint(gentity_t* ent) {
+
+	// this is just a placeholder, we will convert it to normal defrag triggers. just keeping commented code so i know what its supposed to be doing
+	InitTrigger(ent);
+	trap_LinkEntity(ent);
+
+	level.q3r_numCheckpoints++;
+
+	//trap_SetBrushModel(ent, ent->model);
+
+	//// STONELANCE - April 23, 2002 temp for testing bezier curve stuff
+	//ent->r.svFlags |= SVF_BROADCAST;
+	////
+	//ent->s.eType = ET_CHECKPOINT;
+
+	//ent->think = Think_Checkpoint;
+	//ent->nextthink = level.time + 200;
+
+	//ent->touch = Touch_Checkpoint;
+	//ent->s.frame = 0;
+
+	//trap_LinkEntity(ent);
+}
+
+
+
+
+
+
 

@@ -106,6 +106,8 @@ field_t fields[] = {
 	{"notcpm", FOFS(notCPM), F_INT},
 	{"overrideMessage", FOFS(overrideMessage), F_LSTRING},
 	{"ttFlags", FOFS(ttFlags), F_INT},
+	{"number", FOFS(number), F_INT}, // q3 rally map support
+	{"laps", FOFS(laps), F_INT}, // q3 rally map support
 	//{"objective", FOFS(objective), F_INT},
 
 	{NULL}
@@ -166,6 +168,9 @@ void SP_target_kill (gentity_t *ent);
 void SP_target_position (gentity_t *ent);
 void SP_target_location (gentity_t *ent);
 void SP_target_push (gentity_t *ent);
+
+void Q3R_SP_rally_checkpoint(gentity_t* ent);
+void Q3R_SP_rally_startfinish(gentity_t* ent);
 
 void SP_light (gentity_t *self);
 void SP_info_null (gentity_t *self);
@@ -256,6 +261,10 @@ spawn_t	spawns[] = {
 	{"df_trigger_start", qfalse, DF_trigger_start},
 	{"df_trigger_finish", qfalse, DF_trigger_finish},
 	{"df_trigger_checkpoint", qfalse, DF_trigger_checkpoint},
+
+	// q3 rally map support
+	{"rally_startfinish", qfalse, Q3R_SP_rally_startfinish},
+	{"rally_checkpoint", qfalse, Q3R_SP_rally_checkpoint},
 
 	// targets perform no action by themselves, but must be triggered
 	// by another entity
@@ -954,7 +963,12 @@ void SP_worldspawn( void )
 			Com_Error(ERR_DROP, "Style %d has inconsistent lengths: R %d, G %d, B %d", 
 				i, lengthRed, lengthGreen, lengthBlue);
 		}
-	}		
+	}	
+
+
+	// q3 rally map support
+	G_SpawnString("reversable", "0", &text);
+	level.q3r_trackIsReversable = atoi(text); // we can run our checkpoints in any order anyway but may as well maybe tell the player if a reverse order is possible? meh.
 }
 
 
@@ -977,6 +991,8 @@ void G_SpawnEntitiesFromString( void ) {
 		G_Error( "SpawnEntities: no entities" );
 	}
 	SP_worldspawn();
+
+	level.q3r_numCheckpoints = 0; // q3 rally map support
 
 	// parse ents
 	while( G_ParseSpawnVars() ) {
