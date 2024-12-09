@@ -2662,11 +2662,16 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 
 	DF_RemoveCheckPoints(ent);
 
-	if (ent->client->pers.recordingDemo && !ent->client->pers.keepDemoMaybe) {
+	if (ent->client->pers.recordingDemo) {
 
 		ent->client->pers.recordingDemo = qfalse;
 		ent->client->pers.demoStoppedTime = level.time;
-		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", ent - g_entities, ent->client->pers.tempDemoName, ent - g_entities));
+		if (!ent->client->pers.keepDemoMaybe) {
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", ent - g_entities, ent->client->pers.tempDemoName, ent - g_entities));
+		}
+		else {
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", ent - g_entities, ent->client->pers.tempDemoName, ent - g_entities));
+		}
 	}
 
 	i = 0;

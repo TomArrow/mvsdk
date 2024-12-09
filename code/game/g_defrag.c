@@ -764,11 +764,16 @@ void DF_HandleUnfinishedDemos() {
 	gentity_t* ent = g_entities;
 	for (i = 0; i < level.maxclients; i++,ent++) {
 		if (!ent->inuse) continue;
-		if (ent->client->pers.recordingDemo && !ent->client->pers.keepDemoMaybe) {
+		if (ent->client->pers.recordingDemo) {
 
 			ent->client->pers.recordingDemo = qfalse;
 			ent->client->pers.demoStoppedTime = level.time;
-			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", i, ent->client->pers.tempDemoName, i));
+			if (!ent->client->pers.keepDemoMaybe) {
+				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", i, ent->client->pers.tempDemoName, i));
+			}
+			else {
+				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", i, ent->client->pers.tempDemoName, i));
+			}
 		}
 	}
 }
