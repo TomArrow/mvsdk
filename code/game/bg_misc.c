@@ -2108,7 +2108,7 @@ void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs) {
 }
 
 static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity) {
-	if (!referenceMsec) return gravity;
+	if (!referenceMsec || referenceMsec == -2) return gravity;
 	return roundf((float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
 }
 

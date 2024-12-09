@@ -1163,7 +1163,7 @@ void CG_PredictPlayerState( void ) {
 		moved = qtrue;
 
 		// add push trigger movement effects
-		CG_TouchTriggerPrediction((cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_JUMPPADCOMPENSATE)) ? msec : 0);
+		CG_TouchTriggerPrediction((cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_JUMPPADCOMPENSATE)) ? (cg.predictedPlayerState.stats[STAT_MSECRESTRICT] == -2 ? -2: msec ): 0);
 
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
