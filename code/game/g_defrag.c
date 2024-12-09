@@ -1948,8 +1948,13 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				if (runInfo->lbType == LB_MAIN) {
 					PlayActualGlobalSound(G_SoundIndex("sound/movers/sec_panel_pass"));
 					if (ent) {
-						gentity_t* shakeEnt = G_ScreenShake(ent->client->ps.origin, NULL, 5.0f, 800, qtrue);
-						shakeEnt->parent = ent;
+						if (runInfo->raceStyle.movementStyle == MV_JK2) {
+							gentity_t* shakeEnt = G_ScreenShake(ent->client->ps.origin, NULL, 5.0f, 800, qtrue);
+							shakeEnt->parent = ent;
+						}
+						else {
+							gentity_t* shakeEnt = G_ScreenShake(ent->client->ps.origin, ent, 5.0f, 800, qfalse);
+						}
 					}
 				}
 			}
