@@ -1097,6 +1097,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		char course[COURSENAME_MAX_LEN+1];
 		char subcourse[COURSENAME_MAX_LEN +1];
 		char runwhen[30];
+		char colorChar;
 		mainLeaderboardType_t lbType;
 
 		if (resultIndex == 0) {
@@ -1115,12 +1116,6 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		}
 
 		userid = G_COOL_API_DB_GetInt(0);
-		if (userid == -1) {
-			Q_strncpyz(username, "!unlogged!", sizeof(username));
-		}
-		else {
-			G_COOL_API_DB_GetString(1, username, sizeof(username));
-		}
 		G_COOL_API_DB_GetString(2, course, sizeof(course));
 		G_COOL_API_DB_GetString(3, subcourse, sizeof(subcourse));
 		raceStyle.movementStyle = G_COOL_API_DB_GetInt(4);
@@ -1144,8 +1139,18 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 
 		lbType = classifyLeaderBoard(&raceStyle, &mapDefaultRaceStyle);
 
+		colorChar = lbType == LB_MAIN ? '7' : 'O';
+
+		if (userid == -1) {
+			//Q_strncpyz(username, "!unlogged!", sizeof(username));
+			Com_sprintf(username, sizeof(username), "^1!^%cunlogged^1!^%c", colorChar, colorChar);
+		}
+		else {
+			G_COOL_API_DB_GetString(1, username, sizeof(username));
+		}
+
 		trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %-10s %-23s %-4s %-4d %-10s %-20s %s\n\""
-			, lbType == LB_MAIN ? '7' : 'O'
+			, colorChar
 			, miniva("[%s]", leaderboardNames[lbType].string)
 			, raceStyle.movementStyle < MV_NUMSTYLES ? moveStyleNames[raceStyle.movementStyle].string : "UNKNOWN"
 			, username
