@@ -2535,12 +2535,14 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 				cl->pers.stats.q3RallyState.isReverse = qtrue;
 				cl->pers.stats.q3RallyState.directionInited = qtrue;
 				cl->pers.stats.q3RallyState.lastCheckpoint = trigger->number;
+				cl->pers.stats.courseId = 1;
 				Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint ^%c%d^%c/%d\n^3[reverse]", '3', 1, '7',level.q3r_numCheckpoints), sizeof(scoreAddExtraText));
 			}
 			else if (trigger->number == 1) {
 				cl->pers.stats.q3RallyState.isReverse = qfalse;
 				cl->pers.stats.q3RallyState.directionInited = qtrue;
 				cl->pers.stats.q3RallyState.lastCheckpoint = trigger->number;
+				cl->pers.stats.courseId = 0;
 				Q_strncpyz(scoreAddExtraText, va("\n^7Checkpoint ^%c%d^%c/%d", '3', 1, '7', level.q3r_numCheckpoints), sizeof(scoreAddExtraText));
 			}
 			else {
