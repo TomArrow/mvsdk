@@ -2732,7 +2732,7 @@ void CheckCvars( void ) {
 	}
 }
 
-#define AUTOGEN_ARENA_NAME "0autoGenArenas"
+#define AUTOGEN_ARENA_NAME "_autoGenArenas" // changed back to _ from 0. doesnt affect ordering anyway
 extern const char* DF_GetCourseName();
 /*
 =============
