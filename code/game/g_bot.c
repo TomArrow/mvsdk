@@ -390,15 +390,15 @@ static void G_LoadArenas( void ) {
 	int			numBsps;
 	vmCvar_t	arenasFile;
 	char		filename[128];
-	static char	dirlistBsp[4096];
-	static char	dirlist[4096];
+	static char	dirlistBsp[8192];
+	static char	dirlist[8192];
 	char*		dirptr;
 	int			i, n;
 	int			dirlen;
 
 	g_numArenas = 0;
 
-	numBsps = trap_FS_GetFileList("maps", ".bsp", dirlistBsp, 4096);
+	numBsps = trap_FS_GetFileList("maps", ".bsp", dirlistBsp, sizeof(dirlistBsp));
 
 	trap_Cvar_Register( &arenasFile, "g_arenasFile", "", CVAR_INIT|CVAR_ROM );
 	if( *arenasFile.string ) {
@@ -409,7 +409,7 @@ static void G_LoadArenas( void ) {
 	}
 
 	// get all arenas from .arena files
-	numdirs = trap_FS_GetFileList("scripts", ".arena", dirlist, 1024 );
+	numdirs = trap_FS_GetFileList("scripts", ".arena", dirlist, sizeof(dirlist));
 	dirptr  = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
 		dirlen = strlen(dirptr);
