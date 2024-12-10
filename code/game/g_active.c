@@ -1624,8 +1624,14 @@ void ClientThink_real( gentity_t *ent ) {
 		ucmd->serverTime = level.time + 200;
 //		G_Printf("serverTime <<<<<\n" );
 	}
-	if ( ucmd->serverTime < level.time - 1000 ) {
-		ucmd->serverTime = level.time - 1000;
+	if ( ucmd->serverTime < level.time - (ent->client->sess.raceMode ? 1500:1000) ) { // bit higher limit for racemoders to avoid extreme lags killing runs
+		if (ent->client->sess.raceMode && (ent->client->sess.raceStyle.msec == 1000 || ent->client->sess.raceStyle.msec == -1) && (ucmd->serverTime - client->ps.commandTime) == 1000 && ucmd->serverTime >= level.time - 2000) {
+			// special exception for 1 fps defragging (for very funny people)
+			// increase the limit even more for them
+		}
+		else {
+			ucmd->serverTime = level.time - (ent->client->sess.raceMode ? 1500 : 1000);
+		}
 //		G_Printf("serverTime >>>>>\n" );
 	}
 
@@ -1635,8 +1641,16 @@ void ClientThink_real( gentity_t *ent ) {
 	if ( msec < 1 && client->sess.spectatorState != SPECTATOR_FOLLOW ) {
 		return;
 	}
-	if ( msec > 200 ) {
-		msec = 200;
+	if ( msec > 200) {
+		if (ent->client->sess.raceMode && (ent->client->sess.raceStyle.msec > 200 || ent->client->sess.raceStyle.msec == -1) ) {
+			// racemode is more lenient, we wanna allow 1 fps runs and nonsense like that
+			if (msec > 1000) {
+				msec = 1000;
+			}
+		}
+		else {
+			msec = 200;
+		}
 	}
 	
 	if (g_defrag.integer && client->sess.raceMode && ent->activatedEntities) {

@@ -1191,7 +1191,7 @@ static void AcceptClientPhysicsFps(gentity_t* ent, int clientSetting) {
 	gclient_t* client = ent->client;
 	client->pers.physicsFps.lastChange = level.time;
 	client->pers.physicsFps.acceptedSetting = clientSetting;
-	client->pers.physicsFps.acceptedSettingMsec = (MAX(1, MIN(200, 1000 / MAX(1, clientSetting))));
+	client->pers.physicsFps.acceptedSettingMsec = (MAX(1, MIN(1000, 1000 / MAX(1, clientSetting))));
 	if (client->sess.raceStyle.msec >= 0) { // -1 = toggle, -2 = float
 		client->sess.raceStyle.msec = client->pers.physicsFps.acceptedSettingMsec;
 		DF_RaceStateInvalidated(ent, qtrue);

@@ -2053,12 +2053,22 @@ void DF_MakeUsedFpsString(runFpsStats_t* fps, char* buf, int bufSize) {
 	int count = 0;
 	fpsEntry_t entries[FPSTABLE_SIZE];
 
+	if (!fps->totalCount) {
+		buf[0] = '\0';
+		return;
+	}
+
 	for (i = 0; i < FPSTABLE_SIZE; i++) {
 		value = 100 * fps->msecCounts[i] / fps->totalCount;
 		if (value < 1) continue; 
 		entries[count].fps = 1000 / fpsTableIndexToMsec[i];
 		entries[count].count = fps->msecCounts[i];
 		count++;
+	}
+
+	if (!count) {
+		buf[0] = '\0';
+		return;
 	}
 
 	qsort(entries, count, sizeof(fpsEntry_t), compareFpsEntry);

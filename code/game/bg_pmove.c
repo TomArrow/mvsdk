@@ -377,6 +377,17 @@ Q_INLINE int PM_GetMsecRestrict(void)
 #endif
 	return 0; // this can happen when we die in racemode too!
 }
+Q_INLINE int PM_GetRaceMode(pmove_t* pmove)
+{
+	if (!pmove || !pmove->ps)
+		return 0;
+#if JK2_GAME
+	return pmove->ps->stats[STAT_RACEMODE];
+#elif JK2_CGAME
+	return cgs.isTommyTernal && pmove->ps->stats[STAT_RACEMODE];
+#endif
+	return 0; // this can happen when we die in racemode too!
+}
 
 int PM_GetSaberStance(void)
 {
@@ -5579,7 +5590,7 @@ void PmoveSingle (pmove_t *pmove) {
 	pml.msec = pmove->cmd.serverTime - pm->ps->commandTime;
 	if ( pml.msec < 1 ) {
 		pml.msec = 1;
-	} else if ( pml.msec > 200 ) {
+	} else if ( pml.msec > 200 && (pml.msec > msecRestrict && msecRestrict != -1)) { // racemode can allow higher for shits and giggles
 		pml.msec = 200;
 	}
 	pm->ps->commandTime = pmove->cmd.serverTime;
@@ -6059,6 +6070,7 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 }
 
+extern Q_INLINE int PM_GetRaceMode(pmove_t* pmove);
 
 /*
 ================
@@ -6121,7 +6133,8 @@ void Pmove (pmove_t *pmove) {
 			}
 		}
 		else {
-			if ( msec > 66 ) {
+			qboolean isRaceMode = PM_GetRaceMode(pmove);
+			if ( msec > 66 && !isRaceMode) { // if racemode, let other places handle this. we are not really concerned about someone gaining an undue advantage then. (is that even what its for? what even is the point since ppl can just send a bunch of shorter cmds at once)
 				msec = 66;
 			}
 		}
