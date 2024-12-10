@@ -541,6 +541,7 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 				int maxMsecDelay = MIN(200,1000/MAX(1,g_blockIdenticalUserSnapsMinFps.integer));
 				if (g_blockIdenticalUserSnaps.integer && client && (client->sess.sessionTeam != TEAM_SPECTATOR || !client->anyClientMovedSinceSnapshot) && client->lastSnapshotSentCommandTime == client->ps.commandTime && level.time > client->lastSnapshotSent && (level.time-client->lastSnapshotSent) < maxMsecDelay) {
 					// smooth demos a bit by not sending useless repeated packets, unless it would be come TOO stuttery
+					// TODO make it able to go even lower fps but then do some more advanced checks to make sure any spawned/despawned item and such is still visible? hook into G_Spawn and G_Free?
 					return qfalse;
 				}
 				PlayerSnapshotHackValues(lastPlayerSnapshotNum == -1, playerNum);

@@ -1586,8 +1586,9 @@ void ClientThink_real( gentity_t *ent ) {
 		otherClientEnt = g_entities + i;
 		// this is for snapshot limiting (avoiding dupe snapshots when no commandtime update has happened for smoother demos)
 		// if we are in follow mode, we wont set it for ourselves otherwise we might override the snapshot limiting. it will think something moved,
-		// but it was just us as spectator sending usercmds that did nothing relevant.
-		if (!otherClientEnt->client || !otherClientEnt->inuse || (otherClientEnt == ent && ent->client->sess.spectatorState == SPECTATOR_FOLLOW)) continue;
+		// but it was just us as spectator sending usercmds that did nothing relevant. dont set it for others either then i guess?
+		// also if we are a free floating spectator, don't count our movement for others
+		if (!otherClientEnt->client || !otherClientEnt->inuse || (/*otherClientEnt == ent &&*/ ent->client->sess.spectatorState == SPECTATOR_FOLLOW) || (ent->client->sess.sessionTeam == TEAM_SPECTATOR && otherClientEnt != ent)) continue;
 		otherClientEnt->client->anyClientMovedSinceSnapshot = qtrue;
 	}
 
