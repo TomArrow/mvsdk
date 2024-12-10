@@ -1103,6 +1103,109 @@ void Cmd_Team_f( gentity_t *ent ) {
 }
 
 
+static void Cmd_Launch_f(gentity_t* ent)
+{
+	char xySpeedStr[16], xStr[16], yStr[16], zStr[16], yawStr[16], zSpeedStr[16];
+	vec3_t fwdAngles, jumpFwd;
+	const int clampSpeed = 25000;
+	int frameTime;
+
+	if (!ent->client)
+		return;
+
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in race mode to use this command!\n\""); //Should never happen since cant be in practice w/o racemode? or... w/e
+		return;
+	}
+
+	if (trap_Argc() != 2 && trap_Argc() != 7) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /launch <speed> or /launch <x y z yaw xyspeed zspeed>\n\"");
+		return;
+	}
+
+	DF_RaceStateInvalidated(ent, qtrue);
+
+	if (trap_Argc() == 2) {
+		int xyspeed;
+
+		trap_Argv(1, xySpeedStr, sizeof(xySpeedStr));
+
+		xyspeed = atoi(xySpeedStr);
+		if (xyspeed > clampSpeed)
+			xyspeed = clampSpeed;
+		else if (xyspeed < -clampSpeed)
+			xyspeed = -clampSpeed;
+
+		VectorCopy(ent->client->ps.viewangles, fwdAngles);
+		fwdAngles[PITCH] = fwdAngles[ROLL] = 0;
+		AngleVectors(fwdAngles, jumpFwd, NULL, NULL);
+		VectorScale(jumpFwd, xyspeed, ent->client->ps.velocity);
+		ent->client->ps.velocity[2] = 270; //Hmm?
+	}
+	else {
+		int xyspeed, zspeed;
+		vec3_t origin, angles;
+
+		trap_Argv(1, xStr, sizeof(xStr));
+		trap_Argv(2, yStr, sizeof(yStr));
+		trap_Argv(3, zStr, sizeof(zStr));
+		trap_Argv(4, yawStr, sizeof(yawStr));
+		trap_Argv(5, xySpeedStr, sizeof(xySpeedStr));
+		trap_Argv(6, zSpeedStr, sizeof(zSpeedStr));
+
+		xyspeed = atoi(xySpeedStr);
+		if (xyspeed > clampSpeed)
+			xyspeed = clampSpeed;
+		else if (xyspeed < -clampSpeed)
+			xyspeed = -clampSpeed;
+
+		zspeed = atoi(zSpeedStr);
+		if (zspeed > clampSpeed)
+			zspeed = clampSpeed;
+		else if (zspeed < -clampSpeed)
+			zspeed = -clampSpeed;
+
+		origin[0] = atoi(xStr);
+		origin[1] = atoi(yStr);
+		origin[2] = atoi(zStr);
+		angles[0] = 0;
+		angles[1] = atoi(yawStr);
+		angles[2] = 0;
+
+		//tele
+		//AmTeleportPlayer(ent, origin, angles, qfalse, qtrue, qfalse);
+		TeleportPlayer(ent, origin, angles);//, qfalse, qtrue, qfalse);
+
+		fwdAngles[0] = 0;
+		fwdAngles[1] = atoi(yawStr);
+		fwdAngles[2] = 0;
+		AngleVectors(fwdAngles, jumpFwd, NULL, NULL);
+
+		VectorScale(jumpFwd, xyspeed, ent->client->ps.velocity);
+		ent->client->ps.velocity[2] = zspeed; //Hmm?
+	}
+
+	//PM_SetForceJumpZStart(pm->ps->origin[2]);//so we don't take damage if we land at same height
+
+	//PM_AddEvent( EV_JUMP );
+	ent->client->ps.fd.forceJumpSound = 1;
+	//ent->client->pers.cmd.upmove = 0;
+
+
+	//frameTime = ent->client->pmoveMsec;
+	//if (frameTime > 16)
+	//	frameTime = 16;
+	//ent->client->pers.stats.startTime = trap_Milliseconds() + frameTime; //Set their timer as now..
+	//ent->client->ps.duelTime = level.time;
+	//ent->client->pers.startLag = trap_Milliseconds() - level.frameStartTime + level.time - ent->client->pers.cmd.serverTime; //use level.previousTime?
+
+	//ent->client->pers.stats.displacement = 0;
+	//ent->client->pers.stats.displacementSamples = 0;//avg fix for standing in starttimer and /launch
+	//ent->client->pers.stats.coopStarted = qtrue;
+}
+
+
 /*
 =================
 Cmd_Team_f
@@ -3872,6 +3975,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "launch"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "help"))
 		{
 			giveError = qtrue;
@@ -4075,6 +4182,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Team_f (ent);
 	else if (Q_stricmp (cmd, "race") == 0)
 		Cmd_Race_f(ent);
+	else if (Q_stricmp (cmd, "launch") == 0)
+		Cmd_Launch_f(ent);
 	else if (Q_stricmp (cmd, "help") == 0)
 		Cmd_Help_f(ent);
 	else if (Q_stricmp (cmd, "togglefps") == 0)

@@ -1990,4 +1990,5 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("help");
 	trap_AddCommand("ignore");
 	trap_AddCommand("maplist");
+	trap_AddCommand("launch");
 }
