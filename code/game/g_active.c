@@ -182,15 +182,16 @@ void P_WorldEffects( gentity_t *ent ) {
 			if ( envirosuit ) {
 				G_AddEvent( ent, EV_POWERUP_BATTLESUIT, 0 );
 			} else {
+				int damageFlags = ent->client && ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_LAVAPROTECT) ? FAKE_DAMAGE_IN_RACEMODE : DAMAGE_IN_RACEMODE;
 				//if (!ent->client || !ent->client->sess.raceMode) { //No sizzle dmg in racemode?
 					if (ent->watertype & CONTENTS_LAVA) {
 						G_Damage(ent, NULL, NULL, NULL, NULL,
-							30 * waterlevel, FAKE_DAMAGE_IN_RACEMODE, MOD_LAVA);
+							30 * waterlevel, damageFlags, MOD_LAVA);
 					}
 
 					if (ent->watertype & CONTENTS_SLIME) {
 						G_Damage(ent, NULL, NULL, NULL, NULL,
-							10 * waterlevel, FAKE_DAMAGE_IN_RACEMODE, MOD_SLIME);
+							10 * waterlevel, damageFlags, MOD_SLIME);
 					}
 				//}
 			}

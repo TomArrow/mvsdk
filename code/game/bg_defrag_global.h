@@ -62,6 +62,7 @@ a(norolls,NOROLLS,6,RUNFLAGSDBPREFIX,"","")\
 a(tas,TAS,7,RUNFLAGSDBPREFIX,"","")\
 a(climb,CLIMBTECH,8,RUNFLAGSDBPREFIX,"","")\
 a(jpadcomp,JUMPPADCOMPENSATE,9,RUNFLAGSDBPREFIX,"","")\
+a(lavaProtect,LAVAPROTECT,10,RUNFLAGSDBPREFIX,"","")\
 //a(wallspawn,WALLSPAWN,9,RUNFLAGSDBPREFIX,"","")
 
 // the "/*","*/" thing for JUMPBUGDISABLE is so we can disable it for query construction (since it doesn't need to be identical to the level's default, we still query both)

@@ -3,12 +3,12 @@
 #include "bg_local.h"
 
 
-const int defaultRunFlags = RFL_NODEADRAMPS;
+const int defaultRunFlags = RFL_NODEADRAMPS | RFL_LAVAPROTECT;
 raceStyle_t defaultRaceStyle;
 
-const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS;
-const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
-const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
+const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_LAVAPROTECT;
+const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_NOROLLSTART | RFL_NOROLLS;
+const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
 
 bitInfo_t runFlagsNames[] = { 
@@ -22,6 +22,7 @@ bitInfo_t runFlagsNames[] = {
 	{ "TAS mode" },//7
 	{ "Climb tech" },//8
 	{ "Jumppad FPS compensation" },//9
+	{ "Lava protection" },//10
 //	{ "Wallspawn" },//9 // was just a test for db column generation
 };
 
@@ -50,6 +51,7 @@ bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "tas" },//7
 	{ "clb" },//8
 	{ "jpc" },//9
+	{ "lvp" },//10
 //	{ "wlsp" },//9 // was just a test for db column generation
 };
 
