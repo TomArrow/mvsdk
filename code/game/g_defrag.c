@@ -5175,7 +5175,7 @@ void DF_CheckRollSpeed(gentity_t* ent) {
 			raceStyle_t defaults = defaultRaceStyle;
 			raceStyle_t clientRs = ent->client->sess.raceStyle;
 			defaults.runFlags = (defaults.runFlags & ~allowedRollRunFlags) | (clientRs.runFlags & allowedRollRunFlags); // allowedRollRunFlags are ones we don't care about, so we just take whatever the client has
-			if (classifyLeaderBoard(&clientRs,&defaults) == LB_MAIN) {
+			if (classifyLeaderBoard(&clientRs,&defaults) == LB_MAIN && clientRs.movementStyle == MV_JK2) {
 				defaults.msec = clientRs.msec;
 				DF_SetPlayerSubContestValue(ent, SUBCONTESTS_ROLLYMPICS, roll->rollSpeed, 0, 0, roll->finalAirClientSpeed, roll->rollAirTime);
 			}
