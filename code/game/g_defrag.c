@@ -302,7 +302,7 @@ qboolean DF_InTrigger(vec3_t interpOrigin, gentity_t* trigger, vec3_t playerMins
 
 	return qfalse;
 }
-qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t playerMins, vec3_t playerMaxs, gentity_t* activator, int courseId) // TODO make this more efficient
+qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t playerMins, vec3_t playerMaxs, gentity_t* activator, int courseId, qboolean ignoreCourseId) // TODO make this more efficient
 {
 	vec3_t	mins, maxs;
 	//vec3_t	playerMins, playerMaxs;
@@ -316,7 +316,7 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t play
 
 	trigger = NULL;
 	while ((trigger = G_Find(trigger, FOFS(classname), classname)) != NULL) {
-		if (/*courseId >=0 &&*/ trigger->courseID != courseId || trigger->triggerClientSpecific && trigger->parent != activator) continue;
+		if (/*courseId >=0 &&*/ !ignoreCourseId && trigger->courseID != courseId || trigger->triggerClientSpecific && trigger->parent != activator) continue;
 		if (trap_EntityContact(mins, maxs, trigger)) return qtrue;
 	}
 
@@ -346,7 +346,7 @@ int DF_InterpolateTouchTimeToOldPosOld(gentity_t* activator, gentity_t* trigger,
 	VectorScale(delta, msecScale, delta);
 
 	//while ((inTrigger = DF_InTrigger(interpOrigin, trigger)) || !touched)
-	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs, activator, trigger->courseID)) || !touched)
+	while ((inTrigger = DF_InAnyTrigger(interpOrigin, classname,activator->client->triggerMins,activator->client->triggerMaxs, activator, trigger->courseID, qfalse)) || !touched)
 	{
 #if 0
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
@@ -639,7 +639,7 @@ int DF_InterpolateTouchTimeForStartTimerOld(gentity_t* activator, gentity_t* tri
 	VectorScale(delta, msecScale, delta);
 
 	//while (!(inTrigger = DF_InTrigger(interpOrigin, trigger)) || !left)
-	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator, trigger->courseID)) || !left)
+	while (!(inTrigger = DF_InAnyTrigger(interpOrigin,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator, trigger->courseID,qfalse)) || !left)
 	{
 #if 1
 		// with normal trace it can happen that the trace hits a trigger due to epsilom, but entitycontact returns false (because the bounding boxes actually
@@ -859,7 +859,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		}
 	}
 
-	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator, -1)) return; // we are still in some start trigger.
+	if (DF_InAnyTrigger(cl->postPmovePosition,"df_trigger_start", activator->client->triggerMins, activator->client->triggerMaxs, activator, -1,qtrue)) return; // we are still in some start trigger.
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
