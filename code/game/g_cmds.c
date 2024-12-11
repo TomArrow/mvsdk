@@ -1536,7 +1536,10 @@ void Cmd_Logout_f( gentity_t *ent )
 	memset(&ent->client->sess.login, 0, sizeof(ent->client->sess.login));
 	DF_SetSubContestDefaults(ent->client);
 	trap_SendServerCommand(ent - g_entities, "print \"^2You were successfully logged out.\n\"");
-	ent->client->pers.raceBestTime = 0;
+	if (ent->client->pers.raceBestTime) {
+		ent->client->pers.raceBestTime = 0;
+		CalculateRanks();
+	}
 	ClientUserinfoChanged(ent - g_entities);
 }
 extern const char* DF_GetCourseName();

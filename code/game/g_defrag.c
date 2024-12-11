@@ -2446,6 +2446,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		if (cl->pers.raceBestTime != newRaceBestTime) {
 			cl->pers.raceBestTime = newRaceBestTime;
 			// Update client
+			CalculateRanks();
 			ClientUserinfoChanged(activator - g_entities);
 		}
 	}

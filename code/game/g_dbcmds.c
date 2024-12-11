@@ -1263,8 +1263,11 @@ static void G_TimeResult(int status, const char* errorMessage, int affectedRows)
 		time = G_COOL_API_DB_GetInt(0);
 
 		if (lbRequestData.forUserInfo) {
-			ent->client->pers.raceBestTime = time;
-			ClientUserinfoChanged(ent - g_entities);
+			//if (time != ent->client->pers.raceBestTime) { // dont check, this is just called from login, which doesnt do the calc, so we always do it.
+				ent->client->pers.raceBestTime = time;
+				CalculateRanks();
+				ClientUserinfoChanged(ent - g_entities);
+			//}
 		}
 		else {
 
@@ -1288,6 +1291,13 @@ static void G_TimeResult(int status, const char* errorMessage, int affectedRows)
 			}
 		}
 	}
+	else if (lbRequestData.forUserInfo) {
+
+		ent->client->pers.raceBestTime = 0;
+		CalculateRanks();
+	} 
+
+	
 
 }
 static void G_LoginContinue(loginRegisterStruct_t* loginData) {
@@ -1312,7 +1322,10 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 	client->sess.login.flags = loginData->userFlags;
 	client->sess.login.loggedIn = qtrue;
 	client->sess.login.forceLoggedIn = qfalse;
-	client->pers.raceBestTime = 0;
+	//if (client->pers.raceBestTime) {
+		client->pers.raceBestTime = 0;
+		//CalculateRanks(); // we do this in the response handler for DF_RequestPlayerDefaultTime, to avoid audio spam of rank changes
+	//}
 	DF_SetSubContestDefaults(client);
 
 	DF_RequestPlayerDefaultTime(ent);
@@ -1382,7 +1395,10 @@ static void G_ForceLoginContinue(int status, const char* errorMessage, int affec
 	client->sess.login.flags = data.userFlags;
 	client->sess.login.loggedIn = qtrue;
 	client->sess.login.forceLoggedIn = qtrue;
-	client->pers.raceBestTime = 0;
+	//if (client->pers.raceBestTime) {
+		client->pers.raceBestTime = 0;
+		//CalculateRanks(); // we do this in the response handler for DF_RequestPlayerDefaultTime, to avoid audio spam of rank changes
+	//}
 	DF_SetSubContestDefaults(client);
 
 	DF_RequestPlayerDefaultTime(ent);
