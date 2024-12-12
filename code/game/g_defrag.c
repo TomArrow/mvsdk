@@ -3715,6 +3715,15 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			}
 		}
 
+		if (es->eType == ET_PUSH_TRIGGER) {
+			if (other->notCPM) {
+				mvEnt->snapshotIgnore[followedClientNum] = followedClient->sess.raceMode && !MovementStyleHasVQ3OnlyJumppads(followedClient->sess.raceStyle.movementStyle);
+			}
+			else if (other->notVQ3) {
+				mvEnt->snapshotIgnore[followedClientNum] = followedClient->sess.raceMode && !MovementStyleHasCPMOnlyJumppads(followedClient->sess.raceStyle.movementStyle);
+			}
+		}
+
 		if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex) { // dont send global screenshakes to active players unless they are not in a run
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
 				mvEnt->snapshotIgnoreRealClient[clientNum] = cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime;
