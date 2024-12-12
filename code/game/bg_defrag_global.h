@@ -288,6 +288,8 @@ typedef struct finishedRunInfo_s {
 
 int RaceNameToInteger(char* style);
 qboolean MovementStyleHasQuake2Ramps(int moveStyle);
+qboolean MovementStyleHasVQ3OnlyJumppads(int moveStyle);
+qboolean MovementStyleHasCPMOnlyJumppads(int moveStyle);
 qboolean MovementIsQuake3Based(int moveStyle);
 const char* DF_MsToString(const int ms);
 const char* RunFlagsToString(int runFlags, int defaultRunFlags, int lengthFactor, const char* prefix, const char* suffix);

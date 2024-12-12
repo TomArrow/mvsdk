@@ -249,6 +249,13 @@ void trigger_push_touch(gentity_t *self, gentity_t *other, trace_t *trace ) {
 		return;
 	}
 
+	if (other->client->sess.raceMode &&
+		(self->notCPM && !MovementStyleHasVQ3OnlyJumppads(other->client->sess.raceStyle.movementStyle)
+			|| self->notVQ3 && !MovementStyleHasCPMOnlyJumppads(other->client->sess.raceStyle.movementStyle))
+		) {
+		return;
+	}
+
 	other->client->pers.roll.segmentDisqualified = qtrue;
 
 	BG_TouchJumpPad( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? (other->client->sess.raceStyle.msec == -2 ? -2 : other->client->lastMsecValue) : 0, level.mapDefaultRaceStyle.msec);
@@ -257,6 +264,13 @@ void trigger_push_touch(gentity_t *self, gentity_t *other, trace_t *trace ) {
 void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	if ( !other->client ) {
+		return;
+	}
+
+	if (other->client->sess.raceMode && 
+		(self->notCPM && !MovementStyleHasVQ3OnlyJumppads(other->client->sess.raceStyle.movementStyle)
+			|| self->notVQ3 && !MovementStyleHasCPMOnlyJumppads(other->client->sess.raceStyle.movementStyle)			)
+		) {
 		return;
 	}
 
@@ -322,6 +336,8 @@ void SP_trigger_push( gentity_t *self ) {
 	G_SoundIndex("sound/weapons/force/jump.wav");
 
 	self->s.eType = ET_PUSH_TRIGGER;
+	self->s.generic1 = self->notCPM;
+	self->s.genericenemyindex = self->notVQ3;
 	self->touch = trigger_push_touch;
 	self->think = AimAtTarget;
 	self->nextthink = level.time + FRAMETIME;
@@ -345,6 +361,8 @@ void SP_trigger_push_velocity( gentity_t *self ) {
 	self->s.angles2[0] = self->speed;
 	self->s.angles2[1] = self->speed;
 	self->s.angles2[2] = self->count;
+	self->s.generic1 = self->notCPM;
+	self->s.genericenemyindex = self->notVQ3;
 	trap_LinkEntity (self);
 }
 

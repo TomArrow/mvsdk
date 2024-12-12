@@ -571,7 +571,18 @@ static void CG_TouchTriggerPrediction( int msec ) {
 			}
 		} else if ( ent->eType == ET_PUSH_TRIGGER ) {
 			//BG_TouchJumpPad( &cg.predictedPlayerState, ent );
-			BG_TouchJumpPadVelocity( &cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer);
+			if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && 
+				(ent->generic1 && !MovementStyleHasVQ3OnlyJumppads(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE])
+				|| ent->genericenemyindex && !MovementStyleHasCPMOnlyJumppads(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE])
+					)
+				) {
+				// this is a vq3 only jumppad, dont use it in other types of movements.
+				// generic1 = notCpm
+				// genericenemyindex = notvq3
+			}
+			else {
+				BG_TouchJumpPadVelocity(&cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer);
+			}
 		}
 	}
 
