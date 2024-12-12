@@ -145,6 +145,17 @@ void P_WorldEffects( gentity_t *ent ) {
 			// drown!
 			ent->client->airOutTime += 1000;
 			if ( ent->health > 0 ) {
+				int damageFlags = DAMAGE_NO_ARMOR;
+
+				if (ent->client->sess.raceMode) {
+					if (ent->client->sess.raceStyle.runFlags & RFL_LAVAPROTECT) {
+						damageFlags |= FAKE_DAMAGE_IN_RACEMODE;
+					}
+					else {
+						damageFlags |= DAMAGE_IN_RACEMODE;
+					}
+				}
+
 				// take more damage the longer underwater
 				ent->damage += 2;
 				if (ent->damage > 15)
@@ -163,7 +174,7 @@ void P_WorldEffects( gentity_t *ent ) {
 				ent->pain_debounce_time = nowTime + 200;
 
 				G_Damage (ent, NULL, NULL, NULL, NULL, 
-					ent->damage, DAMAGE_NO_ARMOR, MOD_WATER);
+					ent->damage, damageFlags, MOD_WATER);
 			}
 		}
 	} else {
