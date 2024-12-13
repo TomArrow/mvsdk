@@ -1638,6 +1638,8 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 		return;
 	}
 
+	data.mapDefaultRaceStyle = *thisMapDefaultRaceStyle;
+
 	page = MAX(0, page - 1);
 
 #define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump, topspeed, average, runwhen, saveposCount, resposCount, duration_ms_segmented_total, fpsString"

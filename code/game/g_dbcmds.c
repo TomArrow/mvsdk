@@ -931,7 +931,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		}
 		entry->besttime = G_COOL_API_DB_GetInt(2);
 		entry->runFlags = G_COOL_API_DB_GetInt(4);
-		entry->runFlagsDiff = (entry->runFlags ^ level.mapDefaultRaceStyle.runFlags) & entry->runFlags; // show all that are active that are different from default
+		entry->runFlagsDiff = (entry->runFlags ^ lbRequestData.mapDefaultRaceStyle.runFlags) & entry->runFlags; // show all that are active that are different from default
 		entry->msec = G_COOL_API_DB_GetInt(5);
 		entry->jump = G_COOL_API_DB_GetInt(6);
 		G_COOL_API_DB_GetFloat(7,&entry->topSpeed);
@@ -951,7 +951,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 			raceStyle.runFlags = entry->runFlags;
 			raceStyle.jumpLevel = entry->jump;
 			raceStyle.runFlags &= ~RFL_SEGMENTED;
-			entry->mainLBCompatible = classifyLeaderBoard(&raceStyle,&level.mapDefaultRaceStyle) == LB_MAIN;
+			entry->mainLBCompatible = classifyLeaderBoard(&raceStyle,&lbRequestData.mapDefaultRaceStyle) == LB_MAIN;
 		}
 		else {
 			entry->mainLBCompatible = qfalse;
@@ -1010,7 +1010,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE),
-					!entriesHere[LB_CUSTOM].exists? "" : RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, defaultRunFlags /*level.mapDefaultRaceStyle.runFlags*/, 1, NULL, NULL), // todo make it relative to the relevant map
+					!entriesHere[LB_CUSTOM].exists? "" : RunFlagsToString(entriesHere[LB_CUSTOM].runFlags, lbRequestData.mapDefaultRaceStyle.runFlags /*defaultRunFlags level.mapDefaultRaceStyle.runFlags*/, 1, NULL, NULL), // todo make it relative to the relevant map
 					(!entriesHere[LB_CUSTOM].exists || entriesHere[LB_CUSTOM].msec != -1) ? "" : multiva(" fps:%s", entriesHere[LB_CUSTOM].fpsString)
 				));
 				break;
