@@ -2706,8 +2706,9 @@ void DF_trigger_start(gentity_t* ent) {
 
 	if (!ent->model) {
 		// broken dumb trigger (srsly i dont get what some ppl are thinking)
-		G_Printf("DEFRAG: ^1Broken %s (no model), deleting. WTF\n", ent->classname);
-		G_FreeEntity(ent);
+		G_Printf("DEFRAG: ^1Broken %s (no model), maybe used as a target, turning into q3 target_startTimer. WTF\n", ent->classname);
+		ent->classname = "target_startTimer";
+		//G_FreeEntity(ent);
 		return;
 	}
 
@@ -2723,6 +2724,14 @@ void DF_trigger_start(gentity_t* ent) {
 }
 void DF_trigger_finish(gentity_t* ent) {
 
+	if (!ent->model) {
+		// broken dumb trigger (srsly i dont get what some ppl are thinking)
+		G_Printf("DEFRAG: ^1Broken %s (no model), maybe used as a target, turning into q3 target_stopTimer. WTF\n", ent->classname);
+		ent->classname = "target_stopTimer";
+		//G_FreeEntity(ent);
+		return;
+	}
+
 	InitTrigger(ent);
 
 	G_SpawnInt("objective", "0", &ent->objective); // japro checkpoints
@@ -2737,6 +2746,14 @@ void DF_trigger_finish(gentity_t* ent) {
 	trap_LinkEntity(ent);
 }
 void DF_trigger_checkpoint(gentity_t* ent) {
+
+	if (!ent->model) {
+		// broken dumb trigger (srsly i dont get what some ppl are thinking)
+		G_Printf("DEFRAG: ^1Broken %s (no model), maybe used as a target, turning into q3 target_checkpoint. WTF\n", ent->classname);
+		ent->classname = "target_checkpoint";
+		//G_FreeEntity(ent);
+		return;
+	}
 
 	InitTrigger(ent);
 
