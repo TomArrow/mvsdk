@@ -999,7 +999,13 @@ qboolean BG_ParseAnimationFile(const char *filename)
 		{
 //#ifndef FINAL_BUILD
 #ifdef _DEBUG
+#if JK2_GAME
+		if(g_developer.integer){
+#elif JK2_CGAME
+		if (cg_developer.integer) {
+#endif
 			Com_Printf(S_COLOR_RED"WARNING: Unknown token %s in %s\n", token, filename);
+		}
 #endif
 			continue;
 		}
@@ -1092,16 +1098,22 @@ qboolean BG_ParseAnimationFile(const char *filename)
 	//BG_AnimationOverrides(); // just to be safe but we should already be using only available anims (ones in animation.cfg). others cant be used because the array will never loop over them and thus we get assertion error on debug build
 
 #ifdef _DEBUG
+#if JK2_GAME
+	if (g_developer.integer) {
+#elif JK2_CGAME
+	if (cg_developer.integer) {
+#endif
 	//Check the array, and print the ones that have nothing in them.
-	for(i = 0; i < MAX_ANIMATIONS; i++)
-	{	
+	for (i = 0; i < MAX_ANIMATIONS; i++)
+	{
 		if (animTable[i].name != NULL)		// This animation reference exists.
 		{
-			if (bgGlobalAnimations[i].firstFrame <= 0 && bgGlobalAnimations[i].numFrames <=0)
+			if (bgGlobalAnimations[i].firstFrame <= 0 && bgGlobalAnimations[i].numFrames <= 0)
 			{	// This is an empty animation reference.
 				Com_Printf("***ANIMTABLE reference #%d (%s) is empty!\n", i, animTable[i].name);
 			}
 		}
+	}
 	}
 #endif // _DEBUG
 
