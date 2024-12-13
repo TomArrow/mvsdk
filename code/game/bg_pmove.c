@@ -2527,6 +2527,9 @@ static void PM_NoclipMove( void ) {
 	if (pm->cmd.buttons & BUTTON_ALT_ATTACK) {	//turbo boost
 		scale *= 10;
 	}
+	if (pm->cmd.buttons & BUTTON_BOUNCEPOWER) {	//turbo boost for bounce mode (comfier to use mouse2 with it)
+		scale *= 10;
+	}
 
 	fmove = pm->cmd.forwardmove;
 	smove = pm->cmd.rightmove;
