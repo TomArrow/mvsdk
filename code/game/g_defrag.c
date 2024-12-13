@@ -1906,10 +1906,10 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		const int runFlagsStringLen = strlen(runFlagsString);
 		Q_strncpyz(fpsStr, runInfo->raceStyle.msec == -1 ? "togl" : (runInfo->raceStyle.msec == -2 ? "flt" : (runInfo->raceStyle.msec == 0 ? "unkn" : va("%d", 1000 / runInfo->raceStyle.msec))), sizeof(fpsStr));
 
-		Q_strncpyz(messageStr, va("%s^%c%12s ^3%12s^%c  ^3%7.2f^%cmax ^3%7.2f^%cavg ^3%7.1fk^%cdist ^3%2i^%cj ^3%4s^%cfps ^3%6s^%c style %s ^%c%s",
+		Q_strncpyz(messageStr, va("%s^%c%19s ^3%12s^%c  ^3%7.2f^%cmax ^3%7.2f^%cavg ^3%7.1fk^%cdist ^3%2i^%cj ^3%4s^%cfps %s ^%c%s",
 			prefix,
 			color,
-			miniva("[%s]",leaderboardNames[runInfo->lbType].string),
+			miniva("[%s/%s]", moveStyleNames[runInfo->raceStyle.movementStyle].string,leaderboardNames[runInfo->lbType].string),
 			DF_MsToString(runInfo->milliseconds),
 			color,
 			runInfo->topspeed,
@@ -1921,8 +1921,6 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			runInfo->raceStyle.jumpLevel,
 			color,
 			fpsStr,
-			color,
-			moveStyleNames[runInfo->raceStyle.movementStyle].string,
 			color,
 			runFlagsString,
 			color,
@@ -1950,10 +1948,10 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	else if (runInfo->rankLB != -1) {
 		// todo what if i DONT get a pb but its still wr compared to other users?
 		if (runInfo->rankLB == 1 && (runInfo->pbStatus & PB_LB)) { //was 1 when it shouldnt have been.. ?
-			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] %sbeat the %s ^3WORLD RECORD^%c%s and %s ranked ^3#%i\n",
+			Q_strncpyz(messageStr, va("%s^%c%19s^7 %s ^%c[^%c%s^%c] %sbeat the ^3%s WORLD RECORD^%c%s and %s ranked ^3#%i\n",
 				prefix,
 				color,
-				miniva("[%s]", leaderboardNames[runInfo->lbType].string),
+				miniva("[%s/%s]", moveStyleNames[runInfo->raceStyle.movementStyle].string, leaderboardNames[runInfo->lbType].string),
 				runInfo->netname,color, runInfo->userId == -1 ? '1' : nameColor,
 				runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username,
 				color, 
