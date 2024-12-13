@@ -1386,6 +1386,7 @@ SortRanks
 int QDECL SortRanks( const void *a, const void *b ) {
 	gclient_t	*ca, *cb;
 	int raceA, raceB;
+	int scoreA, scoreB;
 
 	ca = &level.clients[*(int *)a];
 	cb = &level.clients[*(int *)b];
@@ -1435,13 +1436,16 @@ int QDECL SortRanks( const void *a, const void *b ) {
 		return 1;
 	}
 
+	scoreA = ca->sess.raceMode ? 32767 : ca->ps.persistant[PERS_SCORE];
+	scoreB = cb->sess.raceMode ? 32767 : cb->ps.persistant[PERS_SCORE];
+
 	// then sort by score
-	if ( ca->ps.persistant[PERS_SCORE]
-		> cb->ps.persistant[PERS_SCORE] ) {
+	if (scoreA
+		> scoreB) {
 		return -1;
 	}
-	if ( ca->ps.persistant[PERS_SCORE]
-		< cb->ps.persistant[PERS_SCORE] ) {
+	if (scoreA
+		< scoreB) {
 		return 1;
 	}
 	return 0;
@@ -1463,6 +1467,7 @@ void CalculateRanks( void ) {
 	int		i;
 	int		rank;
 	int		score;
+	int		raceBestTime;
 	int		newScore;
 	// int		preNumSpec = 0;
 	// int		nonSpecIndex = -1;
@@ -1546,10 +1551,11 @@ void CalculateRanks( void ) {
 	} else {	
 		rank = -1;
 		score = 0;
+		raceBestTime = 0;
 		for ( i = 0;  i < level.numPlayingClients; i++ ) {
 			cl = &level.clients[ level.sortedClients[i] ];
-			newScore = cl->ps.persistant[PERS_SCORE];
-			if ( i == 0 || newScore != score ) {
+			newScore = cl->sess.raceMode ? 32767 : cl->ps.persistant[PERS_SCORE];
+			if ( i == 0 || newScore != score || cl->pers.raceBestTime != raceBestTime ) {
 				rank = i;
 				// assume we aren't tied until the next client is checked
 				level.clients[ level.sortedClients[i] ].ps.persistant[PERS_RANK] = rank;
@@ -1559,6 +1565,7 @@ void CalculateRanks( void ) {
 				level.clients[ level.sortedClients[i] ].ps.persistant[PERS_RANK] = rank | RANK_TIED_FLAG;
 			}
 			score = newScore;
+			raceBestTime = cl->pers.raceBestTime;
 			if ( g_gametype.integer == GT_SINGLE_PLAYER && level.numPlayingClients == 1 ) {
 				level.clients[ level.sortedClients[i] ].ps.persistant[PERS_RANK] = rank | RANK_TIED_FLAG;
 			}
