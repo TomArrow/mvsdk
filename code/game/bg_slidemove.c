@@ -484,10 +484,10 @@ void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 		JUMP_VELOCITY_NEW = 270;
 	}
 	
-	if (pm->ps->groundEntityNum != ENTITYNUM_NONE || pm->ps->origin[2] < pm->ps->fd.forceJumpZStart)
-	{
+	//if (pm->ps->groundEntityNum != ENTITYNUM_NONE || pm->ps->origin[2] < pm->ps->fd.forceJumpZStart) // do this always ? calling this function already implies there was a ground bounce anyway
+	//{
 		pm->ps->fd.forcePowersActive &= ~(1 << FP_LEVITATION);
-	}
+	//}
 
   	velocity[2] += JUMP_VELOCITY_NEW;
 	if (velocity[2] < JUMP_VELOCITY_NEW)
