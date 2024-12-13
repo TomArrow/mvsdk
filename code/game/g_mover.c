@@ -68,8 +68,8 @@ int G_ResetActivatorTimeDelta(gentity_t* ent, gentity_t* activator) {
 
 // TODO what about order of entities? preserve it? atm last activated one will run first?
 void G_SetActivator(gentity_t* ent, gentity_t* activator) {
-	if (activator != ent->activatorReal && activator->client) {
-		G_ResetActivatorTimeDelta(ent, activator);
+	if (activator != ent->activatorReal && activator && activator->client) {
+		G_ResetActivatorTimeDelta(ent, activator); // todo: dont we have to do this anyway even if not activator->client?
 	}
 	G_ClearEntityActivator(ent);
 	ent->activatorReal = ent->activator = activator;
