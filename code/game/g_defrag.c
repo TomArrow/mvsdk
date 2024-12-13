@@ -5195,6 +5195,9 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 void DF_CheckRollSpeed(gentity_t* ent) {
 	rollState_t* roll = &ent->client->pers.roll;
 	rollState_t* statsRoll = &ent->client->pers.stats.roll;
+
+	if (!ent->client->sess.raceMode) return; // dont bother outside defrag
+
 	if (roll->status == ROLL_ENDED) {
 		G_CenterPrint(ent - g_entities, 3, va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d", roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime), qfalse, qtrue, qfalse);
 		if (!roll->rollDisqualified && !ent->client->sess.raceStateInvalidated) {
