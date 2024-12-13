@@ -1948,7 +1948,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 	else if (runInfo->rankLB != -1) {
 		// todo what if i DONT get a pb but its still wr compared to other users?
 		if (runInfo->rankLB == 1 && (runInfo->pbStatus & PB_LB)) { //was 1 when it shouldnt have been.. ?
-			Q_strncpyz(messageStr, va("%s^%c%19s^7 %s ^%c[^%c%s^%c] %sbeat the ^3%s WORLD RECORD^%c%s and %s ranked ^3#%i\n",
+			Q_strncpyz(messageStr, va("%s^%c%19s^7 %s ^%c[^%c%s^%c] %sbeat the ^3%s%s^%c%s and %s ranked ^3#%i\n",
 				prefix,
 				color,
 				miniva("[%s/%s]", moveStyleNames[runInfo->raceStyle.movementStyle].string, leaderboardNames[runInfo->lbType].string),
@@ -1957,6 +1957,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				color, 
 				runInfo->userId == -1 ? "unofficially " : "",
 				moveStyleNames[runInfo->raceStyle.movementStyle].string,
+				runInfo->lbType == LB_MAIN ? " WORLD RECORD" : miniva("/%s world record", leaderboardNames[runInfo->lbType].string),
 				color,
 				runInfo->subcoursename[0] ? miniva(" (^3%s^%c)", runInfo->subcoursename, color) : "",
 				runInfo->userId == -1 ? "would be " : "is now",
