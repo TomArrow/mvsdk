@@ -833,7 +833,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	if (cl->sess.raceStateSoftInvalidated) {
 		//DF_RaceStateInvalidated(activator,qfalse); // dont reset or it becomes impossible to save spawn on maps with reverse course but without extra spawn
 		//if ((cl->pers.lastRaceFinishTime + 1000 > level.time || level.time < cl->pers.lastRaceFinishTime) && !(ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother player with message directly after run finished
-		if ((cl->pers.lastRaceFinishTime + 1000 > level.time || level.time < cl->pers.lastRaceFinishTime)) { // dont bother player with message directly after run finished (especially annoying on maps with reverse courses)
+		if ((cl->pers.lastRaceFinishTime + 1000 < level.time || level.time < cl->pers.lastRaceFinishTime)) { // dont bother player with message directly after run finished (especially annoying on maps with reverse courses)
 			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue);
 		}
 		return;
