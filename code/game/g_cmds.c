@@ -2100,7 +2100,16 @@ Cmd_Rollympics_f
 */
 void Cmd_Rollympics_f( gentity_t *ent )
 {
-	DF_RequestSubContestLeaderboard(ent,SUBCONTESTS_ROLLYMPICS);
+	int page = 1;
+	if (trap_Argc() > 1) {
+		char number[15];
+		trap_Argv(1, number, sizeof(number));
+		page = atoi(number);
+		if (page < 1) {
+			page = 1;
+		}
+	}
+	DF_RequestSubContestLeaderboard(ent,SUBCONTESTS_ROLLYMPICS,page);
 }
 
 /*

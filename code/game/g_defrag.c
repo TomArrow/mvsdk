@@ -5095,11 +5095,11 @@ void DF_SetSubContestDefaults(gclient_t* client) {
 #define MAXVALSORT "value DESC"
 #define MINVALSORT "value ASC"
 
-#define SUBCONTESTTOPLIST(a) "SELECT userid,users.username,value,recordwhen,course,msec,extraValue1,extraValue2,extraValue3,extraValue4 FROM subcontests LEFT JOIN users ON users.id=subcontests.userid WHERE type=? ORDER BY " a " LIMIT 11;" 
+#define SUBCONTESTTOPLIST(a) "SELECT userid,users.username,value,recordwhen,course,msec,extraValue1,extraValue2,extraValue3,extraValue4 FROM subcontests LEFT JOIN users ON users.id=subcontests.userid WHERE type=? ORDER BY " a " LIMIT ?,11;" 
 
 
 
-void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest) {
+void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int page) {
 	subContestLeaderboardRequestStruct_t data;
 	subContestParams_t* params = &subContestParams[contest];
 	const char* query = NULL;
@@ -5110,6 +5110,8 @@ void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest) {
 		query = SUBCONTESTTOPLIST(MINVALSORT);
 	}
 
+	page = MAX(0, page - 1);
+
 	data.clientnum = ent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	data.contest = contest;
@@ -5119,6 +5121,7 @@ void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest) {
 	}
 
 	G_COOL_API_DB_PreparedBindInt(contest);
+	G_COOL_API_DB_PreparedBindInt(page*10);
 
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 
