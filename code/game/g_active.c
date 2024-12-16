@@ -3047,9 +3047,11 @@ void ClientEndFrameServerFrame(gentity_t* ent) {
 	ent->client->ps.stats[STAT_HEALTH] = ent->health;	// FIXME: get rid of ent->health...
 
 	// add the EF_CONNECTION flag if we haven't gotten commands recently
-	if (level.time - ent->client->lastCmdTime > 1000) {
+	if (level.time - ent->client->lastCmdTime > 1000 && !(ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state == SEG_REPLAY)) { // let it be ok during replays (if ppl time out/ disconnect)
 		ent->s.eFlags |= EF_CONNECTION;
-		G_ClearActivatedEntities(ent); // dont let this client bug out all the movers he touched while he's having connection issues
+		if (level.time - ent->client->lastCmdTime > 3000) {
+			G_ClearActivatedEntities(ent); // dont let this client bug out all the movers he touched while he's having connection issues
+		}
 	}
 	else {
 		ent->s.eFlags &= ~EF_CONNECTION;
