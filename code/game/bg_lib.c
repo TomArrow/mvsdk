@@ -862,7 +862,7 @@ double _atof( const char **stringPtr ) {
 
 	// read digits
 	value = 0;
-	if ( string[0] != '.' ) {
+	//if ( string[0] != '.' ) { // TA: remove condition or else .xxx numbers without anything before the dot will break everything as string isnt advanced from the dot.
 		do {
 			c = *string++;
 			if ( c < '0' || c > '9' ) {
@@ -871,7 +871,7 @@ double _atof( const char **stringPtr ) {
 			c -= '0';
 			value = value * 10 + c;
 		} while ( 1 );
-	}
+	//}
 
 	// check for decimal point
 	if ( c == '.' ) {
