@@ -1984,10 +1984,10 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
 		}
 		else if ((runInfo->pbStatus & PB_LB)) {
-			Q_strncpyz(messageStr, va("%s^%c%12s^7 %s ^%c[^%c%s^%c] %s a new %s %s best%s and %s ranked ^3#%i\n",
+			Q_strncpyz(messageStr, va("%s^%c%19s^7 %s ^%c[^%c%s^%c] %s a new %s%s %s best%s and %s ranked ^3#%i\n",
 				prefix,
 				color,
-				miniva("[%s]", leaderboardNames[runInfo->lbType].string),
+				miniva("[%s/%s]", moveStyleNames[runInfo->raceStyle.movementStyle].string, leaderboardNames[runInfo->lbType].string),
 				runInfo->netname, 
 				color, 
 				runInfo->userId == -1 ? '1' : nameColor, 
@@ -1995,6 +1995,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				color,
 				runInfo->userId == -1 ? "set" : "got",
 				moveStyleNames[runInfo->raceStyle.movementStyle].string,
+				runInfo->lbType == LB_MAIN ? "" : miniva("/%s", leaderboardNames[runInfo->lbType].string),
 				runInfo->userId == -1 ? "unlogged" : "personal",
 				runInfo->subcoursename[0] ? miniva(" (^3%s^%c)", runInfo->subcoursename, color) : "",
 				runInfo->userId == -1 ? "would be " : "is now", 
