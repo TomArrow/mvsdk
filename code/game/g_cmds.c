@@ -1005,7 +1005,8 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/stealpos^7 - Steal saved position from another player (call with client number from ^2/clientlist^7)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/amtele^7 - Call with a client number or name to teleport to a player.\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/amtele^7 - Call with a client number or name to teleport to a player\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/launch^7 - Launch yourself with speed. Call without arguments to see available options/parameters\n\"");
 
 		trap_SendServerCommand(ent - g_entities, "print \"\n^7Checkpoint commands:\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/checkpoint^7 - Add a custom checkpoint at your current position\n\"");
