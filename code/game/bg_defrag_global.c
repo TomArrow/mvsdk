@@ -239,7 +239,7 @@ qboolean MovementStyleHasQuake2Ramps(int moveStyle) {
 	return qfalse;
 }
 qboolean MovementStyleHasVQ3OnlyJumppads(int moveStyle) {
-	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PJK2 || moveStyle == MV_PINBALL || moveStyle == MV_BOUNCE) {
+	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PJK2) {
 		return qfalse;
 	}
 	return qtrue;
