@@ -1752,7 +1752,7 @@ void Cmd_Amtele_f(gentity_t* ent)
 
 qboolean atoi_real(const char* string) {
 	size_t i;
-	if (*string) return qfalse;
+	if (!*string) return qfalse;
 	for (i = 0; string[i] != '\0'; ++i) {
 		if (string[i] < '0' || string[i] > '9') {
 			return qfalse;

@@ -880,9 +880,10 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	topScoresRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
 	int currentType = -1;
-	int rank = 1;
+	//int rank = 1;
 	int maxrank = 0;
 	int i;
+	int	offsetRank;
 	static topLeaderBoardEntry_t entries[11][LB_TYPES_COUNT];
 	//evaluatedRunInfo_t eRunInfo;
 
@@ -908,19 +909,21 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	memset(entries, 0, sizeof(entries));
 
 	while (G_COOL_API_DB_NextRow()) {
-		int type,userid,rankHere;
+		int type, userid, rankHere;
+		int realRank;
 		topLeaderBoardEntry_t* entry;
 		type = G_COOL_API_DB_GetInt(0);
 		userid = G_COOL_API_DB_GetInt(3);
-
+		realRank = G_COOL_API_DB_GetInt(14);
 		if (lbRequestData.type == TOPREQUEST_SPECIFICLB && type != lbRequestData.lbTypeIfSpecific) continue;
 		if (type != currentType) {
 			currentType = type;
-			rank = 1;
+			//rank = 1;
 			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^2Leaderboard type %d.\n\"", currentType));
 		}
-		if (rank > 9) continue;
-		rankHere = userid == -1 ? 10 : rank - 1;
+		//if (rank > 9) continue;
+		rankHere = userid == -1 ? 10 : realRank-1-lbRequestData.page*10;
+		if (rankHere > 10 || rankHere < 0) continue;
 		entry = &entries[rankHere][type]; // unofficial go at the end.
 		entry->exists = qtrue;
 		if (userid == -1) {
@@ -958,13 +961,16 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		}
 		if (userid != -1) {
 			//trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1#%d %-10s %10s.\n\"", rank, userid == -1 ? "!unlogged!": username, DF_MsToString(besttime)));
-			maxrank = MAX(maxrank, rank);
-			rank++;
+			//maxrank = MAX(maxrank, rank);
+			maxrank = MAX(maxrank, rankHere+1);
+			//rank++;
 		}
 	}
 
+	// TODO how to not make it look bad at page 9 or so? when it goes from 99 to 100?
+#define TOPNUMBERSTRING (i == 10 ? "UL" : (offsetRank<10 ? topNumberStrings[i] : miniva("%d",offsetRank+1)))
 #define MSECSTRING(msec) ((msec) == -1 ? "togl" : ((msec) == -2 ? "flt" : ((msec) == 0 ? "unkn" : multiva("%d", 1000 / (msec)))))
-#define LBROW(lbType,coloration,jumpvalue) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : topNumberStrings[i], coloration(entriesHere[lbType]), entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "" jumpvalue(entriesHere[lbType],lbType), !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
+#define LBROW(lbType,coloration,jumpvalue) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : TOPNUMBERSTRING, coloration(entriesHere[lbType]), entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "" jumpvalue(entriesHere[lbType],lbType), !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
 
 #define LBROWFULL_STRING "  ^c%11s  %11s  %s"
 
@@ -982,7 +988,8 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	else {
 		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2    %-27s^h|     ^2%-27s^h|     ^2%-31s^h|     ^2%-27s^h|     ^2%-29s\n\"", "MAIN","NOJUMPBUG","CUSTOM","SEGMENTED", "CHEAT"));
 	}
-	for (i = 0; i < 11; i++) {
+	offsetRank = lbRequestData.page * 10;
+	for (i = 0; i < 11; i++, offsetRank++) {
 		topLeaderBoardEntry_t* entriesHere = entries[i];
 		if (i >= maxrank && i < 10) continue;
 

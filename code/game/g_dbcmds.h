@@ -57,6 +57,7 @@ typedef struct topScoresRequestStruct_s {
 	topRequestType_t		type;
 	mainLeaderboardType_t	lbTypeIfSpecific;
 	raceStyle_t	mapDefaultRaceStyle;
+	int			page;
 }topScoresRequestStruct_t;
 typedef struct timeRequestStruct_s {
 	int			ip[4];
