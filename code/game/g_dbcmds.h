@@ -109,6 +109,7 @@ typedef struct subContestLeaderboardRequestStruct_s {
 	int					ip[4];
 	int					clientnum;
 	subContests_t		contest;
+	int					page;
 } subContestLeaderboardRequestStruct_t;
 
 typedef struct insertUpdateMapRaceDefaultsStruct_s {

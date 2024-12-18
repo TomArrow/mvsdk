@@ -5099,7 +5099,8 @@ void DF_SetSubContestDefaults(gclient_t* client) {
 #define MAXVALSORT "value DESC"
 #define MINVALSORT "value ASC"
 
-#define SUBCONTESTTOPLIST(a) "SELECT userid,users.username,value,recordwhen,course,msec,extraValue1,extraValue2,extraValue3,extraValue4 FROM subcontests LEFT JOIN users ON users.id=subcontests.userid WHERE type=? ORDER BY " a " LIMIT ?,11;" 
+#define REALRANKSUBCONTEST(b) "ROW_NUMBER() OVER (PARTITION BY userid=-1 ORDER BY " b ") AS realRank"
+#define SUBCONTESTTOPLIST(a) "SELECT userid,users.username,value,recordwhen,course,msec,extraValue1,extraValue2,extraValue3,extraValue4," REALRANKSUBCONTEST(a) " FROM subcontests LEFT JOIN users ON users.id=subcontests.userid WHERE type=? ORDER BY " a " LIMIT ?,11;" 
 
 
 
@@ -5119,6 +5120,7 @@ void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int 
 	data.clientnum = ent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	data.contest = contest;
+	data.page = page;
 
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_SUBCONTESTLEADERBOARD, query)) {
 		return;

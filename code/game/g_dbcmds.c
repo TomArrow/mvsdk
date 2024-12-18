@@ -1176,7 +1176,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 static void G_SubContestLBResult(int status, const char* errorMessage, int affectedRows) {
 	subContestLeaderboardRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
-	int rank = 1;
+	//int rank = 1;
 	int index = 0;
 
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
@@ -1201,13 +1201,19 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 	while (G_COOL_API_DB_NextRow()) {
 		int userid,msec,extraValue3,extraValue4;
 		float value,extraValue1,extraValue2;
+		int realRank;
 		static char coursename[COURSENAME_MAX_LEN + 1];
 		static char when[20];
 		static char username[USERNAME_MAX_LEN + 1];
+
+		userid = G_COOL_API_DB_GetInt(0);
+		realRank = G_COOL_API_DB_GetInt(10)-1;
+
+		if (userid != -1 && (realRank < lbRequestData.page * 10 || realRank >= ((lbRequestData.page + 1) * 10))) continue;
+
 		if (!index) {
 			trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2ROLLYMPICS\n"));
 		}
-		userid = G_COOL_API_DB_GetInt(0);
 		G_COOL_API_DB_GetString(1, username, sizeof(username));
 		G_COOL_API_DB_GetFloat(2, &value);
 		G_COOL_API_DB_GetString(3, when, sizeof(when));
@@ -1219,10 +1225,10 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 		extraValue4 = G_COOL_API_DB_GetInt(9);
 
 
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^3%-3s ^7%-10s  ^3%4.2f^7ups ^3%6s^7fps ^3%s ^7on ^3%s\n\"",userid==-1 ? "" : miniva("#%d",rank), userid==-1 ?"!unlogged!" : username, value, MSECSTRING(msec), when, coursename));
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^3%-3s ^7%-10s  ^3%4.2f^7ups ^3%6s^7fps ^3%s ^7on ^3%s\n\"",userid==-1 ? "" : miniva("#%d",realRank+1), userid==-1 ?"!unlogged!" : username, value, MSECSTRING(msec), when, coursename));
 
 		if (userid != -1) {
-			rank++;
+			//rank++;
 		}
 		index++;
 	}
