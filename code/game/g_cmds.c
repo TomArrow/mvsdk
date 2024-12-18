@@ -2062,8 +2062,12 @@ void Cmd_Maplist_f(gentity_t* ent) {
 void Cmd_Latest_f(gentity_t* ent) {
 	int clientNum = -1;
 	int page, first;
+	int i,t;
+	int style = -1;
 	latestRunsRequestStruct_t data;
-	char pageNum[10];
+	//char pageNum[10];
+	const int args = trap_Argc();
+	char inputString[15];
 
 	if (!coolApi_dbVersion) {
 		trap_SendServerCommand(ent-g_entities,"print \"^1latest not possible, DB API not available\n\"");
@@ -2073,9 +2077,18 @@ void Cmd_Latest_f(gentity_t* ent) {
 	data.clientnum = ent - g_entities;
 	memcpy(&data.ip, &mv_clientSessions[data.clientnum], sizeof(data.ip));
 
+	page = 0;
 	if (trap_Argc() > 1) {
-		trap_Argv(1, pageNum, sizeof(pageNum));
-		page = atoi(pageNum) - 1;
+		for (i = 1; i < args; i++) {
+			trap_Argv(i, inputString, sizeof(inputString));
+			if (atoi_real(inputString)) {
+				//BUG - atoi(inputstring) returns true for values like "18percent" where it should return false..
+				page = atoi(inputString);
+			}
+			else if ((t = RaceNameToInteger(inputString)) != -1) {
+				style = t;
+			}
+		}
 	}
 	else {
 		page = 0;
@@ -2083,9 +2096,23 @@ void Cmd_Latest_f(gentity_t* ent) {
 	page = MAX(page, 0);
 	first = page * 10;
 
-	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, "SELECT runs.userid,users.username,runs.course,runs.subcourse,runs.style,runs.msec,runs.jump,runs.variant,runs.runflags,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,runs.duration_ms,runs.runwhen FROM runs LEFT JOIN users ON (users.id = runs.userid) LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) ORDER BY runs.runwhen DESC  LIMIT ?,10")) {
-		trap_SendServerCommand(ent-g_entities,"print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
-		return;
+#define LATESTQUERY "SELECT runs.userid,users.username,runs.course,runs.subcourse,runs.style,runs.msec,runs.jump,runs.variant,runs.runflags,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,runs.duration_ms,runs.runwhen FROM runs LEFT JOIN users ON (users.id = runs.userid) LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
+#define LATESTQUERY_STYLEWUERE " WHERE runs.style=? "
+#define LATESTQUERY_END " ORDER BY runs.runwhen DESC  LIMIT ?,10"
+
+	if (style == -1) {
+
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY LATESTQUERY_END)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+	}
+	else {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY LATESTQUERY_STYLEWUERE LATESTQUERY_END)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+		G_COOL_API_DB_PreparedBindInt(style);
 	}
 
 	G_COOL_API_DB_PreparedBindInt(first);
