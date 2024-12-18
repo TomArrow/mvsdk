@@ -427,7 +427,10 @@ void trigger_teleporter_setupdefaulttarget(gentity_t* self) {
 	int numChoices = 0;
 	dest = G_PickTarget(self->target, qfalse, &numChoices);
 	if (!dest) {
-		G_Printf("Couldn't set up teleporter destination\n");
+		self->s.trickedentindex3 = 0; // we won't ever be able to do this, therefore don't tell clients to predict.
+		// really may as well free the entity?
+		G_FreeEntity(self);
+		G_Printf("Couldn't set up teleporter destination. Removing teleporter.\n");
 		return;
 	}
 
