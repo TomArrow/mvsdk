@@ -3214,6 +3214,10 @@ void G_ConvertDefragTriggerTypes() {
 				if (index == 1 && i != TARGET_STOPTIMER || index == 0 && i != TARGET_STARTTIMER) {
 					continue; // index 0 = first trigger_multiple. means start timer. 
 				}
+				if ((level.dfEndTriggerTypes & (1 << DFTRIG_TRIGMULT)) && i == TARGET_STOPTIMER) {
+					G_Printf("DEFRAG: ^1refusing to convert %s to df_trigger_finish%s. Already did it once. This map is really badly made (or not a defrag map at all and still very badly made).\n", trigger->classname, disgustingType ? " (disgusting type)" : "");
+					continue; // already have one trigger_multiple finish. avoid creating additional ones in case a map is SUPER badly fucked
+				}
 
 				oldModel = trigger->model;
 				oldType = trigger->classname;
