@@ -451,7 +451,12 @@ argv(0) savepos
 qboolean SavePosition(gentity_t* client, savedPosition_t* savedPosition);
 void Cmd_Savepos_f( gentity_t *ent ) {
 	char	*msg;
-	
+
+	if (ent->client->noclip) {
+		trap_SendServerCommand(ent - g_entities, "print \"Can't save position during noclip.\n\"");
+		return;
+	}
+
 	if (g_defrag.integer && ent->client->sess.raceMode) {
 		if (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) { // segmented restore/save pos handled elsewhere
 			if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
@@ -496,6 +501,11 @@ argv(0) respos
 void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void Cmd_Respos_f( gentity_t *ent ) {
 	char	*msg;
+
+	if (ent->client->noclip) {
+		trap_SendServerCommand(ent - g_entities, "print \"Can't restore position during noclip.\n\"");
+		return;
+	}
 
 	if (g_defrag.integer && ent->client->sess.raceMode) {
 		if (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) { // segmented restore/save pos handled elsewhere
