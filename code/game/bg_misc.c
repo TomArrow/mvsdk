@@ -1671,8 +1671,12 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 			return qfalse;
 		}
 
-		if (ps->stats[STAT_RACEMODE] && item && (item->giTag != PW_YSALAMIRI) && (item->giTag != PW_FORCE_BOON)) // no picking up shit in racemode?
-			return qfalse; //Maybe allow spawnflags 2 to be racemode_only ?
+		if (ps->stats[STAT_RACEMODE] && item && (item->giType != IT_POWERUP || (item->giTag != PW_YSALAMIRI) && (item->giTag != PW_FORCE_BOON))) // no picking up shit in racemode?
+		{//Maybe allow spawnflags 2 to be racemode_only ?
+			if ((ps->stats[STAT_RUNFLAGS] & RFL_LAVAPROTECT) || item->giType != IT_ARMOR && item->giType != IT_HEALTH && (item->giType != IT_HOLDABLE || (item->giTag != HI_MEDPAC))) { // when we dont have "godmode" (protection from lava,slime,drowning), let us pick up health/armor/medpack
+				return qfalse; 
+			}
+		}
 	}
 	else
 	{//safety return since below code assumes a non-null ps
