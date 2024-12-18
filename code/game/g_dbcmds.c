@@ -1062,9 +1062,12 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	}
 	
 	//trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7color explanation:\n^7    %-27s      ^7%-27s      ^7%-27s      ^7%-27s^      ^7%-29s\n\"", "MAIN", "NOJUMPBUG", "CUSTOM", "SEGMENTED", "CHEAT"));
-	trap_SendServerCommand(lbRequestData.clientnum,va( "print \"\n^7username color explanation: ^2%-12s ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"", "main leaderboard compatible settings", "climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
 	if (lbRequestData.type != TOPREQUEST_SPECIFICLB) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7username color explanation: ^2%-12s ^E%-12s ^1%-12s ^j%-12s\n^7for more details, request specific leaderboard\n\"", "main leaderboard compatible settings", "climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
 		trap_SendServerCommand(lbRequestData.clientnum, "print \"^7Specific leaderboard commands: ^c/topmain^7, ^c/topnojumpbug^7, ^c/topcustom^7, ^c/topsegmented^7, ^c/topcheat\n\"");
+	}
+	else {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"\n^7username color explanation: ^2%-12s ^E%-12s ^1%-12s ^j%-12s\n^7to see an overview of all leaderboards, simply use ^c/top\n\"", "main leaderboard compatible settings", "climbtech", "strafebot/TAS", "strafebot/TAS+segmented"));
 	}
 
 }
