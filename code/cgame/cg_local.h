@@ -767,6 +767,7 @@ typedef struct {
 	centity_t		predictedPlayerEntity;
 	rollState_t		roll;
 	antiLoopState_t antiLoop;
+	int				antiLoopLastCommandTime;
 	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;
