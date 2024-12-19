@@ -1589,6 +1589,7 @@ void ClientThink_real( gentity_t *ent ) {
 	int	moveStyle;
 	qboolean	clientFpsOk;
 	qboolean	inactivityToSpec = qfalse;
+	vec3_t		prePmoveVelocity;
 
 	client = ent->client;
 
@@ -2193,6 +2194,7 @@ void ClientThink_real( gentity_t *ent ) {
 	VectorCopy(ent->client->ps.origin,ent->client->prePmovePosition);
 	VectorCopy(ent->r.mins,ent->client->prePmoveMins); // this is -8 -8 -8 8 8 8 sometimes?!?!?! when rolling?
 	VectorCopy(ent->r.maxs,ent->client->prePmoveMaxs);
+	VectorCopy(ent->client->ps.velocity,prePmoveVelocity);
 	ent->client->prePmoveEFlags = ent->client->ps.eFlags;
 	ent->client->prePmovePositionSet = qtrue;
 	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
@@ -2208,6 +2210,7 @@ void ClientThink_real( gentity_t *ent ) {
 		ent->client->pers.roll.rollDisqualified = qtrue;
 	}
 
+	DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,prePmoveVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
 	DF_CheckRollSpeed(ent);
 
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);

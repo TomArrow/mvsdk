@@ -3,12 +3,12 @@
 #include "bg_local.h"
 
 
-const int defaultRunFlags = RFL_NODEADRAMPS | RFL_LAVAPROTECT;
+const int defaultRunFlags = RFL_NODEADRAMPS | RFL_LAVAPROTECT | RFL_ANTILOOP;
 raceStyle_t defaultRaceStyle;
 
-const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_LAVAPROTECT;
-const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_NOROLLSTART | RFL_NOROLLS;
-const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_NOROLLSTART | RFL_NOROLLS;
+const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_LAVAPROTECT | RFL_ANTILOOP;
+const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
+const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
 
 bitInfo_t runFlagsNames[] = { 
@@ -23,6 +23,7 @@ bitInfo_t runFlagsNames[] = {
 	{ "Climb tech" },//8
 	{ "Jumppad FPS compensation" },//9
 	{ "Lava protection" },//10
+	{ "Anti-Loop" },//11
 //	{ "Wallspawn" },//9 // was just a test for db column generation
 };
 
@@ -52,6 +53,7 @@ bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "clb" },//8
 	{ "jpc" },//9
 	{ "lvp" },//10
+	{ "al" },//11
 //	{ "wlsp" },//9 // was just a test for db column generation
 };
 
@@ -232,6 +234,12 @@ qboolean MovementStyleAllowsWeapons(int moveStyle) {
 	return qfalse;
 }
 
+//qboolean MovementStyleHasAntiLoop(int moveStyle) {
+//	if (moveStyle == MV_JK2 || moveStyle == MV_SPEED /*|| moveStyle == MV_JK2SP*/) { // is this correct? does sp need antiloop?
+//		return qfalse;
+//	}
+//	return qtrue;
+//}
 qboolean MovementStyleHasQuake2Ramps(int moveStyle) {
 	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PINBALL) {
 		return qtrue;
@@ -386,4 +394,27 @@ void	InitFpsTable() {
 		fpsTableIndexToMsec[index] = FPSTABLE_OVERFLOW_MSECVALUE; // this "loop" actually just runs once, since i set the array to the needed size. bit random that i can't explain why it has to be exactly that size but it just is that way. wish i could come up with a math formula to do this mapping instead of LUTs
 	}
 }
+
+
+void DF_AntiLoop_NewAngle(antiLoopState_t* antiLoopState, vec3_t oldVelocity, vec3_t velocity, float baseSpeed, qboolean inRace) {
+	float xyVel = XYSPEED(velocity);
+	if (xyVel < baseSpeed && !inRace) {
+		antiLoopState->yawAngleChangeSinceBaseSpeed = 0;
+	}
+	else {
+		vec3_t velNorm, oldVelNorm;
+		vec3_t angles,anglesOld;
+		float diff;
+		VectorCopy(oldVelocity, oldVelNorm);
+		VectorCopy(velocity, velNorm);
+		VectorNormalize(oldVelNorm);
+		VectorNormalize(velNorm);
+		vectoangles(velNorm, angles);
+		vectoangles(oldVelNorm, anglesOld);
+		diff = AngleSubtract(angles[YAW], anglesOld[YAW]);
+		antiLoopState->yawAngleChangeSinceBaseSpeed += fabsf(diff);
+	}
+}
+
+
 

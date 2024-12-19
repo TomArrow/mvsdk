@@ -17,6 +17,7 @@ static void CG_Speedometer(void); //jk2pro
 static void CG_StrafeHelper(centity_t *cent); //jk2pro
 static void CG_DrawAccelMeter(void); //jk2pro
 static void CG_DrawBouncePowerMeter(void); //tommyternal :)
+static void CG_AntiLoopIndicator(void); // tommyternal
 static void CG_JumpHeight(centity_t *cent); //jk2pro
 //static void CG_RaceTimer(centity_t *cent); //jk2pro
 static void CG_DrawSpeedGraph(rectDef_t* rect, vec4_t foreColor,
@@ -1273,6 +1274,10 @@ void CG_DrawHUD(centity_t	*cent)
 
 	if (cg_movementKeys.integer)
 		CG_MovementKeys(cent);
+
+	if (cg_drawAntiLoopIndicator.integer && !cg.demoPlayback) { // TODO make work for demos?
+		CG_AntiLoopIndicator();
+	}
 
 	CG_DrawBouncePowerMeter();
 
@@ -5631,7 +5636,11 @@ static void CG_Draw2D( void ) {
 
 			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
 
-			CG_DrawBouncePowerMeter();
+			CG_DrawBouncePowerMeter(); 
+			
+			//if (cg_drawAntiLoopIndicator.integer && !cg.demoPlayback) { // TODO make work for demos?
+			//	CG_AntiLoopIndicator();
+			//}
 
 			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE) || cg_strafeHelper.integer || (cgs.isJK2Pro && cg_raceTimer.integer > 1))
 				CG_CalculateSpeed(cent);
@@ -6729,6 +6738,36 @@ static void CG_DrawBouncePowerMeter(void)
 		12,
 		bouncePowerPercentage * 50,
 		colorTable[CT_CYAN]);
+	//CG_FillRect(x,
+	//	y,
+	//	2,
+	//	bouncePowerRegenPercentage * 50,
+	//	colorTable[CT_RED]);
+
+}
+static void CG_AntiLoopIndicator(void)
+{
+	float x, y;
+	float antiloopPercentage = 0;
+
+	if ((!cgs.isTommyTernal || !cg.predictedPlayerState.stats[STAT_RACEMODE] /*|| !MovementStyleHasAntiLoop(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE])*/ || !(cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_ANTILOOP)) && cg_drawAntiLoopIndicator.integer <= 1) return;
+
+	antiloopPercentage = MIN(1.0f, (cg.antiLoop.yawAngleChangeSinceBaseSpeed / (float)ANTILOOP_MAXYAWCHANGE));
+
+	x = 45;
+	y = 200;
+	CG_DrawRect(x - 0.75,
+		y - 0.75,
+		13.5,
+		51.5,
+		0.5f,
+		colorTable[CT_BLACK]);
+
+	CG_FillRect(x,
+		y+ (50- antiloopPercentage * 50),
+		12,
+		antiloopPercentage * 50,
+		colorTable[CT_RED]);
 	//CG_FillRect(x,
 	//	y,
 	//	2,

@@ -133,7 +133,6 @@ typedef struct savedPosition_s {
 				int			packetCount;
 			} raceDropped;
 
-			antiLoopState_t antiLoop;
 		} pers;
 
 		// sess.

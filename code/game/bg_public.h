@@ -330,7 +330,6 @@ typedef struct {
 	void		(*rawtrace)(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask);
 
 	rollState_t		roll;
-	antiLoopState_t antiLoop;
 
 	float			accelMiss;
 	float			wishSpeed;

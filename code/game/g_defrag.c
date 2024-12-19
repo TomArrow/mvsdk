@@ -822,6 +822,15 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 
+	if ((cl->sess.raceStyle.runFlags & RFL_ANTILOOP) /*&& MovementStyleHasAntiLoop(cl->sess.raceStyle.movementStyle)*/ && cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed > ANTILOOP_MAXYAWCHANGE) {
+		if (cl->pers.raceStartCommandTime) {
+			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Restart blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse);
+		}
+		else {
+			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed,(float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qtrue);
+		}
+		return;
+	}
 	if (cl->sess.raceStateInvalidated) {
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
 		return;
@@ -2107,6 +2116,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 		Q_strncpyz(runInfo->username, "!unlogged!", sizeof(runInfo->username));
 	}
 	runInfo->raceStyle = client->sess.raceStyle;
+	//if (!MovementStyleHasAntiLoop(runInfo->raceStyle.movementStyle)) {
+	//	runInfo->raceStyle.runFlags &= ~RFL_ANTILOOP; // remove antiloop from runs that dont even qualify
+	//}
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(runInfo->coursename, Info_ValueForKey(serverInfo, "mapname"), sizeof(runInfo->coursename));

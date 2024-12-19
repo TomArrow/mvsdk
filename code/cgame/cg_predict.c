@@ -881,6 +881,7 @@ void CG_PredictPlayerState( void ) {
 	usercmd_t	oldestCmd;
 	usercmd_t	latestCmd;
 	usercmd_t	temporaryCmd;
+	vec3_t		prePmoveVelocity;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
@@ -1155,13 +1156,15 @@ void CG_PredictPlayerState( void ) {
 				VectorCopy(lockAng, cg_pmove.ps->viewangles);
 			}
 		}
-
+		
+		VectorCopy(cg_pmove.ps->velocity,prePmoveVelocity);
 		cg_pmove.roll = cg.roll;
 		cg_pmove.handleStrafebotSlopes = cg_strafebotSlopeHandling.integer;
 		Pmove (&cg_pmove);
 		cg.roll = cg_pmove.roll;
 		cg.accelMiss = cg_pmove.accelMiss;
 		cg.wishSpeed = cg_pmove.wishSpeed;
+		DF_AntiLoop_NewAngle(&cg.antiLoop, prePmoveVelocity, cg_pmove.ps->velocity, cg_pmove.ps->basespeed, cgs.isTommyTernal && cg_pmove.ps->stats[STAT_RACEMODE] && cg_pmove.ps->duelTime);
 
 		for ( i = 0 ; i < MAX_CLIENTS ; i++ )
 		{

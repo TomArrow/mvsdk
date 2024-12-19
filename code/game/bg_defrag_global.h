@@ -63,6 +63,7 @@ a(tas,TAS,7,RUNFLAGSDBPREFIX,"","")\
 a(climb,CLIMBTECH,8,RUNFLAGSDBPREFIX,"","")\
 a(jpadcomp,JUMPPADCOMPENSATE,9,RUNFLAGSDBPREFIX,"","")\
 a(lavaProtect,LAVAPROTECT,10,RUNFLAGSDBPREFIX,"","")\
+a(antiLoop,ANTILOOP,11,RUNFLAGSDBPREFIX,"","")\
 //a(wallspawn,WALLSPAWN,9,RUNFLAGSDBPREFIX,"","")
 
 // the "/*","*/" thing for JUMPBUGDISABLE is so we can disable it for query construction (since it doesn't need to be identical to the level's default, we still query both)
@@ -200,16 +201,9 @@ typedef struct q3TrackStatus_s {
 	int			lastCheckpoint;
 } q3TrackStatus_t;
 
-typedef enum startTriggerEventType_s {
-	STARTTRIGGEREVENT_NONE,
-	STARTTRIGGEREVENT_ENTER,
-	STARTTRIGGEREVENT_LEAVE,
-} startTriggerEventType_t;
-
+#define ANTILOOP_MAXYAWCHANGE 270
 typedef struct antiLoopState_s {
 	float						yawAngleChangeSinceBaseSpeed;
-	startTriggerEventType_t		lastStartTriggerEvent;
-	vec3_t						lastStartTriggerEventAngle;
 } antiLoopState_t;
 
 #define MAX_FPSMEASURE_FRAMECOUNT 32
@@ -287,6 +281,7 @@ typedef struct finishedRunInfo_s {
 //} evaluatedRunInfo_t;
 
 int RaceNameToInteger(char* style);
+//qboolean MovementStyleHasAntiLoop(int moveStyle);
 qboolean MovementStyleHasQuake2Ramps(int moveStyle);
 qboolean MovementStyleHasVQ3OnlyJumppads(int moveStyle);
 qboolean MovementStyleHasCPMOnlyJumppads(int moveStyle);
@@ -300,7 +295,7 @@ raceStyle_t getDefaultMapRaceStyle();
 char* QDECL multiva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 char* QDECL miniva(const char* format, ...) __attribute__((format(printf, 1, 2)));
 const char* DF_DemoRaceStyleNamePart(raceStyle_t* rs);
-
+void DF_AntiLoop_NewAngle(antiLoopState_t* antiLoopState, vec3_t oldVelocity, vec3_t velocity, float baseSpeed, qboolean inRace);
 
 
 #define FPSTABLE_SIZE 64 // i already checked, we need roughly 62-63 entries for unqiuely settable fps. just do a bit higher for overflow values. this isnt really depending on any factors, its just how it is, but i can't really give a math formula for WHY it is like that. it just is.
