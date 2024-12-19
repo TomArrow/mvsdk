@@ -6749,23 +6749,26 @@ static void CG_AntiLoopIndicator(void)
 {
 	float x, y;
 	float antiloopPercentage = 0;
+	qboolean overflowed = qfalse;
+	float thickness = 5.0f;
 
 	if ((!cgs.isTommyTernal || !cg.predictedPlayerState.stats[STAT_RACEMODE] /*|| !MovementStyleHasAntiLoop(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE])*/ || !(cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_ANTILOOP)) && cg_drawAntiLoopIndicator.integer <= 1) return;
 
+	overflowed = cg.antiLoop.yawAngleChangeSinceBaseSpeed > (float)ANTILOOP_MAXYAWCHANGE;
 	antiloopPercentage = MIN(1.0f, (cg.antiLoop.yawAngleChangeSinceBaseSpeed / (float)ANTILOOP_MAXYAWCHANGE));
 
 	x = 45;
 	y = 200;
 	CG_DrawRect(x - 0.75,
 		y - 0.75,
-		13.5,
+		thickness+1.5f,
 		51.5,
 		0.5f,
-		colorTable[CT_BLACK]);
+		overflowed ? colorTable[CT_RED] : colorTable[CT_BLACK]);
 
 	CG_FillRect(x,
 		y+ (50- antiloopPercentage * 50),
-		12,
+		thickness,
 		antiloopPercentage * 50,
 		colorTable[CT_RED]);
 	//CG_FillRect(x,
