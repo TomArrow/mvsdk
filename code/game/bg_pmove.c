@@ -8,6 +8,7 @@
 #include "bg_local.h"
 #include "../qcommon/fp16.h"
 #include "bg_pmove_q2.h"
+#include "bg_pmove_css.h"
 
 #ifdef JK2_GAME
 #include "g_local.h"
@@ -5525,6 +5526,7 @@ PmoveSingle
 */
 void trap_SnapVector( float *v );
 void PmoveQ2(pmoveq2_t* pmove);
+void PmoveCSS(pmovecss_t* pmove);
 void PmoveSingle (pmove_t *pmove) {
 	int runFlags;
 	int msecRestrict;
@@ -5549,6 +5551,24 @@ void PmoveSingle (pmove_t *pmove) {
 		pm->ps->commandTime = pm->cmd.serverTime;
 		VectorCopy(pmq2.mins, pm->mins);
 		VectorCopy(pmq2.maxs, pm->maxs);
+		return;
+	}
+	else if (moveStyle == MV_CSS) {
+		pmovecss_t pmcss;
+		memset(&pmcss, 0, sizeof(pmcss));
+		pmcss.ps = pm->ps;
+		pmcss.cmd = pm->cmd;
+		pmcss.tracemask = pm->tracemask;
+		pmcss.trace = pm->trace;
+		pmcss.snapinitial = pm->positionChangedOutsidePmove;
+		pmcss.pointcontents = pm->pointcontents;
+		VectorCopy(pm->mins, pmcss.mins);
+		VectorCopy(pm->maxs, pmcss.maxs);
+		PmoveCSS(&pmcss);
+		PM_SetAnimAfterQ2();
+		pm->ps->commandTime = pm->cmd.serverTime;
+		VectorCopy(pmcss.mins, pm->mins);
+		VectorCopy(pmcss.maxs, pm->maxs);
 		return;
 	}
 

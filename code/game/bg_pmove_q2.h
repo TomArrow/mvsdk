@@ -1,6 +1,6 @@
 
-#ifndef BG_PMOVE_CSS_H
-#define BG_PMOVE_CSS_H
+#ifndef BG_PMOVE_Q2_H
+#define BG_PMOVE_Q2_H
 
 #include "../game/q_shared.h"
 

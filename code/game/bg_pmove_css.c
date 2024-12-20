@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../game/bg_public.h"
 
 
+//#define AUTHENTIC_CSSSNAP
 
 #define	STEPSIZE	18
 
@@ -31,8 +32,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct
 {
-	//vec3_t		origin;			// full float precision
-	//vec3_t		velocity;		// full float precision
+	vec3_t		origin;			// full float precision
+	vec3_t		velocity;		// full float precision
 
 
 	vec3_t		forward, right, up;
@@ -134,7 +135,7 @@ void PMCSS_StepSlideMove_(void)
 
 	numbumps = 4;
 
-	VectorCopy(pmcss->ps->velocity, primal_velocity);
+	VectorCopy(pmlcss.velocity, primal_velocity);
 	numplanes = 0;
 
 	time_left = pmlcss.frametime;
@@ -142,19 +143,19 @@ void PMCSS_StepSlideMove_(void)
 	for (bumpcount = 0; bumpcount < numbumps; bumpcount++)
 	{
 		for (i = 0; i < 3; i++)
-			end[i] = pmcss->ps->origin[i] + time_left * pmcss->ps->velocity[i];
+			end[i] = pmlcss.origin[i] + time_left * pmlcss.velocity[i];
 
-		pmcss->trace(&trace,pmcss->ps->origin, pmcss->mins, pmcss->maxs, end,pmcss->ps->clientNum,pmcss->tracemask);
+		pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, end, pmcss->ps->clientNum, pmcss->tracemask);
 
 		if (trace.allsolid)
 		{	// entity is trapped in another solid
-			pmcss->ps->velocity[2] = 0;	// don't build up falling damage
+			pmlcss.velocity[2] = 0;	// don't build up falling damage
 			return;
 		}
 
 		if (trace.fraction > 0)
 		{	// actually covered some distance
-			VectorCopy(trace.endpos, pmcss->ps->origin);
+			VectorCopy(trace.endpos, pmlcss.origin);
 			numplanes = 0;
 		}
 
@@ -173,7 +174,7 @@ void PMCSS_StepSlideMove_(void)
 		// slide along this plane
 		if (numplanes >= MAX_CLIP_PLANES)
 		{	// this shouldn't really happen
-			VectorCopy(vec3_origin, pmcss->ps->velocity);
+			VectorCopy(vec3_origin, pmlcss.velocity);
 			break;
 		}
 
@@ -188,36 +189,36 @@ void PMCSS_StepSlideMove_(void)
 		//
 		if (numplanes == 1)
 		{	// go along this plane
-			VectorCopy(pmcss->ps->velocity, dir);
+			VectorCopy(pmlcss.velocity, dir);
 			VectorNormalize(dir);
 			rub = 1.0 + 0.5 * DotProduct(dir, planes[0]);
 
 			// slide along the plane
-			PMCSS_ClipVelocity(pmcss->ps->velocity, planes[0], pmcss->ps->velocity, 1.01);
+			PMCSS_ClipVelocity(pmlcss.velocity, planes[0], pmlcss.velocity, 1.01);
 			// rub some extra speed off on xy axis
 			// not on Z, or you can scrub down walls
-			pmcss->ps->velocity[0] *= rub;
-			pmcss->ps->velocity[1] *= rub;
-			pmcss->ps->velocity[2] *= rub;
+			pmlcss.velocity[0] *= rub;
+			pmlcss.velocity[1] *= rub;
+			pmlcss.velocity[2] *= rub;
 		}
 		else if (numplanes == 2)
 		{	// go along the crease
-			VectorCopy(pmcss->ps->velocity, dir);
+			VectorCopy(pmlcss.velocity, dir);
 			VectorNormalize(dir);
 			rub = 1.0 + 0.5 * DotProduct(dir, planes[0]);
 
 			// slide along the plane
 			CrossProduct(planes[0], planes[1], dir);
-			d = DotProduct(dir, pmcss->ps->velocity);
-			VectorScale(dir, d, pmcss->ps->velocity);
+			d = DotProduct(dir, pmlcss.velocity);
+			VectorScale(dir, d, pmlcss.velocity);
 
 			// rub some extra speed off
-			VectorScale(pmcss->ps->velocity, rub, pmcss->ps->velocity);
+			VectorScale(pmlcss.velocity, rub, pmlcss.velocity);
 		}
 		else
 		{
 			//			Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
-			VectorCopy(vec3_origin, pmcss->ps->velocity);
+			VectorCopy(vec3_origin, pmlcss.velocity);
 			break;
 		}
 
@@ -227,11 +228,11 @@ void PMCSS_StepSlideMove_(void)
 		//
 		for (i = 0; i < numplanes; i++)
 		{
-			PMCSS_ClipVelocity(pmcss->ps->velocity, planes[i], pmcss->ps->velocity, 1.01);
+			PMCSS_ClipVelocity(pmlcss.velocity, planes[i], pmlcss.velocity, 1.01);
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
-					if (DotProduct(pmcss->ps->velocity, planes[j]) < 0)
+					if (DotProduct(pmlcss.velocity, planes[j]) < 0)
 						break;	// not ok
 				}
 			if (j == numplanes)
@@ -246,28 +247,28 @@ void PMCSS_StepSlideMove_(void)
 			if (numplanes != 2)
 			{
 				//				Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
-				VectorCopy(vec3_origin, pmcss->ps->velocity);
+				VectorCopy(vec3_origin, pmlcss.velocity);
 				break;
 			}
 			CrossProduct(planes[0], planes[1], dir);
-			d = DotProduct(dir, pmcss->ps->velocity);
-			VectorScale(dir, d, pmcss->ps->velocity);
+			d = DotProduct(dir, pmlcss.velocity);
+			VectorScale(dir, d, pmlcss.velocity);
 		}
 #endif
 		//
 		// if velocity is against the original velocity, stop dead
 		// to avoid tiny occilations in sloping corners
 		//
-		if (DotProduct(pmcss->ps->velocity, primal_velocity) <= 0)
+		if (DotProduct(pmlcss.velocity, primal_velocity) <= 0)
 		{
-			VectorCopy(vec3_origin, pmcss->ps->velocity);
+			VectorCopy(vec3_origin, pmlcss.velocity);
 			break;
 		}
 	}
 
 	if (pmcss->ps->pm_time)
 	{
-		VectorCopy(primal_velocity, pmcss->ps->velocity);
+		VectorCopy(primal_velocity, pmlcss.velocity);
 	}
 }
 
@@ -286,13 +287,13 @@ void PMCSS_StepSlideMove(void)
 	//	vec3_t		delta;
 	vec3_t		up, down;
 
-	VectorCopy(pmcss->ps->origin, start_o);
-	VectorCopy(pmcss->ps->velocity, start_v);
+	VectorCopy(pmlcss.origin, start_o);
+	VectorCopy(pmlcss.velocity, start_v);
 
 	PMCSS_StepSlideMove_();
 
-	VectorCopy(pmcss->ps->origin, down_o);
-	VectorCopy(pmcss->ps->velocity, down_v);
+	VectorCopy(pmlcss.origin, down_o);
+	VectorCopy(pmlcss.velocity, down_v);
 
 	VectorCopy(start_o, up);
 	up[2] += STEPSIZE;
@@ -303,28 +304,28 @@ void PMCSS_StepSlideMove(void)
 		return;		// can't step up
 
 	// try sliding above
-	VectorCopy(up, pmcss->ps->origin);
-	VectorCopy(start_v, pmcss->ps->velocity);
+	VectorCopy(up, pmlcss.origin);
+	VectorCopy(start_v, pmlcss.velocity);
 
 	PMCSS_StepSlideMove_();
 
 	// push down the final amount
-	VectorCopy(pmcss->ps->origin, down);
+	VectorCopy(pmlcss.origin, down);
 	down[2] -= STEPSIZE;
-	pmcss->trace(&trace, pmcss->ps->origin, pmcss->mins, pmcss->maxs, down, pmcss->ps->clientNum, pmcss->tracemask);
+	pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, down, pmcss->ps->clientNum, pmcss->tracemask);
 	if (!trace.allsolid)
 	{
-		VectorCopy(trace.endpos, pmcss->ps->origin);
+		VectorCopy(trace.endpos, pmlcss.origin);
 	}
 
 #if 0
-	VectorSubtract(pmcss->ps->origin, up, delta);
+	VectorSubtract(pmlcss.origin, up, delta);
 	up_dist = DotProduct(delta, start_v);
 
 	VectorSubtract(down_o, start_o, delta);
 	down_dist = DotProduct(delta, start_v);
 #else
-	VectorCopy(pmcss->ps->origin, up);
+	VectorCopy(pmlcss.origin, up);
 
 	// decide which one went farther
 	down_dist = (down_o[0] - start_o[0]) * (down_o[0] - start_o[0])
@@ -335,13 +336,13 @@ void PMCSS_StepSlideMove(void)
 
 	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
 	{
-		VectorCopy(down_o, pmcss->ps->origin);
-		VectorCopy(down_v, pmcss->ps->velocity);
+		VectorCopy(down_o, pmlcss.origin);
+		VectorCopy(down_v, pmlcss.velocity);
 		return;
 	}
 	//!! Special case
 	// if we were walking along a plane, then we need to copy the Z over
-	pmcss->ps->velocity[2] = down_v[2];
+	pmlcss.velocity[2] = down_v[2];
 }
 
 
@@ -359,7 +360,7 @@ void PMCSS_Friction(void)
 	float	friction;
 	float	drop;
 
-	vel = pmcss->ps->velocity;
+	vel = pmlcss.velocity;
 
 	speed = sqrt(vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2]);
 	if (speed < 1)
@@ -409,7 +410,7 @@ void PMCSS_Accelerate(vec3_t wishdir, float wishspeed, float accel)
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
 
-	currentspeed = DotProduct(pmcss->ps->velocity, wishdir);
+	currentspeed = DotProduct(pmlcss.velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
@@ -418,7 +419,7 @@ void PMCSS_Accelerate(vec3_t wishdir, float wishspeed, float accel)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
-		pmcss->ps->velocity[i] += accelspeed * wishdir[i];
+		pmlcss.velocity[i] += accelspeed * wishdir[i];
 }
 
 void PMCSS_AirAccelerate(vec3_t wishdir, float wishspeed, float accel)
@@ -428,7 +429,7 @@ void PMCSS_AirAccelerate(vec3_t wishdir, float wishspeed, float accel)
 
 	if (wishspd > 30)
 		wishspd = 30;
-	currentspeed = DotProduct(pmcss->ps->velocity, wishdir);
+	currentspeed = DotProduct(pmlcss.velocity, wishdir);
 	addspeed = wishspd - currentspeed;
 	if (addspeed <= 0)
 		return;
@@ -437,7 +438,7 @@ void PMCSS_AirAccelerate(vec3_t wishdir, float wishspeed, float accel)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
-		pmcss->ps->velocity[i] += accelspeed * wishdir[i];
+		pmlcss.velocity[i] += accelspeed * wishdir[i];
 }
 
 /*
@@ -454,7 +455,7 @@ void PMCSS_AddCurrents(vec3_t	wishvel)
 	// account for ladders
 	//
 
-	if (pmlcss.ladder && fabs(pmcss->ps->velocity[2]) <= 200)
+	if (pmlcss.ladder && fabs(pmlcss.velocity[2]) <= 200)
 	{
 		if ((pmcss->ps->viewangles[PITCH] <= -15) && (pmlcss.forwardmove > 0))
 			wishvel[2] = 200;
@@ -627,35 +628,35 @@ void PMCSS_AirMove(void)
 		PMCSS_Accelerate(wishdir, wishspeed, pmcss_accelerate);
 		if (!wishvel[2])
 		{
-			if (pmcss->ps->velocity[2] > 0)
+			if (pmlcss.velocity[2] > 0)
 			{
-				pmcss->ps->velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
-				if (pmcss->ps->velocity[2] < 0)
-					pmcss->ps->velocity[2] = 0;
+				pmlcss.velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
+				if (pmlcss.velocity[2] < 0)
+					pmlcss.velocity[2] = 0;
 			}
 			else
 			{
-				pmcss->ps->velocity[2] += pmcss->ps->gravity * pmlcss.frametime;
-				if (pmcss->ps->velocity[2] > 0)
-					pmcss->ps->velocity[2] = 0;
+				pmlcss.velocity[2] += pmcss->ps->gravity * pmlcss.frametime;
+				if (pmlcss.velocity[2] > 0)
+					pmlcss.velocity[2] = 0;
 			}
 		}
 		PMCSS_StepSlideMove();
 	}
 	else if (pmcss->ps->groundEntityNum != ENTITYNUM_NONE)
 	{	// walking on ground
-		pmcss->ps->velocity[2] = 0; //!!! this is before the accel
+		pmlcss.velocity[2] = 0; //!!! this is before the accel
 		PMCSS_Accelerate(wishdir, wishspeed, pmcss_accelerate);
 
 		// PGM	-- fix for negative trigger_gravity fields
-		//		pmcss->ps->velocity[2] = 0;
+		//		pmlcss.velocity[2] = 0;
 		if (pmcss->ps->gravity > 0)
-			pmcss->ps->velocity[2] = 0;
+			pmlcss.velocity[2] = 0;
 		else
-			pmcss->ps->velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
+			pmlcss.velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
 		// PGM
 
-		if (!pmcss->ps->velocity[0] && !pmcss->ps->velocity[1])
+		if (!pmlcss.velocity[0] && !pmlcss.velocity[1])
 			return;
 		PMCSS_StepSlideMove();
 	}
@@ -666,7 +667,7 @@ void PMCSS_AirMove(void)
 		else
 			PMCSS_Accelerate(wishdir, wishspeed, 1);
 		// add gravity
-		pmcss->ps->velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
+		pmlcss.velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
 		PMCSS_StepSlideMove();
 	}
 }
@@ -690,17 +691,17 @@ void PMCSS_CatagorizePosition(void)
 	// is on ground
 
 	// see if standing on something solid	
-	point[0] = pmcss->ps->origin[0];
-	point[1] = pmcss->ps->origin[1];
-	point[2] = pmcss->ps->origin[2] - 0.25;
-	if (pmcss->ps->velocity[2] > 180) //!!ZOID changed from 100 to 180 (ramp accel)
+	point[0] = pmlcss.origin[0];
+	point[1] = pmlcss.origin[1];
+	point[2] = pmlcss.origin[2] - 0.25;
+	if (pmlcss.velocity[2] > 180) //!!ZOID changed from 100 to 180 (ramp accel)
 	{
 		//pmcss->ps->pm_flags &= ~PMF_ON_GROUND;
 		pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
 	}
 	else
 	{
-		pmcss->trace(&trace, pmcss->ps->origin, pmcss->mins, pmcss->maxs, point, pmcss->ps->clientNum, pmcss->tracemask);
+		pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, point, pmcss->ps->clientNum, pmcss->tracemask);
 		pmlcss.groundplane = trace.plane;
 		//pmlcss.groundsurface = trace.surface;
 		pmlcss.surfaceFlags = trace.surfaceFlags;
@@ -729,11 +730,11 @@ void PMCSS_CatagorizePosition(void)
 			{	// just hit the ground
 				//pmcss->ps->pm_flags |= PMF_ON_GROUND;
 				// don't do landing time if we were just going down a slope
-				if (pmcss->ps->velocity[2] < -200)
+				if (pmlcss.velocity[2] < -200)
 				{
 					pmcss->ps->pm_flags |= PMF_TIME_LAND;
 					// don't allow another jump for a little while
-					if (pmcss->ps->velocity[2] < -400)
+					if (pmlcss.velocity[2] < -400)
 						pmcss->ps->pm_time = 25;
 					else
 						pmcss->ps->pm_time = 18;
@@ -742,8 +743,8 @@ void PMCSS_CatagorizePosition(void)
 		}
 
 #if 0
-		if (trace.fraction < 1.0 && trace.ent && pmcss->ps->velocity[2] < 0)
-			pmcss->ps->velocity[2] = 0;
+		if (trace.fraction < 1.0 && trace.ent && pmlcss.velocity[2] < 0)
+			pmlcss.velocity[2] = 0;
 #endif
 
 		if (pmcss->numtouch < MAXTOUCH && trace.entityNum != ENTITYNUM_NONE)
@@ -762,19 +763,19 @@ void PMCSS_CatagorizePosition(void)
 	sample2 = pmcss->ps->viewheight - pmcss->mins[2];
 	sample1 = sample2 / 2;
 
-	point[2] = pmcss->ps->origin[2] + pmcss->mins[2] + 1;
-	cont = pmcss->pointcontents(point,pmcss->ps->clientNum);
+	point[2] = pmlcss.origin[2] + pmcss->mins[2] + 1;
+	cont = pmcss->pointcontents(point, pmcss->ps->clientNum);
 
 	if (cont & MASK_WATER)
 	{
 		pmcss->watertype = cont;
 		pmcss->waterlevel = 1;
-		point[2] = pmcss->ps->origin[2] + pmcss->mins[2] + sample1;
-		cont = pmcss->pointcontents(point,pmcss->ps->clientNum);
+		point[2] = pmlcss.origin[2] + pmcss->mins[2] + sample1;
+		cont = pmcss->pointcontents(point, pmcss->ps->clientNum);
 		if (cont & MASK_WATER)
 		{
 			pmcss->waterlevel = 2;
-			point[2] = pmcss->ps->origin[2] + pmcss->mins[2] + sample2;
+			point[2] = pmlcss.origin[2] + pmcss->mins[2] + sample2;
 			cont = pmcss->pointcontents(point, pmcss->ps->clientNum);
 			if (cont & MASK_WATER)
 				pmcss->waterlevel = 3;
@@ -813,15 +814,15 @@ void PMCSS_CheckJump(void)
 	{	// swimming, not jumping
 		pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
 
-		if (pmcss->ps->velocity[2] <= -300)
+		if (pmlcss.velocity[2] <= -300)
 			return;
 
 		if (pmcss->watertype == CONTENTS_WATER)
-			pmcss->ps->velocity[2] = 100;
+			pmlcss.velocity[2] = 100;
 		else if (pmcss->watertype == CONTENTS_SLIME)
-			pmcss->ps->velocity[2] = 80;
+			pmlcss.velocity[2] = 80;
 		else
-			pmcss->ps->velocity[2] = 50;
+			pmlcss.velocity[2] = 50;
 		return;
 	}
 
@@ -831,9 +832,9 @@ void PMCSS_CheckJump(void)
 	pmcss->ps->pm_flags |= PMF_JUMP_HELD;
 
 	pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
-	pmcss->ps->velocity[2] += 270;
-	if (pmcss->ps->velocity[2] < 270)
-		pmcss->ps->velocity[2] = 270;
+	pmlcss.velocity[2] += 270;
+	if (pmlcss.velocity[2] < 270)
+		pmlcss.velocity[2] = 270;
 }
 
 
@@ -860,8 +861,8 @@ void PMCSS_CheckSpecialMovement(void)
 	flatforward[2] = 0;
 	VectorNormalize(flatforward);
 
-	VectorMA(pmcss->ps->origin, 1, flatforward, spot);
-	pmcss->trace(&trace, pmcss->ps->origin, pmcss->mins, pmcss->maxs, spot, pmcss->ps->clientNum, pmcss->tracemask);
+	VectorMA(pmlcss.origin, 1, flatforward, spot);
+	pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, spot, pmcss->ps->clientNum, pmcss->tracemask);
 	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
 		pmlcss.ladder = qtrue;
 
@@ -869,7 +870,7 @@ void PMCSS_CheckSpecialMovement(void)
 	if (pmcss->waterlevel != 2)
 		return;
 
-	VectorMA(pmcss->ps->origin, 30, flatforward, spot);
+	VectorMA(pmlcss.origin, 30, flatforward, spot);
 	spot[2] += 4;
 	cont = pmcss->pointcontents(spot, pmcss->ps->clientNum);
 	if (!(cont & CONTENTS_SOLID))
@@ -880,8 +881,8 @@ void PMCSS_CheckSpecialMovement(void)
 	if (cont)
 		return;
 	// jump out of water
-	VectorScale(flatforward, 50, pmcss->ps->velocity);
-	pmcss->ps->velocity[2] = 350;
+	VectorScale(flatforward, 50, pmlcss.velocity);
+	pmlcss.velocity[2] = 350;
 
 	pmcss->ps->pm_flags |= PMF_TIME_WATERJUMP;
 	pmcss->ps->pm_time = 255;
@@ -909,10 +910,10 @@ void PMCSS_FlyMove(qboolean doclip)
 
 	// friction
 
-	speed = VectorLength(pmcss->ps->velocity);
+	speed = VectorLength(pmlcss.velocity);
 	if (speed < 1)
 	{
-		VectorCopy(vec3_origin, pmcss->ps->velocity);
+		VectorCopy(vec3_origin, pmlcss.velocity);
 	}
 	else
 	{
@@ -928,7 +929,7 @@ void PMCSS_FlyMove(qboolean doclip)
 			newspeed = 0;
 		newspeed /= speed;
 
-		VectorScale(pmcss->ps->velocity, newspeed, pmcss->ps->velocity);
+		VectorScale(pmlcss.velocity, newspeed, pmlcss.velocity);
 	}
 
 	// accelerate
@@ -955,7 +956,7 @@ void PMCSS_FlyMove(qboolean doclip)
 	}
 
 
-	currentspeed = DotProduct(pmcss->ps->velocity, wishdir);
+	currentspeed = DotProduct(pmlcss.velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
@@ -964,19 +965,19 @@ void PMCSS_FlyMove(qboolean doclip)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
-		pmcss->ps->velocity[i] += accelspeed * wishdir[i];
+		pmlcss.velocity[i] += accelspeed * wishdir[i];
 
 	if (doclip) {
 		for (i = 0; i < 3; i++)
-			end[i] = pmcss->ps->origin[i] + pmlcss.frametime * pmcss->ps->velocity[i];
+			end[i] = pmlcss.origin[i] + pmlcss.frametime * pmlcss.velocity[i];
 
-		pmcss->trace(&trace, pmcss->ps->origin, pmcss->mins, pmcss->maxs, end, pmcss->ps->clientNum, pmcss->tracemask);
+		pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, end, pmcss->ps->clientNum, pmcss->tracemask);
 
-		VectorCopy(trace.endpos, pmcss->ps->origin);
+		VectorCopy(trace.endpos, pmlcss.origin);
 	}
 	else {
 		// move
-		VectorMA(pmcss->ps->origin, pmlcss.frametime, pmcss->ps->velocity, pmcss->ps->origin);
+		VectorMA(pmlcss.origin, pmlcss.frametime, pmlcss.velocity, pmlcss.origin);
 	}
 }
 
@@ -1024,7 +1025,7 @@ void PMCSS_CheckDuck(void)
 		{
 			// try to stand up
 			pmcss->maxs[2] = 32;
-			pmcss->trace(&trace, pmcss->ps->origin, pmcss->mins, pmcss->maxs, pmcss->ps->origin, pmcss->ps->clientNum, pmcss->tracemask);
+			pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, pmlcss.origin, pmcss->ps->clientNum, pmcss->tracemask);
 			if (!trace.allsolid)
 				pmcss->ps->pm_flags &= ~PMF_DUCKED;
 		}
@@ -1057,16 +1058,16 @@ void PMCSS_DeadMove(void)
 
 	// extra friction
 
-	forward = VectorLength(pmcss->ps->velocity);
+	forward = VectorLength(pmlcss.velocity);
 	forward -= 20;
 	if (forward <= 0)
 	{
-		VectorClear(pmcss->ps->velocity);
+		VectorClear(pmlcss.velocity);
 	}
 	else
 	{
-		VectorNormalize(pmcss->ps->velocity);
-		VectorScale(pmcss->ps->velocity, forward, pmcss->ps->velocity);
+		VectorNormalize(pmlcss.velocity);
+		VectorScale(pmlcss.velocity, forward, pmlcss.velocity);
 	}
 }
 
@@ -1081,7 +1082,11 @@ qboolean	PMCSS_GoodPosition(void)
 		return qtrue;
 
 	for (i = 0; i < 3; i++)
-		origin[i] = end[i] = pmcss->ps->origin[i];// *0.125;
+#ifdef AUTHENTIC_CSSSNAP
+		origin[i] = end[i] = pmcss->ps->origin[i] * 0.125;
+#else
+		origin[i] = end[i] = pmcss->ps->origin[i];
+#endif
 	pmcss->trace(&trace, origin, pmcss->mins, pmcss->maxs, end, pmcss->ps->clientNum, pmcss->tracemask);
 
 	return !trace.allsolid;
@@ -1099,24 +1104,29 @@ void PMCSS_SnapPosition(void)
 {
 	int		sign[3];
 	int		i, j, bits;
-	short	base[3];
+	//short	base[3];
+	float	base[3]; // this isn't 100% authentic but it should be authentic in the range of short in any case and way beyond it too for a while
 	// try all single bits first
 	static int jitterbits[8] = { 0,4,1,2,3,5,6,7 };
 
-	return; // we dont do this weird network *8 *0.125 thingie for anything
-	/*
+#ifndef AUTHENTIC_CSSSNAP
+	return; // no need for snapping in jk2
+#else
+
+	// we don't need this in jk but we keep it for authentic feel just in case.
+
 	// snap velocity to eigths
 	for (i = 0; i < 3; i++)
-		pmcss->ps->velocity[i] = (int)(pmcss->ps->velocity[i] * 8);
+		pmcss->ps->velocity[i] = (int)(pmlcss.velocity[i] * 8);
 
 	for (i = 0; i < 3; i++)
 	{
-		if (pmcss->ps->origin[i] >= 0)
+		if (pmlcss.origin[i] >= 0)
 			sign[i] = 1;
 		else
 			sign[i] = -1;
-		pmcss->ps->origin[i] = (int)(pmcss->ps->origin[i] * 8);
-		if (pmcss->ps->origin[i] * 0.125 == pmcss->ps->origin[i])
+		pmcss->ps->origin[i] = (int)(pmlcss.origin[i] * 8);
+		if (pmcss->ps->origin[i] * 0.125 == pmlcss.origin[i])
 			sign[i] = 0;
 	}
 	VectorCopy(pmcss->ps->origin, base);
@@ -1137,7 +1147,9 @@ void PMCSS_SnapPosition(void)
 	// go back to the last position
 	VectorCopy(pmlcss.previous_origin, pmcss->ps->origin);
 	//	Com_DPrintf ("using previous_origin\n");
-	*/
+#endif
+
+
 }
 
 #if 0
@@ -1166,9 +1178,9 @@ void PMCSS_InitialSnapPosition(void)
 				pmcss->ps->origin[0] = base[0] + x;
 				if (PMCSS_GoodPosition())
 				{
-					pmcss->ps->origin[0] = pmcss->ps->origin[0] * 0.125;
-					pmcss->ps->origin[1] = pmcss->ps->origin[1] * 0.125;
-					pmcss->ps->origin[2] = pmcss->ps->origin[2] * 0.125;
+					pmlcss.origin[0] = pmcss->ps->origin[0] * 0.125;
+					pmlcss.origin[1] = pmcss->ps->origin[1] * 0.125;
+					pmlcss.origin[2] = pmcss->ps->origin[2] * 0.125;
 					VectorCopy(pmcss->ps->origin, pmlcss.previous_origin);
 					return;
 				}
@@ -1188,8 +1200,13 @@ PMCSS_InitialSnapPosition
 void PMCSS_InitialSnapPosition(void)
 {
 	int        x, y, z;
-	short      base[3];
-	static int offset[3] = { 0, -1, 1 };
+#ifdef AUTHENTIC_CSSSNAP
+	float      base[3]; // we still change them to float because our origin number is a float. should still behave the same at least within the range of a short, but allows larger maps to work properly
+	static float offset[3] = { 0, -1, 1 }; // should behave like integer math in smaller ranges
+#else
+	float      base[3];
+	static float offset[3] = { 0, -0.125, 0.125 };
+#endif
 
 	VectorCopy(pmcss->ps->origin, base);
 
@@ -1200,6 +1217,15 @@ void PMCSS_InitialSnapPosition(void)
 			for (x = 0; x < 3; x++) {
 				pmcss->ps->origin[0] = base[0] + offset[x];
 				if (PMCSS_GoodPosition()) {
+#ifdef AUTHENTIC_CSSSNAP
+					pmlcss.origin[0] = pmcss->ps->origin[0] * 0.125;
+					pmlcss.origin[1] = pmcss->ps->origin[1] * 0.125;
+					pmlcss.origin[2] = pmcss->ps->origin[2] * 0.125;
+#else
+					pmlcss.origin[0] = pmcss->ps->origin[0];
+					pmlcss.origin[1] = pmcss->ps->origin[1];
+					pmlcss.origin[2] = pmcss->ps->origin[2];
+#endif
 					VectorCopy(pmcss->ps->origin, pmlcss.previous_origin);
 					return;
 				}
@@ -1269,6 +1295,35 @@ void PmoveCSS(pmovecss_t* pmove)
 	// clear all pmove local vars
 	memset(&pmlcss, 0, sizeof(pmlcss));
 
+
+#ifdef AUTHENTIC_CSSSNAP
+	pmcss->ps->origin[0] = (int)(pmcss->ps->origin[0] * 8.0f);
+	pmcss->ps->origin[1] = (int)(pmcss->ps->origin[1] * 8.0f);
+	pmcss->ps->origin[2] = (int)(pmcss->ps->origin[2] * 8.0f);
+
+	pmcss->ps->velocity[0] = (int)(pmcss->ps->velocity[0] * 8.0f);
+	pmcss->ps->velocity[1] = (int)(pmcss->ps->velocity[1] * 8.0f);
+	pmcss->ps->velocity[2] = (int)(pmcss->ps->velocity[2] * 8.0f);
+
+	// convert origin and velocity to float values
+	pmlcss.origin[0] = pmcss->ps->origin[0] * 0.125;
+	pmlcss.origin[1] = pmcss->ps->origin[1] * 0.125;
+	pmlcss.origin[2] = pmcss->ps->origin[2] * 0.125;
+
+	pmlcss.velocity[0] = pmcss->ps->velocity[0] * 0.125;
+	pmlcss.velocity[1] = pmcss->ps->velocity[1] * 0.125;
+	pmlcss.velocity[2] = pmcss->ps->velocity[2] * 0.125;
+#else
+	// convert origin and velocity to float values
+	pmlcss.origin[0] = pmcss->ps->origin[0];
+	pmlcss.origin[1] = pmcss->ps->origin[1];
+	pmlcss.origin[2] = pmcss->ps->origin[2];
+
+	pmlcss.velocity[0] = pmcss->ps->velocity[0];
+	pmlcss.velocity[1] = pmcss->ps->velocity[1];
+	pmlcss.velocity[2] = pmcss->ps->velocity[2];
+#endif
+
 	pmlcss.msec = pmcss->cmd.serverTime - pmcss->ps->commandTime;
 	pmlcss.forwardmove = (int)pmcss->cmd.forwardmove * 500 / 127;//adapt from q3 range
 	pmlcss.rightmove = (int)pmcss->cmd.rightmove * 500 / 127;//adapt from q3 range
@@ -1284,7 +1339,18 @@ void PmoveCSS(pmovecss_t* pmove)
 	if (pmcss->ps->pm_type == PM_SPECTATOR)
 	{
 		PMCSS_FlyMove(qfalse);
+#ifdef AUTHENTIC_CSSSNAP
 		PMCSS_SnapPosition();
+		pmcss->ps->origin[0] *= 0.125f;
+		pmcss->ps->origin[1] *= 0.125f;
+		pmcss->ps->origin[2] *= 0.125f;
+		pmcss->ps->velocity[0] *= 0.125f;
+		pmcss->ps->velocity[1] *= 0.125f;
+		pmcss->ps->velocity[2] *= 0.125f;
+#else 
+		VectorCopy(pmlcss.origin, pmcss->ps->origin);
+		VectorCopy(pmlcss.velocity, pmcss->ps->velocity);
+#endif
 		return;
 	}
 
@@ -1336,8 +1402,8 @@ void PmoveCSS(pmovecss_t* pmove)
 	//else 
 	if (pmcss->ps->pm_flags & PMF_TIME_WATERJUMP)
 	{	// waterjump has no control, but falls
-		pmcss->ps->velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
-		if (pmcss->ps->velocity[2] < 0)
+		pmlcss.velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
+		if (pmlcss.velocity[2] < 0)
 		{	// cancel as soon as we are falling down again
 			pmcss->ps->pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND /*| PMF_TIME_TELEPORT*/);
 			pmcss->ps->pm_time = 0;
@@ -1370,6 +1436,18 @@ void PmoveCSS(pmovecss_t* pmove)
 	// set groundentity, watertype, and waterlevel for final spot
 	PMCSS_CatagorizePosition();
 
+
+#ifdef AUTHENTIC_CSSSNAP
 	PMCSS_SnapPosition();
+	pmcss->ps->origin[0] *= 0.125f;
+	pmcss->ps->origin[1] *= 0.125f;
+	pmcss->ps->origin[2] *= 0.125f;
+	pmcss->ps->velocity[0] *= 0.125f;
+	pmcss->ps->velocity[1] *= 0.125f;
+	pmcss->ps->velocity[2] *= 0.125f;
+#else 
+	VectorCopy(pmlcss.origin, pmcss->ps->origin);
+	VectorCopy(pmlcss.velocity, pmcss->ps->velocity);
+#endif
 }
 
