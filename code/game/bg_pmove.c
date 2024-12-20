@@ -7,6 +7,7 @@
 #include "bg_public.h"
 #include "bg_local.h"
 #include "../qcommon/fp16.h"
+#include "bg_pmove_q2.h"
 
 #ifdef JK2_GAME
 #include "g_local.h"
@@ -5416,6 +5417,106 @@ void PM_CheckRollEnd() {
 	}
 }
 
+static void PM_SetAnimAfterQ2() { // idk if this is right lol
+
+	qboolean	duck, run;
+	float xyspeed = sqrtf(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1]);
+	int currentAnim = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT);
+	int newAnim = 0;
+
+	if (pm->ps->pm_flags & PMF_DUCKED)
+		duck = qtrue;
+	else
+		duck = qfalse;
+	if (xyspeed)
+		run = qtrue;
+	else
+		run = qfalse;
+
+	//// check for stand/duck and stop/go transitions
+	//if (duck != client->anim_duck && client->anim_priority < ANIM_DEATH)
+	//	goto newanim;
+	//if (run != client->anim_run && client->anim_priority == ANIM_BASIC)
+	//	goto newanim;
+	//if (!ent->groundentity && client->anim_priority <= ANIM_WAVE)
+	//	goto newanim;
+
+	//if (client->anim_priority == ANIM_REVERSE)
+	//{
+	//	if (ent->s.frame > client->anim_end)
+	//	{
+	//		ent->s.frame--;
+	//		return;
+	//	}
+	//}
+	//else if (ent->s.frame < client->anim_end)
+	//{	// continue an animation
+	//	ent->s.frame++;
+	//	return;
+	//}
+
+	//if (client->anim_priority == ANIM_DEATH)
+	if (pm->ps->pm_flags & PM_DEAD)
+		return;		// stay there
+	//if (client->anim_priority == ANIM_JUMP)
+	//{
+	//	if (!ent->groundentity)
+	//		return;		// stay there
+	//	ent->client->anim_priority = ANIM_WAVE;
+	//	ent->s.frame = FRAME_jump3;
+	//	ent->client->anim_end = FRAME_jump6;
+	//	return;
+	//}
+
+newanim:
+	// return to either a running or standing frame
+	newAnim = BOTH_WALK1;
+
+	if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
+	{
+		newAnim = BOTH_JUMP1;
+	}
+	else if (run)
+	{	// running
+		if (duck)
+		{
+			newAnim = BOTH_CROUCH1WALK;
+		}
+		else
+		{
+			newAnim = BOTH_RUN1;
+		}
+	}
+	else
+	{	// standing
+		if (duck)
+		{
+			newAnim = BOTH_CROUCH1;
+		}
+		else
+		{
+			newAnim = BOTH_STAND1;
+		}
+	}
+
+	if (newAnim != currentAnim) {
+		if (newAnim == BOTH_JUMP1 && pm->cmd.upmove > 0) {
+			PM_AddEvent(EV_JUMP);
+		}
+		else if (newAnim != BOTH_JUMP1 && currentAnim == BOTH_JUMP1) {
+			PM_AddEvent(EV_FALL);
+		}
+		PM_SetAnim(SETANIM_BOTH,newAnim,SETANIM_FLAG_NORMAL,100);
+	}
+	
+	if (pm->cmd.buttons & BUTTON_TALK) {
+		pm->ps->eFlags |= EF_TALK;
+	}
+	else {
+		pm->ps->eFlags &= ~EF_TALK;
+	}
+}
+
 /*
 ================
 PmoveSingle
@@ -5423,13 +5524,33 @@ PmoveSingle
 ================
 */
 void trap_SnapVector( float *v );
-
+void PmoveQ2(pmoveq2_t* pmove);
 void PmoveSingle (pmove_t *pmove) {
 	int runFlags;
 	int msecRestrict;
 	int oldCmdRoll;
 	int moveStyle;
 	pm = pmove;
+	moveStyle = PM_GetMovePhysics();
+
+	if (moveStyle == MV_Q2) {
+		pmoveq2_t pmq2;
+		memset(&pmq2, 0, sizeof(pmq2));
+		pmq2.ps = pm->ps;
+		pmq2.cmd = pm->cmd;
+		pmq2.tracemask = pm->tracemask;
+		pmq2.trace = pm->trace;
+		pmq2.pointcontents = pm->pointcontents;
+		VectorCopy(pm->mins, pmq2.mins);
+		VectorCopy(pm->maxs, pmq2.maxs);
+		PmoveQ2(&pmq2);
+		PM_SetAnimAfterQ2();
+		pm->ps->commandTime = pm->cmd.serverTime;
+		VectorCopy(pmq2.mins, pm->mins);
+		VectorCopy(pmq2.maxs, pm->maxs);
+		return;
+	}
+
 	runFlags = PM_GetRunFlags();
 	msecRestrict = PM_GetMsecRestrict();
 	moveStyle = PM_GetMovePhysics();

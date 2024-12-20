@@ -1893,6 +1893,7 @@ typedef struct usercmd_s {
 	signed char	forwardmove, rightmove, upmove;
 } usercmd_t;
 
+
 //===================================================================
 
 //rww - unsightly hack to allow us to make an FX call that takes a horrible amount of args
