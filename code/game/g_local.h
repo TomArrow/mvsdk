@@ -625,6 +625,8 @@ struct gclient_s {
 	int			randomLastCenterprint;
 
 	qboolean	clientIsZombified; // technically disconnected but we're necromancing and keeping him around to finish a segmented replay
+
+	vec3_t		oldPostPmovePosition;
 };
 
 

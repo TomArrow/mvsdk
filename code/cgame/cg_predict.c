@@ -882,6 +882,7 @@ void CG_PredictPlayerState( void ) {
 	usercmd_t	latestCmd;
 	usercmd_t	temporaryCmd;
 	vec3_t		prePmoveVelocity;
+	vec3_t		oldPos;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
@@ -997,6 +998,8 @@ void CG_PredictPlayerState( void ) {
 
 	cg_pmove.debugLevel = cg_debugMove.integer;
 	cg_pmove.isSpecialPredict = qfalse;
+
+	VectorClear(oldPos);
 
 	// run cmds
 	moved = qfalse;
@@ -1160,7 +1163,9 @@ void CG_PredictPlayerState( void ) {
 		VectorCopy(cg_pmove.ps->velocity,prePmoveVelocity);
 		cg_pmove.roll = cg.roll;
 		cg_pmove.handleStrafebotSlopes = cg_strafebotSlopeHandling.integer;
+		cg_pmove.positionChangedOutsidePmove = !VectorCompare(cg_pmove.ps->origin, oldPos);
 		Pmove (&cg_pmove);
+		VectorCopy(cg_pmove.ps->origin,oldPos );
 		cg.roll = cg_pmove.roll;
 		cg.accelMiss = cg_pmove.accelMiss;
 		cg.wishSpeed = cg_pmove.wishSpeed;

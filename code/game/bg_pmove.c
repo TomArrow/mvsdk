@@ -5540,6 +5540,7 @@ void PmoveSingle (pmove_t *pmove) {
 		pmq2.cmd = pm->cmd;
 		pmq2.tracemask = pm->tracemask;
 		pmq2.trace = pm->trace;
+		pmq2.snapinitial = pm->positionChangedOutsidePmove;
 		pmq2.pointcontents = pm->pointcontents;
 		VectorCopy(pm->mins, pmq2.mins);
 		VectorCopy(pm->maxs, pmq2.maxs);

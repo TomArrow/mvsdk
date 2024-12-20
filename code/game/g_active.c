@@ -809,11 +809,13 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		//Set up bg entity data
 		pm.baseEnt = (bgEntity_t*)g_entities;
 		pm.entSize = sizeof(gentity_t);
+		pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 
 		// perform a pmove
 		Pmove (&pm);
 		// save results of pmove
 		VectorCopy( client->ps.origin, ent->s.origin );
+		VectorCopy( client->ps.origin, client->oldPostPmovePosition ); // for q2 snapping mode
 
 		G_TouchTriggers( ent );
 		trap_UnlinkEntity( ent );
@@ -2202,6 +2204,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.handleStrafebotSlopes = g_strafebotSlopeHandling.integer;
 	pm.roll = ent->client->pers.roll;
 	DF_PreDeltaAngleChange(ent->client);
+	pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 	Pmove (&pm);
 	DF_PostDeltaAngleChange(ent->client,!(ent->client->sess.raceStyle.runFlags & RFL_BOT)); // qfalse if strafebot
 	ent->client->pers.roll = pm.roll;
@@ -2216,6 +2219,7 @@ void ClientThink_real( gentity_t *ent ) {
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);
 	VectorCopy(pm.mins, ent->client->postPmoveMins);
 	VectorCopy(pm.maxs, ent->client->postPmoveMaxs);
+	VectorCopy(client->ps.origin, client->oldPostPmovePosition); // for q2 snapping mode
 
 	UpdateClientPastFpsStats(ent,msec);
 	//client->lastMsecValue = msec;

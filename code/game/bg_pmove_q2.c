@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../game/bg_public.h"
 
 
-//#define AUTHENTIC_Q2SNAP
+#define AUTHENTIC_Q2SNAP
 
 #define	STEPSIZE	18
 
@@ -32,8 +32,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 typedef struct
 {
-	//vec3_t		origin;			// full float precision
-	//vec3_t		velocity;		// full float precision
+	vec3_t		origin;			// full float precision
+	vec3_t		velocity;		// full float precision
 
 
 	vec3_t		forward, right, up;
@@ -135,7 +135,7 @@ void PMQ2_StepSlideMove_(void)
 
 	numbumps = 4;
 
-	VectorCopy(pmq2->ps->velocity, primal_velocity);
+	VectorCopy(pmlq2.velocity, primal_velocity);
 	numplanes = 0;
 
 	time_left = pmlq2.frametime;
@@ -143,19 +143,19 @@ void PMQ2_StepSlideMove_(void)
 	for (bumpcount = 0; bumpcount < numbumps; bumpcount++)
 	{
 		for (i = 0; i < 3; i++)
-			end[i] = pmq2->ps->origin[i] + time_left * pmq2->ps->velocity[i];
+			end[i] = pmlq2.origin[i] + time_left * pmlq2.velocity[i];
 
-		pmq2->trace(&trace,pmq2->ps->origin, pmq2->mins, pmq2->maxs, end,pmq2->ps->clientNum,pmq2->tracemask);
+		pmq2->trace(&trace,pmlq2.origin, pmq2->mins, pmq2->maxs, end,pmq2->ps->clientNum,pmq2->tracemask);
 
 		if (trace.allsolid)
 		{	// entity is trapped in another solid
-			pmq2->ps->velocity[2] = 0;	// don't build up falling damage
+			pmlq2.velocity[2] = 0;	// don't build up falling damage
 			return;
 		}
 
 		if (trace.fraction > 0)
 		{	// actually covered some distance
-			VectorCopy(trace.endpos, pmq2->ps->origin);
+			VectorCopy(trace.endpos, pmlq2.origin);
 			numplanes = 0;
 		}
 
@@ -174,7 +174,7 @@ void PMQ2_StepSlideMove_(void)
 		// slide along this plane
 		if (numplanes >= MAX_CLIP_PLANES)
 		{	// this shouldn't really happen
-			VectorCopy(vec3_origin, pmq2->ps->velocity);
+			VectorCopy(vec3_origin, pmlq2.velocity);
 			break;
 		}
 
@@ -189,36 +189,36 @@ void PMQ2_StepSlideMove_(void)
 		//
 		if (numplanes == 1)
 		{	// go along this plane
-			VectorCopy(pmq2->ps->velocity, dir);
+			VectorCopy(pmlq2.velocity, dir);
 			VectorNormalize(dir);
 			rub = 1.0 + 0.5 * DotProduct(dir, planes[0]);
 
 			// slide along the plane
-			PMQ2_ClipVelocity(pmq2->ps->velocity, planes[0], pmq2->ps->velocity, 1.01);
+			PMQ2_ClipVelocity(pmlq2.velocity, planes[0], pmlq2.velocity, 1.01);
 			// rub some extra speed off on xy axis
 			// not on Z, or you can scrub down walls
-			pmq2->ps->velocity[0] *= rub;
-			pmq2->ps->velocity[1] *= rub;
-			pmq2->ps->velocity[2] *= rub;
+			pmlq2.velocity[0] *= rub;
+			pmlq2.velocity[1] *= rub;
+			pmlq2.velocity[2] *= rub;
 		}
 		else if (numplanes == 2)
 		{	// go along the crease
-			VectorCopy(pmq2->ps->velocity, dir);
+			VectorCopy(pmlq2.velocity, dir);
 			VectorNormalize(dir);
 			rub = 1.0 + 0.5 * DotProduct(dir, planes[0]);
 
 			// slide along the plane
 			CrossProduct(planes[0], planes[1], dir);
-			d = DotProduct(dir, pmq2->ps->velocity);
-			VectorScale(dir, d, pmq2->ps->velocity);
+			d = DotProduct(dir, pmlq2.velocity);
+			VectorScale(dir, d, pmlq2.velocity);
 
 			// rub some extra speed off
-			VectorScale(pmq2->ps->velocity, rub, pmq2->ps->velocity);
+			VectorScale(pmlq2.velocity, rub, pmlq2.velocity);
 		}
 		else
 		{
 			//			Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
-			VectorCopy(vec3_origin, pmq2->ps->velocity);
+			VectorCopy(vec3_origin, pmlq2.velocity);
 			break;
 		}
 
@@ -228,11 +228,11 @@ void PMQ2_StepSlideMove_(void)
 		//
 		for (i = 0; i < numplanes; i++)
 		{
-			PMQ2_ClipVelocity(pmq2->ps->velocity, planes[i], pmq2->ps->velocity, 1.01);
+			PMQ2_ClipVelocity(pmlq2.velocity, planes[i], pmlq2.velocity, 1.01);
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
-					if (DotProduct(pmq2->ps->velocity, planes[j]) < 0)
+					if (DotProduct(pmlq2.velocity, planes[j]) < 0)
 						break;	// not ok
 				}
 			if (j == numplanes)
@@ -247,28 +247,28 @@ void PMQ2_StepSlideMove_(void)
 			if (numplanes != 2)
 			{
 				//				Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
-				VectorCopy(vec3_origin, pmq2->ps->velocity);
+				VectorCopy(vec3_origin, pmlq2.velocity);
 				break;
 			}
 			CrossProduct(planes[0], planes[1], dir);
-			d = DotProduct(dir, pmq2->ps->velocity);
-			VectorScale(dir, d, pmq2->ps->velocity);
+			d = DotProduct(dir, pmlq2.velocity);
+			VectorScale(dir, d, pmlq2.velocity);
 		}
 #endif
 		//
 		// if velocity is against the original velocity, stop dead
 		// to avoid tiny occilations in sloping corners
 		//
-		if (DotProduct(pmq2->ps->velocity, primal_velocity) <= 0)
+		if (DotProduct(pmlq2.velocity, primal_velocity) <= 0)
 		{
-			VectorCopy(vec3_origin, pmq2->ps->velocity);
+			VectorCopy(vec3_origin, pmlq2.velocity);
 			break;
 		}
 	}
 
 	if (pmq2->ps->pm_time)
 	{
-		VectorCopy(primal_velocity, pmq2->ps->velocity);
+		VectorCopy(primal_velocity, pmlq2.velocity);
 	}
 }
 
@@ -287,13 +287,13 @@ void PMQ2_StepSlideMove(void)
 	//	vec3_t		delta;
 	vec3_t		up, down;
 
-	VectorCopy(pmq2->ps->origin, start_o);
-	VectorCopy(pmq2->ps->velocity, start_v);
+	VectorCopy(pmlq2.origin, start_o);
+	VectorCopy(pmlq2.velocity, start_v);
 
 	PMQ2_StepSlideMove_();
 
-	VectorCopy(pmq2->ps->origin, down_o);
-	VectorCopy(pmq2->ps->velocity, down_v);
+	VectorCopy(pmlq2.origin, down_o);
+	VectorCopy(pmlq2.velocity, down_v);
 
 	VectorCopy(start_o, up);
 	up[2] += STEPSIZE;
@@ -304,28 +304,28 @@ void PMQ2_StepSlideMove(void)
 		return;		// can't step up
 
 	// try sliding above
-	VectorCopy(up, pmq2->ps->origin);
-	VectorCopy(start_v, pmq2->ps->velocity);
+	VectorCopy(up, pmlq2.origin);
+	VectorCopy(start_v, pmlq2.velocity);
 
 	PMQ2_StepSlideMove_();
 
 	// push down the final amount
-	VectorCopy(pmq2->ps->origin, down);
+	VectorCopy(pmlq2.origin, down);
 	down[2] -= STEPSIZE;
-	pmq2->trace(&trace, pmq2->ps->origin, pmq2->mins, pmq2->maxs, down, pmq2->ps->clientNum, pmq2->tracemask);
+	pmq2->trace(&trace, pmlq2.origin, pmq2->mins, pmq2->maxs, down, pmq2->ps->clientNum, pmq2->tracemask);
 	if (!trace.allsolid)
 	{
-		VectorCopy(trace.endpos, pmq2->ps->origin);
+		VectorCopy(trace.endpos, pmlq2.origin);
 	}
 
 #if 0
-	VectorSubtract(pmq2->ps->origin, up, delta);
+	VectorSubtract(pmlq2.origin, up, delta);
 	up_dist = DotProduct(delta, start_v);
 
 	VectorSubtract(down_o, start_o, delta);
 	down_dist = DotProduct(delta, start_v);
 #else
-	VectorCopy(pmq2->ps->origin, up);
+	VectorCopy(pmlq2.origin, up);
 
 	// decide which one went farther
 	down_dist = (down_o[0] - start_o[0]) * (down_o[0] - start_o[0])
@@ -336,13 +336,13 @@ void PMQ2_StepSlideMove(void)
 
 	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
 	{
-		VectorCopy(down_o, pmq2->ps->origin);
-		VectorCopy(down_v, pmq2->ps->velocity);
+		VectorCopy(down_o, pmlq2.origin);
+		VectorCopy(down_v, pmlq2.velocity);
 		return;
 	}
 	//!! Special case
 	// if we were walking along a plane, then we need to copy the Z over
-	pmq2->ps->velocity[2] = down_v[2];
+	pmlq2.velocity[2] = down_v[2];
 }
 
 
@@ -360,7 +360,7 @@ void PMQ2_Friction(void)
 	float	friction;
 	float	drop;
 
-	vel = pmq2->ps->velocity;
+	vel = pmlq2.velocity;
 
 	speed = sqrt(vel[0] * vel[0] + vel[1] * vel[1] + vel[2] * vel[2]);
 	if (speed < 1)
@@ -410,7 +410,7 @@ void PMQ2_Accelerate(vec3_t wishdir, float wishspeed, float accel)
 	int			i;
 	float		addspeed, accelspeed, currentspeed;
 
-	currentspeed = DotProduct(pmq2->ps->velocity, wishdir);
+	currentspeed = DotProduct(pmlq2.velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
@@ -419,7 +419,7 @@ void PMQ2_Accelerate(vec3_t wishdir, float wishspeed, float accel)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
-		pmq2->ps->velocity[i] += accelspeed * wishdir[i];
+		pmlq2.velocity[i] += accelspeed * wishdir[i];
 }
 
 void PMQ2_AirAccelerate(vec3_t wishdir, float wishspeed, float accel)
@@ -429,7 +429,7 @@ void PMQ2_AirAccelerate(vec3_t wishdir, float wishspeed, float accel)
 
 	if (wishspd > 30)
 		wishspd = 30;
-	currentspeed = DotProduct(pmq2->ps->velocity, wishdir);
+	currentspeed = DotProduct(pmlq2.velocity, wishdir);
 	addspeed = wishspd - currentspeed;
 	if (addspeed <= 0)
 		return;
@@ -438,7 +438,7 @@ void PMQ2_AirAccelerate(vec3_t wishdir, float wishspeed, float accel)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
-		pmq2->ps->velocity[i] += accelspeed * wishdir[i];
+		pmlq2.velocity[i] += accelspeed * wishdir[i];
 }
 
 /*
@@ -455,7 +455,7 @@ void PMQ2_AddCurrents(vec3_t	wishvel)
 	// account for ladders
 	//
 
-	if (pmlq2.ladder && fabs(pmq2->ps->velocity[2]) <= 200)
+	if (pmlq2.ladder && fabs(pmlq2.velocity[2]) <= 200)
 	{
 		if ((pmq2->ps->viewangles[PITCH] <= -15) && (pmlq2.forwardmove > 0))
 			wishvel[2] = 200;
@@ -628,35 +628,35 @@ void PMQ2_AirMove(void)
 		PMQ2_Accelerate(wishdir, wishspeed, pmq2_accelerate);
 		if (!wishvel[2])
 		{
-			if (pmq2->ps->velocity[2] > 0)
+			if (pmlq2.velocity[2] > 0)
 			{
-				pmq2->ps->velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
-				if (pmq2->ps->velocity[2] < 0)
-					pmq2->ps->velocity[2] = 0;
+				pmlq2.velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
+				if (pmlq2.velocity[2] < 0)
+					pmlq2.velocity[2] = 0;
 			}
 			else
 			{
-				pmq2->ps->velocity[2] += pmq2->ps->gravity * pmlq2.frametime;
-				if (pmq2->ps->velocity[2] > 0)
-					pmq2->ps->velocity[2] = 0;
+				pmlq2.velocity[2] += pmq2->ps->gravity * pmlq2.frametime;
+				if (pmlq2.velocity[2] > 0)
+					pmlq2.velocity[2] = 0;
 			}
 		}
 		PMQ2_StepSlideMove();
 	}
 	else if (pmq2->ps->groundEntityNum != ENTITYNUM_NONE)
 	{	// walking on ground
-		pmq2->ps->velocity[2] = 0; //!!! this is before the accel
+		pmlq2.velocity[2] = 0; //!!! this is before the accel
 		PMQ2_Accelerate(wishdir, wishspeed, pmq2_accelerate);
 
 		// PGM	-- fix for negative trigger_gravity fields
-		//		pmq2->ps->velocity[2] = 0;
+		//		pmlq2.velocity[2] = 0;
 		if (pmq2->ps->gravity > 0)
-			pmq2->ps->velocity[2] = 0;
+			pmlq2.velocity[2] = 0;
 		else
-			pmq2->ps->velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
+			pmlq2.velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
 		// PGM
 
-		if (!pmq2->ps->velocity[0] && !pmq2->ps->velocity[1])
+		if (!pmlq2.velocity[0] && !pmlq2.velocity[1])
 			return;
 		PMQ2_StepSlideMove();
 	}
@@ -667,7 +667,7 @@ void PMQ2_AirMove(void)
 		else
 			PMQ2_Accelerate(wishdir, wishspeed, 1);
 		// add gravity
-		pmq2->ps->velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
+		pmlq2.velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
 		PMQ2_StepSlideMove();
 	}
 }
@@ -691,17 +691,17 @@ void PMQ2_CatagorizePosition(void)
 	// is on ground
 
 	// see if standing on something solid	
-	point[0] = pmq2->ps->origin[0];
-	point[1] = pmq2->ps->origin[1];
-	point[2] = pmq2->ps->origin[2] - 0.25;
-	if (pmq2->ps->velocity[2] > 180) //!!ZOID changed from 100 to 180 (ramp accel)
+	point[0] = pmlq2.origin[0];
+	point[1] = pmlq2.origin[1];
+	point[2] = pmlq2.origin[2] - 0.25;
+	if (pmlq2.velocity[2] > 180) //!!ZOID changed from 100 to 180 (ramp accel)
 	{
 		//pmq2->ps->pm_flags &= ~PMF_ON_GROUND;
 		pmq2->ps->groundEntityNum = ENTITYNUM_NONE;
 	}
 	else
 	{
-		pmq2->trace(&trace, pmq2->ps->origin, pmq2->mins, pmq2->maxs, point, pmq2->ps->clientNum, pmq2->tracemask);
+		pmq2->trace(&trace, pmlq2.origin, pmq2->mins, pmq2->maxs, point, pmq2->ps->clientNum, pmq2->tracemask);
 		pmlq2.groundplane = trace.plane;
 		//pmlq2.groundsurface = trace.surface;
 		pmlq2.surfaceFlags = trace.surfaceFlags;
@@ -730,11 +730,11 @@ void PMQ2_CatagorizePosition(void)
 			{	// just hit the ground
 				//pmq2->ps->pm_flags |= PMF_ON_GROUND;
 				// don't do landing time if we were just going down a slope
-				if (pmq2->ps->velocity[2] < -200)
+				if (pmlq2.velocity[2] < -200)
 				{
 					pmq2->ps->pm_flags |= PMF_TIME_LAND;
 					// don't allow another jump for a little while
-					if (pmq2->ps->velocity[2] < -400)
+					if (pmlq2.velocity[2] < -400)
 						pmq2->ps->pm_time = 25;
 					else
 						pmq2->ps->pm_time = 18;
@@ -743,8 +743,8 @@ void PMQ2_CatagorizePosition(void)
 		}
 
 #if 0
-		if (trace.fraction < 1.0 && trace.ent && pmq2->ps->velocity[2] < 0)
-			pmq2->ps->velocity[2] = 0;
+		if (trace.fraction < 1.0 && trace.ent && pmlq2.velocity[2] < 0)
+			pmlq2.velocity[2] = 0;
 #endif
 
 		if (pmq2->numtouch < MAXTOUCH && trace.entityNum != ENTITYNUM_NONE)
@@ -763,19 +763,19 @@ void PMQ2_CatagorizePosition(void)
 	sample2 = pmq2->ps->viewheight - pmq2->mins[2];
 	sample1 = sample2 / 2;
 
-	point[2] = pmq2->ps->origin[2] + pmq2->mins[2] + 1;
+	point[2] = pmlq2.origin[2] + pmq2->mins[2] + 1;
 	cont = pmq2->pointcontents(point,pmq2->ps->clientNum);
 
 	if (cont & MASK_WATER)
 	{
 		pmq2->watertype = cont;
 		pmq2->waterlevel = 1;
-		point[2] = pmq2->ps->origin[2] + pmq2->mins[2] + sample1;
+		point[2] = pmlq2.origin[2] + pmq2->mins[2] + sample1;
 		cont = pmq2->pointcontents(point,pmq2->ps->clientNum);
 		if (cont & MASK_WATER)
 		{
 			pmq2->waterlevel = 2;
-			point[2] = pmq2->ps->origin[2] + pmq2->mins[2] + sample2;
+			point[2] = pmlq2.origin[2] + pmq2->mins[2] + sample2;
 			cont = pmq2->pointcontents(point, pmq2->ps->clientNum);
 			if (cont & MASK_WATER)
 				pmq2->waterlevel = 3;
@@ -814,15 +814,15 @@ void PMQ2_CheckJump(void)
 	{	// swimming, not jumping
 		pmq2->ps->groundEntityNum = ENTITYNUM_NONE;
 
-		if (pmq2->ps->velocity[2] <= -300)
+		if (pmlq2.velocity[2] <= -300)
 			return;
 
 		if (pmq2->watertype == CONTENTS_WATER)
-			pmq2->ps->velocity[2] = 100;
+			pmlq2.velocity[2] = 100;
 		else if (pmq2->watertype == CONTENTS_SLIME)
-			pmq2->ps->velocity[2] = 80;
+			pmlq2.velocity[2] = 80;
 		else
-			pmq2->ps->velocity[2] = 50;
+			pmlq2.velocity[2] = 50;
 		return;
 	}
 
@@ -832,9 +832,9 @@ void PMQ2_CheckJump(void)
 	pmq2->ps->pm_flags |= PMF_JUMP_HELD;
 
 	pmq2->ps->groundEntityNum = ENTITYNUM_NONE;
-	pmq2->ps->velocity[2] += 270;
-	if (pmq2->ps->velocity[2] < 270)
-		pmq2->ps->velocity[2] = 270;
+	pmlq2.velocity[2] += 270;
+	if (pmlq2.velocity[2] < 270)
+		pmlq2.velocity[2] = 270;
 }
 
 
@@ -861,8 +861,8 @@ void PMQ2_CheckSpecialMovement(void)
 	flatforward[2] = 0;
 	VectorNormalize(flatforward);
 
-	VectorMA(pmq2->ps->origin, 1, flatforward, spot);
-	pmq2->trace(&trace, pmq2->ps->origin, pmq2->mins, pmq2->maxs, spot, pmq2->ps->clientNum, pmq2->tracemask);
+	VectorMA(pmlq2.origin, 1, flatforward, spot);
+	pmq2->trace(&trace, pmlq2.origin, pmq2->mins, pmq2->maxs, spot, pmq2->ps->clientNum, pmq2->tracemask);
 	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
 		pmlq2.ladder = qtrue;
 
@@ -870,7 +870,7 @@ void PMQ2_CheckSpecialMovement(void)
 	if (pmq2->waterlevel != 2)
 		return;
 
-	VectorMA(pmq2->ps->origin, 30, flatforward, spot);
+	VectorMA(pmlq2.origin, 30, flatforward, spot);
 	spot[2] += 4;
 	cont = pmq2->pointcontents(spot, pmq2->ps->clientNum);
 	if (!(cont & CONTENTS_SOLID))
@@ -881,8 +881,8 @@ void PMQ2_CheckSpecialMovement(void)
 	if (cont)
 		return;
 	// jump out of water
-	VectorScale(flatforward, 50, pmq2->ps->velocity);
-	pmq2->ps->velocity[2] = 350;
+	VectorScale(flatforward, 50, pmlq2.velocity);
+	pmlq2.velocity[2] = 350;
 
 	pmq2->ps->pm_flags |= PMF_TIME_WATERJUMP;
 	pmq2->ps->pm_time = 255;
@@ -910,10 +910,10 @@ void PMQ2_FlyMove(qboolean doclip)
 
 	// friction
 
-	speed = VectorLength(pmq2->ps->velocity);
+	speed = VectorLength(pmlq2.velocity);
 	if (speed < 1)
 	{
-		VectorCopy(vec3_origin, pmq2->ps->velocity);
+		VectorCopy(vec3_origin, pmlq2.velocity);
 	}
 	else
 	{
@@ -929,7 +929,7 @@ void PMQ2_FlyMove(qboolean doclip)
 			newspeed = 0;
 		newspeed /= speed;
 
-		VectorScale(pmq2->ps->velocity, newspeed, pmq2->ps->velocity);
+		VectorScale(pmlq2.velocity, newspeed, pmlq2.velocity);
 	}
 
 	// accelerate
@@ -956,7 +956,7 @@ void PMQ2_FlyMove(qboolean doclip)
 	}
 
 
-	currentspeed = DotProduct(pmq2->ps->velocity, wishdir);
+	currentspeed = DotProduct(pmlq2.velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0)
 		return;
@@ -965,19 +965,19 @@ void PMQ2_FlyMove(qboolean doclip)
 		accelspeed = addspeed;
 
 	for (i = 0; i < 3; i++)
-		pmq2->ps->velocity[i] += accelspeed * wishdir[i];
+		pmlq2.velocity[i] += accelspeed * wishdir[i];
 
 	if (doclip) {
 		for (i = 0; i < 3; i++)
-			end[i] = pmq2->ps->origin[i] + pmlq2.frametime * pmq2->ps->velocity[i];
+			end[i] = pmlq2.origin[i] + pmlq2.frametime * pmlq2.velocity[i];
 
-		pmq2->trace(&trace, pmq2->ps->origin, pmq2->mins, pmq2->maxs, end, pmq2->ps->clientNum, pmq2->tracemask);
+		pmq2->trace(&trace, pmlq2.origin, pmq2->mins, pmq2->maxs, end, pmq2->ps->clientNum, pmq2->tracemask);
 
-		VectorCopy(trace.endpos, pmq2->ps->origin);
+		VectorCopy(trace.endpos, pmlq2.origin);
 	}
 	else {
 		// move
-		VectorMA(pmq2->ps->origin, pmlq2.frametime, pmq2->ps->velocity, pmq2->ps->origin);
+		VectorMA(pmlq2.origin, pmlq2.frametime, pmlq2.velocity, pmlq2.origin);
 	}
 }
 
@@ -1025,7 +1025,7 @@ void PMQ2_CheckDuck(void)
 		{
 			// try to stand up
 			pmq2->maxs[2] = 32;
-			pmq2->trace(&trace, pmq2->ps->origin, pmq2->mins, pmq2->maxs, pmq2->ps->origin, pmq2->ps->clientNum, pmq2->tracemask);
+			pmq2->trace(&trace, pmlq2.origin, pmq2->mins, pmq2->maxs, pmlq2.origin, pmq2->ps->clientNum, pmq2->tracemask);
 			if (!trace.allsolid)
 				pmq2->ps->pm_flags &= ~PMF_DUCKED;
 		}
@@ -1058,16 +1058,16 @@ void PMQ2_DeadMove(void)
 
 	// extra friction
 
-	forward = VectorLength(pmq2->ps->velocity);
+	forward = VectorLength(pmlq2.velocity);
 	forward -= 20;
 	if (forward <= 0)
 	{
-		VectorClear(pmq2->ps->velocity);
+		VectorClear(pmlq2.velocity);
 	}
 	else
 	{
-		VectorNormalize(pmq2->ps->velocity);
-		VectorScale(pmq2->ps->velocity, forward, pmq2->ps->velocity);
+		VectorNormalize(pmlq2.velocity);
+		VectorScale(pmlq2.velocity, forward, pmlq2.velocity);
 	}
 }
 
@@ -1082,7 +1082,11 @@ qboolean	PMQ2_GoodPosition(void)
 		return qtrue;
 
 	for (i = 0; i < 3; i++)
-		origin[i] = end[i] = pmq2->ps->origin[i];// *0.125;
+#ifdef AUTHENTIC_Q2SNAP
+		origin[i] = end[i] = pmq2->ps->origin[i] *0.125;
+#else
+		origin[i] = end[i] = pmq2->ps->origin[i];
+#endif
 	pmq2->trace(&trace, origin, pmq2->mins, pmq2->maxs, end, pmq2->ps->clientNum, pmq2->tracemask);
 
 	return !trace.allsolid;
@@ -1100,7 +1104,8 @@ void PMQ2_SnapPosition(void)
 {
 	int		sign[3];
 	int		i, j, bits;
-	short	base[3];
+	//short	base[3];
+	float	base[3]; // this isn't 100% authentic but it should be authentic in the range of short in any case and way beyond it too for a while
 	// try all single bits first
 	static int jitterbits[8] = { 0,4,1,2,3,5,6,7 };
 
@@ -1112,16 +1117,16 @@ void PMQ2_SnapPosition(void)
 
 	// snap velocity to eigths
 	for (i = 0; i < 3; i++)
-		pmq2->ps->velocity[i] = 0.125f * (int)(pmq2->ps->velocity[i] * 8);
+		pmq2->ps->velocity[i] = (int)(pmlq2.velocity[i] * 8);
 
 	for (i = 0; i < 3; i++)
 	{
-		if (pmq2->ps->origin[i] >= 0)
+		if (pmlq2.origin[i] >= 0)
 			sign[i] = 1;
 		else
 			sign[i] = -1;
-		pmq2->ps->origin[i] = (int)(pmq2->ps->origin[i] * 8);
-		if (pmq2->ps->origin[i] * 0.125 == pmq2->ps->origin[i])
+		pmq2->ps->origin[i] = (int)(pmlq2.origin[i] * 8);
+		if (pmq2->ps->origin[i] * 0.125 == pmlq2.origin[i])
 			sign[i] = 0;
 	}
 	VectorCopy(pmq2->ps->origin, base);
@@ -1173,9 +1178,9 @@ void PMQ2_InitialSnapPosition(void)
 				pmq2->ps->origin[0] = base[0] + x;
 				if (PMQ2_GoodPosition())
 				{
-					pmq2->ps->origin[0] = pmq2->ps->origin[0] * 0.125;
-					pmq2->ps->origin[1] = pmq2->ps->origin[1] * 0.125;
-					pmq2->ps->origin[2] = pmq2->ps->origin[2] * 0.125;
+					pmlq2.origin[0] = pmq2->ps->origin[0] * 0.125;
+					pmlq2.origin[1] = pmq2->ps->origin[1] * 0.125;
+					pmlq2.origin[2] = pmq2->ps->origin[2] * 0.125;
 					VectorCopy(pmq2->ps->origin, pmlq2.previous_origin);
 					return;
 				}
@@ -1195,8 +1200,13 @@ PMQ2_InitialSnapPosition
 void PMQ2_InitialSnapPosition(void)
 {
 	int        x, y, z;
-	short      base[3];
-	static int offset[3] = { 0, -1, 1 };
+#ifdef AUTHENTIC_Q2SNAP
+	float      base[3]; // we still change them to float because our origin number is a float. should still behave the same at least within the range of a short, but allows larger maps to work properly
+	static float offset[3] = { 0, -1, 1 }; // should behave like integer math in smaller ranges
+#else
+	float      base[3];
+	static float offset[3] = { 0, -0.125, 0.125 };
+#endif
 
 	VectorCopy(pmq2->ps->origin, base);
 
@@ -1207,6 +1217,15 @@ void PMQ2_InitialSnapPosition(void)
 			for (x = 0; x < 3; x++) {
 				pmq2->ps->origin[0] = base[0] + offset[x];
 				if (PMQ2_GoodPosition()) {
+#ifdef AUTHENTIC_Q2SNAP
+					pmlq2.origin[0] = pmq2->ps->origin[0] * 0.125;
+					pmlq2.origin[1] = pmq2->ps->origin[1] * 0.125;
+					pmlq2.origin[2] = pmq2->ps->origin[2] * 0.125;
+#else
+					pmlq2.origin[0] = pmq2->ps->origin[0];
+					pmlq2.origin[1] = pmq2->ps->origin[1];
+					pmlq2.origin[2] = pmq2->ps->origin[2];
+#endif
 					VectorCopy(pmq2->ps->origin, pmlq2.previous_origin);
 					return;
 				}
@@ -1276,6 +1295,35 @@ void PmoveQ2(pmoveq2_t* pmove)
 	// clear all pmove local vars
 	memset(&pmlq2, 0, sizeof(pmlq2));
 
+
+#ifdef AUTHENTIC_Q2SNAP
+	pmq2->ps->origin[0] = (int)(pmq2->ps->origin[0] * 8.0f);
+	pmq2->ps->origin[1] = (int)(pmq2->ps->origin[1] * 8.0f);
+	pmq2->ps->origin[2] = (int)(pmq2->ps->origin[2] * 8.0f);
+	
+	pmq2->ps->velocity[0] = (int)(pmq2->ps->velocity[0] * 8.0f);
+	pmq2->ps->velocity[1] = (int)(pmq2->ps->velocity[1] * 8.0f);
+	pmq2->ps->velocity[2] = (int)(pmq2->ps->velocity[2] * 8.0f);
+
+	// convert origin and velocity to float values
+	pmlq2.origin[0] = pmq2->ps->origin[0] * 0.125;
+	pmlq2.origin[1] = pmq2->ps->origin[1] * 0.125;
+	pmlq2.origin[2] = pmq2->ps->origin[2] * 0.125;
+
+	pmlq2.velocity[0] = pmq2->ps->velocity[0] * 0.125;
+	pmlq2.velocity[1] = pmq2->ps->velocity[1] * 0.125;
+	pmlq2.velocity[2] = pmq2->ps->velocity[2] * 0.125;
+#else
+	// convert origin and velocity to float values
+	pmlq2.origin[0] = pmq2->ps->origin[0];
+	pmlq2.origin[1] = pmq2->ps->origin[1];
+	pmlq2.origin[2] = pmq2->ps->origin[2];
+
+	pmlq2.velocity[0] = pmq2->ps->velocity[0];
+	pmlq2.velocity[1] = pmq2->ps->velocity[1];
+	pmlq2.velocity[2] = pmq2->ps->velocity[2];
+#endif
+
 	pmlq2.msec = pmq2->cmd.serverTime - pmq2->ps->commandTime;
 	pmlq2.forwardmove = (int)pmq2->cmd.forwardmove * 500 / 127;//adapt from q3 range
 	pmlq2.rightmove = (int)pmq2->cmd.rightmove * 500 / 127;//adapt from q3 range
@@ -1291,7 +1339,18 @@ void PmoveQ2(pmoveq2_t* pmove)
 	if (pmq2->ps->pm_type == PM_SPECTATOR)
 	{
 		PMQ2_FlyMove(qfalse);
+#ifdef AUTHENTIC_Q2SNAP
 		PMQ2_SnapPosition();
+		pmq2->ps->origin[0] *= 0.125f;
+		pmq2->ps->origin[1] *= 0.125f;
+		pmq2->ps->origin[2] *= 0.125f;
+		pmq2->ps->velocity[0] *= 0.125f;
+		pmq2->ps->velocity[1] *= 0.125f;
+		pmq2->ps->velocity[2] *= 0.125f;
+#else 
+		VectorCopy(pmlq2.origin, pmq2->ps->origin);
+		VectorCopy(pmlq2.velocity, pmq2->ps->velocity);
+#endif
 		return;
 	}
 
@@ -1343,8 +1402,8 @@ void PmoveQ2(pmoveq2_t* pmove)
 	//else 
 	if (pmq2->ps->pm_flags & PMF_TIME_WATERJUMP)
 	{	// waterjump has no control, but falls
-		pmq2->ps->velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
-		if (pmq2->ps->velocity[2] < 0)
+		pmlq2.velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
+		if (pmlq2.velocity[2] < 0)
 		{	// cancel as soon as we are falling down again
 			pmq2->ps->pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND /*| PMF_TIME_TELEPORT*/);
 			pmq2->ps->pm_time = 0;
@@ -1377,6 +1436,18 @@ void PmoveQ2(pmoveq2_t* pmove)
 	// set groundentity, watertype, and waterlevel for final spot
 	PMQ2_CatagorizePosition();
 
+
+#ifdef AUTHENTIC_Q2SNAP
 	PMQ2_SnapPosition();
+	pmq2->ps->origin[0] *= 0.125f;
+	pmq2->ps->origin[1] *= 0.125f;
+	pmq2->ps->origin[2] *= 0.125f;
+	pmq2->ps->velocity[0] *= 0.125f;
+	pmq2->ps->velocity[1] *= 0.125f;
+	pmq2->ps->velocity[2] *= 0.125f;
+#else 
+	VectorCopy(pmlq2.origin,pmq2->ps->origin);
+	VectorCopy(pmlq2.velocity,pmq2->ps->velocity);
+#endif
 }
 
