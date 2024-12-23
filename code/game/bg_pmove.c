@@ -5564,6 +5564,7 @@ void PmoveSingle (pmove_t *pmove) {
 		pmcss.pointcontents = pm->pointcontents;
 		VectorCopy(pm->mins, pmcss.mins);
 		VectorCopy(pm->maxs, pmcss.maxs);
+		pmcss.oldbuttons = pm->oldButtons;
 		PmoveCSS(&pmcss);
 		PM_SetAnimAfterQ2();
 		pm->ps->commandTime = pm->cmd.serverTime;

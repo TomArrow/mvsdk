@@ -47,7 +47,10 @@ typedef struct
 
 	// command (in)
 	usercmd_t		cmd;
+	int				oldbuttons;
 	qboolean		snapinitial;	// if s has been changed outside pmove
+
+	qboolean		crouchSpeedReduced;
 
 	// results (out)
 	int			numtouch;

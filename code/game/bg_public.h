@@ -281,6 +281,7 @@ typedef struct {
 	// command (in)
 	usercmd_t	cmd;
 	usercmd_t	unalteredCmd;
+	int			oldButtons;
 	int			tracemask;			// collide against these types of surfaces
 	int			debugLevel;			// if set, diagnostic output will be printed
 	qboolean	noFootsteps;		// if the game is setup for no footsteps by the server
@@ -336,6 +337,7 @@ typedef struct {
 	float			accelMiss;
 	float			wishSpeed;
 	qboolean		handleStrafebotSlopes;
+
 } pmove_t;
 
 extern	pmove_t		*pm;

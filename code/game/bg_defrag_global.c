@@ -70,7 +70,7 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 	{ "Bounce" },//5
 	{ "Pinball" },//6
 	{ "CSS" },//7
-	{ "Quake2" },//7
+	{ "Q2" },//7
 };
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
@@ -233,7 +233,7 @@ int RaceNameToInteger(char* style) {
 		return MV_BOUNCE;
 	if (!Q_stricmp(style, "pinball"))
 		return MV_PINBALL;
-	if (!Q_stricmp(style, "quake2"))
+	if (!Q_stricmp(style, "q2") || !Q_stricmp(style, "quake2"))
 		return MV_Q2;
 	if (!Q_stricmp(style, "css"))
 		return MV_CSS;

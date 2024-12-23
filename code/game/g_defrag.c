@@ -1016,8 +1016,8 @@ qboolean ValidRaceSettings(gentity_t* player)
 
 	style = cl->sess.raceStyle.movementStyle;
 
-	//if (style == MV_OCPM)
-	//	return qfalse;//temp
+	if (style == MV_CSS)
+		return qfalse;//work in progress
 
 	//if (cl->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
 	//	return qfalse;
@@ -2119,6 +2119,10 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	//if (!MovementStyleHasAntiLoop(runInfo->raceStyle.movementStyle)) {
 	//	runInfo->raceStyle.runFlags &= ~RFL_ANTILOOP; // remove antiloop from runs that dont even qualify
 	//}
+	if (runInfo->raceStyle.movementStyle == MV_CSS || runInfo->raceStyle.movementStyle == MV_Q2) {
+		runInfo->raceStyle.runFlags &= ~RFL_BOT; // bot doesnt work for these atm so may as well remove that.
+	}
+
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
 	Q_strncpyz(runInfo->coursename, Info_ValueForKey(serverInfo, "mapname"), sizeof(runInfo->coursename));

@@ -883,6 +883,7 @@ void CG_PredictPlayerState( void ) {
 	usercmd_t	temporaryCmd;
 	vec3_t		prePmoveVelocity;
 	vec3_t		oldPos;
+	int			oldButtons = 0;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
@@ -1065,6 +1066,7 @@ void CG_PredictPlayerState( void ) {
 
 		// don't do anything if the time is before the snapshot player time
 		if ( cg_pmove.cmd.serverTime <= cg.predictedPlayerState.commandTime ) {
+			oldButtons = cg_pmove.cmd.buttons;
 			continue;
 		}
 
@@ -1072,6 +1074,9 @@ void CG_PredictPlayerState( void ) {
 		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime && !(cg_specialPredictPhysicsFps.integer && cg_com_physicsFps.integer && latestCmd.serverTime < cg.time && cg_pmove.cmd.serverTime <= cg.time)) {
 			continue;
 		}
+
+		cg_pmove.oldButtons = oldButtons;
+		oldButtons = cg_pmove.cmd.buttons;
 
 		// check for a prediction error from last frame
 		// on a lan, this will often be the exact value

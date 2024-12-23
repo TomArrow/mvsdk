@@ -45,11 +45,11 @@ typedef struct
 	cplane_t	groundplane;
 	int			groundcontents;
 	int			surfaceFlags;
-	trace_t		groundTrace;
+	//trace_t		groundTrace;
 	qboolean	groundFound;
 
 
-	int			forwardmove, rightmove, upmove;
+	float		forwardmove, rightmove, upmove;
 
 	vec3_t		previous_origin;
 	qboolean	ladder;
@@ -75,6 +75,35 @@ float	pmcss_waterspeed = 400;
   walking up a step should kill some velocity
 
 */
+
+
+
+/*
+===============
+PM_AddTouchEnt
+===============
+*/
+static void PMCSS_AddTouchEnt(int entityNum) {
+	int		i;
+
+	if (entityNum == ENTITYNUM_WORLD) {
+		return;
+	}
+	if (pmcss->numtouch == MAXTOUCH) {
+		return;
+	}
+
+	// see if it is already added
+	for (i = 0; i < pmcss->numtouch; i++) {
+		if (pmcss->touchents[i] == entityNum) {
+			return;
+		}
+	}
+
+	// add it
+	pmcss->touchents[pmcss->numtouch] = entityNum;
+	pmcss->numtouch++;
+}
 
 
 /*
@@ -673,6 +702,37 @@ void PMCSS_AirMove(void)
 }
 
 
+void PMCSS_FancyGroundTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask) {
+	vec3_t minsArr[4], maxsArr[4];
+	vec3_t oldEndPos;
+	float oldFraction = results->fraction;
+	int i;
+	for (i = 0; i < 4; i++) {
+		VectorCopy(mins,minsArr[i]);
+		VectorCopy(maxs,maxsArr[i]);
+	}
+	maxsArr[0][0] = MIN(0, maxsArr[0][0]);
+	maxsArr[0][1] = MIN(0, maxsArr[0][1]);
+	minsArr[1][0] = MAX(0, maxsArr[1][0]);
+	minsArr[1][1] = MAX(0, maxsArr[1][1]);
+	maxsArr[2][0] = MIN(0, maxsArr[2][0]);
+	minsArr[2][1] = MAX(0, minsArr[2][1]);
+	minsArr[3][0] = MAX(0, minsArr[3][0]);
+	maxsArr[3][1] = MIN(0, maxsArr[3][1]);
+	VectorCopy(results->endpos, oldEndPos);
+
+	for (i = 0; i < 4; i++) {
+		pm->trace(results,start,minsArr[i],maxsArr[i],end,passEntityNum,contentMask);
+		if (results->entityNum != ENTITYNUM_NONE && results->plane.normal[2] >= 0.7) {
+			goto done;
+		}
+	}
+
+done:
+	VectorCopy(oldEndPos, results->endpos);
+	results->fraction = oldFraction;
+	return;
+}
 
 /*
 =============
@@ -686,6 +746,7 @@ void PMCSS_CatagorizePosition(void)
 	trace_t		trace;
 	int			sample1;
 	int			sample2;
+	vec3_t		flatforward,spot;
 
 	// if the player hull point one unit down is solid, the player
 	// is on ground
@@ -693,66 +754,6 @@ void PMCSS_CatagorizePosition(void)
 	// see if standing on something solid	
 	point[0] = pmlcss.origin[0];
 	point[1] = pmlcss.origin[1];
-	point[2] = pmlcss.origin[2] - 0.25;
-	if (pmlcss.velocity[2] > 180) //!!ZOID changed from 100 to 180 (ramp accel)
-	{
-		//pmcss->ps->pm_flags &= ~PMF_ON_GROUND;
-		pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
-	}
-	else
-	{
-		pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, point, pmcss->ps->clientNum, pmcss->tracemask);
-		pmlcss.groundplane = trace.plane;
-		//pmlcss.groundsurface = trace.surface;
-		pmlcss.surfaceFlags = trace.surfaceFlags;
-		pmlcss.groundcontents = trace.contents;
-		pmlcss.groundFound = trace.entityNum != ENTITYNUM_NONE; // is this right?
-
-		if (trace.entityNum == ENTITYNUM_NONE || (trace.plane.normal[2] < 0.7 && !trace.startsolid))
-		{
-			pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
-			//pmcss->ps->pm_flags &= ~PMF_ON_GROUND;
-		}
-		else
-		{
-			int oldGroundEntityNum = pmcss->ps->groundEntityNum;
-			pmcss->ps->groundEntityNum = trace.entityNum;
-
-			// hitting solid ground will end a waterjump
-			if (pmcss->ps->pm_flags & PMF_TIME_WATERJUMP)
-			{
-				pmcss->ps->pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND/* | PMF_TIME_TELEPORT*/);
-				pmcss->ps->pm_time = 0;
-			}
-
-			//if (!(pmcss->ps->pm_flags & PMF_ON_GROUND))
-			if (oldGroundEntityNum == ENTITYNUM_NONE)
-			{	// just hit the ground
-				//pmcss->ps->pm_flags |= PMF_ON_GROUND;
-				// don't do landing time if we were just going down a slope
-				if (pmlcss.velocity[2] < -200)
-				{
-					pmcss->ps->pm_flags |= PMF_TIME_LAND;
-					// don't allow another jump for a little while
-					if (pmlcss.velocity[2] < -400)
-						pmcss->ps->pm_time = 25;
-					else
-						pmcss->ps->pm_time = 18;
-				}
-			}
-		}
-
-#if 0
-		if (trace.fraction < 1.0 && trace.ent && pmlcss.velocity[2] < 0)
-			pmlcss.velocity[2] = 0;
-#endif
-
-		if (pmcss->numtouch < MAXTOUCH && trace.entityNum != ENTITYNUM_NONE)
-		{
-			pmcss->touchents[pmcss->numtouch] = trace.entityNum;
-			pmcss->numtouch++;
-		}
-	}
 
 	//
 	// get waterlevel, accounting for ducking
@@ -781,6 +782,69 @@ void PMCSS_CatagorizePosition(void)
 				pmcss->waterlevel = 3;
 		}
 	}
+
+	if (pm->ps->pm_type == PM_SPECTATOR) {
+		return;
+	}
+
+	pmlcss.ladder = qfalse;
+
+	// check for ladder
+	flatforward[0] = pmlcss.forward[0];
+	flatforward[1] = pmlcss.forward[1];
+	flatforward[2] = 0;
+	VectorNormalize(flatforward);
+
+	VectorMA(pmlcss.origin, 1, flatforward, spot);
+	pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, spot, pmcss->ps->clientNum, pmcss->tracemask);
+	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
+		pmlcss.ladder = qtrue;
+
+
+
+	point[2] = pmlcss.origin[2] - 2.0;
+
+	if (pmlcss.velocity[2] > 140 || pmlcss.velocity[2]>0 && pmlcss.ladder) //!!ZOID changed from 100 to 180 (ramp accel)
+	{
+		//pmcss->ps->pm_flags &= ~PMF_ON_GROUND;
+		pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
+	}
+	else
+	{
+		qboolean ground = qtrue;
+		pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, point, pmcss->ps->clientNum, pmcss->tracemask);
+		pmlcss.groundplane = trace.plane;
+		//pmlcss.groundsurface = trace.surface;
+		pmlcss.surfaceFlags = trace.surfaceFlags;
+		pmlcss.groundcontents = trace.contents;
+		pmlcss.groundFound = trace.entityNum != ENTITYNUM_NONE; // is this right?
+
+		if (trace.entityNum == ENTITYNUM_NONE || trace.plane.normal[2] < 0.7)
+		{
+			PMCSS_FancyGroundTrace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, point, pmcss->ps->clientNum, pmcss->tracemask);
+			if (trace.entityNum == ENTITYNUM_NONE || trace.plane.normal[2] < 0.7)
+			{
+				pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
+				ground = qfalse;
+			}
+		}
+		if(ground)
+		{
+			int oldGroundEntityNum = pmcss->ps->groundEntityNum;
+			pmcss->ps->groundEntityNum = trace.entityNum;
+
+			// hitting solid ground will end a waterjump
+			pmcss->ps->rocketLockTime = 0;
+
+			if (pmcss->ps->groundEntityNum != ENTITYNUM_WORLD)
+			{
+				PMCSS_AddTouchEnt(pmcss->ps->groundEntityNum);
+			}
+		}
+
+	}
+
+	
 
 }
 
@@ -853,18 +917,11 @@ void PMCSS_CheckSpecialMovement(void)
 	if (pmcss->ps->pm_time)
 		return;
 
-	pmlcss.ladder = qfalse;
-
-	// check for ladder
 	flatforward[0] = pmlcss.forward[0];
 	flatforward[1] = pmlcss.forward[1];
 	flatforward[2] = 0;
 	VectorNormalize(flatforward);
 
-	VectorMA(pmlcss.origin, 1, flatforward, spot);
-	pmcss->trace(&trace, pmlcss.origin, pmcss->mins, pmcss->maxs, spot, pmcss->ps->clientNum, pmcss->tracemask);
-	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
-		pmlcss.ladder = qtrue;
 
 	// check for water jump
 	if (pmcss->waterlevel != 2)
@@ -981,6 +1038,15 @@ void PMCSS_FlyMove(qboolean doclip)
 	}
 }
 
+float smooth0To1(float input) {
+	return 3.0f * input * input - 2.0f * input * input * input;
+}
+
+void PMCSS_SetViewHeight(float ratio) {
+
+	pm->ps->viewheight = 47.0f * ratio + 64.0f * (1.0f - ratio);
+}
+
 
 /*
 ==============
@@ -992,6 +1058,38 @@ Sets mins, maxs, and pmcss->ps->viewheight
 void PMCSS_CheckDuck(void)
 {
 	trace_t	trace;
+	int buttons = pmcss->oldbuttons ^ pmcss->cmd.buttons;
+	int buttonsNew = buttons & pmcss->cmd.buttons;
+	int buttonsOld = buttons & pmcss->oldbuttons;
+
+
+	if (pm->ps->fd.forceRageRecoveryTime) {
+		int crouchTime = 1000 - pm->ps->fd.forceRageRecoveryTime;
+		if (crouchTime < 0) {
+			crouchTime = 0;
+		}
+		if (crouchTime > 200) {
+			pm->ps->fd.forceRageRecoveryTime = 0;
+			PMCSS_SetViewHeight(0);
+		}
+		else {
+			PMCSS_SetViewHeight(smooth0To1(1.0f-((float)crouchTime/200.0f)));
+		}
+	}
+
+	if (pm->ps->pm_type == PM_DEAD) {
+		return;
+	}
+
+	if (!pmcss->crouchSpeedReduced && (pm->ps->pm_flags & PMF_DUCKED) && pm->ps->groundEntityNum != ENTITYNUM_NONE) { // will this break with pmove_fixed?
+		pmcss->cmd.forwardmove /= 3;
+		pmcss->cmd.rightmove /= 3;
+		pmcss->cmd.upmove /= 3;
+		pmcss->crouchSpeedReduced = qtrue;
+	}
+
+	/*
+
 
 	pmcss->mins[0] = -16;
 	pmcss->mins[1] = -16;
@@ -999,14 +1097,6 @@ void PMCSS_CheckDuck(void)
 	pmcss->maxs[0] = 16;
 	pmcss->maxs[1] = 16;
 
-	/* TA: doesnt exist in jk
-	if (pmcss->ps->pm_type == PMCSS_GIB)
-	{
-		pmcss->mins[2] = 0;
-		pmcss->maxs[2] = 16;
-		pmcss->ps->viewheight = 8;
-		return;
-	}*/
 
 	pmcss->mins[2] = -24;
 
@@ -1040,7 +1130,7 @@ void PMCSS_CheckDuck(void)
 	{
 		pmcss->maxs[2] = 32;
 		pmcss->ps->viewheight = 22;
-	}
+	}*/
 }
 
 
@@ -1082,115 +1172,12 @@ qboolean	PMCSS_GoodPosition(void)
 		return qtrue;
 
 	for (i = 0; i < 3; i++)
-#ifdef AUTHENTIC_CSSSNAP
-		origin[i] = end[i] = pmcss->ps->origin[i] * 0.125;
-#else
 		origin[i] = end[i] = pmcss->ps->origin[i];
-#endif
 	pmcss->trace(&trace, origin, pmcss->mins, pmcss->maxs, end, pmcss->ps->clientNum, pmcss->tracemask);
 
 	return !trace.allsolid;
 }
 
-/*
-================
-PMCSS_SnapPosition
-
-On exit, the origin will have a value that is pre-quantized to the 0.125
-precision of the network channel and in a valid position.
-================
-*/
-void PMCSS_SnapPosition(void)
-{
-	int		sign[3];
-	int		i, j, bits;
-	//short	base[3];
-	float	base[3]; // this isn't 100% authentic but it should be authentic in the range of short in any case and way beyond it too for a while
-	// try all single bits first
-	static int jitterbits[8] = { 0,4,1,2,3,5,6,7 };
-
-#ifndef AUTHENTIC_CSSSNAP
-	return; // no need for snapping in jk2
-#else
-
-	// we don't need this in jk but we keep it for authentic feel just in case.
-
-	// snap velocity to eigths
-	for (i = 0; i < 3; i++)
-		pmcss->ps->velocity[i] = (int)(pmlcss.velocity[i] * 8);
-
-	for (i = 0; i < 3; i++)
-	{
-		if (pmlcss.origin[i] >= 0)
-			sign[i] = 1;
-		else
-			sign[i] = -1;
-		pmcss->ps->origin[i] = (int)(pmlcss.origin[i] * 8);
-		if (pmcss->ps->origin[i] * 0.125 == pmlcss.origin[i])
-			sign[i] = 0;
-	}
-	VectorCopy(pmcss->ps->origin, base);
-
-	// try all combinations
-	for (j = 0; j < 8; j++)
-	{
-		bits = jitterbits[j];
-		VectorCopy(base, pmcss->ps->origin);
-		for (i = 0; i < 3; i++)
-			if (bits & (1 << i))
-				pmcss->ps->origin[i] += sign[i];
-
-		if (PMCSS_GoodPosition())
-			return;
-	}
-
-	// go back to the last position
-	VectorCopy(pmlcss.previous_origin, pmcss->ps->origin);
-	//	Com_DPrintf ("using previous_origin\n");
-#endif
-
-
-}
-
-#if 0
-//NO LONGER USED
-/*
-================
-PMCSS_InitialSnapPosition
-
-================
-*/
-void PMCSS_InitialSnapPosition(void)
-{
-	int		x, y, z;
-	short	base[3];
-
-	VectorCopy(pmcss->ps->origin, base);
-
-	for (z = 1; z >= -1; z--)
-	{
-		pmcss->ps->origin[2] = base[2] + z;
-		for (y = 1; y >= -1; y--)
-		{
-			pmcss->ps->origin[1] = base[1] + y;
-			for (x = 1; x >= -1; x--)
-			{
-				pmcss->ps->origin[0] = base[0] + x;
-				if (PMCSS_GoodPosition())
-				{
-					pmlcss.origin[0] = pmcss->ps->origin[0] * 0.125;
-					pmlcss.origin[1] = pmcss->ps->origin[1] * 0.125;
-					pmlcss.origin[2] = pmcss->ps->origin[2] * 0.125;
-					VectorCopy(pmcss->ps->origin, pmlcss.previous_origin);
-					return;
-				}
-			}
-		}
-	}
-
-	Com_DPrintf("Bad InitialSnapPosition\n");
-}
-#else
 /*
 ================
 PMCSS_InitialSnapPosition
@@ -1200,13 +1187,8 @@ PMCSS_InitialSnapPosition
 void PMCSS_InitialSnapPosition(void)
 {
 	int        x, y, z;
-#ifdef AUTHENTIC_CSSSNAP
-	float      base[3]; // we still change them to float because our origin number is a float. should still behave the same at least within the range of a short, but allows larger maps to work properly
-	static float offset[3] = { 0, -1, 1 }; // should behave like integer math in smaller ranges
-#else
 	float      base[3];
 	static float offset[3] = { 0, -0.125, 0.125 };
-#endif
 
 	VectorCopy(pmcss->ps->origin, base);
 
@@ -1217,15 +1199,9 @@ void PMCSS_InitialSnapPosition(void)
 			for (x = 0; x < 3; x++) {
 				pmcss->ps->origin[0] = base[0] + offset[x];
 				if (PMCSS_GoodPosition()) {
-#ifdef AUTHENTIC_CSSSNAP
-					pmlcss.origin[0] = pmcss->ps->origin[0] * 0.125;
-					pmlcss.origin[1] = pmcss->ps->origin[1] * 0.125;
-					pmlcss.origin[2] = pmcss->ps->origin[2] * 0.125;
-#else
 					pmlcss.origin[0] = pmcss->ps->origin[0];
 					pmlcss.origin[1] = pmcss->ps->origin[1];
 					pmlcss.origin[2] = pmcss->ps->origin[2];
-#endif
 					VectorCopy(pmcss->ps->origin, pmlcss.previous_origin);
 					return;
 				}
@@ -1236,7 +1212,6 @@ void PMCSS_InitialSnapPosition(void)
 	//Com_DPrintf("Bad InitialSnapPosition\n");
 }
 
-#endif
 
 /*
 ================
@@ -1273,6 +1248,63 @@ void PMCSS_ClampAngles(void)
 	AngleVectors(pmcss->ps->viewangles, pmlcss.forward, pmlcss.right, pmlcss.up);
 }
 
+
+static void PMCSS_ScaleWishVel() {
+	if (pmcss->ps->pm_type != PM_NOCLIP && pmcss->ps->pm_type != PM_SPECTATOR) {
+		float maxSpeed = (pmcss->cmd.buttons & BUTTON_WALKING) ? 100 : 320;
+		float wishSpeed = sqrtf(pmlcss.forwardmove* pmlcss.forwardmove+ pmlcss.rightmove * pmlcss.rightmove + pmlcss.upmove * pmlcss.upmove);
+		if (wishSpeed > maxSpeed) {
+			float ratio = maxSpeed / wishSpeed;
+			pmlcss.forwardmove *= ratio;
+			pmlcss.rightmove *= ratio;
+			pmlcss.upmove *= ratio;
+		}
+	}
+	if (pmcss->ps->pm_type == PM_FREEZE || pmcss->ps->pm_type == PM_DEAD) {
+		pmlcss.forwardmove = 0;
+		pmlcss.rightmove = 0;
+		pmlcss.upmove = 0;
+	}
+
+}
+
+
+
+/*
+================
+PM_DropTimers
+================
+*/
+static void PMCSS_DropTimers(void) {
+
+	// drop misc timing counter
+
+	if (pmcss->ps->forceDodgeAnim) {
+		if (pmlcss.msec >= pmcss->ps->forceDodgeAnim) {
+			pmcss->ps->pm_time = 0;
+		}
+		else {
+			pmcss->ps->forceDodgeAnim -= pmlcss.msec;
+		}
+	}
+	if (pmcss->ps->fd.forceRageRecoveryTime) {
+		if (pmlcss.msec >= pmcss->ps->fd.forceRageRecoveryTime) {
+			pmcss->ps->pm_time = 0;
+		}
+		else {
+			pmcss->ps->fd.forceRageRecoveryTime -= pmlcss.msec;
+		}
+	}
+	if (pmcss->ps->fd.forcePowerDebounce[FP_LEVITATION]) {
+		if (pmlcss.msec >= pmcss->ps->fd.forcePowerDebounce[FP_LEVITATION]) {
+			pmcss->ps->pm_time = 0;
+		}
+		else {
+			pmcss->ps->fd.forcePowerDebounce[FP_LEVITATION] -= pmlcss.msec;
+		}
+	}
+}
+
 /*
 ================
 Pmove
@@ -1295,26 +1327,6 @@ void PmoveCSS(pmovecss_t* pmove)
 	// clear all pmove local vars
 	memset(&pmlcss, 0, sizeof(pmlcss));
 
-
-#ifdef AUTHENTIC_CSSSNAP
-	pmcss->ps->origin[0] = (int)(pmcss->ps->origin[0] * 8.0f);
-	pmcss->ps->origin[1] = (int)(pmcss->ps->origin[1] * 8.0f);
-	pmcss->ps->origin[2] = (int)(pmcss->ps->origin[2] * 8.0f);
-
-	pmcss->ps->velocity[0] = (int)(pmcss->ps->velocity[0] * 8.0f);
-	pmcss->ps->velocity[1] = (int)(pmcss->ps->velocity[1] * 8.0f);
-	pmcss->ps->velocity[2] = (int)(pmcss->ps->velocity[2] * 8.0f);
-
-	// convert origin and velocity to float values
-	pmlcss.origin[0] = pmcss->ps->origin[0] * 0.125;
-	pmlcss.origin[1] = pmcss->ps->origin[1] * 0.125;
-	pmlcss.origin[2] = pmcss->ps->origin[2] * 0.125;
-
-	pmlcss.velocity[0] = pmcss->ps->velocity[0] * 0.125;
-	pmlcss.velocity[1] = pmcss->ps->velocity[1] * 0.125;
-	pmlcss.velocity[2] = pmcss->ps->velocity[2] * 0.125;
-#else
-	// convert origin and velocity to float values
 	pmlcss.origin[0] = pmcss->ps->origin[0];
 	pmlcss.origin[1] = pmcss->ps->origin[1];
 	pmlcss.origin[2] = pmcss->ps->origin[2];
@@ -1322,35 +1334,28 @@ void PmoveCSS(pmovecss_t* pmove)
 	pmlcss.velocity[0] = pmcss->ps->velocity[0];
 	pmlcss.velocity[1] = pmcss->ps->velocity[1];
 	pmlcss.velocity[2] = pmcss->ps->velocity[2];
-#endif
 
 	pmlcss.msec = pmcss->cmd.serverTime - pmcss->ps->commandTime;
 	pmlcss.forwardmove = (int)pmcss->cmd.forwardmove * 500 / 127;//adapt from q3 range
 	pmlcss.rightmove = (int)pmcss->cmd.rightmove * 500 / 127;//adapt from q3 range
 	pmlcss.upmove = (int)pmcss->cmd.upmove * 500 / 127;//adapt from q3 range
 
+	PMCSS_ScaleWishVel();
+
 	// save old org in case we get stuck
 	VectorCopy(pmcss->ps->origin, pmlcss.previous_origin);
 
 	pmlcss.frametime = pmlcss.msec * 0.001;
+
+	PMCSS_DropTimers();
 
 	PMCSS_ClampAngles();
 
 	if (pmcss->ps->pm_type == PM_SPECTATOR)
 	{
 		PMCSS_FlyMove(qfalse);
-#ifdef AUTHENTIC_CSSSNAP
-		PMCSS_SnapPosition();
-		pmcss->ps->origin[0] *= 0.125f;
-		pmcss->ps->origin[1] *= 0.125f;
-		pmcss->ps->origin[2] *= 0.125f;
-		pmcss->ps->velocity[0] *= 0.125f;
-		pmcss->ps->velocity[1] *= 0.125f;
-		pmcss->ps->velocity[2] *= 0.125f;
-#else 
 		VectorCopy(pmlcss.origin, pmcss->ps->origin);
 		VectorCopy(pmlcss.velocity, pmcss->ps->velocity);
-#endif
 		return;
 	}
 
@@ -1364,14 +1369,16 @@ void PmoveCSS(pmovecss_t* pmove)
 	if (pmcss->ps->pm_type == PM_FREEZE)
 		return;		// no movement at all
 
-	// set mins, maxs, and viewheight
-	PMCSS_CheckDuck();
 
 	if (pmcss->snapinitial)
 		PMCSS_InitialSnapPosition();
 
 	// set groundentity, watertype, and waterlevel
 	PMCSS_CatagorizePosition();
+
+
+	// set mins, maxs, and viewheight
+	PMCSS_CheckDuck();
 
 	if (pmcss->ps->pm_type == PM_DEAD)
 		PMCSS_DeadMove();
@@ -1436,18 +1443,7 @@ void PmoveCSS(pmovecss_t* pmove)
 	// set groundentity, watertype, and waterlevel for final spot
 	PMCSS_CatagorizePosition();
 
-
-#ifdef AUTHENTIC_CSSSNAP
-	PMCSS_SnapPosition();
-	pmcss->ps->origin[0] *= 0.125f;
-	pmcss->ps->origin[1] *= 0.125f;
-	pmcss->ps->origin[2] *= 0.125f;
-	pmcss->ps->velocity[0] *= 0.125f;
-	pmcss->ps->velocity[1] *= 0.125f;
-	pmcss->ps->velocity[2] *= 0.125f;
-#else 
 	VectorCopy(pmlcss.origin, pmcss->ps->origin);
 	VectorCopy(pmlcss.velocity, pmcss->ps->velocity);
-#endif
 }
 

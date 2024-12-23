@@ -810,6 +810,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		pm.baseEnt = (bgEntity_t*)g_entities;
 		pm.entSize = sizeof(gentity_t);
 		pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
+		pm.oldButtons = ent->client->oldbuttons;
 
 		// perform a pmove
 		Pmove (&pm);
@@ -2203,6 +2204,7 @@ void ClientThink_real( gentity_t *ent ) {
 	
 	pm.handleStrafebotSlopes = g_strafebotSlopeHandling.integer;
 	pm.roll = ent->client->pers.roll;
+	pm.oldButtons = ent->client->oldbuttons;
 	DF_PreDeltaAngleChange(ent->client);
 	pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 	Pmove (&pm);
