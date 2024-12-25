@@ -24,7 +24,7 @@ typedef enum //movementstyle enum
 	MV_PINBALL,//MV_RJCPM,
 	MV_CSS,//MV_SWOOP,
 	MV_Q2,//MV_JETPACK,
-	//MV_SPEED,
+	MV_FORCE,//MV_SPEED,
 	//MV_SP,
 	//MV_SLICK,
 	//MV_BOTCPM,

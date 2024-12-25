@@ -673,8 +673,14 @@ qboolean WP_ForcePowerUsable( gentity_t *self, forcePowers_t forcePower )
 {
 	int		nowTime = LEVELTIME(self->client);
 
-	if (self->client && self->client->sess.raceMode)
-		return qfalse;
+	if (self->client && self->client->sess.raceMode) {
+		if (self->client->sess.raceStyle.movementStyle == MV_FORCE && (forcePower == FP_RAGE || forcePower == FP_SPEED)) {
+			return qtrue;
+		}
+		else {
+			return qfalse;
+		}
+	}
 
 	if (BG_HasYsalamiri(g_gametype.integer, &self->client->ps))
 	{

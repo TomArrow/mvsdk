@@ -4274,6 +4274,12 @@ void UpdateClientRaceVars(gclient_t* client) {
 	
 	if (client->sess.raceMode) { // what happens when switching out of racemode? dont care rn TODO
 		client->ps.fd.forcePowerLevel[FP_LEVITATION] = MAX(0,client->sess.raceStyle.jumpLevel);
+		if (client->sess.raceStyle.movementStyle == MV_FORCE) {
+			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 3; // TODO will this work ok when ppl go out of racemode? idk
+		}
+		else {
+			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 0;
+		}
 		if (client->sess.raceStyle.jumpLevel == -1) {
 			client->ps.powerups[PW_YSALAMIRI] = INT_MAX;
 		}

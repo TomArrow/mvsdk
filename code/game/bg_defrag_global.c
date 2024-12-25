@@ -10,9 +10,9 @@ const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_LAVAP
 const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 #if WIN32// && DEBUG
-const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_CSS) | (1 << MV_Q2);// | (1 << MV_PINBALL);
+const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_CSS) | (1 << MV_Q2) | (1 << MV_FORCE);// | (1 << MV_PINBALL);
 #else
-const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
+const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_Q2) | (1 << MV_FORCE);// | (1 << MV_PINBALL);
 #endif
 bitInfo_t runFlagsNames[] = { 
 	{ "Disable jumpbug" },//0
@@ -70,7 +70,8 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 	{ "Bounce" },//5
 	{ "Pinball" },//6
 	{ "CSS" },//7
-	{ "Q2" },//7
+	{ "Q2" },//8
+	{ "Force" },//9
 };
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
@@ -237,6 +238,8 @@ int RaceNameToInteger(char* style) {
 		return MV_Q2;
 	if (!Q_stricmp(style, "css"))
 		return MV_CSS;
+	if (!Q_stricmp(style, "force"))
+		return MV_FORCE;
 	return -1;
 }
 qboolean MovementStyleAllowsWeapons(int moveStyle) {
