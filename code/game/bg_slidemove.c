@@ -325,9 +325,9 @@ void PM_Q2StepSlideMove_(void)
 			//	// limit it or we eventually get stuck in walls with velocity reaching billions
 			//	VectorScale(pm->ps->velocity, 100000.0f/ tmp, pm->ps->velocity);
 			//}
-			//if (planes[i][2] >= MIN_WALK_NORMAL) {
+			if (planes[i][2] >= MIN_WALK_NORMAL) {
 				pml.clipped = qtrue; // uh am i putting this the right place? idk
-			//}
+			}
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
@@ -569,6 +569,10 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
 					pm->ps->velocity, overbounce);
 				pml.groundBounces = qtrue;
+
+				if (pml.groundTrace.plane.normal[2] >= MIN_WALK_NORMAL) {
+					pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
+				}
 			}
 		}
 	}
@@ -680,6 +684,10 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 			PM_ClipVelocity (endVelocity, planes[i], endClipVelocity, overbounce);
 			pml.groundBounces = pml.groundBounces || planes[i][2] >= MIN_WALK_NORMAL;
 
+			if (planes[i][2] >= MIN_WALK_NORMAL) {
+				pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
+			}
+
 			// see if there is a second plane that the new move enters
 			for ( j = 0 ; j < numplanes ; j++ ) {
 				if ( j == i ) {
@@ -692,7 +700,10 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				// try clipping the move to the plane
 				PM_ClipVelocity( clipVelocity, planes[j], clipVelocity, overbounce);
 				PM_ClipVelocity( endClipVelocity, planes[j], endClipVelocity, overbounce);
-				pml.groundBounces = pml.groundBounces || planes[j][2] >= MIN_WALK_NORMAL;
+				pml.groundBounces = pml.groundBounces || planes[j][2] >= MIN_WALK_NORMAL; 
+				if (planes[j][2] >= MIN_WALK_NORMAL) {
+					pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
+				}
 
 				// TODO MAYBE jaPRO player collision physics fix?
 
@@ -944,7 +955,11 @@ void PM_StepSlideMove( qboolean gravity ) {
 
 	PM_SlideMove( gravity );
 
-	pml.clipped = qtrue;
+	if (pml.clippedWalkable) { 
+		// only mark as clipped if it was a walkable surface, thats the only thing that matters for dead ramps
+		// otherwise we might slide down a steep slope and still get a dead ramp because its "clipped" from the slope.
+		pml.clipped = qtrue;
+	}
 
 	VectorSubtract(pm->ps->velocity, prevel, prevel);
 	if (prevel[0] < 0)
@@ -1030,6 +1045,9 @@ void PM_StepSlideMove( qboolean gravity ) {
 	if ( trace.fraction < 1.0 ) {
 		PM_ClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
 		pml.groundBounces = pml.groundBounces || trace.plane.normal[2] >= MIN_WALK_NORMAL;
+		if (trace.plane.normal[2] >= MIN_WALK_NORMAL) {
+			pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
+		}
 	}
 
 #if 0

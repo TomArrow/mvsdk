@@ -2128,7 +2128,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 		runInfo->raceStyle.runFlags &= ~RFL_JUMPBUGDISABLE; // not meaningful for these atm
 		runInfo->raceStyle.runFlags &= ~RFL_NOROLLS; // not meaningful
 		runInfo->raceStyle.runFlags &= ~RFL_NOROLLSTART; // not meaningful
-		runInfo->raceStyle.runFlags &= ~RFL_NODEADRAMPS; // not available rn? do i need to do it? 
+		if (runInfo->raceStyle.movementStyle == MV_CSS) {
+			runInfo->raceStyle.runFlags &= ~RFL_NODEADRAMPS; // not yet implemented
+		}
 	}
 
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;

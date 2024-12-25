@@ -38,6 +38,7 @@ typedef struct
 
 	qboolean	clippedPre;
 	qboolean	clipped;
+	qboolean	clippedWalkable;
 	qboolean	groundBounces;
 	qboolean	bounceJumped;
 } pml_t;

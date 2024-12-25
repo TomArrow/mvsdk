@@ -27,6 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define	STEPSIZE	18
 
+extern int		c_pmove;
+
 // all of the locals will be zeroed before each
 // pmove, just to make damn sure we don't have
 // any differences when running on client or server
@@ -48,6 +50,7 @@ typedef struct
 	int			surfaceFlags;
 	trace_t		groundTrace;
 	qboolean	groundFound;
+	qboolean	clipped;
 
 
 	int			forwardmove, rightmove, upmove;
@@ -273,6 +276,9 @@ void PMQ2_StepSlideMove_(void)
 				}
 			}
 #endif
+			if (planes[i][2] >= 0.7) {
+				pmlq2.clipped = qtrue; // uh am i putting this the right place? idk
+			}
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
@@ -788,6 +794,8 @@ void PMQ2_CatagorizePosition(void)
 		}
 		else
 		{
+
+
 			int oldGroundEntityNum = pmq2->ps->groundEntityNum;
 			pmq2->ps->groundEntityNum = trace.entityNum;
 
@@ -801,6 +809,39 @@ void PMQ2_CatagorizePosition(void)
 			//if (!(pmq2->ps->pm_flags & PMF_ON_GROUND))
 			if (oldGroundEntityNum == ENTITYNUM_NONE)
 			{	// just hit the ground
+
+				// Thanks to Loda for making this fix and Daggo for pointing me to it.
+				if ((trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f))// don't count them during special predict
+				{ // It's a ramp!
+					if (!pmlq2.clipped)
+					{
+						// TODO should we do more checks here to make sure it behaves same as normal clip would? 
+						// the trace.plane.normal[2] != 1.0f check in particular seems sus no? since the slidemove stuff
+						// works more with various dot products to determine whether to clip etc. oh well. fuck it.
+
+						const int runFlags = PM_GetRunFlags();
+						if (runFlags & RFL_NODEADRAMPS) {
+
+							PMQ2_ClipVelocity(pmlq2.velocity, trace.plane.normal, pmlq2.velocity, 1.01);
+
+							if (pm->debugLevel) {
+								Com_Printf("%i:Dead ramp fixed\n", c_pmove);
+							}
+						}
+						else {
+							if (pm->debugLevel) {
+								Com_Printf("%i:Dead ramp\n", c_pmove);
+							}
+						}
+					}
+					else {
+						if (pm->debugLevel) {
+							Com_Printf("%i:Good ramp\n", c_pmove);
+						}
+					}
+				}
+
+
 				//pmq2->ps->pm_flags |= PMF_ON_GROUND;
 				// don't do landing time if we were just going down a slope
 				if (pmlq2.velocity[2] < -200)
@@ -1447,8 +1488,10 @@ void PmoveQ2(pmoveq2_t* pmove)
 	if (pmq2->snapinitial)
 		PMQ2_InitialSnapPosition();
 
+	pmlq2.clipped = qtrue;
 	// set groundentity, watertype, and waterlevel
 	PMQ2_CatagorizePosition();
+	pmlq2.clipped = qfalse; // dead ramp detection only after slidemove.
 
 	if (pmq2->ps->pm_type == PM_DEAD)
 		PMQ2_DeadMove();
