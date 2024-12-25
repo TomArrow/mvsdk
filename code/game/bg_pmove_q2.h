@@ -76,6 +76,7 @@ typedef struct
 	//int			(*pointcontents) (vec3_t point); 
 	int			(*pointcontents)(const vec3_t point, int passEntityNum);
 	qboolean	haveQ2StyleTrace;
+	int			debugLevel;
 } pmoveq2_t;
 
 

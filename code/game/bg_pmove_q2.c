@@ -412,6 +412,11 @@ void PMQ2_StepSlideMove(void)
 		VectorCopy(down_v, pmlq2.velocity);
 		return;
 	}
+	else {
+		//if (pm->debugLevel) {
+		//	Com_Printf("%i:stepped up\n", c_pmove);
+		//}
+	}
 	//!! Special case
 	// if we were walking along a plane, then we need to copy the Z over
 	pmlq2.velocity[2] = down_v[2];
@@ -751,7 +756,7 @@ void PMQ2_AirMove(void)
 PMQ2_CatagorizePosition
 =============
 */
-void PMQ2_CatagorizePosition(void)
+void PMQ2_CatagorizePosition(int type)
 {
 	vec3_t		point;
 	int			cont;
@@ -810,6 +815,10 @@ void PMQ2_CatagorizePosition(void)
 			if (oldGroundEntityNum == ENTITYNUM_NONE)
 			{	// just hit the ground
 
+				if (pm->debugLevel) {
+					Com_Printf("%i:landed, pmlq2.velocity[2] %f (call %d)\n", c_pmove, pmlq2.velocity[2],type);
+				}
+
 				// Thanks to Loda for making this fix and Daggo for pointing me to it.
 				if ((trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f))// don't count them during special predict
 				{ // It's a ramp!
@@ -852,6 +861,10 @@ void PMQ2_CatagorizePosition(void)
 						pmq2->ps->pm_time = 25;
 					else
 						pmq2->ps->pm_time = 18;
+
+					if (pm->debugLevel) {
+						Com_Printf("%i:PMF_TIME_LAND, pmlq2.velocity[2] %f (call %d)\n", c_pmove, pmlq2.velocity[2],type);
+					}
 				}
 			}
 		}
@@ -908,7 +921,18 @@ void PMQ2_CheckJump(void)
 {
 	if (pmq2->ps->pm_flags & PMF_TIME_LAND)
 	{	// hasn't been long enough since landing to jump again
-		return;
+		const int runFlags = PM_GetRunFlags();
+		if (runFlags & RFL_NODEADRAMPS) {
+			// kinda in the same spirit tbh. this behaves like an RNG that sometimes wont let us hop and keep speed.
+			// different fps makes it behave differently as well. it feels really bad.
+			// depending on whether the even floor was clipped during the slidemove,
+			// PMF_TIME_LAND will be set or not, as its dependent on downward speed,
+			// but the slidemove clipping will eliminate that downward speed (or not),
+			// so this is essentially completely pointless RNG
+		}
+		else {
+			return;
+		}
 	}
 
 	if (pmlq2.upmove < 10)
@@ -949,6 +973,10 @@ void PMQ2_CheckJump(void)
 	pmlq2.velocity[2] += 270;
 	if (pmlq2.velocity[2] < 270)
 		pmlq2.velocity[2] = 270;
+
+	if (pm->debugLevel) {
+		Com_Printf("%i:jump\n", c_pmove);
+	}
 }
 
 
@@ -1406,7 +1434,7 @@ void PmoveQ2(pmoveq2_t* pmove)
 	pmq2->numtouch = 0;
 	VectorClear(pmq2->ps->viewangles);
 	pmq2->ps->viewheight = 0;
-	pmq2->ps->groundEntityNum = ENTITYNUM_NONE;
+	//pmq2->ps->groundEntityNum = ENTITYNUM_NONE;
 	pmq2->watertype = 0;
 	pmq2->waterlevel = 0;
 
@@ -1488,10 +1516,10 @@ void PmoveQ2(pmoveq2_t* pmove)
 	if (pmq2->snapinitial)
 		PMQ2_InitialSnapPosition();
 
-	pmlq2.clipped = qtrue;
+	//pmlq2.clipped = qtrue;
 	// set groundentity, watertype, and waterlevel
-	PMQ2_CatagorizePosition();
-	pmlq2.clipped = qfalse; // dead ramp detection only after slidemove.
+	PMQ2_CatagorizePosition(0);
+	//pmlq2.clipped = qfalse; // dead ramp detection only after slidemove. actually nvm, this might also fix an issue where land gets detected before jump (i guess from quantizing position) and blocks rejump
 
 	if (pmq2->ps->pm_type == PM_DEAD)
 		PMQ2_DeadMove();
@@ -1554,7 +1582,7 @@ void PmoveQ2(pmoveq2_t* pmove)
 	}
 
 	// set groundentity, watertype, and waterlevel for final spot
-	PMQ2_CatagorizePosition();
+	PMQ2_CatagorizePosition(1);
 
 
 #ifdef AUTHENTIC_Q2SNAP

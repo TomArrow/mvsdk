@@ -5503,6 +5503,9 @@ newanim:
 			pm->ps->fd.forceSide = 1;
 		}
 	}
+	else {
+		pm->ps->fd.forceSide = 0;
+	}
 
 	if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
 	{
@@ -5532,10 +5535,7 @@ newanim:
 	}
 
 	if (newAnim != currentAnim && (currentAnim != BOTH_JUMP1 || transitionFromJump)) {
-		if (newAnim == BOTH_JUMP1 && pm->cmd.upmove > 0) {
-			PM_AddEvent(EV_JUMP);
-		}
-		else if (newAnim != BOTH_JUMP1 && currentAnim == BOTH_JUMP1) {
+		if (newAnim != BOTH_JUMP1 && currentAnim == BOTH_JUMP1) {
 			PM_AddEventWithParm(EV_FALL, delta);
 		}
 		PM_SetAnim(SETANIM_BOTH,newAnim,SETANIM_FLAG_NORMAL,100);
@@ -5570,6 +5570,7 @@ void PmoveSingle (pmove_t *pmove) {
 		if (moveStyle == MV_Q2) {
 			pmoveq2_t pmq2;
 			vec3_t oldVel;
+			int oldGEN = pm->ps->groundEntityNum;
 			memset(&pmq2, 0, sizeof(pmq2));
 			pmq2.ps = pm->ps;
 			pmq2.cmd = pm->cmd;
@@ -5579,10 +5580,15 @@ void PmoveSingle (pmove_t *pmove) {
 			//pmq2.trace = pm->trace;
 			pmq2.snapinitial = pm->positionChangedOutsidePmove;
 			pmq2.pointcontents = pm->pointcontents;
+			pmq2.debugLevel = pm->debugLevel;
 			VectorCopy(pm->mins, pmq2.mins);
 			VectorCopy(pm->maxs, pmq2.maxs);
 			VectorCopy(pm->ps->velocity, oldVel);
+			c_pmove++;
 			PmoveQ2(&pmq2);
+			if (oldGEN != ENTITYNUM_NONE && pm->ps->groundEntityNum == ENTITYNUM_NONE && pm->cmd.upmove > 0) {
+				PM_AddEvent(EV_JUMP);
+			}
 			PM_SetAnimAfterQ2(oldVel);
 			pm->ps->commandTime = pm->cmd.serverTime;
 			VectorCopy(pmq2.mins, pm->mins);
@@ -5603,6 +5609,7 @@ void PmoveSingle (pmove_t *pmove) {
 			VectorCopy(pm->maxs, pmcss.maxs);
 			pmcss.oldbuttons = pm->oldButtons;
 			VectorCopy(pm->ps->velocity, oldVel);
+			c_pmove++;
 			PmoveCSS(&pmcss);
 			PM_SetAnimAfterQ2(oldVel);
 			pm->ps->commandTime = pm->cmd.serverTime;
