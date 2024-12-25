@@ -104,6 +104,8 @@
 
 
 
+
+
 #define RESTRICT_SB					(1<<0)	//remove hackbots
 #define RESTRICT_COSBY				(1<<1)	//remove hackbots
 #define RESTRICT_LEAD				(1<<2)	//remove lead indicator
@@ -768,6 +770,7 @@ typedef struct {
 	rollState_t		roll;
 	antiLoopState_t antiLoop;
 	int				antiLoopLastCommandTime;
+	vec3_t			antiLoopInferredLastVelocity;
 	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;
@@ -1854,6 +1857,7 @@ extern	vmCvar_t		cg_strafebotFactor;
 extern	vmCvar_t		cg_mapDefaultMsec;
 extern	vmCvar_t		cg_mapDefaultJump;
 extern	vmCvar_t		cg_mapDefaultRunFlags;
+extern	vmCvar_t		cg_q2trace;
 
 extern	vmCvar_t		cg_strafebotSlopeHandling;
 
@@ -2101,7 +2105,13 @@ void CG_BuildSolidList( void );
 int	CG_PointContents( const vec3_t point, int passEntityNum );
 void CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
 					 int skipNumber, int mask );
+void CG_TraceQ2Style( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
+	int skipNumber, int mask);
+void CG_TraceQ2StyleLite( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
+					 int skipNumber, int mask );
 void CG_RawTrace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
+					 int skipNumber, int mask );
+void CG_RawTraceQ2Style( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
 					 int skipNumber, int mask );
 void CG_PredictPlayerState( void );
 void CG_LoadDeferredPlayers( void );
@@ -2327,11 +2337,11 @@ int			trap_CM_PointContents( const vec3_t p, clipHandle_t model );
 int			trap_CM_TransformedPointContents( const vec3_t p, clipHandle_t model, const vec3_t origin, const vec3_t angles );
 void		trap_CM_BoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 					  const vec3_t mins, const vec3_t maxs,
-					  clipHandle_t model, int brushmask );
+					  clipHandle_t model, int brushmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags);
 void		trap_CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 					  const vec3_t mins, const vec3_t maxs,
 					  clipHandle_t model, int brushmask,
-					  const vec3_t origin, const vec3_t angles );
+					  const vec3_t origin, const vec3_t angles, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags);
 
 // Returns the projection of a polygon onto the solid brushes in the world
 int			trap_CM_MarkFragments( int numPoints, const vec3_t *points, 

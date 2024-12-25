@@ -821,16 +821,6 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		// don't retrigger runs that already went through checkpoints
 		return;
 	}
-
-	if ((cl->sess.raceStyle.runFlags & RFL_ANTILOOP) /*&& MovementStyleHasAntiLoop(cl->sess.raceStyle.movementStyle)*/ && cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed > ANTILOOP_MAXYAWCHANGE) {
-		if (cl->pers.raceStartCommandTime) {
-			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Restart blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse);
-		}
-		else {
-			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed,(float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qtrue);
-		}
-		return;
-	}
 	if (cl->sess.raceStateInvalidated) {
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
 		return;
@@ -844,6 +834,17 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		//if ((cl->pers.lastRaceFinishTime + 1000 > level.time || level.time < cl->pers.lastRaceFinishTime) && !(ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother player with message directly after run finished
 		if ((cl->pers.lastRaceFinishTime + 1000 < level.time || level.time < cl->pers.lastRaceFinishTime)) { // dont bother player with message directly after run finished (especially annoying on maps with reverse courses)
 			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue);
+		}
+		return;
+	}
+
+
+	if ((cl->sess.raceStyle.runFlags & RFL_ANTILOOP) /*&& MovementStyleHasAntiLoop(cl->sess.raceStyle.movementStyle)*/ && cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed > ANTILOOP_MAXYAWCHANGE) {
+		if (cl->pers.raceStartCommandTime) {
+			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Restart blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse);
+		}
+		else {
+			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qtrue);
 		}
 		return;
 	}
@@ -1017,6 +1018,8 @@ qboolean ValidRaceSettings(gentity_t* player)
 	style = cl->sess.raceStyle.movementStyle;
 
 	if (style == MV_CSS)
+		return qfalse;//work in progress
+	if (style == MV_Q2 && g_q2trace.integer != 1) // i decided against the q2 style trace. i just couldnt make it work right. but lets still use the right epsilon. 0 = normal trace. 1 = q2 epsilon. 2 = q2 style
 		return qfalse;//work in progress
 
 	//if (cl->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
@@ -2121,6 +2124,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	//}
 	if (runInfo->raceStyle.movementStyle == MV_CSS || runInfo->raceStyle.movementStyle == MV_Q2) {
 		runInfo->raceStyle.runFlags &= ~RFL_BOT; // bot doesnt work for these atm so may as well remove that.
+		runInfo->raceStyle.runFlags &= ~RFL_CLIMBTECH; // climbtech doesnt work for these atm so may as well remove that.
+		runInfo->raceStyle.runFlags &= ~RFL_JUMPBUGDISABLE; // not meaningful for these atm
+		runInfo->raceStyle.runFlags &= ~RFL_NOROLLS; // not available rn? do i need to do it? 
 	}
 
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
@@ -3597,10 +3603,13 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 	return qfalse;
 }
 
-static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean precise) {
+static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean precise,qboolean traceCustomEpsilon, float customEpsilon, int traceCustomFlags) {
 	
 	if (precise && (coolApi & COOL_APIFEATURE_NONEPSILONTRACE)) {
 		trap_G_COOL_API_NonEpsilonTrace(results, start, mins, maxs, end, passEntityNum, contentmask);
+	}
+	else if ((traceCustomEpsilon || traceCustomFlags) && (coolApi & COOL_APIFEATURE_CUSTOMEPSILONTRACE)) {
+		trap_G_COOL_API_CustomEpsilonTrace(results, start, mins, maxs, end, passEntityNum, contentmask, traceCustomEpsilon, customEpsilon, traceCustomFlags);
 	}
 	else {
 		trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
@@ -3622,7 +3631,7 @@ static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins
 			//else {
 			//	JP_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
 			//}
-			JP_TraceReal(results,start,mins,maxs,end,passEntityNum,contentmask,precise);
+			JP_TraceReal(results,start,mins,maxs,end,passEntityNum,contentmask,precise, traceCustomEpsilon,customEpsilon, traceCustomFlags);
 			ent->r.contents = contents;
 
 			return;
@@ -3640,7 +3649,7 @@ static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins
 
 void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
 {
-	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qfalse);
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qfalse,qfalse,0,0);
 }
 // don't use this for movement and normal stuff. 
 // normal trace applies an epsilon (0.125f offset) to avoid some fuckery with vector snapping over network and i dont even know,
@@ -3649,7 +3658,19 @@ void JP_Trace(trace_t* results, const vec3_t start, const vec3_t mins, const vec
 // hence, for trigger tracing, use this.
 void JP_TracePrecise(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
 {
-	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qtrue);
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qtrue,qfalse,0,0);
+}
+void JP_TraceCustomEpsilon(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean traceCustomEpsilon,float customEpsilon,int traceCustomFlags)
+{
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qfalse, traceCustomEpsilon,customEpsilon, traceCustomFlags);
+}
+void JP_TraceCustomEpsilonQ2(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
+{
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qfalse,qtrue, 0.03125f,TRACECUSTOMFLAG_Q2STYLE);
+}
+void JP_TraceCustomEpsilonQ2Lite(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask)
+{
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qfalse,qtrue, 0.03125f,0);
 }
 
 /*

@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "../game/bg_pmove_q2.h"
 #include "../game/bg_public.h"
 
+//#define CRINGY_STUCK_DEBUG
 
 #define AUTHENTIC_Q2SNAP
 
@@ -128,6 +129,9 @@ void PMQ2_StepSlideMove_(void)
 	int			numplanes;
 	vec3_t		planes[MAX_CLIP_PLANES];
 	vec3_t		primal_velocity;
+#ifdef CRINGY_STUCK_DEBUG
+	vec3_t		preBumpVel;
+#endif
 	int			i, j;
 	trace_t	trace;
 	vec3_t		end;
@@ -175,7 +179,29 @@ void PMQ2_StepSlideMove_(void)
 		if (numplanes >= MAX_CLIP_PLANES)
 		{	// this shouldn't really happen
 			VectorCopy(vec3_origin, pmlq2.velocity);
+#ifdef CRINGY_STUCK_DEBUG
+			Com_Printf("numplanes >= MAX_CLIP_PLANES, nulling\n");
+#endif
 			break;
+		}
+
+		if (!pmq2->haveQ2StyleTrace) {
+			//
+			// if this is the same plane we hit before, nudge velocity
+			// out along it, which fixes some epsilon issues with
+			// non-axial planes
+			//
+			// TA: I just couldn't properly get everything to be smooth without this. I tried adjusting trace code to make it more compatible with Q2, but it still wasn't satisfactory. 
+			// 
+			for (i = 0; i < numplanes; i++) {
+				if (DotProduct(trace.plane.normal, planes[i]) > 0.99) {
+					VectorAdd(trace.plane.normal, pmlq2.velocity, pmlq2.velocity);
+					break;
+				}
+			}
+			//if (i < numplanes) {
+			//	continue;
+			//}
 		}
 
 		VectorCopy(trace.plane.normal, planes[numplanes]);
@@ -223,12 +249,30 @@ void PMQ2_StepSlideMove_(void)
 		}
 
 #else
+
+#ifdef CRINGY_STUCK_DEBUG
+		VectorCopy(pmlq2.velocity, preBumpVel);
+#endif
+
 		//
 		// modify original_velocity so it parallels all of the clip planes
 		//
 		for (i = 0; i < numplanes; i++)
 		{
 			PMQ2_ClipVelocity(pmlq2.velocity, planes[i], pmlq2.velocity, 1.01);
+#if 0//#ifdef  CRINGY_STUCK_DEBUG
+			{
+				vec3_t normVel;
+				float dot, angle;
+				VectorCopy(pmlq2.velocity, normVel);
+				VectorNormalize(normVel);
+				dot = DotProduct(planes[i], normVel);
+				if (dot <= 0) {
+					angle = acos(MIN(1.0f, MAX(0.0f, dot))) * (180.0f / M_PI);
+					Com_Printf("clip velocity dot <= 0 dot between newVel and normal %f angle %f fraction %f entitynum %d startsolid %d allsolid %d\n", dot, angle, trace.fraction, trace.entityNum, trace.startsolid, trace.allsolid);
+				}
+			}
+#endif
 			for (j = 0; j < numplanes; j++)
 				if (j != i)
 				{
@@ -248,11 +292,30 @@ void PMQ2_StepSlideMove_(void)
 			{
 				//				Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
 				VectorCopy(vec3_origin, pmlq2.velocity);
+#ifdef CRINGY_STUCK_DEBUG
+				Com_Printf("i == numplanes && numplanes != 2, nulling\n");
+#endif
 				break;
 			}
 			CrossProduct(planes[0], planes[1], dir);
 			d = DotProduct(dir, pmlq2.velocity);
-			VectorScale(dir, d, pmlq2.velocity);
+#ifdef CRINGY_STUCK_DEBUG
+			if (!d) {
+				vec3_t normVel,traceDir;
+				float dot,dot2,dot3,angle;
+				VectorCopy(preBumpVel, normVel);
+				VectorSubtract(end, pmlq2.origin, traceDir);
+				VectorNormalize(normVel);
+				dot = DotProduct(planes[0], normVel);
+				dot2 = DotProduct(planes[0], preBumpVel);
+				dot3 = DotProduct(planes[0], traceDir);
+				angle = acos(MIN(1.0f,MAX(0.0f,dot))) * (180.0f / M_PI);
+				Com_Printf("go along the crease 0 direction vel (identical planes?) dot between preBumpVel and normal %f, non norm dot %f, dirmove dot nonorm %f, angle %f fraction %f entitynum %d startsolid %d allsolid %d\n",dot,dot2,dot3,angle,trace.fraction,trace.entityNum,trace.startsolid,trace.allsolid);
+				// for debug: (so u can step in dev-sama)
+				pmq2->trace(&trace, pmlq2.origin, pmq2->mins, pmq2->maxs, end, pmq2->ps->clientNum, pmq2->tracemask);
+			}
+#endif
+ 			VectorScale(dir, d, pmlq2.velocity);
 		}
 #endif
 		//
@@ -261,6 +324,9 @@ void PMQ2_StepSlideMove_(void)
 		//
 		if (DotProduct(pmlq2.velocity, primal_velocity) <= 0)
 		{
+#ifdef CRINGY_STUCK_DEBUG
+			Com_Printf("DotProduct(pmlq2.velocity, primal_velocity) <= 0, nulling\n");
+#endif
 			VectorCopy(vec3_origin, pmlq2.velocity);
 			break;
 		}
@@ -708,6 +774,13 @@ void PMQ2_CatagorizePosition(void)
 		pmlq2.groundcontents = trace.contents;
 		pmlq2.groundFound = trace.entityNum != ENTITYNUM_NONE; // is this right?
 
+#ifdef CRINGY_STUCK_DEBUG
+		if (trace.allsolid) {
+			// step into it.
+			pmq2->trace(&trace, pmlq2.origin, pmq2->mins, pmq2->maxs, point, pmq2->ps->clientNum, pmq2->tracemask);
+		}
+#endif
+
 		if (trace.entityNum == ENTITYNUM_NONE || (trace.plane.normal[2] < 0.7 && !trace.startsolid))
 		{
 			pmq2->ps->groundEntityNum = ENTITYNUM_NONE;
@@ -1146,7 +1219,9 @@ void PMQ2_SnapPosition(void)
 
 	// go back to the last position
 	VectorCopy(pmlq2.previous_origin, pmq2->ps->origin);
-	//	Com_DPrintf ("using previous_origin\n");
+#ifdef CRINGY_STUCK_DEBUG
+	Com_Printf ("using previous_origin\n");
+#endif
 #endif
 
 	
@@ -1187,8 +1262,9 @@ void PMQ2_InitialSnapPosition(void)
 			}
 		}
 	}
-
+#ifdef
 	Com_DPrintf("Bad InitialSnapPosition\n");
+#endif
 }
 #else
 /*
@@ -1232,8 +1308,9 @@ void PMQ2_InitialSnapPosition(void)
 			}
 		}
 	}
-
-	//Com_DPrintf("Bad InitialSnapPosition\n");
+#ifdef CRINGY_STUCK_DEBUG
+	Com_Printf("Bad InitialSnapPosition\n");
+#endif
 }
 
 #endif
@@ -1446,6 +1523,7 @@ void PmoveQ2(pmoveq2_t* pmove)
 	pmq2->ps->velocity[1] *= 0.125f;
 	pmq2->ps->velocity[2] *= 0.125f;
 #else 
+	// TODO if not using authentic snap and if using q2 style trace (even if not?) we need to still nudge the final position in case its in a solid
 	VectorCopy(pmlq2.origin,pmq2->ps->origin);
 	VectorCopy(pmlq2.velocity,pmq2->ps->velocity);
 #endif

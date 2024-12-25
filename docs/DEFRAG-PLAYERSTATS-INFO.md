@@ -42,7 +42,7 @@ typedef struct raceStyle_s {
 netField_t	entityStateFields15[] =
 {
 	{ NETF(pos.trTime), 32 }, // respos count of last cut mark in segmented
-	{ NETF(pos.trBase[0]), 0 },
+	{ NETF(pos.trBase[0]), 0 }, // antiloop angle change
 	{ NETF(pos.trBase[1]), 0 },
 	{ NETF(pos.trDelta[0]), 0 },
 	{ NETF(pos.trDelta[1]), 0 },
@@ -96,7 +96,7 @@ netField_t	entityStateFields15[] =
 	{ NETF(origin2[1]), 0 },
 	{ NETF(modelindex2), 8 },
 	{ NETF(angles[0]), 0 },
-	{ NETF(time), 32 },
+	{ NETF(time), 32 }, 
 	{ NETF(apos.trTime), 32 }, // last segmented run reset point in replay (commandtime)
 	{ NETF(apos.trDuration), 32 }, // racestyle: msec and runflags
 	{ NETF(apos.trBase[2]), 0 }, // ucmd angles

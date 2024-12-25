@@ -1058,9 +1058,9 @@ Sets mins, maxs, and pmcss->ps->viewheight
 void PMCSS_CheckDuck(void)
 {
 	trace_t	trace;
-	int buttons = pmcss->oldbuttons ^ pmcss->cmd.buttons;
-	int buttonsNew = buttons & pmcss->cmd.buttons;
-	int buttonsOld = buttons & pmcss->oldbuttons;
+	int buttonsDiff = pmcss->oldbuttons ^ pmcss->cmd.buttons;
+	int buttonsNew = buttonsDiff & pmcss->cmd.buttons;
+	int buttonsOld = buttonsDiff & pmcss->oldbuttons;
 
 
 	if (pm->ps->fd.forceRageRecoveryTime) {
@@ -1086,6 +1086,10 @@ void PMCSS_CheckDuck(void)
 		pmcss->cmd.rightmove /= 3;
 		pmcss->cmd.upmove /= 3;
 		pmcss->crouchSpeedReduced = qtrue;
+	}
+
+	if (pmcss->cmd.buttons) {
+
 	}
 
 	/*

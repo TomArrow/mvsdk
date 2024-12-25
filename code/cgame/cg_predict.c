@@ -73,7 +73,7 @@ CG_ClipMoveToEntities
 ====================
 */
 static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-							int skipNumber, int mask, trace_t *tr, qboolean explicitlyDeluxe, qboolean rawTrace ) {
+							int skipNumber, int mask, trace_t *tr, qboolean explicitlyDeluxe, qboolean rawTrace, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
 	int			i, x, zd, zu;
 	trace_t		trace;
 	entityState_t	*ent;
@@ -199,7 +199,7 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 
 
 		trap_CM_TransformedBoxTrace ( &trace, start, end,
-			mins, maxs, cmodel,  mask, origin, angles);
+			mins, maxs, cmodel,  mask, origin, angles, customEpsilonTrace,customEpsilon,traceCustomFlags);
 
 		if (trace.allsolid || trace.fraction < tr->fraction) {
 			trace.entityNum = ent->number;
@@ -214,7 +214,7 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 		// Do a second prediction with deluxe predicted origin.
 		if ((explicitlyDeluxe || cg_deluxePlayersPredictClipMove.integer) && cent->deluxePredict.lerpOriginClipMoveFilled) {
 			trap_CM_TransformedBoxTrace(&trace, start, end,
-				mins, maxs, cmodel, mask, cent->deluxePredict.lerpOriginClipMove, angles);
+				mins, maxs, cmodel, mask, cent->deluxePredict.lerpOriginClipMove, angles, customEpsilonTrace, customEpsilon, traceCustomFlags);
 
 			if (trace.allsolid || trace.fraction < tr->fraction) {
 				trace.entityNum = ent->number;
@@ -235,17 +235,32 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 CG_Trace
 ================
 */
-void	CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
-					 int skipNumber, int mask ) {
+void	CG_TraceReal( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
 	trace_t	t;
 
-	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask);
+	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask,customEpsilonTrace,customEpsilon,traceCustomFlags);
 	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
 	// check all other solid models
-	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qfalse);
+	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qfalse, customEpsilonTrace, customEpsilon, traceCustomFlags);
 	cg.nextCGTraceExplicitlyDeluxe = qfalse;
 
 	*result = t;
+}
+void	CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask ) {
+	
+	CG_TraceReal(result,start,mins,maxs,end,skipNumber,mask,qfalse,0,0);
+}
+void	CG_TraceQ2Style( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask ) {
+	
+	CG_TraceReal(result,start,mins,maxs,end,skipNumber,mask, qtrue, 0.03125f, TRACECUSTOMFLAG_Q2STYLE);
+}
+void	CG_TraceQ2StyleLite( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask ) {
+	
+	CG_TraceReal(result,start,mins,maxs,end,skipNumber,mask, qtrue, 0.03125f, 0);
 }
 /*
 ================
@@ -254,17 +269,25 @@ CG_RawTrace
 Allow us to trace even players with solid 0
 ================
 */
-void	CG_RawTrace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
-					 int skipNumber, int mask ) {
+void	CG_RawTraceReal( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
 	trace_t	t;
 
-	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask);
+	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask, customEpsilonTrace, customEpsilon, traceCustomFlags);
 	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
 	// check all other solid models
-	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qtrue);
+	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qtrue, customEpsilonTrace, customEpsilon, traceCustomFlags);
 	cg.nextCGTraceExplicitlyDeluxe = qfalse;
 
 	*result = t;
+}
+void	CG_RawTrace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask ) {
+	CG_RawTraceReal(result,start,mins,maxs,end,skipNumber,mask,qfalse,0,0);
+}
+void	CG_RawTraceQ2Style( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask ) {
+	CG_RawTraceReal(result,start,mins,maxs,end,skipNumber,mask, qtrue, 0.03125f, TRACECUSTOMFLAG_Q2STYLE);
 }
 
 /*
@@ -553,7 +576,7 @@ static void CG_TouchTriggerPrediction( int msec ) {
 		}
 
 		trap_CM_BoxTrace( &trace, cg.predictedPlayerState.origin, cg.predictedPlayerState.origin, 
-			cg_pmove.mins, cg_pmove.maxs, cmodel, -1 );
+			cg_pmove.mins, cg_pmove.maxs, cmodel, -1,qfalse,0,0 );
 
 		if ( !trace.startsolid ) {
 			continue;
@@ -883,6 +906,7 @@ void CG_PredictPlayerState( void ) {
 	usercmd_t	temporaryCmd;
 	vec3_t		prePmoveVelocity;
 	vec3_t		oldPos;
+	qboolean	haveAntiLoopStats = qfalse;
 	int			oldButtons = 0;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
@@ -902,14 +926,38 @@ void CG_PredictPlayerState( void ) {
 	}
 	lastSnapPsCommandTime = cg.snap->ps.commandTime;
 
+	if (cg_statsEntities[cg.predictedPlayerState.clientNum] && (cgs.ttFlags & TTFLAGSSERVERINFO_HASANTILOOPSTATS)) {
+		if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
+			cg.antiLoop.yawAngleChangeSinceBaseSpeed = cg_statsEntities[cg.predictedPlayerState.clientNum]->nextState.pos.trBase[0];
+		}
+		else {
+			cg.antiLoop.yawAngleChangeSinceBaseSpeed = cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState.pos.trBase[0];
+		}
+		haveAntiLoopStats = qtrue;
+	}
+
 	// demo playback just copies the moves
 	if ( cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer == 2 ) {
+		if (!haveAntiLoopStats) {
+			if (cg.antiLoopLastCommandTime < cg.snap->ps.commandTime) {
+				DF_AntiLoop_NewAngle(&cg.antiLoop, cg.antiLoopInferredLastVelocity, cg.snap->ps.velocity, cg.snap->ps.basespeed, cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE] && cg.snap->ps.duelTime);
+				cg.antiLoopLastCommandTime = cg.snap->ps.commandTime;
+				VectorCopy(cg.snap->ps.velocity, cg.antiLoopInferredLastVelocity);
+			}
+		}
 		CG_InterpolatePlayerState( qfalse );
 		return;
 	}
 
 	// non-predicting local movement will grab the latest angles
 	if ( cg_nopredict.integer || cg_synchronousClients.integer ) {
+		if (!haveAntiLoopStats) {
+			if (cg.antiLoopLastCommandTime < cg.snap->ps.commandTime) {
+				DF_AntiLoop_NewAngle(&cg.antiLoop, cg.antiLoopInferredLastVelocity, cg.snap->ps.velocity, cg.snap->ps.basespeed, cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE] && cg.snap->ps.duelTime);
+				cg.antiLoopLastCommandTime = cg.snap->ps.commandTime;
+				VectorCopy(cg.snap->ps.velocity, cg.antiLoopInferredLastVelocity);
+			}
+		}
 		CG_InterpolatePlayerState( qtrue );
 		return;
 	}
@@ -918,6 +966,8 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.ps = &cg.predictedPlayerState;
 	cg_pmove.trace = CG_Trace;
 	cg_pmove.rawtrace = CG_RawTrace;
+	cg_pmove.q2trace = cg_q2trace.integer == 2 ? CG_TraceQ2Style : (cg_q2trace.integer ? CG_TraceQ2StyleLite : 0);
+	cg_pmove.q2TraceStyle = cg_q2trace.integer;
 	cg_pmove.pointcontents = CG_PointContents;
 	if ( cg_pmove.ps->pm_type == PM_DEAD ) {
 		cg_pmove.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;
@@ -983,6 +1033,11 @@ void CG_PredictPlayerState( void ) {
 			cg.physicsTime = cg.snap->serverTime;
 		}
 	}
+
+	if (haveAntiLoopStats) {
+		cg.antiLoopLastCommandTime = cg.predictedPlayerState.commandTime;
+	}
+
 
 	//JAPRO - Clientside - Unlock Pmove bounds - Start 
 	if ( cg_pmove_msec.integer < 1 ) {

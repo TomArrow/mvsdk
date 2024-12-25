@@ -108,6 +108,7 @@ vmCvar_t	g_motd;
 vmCvar_t	g_mapDefaultMsec;
 vmCvar_t	g_mapDefaultJump;
 vmCvar_t	g_mapDefaultRunFlags;
+vmCvar_t	g_q2trace;
 
 vmCvar_t	g_strafebotSlopeHandling;
 
@@ -269,6 +270,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_mapDefaultMsec, "g_mapDefaultMsec", "8", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 	{ &g_mapDefaultJump, "g_mapDefaultJump", "1", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 	{ &g_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO | CVAR_ROM, 0, qfalse},
+	{ &g_q2trace, "g_q2trace", "1", CVAR_SYSTEMINFO, 0, qtrue},
 
 	{ &g_strafebotSlopeHandling, "g_strafebotSlopeHandling", "1", CVAR_SYSTEMINFO | CVAR_CHEAT, 0, qfalse},
 
@@ -340,7 +342,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_fixHighFPSAbuse, "g_fixHighFPSAbuse", "0", CVAR_SYSTEMINFO, 0, qtrue},
-	{ &g_ttFlags, "g_ttFlags", "0", CVAR_SERVERINFO| CVAR_ROM, 0, qtrue}, // not currently used, maybe for the future to communicate special tommyternal server settings to the client
+	{ &g_ttFlags, "ttFlags", "1", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue}, // not currently used, maybe for the future to communicate special tommyternal server settings to the client. value 1 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS))
 	{ &g_entHUDFields, "g_entHUDFields", "1", CVAR_SYSTEMINFO|CVAR_ARCHIVE, 0, qtrue},
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
@@ -426,7 +428,7 @@ qboolean mvStructConversionDisabled = qfalse;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
 vmCvar_t coolApi_supported_game;
-int coolApi_supported_game_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE | COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE | COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS | COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED | COOL_APIFEATURE_VMCUSTOMFLAGS | COOL_APIFEATURE_KEEPZOMBIE;
+int coolApi_supported_game_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE | COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE | COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS | COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED | COOL_APIFEATURE_VMCUSTOMFLAGS | COOL_APIFEATURE_KEEPZOMBIE | COOL_APIFEATURE_CUSTOMEPSILONTRACE;
 int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY;
 
 int Init_levelTime;

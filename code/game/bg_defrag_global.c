@@ -9,7 +9,7 @@ raceStyle_t defaultRaceStyle;
 const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_LAVAPROTECT | RFL_ANTILOOP;
 const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
-#if WIN32 && DEBUG
+#if WIN32// && DEBUG
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_CSS) | (1 << MV_Q2);// | (1 << MV_PINBALL);
 #else
 const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE);// | (1 << MV_PINBALL);
@@ -407,7 +407,7 @@ void	InitFpsTable() {
 
 void DF_AntiLoop_NewAngle(antiLoopState_t* antiLoopState, vec3_t oldVelocity, vec3_t velocity, float baseSpeed, qboolean inRace) {
 	float xyVel = XYSPEED(velocity);
-	if (xyVel < baseSpeed && !inRace) {
+	if (xyVel < baseSpeed/* && !inRace*/) {
 		antiLoopState->yawAngleChangeSinceBaseSpeed = 0;
 	}
 	else {

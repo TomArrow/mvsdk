@@ -125,28 +125,36 @@ int		trap_CM_TransformedPointContents( const vec3_t p, clipHandle_t model, const
 
 void	trap_CM_BoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
-						  clipHandle_t model, int brushmask ) {
-	syscall( CG_CM_BOXTRACE, results, start, end, mins, maxs, model, brushmask );
+						  clipHandle_t model, int brushmask
+	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
+) {
+	syscall( CG_CM_BOXTRACE, results, start, end, mins, maxs, model, brushmask, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags );
 }
 
 void	trap_CM_CapsuleTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
-						  clipHandle_t model, int brushmask ) {
-	syscall( CG_CM_CAPSULETRACE, results, start, end, mins, maxs, model, brushmask );
+						  clipHandle_t model, int brushmask
+	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
+) {
+	syscall( CG_CM_CAPSULETRACE, results, start, end, mins, maxs, model, brushmask, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
 }
 
 void	trap_CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
 						  clipHandle_t model, int brushmask,
-						  const vec3_t origin, const vec3_t angles ) {
-	syscall( CG_CM_TRANSFORMEDBOXTRACE, results, start, end, mins, maxs, model, brushmask, origin, angles );
+						  const vec3_t origin, const vec3_t angles
+	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
+) {
+	syscall( CG_CM_TRANSFORMEDBOXTRACE, results, start, end, mins, maxs, model, brushmask, origin, angles, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
 }
 
 void	trap_CM_TransformedCapsuleTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
 						  clipHandle_t model, int brushmask,
-						  const vec3_t origin, const vec3_t angles ) {
-	syscall( CG_CM_TRANSFORMEDCAPSULETRACE, results, start, end, mins, maxs, model, brushmask, origin, angles );
+						  const vec3_t origin, const vec3_t angles
+	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
+) {
+	syscall( CG_CM_TRANSFORMEDCAPSULETRACE, results, start, end, mins, maxs, model, brushmask, origin, angles, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
 }
 
 int		trap_CM_MarkFragments( int numPoints, const vec3_t *points, 
@@ -268,6 +276,19 @@ int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum)
 qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
 	return syscall(CG_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
 }
+
+//void trap_CG_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
+//	syscall(CG_COOL_API_NONEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+//}
+//void trap_CG_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
+//	syscall(CG_COOL_API_NONEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+//}
+//void trap_CG_COOL_API_CustomEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, float customEpsilon) {
+//	syscall(CG_COOL_API_CUSTOMEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, PASSFLOAT(customEpsilon));
+//}
+//void trap_CG_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, float customEpsilon) {
+//	syscall(CG_COOL_API_CUSTOMEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, PASSFLOAT(customEpsilon));
+//}
 
 
 

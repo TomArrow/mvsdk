@@ -269,6 +269,8 @@ equ trap_G_COOL_API_PlayerUserCmdGetCount        		-1106	;G_COOL_API_PLAYERUSERC
 equ trap_G_COOL_API_NonEpsilonTrace						-1107	;G_COOL_API_NONEPSILONTRACE 
 equ trap_G_COOL_API_NonEpsilonTraceCapsule				-1108	;G_COOL_API_NONEPSILONTRACE_CAPSULE 
 equ trap_G_COOL_API_SendBackUCMD_GameGenerated			-1109	;G_COOL_API_SENDBACKUCMD_GAMEGENERATED 
+equ trap_G_COOL_API_CustomEpsilonTrace					-1110	;G_COOL_API_CUSTOMEPSILONTRACE 
+equ trap_G_COOL_API_CustomEpsilonTraceCapsule			-1111	;G_COOL_API_CUSTOMEPSILONTRACE_CAPSULE 
 
 ; COOL API DB Calls
 equ trap_G_COOL_API_DB_EscapeString						-1201	;G_COOL_API_DB_ESCAPESTRING

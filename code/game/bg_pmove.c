@@ -2155,6 +2155,9 @@ static void PM_FlyMove( void ) {
 		//turbo boost
 		scale *= 10;
 	}
+	if (pm->cmd.buttons & BUTTON_BOUNCEPOWER) {	//turbo boost for bounce mode (comfier to use mouse2 with it)
+		scale *= 10;
+	}
 
 	//
 	// user intentions
@@ -5418,12 +5421,14 @@ void PM_CheckRollEnd() {
 	}
 }
 
-static void PM_SetAnimAfterQ2() { // idk if this is right lol
+static void PM_SetAnimAfterQ2(vec3_t oldVel) { // idk if this is right lol
 
 	qboolean	duck, run;
 	float xyspeed = sqrtf(pm->ps->velocity[0] * pm->ps->velocity[0] + pm->ps->velocity[1] * pm->ps->velocity[1]);
 	int currentAnim = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT);
 	int newAnim = 0;
+	float delta;
+	qboolean	transitionFromJump;
 
 	if (pm->ps->pm_flags & PMF_DUCKED)
 		duck = qtrue;
@@ -5433,6 +5438,21 @@ static void PM_SetAnimAfterQ2() { // idk if this is right lol
 		run = qtrue;
 	else
 		run = qfalse;
+
+	if ((oldVel[2] < 0) && (pm->ps->velocity[2] > oldVel[2]) && (pm->ps->groundEntityNum == ENTITYNUM_NONE))
+	{
+		delta = oldVel[2];
+	}
+	else
+	{
+		if (pm->ps->groundEntityNum == ENTITYNUM_NONE) {
+			delta = 0;
+		}
+		else {
+			delta = pm->ps->velocity[2] - oldVel[2];
+		}
+	}
+	delta = delta * delta * 0.0001;
 
 	//// check for stand/duck and stop/go transitions
 	//if (duck != client->anim_duck && client->anim_priority < ANIM_DEATH)
@@ -5473,6 +5493,17 @@ newanim:
 	// return to either a running or standing frame
 	newAnim = BOTH_WALK1;
 
+	if (pm->ps->groundEntityNum != ENTITYNUM_NONE) {
+		if (pm->ps->fd.forceSide) {
+			transitionFromJump = 1;
+			pm->ps->fd.forceSide = 0;
+		}
+		else {
+			transitionFromJump = 0;
+			pm->ps->fd.forceSide = 1;
+		}
+	}
+
 	if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
 	{
 		newAnim = BOTH_JUMP1;
@@ -5500,12 +5531,12 @@ newanim:
 		}
 	}
 
-	if (newAnim != currentAnim) {
+	if (newAnim != currentAnim && (currentAnim != BOTH_JUMP1 || transitionFromJump)) {
 		if (newAnim == BOTH_JUMP1 && pm->cmd.upmove > 0) {
 			PM_AddEvent(EV_JUMP);
 		}
 		else if (newAnim != BOTH_JUMP1 && currentAnim == BOTH_JUMP1) {
-			PM_AddEvent(EV_FALL);
+			PM_AddEventWithParm(EV_FALL, delta);
 		}
 		PM_SetAnim(SETANIM_BOTH,newAnim,SETANIM_FLAG_NORMAL,100);
 	}
@@ -5535,42 +5566,50 @@ void PmoveSingle (pmove_t *pmove) {
 	pm = pmove;
 	moveStyle = PM_GetMovePhysics();
 
-	if (moveStyle == MV_Q2) {
-		pmoveq2_t pmq2;
-		memset(&pmq2, 0, sizeof(pmq2));
-		pmq2.ps = pm->ps;
-		pmq2.cmd = pm->cmd;
-		pmq2.tracemask = pm->tracemask;
-		pmq2.trace = pm->trace;
-		pmq2.snapinitial = pm->positionChangedOutsidePmove;
-		pmq2.pointcontents = pm->pointcontents;
-		VectorCopy(pm->mins, pmq2.mins);
-		VectorCopy(pm->maxs, pmq2.maxs);
-		PmoveQ2(&pmq2);
-		PM_SetAnimAfterQ2();
-		pm->ps->commandTime = pm->cmd.serverTime;
-		VectorCopy(pmq2.mins, pm->mins);
-		VectorCopy(pmq2.maxs, pm->maxs);
-		return;
-	}
-	else if (moveStyle == MV_CSS) {
-		pmovecss_t pmcss;
-		memset(&pmcss, 0, sizeof(pmcss));
-		pmcss.ps = pm->ps;
-		pmcss.cmd = pm->cmd;
-		pmcss.tracemask = pm->tracemask;
-		pmcss.trace = pm->trace;
-		pmcss.snapinitial = pm->positionChangedOutsidePmove;
-		pmcss.pointcontents = pm->pointcontents;
-		VectorCopy(pm->mins, pmcss.mins);
-		VectorCopy(pm->maxs, pmcss.maxs);
-		pmcss.oldbuttons = pm->oldButtons;
-		PmoveCSS(&pmcss);
-		PM_SetAnimAfterQ2();
-		pm->ps->commandTime = pm->cmd.serverTime;
-		VectorCopy(pmcss.mins, pm->mins);
-		VectorCopy(pmcss.maxs, pm->maxs);
-		return;
+	if (pm->ps->pm_type != PM_SPECTATOR && pm->ps->pm_type != PM_NOCLIP && pm->ps->pm_type != PM_INTERMISSION) {
+		if (moveStyle == MV_Q2) {
+			pmoveq2_t pmq2;
+			vec3_t oldVel;
+			memset(&pmq2, 0, sizeof(pmq2));
+			pmq2.ps = pm->ps;
+			pmq2.cmd = pm->cmd;
+			pmq2.tracemask = pm->tracemask;
+			pmq2.trace = pm->q2trace ? pm->q2trace : pm->trace;
+			pmq2.haveQ2StyleTrace = pm->q2TraceStyle == 2;
+			//pmq2.trace = pm->trace;
+			pmq2.snapinitial = pm->positionChangedOutsidePmove;
+			pmq2.pointcontents = pm->pointcontents;
+			VectorCopy(pm->mins, pmq2.mins);
+			VectorCopy(pm->maxs, pmq2.maxs);
+			VectorCopy(pm->ps->velocity, oldVel);
+			PmoveQ2(&pmq2);
+			PM_SetAnimAfterQ2(oldVel);
+			pm->ps->commandTime = pm->cmd.serverTime;
+			VectorCopy(pmq2.mins, pm->mins);
+			VectorCopy(pmq2.maxs, pm->maxs);
+			return;
+		}
+		else if (moveStyle == MV_CSS) {
+			pmovecss_t pmcss;
+			vec3_t oldVel;
+			memset(&pmcss, 0, sizeof(pmcss));
+			pmcss.ps = pm->ps;
+			pmcss.cmd = pm->cmd;
+			pmcss.tracemask = pm->tracemask;
+			pmcss.trace = pm->trace;
+			pmcss.snapinitial = pm->positionChangedOutsidePmove;
+			pmcss.pointcontents = pm->pointcontents;
+			VectorCopy(pm->mins, pmcss.mins);
+			VectorCopy(pm->maxs, pmcss.maxs);
+			pmcss.oldbuttons = pm->oldButtons;
+			VectorCopy(pm->ps->velocity, oldVel);
+			PmoveCSS(&pmcss);
+			PM_SetAnimAfterQ2(oldVel);
+			pm->ps->commandTime = pm->cmd.serverTime;
+			VectorCopy(pmcss.mins, pm->mins);
+			VectorCopy(pmcss.maxs, pm->maxs);
+			return;
+		}
 	}
 
 	runFlags = PM_GetRunFlags();

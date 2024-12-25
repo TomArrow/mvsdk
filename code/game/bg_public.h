@@ -57,6 +57,9 @@
 #define MVSDK_CGFLAG_SUBMODEL_TIME2         (1 << 1)        // Set by the client in mvsdk_cgFlags to inform the server that it is capable of reading modelindexes >= 255 from time2
 #define MVSDK_CGFLAG_SUBMODEL_BYPASS        (1 << 2)        // Set by the client in mvsdk_cgFlags to inform the server that it is capable of loading more than 256 submodels (only set when the engine supports it, too)
 
+
+#define TTFLAGSSERVERINFO_HASANTILOOPSTATS		(1<<0) //unused
+
 //
 // config strings are a general means of communicating variable length strings
 // from the server to all connected clients.
@@ -316,7 +319,9 @@ typedef struct {
 	// callbacks to test the world
 	// these will be different functions during game and cgame
 	void		(*trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
+	void		(*q2trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
 	int			(*pointcontents)( const vec3_t point, int passEntityNum );
+	qboolean	q2TraceStyle;
 
 	qboolean	positionChangedOutsidePmove;
 

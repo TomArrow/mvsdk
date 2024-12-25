@@ -1095,6 +1095,12 @@ void trap_G_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const
 void trap_G_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
 	syscall(G_COOL_API_NONEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
 }
+void trap_G_COOL_API_CustomEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
+	syscall(G_COOL_API_CUSTOMEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, customEpsilonTrace,PASSFLOAT(customEpsilon),traceCustomFlags);
+}
+void trap_G_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
+	syscall(G_COOL_API_CUSTOMEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+}
 void trap_G_COOL_API_SendBackUCMD_GameGenerated(int clientNum, usercmd_t* ucmd) {
 	syscall(G_COOL_API_SENDBACKUCMD_GAMEGENERATED, clientNum, ucmd);
 }

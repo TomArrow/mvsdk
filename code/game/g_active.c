@@ -2107,6 +2107,8 @@ void ClientThink_real( gentity_t *ent ) {
 		pm.tracemask = MASK_PLAYERSOLID;
 	}
 	pm.trace = JP_Trace;
+	pm.q2trace = g_q2trace.integer == 2 ? JP_TraceCustomEpsilonQ2 : (g_q2trace.integer ? JP_TraceCustomEpsilonQ2Lite : 0);
+	pm.q2TraceStyle = g_q2trace.integer;
 	pm.rawtrace = trap_Trace;
 	pm.pointcontents = trap_PointContents;
 	pm.debugLevel = g_debugMove.integer;
@@ -2216,6 +2218,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,prePmoveVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
+	level.playerStats[ent - g_entities]->s.pos.trBase[0] = ent->client->pers.antiLoop.yawAngleChangeSinceBaseSpeed;
 	DF_CheckRollSpeed(ent);
 
 	VectorCopy(ent->client->ps.origin,ent->client->postPmovePosition);

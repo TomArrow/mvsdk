@@ -2645,6 +2645,7 @@ void ClientSpawn(gentity_t *ent) {
 	if (!inSegmentedRun) {
 		DF_RaceStateInvalidated(ent,qfalse);
 		ent->client->sess.raceStateInvalidated = qfalse;
+		ent->client->pers.antiLoop.yawAngleChangeSinceBaseSpeed = 0;
 	}
 }
 
