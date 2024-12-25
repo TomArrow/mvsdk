@@ -2126,7 +2126,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 		runInfo->raceStyle.runFlags &= ~RFL_BOT; // bot doesnt work for these atm so may as well remove that.
 		runInfo->raceStyle.runFlags &= ~RFL_CLIMBTECH; // climbtech doesnt work for these atm so may as well remove that.
 		runInfo->raceStyle.runFlags &= ~RFL_JUMPBUGDISABLE; // not meaningful for these atm
-		runInfo->raceStyle.runFlags &= ~RFL_NOROLLS; // not available rn? do i need to do it? 
+		runInfo->raceStyle.runFlags &= ~RFL_NOROLLS; // not meaningful
+		runInfo->raceStyle.runFlags &= ~RFL_NOROLLSTART; // not meaningful
+		runInfo->raceStyle.runFlags &= ~RFL_NODEADRAMPS; // not available rn? do i need to do it? 
 	}
 
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
