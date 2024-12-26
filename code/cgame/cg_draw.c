@@ -6631,7 +6631,7 @@ void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4
 	trap_R_SetColor(color);
 
 	for (i = 0; i <= (length / size); i++) {
-		if (x1 < 640 && y1 < 480 && y1 < ycutoff)
+		if (x1 < cgs.screenWidth && y1 < cgs.screenHeight && y1 < ycutoff)
 			CG_DrawPic(x1, y1, size, size, cgs.media.whiteShader);
 		x1 += stepx;
 		y1 += stepy;
