@@ -1019,7 +1019,7 @@ qboolean ValidRaceSettings(gentity_t* player)
 
 	if (style == MV_CSS)
 		return qfalse;//work in progress
-	if (style == MV_Q2 && g_q2trace.integer != 1) // i decided against the q2 style trace. i just couldnt make it work right. but lets still use the right epsilon. 0 = normal trace. 1 = q2 epsilon. 2 = q2 style
+	if (style == MV_Q2 && (g_q2trace.integer != 1 || g_q2Skims.integer)) // i decided against the q2 style trace. i just couldnt make it work right. but lets still use the right epsilon. 0 = normal trace. 1 = q2 epsilon. 2 = q2 style
 		return qfalse;//work in progress
 
 	//if (cl->sess.accountFlags & JAPRO_ACCOUNTFLAG_NORACE)
@@ -5618,7 +5618,36 @@ void Q3R_SP_rally_checkpoint(gentity_t* ent) {
 }
 
 
+void DF_InvalidateRunsByStyle(movementStyle_e style) {
+	int i;
+	gentity_t* ent = g_entities;
+	for (i = 0; i < level.maxclients; i++, ent++) {
+		
+		if (!ent->inuse || !ent->client) {
+			continue;
+		}
+		if (ent->client->sess.raceMode && ent->client->sess.raceStyle.movementStyle == style) {
+			DF_RaceStateInvalidated(ent, qtrue);
+		}
+	}
+}
 
+int q2TraceModificationCount = 0;
+int q2SkimsModificationCount = 0;
+void DF_CheckRaceCvarChanges(qboolean init) {
+	if (init) {
+		q2TraceModificationCount = g_q2trace.modificationCount;
+		q2SkimsModificationCount = g_q2Skims.modificationCount;
+		return;
+	}
+	if (g_q2trace.modificationCount != q2TraceModificationCount) {
+		q2TraceModificationCount = g_q2trace.modificationCount;
+		DF_InvalidateRunsByStyle(MV_Q2);
+	} else if (g_q2Skims.modificationCount != q2SkimsModificationCount) {
+		q2SkimsModificationCount = g_q2Skims.modificationCount;
+		DF_InvalidateRunsByStyle(MV_Q2);
+	}
+}
 
 
 

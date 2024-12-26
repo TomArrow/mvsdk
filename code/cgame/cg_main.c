@@ -675,6 +675,7 @@ vmCvar_t	cg_mapDefaultMsec;
 vmCvar_t	cg_mapDefaultJump;
 vmCvar_t	cg_mapDefaultRunFlags;
 vmCvar_t	cg_q2trace;
+vmCvar_t	cg_q2Skims;
 
 vmCvar_t	cg_strafebotSlopeHandling;
 
@@ -1039,6 +1040,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_strafebotSlopeHandling, "g_strafebotSlopeHandling", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_q2trace, "g_q2trace", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
+	{ &cg_q2Skims, "g_q2Skims", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_synchronousClients, "g_synchronousClients", "0", 0 },	// communicated by systeminfo
 
 	{ &cg_debugMove, "cg_debugMove", "0", CVAR_TEMP },

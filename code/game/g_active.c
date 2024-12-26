@@ -2109,6 +2109,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.trace = JP_Trace;
 	pm.q2trace = g_q2trace.integer == 2 ? JP_TraceCustomEpsilonQ2 : (g_q2trace.integer ? JP_TraceCustomEpsilonQ2Lite : 0);
 	pm.q2TraceStyle = g_q2trace.integer;
+	pm.q2Skims = g_q2Skims.integer;
 	pm.rawtrace = trap_Trace;
 	pm.pointcontents = trap_PointContents;
 	pm.debugLevel = g_debugMove.integer;

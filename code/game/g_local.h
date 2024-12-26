@@ -1374,6 +1374,7 @@ extern	vmCvar_t	g_mapDefaultMsec;
 extern	vmCvar_t	g_mapDefaultJump;
 extern	vmCvar_t	g_mapDefaultRunFlags;
 extern	vmCvar_t	g_q2trace;
+extern	vmCvar_t	g_q2Skims;
 
 extern	vmCvar_t	g_strafebotSlopeHandling;
 

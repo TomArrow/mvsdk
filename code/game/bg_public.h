@@ -321,7 +321,8 @@ typedef struct {
 	void		(*trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
 	void		(*q2trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
 	int			(*pointcontents)( const vec3_t point, int passEntityNum );
-	qboolean	q2TraceStyle;
+	int			q2TraceStyle;
+	int			q2Skims;
 
 	qboolean	positionChangedOutsidePmove;
 

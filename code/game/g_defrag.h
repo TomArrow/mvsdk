@@ -299,5 +299,6 @@ void DF_SetMapDefaults(raceStyle_t rs);
 
 void DF_HandleUnfinishedDemos();
 const char* DF_FormatFpsString(char* rawFpsString);
+void DF_CheckRaceCvarChanges(qboolean init);
 
 #endif

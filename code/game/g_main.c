@@ -109,6 +109,7 @@ vmCvar_t	g_mapDefaultMsec;
 vmCvar_t	g_mapDefaultJump;
 vmCvar_t	g_mapDefaultRunFlags;
 vmCvar_t	g_q2trace;
+vmCvar_t	g_q2Skims;
 
 vmCvar_t	g_strafebotSlopeHandling;
 
@@ -271,6 +272,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_mapDefaultJump, "g_mapDefaultJump", "1", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 	{ &g_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO | CVAR_ROM, 0, qfalse},
 	{ &g_q2trace, "g_q2trace", "1", CVAR_SYSTEMINFO, 0, qtrue},
+	{ &g_q2Skims, "g_q2Skims", "0", CVAR_SYSTEMINFO, 0, qtrue},
 
 	{ &g_strafebotSlopeHandling, "g_strafebotSlopeHandling", "1", CVAR_SYSTEMINFO | CVAR_CHEAT, 0, qfalse},
 
@@ -912,6 +914,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	mysrand( randomSeed ); // On linux rand() behaves different than on Winodws or in a qvm, ...
 
 	G_RegisterCvars();
+
+	DF_CheckRaceCvarChanges(qtrue);
 
 	G_DB_Init();
 
@@ -2941,6 +2945,7 @@ void G_RunFrame( int levelTime ) {
 	// get any cvar changes
 	G_UpdateCvars();
 
+	DF_CheckRaceCvarChanges(qfalse);
 
 	G_DB_CheckResponses();
 

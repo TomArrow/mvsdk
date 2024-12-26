@@ -77,6 +77,15 @@ typedef struct
 	int			(*pointcontents)(const vec3_t point, int passEntityNum);
 	qboolean	haveQ2StyleTrace;
 	int			debugLevel;
+	int			cornerSkims; 
+	// 0 = no/default q2 behavior. 
+	// 1 = restore intended q2 behavior (based on downward speed like q3 but with length variation too). can't jump during pm_time. feels bad.
+	// 2 = like 1, but let us jump. all following options let us jump
+	// 3 = yes, when downward speed -200. 
+	// 4 = yes, when downward speed -200, long pm_time version.
+	// 5 = yes, always. 
+	// 6 = yes, always, long pm_time version
+	float		airAccelerate;
 } pmoveq2_t;
 
 

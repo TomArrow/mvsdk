@@ -56,6 +56,7 @@ typedef struct
 	int			forwardmove, rightmove, upmove;
 
 	vec3_t		previous_origin;
+	vec3_t		previous_velocity; // TA: addition for non-standard (settable) corner skims (pmq2->cornerSkims)
 	qboolean	ladder;
 } pmlq2_t;
 
@@ -641,6 +642,8 @@ void PMQ2_WaterMove(void)
 	VectorCopy(wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
 
+	pmq2->ps->speed = pmq2_maxspeed;
+
 	if (wishspeed > pmq2_maxspeed)
 	{
 		VectorScale(wishvel, pmq2_maxspeed / wishspeed, wishvel);
@@ -693,6 +696,8 @@ void PMQ2_AirMove(void)
 	// clamp to server defined max speed
 	//
 	maxspeed = (pmq2->ps->pm_flags & PMF_DUCKED) ? pmq2_duckspeed : pmq2_maxspeed;
+
+	pmq2->ps->speed = maxspeed;
 
 	if (wishspeed > maxspeed)
 	{
@@ -815,6 +820,8 @@ void PMQ2_CatagorizePosition(int type)
 			if (oldGroundEntityNum == ENTITYNUM_NONE)
 			{	// just hit the ground
 
+				const int runFlags = PM_GetRunFlags();
+
 				if (pm->debugLevel) {
 					Com_Printf("%i:landed, pmlq2.velocity[2] %f (call %d)\n", c_pmove, pmlq2.velocity[2],type);
 				}
@@ -828,7 +835,6 @@ void PMQ2_CatagorizePosition(int type)
 						// the trace.plane.normal[2] != 1.0f check in particular seems sus no? since the slidemove stuff
 						// works more with various dot products to determine whether to clip etc. oh well. fuck it.
 
-						const int runFlags = PM_GetRunFlags();
 						if (runFlags & RFL_NODEADRAMPS) {
 
 							PMQ2_ClipVelocity(pmlq2.velocity, trace.plane.normal, pmlq2.velocity, 1.01);
@@ -851,10 +857,70 @@ void PMQ2_CatagorizePosition(int type)
 				}
 
 
+				if (pmq2->cornerSkims >= 5) {
+					// this is NONSTANDARD q2 behavior, but in some situations it may happen as you can see below.
+					// the idea of the standard heavior is that you get more pm_time the faster you fall, but obviously
+					// that doesn't work out by default since slidemove will already take away the Z velocity most of the time
+					// We allow pmq2->cornerSkims to set the amount of pm_time added. the high value is supposed to be reserved
+					// for higher falls but gives more boost 
+					//
+					// uhm anyway in normal q3 code this all works via pml.previous_velocity which we could do here too (check -200)
+					// and maybe we will, so consider this just a proof of concept
+					// the problem with that would be that there may not be a previous_velocity due to only reaching ground as a result of 
+					// 1/8 origin snapping of the previous pmove at the start of the new pmove, so that would ahve to be solved as well
+					// but if we did that maybe we should use the logic from below (make downspeed dictate amount of pm_time)
+					//
+					// 
+					pmq2->ps->pm_flags |= PMF_TIME_LAND; 
+					pmq2->ps->pm_time = pmq2->cornerSkims == 6 ? 25 : 18;
+					if (pm->debugLevel) {
+						Com_Printf("%i:PMF_TIME_LAND, cornerSkims %d, pmlq2.previous_velocity[2] %f, pmlq2.velocity[2] %f (call %d)\n", c_pmove, pmq2->cornerSkims,pmlq2.previous_velocity[2],pmlq2.velocity[2], type);
+					}
+				}
+				else if (pmq2->cornerSkims >= 1) {
+					// this restores originally intended behavior (sorta) of q2 (using previous_velocity instead of velocity 
+					// which will usually already have killed downward speed through slidemove
+					// 
+
+					if (pmlq2.previous_velocity[2] < -200) {
+						pmq2->ps->pm_flags |= PMF_TIME_LAND;
+						// don't allow another jump for a little while (TA: it does allow jump if rampfix is active, it just lets us skim corners)
+						if (pmq2->cornerSkims <= 2) { 
+							// value 1 and 2 of cornerSkims restores "intended" q2 behavior based on previous_velocity
+							// value 1 is truly vanilla because it wont let us jump afterwards as q2 devs intended.
+							// value 2 will but keep the rest vanilla. 
+							// 
+							if (pmlq2.previous_velocity[2] < -400)
+								pmq2->ps->pm_time = 25;
+							else
+								pmq2->ps->pm_time = 18;
+						}
+						else {//if (pmq2->cornerSkims > 2) {
+							// values 3 and 4 of cornerSkims behave more like q3 with fixed pm_time no matter the actual previous_velocitty as long as its under negative 200
+							pmq2->ps->pm_time = pmq2->cornerSkims == 4 ? 25 : 18;
+						}
+						if (pm->debugLevel) {
+							Com_Printf("%i:PMF_TIME_LAND, pm_time %d, cornerSkims %d, pmlq2.previous_velocity[2] %f (call %d)\n", c_pmove, pmq2->ps->pm_time, pmq2->cornerSkims, pmlq2.previous_velocity[2], type);
+						}
+					}
+
+				}
 				//pmq2->ps->pm_flags |= PMF_ON_GROUND;
 				// don't do landing time if we were just going down a slope
-				if (pmlq2.velocity[2] < -200)
+				else if (pmlq2.velocity[2] < -200 && !(runFlags & RFL_NODEADRAMPS)) 
 				{
+					// rampfix removes rng-feeling vanilla behavior here by not setting pm_time ever.
+					// in normal gameplay pm_time is almost never set but when it IS set, it wont let us jump and feel terrible
+					// 
+					// a good example of this is com_physicsfps 142 on shitstrafe3. we constantly get stopped.
+					// 
+					// rampfix already also fixes that jump wont trigger wwhen PMF_TIME_LAND is in pm_flags
+					// however we still don't want it to get randomly set because it allows corner skims
+					// and for competitive defrag we dont want a 1-in-a-million technique to become the way 
+					// to win a map
+					// 
+					// See above code (pmq2->cornerSkims) for a more q3 like behavior for skimming corners
+
 					pmq2->ps->pm_flags |= PMF_TIME_LAND;
 					// don't allow another jump for a little while
 					if (pmlq2.velocity[2] < -400)
@@ -922,7 +988,16 @@ void PMQ2_CheckJump(void)
 	if (pmq2->ps->pm_flags & PMF_TIME_LAND)
 	{	// hasn't been long enough since landing to jump again
 		const int runFlags = PM_GetRunFlags();
-		if (runFlags & RFL_NODEADRAMPS) {
+
+		if (pmq2->cornerSkims) {
+			if (pmq2->cornerSkims == 1) {
+				return; // cornerSkims 1 == originally intended vanilla q2 behavior (feels bad, wont be able to bunnyhop)
+			}
+			else {
+				// above 1 cornerSkims we can actually skim corners regularly
+			}
+		}
+		else if (runFlags & RFL_NODEADRAMPS) {
 			// kinda in the same spirit tbh. this behaves like an RNG that sometimes wont let us hop and keep speed.
 			// different fps makes it behave differently as well. it feels really bad.
 			// depending on whether the even floor was clipped during the slidemove,
@@ -1097,6 +1172,7 @@ void PMQ2_FlyMove(qboolean doclip)
 		wishspeed = pmq2_maxspeed;
 	}
 
+	pmq2->ps->speed = pmq2_maxspeed;
 
 	currentspeed = DotProduct(pmlq2.velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
@@ -1475,10 +1551,15 @@ void PmoveQ2(pmoveq2_t* pmove)
 	pmlq2.rightmove = (int)pmq2->cmd.rightmove * 500 / 127;//adapt from q3 range
 	pmlq2.upmove = (int)pmq2->cmd.upmove * 500 / 127;//adapt from q3 range
 
+	// save old vel for corner skims (non-standard Q2 to restore originally intended behavior, controllable via pmq2->cornerSkims, default 0 = deactivated)
+	VectorCopy(pmlq2.velocity, pmlq2.previous_velocity);
+
 	// save old org in case we get stuck
 	VectorCopy(pmq2->ps->origin, pmlq2.previous_origin);
 
 	pmlq2.frametime = pmlq2.msec * 0.001;
+
+	pmq2->ps->basespeed = pmq2->ps->speed = pmq2_maxspeed;
 
 	PMQ2_ClampAngles();
 

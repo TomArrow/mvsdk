@@ -5576,6 +5576,7 @@ void PmoveSingle (pmove_t *pmove) {
 			pmq2.cmd = pm->cmd;
 			pmq2.tracemask = pm->tracemask;
 			pmq2.trace = pm->q2trace ? pm->q2trace : pm->trace;
+			pmq2.cornerSkims = pm->q2Skims;
 			pmq2.haveQ2StyleTrace = pm->q2TraceStyle == 2;
 			//pmq2.trace = pm->trace;
 			pmq2.snapinitial = pm->positionChangedOutsidePmove;

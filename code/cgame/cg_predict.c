@@ -966,6 +966,7 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.ps = &cg.predictedPlayerState;
 	cg_pmove.trace = CG_Trace;
 	cg_pmove.rawtrace = CG_RawTrace;
+	cg_pmove.q2Skims = cg_q2Skims.integer;
 	cg_pmove.q2trace = cg_q2trace.integer == 2 ? CG_TraceQ2Style : (cg_q2trace.integer ? CG_TraceQ2StyleLite : 0);
 	cg_pmove.q2TraceStyle = cg_q2trace.integer;
 	cg_pmove.pointcontents = CG_PointContents;
