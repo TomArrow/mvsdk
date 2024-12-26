@@ -2639,7 +2639,7 @@ qboolean G_GetUserCmd(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance) 
 			didAdvance = qtrue;
 		}
 		else {
-			if (g_developer.integer > 1) {
+			if (g_developer.integer > 10) {
 				G_Printf("^1frame advance delayed (%s) for client %d; level.time %d, msecThisFrame %d, nextMsec %d, delay %d, buffer size %d, nextToExecute %d\n", advance == GETUSERCMD_ADVANCERUNCLIENT ? "RunClient" : "ClientThink", clientNum, level.time, userCmdBuffer[clientNum].msecThisFrame, nextMsec, (currentServerTime - oldCmd->serverTime), userCmdBuffer[clientNum].nextBufferIndex - userCmdBuffer[clientNum].nextToExecute, userCmdBuffer[clientNum].nextToExecute);
 			}
 		}
@@ -2732,7 +2732,7 @@ void G_RunClient( gentity_t *ent ) {
 	// check if we should execute a few client frames that got buffered
 	if (!(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying && g_userCmdBuffer.integer) {
 		while (G_GetUserCmd(ent - g_entities, &ent->client->pers.cmd, GETUSERCMD_ADVANCERUNCLIENT)) {
-			if (g_developer.integer > 1) {
+			if (g_developer.integer > 10) {
 				G_Printf("^3executing buffered cmd for client %d\n", ent-g_entities);
 			}
 			ClientThink_real(ent);
