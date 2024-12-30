@@ -2134,7 +2134,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	//}
 
 	if (runInfo->raceStyle.movementStyle == MV_CSS || runInfo->raceStyle.movementStyle == MV_Q2) {
-		runInfo->raceStyle.jumpLevel = 1;
+		//runInfo->raceStyle.jumpLevel = 1;
 	}
 	runInfo->raceStyle.runFlags &= MovementStyleDisabledRunFlags(runInfo->raceStyle.movementStyle);
 
@@ -4290,11 +4290,11 @@ void UpdateClientRaceVars(gclient_t* client) {
 	if (client->sess.raceMode) { // what happens when switching out of racemode? dont care rn TODO
 		int oldRunFlags = client->sess.raceStyle.runFlags;
 
-		if ((client->sess.raceStyle.movementStyle == MV_Q2 || client->sess.raceStyle.movementStyle == MV_CSS) && client->sess.raceStyle.jumpLevel != 1) {
+		/*if ((client->sess.raceStyle.movementStyle == MV_Q2 || client->sess.raceStyle.movementStyle == MV_CSS) && client->sess.raceStyle.jumpLevel != 1) {
 			client->sess.raceStyle.jumpLevel = 1;
 			trap_SendServerCommand(client - g_clients, "print \"Invalid jump height for style detected.\n\"");
 			DF_RaceStateInvalidated(g_entities + (client - g_clients), qtrue);
-		}
+		}*/
 
 		client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(client->sess.raceStyle.movementStyle);
 
@@ -4929,7 +4929,7 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 			bounceButtonMessage = qtrue;
 		}
 		if (newStyle == MV_Q2 || newStyle == MV_CSS) {
-			ent->client->sess.raceStyle.jumpLevel = 1;
+			//ent->client->sess.raceStyle.jumpLevel = 1;
 		}
 		ent->client->sess.raceStyle.movementStyle = newStyle;
 		ent->client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(newStyle);
