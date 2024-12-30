@@ -246,6 +246,22 @@ qboolean MovementStyleAllowsWeapons(int moveStyle) {
 	return qfalse;
 }
 
+int	MovementStyleDisabledRunFlags(int moveStyle) {
+	int disallowed = 0;
+	if (moveStyle == MV_Q2 || moveStyle == MV_CSS) {
+		disallowed |= RFL_BOT; // bot doesnt work for these atm so may as well remove that.
+		disallowed |= RFL_CLIMBTECH; // climbtech doesnt work for these atm so may as well remove that.
+		disallowed |= RFL_JUMPBUGDISABLE;// not meaningful for these atm
+		disallowed |= RFL_NOROLLS; // not meaningful
+		disallowed |= RFL_NOROLLSTART;// not meaningful
+		disallowed |= RFL_JUMPPADCOMPENSATE; // kinda doesnt work right (yet?) idk. 
+		if (moveStyle == MV_CSS) {
+			disallowed |= RFL_NODEADRAMPS; // not implemented
+		}
+	}
+	return disallowed;
+}
+
 //qboolean MovementStyleHasAntiLoop(int moveStyle) {
 //	if (moveStyle == MV_JK2 || moveStyle == MV_SPEED /*|| moveStyle == MV_JK2SP*/) { // is this correct? does sp need antiloop?
 //		return qfalse;

@@ -604,7 +604,7 @@ static void CG_TouchTriggerPrediction( int msec ) {
 				// genericenemyindex = notvq3
 			}
 			else {
-				BG_TouchJumpPadVelocity(&cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer);
+				BG_TouchJumpPadVelocity(&cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer,(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) ? cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] : MV_JK2);
 			}
 		}
 	}

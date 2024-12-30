@@ -1132,8 +1132,8 @@ void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es);
 void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs);
 
 
-void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec);
-void	BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec);
+void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec, movementStyle_e style);
+void	BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec, movementStyle_e style);
 
 void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap );
 void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );

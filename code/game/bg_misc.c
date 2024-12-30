@@ -2111,14 +2111,22 @@ void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs) {
 	rs->runFlags = USHORT2SHORT(es->apos.trDuration & 65535);
 }
 
-static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity) {
+static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity, movementStyle_e style) {
 	if (!referenceMsec || referenceMsec == -2) return gravity;
-	return roundf((float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
+	if (style == MV_Q2) {
+		// q2 has different type of snapping
+		// DONT use this rn, i think its not 100% reliable
+		// TODO fix this. doesn't seem to calculate things properly? 200fps (800 grav) jumps higher than 125 (under 800) on pornstar-budlight. dumb.
+		return 0.125f*(int)(8.0f*(float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
+	}
+	else {
+		return roundf((float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
+	}
 }
 
-static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float gravity) {
-	float gravcurrent = BG_MsecToEffectiveGravity(msec, gravity);
-	float gravreference = BG_MsecToEffectiveGravity(referenceMsec, gravity);
+static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float gravity, movementStyle_e style) {
+	float gravcurrent = BG_MsecToEffectiveGravity(msec, gravity,style);
+	float gravreference = BG_MsecToEffectiveGravity(referenceMsec, gravity,MV_JK2); // the reference is always the same style
 	return sqrtf(gravcurrent) / sqrtf(gravreference); // magically, after a few hours in excel, it turns out this is 100% accurate. a mathematician could have prolly figured that out in 2 minutes, but im not one. :)
 }
 
@@ -2127,7 +2135,7 @@ static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float
 BG_TouchJumpPad
 ========================
 */
-void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec) {
+void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec,movementStyle_e style) {
 	// spectators don't use jump pads
 	if ( ps->pm_type != PM_NORMAL && ps->pm_type != PM_FLOAT ) {
 		return;
@@ -2156,7 +2164,7 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompens
 	ps->jumppad_frame = ps->pmove_framecount;
 	// give the player the velocity from the jumppad
 	if (msecCompensate) {
-		float compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f);
+		float compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f,style);
 		VectorScale(jumppad->origin2, compensate, ps->velocity);
 	}
 	else {
@@ -2174,7 +2182,7 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompens
 #define JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS 64
 
 // TODO do a test of this against the other code to make sure its accurate.
-void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec) {
+void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec, movementStyle_e style) {
 	vec3_t tmpHorz, tmpVert;
 	int flags = jumppad->weapon;
 	float speedHorz = jumppad->angles2[0];
@@ -2184,7 +2192,7 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msec
 
 
 	if (msecCompensate) {
-		compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f);
+		compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f, style);
 	}
 
 	/*

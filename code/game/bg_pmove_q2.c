@@ -1326,6 +1326,7 @@ void PMQ2_SnapPosition(void)
 	float	base[3]; // this isn't 100% authentic but it should be authentic in the range of short in any case and way beyond it too for a while
 	// try all single bits first
 	static int jitterbits[8] = { 0,4,1,2,3,5,6,7 };
+	int msecRestrict = PM_GetMsecRestrict();
 
 #ifndef AUTHENTIC_Q2SNAP
 	return; // no need for snapping in jk2
@@ -1334,8 +1335,14 @@ void PMQ2_SnapPosition(void)
 	// we don't need this in jk but we keep it for authentic feel just in case.
 
 	// snap velocity to eigths
-	for (i = 0; i < 3; i++)
-		pmq2->ps->velocity[i] = (int)(pmlq2.velocity[i] * 8);
+	if (msecRestrict == -2) { // in float physics mode no snap
+		for (i = 0; i < 3; i++)
+			pmq2->ps->velocity[i] = pmlq2.velocity[i] * 8;
+	}
+	else {
+		for (i = 0; i < 3; i++)
+			pmq2->ps->velocity[i] = (int)(pmlq2.velocity[i] * 8);
+	}
 
 	for (i = 0; i < 3; i++)
 	{
@@ -1343,7 +1350,12 @@ void PMQ2_SnapPosition(void)
 			sign[i] = 1;
 		else
 			sign[i] = -1;
-		pmq2->ps->origin[i] = (int)(pmlq2.origin[i] * 8);
+		if (msecRestrict == -2) {
+			pmq2->ps->origin[i] = pmlq2.origin[i] * 8; // in float physics mode no snap
+		}
+		else {
+			pmq2->ps->origin[i] = (int)(pmlq2.origin[i] * 8);
+		}
 		if (pmq2->ps->origin[i] * 0.125 == pmlq2.origin[i])
 			sign[i] = 0;
 	}
@@ -1504,6 +1516,8 @@ Can be called by either the server or the client
 */
 void PmoveQ2(pmoveq2_t* pmove)
 {
+	int msecRestrict = PM_GetMsecRestrict();
+
 	pmq2 = pmove;
 
 	// clear results
@@ -1519,13 +1533,24 @@ void PmoveQ2(pmoveq2_t* pmove)
 
 
 #ifdef AUTHENTIC_Q2SNAP
-	pmq2->ps->origin[0] = (int)(pmq2->ps->origin[0] * 8.0f);
-	pmq2->ps->origin[1] = (int)(pmq2->ps->origin[1] * 8.0f);
-	pmq2->ps->origin[2] = (int)(pmq2->ps->origin[2] * 8.0f);
-	
-	pmq2->ps->velocity[0] = (int)(pmq2->ps->velocity[0] * 8.0f);
-	pmq2->ps->velocity[1] = (int)(pmq2->ps->velocity[1] * 8.0f);
-	pmq2->ps->velocity[2] = (int)(pmq2->ps->velocity[2] * 8.0f);
+	if (msecRestrict == -2) {
+		pmq2->ps->origin[0] = (pmq2->ps->origin[0] * 8.0f);
+		pmq2->ps->origin[1] = (pmq2->ps->origin[1] * 8.0f);
+		pmq2->ps->origin[2] = (pmq2->ps->origin[2] * 8.0f);
+
+		pmq2->ps->velocity[0] = (pmq2->ps->velocity[0] * 8.0f);
+		pmq2->ps->velocity[1] = (pmq2->ps->velocity[1] * 8.0f);
+		pmq2->ps->velocity[2] = (pmq2->ps->velocity[2] * 8.0f);
+	}
+	else {
+		pmq2->ps->origin[0] = (int)(pmq2->ps->origin[0] * 8.0f);
+		pmq2->ps->origin[1] = (int)(pmq2->ps->origin[1] * 8.0f);
+		pmq2->ps->origin[2] = (int)(pmq2->ps->origin[2] * 8.0f);
+
+		pmq2->ps->velocity[0] = (int)(pmq2->ps->velocity[0] * 8.0f);
+		pmq2->ps->velocity[1] = (int)(pmq2->ps->velocity[1] * 8.0f);
+		pmq2->ps->velocity[2] = (int)(pmq2->ps->velocity[2] * 8.0f);
+	}
 
 	// convert origin and velocity to float values
 	pmlq2.origin[0] = pmq2->ps->origin[0] * 0.125;

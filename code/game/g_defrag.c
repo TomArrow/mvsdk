@@ -2122,16 +2122,18 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	//if (!MovementStyleHasAntiLoop(runInfo->raceStyle.movementStyle)) {
 	//	runInfo->raceStyle.runFlags &= ~RFL_ANTILOOP; // remove antiloop from runs that dont even qualify
 	//}
-	if (runInfo->raceStyle.movementStyle == MV_CSS || runInfo->raceStyle.movementStyle == MV_Q2) {
-		runInfo->raceStyle.runFlags &= ~RFL_BOT; // bot doesnt work for these atm so may as well remove that.
-		runInfo->raceStyle.runFlags &= ~RFL_CLIMBTECH; // climbtech doesnt work for these atm so may as well remove that.
-		runInfo->raceStyle.runFlags &= ~RFL_JUMPBUGDISABLE; // not meaningful for these atm
-		runInfo->raceStyle.runFlags &= ~RFL_NOROLLS; // not meaningful
-		runInfo->raceStyle.runFlags &= ~RFL_NOROLLSTART; // not meaningful
-		if (runInfo->raceStyle.movementStyle == MV_CSS) {
-			runInfo->raceStyle.runFlags &= ~RFL_NODEADRAMPS; // not yet implemented
-		}
-	}
+	//if (runInfo->raceStyle.movementStyle == MV_CSS || runInfo->raceStyle.movementStyle == MV_Q2) {
+	//	runInfo->raceStyle.runFlags &= ~RFL_BOT; // bot doesnt work for these atm so may as well remove that.
+	//	runInfo->raceStyle.runFlags &= ~RFL_CLIMBTECH; // climbtech doesnt work for these atm so may as well remove that.
+	//	runInfo->raceStyle.runFlags &= ~RFL_JUMPBUGDISABLE; // not meaningful for these atm
+	//	runInfo->raceStyle.runFlags &= ~RFL_NOROLLS; // not meaningful
+	//	runInfo->raceStyle.runFlags &= ~RFL_NOROLLSTART; // not meaningful
+	//	if (runInfo->raceStyle.movementStyle == MV_CSS) {
+	//		runInfo->raceStyle.runFlags &= ~RFL_NODEADRAMPS; // not yet implemented
+	//	}
+	//}
+
+	runInfo->raceStyle.runFlags &= MovementStyleDisabledRunFlags(runInfo->raceStyle.movementStyle);
 
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
@@ -4178,6 +4180,7 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 
 		char arg[8] = { 0 };
 		int index, index2, flag;
+		const uint32_t styleAllowed = allowedRunFlags & ~MovementStyleDisabledRunFlags(ent->client->sess.raceStyle.movementStyle);
 		const uint32_t mask = allowedRunFlags & ((1 << MAX_RUN_FLAGS) - 1);
 
 		if (ent->client->pers.raceStartCommandTime) {
@@ -4193,6 +4196,10 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
 		if (~allowedRunFlags & flag) {
 			G_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
+			return;
+		}
+		if (~styleAllowed & flag) {
+			G_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag for this movement style: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
 			return;
 		}
 
@@ -4232,6 +4239,7 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		//else 
 		{
 			ent->client->sess.raceStyle.runFlags = flag ^ ((int)ent->client->sess.raceStyle.runFlags & mask);
+			ent->client->sess.raceStyle.runFlags &= styleAllowed; // just sanity/safety check
 			ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 			DF_RaceStateInvalidated(ent,qtrue);
 			if (flag & RFL_BOT ) {
@@ -4277,6 +4285,15 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 void UpdateClientRaceVars(gclient_t* client) {
 	
 	if (client->sess.raceMode) { // what happens when switching out of racemode? dont care rn TODO
+		int oldRunFlags = client->sess.raceStyle.runFlags;
+
+		client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(client->sess.raceStyle.movementStyle);
+
+		if (client->sess.raceStyle.runFlags != oldRunFlags) { // sanity checks
+			trap_SendServerCommand(client - g_clients, "print \"Invalid run flags detected.\n\"");
+			DF_RaceStateInvalidated(g_entities + (client - g_clients), qtrue);
+		}
+
 		client->ps.fd.forcePowerLevel[FP_LEVITATION] = MAX(0,client->sess.raceStyle.jumpLevel);
 		if (client->sess.raceStyle.movementStyle == MV_FORCE) {
 			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 3; // TODO will this work ok when ppl go out of racemode? idk
@@ -4896,13 +4913,19 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 	}
 
 	if (newStyle >= 0) {
-
-		G_SendServerCommand(ent - g_entities, "print \"Movement style updated.\n\"",qtrue);
+		int oldFlags = ent->client->sess.raceStyle.runFlags;
 
 		if (newStyle == MV_BOUNCE) {
 			bounceButtonMessage = qtrue;
 		}
 		ent->client->sess.raceStyle.movementStyle = newStyle;
+		ent->client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(newStyle);
+		if (ent->client->sess.raceStyle.runFlags != oldFlags) {
+			G_SendServerCommand(ent - g_entities, "print \"Movement style updated, invalid run flags for new style disabled.\n\"", qtrue);
+		}
+		else {
+			G_SendServerCommand(ent - g_entities, "print \"Movement style updated.\n\"", qtrue);
+		}
 		ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 		DF_RaceStateInvalidated(ent,qtrue);
 		//DF_InvalidateSpawn(ent);

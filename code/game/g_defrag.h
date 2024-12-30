@@ -291,6 +291,7 @@ void G_ConvertDefragTriggerTypes();
 qboolean MovementStyleAllowsWeapons(int moveStyle);
 void PlayerSnapshotHackValues(qboolean saveState, int clientNum);
 void PlayerSnapshotRestoreValues();
+int	MovementStyleDisabledRunFlags(int moveStyle);
 //void DF_ResetSegmentedRun(gentity_t* ent);
 //void DF_SegmentedRunStatusInvalidated(gentity_t* ent); // call when something non-deterministic happens (like death). prevents savepos from being used
 
