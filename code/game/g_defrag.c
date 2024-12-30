@@ -2136,7 +2136,7 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	if (runInfo->raceStyle.movementStyle == MV_CSS || runInfo->raceStyle.movementStyle == MV_Q2) {
 		//runInfo->raceStyle.jumpLevel = 1;
 	}
-	runInfo->raceStyle.runFlags &= MovementStyleDisabledRunFlags(runInfo->raceStyle.movementStyle);
+	runInfo->raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(runInfo->raceStyle.movementStyle);
 
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
 	trap_GetServerinfo(serverInfo, sizeof(serverInfo));
