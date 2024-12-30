@@ -2133,6 +2133,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	//	}
 	//}
 
+	if (runInfo->raceStyle.movementStyle == MV_CSS || runInfo->raceStyle.movementStyle == MV_Q2) {
+		runInfo->raceStyle.jumpLevel = 1;
+	}
 	runInfo->raceStyle.runFlags &= MovementStyleDisabledRunFlags(runInfo->raceStyle.movementStyle);
 
 	runInfo->lbType = classifyLeaderBoard(&runInfo->raceStyle, &level.mapDefaultRaceStyle);;
@@ -4287,6 +4290,12 @@ void UpdateClientRaceVars(gclient_t* client) {
 	if (client->sess.raceMode) { // what happens when switching out of racemode? dont care rn TODO
 		int oldRunFlags = client->sess.raceStyle.runFlags;
 
+		if ((client->sess.raceStyle.movementStyle == MV_Q2 || client->sess.raceStyle.movementStyle == MV_CSS) && client->sess.raceStyle.jumpLevel != 1) {
+			client->sess.raceStyle.jumpLevel = 1;
+			trap_SendServerCommand(client - g_clients, "print \"Invalid jump height for style detected.\n\"");
+			DF_RaceStateInvalidated(g_entities + (client - g_clients), qtrue);
+		}
+
 		client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(client->sess.raceStyle.movementStyle);
 
 		if (client->sess.raceStyle.runFlags != oldRunFlags) { // sanity checks
@@ -4914,18 +4923,17 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 
 	if (newStyle >= 0) {
 		int oldFlags = ent->client->sess.raceStyle.runFlags;
+		int oldJump = ent->client->sess.raceStyle.jumpLevel;
 
 		if (newStyle == MV_BOUNCE) {
 			bounceButtonMessage = qtrue;
 		}
+		if (newStyle == MV_Q2 || newStyle == MV_CSS) {
+			ent->client->sess.raceStyle.jumpLevel = 1;
+		}
 		ent->client->sess.raceStyle.movementStyle = newStyle;
 		ent->client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(newStyle);
-		if (ent->client->sess.raceStyle.runFlags != oldFlags) {
-			G_SendServerCommand(ent - g_entities, "print \"Movement style updated, invalid run flags for new style disabled.\n\"", qtrue);
-		}
-		else {
-			G_SendServerCommand(ent - g_entities, "print \"Movement style updated.\n\"", qtrue);
-		}
+		G_SendServerCommand(ent - g_entities, va("print \"Movement style updated%s.%s\n\"", ent->client->sess.raceStyle.runFlags != oldFlags ? ", invalid run flags for new style disabled" : "", ent->client->sess.raceStyle.jumpLevel != oldJump ? " Jumplevel reset for new style." : ""), qtrue);
 		ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 		DF_RaceStateInvalidated(ent,qtrue);
 		//DF_InvalidateSpawn(ent);
