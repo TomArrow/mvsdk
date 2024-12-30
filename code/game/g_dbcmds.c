@@ -1487,9 +1487,11 @@ static void G_PWBCryptReturned(int status, const char* errorMessage) {
 				break;
 		}
 
+#ifdef BCRYPTDEBUG
 		if (g_developer.integer) {
 			trap_SendServerCommand(loginData.clientnum, va("print \"G_Login_PWBCryptReturned: Client %d (user %s), Crypted pw: %s\n\"", loginData.clientnum, loginData.username, loginData.password));
 		}
+#endif
 	}
 	else {
 		trap_SendServerCommand(loginData.clientnum, "print \"^1Failed to get bcrypted password from DB API (no response row).\n\"");

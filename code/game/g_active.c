@@ -5,6 +5,8 @@
 
 userCmdBuffer_t		userCmdBuffer[MAX_CLIENTS];
 
+static usercmd_t nullUserCmd={ 0 };
+
 void G_UserCmdBuffer_NewFrame() {
 	int i;
 	for (i = 0; i < level.maxclients; i++) {
@@ -1832,7 +1834,13 @@ void ClientThink_real( gentity_t *ent ) {
 		G_CenterPrint(client - level.clients, 3, "^3You were force-logged in by an admin. Please change your password with /changepassword, log out and log in again.", qfalse, qtrue, qfalse);
 	}
 
-	BG_UserCmdToUserStats(&client->pers.cmd,&level.playerStats[ent-g_entities]->s);
+	if (client->sess.sessionTeam != TEAM_SPECTATOR) {
+		BG_UserCmdToUserStats(&client->pers.cmd, &level.playerStats[ent - g_entities]->s);
+	}
+	else { // dont waste demo space on commands of spectators, what for...
+		BG_UserCmdToUserStats(&nullUserCmd, &level.playerStats[ent - g_entities]->s);
+	}
+
 	BG_RaceStyleToUserStats(&client->sess.raceStyle,&level.playerStats[ent-g_entities]->s);
 	level.playerStats[ent - g_entities]->s.activeForcePass = classifyLeaderBoard(&client->sess.raceStyle,&level.mapDefaultRaceStyle );
 
