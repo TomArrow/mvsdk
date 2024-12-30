@@ -2103,7 +2103,7 @@ void Cmd_Latest_f(gentity_t* ent) {
 	else {
 		page = 0;
 	}
-	page = MAX(page, 0);
+	page = MAX(page-1, 0);
 	first = page * 10;
 
 #define LATESTQUERY "SELECT runs.userid,users.username,runs.course,runs.subcourse,runs.style,runs.msec,runs.jump,runs.variant,runs.runflags,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,runs.duration_ms,runs.runwhen FROM runs LEFT JOIN users ON (users.id = runs.userid) LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
