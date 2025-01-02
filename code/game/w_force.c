@@ -1622,7 +1622,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 		{//an enemy or object
 			if (ForcePowerUsableOn(self, traceEnt, FP_LIGHTNING))
 			{
-				int	dmg = (traceEnt->client && traceEnt->client->sess.raceMode) ? 1: Q_irand(1,2); //Q_irand( 1, 3 );
+				int	dmg = (traceEnt->client && traceEnt->client->sess.raceMode) ? 1: Q_irand(1,2, self->client && self->client->sess.raceMode,1); //Q_irand( 1, 3 );
 				
 				int modPowerLevel = -1;
 				
@@ -1654,7 +1654,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 				}
 				if ( traceEnt->client )
 				{
-					if ( !Q_irand( 0, 2 ) )
+					if ( !Q_irand( 0, 2, qfalse, 1 ) )
 					{
 						G_Sound( traceEnt, CHAN_BODY, G_SoundIndex( "sound/weapons/force/lightninghit.wav" ) );
 					}
@@ -1927,7 +1927,7 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 				}
 				*/
 
-				if ( !Q_irand( 0, 2 ) )
+				if ( !Q_irand( 0, 2, self->client && self->client->sess.raceMode, 1) )
 				{
 					//G_Sound( traceEnt, CHAN_BODY, G_SoundIndex( "sound/weapons/force/lightninghit.wav" ) );
 				}
@@ -3169,7 +3169,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 						}
 
 						// TODO what about racemode? dont have to care i guess
-						if (!OnSameTeam(self, push_list[x]) && Q_irand(1, 10) <= randfact && canPullWeapon)
+						if (!OnSameTeam(self, push_list[x]) && Q_irand(1, 10, self->client && self->client->sess.raceMode, 5) <= randfact && canPullWeapon)
 						{
 							vec3_t uorg, vecnorm;
 
@@ -3584,7 +3584,7 @@ void DoGripAction(gentity_t *self, forcePowers_t forcePower)
 			G_Damage(gripEnt, self, self, NULL, NULL, 20, DAMAGE_NO_ARMOR, MOD_FORCE_DARK);
 
 			//Must play custom sounds on the actual entity. Don't use G_Sound (it creates a temp entity for the sound)
-			G_EntitySound( gripEnt, CHAN_VOICE, G_SoundIndex(va( "*choke%d.wav", Q_irand( 1, 3 ) )) );
+			G_EntitySound( gripEnt, CHAN_VOICE, G_SoundIndex(va( "*choke%d.wav", Q_irand( 1, 3, qfalse,2 ) )) );
 
 			gripEnt->client->ps.forceHandExtend = HANDEXTEND_CHOKE;
 			gripEnt->client->ps.forceHandExtendTime = nowTimeGripped + 2000;
@@ -3670,7 +3670,7 @@ void DoGripAction(gentity_t *self, forcePowers_t forcePower)
 			G_Damage(gripEnt, self, self, NULL, NULL, 40, DAMAGE_NO_ARMOR, MOD_FORCE_DARK);
 
 			//Must play custom sounds on the actual entity. Don't use G_Sound (it creates a temp entity for the sound)
-			G_EntitySound( gripEnt, CHAN_VOICE, G_SoundIndex(va( "*choke%d.wav", Q_irand( 1, 3 ) )) );
+			G_EntitySound( gripEnt, CHAN_VOICE, G_SoundIndex(va( "*choke%d.wav", Q_irand( 1, 3,qfalse,2 ) )) );
 
 			gripEnt->client->ps.forceHandExtend = HANDEXTEND_CHOKE;
 			gripEnt->client->ps.forceHandExtendTime = nowTimeGripped + 2000;
@@ -4365,7 +4365,7 @@ void SeekerDroneUpdate(gentity_t *self)
 				WP_FireGenericBlasterMissile(self, org, endir, 0, 15, 2000, MOD_BLASTER);
 				G_SoundAtLoc( org, CHAN_WEAPON, G_SoundIndex("sound/weapons/bryar/fire.wav") );
 
-				self->client->ps.droneFireTime = nowTime + (self->client->sess.raceMode? 550: Q_irand(400, 700));
+				self->client->ps.droneFireTime = nowTime + (self->client->sess.raceMode? 550: Q_irand(400, 700, self->client && self->client->sess.raceMode, 550));
 			}
 		}
 	}
@@ -5169,7 +5169,7 @@ qboolean Jedi_DodgeEvasion( gentity_t *self, gentity_t *shooter, trace_t *tr, in
 	if (g_forceDodge.integer == 2)
 	{
 		// dont do this check in racemode
-		if ( !self->client->sess.raceMode && Q_irand( 1, 7 ) > self->client->ps.fd.forcePowerLevel[FP_SPEED] )
+		if ( !self->client->sess.raceMode && Q_irand( 1, 7, qfalse, 2) > self->client->ps.fd.forcePowerLevel[FP_SPEED] )
 		{//more likely to fail on lower force speed level
 			return qfalse;
 		}

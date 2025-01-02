@@ -1327,7 +1327,7 @@ static void WP_FlechetteMainFire( gentity_t *ent )
 		missile->clipmask = MASK_SHOT | CONTENTS_LIGHTSABER;
 
 		// we don't want it to bounce forever
-		missile->bounceCount = Q_irand(5,8);
+		missile->bounceCount = Q_irand(5,8, ent->client && ent->client->sess.raceMode, 6);
 
 		missile->s.eFlags |= EF_BOUNCE_SHRAPNEL;
 	}
@@ -2270,9 +2270,9 @@ void charge_stick (gentity_t *self, gentity_t *other, trace_t *trace)
 		VectorCopy(trace->plane.normal, vNor);
 		VectorNormalize(vNor);
 		VectorNPos(self->s.pos.trDelta, tN);
-		self->s.pos.trDelta[0] += vNor[0]*(tN[0]*(((float)Q_irand(1, 10))*0.1));
-		self->s.pos.trDelta[1] += vNor[1]*(tN[1]*(((float)Q_irand(1, 10))*0.1));
-		self->s.pos.trDelta[2] += vNor[1]*(tN[2]*(((float)Q_irand(1, 10))*0.1));
+		self->s.pos.trDelta[0] += vNor[0]*(tN[0]*(((float)Q_irand(1, 10, self->parent && self->parent->client && self->parent->client->sess.raceMode, 5))*0.1));
+		self->s.pos.trDelta[1] += vNor[1]*(tN[1]*(((float)Q_irand(1, 10, self->parent && self->parent->client && self->parent->client->sess.raceMode, 5))*0.1));
+		self->s.pos.trDelta[2] += vNor[1]*(tN[2]*(((float)Q_irand(1, 10, self->parent && self->parent->client && self->parent->client->sess.raceMode, 5))*0.1));
 
 		vectoangles(vNor, self->s.angles);
 		vectoangles(vNor, self->s.apos.trBase);
@@ -2368,14 +2368,14 @@ void DetPackBlow(gentity_t *self)
 void DetPackPain(gentity_t *self, gentity_t *attacker, int damage)
 {
 	self->think = DetPackBlow;
-	self->nextthink = level.time + Q_irand(50, 100);
+	self->nextthink = level.time + Q_irand(50, 100, self->parent && self->parent->client && self->parent->client->sess.raceMode, 75);
 	self->takedamage = qfalse;
 }
 
 void DetPackDie(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod)
 {
 	self->think = DetPackBlow;
-	self->nextthink = level.time + Q_irand(50, 100);
+	self->nextthink = level.time + Q_irand(50, 100, self->parent && self->parent->client && self->parent->client->sess.raceMode, 75);
 	self->takedamage = qfalse;
 }
 
@@ -2660,7 +2660,7 @@ void WP_FireStunBaton( gentity_t *ent, qboolean alt_fire )
 		G_PlayEffect( EFFECT_STUNHIT, tr.endpos, tr.plane.normal );
 
 		// TEMP!
-		G_Sound( tr_ent, CHAN_WEAPON, G_SoundIndex( va("sound/weapons/melee/punch%d", Q_irand(1, 4)) ) );
+		G_Sound( tr_ent, CHAN_WEAPON, G_SoundIndex( va("sound/weapons/melee/punch%d", Q_irand(1, 4,qfalse,2)) ) );
 
 		G_Damage( tr_ent, ent, ent, forward, tr.endpos, STUN_BATON_DAMAGE, (DAMAGE_NO_KNOCKBACK|DAMAGE_HALF_ABSORB), MOD_STUN_BATON );
 		//alt-fire?
@@ -3341,7 +3341,7 @@ void emplaced_gun_update(gentity_t *self)
 		//G_PlayEffect(EFFECT_EXPLOSION, explOrg, /*self->r.currentAngles*/puffAngle);
 		G_PlayEffect(EFFECT_EXPLOSION_DETPACK, explOrg, /*self->r.currentAngles*/puffAngle);
 
-		self->boltpoint3 = level.time + Q_irand(2500, 3500);
+		self->boltpoint3 = level.time + Q_irand(2500, 3500, g_defrag.integer, 3000);
 
 		G_RadiusDamage(self->r.currentOrigin, self, self->splashDamage, self->splashRadius, self, MOD_UNKNOWN);
 
@@ -3362,7 +3362,7 @@ void emplaced_gun_update(gentity_t *self)
 			//What.. was I thinking?
 			G_PlayEffect(EFFECT_SMOKE, smokeOrg, puffAngle);
 
-			self->boltpoint2 = level.time + Q_irand(250, 400);
+			self->boltpoint2 = level.time + Q_irand(250, 400, qfalse, 325);
 			//This would be much better if we checked a value on the entity on the client
 			//and then spawned smoke there instead of sending over a bunch of events. But
 			//this will do for now, an event every 250-400ms isn't too bad.

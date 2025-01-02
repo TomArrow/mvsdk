@@ -1111,7 +1111,7 @@ qboolean BG_FlippingAnim( int anim );
 qboolean BG_SpinningSaberAnim( int anim );
 qboolean BG_SaberInSpecialAttack( int anim );
 int BG_BrokenParryForAttack( int move );
-int BG_BrokenParryForParry( int move );
+int BG_BrokenParryForParry( int move, qboolean raceMode );
 int BG_KnockawayForParry( int move );
 qboolean BG_InRoll( playerState_t *ps, int anim );
 qboolean BG_InDeathAnim( int anim );

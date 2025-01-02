@@ -2256,7 +2256,7 @@ void ClientThink_real( gentity_t *ent ) {
 		{
 			gentity_t *clientLost = &g_entities[pm.checkDuelLoss-1];
 
-			if (clientLost && clientLost->inuse && clientLost->client && Q_irand(0, 40) > clientLost->health)
+			if (clientLost && clientLost->inuse && clientLost->client && Q_irand(0, 40, clientLost->client->sess.raceMode, 20) > clientLost->health)
 			{
 				vec3_t attDir;
 				VectorSubtract(ent->client->ps.origin, clientLost->client->ps.origin, attDir);
@@ -2492,7 +2492,7 @@ void ClientThink_real( gentity_t *ent ) {
 						faceKicked->client->ps.stats[STAT_HEALTH] > 0 &&
 						faceKicked->client->ps.forceHandExtend != HANDEXTEND_KNOCKDOWN)
 					{
-						if (Q_irand(1, 10) <= 3)
+						if (Q_irand(1, 10, faceKicked->client->sess.raceMode,5) <= 3)
 						{ //only actually knock over sometimes, but always do velocity hit
 							faceKicked->client->ps.forceHandExtend = HANDEXTEND_KNOCKDOWN;
 							faceKicked->client->ps.forceHandExtendTime = LEVELTIME(faceKicked->client) + 1100;
@@ -2509,7 +2509,7 @@ void ClientThink_real( gentity_t *ent ) {
 					}
 				}
 
-				G_Sound( faceKicked, CHAN_AUTO, G_SoundIndex( va("sound/weapons/melee/punch%d", Q_irand(1, 4)) ) );
+				G_Sound( faceKicked, CHAN_AUTO, G_SoundIndex( va("sound/weapons/melee/punch%d", Q_irand(1, 4,qfalse,2)) ) );
 			}
 		}
 

@@ -1572,15 +1572,15 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 			{
 			case HL_FOOT_RT:
 			case HL_FOOT_LT:
-				if ( mod == MOD_SABER && !Q_irand( 0, 2 ) )
+				if ( mod == MOD_SABER && !Q_irand( 0, 2, qfalse,1 ) )
 				{
 					return BOTH_DEATH10;//chest: back flip
 				}
-				else if ( !Q_irand( 0, 2 ) )
+				else if ( !Q_irand( 0, 2,qfalse,1 ) )
 				{
 					deathAnim = BOTH_DEATH4;//back: forward
 				}
-				else if ( !Q_irand( 0, 1 ) )
+				else if ( !Q_irand( 0, 1, qfalse, 0 ) )
 				{
 					deathAnim = BOTH_DEATH5;//same as 4
 				}
@@ -1590,11 +1590,11 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				break;
 			case HL_LEG_RT:
-				if ( !Q_irand( 0, 2 ) )
+				if ( !Q_irand( 0, 2,qfalse,1 ) )
 				{
 					deathAnim = BOTH_DEATH4;//back: forward
 				}
-				else if ( !Q_irand( 0, 1 ) )
+				else if ( !Q_irand( 0, 1, qfalse, 0 ) ) // doesnt this q_irand always return 0?
 				{
 					deathAnim = BOTH_DEATH5;//same as 4
 				}
@@ -1604,11 +1604,11 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				break;
 			case HL_LEG_LT:
-				if ( !Q_irand( 0, 2 ) )
+				if ( !Q_irand( 0, 2, qfalse, 1) )
 				{
 					deathAnim = BOTH_DEATH4;//back: forward
 				}
-				else if ( !Q_irand( 0, 1 ) )
+				else if ( !Q_irand( 0, 1, qfalse, 0) )
 				{
 					deathAnim = BOTH_DEATH5;//same as 4
 				}
@@ -1624,11 +1624,11 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				else
 				{
-					if ( !Q_irand( 0, 2 ) )
+					if ( !Q_irand( 0, 2, qfalse, 1) )
 					{
 						deathAnim = BOTH_DEATH4;//back: forward
 					}
-					else if ( !Q_irand( 0, 1 ) )
+					else if ( !Q_irand( 0, 1, qfalse, 0) )
 					{
 						deathAnim = BOTH_DEATH5;//same as 4
 					}
@@ -1657,13 +1657,13 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				else 
 				{
 					//TEMP HACK: play spinny deaths less often
-					if ( Q_irand( 0, 1 ) )
+					if ( Q_irand( 0, 1, qfalse, 0) )
 					{
 						deathAnim = BOTH_DEATH8;//chest right: spin high
 					}
 					else
 					{
-						switch ( Q_irand( 0, 2 ) )
+						switch ( Q_irand( 0, 2, qfalse, 1) )
 						{
 						default:
 						case 0:
@@ -1698,13 +1698,13 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				else
 				{
 					//TEMP HACK: play spinny deaths less often
-					if ( Q_irand( 0, 1 ) )
+					if ( Q_irand( 0, 1, qfalse, 0) )
 					{
 						deathAnim = BOTH_DEATH14;//chest left: spin high
 					}
 					else
 					{
-						switch ( Q_irand( 0, 2 ) )
+						switch ( Q_irand( 0, 2, qfalse, 1) )
 						{
 						default:
 						case 0:
@@ -1724,7 +1724,7 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 			case HL_WAIST:
 				if ( damage <= max_health*0.25 || !VectorLengthSquared( objVelocity ) )
 				{
-					if ( !Q_irand( 0, 1 ) )
+					if ( !Q_irand( 0, 1, qfalse, 0) )
 					{
 						deathAnim = BOTH_DEATH18;//gut: fall right
 					}
@@ -1739,7 +1739,7 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				else if ( damage <= max_health*0.75 )
 				{
-					if ( !Q_irand( 0, 1 ) )
+					if ( !Q_irand( 0, 1, qfalse, 0) )
 					{
 						deathAnim = BOTH_DEATH1;//chest: backward med
 					}
@@ -2667,7 +2667,7 @@ void G_Dismember( gentity_t *ent, vec3_t point, int limbType, float limbRollBase
 	VectorCopy( newPoint, limb->s.pos.trBase );
 	limb->think = LimbThink;
 	limb->touch = LimbTouch;
-	limb->speed = level.time + Q_irand(4000, 8000);
+	limb->speed = level.time + Q_irand(4000, 8000, qfalse, 6000);
 	limb->nextthink = level.time + FRAMETIME;
 
 	//need size, contents, clipmask
@@ -2743,15 +2743,15 @@ void G_Dismember( gentity_t *ent, vec3_t point, int limbType, float limbRollBase
 
 	if ( jk2gameplay == VERSION_1_02 )
 	{
-		limb->s.apos.trDelta[0] = Q_irand( -300, 300 );
-		limb->s.apos.trDelta[2] = Q_irand( -300, 300 );
-		limb->s.apos.trDelta[1] = Q_irand( -300, 300 );
+		limb->s.apos.trDelta[0] = Q_irand( -300, 300, qfalse, 0 );
+		limb->s.apos.trDelta[2] = Q_irand( -300, 300, qfalse, 0 );
+		limb->s.apos.trDelta[1] = Q_irand( -300, 300, qfalse, 0 );
 
 		if (limbType == G2_MODELPART_WAIST)
 		{
-			limb->s.apos.trDelta[0] = Q_irand( -60, 60 );
-			limb->s.apos.trDelta[2] = Q_irand( -60, 60 );
-			limb->s.apos.trDelta[1] = Q_irand( -60, 60 );
+			limb->s.apos.trDelta[0] = Q_irand( -60, 60, qfalse, 0 );
+			limb->s.apos.trDelta[2] = Q_irand( -60, 60, qfalse, 0 );
+			limb->s.apos.trDelta[1] = Q_irand( -60, 60, qfalse, 0 );
 		}
 	}
 	else
@@ -2925,7 +2925,7 @@ void G_CheckForDismemberment(gentity_t *ent, vec3_t point, int damage, int death
 
 	// if (gGAvoidDismember != 2)
 	{ //this means do the dismemberment regardless of randomness and damage
-		if (Q_irand(0, 100) > dismember)
+		if (Q_irand(0, 100, qfalse, 50) > dismember)
 		{
 			return;
 		}

@@ -1496,7 +1496,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 	case EV_SABER_ATTACK:
 		DEBUGNAME("EV_SABER_ATTACK");
-		trap_S_StartSound(es->pos.trBase, es->number, CHAN_WEAPON, trap_S_RegisterSound(va("sound/weapons/saber/saberhup%i.wav", Q_irand(1, 8))));
+		trap_S_StartSound(es->pos.trBase, es->number, CHAN_WEAPON, trap_S_RegisterSound(va("sound/weapons/saber/saberhup%i.wav", Q_irand(1, 8,qfalse,4))));
 		break;
 
 	case EV_SABER_HIT:
@@ -1506,9 +1506,9 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 			qhandle_t hitSound;
 
 			if (cg_newSaberHitSounds.integer == 1)
-				hitSoundNum = Q_irand(1, 3);
+				hitSoundNum = Q_irand(1, 3,qfalse,2);
 			else if (cg_newSaberHitSounds.integer > 1) 
-				hitSoundNum = Q_irand(0, 3);
+				hitSoundNum = Q_irand(0, 3,qfalse,2);
 
 			hitSound = hitSoundNum ? trap_S_RegisterSound(va("sound/weapons/saber/saberhit%i.wav", hitSoundNum)) : trap_S_RegisterSound("sound/weapons/saber/saberhit.wav");
 			if (cgs.isCaMod && cg.snap->ps.duelInProgress && es->otherEntityNum != cg.snap->ps.clientNum && es->otherEntityNum != cg.snap->ps.duelIndex)
@@ -1573,7 +1573,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 			{
 				fxDir[1] = 1;
 			}
-			trap_S_StartSound(es->origin, es->number, CHAN_AUTO, trap_S_RegisterSound(va( "sound/weapons/saber/saberblock%d.wav", Q_irand(1, 9) )));
+			trap_S_StartSound(es->origin, es->number, CHAN_AUTO, trap_S_RegisterSound(va( "sound/weapons/saber/saberblock%d.wav", Q_irand(1, 9,qfalse,5) )));
 			trap_FX_PlayEffectID( trap_FX_RegisterEffect("saber/saber_block.efx"), es->origin, fxDir );
 
 			g_saberFlashTime = cg.time-50;

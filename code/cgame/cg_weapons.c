@@ -1650,17 +1650,17 @@ void CG_FireWeapon( centity_t *cent, qboolean altFire ) {
 		{
 			if (ent->weapon == WP_ROCKET_LAUNCHER)
 			{
-				CGCam_Shake(Q_irand(2, 3), 350);
+				CGCam_Shake(Q_irand(2, 3, qfalse, 2), 350);
 			}
 			else if (ent->weapon == WP_REPEATER)
 			{
-				CGCam_Shake(Q_irand(2, 3), 350);
+				CGCam_Shake(Q_irand(2, 3, qfalse, 2), 350);
 			}
 			else if (ent->weapon == WP_FLECHETTE)
 			{
 				if (altFire)
 				{
-					CGCam_Shake(Q_irand(2, 3), 350);
+					CGCam_Shake(Q_irand(2, 3,qfalse,2), 350);
 				}
 				else
 				{

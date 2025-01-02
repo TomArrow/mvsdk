@@ -537,7 +537,7 @@ void BotInputToUserCommand(bot_input_t *bi, usercmd_t *ucmd, int delta_angles[3]
 
 	if (bi->actionflags & ACTION_FORCEPOWER) ucmd->buttons |= BUTTON_FORCEPOWER;
 
-	if (useTime < level.time && Q_irand(1, 10) < 5)
+	if (useTime < level.time && Q_irand(1, 10, qfalse, 5) < 5)
 	{ //for now just hit use randomly in case there's something useable around
 		ucmd->buttons |= BUTTON_USE;
 	}
@@ -2502,7 +2502,7 @@ int BotGetFlagBack(bot_state_t *bs)
 		if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 		{
 			bs->wpDestination = gWPArray[tempInt];
-			bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000);
+			bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000, qfalse, 2500);
 		}
 	}
 
@@ -2566,7 +2566,7 @@ int BotGuardFlagCarrier(bot_state_t *bs)
 		if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 		{
 			bs->wpDestination = gWPArray[tempInt];
-			bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000);
+			bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000, qfalse, 2500);
 		}
 	}
 
@@ -3430,7 +3430,7 @@ int GetBestIdleGoal(bot_state_t *bs)
 	{
 		if (bs->randomNavTime < level.time)
 		{
-			if (Q_irand(1, 10) < 5)
+			if (Q_irand(1, 10, qfalse, 5) < 5)
 			{
 				bs->randomNav = 1;
 			}
@@ -3439,7 +3439,7 @@ int GetBestIdleGoal(bot_state_t *bs)
 				bs->randomNav = 0;
 			}
 			
-			bs->randomNavTime = level.time + Q_irand(5000, 15000);
+			bs->randomNavTime = level.time + Q_irand(5000, 15000, qfalse, 10000);
 		}
 	}
 
@@ -3608,7 +3608,7 @@ void GetIdealDestination(bot_state_t *bs)
 
 				bs->wpCurrent = gWPArray[tempInt];
 
-				bs->escapeDirTime = level.time + Q_irand(500, 1000);//Q_irand(1000, 1400);
+				bs->escapeDirTime = level.time + Q_irand(500, 1000, qfalse, 750);//Q_irand(1000, 1400);
 
 				//G_Printf("Escaping from scary bad thing [%s]\n", badthing->classname);
 			}
@@ -3657,7 +3657,7 @@ void GetIdealDestination(bot_state_t *bs)
 			if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 			{
 				bs->wpDestination = gWPArray[tempInt];
-				bs->wpDestSwitchTime = level.time + Q_irand(5000, 10000);
+				bs->wpDestSwitchTime = level.time + Q_irand(5000, 10000, qfalse, 7500);
 			}
 		}
 	}
@@ -3680,7 +3680,7 @@ void GetIdealDestination(bot_state_t *bs)
 			if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 			{
 				bs->wpDestination = gWPArray[tempInt];
-				bs->wpDestSwitchTime = level.time + Q_irand(5000, 10000);
+				bs->wpDestSwitchTime = level.time + Q_irand(5000, 10000, qfalse, 7500);
 			}
 		}
 	}
@@ -3739,11 +3739,11 @@ void GetIdealDestination(bot_state_t *bs)
 
 				if (g_gametype.integer == GT_SINGLE_PLAYER)
 				{ //be more aggressive
-					bs->wpDestSwitchTime = level.time + Q_irand(300, 1000);
+					bs->wpDestSwitchTime = level.time + Q_irand(300, 1000, qfalse, 600);
 				}
 				else
 				{
-					bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000);
+					bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000, qfalse, 3000);
 				}
 			}
 		}
@@ -4081,7 +4081,7 @@ void CommanderBotTeamplayAI(bot_state_t *bs)
 				bst->squadLeader = &g_entities[bs->client];
 			}
 
-			if (bs->squadRegroupInterval < level.time && Q_irand(1, 10) < 5)
+			if (bs->squadRegroupInterval < level.time && Q_irand(1, 10, qfalse, 5) < 5)
 			{ //every so often tell the squad to regroup for the sake of variation
 				if (bst->teamplayState == TEAMPLAYSTATE_FOLLOWING)
 				{
@@ -4090,7 +4090,7 @@ void CommanderBotTeamplayAI(bot_state_t *bs)
 
 				bs->isSquadLeader = 0;
 				bs->squadCannotLead = level.time + 500;
-				bs->squadRegroupInterval = level.time + Q_irand(45000, 65000);
+				bs->squadRegroupInterval = level.time + Q_irand(45000, 65000, qfalse, 55000);
 			}
 		}
 
@@ -4152,7 +4152,7 @@ void MeleeCombatHandling(bot_state_t *bs)
 			bs->meleeStrafeDir = 1;
 		}
 
-		bs->meleeStrafeTime = level.time + Q_irand(500, 1800);
+		bs->meleeStrafeTime = level.time + Q_irand(500, 1800, qfalse, 1100);
 	}
 
 	mins[0] = -15;
@@ -4236,7 +4236,7 @@ void SaberCombatHandling(bot_state_t *bs)
 			bs->meleeStrafeDir = 1;
 		}
 
-		bs->meleeStrafeTime = level.time + Q_irand(500, 1800);
+		bs->meleeStrafeTime = level.time + Q_irand(500, 1800, qfalse, 1100);
 	}
 
 	mins[0] = -15;
@@ -4302,7 +4302,7 @@ void SaberCombatHandling(bot_state_t *bs)
 		if (bs->frame_Enemy_Len > 128)
 		{ //be ready to attack
 			bs->saberDefending = 0;
-			bs->saberDefendDecideTime = level.time + Q_irand(1000, 2000);
+			bs->saberDefendDecideTime = level.time + Q_irand(1000, 2000, qfalse, 1500);
 		}
 		else
 		{
@@ -4317,7 +4317,7 @@ void SaberCombatHandling(bot_state_t *bs)
 					bs->saberDefending = 1;
 				}
 
-				bs->saberDefendDecideTime = level.time + Q_irand(500, 2000);
+				bs->saberDefendDecideTime = level.time + Q_irand(500, 2000, qfalse, 1250);
 			}
 		}
 
@@ -4333,10 +4333,10 @@ void SaberCombatHandling(bot_state_t *bs)
 
 		if (bs->frame_Enemy_Len > 90 && bs->saberBFTime > level.time && bs->saberBTime > level.time && bs->beStill < level.time && bs->saberSTime < level.time)
 		{
-			bs->beStill = level.time + Q_irand(500, 1000);
-			bs->saberSTime = level.time + Q_irand(1200, 1800);
+			bs->beStill = level.time + Q_irand(500, 1000, qfalse, 750);
+			bs->saberSTime = level.time + Q_irand(1200, 1800, qfalse, 1500);
 		}
-		else if (bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_SABER && bs->frame_Enemy_Len < 80 && ((Q_irand(1, 10) < 8 && bs->saberBFTime < level.time) || bs->saberBTime > level.time))
+		else if (bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_SABER && bs->frame_Enemy_Len < 80 && ((Q_irand(1, 10, qfalse, 5) < 8 && bs->saberBFTime < level.time) || bs->saberBTime > level.time))
 		{
 			vec3_t vs;
 			vec3_t groundcheck;
@@ -4350,8 +4350,8 @@ void SaberCombatHandling(bot_state_t *bs)
 
 			if (bs->saberBTime < level.time)
 			{
-				bs->saberBFTime = level.time + Q_irand(900, 1300);
-				bs->saberBTime = level.time + Q_irand(300, 700);
+				bs->saberBFTime = level.time + Q_irand(900, 1300, qfalse, 1100);
+				bs->saberBTime = level.time + Q_irand(300, 700, qfalse, 500);
 			}
 
 			VectorCopy(bs->goalPosition, groundcheck);
@@ -4367,7 +4367,7 @@ void SaberCombatHandling(bot_state_t *bs)
 		}
 		else if (bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_SABER && bs->frame_Enemy_Len >= 75)
 		{
-			bs->saberBFTime = level.time + Q_irand(700, 1300);
+			bs->saberBFTime = level.time + Q_irand(700, 1300, qfalse, 1000);
 			bs->saberBTime = 0;
 		}
 
@@ -4810,7 +4810,7 @@ int CombatBotAI(bot_state_t *bs, float thinktime)
 				if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT &&
 					bs->cur_ps.weaponstate != WEAPON_CHARGING)
 				{
-					bs->altChargeTime = Q_irand(500, 1000);
+					bs->altChargeTime = Q_irand(500, 1000, qfalse, 750);
 				}
 
 				if (secFire == 1)
@@ -5253,7 +5253,7 @@ void StrafeTracing(bot_state_t *bs)
 
 	if (tr.fraction != 1)
 	{
-		bs->meleeStrafeDisable = level.time + Q_irand(500, 1500);
+		bs->meleeStrafeDisable = level.time + Q_irand(500, 1500, qfalse, 1000);
 	}
 
 	VectorCopy(rorg, drorg);
@@ -5264,7 +5264,7 @@ void StrafeTracing(bot_state_t *bs)
 
 	if (tr.fraction == 1)
 	{ //this may be a dangerous ledge, so don't strafe over it just in case
-		bs->meleeStrafeDisable = level.time + Q_irand(500, 1500);
+		bs->meleeStrafeDisable = level.time + Q_irand(500, 1500, qfalse, 1000);
 	}
 }
 
@@ -6451,7 +6451,7 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 
 	if (bs->cur_ps.saberInFlight)
 	{
-		bs->saberThrowTime = level.time + Q_irand(4000, 10000);
+		bs->saberThrowTime = level.time + Q_irand(4000, 10000, qfalse, 7000);
 	}
 
 	if (bs->currentEnemy)
@@ -6465,7 +6465,7 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 
 			if (bs->saberPowerTime < level.time)
 			{ //Don't just use strong attacks constantly, switch around a bit
-				if (Q_irand(1, 10) <= 5)
+				if (Q_irand(1, 10, qfalse, 5) <= 5)
 				{
 					bs->saberPower = qtrue;
 				}
@@ -6474,7 +6474,7 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 					bs->saberPower = qfalse;
 				}
 
-				bs->saberPowerTime = level.time + Q_irand(3000, 15000);
+				bs->saberPowerTime = level.time + Q_irand(3000, 15000, qfalse, 9000);
 			}
 
 			if (bs->currentEnemy->health > 75 && g_entities[bs->client].client->ps.fd.forcePowerLevel[FP_SABERATTACK] > 2)
@@ -6815,15 +6815,15 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 			vectoangles(a, a);
 			VectorCopy(a, bs->goalAngles);
 
-			if (Q_irand(1, 10) < 5)
+			if (Q_irand(1, 10, qfalse, 5) < 5)
 			{
-				bs->goalAngles[YAW] += Q_irand(0, 3);
-				bs->goalAngles[PITCH] += Q_irand(0, 3);
+				bs->goalAngles[YAW] += Q_irand(0, 3, qfalse, 2);
+				bs->goalAngles[PITCH] += Q_irand(0, 3, qfalse, 2);
 			}
 			else
 			{
-				bs->goalAngles[YAW] -= Q_irand(0, 3);
-				bs->goalAngles[PITCH] -= Q_irand(0, 3);
+				bs->goalAngles[YAW] -= Q_irand(0, 3, qfalse, 2);
+				bs->goalAngles[PITCH] -= Q_irand(0, 3, qfalse, 2);
 			}
 
 			if (InFieldOfVision(bs->viewangles, 30, a) &&

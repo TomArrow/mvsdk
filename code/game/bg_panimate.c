@@ -357,7 +357,7 @@ int BG_BrokenParryForAttack( int move )
 	return LS_NONE;
 }
 
-int BG_BrokenParryForParry( int move )
+int BG_BrokenParryForParry( int move, qboolean raceMode )
 {
 	//FIXME: need actual anims for this
 	//FIXME: need to know which side of the saber was hit!  For now, we presume the saber gets knocked away from the center
@@ -365,7 +365,7 @@ int BG_BrokenParryForParry( int move )
 	{
 	case LS_PARRY_UP:
 		//Hmm... since we don't know what dir the hit came from, randomly pick knock down or knock back
-		if ( Q_irand( 0, 1 ) )
+		if ( Q_irand( 0, 1, raceMode, 0 ) )
 		{
 			return LS_H1_B_;
 		}

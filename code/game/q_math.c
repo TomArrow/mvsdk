@@ -1192,9 +1192,19 @@ void Rand_Init(int seed)
 
 // Returns a float min <= x < max (exclusive; will get max - 0.00001; but never max)
 
-float flrand(float min, float max)
+float flrand(float min, float max, qboolean useDefault, float defaultValue)
 {
 	float	result;
+
+//#ifdef DEBUG
+//	if (defaultValue >= min || defaultValue < max) {
+//		Com_Printf("flrand(%f,%f,%f,%f), bad call", min, max, useDefault, defaultValue);
+//	}
+//#endif
+
+	if (useDefault) {
+		return defaultValue;
+	}
 
 	assert((max - min) < 32768);
 
@@ -1207,9 +1217,19 @@ float flrand(float min, float max)
 
 // Returns an integer min <= x <= max (ie inclusive)
 
-int irand(int min, int max)
+int irand(int min, int max, qboolean useDefault, int defaultValue)
 {
 	int		result;
+
+//#ifdef DEBUG
+//	if (defaultValue >= min || defaultValue < max) {
+//		Com_Printf("irand(%d,%d,%d,%d), bad call", min, max, useDefault, defaultValue);
+//	}
+//#endif
+
+	if (useDefault) {
+		return defaultValue;
+	}
 
 	assert((max - min) < 32768);
 

@@ -164,11 +164,11 @@ void G_BounceMissile( gentity_t *ent, trace_t *trace ) {
 
 	if (ent->s.weapon == WP_THERMAL)
 	{ //slight hack for hit sound
-		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/thermal/bounce%i.wav", Q_irand(1, 2))));
+		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/thermal/bounce%i.wav", Q_irand(1, 2, qfalse, 1))));
 	}
 	else if (ent->s.weapon == WP_SABER)
 	{
-		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/saber/bounce%i.wav", Q_irand(1, 3))));
+		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/saber/bounce%i.wav", Q_irand(1, 3,qfalse,2))));
 	}
 	else if (ent->s.weapon == G2_MODEL_PART)
 	{

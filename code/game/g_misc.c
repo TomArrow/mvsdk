@@ -322,23 +322,23 @@ void HolocronRespawn(gentity_t *self)
 
 void HolocronPopOut(gentity_t *self)
 {
-	if (Q_irand(1, 10) < 5)
+	if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
 	{
-		self->s.pos.trDelta[0] = 150 + Q_irand(1, 100);
+		self->s.pos.trDelta[0] = 150 + Q_irand(1, 100, g_defrag.integer, 50);
 	}
 	else
 	{
-		self->s.pos.trDelta[0] = -150 - Q_irand(1, 100);
+		self->s.pos.trDelta[0] = -150 - Q_irand(1, 100, g_defrag.integer, 50);
 	}
-	if (Q_irand(1, 10) < 5)
+	if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
 	{
-		self->s.pos.trDelta[1] = 150 + Q_irand(1, 100);
+		self->s.pos.trDelta[1] = 150 + Q_irand(1, 100, g_defrag.integer, 50);
 	}
 	else
 	{
-		self->s.pos.trDelta[1] = -150 - Q_irand(1, 100);
+		self->s.pos.trDelta[1] = -150 - Q_irand(1, 100, g_defrag.integer, 50);
 	}
-	self->s.pos.trDelta[2] = 150 + Q_irand(1, 100);
+	self->s.pos.trDelta[2] = 150 + Q_irand(1, 100, g_defrag.integer, 50);
 }
 
 void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
@@ -1798,7 +1798,7 @@ void ExampleAnimEntCustomSound(gentity_t *self, int soundType)
 		return;
 	}
 
-	G_Sound(self, CHAN_AUTO, customSounds[Q_irand(0, numSounds-1)]);
+	G_Sound(self, CHAN_AUTO, customSounds[Q_irand(0, numSounds-1,qfalse, (numSounds-1)/2)]);
 }
 
 int ExampleAnimEntAlignment(gentity_t *self)
@@ -1847,7 +1847,7 @@ void ExampleAnimEntAlertOthers(gentity_t *self)
 			{
 				g_entities[i].bolt_Motion = self->bolt_Motion;
 				g_entities[i].speed = level.time + 4000; //4 seconds til we forget about the enemy
-				g_entities[i].bolt_RArm = level.time + Q_irand(500, 1000);
+				g_entities[i].bolt_RArm = level.time + Q_irand(500, 1000, qfalse, 750);
 			}
 		}
 
@@ -1872,15 +1872,15 @@ void ExampleAnimEnt_Die( gentity_t *self, gentity_t *inflictor, gentity_t *attac
 
 	if (self->watertype == ANIMENT_TYPE_STORMTROOPER)
 	{
-		G_Sound(self, CHAN_AUTO, gTrooperSound_Death[Q_irand(0, TROOPER_DEATH_SOUNDS-1)]);
+		G_Sound(self, CHAN_AUTO, gTrooperSound_Death[Q_irand(0, TROOPER_DEATH_SOUNDS-1, qfalse, (TROOPER_DEATH_SOUNDS - 1) / 2)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_RODIAN)
 	{
-		G_Sound(self, CHAN_AUTO, gRodianSound_Death[Q_irand(0, RODIAN_DEATH_SOUNDS-1)]);
+		G_Sound(self, CHAN_AUTO, gRodianSound_Death[Q_irand(0, RODIAN_DEATH_SOUNDS-1, qfalse, (RODIAN_DEATH_SOUNDS - 1) / 2)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_JAN)
 	{
-		G_Sound(self, CHAN_AUTO, gJanSound_Death[Q_irand(0, JAN_DEATH_SOUNDS-1)]);
+		G_Sound(self, CHAN_AUTO, gJanSound_Death[Q_irand(0, JAN_DEATH_SOUNDS-1,qfalse,(JAN_DEATH_SOUNDS - 1)/2)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_CUSTOM)
 	{
@@ -1892,21 +1892,21 @@ void ExampleAnimEnt_Die( gentity_t *self, gentity_t *inflictor, gentity_t *attac
 		vec3_t preDelta;
 		VectorCopy(self->s.pos.trDelta, preDelta);
 
-		if (Q_irand(1, 10) < 5)
+		if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
 		{
-			self->s.pos.trDelta[0] += Q_irand(10, 40);
+			self->s.pos.trDelta[0] += Q_irand(10, 40, g_defrag.integer, 25);
 		}
 		else
 		{
-			self->s.pos.trDelta[0] -= Q_irand(10, 40);
+			self->s.pos.trDelta[0] -= Q_irand(10, 40, g_defrag.integer, 25);
 		}
-		if (Q_irand(1, 10) < 5)
+		if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
 		{
-			self->s.pos.trDelta[1] += Q_irand(10, 40);
+			self->s.pos.trDelta[1] += Q_irand(10, 40, g_defrag.integer, 25);
 		}
 		else
 		{
-			self->s.pos.trDelta[1] -= Q_irand(10, 40);
+			self->s.pos.trDelta[1] -= Q_irand(10, 40, g_defrag.integer, 25);
 		}
 		self->s.pos.trDelta[2] += 100;
 		G_CheckForDismemberment(self, self->pos1, damage, self->s.torsoAnim);
@@ -1932,12 +1932,12 @@ void ExampleAnimEnt_Die( gentity_t *self, gentity_t *inflictor, gentity_t *attac
 
 void ExampleAnimEnt_Pain(gentity_t *self, gentity_t *attacker, int damage)
 {
-	int painAnim = (BOTH_PAIN1 + Q_irand(0, 3));
+	int painAnim = (BOTH_PAIN1 + Q_irand(0, 3, g_defrag.integer, 2));
 	int animLen = (bgGlobalAnimations[painAnim].numFrames * abs(bgGlobalAnimations[painAnim].frameLerp))-50;
 
 	while (painAnim == self->s.torsoAnim)
 	{
-		painAnim = (BOTH_PAIN1 + Q_irand(0, 3));
+		painAnim = (BOTH_PAIN1 + Q_irand(0, 3, g_defrag.integer, 2));
 	}
 
 	self->s.torsoAnim = painAnim;
@@ -1951,15 +1951,15 @@ void ExampleAnimEnt_Pain(gentity_t *self, gentity_t *attacker, int damage)
 
 	if (self->watertype == ANIMENT_TYPE_STORMTROOPER)
 	{
-		G_Sound(self, CHAN_AUTO, gTrooperSound_Pain[Q_irand(0, TROOPER_PAIN_SOUNDS-1)]);
+		G_Sound(self, CHAN_AUTO, gTrooperSound_Pain[Q_irand(0, TROOPER_PAIN_SOUNDS-1, qfalse, (TROOPER_PAIN_SOUNDS - 1) / 2)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_RODIAN)
 	{
-		G_Sound(self, CHAN_AUTO, gRodianSound_Pain[Q_irand(0, RODIAN_PAIN_SOUNDS-1)]);
+		G_Sound(self, CHAN_AUTO, gRodianSound_Pain[Q_irand(0, RODIAN_PAIN_SOUNDS-1, qfalse, (RODIAN_PAIN_SOUNDS - 1) / 2)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_JAN)
 	{
-		G_Sound(self, CHAN_AUTO, gJanSound_Pain[Q_irand(0, JAN_PAIN_SOUNDS-1)]);
+		G_Sound(self, CHAN_AUTO, gJanSound_Pain[Q_irand(0, JAN_PAIN_SOUNDS-1,qfalse,(JAN_PAIN_SOUNDS - 1)/2)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_CUSTOM)
 	{
@@ -1973,7 +1973,7 @@ void ExampleAnimEnt_Pain(gentity_t *self, gentity_t *attacker, int damage)
 			self->bolt_Motion = attacker->s.number;
 			self->speed = level.time + 4000; //4 seconds til we forget about the enemy
 			ExampleAnimEntAlertOthers(self);
-			self->bolt_RArm = level.time + Q_irand(500, 1000);
+			self->bolt_RArm = level.time + Q_irand(500, 1000, g_defrag.integer, 750);
 		}
 	}
 }
@@ -2170,7 +2170,7 @@ void ExampleAnimEntWeaponHandling(gentity_t *self)
 		{
 			AnimEntFireWeapon(self, qtrue);
 			G_AddEvent(self, EV_FIRE_WEAPON, 1);
-			self->bolt_RArm = level.time + Q_irand(1500, 2500);
+			self->bolt_RArm = level.time + Q_irand(1500, 2500, g_defrag.integer, 2000);
 		}
 		else
 		{
@@ -2179,15 +2179,15 @@ void ExampleAnimEntWeaponHandling(gentity_t *self)
 
 			if (self->s.weapon == WP_REPEATER)
 			{
-				self->bolt_RArm = level.time + Q_irand(1, 500);
+				self->bolt_RArm = level.time + Q_irand(1, 500, g_defrag.integer, 50);
 			}
 			else if (ExampleAnimEntAlignment(self) == ANIMENT_ALIGNED_GOOD)
 			{
-				self->bolt_RArm = level.time + Q_irand(200, 400);
+				self->bolt_RArm = level.time + Q_irand(200, 400, g_defrag.integer, 300);
 			}
 			else
 			{
-				self->bolt_RArm = level.time + Q_irand(700, 1000);
+				self->bolt_RArm = level.time + Q_irand(700, 1000, g_defrag.integer, 850);
 			}
 		}
 	}
@@ -2417,19 +2417,19 @@ void ExampleAnimEntEnemyHandling(gentity_t *self, float enDist, qboolean enDistS
 		self->bolt_Motion = bestIndex;
 		self->speed = level.time + 4000; //4 seconds til we forget about the enemy
 		ExampleAnimEntAlertOthers(self);
-		self->bolt_RArm = level.time + Q_irand(500, 1000);
+		self->bolt_RArm = level.time + Q_irand(500, 1000, g_defrag.integer, 750);
 
 		if (self->watertype == ANIMENT_TYPE_STORMTROOPER)
 		{
-			G_Sound(self, CHAN_AUTO, gTrooperSound_Alert[Q_irand(0, TROOPER_ALERT_SOUNDS-1)]);
+			G_Sound(self, CHAN_AUTO, gTrooperSound_Alert[Q_irand(0, TROOPER_ALERT_SOUNDS-1, qfalse, (TROOPER_ALERT_SOUNDS - 1) / 2)]);
 		}
 		else if (self->watertype == ANIMENT_TYPE_RODIAN)
 		{
-			G_Sound(self, CHAN_AUTO, gRodianSound_Alert[Q_irand(0, RODIAN_ALERT_SOUNDS-1)]);
+			G_Sound(self, CHAN_AUTO, gRodianSound_Alert[Q_irand(0, RODIAN_ALERT_SOUNDS-1, qfalse, (RODIAN_ALERT_SOUNDS - 1) / 2)]);
 		}
 		else if (self->watertype == ANIMENT_TYPE_JAN)
 		{
-			G_Sound(self, CHAN_AUTO, gJanSound_Alert[Q_irand(0, JAN_ALERT_SOUNDS-1)]);
+			G_Sound(self, CHAN_AUTO, gJanSound_Alert[Q_irand(0, JAN_ALERT_SOUNDS-1, qfalse,(JAN_ALERT_SOUNDS - 1)/2)]);
 		}
 		else if (self->watertype == ANIMENT_TYPE_CUSTOM)
 		{
@@ -2571,7 +2571,7 @@ void ExampleAnimEntUpdateSelf(gentity_t *self)
 						}
 					}
 
-					self->splashRadius = level.time + Q_irand(2000, 5000);
+					self->splashRadius = level.time + Q_irand(2000, 5000, g_defrag.integer, 3500);
 				}
 
 				if (hasEnemyLOS && ((enDistSet && enDist < 512) || self->watertype == ANIMENT_TYPE_RODIAN) && self->splashMethodOfDeath)
@@ -3209,7 +3209,7 @@ void SP_misc_animent_spawner(gentity_t *ent)
 	}
 
 	ent->think = AESpawner_Think;
-	ent->nextthink = level.time + Q_irand(50, 500);
+	ent->nextthink = level.time + Q_irand(50, 500, g_defrag.integer, 250);
 	trap_LinkEntity(ent);
 }
 

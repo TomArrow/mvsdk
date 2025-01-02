@@ -225,9 +225,9 @@ void G_RunObject( gentity_t *ent )
 			{
 				VectorCopy( ent->r.currentAngles, ent->s.apos.trBase );
 				ent->s.apos.trType = TR_LINEAR;
-				ent->s.apos.trDelta[1] = flrand( -300, 300 );
-				ent->s.apos.trDelta[0] = flrand( -10, 10 );
-				ent->s.apos.trDelta[2] = flrand( -10, 10 );
+				ent->s.apos.trDelta[1] = flrand( -300, 300, ent->parent && ent->parent->client && ent->parent->client->sess.raceMode, 0 );
+				ent->s.apos.trDelta[0] = flrand( -10, 10, ent->parent && ent->parent->client && ent->parent->client->sess.raceMode, 0);
+				ent->s.apos.trDelta[2] = flrand( -10, 10, ent->parent && ent->parent->client && ent->parent->client->sess.raceMode, 0);
 				ent->s.apos.trTime = level.time;
 			}
 		}

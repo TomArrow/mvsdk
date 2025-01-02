@@ -1495,9 +1495,19 @@ void Info_SetValueForKey_Big( char *s, const char *key, const char *value ) {
 
 
 //rww - convience function..
-int Q_irand(int value1, int value2)
+int Q_irand(int value1, int value2, qboolean useDefault, int defaultValue)
 {
 	int r;
+
+//#ifdef DEBUG
+//	// find bad calls: rand\s*\([^,]+,\s*([^,\s]+)\s*,[^,]+,\s*\1\s*\)
+//	if (defaultValue >= value2 || defaultValue < value1) {
+//		Com_Printf("Q_irand(%d,%d,%d,%d), bad call", value1, value2, useDefault, defaultValue);
+//	}
+//#endif
+	if (useDefault) {
+		return defaultValue;
+	}
 
 	r = rand()%value2;
 	r += value1;

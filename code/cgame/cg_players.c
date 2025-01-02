@@ -4560,7 +4560,7 @@ Ghoul2 Insert Start
 					if ( cg.time - cent->saberHitWallSoundDebounceTime >= 100 )
 					{//ugh, need to have a real sound debouncer... or do this game-side
 						cent->saberHitWallSoundDebounceTime = cg.time;
-						trap_S_StartSound ( trace.endpos, -1, CHAN_WEAPON, trap_S_RegisterSound( va("sound/weapons/saber/saberhitwall%i", Q_irand(1, 3)) ) );
+						trap_S_StartSound ( trace.endpos, -1, CHAN_WEAPON, trap_S_RegisterSound( va("sound/weapons/saber/saberhitwall%i", Q_irand(1, 3, qfalse, 2)) ) );
 					}
 				}
 			}
@@ -4965,35 +4965,35 @@ void CG_AddRandomLightning(vec3_t start, vec3_t end)
 
 	if ( rand() & 1 )
 	{
-		outOrg[0] += Q_irand(0, 24);
-		inOrg[0] += Q_irand(0, 8);
+		outOrg[0] += Q_irand(0, 24, qfalse, 12);
+		inOrg[0] += Q_irand(0, 8, qfalse, 4);
 	}
 	else
 	{
-		outOrg[0] -= Q_irand(0, 24);
-		inOrg[0] -= Q_irand(0, 8);
+		outOrg[0] -= Q_irand(0, 24, qfalse, 12);
+		inOrg[0] -= Q_irand(0, 8, qfalse, 4);
 	}
 
 	if ( rand() & 1 )
 	{
-		outOrg[1] += Q_irand(0, 24);
-		inOrg[1] += Q_irand(0, 8);
+		outOrg[1] += Q_irand(0, 24, qfalse, 12);
+		inOrg[1] += Q_irand(0, 8, qfalse, 4);
 	}
 	else
 	{
-		outOrg[1] -= Q_irand(0, 24);
-		inOrg[1] -= Q_irand(0, 8);
+		outOrg[1] -= Q_irand(0, 24, qfalse, 12);
+		inOrg[1] -= Q_irand(0, 8, qfalse, 4);
 	}
 
 	if ( rand() & 1 )
 	{
-		outOrg[2] += Q_irand(0, 50);
-		inOrg[2] += Q_irand(0, 40);
+		outOrg[2] += Q_irand(0, 50, qfalse, 25);
+		inOrg[2] += Q_irand(0, 40, qfalse, 20);
 	}
 	else
 	{
-		outOrg[2] -= Q_irand(0, 64);
-		inOrg[2] -= Q_irand(0, 40);
+		outOrg[2] -= Q_irand(0, 64, qfalse, 32);
+		inOrg[2] -= Q_irand(0, 40, qfalse, 20);
 	}
 
 	CG_AddLightningBeam(inOrg, outOrg);
@@ -7986,7 +7986,7 @@ doEssentialThree:
 		legs.renderfx |= RF_RGB_TINT;
 		*/
 
-		legs.shaderRGBA[0] = legs.shaderRGBA[1] = legs.shaderRGBA[2] = Q_irand(1, 255);
+		legs.shaderRGBA[0] = legs.shaderRGBA[1] = legs.shaderRGBA[2] = Q_irand(1, 255, qfalse, 128);
 
 		legs.renderfx &= ~RF_FORCE_ENT_ALPHA;
 		legs.renderfx &= ~RF_MINLIGHT;

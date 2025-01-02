@@ -2181,9 +2181,9 @@ typedef enum _flag_status {
 #define CDCHKSUM_LEN 2
 
 void Rand_Init(int seed);
-float flrand(float min, float max);
-int irand(int min, int max);
-int Q_irand(int value1, int value2);
+float flrand(float min, float max, qboolean useDefault, float defaultValue);
+int irand(int min, int max, qboolean useDefault, int defaultValue);
+int Q_irand(int value1, int value2, qboolean useDefault, int defaultValue);
 
 /*
 Ghoul2 Insert Start

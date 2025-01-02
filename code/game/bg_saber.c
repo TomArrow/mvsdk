@@ -2,9 +2,19 @@
 #include "bg_public.h"
 #include "bg_local.h"
 
-int PM_irand_timesync(int val1, int val2)
+int PM_irand_timesync(int val1, int val2,qboolean useDefault, int defaultValue)
 {
 	int i;
+
+	if (useDefault) {
+//#ifdef DEBUG
+//		// find bad calls: PM_irand_timesync\s*\([^,]+,\s*([^,\s]+)\s*,[^,]+,\s*\1\s*\)
+//		if (defaultValue >= val2 || defaultValue < val1) {
+//			Com_Printf("PM_irand_timesync(%d,%d,%d,%d), bad call", val1, val2, useDefault, defaultValue);
+//		}
+//#endif
+		return defaultValue;
+	}
 
 	i = (val1-1) + (Q_random( &pml.seed )*(val2 - val1)) + 1;
 	if (i < val1)
@@ -711,8 +721,8 @@ int PM_SaberAttackChainAngle( int move1, int move2 )
 
 qboolean PM_SaberKataDone_1_02( void )
 {
-	if ( (pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 )) ||
-		( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 ) ) )
+	if ( (pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1, pm->ps->stats[STAT_RACEMODE], 0 )) ||
+		( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5, pm->ps->stats[STAT_RACEMODE], 4) ) )
 	{
 		return qtrue;
 	}
@@ -725,12 +735,12 @@ qboolean PM_SaberKataDone(int curmove, int newmove)
 	{
 		if ( curmove == LS_NONE || newmove == LS_NONE )
 		{
-			if ( pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 ) )
+			if ( pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1, pm->ps->stats[STAT_RACEMODE], 0) )
 			{
 				return qtrue;
 			}
 		}
-		else if ( pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 3 ) )
+		else if ( pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 3, pm->ps->stats[STAT_RACEMODE], 2) )
 		{
 			return qtrue;
 		}
@@ -777,12 +787,12 @@ qboolean PM_SaberKataDone(int curmove, int newmove)
 				chainTolerance = 3;
 			}
 
-			if (pm->ps->saberAttackChainCount >= chainTolerance && PM_irand_timesync(1, pm->ps->saberAttackChainCount) > chainTolerance)
+			if (pm->ps->saberAttackChainCount >= chainTolerance && PM_irand_timesync(1, pm->ps->saberAttackChainCount, pm->ps->stats[STAT_RACEMODE], pm->ps->saberAttackChainCount-1) > chainTolerance)
 			{
 				return qtrue;
 			}
 		}
-		if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 ) )
+		if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5, pm->ps->stats[STAT_RACEMODE], 4) )
 		{
 			return qtrue;
 		}
@@ -918,9 +928,9 @@ void PM_SaberLockBreak( playerState_t *genemy, qboolean victory )
 	}
 	else
 	{
-		if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 ) : PM_irand_timesync( 0, 1 )) )
+		if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1, pm->ps->stats[STAT_RACEMODE], 0) : PM_irand_timesync( 0, 1, pm->ps->stats[STAT_RACEMODE], 0)) )
 		{
-			BG_AddPredictableEventToPlayerstate(EV_JUMP, PM_irand_timesync( 0, 75 ), genemy);
+			BG_AddPredictableEventToPlayerstate(EV_JUMP, PM_irand_timesync( 0, 75, pm->ps->stats[STAT_RACEMODE], 74), genemy); // what is this eventparm? doesnt seem used for anything?
 		}
 	}
 }
@@ -1008,7 +1018,7 @@ void PM_SaberLocked( void )
 						remaining = anim->firstFrame+anim->numFrames-curFrame;
 					}
 				}
-				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 ) : PM_irand_timesync( 0, 2 )) )
+				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2, pm->ps->stats[STAT_RACEMODE], 1) : PM_irand_timesync( 0, 2, pm->ps->stats[STAT_RACEMODE], 1)) )
 				{
 					PM_AddEvent( EV_JUMP );
 				}
@@ -1023,7 +1033,7 @@ void PM_SaberLocked( void )
 			if ( (genemy->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_CWCIRCLELOCK ||
 				(genemy->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_BF1LOCK )
 			{
-				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 ) : PM_irand_timesync( 0, 2 )) )
+				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2, pm->ps->stats[STAT_RACEMODE], 1) : PM_irand_timesync( 0, 2, pm->ps->stats[STAT_RACEMODE], 1)) )
 				{
 					BG_AddPredictableEventToPlayerstate(EV_PAIN, floor((float)80/100*100.0f), genemy);
 				}
@@ -1155,7 +1165,7 @@ saberMoveName_t PM_SaberFlipOverAttackMove(trace_t *tr)
 	pm->ps->fd.forceJumpSound = 1;
 	pm->cmd.upmove = 0;
 
-	if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 ) : PM_irand_timesync( 0, 1 )) )
+	if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1, pm->ps->stats[STAT_RACEMODE], 0) : PM_irand_timesync( 0, 1, pm->ps->stats[STAT_RACEMODE], 0)) )
 	{
 		return LS_A_FLIP_STAB;
 	}
@@ -1483,7 +1493,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			//prediction values. Under laggy conditions this will cause the appearance of rapid swing
 			//sequence changes.
 			
-			if ( jk2gameplay == VERSION_1_02 ) newmove = PM_irand_timesync(LS_A_TL2BR, LS_A_T2B);
+			if ( jk2gameplay == VERSION_1_02 ) newmove = PM_irand_timesync(LS_A_TL2BR, LS_A_T2B, pm->ps->stats[STAT_RACEMODE], LS_A_TL2BR);
 			else							   newmove = LS_A_T2B; //decided we don't like random attacks when idle, use an overhead instead.
 		}
 	}
@@ -1720,7 +1730,7 @@ void PM_WeaponLightsaber(void)
 						{//player is still in same attack quad, don't repeat that attack because it looks bad, 
 							//FIXME: try to pick one that might look cool?
 							//newQuad = Q_irand( Q_BR, Q_BL );
-							newQuad = PM_irand_timesync( Q_BR, Q_BL );
+							newQuad = PM_irand_timesync( Q_BR, Q_BL, pm->ps->stats[STAT_RACEMODE], Q_BR); // idk what else to do meh
 							//FIXME: sanity check, just in case?
 						}//else player is switching up anyway, take the new attack dir
 						bounceMove = transitionMove[saberMoveData[pm->ps->saberMove].startQuad][newQuad];
