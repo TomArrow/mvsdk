@@ -983,6 +983,7 @@ void Cmd_Help_f(gentity_t* ent) {
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7 - Show longest/shortest maps. Can call with movement style and page.\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7 - Call a vote to switch to a map (call with map name)\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote mapnum^7 - Call a vote to switch to a map (call with map number from ^2/maplist^7)\n\"");
 
@@ -2185,6 +2186,79 @@ void Cmd_Latest_f(gentity_t* ent) {
 		}
 	}
 
+	G_COOL_API_DB_PreparedBindInt(first);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+
+}
+void Cmd_ShortestLongest_f(gentity_t* ent) {
+	int clientNum = -1;
+	int page, first;
+	int i,t;
+	longestShortestMapsRequestStruct_t data;
+	//char pageNum[10];
+	const int args = trap_Argc();
+	char inputString[15];
+	char cmd[10];
+	trap_Argv(0,cmd,sizeof(cmd));
+
+
+	
+	memset(&data, 0, sizeof(data));
+	
+
+	data.longest = !Q_stricmp(cmd, "longest");
+
+	if (!coolApi_dbVersion) {
+		trap_SendServerCommand(ent-g_entities,"print \"^1Longest/shortest request not possible, DB API not available\n\"");
+		return;
+	}
+
+	data.clientnum = ent - g_entities;
+	memcpy(&data.ip, &mv_clientSessions[data.clientnum], sizeof(data.ip));
+
+	page = 0;
+	if (trap_Argc() > 1) {
+		for (i = 1; i < args; i++) {
+			trap_Argv(i, inputString, sizeof(inputString));
+			if (atoi_real(inputString)) {
+				//BUG - atoi(inputstring) returns true for values like "18percent" where it should return false..
+				page = atoi(inputString);
+				data.pageSpecified = qtrue;
+			}
+			else if ((t = RaceNameToInteger(inputString)) != -1) {
+				data.style = t;
+				data.styleSpecified = qtrue;
+			}
+		}
+	}
+	else {
+		page = 0;
+	}
+	page = MAX(page-1, 0);
+	first = page * 10;
+
+	// TODO more distinction? avoid segmented times? idk
+
+	if (data.style == -1) {
+		data.style = MV_JK2;
+	}
+
+#define LONGESTSHORTESTQUERY "SELECT MIN(duration_ms) as fastest,runs.course,runs.subcourse FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) WHERE style = ? AND (runs.jump = mapdefaults.jump OR (mapdefaults.jump IS NULL AND runs.jump = 1)) GROUP BY runs.course,runs.subcourse ORDER BY fastest "
+#define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
+
+	if (data.longest) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_SHORTESTLONGESTMAPS, LONGESTSHORTESTQUERY "DESC" LONGESTSHORTESTQUERY_END)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Longest maps cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+	}
+	else {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_SHORTESTLONGESTMAPS, LONGESTSHORTESTQUERY "ASC" LONGESTSHORTESTQUERY_END)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Shortest maps cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+	}
+	G_COOL_API_DB_PreparedBindInt(data.style);
 	G_COOL_API_DB_PreparedBindInt(first);
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 
@@ -4172,6 +4246,14 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "longest"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "shortest"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "maplist"))
 		{
 			giveError = qtrue;
@@ -4337,6 +4419,10 @@ void ClientCommand( int clientNum ) {
 		Cmd_Top_f(ent);
 	else if (Q_stricmp(cmd, "latest") == 0)
 		Cmd_Latest_f(ent);
+	else if (Q_stricmp(cmd, "longest") == 0)
+		Cmd_ShortestLongest_f(ent);
+	else if (Q_stricmp(cmd, "shortest") == 0)
+		Cmd_ShortestLongest_f(ent);
 	else if (Q_stricmp(cmd, "maplist") == 0)
 		Cmd_Maplist_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)

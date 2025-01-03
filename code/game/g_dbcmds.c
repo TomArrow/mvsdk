@@ -1193,6 +1193,83 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 	}
 
 }
+
+static void G_ShortestLongestResult(int status, const char* errorMessage, int affectedRows) {
+	longestShortestMapsRequestStruct_t lbRequestData;
+	gentity_t* ent = NULL;
+	int resultIndex = 0;
+	//evaluatedRunInfo_t eRunInfo;
+
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d shortest/longest map results returned, user no longer valid.\n", lbRequestData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateMapRaceDefaultsTable();
+		G_CreateRunsTable();
+		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Shortest/longest map results display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Shortest/longest map results failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	if (lbRequestData.longest) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Longest maps in style %s (based on fastest run including segmented/cheat):\n\"", lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN"));
+	}
+	else {
+		trap_SendServerCommand(ent - g_entities, va("print \"Shortest maps in style %s (based on fastest run including segmented/cheat):\n\"", lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN"));
+	}
+
+	while (G_COOL_API_DB_NextRow()) {
+		char course[COURSENAME_MAX_LEN+1];
+		char subcourse[COURSENAME_MAX_LEN +1];
+		int time;
+		int mapnum;
+		infoHashed_t* infoHashed;
+		mainLeaderboardType_t lbType;
+
+		if (resultIndex == 0) {
+			trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
+				, '2'
+				, "TIME"
+				, "MAPNUM"
+				, "MAP/COURSE"
+			));
+		}
+		time = G_COOL_API_DB_GetInt(0);
+		G_COOL_API_DB_GetString(1, course, sizeof(course));
+		G_COOL_API_DB_GetString(2, subcourse, sizeof(subcourse));
+
+		infoHashed = G_GetArenaInfoByMap(course);
+
+		trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
+			, '7'
+			, DF_MsToString(time)
+			, infoHashed ? miniva("%d",infoHashed-g_arenaInfosHashed) : "-"
+			, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
+		));
+		resultIndex++;
+	}
+
+	trap_SendServerCommand(ent - g_entities, va("print \"\n\""));
+
+	if (!lbRequestData.styleSpecified && !lbRequestData.pageSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can specify movement style and page number.\n\""));
+	}
+	else if (!lbRequestData.pageSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify page number.\n\""));
+	} else if (!lbRequestData.styleSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify movement style.\n\""));
+	}
+
+
+}
 static void G_MapListUnplayedResult(int status, const char* errorMessage, int affectedRows) {
 	maplistUnplayedRequestStruct_t data;
 	gentity_t* ent = NULL;
@@ -1675,6 +1752,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_GETLATESTRUNS:
 					G_LatestRunsResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_SHORTESTLONGESTMAPS:
+					G_ShortestLongestResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_MAPLISTUNPLAYED:
 					G_MapListUnplayedResult(status, errorMessage, affectedRows);

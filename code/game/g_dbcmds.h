@@ -28,6 +28,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_ARENAGENMAPLIST,
 	DBREQUEST_GETLATESTRUNS,
 	DBREQUEST_MAPLISTUNPLAYED,
+	DBREQUEST_SHORTESTLONGESTMAPS,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -82,6 +83,14 @@ typedef struct latestRunsRequestStruct_s {
 	qboolean	styleSpecified;
 	qboolean	pageSpecified;
 }latestRunsRequestStruct_t;
+typedef struct longestShortestMapsRequestStruct_s {
+	int			ip[4];
+	int			clientnum;
+	qboolean	styleSpecified;
+	qboolean	pageSpecified;
+	qboolean	longest;
+	int			style;
+} longestShortestMapsRequestStruct_t;
 typedef struct maplistUnplayedRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
