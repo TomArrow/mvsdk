@@ -2016,7 +2016,7 @@ void Cmd_Top_f( gentity_t *ent )
 void Cmd_Maplist_f(gentity_t* ent) {
 
 	int			mapsinmessage = 0;
-	char*		type = NULL;
+	const char*	type = NULL;
 	char		mapListString[1024];
 	char		currentMapString[1024];
 	char		currentMap[COURSENAME_MAX_LEN+1];

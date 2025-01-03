@@ -170,7 +170,7 @@ G_LoadArenasFromFile
 static void G_LoadArenasFromFile( char *filename, const char* bspList, int bspCount ) {
 	int				len;
 	fileHandle_t	f;
-	char			buf[MAX_ARENAS_TEXT];
+	static char		buf[MAX_ARENAS_TEXT];
 	int				countHere;
 
 	if (g_developer.integer) {

@@ -1296,7 +1296,7 @@ static void G_MapListUnplayedResult(int status, const char* errorMessage, int af
 	else {
 
 		int			mapsinmessage = 0;
-		char*		mapName = NULL;
+		const char*	mapName = NULL;
 		char		mapListString[1024];
 		char		currentMapString[1024];
 		char		currentMap[COURSENAME_MAX_LEN + 1];
