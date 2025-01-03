@@ -1338,7 +1338,7 @@ static void G_MapListUnplayedResult(int status, const char* errorMessage, int af
 			}
 
 			Q_strncpyz(currentMap, mapName, 24);
-			Com_sprintf(currentMapString, sizeof(currentMapString), "^7[^2%03i^7] %-24s", currentMap, mapName);
+			Com_sprintf(currentMapString, sizeof(currentMapString), "^7[^2%03i^7] %-24s", mapNum, currentMap);
 			Q_strcat(mapListString, sizeof(mapListString), currentMapString);
 
 			mapsinmessage = mapsinmessage + 1;
