@@ -1177,6 +1177,9 @@ typedef struct infoHashed_s {
 	struct infoHashed_s* next;
 } infoHashed_t;
 
+extern int					g_numArenas;
+extern infoHashed_t			g_arenaInfosHashed[MAX_ARENAS];
+
 #define MAX_BOTS			1024
 #define MAX_BOTS_TEXT		8192
 

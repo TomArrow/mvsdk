@@ -982,7 +982,7 @@ void Cmd_Help_f(gentity_t* ent) {
 
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7 - Call a vote to switch to a map (call with map name)\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote mapnum^7 - Call a vote to switch to a map (call with map number from ^2/maplist^7)\n\"");
 
@@ -1029,7 +1029,7 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/time^7 - Check and publicly print your personal best for your current race settings\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/latest^7 - Show latest runs\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 and ^2/latest unlogged\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/rollympics^7 - Show fastest roll records\n\"");
 	}
 
@@ -2012,8 +2012,6 @@ void Cmd_Top_f( gentity_t *ent )
 
 }
 
-extern int					g_numArenas;
-extern infoHashed_t			g_arenaInfosHashed[MAX_ARENAS];
 void Cmd_Maplist_f(gentity_t* ent) {
 
 	int			mapsinmessage = 0;
@@ -2025,6 +2023,31 @@ void Cmd_Maplist_f(gentity_t* ent) {
 	int			n = 0;
 	//int			milliseconds = 0;
 	int			mapsInFrame = 0;
+
+	if (trap_Argc() > 1) {
+		char arg[10];
+		trap_Argv(1, arg, sizeof(arg));
+		if (!Q_stricmp(arg,"unplayed")) {
+			if (!ent->client->sess.login.loggedIn) {
+				trap_SendServerCommand(ent - g_entities, va("print \"Cannot display unplayed maps unless you are logged in.\n\"", type));
+				return;
+			}
+			else {
+				maplistUnplayedRequestStruct_t data;
+				data.clientnum = ent - g_entities;
+				memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+				if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_MAPLISTUNPLAYED,
+					"SELECT runs.course,runs2.userid FROM runs LEFT JOIN runs AS runs2 ON (runs.course=runs2.course AND runs2.userid=?) GROUP BY runs.course HAVING runs2.userid IS NULL ORDER BY course ASC"
+				)) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^1Cannot display unplayed maps - database error.\n\"", type));
+					return;
+				}
+				G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+				G_COOL_API_DB_FinishAndSendPreparedStatement();
+				return;
+			}
+		}
+	}
 
 	Q_strncpyz(mapListString, "", sizeof(mapListString));
 	trap_SendServerCommand(ent - g_entities, va("print \"^2----------^7INSTALLED MAPS^2---------\n\"",type));
@@ -2066,6 +2089,7 @@ void Cmd_Maplist_f(gentity_t* ent) {
 			mapsinmessage = 0;
 		}
 	}
+	trap_SendServerCommand(ent - g_entities, va("print \"\nWhen logged in, you can call ^2/maplist unplayed^7 to see maps that were finished by other people that you haven't played yet.\n\""));
 
 }
 
@@ -2078,6 +2102,10 @@ void Cmd_Latest_f(gentity_t* ent) {
 	//char pageNum[10];
 	const int args = trap_Argc();
 	char inputString[15];
+	
+	memset(&data, 0, sizeof(data));
+	
+	data.userId = -2;
 
 	if (!coolApi_dbVersion) {
 		trap_SendServerCommand(ent-g_entities,"print \"^1latest not possible, DB API not available\n\"");
@@ -2094,9 +2122,21 @@ void Cmd_Latest_f(gentity_t* ent) {
 			if (atoi_real(inputString)) {
 				//BUG - atoi(inputstring) returns true for values like "18percent" where it should return false..
 				page = atoi(inputString);
+				data.pageSpecified = qtrue;
 			}
 			else if ((t = RaceNameToInteger(inputString)) != -1) {
 				style = t;
+				data.styleSpecified = qtrue;
+			}
+			else if (!Q_stricmp(inputString,"mine")) {
+				if (!ent->client->sess.login.loggedIn) {
+					trap_SendServerCommand(ent - g_entities, "print \"Cannot show your latest runs because you are not logged in.\n\"");
+					return;
+				}
+				data.userId = ent->client->sess.login.id;
+			}
+			else if(!Q_stricmp(inputString, "unlogged")) {
+				data.userId = -1;
 			}
 		}
 	}
@@ -2107,22 +2147,42 @@ void Cmd_Latest_f(gentity_t* ent) {
 	first = page * 10;
 
 #define LATESTQUERY "SELECT runs.userid,users.username,runs.course,runs.subcourse,runs.style,runs.msec,runs.jump,runs.variant,runs.runflags,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,runs.duration_ms,runs.runwhen FROM runs LEFT JOIN users ON (users.id = runs.userid) LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
-#define LATESTQUERY_STYLEWUERE " WHERE runs.style=? "
+#define LATESTQUERY_STYLEWUERE " runs.style=? "
+#define LATESTQUERY_USERWUERE " runs.userid=? "
 #define LATESTQUERY_END " ORDER BY runs.runwhen DESC  LIMIT ?,10"
 
 	if (style == -1) {
 
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY LATESTQUERY_END)) {
-			trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
-			return;
+		if (data.userId != -2) {
+			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY " WHERE " LATESTQUERY_USERWUERE LATESTQUERY_END)) {
+				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
+				return;
+			}
+			G_COOL_API_DB_PreparedBindInt(data.userId);
+		}
+		else {
+			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY LATESTQUERY_END)) {
+				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
+				return;
+			}
 		}
 	}
 	else {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY LATESTQUERY_STYLEWUERE LATESTQUERY_END)) {
-			trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
-			return;
+		if (data.userId != -2) {
+			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY  " WHERE " LATESTQUERY_USERWUERE  " AND " LATESTQUERY_STYLEWUERE LATESTQUERY_END)) {
+				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
+				return;
+			}
+			G_COOL_API_DB_PreparedBindInt(data.userId);
+			G_COOL_API_DB_PreparedBindInt(style);
 		}
-		G_COOL_API_DB_PreparedBindInt(style);
+		else {
+			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY  " WHERE "  LATESTQUERY_STYLEWUERE LATESTQUERY_END)) {
+				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
+				return;
+			}
+			G_COOL_API_DB_PreparedBindInt(style);
+		}
 	}
 
 	G_COOL_API_DB_PreparedBindInt(first);

@@ -1175,6 +1175,128 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		resultIndex++;
 	}
 
+	trap_SendServerCommand(ent - g_entities, va("print \"\n\""));
+
+	if (!lbRequestData.styleSpecified && !lbRequestData.pageSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can specify movement style and page number for ^2/latest^7.\n\""));
+	}
+	else if (!lbRequestData.pageSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify page number for ^2/latest^7.\n\""));
+	} else if (!lbRequestData.styleSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify movement style for ^2/latest^7.\n\""));
+	}
+
+	if (lbRequestData.userId == -2) {
+
+		trap_SendServerCommand(ent - g_entities, va("print \"When logged in, you can call ^2/latest mine^7 to see maps you played recently.\n\""));
+		trap_SendServerCommand(ent - g_entities, va("print \"You can also call ^2/latest unlogged^7 to see maps recently played by unlogged players.\n\""));
+	}
+
+}
+static void G_MapListUnplayedResult(int status, const char* errorMessage, int affectedRows) {
+	maplistUnplayedRequestStruct_t data;
+	gentity_t* ent = NULL;
+	int resultIndex = 0;
+	//evaluatedRunInfo_t eRunInfo;
+
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Client %d unplayed maplist returned, user no longer valid.\n", data.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateRunsTable();
+		trap_SendServerCommand(data.clientnum,"print \"^1Unplayed maplist display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1Unplayed maplist failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+	else {
+
+		int			mapsinmessage = 0;
+		char*		mapName = NULL;
+		char		mapListString[1024];
+		char		currentMapString[1024];
+		char		currentMap[COURSENAME_MAX_LEN + 1];
+		qboolean	first = qtrue;
+		//int			n = 0;
+		//int			milliseconds = 0;
+		int			mapsInFrame = 0;
+		int			mapNum;
+		infoHashed_t* mapInfo;
+
+
+		Q_strncpyz(mapListString, "", sizeof(mapListString));
+		trap_SendServerCommand(ent - g_entities, va("print \"^2----------^7INSTALLED MAPS^2---------\n\""));
+
+		while (G_COOL_API_DB_NextRow()) {
+			G_COOL_API_DB_GetString(0, currentMap, sizeof(currentMap));
+
+			mapInfo = G_GetArenaInfoByMap(currentMap);
+			if (!mapInfo) {
+				continue;
+			}
+
+			mapName = mapInfo->name; //Info_ValueForKey(g_arenaInfosHashed[n]., "map");
+			mapNum = mapInfo - g_arenaInfosHashed;
+
+			if (strlen(mapName) < 1 || !Q_stricmp(mapName, "<NULL>")) {
+
+				if (mapNum == (g_numArenas - 1)) {
+					mapsInFrame += 5;
+					trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
+					if (mapsInFrame >= 300) {
+						mapsInFrame = 0;
+						//milliseconds += 100;
+					}
+					Q_strncpyz(mapListString, "", sizeof(mapListString));
+					mapsinmessage = 0;
+				}
+				continue;
+			}
+
+			Q_strncpyz(currentMap, mapName, 24);
+			Com_sprintf(currentMapString, sizeof(currentMapString), "^7[^2%03i^7] %-24s", currentMap, mapName);
+			Q_strcat(mapListString, sizeof(mapListString), currentMapString);
+
+			mapsinmessage = mapsinmessage + 1;
+
+			if ((mapsinmessage >= 5) || (mapNum == (g_numArenas - 1))) {
+				mapsInFrame += 5;
+				trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
+				if (mapsInFrame >= 300) {
+					mapsInFrame = 0;
+					//milliseconds += 100;
+				}
+
+				Q_strncpyz(mapListString, "", sizeof(mapListString));
+				mapsinmessage = 0;
+			}
+		}
+
+		if ((mapsinmessage >= 1)) {
+			mapsInFrame += 5;
+			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
+			if (mapsInFrame >= 300) {
+				mapsInFrame = 0;
+				//milliseconds += 100;
+			}
+
+			Q_strncpyz(mapListString, "", sizeof(mapListString));
+			mapsinmessage = 0;
+		}
+
+
+	}
+
+
+
+
 }
 static void G_SubContestLBResult(int status, const char* errorMessage, int affectedRows) {
 	subContestLeaderboardRequestStruct_t lbRequestData;
@@ -1553,6 +1675,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_GETLATESTRUNS:
 					G_LatestRunsResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_MAPLISTUNPLAYED:
+					G_MapListUnplayedResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_SUBCONTESTLEADERBOARD:
 					G_SubContestLBResult(status, errorMessage, affectedRows);

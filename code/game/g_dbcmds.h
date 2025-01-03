@@ -27,6 +27,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_CHANGEPASSWORD,
 	DBREQUEST_ARENAGENMAPLIST,
 	DBREQUEST_GETLATESTRUNS,
+	DBREQUEST_MAPLISTUNPLAYED,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -77,7 +78,14 @@ typedef struct checkPointSaveRequestStruct_s {
 typedef struct latestRunsRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
+	int			userId;
+	qboolean	styleSpecified;
+	qboolean	pageSpecified;
 }latestRunsRequestStruct_t;
+typedef struct maplistUnplayedRequestStruct_s {
+	int			ip[4];
+	int			clientnum;
+}maplistUnplayedRequestStruct_t;
 
 typedef struct insertUpdateRunStruct_s {
 	int					ip[4];
