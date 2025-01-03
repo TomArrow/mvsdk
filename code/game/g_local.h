@@ -1201,7 +1201,8 @@ void UpdateTournamentInfo( void );
 //
 void G_InitBots( qboolean restart );
 char *G_GetBotInfoByNumber( int num );
-char *G_GetBotInfoByName( const char *name );
+infoHashed_t *G_GetBotInfoByName( const char *name );
+infoHashed_t *G_GetArenaInfoByMap(const char* map);
 void G_CheckBotSpawn( void );
 void G_RemoveQueuedBotBegin( int clientNum );
 qboolean G_BotConnect( int clientNum, qboolean restart );

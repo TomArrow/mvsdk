@@ -2012,8 +2012,8 @@ void Cmd_Top_f( gentity_t *ent )
 
 }
 
-extern int				g_numArenas;
-extern char*			g_arenaInfos[MAX_ARENAS];
+extern int					g_numArenas;
+extern infoHashed_t			g_arenaInfosHashed[MAX_ARENAS];
 void Cmd_Maplist_f(gentity_t* ent) {
 
 	int			mapsinmessage = 0;
@@ -2031,7 +2031,7 @@ void Cmd_Maplist_f(gentity_t* ent) {
 
 	for (n = 0; n < g_numArenas; n++) {
 
-		type = Info_ValueForKey(g_arenaInfos[n], "map");
+		type = g_arenaInfosHashed[n].name; //Info_ValueForKey(g_arenaInfosHashed[n]., "map");
 
 		if (strlen(type) < 1 || !Q_stricmp(type, "<NULL>")) {
 
@@ -2961,7 +2961,8 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum.\n\"");
 		}
 
-		Q_strncpyz(mapname,Info_ValueForKey(g_arenaInfos[mapnum], "map"),sizeof(mapname));
+		//Q_strncpyz(mapname,Info_ValueForKey(g_arenaInfos[mapnum], "map"),sizeof(mapname));
+		Q_strncpyz(mapname,g_arenaInfosHashed[mapnum].name,sizeof(mapname));
 
 		if (!mapname || !mapname[0]) {
 			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum (wtf?!).\n\"");

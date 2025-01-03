@@ -6,11 +6,12 @@
 
 
 static int		g_numBots;
-static char		*g_botInfos[MAX_BOTS];
+infoHashed_t	g_botInfosHashed[MAX_BOTS];
+infoHashed_t*	g_botInfosHashTable[INFO_HASH_SIZE] = {NULL};
 
-
-int				g_numArenas;
-char			*g_arenaInfos[MAX_ARENAS];
+int					g_numArenas;
+infoHashed_t		g_arenaInfosHashed[MAX_ARENAS];
+infoHashed_t*		g_arenaInfosHashTable[INFO_HASH_SIZE] = { NULL };
 
 
 #define BOT_BEGIN_DELAY_BASE		2000
@@ -40,17 +41,43 @@ float trap_Cvar_VariableValue( const char *var_name ) {
 }
 
 
+/*
+================
+return a hash value for the filename
+================
+*/
+static int generateHashValue(const char* fname, const int size) {
+	int		i;
+	int		hash;
+	char	letter;
+
+	hash = 0;
+	i = 0;
+	while (fname[i] != '\0') {
+		letter = tolower(fname[i]);
+		if (letter == '.') break;				// don't include extension
+		if (letter == '\\') letter = '/';		// damn path names
+		hash += (int)(letter) * (i + 119);
+		i++;
+	}
+	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
+	hash &= (size - 1);
+	return hash;
+}
+
 
 /*
 ===============
 G_ParseInfos
 ===============
 */
-int G_ParseInfos( char *buf, int max, char *infos[], const char* bspList, int bspCount) {
-	char	*token;
-	int		count;
-	char	key[MAX_TOKEN_CHARS];
-	char	info[MAX_INFO_STRING];
+int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTable[], const char* hashKey, const char* bspList, int bspCount) {
+	char		*token;
+	int			count;
+	char		key[MAX_TOKEN_CHARS];
+	char		info[MAX_INFO_STRING];
+	const char* keyValue;
+	int			hash;
 
 	count = 0;
 
@@ -118,10 +145,18 @@ int G_ParseInfos( char *buf, int max, char *infos[], const char* bspList, int bs
 		}
 
 		//NOTE: extra space for arena number
-		infos[count] = G_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
-		if (infos[count]) {
-			strcpy(infos[count], info);
-			count++;
+		keyValue = Info_ValueForKey(info, hashKey);
+		hash = generateHashValue(keyValue,INFO_HASH_SIZE);
+		infos[count].name = G_Alloc(strlen(keyValue) + 1);
+		if (infos[count].name) {
+			strcpy(infos[count].name, keyValue);
+			infos[count].info = G_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
+			if (infos[count].info) {
+				strcpy(infos[count].info, info);
+				infos[count].next = hashTable[hash];
+				hashTable[hash] = &infos[count];
+				count++;
+			}
 		}
 	}
 	return count;
@@ -157,7 +192,7 @@ static void G_LoadArenasFromFile( char *filename, const char* bspList, int bspCo
 	buf[len] = 0;
 	trap_FS_FCloseFile( f );
 
-	countHere = G_ParseInfos(buf, MAX_ARENAS - g_numArenas, &g_arenaInfos[g_numArenas], bspList, bspCount);
+	countHere = G_ParseInfos(buf, MAX_ARENAS - g_numArenas, &g_arenaInfosHashed[g_numArenas],g_arenaInfosHashTable,"map", bspList, bspCount);
 	g_numArenas += countHere;
 
 	if (g_developer.integer) {
@@ -201,12 +236,13 @@ int G_GetMapTypeBits(char *type)
 
 qboolean G_DoesMapSupportGametype(const char *mapname, int gametype)
 {
-	int			typeBits = 0;
-	int			thisLevel = -1;
-	int			n = 0;
-	char		*type = NULL;
+	int				typeBits = 0;
+	//int				thisLevel = -1;
+	int				n = 0;
+	char			*type = NULL;
+	infoHashed_t*	mapInfo;
 
-	if (!g_arenaInfos[0])
+	if (!g_arenaInfosHashed[0].info)
 	{
 		return qfalse;
 	}
@@ -216,18 +252,20 @@ qboolean G_DoesMapSupportGametype(const char *mapname, int gametype)
 		return qfalse;
 	}
 
-	for( n = 0; n < g_numArenas; n++ )
-	{
-		type = Info_ValueForKey( g_arenaInfos[n], "map" );
+	mapInfo = G_GetArenaInfoByMap(mapname);
+	//for( n = 0; n < g_numArenas; n++ )
+	//{
+	//	//type = Info_ValueForKey( g_arenaInfos[n], "map" );
+	//	type = g_arenaInfosHashed[n].name;
 
-		if (Q_stricmp(mapname, type) == 0)
-		{
-			thisLevel = n;
-			break;
-		}
-	}
+	//	if (Q_stricmp(mapname, type) == 0)
+	//	{
+	//		thisLevel = n;
+	//		break;
+	//	}
+	//}
 
-	if (thisLevel == -1)
+	if (!mapInfo)
 	{
 		return qfalse;
 	}
@@ -236,7 +274,7 @@ qboolean G_DoesMapSupportGametype(const char *mapname, int gametype)
 		return qtrue; // fair? no map that doesnt support ffa is there? it would have to have no spawn at all. wait, will we even get this far if it has no arena file?
 	}
 
-	type = Info_ValueForKey(g_arenaInfos[thisLevel], "type");
+	type = Info_ValueForKey(mapInfo->info, "type");
 
 	typeBits = G_GetMapTypeBits(type);
 	if (typeBits & (1 << gametype))
@@ -251,7 +289,7 @@ qboolean G_DoesMapHaveArena(const char *mapname)
 	int			n = 0;
 	char		*type = NULL;
 
-	if (!g_arenaInfos[0])
+	if (!g_arenaInfosHashed[0].info)
 	{
 		return qfalse;
 	}
@@ -263,7 +301,8 @@ qboolean G_DoesMapHaveArena(const char *mapname)
 
 	for( n = 0; n < g_numArenas; n++ )
 	{
-		type = Info_ValueForKey( g_arenaInfos[n], "map" );
+		//type = Info_ValueForKey( g_arenaInfos[n], "map" );
+		type = g_arenaInfosHashed[n].name;
 
 		if (Q_stricmp(mapname, type) == 0)
 		{
@@ -290,7 +329,7 @@ const char *G_RefreshNextMap(int gametype, qboolean forced)
 		return NULL;
 	}
 
-	if (!g_arenaInfos[0])
+	if (!g_arenaInfosHashed[0].info)
 	{
 		return NULL;
 	}
@@ -298,7 +337,8 @@ const char *G_RefreshNextMap(int gametype, qboolean forced)
 	trap_Cvar_Register( &mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM );
 	for( n = 0; n < g_numArenas; n++ )
 	{
-		type = Info_ValueForKey( g_arenaInfos[n], "map" );
+		//type = Info_ValueForKey( g_arenaInfos[n], "map" );
+		type = g_arenaInfosHashed[n].name;
 
 		if (Q_stricmp(mapname.string, type) == 0)
 		{
@@ -313,7 +353,7 @@ const char *G_RefreshNextMap(int gametype, qboolean forced)
 	n = thisLevel+1;
 	while (n != thisLevel)
 	{ //now cycle through the arena list and find the next map that matches the gametype we're in
-		if (!g_arenaInfos[n] || n >= g_numArenas)
+		if (!g_arenaInfosHashed[n].info || n >= g_numArenas)
 		{
 			if (loopingUp)
 			{ //this shouldn't happen, but if it does we have a null entry break in the arena file
@@ -324,7 +364,7 @@ const char *G_RefreshNextMap(int gametype, qboolean forced)
 			loopingUp = qtrue;
 		}
 
-		type = Info_ValueForKey(g_arenaInfos[n], "type");
+		type = Info_ValueForKey(g_arenaInfosHashed[n].info, "type");
 		
 		typeBits = G_GetMapTypeBits(type);
 		if (typeBits & (1 << gametype))
@@ -343,11 +383,13 @@ const char *G_RefreshNextMap(int gametype, qboolean forced)
 	}
 	else
 	{ //otherwise we have a valid nextmap to cycle to, so use it.
-		type = Info_ValueForKey( g_arenaInfos[desiredMap], "map" );
+		//type = Info_ValueForKey( g_arenaInfos[desiredMap], "map" );
+		type = g_arenaInfosHashed[desiredMap].name;
 		trap_Cvar_Set( "nextmap", va("map %s", type));
 	}
 
-	return Info_ValueForKey( g_arenaInfos[desiredMap], "map" );
+	//return Info_ValueForKey( g_arenaInfos[desiredMap], "map" );
+	return g_arenaInfosHashed[desiredMap].name;
 }
 
 
@@ -359,7 +401,7 @@ void G_CheckMapHasArenaInfo()
 
 	level.hasArenaInfo = qfalse;
 
-	if (!g_arenaInfos[0])
+	if (!g_arenaInfosHashed[0].info)
 	{
 		return;
 	}
@@ -367,7 +409,8 @@ void G_CheckMapHasArenaInfo()
 	trap_Cvar_Register(&mapname, "mapname", "", CVAR_SERVERINFO | CVAR_ROM);
 	for (n = 0; n < g_numArenas; n++)
 	{
-		type = Info_ValueForKey(g_arenaInfos[n], "map");
+		//type = Info_ValueForKey(g_arenaInfos[n], "map");
+		type = g_arenaInfosHashed[n].name;
 
 		if (Q_stricmp(mapname.string, type) == 0)
 		{
@@ -379,13 +422,19 @@ void G_CheckMapHasArenaInfo()
 	G_Printf("^3Map is missing an arena info.\n");
 }
 
+//int arenasort(void const* a, void const* b) {
+//	char const* aa = *(char const**)a;
+//	char const* bb = *(char const**)b;
+//	const char* map1 = Info_ValueForKey(aa, "map");
+//	const char* map2 = Info_ValueForKey(bb, "map");
+//
+//	return strcmp(map1,map2);
+//}
 int arenasort(void const* a, void const* b) {
-	char const* aa = *(char const**)a;
-	char const* bb = *(char const**)b;
-	const char* map1 = Info_ValueForKey(aa, "map");
-	const char* map2 = Info_ValueForKey(bb, "map");
+	infoHashed_t* aa = (infoHashed_t*)a;
+	infoHashed_t* bb = (infoHashed_t*)b;
 
-	return strcmp(map1,map2);
+	return strcmp(aa->name, bb->name);
 }
 
 /*
@@ -403,6 +452,7 @@ static void G_LoadArenas( void ) {
 	char*		dirptr;
 	int			i, n;
 	int			dirlen;
+	int			hash;
 
 	g_numArenas = 0;
 
@@ -428,12 +478,21 @@ static void G_LoadArenas( void ) {
 	trap_Printf( va( "%i arenas parsed\n", g_numArenas ) );
 	
 	for( n = 0; n < g_numArenas; n++ ) {
-		Info_SetValueForKey( g_arenaInfos[n], "num", va( "%i", n ) );
+		//Info_SetValueForKey( g_arenaInfos[n], "num", va( "%i", n ) );
+		Info_SetValueForKey( g_arenaInfosHashed[n].info, "num", va( "%i", n ) );
 	}
 
 	level.arenasLoaded = qtrue;
 
-	qsort((void*)g_arenaInfos, g_numArenas, sizeof(g_arenaInfos[0]), arenasort);
+	qsort((void*)g_arenaInfosHashed, g_numArenas, sizeof(g_arenaInfosHashed[0]), arenasort);
+
+	// after qsort we need to redo the hash table
+	memset(g_arenaInfosHashTable, 0, sizeof(g_arenaInfosHashTable));
+	for (n = 0; n < g_numArenas; n++) {
+		hash = generateHashValue(g_arenaInfosHashed[n].name, INFO_HASH_SIZE);
+		g_arenaInfosHashed[n].next = g_arenaInfosHashTable[hash];
+		g_arenaInfosHashTable[hash] = &g_arenaInfosHashed[n];
+	}
 
 	G_CheckMapHasArenaInfo();
 
@@ -446,14 +505,24 @@ static void G_LoadArenas( void ) {
 G_GetArenaInfoByNumber
 ===============
 */
-const char *G_GetArenaInfoByMap( const char *map ) {
-	int			n;
+infoHashed_t *G_GetArenaInfoByMap( const char *map ) {
+	int				n;
+	int				hash = generateHashValue(map,INFO_HASH_SIZE);
+	infoHashed_t*	info;
 
-	for( n = 0; n < g_numArenas; n++ ) {
-		if( Q_stricmp( Info_ValueForKey( g_arenaInfos[n], "map" ), map ) == 0 ) {
-			return g_arenaInfos[n];
+	for (info = g_arenaInfosHashTable[hash]; info; info = info->next) {
+		//if( Q_stricmp( Info_ValueForKey( g_arenaInfos[n], "map" ), map ) == 0 ) {
+		if (Q_stricmp(info->name, map) == 0) {
+			return info;
 		}
 	}
+
+	/*for (n = 0; n < g_numArenas; n++) {
+		//if( Q_stricmp( Info_ValueForKey( g_arenaInfos[n], "map" ), map ) == 0 ) {
+		if( Q_stricmp( g_arenaInfosHashed[n].name, map ) == 0 ) {
+			return &g_arenaInfosHashed[n];
+		}
+	}*/
 
 	return NULL;
 }
@@ -498,7 +567,8 @@ void G_AddRandomBot( int team ) {
 
 	num = 0;
 	for ( n = 0; n < g_numBots ; n++ ) {
-		value = Info_ValueForKey( g_botInfos[n], "name" );
+		//value = Info_ValueForKey( g_botInfos[n], "name" );
+		value = g_botInfosHashed[n].name;
 		//
 		for ( i=0 ; i< g_maxclients.integer ; i++ ) {
 			cl = level.clients + i;
@@ -521,7 +591,8 @@ void G_AddRandomBot( int team ) {
 	}
 	num = random() * num;
 	for ( n = 0; n < g_numBots ; n++ ) {
-		value = Info_ValueForKey( g_botInfos[n], "name" );
+		//value = Info_ValueForKey( g_botInfos[n], "name" );
+		value = g_botInfosHashed[n].name;
 		//
 		for ( i=0 ; i< g_maxclients.integer ; i++ ) {
 			cl = level.clients + i;
@@ -835,7 +906,7 @@ G_AddBot
 */
 static void G_AddBot( const char *name, float skill, const char *team, int delay, char *altname) {
 	int				clientNum;
-	char			*botinfo;
+	infoHashed_t	*botinfo;
 	gentity_t		*bot;
 	char			*key;
 	char			*s;
@@ -855,9 +926,9 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	// create the bot's userinfo
 	userinfo[0] = '\0';
 
-	botname = Info_ValueForKey( botinfo, "funname" );
+	botname = Info_ValueForKey( botinfo->info, "funname" );
 	if( !botname[0] ) {
-		botname = Info_ValueForKey( botinfo, "name" );
+		botname = Info_ValueForKey( botinfo->info, "name" );
 	}
 	// check for an alternative name
 	if (altname && altname[0]) {
@@ -879,7 +950,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	}
 
 	key = "model";
-	model = Info_ValueForKey( botinfo, key );
+	model = Info_ValueForKey( botinfo->info, key );
 	if ( !*model ) {
 		model = "visor/default";
 	}
@@ -897,27 +968,27 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	Info_SetValueForKey( userinfo, key, headmodel );
 */
 	key = "gender";
-	s = Info_ValueForKey( botinfo, key );
+	s = Info_ValueForKey( botinfo->info, key );
 	if ( !*s ) {
 		s = "male";
 	}
 	Info_SetValueForKey( userinfo, "sex", s );
 
 	key = "color1";
-	s = Info_ValueForKey( botinfo, key );
+	s = Info_ValueForKey( botinfo->info, key );
 	if ( !*s ) {
 		s = "4";
 	}
 	Info_SetValueForKey( userinfo, key, s );
 
 	key = "color2";
-	s = Info_ValueForKey( botinfo, key );
+	s = Info_ValueForKey( botinfo->info, key );
 	if ( !*s ) {
 		s = "5";
 	}
 	Info_SetValueForKey( userinfo, key, s );
 
-	s = Info_ValueForKey(botinfo, "personality");
+	s = Info_ValueForKey(botinfo->info, "personality");
 	if (!*s )
 	{
 		Info_SetValueForKey( userinfo, "personality", "botfiles/default.jkb" );
@@ -1094,19 +1165,20 @@ void Svcmd_BotList_f( void ) {
 
 	trap_Printf("^1name             model            personality              funname\n");
 	for (i = 0; i < g_numBots; i++) {
-		strcpy(name, Info_ValueForKey( g_botInfos[i], "name" ));
+		//strcpy(name, Info_ValueForKey( g_botInfos[i], "name" ));
+		strcpy(name, g_botInfosHashed[i].name);
 		if ( !*name ) {
 			strcpy(name, "Padawan");
 		}
-		strcpy(funname, Info_ValueForKey( g_botInfos[i], "funname" ));
+		strcpy(funname, Info_ValueForKey(g_botInfosHashed[i].info, "funname" ));
 		if ( !*funname ) {
 			strcpy(funname, "");
 		}
-		strcpy(model, Info_ValueForKey( g_botInfos[i], "model" ));
+		strcpy(model, Info_ValueForKey(g_botInfosHashed[i].info, "model" ));
 		if ( !*model ) {
 			strcpy(model, "visor/default");
 		}
-		strcpy(personality, Info_ValueForKey( g_botInfos[i], "personality"));
+		strcpy(personality, Info_ValueForKey(g_botInfosHashed[i].info, "personality"));
 		if (!*personality ) {
 			strcpy(personality, "botfiles/default.jkb");
 		}
@@ -1199,7 +1271,7 @@ static void G_LoadBotsFromFile( char *filename ) {
 	buf[len] = 0;
 	trap_FS_FCloseFile( f );
 
-	g_numBots += G_ParseInfos( buf, MAX_BOTS - g_numBots, &g_botInfos[g_numBots] , NULL, 0 );
+	g_numBots += G_ParseInfos( buf, MAX_BOTS - g_numBots, &g_botInfosHashed[g_numBots], g_botInfosHashTable, "name", NULL, 0);
 }
 
 /*
@@ -1255,7 +1327,7 @@ char *G_GetBotInfoByNumber( int num ) {
 		trap_Printf( va( S_COLOR_RED "Invalid bot number: %i\n", num ) );
 		return NULL;
 	}
-	return g_botInfos[num];
+	return g_botInfosHashed[num].info;
 }
 
 
@@ -1264,16 +1336,23 @@ char *G_GetBotInfoByNumber( int num ) {
 G_GetBotInfoByName
 ===============
 */
-char *G_GetBotInfoByName( const char *name ) {
-	int		n;
-	char	*value;
+infoHashed_t *G_GetBotInfoByName( const char *name ) {
+	int				n;
+	int				hash = generateHashValue(name, INFO_HASH_SIZE);
+	infoHashed_t*	info;
 
-	for ( n = 0; n < g_numBots ; n++ ) {
-		value = Info_ValueForKey( g_botInfos[n], "name" );
-		if ( !Q_stricmp( value, name ) ) {
-			return g_botInfos[n];
+	for (info = g_botInfosHashTable[hash]; info; info = info->next) {
+		//if( Q_stricmp( Info_ValueForKey( g_arenaInfos[n], "map" ), map ) == 0 ) {
+		if (Q_stricmp(info->name, name) == 0) {
+			return info;
 		}
 	}
+	/*for (n = 0; n < g_numBots; n++) {
+		value = g_botInfosHashed[n].name;
+		if ( !Q_stricmp( value, name ) ) {
+			return &g_botInfosHashed[n];
+		}
+	}*/
 
 	return NULL;
 }

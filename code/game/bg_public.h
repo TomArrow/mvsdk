@@ -1164,8 +1164,18 @@ extern int WeaponAttackAnim[WP_NUM_WEAPONS];
 extern int forcePowerDarkLight[NUM_FORCE_POWERS];
 
 #define ARENAS_PER_TIER		4
-#define MAX_ARENAS			1024
-#define	MAX_ARENAS_TEXT		8192
+#define MAX_ARENAS			4096 // was 1024
+#define	MAX_ARENAS_TEXT		32768 // was 8192
+
+#define INFO_HASH_SIZE		1024
+
+typedef struct infoHashed_s {
+	//short hash;
+	//short arenaNum;
+	const char* name;
+	char* info;
+	struct infoHashed_s* next;
+} infoHashed_t;
 
 #define MAX_BOTS			1024
 #define MAX_BOTS_TEXT		8192
