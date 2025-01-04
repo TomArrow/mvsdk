@@ -1305,9 +1305,14 @@ qboolean	PMQ2_GoodPosition(void)
 #else
 		origin[i] = end[i] = pmq2->ps->origin[i];
 #endif
+
+	end[2] -= 1.0; // TA deviation from Q2: if we trace same to same position, we get stuck in oneway clips/patches. idk why :/ q2 doesnt have patches so they dont have the issue. TODO check if this is ok in general?
+
 	pmq2->trace(&trace, origin, pmq2->mins, pmq2->maxs, end, pmq2->ps->clientNum, pmq2->tracemask);
 
-	return !trace.allsolid;
+	//return !trace.allsolid; // TA deviation from Q2: if we trace same to same position, we get stuck in oneway clips/patches.
+	// so do a trace to random other position a little bit away and then just return startsolid value.
+	return !trace.startsolid;
 }
 
 /*
@@ -1507,6 +1512,11 @@ void PMQ2_ClampAngles(void)
 	AngleVectors(pmq2->ps->viewangles, pmlq2.forward, pmlq2.right, pmlq2.up);
 }
 
+// jk2: weapon changes
+void PM_BeginWeaponChange(int weapon);
+void PM_FinishWeaponChange(void);
+// end weapon changes
+
 /*
 ================
 Pmove
@@ -1689,6 +1699,32 @@ void PmoveQ2(pmoveq2_t* pmove)
 
 	// set groundentity, watertype, and waterlevel for final spot
 	PMQ2_CatagorizePosition(1);
+
+
+	// from jk2: allow weapon changes
+	// check for weapon change
+	// can't change if weapon is firing, but can change
+	// again if lowering or raising
+	if (pm->ps->weaponTime > 0) {
+		pm->ps->weaponTime -= pmlq2.msec;
+	}
+	if (pm->ps->weaponTime <= 0 || pm->ps->weaponstate != WEAPON_FIRING) {
+		if (pm->ps->weapon != pm->cmd.weapon) {
+			PM_BeginWeaponChange(pm->cmd.weapon);
+		}
+	}
+
+	if (pm->ps->weaponTime > 0) {
+	}
+	else {
+		// change weapon if time
+		if (pm->ps->weaponstate == WEAPON_DROPPING) {
+			PM_FinishWeaponChange();
+		}
+	}
+
+
+	// end jk2: allow weapon changes
 
 
 #ifdef AUTHENTIC_Q2SNAP
