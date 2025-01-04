@@ -657,7 +657,7 @@ static void G_SaveCheckpointsResult(int status, const char* errorMessage, int af
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d checkpoints saved, user no longer valid.\n", data.clientnum);
-		//return;
+		return;
 	}
 
 	if (status == 1146) {
@@ -697,7 +697,7 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d checkpoints loaded, user no longer valid.\n", data.clientnum);
-		//return;
+		return;
 	}
 
 	if (status == 1146) {
@@ -749,7 +749,7 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d top map search results returned, user no longer valid.\n", data.clientnum);
-		//return;
+		return;
 	}
 
 	if (status == 1146) {
@@ -854,7 +854,7 @@ typedef struct topLeaderBoardEntry_s {
 	int besttime, userid, runFlags, msec, jump, runFlagsDiff;
 	qboolean mainLBCompatible;
 	//raceStyle_t raceStyle;
-	float topSpeed, average;
+	float topSpeed, average,distance;
 	int savePosCount, resposCount, duration_ms_segmented_total;
 	char username[USERNAME_MAX_LEN + 1];
 	char time[25];
@@ -939,6 +939,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		entry->jump = G_COOL_API_DB_GetInt(6);
 		G_COOL_API_DB_GetFloat(7,&entry->topSpeed);
 		G_COOL_API_DB_GetFloat(8,&entry->average);
+		G_COOL_API_DB_GetFloat(15,&entry->distance);
 		G_COOL_API_DB_GetString(9,entry->time,sizeof(entry->time));
 		entry->savePosCount = G_COOL_API_DB_GetInt(10);
 		entry->resposCount = G_COOL_API_DB_GetInt(11);
@@ -972,9 +973,9 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 #define MSECSTRING(msec) ((msec) == -1 ? "togl" : ((msec) == -2 ? "flt" : ((msec) == 0 ? "unkn" : multiva("%d", 1000 / (msec)))))
 #define LBROW(lbType,coloration,jumpvalue) !entriesHere[lbType].exists ? ' ' :'#', !entriesHere[lbType].exists ? "  " : TOPNUMBERSTRING, coloration(entriesHere[lbType]), entriesHere[lbType].exists ? entriesHere[lbType].username : "", entriesHere[lbType].exists ? MSECSTRING(entriesHere[lbType].msec) : "" jumpvalue(entriesHere[lbType],lbType), !entriesHere[lbType].exists ? "" : DF_MsToString(entriesHere[lbType].besttime)
 
-#define LBROWFULL_STRING "  ^c%11s  %11s  %s"
+#define LBROWFULL_STRING "  ^c%11s  %11s  %11s  %s"
 
-#define LBROWFULL(lbType,coloration,jumpvalue) LBROW(lbType,coloration,jumpvalue),!entriesHere[lbType].exists ? "" :miniva("%.2favg",entriesHere[lbType].average),!entriesHere[lbType].exists ? "" :miniva("%.2ftop",entriesHere[lbType].topSpeed),!entriesHere[lbType].exists ? "" :entriesHere[lbType].time
+#define LBROWFULL(lbType,coloration,jumpvalue) LBROW(lbType,coloration,jumpvalue),!entriesHere[lbType].exists ? "" :miniva("%.2favg",entriesHere[lbType].average),!entriesHere[lbType].exists ? "" :miniva("%.2ftop",entriesHere[lbType].topSpeed),!entriesHere[lbType].exists ? "" :miniva("%ddist",(int)entriesHere[lbType].distance),!entriesHere[lbType].exists ? "" :entriesHere[lbType].time
 
 #define JUMPVALUE(a,b) ,entriesHere[b].exists ? 'j':' ' ,(entriesHere[b].exists ? miniva("%-2d",(a).jump) : "  ")
 #define JUMPVALUE_EMPTY(a,b) 
@@ -1845,7 +1846,7 @@ void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
 	}
 	memset(&data, 0, sizeof(data));
 	data.clientnum = playerent - g_entities;
-	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_SAVECHECKPOINTS,request)) {
 		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to save checkpoints.\n\"",qtrue);
@@ -1885,7 +1886,7 @@ void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 	}
 	memset(&data, 0, sizeof(data));
 	data.clientnum = playerent - g_entities;
-	memcpy(data.ip, mv_clientSessions->clientIP, sizeof(data.ip));
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data), DBREQUEST_LOADCHECKPOINTS, "SELECT x,y,z,yaw FROM checkpoints WHERE course=? AND userid=? ORDER BY number ASC")) {
 		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to load checkpoints.\n\"",qtrue);

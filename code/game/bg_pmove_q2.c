@@ -1306,7 +1306,7 @@ qboolean	PMQ2_GoodPosition(void)
 		origin[i] = end[i] = pmq2->ps->origin[i];
 #endif
 
-	end[2] -= 1.0; // TA deviation from Q2: if we trace same to same position, we get stuck in oneway clips/patches. idk why :/ q2 doesnt have patches so they dont have the issue. TODO check if this is ok in general?
+	end[2] -= 1.0; // TA deviation from Q2: if we trace same to same position, we get stuck in oneway clips/patches. idk why :/ q2 doesnt have patches so they dont have the issue. TODO check if this is ok in general? or will this cause (barely noticable?) weirdness with epsilon?
 
 	pmq2->trace(&trace, origin, pmq2->mins, pmq2->maxs, end, pmq2->ps->clientNum, pmq2->tracemask);
 
