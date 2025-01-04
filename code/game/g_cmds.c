@@ -1051,6 +1051,9 @@ void Cmd_Help_f(gentity_t* ent) {
 		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_USERSFORCELOGIN) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/forcelogin^7 - call with client number and account name to force login a player so he can change his password\n\"");
 		}
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_ARENALESSMAPS) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/arenaless^7 - List .bsp files without corresponding arena files\n\"");
+		}
 	}
 }
 
@@ -2974,6 +2977,81 @@ void Cmd_GenArena_f(gentity_t* ent) {
 
 }
 
+#define ARENALESS_LINE_MAX_LENGTH 150
+void Cmd_Arenaless_f(gentity_t* ent) {
+	qboolean		allRace = qfalse;
+	char			arg1[10];
+	static char		dirlistBsp[8192];
+	char*			bspptr,*strptr;
+	int				numBsps;
+	int				i,bspLen;
+	infoHashed_t*	ai;
+	char			currentMessage[MAX_STRING_CHARS];
+	char*			curMsgPtr = currentMessage;
+	int				curMsgIndex = 0;
+	qboolean		overflowing = qfalse;
+	int				count = 0;
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_ARENALESSMAPS)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1You do not have permission to use this command.\n\"");
+		return;
+	}
+	trap_SendServerCommand(ent - g_entities, "print \"Maps without arena:\n\"");
+
+	numBsps = trap_FS_GetFileList("maps", ".bsp", dirlistBsp, sizeof(dirlistBsp));
+	bspptr = dirlistBsp;
+	curMsgIndex = 0;
+	for (i = 0; i < numBsps; i++, bspptr += bspLen + 1) {
+		bspLen = strlen(bspptr); 
+		// a.bsp
+		*(bspptr + bspLen - 4) = '\0'; // cut off .bsp
+		ai = G_GetArenaInfoByMap(bspptr);
+		if (ai) {
+			continue; // already have this as arena
+		}
+
+		if ((curMsgIndex+ bspLen+25)>=sizeof(currentMessage)) { // check if we are overflowing (shouldnt happen as we are pretty generous overall)
+			*curMsgPtr++ = '\0';
+			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", currentMessage));
+			curMsgPtr = currentMessage;
+			curMsgIndex = 0;
+		}
+
+		if ((curMsgIndex + bspLen + 25) >= sizeof(currentMessage)) {
+			continue; // we are STILL overflowing. troll map that has a name thats 1024 chars long? skip.
+		}
+		count++;
+		strptr = bspptr;
+		while (*strptr) { // 25 cuz im too lazy to think this through.
+			*curMsgPtr++ = *strptr++;
+			curMsgIndex++;
+		}
+		*curMsgPtr++ = ' ';
+		curMsgIndex++;
+		while (curMsgIndex % 20 && curMsgIndex < ARENALESS_LINE_MAX_LENGTH) { // align the mapnames at 20 char distances
+			*curMsgPtr++ = ' ';
+			curMsgIndex++;
+		}
+		if (curMsgIndex >= ARENALESS_LINE_MAX_LENGTH) {
+			*curMsgPtr++ = '\0';
+			trap_SendServerCommand(ent-g_entities,va("print \"%s\n\"",currentMessage));
+			curMsgPtr = currentMessage;
+			curMsgIndex = 0;
+		}
+	}
+
+	if (curMsgIndex) {
+		*curMsgPtr++ = '\0';
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", currentMessage));
+		//curMsgPtr = currentMessage; // no need, we're done anyway
+		//curMsgIndex = 0;
+	}
+	trap_SendServerCommand(ent - g_entities, va("print \"\nTotal count: %d\n\"", count));
+
+
+
+}
+
 extern int DF_GetSegmentedRunnerCount();
 
 /*
@@ -4307,6 +4385,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "arenaless"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcelogin"))
 		{
 			giveError = qtrue;
@@ -4449,6 +4531,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_CallVote_f (ent);
 	else if (Q_stricmp (cmd, "genArena") == 0)
 		Cmd_GenArena_f(ent);
+	else if (Q_stricmp (cmd, "arenaless") == 0)
+		Cmd_Arenaless_f(ent);
 	else if (Q_stricmp (cmd, "forcelogin") == 0)
 		Cmd_ForceLogin_f(ent);
 	else if (Q_stricmp (cmd, "vote") == 0)

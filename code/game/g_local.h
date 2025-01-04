@@ -102,6 +102,7 @@ extern int gEscapeTime;
 #define TT_ACCOUNTFLAG_A_VOTEBESIDESMAP					(1<<1)
 #define TT_ACCOUNTFLAG_A_ARENAGEN						(1<<2)
 #define TT_ACCOUNTFLAG_A_USERSFORCELOGIN				(1<<3)
+#define TT_ACCOUNTFLAG_A_ARENALESSMAPS					(1<<4) // list/callvote maps without arena files
 
 typedef enum getUserCmdType_s
 {
