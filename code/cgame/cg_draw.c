@@ -16,6 +16,7 @@ static void CG_MovementKeys(centity_t *cent);
 static void CG_Speedometer(void); //jk2pro
 static void CG_StrafeHelper(centity_t *cent); //jk2pro
 static void CG_DrawAccelMeter(void); //jk2pro
+static void CG_DrawForceMeter(void);  //tommyternal :)
 static void CG_DrawBouncePowerMeter(void); //tommyternal :)
 static void CG_AntiLoopIndicator(void); // tommyternal
 static void CG_JumpHeight(centity_t *cent); //jk2pro
@@ -1280,6 +1281,7 @@ void CG_DrawHUD(centity_t	*cent)
 	}
 
 	CG_DrawBouncePowerMeter();
+	CG_DrawForceMeter();
 
 	if(cg_drawStrafeBotFactor.integer)
 		CG_DrawStrafeBotFactor();
@@ -5637,6 +5639,7 @@ static void CG_Draw2D( void ) {
 			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
 
 			CG_DrawBouncePowerMeter(); 
+			CG_DrawForceMeter(); 
 			
 			//if (cg_drawAntiLoopIndicator.integer && !cg.demoPlayback) { // TODO make work for demos?
 			//	CG_AntiLoopIndicator();
@@ -6551,9 +6554,9 @@ static void CG_Speedometer(void)
 			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 		}
 
+		speedometerXPos += 52;
 	}
 
-	speedometerXPos += 52;
 
 	if (cg_speedometer.integer & SPEEDOMETER_GROUNDSPEED) {
 		char speedStr4[32] = { 0 };
@@ -6709,6 +6712,30 @@ static void CG_DrawAccelMeter(void)
 
 	cg.previousSpeed = cg.currentSpeed;
 }
+
+
+static void CG_DrawForceMeter(void)
+{
+	float forcePercent = (float)cg.predictedPlayerState.fd.forcePower/100.0f;
+
+	if (!cg_forcemeter.integer) {
+		return;
+	}
+
+	CG_DrawRect(cg_forcemeterX.value - 0.75,
+		cg_forcemeterY.value - 0.85f,
+		37.75,
+		10.75,
+		0.5f,
+		colorTable[CT_BLACK]);
+	CG_FillRect(cg_forcemeterX.value,
+		cg_forcemeterY.value,
+		36 * forcePercent,
+		9,
+		colorTable[CT_CYAN]);
+
+}
+
 
 static void CG_DrawBouncePowerMeter(void)
 {

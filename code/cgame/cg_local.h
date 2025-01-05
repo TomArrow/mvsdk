@@ -1752,6 +1752,9 @@ extern	vmCvar_t		cg_speedometerX;
 extern	vmCvar_t		cg_speedometerY;
 extern	vmCvar_t		cg_speedometerSize;
 extern	vmCvar_t		cg_showpos;
+extern	vmCvar_t		cg_forcemeter;
+extern	vmCvar_t		cg_forcemeterX;
+extern	vmCvar_t		cg_forcemeterY;
 
 extern	vmCvar_t		cg_strafeHelperCutoff;
 extern	vmCvar_t		cg_strafeHelper;

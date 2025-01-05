@@ -569,6 +569,9 @@ vmCvar_t	cg_speedometerX;
 vmCvar_t	cg_speedometerY;
 vmCvar_t	cg_speedometerSize;
 vmCvar_t	cg_showpos;
+vmCvar_t	cg_forcemeter;
+vmCvar_t	cg_forcemeterX;
+vmCvar_t	cg_forcemeterY;
 
 vmCvar_t	cg_strafeHelperCutoff;
 vmCvar_t	cg_strafeHelper;
@@ -918,6 +921,9 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_speedometerY, "cg_speedometerY", "460", CVAR_ARCHIVE },
 	{ &cg_speedometerSize, "cg_speedometerSize", "0.75", CVAR_ARCHIVE },
 	{ &cg_showpos, "cg_showpos", "0", 0 },
+	{ &cg_forcemeter, "cg_forcemeter", "0", CVAR_ARCHIVE },
+	{ &cg_forcemeterX, "cg_forcemeterX", "300", CVAR_ARCHIVE },
+	{ &cg_forcemeterY, "cg_forcemeterY", "240", CVAR_ARCHIVE },
 
 
 	{ &cg_strafeHelperCutoff, "cg_strafeHelperCutoff", "240", CVAR_ARCHIVE },
