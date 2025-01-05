@@ -4521,7 +4521,7 @@ static qboolean CG_DrawFollow( void )
 	}
 	else {
 		movementStyle = cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-		if (movementStyle < 0 || movementStyle > MV_NUMSTYLES) {
+		if (movementStyle < 0 || movementStyle >= MV_NUMSTYLES) {
 			movementStyle = -1;
 		}
 	}
