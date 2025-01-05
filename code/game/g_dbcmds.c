@@ -1978,6 +1978,7 @@ static void G_CreateRunsTable() {
 			warningFlags INT NOT NULL, \
 			fpsString VARCHAR(255) NOT NULL, \
 			server VARCHAR(255) NOT NULL, \
+			hidden TINYINT(1) NOT NULL DEFAULT 0, \
 			UNIQUE KEY user_runtype (userid,course,subcourse,style,msec,jump,variant,runFlags"
 			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
 			"), \
@@ -1993,6 +1994,7 @@ static void G_CreateRunsTable() {
 			INDEX i_runwhen(runwhen), \
 			INDEX i_runfirst (runfirst),\
 			INDEX i_warningFlags (warningFlags), \
+			INDEX i_hidden (hidden), \
 			INDEX i_runtype (style,msec,jump,variant,runFlags) );"
 			RUNFLAGS(RUNFLAGSFUNC4)
 			//RUNFLAGS(RUNFLAGSFUNC5)
@@ -2120,7 +2122,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			// check if we had a better time on this leaderboard before. (return value of INSERT OR UPDATE only tells us if it was the best with the unique key, but leaderboards accumulate ranges of race settings, especially "custom" leaderboard and such)
 			"SELECT COUNT(id) AS countOwnFaster FROM runs WHERE userid=? AND course=? AND subcourse=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));"
 			// check our new rank.
-			"SELECT COUNT(DISTINCT userid) AS countFaster FROM runs WHERE userid !=? AND userid!=-1 AND course=? AND subcourse=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
+			"SELECT COUNT(DISTINCT userid) AS countFaster FROM runs WHERE hidden=0 AND userid !=? AND userid!=-1 AND course=? AND subcourse=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));" // if someone got the same time as you, but earlier, hes in front of u
 			"SELECT (UNIX_TIMESTAMP(@now)-(?*1000000000)) as unixTimeMinus3bill", lbSQLCondition, lbSQLCondition);
 	
 #undef RUNFLAGSFUNC
