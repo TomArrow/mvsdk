@@ -1756,6 +1756,9 @@ extern	vmCvar_t		cg_forcemeter;
 extern	vmCvar_t		cg_forcemeterX;
 extern	vmCvar_t		cg_forcemeterY;
 
+extern	vmCvar_t		cg_forceFieldOpacity;
+extern	vmCvar_t		cg_forceFieldOpacityRace;
+
 extern	vmCvar_t		cg_strafeHelperCutoff;
 extern	vmCvar_t		cg_strafeHelper;
 extern	vmCvar_t		cg_strafeHelperPrecision;

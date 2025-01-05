@@ -274,7 +274,17 @@ void FX_DrawPortableShield(centity_t *cent)
 			break;
 	}
 
-	FX_AddOrientedLine(start, end, normal, 1.0f, height, 0.0f, 1.0f, 1.0f, 50.0, shader);
+	if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
+		if (cg_forceFieldOpacityRace.value) {
+			FX_AddOrientedLine(start, end, normal, 1.0f, height, 0.0f, cg_forceFieldOpacityRace.value, cg_forceFieldOpacityRace.value, 50.0, shader);
+		}
+	}
+	else {
+		if (cg_forceFieldOpacity.value) {
+			FX_AddOrientedLine(start, end, normal, 1.0f, height, 0.0f, cg_forceFieldOpacity.value, cg_forceFieldOpacity.value, 50.0, shader);
+		}
+	}
+
 }
 
 /*

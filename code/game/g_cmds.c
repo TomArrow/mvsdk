@@ -3171,6 +3171,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 
 		if (mapnum < 0 || mapnum >= g_numArenas) {
 			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum.\n\"");
+			return;
 		}
 
 		//Q_strncpyz(mapname,Info_ValueForKey(g_arenaInfos[mapnum], "map"),sizeof(mapname));

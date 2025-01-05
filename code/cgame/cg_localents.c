@@ -749,6 +749,8 @@ void CG_AddOLine( localEntity_t *le )
 
 	re->reType = RT_ORIENTEDLINE;
 
+	re->saberLength = alpha != 1.0f ? -1.0 : 0.0f; // tommyternal secret override to always allow setting alpha (engine must support this)
+
 	trap_R_AddRefEntityToScene( re );
 }
 

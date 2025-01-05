@@ -572,6 +572,8 @@ vmCvar_t	cg_showpos;
 vmCvar_t	cg_forcemeter;
 vmCvar_t	cg_forcemeterX;
 vmCvar_t	cg_forcemeterY;
+vmCvar_t	cg_forceFieldOpacity;
+vmCvar_t	cg_forceFieldOpacityRace;
 
 vmCvar_t	cg_strafeHelperCutoff;
 vmCvar_t	cg_strafeHelper;
@@ -924,6 +926,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_forcemeter, "cg_forcemeter", "0", CVAR_ARCHIVE },
 	{ &cg_forcemeterX, "cg_forcemeterX", "300", CVAR_ARCHIVE },
 	{ &cg_forcemeterY, "cg_forcemeterY", "240", CVAR_ARCHIVE },
+	{ &cg_forceFieldOpacity, "cg_forceFieldOpacity", "1.0", CVAR_ARCHIVE },
+	{ &cg_forceFieldOpacityRace, "cg_forceFieldOpacityRace", "0.5", CVAR_ARCHIVE },
 
 
 	{ &cg_strafeHelperCutoff, "cg_strafeHelperCutoff", "240", CVAR_ARCHIVE },
