@@ -551,7 +551,7 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	int			dflags;
 	int			nowTime = LEVELTIME(other->client);
 	qboolean	raceMode = other->client && other->client->sess.raceMode;
-	int*		timeStamp = raceMode ? &other->hurt_timestamp : &self->timestamp;
+	int*		timeStamp = raceMode ? &other->client->triggerTimes[self-g_entities] : &self->timestamp;
 
 	if ( !other->takedamage ) {
 		return;

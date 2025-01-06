@@ -183,7 +183,7 @@ struct gentity_s {
 	const char	*overrideMessage;
 
 	int			timestamp;		// body queue sinking, etc
-	int			hurt_timestamp; // for racemode clients, we reverse timestamp on tar
+	//int			hurt_timestamp; // for racemode clients, we reverse timestamp on tar
 
 	float		angle;			// set in editor, -1 = up, -2 = down
 	char		*target;

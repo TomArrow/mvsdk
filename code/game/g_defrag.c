@@ -106,7 +106,6 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(lastSaberBase_Always)\
 
 #define FIELDSENT()\
-		FIELDSFUNC(hurt_timestamp)\
 		FIELDSFUNC(health)\
 		FIELDSFUNC(takedamage)\
 		FIELDSFUNC(eventTime)\
