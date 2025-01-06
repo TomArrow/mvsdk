@@ -125,7 +125,6 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(pain_debounce_time)\
 		FIELDSFUNC(fly_sound_debounce_time)\
 		FIELDSFUNC(eventTime)\
-		FIELDSFUNC(hurt_timestamp)\
 		FIELDSFUNC(client->airOutTime)\
 		FIELDSFUNC(client->dangerTime)\
 		FIELDSFUNC(client->forcePowerSoundDebounce)\
