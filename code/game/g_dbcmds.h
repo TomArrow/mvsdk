@@ -65,6 +65,9 @@ typedef struct topScoresRequestStruct_s {
 typedef struct rankUpdateRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
+	char		course[COURSENAME_MAX_LEN + 1];
+	char		subcourse[COURSENAME_MAX_LEN + 1];
+	int			style;
 }rankUpdateRequestStruct_t;
 typedef struct timeRequestStruct_s {
 	int			ip[4];

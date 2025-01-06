@@ -2045,6 +2045,11 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 		return;
 	}
 
+	if (!level.mapDefaultsConfirmed) {
+		trap_SendServerCommand(ent - g_entities, "print \"Cannot run rank update. Level map defaults are not confirmed.\n\"");
+		return;
+	}
+
 	DF_UpdateRanks(ent, thisMapName, mainSubCourseName, &level.mapDefaultRaceStyle);
 
 }

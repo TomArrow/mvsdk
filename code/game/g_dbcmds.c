@@ -1072,6 +1072,39 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	}
 
 }
+static void G_RankUpdateResult(int status, const char* errorMessage, int affectedRows) {
+	rankUpdateRequestStruct_t lbRequestData;
+	gentity_t* ent = NULL;
+
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d rank update results returned, user no longer valid.\n", lbRequestData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateRunsTable();
+		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Rank update failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Rank update failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	//if (affectedRows) 
+	{
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^%cRank update on %s/%s for style %s successful. Affected rows: %d.\n\"",affectedRows ? '2' : '3', lbRequestData.course, lbRequestData.subcourse, lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
+	}
+	//else {
+	//	trap_SendServerCommand(lbRequestData.clientnum, va("print \".\"", lbRequestData.course, lbRequestData.subcourse, lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
+	//}
+
+
+}
 static void G_LatestRunsResult(int status, const char* errorMessage, int affectedRows) {
 	latestRunsRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
@@ -1750,6 +1783,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_TOP:
 					G_TopResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_RANKUPDATE:
+					G_RankUpdateResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_GETLATESTRUNS:
 					G_LatestRunsResult(status, errorMessage, affectedRows);

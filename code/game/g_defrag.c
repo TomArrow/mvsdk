@@ -1739,12 +1739,16 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 		return;
 	}
 
+	Q_strncpyz(data.course,coursename,sizeof(data.course));
+	Q_strncpyz(data.subcourse, subcoursename,sizeof(data.subcourse));
+
 #define TOPCOLUMNS2 "runs_pre.id AS runId, " REALRANK 
 #define QUERY3 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE besttime=duration_ms GROUP BY userid ORDER BY besttime ASC, runwhen ASC"
 
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	
 	for (i = 0; i < MV_NUMSTYLES;i++) {
+		data.style = i;
 		if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATE,
 			va(
 				"UPDATE runs INNER JOIN "
