@@ -1227,6 +1227,72 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 	}
 
 }
+void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcoursename, raceStyle_t* thisMapDefaultRaceStyle);
+
+static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, int affectedRows) {
+	rankUpdateMapRequestStruct_t lbRequestData;
+	gentity_t* ent = NULL;
+	int resultIndex = 0;
+	//evaluatedRunInfo_t eRunInfo;
+
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d rank update map request results returned, user no longer valid.\n", lbRequestData.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateRunsTable();
+		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Rank update map request failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Rank update map request failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	trap_SendServerCommand(ent - g_entities, "print \"Requesting map rank updates:\n\"");
+
+	while (G_COOL_API_DB_NextRow()) {
+		int runCount,duration_ms;
+		qboolean mapDefaultsFound;
+		raceStyle_t mapDefaultRaceStyle;
+		char username[USERNAME_MAX_LEN+1+10]; // some extra buffer for !unlogged! colored
+		char course[COURSENAME_MAX_LEN+1];
+		char subcourse[COURSENAME_MAX_LEN +1];
+		char runwhen[30];
+		char colorChar;
+		mainLeaderboardType_t lbType;
+
+		runCount = G_COOL_API_DB_GetInt(0);
+		G_COOL_API_DB_GetString(1, course, sizeof(course));
+		G_COOL_API_DB_GetString(2, subcourse, sizeof(subcourse));
+		mapDefaultsFound = !G_COOL_API_DB_GetInt(3);
+		if (!mapDefaultsFound) {
+			memcpy(&mapDefaultRaceStyle, &defaultRaceStyle, sizeof(mapDefaultRaceStyle));
+		}
+		else {
+			mapDefaultRaceStyle.movementStyle = MV_JK2; // TODO fix this if we ever, god forbid, do style specific rules in lb classification...
+			mapDefaultRaceStyle.msec = G_COOL_API_DB_GetInt(4);
+			mapDefaultRaceStyle.jumpLevel = G_COOL_API_DB_GetInt(5);
+			mapDefaultRaceStyle.variant = G_COOL_API_DB_GetInt(6);
+			mapDefaultRaceStyle.runFlags = G_COOL_API_DB_GetInt(7);
+		}
+		if (resultIndex == 0) {
+			trap_SendServerCommand(ent - g_entities, va("print \"%s/%s\"",course,subcourse));
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, va("print \", %s/%s\"", course, subcourse));
+		}
+		DF_UpdateRanks(ent,course,subcourse,&mapDefaultRaceStyle);
+		resultIndex++;
+	}
+
+	trap_SendServerCommand(ent - g_entities, va("print \"\n\""));
+
+}
 
 static void G_ShortestLongestResult(int status, const char* errorMessage, int affectedRows) {
 	longestShortestMapsRequestStruct_t lbRequestData;
@@ -1789,6 +1855,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_GETLATESTRUNS:
 					G_LatestRunsResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_RANKUPDATEMAPREQUEST:
+					G_RankUpdateMapRequestResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_SHORTESTLONGESTMAPS:
 					G_ShortestLongestResult(status, errorMessage, affectedRows);

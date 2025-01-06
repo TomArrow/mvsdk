@@ -2039,6 +2039,9 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 {
 	const char* thisMapName = DF_GetCourseName();
 	const char* mainSubCourseName = DF_GetMainSubcourseName();
+	char arg[10];
+	qboolean all = qfalse;
+	rankUpdateMapRequestStruct_t data;
 
 	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_UPDATERANKS)) {
 		trap_SendServerCommand(ent-g_entities,"print \"You don't have permissions to execute this command.\n\"");
@@ -2050,7 +2053,38 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 		return;
 	}
 
-	DF_UpdateRanks(ent, thisMapName, mainSubCourseName, &level.mapDefaultRaceStyle);
+	if (trap_Argc() > 1) {
+		trap_Argv(1,arg,sizeof(arg));
+		if (!Q_stricmp(arg,"all")) {
+			all = qtrue;
+		}
+	}
+
+	memset(&data, 0, sizeof(data));
+
+	data.clientnum = ent - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+
+#define RANKMAPQUERY "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) GROUP BY runs.course,runs.subcourse ORDER BY runCount DESC"
+#define RANKMAPQUERYSEARCH "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) WHERE runs.course=? GROUP BY runs.course,runs.subcourse ORDER BY runCount DESC"
+
+	if (all) {
+		if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Error sending rank update map request query.\n\"");
+		}
+	}
+	else {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERYSEARCH)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Error sending rank update map request query.\n\"");
+			return;
+		}
+		G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+
+	// dont do this directly to not get confused by multi-course maps with different styles
+	// TODO same for top?
+	//DF_UpdateRanks(ent, thisMapName, mainSubCourseName, &level.mapDefaultRaceStyle);
 
 }
 

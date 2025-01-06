@@ -1730,7 +1730,7 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, thisMapDefaultRaceStyle);
 	const char* segmentedLBWhere = getLeaderboardSQLConditions(LB_SEGMENTED, thisMapDefaultRaceStyle);
 	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, thisMapDefaultRaceStyle);
-	int i;
+	int i,style;
 
 	data.clientnum = ent - g_entities;
 
@@ -1747,8 +1747,8 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	
-	for (i = 0; i < MV_NUMSTYLES;i++) {
-		data.style = i;
+	for (style = 0; style < MV_NUMSTYLES; style++) {
+		data.style = style;
 		if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATE,
 			va(
 				"UPDATE runs INNER JOIN "
@@ -1766,7 +1766,7 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 			for (i = 0; i < countLBs; i++) {
 				G_COOL_API_DB_PreparedBindString(coursename);
 				G_COOL_API_DB_PreparedBindString(subcoursename);// subcourse
-				G_COOL_API_DB_PreparedBindInt(i);
+				G_COOL_API_DB_PreparedBindInt(style);
 				G_COOL_API_DB_PreparedBindInt(0);
 			}
 			G_COOL_API_DB_FinishAndSendPreparedStatement();
