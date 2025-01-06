@@ -2040,6 +2040,7 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 	const char* mainSubCourseName = DF_GetMainSubcourseName();
 	char arg[10];
 	qboolean all = qfalse;
+	qboolean forceAll = qfalse;
 
 	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_UPDATERANKS)) {
 		trap_SendServerCommand(ent-g_entities,"print \"You don't have permissions to execute this command.\n\"");
@@ -2056,8 +2057,12 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 		if (!Q_stricmp(arg,"all")) {
 			all = qtrue;
 		}
+		else if (!Q_stricmp(arg,"forceall")) {
+			all = qtrue;
+			forceAll = qtrue;
+		}
 	}
-	DF_UpdateRanksMainRequest(ent, all ? NULL : DF_GetCourseName());
+	DF_UpdateRanksMainRequest(ent, all ? NULL : DF_GetCourseName(), forceAll);
 
 }
 

@@ -31,6 +31,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_SHORTESTLONGESTMAPS,
 	DBREQUEST_RANKUPDATE,
 	DBREQUEST_RANKUPDATEMAPREQUEST,
+	DBREQUEST_RANKUPDATEMAPLATESTSET,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -73,6 +74,8 @@ typedef struct rankUpdateRequestStruct_s {
 typedef struct rankUpdateMapRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
+	int			mapCountLimit;
+	qboolean	all;
 }rankUpdateMapRequestStruct_t;
 typedef struct timeRequestStruct_s {
 	int			ip[4];

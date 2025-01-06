@@ -1792,7 +1792,7 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 #undef REALRANK
 }
 
-void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseNameOrNull) {
+void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseNameOrNull, qboolean forceAll) {
 
 	rankUpdateMapRequestStruct_t data;
 
@@ -1806,17 +1806,26 @@ void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseName
 		data.clientnum = -1;
 	}
 
-#define RANKMAPQUERY "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) GROUP BY runs.course,runs.subcourse ORDER BY runCount DESC"
-#define RANKMAPQUERYSEARCH "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) WHERE runs.course=? GROUP BY runs.course,runs.subcourse ORDER BY runCount DESC"
+#define RANKMAPQUERY_DATELIMITED "SELECT COUNT(runs.id) as runCount, runs.course, runs.subcourse, ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound, mapdefaults.msec, mapdefaults.jump, mapdefaults.variant, mapdefaults.runFlags, MAX(runs.runwhen) AS latestRunWhen, meta.valueWhen FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) LEFT JOIN meta ON (`meta`.`key` = 'rankUpdateLatest') GROUP BY runs.course, runs.subcourse HAVING (meta.valueWhen IS NULL OR meta.valueWhen < latestRunWhen) ORDER BY latestRunWhen ASC"
+#define RANKMAPQUERY "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,MAX(runs.runwhen) AS latestRunWhen FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) GROUP BY runs.course,runs.subcourse ORDER BY latestRunWhen ASC"
+#define RANKMAPQUERYSEARCH "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,MAX(runs.runwhen) AS latestRunWhen FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) WHERE runs.course=?  GROUP BY runs.course,runs.subcourse ORDER BY latestRunWhen ASC"
 
 	if (!courseNameOrNull) {
-		if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY)) {
-			G_SendOrPrint(requesterOrNull,"^1Error sending rank update map request query.\n");
+		data.all = qtrue;
+		if (forceAll) {
+			if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY)) {
+				G_SendOrPrint(requesterOrNull, "^1Error sending rank update map request query.\n");
+			}
+		}
+		else {
+			if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY_DATELIMITED)) {
+				G_SendOrPrint(requesterOrNull, "^1Error sending date-limited rank update map request query.\n");
+			}
 		}
 	}
 	else {
 		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERYSEARCH)) {
-			G_SendOrPrint(requesterOrNull, "^1Error sending rank update map request query.\n");
+			G_SendOrPrint(requesterOrNull, "^1Error sending course-specific rank update map request query.\n");
 			return;
 		}
 		G_COOL_API_DB_PreparedBindString(courseNameOrNull);

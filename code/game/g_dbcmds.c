@@ -16,6 +16,7 @@ static void G_CreateRunsTable();
 static void G_CreateCheckpointsTable();
 static void G_CreateSubContestsTable();
 static void G_CreateMapRaceDefaultsTable();
+static void G_CreateMetaTable();
 extern const char* DF_GetCourseName(); 
 const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
@@ -1233,6 +1234,7 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 	rankUpdateMapRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
 	int resultIndex = 0;
+	char time[30];
 	//evaluatedRunInfo_t eRunInfo;
 
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
@@ -1246,6 +1248,8 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 	if (status == 1146) {
 		// table doesn't exist. create it.
 		G_CreateRunsTable();
+		G_CreateMapRaceDefaultsTable();
+		G_CreateMetaTable();
 		G_SendOrPrint(ent, "^1Rank update map request failed due to table not existing. Attempting to create. Please try again shortly.\n");
 		return;
 	}
@@ -1260,12 +1264,8 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		int runCount,duration_ms;
 		qboolean mapDefaultsFound;
 		raceStyle_t mapDefaultRaceStyle;
-		char username[USERNAME_MAX_LEN+1+10]; // some extra buffer for !unlogged! colored
 		char course[COURSENAME_MAX_LEN+1];
 		char subcourse[COURSENAME_MAX_LEN +1];
-		char runwhen[30];
-		char colorChar;
-		mainLeaderboardType_t lbType;
 
 		runCount = G_COOL_API_DB_GetInt(0);
 		G_COOL_API_DB_GetString(1, course, sizeof(course));
@@ -1281,6 +1281,7 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 			mapDefaultRaceStyle.variant = G_COOL_API_DB_GetInt(6);
 			mapDefaultRaceStyle.runFlags = G_COOL_API_DB_GetInt(7);
 		}
+		G_COOL_API_DB_GetString(8, time, sizeof(time)); // results are ordered from map with oldest newest time to newest newest time, so last one will be representative of how far we actually got with this.
 		if (resultIndex == 0) {
 			G_SendOrPrint(ent, va("%s/%s", course, subcourse));
 		}
@@ -1289,9 +1290,23 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		}
 		DF_UpdateRanks(ent,course,subcourse,&mapDefaultRaceStyle);
 		resultIndex++;
+		if (lbRequestData.mapCountLimit && resultIndex > lbRequestData.mapCountLimit) {
+			break;
+		}
 	}
 
-	G_SendOrPrint(ent, "\n");
+	if (!resultIndex || !lbRequestData.all) {
+		return; // nothing was updated or we just updated a single map, therefore we don't know the correct time to set.
+	}
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&lbRequestData,sizeof(lbRequestData), DBREQUEST_RANKUPDATEMAPLATESTSET,
+		"REPLACE INTO meta (`key`,valueWhen) VALUES ('rankUpdateLatest',?)")) {
+
+		G_SendOrPrint(ent, "Failed to send rank update latest time meta set request.\n");
+		return;
+	}
+	G_COOL_API_DB_PreparedBindString(time);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
 
 }
 
@@ -2039,6 +2054,18 @@ static void G_CreateMapRaceDefaultsTable() {
 	Q_strncpyz(tableName.s, "mapdefaults", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
+static void G_CreateMetaTable() {
+	referenceSimpleString_t tableName;
+	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS meta(\
+			`key` VARCHAR(100) NOT NULL, \
+			valueInt INT NULL, \
+			valueDouble DOUBLE NULL, \
+			valueWhen DATETIME NULL, \
+			valueString VARCHAR(255) NULL, \
+			PRIMARY KEY(`key`))";
+	Q_strncpyz(tableName.s, "meta", sizeof(tableName.s));
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
+}
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
 #define SUBFUNC(a) `runFlag_ ## a` TINYINT(1)
@@ -2149,6 +2176,7 @@ static void G_DB_CreateTables() {
 	G_CreateCheckpointsTable();
 	G_CreateSubContestsTable();
 	G_CreateMapRaceDefaultsTable();
+	G_CreateMetaTable();
 }
 
 void G_DB_Init() {
