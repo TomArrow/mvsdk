@@ -1059,6 +1059,9 @@ void Cmd_Help_f(gentity_t* ent) {
 		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_ARENALESSMAPS) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/arenaless^7 - List .bsp files without corresponding arena files\n\"");
 		}
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_UPDATERANKS) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/updateRanks^7 - Update temporary ranks of this map in the DB\n\"");
+		}
 	}
 }
 
@@ -1783,6 +1786,7 @@ qboolean atoi_real(const char* string) {
 	return qtrue;
 }
 
+void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcoursename, raceStyle_t* thisMapDefaultRaceStyle);
 void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcoursename, int page, int style, topRequestType_t type, mainLeaderboardType_t lbTypeIfSpecific, raceStyle_t* thisMapDefaultRaceStyle);
 
 void DF_PrintSubCoursesToPlayer(gentity_t* ent) {
@@ -2023,6 +2027,25 @@ void Cmd_Top_f( gentity_t *ent )
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database connection not available.\n\"");
 	}
 	*/
+
+}
+
+/*
+=================
+Cmd_Top_f
+=================
+*/
+void Cmd_UpdateRanks_f( gentity_t *ent )
+{
+	const char* thisMapName = DF_GetCourseName();
+	const char* mainSubCourseName = DF_GetMainSubcourseName();
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_UPDATERANKS)) {
+		trap_SendServerCommand(ent-g_entities,"print \"You don't have permissions to execute this command.\n\"");
+		return;
+	}
+
+	DF_UpdateRanks(ent, thisMapName, mainSubCourseName, &level.mapDefaultRaceStyle);
 
 }
 
@@ -4516,6 +4539,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "updateRanks"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcelogin"))
 		{
 			giveError = qtrue;
@@ -4662,6 +4689,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_GenArena_f(ent);
 	else if (Q_stricmp (cmd, "arenaless") == 0)
 		Cmd_Arenaless_f(ent);
+	else if (Q_stricmp (cmd, "updateRanks") == 0)
+		Cmd_UpdateRanks_f(ent);
 	else if (Q_stricmp (cmd, "forcelogin") == 0)
 		Cmd_ForceLogin_f(ent);
 	else if (Q_stricmp (cmd, "vote") == 0)

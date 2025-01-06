@@ -1979,6 +1979,8 @@ static void G_CreateRunsTable() {
 			fpsString VARCHAR(255) NOT NULL, \
 			server VARCHAR(255) NOT NULL, \
 			hidden TINYINT(1) NOT NULL DEFAULT 0, \
+			tmpRank INT, \
+			tmpLB INT, \
 			UNIQUE KEY user_runtype (userid,course,subcourse,style,msec,jump,variant,runFlags"
 			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
 			"), \
@@ -1995,6 +1997,9 @@ static void G_CreateRunsTable() {
 			INDEX i_runfirst (runfirst),\
 			INDEX i_warningFlags (warningFlags), \
 			INDEX i_hidden (hidden), \
+			INDEX i_tmpRank (tmpRank), \
+			INDEX i_tmpLB (tmpLB), \
+			INDEX i_lbRank (tmpLB,i_tmpRank), \
 			INDEX i_runtype (style,msec,jump,variant,runFlags) );"
 			RUNFLAGS(RUNFLAGSFUNC4)
 			//RUNFLAGS(RUNFLAGSFUNC5)

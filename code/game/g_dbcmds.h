@@ -29,6 +29,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_GETLATESTRUNS,
 	DBREQUEST_MAPLISTUNPLAYED,
 	DBREQUEST_SHORTESTLONGESTMAPS,
+	DBREQUEST_RANKUPDATE,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -61,6 +62,10 @@ typedef struct topScoresRequestStruct_s {
 	raceStyle_t	mapDefaultRaceStyle;
 	int			page;
 }topScoresRequestStruct_t;
+typedef struct rankUpdateRequestStruct_s {
+	int			ip[4];
+	int			clientnum;
+}rankUpdateRequestStruct_t;
 typedef struct timeRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
