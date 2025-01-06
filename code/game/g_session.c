@@ -208,7 +208,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess->mapStyleBaseline = level.mapDefaultRaceStyle;
 	sess->raceStyle = sess->mapStyleBaseline;
 	sess->raceStyle.msec = 7; // make old client versions work nicely? maybe? probably wont work but whatever
-	sess->lastHereTime = 0;
+	sess->lastHereTime = level.time;
 	UpdateClientRaceVars(client);
 	//client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 
