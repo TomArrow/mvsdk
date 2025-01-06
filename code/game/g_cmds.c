@@ -945,6 +945,8 @@ Cmd_Help_f
 void Cmd_Help_f(gentity_t* ent) {
 	char arg1[20];
 
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
 	if (trap_Argc() > 1) {
 		trap_Argv(1,arg1,sizeof(arg1));
 		if (!Q_stricmpn(arg1, "seg", 3)) {
@@ -1439,6 +1441,7 @@ void Cmd_Login_f( gentity_t *ent )
 	static char thirdparam[MAX_TOKEN_CHARS];
 	static loginRegisterStruct_t loginData;
 
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
 	if (ent->client->sess.login.loggedIn) {
 		trap_SendServerCommand(ent - g_entities, va("print \"^1You are already logged in as '%s'.\n\"", ent->client->sess.login.name));
@@ -1549,6 +1552,8 @@ Cmd_Logout_f
 */
 void Cmd_Logout_f( gentity_t *ent )
 {
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
 	if (!ent->client->sess.login.loggedIn) {
 		trap_SendServerCommand(ent - g_entities, "print \"You are already logged out.\n\"");
 		return;
@@ -1834,6 +1839,8 @@ void Cmd_Top_f( gentity_t *ent )
 	const char* thisMapName = DF_GetCourseName();
 	const char* mainSubCourseName = DF_GetMainSubcourseName();
 
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
 	data.page = 1;
 	data.style = MV_JK2;
 
@@ -2031,6 +2038,8 @@ void Cmd_Maplist_f(gentity_t* ent) {
 	//int			milliseconds = 0;
 	int			mapsInFrame = 0;
 
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
 	if (trap_Argc() > 1) {
 		char arg[10];
 		trap_Argv(1, arg, sizeof(arg));
@@ -2055,6 +2064,7 @@ void Cmd_Maplist_f(gentity_t* ent) {
 			}
 		}
 	}
+
 
 	Q_strncpyz(mapListString, "", sizeof(mapListString));
 	trap_SendServerCommand(ent - g_entities, va("print \"^2----------^7INSTALLED MAPS^2---------\n\"",type));
@@ -2109,7 +2119,9 @@ void Cmd_Latest_f(gentity_t* ent) {
 	//char pageNum[10];
 	const int args = trap_Argc();
 	char inputString[15];
-	
+
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
 	memset(&data, 0, sizeof(data));
 	
 	data.userId = -2;
@@ -2208,6 +2220,7 @@ void Cmd_ShortestLongest_f(gentity_t* ent) {
 	trap_Argv(0,cmd,sizeof(cmd));
 
 
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	
 	memset(&data, 0, sizeof(data));
 	
@@ -2286,6 +2299,9 @@ void Cmd_Rollympics_f( gentity_t *ent )
 			page = 1;
 		}
 	}
+
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
 	DF_RequestSubContestLeaderboard(ent,SUBCONTESTS_ROLLYMPICS,page);
 }
 
@@ -2552,6 +2568,8 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
 		p = ConcatArgs( 1 );
 	}
 
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
 	G_Say( ent, NULL, mode, p );
 }
 
@@ -2580,6 +2598,8 @@ static void Cmd_Tell_f( gentity_t *ent ) {
 	if ( !target || !target->inuse || !target->client ) {
 		return;
 	}
+
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
 	p = ConcatArgs( 2 );
 

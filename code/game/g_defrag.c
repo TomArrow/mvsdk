@@ -4931,9 +4931,10 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 		if (newStyle == MV_Q2 || newStyle == MV_CSS) {
 			//ent->client->sess.raceStyle.jumpLevel = 1;
 		}
+		ent->client->sess.raceStyle.runFlags |= (MovementStyleDisabledRunFlags(ent->client->sess.raceStyle.movementStyle) & level.mapDefaultRaceStyle.runFlags); // if some flags were disabled by the style but are default in this level race style, re-enable them.
 		ent->client->sess.raceStyle.movementStyle = newStyle;
 		ent->client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(newStyle);
-		G_SendServerCommand(ent - g_entities, va("print \"Movement style updated%s.%s\n\"", ent->client->sess.raceStyle.runFlags != oldFlags ? ", invalid run flags for new style disabled" : "", ent->client->sess.raceStyle.jumpLevel != oldJump ? " Jumplevel reset for new style." : ""), qtrue);
+		G_SendServerCommand(ent - g_entities, va("print \"Movement style updated%s.%s\n\"", ent->client->sess.raceStyle.runFlags != oldFlags ? ", run flags updated for new style" : "", ent->client->sess.raceStyle.jumpLevel != oldJump ? " Jumplevel reset for new style." : ""), qtrue);
 		ent->client->sess.mapStyleBaseline = level.mapDefaultRaceStyle;
 		DF_RaceStateInvalidated(ent,qtrue);
 		//DF_InvalidateSpawn(ent);

@@ -2685,7 +2685,13 @@ A new command has arrived from the client
 */
 void ClientThink( int clientNum ) {
 	gentity_t *ent = g_entities + clientNum;
+	usercmd_t tmpCmdForAfkCheck; // only used for checking if player is active or afk, rest is handled via G_GetUserCmd
 	qboolean segmentedReplay = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
+
+	trap_GetUsercmd(clientNum, &tmpCmdForAfkCheck);
+	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || (tmpCmdForAfkCheck.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
+		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+	}
 
 	//if (!segmentedReplay) {
 	//	canRun = G_GetUserCmd(clientNum, &ent->client->pers.cmd,qtrue);
@@ -2698,6 +2704,7 @@ void ClientThink( int clientNum ) {
 	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !segmentedReplay) {
 		int index = 0;
 		while (G_GetUserCmd(clientNum, &ent->client->pers.cmd, GETUSERCMD_ADVANCECLIENTTHINK) || !g_userCmdBuffer.integer && !index) {
+
 			ClientThink_real(ent);
 			index++;
 		}
@@ -2783,7 +2790,6 @@ void G_RunClient( gentity_t *ent ) {
 	
 	if (ent->client->pers.cmd.forwardmove || ent->client->pers.cmd.rightmove || ent->client->pers.cmd.upmove || (ent->client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
 		ent->client->lastHereTime = level.time; // for demo stuff
-		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	}
 
 	//if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
