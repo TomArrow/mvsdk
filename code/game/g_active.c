@@ -2782,7 +2782,8 @@ void G_RunClient( gentity_t *ent ) {
 	}
 	
 	if (ent->client->pers.cmd.forwardmove || ent->client->pers.cmd.rightmove || ent->client->pers.cmd.upmove || (ent->client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
-		ent->client->lastHereTime = level.time;
+		ent->client->lastHereTime = level.time; // for demo stuff
+		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	}
 
 	//if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {

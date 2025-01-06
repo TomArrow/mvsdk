@@ -29,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s", 
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -48,6 +48,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		(int)client->sess.mapStyleBaseline.runFlags,
 		(int)client->sess.mapStyleBaseline.jumpLevel,
 		client->sess.raceStateInvalidated,
+		(int)(level.time-client->sess.lastHereTime),
 		client->sess.login.loggedIn,
 		client->sess.login.id,
 		client->sess.login.flags,
@@ -97,6 +98,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	int baseJumpLevel;
 	int raceStateInvalidated;
 	int loggedIn;
+	int lastHereTimeOffset;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
@@ -120,6 +122,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&baseRunFlags,
 		&baseJumpLevel,
 		&raceStateInvalidated,
+		&lastHereTimeOffset,
 		&loggedIn,
 		&client->sess.login.id,
 		&client->sess.login.flags,
@@ -140,6 +143,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.mapStyleBaseline.jumpLevel = (signed char)baseJumpLevel;
 	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
 	client->sess.login.loggedIn = loggedIn;
+	client->sess.lastHereTime = level.time- lastHereTimeOffset;
 
 	//client->sess.raceStyle.msec = 7; // just default to this *shrug*// Nope, keep it so we remember floatphysics/toggle
 
@@ -204,6 +208,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess->mapStyleBaseline = level.mapDefaultRaceStyle;
 	sess->raceStyle = sess->mapStyleBaseline;
 	sess->raceStyle.msec = 7; // make old client versions work nicely? maybe? probably wont work but whatever
+	sess->lastHereTime = 0;
 	UpdateClientRaceVars(client);
 	//client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 

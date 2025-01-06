@@ -980,12 +980,15 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, va("print \"^2/race^7 - Call to %s racemode.\n\"", ent->client->sess.raceMode ? "exit/enter":"enter/exit")); 
 	}
 
+	trap_SendServerCommand(ent - g_entities, "print \"\n^7Various commands:\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/afk^7 - See who's afk and for how long\n\"");
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7 - Show longest/shortest maps. Can call with movement style and page.\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7 - Call a vote to switch to a map (call with map name)\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote mapnum^7 - Call a vote to switch to a map (call with map number from ^2/maplist^7)\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote randommap^7 - Call a vote to switch to a randomly selected map\n\"");
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Account commands:\n\"");
 
@@ -3052,6 +3055,48 @@ void Cmd_Arenaless_f(gentity_t* ent) {
 
 }
 
+typedef struct afkClient_s {
+	int afkTime;
+	int clientNum;
+} afkClient_t;
+
+
+
+int compareAfkCliientEntry(const void* a, const void* b) {
+	return ((afkClient_t*)b)->afkTime - ((afkClient_t*)a)->afkTime;
+}
+
+void Cmd_Afk_f(gentity_t* ent) {
+	gentity_t* other;
+	afkClient_t afkTimes[MAX_CLIENTS];
+	int afkCount = 0;
+	int i;
+	int millisecs,minMillisecs = clampedIntMult(g_afkCmdMinSecs.integer, 1000);
+	for (i = 0; i < level.maxclients; i++) {
+		other = g_entities + i;
+		if (!other->inuse || !other->client) {
+			continue;
+		}
+		millisecs = level.time - other->client->sess.lastHereTime;
+		if (millisecs < minMillisecs) {
+			continue;
+		}
+		afkTimes[afkCount].afkTime = millisecs;
+		afkTimes[afkCount++].clientNum = i;
+	}
+	if (!afkCount) {
+
+		trap_SendServerCommand(ent - g_entities, "print \"Nobody is afk.\n\"");
+		return;
+	}
+	qsort(afkTimes,afkCount,sizeof(afkTimes[0]), compareAfkCliientEntry);
+	trap_SendServerCommand(ent - g_entities, "print \"Players AFK status:\n\"");
+	for (i = 0; i < afkCount; i++) {
+		other = g_entities + afkTimes[i].clientNum;
+		trap_SendServerCommand(ent - g_entities, va("print \"%15s %2d %s\n\"",DF_MsToString(afkTimes[i].afkTime), afkTimes[i].clientNum,other->client->pers.netname));
+	}
+}
+
 extern int DF_GetSegmentedRunnerCount();
 
 /*
@@ -3099,6 +3144,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	if ( !Q_stricmp( arg1, "map_restart" ) ) {
 	} else if ( !Q_stricmp( arg1, "nextmap" ) ) {
 	} else if ( !Q_stricmp( arg1, "map" ) ) {
+	} else if ( !Q_stricmp( arg1, "randommap" ) ) {
 	} else if ( !Q_stricmp( arg1, "mapnum" ) ) {
 	} else if ( !Q_stricmp( arg1, "g_gametype" ) ) {
 	} else if ( !Q_stricmp( arg1, "kick" ) ) {
@@ -3108,7 +3154,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	} else if ( !Q_stricmp( arg1, "fraglimit" ) ) {
 	} else {
 		trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
-		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>.\n\"" );
+		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>.\n\"" );
 		return;
 	}
 
@@ -3201,6 +3247,62 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		} else {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
+		}
+	} else if ( !Q_stricmp( arg1, "randommap" ) ) 
+	{
+		// special case for map changes, we want to reset the nextmap setting
+		// this allows a player to change maps, but not upset the map rotation
+		char			s[MAX_STRING_CHARS];
+		char			mapname[MAX_STRING_CHARS];
+		int				mapnum = -1; //atoi(arg2);
+		int				tries = 0;
+
+		while (mapnum == -1 && tries< 10) {
+			mapnum = Q_irand(0, g_numArenas, qfalse, 0); //atoi(arg2);
+			if (mapnum < 0 || mapnum >= g_numArenas) {
+				trap_SendServerCommand(ent - g_entities, "print \"WEIRD! Map could not be found from mapnum.\n\"");
+				Com_Printf("WEIRD! randommap Map could not be found from mapnum %d, g_numArenas %d.\n", mapnum, g_numArenas);
+				return;
+			}
+			if (!Q_stricmp(g_arenaInfosHashed[mapnum].name,DF_GetCourseName())) { // dont go on the same map we are on now
+				mapnum = -1;
+			}
+			tries++;
+		}
+
+		if (mapnum == -1) {
+			trap_SendServerCommand(ent - g_entities, "print \"Was unable to choose random map after 10 tries.\n\"");
+			Com_Printf("WEIRD! randommap Was unable to choose random map after 10 tries. g_numArenas %d.\n", g_numArenas);
+			return;
+		}
+
+		//Q_strncpyz(mapname,Info_ValueForKey(g_arenaInfos[mapnum], "map"),sizeof(mapname));
+		Q_strncpyz(mapname,g_arenaInfosHashed[mapnum].name,sizeof(mapname));
+
+		if (!mapname || !mapname[0]) {
+			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum (wtf?!).\n\"");
+			return;
+		}
+
+		if (DF_GetSegmentedRunnerCount()) {
+			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
+			return;
+		}
+
+		if (!G_DoesMapSupportGametype(mapname, trap_Cvar_VariableIntegerValue("g_gametype")))
+		{
+			//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
+			trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE_MAPNOTSUPPORTEDBYGAME")) );
+			return;
+		}
+
+		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
+		if (*s) {
+			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap) %s %s" S_COLOR_WHITE "; set nextmap \"%s\"", "map", mapname, s );
+		} else {
+			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap) %s", level.voteString );
 		}
 	}
 	else if ( !Q_stricmp ( arg1, "clientkick" ) && canVoteBesideMap)
@@ -4382,6 +4484,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "afk"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "genArena"))
 		{
 			giveError = qtrue;
@@ -4530,6 +4636,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Where_f (ent);
 	else if (Q_stricmp (cmd, "callvote") == 0)
 		Cmd_CallVote_f (ent);
+	else if (Q_stricmp(cmd, "afk") == 0)
+		Cmd_Afk_f(ent);
 	else if (Q_stricmp (cmd, "genArena") == 0)
 		Cmd_GenArena_f(ent);
 	else if (Q_stricmp (cmd, "arenaless") == 0)

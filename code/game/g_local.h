@@ -393,6 +393,8 @@ typedef struct {
 	} login;
 
 	subContestState_t subcontestVals[SUBCONTESTS_COUNT];
+
+	int		lastHereTime; // for cross-map afk checking
 } clientSession_t;
 
 // JK2MV
@@ -1361,6 +1363,7 @@ extern	vmCvar_t	g_knockback;
 extern	vmCvar_t	g_quadfactor;
 extern	vmCvar_t	g_forcerespawn;
 extern	vmCvar_t	g_startWeaponAlwaysSaber;
+extern	vmCvar_t	g_afkCmdMinSecs;
 extern	vmCvar_t	g_inactivity;
 extern	vmCvar_t	g_inactivityToSpec;
 extern	vmCvar_t	g_inactivityToSpecRacers;
