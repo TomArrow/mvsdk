@@ -1721,3 +1721,6 @@ qboolean DF_ClientInSegmentedRunMode(gclient_t* client);
 void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4);
 void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int page);
 qboolean DF_KeepClientZombie(gentity_t* ent);
+void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
+void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull);
+

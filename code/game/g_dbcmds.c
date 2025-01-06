@@ -1237,23 +1237,24 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
 
-	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+	if (lbRequestData.clientnum == -1) {
+		Com_Printf("^3Clientless rank update map request result returned.\n", lbRequestData.clientnum);
+	} else if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d rank update map request results returned, user no longer valid.\n", lbRequestData.clientnum);
-		return;
 	}
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
 		G_CreateRunsTable();
-		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Rank update map request failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		G_SendOrPrint(ent, "^1Rank update map request failed due to table not existing. Attempting to create. Please try again shortly.\n");
 		return;
 	}
 	else if (status) {
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Rank update map request failed with status %d and error message %s.\n\"", status, errorMessage));
+		G_SendOrPrint(ent, va("^1Rank update map request failed with status %d and error message %s.\n",status,errorMessage));
 		return;
 	}
 
-	trap_SendServerCommand(ent - g_entities, "print \"Requesting map rank updates:\n\"");
+	G_SendOrPrint(ent, "Requesting map rank updates:\n");
 
 	while (G_COOL_API_DB_NextRow()) {
 		int runCount,duration_ms;
@@ -1281,16 +1282,16 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 			mapDefaultRaceStyle.runFlags = G_COOL_API_DB_GetInt(7);
 		}
 		if (resultIndex == 0) {
-			trap_SendServerCommand(ent - g_entities, va("print \"%s/%s\"",course,subcourse));
+			G_SendOrPrint(ent, va("%s/%s", course, subcourse));
 		}
 		else {
-			trap_SendServerCommand(ent - g_entities, va("print \", %s/%s\"", course, subcourse));
+			G_SendOrPrint(ent, va(", %s/%s", course, subcourse));
 		}
 		DF_UpdateRanks(ent,course,subcourse,&mapDefaultRaceStyle);
 		resultIndex++;
 	}
 
-	trap_SendServerCommand(ent - g_entities, va("print \"\n\""));
+	G_SendOrPrint(ent, "\n");
 
 }
 
