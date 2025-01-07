@@ -1244,7 +1244,9 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (lbRequestData.clientnum == -1) {
-		Com_Printf("^3Clientless rank update map request result returned.\n", lbRequestData.clientnum);
+		if (g_developer.integer) {
+			Com_Printf("^3Clientless rank update map request result returned.\n", lbRequestData.clientnum);
+		}
 	} else if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d rank update map request results returned, user no longer valid.\n", lbRequestData.clientnum);
 	}
@@ -1271,6 +1273,10 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		char subcourse[COURSENAME_MAX_LEN +1];
 
 		if (!resultIndex) {
+			if (!g_developer.integer && lbRequestData.clientnum == -1) {
+
+				Com_Printf("^3Clientless rank update map request result returned.\n", lbRequestData.clientnum);
+			}
 			G_SendOrPrint(ent, "Requesting map rank updates:\n");
 		}
 
