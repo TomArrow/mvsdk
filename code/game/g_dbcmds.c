@@ -432,10 +432,12 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	else if (affectedRows == 1) {
 		//trap_SendServerCommand(-1, "print \"^1First run.\n\"");
 		runData.runInfo.pbStatus |= PB_FIRSTRUN_SPECIFICSTYLE; // first run
+		level.shouldUpdateMapRanks = qtrue;
 	}
 	else if (affectedRows == 2) {
 		//trap_SendServerCommand(-1, "print \"^1PB!\n\"");
 		runData.runInfo.pbStatus |= PB_NEWPB_SPECIFICSTYLE;
+		level.shouldUpdateMapRanks = qtrue;
 	}
 	else {
 		trap_SendServerCommand(-1, va("print \"^1WTF %d\n\"", affectedRows));
@@ -1079,26 +1081,28 @@ static void G_RankUpdateResult(int status, const char* errorMessage, int affecte
 
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
 
-	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+	if (lbRequestData.clientnum == -1) {
+		//Com_Printf("^1Clientless rank update results returned.\n");
+	}
+	else if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d rank update results returned, user no longer valid.\n", lbRequestData.clientnum);
-		return;
 	}
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
 		G_CreateUserTable();
 		G_CreateRunsTable();
-		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Rank update failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		G_SendOrPrint(ent,"^1Rank update failed due to table not existing. Attempting to create. Please try again shortly.\n");
 		return;
 	}
 	else if (status) {
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Rank update failed with status %d and error message %s.\n\"", status, errorMessage));
+		G_SendOrPrint(ent, va("^1Rank update failed with status %d and error message %s.\n", status, errorMessage));
 		return;
 	}
 
 	//if (affectedRows) 
 	{
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^%cRank update on %s/%s for style %s successful. Affected rows: %d.\n\"",affectedRows ? '2' : '3', lbRequestData.course, lbRequestData.subcourse, lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
+		G_SendOrPrint(ent, va("^%cRank update on %s/%s for style %s successful. Affected rows: %d.\n", affectedRows ? '2' : '3', lbRequestData.course, lbRequestData.subcourse, lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
 	}
 	//else {
 	//	trap_SendServerCommand(lbRequestData.clientnum, va("print \".\"", lbRequestData.course, lbRequestData.subcourse, lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
@@ -1258,7 +1262,6 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		return;
 	}
 
-	G_SendOrPrint(ent, "Requesting map rank updates:\n");
 
 	while (G_COOL_API_DB_NextRow()) {
 		int runCount,duration_ms;
@@ -1266,6 +1269,10 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		raceStyle_t mapDefaultRaceStyle;
 		char course[COURSENAME_MAX_LEN+1];
 		char subcourse[COURSENAME_MAX_LEN +1];
+
+		if (!resultIndex) {
+			G_SendOrPrint(ent, "Requesting map rank updates:\n");
+		}
 
 		runCount = G_COOL_API_DB_GetInt(0);
 		G_COOL_API_DB_GetString(1, course, sizeof(course));

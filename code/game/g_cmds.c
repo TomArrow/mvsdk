@@ -2062,7 +2062,7 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 			forceAll = qtrue;
 		}
 	}
-	DF_UpdateRanksMainRequest(ent, all ? NULL : DF_GetCourseName(), forceAll);
+	DF_UpdateRanksMainRequest(ent, all ? NULL : DF_GetCourseName(), forceAll, 0);
 
 }
 

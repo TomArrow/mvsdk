@@ -1741,10 +1741,10 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, thisMapDefaultRaceStyle);
 	int i,style;
 
-	data.clientnum = ent - g_entities;
+	data.clientnum = ent ? ent - g_entities : -1;
 
 	if (coolApi_dbVersion < 3) {
-		trap_SendServerCommand(data.clientnum, "print \"Rank update request failed, database version too low.\n\"");
+		G_SendOrPrint(ent,"Rank update request failed, database version too low.\n");
 		return;
 	}
 
@@ -1754,7 +1754,9 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 #define TOPCOLUMNS2 "runs_pre.id AS runId, " REALRANK 
 #define QUERY3 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE besttime=duration_ms GROUP BY userid ORDER BY besttime ASC, runwhen ASC"
 
-	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	if (data.clientnum != -1) {
+		memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	}
 	
 	for (style = 0; style < MV_NUMSTYLES; style++) {
 		data.style = style;
@@ -1781,7 +1783,7 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 			G_COOL_API_DB_FinishAndSendPreparedStatement();
 		}
 		else {
-			trap_SendServerCommand(data.clientnum, "print \"Rank update request failed, database connection not available.\n\"");
+			G_SendOrPrint(ent, "Rank update request failed, database connection not available.\n\n");
 		}
 	}
 
@@ -1792,7 +1794,7 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 #undef REALRANK
 }
 
-void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseNameOrNull, qboolean forceAll) {
+void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseNameOrNull, qboolean forceAll, int limitCount) {
 
 	rankUpdateMapRequestStruct_t data;
 
@@ -1806,11 +1808,14 @@ void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseName
 		data.clientnum = -1;
 	}
 
+	data.mapCountLimit = limitCount;
+
 #define RANKMAPQUERY_DATELIMITED "SELECT COUNT(runs.id) as runCount, runs.course, runs.subcourse, ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound, mapdefaults.msec, mapdefaults.jump, mapdefaults.variant, mapdefaults.runFlags, MAX(runs.runwhen) AS latestRunWhen, meta.valueWhen FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) LEFT JOIN meta ON (`meta`.`key` = 'rankUpdateLatest') GROUP BY runs.course, runs.subcourse HAVING (meta.valueWhen IS NULL OR meta.valueWhen < latestRunWhen) ORDER BY latestRunWhen ASC"
 #define RANKMAPQUERY "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,MAX(runs.runwhen) AS latestRunWhen FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) GROUP BY runs.course,runs.subcourse ORDER BY latestRunWhen ASC"
 #define RANKMAPQUERYSEARCH "SELECT COUNT(runs.id) as runCount, runs.course,runs.subcourse,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,MAX(runs.runwhen) AS latestRunWhen FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) WHERE runs.course=?  GROUP BY runs.course,runs.subcourse ORDER BY latestRunWhen ASC"
 
 	if (!courseNameOrNull) {
+		level.lastAllRankUpdate = level.time;
 		data.all = qtrue;
 		if (forceAll) {
 			if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY)) {

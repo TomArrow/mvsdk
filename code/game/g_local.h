@@ -754,6 +754,7 @@ typedef struct {
 	qboolean	mustGenerateArena;
 	qboolean	allRaceGenerationAlreadyCalled;
 	qboolean	arenasLoaded;
+	qboolean	shouldUpdateMapRanks;
 	char		message[MAX_STRING_CHARS]; // map message (some maps provide it and its like a long level name, can use for arena auto gen
 
 	// q3 rally map support
@@ -766,6 +767,8 @@ typedef struct {
 	// map variables
 	qboolean	q3r_hasStartFinish;
 	int			q3r_numCheckpoints;
+
+	int			lastAllRankUpdate;
 } level_locals_t;
 
 
@@ -1722,5 +1725,5 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int page);
 qboolean DF_KeepClientZombie(gentity_t* ent);
 void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
-void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll);
+void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
 

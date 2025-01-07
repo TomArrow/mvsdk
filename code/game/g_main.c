@@ -3063,6 +3063,15 @@ void G_RunFrame( int levelTime ) {
 		level.hasArenaInfo = qtrue;
 	}
 
+	if (!level.numPlayingClients && (clampedIntAdd(level.lastAllRankUpdate, 60000) < level.time || level.time < level.lastAllRankUpdate || !level.lastAllRankUpdate && level.time)) {
+		//Com_Printf("^3Executing auto rank update.");
+		DF_UpdateRanksMainRequest(NULL,NULL,qfalse,5); // up to 5 maps at a time
+	}
+	else if (level.shouldUpdateMapRanks && !activeRunnerCount) {
+		DF_UpdateRanksMainRequest(NULL, DF_GetCourseName(), qfalse, 0); // up to 5 maps at a time
+		level.shouldUpdateMapRanks = qfalse;
+	}
+
 	// Process logical entities
 	ent = &g_entities[MAX_GENTITIES];
 	for (i = 0; i < level.num_logicalents; i++, ent++) {
