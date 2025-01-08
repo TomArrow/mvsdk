@@ -2066,6 +2066,22 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 
 }
 
+void Cmd_MapRatings_f(gentity_t* ent) {
+	char arg[10];
+
+	// TODO...
+
+	if (trap_Argc() > 1) {
+		trap_Argv(1, arg, sizeof(arg));
+		if (!Q_stricmp(arg, "top")) {
+			/// top maps
+			return;
+		} 
+	}
+
+
+}
+
 void Cmd_Maplist_f(gentity_t* ent) {
 
 	int			mapsinmessage = 0;
@@ -2248,11 +2264,11 @@ void Cmd_Latest_f(gentity_t* ent) {
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 
 }
-void Cmd_ShortestLongest_f(gentity_t* ent) {
+void Cmd_MapSearch_f(gentity_t* ent) {
 	int clientNum = -1;
 	int page, first;
 	int i,t;
-	longestShortestMapsRequestStruct_t data;
+	mapSearchRequestStruct_t data;
 	//char pageNum[10];
 	const int args = trap_Argc();
 	char inputString[15];
@@ -2264,8 +2280,17 @@ void Cmd_ShortestLongest_f(gentity_t* ent) {
 	
 	memset(&data, 0, sizeof(data));
 	
-
-	data.longest = !Q_stricmp(cmd, "longest");
+	data.type = MAPSEARCH_SHORTEST;
+	if (!Q_stricmp(cmd, "longest")) {
+		data.type = MAPSEARCH_LONGEST;
+	}
+	else if (!Q_stricmp(cmd, "notwr")) {
+		data.type = MAPSEARCH_NOTWR;
+		if (!ent->client->sess.login.loggedIn) {
+			trap_SendServerCommand(ent - g_entities, "print \"Gotta be logged in to use ^2/notwr^7.\n\"");
+			return;
+		}
+	}
 
 	if (!coolApi_dbVersion) {
 		trap_SendServerCommand(ent-g_entities,"print \"^1Longest/shortest request not possible, DB API not available\n\"");
@@ -2288,6 +2313,10 @@ void Cmd_ShortestLongest_f(gentity_t* ent) {
 				data.style = t;
 				data.styleSpecified = qtrue;
 			}
+			else if ((t = LeaderboardNameToInteger(inputString)) != -1) {
+				data.lbType = t;
+				data.lbTypeSpecified = qtrue;
+			}
 		}
 	}
 	else {
@@ -2303,23 +2332,42 @@ void Cmd_ShortestLongest_f(gentity_t* ent) {
 	}
 
 #define LONGESTSHORTESTQUERY "SELECT MIN(duration_ms) as fastest,runs.course,runs.subcourse FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) WHERE style = ? AND (runs.jump = mapdefaults.jump OR (mapdefaults.jump IS NULL AND runs.jump = 1)) GROUP BY runs.course,runs.subcourse ORDER BY fastest "
+#define NOTWRQUERY "SELECT runs.course,runs.subcourse,COUNT(subruns.userid) >0 AS anyruns,MIN(subruns.tmpRank) AS bestrank FROM runs \
+	LEFT JOIN runs AS subruns ON(subruns.userid = ? AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
+		GROUP BY course, subcourse \
+		HAVING bestrank > 1 OR anyruns = 0 \
+		ORDER BY anyruns DESC, bestrank ASC "
 #define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
 
-	if (data.longest) {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_SHORTESTLONGESTMAPS, LONGESTSHORTESTQUERY "DESC" LONGESTSHORTESTQUERY_END)) {
+	if (data.type == MAPSEARCH_LONGEST) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "DESC" LONGESTSHORTESTQUERY_END)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Longest maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(first);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
-	else {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_SHORTESTLONGESTMAPS, LONGESTSHORTESTQUERY "ASC" LONGESTSHORTESTQUERY_END)) {
+	else if (data.type == MAPSEARCH_SHORTEST) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "ASC" LONGESTSHORTESTQUERY_END)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Shortest maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(first);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
-	G_COOL_API_DB_PreparedBindInt(data.style);
-	G_COOL_API_DB_PreparedBindInt(first);
-	G_COOL_API_DB_FinishAndSendPreparedStatement();
+	else if (data.type == MAPSEARCH_NOTWR) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, NOTWRQUERY LONGESTSHORTESTQUERY_END)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Non-WR maps cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+		G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(data.lbType);
+		G_COOL_API_DB_PreparedBindInt(first);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
 
 }
 
@@ -4495,6 +4543,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "notwr"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "maplist"))
 		{
 			giveError = qtrue;
@@ -4673,9 +4725,11 @@ void ClientCommand( int clientNum ) {
 	else if (Q_stricmp(cmd, "latest") == 0)
 		Cmd_Latest_f(ent);
 	else if (Q_stricmp(cmd, "longest") == 0)
-		Cmd_ShortestLongest_f(ent);
+		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "shortest") == 0)
-		Cmd_ShortestLongest_f(ent);
+		Cmd_MapSearch_f(ent);
+	else if (Q_stricmp(cmd, "notwr") == 0)
+		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "maplist") == 0)
 		Cmd_Maplist_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)

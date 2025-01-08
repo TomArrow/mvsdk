@@ -281,6 +281,7 @@ typedef struct finishedRunInfo_s {
 //} evaluatedRunInfo_t;
 
 int RaceNameToInteger(char* style);
+int LeaderboardNameToInteger(char* lbType);
 //qboolean MovementStyleHasAntiLoop(int moveStyle);
 qboolean MovementStyleHasQuake2Ramps(int moveStyle);
 qboolean MovementStyleHasVQ3OnlyJumppads(int moveStyle);

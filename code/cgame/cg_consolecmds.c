@@ -1991,4 +1991,7 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("ignore");
 	trap_AddCommand("maplist");
 	trap_AddCommand("launch");
+	trap_AddCommand("longest");
+	trap_AddCommand("shortest");
+	trap_AddCommand("notwr");
 }

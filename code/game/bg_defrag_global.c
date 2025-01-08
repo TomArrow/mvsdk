@@ -242,6 +242,26 @@ int RaceNameToInteger(char* style) {
 		return MV_FORCE;
 	return -1;
 }
+int LeaderboardNameToInteger(char* lbType) {
+	Q_strlwr(lbType);
+	Q_CleanStr(lbType,qtrue,qtrue);
+
+	if (!Q_stricmp(lbType, "main"))
+		return LB_MAIN;
+	if (!Q_stricmp(lbType, "njb"))
+		return LB_NOJUMPBUG;
+	if (!Q_stricmp(lbType, "nojumpbug"))
+		return LB_NOJUMPBUG;
+	if (!Q_stricmp(lbType, "custom"))
+		return LB_CUSTOM;
+	if (!Q_stricmp(lbType, "seg"))
+		return LB_SEGMENTED;
+	if (!Q_stricmp(lbType, "segmented"))
+		return LB_SEGMENTED;
+	if (!Q_stricmp(lbType, "cheat"))
+		return LB_CHEAT;
+	return -1;
+}
 qboolean MovementStyleAllowsWeapons(int moveStyle) {
 	return qfalse;
 }

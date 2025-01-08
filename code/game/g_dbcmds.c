@@ -17,6 +17,7 @@ static void G_CreateCheckpointsTable();
 static void G_CreateSubContestsTable();
 static void G_CreateMapRaceDefaultsTable();
 static void G_CreateMetaTable();
+static void G_CreateMapRatingsTable();
 extern const char* DF_GetCourseName(); 
 const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
@@ -1324,15 +1325,15 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 }
 
 static void G_ShortestLongestResult(int status, const char* errorMessage, int affectedRows) {
-	longestShortestMapsRequestStruct_t lbRequestData;
+	mapSearchRequestStruct_t data;
 	gentity_t* ent = NULL;
 	int resultIndex = 0;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
 
-	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
-		Com_Printf("^1Client %d shortest/longest map results returned, user no longer valid.\n", lbRequestData.clientnum);
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Client %d shortest/longest map results returned, user no longer valid.\n", data.clientnum);
 		return;
 	}
 
@@ -1340,60 +1341,98 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 		// table doesn't exist. create it.
 		G_CreateMapRaceDefaultsTable();
 		G_CreateRunsTable();
-		trap_SendServerCommand(lbRequestData.clientnum,"print \"^1Shortest/longest map results display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		trap_SendServerCommand(data.clientnum,"print \"^1Shortest/longest map results display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
 		return;
 	}
 	else if (status) {
-		trap_SendServerCommand(lbRequestData.clientnum, va("print \"^1Shortest/longest map results failed with status %d and error message %s.\n\"", status, errorMessage));
+		trap_SendServerCommand(data.clientnum, va("print \"^1Shortest/longest map results failed with status %d and error message %s.\n\"", status, errorMessage));
 		return;
 	}
 
-	if (lbRequestData.longest) {
-		trap_SendServerCommand(ent - g_entities, va("print \"Longest maps in style %s (based on fastest run including segmented/cheat):\n\"", lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN"));
+	if (data.type == MAPSEARCH_LONGEST) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Longest maps in style %s (based on fastest run including segmented/cheat):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
 	}
-	else {
-		trap_SendServerCommand(ent - g_entities, va("print \"Shortest maps in style %s (based on fastest run including segmented/cheat):\n\"", lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN"));
+	else if(data.type == MAPSEARCH_SHORTEST) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Shortest maps in style %s (based on fastest run including segmented/cheat):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
+	}
+	else if(data.type == MAPSEARCH_NOTWR) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Maps in style %s in leaderboard type %s you do not hold WR on:\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN", data.lbType < LB_TYPES_COUNT ? leaderboardNames[data.lbType].string : "UNKNOWN"));
 	}
 
-	while (G_COOL_API_DB_NextRow()) {
-		char course[COURSENAME_MAX_LEN+1];
-		char subcourse[COURSENAME_MAX_LEN +1];
+	{
+
+		char course[COURSENAME_MAX_LEN + 1];
+		char subcourse[COURSENAME_MAX_LEN + 1];
 		int time;
 		int mapnum;
 		infoHashed_t* infoHashed;
 		mainLeaderboardType_t lbType;
+		qboolean anyRuns;
+		int rank;
 
-		if (resultIndex == 0) {
-			trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
-				, '2'
-				, "TIME"
-				, "MAPNUM"
-				, "MAP/COURSE"
-			));
+		while (G_COOL_API_DB_NextRow()) {
+
+			if (data.type == MAPSEARCH_LONGEST || data.type == MAPSEARCH_SHORTEST) {
+
+				if (resultIndex == 0) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
+						, '2'
+						, "TIME"
+						, "MAPNUM"
+						, "MAP/COURSE"
+					));
+				}
+				time = G_COOL_API_DB_GetInt(0);
+				G_COOL_API_DB_GetString(1, course, sizeof(course));
+				G_COOL_API_DB_GetString(2, subcourse, sizeof(subcourse));
+
+				infoHashed = G_GetArenaInfoByMap(course);
+
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
+					, '7'
+					, DF_MsToString(time)
+					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
+				));
+			}
+			else if (data.type == MAPSEARCH_NOTWR) {
+
+				if (resultIndex == 0) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-20s\n\""
+						, '2'
+						, "RANK"
+						, "MAPNUM"
+						, "MAP/COURSE"
+					));
+				}
+
+				G_COOL_API_DB_GetString(0, course, sizeof(course));
+				G_COOL_API_DB_GetString(1, subcourse, sizeof(subcourse));
+				anyRuns = G_COOL_API_DB_GetInt(2);
+				rank = G_COOL_API_DB_GetInt(3);
+
+				infoHashed = G_GetArenaInfoByMap(course);
+
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-20s\n\""
+					, '7'
+					, anyRuns? miniva("%d",rank) : "-"
+					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
+				));
+
+			}
+			resultIndex++;
 		}
-		time = G_COOL_API_DB_GetInt(0);
-		G_COOL_API_DB_GetString(1, course, sizeof(course));
-		G_COOL_API_DB_GetString(2, subcourse, sizeof(subcourse));
-
-		infoHashed = G_GetArenaInfoByMap(course);
-
-		trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
-			, '7'
-			, DF_MsToString(time)
-			, infoHashed ? miniva("%d",infoHashed-g_arenaInfosHashed) : "-"
-			, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
-		));
-		resultIndex++;
 	}
 
 	trap_SendServerCommand(ent - g_entities, va("print \"\n\""));
 
-	if (!lbRequestData.styleSpecified && !lbRequestData.pageSpecified) {
+	if (!data.styleSpecified && !data.pageSpecified) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can specify movement style and page number.\n\""));
 	}
-	else if (!lbRequestData.pageSpecified) {
+	else if (!data.pageSpecified) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify page number.\n\""));
-	} else if (!lbRequestData.styleSpecified) {
+	} else if (!data.styleSpecified) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify movement style.\n\""));
 	}
 
@@ -1888,7 +1927,7 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_RANKUPDATEMAPREQUEST:
 					G_RankUpdateMapRequestResult(status, errorMessage, affectedRows);
 					break;
-				case DBREQUEST_SHORTESTLONGESTMAPS:
+				case DBREQUEST_MAPSEARCH:
 					G_ShortestLongestResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_MAPLISTUNPLAYED:
@@ -2067,6 +2106,17 @@ static void G_CreateMapRaceDefaultsTable() {
 	Q_strncpyz(tableName.s, "mapdefaults", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
+static void G_CreateMapRatingsTable() {
+	referenceSimpleString_t tableName;
+	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS mapratings(\
+			course VARCHAR(100) NOT NULL, \
+			userid BIGINT SIGNED NOT NULL, \
+			style SMALLINT UNSIGNED NOT NULL, \
+			rating TINYINT NOT NULL, \
+			PRIMARY KEY(course,userid,style))";
+	Q_strncpyz(tableName.s, "mapratings", sizeof(tableName.s));
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
+}
 static void G_CreateMetaTable() {
 	referenceSimpleString_t tableName;
 	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS meta(\
@@ -2190,6 +2240,7 @@ static void G_DB_CreateTables() {
 	G_CreateSubContestsTable();
 	G_CreateMapRaceDefaultsTable();
 	G_CreateMetaTable();
+	G_CreateMapRatingsTable();
 }
 
 void G_DB_Init() {
