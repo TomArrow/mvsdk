@@ -1519,7 +1519,7 @@ static void G_RateMapResult(int status, const char* errorMessage, int affectedRo
 		return;
 	}
 
-	trap_SendServerCommand(data.clientnum, va("print \"Thank you. You have rated this map ^%c%f/10^7 for style %s.%s\n\"", data.value > 6.5 ? '2' : (data.value > 4 ? '3' : '1'),data.value,data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN",affectedRows < 2 ? " ^3No change." : ""));
+	trap_SendServerCommand(data.clientnum, va("print \"Thank you. You have rated this map ^%c%f/10^7 for style %s.%s\n\"", data.value > 6.5 ? '2' : (data.value > 4 ? '3' : '1'),data.value,data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN",affectedRows == 1 ? " ^3No change." : ""));
 
 }
 static void G_MapListUnplayedResult(int status, const char* errorMessage, int affectedRows) {
