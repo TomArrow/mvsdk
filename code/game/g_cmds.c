@@ -2405,7 +2405,7 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	LEFT JOIN runs AS subruns ON(subruns.userid = ? AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
 		GROUP BY course, subcourse \
 		HAVING bestrank > 1 OR anyruns = 0 \
-		ORDER BY anyruns DESC, bestrank ASC "
+		ORDER BY anyruns DESC, bestrank ASC, course ASC "
 #define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
 
 	if (data.type == MAPSEARCH_MOSTPLAYED) {
