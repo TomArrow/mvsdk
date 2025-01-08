@@ -987,10 +987,10 @@ void Cmd_Help_f(gentity_t* ent) {
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7 - Show longest/shortest maps. Can call with movement style and page.\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7 - Call a vote to switch to a map (call with map name)\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote mapnum^7 - Call a vote to switch to a map (call with map number from ^2/maplist^7)\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote randommap^7 - Call a vote to switch to a randomly selected map\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7,^2/toprated^7,^2/mostplayed^7 - Show longest/shortest/popular(by rating)/popular(by amount of runs) maps. Can call with movement style and page.\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/ratemap^7 - Rate the current map from 0 to 10. Call with movement style and number.\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/notwr^7 - Show maps you do not hold WR on, sorted by your current rank, highest first.\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"");
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Account commands:\n\"");
 
@@ -2264,6 +2264,67 @@ void Cmd_Latest_f(gentity_t* ent) {
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 
 }
+
+void Cmd_RateMap_f(gentity_t* ent) {
+	char arg[30];
+	char* str;
+	rateMapStruct_t data;
+
+	if (!ent->client->sess.login.loggedIn) {
+		trap_SendServerCommand(ent - g_entities, "print \"You can't rate maps without being logged in.\n\"");
+		return;
+	}
+	if (trap_Argc() < 3) {
+		trap_SendServerCommand(ent-g_entities,"print \"Usage: ratemap <style> <rating>; rating must be a number from 0 to 10, and can be a fractional number\n\"");
+		return;
+	}
+	memset(&data, 0, sizeof(data));
+
+	data.clientnum = ent - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+
+	trap_Argv(1, arg, sizeof(arg));
+	data.style = RaceNameToInteger(arg);
+	if (data.style == -1) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Style '%s' not recognized.\n\"",arg));
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: ratemap <style> <rating>; rating must be a number from 0 to 10, and can be a fractional number\n\"");
+		return;
+	}
+	trap_Argv(2, arg, sizeof(arg));
+	str = arg;
+	while (*str) {
+		if (*str == ',') {
+			*str == '.'; // normalize fractional numbers
+		}
+		if (*str != '.' && !(*str >= '0' && *str <= '9')) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Character '%c' is not supported for rating value.\n\"", *str));
+			trap_SendServerCommand(ent - g_entities, "print \"Usage: ratemap <style> <rating>; rating must be a number from 0 to 10, and can be a fractional number\n\"");
+			return;
+		}
+		str++;
+	}
+	data.value = atof(arg);
+	if (data.value < 0 || data.value > 10) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Rating value %f is out of range. Must be 0-10.\n\"", data.value));
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: ratemap <style> <rating>; rating must be a number from 0 to 10, and can be a fractional number\n\"");
+		return;
+	}
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_RATEMAP,
+		"REPLACE INTO mapratings (course,userid,style,rating) VALUES (?,?,?,?)"
+	)) {
+		trap_SendServerCommand(ent - g_entities, "print \"Error rating map: Database error, query could not be sent.\n\"");
+		return;
+	}
+	G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+	G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+	G_COOL_API_DB_PreparedBindInt(data.style);
+	G_COOL_API_DB_PreparedBindFloat(data.value);
+
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+
+}
+
 void Cmd_MapSearch_f(gentity_t* ent) {
 	int clientNum = -1;
 	int page, first;
@@ -2272,7 +2333,7 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	//char pageNum[10];
 	const int args = trap_Argc();
 	char inputString[15];
-	char cmd[10];
+	char cmd[15];
 	trap_Argv(0,cmd,sizeof(cmd));
 
 
@@ -2283,6 +2344,12 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	data.type = MAPSEARCH_SHORTEST;
 	if (!Q_stricmp(cmd, "longest")) {
 		data.type = MAPSEARCH_LONGEST;
+	}
+	else if (!Q_stricmp(cmd, "mostplayed")) {
+		data.type = MAPSEARCH_MOSTPLAYED;
+	}
+	else if (!Q_stricmp(cmd, "toprated")) {
+		data.type = MAPSEARCH_TOPRATED;
 	}
 	else if (!Q_stricmp(cmd, "notwr")) {
 		data.type = MAPSEARCH_NOTWR;
@@ -2332,6 +2399,8 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	}
 
 #define LONGESTSHORTESTQUERY "SELECT MIN(duration_ms) as fastest,runs.course,runs.subcourse FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) WHERE style = ? AND (runs.jump = mapdefaults.jump OR (mapdefaults.jump IS NULL AND runs.jump = 1)) GROUP BY runs.course,runs.subcourse ORDER BY fastest "
+#define MOSTPLAYEDQUERY "SELECT COUNT(DISTINCT userid) as playerCount, runs.course, runs.subcourse FROM runs WHERE style = ? GROUP BY runs.course, runs.subcourse ORDER BY playerCount DESC "
+#define TOPRATEDQUERY "SELECT AVG(rating) AS avgRating,COUNT(DISTINCT userid) ratingCount, course FROM mapratings WHERE style=? GROUP BY course,style ORDER BY avgRating DESC "
 #define NOTWRQUERY "SELECT runs.course,runs.subcourse,COUNT(subruns.userid) >0 AS anyruns,MIN(subruns.tmpRank) AS bestrank FROM runs \
 	LEFT JOIN runs AS subruns ON(subruns.userid = ? AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
 		GROUP BY course, subcourse \
@@ -2339,7 +2408,25 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 		ORDER BY anyruns DESC, bestrank ASC "
 #define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
 
-	if (data.type == MAPSEARCH_LONGEST) {
+	if (data.type == MAPSEARCH_MOSTPLAYED) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, MOSTPLAYEDQUERY LONGESTSHORTESTQUERY_END)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Most played maps cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(first);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else if (data.type == MAPSEARCH_TOPRATED) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, TOPRATEDQUERY LONGESTSHORTESTQUERY_END)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Top rated maps cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(first);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else if (data.type == MAPSEARCH_LONGEST) {
 		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "DESC" LONGESTSHORTESTQUERY_END)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Longest maps cannot be displayed. Database request failed.\n\"");
 			return;
@@ -4547,6 +4634,18 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "mostplayed"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "toprated"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "ratemap"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "maplist"))
 		{
 			giveError = qtrue;
@@ -4730,6 +4829,12 @@ void ClientCommand( int clientNum ) {
 		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "notwr") == 0)
 		Cmd_MapSearch_f(ent);
+	else if (Q_stricmp(cmd, "mostplayed") == 0)
+		Cmd_MapSearch_f(ent);
+	else if (Q_stricmp(cmd, "toprated") == 0)
+		Cmd_MapSearch_f(ent);
+	else if (Q_stricmp(cmd, "ratemap") == 0)
+		Cmd_RateMap_f(ent);
 	else if (Q_stricmp(cmd, "maplist") == 0)
 		Cmd_Maplist_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)

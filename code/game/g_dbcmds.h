@@ -32,6 +32,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_RANKUPDATE,
 	DBREQUEST_RANKUPDATEMAPREQUEST,
 	DBREQUEST_RANKUPDATEMAPLATESTSET,
+	DBREQUEST_RATEMAP,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -91,6 +92,12 @@ typedef struct checkPointSaveRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
 }checkPointSaveRequestStruct_t;
+typedef struct rateMapStruct_s {
+	int			ip[4];
+	int			clientnum;
+	float		value;
+	int			style;
+}rateMapStruct_t;
 
 typedef struct latestRunsRequestStruct_s {
 	int			ip[4];
@@ -104,6 +111,8 @@ typedef enum mapSearchType_s {
 	MAPSEARCH_LONGEST,
 	MAPSEARCH_SHORTEST,
 	MAPSEARCH_NOTWR,
+	MAPSEARCH_MOSTPLAYED,
+	MAPSEARCH_TOPRATED,
 
 } mapSearchType_t;
 

@@ -1355,6 +1355,12 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 	else if(data.type == MAPSEARCH_SHORTEST) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Shortest maps in style %s (based on fastest run including segmented/cheat):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
 	}
+	else if(data.type == MAPSEARCH_MOSTPLAYED) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Most played maps in style %s (all leaderboards):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
+	}
+	else if(data.type == MAPSEARCH_TOPRATED) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Top rated maps (0-10) in style %s (all leaderboards):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
+	}
 	else if(data.type == MAPSEARCH_NOTWR) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Maps in style %s in leaderboard type %s you do not hold WR on:\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN", data.lbType < LB_TYPES_COUNT ? leaderboardNames[data.lbType].string : "UNKNOWN"));
 	}
@@ -1369,6 +1375,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 		mainLeaderboardType_t lbType;
 		qboolean anyRuns;
 		int rank;
+		float rating;
 
 		while (G_COOL_API_DB_NextRow()) {
 
@@ -1391,6 +1398,55 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
 					, '7'
 					, DF_MsToString(time)
+					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
+				));
+			}
+			else if (data.type == MAPSEARCH_MOSTPLAYED ) {
+
+				if (resultIndex == 0) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^%c%7s %-7s %-20s\n\""
+						, '2'
+						, "PLAYERS"
+						, "MAPNUM"
+						, "MAP/COURSE"
+					));
+				}
+				time = G_COOL_API_DB_GetInt(0); // reuse time variable but its players
+				G_COOL_API_DB_GetString(1, course, sizeof(course));
+				G_COOL_API_DB_GetString(2, subcourse, sizeof(subcourse));
+
+				infoHashed = G_GetArenaInfoByMap(course);
+
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%7s %-7s %-20s\n\""
+					, '7'
+					, miniva("%d",time)
+					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
+				));
+			}
+			else if (data.type == MAPSEARCH_TOPRATED ) {
+
+				if (resultIndex == 0) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-10s %-10s %-20s\n\""
+						, '2'
+						, "RATING"
+						, "VOTECOUNT"
+						, "MAPNUM"
+						, "MAP/COURSE"
+					));
+				}
+				G_COOL_API_DB_GetFloat(0,&rating); 
+				time = G_COOL_API_DB_GetInt(1); // reuse time variable but its vote count
+				G_COOL_API_DB_GetString(2, course, sizeof(course));
+				subcourse[0] = '\0';
+
+				infoHashed = G_GetArenaInfoByMap(course);
+
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-10s %-10s %-20s\n\""
+					, '7'
+					, time > 0 ? miniva("%.5f",rating) : "-"
+					, time > 0 ? miniva("%d",time) : "-"
 					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 				));
@@ -1436,6 +1492,34 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify movement style.\n\""));
 	}
 
+
+}
+static void G_RateMapResult(int status, const char* errorMessage, int affectedRows) {
+	rateMapStruct_t data;
+	gentity_t* ent = NULL;
+	int resultIndex = 0;
+	//evaluatedRunInfo_t eRunInfo;
+
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Client %d set map rating results returned, user no longer valid.\n", data.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateMapRatingsTable();
+		G_CreateRunsTable();
+		trap_SendServerCommand(data.clientnum,"print \"^1Rating map failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1Rating map failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	trap_SendServerCommand(data.clientnum, va("print \"Thank you. You have rated this map ^%c%f/10^7 for style %s.%s\n\"", data.value > 6.5 ? '2' : (data.value > 4 ? '3' : '1'),data.value,data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN",affectedRows < 2 ? " ^3No change." : ""));
 
 }
 static void G_MapListUnplayedResult(int status, const char* errorMessage, int affectedRows) {
@@ -1930,6 +2014,9 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_MAPSEARCH:
 					G_ShortestLongestResult(status, errorMessage, affectedRows);
 					break;
+				case DBREQUEST_RATEMAP:
+					G_RateMapResult(status, errorMessage, affectedRows);
+					break;
 				case DBREQUEST_MAPLISTUNPLAYED:
 					G_MapListUnplayedResult(status, errorMessage, affectedRows);
 					break;
@@ -2112,7 +2199,7 @@ static void G_CreateMapRatingsTable() {
 			course VARCHAR(100) NOT NULL, \
 			userid BIGINT SIGNED NOT NULL, \
 			style SMALLINT UNSIGNED NOT NULL, \
-			rating TINYINT NOT NULL, \
+			rating DOUBLE NOT NULL, \
 			PRIMARY KEY(course,userid,style))";
 	Q_strncpyz(tableName.s, "mapratings", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
