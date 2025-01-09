@@ -7461,8 +7461,8 @@ static void CG_RealAccelHelper() {
 	vec4_t gainingParsed;
 	const vec4_t losingDefault = { 1.0, 0.0, 0.0, 0.5f };
 	const vec4_t gainingDefault = { 0.0, 1.0, 0.0, 0.5f };
-	vec_t* losing = losingDefault;
-	vec_t* gaining = gainingDefault;
+	const vec_t* losing = losingDefault;
+	const vec_t* gaining = gainingDefault;
 	float mid = (float)cgs.screenHeight / 2.0f;
 	qboolean snap = qtrue;
 	qboolean q2Snap = qfalse;
