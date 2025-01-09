@@ -7294,6 +7294,12 @@ static qboolean CG_GetStrafehelperCmdAndFrametime(usercmd_t* cmd, int* reference
 		}
 	}
 	else if (cg.snap) {
+		if (cg_strafeHelper_DemoFPS.integer && cg.demoPlayback) {
+			*referenceFrameTime = 1000 / cg_strafeHelper_DemoFPS.integer;
+		}
+		else if (cg_strafeHelper_UnknownFPSFallback.integer) {
+			*referenceFrameTime = 1000/cg_strafeHelper_UnknownFPSFallback.integer;
+		}
 		moveDir = cg.snap->ps.movementDir;
 		switch (moveDir) {
 		case 0: // W
@@ -7467,9 +7473,18 @@ static void CG_RealAccelHelper() {
 		return; //No cg.snap causes this to return.
 	}
 
-	VectorCopy(cg.strafehelperPredictedPlayerState.velocity, currentVelVec);
+	if (cg.strafehelperVelocityIsInterpolated) {
+		VectorCopy(cg.strafehelperRealVel, currentVelVec); // interpolated velocities make snapping display spazz out, understandably
+	}
+	else {
+		VectorCopy(cg.strafehelperPredictedPlayerState.velocity, currentVelVec);
+	}
 
-	frametime = (float)referenceFrameTime * 0.001f;
+	if (cg_strafeHelper_FPS.value < 1)
+		frametime = ((float)referenceFrameTime * 0.001f);
+	else if (cg_strafeHelper_FPS.value > 1000) // invalid
+		frametime = 1;
+	else frametime = 1 / cg_strafeHelper_FPS.value;
 
 	onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
 
@@ -7653,6 +7668,13 @@ static void CG_StrafeHelper(centity_t *cent)
 		optimalDeltaAngle = acos((double)((baseSpeed - (pmAccel*baseSpeed*frametime)) / (currentSpeed*(1 - pmFriction*(frametime))))) * (180.0f / M_PI) - 45.0f;
 	else
 		optimalDeltaAngle = acos((double)((baseSpeed - (pmAirAccel*baseSpeed * frametime)) / currentSpeed)) * (180.0f / M_PI) - 45.0f;
+
+	if (fpclassify(optimalDeltaAngle) == FP_NAN) {
+		return; // something went wrong, shrug
+	}
+	if (optimalDeltaAngle < -360 || optimalDeltaAngle > 360) {
+		return; // something weird happened, shrug
+	}
 
 	//if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
 	//	optimalDeltaAngle = 0; // what the fuck?

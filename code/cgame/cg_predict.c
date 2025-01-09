@@ -339,7 +339,7 @@ Generates cg.predictedPlayerState by interpolating between
 cg.snap->player_state and cg.nextFrame->player_state
 ========================
 */
-static void CG_InterpolatePlayerState( qboolean grabAngles ) {
+static void CG_InterpolatePlayerState( qboolean grabAngles, vec3_t newestVel ) {
 	float			f;
 	int				i;
 	playerState_t	*out;
@@ -364,12 +364,16 @@ static void CG_InterpolatePlayerState( qboolean grabAngles ) {
 
 	// if the next frame is a teleport, we can't lerp to it
 	if ( cg.nextFrameTeleport ) {
+		VectorCopy(out->velocity, newestVel);
 		return;
 	}
 
 	if ( !next || next->serverTime <= prev->serverTime ) {
+		VectorCopy(out->velocity, newestVel);
 		return;
 	}
+
+	VectorCopy(next->ps.velocity, newestVel);
 
 	// fau - for player it would more correct to interpolate between
 	// commandTimes (but requires one more snaphost ahead)
@@ -941,6 +945,8 @@ void CG_PredictPlayerState( void ) {
 		haveAntiLoopStats = qtrue;
 	}
 
+	cg.strafehelperVelocityIsInterpolated = qfalse;
+
 	// demo playback just copies the moves
 	if ( cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer == 2 ) {
 		if (!haveAntiLoopStats) {
@@ -950,7 +956,8 @@ void CG_PredictPlayerState( void ) {
 				VectorCopy(cg.snap->ps.velocity, cg.antiLoopInferredLastVelocity);
 			}
 		}
-		CG_InterpolatePlayerState( qfalse );
+		CG_InterpolatePlayerState( qfalse, cg.strafehelperRealVel);
+		cg.strafehelperVelocityIsInterpolated = qtrue;// realaccel helper will spazz out with interpolated velocities
 		cg.strafehelperPredictedPlayerState = cg.predictedPlayerState;
 		return;
 	}
@@ -964,7 +971,8 @@ void CG_PredictPlayerState( void ) {
 				VectorCopy(cg.snap->ps.velocity, cg.antiLoopInferredLastVelocity);
 			}
 		}
-		CG_InterpolatePlayerState( qtrue );
+		CG_InterpolatePlayerState( qtrue , cg.strafehelperRealVel);
+		cg.strafehelperVelocityIsInterpolated = qtrue;// realaccel helper will spazz out with interpolated velocities
 		cg.strafehelperPredictedPlayerState = cg.predictedPlayerState;
 		return;
 	}

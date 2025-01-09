@@ -766,6 +766,8 @@ typedef struct {
 	qboolean	hyperspace;				// true if prediction has hit a trigger_teleport
 	qboolean	teleporterPredicted;				// true if prediction has hit a trigger_teleport
 	playerState_t	strafehelperPredictedPlayerState; // must be 1 frame behind to correspond with whats actually going on
+	qboolean		strafehelperVelocityIsInterpolated;
+	vec3_t			strafehelperRealVel; // for realaccel helper we need a real vel, not interpolated one
 	playerState_t	predictedPlayerState;
 	centity_t		predictedPlayerEntity;
 	rollState_t		roll;
@@ -1769,6 +1771,8 @@ extern	vmCvar_t		cg_strafeHelperInactiveAlpha;
 
 extern	vmCvar_t		cg_strafeHelperOffset;
 extern	vmCvar_t		cg_strafeHelper_FPS;
+extern	vmCvar_t		cg_strafeHelper_DemoFPS;
+extern	vmCvar_t		cg_strafeHelper_UnknownFPSFallback;
 extern	vmCvar_t		cg_strafeHelper_RealPhysicsLines;
 
 extern	vmCvar_t		cg_crosshairSizeScale;
