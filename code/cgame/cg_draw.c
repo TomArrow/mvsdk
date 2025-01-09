@@ -7260,11 +7260,11 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 }
 
 static qboolean CG_GetStrafehelperCmdAndFrametime(usercmd_t* cmd, int* referenceFrameTime) {
-	*referenceFrameTime = cg.frametime;
 	static int referenceFrameTimeOld;
 	int currentCmdNumber;
 	usercmd_t oldcmd = { 0 };
 	int moveDir;
+	*referenceFrameTime = cg.frametime;
 	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
 		currentCmdNumber = trap_GetCurrentCmdNumber();
 		trap_GetUserCmd(currentCmdNumber, cmd);
