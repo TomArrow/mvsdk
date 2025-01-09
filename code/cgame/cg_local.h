@@ -765,6 +765,7 @@ typedef struct {
 	// prediction state
 	qboolean	hyperspace;				// true if prediction has hit a trigger_teleport
 	qboolean	teleporterPredicted;				// true if prediction has hit a trigger_teleport
+	playerState_t	strafehelperPredictedPlayerState; // must be 1 frame behind to correspond with whats actually going on
 	playerState_t	predictedPlayerState;
 	centity_t		predictedPlayerEntity;
 	rollState_t		roll;
@@ -774,7 +775,7 @@ typedef struct {
 	qboolean	validPPS;				// clear until the first call to CG_PredictPlayerState
 	int			predictedErrorTime;
 	vec3_t		predictedError;
-	int			predictionBaseTime; // From SaberMod: serverTime of snapshot predictedPlayerState is based on. With cg_optimizedPredict 1
+	//int			predictionBaseTime; // From SaberMod: serverTime of snapshot predictedPlayerState is based on. With cg_optimizedPredict 1
 	vec3_t		predictedPlayerOrigin;	// predicted origin unaffected by BG_AdjustPositionForMover
 
 	int			eventSequence;
@@ -1879,7 +1880,7 @@ extern	vmCvar_t 		cg_buildScript;
 extern	vmCvar_t		cg_paused;
 extern	vmCvar_t		cg_blood;
 extern	vmCvar_t		cg_predictItems;
-extern	vmCvar_t		cg_optimizedPredict;
+//extern	vmCvar_t		cg_optimizedPredict;
 extern	vmCvar_t		cg_deferPlayers;
 extern	vmCvar_t		cg_deferPlayersDebug;
 extern	vmCvar_t		cg_drawFriend;

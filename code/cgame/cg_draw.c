@@ -9,6 +9,7 @@
 #include "../qcommon/fp16.h"
 
 qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y);
+qboolean CG_WorldCoordToScreenCoordCustomAngles(vec3_t worldCoord, float* x, float* y, vec3_t viewangles);
 qboolean CG_CalcMuzzlePoint( int entityNum, vec3_t muzzle );
 
 static void CG_CalculateSpeed(centity_t *cent); //jk2pro.
@@ -3655,7 +3656,7 @@ static void CG_DrawCrosshair( vec3_t worldPoint, int chEntValid ) {
 
 }
 
-qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y)
+qboolean CG_WorldCoordToScreenCoordCustomAngles(vec3_t worldCoord, float *x, float *y,vec3_t viewangles)
 {
 	float	xcenter, ycenter;
 	vec3_t	local, transformed;
@@ -3673,7 +3674,7 @@ qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y)
 	xcenter = 0.5f * cgs.screenWidth;
 	ycenter = 0.5f * cgs.screenHeight;
 
-	AngleVectors (cg.refdefViewAngles, vfwd, vright, vup);
+	AngleVectors (viewangles, vfwd, vright, vup);
 
 	VectorSubtract (worldCoord, cg.refdef.vieworg, local);
 
@@ -3694,6 +3695,10 @@ qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y)
 	*y = ycenter - yzi * transformed[1];
 
 	return qtrue;
+}
+
+qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float* x, float* y) {
+	return CG_WorldCoordToScreenCoordCustomAngles(worldCoord, x, y, cg.refdefViewAngles);
 }
 
 /*
@@ -7209,7 +7214,7 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 	line[1] = delta[1] + start[1];
 	line[2] = start[2];
 
-	if (!CG_WorldCoordToScreenCoord(line, &x, &y))
+	if (!CG_WorldCoordToScreenCoordCustomAngles(line, &x, &y, cg.strafehelperPredictedPlayerState.viewangles))
 		return;
 
 	if (cg_strafeHelper.integer & SHELPER_NEWBARS) {
@@ -7218,7 +7223,7 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 	}
 	if (cg_strafeHelper.integer & SHELPER_OLDBARS && active && moveDir != 0) { //Not sure how to deal with multiple lines for W only so just fuck it for now..
 																			   //Proper way is to tell which line we are closest to aiming at and display the shit for that...
-		CG_FillRect(cgs.screenWidth / 2, SCREEN_HEIGHT / 2, (-4.444 * AngleSubtract(cg.predictedPlayerState.viewangles[YAW], angs[YAW])), 12, colorTable[CT_RED]);
+		CG_FillRect(cgs.screenWidth / 2, SCREEN_HEIGHT / 2, (-4.444 * AngleSubtract(cg.strafehelperPredictedPlayerState.viewangles[YAW], angs[YAW])), 12, colorTable[CT_RED]);
 	}
 	if (cg_strafeHelper.integer & SHELPER_OLDSTYLE) {
 		int cutoff = SCREEN_HEIGHT - cg_strafeHelperCutoff.integer; //Should be between 480 and LINE_HEIGHT
@@ -7255,7 +7260,7 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 		Dzikie_CG_DrawSpeed(moveDir);
 	}
 	if (cg_strafeHelper.integer & SHELPER_SOUND && active && moveDir != 8) { //Dont do this shit for the center line since its not really a strafe
-		CG_StrafeHelperSound(100 * AngleSubtract(cg.predictedPlayerState.viewangles[YAW], angs[YAW]));
+		CG_StrafeHelperSound(100 * AngleSubtract(cg.strafehelperPredictedPlayerState.viewangles[YAW], angs[YAW]));
 	}
 }
 
@@ -7265,7 +7270,7 @@ static qboolean CG_GetStrafehelperCmdAndFrametime(usercmd_t* cmd, int* reference
 	usercmd_t oldcmd = { 0 };
 	int moveDir;
 	*referenceFrameTime = cg.frametime;
-	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
+	if (cg.clientNum == cg.strafehelperPredictedPlayerState.clientNum && !cg.demoPlayback) {
 		currentCmdNumber = trap_GetCurrentCmdNumber();
 		trap_GetUserCmd(currentCmdNumber, cmd);
 		if ((cg_strafeHelper_RealPhysicsLines.integer || cg_com_physicsFps.integer) && currentCmdNumber > 1) {
@@ -7280,8 +7285,8 @@ static qboolean CG_GetStrafehelperCmdAndFrametime(usercmd_t* cmd, int* reference
 			}
 		}
 	}
-	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
-		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+	else if (cg_statsEntities[cg.strafehelperPredictedPlayerState.clientNum]) {
+		entityState_t* stats = &cg_statsEntities[cg.strafehelperPredictedPlayerState.clientNum]->currentState;
 		BG_StatsToUserCmd(stats, cmd);
 		if (cg_strafeHelper_RealPhysicsLines.integer) {
 			int statsMsec = stats->pastFpsUnionArray[(stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1)];
@@ -7329,7 +7334,7 @@ static void CG_RealAccel_SickoAccelerate(vec3_t velocity, vec3_t velocityOut, ve
 
 	VectorCopy(velocity, velocityOut);
 
-	currentspeed = DotProduct(pm->ps->velocity, wishdir);
+	currentspeed = DotProduct(velocity, wishdir);
 	addspeed = wishspeed - currentspeed;
 	if (addspeed <= 0) {
 		return;
@@ -7365,7 +7370,7 @@ static void CG_RealAccel_QuaJKAccelerate(vec3_t velocity, vec3_t velocityOut, ve
 
 	VectorCopy(velocity,velocityOut);
 
-	currentspeed = DotProduct(pm->ps->velocity, wishdir);
+	currentspeed = DotProduct(velocity, wishdir);
 
 	if (currentspeed >= wishspeed) return;
 
@@ -7462,11 +7467,11 @@ static void CG_RealAccelHelper() {
 		return; //No cg.snap causes this to return.
 	}
 
-	VectorCopy(cg.predictedPlayerState.velocity, currentVelVec);
+	VectorCopy(cg.strafehelperPredictedPlayerState.velocity, currentVelVec);
 
 	frametime = (float)referenceFrameTime * 0.001f;
 
-	onGround = (qboolean)(cg.snap->ps.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
+	onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
 
 	if (onGround) {
 		frictionFactor = (1.0f - 6.0f * (frametime));
@@ -7475,7 +7480,7 @@ static void CG_RealAccelHelper() {
 
 	currentSpeed = XYSPEED(currentVelVec);
 
-	if (currentSpeed < (cg.predictedPlayerState.basespeed - 1))
+	if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed - 1))
 		return;
 
 	while (angleStep < pixelAngleWidth) {
@@ -7494,11 +7499,11 @@ static void CG_RealAccelHelper() {
 	vectoangles(accelOffsetDir, accelOffsetAngles);
 	accelOffsetAngle = accelOffsetAngles[YAW];
 
-	startAngle = ANGLE2SHORT(AngleNormalize360(cg.predictedPlayerState.viewangles[YAW]- accelOffsetAngle - cg_fov.value/2));
+	startAngle = ANGLE2SHORT(AngleNormalize360(cg.strafehelperPredictedPlayerState.viewangles[YAW]- accelOffsetAngle - cg_fov.value/2));
 
-	if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
-		style = cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-		if (cg.predictedPlayerState.stats[STAT_MSECRESTRICT] == -2) {
+	if (cgs.isTommyTernal && cg.strafehelperPredictedPlayerState.stats[STAT_RACEMODE]) {
+		style = cg.strafehelperPredictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+		if (cg.strafehelperPredictedPlayerState.stats[STAT_MSECRESTRICT] == -2) {
 			snap = qfalse;
 		}
 		else if (style == MV_Q2) {
@@ -7513,16 +7518,13 @@ static void CG_RealAccelHelper() {
 
 	hereAccel = onGround ? 10.0f : 1.0f;
 	for (iAngle = 0.0f, i = startAngle, x =0; iAngle < angleRange; i = ((i + angleIncrement) & 65535), iAngle += angleStep, x+= angleXStep) {
-		switch (style) {
-		case MV_QUAJK:
-			CG_RealAccel_QuaJKAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.predictedPlayerState.speed, frametime, hereAccel,70.0f,30.0f);
-			break;
-		case MV_SICKO:
-			CG_RealAccel_SickoAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.predictedPlayerState.speed, frametime, hereAccel,200.0f);
-			break;
-		default:
-			CG_RealAccel_Accel(currentVelVec, newVelVec, angleVectors[i], cg.predictedPlayerState.speed, frametime, hereAccel);
-			break;
+		if (!onGround && style == MV_QUAJK) {
+			CG_RealAccel_QuaJKAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 70.0f, 30.0f);
+		}
+		else if (!onGround && style == MV_SICKO){
+			CG_RealAccel_SickoAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 200.0f);
+		} else{
+			CG_RealAccel_Accel(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
 		}
 		if (snap) {
 			trap_SnapVector(newVelVec);
@@ -7544,15 +7546,15 @@ static void CG_RealAccelHelper() {
 			trap_R_SetColor(gaining);
 		}
 
-		vDelta /= hereAccel*(float)referenceFrameTime * cg.predictedPlayerState.speed *0.0001f;
+		vDelta /= hereAccel*(float)referenceFrameTime * cg.strafehelperPredictedPlayerState.speed *0.0001f;
 		if (style == MV_SICKO) {
 			vDelta /= 200.0f;
 		}
 		else if (style == MV_QUAJK) {
 			vDelta /= 2.0f;
 		}
-		if (currentSpeed > cg.predictedPlayerState.speed) {
-			tmp = vDelta * currentSpeed / cg.predictedPlayerState.speed;
+		if (currentSpeed > cg.strafehelperPredictedPlayerState.speed) {
+			tmp = vDelta * currentSpeed / cg.strafehelperPredictedPlayerState.speed;
 			vDelta = vDelta * 0.5f + tmp * 0.5f;
 		}
 
@@ -7567,14 +7569,18 @@ static void CG_RealAccelHelper() {
 
 static void CG_StrafeHelper(centity_t *cent)
 {
-	vec_t * velocity = cg.predictedPlayerState.velocity;
+	vec3_t velocity;
+	//vec_t * velocity = cg.strafehelperPredictedPlayerState.velocity;
 	static vec3_t velocityAngle;
-	const float currentSpeed = cg.currentSpeed;
-	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.predictedPlayerState.speed;
+	float currentSpeed; //cg.currentSpeed;
+	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.strafehelperPredictedPlayerState.speed;
 	const int moveStyle = PM_GetMovePhysics();
 	int referenceFrameTime;
 	qboolean onGround;
 	usercmd_t cmd = { 0 };
+
+	VectorCopy(cg.strafehelperPredictedPlayerState.velocity,velocity); 
+	currentSpeed = XYSPEED(velocity);
 
 	//if (moveStyle == MV_SIEGE)
 	//	return; //no strafe in siege
@@ -7584,7 +7590,7 @@ static void CG_StrafeHelper(centity_t *cent)
 		return; //No cg.snap causes this to return.
 	}
 
-	onGround = (qboolean)(cg.snap->ps.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
+	onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
 
 	//if (moveStyle == MV_WSW) {
 	//	pmAccel = 12.0f;
@@ -7606,17 +7612,17 @@ static void CG_StrafeHelper(centity_t *cent)
 	if (currentSpeed < (baseSpeed - 1))
 		return;
 
-	/*if (cg.predictedPlayerState.pm_type == PM_JETPACK) {
+	/*if (cg.strafehelperPredictedPlayerState.pm_type == PM_JETPACK) {
 		pmAirAccel = 1.4f; //idk
 		if (cmd.upmove <= 0)
 			baseSpeed *= 0.8f;
 		else
 			baseSpeed *= 2.0f;
 	}
-	else if (moveStyle == MV_SWOOP && cg.predictedPlayerState.m_iVehicleNum) {
-		centity_t *vehCent = &cg_entities[cg.predictedPlayerState.m_iVehicleNum];
+	else if (moveStyle == MV_SWOOP && cg.strafehelperPredictedPlayerState.m_iVehicleNum) {
+		centity_t *vehCent = &cg_entities[cg.strafehelperPredictedPlayerState.m_iVehicleNum];
 		velocity = vehCent->currentState.pos.trDelta; //jerky otherwise?
-		if (cg.predictedPlayerState.commandTime < vehCent->m_pVehicle->m_iTurboTime) {
+		if (cg.strafehelperPredictedPlayerState.commandTime < vehCent->m_pVehicle->m_iTurboTime) {
 			baseSpeed = vehCent->m_pVehicle->m_pVehicleInfo->turboSpeed;//1400
 		}
 		else {
@@ -7626,12 +7632,12 @@ static void CG_StrafeHelper(centity_t *cent)
 	else*/ 
 	//if (moveStyle == MV_SP) {
 		/*
-		if ((DotProduct(cg.predictedPlayerState.velocity, wishdir)) < 0.0f)
+		if ((DotProduct(cg.strafehelperPredictedPlayerState.velocity, wishdir)) < 0.0f)
 		{//Encourage deceleration away from the current velocity
 		wishspeed *= 1.35f;//pm_airDecelRate - adjust basespeed
 		}
 		*/
-	//	if (!(cg.predictedPlayerState.pm_flags & PMF_JUMP_HELD) && cmd.upmove > 0) { //Also, wishspeed *= scale.  Scale is different cuz of upmove in air.  Only works ingame not from spec
+	//	if (!(cg.strafehelperPredictedPlayerState.pm_flags & PMF_JUMP_HELD) && cmd.upmove > 0) { //Also, wishspeed *= scale.  Scale is different cuz of upmove in air.  Only works ingame not from spec
 	//		baseSpeed /= 1.41421356237f; //umm.. dunno.. divide by sqrt(2)
 	//	}
 	//}
@@ -7648,8 +7654,8 @@ static void CG_StrafeHelper(centity_t *cent)
 	else
 		optimalDeltaAngle = acos((double)((baseSpeed - (pmAirAccel*baseSpeed * frametime)) / currentSpeed)) * (180.0f / M_PI) - 45.0f;
 
-	if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
-		optimalDeltaAngle = 0;
+	//if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
+	//	optimalDeltaAngle = 0; // what the fuck?
 
 	//Com_Printf("Optimal Angle is %.3f\n", optimalDeltaAngle);
 
@@ -7803,7 +7809,7 @@ void CG_DrawSnapHud(void)
 
 	if (cg.renderingThirdPerson)
 	{
-		va[YAW] = cg.predictedPlayerState.viewangles[YAW];
+		va[YAW] = cg.strafehelperPredictedPlayerState.viewangles[YAW];
 	}
 	else
 	{

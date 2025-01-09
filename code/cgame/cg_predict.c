@@ -907,6 +907,11 @@ void CG_PredictPlayerState( void ) {
 	vec3_t		prePmoveVelocity;
 	vec3_t		oldPos;
 	qboolean	haveAntiLoopStats = qfalse;
+	qboolean	usingNextSnap = qfalse;
+	qboolean	doingStrafeHelperExtraPredict = qfalse;
+	playerState_t* extraPredictRestorePs = NULL;
+	int			extraPredictRestorePhysicsTime;
+	antiLoopState_t extraPredictRestoreAntiloop;
 	int			oldButtons = 0;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
@@ -946,6 +951,7 @@ void CG_PredictPlayerState( void ) {
 			}
 		}
 		CG_InterpolatePlayerState( qfalse );
+		cg.strafehelperPredictedPlayerState = cg.predictedPlayerState;
 		return;
 	}
 
@@ -959,8 +965,11 @@ void CG_PredictPlayerState( void ) {
 			}
 		}
 		CG_InterpolatePlayerState( qtrue );
+		cg.strafehelperPredictedPlayerState = cg.predictedPlayerState;
 		return;
 	}
+
+	extraPredictRestoreAntiloop = cg.antiLoop;
 
 	// prepare for pmove
 	cg_pmove.ps = &cg.predictedPlayerState;
@@ -1006,34 +1015,73 @@ void CG_PredictPlayerState( void ) {
 	// the server time is beyond our current cg.time,
 	// because predicted player positions are going to 
 	// be ahead of everything else anyway
-	if (cg_optimizedPredict.integer) {
-		// From SaberMod
-		if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
-			baseSnap = cg.nextSnap;
-		}
-		else {
-			baseSnap = cg.snap;
-		}
+	//if (cg_optimizedPredict.integer) { // this doesnt rly work..
+	//	// From SaberMod
+	//	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
+	//		baseSnap = cg.nextSnap;
+	//	}
+	//	else {
+	//		baseSnap = cg.snap;
+	//	}
 
-		// don't recalculalate if base playerState hasn't changed
-		if (baseSnap->serverTime != cg.predictionBaseTime) {
-			cg.predictedPlayerState = baseSnap->ps;
-			cg.physicsTime = baseSnap->serverTime;
-			cg.predictionBaseTime = baseSnap->serverTime;
-		}
-		else {
-			// restore origin unaffected by BG_AdjustPositionForMover
-			VectorCopy(cg.predictedPlayerOrigin, cg.predictedPlayerState.origin);
-		}
-	} else{
+	//	// don't recalculalate if base playerState hasn't changed
+	//	if (baseSnap->serverTime != cg.predictionBaseTime) {
+	//		cg.predictedPlayerState = baseSnap->ps;
+	//		cg.physicsTime = baseSnap->serverTime;
+	//		cg.predictionBaseTime = baseSnap->serverTime;
+	//	}
+	//	else {
+	//		// restore origin unaffected by BG_AdjustPositionForMover
+	//		VectorCopy(cg.predictedPlayerOrigin, cg.predictedPlayerState.origin);
+	//	}
+	//} else
+	{
 		if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
 			cg.predictedPlayerState = cg.nextSnap->ps;
+			extraPredictRestorePs = &cg.nextSnap->ps;
+			extraPredictRestorePhysicsTime = cg.nextSnap->serverTime;
 			cg.physicsTime = cg.nextSnap->serverTime;
+			usingNextSnap = qtrue;
 		} else {
 			cg.predictedPlayerState = cg.snap->ps;
+			extraPredictRestorePs = &cg.snap->ps;
+			extraPredictRestorePhysicsTime = cg.snap->serverTime;
 			cg.physicsTime = cg.snap->serverTime;
 		}
 	}
+
+	if (cg_strafeHelper.integer && latestCmd.serverTime == cg.predictedPlayerState.commandTime/* && !cg_optimizedPredict.integer*/) {
+		// we won't be doing a prediction.
+		// so normally we couldn't get proper strafehelper data here because for that we need to evaluate one frame (we need viewangles after, but velocity before pmove)
+		// so quickly do a prediction from an older state (if available) and then when we reach the proper time, we will
+		// switch the real deal.
+		if (usingNextSnap && cg.snap && cg.snap->ps.commandTime < cg.predictedPlayerState.commandTime && cg.snap->ps.commandTime >= oldestCmd.serverTime) {
+			cg.predictedPlayerState = cg.snap->ps;
+			cg.physicsTime = cg.snap->serverTime;
+			doingStrafeHelperExtraPredict = qtrue;
+			if (cg_developer.integer > 5) {
+				Com_Printf("Doing strafehelper extra predict from snap instead of nextSnap.");
+			}
+		} else if (oldPlayerState.commandTime < cg.predictedPlayerState.commandTime && oldPlayerState.commandTime >= oldestCmd.serverTime) {
+			cg.predictedPlayerState = oldPlayerState;
+			//cg.physicsTime = cg.snap->serverTime; // uh can i make this work? idk. but for purposes of strafehelper it hopefully wont hurt us too much if this is wrong
+			doingStrafeHelperExtraPredict = qtrue;
+			if (cg_developer.integer > 5) {
+				Com_Printf("Doing strafehelper extra predict from old PS.");
+			}
+		}
+		else {
+			if (cg_developer.integer > 5) {
+				Com_Printf("Cannot do strafehelper extra predict. Strafehelper will be wrong.");
+			}
+		}
+
+	}
+
+restartpredict:
+	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
+	cg.teleporterPredicted = qfalse;	// teleporter was predicted so ignore areamask
+
 
 	if (haveAntiLoopStats) {
 		cg.antiLoopLastCommandTime = cg.predictedPlayerState.commandTime;
@@ -1062,7 +1110,6 @@ void CG_PredictPlayerState( void ) {
 	moved = qfalse;
 	lastCmdWasWrongFps = qfalse;
 	for ( cmdNum = MAX(current - REAL_CMD_BACKUP + 1,0) ; cmdNum <= (current+1) ; cmdNum++ ) {
-
 		if (cmdNum > current) {
 
 			preSpecialPredictPlayerState = *cg_pmove.ps;
@@ -1123,6 +1170,9 @@ void CG_PredictPlayerState( void ) {
 		// don't do anything if the time is before the snapshot player time
 		if ( cg_pmove.cmd.serverTime <= cg.predictedPlayerState.commandTime ) {
 			oldButtons = cg_pmove.cmd.buttons;
+			if (cg_pmove.cmd.serverTime == cg.predictedPlayerState.commandTime && cmdNum < current) {
+				cg.strafehelperPredictedPlayerState = cg.predictedPlayerState; 
+			}
 			continue;
 		}
 
@@ -1251,6 +1301,21 @@ void CG_PredictPlayerState( void ) {
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
 
+		if (cmdNum == (current - 1)) {
+			cg.strafehelperPredictedPlayerState = cg.predictedPlayerState; // strafehelper must work with previous ps to see whats rly going on
+		}
+		else if (cmdNum == current) {
+			// need velociity from before but vieiwangles from after (cuz they get set from usercmd during pmove)
+			VectorCopy(cg.predictedPlayerState.viewangles,cg.strafehelperPredictedPlayerState.viewangles);
+		}
+
+		if (doingStrafeHelperExtraPredict && cg.predictedPlayerState.commandTime == extraPredictRestorePs->commandTime) {
+			cg.predictedPlayerState = *extraPredictRestorePs;
+			cg.physicsTime = extraPredictRestorePhysicsTime;
+			cg.antiLoop = extraPredictRestoreAntiloop;
+			goto restartpredict;
+		}
+
 		if (cmdNum > current) {
 			// We only want the new positions from the special predict, leave animations alone to avoid misprediction glitches.
 			cg_pmove.ps->legsAnim = preSpecialPredictPlayerState.legsAnim;
@@ -1272,10 +1337,10 @@ void CG_PredictPlayerState( void ) {
 		return;
 	}
 
-	if (cg_optimizedPredict.integer) {
-		// save origin before CG_AdjustPositionForMover
-		VectorCopy(cg.predictedPlayerState.origin, cg.predictedPlayerOrigin);
-	}
+	//if (cg_optimizedPredict.integer) {
+	//	// save origin before CG_AdjustPositionForMover
+	//	VectorCopy(cg.predictedPlayerState.origin, cg.predictedPlayerOrigin);
+	//}
 
 	// adjust for the movement of the groundentity
 	CG_AdjustPositionForMover( cg.predictedPlayerState.origin, 

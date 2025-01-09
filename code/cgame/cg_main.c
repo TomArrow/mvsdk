@@ -697,7 +697,7 @@ vmCvar_t 	cg_forceMyModel;
 vmCvar_t	cg_paused;
 vmCvar_t	cg_blood;
 vmCvar_t	cg_predictItems;
-vmCvar_t	cg_optimizedPredict;
+//vmCvar_t	cg_optimizedPredict;
 vmCvar_t	cg_deferPlayers;
 vmCvar_t	cg_deferPlayersDebug;
 vmCvar_t	cg_drawTeamOverlay;
@@ -1032,7 +1032,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_forceModel, "cg_forceModel", "0", CVAR_ARCHIVE  },
 	{ &cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE  },
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
-	{ &cg_optimizedPredict, "cg_optimizedPredict", "0", CVAR_ARCHIVE },
+	//{ &cg_optimizedPredict, "cg_optimizedPredict", "0", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayersDebug, "cg_deferPlayersDebug", "0", CVAR_TEMP },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
