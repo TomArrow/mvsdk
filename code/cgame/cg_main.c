@@ -584,6 +584,11 @@ vmCvar_t	cg_strafeHelperLineWidth;
 vmCvar_t	cg_strafeHelperActiveColor;
 vmCvar_t	cg_strafeHelperInactiveAlpha;
 
+vmCvar_t	cg_realAccelPositiveColor;
+vmCvar_t	cg_realAccelNegativeColor;
+vmCvar_t	cg_realAccelScale;
+vmCvar_t	cg_realAccelDynScale;
+
 vmCvar_t	cg_strafeHelperOffset;
 vmCvar_t	cg_strafeHelper_FPS;
 vmCvar_t	cg_strafeHelper_DemoFPS;
@@ -940,6 +945,11 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_strafeHelperLineWidth, "cg_strafeHelperLineWidth", "1", CVAR_ARCHIVE },
 	{ &cg_strafeHelperActiveColor, "cg_strafeHelperActiveColor", "0 255 0 200", CVAR_ARCHIVE },
 	{ &cg_strafeHelperInactiveAlpha, "cg_strafeHelperInactiveAlpha", "200", CVAR_ARCHIVE },
+
+	{ &cg_realAccelPositiveColor, "cg_realAccelPositiveColor", "0 1 0 0.5", CVAR_ARCHIVE },
+	{ &cg_realAccelNegativeColor, "cg_realAccelNegativeColor", "1 0 0 0.1", CVAR_ARCHIVE },
+	{ &cg_realAccelScale, "cg_realAccelScale", "1.0", CVAR_ARCHIVE },
+	{ &cg_realAccelDynScale, "cg_realAccelDynScale", "0.5", CVAR_ARCHIVE },
 
 	{ &cg_strafeHelperOffset, "cg_strafeHelperOffset", "75", CVAR_ARCHIVE },
 	{ &cg_strafeHelper_FPS, "cg_strafeHelper_FPS", "0", CVAR_ARCHIVE },

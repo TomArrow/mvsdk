@@ -1769,6 +1769,11 @@ extern	vmCvar_t		cg_strafeHelperLineWidth;
 extern	vmCvar_t		cg_strafeHelperActiveColor;
 extern	vmCvar_t		cg_strafeHelperInactiveAlpha;
 
+extern	vmCvar_t		cg_realAccelPositiveColor;
+extern	vmCvar_t		cg_realAccelNegativeColor;
+extern	vmCvar_t		cg_realAccelScale;
+extern	vmCvar_t		cg_realAccelDynScale;
+
 extern	vmCvar_t		cg_strafeHelperOffset;
 extern	vmCvar_t		cg_strafeHelper_FPS;
 extern	vmCvar_t		cg_strafeHelper_DemoFPS;

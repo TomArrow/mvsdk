@@ -7457,8 +7457,12 @@ static void CG_RealAccelHelper() {
 	float angleXStep, angleXStepHalf; // how much we have to move X pos per step
 	float vDelta;
 	float hereAccel;
-	const vec4_t losing = { 1.0, 0.0, 0.0, 0.5f };
-	const vec4_t gaining = { 0.0, 1.0, 0.0, 0.5f };
+	vec4_t losingParsed;
+	vec4_t gainingParsed;
+	const vec4_t losingDefault = { 1.0, 0.0, 0.0, 0.5f };
+	const vec4_t gainingDefault = { 0.0, 1.0, 0.0, 0.5f };
+	vec_t* losing = losingDefault;
+	vec_t* gaining = gainingDefault;
 	float mid = (float)cgs.screenHeight / 2.0f;
 	qboolean snap = qtrue;
 	qboolean q2Snap = qfalse;
@@ -7468,6 +7472,7 @@ static void CG_RealAccelHelper() {
 	float frictionFactor;
 	float tmp;
 	int style = MV_JK2;
+	const char* t;
 
 	if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime)) {
 		return; //No cg.snap causes this to return.
@@ -7497,6 +7502,28 @@ static void CG_RealAccelHelper() {
 
 	if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed - 1))
 		return;
+
+
+	t = cg_realAccelPositiveColor.string;
+	gainingParsed[0] = atof(COM_Parse(&t));
+	gainingParsed[1] = atof(COM_Parse(&t));
+	gainingParsed[2] = atof(COM_Parse(&t));
+	gainingParsed[3] = atof(COM_Parse(&t));
+
+	t = cg_realAccelNegativeColor.string;
+	losingParsed[0] = atof(COM_Parse(&t));
+	losingParsed[1] = atof(COM_Parse(&t));
+	losingParsed[2] = atof(COM_Parse(&t));
+	losingParsed[3] = atof(COM_Parse(&t));
+
+	if (gainingParsed[3]) {
+		// if not the case, maybe wrongly entered
+		gaining = gainingParsed;
+	}
+	if (losingParsed[3]) {
+		// if not the case, maybe wrongly entered
+		losing = losingParsed;
+	}
 
 	while (angleStep < pixelAngleWidth) {
 		angleIncrement *= 2;
@@ -7562,6 +7589,7 @@ static void CG_RealAccelHelper() {
 		}
 
 		vDelta /= hereAccel*(float)referenceFrameTime * cg.strafehelperPredictedPlayerState.speed *0.0001f;
+		vDelta *= cg_realAccelScale.value;
 		if (style == MV_SICKO) {
 			vDelta /= 200.0f;
 		}
@@ -7570,7 +7598,7 @@ static void CG_RealAccelHelper() {
 		}
 		if (currentSpeed > cg.strafehelperPredictedPlayerState.speed) {
 			tmp = vDelta * currentSpeed / cg.strafehelperPredictedPlayerState.speed;
-			vDelta = vDelta * 0.5f + tmp * 0.5f;
+			vDelta = vDelta * (1.0f- cg_realAccelDynScale.value)+ tmp * cg_realAccelDynScale.value;
 		}
 
 		CG_DrawPic(cgs.screenWidth-x- angleXStepHalf, mid - vDelta,
