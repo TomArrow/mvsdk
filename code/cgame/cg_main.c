@@ -947,7 +947,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_strafeHelperInactiveAlpha, "cg_strafeHelperInactiveAlpha", "200", CVAR_ARCHIVE },
 
 	{ &cg_realAccelPositiveColor, "cg_realAccelPositiveColor", "0 1 0 0.5", CVAR_ARCHIVE },
-	{ &cg_realAccelNegativeColor, "cg_realAccelNegativeColor", "1 0 0 0.1", CVAR_ARCHIVE },
+	{ &cg_realAccelNegativeColor, "cg_realAccelNegativeColor", "1 0 0 0.2", CVAR_ARCHIVE },
 	{ &cg_realAccelScale, "cg_realAccelScale", "1.0", CVAR_ARCHIVE },
 	{ &cg_realAccelDynScale, "cg_realAccelDynScale", "0.5", CVAR_ARCHIVE },
 
