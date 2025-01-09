@@ -14,6 +14,7 @@ qboolean CG_CalcMuzzlePoint( int entityNum, vec3_t muzzle );
 static void CG_CalculateSpeed(centity_t *cent); //jk2pro.
 static void CG_MovementKeys(centity_t *cent);
 static void CG_Speedometer(void); //jk2pro
+static void CG_RealAccelHelper(); //tommyternal :)
 static void CG_StrafeHelper(centity_t *cent); //jk2pro
 static void CG_DrawAccelMeter(void); //jk2pro
 static void CG_DrawForceMeter(void);  //tommyternal :)
@@ -46,6 +47,7 @@ static void CG_DrawAccelMiss(); //tommyternal :)
 #define SHELPER_ACCELMETER		(1<<12)
 #define SHELPER_WEZE			(1<<13)
 #define SHELPER_CROSSHAIR		(1<<14)
+#define SHELPER_REALACCEL		(1<<15)
 
 #define SPEEDOMETER_ENABLE			(1<<0)
 #define SPEEDOMETER_GROUNDSPEED		(1<<1)
@@ -1308,6 +1310,10 @@ void CG_DrawHUD(centity_t	*cent)
 
 	if (cg_snapHud.integer)
 		CG_DrawSnapHud();
+
+	if (cg_strafeHelper.integer & SHELPER_REALACCEL) {
+		CG_RealAccelHelper();
+	}
 
 	if (cg_strafeHelper.integer)
 		CG_StrafeHelper(cent);
@@ -5668,6 +5674,13 @@ static void CG_Draw2D( void ) {
 					CG_DrawVerticalSpeed();
 			}
 
+			if (cg_snapHud.integer)
+				CG_DrawSnapHud();
+
+			if (cg_strafeHelper.integer & SHELPER_REALACCEL) {
+				CG_RealAccelHelper();
+			}
+
 			if (cg_strafeHelper.integer)
 				CG_StrafeHelper(cent);
 
@@ -7246,6 +7259,312 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 	}
 }
 
+static qboolean CG_GetStrafehelperCmdAndFrametime(usercmd_t* cmd, int* referenceFrameTime) {
+	*referenceFrameTime = cg.frametime;
+	static int referenceFrameTimeOld;
+	int currentCmdNumber;
+	usercmd_t oldcmd = { 0 };
+	int moveDir;
+	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
+		currentCmdNumber = trap_GetCurrentCmdNumber();
+		trap_GetUserCmd(currentCmdNumber, cmd);
+		if ((cg_strafeHelper_RealPhysicsLines.integer || cg_com_physicsFps.integer) && currentCmdNumber > 1) {
+
+			trap_GetUserCmd(currentCmdNumber - 1, &oldcmd);
+			if (cmd->serverTime != oldcmd.serverTime) {
+				*referenceFrameTime = cmd->serverTime - oldcmd.serverTime;
+				referenceFrameTimeOld = *referenceFrameTime;
+			}
+			else {
+				*referenceFrameTime = referenceFrameTimeOld;
+			}
+		}
+	}
+	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+		BG_StatsToUserCmd(stats, cmd);
+		if (cg_strafeHelper_RealPhysicsLines.integer) {
+			int statsMsec = stats->pastFpsUnionArray[(stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1)];
+			*referenceFrameTime = statsMsec;
+		}
+	}
+	else if (cg.snap) {
+		moveDir = cg.snap->ps.movementDir;
+		switch (moveDir) {
+		case 0: // W
+			cmd->forwardmove = 1; break;
+		case 1: // WA
+			cmd->forwardmove = 1; cmd->rightmove = -1; break;
+		case 2: // A
+			cmd->rightmove = -1;	break;
+		case 3: // AS
+			cmd->rightmove = -1;	cmd->forwardmove = -1; break;
+		case 4: // S
+			cmd->forwardmove = -1; break;
+		case 5: // SD
+			cmd->forwardmove = -1; cmd->rightmove = 1; break;
+		case 6: // D
+			cmd->rightmove = 1; break;
+		case 7: // DW
+			cmd->rightmove = 1; cmd->forwardmove = 1;	break;
+		default:
+			break;
+		}
+		if (cg.snap->ps.pm_flags & PMF_JUMP_HELD)
+			cmd->upmove = 1;
+	}
+	else {
+		return qfalse; //No cg.snap causes this to return.
+	}
+
+	return qtrue;
+}
+
+
+static void CG_RealAccel_SickoAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel) {
+	// q2 style
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+	float		baseInc, accel;
+
+	VectorCopy(velocity, velocityOut);
+
+	currentspeed = DotProduct(pm->ps->velocity, wishdir);
+	addspeed = wishspeed - currentspeed;
+	if (addspeed <= 0) {
+		return;
+	}
+	baseInc = frametime * wishspeed;
+
+	accel = addspeed / baseInc;
+
+	if (accel > maxAccel) {
+		accel = maxAccel;
+	}
+	else if (accel < baseAccel) {
+		accel = baseAccel;
+	}
+
+	accelspeed = accel * baseInc;
+	if (accelspeed > addspeed) {
+		accelspeed = addspeed;
+	}
+
+	for (i = 0; i < 3; i++) {
+		velocityOut[i] += accelspeed * wishdir[i];
+	}
+}
+static void CG_RealAccel_QuaJKAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel, float maxAccelWishSpeed) {
+	// q2 style
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+	float		accel;
+	float		f, finalWishSpeed;
+	float		accelAddSlow, accelAddHigh;
+	float		neededSpeedSlow, neededSpeedHigh;
+
+	VectorCopy(velocity,velocityOut);
+
+	currentspeed = DotProduct(pm->ps->velocity, wishdir);
+
+	if (currentspeed >= wishspeed) return;
+
+	accelAddSlow = baseAccel * frametime * wishspeed;
+	accelAddHigh = maxAccel * frametime * maxAccelWishSpeed;
+
+	neededSpeedSlow = wishspeed - accelAddSlow;
+	neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
+
+	f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+
+	if (f < 0) f = 0;
+	else if (f > 1) f = 1;
+
+	accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
+	finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
+
+	accelspeed = accel * frametime * finalWishSpeed;
+
+	addspeed = finalWishSpeed - currentspeed;
+	if (addspeed <= 0) {
+		return;
+	}
+
+	if (accelspeed > addspeed) {
+		accelspeed = addspeed;
+	}
+
+	for (i = 0; i < 3; i++) {
+		velocityOut[i] += accelspeed * wishdir[i];
+	}
+}
+
+static void CG_RealAccel_Accel(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float accel) {
+	// q2 style
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+
+	VectorCopy(velocity, velocityOut);
+
+	currentspeed = DotProduct(velocity, wishdir);
+	addspeed = wishspeed - currentspeed;
+
+	accelspeed = accel * frametime * wishspeed;
+
+	//pm->accelMiss = (addspeed - accelspeed) / accelspeed;
+	//pm->wishSpeed = wishspeed;
+
+	if (addspeed <= 0) {
+		return;
+	}
+	if (accelspeed > addspeed) {
+		accelspeed = addspeed;
+	}
+
+	for (i = 0; i < 3; i++) {
+		velocityOut[i] += accelspeed * wishdir[i];
+	}
+}
+
+static void CG_RealAccelHelper() {
+
+	int referenceFrameTime;
+	float frametime;
+	qboolean onGround;
+	usercmd_t cmd = { 0 };
+	int startAngle, endAngle;
+	float angleStep = 360.0f / 65536.0f;
+	float pixelAngleWidth = cg_fov.value/(float)cgs.glconfig.vidWidth;
+	int angleIncrement = 1;
+	int i;
+	vec3_t currentVelVec;
+	vec3_t newVelVec;
+	float currentSpeed;
+	float iAngle = 0;
+	float angleRange = cg_fov.value; // +2.0f for a bit of buffer so the sides dont get cut off
+	float x,oldX=-1.0f;
+	float angleXStep, angleXStepHalf; // how much we have to move X pos per step
+	float vDelta;
+	float hereAccel;
+	const vec4_t losing = { 1.0, 0.0, 0.0, 0.5f };
+	const vec4_t gaining = { 0.0, 1.0, 0.0, 0.5f };
+	float mid = (float)cgs.screenHeight / 2.0f;
+	qboolean snap = qtrue;
+	qboolean q2Snap = qfalse;
+	vec3_t accelOffsetDir = { 0 };
+	vec3_t accelOffsetAngles;
+	float accelOffsetAngle;
+	float frictionFactor;
+	float tmp;
+	int style = MV_JK2;
+
+	if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime)) {
+		return; //No cg.snap causes this to return.
+	}
+
+	VectorCopy(cg.predictedPlayerState.velocity, currentVelVec);
+
+	frametime = (float)referenceFrameTime * 0.001f;
+
+	onGround = (qboolean)(cg.snap->ps.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
+
+	if (onGround) {
+		frictionFactor = (1.0f - 6.0f * (frametime));
+		VectorScale(currentVelVec, frictionFactor, currentVelVec);
+	}
+
+	currentSpeed = XYSPEED(currentVelVec);
+
+	if (currentSpeed < (cg.predictedPlayerState.basespeed - 1))
+		return;
+
+	while (angleStep < pixelAngleWidth) {
+		angleIncrement *= 2;
+		angleStep *= 2.0f;
+	}
+
+	angleXStep = ((float)cgs.screenWidth / cg_fov.value)*angleStep;
+	angleXStepHalf = angleXStep * 0.5f;
+
+	accelOffsetDir[0] = cmd.forwardmove;
+	accelOffsetDir[1] = cmd.rightmove;
+
+	VectorNormalize(accelOffsetDir);
+
+	vectoangles(accelOffsetDir, accelOffsetAngles);
+	accelOffsetAngle = accelOffsetAngles[YAW];
+
+	startAngle = ANGLE2SHORT(AngleNormalize360(cg.predictedPlayerState.viewangles[YAW]- accelOffsetAngle - cg_fov.value/2));
+
+	if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
+		style = cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+		if (cg.predictedPlayerState.stats[STAT_MSECRESTRICT] == -2) {
+			snap = qfalse;
+		}
+		else if (style == MV_Q2) {
+			q2Snap = qtrue;
+			snap = qfalse;
+		}
+	}
+	else if (cg_pmove_float.integer) {
+		snap = qfalse;
+	}
+
+
+	hereAccel = onGround ? 10.0f : 1.0f;
+	for (iAngle = 0.0f, i = startAngle, x =0; iAngle < angleRange; i = ((i + angleIncrement) & 65535), iAngle += angleStep, x+= angleXStep) {
+		switch (style) {
+		case MV_QUAJK:
+			CG_RealAccel_QuaJKAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.predictedPlayerState.speed, frametime, hereAccel,70.0f,30.0f);
+			break;
+		case MV_SICKO:
+			CG_RealAccel_SickoAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.predictedPlayerState.speed, frametime, hereAccel,200.0f);
+			break;
+		default:
+			CG_RealAccel_Accel(currentVelVec, newVelVec, angleVectors[i], cg.predictedPlayerState.speed, frametime, hereAccel);
+			break;
+		}
+		if (snap) {
+			trap_SnapVector(newVelVec);
+		}
+		else if (q2Snap) {
+			newVelVec[0] = 0.125f * (float)(int)(newVelVec[0]* 8.0f);
+			newVelVec[1] = 0.125f * (float)(int)(newVelVec[1]* 8.0f);
+			newVelVec[2] = 0.125f * (float)(int)(newVelVec[2]* 8.0f);
+		}
+		vDelta = XYSPEED(newVelVec) - currentSpeed;
+
+		if (vDelta == 0) {
+			continue;
+		}
+		else if (vDelta < 0) {
+			trap_R_SetColor(losing);
+		}
+		else {
+			trap_R_SetColor(gaining);
+		}
+
+		vDelta /= hereAccel*(float)referenceFrameTime * cg.predictedPlayerState.speed *0.0001f;
+		if (style == MV_SICKO) {
+			vDelta /= 200.0f;
+		}
+		else if (style == MV_QUAJK) {
+			vDelta /= 2.0f;
+		}
+		if (currentSpeed > cg.predictedPlayerState.speed) {
+			tmp = vDelta * currentSpeed / cg.predictedPlayerState.speed;
+			vDelta = vDelta * 0.5f + tmp * 0.5f;
+		}
+
+		CG_DrawPic(cgs.screenWidth-x- angleXStepHalf, mid - vDelta,
+			angleXStep, vDelta,
+			cgs.media.whiteShader);
+
+		oldX = x;
+	}
+	trap_R_SetColor(NULL);
+}
+
 static void CG_StrafeHelper(centity_t *cent)
 {
 	vec_t * velocity = cg.predictedPlayerState.velocity;
@@ -7253,69 +7572,15 @@ static void CG_StrafeHelper(centity_t *cent)
 	const float currentSpeed = cg.currentSpeed;
 	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.predictedPlayerState.speed;
 	const int moveStyle = PM_GetMovePhysics();
-	int moveDir;
-	int currentCmdNumber;
 	int referenceFrameTime;
-	static int referenceFrameTimeOld;
 	qboolean onGround;
 	usercmd_t cmd = { 0 };
-	usercmd_t oldcmd = { 0 };
 
 	//if (moveStyle == MV_SIEGE)
 	//	return; //no strafe in siege
 
 
-	referenceFrameTime = cg.frametime;
-
-	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
-		currentCmdNumber = trap_GetCurrentCmdNumber();
-		trap_GetUserCmd(currentCmdNumber, &cmd);
-		if((cg_strafeHelper_RealPhysicsLines.integer || cg_com_physicsFps.integer) && currentCmdNumber > 1){
-
-			trap_GetUserCmd(currentCmdNumber-1, &oldcmd);
-			if (cmd.serverTime != oldcmd.serverTime) {
-				referenceFrameTime = cmd.serverTime - oldcmd.serverTime;
-				referenceFrameTimeOld = referenceFrameTime;
-			}
-			else {
-				referenceFrameTime = referenceFrameTimeOld;
-			}
-		}
-	}
-	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
-		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
-		BG_StatsToUserCmd(stats, &cmd);
-		if (cg_strafeHelper_RealPhysicsLines.integer) {
-			int statsMsec = stats->pastFpsUnionArray[(stats->fireflag-1)&(PLAYERSTATS_PAST_MSEC -1)];
-			referenceFrameTime = statsMsec;
-		}
-	}
-	else if (cg.snap) {
-		moveDir = cg.snap->ps.movementDir;
-		switch (moveDir) {
-		case 0: // W
-			cmd.forwardmove = 1; break;
-		case 1: // WA
-			cmd.forwardmove = 1; cmd.rightmove = -1; break;
-		case 2: // A
-			cmd.rightmove = -1;	break;
-		case 3: // AS
-			cmd.rightmove = -1;	cmd.forwardmove = -1; break;
-		case 4: // S
-			cmd.forwardmove = -1; break;
-		case 5: // SD
-			cmd.forwardmove = -1; cmd.rightmove = 1; break;
-		case 6: // D
-			cmd.rightmove = 1; break;
-		case 7: // DW
-			cmd.rightmove = 1; cmd.forwardmove = 1;	break;
-		default:
-			break;
-		}
-		if (cg.snap->ps.pm_flags & PMF_JUMP_HELD)
-			cmd.upmove = 1;
-	}
-	else {
+	if(!CG_GetStrafehelperCmdAndFrametime(&cmd,&referenceFrameTime)){
 		return; //No cg.snap causes this to return.
 	}
 

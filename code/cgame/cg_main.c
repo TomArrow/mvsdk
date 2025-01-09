@@ -13,6 +13,8 @@ displayContextDef_t cgDC;
 	#include "cg_lights.h"
 #endif
 
+vec3_t angleVectors[65536];
+
 /*
 Ghoul2 Insert Start
 */
@@ -3008,6 +3010,23 @@ void MV_LoadSettings( const char *info )
 }
 
 
+void CG_InitAngleVectorsLUT() { // for realaccel strafehelper
+	int i;
+	vec3_t angles = { 0,0,0 };
+	if (cg_developer.integer) {
+		Com_Printf("Initializing angle vector LUT.\n");
+	}
+
+	for (i = 0; i < 65536; i++) {
+		angles[YAW] = SHORT2ANGLE(i);
+		AngleVectors(angles, angleVectors[i], NULL, NULL);
+	}
+
+	if (cg_developer.integer) {
+		Com_Printf("Initializing angle vector LUT done.\n");
+	}
+}
+
 /*
 =================
 CG_Init
@@ -3084,6 +3103,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 Ghoul2 Insert Start
 */
 
+	CG_InitAngleVectorsLUT();
 //	memset( cg_entities, 0, sizeof( cg_entities ) );
 	CG_Init_CGents();
 // this is a No-No now we have stl vector classes in here.

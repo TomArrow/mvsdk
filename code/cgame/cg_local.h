@@ -118,7 +118,7 @@
 #define RESTRICT_DO					(1<<9)	//force plugin for racers
 #define RESTRICT_ANGLE				(1<<10)	//force plugin for racers
 
-
+extern vec3_t angleVectors[65536];
 extern int dueltypes[MAX_CLIENTS];//jk2PRO - Clientside - Fullforce Duels
 
 typedef enum {

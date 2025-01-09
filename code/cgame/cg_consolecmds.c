@@ -701,7 +701,8 @@ static bitInfo_T strafeTweaks[] = {
 	{ "Center" },//11
 	{ "Accel bar" },//12
 	{ "Weze style" },//13
-	{ "Line Crosshair" }//13
+	{ "Line Crosshair" },//14
+	{ "RealAccel" }//15
 };
 static const int MAX_STRAFEHELPER_TWEAKS = ARRAY_LEN(strafeTweaks);
 
