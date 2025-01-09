@@ -2056,9 +2056,14 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 
 
 void BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es) {
-
-	es->constantLight = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
-	es->forcePowersActive = ((byte)ucmd->forwardmove << 24) | ((byte)ucmd->rightmove << 16) | ((byte)ucmd->upmove << 8);
+	byte fw=(byte)ucmd->forwardmove, rt = (byte)ucmd->rightmove, up = (byte)ucmd->upmove;
+	unsigned int fpa = (fw << 24) | (rt << 16) | (up << 8); // few extra steps here because qvm behaves weird
+	unsigned int cl = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
+	//es->constantLight = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
+	es->constantLight = (int)cl;// few extra steps here because qvm behaves weird
+	
+	//es->forcePowersActive = ((byte)ucmd->forwardmove << 24) | ((byte)ucmd->rightmove << 16) | ((byte)ucmd->upmove << 8); // few extra steps here because qvm behaves weird
+	es->forcePowersActive = (int)fpa;
 
 	// do we need angles? might be a bit wasteful.
 	VectorCopy(ucmd->angles, es->apos.trBase);
@@ -2068,14 +2073,14 @@ void BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es) {
 
 void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
 
-	ucmd->weapon = es->constantLight >> 24;
-	ucmd->forcesel = (es->constantLight >> 16) & 0xff;
-	ucmd->invensel = (es->constantLight >> 8) & 0xff;
-	ucmd->generic_cmd = (es->constantLight) & 0xff;
+	ucmd->weapon = ((unsigned int)es->constantLight) >> 24;
+	ucmd->forcesel = (((unsigned int)es->constantLight) >> 16) & 0xff;
+	ucmd->invensel = (((unsigned int)es->constantLight) >> 8) & 0xff;
+	ucmd->generic_cmd = (((unsigned int)es->constantLight)) & 0xff;
 
-	ucmd->forwardmove = (signed char)(es->forcePowersActive >> 24);
-	ucmd->rightmove = (signed char)((es->forcePowersActive >> 16) & 0xff);
-	ucmd->upmove = (signed char)((es->forcePowersActive >> 8) & 0xff);
+	ucmd->forwardmove = (signed char)(((unsigned int)es->forcePowersActive) >> 24);
+	ucmd->rightmove = (signed char)((((unsigned int)es->forcePowersActive) >> 16) & 0xff);
+	ucmd->upmove = (signed char)((((unsigned int)es->forcePowersActive) >> 8) & 0xff);
 
 	// do we need angles? might be a bit wasteful.
 	VectorCopy(es->apos.trBase, ucmd->angles);

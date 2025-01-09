@@ -479,6 +479,97 @@ void	Svcmd_ForceTeam_f( void ) {
 	SetTeam( &g_entities[cl - level.clients], str );
 }
 
+/*
+===================
+Svcmd_NumBehavior_f
+
+writes a debug file about number behavior things to compare qvm and libs
+===================
+*/
+void	Svcmd_NumBehavior_f( void ) {
+	gclient_t		*cl;
+	char			str[MAX_TOKEN_CHARS];
+	fileHandle_t	f;
+	int				i;
+	signed char		sb;
+	byte			b;
+	int				intn;
+	unsigned int	uintn;
+	float			fValue;
+
+	if (trap_Argc() < 2) {
+		Com_Printf("specify a filename.");
+		return;
+	}
+
+	trap_Argv(1, str, sizeof(str));
+
+	trap_FS_FOpenFile(str, &f, FS_WRITE);
+
+	if (!f) {
+		Com_Printf("unable to open file for writing: %s.",str);
+		return;
+	}
+
+#ifdef Q3_VM
+	Com_sprintf(str, sizeof(str), "\Svcmd_NumBehavior_f (VM)\n");
+	trap_FS_Write(str, strlen(str), f);
+#else
+	Com_sprintf(str, sizeof(str), "\Svcmd_NumBehavior_f\n");
+	trap_FS_Write(str, strlen(str), f);
+#endif
+
+	Com_sprintf(str, sizeof(str), "\nangle2short\n");
+	trap_FS_Write(str, strlen(str), f);
+
+	for (i = -100000; i < 100000; i++) {
+		fValue = SHORT2ANGLE(i);
+		Com_sprintf(str, sizeof(str), "%d angle2short %d, float angle %f, (from float) %d\n",i,i & 65535, fValue, ANGLE2SHORT(fValue));
+		trap_FS_Write(str,strlen(str),f);
+	}
+
+	Com_sprintf(str, sizeof(str), "\nsbyte2byte\n");
+	trap_FS_Write(str, strlen(str), f);
+
+
+	for (i = -128; i <= 127; i++) {
+		sb = i;
+		intn = (int)((byte)sb << 24);
+		uintn = (unsigned int)intn;
+		Com_sprintf(str, sizeof(str), "%d (%d) sbyte 2 byte %d, bytecast and << 24 %d to int, bytecast and << 24 %u to uint, bytecast and << 24 %u to int and then to uint, same and >> 24 again %u, same and back to sbyte %d, int >> 24 %d, and cast to sbyte %d\n", i,(int)sb,(int)(byte)sb, intn,(unsigned int)( (byte)sb << 24), uintn, (uintn >> 24), (int)(signed char)(uintn >> 24), intn>>24, (int)(signed char)(intn>>24));
+		trap_FS_Write(str, strlen(str), f);
+	}
+
+	Com_sprintf(str, sizeof(str), "\nsbyte2byte (using unsigned char)\n");
+	trap_FS_Write(str, strlen(str), f);
+
+
+	for (i = -128; i <= 127; i++) {
+		sb = i;
+		intn = (int)((unsigned char)sb << 24);
+		uintn = (unsigned int)intn;
+		Com_sprintf(str, sizeof(str), "%d (%d) sbyte 2 byte %d, bytecast and << 24 %d to int, bytecast and << 24 %u to uint, bytecast and << 24 %u to int and then to uint, same and >> 24 again %u, same and back to sbyte %d, int >> 24 %d, and cast to sbyte %d\n", i,(int)sb,(int)(unsigned char)sb, intn,(unsigned int)( (unsigned char)sb << 24), uintn, (uintn >> 24), (int)(signed char)(uintn >> 24), intn>>24, (int)(signed char)(intn>>24));
+		trap_FS_Write(str, strlen(str), f);
+	}
+
+	Com_sprintf(str, sizeof(str), "\nsbyte2byte (realvar)\n");
+	trap_FS_Write(str, strlen(str), f);
+
+
+	for (i = -128; i <= 127; i++) {
+		sb = i;
+		b = (byte)sb;
+		intn = (int)(b << 24);
+		uintn = (unsigned int)intn;
+		Com_sprintf(str, sizeof(str), "%d (%d) sbyte 2 byte %d, bytecast and << 24 %d to int, bytecast and << 24 %u to uint, bytecast and << 24 %u to int and then to uint, same and >> 24 again %u, same and back to sbyte %d, int >> 24 %d, and cast to sbyte %d\n", i,(int)sb,(int)b, intn,(unsigned int)( b << 24), uintn, (uintn >> 24), (int)(signed char)(uintn >> 24), intn>>24, (int)(signed char)(intn>>24));
+		trap_FS_Write(str, strlen(str), f);
+	}
+
+	Com_Printf("done.");
+
+	trap_FS_FCloseFile(f);
+}
+
 void Svcmd_ResetScores_f(void) {
 	int i;
 	//gclient_t	*cl;
@@ -567,6 +658,11 @@ qboolean	ConsoleCommand( void ) {
 
 	if (Q_stricmp (cmd, "game_memory") == 0) {
 		Svcmd_GameMem_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "numbehavior") == 0) {
+		Svcmd_NumBehavior_f();
 		return qtrue;
 	}
 

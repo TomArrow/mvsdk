@@ -6373,7 +6373,7 @@ static void CG_MovementKeys(centity_t *cent)
 	//if (!pm)
 	//return;//idk
 
-	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback)
+	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback && cg_movementKeys.integer > 0)
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
 	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
 		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;

@@ -1217,6 +1217,53 @@ static void AddInt( char **buf_p, char * const buf_end, int val, int width, int 
 	*buf_p = buf;
 }
 
+static void AddUInt( char **buf_p, char * const buf_end, unsigned int val, int width, int flags ) {
+	char	text[32];
+	int		digits;
+	unsigned int		div;
+	char	*buf;
+
+	digits = 0;
+
+	do {
+		div = val / 10;
+		text[digits++] = '0' + (val - div * 10);
+		val = div;
+	} while ( val );
+
+
+	buf = *buf_p;
+
+	if( !( flags & LADJUST ) ) {
+		while ( digits < width ) {
+			if ( buf < buf_end ) {
+				*buf = ( flags & ZEROPAD ) ? '0' : ' ';
+			}
+			buf++;
+			width--;
+		}
+	}
+
+	while ( digits-- ) {
+		if ( buf < buf_end ) {
+			*buf = text[digits];
+		}
+		buf++;
+		width--;
+	}
+
+	if( flags & LADJUST ) {
+		while ( width-- ) {
+			if ( buf < buf_end ) {
+				*buf = ( flags & ZEROPAD ) ? '0' : ' ';
+			}
+			buf++;
+		}
+	}
+
+	*buf_p = buf;
+}
+
 static void AddFloat( char **buf_p, char * const buf_end, float fval, int width, int prec, int flags ) {
 	char	text[32];
 	int		digits;
@@ -1441,6 +1488,9 @@ reswitch:
 		case 'd':
 		case 'i':
 			AddInt( &buf_p, buf_end, va_arg(ap, int), width, flags );
+			break;
+		case 'u':
+			AddUInt( &buf_p, buf_end, va_arg(ap, unsigned int), width, flags );
 			break;
 		case 'f':
 			AddFloat( &buf_p, buf_end, va_arg(ap, double), width, prec, flags );
