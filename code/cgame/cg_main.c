@@ -588,6 +588,8 @@ vmCvar_t	cg_realAccelPositiveColor;
 vmCvar_t	cg_realAccelNegativeColor;
 vmCvar_t	cg_realAccelScale;
 vmCvar_t	cg_realAccelDynScale;
+vmCvar_t	cg_realAccelSlopes;
+vmCvar_t	cg_realAccelPreFriction;
 
 vmCvar_t	cg_strafeHelperOffset;
 vmCvar_t	cg_strafeHelper_FPS;
@@ -950,6 +952,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_realAccelNegativeColor, "cg_realAccelNegativeColor", "1 0 0 0.2", CVAR_ARCHIVE },
 	{ &cg_realAccelScale, "cg_realAccelScale", "1.0", CVAR_ARCHIVE },
 	{ &cg_realAccelDynScale, "cg_realAccelDynScale", "0.5", CVAR_ARCHIVE },
+	{ &cg_realAccelSlopes, "cg_realAccelSlopes", "2", CVAR_ARCHIVE },
+	{ &cg_realAccelPreFriction, "cg_realAccelPreFriction", "0", CVAR_ARCHIVE },
 
 	{ &cg_strafeHelperOffset, "cg_strafeHelperOffset", "75", CVAR_ARCHIVE },
 	{ &cg_strafeHelper_FPS, "cg_strafeHelper_FPS", "0", CVAR_ARCHIVE },

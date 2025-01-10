@@ -1773,6 +1773,8 @@ extern	vmCvar_t		cg_realAccelPositiveColor;
 extern	vmCvar_t		cg_realAccelNegativeColor;
 extern	vmCvar_t		cg_realAccelScale;
 extern	vmCvar_t		cg_realAccelDynScale;
+extern	vmCvar_t		cg_realAccelSlopes;
+extern	vmCvar_t		cg_realAccelPreFriction;
 
 extern	vmCvar_t		cg_strafeHelperOffset;
 extern	vmCvar_t		cg_strafeHelper_FPS;

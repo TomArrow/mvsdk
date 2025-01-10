@@ -7437,13 +7437,40 @@ static void CG_RealAccel_Accel(vec3_t velocity, vec3_t velocityOut, vec3_t wishd
 	}
 }
 
+static void CG_RealAccel_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce, int runFlags) {
+	float	backoff;
+	float	change;
+	int		i;
+
+	if ((runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	{//no sliding!
+		VectorCopy(in, out);
+		return;
+	}
+
+	backoff = DotProduct(in, normal);
+
+	if (backoff < 0) {
+		backoff *= overbounce;
+	}
+	else {
+		backoff /= overbounce;
+	}
+
+	for (i = 0; i < 3; i++) {
+		change = normal[i] * backoff;
+		out[i] = in[i] - change;
+	}
+}
+float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd);
 static void CG_RealAccelHelper() {
 
 	int referenceFrameTime;
 	float frametime;
 	qboolean onGround;
 	usercmd_t cmd = { 0 };
-	int startAngle, endAngle;
+	int startAngle;
+	int frontViewAngleOffset, rightViewAngleOffset; // for complex slope calculation (2 buttons pressed)
 	float angleStep = 360.0f / 65536.0f;
 	float pixelAngleWidth = cg_fov.value/(float)cgs.glconfig.vidWidth;
 	int angleIncrement = 1;
@@ -7472,11 +7499,18 @@ static void CG_RealAccelHelper() {
 	float frictionFactor;
 	float tmp;
 	int style = MV_JK2;
+	int runFlags = 0;
 	const char* t;
+	trace_t groundTrace;
+	qboolean doingSlopes = qfalse;
+	qboolean doingComplexSlopes = qfalse;
+	int overbounce;
 
 	if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime)) {
 		return; //No cg.snap causes this to return.
 	}
+
+	overbounce = MovementOverbounceFactor(style, &cg.strafehelperPredictedPlayerState, &cmd);
 
 	if (cg.strafehelperVelocityIsInterpolated) {
 		VectorCopy(cg.strafehelperRealVel, currentVelVec); // interpolated velocities make snapping display spazz out, understandably
@@ -7493,14 +7527,69 @@ static void CG_RealAccelHelper() {
 
 	onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
 
+	memset(&groundTrace, 0, sizeof(groundTrace));
+
+	if (cg_realAccelPreFriction.integer) {
+		currentSpeed = XYSPEED(currentVelVec);
+	}
+
+
+	if (cgs.isTommyTernal && cg.strafehelperPredictedPlayerState.stats[STAT_RACEMODE]) {
+		style = cg.strafehelperPredictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+		runFlags = cg.strafehelperPredictedPlayerState.stats[STAT_RUNFLAGS];
+		if (cg.strafehelperPredictedPlayerState.stats[STAT_MSECRESTRICT] == -2) {
+			snap = qfalse;
+		}
+		else if (style == MV_Q2) {
+			q2Snap = qtrue;
+			snap = qfalse;
+		}
+	}
+	else if (cg_pmove_float.integer) {
+		snap = qfalse;
+	}
+
+
 	if (onGround) {
 		frictionFactor = (1.0f - 6.0f * (frametime));
 		VectorScale(currentVelVec, frictionFactor, currentVelVec);
+		if (cg_realAccelSlopes.integer) {
+			static const vec3_t playerMins = { -15, -15, DEFAULT_MINS_2 + 1 }; // do +1 in case there's any issues with being in solid or whatever.
+			static const vec3_t playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+			vec3_t down;
+			doingSlopes = qtrue;
+			VectorCopy(cg.strafehelperPredictedPlayerState.origin, down);
+			down[2] -= 2.0f; // doesnt really matter we already know we're on ground, just trying to see the normal
+			CG_Trace(&groundTrace, cg.strafehelperPredictedPlayerState.origin,playerMins,playerMaxs,down, cg.strafehelperPredictedPlayerState.clientNum,MASK_PLAYERSOLID);
+			if (groundTrace.startsolid || groundTrace.fraction == 1.0f) {
+				if (cg_developer.integer) { // should never happen unless freak situations?
+					Com_Printf("^3RealAccel strafehelper: Groundtrace didn't work for some reason.");
+				}
+				doingSlopes = qfalse;
+			}
+			else if (groundTrace.plane.normal[0] == 0.0f && groundTrace.plane.normal[1] == 0.0f && groundTrace.plane.normal[2] == 1.0f) {
+				// its flat ground, no need for slope calc
+				doingSlopes = qfalse;
+			}
+			else {
+				if (cmd.forwardmove && cmd.rightmove) {
+					if (runFlags & RFL_BOT && cmd.forwardmove > 0 && (cmd.buttons & BUTTON_STRAFEBOT)) {
+						cmd.rightmove = 0; // bot does this too.
+					}
+					else if(cg_realAccelSlopes.integer >= 2) {
+						doingComplexSlopes = qtrue; // we have more than 1 button pressed. which means we need to calculate an adjusted wishspeed too :/
+					}
+				}
+			}
+		}
 	}
 
-	currentSpeed = XYSPEED(currentVelVec);
+	if (!cg_realAccelPreFriction.integer) {
+		currentSpeed = XYSPEED(currentVelVec);
+	}
 
-	if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed - 1))
+	//if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed - 1))
+	if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed/2 - 1))
 		return;
 
 
@@ -7542,31 +7631,68 @@ static void CG_RealAccelHelper() {
 	accelOffsetAngle = accelOffsetAngles[YAW];
 
 	startAngle = ANGLE2SHORT(AngleNormalize360(cg.strafehelperPredictedPlayerState.viewangles[YAW]- accelOffsetAngle - cg_fov.value/2));
-
-	if (cgs.isTommyTernal && cg.strafehelperPredictedPlayerState.stats[STAT_RACEMODE]) {
-		style = cg.strafehelperPredictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-		if (cg.strafehelperPredictedPlayerState.stats[STAT_MSECRESTRICT] == -2) {
-			snap = qfalse;
-		}
-		else if (style == MV_Q2) {
-			q2Snap = qtrue;
-			snap = qfalse;
-		}
-	}
-	else if (cg_pmove_float.integer) {
-		snap = qfalse;
+	if (doingComplexSlopes) {
+		static float sign90 = 1.0f; // for debugging what the correct signs are here as i got confused somewhere along the way
+		static float signAccel = -1.0f;
+		// gotta calculate frontViewAngleOffset and rightViewAngleOffset quick
+		frontViewAngleOffset = ANGLE2SHORT(AngleNormalize360(signAccel*accelOffsetAngle));
+		rightViewAngleOffset = ANGLE2SHORT(AngleNormalize360(signAccel*accelOffsetAngle+ sign90*90.0f));
 	}
 
 
-	hereAccel = onGround ? 10.0f : 1.0f;
+	if (onGround) {
+		if (MovementIsQuake3Based(style)) {
+			hereAccel = 15.0f;
+		}
+		else {
+			hereAccel = 10.0f;
+		}
+	}
+	else {
+		hereAccel = 1.0f;
+	}
 	for (iAngle = 0.0f, i = startAngle, x =0; iAngle < angleRange; i = ((i + angleIncrement) & 65535), iAngle += angleStep, x+= angleXStep) {
 		if (!onGround && style == MV_QUAJK) {
+			if (DotProduct(currentVelVec, angleVectors[i]) < 0) {
+				hereAccel = 2.5f;
+			}
 			CG_RealAccel_QuaJKAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 70.0f, 30.0f);
 		}
 		else if (!onGround && style == MV_SICKO){
 			CG_RealAccel_SickoAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 200.0f);
 		} else{
-			CG_RealAccel_Accel(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
+			if (!doingSlopes) {
+				CG_RealAccel_Accel(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
+			}
+			else {
+				vec3_t adjustedWishdir;
+				// when we are standing on slopes, stuff becomes more complicated.
+				// cg_realAccelSlopes 0 deactivates this behavior as it has to do more calculations
+				if (!doingComplexSlopes) {
+					CG_RealAccel_ClipVelocity(angleVectors[i],groundTrace.plane.normal,adjustedWishdir,overbounce, runFlags);
+					VectorNormalize(adjustedWishdir);
+					CG_RealAccel_Accel(currentVelVec, newVelVec, adjustedWishdir, cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
+				}
+				else {
+					// we have more than 1 button pressed so it gets complicated because wishspeed gets affected...
+					int frontAngle = (i + frontViewAngleOffset) & 65535;
+					int rightAngle = (i + rightViewAngleOffset) & 65535;
+					vec3_t front, right;
+					float multiplier;
+					float adjustedWishSpeed = cg.strafehelperPredictedPlayerState.speed;
+					int j;
+					CG_RealAccel_ClipVelocity(angleVectors[frontAngle], groundTrace.plane.normal, front, overbounce, runFlags);
+					CG_RealAccel_ClipVelocity(angleVectors[rightAngle], groundTrace.plane.normal, right, overbounce, runFlags);
+					VectorNormalize(front);
+					VectorNormalize(right);
+					for (j = 0;j < 3; j++) {
+						adjustedWishdir[j] = front[j] * accelOffsetDir[0] + right[j] * accelOffsetDir[1];
+					}
+					multiplier = VectorNormalize(adjustedWishdir);
+					adjustedWishSpeed *= multiplier;
+					CG_RealAccel_Accel(currentVelVec, newVelVec, adjustedWishdir, adjustedWishSpeed, frametime, hereAccel);
+				}
+			}
 		}
 		if (snap) {
 			trap_SnapVector(newVelVec);
