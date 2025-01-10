@@ -2401,11 +2401,14 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 #define LONGESTSHORTESTQUERY "SELECT MIN(duration_ms) as fastest,runs.course,runs.subcourse FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) WHERE style = ? AND (runs.jump = mapdefaults.jump OR (mapdefaults.jump IS NULL AND runs.jump = 1)) GROUP BY runs.course,runs.subcourse ORDER BY fastest "
 #define MOSTPLAYEDQUERY "SELECT COUNT(DISTINCT userid) as playerCount, runs.course, runs.subcourse FROM runs WHERE style = ? GROUP BY runs.course, runs.subcourse ORDER BY playerCount DESC "
 #define TOPRATEDQUERY "SELECT AVG(rating) AS avgRating,COUNT(DISTINCT userid) ratingCount, course FROM mapratings WHERE style=? GROUP BY course,style ORDER BY avgRating DESC "
-#define NOTWRQUERY "SELECT runs.course,runs.subcourse,COUNT(subruns.userid) >0 AS anyruns,MIN(subruns.tmpRank) AS bestrank FROM runs \
+#define NOTWRQUERY "SELECT runs.course,runs.subcourse,COUNT(subruns.userid) >0 AS anyruns,MIN(subruns.tmpRank) AS bestrank, COUNT(DISTINCT subruns2.userid) AS playerCount, AVG(mapratings.rating) AS rating, COUNT(DISTINCT mapratings.userid) AS ratingCount, mapratings2.rating as myRating, mapratings2.rating IS NOT NULL AS haveMyRating  FROM runs \
 	LEFT JOIN runs AS subruns ON(subruns.userid = ? AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
+	LEFT JOIN runs AS subruns2 ON(subruns2.course = runs.course AND subruns2.subcourse = runs.subcourse AND subruns2.style = ? AND subruns2.tmpLB = ?) \
+	LEFT JOIN mapratings ON (mapratings.course=runs.course AND mapratings.style=?)\
+	LEFT JOIN mapratings AS mapratings2 ON (mapratings2.course=runs.course AND mapratings2.style=? AND mapratings2.userid=?)\
 		GROUP BY course, subcourse \
 		HAVING bestrank > 1 OR anyruns = 0 \
-		ORDER BY anyruns DESC, bestrank ASC, runs.course ASC "
+		ORDER BY anyruns DESC, bestrank ASC, playerCount DESC,rating DESC, runs.course ASC  "
 #define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
 
 	if (data.type == MAPSEARCH_MOSTPLAYED) {
@@ -2452,6 +2455,11 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 		G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
 		G_COOL_API_DB_PreparedBindInt(data.style);
 		G_COOL_API_DB_PreparedBindInt(data.lbType);
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(data.lbType);
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
 		G_COOL_API_DB_PreparedBindInt(first);
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
