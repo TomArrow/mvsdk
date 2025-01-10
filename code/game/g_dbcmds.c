@@ -1370,7 +1370,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 		char course[COURSENAME_MAX_LEN + 1];
 		char subcourse[COURSENAME_MAX_LEN + 1];
 		int time;
-		int votecount,haveMyRating;
+		int votecount,haveMyRating,shortestRun;
 		int mapnum;
 		infoHashed_t* infoHashed;
 		mainLeaderboardType_t lbType;
@@ -1455,11 +1455,12 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 			else if (data.type == MAPSEARCH_NOTWR) {
 
 				if (resultIndex == 0) {
-					trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-7s %-7s %-9s %-8s %-20s\n\""
+					trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-7s %-12s %-7s %-9s %-8s %-20s\n\""
 						, '2'
 						, "RANK"
 						, "MAPNUM"
 						, "PLAYERS"
+						, "TOPRUN"
 						, "RATING"
 						, "VOTECOUNT"
 						, "MYRATING"
@@ -1476,14 +1477,16 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 				votecount = G_COOL_API_DB_GetInt(6); 
 				G_COOL_API_DB_GetFloat(7,&myRating);
 				haveMyRating = G_COOL_API_DB_GetInt(8);
+				shortestRun = G_COOL_API_DB_GetInt(9);
 
 				infoHashed = G_GetArenaInfoByMap(course);
 
-				trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-7s %-7s %-9s %-8s %-20s\n\""
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-7s %-12s %-7s %-9s %-8s %-20s\n\""
 					, '7'
 					, anyRuns? miniva("%d",rank) : "-"
 					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
 					, time > 0 ? miniva("%d", time) : "-"
+					, time > 0 ? DF_MsToString(shortestRun) : "-"
 					, votecount > 0 ? miniva("%.4f", rating) : "-"
 					, votecount > 0 ? miniva("%d", votecount) : "-"
 					, haveMyRating > 0 ? miniva("%.4f", myRating) : "-"
