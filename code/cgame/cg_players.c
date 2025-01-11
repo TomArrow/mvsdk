@@ -57,7 +57,7 @@ sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName ) {
 }
 
 
-Q_INLINE int CG_GetRunFlags(centity_t* cent) // TODO hm. what about other players? 
+static int CG_GetRunFlags(centity_t* cent) // TODO hm. what about other players? 
 {
 	if ((cent - cg_entities) != cg.predictedPlayerState.clientNum) return 0;
 	if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
