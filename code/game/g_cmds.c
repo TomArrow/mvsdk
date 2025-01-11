@@ -792,7 +792,7 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 					trap_SendServerCommand( ent->client->ps.clientNum, 
 						va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "TOOMANYRED")) );
 				}
-				return; // ignore the request
+				return qfalse; // ignore the request
 			}
 			if ( team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1 ) {
 				//For now, don't do this. The legalize function will set powers properly now.
@@ -808,7 +808,7 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 					trap_SendServerCommand( ent->client->ps.clientNum, 
 						va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "TOOMANYBLUE")) );
 				}
-				return; // ignore the request
+				return qfalse; // ignore the request
 			}
 
 			// It's ok, the team we are switching to has less or same number of players
