@@ -7472,14 +7472,14 @@ static void CG_RealAccelHelper() {
 	int startAngle;
 	int frontViewAngleOffset, rightViewAngleOffset; // for complex slope calculation (2 buttons pressed)
 	float angleStep = 360.0f / 65536.0f;
-	float pixelAngleWidth = cg_fov.value/(float)cgs.glconfig.vidWidth;
+	float pixelAngleWidth = cg.refdef.fov_x /(float)cgs.glconfig.vidWidth;
 	int angleIncrement = 1;
 	int i;
 	vec3_t currentVelVec;
 	vec3_t newVelVec;
 	float currentSpeed;
 	float iAngle = 0;
-	float angleRange = cg_fov.value; // +2.0f for a bit of buffer so the sides dont get cut off
+	float angleRange = cg.refdef.fov_x; // +2.0f for a bit of buffer so the sides dont get cut off
 	float x,oldX=-1.0f;
 	float angleXStep, angleXStepHalf; // how much we have to move X pos per step
 	float vDelta;
@@ -7619,20 +7619,20 @@ static void CG_RealAccelHelper() {
 		angleStep *= 2.0f;
 	}
 
-	angleXStep = ((float)cgs.screenWidth / cg_fov.value)*angleStep;
+	angleXStep = ((float)cgs.screenWidth / cg.refdef.fov_x)*angleStep;
 	angleXStepHalf = angleXStep * 0.5f;
 
 	accelOffsetDir[0] = cmd.forwardmove;
-	accelOffsetDir[1] = cmd.rightmove;
+	accelOffsetDir[1] = -cmd.rightmove;
 
 	VectorNormalize(accelOffsetDir);
 
 	vectoangles(accelOffsetDir, accelOffsetAngles);
 	accelOffsetAngle = accelOffsetAngles[YAW];
 
-	startAngle = ANGLE2SHORT(AngleNormalize360(cg.strafehelperPredictedPlayerState.viewangles[YAW]- accelOffsetAngle - cg_fov.value/2));
+	startAngle = ANGLE2SHORT(AngleNormalize360(cg.strafehelperPredictedPlayerState.viewangles[YAW]+ accelOffsetAngle + cg.refdef.fov_x /2));
 	if (doingComplexSlopes) {
-		static float sign90 = 1.0f; // for debugging what the correct signs are here as i got confused somewhere along the way
+		static float sign90 = -1.0f; // for debugging what the correct signs are here as i got confused somewhere along the way
 		static float signAccel = -1.0f;
 		// gotta calculate frontViewAngleOffset and rightViewAngleOffset quick
 		frontViewAngleOffset = ANGLE2SHORT(AngleNormalize360(signAccel*accelOffsetAngle));
@@ -7651,7 +7651,7 @@ static void CG_RealAccelHelper() {
 	else {
 		hereAccel = 1.0f;
 	}
-	for (iAngle = 0.0f, i = startAngle, x =0; iAngle < angleRange; i = ((i + angleIncrement) & 65535), iAngle += angleStep, x+= angleXStep) {
+	for (iAngle = 0.0f, i = startAngle, x =0; iAngle < angleRange; i = ((i - angleIncrement) & 65535), iAngle += angleStep, x+= angleXStep) {
 		if (!onGround && style == MV_QUAJK) {
 			if (DotProduct(currentVelVec, angleVectors[i]) < 0) {
 				hereAccel = 2.5f;
@@ -7686,7 +7686,7 @@ static void CG_RealAccelHelper() {
 					VectorNormalize(front);
 					VectorNormalize(right);
 					for (j = 0;j < 3; j++) {
-						adjustedWishdir[j] = front[j] * accelOffsetDir[0] + right[j] * accelOffsetDir[1];
+						adjustedWishdir[j] = front[j] * accelOffsetDir[0] + right[j] * -accelOffsetDir[1];
 					}
 					multiplier = VectorNormalize(adjustedWishdir);
 					adjustedWishSpeed *= multiplier;
@@ -7727,7 +7727,7 @@ static void CG_RealAccelHelper() {
 			vDelta = vDelta * (1.0f- cg_realAccelDynScale.value)+ tmp * cg_realAccelDynScale.value;
 		}
 
-		CG_DrawPic(cgs.screenWidth-x- angleXStepHalf, mid - vDelta,
+		CG_DrawPic(x- angleXStepHalf, mid - vDelta,
 			angleXStep, vDelta,
 			cgs.media.whiteShader);
 
