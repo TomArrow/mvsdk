@@ -395,7 +395,9 @@ typedef struct {
 
 	subContestState_t subcontestVals[SUBCONTESTS_COUNT];
 
-	int		lastHereTime; // for cross-map afk checking
+	int			lastHereTime; // for cross-map afk checking
+	int			oldbuttons_immediate; // since we switched stuff up a bit with usercmd store and segmented replays... and also to carry on through sessions
+	qboolean	sessionInitialized; // so for afk detection, when comparing to old buttons, we are comparing to a real value.
 } clientSession_t;
 
 // JK2MV

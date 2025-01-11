@@ -2689,9 +2689,19 @@ void ClientThink( int clientNum ) {
 	qboolean segmentedReplay = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
 
 	trap_GetUsercmd(clientNum, &tmpCmdForAfkCheck);
-	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || (tmpCmdForAfkCheck.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
+	//if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || (tmpCmdForAfkCheck.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK)) || ((tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate) & BUTTON_TALK)) {
+	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || ent->client->sess.sessionInitialized && (tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate)) {
+		if (g_developer.integer) {
+			if ((level.time - ent->client->sess.lastHereTime) > 30000) {
+				Com_Printf("^3Client %d came back from AFK after %d milliseconds, btnchange %d.\n", level.time - ent->client->sess.lastHereTime, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate);
+			}
+			else if (level.time < ent->client->sess.lastHereTime) {
+				Com_Printf("^3Client %d came back from AFK (glitch %d<%d), btnchange %d.\n", level.time, ent->client->sess.lastHereTime, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate);
+			}
+		}
 		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	}
+	ent->client->sess.oldbuttons_immediate = tmpCmdForAfkCheck.buttons;
 
 	//if (!segmentedReplay) {
 	//	canRun = G_GetUserCmd(clientNum, &ent->client->pers.cmd,qtrue);

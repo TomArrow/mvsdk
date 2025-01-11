@@ -29,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -49,6 +49,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		(int)client->sess.mapStyleBaseline.jumpLevel,
 		client->sess.raceStateInvalidated,
 		(int)(level.time-client->sess.lastHereTime),
+		(int)(level.time-client->sess.oldbuttons_immediate),
 		client->sess.login.loggedIn,
 		client->sess.login.id,
 		client->sess.login.flags,
@@ -103,7 +104,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -123,6 +124,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&baseJumpLevel,
 		&raceStateInvalidated,
 		&lastHereTimeOffset,
+		&client->sess.oldbuttons_immediate,
 		&loggedIn,
 		&client->sess.login.id,
 		&client->sess.login.flags,
@@ -157,6 +159,8 @@ void G_ReadSessionData( gclient_t *client ) {
 	}
 
 	DF_SetSubContestDefaults(client); // would be nicer to keep it but lets just set defaults who cares. means a few more db requests that could be avoided, but it wont cause any issues beyond that, maybe TODO someday
+
+	client->sess.sessionInitialized = qtrue;
 }
 
 /*
@@ -275,7 +279,9 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess->spectatorState = SPECTATOR_FREE;
 	sess->spectatorOrder = 0;
 
-	DF_SetSubContestDefaults( client );
+	DF_SetSubContestDefaults( client ); 
+	
+	client->sess.sessionInitialized = qtrue;
 
 	G_WriteClientSessionData( client );
 }
