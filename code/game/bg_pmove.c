@@ -5587,6 +5587,7 @@ void PmoveSingle (pmove_t *pmove) {
 			VectorCopy(pm->ps->velocity, oldVel);
 			c_pmove++;
 			PmoveQ2(&pmq2);
+			PM_SetMovementDir();
 			if (oldGEN != ENTITYNUM_NONE && pm->ps->groundEntityNum == ENTITYNUM_NONE && pm->cmd.upmove > 0) {
 				PM_AddEvent(EV_JUMP);
 			}
@@ -5612,6 +5613,7 @@ void PmoveSingle (pmove_t *pmove) {
 			VectorCopy(pm->ps->velocity, oldVel);
 			c_pmove++;
 			PmoveCSS(&pmcss);
+			PM_SetMovementDir();
 			PM_SetAnimAfterQ2(oldVel);
 			pm->ps->commandTime = pm->cmd.serverTime;
 			VectorCopy(pmcss.mins, pm->mins);
