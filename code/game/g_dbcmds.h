@@ -105,12 +105,14 @@ typedef struct latestRunsRequestStruct_s {
 	int			userId;
 	qboolean	styleSpecified;
 	qboolean	pageSpecified;
+	char		userSearchTerm[15];
 }latestRunsRequestStruct_t;
 
 typedef enum mapSearchType_s {
 	MAPSEARCH_LONGEST,
 	MAPSEARCH_SHORTEST,
 	MAPSEARCH_NOTWR,
+	MAPSEARCH_WR,
 	MAPSEARCH_MOSTPLAYED,
 	MAPSEARCH_TOPRATED,
 
@@ -125,6 +127,7 @@ typedef struct mapSearchRequestStruct_s {
 	mapSearchType_t			type;
 	int						style;
 	mainLeaderboardType_t	lbType;
+	char					userSearchTerm[15];
 } mapSearchRequestStruct_t;
 
 
@@ -189,5 +192,18 @@ typedef struct topRequestStruct_s {
 void G_DB_CheckResponses();
 qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify); 
 void G_DB_Init();
+
+
+// bind username and userid
+#define USERIDQUERY_USERID "SET @username=?, @userid=?;SELECT @username,@userid;"
+
+// bind username search term
+#define USERIDQUERY_USERSEARCH "SET @search = ?; \
+(SELECT @username := username, @userid := id, \
+instr(username, @search) + instr(REVERSE(username), REVERSE(@search)) - 2 AS diff \
+FROM users \
+WHERE instr(username, @search) \
+ORDER BY diff ASC \
+LIMIT 1);"
 
 #endif

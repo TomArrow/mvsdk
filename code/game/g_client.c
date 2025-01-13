@@ -1355,6 +1355,7 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// check for com_physicsFps setting
 	s = Info_ValueForKey( userinfo, "com_physicsFps" );
+	client->pers.physicsFps.clientSendsPhysicsFps = *s != '\0';
 	if ( atoi( s ) ) {
 		SetClientPhysicsFps(ent, atoi(s));
 	} else {
@@ -1582,6 +1583,7 @@ qboolean ClientPhysicsFpsChanged( int clientNum ) {
 
 	// check for com_physicsFps setting
 	s = Info_ValueForKey( userinfo, "com_physicsFps" );
+	client->pers.physicsFps.clientSendsPhysicsFps = *s != '\0';
 	if ( atoi( s ) ) {
 		SetClientPhysicsFps(ent, atoi(s));
 	} else {

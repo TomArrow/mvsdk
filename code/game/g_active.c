@@ -971,7 +971,12 @@ static qboolean ClientCheckNotifyPhysicsFps(gentity_t* ent) {
 		else if (client->pers.physicsFps.clientSetting != client->pers.physicsFps.acceptedSetting) {
 			if (!client->pers.physicsFps.clientSettingValid) {
 				// Seems like the client set an invalid value as it hasn't been accepted
-				notification = "cp \"^2Toggle disabled.\n^1Invalid ^7com_physicsFps value detected. \nPlease set a valid value\nor use ^2/togglefps ^7for toggle mode.\n\"";
+				if (client->pers.physicsFps.clientSendsPhysicsFps) {
+					notification = "cp \"^2Toggle disabled.\n^1Invalid ^7com_physicsFps value detected.\nYour movement may be restricted.\nPlease set a valid value\nor use ^2/togglefps ^7for toggle mode.\n\"";
+				}
+				else {
+					notification = "cp \"^2Toggle disabled.\n^1No ^7com_physicsFps value detected.\nYour movement may be restricted.\nPlease use a client with com_physicsFps\n^3(dev note: must be CVAR_USERINFO)\n^7or use ^2/togglefps ^7for toggle mode.\n\"";
+				}
 			}
 			else {
 				if (client->pers.physicsFps.acceptedSetting) {

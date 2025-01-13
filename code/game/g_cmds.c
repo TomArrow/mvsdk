@@ -2213,6 +2213,10 @@ void Cmd_Latest_f(gentity_t* ent) {
 			else if(!Q_stricmp(inputString, "unlogged")) {
 				data.userId = -1;
 			}
+			else if(*inputString){
+				Q_strncpyz(data.userSearchTerm, inputString, sizeof(data.userSearchTerm));
+				data.userId = -3;
+			}
 		}
 	}
 	else {
@@ -2221,19 +2225,29 @@ void Cmd_Latest_f(gentity_t* ent) {
 	page = MAX(page-1, 0);
 	first = page * 10;
 
-#define LATESTQUERY "SELECT runs.userid,users.username,runs.course,runs.subcourse,runs.style,runs.msec,runs.jump,runs.variant,runs.runflags,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,runs.duration_ms,runs.runwhen FROM runs LEFT JOIN users ON (users.id = runs.userid) LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
+#define LATESTQUERY "SELECT runs.userid,users.username,runs.course,runs.subcourse,runs.style,runs.msec,runs.jump,runs.variant,runs.runflags,ISNULL(mapdefaults.runFlags) AS mapdefaultsNotFound,mapdefaults.msec,mapdefaults.jump,mapdefaults.variant,mapdefaults.runFlags,runs.duration_ms,runs.runwhen,runs.tmpRank FROM runs LEFT JOIN users ON (users.id = runs.userid) LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) "
 #define LATESTQUERY_STYLEWUERE " runs.style=? "
-#define LATESTQUERY_USERWUERE " runs.userid=? "
+#define LATESTQUERY_USERWUERE " runs.userid=@userid "
 #define LATESTQUERY_END " ORDER BY runs.runwhen DESC  LIMIT ?,10"
 
 	if (style == -1) {
 
 		if (data.userId != -2) {
-			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY " WHERE " LATESTQUERY_USERWUERE LATESTQUERY_END)) {
+			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS,
+				data.userId == -3
+				? USERIDQUERY_USERSEARCH LATESTQUERY " WHERE " LATESTQUERY_USERWUERE LATESTQUERY_END
+				: USERIDQUERY_USERID LATESTQUERY " WHERE " LATESTQUERY_USERWUERE LATESTQUERY_END
+			)) {
 				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
 				return;
 			}
-			G_COOL_API_DB_PreparedBindInt(data.userId);
+			if (data.userId == -3) {
+				G_COOL_API_DB_PreparedBindString(data.userSearchTerm);
+			}
+			else {
+				G_COOL_API_DB_PreparedBindString(data.userId == -1 ? "" : ent->client->sess.login.name);
+				G_COOL_API_DB_PreparedBindInt(data.userId);
+			}
 		}
 		else {
 			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY LATESTQUERY_END)) {
@@ -2244,11 +2258,21 @@ void Cmd_Latest_f(gentity_t* ent) {
 	}
 	else {
 		if (data.userId != -2) {
-			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY  " WHERE " LATESTQUERY_USERWUERE  " AND " LATESTQUERY_STYLEWUERE LATESTQUERY_END)) {
+			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS,
+				data.userId == -3
+				? USERIDQUERY_USERSEARCH LATESTQUERY  " WHERE " LATESTQUERY_USERWUERE  " AND " LATESTQUERY_STYLEWUERE LATESTQUERY_END
+				: USERIDQUERY_USERID LATESTQUERY  " WHERE " LATESTQUERY_USERWUERE  " AND " LATESTQUERY_STYLEWUERE LATESTQUERY_END
+			)) {
 				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
 				return;
 			}
-			G_COOL_API_DB_PreparedBindInt(data.userId);
+			if (data.userId == -3) {
+				G_COOL_API_DB_PreparedBindString(data.userSearchTerm);
+			}
+			else {
+				G_COOL_API_DB_PreparedBindString(data.userId == -1 ? "" : ent->client->sess.login.name);
+				G_COOL_API_DB_PreparedBindInt(data.userId);
+			}
 			G_COOL_API_DB_PreparedBindInt(style);
 		}
 		else {
@@ -2340,6 +2364,7 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	
 	memset(&data, 0, sizeof(data));
+	data.userSearchTerm[0] = '\0';
 	
 	data.type = MAPSEARCH_SHORTEST;
 	if (!Q_stricmp(cmd, "longest")) {
@@ -2353,10 +2378,9 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	}
 	else if (!Q_stricmp(cmd, "notwr")) {
 		data.type = MAPSEARCH_NOTWR;
-		if (!ent->client->sess.login.loggedIn) {
-			trap_SendServerCommand(ent - g_entities, "print \"Gotta be logged in to use ^2/notwr^7.\n\"");
-			return;
-		}
+	}
+	else if (!Q_stricmp(cmd, "wrs")) {
+		data.type = MAPSEARCH_WR;
 	}
 
 	if (!coolApi_dbVersion) {
@@ -2384,6 +2408,9 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 				data.lbType = t;
 				data.lbTypeSpecified = qtrue;
 			}
+			else {
+				Q_strncpyz(data.userSearchTerm, inputString,sizeof(data.userSearchTerm));
+			}
 		}
 	}
 	else {
@@ -2391,6 +2418,12 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	}
 	page = MAX(page-1, 0);
 	first = page * 10;
+
+
+	if (!ent->client->sess.login.loggedIn && !*data.userSearchTerm && (data.type == MAPSEARCH_NOTWR || data.type == MAPSEARCH_WR)) {
+		trap_SendServerCommand(ent - g_entities, "print \"Gotta be logged in to use ^2/notwr^7,^2/wrs^7; or specify a user search term.\n\"");
+		return;
+	}
 
 	// TODO more distinction? avoid segmented times? idk
 
@@ -2401,14 +2434,15 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 #define LONGESTSHORTESTQUERY "SELECT MIN(duration_ms) as fastest,runs.course,runs.subcourse FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) WHERE style = ? AND (runs.jump = mapdefaults.jump OR (mapdefaults.jump IS NULL AND runs.jump = 1)) GROUP BY runs.course,runs.subcourse ORDER BY fastest "
 #define MOSTPLAYEDQUERY "SELECT COUNT(DISTINCT userid) as playerCount, runs.course, runs.subcourse FROM runs WHERE style = ? GROUP BY runs.course, runs.subcourse ORDER BY playerCount DESC "
 #define TOPRATEDQUERY "SELECT AVG(rating) AS avgRating,COUNT(DISTINCT userid) ratingCount, course FROM mapratings WHERE style=? GROUP BY course,style ORDER BY avgRating DESC "
-#define NOTWRQUERY "SELECT runs.course,runs.subcourse,COUNT(subruns.userid) >0 AS anyruns,MIN(subruns.tmpRank) AS bestrank, COUNT(DISTINCT subruns2.userid) AS playerCount, AVG(mapratings.rating) AS rating, COUNT(DISTINCT mapratings.userid) AS ratingCount, mapratings2.rating as myRating, mapratings2.rating IS NOT NULL AS haveMyRating, MIN(subruns2.duration_ms) AS fastestTime  FROM runs \
-	LEFT JOIN runs AS subruns ON(subruns.userid = ? AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
+#define WRORNOTWRQUERY "SELECT runs.course,runs.subcourse,COUNT(subruns.userid) >0 AS anyruns,MIN(subruns.tmpRank) AS bestrank, COUNT(DISTINCT subruns2.userid) AS playerCount, AVG(mapratings.rating) AS rating, COUNT(DISTINCT mapratings.userid) AS ratingCount, mapratings2.rating as myRating, mapratings2.rating IS NOT NULL AS haveMyRating, MIN(subruns2.duration_ms) AS fastestTime  FROM runs \
+	LEFT JOIN runs AS subruns ON(subruns.userid = @userid AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
 	LEFT JOIN runs AS subruns2 ON(subruns2.course = runs.course AND subruns2.subcourse = runs.subcourse AND subruns2.style = ? AND subruns2.tmpLB = ?) \
 	LEFT JOIN mapratings ON (mapratings.course=runs.course AND mapratings.style=?)\
-	LEFT JOIN mapratings AS mapratings2 ON (mapratings2.course=runs.course AND mapratings2.style=? AND mapratings2.userid=?)\
-		GROUP BY course, subcourse \
-		HAVING bestrank > 1 OR anyruns = 0 \
-		ORDER BY anyruns DESC, bestrank ASC, playerCount DESC,rating DESC, runs.course ASC  "
+	LEFT JOIN mapratings AS mapratings2 ON (mapratings2.course=runs.course AND mapratings2.style=? AND mapratings2.userid=@userid)\
+		GROUP BY course, subcourse  "
+#define WRORNOTWRQUERY_END " ORDER BY anyruns DESC, bestrank ASC, playerCount DESC,rating DESC, runs.course ASC "
+#define NOTWRQUERY WRORNOTWRQUERY " HAVING bestrank > 1 OR anyruns = 0 " WRORNOTWRQUERY_END
+#define WRQUERY WRORNOTWRQUERY " HAVING bestrank = 1 " WRORNOTWRQUERY_END
 #define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
 
 	if (data.type == MAPSEARCH_MOSTPLAYED) {
@@ -2447,19 +2481,39 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 		G_COOL_API_DB_PreparedBindInt(first);
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
-	else if (data.type == MAPSEARCH_NOTWR) {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, NOTWRQUERY LONGESTSHORTESTQUERY_END)) {
+	else if (data.type == MAPSEARCH_NOTWR || data.type == MAPSEARCH_WR) {
+		qboolean requestSuccess;
+		if (*data.userSearchTerm) {
+			if (requestSuccess = G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH,
+				data.type == MAPSEARCH_NOTWR
+				? USERIDQUERY_USERSEARCH NOTWRQUERY LONGESTSHORTESTQUERY_END
+				: USERIDQUERY_USERSEARCH WRQUERY LONGESTSHORTESTQUERY_END
+			)) {
+				G_COOL_API_DB_PreparedBindString(data.userSearchTerm);
+			}
+		}
+		else {
+			if (requestSuccess = G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, 
+				data.type == MAPSEARCH_NOTWR 
+				? USERIDQUERY_USERID NOTWRQUERY LONGESTSHORTESTQUERY_END
+				: USERIDQUERY_USERID WRQUERY LONGESTSHORTESTQUERY_END
+
+			)) {
+				G_COOL_API_DB_PreparedBindString(ent->client->sess.login.name);
+				G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+			}
+		}
+		if (!requestSuccess) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Non-WR maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
-		G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
 		G_COOL_API_DB_PreparedBindInt(data.style);
 		G_COOL_API_DB_PreparedBindInt(data.lbType);
 		G_COOL_API_DB_PreparedBindInt(data.style);
 		G_COOL_API_DB_PreparedBindInt(data.lbType);
 		G_COOL_API_DB_PreparedBindInt(data.style);
 		G_COOL_API_DB_PreparedBindInt(data.style);
-		G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+		//G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
 		G_COOL_API_DB_PreparedBindInt(first);
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
@@ -4642,6 +4696,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "wrs"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "mostplayed"))
 		{
 			giveError = qtrue;
@@ -4836,6 +4894,8 @@ void ClientCommand( int clientNum ) {
 	else if (Q_stricmp(cmd, "shortest") == 0)
 		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "notwr") == 0)
+		Cmd_MapSearch_f(ent);
+	else if (Q_stricmp(cmd, "wrs") == 0)
 		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "mostplayed") == 0)
 		Cmd_MapSearch_f(ent);

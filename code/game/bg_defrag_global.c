@@ -445,7 +445,8 @@ void	InitFpsTable() {
 
 
 void DF_AntiLoop_NewAngle(antiLoopState_t* antiLoopState, vec3_t oldVelocity, vec3_t velocity, float baseSpeed, qboolean inRace) {
-	float xyVel = XYSPEED(velocity);
+	//float xyVel = VectorLength(velocity); //XYSPEED(velocity);
+	float xyVel = XYSPEED(velocity); // should prolly be vectorlength but now ppl already did runs like this so i dont wanna mess wiht it (cuz ppl in quajk can crawl up big steep slopes and move dowm with essentially < baseSpeed but high vertical speed but oh well
 	if (xyVel < baseSpeed/* && !inRace*/) {
 		antiLoopState->yawAngleChangeSinceBaseSpeed = 0;
 	}

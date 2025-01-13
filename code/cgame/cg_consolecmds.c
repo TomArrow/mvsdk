@@ -1995,4 +1995,5 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("longest");
 	trap_AddCommand("shortest");
 	trap_AddCommand("notwr");
+	trap_AddCommand("wrs");
 }

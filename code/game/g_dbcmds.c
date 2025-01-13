@@ -794,25 +794,25 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 		}
 		if (!subCourseName[0]) {
 			if (g_developer.integer) {
-				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s (diff %d %d)\n\"", resultsFound ? "" : "->", courseName, diff, diff2), qtrue);
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s (diff %d %d)\n\"", resultsFound ? "" : "->", courseName, diff, diff2), afterRun);
 			}
 			else {
-				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s\n\"", resultsFound ? "" : "->", courseName), qtrue);
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s\n\"", resultsFound ? "" : "->", courseName), afterRun);
 			}
 		}
 		else {
 			if (g_developer.integer) {
-				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s/%s  (diff %d %d)\n\"", resultsFound ? "" : "->", courseName, subCourseName, diff, diff2), qtrue);
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s/%s  (diff %d %d)\n\"", resultsFound ? "" : "->", courseName, subCourseName, diff, diff2), afterRun);
 			}
 			else {
-				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s/%s\n\"", resultsFound ? "" : "->", courseName, subCourseName), qtrue);
+				G_SendServerCommand(ent - g_entities, va("print \"^3%s%s/%s\n\"", resultsFound ? "" : "->", courseName, subCourseName), afterRun);
 			}
 		}
 		resultsFound++;
 
 	}
 	if (!resultsFound) {
-		G_SendServerCommand(ent - g_entities, "print \"^1Nothing.\n\"", qtrue);
+		G_SendServerCommand(ent - g_entities, "print \"^1Nothing.\n\"", afterRun);
 	}
 
 
@@ -1115,6 +1115,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 	latestRunsRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
 	int resultIndex = 0;
+	char userName[USERNAME_MAX_LEN + 1];
 	//evaluatedRunInfo_t eRunInfo;
 
 	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
@@ -1136,10 +1137,26 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		return;
 	}
 
-	trap_SendServerCommand(ent - g_entities, "print \"Latest runs:\n\"");
+	G_COOL_API_DB_GetMoreResults(&affectedRows); // user search. skip first two statements. TODO check for errors here?
+
+	if (!G_COOL_API_DB_NextRow()) {
+		trap_SendServerCommand(ent - g_entities, va("print \"No user found under the specified serach term '%s'.\n\"", lbRequestData.userSearchTerm));
+		return;
+	}
+	G_COOL_API_DB_GetString(0, userName, sizeof(userName));
+
+	G_COOL_API_DB_GetMoreResults(&affectedRows);
+
+	if (lbRequestData.userId == -3) {
+
+		trap_SendServerCommand(ent - g_entities, va("print \"Latest runs for '%s':\n\"", userName));
+	}else {
+
+		trap_SendServerCommand(ent - g_entities, "print \"Latest runs:\n\"");
+	}
 
 	while (G_COOL_API_DB_NextRow()) {
-		int userid,duration_ms;
+		int userid,duration_ms,tmpRank;
 		qboolean mapDefaultsFound;
 		raceStyle_t raceStyle;
 		raceStyle_t mapDefaultRaceStyle;
@@ -1151,7 +1168,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		mainLeaderboardType_t lbType;
 
 		if (resultIndex == 0) {
-			trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %-10s %-23s %-4s %-4s %-10s %-20s %s\n\""
+			trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %-10s %-23s %-4s %-4s %-4s %-10s %-20s %s\n\""
 				, '2'
 				, ""
 				, "STYLE"
@@ -1159,6 +1176,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 				, "DATE"
 				, "FPS"
 				, "JUMP"
+				, "RANK"
 				, "TIME"
 				, "MAP/COURSE"
 				, "RUNFLAGS"
@@ -1186,6 +1204,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		}
 		duration_ms = G_COOL_API_DB_GetInt(14);
 		G_COOL_API_DB_GetString(15, runwhen, sizeof(runwhen));
+		tmpRank = G_COOL_API_DB_GetInt(16);
 
 		lbType = classifyLeaderBoard(&raceStyle, &mapDefaultRaceStyle);
 
@@ -1200,7 +1219,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 			Com_sprintf(username, sizeof(username), "%-10s", username);
 		}
 
-		trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %s %-23s %-4s %-4d %-10s %-20s %s\n\""
+		trap_SendServerCommand(ent - g_entities, va("print \"^%c%12s %-7s %s %-23s %-4s %-4d %-4s %-10s %-20s %s\n\""
 			, colorChar
 			, miniva("[%s]", leaderboardNames[lbType].string)
 			, raceStyle.movementStyle < MV_NUMSTYLES ? moveStyleNames[raceStyle.movementStyle].string : "UNKNOWN"
@@ -1208,6 +1227,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 			, runwhen
 			, MSECSTRING(raceStyle.msec)
 			, raceStyle.jumpLevel
+			, tmpRank ? miniva("#%d",tmpRank) : ""
 			, DF_MsToString(duration_ms)
 			, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 			, RunFlagsToString(raceStyle.runFlags,mapDefaultRaceStyle.runFlags,0,NULL,NULL)
@@ -1328,6 +1348,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 	mapSearchRequestStruct_t data;
 	gentity_t* ent = NULL;
 	int resultIndex = 0;
+	char userName[USERNAME_MAX_LEN + 1];
 	//evaluatedRunInfo_t eRunInfo;
 
 	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
@@ -1349,6 +1370,8 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 		return;
 	}
 
+	userName[0] = '\0';
+
 	if (data.type == MAPSEARCH_LONGEST) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Longest maps in style %s (based on fastest run including segmented/cheat):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
 	}
@@ -1361,8 +1384,22 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 	else if(data.type == MAPSEARCH_TOPRATED) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Top rated maps (0-10) in style %s (all leaderboards):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
 	}
-	else if(data.type == MAPSEARCH_NOTWR) {
-		trap_SendServerCommand(ent - g_entities, va("print \"Maps in style %s in leaderboard type %s you do not hold WR on:\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN", data.lbType < LB_TYPES_COUNT ? leaderboardNames[data.lbType].string : "UNKNOWN"));
+	else if(data.type == MAPSEARCH_NOTWR || data.type == MAPSEARCH_WR) {
+		G_COOL_API_DB_GetMoreResults(&affectedRows); // user search. skip first two statements. TODO check for errors here?
+
+		if (!G_COOL_API_DB_NextRow()) {
+			trap_SendServerCommand(ent - g_entities, va("print \"No user found under the specified serach term '%s'.\n\"", data.userSearchTerm));
+			return;
+		}
+		G_COOL_API_DB_GetString(0, userName, sizeof(userName));
+
+		G_COOL_API_DB_GetMoreResults(&affectedRows);
+		if (*data.userSearchTerm) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Maps in style %s in leaderboard type %s user '%s' does%s hold WR on:\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN", data.lbType < LB_TYPES_COUNT ? leaderboardNames[data.lbType].string : "UNKNOWN",userName,data.type == MAPSEARCH_NOTWR ? " not" : ""));
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, va("print \"Maps in style %s in leaderboard type %s you do%s hold WR on:\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN", data.lbType < LB_TYPES_COUNT ? leaderboardNames[data.lbType].string : "UNKNOWN",data.type == MAPSEARCH_NOTWR ? " not" : ""));
+		}
 	}
 
 	{
@@ -1452,7 +1489,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 				));
 			}
-			else if (data.type == MAPSEARCH_NOTWR) {
+			else if (data.type == MAPSEARCH_NOTWR || data.type == MAPSEARCH_WR) {
 
 				if (resultIndex == 0) {
 					trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-7s %-12s %-7s %-9s %-8s %-20s\n\""
@@ -1463,7 +1500,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 						, "TOPRUN"
 						, "RATING"
 						, "VOTECOUNT"
-						, "MYRATING"
+						, *data.userSearchTerm ? "PRATING" : "MYRATING"
 						, "MAP/COURSE"
 					));
 				}

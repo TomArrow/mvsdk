@@ -349,6 +349,7 @@ typedef struct {
 	//int			wrongTimingToleratedCount; // Counts how many times the timing was wrong in a row, so we can allow a bit of leniency for people who get a lag.
 	//int			goodTimingCount;
 	//qboolean	lastTimingWasGood;
+	qboolean	clientSendsPhysicsFps;
 } physicsFpsState_t;
 
 // the auto following clients don't follow a specific client
