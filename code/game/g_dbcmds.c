@@ -1378,6 +1378,14 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 	else if(data.type == MAPSEARCH_SHORTEST) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Shortest maps in style %s (based on fastest run including segmented/cheat):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
 	}
+	else if(data.type == MAPSEARCH_HARDEST) {
+		G_COOL_API_DB_GetMoreResults(&affectedRows); // style set. skip first statement. TODO check for errors here?
+		trap_SendServerCommand(ent - g_entities, va("print \"Hardest maps in style %s (based on average player performance):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
+	}
+	else if(data.type == MAPSEARCH_EASIEST) {
+		G_COOL_API_DB_GetMoreResults(&affectedRows); // style set. skip first statement. TODO check for errors here?
+		trap_SendServerCommand(ent - g_entities, va("print \"Easiest maps in style %s (based on average player performance):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
+	}
 	else if(data.type == MAPSEARCH_MOSTPLAYED) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Most played maps in style %s (all leaderboards):\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN"));
 	}
@@ -1413,6 +1421,8 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 		mainLeaderboardType_t lbType;
 		qboolean anyRuns;
 		int rank;
+		float deviation;
+		int samples;
 		float rating, myRating;
 
 		while (G_COOL_API_DB_NextRow()) {
@@ -1436,6 +1446,35 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
 					, '7'
 					, DF_MsToString(time)
+					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
+				));
+			}
+			else if (data.type == MAPSEARCH_HARDEST || data.type == MAPSEARCH_EASIEST) {
+
+				if (resultIndex == 0) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-8s %-7s %-7s %-20s\n\""
+						, '2'
+						, "BEST"
+						, "DIFFICULTY"
+						, "SAMPLES"
+						, "MAPNUM"
+						, "MAP/COURSE"
+					));
+				}
+				G_COOL_API_DB_GetString(0, course, sizeof(course));
+				G_COOL_API_DB_GetString(1, subcourse, sizeof(subcourse));
+				G_COOL_API_DB_GetFloat(2,&deviation);
+				time = G_COOL_API_DB_GetInt(3);
+				samples = G_COOL_API_DB_GetInt(4);
+
+				infoHashed = G_GetArenaInfoByMap(course);
+
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-8s %-7d %-7s %-20s\n\""
+					, '7'
+					, DF_MsToString(time)
+					, miniva("%.2f", deviation)
+					, samples
 					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 				));
@@ -1544,6 +1583,10 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify page number.\n\""));
 	} else if (!data.styleSpecified) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify movement style.\n\""));
+	}
+
+	if (data.type == MAPSEARCH_HARDEST || data.type == MAPSEARCH_EASIEST) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: Maps will only have a difficulty ratiing if enough active players played them for any given style.\n\""));
 	}
 
 

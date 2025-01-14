@@ -987,9 +987,9 @@ void Cmd_Help_f(gentity_t* ent) {
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7,^2/toprated^7,^2/mostplayed^7 - Show longest/shortest/popular(by rating)/popular(by amount of runs) maps. Can call with movement style and page.\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7,^2/toprated^7,^2/mostplayed^7,^2/hardest^7,^2/easiest^7 - Show longest/shortest/popular(by rating)/popular(by amount of runs)/hardest/easiest maps. Can call with movement style and page.\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/ratemap^7 - Rate the current map from 0 to 10. Call with movement style and number.\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/notwr^7 - Show maps you do not hold WR on, sorted by your current rank, highest first.\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2/wrs^7,^2/notwr^7 - Show maps you hold/don't hold WR on, sorted by your current rank, highest first. Can call with username.\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"");
 
 	trap_SendServerCommand(ent - g_entities, "print \"\n^7Account commands:\n\"");
@@ -1035,7 +1035,7 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/time^7 - Check and publicly print your personal best for your current race settings\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 and ^2/latest unlogged\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged or call with username\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/rollympics^7 - Show fastest roll records\n\"");
 	}
 
@@ -2382,6 +2382,12 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	else if (!Q_stricmp(cmd, "wrs")) {
 		data.type = MAPSEARCH_WR;
 	}
+	else if (!Q_stricmp(cmd, "hardest")) {
+		data.type = MAPSEARCH_HARDEST;
+	}
+	else if (!Q_stricmp(cmd, "easiest")) {
+		data.type = MAPSEARCH_EASIEST;
+	}
 
 	if (!coolApi_dbVersion) {
 		trap_SendServerCommand(ent-g_entities,"print \"^1Longest/shortest request not possible, DB API not available\n\"");
@@ -2443,6 +2449,41 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 #define WRORNOTWRQUERY_END " ORDER BY anyruns DESC, bestrank ASC, playerCount DESC,rating DESC, runs.course ASC "
 #define NOTWRQUERY WRORNOTWRQUERY " HAVING bestrank > 1 OR anyruns = 0 " WRORNOTWRQUERY_END
 #define WRQUERY WRORNOTWRQUERY " HAVING bestrank = 1 " WRORNOTWRQUERY_END
+
+	// TODO can we simplify this? LOL
+#define HARDESTEASIESTQUERY "SET @style=?; \
+ \
+SELECT course,subcourse,AVG(playerDevDev)*100 AS avgdevdev, best, COUNT(*) as samples FROM \
+( \
+	SELECT users.id,users.username,runs.course,runs.subcourse,MIN(runs.duration_ms) AS pb,MIN(subruns.duration_ms) AS best, MIN(runs.duration_ms) /MIN(subruns.duration_ms) AS dev,avgDev as playerAvgDev,(MIN(runs.duration_ms) /MIN(subruns.duration_ms))/avgDev as playerDevDev, COUNT(DISTINCT subruns.userid) AS players, COUNT(userDevs.id) as samples  \
+	FROM users  \
+	CROSS JOIN runs ON (users.id = runs.userid AND runs.style=@style AND runs.tmpLB=0) \
+	LEFT JOIN runs as subruns ON (subruns.course=runs.course AND subruns.subcourse=runs.subcourse AND subruns.style=runs.style AND subruns.tmpLB=0) \
+	LEFT JOIN ( \
+		SELECT username,id,AVG(dev) AS avgDev,COUNT(*) as samples \
+		FROM ( \
+			SELECT users.id,users.username,runs.course,runs.subcourse,MIN(runs.duration_ms) AS pb,MIN(subruns.duration_ms) AS best, MIN(runs.duration_ms) /MIN(subruns.duration_ms) AS dev, COUNT(DISTINCT subruns.userid) AS players FROM users  \
+			CROSS JOIN runs ON (users.id = runs.userid AND runs.style=@style AND runs.tmpLB=0) \
+			LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) \
+			LEFT JOIN runs as subruns ON (subruns.course=runs.course AND subruns.subcourse=runs.subcourse AND (subruns.jump=mapdefaults.jump OR (subruns.jump=1 AND mapdefaults.jump IS NULL)) AND subruns.style=@style AND subruns.tmpLB=0) \
+			WHERE users.id != -1 \
+			GROUP BY users.id,runs.course,runs.subcourse \
+			HAVING players>=4 \
+			ORDER BY runs.course,runs.subcourse \
+		) usermapPerformance \
+		GROUP BY usermapPerformance.id \
+		HAVING samples >= 3 \
+		ORDER BY avgDev ASC \
+	) AS userDevs ON (userDevs.id=users.id) \
+	WHERE users.id != -1 \
+	GROUP BY users.id,runs.course,runs.subcourse \
+	HAVING players>=4 AND playerDevDev IS NOT NULL \
+	ORDER BY runs.course,runs.subcourse \
+) mapUserDeviations \
+GROUP BY course,subcourse \
+HAVING samples>=3 \
+ORDER BY avgdevdev "
+
 #define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
 
 	if (data.type == MAPSEARCH_MOSTPLAYED) {
@@ -2466,6 +2507,19 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	else if (data.type == MAPSEARCH_LONGEST) {
 		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "DESC" LONGESTSHORTESTQUERY_END)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Longest maps cannot be displayed. Database request failed.\n\"");
+			return;
+		}
+		G_COOL_API_DB_PreparedBindInt(data.style);
+		G_COOL_API_DB_PreparedBindInt(first);
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else if (data.type == MAPSEARCH_HARDEST || data.type == MAPSEARCH_EASIEST) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, 
+			data.type == MAPSEARCH_HARDEST 
+			? HARDESTEASIESTQUERY " DESC " LONGESTSHORTESTQUERY_END
+			: HARDESTEASIESTQUERY " ASC " LONGESTSHORTESTQUERY_END
+		)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Hardest/easiest maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
 		G_COOL_API_DB_PreparedBindInt(data.style);
@@ -4692,6 +4746,14 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "hardest"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "easiest"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "notwr"))
 		{
 			giveError = qtrue;
@@ -4892,6 +4954,10 @@ void ClientCommand( int clientNum ) {
 	else if (Q_stricmp(cmd, "longest") == 0)
 		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "shortest") == 0)
+		Cmd_MapSearch_f(ent);
+	else if (Q_stricmp(cmd, "hardest") == 0)
+		Cmd_MapSearch_f(ent);
+	else if (Q_stricmp(cmd, "easiest") == 0)
 		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "notwr") == 0)
 		Cmd_MapSearch_f(ent);

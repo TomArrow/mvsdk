@@ -1994,6 +1994,8 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("launch");
 	trap_AddCommand("longest");
 	trap_AddCommand("shortest");
+	trap_AddCommand("hardest");
+	trap_AddCommand("easiest");
 	trap_AddCommand("notwr");
 	trap_AddCommand("wrs");
 }
