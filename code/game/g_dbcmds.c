@@ -1453,7 +1453,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 			else if (data.type == MAPSEARCH_HARDEST || data.type == MAPSEARCH_EASIEST) {
 
 				if (resultIndex == 0) {
-					trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-8s %-7s %-7s %-20s\n\""
+					trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %11s %-7s %-7s %-20s\n\""
 						, '2'
 						, "BEST"
 						, "DIFFICULTY"
@@ -1470,10 +1470,10 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 
 				infoHashed = G_GetArenaInfoByMap(course);
 
-				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-8s %-7d %-7s %-20s\n\""
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %11s %-7d %-7s %-20s\n\""
 					, '7'
 					, DF_MsToString(time)
-					, miniva("%.2f", deviation)
+					, miniva("%.3f", deviation)
 					, samples
 					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
