@@ -1372,8 +1372,11 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 			break;
 		}
 	}
-	G_BufferedSendOrPrint(ent, "\n");
-	G_BufferedSendOrPrintFlush(ent);
+
+	if (resultIndex) {
+		G_BufferedSendOrPrint(ent, "\n");
+		G_BufferedSendOrPrintFlush(ent);
+	}
 
 	if (!resultIndex || !lbRequestData.all) {
 		return; // nothing was updated or we just updated a single map, therefore we don't know the correct time to set.
