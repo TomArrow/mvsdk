@@ -1611,6 +1611,8 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if ( !ent || !ent->client ) return;
 
+	G_BufferedSendOrPrintFlushIfNeeded(ent);
+
 	for (i = 0; i < level.maxclients; i++) {
 		otherClientEnt = g_entities + i;
 		// this is for snapshot limiting (avoiding dupe snapshots when no commandtime update has happened for smoother demos)
@@ -1630,6 +1632,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	if(ent->client->sess.raceMode){ // in racemode we want all things to be consistent and deterministic, so we do this on every CLIENT frame and change level.time references to cmd.servertime where possible
+		// uh should we do this after handlesegmentedrunpre?
 		if ((!level.intermissiontime) && !(ent->client->ps.pm_flags & PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
 		{
 			WP_ForcePowersUpdate(ent, &ent->client->pers.cmd);

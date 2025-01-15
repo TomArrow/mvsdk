@@ -634,6 +634,8 @@ struct gclient_s {
 	qboolean	clientIsZombified; // technically disconnected but we're necromancing and keeping him around to finish a segmented replay
 
 	vec3_t		oldPostPmovePosition;
+	char		bufferedPrintBuffer[MAX_STRING_CHARS]; // if we have a LOT of prints to send... concatenate them a bit.
+	int			bufferedPrintBufferLastFlushedOrUpdated; // so we dont accidentally forget or through an error
 };
 
 
@@ -1728,5 +1730,8 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int page);
 qboolean DF_KeepClientZombie(gentity_t* ent);
 void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
+void G_BufferedSendOrPrint(gentity_t* playerOrNull, const char* text);
+void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull);
+void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull);
 void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
 

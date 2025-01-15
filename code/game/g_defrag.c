@@ -248,6 +248,48 @@ void G_SendOrPrint(gentity_t* playerOrNull, const char* text) {
 		Com_Printf("%s",text);
 	}
 }
+#define BUFFERED_TEXT_MAX_LENGTH (MAX_STRING_CHARS-sizeof("print \"\"")-1)
+
+// to avoid server command overflow when sending a LOT of prints
+void G_BufferedSendOrPrint(gentity_t* playerOrNull, const char* text) {
+	if (playerOrNull) {
+		int lenOld = strlen(playerOrNull->client->bufferedPrintBuffer);
+		int lenNew = strlen(text);
+		if ((lenOld+lenNew)>BUFFERED_TEXT_MAX_LENGTH) {
+			// overflowing, flush what's already there and buffer the new text
+			trap_SendServerCommand(playerOrNull - g_entities, va("print \"%s\"", playerOrNull->client->bufferedPrintBuffer));
+			Q_strncpyz(playerOrNull->client->bufferedPrintBuffer,text,sizeof(playerOrNull->client->bufferedPrintBuffer));
+		}
+		else if ((lenOld+lenNew) == BUFFERED_TEXT_MAX_LENGTH) {
+			// can't fit any more after this, so just send immediately
+			trap_SendServerCommand(playerOrNull - g_entities, va("print \"%s%s\"", playerOrNull->client->bufferedPrintBuffer,text));
+			*playerOrNull->client->bufferedPrintBuffer = '\0';
+		}
+		else {
+			// still room. buffer it
+			Q_strcat(playerOrNull->client->bufferedPrintBuffer, sizeof(playerOrNull->client->bufferedPrintBuffer), text);
+		}
+		playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated = level.time;
+	}
+	else {
+		Com_Printf("%s",text);
+	}
+}
+void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull) {
+	if (playerOrNull && *playerOrNull->client->bufferedPrintBuffer) {
+		trap_SendServerCommand(playerOrNull-g_entities,va("print \"%s\"", playerOrNull->client->bufferedPrintBuffer));
+		*playerOrNull->client->bufferedPrintBuffer = '\0';
+		playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated = level.time;
+	}
+}
+void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull) {
+	if (playerOrNull && *playerOrNull->client->bufferedPrintBuffer) {
+		if (playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated + 1000 < level.time || level.time < playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated) {
+			Com_Printf("^3Flushing client print buffer due to 1000ms passing without flush or update. Code logic problem?");
+			G_BufferedSendOrPrintFlush(playerOrNull);
+		}
+	}
+}
 
 
 static int DF_GetNewRunId() {
@@ -1730,7 +1772,7 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 
 }
 
-void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcoursename, raceStyle_t* thisMapDefaultRaceStyle)
+void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcoursename, raceStyle_t* thisMapDefaultRaceStyle, qboolean flush)
 {
 	rankUpdateRequestStruct_t data = { 0 };
 	int countLBs = LB_TYPES_COUNT;
@@ -1751,15 +1793,17 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 	Q_strncpyz(data.course,coursename,sizeof(data.course));
 	Q_strncpyz(data.subcourse, subcoursename,sizeof(data.subcourse));
 
-#define TOPCOLUMNS2 "runs_pre.id AS runId, " REALRANK 
-#define QUERY3 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE besttime=duration_ms GROUP BY userid ORDER BY besttime ASC, runwhen ASC"
+#define REALRANKRUN "IF(besttime=duration_ms AND userid!=-1,ROW_NUMBER() OVER (PARTITION BY userid=-1,duration_ms=besttime ORDER BY besttime ASC, runwhen ASC),NULL) AS realrank" // unlogged ones shouldn't count and this way we can get the proper ones
+#define TOPCOLUMNS2 "runs_pre.id AS runId, " REALRANKRUN 
+#define QUERY3 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id ORDER BY besttime ASC, runwhen ASC"
 
 	if (data.clientnum != -1) {
 		memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	}
-	
+		
 	for (style = 0; style < MV_NUMSTYLES; style++) {
 		data.style = style;
+		data.flush = (style == MV_NUMSTYLES - 1) && flush;
 		if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATE,
 			va(
 				"UPDATE runs INNER JOIN "

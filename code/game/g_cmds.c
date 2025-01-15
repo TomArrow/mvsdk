@@ -2298,14 +2298,28 @@ void Cmd_RateMap_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"You can't rate maps without being logged in.\n\"");
 		return;
 	}
-	if (trap_Argc() < 3) {
-		trap_SendServerCommand(ent-g_entities,"print \"Usage: ratemap <style> <rating>; rating must be a number from 0 to 10, and can be a fractional number\n\"");
-		return;
-	}
+
 	memset(&data, 0, sizeof(data));
 
 	data.clientnum = ent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+
+	if (trap_Argc() < 3) {
+		trap_SendServerCommand(ent-g_entities,"print \"Usage: ratemap <style> <rating>; rating must be a number from 0 to 10, and can be a fractional number\n\"");
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RATEMAPSHOWMINE,
+			//"REPLACE INTO mapratings (course,userid,style,rating) VALUES (?,?,?,?)"
+			"SELECT style,rating FROM mapratings WHERE course=? AND userid=? ORDER BY style ASC"
+		)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error fetching own ratings of current map: Database error, query could not be sent.\n\"");
+			return;
+		}
+		G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+		G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+
+		return;
+	}
 
 	trap_Argv(1, arg, sizeof(arg));
 	data.style = RaceNameToInteger(arg);
@@ -2335,7 +2349,8 @@ void Cmd_RateMap_f(gentity_t* ent) {
 	}
 
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_RATEMAP,
-		"REPLACE INTO mapratings (course,userid,style,rating) VALUES (?,?,?,?)"
+		//"REPLACE INTO mapratings (course,userid,style,rating) VALUES (?,?,?,?)"
+		"INSERT INTO mapratings (course,userid,style,rating) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE rating=?"
 	)) {
 		trap_SendServerCommand(ent - g_entities, "print \"Error rating map: Database error, query could not be sent.\n\"");
 		return;
@@ -2343,6 +2358,7 @@ void Cmd_RateMap_f(gentity_t* ent) {
 	G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
 	G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
 	G_COOL_API_DB_PreparedBindInt(data.style);
+	G_COOL_API_DB_PreparedBindFloat(data.value);
 	G_COOL_API_DB_PreparedBindFloat(data.value);
 
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
@@ -2451,6 +2467,7 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 #define WRQUERY WRORNOTWRQUERY " HAVING bestrank = 1 " WRORNOTWRQUERY_END
 
 	// TODO can we simplify this? LOL
+	// TODO dont use actual best time as basis for deviation but rather the best time's holder's average general deviation multiplied with his best time?
 #define HARDESTEASIESTQUERY "SET @style=?; \
  \
 SELECT course,subcourse,AVG(playerDevDev)*100 AS avgdevdev, best, COUNT(*) as samples FROM \

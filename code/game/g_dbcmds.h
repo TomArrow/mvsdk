@@ -33,6 +33,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_RANKUPDATEMAPREQUEST,
 	DBREQUEST_RANKUPDATEMAPLATESTSET,
 	DBREQUEST_RATEMAP,
+	DBREQUEST_RATEMAPSHOWMINE,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -71,6 +72,7 @@ typedef struct rankUpdateRequestStruct_s {
 	char		course[COURSENAME_MAX_LEN + 1];
 	char		subcourse[COURSENAME_MAX_LEN + 1];
 	int			style;
+	qboolean	flush;
 }rankUpdateRequestStruct_t;
 typedef struct rankUpdateMapRequestStruct_s {
 	int			ip[4];
