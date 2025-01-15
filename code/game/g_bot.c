@@ -133,7 +133,7 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 				}
 				if (!found) {
 					if (g_developer.integer) {
-						Com_Printf("^3Arenas: Did not find %s. Skipping %s.", mapName, mapNameRaw);
+						Com_Printf("^3Arenas: Did not find %s. Skipping %s.\n", mapName, mapNameRaw);
 					}
 					continue; // skip this map, it doesn't exist anymore
 				}
@@ -155,20 +155,39 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 			strcpy(infos[count].name, keyValue);
 			infos[count].info = G_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
 			if (infos[count].info) {
+				infoHashed_t* cmp;
+				qboolean dupe = qfalse;
 				strcpy(infos[count].info, info);
-				infos[count].next = hashTable[hash];
-				hashTable[hash] = &infos[count];
-				count++;
+
+				// check for dupes
+				for (cmp = g_arenaInfosHashTable[hash]; cmp; cmp = cmp->next) {
+					//if( Q_stricmp( Info_ValueForKey( g_arenaInfos[n], "map" ), map ) == 0 ) {
+					if (Q_stricmp(cmp->name, keyValue) == 0) {
+						dupe = qtrue;
+						break;
+					}
+				}
+
+				if (!dupe) {
+					infos[count].next = hashTable[hash];
+					hashTable[hash] = &infos[count];
+					count++;
+				}
+				else {
+					if (g_developer.integer) {
+						Com_Printf("^3G_ParseInfos: %s is a dupe. Skipping.\n", keyValue);
+					}
+				}
 			}
 			else {
 				if (g_developer.integer) {
-					Com_Printf("^3Arenas: Failed to alloc string for %s.", keyValue);
+					Com_Printf("^3G_ParseInfos: Failed to alloc string for %s.\n", keyValue);
 				}
 			}
 		}
 		else {
 			if (g_developer.integer) {
-				Com_Printf("^3Arenas: Failed to alloc name string for %s.", keyValue);
+				Com_Printf("^3G_ParseInfos: Failed to alloc name string for %s.\n", keyValue);
 			}
 		}
 	}
@@ -460,9 +479,9 @@ static void G_LoadArenas( void ) {
 	int			numBsps;
 	vmCvar_t	arenasFile;
 	char		filename[128];
-	static char	dirlistBsp[8192];
-	static char	dirlist[8192];
 	char*		dirptr;
+	static char	dirlistBsp[32768];
+	static char	dirlist[32768];
 	int			i, n;
 	int			dirlen;
 	int			hash;
