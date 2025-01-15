@@ -1998,4 +1998,5 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("easiest");
 	trap_AddCommand("notwr");
 	trap_AddCommand("wrs");
+	trap_AddCommand("rank");
 }

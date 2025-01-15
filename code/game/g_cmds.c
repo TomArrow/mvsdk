@@ -1032,6 +1032,7 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"^2/loadcheckpoints^7 - Load your custom checkpoints for this map\n\"");
 
 		trap_SendServerCommand(ent - g_entities, "print \"\n^7Statistics commands:\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/rank^7 - Show rankings for a given style and leaderboard type. Default JK2/Main\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/time^7 - Check and publicly print your personal best for your current race settings\n\"");
@@ -2233,6 +2234,7 @@ void Cmd_Latest_f(gentity_t* ent) {
 	if (style == -1) {
 
 		if (data.userId != -2) {
+			data.userResults = qtrue;
 			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS,
 				data.userId == -3
 				? USERIDQUERY_USERSEARCH LATESTQUERY " WHERE " LATESTQUERY_USERWUERE LATESTQUERY_END
@@ -2250,6 +2252,7 @@ void Cmd_Latest_f(gentity_t* ent) {
 			}
 		}
 		else {
+			data.userResults = qfalse;
 			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY LATESTQUERY_END)) {
 				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
 				return;
@@ -2258,6 +2261,7 @@ void Cmd_Latest_f(gentity_t* ent) {
 	}
 	else {
 		if (data.userId != -2) {
+			data.userResults = qtrue;
 			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS,
 				data.userId == -3
 				? USERIDQUERY_USERSEARCH LATESTQUERY  " WHERE " LATESTQUERY_USERWUERE  " AND " LATESTQUERY_STYLEWUERE LATESTQUERY_END
@@ -2276,6 +2280,7 @@ void Cmd_Latest_f(gentity_t* ent) {
 			G_COOL_API_DB_PreparedBindInt(style);
 		}
 		else {
+			data.userResults = qfalse;
 			if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GETLATESTRUNS, LATESTQUERY  " WHERE "  LATESTQUERY_STYLEWUERE LATESTQUERY_END)) {
 				trap_SendServerCommand(ent - g_entities, "print \"^1Latest runs cannot be displayed. Database request failed.\n\"");
 				return;
@@ -2501,10 +2506,10 @@ GROUP BY course,subcourse \
 HAVING samples>=3 \
 ORDER BY avgdevdev "
 
-#define LONGESTSHORTESTQUERY_END " LIMIT ?,10"
+#define PAGINGLIMIT " LIMIT ?,10"
 
 	if (data.type == MAPSEARCH_MOSTPLAYED) {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, MOSTPLAYEDQUERY LONGESTSHORTESTQUERY_END)) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, MOSTPLAYEDQUERY PAGINGLIMIT)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Most played maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
@@ -2513,7 +2518,7 @@ ORDER BY avgdevdev "
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
 	else if (data.type == MAPSEARCH_TOPRATED) {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, TOPRATEDQUERY LONGESTSHORTESTQUERY_END)) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, TOPRATEDQUERY PAGINGLIMIT)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Top rated maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
@@ -2522,7 +2527,7 @@ ORDER BY avgdevdev "
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
 	else if (data.type == MAPSEARCH_LONGEST) {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "DESC" LONGESTSHORTESTQUERY_END)) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "DESC" PAGINGLIMIT)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Longest maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
@@ -2533,8 +2538,8 @@ ORDER BY avgdevdev "
 	else if (data.type == MAPSEARCH_HARDEST || data.type == MAPSEARCH_EASIEST) {
 		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, 
 			data.type == MAPSEARCH_HARDEST 
-			? HARDESTEASIESTQUERY " DESC " LONGESTSHORTESTQUERY_END
-			: HARDESTEASIESTQUERY " ASC " LONGESTSHORTESTQUERY_END
+			? HARDESTEASIESTQUERY " DESC " PAGINGLIMIT
+			: HARDESTEASIESTQUERY " ASC " PAGINGLIMIT
 		)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Hardest/easiest maps cannot be displayed. Database request failed.\n\"");
 			return;
@@ -2544,7 +2549,7 @@ ORDER BY avgdevdev "
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
 	else if (data.type == MAPSEARCH_SHORTEST) {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "ASC" LONGESTSHORTESTQUERY_END)) {
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, LONGESTSHORTESTQUERY "ASC" PAGINGLIMIT)) {
 			trap_SendServerCommand(ent - g_entities, "print \"^1Shortest maps cannot be displayed. Database request failed.\n\"");
 			return;
 		}
@@ -2557,8 +2562,8 @@ ORDER BY avgdevdev "
 		if (*data.userSearchTerm) {
 			if (requestSuccess = G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH,
 				data.type == MAPSEARCH_NOTWR
-				? USERIDQUERY_USERSEARCH NOTWRQUERY LONGESTSHORTESTQUERY_END
-				: USERIDQUERY_USERSEARCH WRQUERY LONGESTSHORTESTQUERY_END
+				? USERIDQUERY_USERSEARCH NOTWRQUERY PAGINGLIMIT
+				: USERIDQUERY_USERSEARCH WRQUERY PAGINGLIMIT
 			)) {
 				G_COOL_API_DB_PreparedBindString(data.userSearchTerm);
 			}
@@ -2566,8 +2571,8 @@ ORDER BY avgdevdev "
 		else {
 			if (requestSuccess = G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_MAPSEARCH, 
 				data.type == MAPSEARCH_NOTWR 
-				? USERIDQUERY_USERID NOTWRQUERY LONGESTSHORTESTQUERY_END
-				: USERIDQUERY_USERID WRQUERY LONGESTSHORTESTQUERY_END
+				? USERIDQUERY_USERID NOTWRQUERY PAGINGLIMIT
+				: USERIDQUERY_USERID WRQUERY PAGINGLIMIT
 
 			)) {
 				G_COOL_API_DB_PreparedBindString(ent->client->sess.login.name);
@@ -2588,6 +2593,79 @@ ORDER BY avgdevdev "
 		G_COOL_API_DB_PreparedBindInt(first);
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
 	}
+
+}
+void Cmd_Rank_f(gentity_t* ent) {
+	//int clientNum = -1;
+	int page, first;
+	int i,t;
+	rankRequestStruct_t data;
+	const int args = trap_Argc();
+	char inputString[15];
+
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+	
+	memset(&data, 0, sizeof(data));
+	
+	if (!coolApi_dbVersion) {
+		trap_SendServerCommand(ent-g_entities,"print \"^1Rank request not possible, DB API not available\n\"");
+		return;
+	}
+
+	data.clientnum = ent - g_entities;
+	memcpy(&data.ip, &mv_clientSessions[data.clientnum], sizeof(data.ip));
+
+	page = 0;
+	if (trap_Argc() > 1) {
+		for (i = 1; i < args; i++) {
+			trap_Argv(i, inputString, sizeof(inputString));
+			if (atoi_real(inputString)) {
+				//BUG - atoi(inputstring) returns true for values like "18percent" where it should return false..
+				page = atoi(inputString);
+				data.pageSpecified = qtrue;
+			}
+			else if ((t = RaceNameToInteger(inputString)) != -1) {
+				data.style = t;
+				data.styleSpecified = qtrue;
+			}
+			else if ((t = LeaderboardNameToInteger(inputString)) != -1) {
+				data.lbType = t;
+				data.lbTypeSpecified = qtrue;
+			}
+		}
+	}
+	else {
+		page = 0;
+	}
+	page = MAX(page-1, 0);
+	first = page * 10;
+
+
+	// TODO more distinction? avoid segmented times? idk
+
+	if (data.style == -1) {
+		data.style = MV_JK2;
+	}
+
+#define RANKREQUEST "SELECT username,SUM(tmpRank=1) as golds,SUM(tmpRank=2) as silvers,SUM(tmpRank=3) as bronzes, ROW_NUMBER() OVER (ORDER BY golds DESC) AS realrank \
+FROM ( \
+SELECT username,users.id,runs.style,runs.tmpLB,runs.tmpRank,SUM(tmpRank) OVER (PARTITION BY runs.userid,runs.style,runs.tmpRank,runs.tmpLB) AS rankSum \
+FROM users \
+LEFT JOIN runs ON (runs.userid=users.id  ) \
+WHERE style=? AND tmpLB=? AND tmpRank < 4 \
+) rankstuff \
+GROUP BY id,style,tmpLB \
+ORDER BY golds DESC"
+
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANK, RANKREQUEST PAGINGLIMIT)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Ranks cannot be displayed. Database request failed.\n\"");
+		return;
+	}
+	G_COOL_API_DB_PreparedBindInt(data.style);
+	G_COOL_API_DB_PreparedBindInt(data.lbType);
+	G_COOL_API_DB_PreparedBindInt(first);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
 
 }
 
@@ -4751,6 +4829,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "rank"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "latest"))
 		{
 			giveError = qtrue;
@@ -4968,6 +5050,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Top_f(ent);
 	else if (Q_stricmp(cmd, "latest") == 0)
 		Cmd_Latest_f(ent);
+	else if (Q_stricmp(cmd, "rank") == 0)
+		Cmd_Rank_f(ent);
 	else if (Q_stricmp(cmd, "longest") == 0)
 		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "shortest") == 0)

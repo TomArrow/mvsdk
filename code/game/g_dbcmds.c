@@ -1176,15 +1176,20 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 		return;
 	}
 
-	G_COOL_API_DB_GetMoreResults(&affectedRows); // user search. skip first two statements. TODO check for errors here?
+	if (lbRequestData.userResults) {
+		G_COOL_API_DB_GetMoreResults(&affectedRows); // user search. skip first two statements. TODO check for errors here?
 
-	if (!G_COOL_API_DB_NextRow()) {
-		trap_SendServerCommand(ent - g_entities, va("print \"No user found under the specified serach term '%s'.\n\"", lbRequestData.userSearchTerm));
-		return;
+		if (!G_COOL_API_DB_NextRow()) {
+			trap_SendServerCommand(ent - g_entities, va("print \"No user found under the specified serach term '%s'.\n\"", lbRequestData.userSearchTerm));
+			return;
+		}
+		G_COOL_API_DB_GetString(0, userName, sizeof(userName));
+
+		G_COOL_API_DB_GetMoreResults(&affectedRows);
 	}
-	G_COOL_API_DB_GetString(0, userName, sizeof(userName));
-
-	G_COOL_API_DB_GetMoreResults(&affectedRows);
+	else {
+		userName[0] = '\0';
+	}
 
 	if (lbRequestData.userId == -3) {
 
@@ -1401,8 +1406,11 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
+		// TODO have i forgot one? this function keeps growing...
 		G_CreateMapRaceDefaultsTable();
 		G_CreateRunsTable();
+		G_CreateUserTable();
+		G_CreateMapRatingsTable();
 		trap_SendServerCommand(data.clientnum,"print \"^1Shortest/longest map results display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
 		return;
 	}
@@ -1628,6 +1636,68 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 
 	if (data.type == MAPSEARCH_HARDEST || data.type == MAPSEARCH_EASIEST) {
 		trap_SendServerCommand(ent - g_entities, va("print \"Note: Maps will only have a difficulty ratiing if enough active players played them for any given style.\n\""));
+	}
+
+
+}
+static void G_RankResult(int status, const char* errorMessage, int affectedRows) {
+	rankRequestStruct_t data;
+	gentity_t* ent = NULL;
+	int resultIndex = 0;
+	char userName[USERNAME_MAX_LEN + 1];
+	//evaluatedRunInfo_t eRunInfo;
+
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		Com_Printf("^1Client %d rank results returned, user no longer valid.\n", data.clientnum);
+		return;
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateRunsTable();
+		trap_SendServerCommand(data.clientnum,"print \"^1Rank results display failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1Rank map results failed with status %d and error message %s.\n\"", status, errorMessage));
+		return;
+	}
+
+	userName[0] = '\0';
+
+	trap_SendServerCommand(ent - g_entities, va("print \"Ranks in style %s in leaderboard type %s:\n\"", data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN", data.lbType < LB_TYPES_COUNT ? leaderboardNames[data.lbType].string : "UNKNOWN"));
+
+	{
+
+		mainLeaderboardType_t lbType;
+		int rank,golds,silvers,bronzes;
+
+		while (G_COOL_API_DB_NextRow()) {
+			G_COOL_API_DB_GetString(0,userName,sizeof(userName));
+			golds = G_COOL_API_DB_GetInt(1);
+			silvers = G_COOL_API_DB_GetInt(2);
+			bronzes = G_COOL_API_DB_GetInt(3);
+			rank = G_COOL_API_DB_GetInt(4);
+
+			trap_SendServerCommand(ent - g_entities, va("print \"#%-3d %10s: %4d world records\n\"",rank,userName,golds));
+
+			
+			resultIndex++;
+		}
+	}
+
+	trap_SendServerCommand(ent - g_entities, va("print \"\n\""));
+
+	if (!data.styleSpecified && !data.pageSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can specify movement style and page number.\n\""));
+	}
+	else if (!data.pageSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify page number.\n\""));
+	} else if (!data.styleSpecified) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Note: You can also specify movement style.\n\""));
 	}
 
 
@@ -2189,6 +2259,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_MAPSEARCH:
 					G_ShortestLongestResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_RANK:
+					G_RankResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_RATEMAP:
 					G_RateMapResult(status, errorMessage, affectedRows);

@@ -34,6 +34,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_RANKUPDATEMAPLATESTSET,
 	DBREQUEST_RATEMAP,
 	DBREQUEST_RATEMAPSHOWMINE,
+	DBREQUEST_RANK,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -108,6 +109,7 @@ typedef struct latestRunsRequestStruct_s {
 	qboolean	styleSpecified;
 	qboolean	pageSpecified;
 	char		userSearchTerm[15];
+	qboolean	userResults;
 }latestRunsRequestStruct_t;
 
 typedef enum mapSearchType_s {
@@ -133,6 +135,15 @@ typedef struct mapSearchRequestStruct_s {
 	mainLeaderboardType_t	lbType;
 	char					userSearchTerm[15];
 } mapSearchRequestStruct_t;
+typedef struct rankRequestStruct_s {
+	int						ip[4];
+	int						clientnum;
+	qboolean				styleSpecified;
+	qboolean				lbTypeSpecified;
+	qboolean				pageSpecified;
+	int						style;
+	mainLeaderboardType_t	lbType;
+} rankRequestStruct_t;
 
 
 typedef struct maplistUnplayedRequestStruct_s {
