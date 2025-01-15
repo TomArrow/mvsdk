@@ -132,6 +132,9 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 					}
 				}
 				if (!found) {
+					if (g_developer.integer) {
+						Com_Printf("^3Arenas: Did not find %s. Skipping %s.", mapName, mapNameRaw);
+					}
 					continue; // skip this map, it doesn't exist anymore
 				}
 			}
@@ -156,6 +159,16 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 				infos[count].next = hashTable[hash];
 				hashTable[hash] = &infos[count];
 				count++;
+			}
+			else {
+				if (g_developer.integer) {
+					Com_Printf("^3Arenas: Failed to alloc string for %s.", keyValue);
+				}
+			}
+		}
+		else {
+			if (g_developer.integer) {
+				Com_Printf("^3Arenas: Failed to alloc name string for %s.", keyValue);
 			}
 		}
 	}
