@@ -104,6 +104,7 @@ extern int gEscapeTime;
 #define TT_ACCOUNTFLAG_A_USERSFORCELOGIN				(1<<3)
 #define TT_ACCOUNTFLAG_A_ARENALESSMAPS					(1<<4) // list/callvote maps without arena files
 #define TT_ACCOUNTFLAG_A_UPDATERANKS					(1<<5) 
+#define TT_ACCOUNTFLAG_A_BLACKLISTMAPS					(1<<6) 
 
 typedef enum getUserCmdType_s
 {
@@ -761,6 +762,7 @@ typedef struct {
 	qboolean	mustGenerateArena;
 	qboolean	allRaceGenerationAlreadyCalled;
 	qboolean	arenasLoaded;
+	qboolean	blacklistsLoaded;
 	qboolean	shouldUpdateMapRanks;
 	char		message[MAX_STRING_CHARS]; // map message (some maps provide it and its like a long level name, can use for arena auto gen
 
@@ -1221,6 +1223,7 @@ void G_InitBots( qboolean restart );
 char *G_GetBotInfoByNumber( int num );
 infoHashed_t *G_GetBotInfoByName( const char *name );
 infoHashed_t *G_GetArenaInfoByMap(const char* map);
+qboolean G_IsMapBlacklisted(const char* map);
 void G_CheckBotSpawn( void );
 void G_RemoveQueuedBotBegin( int clientNum );
 qboolean G_BotConnect( int clientNum, qboolean restart );

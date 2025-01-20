@@ -1061,6 +1061,9 @@ void Cmd_Help_f(gentity_t* ent) {
 		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_ARENALESSMAPS) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/arenaless^7 - List .bsp files without corresponding arena files\n\"");
 		}
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_BLACKLISTMAPS) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/blacklistmap^7 - Blacklists either the current or a named map from being shown in maplist/arenaless list\n\"");
+		}
 		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_UPDATERANKS) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/updateRanks^7 - Update temporary ranks of this map in the DB\n\"");
 		}
@@ -3362,6 +3365,8 @@ int G_ClientNumberFromStrippedName ( const char* name )
 	return -1;
 }
 
+extern void G_BlacklistMap(const char* thisMapName);
+
 void Cmd_GenArena_f(gentity_t* ent) {
 	qboolean allRace = qfalse;
 	char	arg1[10];
@@ -3425,7 +3430,7 @@ void Cmd_Arenaless_f(gentity_t* ent) {
 		// a.bsp
 		*(bspptr + bspLen - 4) = '\0'; // cut off .bsp
 		ai = G_GetArenaInfoByMap(bspptr);
-		if (ai) {
+		if (ai || G_IsMapBlacklisted(bspptr)) {
 			continue; // already have this as arena
 		}
 
@@ -3468,6 +3473,29 @@ void Cmd_Arenaless_f(gentity_t* ent) {
 	trap_SendServerCommand(ent - g_entities, va("print \"\nTotal count: %d\n\"", count));
 
 
+
+}
+
+void Cmd_BlacklistMap_f(gentity_t* ent) {
+	char arg[128];
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_BLACKLISTMAPS)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1You do not have permission to use this command.\n\"");
+		return;
+	}
+
+	if (trap_Argc() > 1) {
+		trap_Argv(1, arg, sizeof(arg));
+	}
+	else {
+		Q_strncpyz(arg, DF_GetCourseName(), sizeof(arg));
+	}
+	if (G_IsMapBlacklisted(arg)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Cannot blacklist map. Already blacklisted.\n\"");
+		return;
+	}
+	G_BlacklistMap(arg);
+	
 
 }
 
@@ -4944,6 +4972,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "blacklistmap"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "updateRanks"))
 		{
 			giveError = qtrue;
@@ -5110,6 +5142,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_GenArena_f(ent);
 	else if (Q_stricmp (cmd, "arenaless") == 0)
 		Cmd_Arenaless_f(ent);
+	else if (Q_stricmp (cmd, "blacklistmap") == 0)
+		Cmd_BlacklistMap_f(ent);
 	else if (Q_stricmp (cmd, "updateRanks") == 0)
 		Cmd_UpdateRanks_f(ent);
 	else if (Q_stricmp (cmd, "forcelogin") == 0)

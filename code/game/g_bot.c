@@ -13,6 +13,10 @@ int					g_numArenas;
 infoHashed_t		g_arenaInfosHashed[MAX_ARENAS];
 infoHashed_t*		g_arenaInfosHashTable[INFO_HASH_SIZE] = { NULL };
 
+int					g_numBlacklistedMaps;
+infoHashed_t		g_blacklistedMaps[MAX_ARENAS];
+infoHashed_t*		g_blacklistedMapsHashTable[INFO_HASH_SIZE] = { NULL };
+
 
 #define BOT_BEGIN_DELAY_BASE		2000
 #define BOT_BEGIN_DELAY_INCREMENT	1500
@@ -116,11 +120,8 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 				}
 			}
 
-			if (g_defrag.integer && (!Q_stricmp(mapNameRaw, "artus_detention") || !Q_stricmp(mapNameRaw, "artus_mine") || !Q_stricmp(mapNameRaw, "artus_topside") || !Q_stricmp(mapNameRaw, "bespin_platform") || !Q_stricmp(mapNameRaw, "bespin_streets") || !Q_stricmp(mapNameRaw, "bespin_undercity") || !Q_stricmp(mapNameRaw, "cairn_assembly") || !Q_stricmp(mapNameRaw, "cairn_bay") || !Q_stricmp(mapNameRaw, "cairn_dock1") || !Q_stricmp(mapNameRaw, "cairn_reactor") || !Q_stricmp(mapNameRaw, "ctf_bespin") || !Q_stricmp(mapNameRaw, "ctf_imperial") || !Q_stricmp(mapNameRaw, "ctf_ns_streets") || !Q_stricmp(mapNameRaw, "ctf_yavin") 
-				|| !Q_stricmp(mapNameRaw, "doom_comm") || !Q_stricmp(mapNameRaw, "doom_detention") || !Q_stricmp(mapNameRaw, "doom_shields") || !Q_stricmp(mapNameRaw, "duel_bay") || !Q_stricmp(mapNameRaw, "duel_bespin") || !Q_stricmp(mapNameRaw, "duel_carbon") || !Q_stricmp(mapNameRaw, "duel_hangar") || !Q_stricmp(mapNameRaw, "duel_jedi") || !Q_stricmp(mapNameRaw, "duel_pit") || !Q_stricmp(mapNameRaw, "duel_temple") || !Q_stricmp(mapNameRaw, "duel_training") 
-				|| !Q_stricmp(mapNameRaw, "ffa_bespin") || !Q_stricmp(mapNameRaw, "ffa_deathstar") || !Q_stricmp(mapNameRaw, "ffa_imperial") || !Q_stricmp(mapNameRaw, "ffa_ns_hideout") || !Q_stricmp(mapNameRaw, "ffa_ns_streets") || !Q_stricmp(mapNameRaw, "ffa_raven") || !Q_stricmp(mapNameRaw, "ffa_yavin") 
-				|| !Q_stricmp(mapNameRaw, "kejim_base") || !Q_stricmp(mapNameRaw, "kejim_post") || !Q_stricmp(mapNameRaw, "ns_hideout") || !Q_stricmp(mapNameRaw, "ns_starpad") || !Q_stricmp(mapNameRaw, "ns_streets") || !Q_stricmp(mapNameRaw, "pit") || !Q_stricmp(mapNameRaw, "valley") || !Q_stricmp(mapNameRaw, "yavin_canyon") || !Q_stricmp(mapNameRaw, "yavin_courtyard") || !Q_stricmp(mapNameRaw, "yavin_final") || !Q_stricmp(mapNameRaw, "yavin_swamp") || !Q_stricmp(mapNameRaw, "yavin_temple") || !Q_stricmp(mapNameRaw, "yavin_trial"))) { // had to split up the line for qvm :/
-				continue; // dont show base maps in the list for defrag 
+			if (G_IsMapBlacklisted(mapNameRaw)) {
+				continue;
 			}
 		}
 
@@ -445,6 +446,208 @@ int arenasort(void const* a, void const* b) {
 
 	return strcmp(aa->name, bb->name);
 }
+
+qboolean G_IsMapBlacklisted(const char* map) {
+	int				n;
+	int				hash = generateHashValue(map, INFO_HASH_SIZE);
+	infoHashed_t* info;
+
+	for (info = g_blacklistedMapsHashTable[hash]; info; info = info->next) {
+		if (Q_stricmp(info->name, map) == 0) {
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+static void G_AddMapToBlacklist(const char* mapname) {
+	infoHashed_t* blMap;
+	int				nameLen;
+	int				hash;
+	if (G_IsMapBlacklisted(mapname)) {
+		// already in the blacklist, dont dupe.
+		return;
+	}
+	blMap = &g_blacklistedMaps[g_numBlacklistedMaps];
+	nameLen = strlen(mapname);
+	blMap->name = G_Alloc(nameLen + 1);
+	if (blMap->name) {
+		Q_strncpyz(blMap->name, mapname, nameLen + 1);
+		blMap->info = NULL;
+		hash = generateHashValue(blMap->name, INFO_HASH_SIZE);
+		blMap->next = g_blacklistedMapsHashTable[hash];
+		g_blacklistedMapsHashTable[hash] = blMap;
+		g_numBlacklistedMaps++;
+	}
+}
+
+static void G_LoadMapBlacklist(const char* mapBlacklistFile) {
+	fileHandle_t	f;
+	static char		buf[MAX_ARENAS_TEXT];
+	char			mapname[128];
+	char			*s = buf;
+	const char		*token;
+	int				fileLen;
+
+	fileLen = trap_FS_FOpenFile(mapBlacklistFile, &f, FS_READ);
+	if (!f) {
+		return;
+	}
+
+	trap_FS_Read(buf, sizeof(buf), f);
+	buf[fileLen] = 0;
+
+	while (s) {
+		token = COM_ParseExt(&s, qtrue);
+		if (*token) {
+			G_AddMapToBlacklist(token);
+		}
+	}
+
+	trap_FS_FCloseFile(f);
+}
+
+static void G_LoadMapBlacklists() {
+
+	int			numdirs;
+	int			numBsps;
+	static char		dirlist[32768];
+	char* dirptr;
+	int i;
+	int			dirlen;
+	char		filename[128];
+	int			numBlacklists = 0;
+
+	g_numBlacklistedMaps = 0;
+
+	numdirs = trap_FS_GetFileList("mapblacklists", ".txt", dirlist, sizeof(dirlist));
+	dirptr = dirlist;
+	for (i = 0; i < numdirs; i++, dirptr += dirlen + 1) {
+		dirlen = strlen(dirptr);
+		strcpy(filename, "mapblacklists/");
+		strcat(filename, dirptr);
+		G_LoadMapBlacklist(filename);
+		numBlacklists++;
+	}
+
+	if (numBlacklists) {
+		Com_Printf("%d blacklist files were parsed.\n");
+	}
+
+	if (g_defrag.integer) {
+
+		// don't show normal mp maps in defrag mode
+		G_AddMapToBlacklist("ctf_bespin");
+		G_AddMapToBlacklist("ctf_imperial");
+		G_AddMapToBlacklist("ctf_ns_streets");
+		G_AddMapToBlacklist("ctf_yavin");
+		G_AddMapToBlacklist("duel_bay");
+		G_AddMapToBlacklist("duel_bespin");
+		G_AddMapToBlacklist("duel_carbon");
+		G_AddMapToBlacklist("duel_hangar");
+		G_AddMapToBlacklist("duel_jedi");
+		G_AddMapToBlacklist("duel_pit");
+		G_AddMapToBlacklist("duel_temple");
+		G_AddMapToBlacklist("duel_training");
+		G_AddMapToBlacklist("ffa_bespin");
+		G_AddMapToBlacklist("ffa_deathstar");
+		G_AddMapToBlacklist("ffa_imperial");
+		G_AddMapToBlacklist("ffa_ns_hideout");
+		G_AddMapToBlacklist("ffa_ns_streets");
+		G_AddMapToBlacklist("ffa_raven");
+		G_AddMapToBlacklist("ffa_yavin");
+	}
+
+	// block sp maps from maplist by default (unless we have some cool way to deal with them?)
+	G_AddMapToBlacklist("artus_detention");
+	G_AddMapToBlacklist("artus_mine");
+	G_AddMapToBlacklist("artus_topside");
+	G_AddMapToBlacklist("bespin_platform");
+	G_AddMapToBlacklist("bespin_streets");
+	G_AddMapToBlacklist("bespin_undercity");
+	G_AddMapToBlacklist("cairn_assembly");
+	G_AddMapToBlacklist("cairn_bay");
+	G_AddMapToBlacklist("cairn_dock1");
+	G_AddMapToBlacklist("cairn_reactor");
+	G_AddMapToBlacklist("doom_comm");
+	G_AddMapToBlacklist("doom_detention");
+	G_AddMapToBlacklist("doom_shields");
+	G_AddMapToBlacklist("kejim_base");
+	G_AddMapToBlacklist("kejim_post");
+	G_AddMapToBlacklist("ns_hideout");
+	G_AddMapToBlacklist("ns_starpad");
+	G_AddMapToBlacklist("ns_streets");
+	G_AddMapToBlacklist("pit");
+	G_AddMapToBlacklist("valley");
+	G_AddMapToBlacklist("yavin_canyon");
+	G_AddMapToBlacklist("yavin_courtyard");
+	G_AddMapToBlacklist("yavin_final");
+	G_AddMapToBlacklist("yavin_swamp");
+	G_AddMapToBlacklist("yavin_temple");
+	G_AddMapToBlacklist("yavin_trial");
+	
+
+	level.blacklistsLoaded = qtrue;
+}
+
+
+#define BLACKLIST_NAME "_blacklist" // changed back to _ from 0. doesnt affect ordering anyway
+/*
+=============
+G_BlacklistMap
+=============
+*/
+void G_BlacklistMap(const char* thisMapName)
+{
+	vmCvar_t		mapname;
+	int				len = 0;
+	fileHandle_t	f;
+	static char		arenaText[MAX_ARENAS_TEXT];
+	int				arenaTextLength;
+	int				arenaFileIndex = 0;
+	const char* tmp;
+
+	if (!level.blacklistsLoaded) {
+		G_SendServerCommand(-1, va("print \"^1Can't add to blacklist, blacklists weren't loaded (can't avoid dupes).\n\"", thisMapName), qtrue);
+		return;
+	}
+
+
+	Q_strncpyz(arenaText, va("\n%s", thisMapName), sizeof(arenaText));
+
+	arenaTextLength = strlen(arenaText);
+	while (((len = trap_FS_FOpenFile(va("mapblacklists/" BLACKLIST_NAME "%d.txt", arenaFileIndex), &f, FS_READ)) + arenaTextLength + 2) > MAX_ARENAS_TEXT) {
+		if (!f) {
+
+			// file doesnt exist yet. good. wait, we would prolly never get here then. oh well
+			break;
+		}
+		trap_FS_FCloseFile(f);
+		f = 0;
+		arenaFileIndex++;
+	}
+	if (f) {
+		trap_FS_FCloseFile(f); // we need to close and reopen it. the first open was in FS_READ mode to get the filesize. second open is in FS_APPEND mode. if the file doesnt yet exist thats fine, we will create it.
+		f = 0;
+	}
+
+	trap_FS_FOpenFile(va("mapblacklists/" BLACKLIST_NAME "%d.txt", arenaFileIndex), &f, FS_APPEND);
+
+	if (!f) {
+		G_SendServerCommand(-1, va("print \"^1Blacklist addition failed, cannot open mapblacklists/" BLACKLIST_NAME "%d.txt for writing.\n\"", arenaFileIndex), qtrue);
+		return;
+	}
+	else {
+		G_AddMapToBlacklist(thisMapName);
+		G_SendServerCommand(-1, va("print \"^2Adding to blacklist for %s (length %d) in mapblacklists/" BLACKLIST_NAME "%d.txt (length %d).\n\"", thisMapName, arenaTextLength, arenaFileIndex, len), qtrue);
+	}
+
+	trap_FS_Write(arenaText, arenaTextLength, f);
+
+	trap_FS_FCloseFile(f);
+}
+
 
 /*
 ===============
@@ -1377,6 +1580,7 @@ G_InitBots
 */
 void G_InitBots( qboolean restart ) {
 	G_LoadBots();
+	G_LoadMapBlacklists();
 	G_LoadArenas();
 
 	trap_Cvar_Register( &bot_minplayers, "bot_minplayers", "0", CVAR_SERVERINFO );
