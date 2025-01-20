@@ -114,7 +114,7 @@ static gentity_t *SpawnModelOnVictoryPad( gentity_t *pad, vec3_t offset, gentity
 		return NULL;
 	}
 
-	body->classname = ent->client->pers.netname;
+	G_SetClassName(body, ent->client->pers.netname);
 	body->client = ent->client;
 	body->s = ent->s;
 	body->s.eType = ET_PLAYER;		// could be ET_INVISIBLE
@@ -265,7 +265,7 @@ static gentity_t *SpawnPodium( void ) {
 		return NULL;
 	}
 
-	podium->classname = "podium";
+	G_SetClassName(podium, "podium");
 	podium->s.eType = ET_GENERAL;
 	podium->s.number = podium - g_entities;
 	podium->clipmask = CONTENTS_SOLID;

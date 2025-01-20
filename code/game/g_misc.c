@@ -1254,7 +1254,7 @@ gentity_t *CreateNewDamageBox( gentity_t *ent )
 	//We do not want the client to have any real knowledge of the entity whatsoever. It will only
 	//ever be used on the server.
 	dmgBox = G_Spawn();
-	dmgBox->classname = "dmg_box";
+	G_SetClassName(dmgBox, "dmg_box");
 			
 	dmgBox->r.svFlags = SVF_USE_CURRENT_ORIGIN;
 	dmgBox->r.ownerNum = ent->s.number;
@@ -2917,7 +2917,7 @@ void G_SpawnExampleAnimEnt(vec3_t pos, int aeType, animentCustomInfo_t *aeInfo)
 
 	G_SetOrigin(animEnt, pos);
 
-	animEnt->classname = "g2animent";
+	G_SetClassName(animEnt, "g2animent");
 			
 	VectorCopy (playerMins, animEnt->r.mins);
 	VectorCopy (playerMaxs, animEnt->r.maxs);

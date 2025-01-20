@@ -876,7 +876,7 @@ void CheckAlmostCapture( gentity_t *self, gentity_t *attacker ) {
 		ent = NULL;
 		do
 		{
-			ent = G_Find(ent, FOFS(classname), classname);
+			ent = G_FindByClassNameFast(ent, classname);
 		} while (ent && (ent->flags & FL_DROPPED_ITEM));
 		// if we found the destination flag and it's not picked up
 		if (ent && !(ent->r.svFlags & SVF_NOCLIENT) ) {
@@ -2662,7 +2662,7 @@ void G_Dismember( gentity_t *ent, vec3_t point, int limbType, float limbRollBase
 
 	VectorCopy( point, newPoint );
 	limb = G_Spawn();
-	limb->classname = "playerlimb";
+	G_SetClassName(limb, "playerlimb");
 	G_SetOrigin( limb, newPoint );
 	VectorCopy( newPoint, limb->s.pos.trBase );
 	limb->think = LimbThink;

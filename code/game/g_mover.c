@@ -1041,7 +1041,7 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 
 	// create a trigger with this size
 	other = G_Spawn ();
-	other->classname = "door_trigger";
+	G_SetClassName(other, "door_trigger");
 	VectorCopy (mins, other->r.mins);
 	VectorCopy (maxs, other->r.maxs);
 	other->parent = ent;
@@ -1244,7 +1244,7 @@ void SpawnPlatTrigger( gentity_t *ent ) {
 	// the middle trigger will be a thin trigger just
 	// above the starting position
 	trigger = G_Spawn();
-	trigger->classname = "plat_trigger";
+	G_SetClassName(trigger, "plat_trigger");
 	trigger->touch = Touch_PlatCenterTrigger;
 	trigger->r.contents = CONTENTS_TRIGGER;
 	trigger->parent = ent;

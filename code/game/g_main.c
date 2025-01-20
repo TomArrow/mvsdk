@@ -20,6 +20,8 @@ typedef struct {
 } cvarTable_t;
 
 gentity_t		g_entities[MAX_ENTITIESTOTAL];
+gentity_t*		g_entitiesHashTable[ENTITY_HASH_SIZE];
+int				g_entitiesHashTableCount = 0;
 gentity_t*		g_logicalents = &g_entities[MAX_GENTITIES]; // Quicker access xD
 gclient_t		g_clients[MAX_CLIENTS];
 
@@ -1698,7 +1700,7 @@ void FindIntermissionPoint( void ) {
 	vec3_t		dir;
 
 	// find the intermission spot
-	ent = G_Find (NULL, FOFS(classname), "info_player_intermission");
+	ent = G_FindByClassNameFast(NULL, "info_player_intermission");
 	if ( !ent ) {	// the map creator forgot to put in an intermission point...
 		SelectSpawnPoint ( vec3_origin, level.intermission_origin, level.intermission_angle );
 	} else {

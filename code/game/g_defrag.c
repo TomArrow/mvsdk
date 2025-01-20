@@ -366,7 +366,7 @@ qboolean DF_InAnyTrigger(vec3_t interpOrigin, const char* classname, vec3_t play
 	VectorAdd(interpOrigin, playerMaxs, maxs);
 
 	trigger = NULL;
-	while ((trigger = G_Find(trigger, FOFS(classname), classname)) != NULL) {
+	while ((trigger = G_FindByClassNameFast(trigger, classname)) != NULL) {
 		if (/*courseId >=0 &&*/ !ignoreCourseId && trigger->courseID != courseId || trigger->triggerClientSpecific && trigger->parent != activator) continue;
 		if (trap_EntityContact(mins, maxs, trigger)) return qtrue;
 	}
@@ -1197,6 +1197,15 @@ qboolean DF_RemoveCheckPoints(gentity_t* playerent) {
 	return (qboolean)(removed > 0);
 }
 
+void DF_ClearCheckPointTimes(gentity_t* playerent) {
+	gentity_t* checkpoint = NULL;
+	int clientNum = playerent - g_entities;
+	while (checkpoint = G_FindByClassNameFast(checkpoint, "df_trigger_checkpoint")) {
+		memset(&checkpoint->checkpointTimes[clientNum],0,sizeof(checkpoint->checkpointTimes[clientNum]));
+		memset(&checkpoint->checkpointTimesSegNonReplay[clientNum],0,sizeof(checkpoint->checkpointTimesSegNonReplay[clientNum]));
+	}
+}
+
 // sanity check that the client still exists and knows about this checkpoint andsuch.
 void df_checkCheckpointValid(gentity_t* ent) {
 	gentity_t* owner;
@@ -1352,7 +1361,7 @@ qboolean DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 
 	shield->s.eType = ET_SPECIAL;
 	shield->s.modelindex = HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
-	shield->classname = "df_trigger_checkpoint";
+	G_SetClassName(shield, "df_trigger_checkpoint");
 
 	shield->r.contents = CONTENTS_TRIGGER;
 	shield->triggerOnlyTraced = qtrue;
@@ -1561,7 +1570,7 @@ qboolean DF_CreateCustomCheckpointFromPos(vec3_t trEndpos,float anglesYaw, genti
 
 	shield->s.eType = ET_SPECIAL;
 	shield->s.modelindex = HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
-	shield->classname = "df_trigger_checkpoint";
+	G_SetClassName(shield, "df_trigger_checkpoint");
 
 	shield->r.contents = CONTENTS_TRIGGER;
 	shield->triggerOnlyTraced = qtrue;
@@ -2906,7 +2915,7 @@ void DF_trigger_start(gentity_t* ent) {
 	if (!ent->model) {
 		// broken dumb trigger (srsly i dont get what some ppl are thinking)
 		G_Printf("DEFRAG: ^1Broken %s (no model), maybe used as a target, turning into q3 target_startTimer. WTF\n", ent->classname);
-		ent->classname = "target_startTimer";
+		G_SetClassName(ent, "target_startTimer");
 		//G_FreeEntity(ent);
 		return;
 	}
@@ -2926,7 +2935,7 @@ void DF_trigger_finish(gentity_t* ent) {
 	if (!ent->model) {
 		// broken dumb trigger (srsly i dont get what some ppl are thinking)
 		G_Printf("DEFRAG: ^1Broken %s (no model), maybe used as a target, turning into q3 target_stopTimer. WTF\n", ent->classname);
-		ent->classname = "target_stopTimer";
+		G_SetClassName(ent, "target_stopTimer");
 		//G_FreeEntity(ent);
 		return;
 	}
@@ -2949,7 +2958,7 @@ void DF_trigger_checkpoint(gentity_t* ent) {
 	if (!ent->model) {
 		// broken dumb trigger (srsly i dont get what some ppl are thinking)
 		G_Printf("DEFRAG: ^1Broken %s (no model), maybe used as a target, turning into q3 target_checkpoint. WTF\n", ent->classname);
-		ent->classname = "target_checkpoint";
+		G_SetClassName(ent, "target_checkpoint");
 		//G_FreeEntity(ent);
 		return;
 	}
@@ -3173,7 +3182,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 
 	switch (targetType) { // reusing japro classnames for compatibility
 	case TARGET_STARTTIMER:
-		trigger->classname = "df_trigger_start";
+		G_SetClassName(trigger, "df_trigger_start");
 		if (specificQ3SpawnTypeOverride && typeString) {
 			trigger->overrideMessage = typeString; // ugh, is that cast safe. not rly?
 			DF_RegisterSubCourse(trigger->overrideMessage);
@@ -3183,7 +3192,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		G_Printf("DEFRAG: ^2Q3 %s (%s%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", specificQ3SpawnTypeOverride ? "-SPAWNOVERRIDE" : "", vtos(target->s.origin));
 		break;
 	case TARGET_STOPTIMER:
-		trigger->classname = "df_trigger_finish";
+		G_SetClassName(trigger, "df_trigger_finish");
 		if (q3CourseType && typeString) {
 			trigger->message = typeString;
 		}
@@ -3196,7 +3205,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		break;
 	default:
 	case TARGET_CHECKPOINT:
-		trigger->classname = "df_trigger_checkpoint";
+		G_SetClassName(trigger, "df_trigger_checkpoint");
 		DF_trigger_checkpoint_converted(trigger);
 		level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3);
 		G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
@@ -3236,7 +3245,7 @@ void G_ConvertDefragTriggerTypes() {
 
 		target = NULL;
 		// Q3 style triggers
-		while ((target = G_Find(target, FOFS(classname), q3DefragTargetNames[i])) != NULL) {
+		while ((target = G_FindByClassName(target, q3DefragTargetNames[i])) != NULL) {
 			trigger = NULL;
 			if (!target->targetname) {
 				G_Printf("DEFRAG: ^1untargeted %s at %s\n", target->classname, vtos(target->s.origin));
@@ -3262,7 +3271,7 @@ void G_ConvertDefragTriggerTypes() {
 		// twi_timer
 		if (i != TARGET_CHECKPOINT) { // dunno how twi mod handles checkpoints
 			trigger = NULL;
-			while ((trigger = G_Find(trigger, FOFS(classname), "Twi_timer")) != NULL) {
+			while ((trigger = G_FindByClassName(trigger, "Twi_timer")) != NULL) {
 				if (!trigger->model) {
 					continue;
 				}
@@ -3277,20 +3286,20 @@ void G_ConvertDefragTriggerTypes() {
 				trigger->model = oldModel; 
 				switch (i) { // reusing japro classnames for compatibility
 					case TARGET_STARTTIMER:
-						trigger->classname = "df_trigger_start";
+						G_SetClassName(trigger, "df_trigger_start");
 						DF_trigger_start_converted(trigger);
 						level.dfStartTriggerTypes |= (1 << DFTRIG_TWITIMER);
 						G_Printf("DEFRAG: ^2Twi %s converted to df_trigger_start.\n", oldType);
 						break;
 					case TARGET_STOPTIMER:
-						trigger->classname = "df_trigger_finish";
+						G_SetClassName(trigger, "df_trigger_finish");
 						DF_trigger_finish_converted(trigger,qtrue);
 						level.dfEndTriggerTypes |= (1 << DFTRIG_TWITIMER);
 						G_Printf("DEFRAG: ^2Twi %s converted to df_trigger_finish.\n", oldType);
 						break;
 					default:
 					case TARGET_CHECKPOINT: // wont ever be hit atm, dunno how twi does checkpoints
-						trigger->classname = "df_trigger_checkpoint";
+						G_SetClassName(trigger, "df_trigger_checkpoint");
 						DF_trigger_checkpoint_converted(trigger);
 						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_TWITIMER);
 						G_Printf("DEFRAG: ^2Twi %s converted to df_trigger_checkpoint.\n", oldType);
@@ -3310,7 +3319,7 @@ void G_ConvertDefragTriggerTypes() {
 			const char* typeToFind = i == TARGET_CHECKPOINT ? "rally_checkpoint" : "rally_startfinish";
 			int oldNumber;
 			trigger = NULL;
-			while ((trigger = G_Find(trigger, FOFS(classname), typeToFind)) != NULL) {
+			while ((trigger = G_FindByClassName(trigger, typeToFind)) != NULL) {
 				if (!trigger->model) {
 					continue;
 				}
@@ -3326,7 +3335,7 @@ void G_ConvertDefragTriggerTypes() {
 
 					triggerCopy->model = trigger->model;
 					triggerCopy->number = trigger->number;
-					triggerCopy->classname = "df_trigger_start";
+					G_SetClassName(triggerCopy, "df_trigger_start");
 					DF_trigger_start_converted(triggerCopy);
 					level.dfStartTriggerTypes |= (1 << DFTRIG_Q3RALLY);
 					G_Printf("DEFRAG: ^2Q3R %s converted (via copy) to df_trigger_start.\n", trigger->classname);
@@ -3343,13 +3352,13 @@ void G_ConvertDefragTriggerTypes() {
 					trigger->number = oldNumber;
 					switch (i) { // reusing japro classnames for compatibility
 					/*case TARGET_STARTTIMER:
-						trigger->classname = "df_trigger_start";
+						G_SetClassName(trigger, "df_trigger_start");
 						DF_trigger_start_converted(trigger);
 						level.dfStartTriggerTypes |= (1 << DFTRIG_Q3RALLY);
 						G_Printf("DEFRAG: ^2Q3R %s converted to df_trigger_start.\n", oldType);
 						break;*/
 					case TARGET_STOPTIMER:
-						trigger->classname = "df_trigger_finish";
+						G_SetClassName(trigger, "df_trigger_finish");
 						DF_trigger_finish_converted(trigger, qtrue);
 						level.dfEndTriggerTypes |= (1 << DFTRIG_Q3RALLY);
 						//trigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE; 
@@ -3359,7 +3368,7 @@ void G_ConvertDefragTriggerTypes() {
 						break;
 					default:
 					case TARGET_CHECKPOINT: // wont ever be hit atm, dunno how twi does checkpoints
-						trigger->classname = "df_trigger_checkpoint";
+						G_SetClassName(trigger, "df_trigger_checkpoint");
 						DF_trigger_checkpoint_converted(trigger);
 						level.dfCheckPointTriggerTypes |= (1 << DFTRIG_Q3RALLY);
 						//trigger->checkpointScore = 1;
@@ -3383,7 +3392,7 @@ void G_ConvertDefragTriggerTypes() {
 		if (i != TARGET_CHECKPOINT) { // dunno how twi mod handles checkpoints
 			trigger = NULL;
 			index = (level.dfStartTriggerTypes & (1 << DFTRIG_TRIGMULT)) ? 0 : -1; // start already found so now the index is automatically 1 higher already.
-			while ((trigger = G_Find(trigger, FOFS(classname), "trigger_multiple")) != NULL) {
+			while ((trigger = G_FindByClassName(trigger, "trigger_multiple")) != NULL) {
 				qboolean disgustingType = qfalse;
 				if (!trigger->model) {
 					continue;
@@ -3424,20 +3433,20 @@ void G_ConvertDefragTriggerTypes() {
 				trigger->model = oldModel;
 				switch (i) { // reusing japro classnames for compatibility
 				case TARGET_STARTTIMER:
-					trigger->classname = "df_trigger_start";
+					G_SetClassName(trigger, "df_trigger_start");
 					DF_trigger_start_converted(trigger);
 					level.dfStartTriggerTypes |= (1 << DFTRIG_TRIGMULT);
 					G_Printf("DEFRAG: ^2%s converted to df_trigger_start%s.\n", oldType, disgustingType ? " (disgusting type)" : "");
 					break;
 				case TARGET_STOPTIMER:
-					trigger->classname = "df_trigger_finish";
+					G_SetClassName(trigger, "df_trigger_finish");
 					DF_trigger_finish_converted(trigger, qtrue);
 					level.dfEndTriggerTypes |= (1 << DFTRIG_TRIGMULT);
 					G_Printf("DEFRAG: ^2%s converted to df_trigger_finish%s.\n", oldType, disgustingType ? " (disgusting type)" : "");
 					break;
 				default:
 				case TARGET_CHECKPOINT: // wont ever be hit atm, dunno how that trigger_multiple "system" does checkpoints
-					trigger->classname = "df_trigger_checkpoint";
+					G_SetClassName(trigger, "df_trigger_checkpoint");
 					DF_trigger_checkpoint_converted(trigger);
 					level.dfCheckPointTriggerTypes |= (1 << DFTRIG_TRIGMULT);
 					G_Printf("DEFRAG: ^2%s converted to df_trigger_checkpoint%s.\n", oldType, disgustingType ? " (disgusting type)" : "");
@@ -5674,7 +5683,7 @@ void Q3R_SP_rally_startfinish(gentity_t* ent) {
 	level.q3r_numberOfLaps = ent->laps;
 	level.q3r_hasStartFinish = qtrue;
 
-	//ent->classname = "rally_checkpoint";
+	//G_SetClassName(ent, "rally_checkpoint");
 
 	//trap_SetBrushModel(ent, ent->model);
 

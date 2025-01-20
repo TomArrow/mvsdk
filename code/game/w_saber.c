@@ -149,7 +149,7 @@ void WP_SaberInitBladeData( gentity_t *ent )
 	//ever be used on the server.
 	saberent = G_Spawn();
 	ent->client->ps.saberEntityNum = saberent->s.number;
-	saberent->classname = "lightsaber";
+	G_SetClassName(saberent, "lightsaber");
 			
 	saberent->r.svFlags = SVF_USE_CURRENT_ORIGIN;
 	saberent->r.ownerNum = ent->s.number;
@@ -3022,7 +3022,7 @@ void MakeDeadSaber(gentity_t *ent)
 	VectorCopy(ent->r.currentOrigin, startorg);
 	VectorCopy(ent->r.currentAngles, startang);
 
-	saberent->classname = "deadsaber";
+	G_SetClassName(saberent, "deadsaber");
 			
 	saberent->r.svFlags = SVF_USE_CURRENT_ORIGIN;
 	saberent->r.ownerNum = ent->s.number;

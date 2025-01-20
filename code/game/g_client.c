@@ -39,7 +39,7 @@ void SP_info_player_deathmatch( gentity_t *ent ) {
 equivelant to info_player_deathmatch
 */
 void SP_info_player_start(gentity_t *ent) {
-	ent->classname = "info_player_deathmatch";
+	G_SetClassName(ent, "info_player_deathmatch");
 	SP_info_player_deathmatch( ent );
 }
 
@@ -49,7 +49,7 @@ saga start point - imperial
 void SP_info_player_imperial(gentity_t *ent) {
 	if (g_gametype.integer != GT_SAGA)
 	{ //turn into a DM spawn if not in saga game mode
-		ent->classname = "info_player_deathmatch";
+		G_SetClassName(ent, "info_player_deathmatch");
 		SP_info_player_deathmatch( ent );
 	}
 }
@@ -60,7 +60,7 @@ saga start point - rebel
 void SP_info_player_rebel(gentity_t *ent) {
 	if (g_gametype.integer != GT_SAGA)
 	{ //turn into a DM spawn if not in saga game mode
-		ent->classname = "info_player_deathmatch";
+		G_SetClassName(ent, "info_player_deathmatch");
 		SP_info_player_deathmatch( ent );
 	}
 }
@@ -387,7 +387,7 @@ gentity_t *SelectNearestDeathmatchSpawnPoint( vec3_t from ) {
 	nearestSpot = NULL;
 	spot = NULL;
 
-	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
+	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
 
 		VectorSubtract( spot->s.origin, from, delta );
 		dist = VectorLength( delta );
@@ -418,7 +418,7 @@ gentity_t *SelectRandomDeathmatchSpawnPoint( void ) {
 	count = 0;
 	spot = NULL;
 
-	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
+	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
 		if ( SpotWouldTelefrag( spot ) ) {
 			continue;
 		}
@@ -427,7 +427,7 @@ gentity_t *SelectRandomDeathmatchSpawnPoint( void ) {
 	}
 
 	if ( !count ) {	// no spots that won't telefrag
-		return G_Find( NULL, FOFS(classname), "info_player_deathmatch");
+		return G_FindByClassNameFast( NULL, "info_player_deathmatch");
 	}
 
 	selection = rand() % count;
@@ -452,7 +452,7 @@ gentity_t *SelectRandomFurthestSpawnPoint ( vec3_t avoidPoint, vec3_t origin, ve
 	numSpots = 0;
 	spot = NULL;
 
-	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
+	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
 		if ( SpotWouldTelefrag( spot ) ) {
 			continue;
 		}
@@ -481,7 +481,7 @@ gentity_t *SelectRandomFurthestSpawnPoint ( vec3_t avoidPoint, vec3_t origin, ve
 		}
 	}
 	if (!numSpots) {
-		spot = G_Find( NULL, FOFS(classname), "info_player_deathmatch");
+		spot = G_FindByClassNameFast( NULL, "info_player_deathmatch");
 		if (!spot)
 		{
 			G_Error( "Couldn't find a spawn point" );
@@ -553,7 +553,7 @@ gentity_t *SelectInitialSpawnPoint( vec3_t origin, vec3_t angles ) {
 	gentity_t	*spot;
 
 	spot = NULL;
-	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
+	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
 		if ( spot->spawnflags & 1 ) {
 			break;
 		}
@@ -615,7 +615,7 @@ void InitBodyQue (void) {
 	level.bodyQueIndex = 0;
 	for (i=0; i<BODY_QUEUE_SIZE ; i++) {
 		ent = G_Spawn();
-		ent->classname = "bodyque";
+		G_SetClassName(ent, "bodyque");
 		ent->neverFree = qtrue;
 		level.bodyQue[i] = ent;
 	}
@@ -633,7 +633,7 @@ void InitPlayerStats(void) {
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		//if (g_defrag.integer) {
 			ent = G_Spawn();
-			ent->classname = "playerstats";
+			G_SetClassName(ent, "playerstats");
 			ent->neverFree = qtrue;
 			ent->s.eType = ET_INVISIBLE;
 			ent->s.clientNum = i;
@@ -1804,6 +1804,8 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 //	if ( !client->areabits )
 //		client->areabits = G_Alloc( (trap_AAS_PointReachabilityAreaIndex( NULL ) + 7) / 8 );
 
+	DF_ClearCheckPointTimes(ent);
+
 	return NULL;
 }
 
@@ -2253,7 +2255,7 @@ void ClientSpawn(gentity_t *ent) {
 	ent->client = &level.clients[index];
 	ent->takedamage = qtrue;
 	ent->inuse = qtrue;
-	ent->classname = "player";
+	G_SetClassName(ent, "player");
 	ent->r.contents = CONTENTS_BODY;
 	ent->clipmask = MASK_PLAYERSOLID;
 	ent->die = player_die;
@@ -2652,6 +2654,7 @@ void ClientSpawn(gentity_t *ent) {
 }
 
 extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
+extern void DF_ClearCheckPointTimes(gentity_t* playerent);
 
 void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 	gentity_t* tent;
@@ -2662,6 +2665,7 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 	// yea better just check activator->inuse...
 	G_ClearEntityActivator(ent); // this one not needed prolly cuz client has no activator, but lets be safe.
 	G_ClearActivatedEntities(ent);
+	DF_ClearCheckPointTimes(ent);
 
 	DF_RemoveCheckPoints(ent);
 
@@ -2741,7 +2745,7 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 	trap_UnlinkEntity(ent);
 	ent->s.modelindex = 0;
 	ent->inuse = qfalse;
-	ent->classname = "disconnected";
+	G_SetClassName(ent, "disconnected");
 	ent->client->pers.connected = CON_DISCONNECTED;
 	ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
 	ent->client->sess.sessionTeam = TEAM_FREE;

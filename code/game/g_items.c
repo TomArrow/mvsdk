@@ -390,7 +390,7 @@ qboolean PlaceShield(gentity_t *playerent)
 
 			shield->s.eType = ET_SPECIAL;
 			shield->s.modelindex =  HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
-			shield->classname = shieldItem->classname;
+			G_SetClassName(shield, shieldItem->classname);
 
 			shield->r.contents = CONTENTS_TRIGGER;
 
@@ -996,7 +996,7 @@ void ItemUse_Sentry( gentity_t *ent )
 
 	sentry = G_Spawn();
 
-	sentry->classname = "sentryGun";
+	G_SetClassName(sentry, "sentryGun");
 	sentry->s.modelindex = G_ModelIndex("models/items/psgun.glm"); //replace ASAP
 
 	sentry->s.g2radius = 30.0f;
@@ -1601,7 +1601,7 @@ gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity ) {
 	}
 	dropped->s.modelindex2 = 1; // This is non-zero is it's a dropped item
 
-	dropped->classname = item->classname;
+	G_SetClassName(dropped, item->classname);
 	dropped->item = item;
 	VectorSet (dropped->r.mins, -ITEM_RADIUS, -ITEM_RADIUS, -ITEM_RADIUS);
 	VectorSet (dropped->r.maxs, ITEM_RADIUS, ITEM_RADIUS, ITEM_RADIUS);

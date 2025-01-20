@@ -540,12 +540,18 @@ void G_SpawnGEntityFromSpawnVars( void ) {
 		ent = G_Spawn();
 	}
 
+	G_UnlistFromHashTable(ent);
+
 	for ( i = 0 ; i < level.numSpawnVars ; i++ ) {
 		G_ParseField( level.spawnVars[i][0], level.spawnVars[i][1], ent );
 	}
 
 	if (isTwiTimer) {
-		ent->classname = "Twi_timer";
+		G_SetClassName(ent, "Twi_timer");
+	}
+	else {
+		// make sure the hashtable is aware of this ent with the now set classname
+		G_SetClassName(ent, ent->classname);
 	}
 
 	// check for "notsingle" flag
@@ -924,7 +930,7 @@ void SP_worldspawn( void )
 	trap_Cvar_Set( "g_enableBreath", text );
 
 	g_entities[ENTITYNUM_WORLD].s.number = ENTITYNUM_WORLD;
-	g_entities[ENTITYNUM_WORLD].classname = "worldspawn";
+	G_SetClassName(&g_entities[ENTITYNUM_WORLD], "worldspawn");
 
 	// see if we want a warmup time
 	trap_SetConfigstring( CS_WARMUP, "" );

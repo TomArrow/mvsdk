@@ -41,29 +41,6 @@ float trap_Cvar_VariableValue( const char *var_name ) {
 }
 
 
-/*
-================
-return a hash value for the filename
-================
-*/
-static int generateHashValue(const char* fname, const int size) {
-	int		i;
-	int		hash;
-	char	letter;
-
-	hash = 0;
-	i = 0;
-	while (fname[i] != '\0') {
-		letter = tolower(fname[i]);
-		if (letter == '.') break;				// don't include extension
-		if (letter == '\\') letter = '/';		// damn path names
-		hash += (int)(letter) * (i + 119);
-		i++;
-	}
-	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
-	hash &= (size - 1);
-	return hash;
-}
 
 
 /*

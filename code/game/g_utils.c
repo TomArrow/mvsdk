@@ -138,6 +138,48 @@ void G_TeamCommand( team_t team, char *cmd ) {
 	}
 }
 
+int G_GetClassNameHash(const char* match) {
+	return generateHashValue(match, ENTITY_HASH_SIZE);
+}
+
+// uses hashtable
+gentity_t* G_FindByClassName(gentity_t* from, const char* match) {
+	int				n;
+	int				hash = generateHashValue(match, ENTITY_HASH_SIZE);
+	gentity_t*		hashEnt;
+
+	for (hashEnt = g_entitiesHashTable[hash]; hashEnt; hashEnt = hashEnt->nextHashed) {
+		if (hashEnt > from && Q_stricmp(hashEnt->classname, match) == 0) {
+			return hashEnt;
+		}
+	}
+
+	return NULL;
+}
+
+// uses hashtable
+// call this one if you are continuing a search with the same classname (hash doesnt need to be recalculated)
+gentity_t* G_FindByClassNameFast(gentity_t* from, const char* match) {
+	int				n;
+	gentity_t*		hashEnt;
+
+	if (!from) {
+		int	hash = generateHashValue(match, ENTITY_HASH_SIZE);
+		hashEnt = g_entitiesHashTable[hash];
+	}
+	else {
+		hashEnt = from->nextHashed;
+	}
+
+	for (; hashEnt; hashEnt = hashEnt->nextHashed) {
+		if (Q_stricmp(hashEnt->classname, match) == 0) {
+			return hashEnt;
+		}
+	}
+
+	return NULL;
+}
+
 
 /*
 =============
@@ -431,7 +473,7 @@ void G_SetMovedir( vec3_t angles, vec3_t movedir ) {
 
 void G_InitGentity( gentity_t *e ) {
 	e->inuse = qtrue;
-	e->classname = "noclass";
+	G_SetClassName(e, "noclass");
 	e->s.number = e - g_entities; 
 	if (e->s.number < 1023) {
 		e->isLogical = qfalse;
@@ -441,6 +483,90 @@ void G_InitGentity( gentity_t *e ) {
 	}
 	e->r.ownerNum = ENTITYNUM_NONE;
 	e->s.modelGhoul2 = 0; //assume not
+}
+
+
+/*
+================
+return a hash value for the filename
+================
+*/
+int generateHashValue(const char* fname, const int size) {
+	int		i;
+	int		hash;
+	char	letter;
+
+	hash = 0;
+	i = 0;
+	while (fname[i] != '\0') {
+		letter = tolower(fname[i]);
+		if (letter == '.') break;				// don't include extension
+		if (letter == '\\') letter = '/';		// damn path names
+		hash += (int)(letter) * (i + 119);
+		i++;
+	}
+	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
+	hash &= (size - 1);
+	return hash;
+}
+
+void G_UnlistFromHashTable(gentity_t* ent) {
+	if (ent->classname) {
+		int hash = generateHashValue(ent->classname, ENTITY_HASH_SIZE);
+		gentity_t* hashEnt, *lastHashEnt=NULL;
+		int found = 0;
+
+		for (hashEnt = g_entitiesHashTable[hash]; hashEnt; hashEnt = hashEnt->nextHashed) {
+			if (hashEnt == ent) {
+				found++;
+				if (!lastHashEnt) {
+					g_entitiesHashTable[hash] = ent->nextHashed;
+					g_entitiesHashTableCount--;
+				}
+				else {
+					lastHashEnt->nextHashed = ent->nextHashed;
+					g_entitiesHashTableCount--;
+				}
+			}
+			lastHashEnt = hashEnt;
+		}
+		ent->nextHashed = NULL;
+		if (found > 1) {
+			Com_Printf("^3entity %d (%s) was found %d times in hashtable with hash %d!!",ent-g_entities,ent->classname,found, hash);
+		}
+	}
+}
+void G_SetClassName(gentity_t* ent, char* classname) {
+	int hash = generateHashValue(classname, ENTITY_HASH_SIZE);
+	gentity_t* hashEnt;
+
+	if (ent->classname) {
+		G_UnlistFromHashTable(ent);
+	}
+	
+	// can put it in directly
+	if (!g_entitiesHashTable[hash] || g_entitiesHashTable[hash] > ent) {
+		ent->nextHashed = g_entitiesHashTable[hash];
+		g_entitiesHashTable[hash] = ent;
+		g_entitiesHashTableCount++;
+	}
+	else {
+		// put it in at the right place
+		for (hashEnt = g_entitiesHashTable[hash]; hashEnt; hashEnt = hashEnt->nextHashed) {
+			if (!hashEnt->nextHashed || hashEnt->nextHashed > ent) {
+				ent->nextHashed = hashEnt->nextHashed;
+				hashEnt->nextHashed = ent;
+				g_entitiesHashTableCount++;
+				break;
+			}
+		}
+	}
+
+	if (g_entitiesHashTableCount < 0 || g_entitiesHashTableCount > MAX_ENTITIESTOTAL) {
+		Com_Printf("^3g_entitiesHashTableCount is %d, something went terribly wrong.", g_entitiesHashTableCount);
+	}
+
+	ent->classname = classname;
 }
 
 /*
@@ -738,8 +864,9 @@ void G_FreeEntity( gentity_t *ed ) {
 	if (!ed->isLogical) {
 		memset(mv_entities + (ed - g_entities), 0, sizeof(mv_entities[0]));
 	}
+	G_UnlistFromHashTable(ed);
 	memset (ed, 0, sizeof(*ed));
-	ed->classname = "freed";
+	G_SetClassName(ed, "freed");
 	ed->freetime = level.time;
 	ed->inuse = qfalse;
 
@@ -788,7 +915,7 @@ gentity_t *G_TempEntity( vec3_t origin, int event ) {
 	e = G_Spawn();
 	e->s.eType = ET_EVENTS + event;
 
-	e->classname = "tempEntity";
+	G_SetClassName(e, "tempEntity");
 	e->eventTime = level.time;
 	e->freeAfterEvent = qtrue;
 
@@ -840,7 +967,7 @@ gentity_t *G_SoundTempEntity( vec3_t origin, int event, int channel ) {
 	e->s.eType = ET_EVENTS + event;
 	e->inuse = qtrue;
 
-	e->classname = "tempEntity";
+	G_SetClassName(e, "tempEntity");
 	e->eventTime = level.time;
 	e->freeAfterEvent = qtrue;
 

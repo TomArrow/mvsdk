@@ -175,7 +175,7 @@ static void WP_FireBryarPistol( gentity_t *ent, qboolean altFire )
 
 	gentity_t	*missile = CreateMissile( muzzle, forward, BRYAR_PISTOL_VEL, 10000, ent, altFire );
 
-	missile->classname = "bryar_proj";
+	G_SetClassName(missile, "bryar_proj");
 	missile->s.weapon = WP_BRYAR_PISTOL;
 
 	if ( altFire )
@@ -244,7 +244,7 @@ void WP_FireTurretMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean al
 
 	missile = CreateMissile( start, dir, velocity, 10000, ent, altFire );
 
-	missile->classname = "generic_proj";
+	G_SetClassName(missile, "generic_proj");
 	missile->s.weapon = WP_TURRET;
 
 	missile->damage = damage;
@@ -272,7 +272,7 @@ void WP_FireGenericBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qbo
 
 	missile = CreateMissile( start, dir, velocity, 10000, ent, altFire );
 
-	missile->classname = "generic_proj";
+	G_SetClassName(missile, "generic_proj");
 	missile->s.weapon = WP_BRYAR_PISTOL;
 
 	missile->damage = damage;
@@ -314,7 +314,7 @@ void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean a
 	
 	missile = CreateMissile( start, dir, velocity, 10000, ent, altFire );
 
-	missile->classname = "blaster_proj";
+	G_SetClassName(missile, "blaster_proj");
 	missile->s.weapon = WP_BLASTER;
 
 	// NOTENOTE Vehicle models are not yet implemented
@@ -351,7 +351,7 @@ void WP_FireEmplacedMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean 
 	
 	missile = CreateMissile( start, dir, velocity, 10000, ent, altFire );
 
-	missile->classname = "emplaced_gun_proj";
+	G_SetClassName(missile, "emplaced_gun_proj");
 	missile->s.weapon = WP_TURRET;//WP_EMPLACED_GUN;
 
 	// NOTENOTE Vehicle models are not yet implemented
@@ -791,7 +791,7 @@ static void WP_BowcasterAltFire( gentity_t *ent )
 
 	gentity_t *missile = CreateMissile( muzzle, forward, BOWCASTER_VELOCITY, 10000, ent, qfalse);
 
-	missile->classname = "bowcaster_proj";
+	G_SetClassName(missile, "bowcaster_proj");
 	missile->s.weapon = WP_BOWCASTER;
 
 	VectorSet( missile->r.maxs, BOWCASTER_SIZE, BOWCASTER_SIZE, BOWCASTER_SIZE );
@@ -889,7 +889,7 @@ static void WP_BowcasterMainFire( gentity_t *ent )
 
 		missile = CreateMissile( muzzle, dir, vel, 10000, ent, qtrue );
 
-		missile->classname = "bowcaster_alt_proj";
+		G_SetClassName(missile, "bowcaster_alt_proj");
 		missile->s.weapon = WP_BOWCASTER;
 
 		VectorSet( missile->r.maxs, BOWCASTER_SIZE, BOWCASTER_SIZE, BOWCASTER_SIZE );
@@ -939,7 +939,7 @@ static void WP_RepeaterMainFire( gentity_t *ent, vec3_t dir )
 
 	gentity_t *missile = CreateMissile( muzzle, dir, REPEATER_VELOCITY, 10000, ent, qfalse );
 
-	missile->classname = "repeater_proj";
+	G_SetClassName(missile, "repeater_proj");
 	missile->s.weapon = WP_REPEATER;
 
 	missile->damage = damage;
@@ -959,7 +959,7 @@ static void WP_RepeaterAltFire( gentity_t *ent )
 
 	gentity_t *missile = CreateMissile( muzzle, forward, REPEATER_ALT_VELOCITY, 10000, ent, qtrue );
 
-	missile->classname = "repeater_alt_proj";
+	G_SetClassName(missile, "repeater_alt_proj");
 	missile->s.weapon = WP_REPEATER;
 //	missile->mass = 10;		// NOTENOTE No mass yet
 
@@ -1019,7 +1019,7 @@ static void WP_DEMP2_MainFire( gentity_t *ent )
 
 	gentity_t *missile = CreateMissile( muzzle, forward, DEMP2_VELOCITY, 10000, ent, qfalse);
 
-	missile->classname = "demp2_proj";
+	G_SetClassName(missile, "demp2_proj");
 	missile->s.weapon = WP_DEMP2;
 
 	VectorSet( missile->r.maxs, DEMP2_SIZE, DEMP2_SIZE, DEMP2_SIZE );
@@ -1246,7 +1246,7 @@ static void WP_DEMP2_AltFire( gentity_t *ent )
 
 	missile->count = count;
 
-	missile->classname = "demp2_alt_proj";
+	G_SetClassName(missile, "demp2_alt_proj");
 	missile->s.weapon = WP_DEMP2;
 
 	missile->think = DEMP2_AltDetonate;
@@ -1315,7 +1315,7 @@ static void WP_FlechetteMainFire( gentity_t *ent )
 
 		missile = CreateMissile( muzzle, fwd, FLECHETTE_VEL, 10000, ent, qfalse);
 
-		missile->classname = "flech_proj";
+		G_SetClassName(missile, "flech_proj");
 		missile->s.weapon = WP_FLECHETTE;
 
 		VectorSet( missile->r.maxs, FLECHETTE_SIZE, FLECHETTE_SIZE, FLECHETTE_SIZE );
@@ -1337,7 +1337,7 @@ void RemoveLaserTraps(gentity_t* ent)
 {
 	gentity_t* found = NULL;
 
-	while ((found = G_Find(found, FOFS(classname), "laserTrap")) != NULL)
+	while ((found = G_FindByClassNameFast(found,  "laserTrap")) != NULL)
 	{//loop through all ents and blow the crap out of them!
 		if (found->parent == ent)
 		{
@@ -1468,7 +1468,7 @@ static void WP_CreateFlechetteBouncyThing( vec3_t start, vec3_t fwd, gentity_t *
 	G_SetActivator(missile, self);
 
 	missile->s.weapon = WP_FLECHETTE;
-	missile->classname = "flech_alt";
+	G_SetClassName(missile, "flech_alt");
 	missile->mass = 4;
 
 	// How 'bout we give this thing a size...
@@ -1692,7 +1692,7 @@ static void WP_FireRocket( gentity_t *ent, qboolean altFire )
 		ent->client->ps.rocketTargetTime = 0;
 	}
 
-	missile->classname = "rocket_proj";
+	G_SetClassName(missile, "rocket_proj");
 	missile->s.weapon = WP_ROCKET_LAUNCHER;
 
 	// NOTENOTE No mass yet.
@@ -1816,7 +1816,7 @@ gentity_t *WP_FireThermalDetonator( gentity_t *ent, qboolean altFire )
 	
 	bolt->physicsObject = qtrue;
 
-	bolt->classname = "thermal_detonator";
+	G_SetClassName(bolt, "thermal_detonator");
 	bolt->think = thermalThinkStandard;
 	bolt->nextthink = level.time;
 	bolt->touch = touch_NULL;
@@ -2098,7 +2098,7 @@ void TrapThink(gentity_t *ent)
 
 void CreateLaserTrap( gentity_t *laserTrap, vec3_t start, gentity_t *owner )
 {
-	laserTrap->classname = "laserTrap";
+	G_SetClassName(laserTrap, "laserTrap");
 	laserTrap->s.eFlags = EF_BOUNCE_HALF;
 	laserTrap->s.eFlags |= EF_MISSILE_STICK;
 	laserTrap->splashDamage = LT_SPLASH_DAM;//*2;
@@ -2174,7 +2174,7 @@ void WP_PlaceLaserTrap( gentity_t *ent, qboolean alt_fire )
 	
 	//limit to 10 placed at any one time
 	//see how many there are now
-	while ( (found = G_Find( found, FOFS(classname), "laserTrap" )) != NULL )
+	while ( (found = G_FindByClassNameFast( found,  "laserTrap" )) != NULL )
 	{
 		if ( found->parent != ent )
 		{
@@ -2386,7 +2386,7 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 	VectorNormalize (dir);
 
 	bolt = G_Spawn();
-	bolt->classname = "detpack";
+	G_SetClassName(bolt, "detpack");
 	bolt->nextthink = level.time + FRAMETIME;
 	bolt->think = G_RunObject;
 	bolt->s.eType = ET_GENERAL;
@@ -2464,7 +2464,7 @@ void BlowDetpacks(gentity_t *ent)
 
 	if ( ent->client->ps.hasDetPackPlanted )
 	{
-		while ( (found = G_Find( found, FOFS(classname), "detpack") ) != NULL )
+		while ( (found = G_FindByClassNameFast( found, "detpack") ) != NULL )
 		{//loop through all ents and blow the crap out of them!
 			if ( found->parent == ent )
 			{
@@ -2488,7 +2488,7 @@ void RemoveDetpacks(gentity_t* ent)
 
 	if (ent->client->ps.hasDetPackPlanted)
 	{
-		while ((found = G_Find(found, FOFS(classname), "detpack")) != NULL)
+		while ((found = G_FindByClassNameFast(found, "detpack")) != NULL)
 		{//loop through all ents and blow the crap out of them!
 			if (found->parent == ent)
 			{
@@ -2533,7 +2533,7 @@ void WP_DropDetPack( gentity_t *ent, qboolean alt_fire )
 
 	//limit to 10 placed at any one time
 	//see how many there are now
-	while ( (found = G_Find( found, FOFS(classname), "detpack" )) != NULL )
+	while ( (found = G_FindByClassNameFast( found, "detpack" )) != NULL )
 	{
 		if ( found->parent != ent )
 		{

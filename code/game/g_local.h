@@ -297,6 +297,8 @@ struct gentity_s {
 
 	int			number; // q3 rally map support
 	int			laps; // q3 rally map support
+
+	gentity_t*	nextHashed; // next with same classname hash
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -841,13 +843,17 @@ int		G_EffectIndex( char *name );
 void	G_TeamCommand( team_t team, char *cmd );
 void	G_KillBox (gentity_t *ent);
 gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match);
+gentity_t *G_FindByClassName (gentity_t *from, const char *match);
+gentity_t *G_FindByClassNameFast (gentity_t *from, const char *match);
 int		G_RadiusList ( vec3_t origin, float radius,	gentity_t *ignore, qboolean takeDamage, gentity_t *ent_list[MAX_GENTITIES]);
 gentity_t *G_PickTarget (char *targetname, qboolean allowRandom, int* numChoices);
 void	G_UseTargets (gentity_t *ent, gentity_t *activator);
 void	G_SetMovedir ( vec3_t angles, vec3_t movedir);
 void	G_SetAngles( gentity_t *ent, vec3_t angles );
 
-void	G_InitGentity( gentity_t *e );
+void	G_InitGentity( gentity_t *e ); 
+void		G_UnlistFromHashTable(gentity_t* ent);
+void		G_SetClassName(gentity_t* ent, char* classname);
 gentity_t	*G_Spawn (void); 
 gentity_t	*G_SpawnLogical(void);
 gentity_t *G_TempEntity( vec3_t origin, int event );
@@ -1298,9 +1304,12 @@ int BotAIStartFrame( int time );
 
 #include "g_team.h" // teamplay specific stuff
 
+#define ENTITY_HASH_SIZE		1024
 
 extern	level_locals_t	level;
 extern	gentity_t		g_entities[MAX_ENTITIESTOTAL];
+extern	gentity_t*		g_entitiesHashTable[ENTITY_HASH_SIZE]; 
+extern	int				g_entitiesHashTableCount;
 extern  gentity_t*		g_logicalents;
 
 #define	FOFS(x) ((size_t)&(((gentity_t *)0)->x))
@@ -1734,4 +1743,7 @@ void G_BufferedSendOrPrint(gentity_t* playerOrNull, const char* text);
 void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull);
 void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull);
 void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
+
+int	generateHashValue(const char* fname, const int size);
+
 

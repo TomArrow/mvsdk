@@ -343,7 +343,7 @@ void Cmd_Give_f (gentity_t *ent)
 
 		it_ent = G_Spawn();
 		VectorCopy( ent->r.currentOrigin, it_ent->s.origin );
-		it_ent->classname = it->classname;
+		G_SetClassName(it_ent, it->classname);
 		G_SpawnItem (it_ent, it);
 		FinishSpawningItem(it_ent );
 		memset( &trace, 0, sizeof( trace ) );
@@ -1017,6 +1017,7 @@ void Cmd_Help_f(gentity_t* ent) {
 
 		trap_SendServerCommand(ent - g_entities, "print \"\n^7Race commands:\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). ^3This also saves your currently selected weapon.^7 Use ^2/kill^7 to respawn\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^2/resetspawn^7 - Deletes/resets your saved spawn point\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state including position, velocity and angles. Works also from spec.\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"");

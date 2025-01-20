@@ -5529,7 +5529,7 @@ void BotCheckDetPacks(bot_state_t *bs)
 	float enLen;
 	float myLen;
 
-	while ( (dp = G_Find( dp, FOFS(classname), "detpack") ) != NULL )
+	while ( (dp = G_FindByClassNameFast( dp, "detpack") ) != NULL )
 	{
 		if (dp && dp->parent && dp->parent->s.number == bs->client)
 		{
