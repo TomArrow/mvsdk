@@ -7270,7 +7270,7 @@ static qboolean CG_GetStrafehelperCmdAndFrametime(usercmd_t* cmd, int* reference
 	usercmd_t oldcmd = { 0 };
 	int moveDir;
 	*referenceFrameTime = cg.frametime;
-	if (cg.clientNum == cg.strafehelperPredictedPlayerState.clientNum && !cg.demoPlayback) {
+	if (cg.clientNum == cg.strafehelperPredictedPlayerState.clientNum && !cg.demoPlayback && !(cg.predictedPlayerState.pm_flags & PMF_FOLLOW) ) {
 		currentCmdNumber = trap_GetCurrentCmdNumber();
 		trap_GetUserCmd(currentCmdNumber, cmd);
 		if ((cg_strafeHelper_RealPhysicsLines.integer || cg_com_physicsFps.integer) && currentCmdNumber > 1) {
