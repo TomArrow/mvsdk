@@ -1705,6 +1705,9 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 	data.clientnum = ent - g_entities;
 	data.type = type;
 	data.lbTypeIfSpecific = lbTypeIfSpecific;
+	data.style = style;
+	Q_strncpyz(data.course, coursename, sizeof(data.course));
+	Q_strncpyz(data.subcourse, subcoursename, sizeof(data.subcourse));
 
 	if (coolApi_dbVersion < 3) {
 		trap_SendServerCommand(data.clientnum, "print \"Top results request failed, database version too low.\n\"");

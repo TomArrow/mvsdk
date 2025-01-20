@@ -910,6 +910,8 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		return;
 	}
 
+	trap_SendServerCommand(lbRequestData.clientnum, va("print \"^BTop %s times on course '%s':\n",lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN STYLE",lbRequestData.subcourse[0] ? multiva("%s/%s", lbRequestData.course, lbRequestData.subcourse) : lbRequestData.course));
+
 	memset(entries, 0, sizeof(entries));
 
 	while (G_COOL_API_DB_NextRow()) {

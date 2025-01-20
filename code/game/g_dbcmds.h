@@ -66,6 +66,9 @@ typedef struct topScoresRequestStruct_s {
 	mainLeaderboardType_t	lbTypeIfSpecific;
 	raceStyle_t	mapDefaultRaceStyle;
 	int			page;
+	char		course[COURSENAME_MAX_LEN + 1];
+	char		subcourse[COURSENAME_MAX_LEN + 1];
+	int			style;
 }topScoresRequestStruct_t;
 typedef struct rankUpdateRequestStruct_s {
 	int			ip[4];
