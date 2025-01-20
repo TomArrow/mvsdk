@@ -1692,6 +1692,7 @@ extern	vmCvar_t		cg_debugAnim;
 extern	vmCvar_t		cg_debugPosition;
 extern	vmCvar_t		cg_debugEvents;
 extern	vmCvar_t		cg_debugSaber;
+extern	vmCvar_t		cg_debugRank;
 extern	vmCvar_t		cg_errorDecay;
 extern	vmCvar_t		cg_nopredict;
 extern	vmCvar_t		cg_deluxePlayersPredict;

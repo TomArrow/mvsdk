@@ -415,6 +415,10 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 		if ( !cg.warmup ) {
 			// never play lead changes during warmup
 			if ( ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK] ) {
+
+				if (cg_debugRank.integer) {
+					CG_Printf("rank change: %3i (tied %d) to %3i (tied %d)\n", ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG, (int)!!(ops->persistant[PERS_RANK] & RANK_TIED_FLAG), ps->persistant[PERS_RANK] & ~RANK_TIED_FLAG, (int)!!(ps->persistant[PERS_RANK] & RANK_TIED_FLAG));
+				}
 				if ( cgs.gametype < GT_TEAM) {
 					if (  ps->persistant[PERS_RANK] == 0 ) {
 						CG_AddBufferedSound(cgs.media.takenLeadSound);

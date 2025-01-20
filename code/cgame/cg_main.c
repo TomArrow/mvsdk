@@ -506,6 +506,7 @@ vmCvar_t	cg_debugAnim;
 vmCvar_t	cg_debugSaber;
 vmCvar_t	cg_debugPosition;
 vmCvar_t	cg_debugEvents;
+vmCvar_t	cg_debugRank;
 vmCvar_t	cg_errorDecay;
 vmCvar_t	cg_nopredict;
 vmCvar_t	cg_deluxePlayersPredict;
@@ -862,6 +863,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_debugSaber, "cg_debugsaber", "-1", CVAR_TEMP },
 	{ &cg_debugPosition, "cg_debugposition", "0", CVAR_TEMP },
 	{ &cg_debugEvents, "cg_debugevents", "0", CVAR_TEMP },
+	{ &cg_debugRank, "cg_debugRank", "0", CVAR_TEMP },
 	{ &cg_errorDecay, "cg_errordecay", "100", 0 },
 	{ &cg_nopredict, "cg_nopredict", "0", 0 },
 	{ &cg_deluxePlayersPredict, "cg_deluxePlayersPredict", "0", CVAR_ARCHIVE },
