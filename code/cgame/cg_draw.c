@@ -7468,6 +7468,7 @@ static void CG_RealAccelHelper() {
 	int referenceFrameTime;
 	float frametime;
 	qboolean onGround;
+	qboolean slicking = qfalse;
 	usercmd_t cmd = { 0 };
 	int startAngle;
 	int frontViewAngleOffset, rightViewAngleOffset; // for complex slope calculation (2 buttons pressed)
@@ -7550,17 +7551,22 @@ static void CG_RealAccelHelper() {
 	}
 
 
-	if (onGround) {
-		frictionFactor = (1.0f - 6.0f * (frametime));
-		VectorScale(currentVelVec, frictionFactor, currentVelVec);
+	if (onGround){ // trace down to see if we are on slopes/whether we are slicking (latter is only relevant for q3 based styles since they have cpm accel then)
+		static const vec3_t playerMins = { -15, -15, DEFAULT_MINS_2 + 1 }; // do +1 in case there's any issues with being in solid or whatever.
+		static const vec3_t playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+		vec3_t down;
+		VectorCopy(cg.strafehelperPredictedPlayerState.origin, down);
+
+		down[2] -= 2.0f; // doesnt really matter we already know we're on ground, just trying to see the normal
+
+		CG_Trace(&groundTrace, cg.strafehelperPredictedPlayerState.origin,playerMins,playerMaxs,down, cg.strafehelperPredictedPlayerState.clientNum,MASK_PLAYERSOLID);
+
+		if ((groundTrace.surfaceFlags & SURF_SLICK)) {
+			slicking = qtrue;
+		}
+
 		if (cg_realAccelSlopes.integer) {
-			static const vec3_t playerMins = { -15, -15, DEFAULT_MINS_2 + 1 }; // do +1 in case there's any issues with being in solid or whatever.
-			static const vec3_t playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
-			vec3_t down;
 			doingSlopes = qtrue;
-			VectorCopy(cg.strafehelperPredictedPlayerState.origin, down);
-			down[2] -= 2.0f; // doesnt really matter we already know we're on ground, just trying to see the normal
-			CG_Trace(&groundTrace, cg.strafehelperPredictedPlayerState.origin,playerMins,playerMaxs,down, cg.strafehelperPredictedPlayerState.clientNum,MASK_PLAYERSOLID);
 			if (groundTrace.startsolid || groundTrace.fraction == 1.0f) {
 				if (cg_developer.integer) { // should never happen unless freak situations?
 					Com_Printf("^3RealAccel strafehelper: Groundtrace didn't work for some reason.");
@@ -7582,6 +7588,16 @@ static void CG_RealAccelHelper() {
 				}
 			}
 		}
+	}
+
+	if (onGround && !slicking) {
+		if (MovementIsQuake3Based(style)) {
+			frictionFactor = (1.0f - 8.0f * (frametime));
+		}
+		else {
+			frictionFactor = (1.0f - 6.0f * (frametime));
+		}
+		VectorScale(currentVelVec, frictionFactor, currentVelVec);
 	}
 
 	if (!cg_realAccelPreFriction.integer) {
@@ -7640,13 +7656,11 @@ static void CG_RealAccelHelper() {
 	}
 
 
-	if (onGround) {
-		if (MovementIsQuake3Based(style)) {
-			hereAccel = 15.0f;
-		}
-		else {
-			hereAccel = 10.0f;
-		}
+	if (onGround && MovementIsQuake3Based(style)) {
+		hereAccel = 15.0f;
+	}
+	else if (onGround && !slicking) {
+		hereAccel = 10.0f;
 	}
 	else {
 		hereAccel = 1.0f;

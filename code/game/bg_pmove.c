@@ -5952,20 +5952,26 @@ void PmoveSingle (pmove_t *pmove) {
 				float optimalAngle2 = 0; // option B
 				float optimalDeltaAngle = 0;
 				qboolean CJ = qtrue;
+				float realFriction = MovementIsQuake3Based(moveStyle) ? pm_vq3_friction : pm_friction;
+				float realAccel = MovementIsQuake3Based(moveStyle) ? pm_cpm_accelerate : pm_accelerate;
 				float strafeFactor = fp16_ieee_to_fp32_value(USHORT2SHORT(oldCmdRoll))+1.0f;  // USHORT2SHORT to normalize to short range since fp16 conversion relies on it
-				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || pm->cmd.upmove > 0)
+				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || pm->cmd.upmove > 0) {
+					realAccel = pm_airaccelerate;
 					CJ = qfalse;
+				}
 				//else if (moveStyle == MV_SLICK)
 				//	CJ = qfalse;
 				else if (pml.walking && pml.groundTrace.surfaceFlags & SURF_SLICK) { //Lmao fuck this bullshit. no way to tell if we are on slick i guess.
-					CJ = qfalse;
+					if (!MovementIsQuake3Based(moveStyle)) {
+						realAccel = pm_airaccelerate;
+					}
+					realFriction = 0;
 				}
 				//else if (realCurrentSpeed > pm->ps->basespeed * 1.5f) //idk this is retarded, but lets us groundframe (TA: WHAT?)
 				//	CJ = qfalse;
 
 				if (realCurrentSpeed > pm->ps->basespeed || (CJ && (realCurrentSpeed > (pm->ps->basespeed * 0.5f)))) {
 					float middleOffset = 0; //Idk
-					float realAccel = CJ ? pm_accelerate : pm_airaccelerate;
 					qboolean calculationFailed = qfalse;
 					qboolean wSuggestsRightWard;
 #if JK2_GAME
@@ -6001,7 +6007,7 @@ void PmoveSingle (pmove_t *pmove) {
 							float deprojectFactor;
 
 							realCurrentSpeed = VectorLength(pm->ps->velocity); //sloped ground movement needs 3d speed
-							angleTmp = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime)))));
+							angleTmp = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - realFriction * (pml.frametime)))));
 
 							if (fpclassify(angleTmp) == FP_NAN) {
 								calculationFailed = qtrue;
@@ -6069,7 +6075,7 @@ void PmoveSingle (pmove_t *pmove) {
 							}
 						}
 						else {
-							optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - pm_friction * (pml.frametime)))));
+							optimalDeltaAngle = acos((double)((pm->ps->speed - (realAccel * pm->ps->speed * pml.frametime * strafeFactor)) / (realCurrentSpeed * (1 - realFriction * (pml.frametime)))));
 						}
 						optimalDeltaAngle = optimalDeltaAngle * (180.0f / M_PI) - 45.0f;
 					}
