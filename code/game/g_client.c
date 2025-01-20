@@ -1647,6 +1647,8 @@ qboolean MV_SetClientIP( int clientNum, char *value )
 	return qtrue;
 }
 
+extern void DF_ClearCheckPointTimes(gentity_t* playerent);
+
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	char		*value;
 //	char		*areabits;
@@ -2654,7 +2656,6 @@ void ClientSpawn(gentity_t *ent) {
 }
 
 extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
-extern void DF_ClearCheckPointTimes(gentity_t* playerent);
 
 void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 	gentity_t* tent;

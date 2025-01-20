@@ -1707,6 +1707,8 @@ qboolean CG_ConsoleCommand( void ) {
 	size_t		levendist;
 	static char misspelled[MAX_STRING_CHARS] = {0};
 	static int	misspelledCount = 0;
+	char		lowercaseCmd[20]; // for levenshtein check. doesnt need to be longer. that long of a cmd wouldn't trigger it anyway
+	int			cmdLen;
 
 	cmd = CG_Argv(0);
 
@@ -1718,10 +1720,16 @@ qboolean CG_ConsoleCommand( void ) {
 		}
 	}
 
+	Q_strncpyz(lowercaseCmd, cmd, sizeof(lowercaseCmd));
+	cmdLen = strlen(lowercaseCmd);
+	for (i = 0; i < cmdLen; i++) {
+		lowercaseCmd[i] = tolower(lowercaseCmd[i]);
+	}
+
 	// check for login and register misspellings
-	if (levenshtein("login", cmd) <= 3 // suspiciously similar to login
-		&& Q_stricmp("logout",cmd) // could be logout, allow that
-		&& Q_stricmp("admin",cmd) // could be admin, allow that
+	if (levenshtein("login", lowercaseCmd) <= 3 // suspiciously similar to login
+		&& Q_stricmp("logout", cmd) // could be logout, allow that
+		&& Q_stricmp("admin", cmd) // could be admin, allow that
 		) {
 		if (!Q_stricmp("amlogin", cmd)) {
 			CG_Login_f();
@@ -1743,7 +1751,7 @@ qboolean CG_ConsoleCommand( void ) {
 	}
 
 	// check for login and register misspellings
-	if (levenshtein("register", cmd) <= 3 // suspiciously similar to register
+	if (levenshtein("register", lowercaseCmd) <= 3 // suspiciously similar to register
 		) {
 		if (misspelledCount && !Q_stricmp(misspelled, cmd)) {
 			misspelledCount++;
@@ -1760,7 +1768,7 @@ qboolean CG_ConsoleCommand( void ) {
 	}
 
 	// check for login and register misspellings
-	if (levenshtein("changepassword", cmd) <= 3 // suspiciously similar to changepassword
+	if (levenshtein("changepassword", lowercaseCmd) <= 3 // suspiciously similar to changepassword
 		) {
 		if (misspelledCount && !Q_stricmp(misspelled, cmd)) {
 			misspelledCount++;

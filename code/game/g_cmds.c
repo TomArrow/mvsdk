@@ -2861,6 +2861,8 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	int			pseudoArgC;
 	const char* pseudoCmd;
 	const char* pseudoArg1;
+	char		lowercaseCmd[20]; // for levenshtein check. doesnt need to be longer. that long of a cmd wouldn't trigger it anyway
+	int			cmdLen,i;
 
 	if ( g_gametype.integer < GT_TEAM && mode == SAY_TEAM && !(g_alwaysAllowTeamChat.integer && ent->client->sess.sessionTeam == TEAM_SPECTATOR || g_alwaysAllowTeamChat.integer >= 2) ) {
 		mode = SAY_ALL;
@@ -2870,16 +2872,23 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	pseudoArgC = BG_Cmd_Argc();
 	pseudoCmd = BG_Cmd_Argv(0);
 	pseudoArg1 = BG_Cmd_Argv(1);
+
 	if (pseudoArgC >= 2) {
+		Q_strncpyz(lowercaseCmd, pseudoCmd, sizeof(lowercaseCmd));
+		cmdLen = strlen(lowercaseCmd);
+		for (i = 0; i < cmdLen; i++) {
+			lowercaseCmd[i] = tolower(lowercaseCmd[i]);
+		}
+
 		if ((
-			(levenshtein("login",pseudoCmd) <= 2 && Q_stricmp("logout", pseudoCmd) && Q_stricmp("admin", pseudoCmd) && Q_stricmp("losing", pseudoCmd))  // allow "admin"/"logout" tho. "losing" (the word" is also ok :)
-			|| levenshtein("register",pseudoCmd) <= 2
+			(levenshtein("login", lowercaseCmd) <= 2 && Q_stricmp("logout", pseudoCmd) && Q_stricmp("admin", pseudoCmd) && Q_stricmp("losing", pseudoCmd))  // allow "admin"/"logout" tho. "losing" (the word" is also ok :)
+			|| levenshtein("register", lowercaseCmd) <= 2
 			) && pseudoArgC >=3 && pseudoArgC <= 5) {
 			G_LogPrintf("clientSay accidental credentials? (mode %d): %s : %s %s ****** %s\n", mode, ent->client->pers.netname, pseudoCmd, pseudoArg1, BG_Cmd_ArgsFrom(3));
 			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed your account credentials in chat, so your message was blocked.", qfalse, qfalse, qtrue);
 			return;
 		}
-		else if (levenshtein("changepassword", pseudoCmd) <= 3 && pseudoArgC >= 2 && pseudoArgC <= 4) {
+		else if (levenshtein("changepassword", lowercaseCmd) <= 3 && pseudoArgC >= 2 && pseudoArgC <= 4) {
 			G_LogPrintf("clientSay accidental credentials? (mode %d): %s : %s ****** %s\n", mode, ent->client->pers.netname, pseudoCmd, BG_Cmd_ArgsFrom(2));
 			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed a password in chat, so your message was blocked.", qfalse, qfalse, qtrue);
 			return;
