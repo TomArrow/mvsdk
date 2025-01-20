@@ -1201,7 +1201,7 @@ void DF_RaceTimer(void)
 			else
 				Com_sprintf(timerStr, sizeof(timerStr), "%i:%02i.%03i\n", minutes, seconds, milliseconds);
 
-			if (cg_raceTimer.integer > 1) {
+			if (cg_raceTimer.integer > 1 && !cg_raceTimerNoSpeeds.integer) {
 				if (cg.displacementSamples)
 					Q_strcat(timerStr, sizeof(timerStr), va("Max: %i\nAvg: %i", (int)((float)cg.maxSpeed + 0.5f),
 						cg.displacement / cg.displacementSamples));
