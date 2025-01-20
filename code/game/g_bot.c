@@ -486,7 +486,7 @@ static void G_LoadMapBlacklist(const char* mapBlacklistFile) {
 	fileHandle_t	f;
 	static char		buf[MAX_ARENAS_TEXT];
 	char			mapname[128];
-	char			*s = buf;
+	const char		*s = buf;
 	const char		*token;
 	int				fileLen;
 

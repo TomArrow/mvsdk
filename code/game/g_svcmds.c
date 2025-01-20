@@ -512,10 +512,10 @@ void	Svcmd_NumBehavior_f( void ) {
 	}
 
 #ifdef Q3_VM
-	Com_sprintf(str, sizeof(str), "\Svcmd_NumBehavior_f (VM)\n");
+	Com_sprintf(str, sizeof(str), "\nSvcmd_NumBehavior_f (VM)\n");
 	trap_FS_Write(str, strlen(str), f);
 #else
-	Com_sprintf(str, sizeof(str), "\Svcmd_NumBehavior_f\n");
+	Com_sprintf(str, sizeof(str), "\nSvcmd_NumBehavior_f\n");
 	trap_FS_Write(str, strlen(str), f);
 #endif
 
