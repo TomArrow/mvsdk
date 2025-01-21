@@ -1290,7 +1290,7 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, va("print \"^2/race^7 - Call to %s racemode.\n\"", ent->client->sess.raceMode ? "exit/enter":"enter/exit")); 
 	}
 
-	for (int i = 0; i < helpTipCount; i++) {
+	for (i = 0; i < helpTipCount; i++) {
 		if (!helpTips[i].raceOnly || ent->client->sess.raceMode) {
 			trap_SendServerCommand(ent - g_entities, helpTips[i].helpPrint);
 		}
