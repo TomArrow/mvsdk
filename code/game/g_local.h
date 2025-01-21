@@ -682,6 +682,7 @@ typedef struct {
 	qboolean	restarted;				// waiting for a map_restart to fire
 
 	int			numConnectedClients;
+	int			numFullyConnectedClients;
 	int			numNonSpectatorClients;	// includes connecting clients
 	int			numPlayingClients;		// connected, non-spectators
 	int			sortedClients[MAX_CLIENTS];		// sorted by score
@@ -699,6 +700,9 @@ typedef struct {
 	int			voteYes;
 	int			voteNo;
 	int			numVotingClients;		// set by CalculateRanks
+
+	qboolean	votingOpinion;
+	qboolean	votingOpinionAll;
 
 	qboolean	votingGametype;
 	int			votingGametypeTo;

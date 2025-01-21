@@ -1040,10 +1040,22 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
+		"print \"\n^7Meme commands:\n\"",
+		"print \"Random tip: \n^7Meme commands:\n\"",
+		qtrue,
+		qtrue
+	},
+	{
 		//"print \"^2/freedom^7,^2/oc9^7 - Serverside apply a freedom/oc9 name tag to your name\n\"",
 		//"print \"Random tip: ^2/freedom^7,^2/oc9^7 - Serverside apply a freedom/oc9 name tag to your name\n\"",
 		"print \"^2/freedom^7 - Serverside apply a freedom name tag to your name\n\"",
 		"print \"Random tip: ^2/freedom^7 - Serverside apply a freedom name tag to your name\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/callvote opinion^7,^2/callvote opinionAll^7 - Call a vote on anything, for active players or for everybody.\n\"",
+		"print \"Random tip: ^2/callvote opinion^7,^2/callvote opinionAll^7 - Call a vote on anything, for active players or for everybody.\n\"",
 		qfalse,
 		qfalse
 	},
@@ -3895,6 +3907,8 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	char	arg2[MAX_STRING_TOKENS];
 	//int		clientPermissions;
 	qboolean	canVoteBesideMap = qfalse;
+	qboolean	votingOpinion = qfalse;
+	qboolean	votingOpinionAll = qfalse;
 
 	if ( !g_allowVote.integer ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE")) );
@@ -3909,7 +3923,8 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MAXVOTES")) );
 		return;
 	}
-	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
+	trap_Argv(1, arg1, sizeof(arg1));
+	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR && Q_stricmp(arg1, "opinion") && Q_stricmp(arg1, "opinionAll")) { // opinions can be initiated from spec
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOSPECVOTE")) );
 		return;
 	}
@@ -3918,7 +3933,6 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	//clientPermissions = ent->client->sess.login.loggedIn ? ent->client->sess.login.flags : 0;
 
 	// make sure it is a valid command to vote on
-	trap_Argv( 1, arg1, sizeof( arg1 ) );
 	trap_Argv( 2, arg2, sizeof( arg2 ) );
 
 	if( strchr( arg1, ';' ) || strchr( arg2, ';' ) ) {
@@ -3930,6 +3944,8 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	} else if ( !Q_stricmp( arg1, "nextmap" ) ) {
 	} else if ( !Q_stricmp( arg1, "map" ) ) {
 	} else if ( !Q_stricmp( arg1, "randommap" ) ) {
+	} else if ( !Q_stricmp( arg1, "opinion" ) ) {
+	} else if ( !Q_stricmp( arg1, "opinionAll" ) ) {
 	} else if ( !Q_stricmp( arg1, "mapnum" ) ) {
 	} else if ( !Q_stricmp( arg1, "g_gametype" ) ) {
 	} else if ( !Q_stricmp( arg1, "kick" ) ) {
@@ -3939,9 +3955,10 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	} else if ( !Q_stricmp( arg1, "fraglimit" ) ) {
 	} else {
 		trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
-		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>.\n\"" );
+		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap, opinion <anything>, opinionAll <anything>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>.\n\"" );
 		return;
 	}
+
 
 	// if there is still a vote to be executed
 	if ( level.voteExecuteTime ) {
@@ -3963,6 +3980,45 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 
 		Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %d", arg1, i );
 		Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s", arg1, gameNames[i] );
+	}
+	else if ( !Q_stricmp( arg1, "opinion" ) ) 
+	{
+		if (!level.numVotingClients) {
+			trap_SendServerCommand(ent - g_entities, "print \"There's nobody here who could vote on that. Try opinionAll?\n\"");
+			return;
+		}
+		if (trap_Argc() < 2) {
+			trap_SendServerCommand(ent - g_entities, "print \"What opinion do you want to vote on?\n\"");
+			return;
+		}
+		else {
+			const char* args = ConcatArgs(2);
+			if (strlen(args) > 150) {
+				trap_SendServerCommand(ent - g_entities, "print \"That's a bit long. Try to be concise.\n\"");
+				return;
+			}
+			votingOpinion = qtrue;
+			Com_sprintf(level.voteString, sizeof(level.voteString), "", arg1, arg2);
+			Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "^3Opinion (players): %s ", args);
+		}
+	}
+	else if ( !Q_stricmp( arg1, "opinionAll" ) ) 
+	{
+		if (trap_Argc() < 2) {
+			trap_SendServerCommand(ent - g_entities, "print \"What opinion do you want to vote on?\n\"");
+			return;
+		}
+		else {
+			const char* args = ConcatArgs(2);
+			if (strlen(args) > 150) {
+				trap_SendServerCommand(ent - g_entities, "print \"That's a bit long. Try to be concise.\n\"");
+				return;
+			}
+			votingOpinion = qtrue;
+			votingOpinionAll = qtrue;
+			Com_sprintf(level.voteString, sizeof(level.voteString), "", arg1, arg2);
+			Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "^3Opinion (all): %s ", args);
+		}
 	}
 	else if ( !Q_stricmp( arg1, "map" ) ) 
 	{
@@ -4158,17 +4214,23 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 	}
 
-	trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLCALLEDVOTE") ) );
+
+	level.votingOpinion = votingOpinion;
+	level.votingOpinionAll = votingOpinionAll;
+
+	trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s: %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLCALLEDVOTE"), level.voteDisplayString ) );
 
 	// start the voting, the caller autoamtically votes yes
 	level.voteTime = level.time;
-	level.voteYes = 1;
+	level.voteYes = level.votingOpinion ? 0 : 1;
 	level.voteNo = 0;
 
 	for ( i = 0 ; i < level.maxclients ; i++ ) {
 		level.clients[i].ps.eFlags &= ~EF_VOTED;
 	}
-	ent->client->ps.eFlags |= EF_VOTED;
+	if (!level.votingOpinion) {
+		ent->client->ps.eFlags |= EF_VOTED;
+	}
 
 	// Append white colorcode at the end of the display string as workaround for cgame leaking colors
 	Q_strcat( level.voteDisplayString, sizeof(level.voteDisplayString), S_COLOR_WHITE );
@@ -4195,7 +4257,7 @@ void Cmd_Vote_f( gentity_t *ent ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEALREADY")) );
 		return;
 	}
-	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
+	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR && !level.votingOpinionAll) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTEASSPEC")) );
 		return;
 	}

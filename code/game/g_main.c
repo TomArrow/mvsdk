@@ -1502,6 +1502,9 @@ void CalculateRanks( void ) {
 		if ( level.clients[i].pers.connected != CON_DISCONNECTED ) {
 			level.sortedClients[level.numConnectedClients] = i;
 			level.numConnectedClients++;
+			if (level.clients[i].pers.connected == CON_CONNECTED) {
+				level.numFullyConnectedClients++;
+			}
 
 			if ( level.clients[i].sess.sessionTeam != TEAM_SPECTATOR ) {
 				level.numNonSpectatorClients++;
@@ -2594,19 +2597,46 @@ void CheckVote( void ) {
 	if ( !level.voteTime ) {
 		return;
 	}
-	if ( level.time - level.voteTime >= VOTE_TIME ) {
-		trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED")) );
-	} else {
-		if ( level.voteYes > level.numVotingClients/2 ) {
-			// execute the command, then remove the vote
-			trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED")) );
-			level.voteExecuteTime = level.time + 3000;
-		} else if ( level.voteNo >= level.numVotingClients/2 ) {
-			// same behavior as a timeout
-			trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED")) );
-		} else {
+	if (level.votingOpinionAll) {
+		if (level.time - level.voteTime >= VOTE_TIME || (level.voteYes+ level.voteNo) >= level.numFullyConnectedClients) {
+			trap_SendServerCommand(-1, va("print \"^3%s^7results: %d Yes vs %d No\n\"", level.voteDisplayString, level.voteYes, level.voteNo));
+			level.votingOpinion = qfalse;
+			level.votingOpinionAll = qfalse;
+		}
+		else {
 			// still waiting for a majority
 			return;
+		}
+	}
+	else if (level.votingOpinion) {
+		if (level.time - level.voteTime >= VOTE_TIME || (level.voteYes+ level.voteNo) >= level.numVotingClients) {
+			trap_SendServerCommand(-1, va("print \"^3%s^7results: %d Yes vs %d No\n\"", level.voteDisplayString, level.voteYes, level.voteNo));
+			level.votingOpinion = qfalse;
+			level.votingOpinionAll = qfalse;
+		}
+		else {
+			// still waiting for a majority
+			return;
+		}
+	}
+	else {
+		if (level.time - level.voteTime >= VOTE_TIME) {
+			trap_SendServerCommand(-1, va("print \"%s: %d Yes vs %d No\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
+		}
+		else {
+			if (level.voteYes > level.numVotingClients / 2) {
+				// execute the command, then remove the vote
+				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED"), level.voteYes, level.voteNo));
+				level.voteExecuteTime = level.time + 3000;
+			}
+			else if (level.voteNo >= level.numVotingClients / 2) {
+				// same behavior as a timeout
+				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
+			}
+			else {
+				// still waiting for a majority
+				return;
+			}
 		}
 	}
 	level.voteTime = 0;
@@ -3074,13 +3104,25 @@ void G_RunFrame( int levelTime ) {
 	}
 
 	if (level.time > level.nextRandomTip && g_randomTipInterval.integer) {
+		int tries = 0;
+		qboolean failed = qfalse;
 		helpTip_t* tip = NULL;
 		tip = &helpTips[Q_irand(0,helpTipCount,qfalse,0)];
-		while (tip->header || tip->raceOnly && !g_defrag.integer) {
+		while (tip->header || !tip->randomTipPrint || tip->raceOnly && !g_defrag.integer) {
 			tip = &helpTips[Q_irand(0, helpTipCount, qfalse, 0)];
+			tries++;
+			if (tries >= 10) {
+				// why am i doing this?
+				// because qvm might (?) behave very strange with q_irand and in some freak situation never give us what we want.
+				// let's be safe, shrug
+				failed = qtrue;
+				break;
+			}
 		}
-		trap_SendServerCommand(-1, tip->randomTipPrint);
-		level.nextRandomTip = clampedIntAdd(level.time, MAX(clampedIntMult(clampedIntMult(MAX(1,g_randomTipInterval.integer), 1000), Q_irand(100,400,qfalse,200)) / 200,1000));
+		if (!failed) {
+			trap_SendServerCommand(-1, tip->randomTipPrint);
+			level.nextRandomTip = clampedIntAdd(level.time, MAX(clampedIntMult(clampedIntMult(MAX(1, g_randomTipInterval.integer), 1000), Q_irand(100, 400, qfalse, 200)) / 200, 1000));
+		}
 	}
 
 	if (!level.numPlayingClients && (clampedIntAdd(level.lastAllRankUpdate, 60000) < level.time || level.time < level.lastAllRankUpdate || !level.lastAllRankUpdate && level.time)) {
