@@ -2707,10 +2707,10 @@ void ClientThink( int clientNum ) {
 	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || ent->client->sess.sessionInitialized && (tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate)) {
 		if (g_developer.integer) {
 			if ((level.time - ent->client->sess.lastHereTime) > 30000) {
-				Com_Printf("^3Client %d came back from AFK after %d milliseconds, btnchange %d.\n", level.time - ent->client->sess.lastHereTime, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate);
+				Com_Printf("^3Client %d came back from AFK after %d milliseconds, btnchange %d.\n",ent-g_entities, level.time - ent->client->sess.lastHereTime, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate);
 			}
 			else if (level.time < ent->client->sess.lastHereTime) {
-				Com_Printf("^3Client %d came back from AFK (glitch %d<%d), btnchange %d.\n", level.time, ent->client->sess.lastHereTime, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate);
+				Com_Printf("^3Client %d came back from AFK (glitch %d<%d), btnchange %d.\n", ent - g_entities, level.time, ent->client->sess.lastHereTime, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate);
 			}
 		}
 		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
