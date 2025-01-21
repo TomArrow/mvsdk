@@ -192,6 +192,8 @@ vmCvar_t	g_userCmdBuffer;
 vmCvar_t	g_blockIdenticalUserSnaps;
 vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 
+vmCvar_t	g_randomTipInterval;
+
 int gDuelist1 = -1;
 int gDuelist2 = -1;
 
@@ -303,6 +305,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_needpass, "g_needpass", "0", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse },
 
 	{ &g_dedicated, "dedicated", "0", 0, 0, qfalse  },
+
+	{ &g_randomTipInterval, "g_randomTipInterval", "600", 0, 0, qfalse  },
 
 	{ &g_speed, "g_speed", "250", 0, 0, qtrue  },
 	{ &g_gravity, "g_gravity", "800", 0, 0, qtrue  },
@@ -3063,6 +3067,20 @@ void G_RunFrame( int levelTime ) {
 		G_AutoGenerateArena(DF_GetCourseName(),qfalse);
 		level.mustGenerateArena = qfalse;
 		level.hasArenaInfo = qtrue;
+	}
+
+	if (!level.nextRandomTip) {
+		level.nextRandomTip = level.time + 30000;
+	}
+
+	if (level.time > level.nextRandomTip && g_randomTipInterval.integer) {
+		helpTip_t* tip = NULL;
+		tip = &helpTips[Q_irand(0,helpTipCount,qfalse,0)];
+		while (tip->header || tip->raceOnly && !g_defrag.integer) {
+			tip = &helpTips[Q_irand(0, helpTipCount, qfalse, 0)];
+		}
+		trap_SendServerCommand(-1, tip->randomTipPrint);
+		level.nextRandomTip = clampedIntAdd(level.time, MAX(clampedIntMult(clampedIntMult(MAX(1,g_randomTipInterval.integer), 1000), Q_irand(100,400,qfalse,200) / 200),1000));
 	}
 
 	if (!level.numPlayingClients && (clampedIntAdd(level.lastAllRankUpdate, 60000) < level.time || level.time < level.lastAllRankUpdate || !level.lastAllRankUpdate && level.time)) {

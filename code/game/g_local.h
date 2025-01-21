@@ -402,6 +402,8 @@ typedef struct {
 	int			lastHereTime; // for cross-map afk checking
 	int			oldbuttons_immediate; // since we switched stuff up a bit with usercmd store and segmented replays... and also to carry on through sessions
 	qboolean	sessionInitialized; // so for afk detection, when comparing to old buttons, we are comparing to a real value.
+
+	nameTagType_t	nameTag;
 } clientSession_t;
 
 // JK2MV
@@ -778,6 +780,7 @@ typedef struct {
 	int			q3r_numCheckpoints;
 
 	int			lastAllRankUpdate;
+	int			nextRandomTip;
 } level_locals_t;
 
 
@@ -1464,6 +1467,8 @@ extern	vmCvar_t	g_botTeamAutoBalance;
 extern	vmCvar_t	g_userCmdBuffer;
 extern	vmCvar_t	g_blockIdenticalUserSnaps;
 extern	vmCvar_t	g_blockIdenticalUserSnapsMinFps;
+
+extern	vmCvar_t	g_randomTipInterval;
 
 void	trap_Printf( const char *fmt );
 Q_NORETURN void	trap_Error( const char *fmt );

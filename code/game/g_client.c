@@ -1044,6 +1044,70 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 	}
 }
 
+void ApplyNameTag(char* name, int bufferSize, nameTagType_t type) {
+	char	tmp[MAX_NETNAME];
+	char*	s = tmp;
+	int		inlen = strlen(name);
+	int		i;
+	char*	shortest = NULL;
+	int		shortestLen = INT_MAX;
+	char*	tmp2;
+	int		tmpLen;
+	char	lastLetter = '\0';
+	Q_strncpyz(tmp, name, sizeof(tmp));
+
+	// NULL out any non-letter or digit char
+	while (*s) {
+		if (*s == Q_COLOR_ESCAPE) {
+			*(s++) = '\0';
+			if (*s == '\0') {
+				s--; // don't accidentally overflow if this is already the end of the string
+			}
+			else {
+				*s = '\0';
+			}
+		}
+		else if (!(*s >= 'a' && *s <= 'z' || *s >= 'A' && *s <= 'Z' || *s >= '0' && *s <= '9')) {
+			*s = '\0';
+		}
+		else if (*s >= 'A' && *s <= 'Z') {
+			*s = tolower(*s);
+		}
+		s++;
+	}
+	// find shortest bit
+	for (i = 0; i < inlen; i++) {
+		if (!lastLetter && tmp[i]) {
+			tmp2 = &tmp[i];
+			tmpLen = strlen(tmp2);
+			if (tmpLen < shortestLen && tmpLen > 1 && Q_stricmp(shortest,"freedom") && Q_stricmp(shortest,"oc9")) {
+				shortest = tmp2;
+				shortestLen = tmpLen;
+			}
+			i += tmpLen;
+		}
+		lastLetter = tmp[i];
+	}
+
+	if (!shortest) {
+		// can't apply nametag, no suitable bit found.
+		return;
+	}
+
+	switch (type) {
+	default:
+		return;
+		break;
+	case NAMETAG_FREEDOM:
+		Com_sprintf(name, bufferSize,"^7^7^4freedom^4^4^7#^7^7^4%s^4^4^7'",shortest);
+		break;
+	case NAMETAG_OC9:
+		Com_sprintf(name, bufferSize, "^5oc9^7#^5%s", shortest);
+		break;
+	}
+
+}
+
 #ifdef _DEBUG
 void G_DebugWrite(const char *path, const char *text)
 {
@@ -1391,6 +1455,10 @@ void ClientUserinfoChanged( int clientNum ) {
 	Info_RemoveKey( userinfo, "name" );
 	Info_SetValueForKey( userinfo, "name", ent->client->pers.netname );
 	trap_SetUserinfo( clientNum, userinfo );
+
+	if (ent->client->sess.nameTag > 0 && ent->client->sess.nameTag < NAMETAG_COUNT) {
+		ApplyNameTag(ent->client->pers.netname, sizeof(ent->client->pers.netname), ent->client->sess.nameTag);
+	}
 
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {

@@ -206,6 +206,12 @@ subContestParams_t subContestParams[SUBCONTESTS_COUNT] = {
 	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_ROLLYMPICS
 };
 
+const char* nameTagTypeNames[NAMETAG_COUNT] = {
+	"none",
+	"freedom",
+	"oc9"
+};
+
 // NOTE: For start timer, make sure we are not standing in any existing start timer before actually starting, 
 // even when leave() is already being called. Only the last left start trigger should actually trigger.
 
@@ -895,7 +901,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Restart blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse);
 		}
 		else {
-			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qtrue);
+			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse);
 		}
 		return;
 	}

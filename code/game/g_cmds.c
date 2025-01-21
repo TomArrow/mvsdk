@@ -936,6 +936,313 @@ void StopFollowing( gentity_t *ent ) {
 	SetClientViewAngle(ent, ent->client->ps.viewangles); //Fix viewangles getting fucked up when we stop spectating someone?
 }
 
+helpTip_t helpTips[] = {
+	{
+		"print \"\n^7Various commands:\n\"",
+		"print \"Random tip: \n^7Various commands:\n\"",
+		qtrue,
+		qfalse
+	},
+	{
+		"print \"^2/afk^7 - See who's afk and for how long\n\"",
+		"print \"Random tip: ^2/afk^7 - See who's afk and for how long\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"\n^7Map commands:\n\"",
+		"print \"Random tip: \n^7Map commands:\n\"",
+		qtrue,
+		qfalse
+	},
+	{
+		"print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"",
+		"print \"Random tip: ^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/longest^7,^2/shortest^7,^2/toprated^7,^2/mostplayed^7,^2/hardest^7,^2/easiest^7 - Show longest/shortest/popular(by rating)/popular(by amount of runs)/hardest/easiest maps. Can call with movement style and page.\n\"",
+		"print \"Random tip: ^2/longest^7,^2/shortest^7,^2/toprated^7,^2/mostplayed^7,^2/hardest^7,^2/easiest^7 - Show longest/shortest/popular(by rating)/popular(by amount of runs)/hardest/easiest maps. Can call with movement style and page.\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/ratemap^7 - Rate the current map from 0 to 10. Call with movement style and number.\n\"",
+		"print \"Random tip: ^2/ratemap^7 - Rate the current map from 0 to 10. Call with movement style and number.\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/wrs^7,^2/notwr^7 - Show maps you hold/don't hold WR on, sorted by your current rank, highest first. Can call with username.\n\"",
+		"print \"Random tip: ^2/wrs^7,^2/notwr^7 - Show maps you hold/don't hold WR on, sorted by your current rank, highest first. Can call with username.\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"",
+		"print \"Random tip: ^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"\n^7Account commands:\n\"",
+		"print \"Random tip: \n^7Account commands:\n\"",
+		qtrue,
+		qfalse
+	},
+	{
+		"print \"^2/register^7 - Call with username and password to create an account\n\"",
+		"print \"Random tip: ^2/register^7 - Call with username and password to create an account\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/login^7 - Call with username and password to log into an existing account\n\"",
+		"print \"Random tip: ^2/login^7 - Call with username and password to log into an existing account\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/changepassword^7 - Call with a new password while logged in to change your password.\n\"",
+		"print \"Random tip: ^2/changepassword^7 - Call with a new password while logged in to change your password.\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/logout^7 - Log out of your account.\n\"",
+		"print \"Random tip: ^2/logout^7 - Log out of your account.\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"\n^7Visual/personal tweak commands:\n\"",
+		"print \"Random tip: \n^7Visual/personal tweak commands:\n\"",
+		qtrue,
+		qfalse
+	},
+	{
+		"print \"^2/lasers^7 - Turn off or on the display of laserpointers by other players\n\"",
+		"print \"Random tip: ^2/lasers^7 - Turn off or on the display of laserpointers by other players\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/solo^7 - Hide or unhide other players\n\"",
+		"print \"Random tip: ^2/solo^7 - Hide or unhide other players\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"",
+		"print \"Random tip: ^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		//"print \"^2/freedom^7,^2/oc9^7 - Serverside apply a freedom/oc9 name tag to your name\n\"",
+		//"print \"Random tip: ^2/freedom^7,^2/oc9^7 - Serverside apply a freedom/oc9 name tag to your name\n\"",
+		"print \"^2/freedom^7 - Serverside apply a freedom name tag to your name\n\"",
+		"print \"Random tip: ^2/freedom^7 - Serverside apply a freedom name tag to your name\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"\n^7Race style commands:\n\"",
+		"print \"Random tip: \n^7Race style commands:\n\"",
+		qtrue,
+		qtrue
+	},
+	{
+		"print \"^2/move^7 - Set your movement style (call without argument to see options)\n\"",
+		"print \"Random tip: ^2/move^7 - Set your movement style (call without argument to see options)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/run^7 - Race style settings (segmented, strafebot, etc.)\n\"",
+		"print \"Random tip: ^2/run^7 - Race style settings (segmented, strafebot, etc.)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/jump^7 - Call with -1 to 3 to set jump level (0 = no force, -1 = ysalamir)\n\"",
+		"print \"Random tip: ^2/jump^7 - Call with -1 to 3 to set jump level (0 = no force, -1 = ysalamir)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/togglefps^7 - Turn fps toggle mode on or off (also needed for clients without com_physicsFps)\n\"",
+		"print \"Random tip: ^2/togglefps^7 - Turn fps toggle mode on or off (also needed for clients without com_physicsFps)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/floatphysics^7 - Turn float physics mode (no velocity snap) on or off \n\"",
+		"print \"Random tip: ^2/floatphysics^7 - Turn float physics mode (no velocity snap) on or off \n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"\n^7Race commands:\n\"",
+		"print \"Random tip: \n^7Race commands:\n\"",
+		qtrue,
+		qtrue
+	},
+	{
+		"print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). ^3This also saves your currently selected weapon.^7 Use ^2/kill^7 to respawn\n\"",
+		"print \"Random tip: ^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). ^3This also saves your currently selected weapon.^7 Use ^2/kill^7 to respawn\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/resetspawn^7 - Deletes/resets your saved spawn point\n\"",
+		"print \"Random tip: ^2/resetspawn^7 - Deletes/resets your saved spawn point\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/savepos^7 - Save your current state including position, velocity and angles. Works also from spec.\n\"",
+		"print \"Random tip: ^2/savepos^7 - Save your current state including position, velocity and angles. Works also from spec.\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/respos^7 - Restore your saved state\n\"",
+		"print \"Random tip: ^2/respos^7 - Restore your saved state\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"",
+		"print \"Random tip: ^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/stealpos^7 - Steal saved position from another player (call with client number from ^2/clientlist^7)\n\"",
+		"print \"Random tip: ^2/stealpos^7 - Steal saved position from another player (call with client number from ^2/clientlist^7)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/amtele^7 - Call with a client number or name to teleport to a player\n\"",
+		"print \"Random tip: ^2/amtele^7 - Call with a client number or name to teleport to a player\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/launch^7 - Launch yourself with speed. Call without arguments to see available options/parameters\n\"",
+		"print \"Random tip: ^2/launch^7 - Launch yourself with speed. Call without arguments to see available options/parameters\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"\n^7Checkpoint commands:\n\"",
+		"print \"Random tip: \n^7Checkpoint commands:\n\"",
+		qtrue,
+		qtrue
+	},
+	{
+		"print \"^2/checkpoint^7 - Add a custom checkpoint at your current position\n\"",
+		"print \"Random tip: ^2/checkpoint^7 - Add a custom checkpoint at your current position\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/removecheckpoints^7 - Remove all custom checkpoints\n\"",
+		"print \"Random tip: ^2/removecheckpoints^7 - Remove all custom checkpoints\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/stealcheckpoints^7 - Steal custom checkpoints from another player (call with client number from ^2/clientlist^7)\n\"",
+		"print \"Random tip: ^2/stealcheckpoints^7 - Steal custom checkpoints from another player (call with client number from ^2/clientlist^7)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/savecheckpoints^7 - Save your custom checkpoints for this map (only if you are logged in. Does not save times.)\n\"",
+		"print \"Random tip: ^2/savecheckpoints^7 - Save your custom checkpoints for this map (only if you are logged in. Does not save times.)\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/loadcheckpoints^7 - Load your custom checkpoints for this map\n\"",
+		"print \"Random tip: ^2/loadcheckpoints^7 - Load your custom checkpoints for this map\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"\n^7Statistics commands:\n\"",
+		"print \"Random tip: \n^7Statistics commands:\n\"",
+		qtrue,
+		qtrue
+	},
+	{
+		"print \"^2/rank^7 - Show rankings for a given style and leaderboard type. Default JK2/Main\n\"",
+		"print \"Random tip: ^2/rank^7 - Show rankings for a given style and leaderboard type. Default JK2/Main\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"",
+		"print \"Random tip: ^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"",
+		"print \"Random tip: ^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/time^7 - Check and publicly print your personal best for your current race settings\n\"",
+		"print \"Random tip: ^2/time^7 - Check and publicly print your personal best for your current race settings\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged or call with username\n\"",
+		"print \"Random tip: ^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged or call with username\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"^2/rollympics^7 - Show fastest roll records\n\"",
+		"print \"Random tip: ^2/rollympics^7 - Show fastest roll records\n\"",
+		qfalse,
+		qtrue
+	},
+	{
+		"print \"\n^7Client binds (named binds work in TommyTernal client):\n\"",
+		"print \"Random tip: \n^7Client binds (named binds work in TommyTernal client):\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/+laserpointer^7 (^2/+button12^7) - Activates laserpointer in your current view direction to show stuff to others. Works even in spec (use ^2/lasers^7 to hide these)\n\"",
+		"print \"Random tip: ^2/+laserpointer^7 (^2/+button12^7) - Activates laserpointer in your current view direction to show stuff to others. Works even in spec (use ^2/lasers^7 to hide these)\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/+bouncepower^7 (^2/+button13^7) - Activates stronger bounce in bounce movement style for up to half a second\n\"",
+		"print \"Random tip: ^2/+bouncepower^7 (^2/+button13^7) - Activates stronger bounce in bounce movement style for up to half a second\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"",
+		"print \"Random tip: ^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"",
+		qfalse,
+		qfalse
+	},
+};
+
+const int helpTipCount = sizeof(helpTips) / sizeof(helpTips[0]);
+
 
 /*
 =================
@@ -944,6 +1251,7 @@ Cmd_Help_f
 */
 void Cmd_Help_f(gentity_t* ent) {
 	char arg1[20];
+	int i;
 
 	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
@@ -982,69 +1290,76 @@ void Cmd_Help_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, va("print \"^2/race^7 - Call to %s racemode.\n\"", ent->client->sess.raceMode ? "exit/enter":"enter/exit")); 
 	}
 
-	trap_SendServerCommand(ent - g_entities, "print \"\n^7Various commands:\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/afk^7 - See who's afk and for how long\n\"");
-
-	trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7,^2/toprated^7,^2/mostplayed^7,^2/hardest^7,^2/easiest^7 - Show longest/shortest/popular(by rating)/popular(by amount of runs)/hardest/easiest maps. Can call with movement style and page.\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/ratemap^7 - Rate the current map from 0 to 10. Call with movement style and number.\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/wrs^7,^2/notwr^7 - Show maps you hold/don't hold WR on, sorted by your current rank, highest first. Can call with username.\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"");
-
-	trap_SendServerCommand(ent - g_entities, "print \"\n^7Account commands:\n\"");
-
-	trap_SendServerCommand(ent - g_entities, "print \"^2/register^7 - Call with username and password to create an account\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/login^7 - Call with username and password to log into an existing account\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/changepassword^7 - Call with a new password while logged in to change your password.\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/logout^7 - Log out of your account.\n\"");
-
-
-	trap_SendServerCommand(ent - g_entities, "print \"\n^7Visual/personal tweak commands:\n\"");
-
-	trap_SendServerCommand(ent - g_entities, "print \"^2/lasers^7 - Turn off or on the display of laserpointers by other players\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/solo^7 - Hide or unhide other players\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"");
-
-	if (ent->client->sess.raceMode) {
-
-		trap_SendServerCommand(ent - g_entities, "print \"\n^7Race style commands:\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/move^7 - Set your movement style (call without argument to see options)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/run^7 - Race style settings (segmented, strafebot, etc.)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/jump^7 - Call with -1 to 3 to set jump level (0 = no force, -1 = ysalamir)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/togglefps^7 - Turn fps toggle mode on or off (also needed for clients without com_physicsFps)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/floatphysics^7 - Turn float physics mode (no velocity snap) on or off \n\"");
-
-		trap_SendServerCommand(ent - g_entities, "print \"\n^7Race commands:\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). ^3This also saves your currently selected weapon.^7 Use ^2/kill^7 to respawn\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/resetspawn^7 - Deletes/resets your saved spawn point\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state including position, velocity and angles. Works also from spec.\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/stealpos^7 - Steal saved position from another player (call with client number from ^2/clientlist^7)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/amtele^7 - Call with a client number or name to teleport to a player\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/launch^7 - Launch yourself with speed. Call without arguments to see available options/parameters\n\"");
-
-		trap_SendServerCommand(ent - g_entities, "print \"\n^7Checkpoint commands:\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/checkpoint^7 - Add a custom checkpoint at your current position\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/removecheckpoints^7 - Remove all custom checkpoints\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/stealcheckpoints^7 - Steal custom checkpoints from another player (call with client number from ^2/clientlist^7)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/savecheckpoints^7 - Save your custom checkpoints for this map (only if you are logged in. Does not save times.)\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/loadcheckpoints^7 - Load your custom checkpoints for this map\n\"");
-
-		trap_SendServerCommand(ent - g_entities, "print \"\n^7Statistics commands:\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/rank^7 - Show rankings for a given style and leaderboard type. Default JK2/Main\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/time^7 - Check and publicly print your personal best for your current race settings\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged or call with username\n\"");
-		trap_SendServerCommand(ent - g_entities, "print \"^2/rollympics^7 - Show fastest roll records\n\"");
+	for (int i = 0; i < helpTipCount; i++) {
+		if (!helpTips[i].raceOnly || ent->client->sess.raceMode) {
+			trap_SendServerCommand(ent - g_entities, helpTips[i].helpPrint);
+		}
 	}
 
-	trap_SendServerCommand(ent - g_entities, "print \"\n^7Client binds (named binds work in TommyTernal client):\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/+laserpointer^7 (^2/+button12^7) - Activates laserpointer in your current view direction to show stuff to others. Works even in spec (use ^2/lasers^7 to hide these)\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/+bouncepower^7 (^2/+button13^7) - Activates stronger bounce in bounce movement style for up to half a second\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"\n^7Various commands:\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/afk^7 - See who's afk and for how long\n\"");
+
+	//trap_SendServerCommand(ent - g_entities, "print \"\n^7Map commands:\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/maplist^7 - Call to see list of maps you can callvote. Optional: ^2/maplist unplayed\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/longest^7,^2/shortest^7,^2/toprated^7,^2/mostplayed^7,^2/hardest^7,^2/easiest^7 - Show longest/shortest/popular(by rating)/popular(by amount of runs)/hardest/easiest maps. Can call with movement style and page.\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/ratemap^7 - Rate the current map from 0 to 10. Call with movement style and number.\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/wrs^7,^2/notwr^7 - Show maps you hold/don't hold WR on, sorted by your current rank, highest first. Can call with username.\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"");
+
+	//trap_SendServerCommand(ent - g_entities, "print \"\n^7Account commands:\n\"");
+
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/register^7 - Call with username and password to create an account\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/login^7 - Call with username and password to log into an existing account\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/changepassword^7 - Call with a new password while logged in to change your password.\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/logout^7 - Log out of your account.\n\"");
+
+
+	//trap_SendServerCommand(ent - g_entities, "print \"\n^7Visual/personal tweak commands:\n\"");
+
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/lasers^7 - Turn off or on the display of laserpointers by other players\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/solo^7 - Hide or unhide other players\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/freedom^7,^2/oc9^7 - Serverside apply a freedom/oc9 name tag to your name\n\"");
+
+	//if (ent->client->sess.raceMode) {
+
+	//	trap_SendServerCommand(ent - g_entities, "print \"\n^7Race style commands:\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/move^7 - Set your movement style (call without argument to see options)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/run^7 - Race style settings (segmented, strafebot, etc.)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/jump^7 - Call with -1 to 3 to set jump level (0 = no force, -1 = ysalamir)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/togglefps^7 - Turn fps toggle mode on or off (also needed for clients without com_physicsFps)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/floatphysics^7 - Turn float physics mode (no velocity snap) on or off \n\"");
+
+	//	trap_SendServerCommand(ent - g_entities, "print \"\n^7Race commands:\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/savespawn^7 - Save your spawn point (only valid for your current race style settings). ^3This also saves your currently selected weapon.^7 Use ^2/kill^7 to respawn\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/resetspawn^7 - Deletes/resets your saved spawn point\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state including position, velocity and angles. Works also from spec.\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/stealspawn^7 - Steal spawn point from another player. Also steals style, if different. (call with client number from ^2/clientlist^7)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/stealpos^7 - Steal saved position from another player (call with client number from ^2/clientlist^7)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/amtele^7 - Call with a client number or name to teleport to a player\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/launch^7 - Launch yourself with speed. Call without arguments to see available options/parameters\n\"");
+
+	//	trap_SendServerCommand(ent - g_entities, "print \"\n^7Checkpoint commands:\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/checkpoint^7 - Add a custom checkpoint at your current position\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/removecheckpoints^7 - Remove all custom checkpoints\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/stealcheckpoints^7 - Steal custom checkpoints from another player (call with client number from ^2/clientlist^7)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/savecheckpoints^7 - Save your custom checkpoints for this map (only if you are logged in. Does not save times.)\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/loadcheckpoints^7 - Load your custom checkpoints for this map\n\"");
+
+	//	trap_SendServerCommand(ent - g_entities, "print \"\n^7Statistics commands:\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/rank^7 - Show rankings for a given style and leaderboard type. Default JK2/Main\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/top^7 - Show leaderboards. Can call with map and subcourse, otherwise current map data is shown. Call with number to go to next page. Call with movement style to get leaderboards for specific movement style. Defaults to JK2 style\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/topmain^7,^2/topnjb^7,^2/topcustom^7,^2/topseg^7,^2/topcheat^7 - Same options as ^2/top^7, shows more detailed specific leaderboards with average/top speed and more\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/time^7 - Check and publicly print your personal best for your current race settings\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged or call with username\n\"");
+	//	trap_SendServerCommand(ent - g_entities, "print \"^2/rollympics^7 - Show fastest roll records\n\"");
+	//}
+
+	//trap_SendServerCommand(ent - g_entities, "print \"\n^7Client binds (named binds work in TommyTernal client):\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/+laserpointer^7 (^2/+button12^7) - Activates laserpointer in your current view direction to show stuff to others. Works even in spec (use ^2/lasers^7 to hide these)\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/+bouncepower^7 (^2/+button13^7) - Activates stronger bounce in bounce movement style for up to half a second\n\"");
+	//trap_SendServerCommand(ent - g_entities, "print \"^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"");
 
 
 	if (ent->client->sess.login.loggedIn && ent->client->sess.login.flags) {
@@ -1498,6 +1813,32 @@ void Cmd_Login_f( gentity_t *ent )
 	}
 }
 
+
+void Cmd_NameTag_f(gentity_t* ent) {
+	char	cmd[20];
+	nameTagType_t	type = NAMETAG_NONE;
+	trap_Argv(0, cmd, sizeof(cmd));
+	if (!Q_stricmp("freedom", cmd)) {
+		type = NAMETAG_FREEDOM;
+	}
+	else if (!Q_stricmp("oc9", cmd)) {
+		type = NAMETAG_OC9;
+	}
+	else {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Weird error. Name tag not recognized.\n\"");
+		return; // dunno
+	}
+	if (ent->client->sess.nameTag == type) {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Name tag disabled: %s\n\"", cmd));
+		ent->client->sess.nameTag = NAMETAG_NONE;
+	}
+	else {
+		trap_SendServerCommand(ent - g_entities, va("print \"^1Name tag applied: %s\n\"",cmd));
+		ent->client->sess.nameTag = type;
+	}
+	ClientUserinfoChanged(ent-g_entities);
+
+}
 
 void Cmd_ForceLogin_f(gentity_t* ent) {
 	qboolean allRace = qfalse;
@@ -4984,6 +5325,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "freedom"))// || !Q_stricmp(cmd, "oc9"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "vote"))
 		{
 			giveError = qtrue;
@@ -5148,6 +5493,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_UpdateRanks_f(ent);
 	else if (Q_stricmp (cmd, "forcelogin") == 0)
 		Cmd_ForceLogin_f(ent);
+	else if (!Q_stricmp(cmd, "freedom"))// || !Q_stricmp(cmd, "oc9"))
+		Cmd_NameTag_f(ent);
 	else if (Q_stricmp (cmd, "vote") == 0)
 		Cmd_Vote_f (ent);
 	else if (Q_stricmp (cmd, "callteamvote") == 0)

@@ -29,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -50,6 +50,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.raceStateInvalidated,
 		(int)(level.time-client->sess.lastHereTime),
 		(int)(level.time-client->sess.oldbuttons_immediate),
+		(int)client->sess.nameTag,
 		client->sess.login.loggedIn,
 		client->sess.login.id,
 		client->sess.login.flags,
@@ -100,11 +101,12 @@ void G_ReadSessionData( gclient_t *client ) {
 	int raceStateInvalidated;
 	int loggedIn;
 	int lastHereTimeOffset;
+	int nameTagType;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -125,6 +127,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&raceStateInvalidated,
 		&lastHereTimeOffset,
 		&client->sess.oldbuttons_immediate,
+		&nameTagType,
 		&loggedIn,
 		&client->sess.login.id,
 		&client->sess.login.flags,
@@ -146,6 +149,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
 	client->sess.login.loggedIn = loggedIn;
 	client->sess.lastHereTime = level.time- lastHereTimeOffset;
+	client->sess.nameTag  = nameTagType;
 
 	//client->sess.raceStyle.msec = 7; // just default to this *shrug*// Nope, keep it so we remember floatphysics/toggle
 
