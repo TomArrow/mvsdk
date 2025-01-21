@@ -1051,9 +1051,11 @@ void ApplyNameTag(char* name, int bufferSize, nameTagType_t type) {
 	int		i;
 	char*	shortest = NULL;
 	int		shortestLen = INT_MAX;
+	qboolean	shortestIsClanTag;
 	char*	tmp2;
 	int		tmpLen;
 	char	lastLetter = '\0';
+	int		pieceIndex = 0;
 	Q_strncpyz(tmp, name, sizeof(tmp));
 
 	// NULL out any non-letter or digit char
@@ -1080,9 +1082,11 @@ void ApplyNameTag(char* name, int bufferSize, nameTagType_t type) {
 		if (!lastLetter && tmp[i]) {
 			tmp2 = &tmp[i];
 			tmpLen = strlen(tmp2);
-			if (tmpLen < shortestLen && tmpLen > 1 && Q_stricmp(shortest,"freedom") && Q_stricmp(shortest,"oc9")) {
+			if ((tmpLen < shortestLen || shortestIsClanTag) && tmpLen > 1 && Q_stricmp(tmp2,"freedom") && Q_stricmp(tmp2,"oc9")) {
 				shortest = tmp2;
 				shortestLen = tmpLen;
+				shortestIsClanTag = pieceIndex == 0 && tmpLen >= 2 && tmpLen <= 3;
+				pieceIndex++;
 			}
 			i += tmpLen;
 		}
