@@ -3080,7 +3080,7 @@ void G_RunFrame( int levelTime ) {
 			tip = &helpTips[Q_irand(0, helpTipCount, qfalse, 0)];
 		}
 		trap_SendServerCommand(-1, tip->randomTipPrint);
-		level.nextRandomTip = clampedIntAdd(level.time, MAX(clampedIntMult(clampedIntMult(MAX(1,g_randomTipInterval.integer), 1000), Q_irand(100,400,qfalse,200) / 200),1000));
+		level.nextRandomTip = clampedIntAdd(level.time, MAX(clampedIntMult(clampedIntMult(MAX(1,g_randomTipInterval.integer), 1000), Q_irand(100,400,qfalse,200)) / 200,1000));
 	}
 
 	if (!level.numPlayingClients && (clampedIntAdd(level.lastAllRankUpdate, 60000) < level.time || level.time < level.lastAllRankUpdate || !level.lastAllRankUpdate && level.time)) {
