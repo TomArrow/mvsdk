@@ -863,6 +863,9 @@ void MV_UpdateSvFlags( void )
 	lastValue = intValue;
 }
 
+
+void InitClanTagHashTable();
+
 /*
 ============
 G_InitGame
@@ -879,6 +882,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	G_Printf ("gamedate: %s\n", __DATE__);
 
 	InitFpsTable();
+	InitClanTagHashTable();
 	
 	if ( jk2version == VERSION_UNDEF )
 	{ // We don't know the version of the server, yet...

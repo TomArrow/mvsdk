@@ -1044,19 +1044,83 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 	}
 }
 
+
+#define CLANTAG_HASHSIZE 256
+static hashEntry_t knownClanTags[] = {
+	{"freedom"},{"cos"},{"pi"},{"oc9"},{"eos"},{"fos"},{"bbb"},{"dbd"},{"174"},{"pureness"},{"believers"},
+	{"fou"},{"jof"},{"jofa"},{"gog"},{"jip"},{"gog"},{"rrr"},{"ft"},{"bdsm"},{"motf"},{"circus"},
+	{"suffix"},{"defiance"},{"el"},{"d2w"},{"coz"},{"fod"},{"ah"},{"jotr"},{"ros"},
+	{"ats"},{"lm"},{"sol"},{"wCw"},{"SL"},{"TFJ"},{"ColdThugz"},{"EC"},{"rj"},
+	{"KR"},{"93o"},{"930"},{"dA"},{"nWo"},{"ez"},{"GotA"},{"CjS"},{"BOMS"},{"ca"},
+	{"eot"},{"bulldozer"},{"WAR"},{"ToD"},{"TB"},{"SPQR"},{"SC"},{"R"},{"NA"},
+	{"DARK"},{"NATO"},{"LoD"},{"g"},{"EU"},{"MAD"},{"E621"},{"AFK"},{"Hecc"},{"hvn"},
+	{"LSS"},{"vvv"},{"il"},
+};
+
+static const int clanTagCount = sizeof(knownClanTags) / sizeof(knownClanTags[0]);
+
+hashEntry_t* clanTagHashTable[CLANTAG_HASHSIZE] = { 0 };
+
+void InitClanTagHashTable() {
+	int i;
+	int hash;
+	static qboolean inited = qfalse;
+	if (!inited) {
+		for (i = 0; i < clanTagCount; i++) {
+			hash = generateHashValue(knownClanTags[i].text, CLANTAG_HASHSIZE);
+			knownClanTags[i].next = clanTagHashTable[hash];
+			clanTagHashTable[hash] = &knownClanTags[i];
+		}
+		inited = qtrue;
+	}
+}
+
+static qboolean CheckIsClanTag(const char* text) {
+	int i;
+	int hash;
+	hashEntry_t* hashEntry;
+	InitClanTagHashTable();
+	hash = generateHashValue(text, CLANTAG_HASHSIZE);
+	for (hashEntry = clanTagHashTable[hash]; hashEntry; hashEntry = hashEntry->next) {
+		if (!Q_stricmp(text,hashEntry->text)) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
 void ApplyNameTag(char* name, int bufferSize, nameTagType_t type) {
 	char	tmp[MAX_NETNAME];
 	char*	s = tmp;
-	int		inlen = strlen(name);
-	int		i;
+	int		inlen=0;// = strlen(name);
+	int		i,j;
 	char*	shortest = NULL;
 	int		shortestLen = INT_MAX;
-	qboolean	shortestIsClanTag;
+	char*	clanTag = NULL;
+	qboolean	shortestIsMaybeClanTag;
+	qboolean	clanTagFound;
 	char*	tmp2;
 	int		tmpLen;
 	char	lastLetter = '\0';
 	int		pieceIndex = 0;
-	Q_strncpyz(tmp, name, sizeof(tmp));
+	char	*s2 = name;
+	
+	//Q_strncpyz(tmp, name, sizeof(tmp)); 
+	while (*s2 && inlen<(sizeof(tmp)-1)) {
+		if (*s2 == Q_COLOR_ESCAPE && *(s2+1)) { // strip colors so we don't pull apart names
+			s2++;
+		}
+		else {
+			*s = *s2;
+			inlen++;
+			s++;
+		}
+		s2++;
+	}
+
+
+	*s = '\0';
+	s = tmp;
 
 	// NULL out any non-letter or digit char
 	while (*s) {
@@ -1082,10 +1146,14 @@ void ApplyNameTag(char* name, int bufferSize, nameTagType_t type) {
 		if (!lastLetter && tmp[i]) {
 			tmp2 = &tmp[i];
 			tmpLen = strlen(tmp2);
-			if ((tmpLen < shortestLen || shortestIsClanTag) && tmpLen > 1 && Q_stricmp(tmp2,"freedom") && Q_stricmp(tmp2,"oc9")) {
+			clanTagFound = CheckIsClanTag(tmp2);
+			if (clanTagFound && !clanTag) {
+				clanTag = tmp2;
+			}
+			else if ((tmpLen < shortestLen || shortestIsMaybeClanTag) && tmpLen > 1 && !clanTagFound) {
 				shortest = tmp2;
 				shortestLen = tmpLen;
-				shortestIsClanTag = pieceIndex == 0 && tmpLen >= 2 && tmpLen <= 3;
+				shortestIsMaybeClanTag = pieceIndex == 0 && tmpLen >= 2 && tmpLen <= 3;
 				pieceIndex++;
 			}
 			i += tmpLen;
@@ -1095,7 +1163,12 @@ void ApplyNameTag(char* name, int bufferSize, nameTagType_t type) {
 
 	if (!shortest) {
 		// can't apply nametag, no suitable bit found.
-		return;
+		if (!clanTag) {
+			return;
+		}
+		else {
+			shortest = clanTag;
+		}
 	}
 
 	switch (type) {

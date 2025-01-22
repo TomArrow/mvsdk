@@ -113,6 +113,11 @@ typedef enum getUserCmdType_s
 	GETUSERCMD_ADVANCERUNCLIENT,
 } getUserCmdType_t;
 
+typedef struct hashEntry_s {
+	const char* text;
+	struct hashEntry_s* next;
+} hashEntry_t;
+
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
