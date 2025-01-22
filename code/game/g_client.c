@@ -1054,7 +1054,8 @@ static hashEntry_t knownClanTags[] = {
 	{"KR"},{"93o"},{"930"},{"dA"},{"nWo"},{"ez"},{"GotA"},{"CjS"},{"BOMS"},{"ca"},
 	{"eot"},{"bulldozer"},{"WAR"},{"ToD"},{"TB"},{"SPQR"},{"SC"},{"R"},{"NA"},
 	{"DARK"},{"NATO"},{"LoD"},{"g"},{"EU"},{"MAD"},{"E621"},{"AFK"},{"Hecc"},{"hvn"},
-	{"LSS"},{"vvv"},{"il"},
+	{"LSS"},{"vvv"},{"il"},{"so"},{"sf"},{"rodia"},{"tnf"},{"tft"},{"gg"},{"Templar"},{"PlayboyZ"},{"PARADiGM"},
+	{"LoC"},{"Lions"},{"lil"},{"LGBTQ"},{"i"},{"dts"},{"dOR"},{"TOR"},{"e"},{"JAWA"},{"Ub"},
 };
 
 static const int clanTagCount = sizeof(knownClanTags) / sizeof(knownClanTags[0]);
