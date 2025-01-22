@@ -1216,8 +1216,8 @@ helpTip_t helpTips[] = {
 		qtrue
 	},
 	{
-		"print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged or call with username\n\"",
-		"print \"Random tip: ^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged or call with username\n\"",
+		"print \"^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged^7 or call with username\n\"",
+		"print \"Random tip: ^2/latest^7 - Show latest runs. Can call with movement style and page. Optional: ^2/latest mine^7 or ^2/latest unlogged^7 or call with username\n\"",
 		qfalse,
 		qtrue
 	},

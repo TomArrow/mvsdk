@@ -930,7 +930,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cjp_client, "cjp_client", "1.4JAPRO", CVAR_USERINFO|CVAR_ROM },
 	{ &cg_raceTimer, "cg_raceTimer", "3", 0 },
 	{ &cg_raceTimerSize, "cg_raceTimerSize", "0.75", 0 },
-	{ &cg_raceTimerNoSpeeds, "cg_raceTimerNoSpeeds", "0", 0 },
+	{ &cg_raceTimerNoSpeeds, "cg_raceTimerNoSpeeds", "0", CVAR_ARCHIVE },
 	{ &cg_raceTimerX, "cg_raceTimerX", "5", 0 },
 	{ &cg_raceTimerY, "cg_raceTimerY", "280", 0 },
 	{ &cg_speedometer, "cg_speedometer", "0", CVAR_ARCHIVE },
