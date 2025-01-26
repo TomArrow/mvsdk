@@ -5201,6 +5201,7 @@ qboolean PM_SaberInTransition( int move );
 
 void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 {
+	int moveStyle = PM_GetMovePhysics();
 	//For prediction, always reset speed back to the last known server base speed
 	//If we didn't do this, under lag we'd eventually dwindle speed down to 0 even though
 	//that would not be the correct predicted value.
@@ -5394,9 +5395,14 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 		{
 			ps->speed = ps->legsTimer/1.5;//450;
 		}
-		if (ps->speed > 600)
-		{
-			ps->speed = 600;
+		if (moveStyle == MV_DREAM) {
+			ps->speed *= 1.28f;
+		}
+		else {
+			if (ps->speed > 600)
+			{
+				ps->speed = 600;
+			}
 		}
 		//Automatically slow down as the roll ends.
 	}
