@@ -7365,6 +7365,7 @@ static void CG_RealAccel_SickoAccelerate(vec3_t velocity, vec3_t velocityOut, ve
 		velocityOut[i] += accelspeed * wishdir[i];
 	}
 }
+
 static void CG_RealAccel_QuaJKAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel, float maxAccelWishSpeed) {
 	// q2 style
 	int			i;
@@ -7404,6 +7405,81 @@ static void CG_RealAccel_QuaJKAccelerate(vec3_t velocity, vec3_t velocityOut, ve
 	if (accelspeed > addspeed) {
 		accelspeed = addspeed;
 	}
+
+	for (i = 0; i < 3; i++) {
+		velocityOut[i] += accelspeed * wishdir[i];
+	}
+}
+
+static void CG_RealAccel_DreamAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel, float maxAccelWishSpeed,float velTotal) {
+	// q2 style
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+	float		accel;
+	float		f, finalWishSpeed;
+	float		accelAddSlow, accelAddHigh;
+	float		neededSpeedSlow, neededSpeedHigh;
+	float		scale;
+	float		maxFront;
+	float		tmp;
+	float		h = 2.0;
+	float		w;
+	float		idealVelRatio;
+	static const float backpow = 5.0f;
+
+	VectorCopy(velocity,velocityOut);
+
+	currentspeed = DotProduct(velocity, wishdir);
+
+	if (currentspeed >= wishspeed) return;
+
+	accelAddSlow = baseAccel * frametime * wishspeed;
+	accelAddHigh = maxAccel * frametime * maxAccelWishSpeed;
+
+	neededSpeedSlow = wishspeed - accelAddSlow;
+	neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
+
+	if (currentspeed < 0) {
+		f = (-1.0f * currentspeed) / velTotal;
+		f = 1.0f - powf(1.0f - f, backpow);
+	}
+	else {
+		f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+	}
+
+	if (f < 0) f = 0;
+	else if (f > 1) f = 1;
+
+	accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
+	finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
+
+	accelspeed = accel * frametime * finalWishSpeed;
+
+	addspeed = finalWishSpeed - currentspeed;
+	if (addspeed <= 0) {
+		return;
+	}
+
+	if (accelspeed > addspeed) {
+		accelspeed = addspeed;
+	}
+
+	w = accelAddSlow + wishspeed;
+	idealVelRatio = (w * w) / (velTotal * velTotal);
+	idealVelRatio *= accelAddSlow / (wishspeed + accelAddSlow);
+	maxFront = idealVelRatio * velTotal;
+
+	tmp = 2 * wishdir[0] * velocityOut[0] + 2 * wishdir[1] * velocityOut[1] + 2.0f * wishdir[2] * velocityOut[2];
+	scale = (-2.0f * wishdir[0] * velocityOut[0] - 2.0f * wishdir[1] * velocityOut[1] - 2.0f * wishdir[2] * velocityOut[2] + sqrtf(tmp * tmp + 4 * h * maxFront * (wishdir[0] * wishdir[0] + wishdir[1] * wishdir[1] + wishdir[2] * wishdir[2]) * (h * maxFront + 2.0f * velTotal))) / (2.0 * h * (wishdir[0] * wishdir[0] + wishdir[1] * wishdir[1] + wishdir[2] * wishdir[2]));
+
+	if (scale < 0 || fpclassify(scale) == FP_NAN) {
+		return;
+	}
+	else if (scale > accelspeed)
+	{
+		scale = accelspeed;
+	}
+	accelspeed = scale;
 
 	for (i = 0; i < 3; i++) {
 		velocityOut[i] += accelspeed * wishdir[i];
@@ -7479,6 +7555,7 @@ static void CG_RealAccelHelper() {
 	vec3_t currentVelVec;
 	vec3_t newVelVec;
 	float currentSpeed;
+	float currentSpeed3D;
 	float iAngle = 0;
 	float angleRange = cg.refdef.fov_x; // +2.0f for a bit of buffer so the sides dont get cut off
 	float x,oldX=-1.0f;
@@ -7529,6 +7606,7 @@ static void CG_RealAccelHelper() {
 	onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
 
 	memset(&groundTrace, 0, sizeof(groundTrace));
+
 
 	if (cg_realAccelPreFriction.integer) {
 		currentSpeed = XYSPEED(currentVelVec);
@@ -7599,6 +7677,7 @@ static void CG_RealAccelHelper() {
 		}
 		VectorScale(currentVelVec, frictionFactor, currentVelVec);
 	}
+	currentSpeed3D = VectorLength(currentVelVec);
 
 	if (!cg_realAccelPreFriction.integer) {
 		currentSpeed = XYSPEED(currentVelVec);
@@ -7671,6 +7750,9 @@ static void CG_RealAccelHelper() {
 				hereAccel = 2.5f;
 			}
 			CG_RealAccel_QuaJKAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 70.0f, 30.0f);
+		}
+		else if (!onGround && style == MV_DREAM) {
+			CG_RealAccel_DreamAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 100,200, currentSpeed3D);
 		}
 		else if (!onGround && style == MV_SICKO){
 			CG_RealAccel_SickoAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 200.0f);

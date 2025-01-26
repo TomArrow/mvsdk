@@ -771,6 +771,86 @@ static void PM_QuaJKAccelerate( vec3_t wishdir, float wishspeed, float baseAccel
 }
 
 
+static void PM_DreamAccelerate( vec3_t wishdir, float wishspeed, float baseAccel, float maxAccel, float maxAccelWishSpeed) {
+	// q2 style
+	int			i;
+	float		addspeed, accelspeed, currentspeed;
+	float		accel;
+	float		f,finalWishSpeed;
+	float		accelAddSlow, accelAddHigh;
+	float		neededSpeedSlow, neededSpeedHigh;
+	float		scale;
+	float		maxFront;
+	float		tmp;
+	float		h = 2.0;
+	float		velTotal = VectorLength(pm->ps->velocity);
+	float		w;
+	float		idealVelRatio;
+	static const float backpow = 5.0f;
+
+	currentspeed = DotProduct (pm->ps->velocity, wishdir);
+
+	if (currentspeed >= wishspeed) return;
+
+	accelAddSlow = baseAccel * pml.frametime * wishspeed;
+	accelAddHigh = maxAccel * pml.frametime * maxAccelWishSpeed;
+
+	neededSpeedSlow = wishspeed - accelAddSlow;
+	neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
+
+	if (currentspeed < 0) {
+		f = (-1.0f*currentspeed)/velTotal;
+		f = 1.0f - powf(1.0f - f, backpow);
+	}
+	else {
+		f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+	}
+
+	if (f < 0) f = 0;
+	else if (f > 1) f = 1;
+
+	accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
+	finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
+
+
+
+	accelspeed = accel * pml.frametime * finalWishSpeed;
+
+	addspeed = finalWishSpeed - currentspeed; 
+	if (addspeed <= 0) {
+		return;
+	}
+
+	if (accelspeed > addspeed) {
+		accelspeed = addspeed;
+	}
+
+	w = accelAddSlow + wishspeed;
+	idealVelRatio = (w * w) / (velTotal*velTotal);
+	idealVelRatio *= accelAddSlow / (wishspeed + accelAddSlow);
+	maxFront = idealVelRatio * velTotal;
+
+	// don't even ask lmfao...
+	tmp = 2 * wishdir[0] * pm->ps->velocity[0] + 2 * wishdir[1] * pm->ps->velocity[1] + 2.0f * wishdir[2] * pm->ps->velocity[2];
+	scale = (-2.0f * wishdir[0] * pm->ps->velocity[0] - 2.0f * wishdir[1] * pm->ps->velocity[1] - 2.0f * wishdir[2] * pm->ps->velocity[2] + sqrtf(tmp*tmp + 4 * h * maxFront * (wishdir[0]*wishdir[0] + wishdir[1]*wishdir[1] + wishdir[2]*wishdir[2]) * (h * maxFront + 2.0f * sqrtf(pm->ps->velocity[0]* pm->ps->velocity[0] + pm->ps->velocity[1]*pm->ps->velocity[1] + pm->ps->velocity[2]*pm->ps->velocity[2])))) / (2.0 * h * (wishdir[0]*wishdir[0] + wishdir[1]*wishdir[1] + wishdir[2]*wishdir[2]));
+
+	if (scale < 0 || fpclassify(scale) == FP_NAN) {
+		return;
+	} 
+	else if (scale > accelspeed)
+	{
+		scale = accelspeed;
+	}
+	accelspeed = scale;
+	
+
+applyaccel:
+	for (i=0 ; i<3 ; i++) {
+		pm->ps->velocity[i] += accelspeed*wishdir[i];	
+	}
+}
+
+
 
 /*
 ============
@@ -2259,6 +2339,9 @@ static void PM_AirMove( void ) {
 		else
 			accel = pm_airaccelerate;
 		PM_QuaJKAccelerate(wishdir, wishspeed, accel,pm_cpm_airstrafeaccelerate,30.0f);
+	}
+	else if (movePhysics == MV_DREAM) {
+		PM_DreamAccelerate(wishdir, wishspeed, pm_airaccelerate,100,200.0f);
 	}
 	else {
 		PM_Accelerate(wishdir, wishspeed, pm_airaccelerate);

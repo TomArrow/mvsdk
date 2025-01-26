@@ -10,9 +10,9 @@ const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_LAVAP
 const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 #if WIN32// && DEBUG
-const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_CSS) | (1 << MV_Q2) | (1 << MV_FORCE);// | (1 << MV_PINBALL);
+const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_CSS) | (1 << MV_Q2) | (1 << MV_FORCE) | (1 << MV_DREAM);// | (1 << MV_PINBALL);
 #else
-const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_Q2) | (1 << MV_FORCE);// | (1 << MV_PINBALL);
+const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_Q2) | (1 << MV_FORCE) | (1 << MV_DREAM);// | (1 << MV_PINBALL);
 #endif
 bitInfo_t runFlagsNames[] = { 
 	{ "Disable jumpbug" },//0
@@ -72,6 +72,7 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 	{ "CSS" },//7
 	{ "Q2" },//8
 	{ "Force" },//9
+	{ "Dream" },//10
 };
 
 const int MAX_RUN_FLAGS = ARRAY_LEN(runFlagsNames);
@@ -240,6 +241,8 @@ int RaceNameToInteger(char* style) {
 		return MV_CSS;
 	if (!Q_stricmp(style, "force"))
 		return MV_FORCE;
+	if (!Q_stricmp(style, "dream"))
+		return MV_DREAM;
 	return -1;
 }
 int LeaderboardNameToInteger(char* lbType) {
@@ -289,25 +292,25 @@ int	MovementStyleDisabledRunFlags(int moveStyle) {
 //	return qtrue;
 //}
 qboolean MovementStyleHasQuake2Ramps(int moveStyle) {
-	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PINBALL) {
+	if (moveStyle == MV_DREAM || moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PINBALL) {
 		return qtrue;
 	}
 	return qfalse;
 }
 qboolean MovementStyleHasVQ3OnlyJumppads(int moveStyle) {
-	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PJK2) {
+	if (moveStyle == MV_DREAM || moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PJK2) {
 		return qfalse;
 	}
 	return qtrue;
 }
 qboolean MovementStyleHasCPMOnlyJumppads(int moveStyle) {
-	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PJK2) {
+	if (moveStyle == MV_DREAM || moveStyle == MV_QUAJK || moveStyle == MV_SICKO || moveStyle == MV_PJK2) {
 		return qtrue;
 	}
 	return qfalse;
 }
 qboolean MovementIsQuake3Based(int moveStyle) {
-	if (moveStyle == MV_QUAJK || moveStyle == MV_SICKO) {
+	if (moveStyle == MV_DREAM || moveStyle == MV_QUAJK || moveStyle == MV_SICKO) {
 		return qtrue;
 	}
 	return qfalse;
@@ -322,6 +325,9 @@ float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd
 	else if (moveStyle == MV_PINBALL) {
 		return 2.1f;
 	}
+	//else if (moveStyle == MV_DREAM) {
+	//	return 1.1f;
+	//}
 	return 1.001f; // OVERCLIP define
 }
 
