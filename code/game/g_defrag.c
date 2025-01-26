@@ -5087,10 +5087,11 @@ void Cmd_MovementStyle_f(gentity_t* ent)
 		return;
 	}
 
-	if (VectorLength(ent->client->ps.velocity)) {
-		trap_SendServerCommand(ent - g_entities, "print \"You must be standing still to use this command!\n\"");
-		return;
-	}
+	// what for... we invalidate anyway
+	//if (VectorLength(ent->client->ps.velocity)) {
+	//	trap_SendServerCommand(ent - g_entities, "print \"You must be standing still to use this command!\n\"");
+	//	return;
+	//}
 
 	trap_Argv(1, mStyle, sizeof(mStyle));
 
