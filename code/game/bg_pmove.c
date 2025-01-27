@@ -3141,7 +3141,9 @@ static void PM_GroundTrace( void ) {
 			Com_Printf("%i:steep\n", c_pmove);
 		}
 		pm->ps->groundEntityNum = ENTITYNUM_NONE;
-		pml.groundPlane = qtrue;
+		if (moveStyle != MV_DREAM) {
+			pml.groundPlane = qtrue;
+		}
 		pml.walking = qfalse;
 		pm->roll.segmentDisqualified = qtrue; // we are sliding, giving us extra speed. disqualify the roll.
 		return;
