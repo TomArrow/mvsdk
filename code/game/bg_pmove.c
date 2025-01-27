@@ -2152,6 +2152,8 @@ static void PM_WaterMove( void ) {
 	float	scale;
 	float	vel;
 	int moveStyle = PM_GetMovePhysics();
+	float	realWaterAccelerate = pm_wateraccelerate;
+	float	realSwimScale = pm_swimScale;
 
 
 	if ( PM_CheckWaterJump() ) {
@@ -2192,11 +2194,16 @@ static void PM_WaterMove( void ) {
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
 
-	if ( wishspeed > pm->ps->speed * pm_swimScale ) {
-		wishspeed = pm->ps->speed * pm_swimScale;
+	if (MovementIsQuake3Based(moveStyle)) {
+		// just feels better
+		realWaterAccelerate = 10.0f;
+		realSwimScale = 0.75f; 
 	}
 
-	PM_Accelerate (wishdir, wishspeed, pm_wateraccelerate);
+	if ( wishspeed > pm->ps->speed * realSwimScale) {
+		wishspeed = pm->ps->speed * realSwimScale;
+	}
+	PM_Accelerate (wishdir, wishspeed, realWaterAccelerate);
 
 	// make sure we can go up slopes easily under water
 	if ( pml.groundPlane && DotProduct( pm->ps->velocity, pml.groundTrace.plane.normal ) < 0 ) {
