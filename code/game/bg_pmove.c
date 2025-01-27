@@ -580,7 +580,15 @@ static void PM_Friction( void ) {
 
 	// apply water friction even if just wading
 	if ( pm->waterlevel ) {
-		drop += speed*pm_waterfriction*pm->waterlevel*pml.frametime;
+		float waterFriction = pm_waterfriction;
+		if (moveStyle == MV_SICKO) {
+			waterFriction = 0.4f;
+		}
+		else 
+		if (MovementIsQuake3Based(moveStyle)) {
+			waterFriction = 0.8f;
+		}
+		drop += speed* waterFriction *pm->waterlevel*pml.frametime;
 	}
 
 	if ( pm->ps->pm_type == PM_SPECTATOR || pm->ps->pm_type == PM_FLOAT )
@@ -2203,7 +2211,25 @@ static void PM_WaterMove( void ) {
 	if ( wishspeed > pm->ps->speed * realSwimScale) {
 		wishspeed = pm->ps->speed * realSwimScale;
 	}
-	PM_Accelerate (wishdir, wishspeed, realWaterAccelerate);
+
+	if (moveStyle == MV_SICKO) {
+		PM_SickoAccelerate(wishdir, wishspeed, realWaterAccelerate, 200.0f);
+	}
+	else if (moveStyle == MV_QUAJK) {
+		float		accel;
+
+		if (DotProduct(pm->ps->velocity, wishdir) < 0)
+			accel = pm_cpm_airstopaccelerate;
+		else
+			accel = realWaterAccelerate;
+		PM_QuaJKAccelerate(wishdir, wishspeed, accel, pm_cpm_airstrafeaccelerate, 30.0f);
+	}
+	else if (moveStyle == MV_DREAM) {
+		PM_DreamAccelerate(wishdir, wishspeed, realWaterAccelerate, 100, 200.0f);
+	}
+	else {
+		PM_Accelerate(wishdir, wishspeed, realWaterAccelerate);
+	}
 
 	// make sure we can go up slopes easily under water
 	if ( pml.groundPlane && DotProduct( pm->ps->velocity, pml.groundTrace.plane.normal ) < 0 ) {
