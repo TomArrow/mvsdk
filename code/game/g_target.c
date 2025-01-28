@@ -364,7 +364,7 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 	}
 
 	//if (!other->client->pers.raceStartCommandTime) {
-		other->client->sess.raceStateSoftInvalidated = qtrue;
+		activator->client->sess.raceStateSoftInvalidated = qtrue;
 	//}
 
 	TeleportPlayer( activator, dest->s.origin, dest->s.angles );
