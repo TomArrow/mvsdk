@@ -7538,6 +7538,49 @@ static void CG_RealAccel_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, floa
 		out[i] = in[i] - change;
 	}
 }
+
+/*
+static struct {
+	qboolean	active;
+	int			countSaved;
+	float		startX;
+	float		oldEndX;
+	float		oldY;
+	float		oldHeight;
+	qhandle_t	oldShader;
+	vec4_t		color;
+} horzPicOpt;
+
+// avoid too many redundant drawcalls.
+// finish parm: ignore values, just flush.
+static int CG_DrawPicHorizontalOptimized(float x, float y, float width, float height, float consecutiveThreshold, vec4_t color, qhandle_t hShader, qboolean finish) {
+	if (!horzPicOpt.active && !finish) {
+		horzPicOpt.startX = x;
+		horzPicOpt.oldEndX = x + width;
+		horzPicOpt.oldHeight = height;
+		horzPicOpt.oldY = y;
+		horzPicOpt.oldShader = hShader;
+		VectorCopy(color, horzPicOpt.color);
+	}
+	else if (finish) {
+		if (horzPicOpt.active) {
+			trap_R_DrawStretchPic(horzPicOpt.startX, horzPicOpt.oldY, horzPicOpt.oldEndX- horzPicOpt.startX, horzPicOpt.oldHeight, 0, 0, 1, 1, horzPicOpt.oldShader);
+		}
+	}
+	else {
+		qboolean different = qfalse;
+		different = different || (!VectorCompare(color,horzPicOpt.color));
+		different = different || (hShader != horzPicOpt.oldShader);
+		different = different || (height != horzPicOpt.oldHeight);
+		different = different || (y != horzPicOpt.oldY);
+	}
+	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
+}
+
+static void CG_DrawPicHorizontalOptimizedClear() {
+	memset(&horzPicOpt,0,sizeof(horzPicOpt));
+}*/
+
 float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd);
 static void CG_RealAccelHelper() {
 
@@ -7583,6 +7626,13 @@ static void CG_RealAccelHelper() {
 	qboolean doingSlopes = qfalse;
 	qboolean doingComplexSlopes = qfalse;
 	int overbounce;
+
+	// optimized draw calls:
+	float oldVDelta;
+	float xStart;
+	qboolean bufferedDraw = qfalse;
+	int	bufferedCount;
+	int drawCalls = 0;
 
 	if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime)) {
 		return; //No cg.snap causes this to return.
@@ -7801,6 +7851,19 @@ static void CG_RealAccelHelper() {
 		vDelta = XYSPEED(newVelVec) - currentSpeed;
 
 		if (vDelta == 0) {
+			if (bufferedDraw) {
+				if (oldVDelta < 0) {
+					trap_R_SetColor(losing);
+				}
+				else {
+					trap_R_SetColor(gaining);
+				}
+				CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
+					angleXStep*(float)bufferedCount, oldVDelta,
+					cgs.media.whiteShader);
+				drawCalls++;
+				bufferedDraw = qfalse;
+			}
 			continue;
 		}
 		else if (vDelta < 0) {
@@ -7823,11 +7886,49 @@ static void CG_RealAccelHelper() {
 			vDelta = vDelta * (1.0f- cg_realAccelDynScale.value)+ tmp * cg_realAccelDynScale.value;
 		}
 
-		CG_DrawPic(x- angleXStepHalf, mid - vDelta,
-			angleXStep, vDelta,
-			cgs.media.whiteShader);
+		if (bufferedDraw && oldVDelta != vDelta) {
+			if (oldVDelta < 0) {
+				trap_R_SetColor(losing);
+			}
+			else {
+				trap_R_SetColor(gaining);
+			}
+			CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
+				angleXStep * (float)bufferedCount, oldVDelta,
+				cgs.media.whiteShader);
+			drawCalls++;
+			bufferedDraw = qfalse;
+		}
+
+		if (!bufferedDraw) {
+			bufferedCount = 1;
+			xStart = x;
+			bufferedDraw = qtrue;
+		}
+		else {
+			bufferedCount++;
+		}
+
+		oldVDelta = vDelta;
 
 		oldX = x;
+	}
+	if (bufferedDraw) {
+		if (oldVDelta < 0) {
+			trap_R_SetColor(losing);
+		}
+		else {
+			trap_R_SetColor(gaining);
+		}
+		CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
+			angleXStep * (float)bufferedCount, oldVDelta,
+			cgs.media.whiteShader);
+		drawCalls++;
+		bufferedDraw = qfalse;
+	}
+	if (cg_developer.integer > 1) {
+		CG_Text_Paint(cgs.screenWidth/2, mid+100, 0.5f, colorTable[CT_WHITE],
+			va("ra drawcalls: %d",drawCalls), 0.0f, 0, ITEM_ALIGN_CENTER | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 	}
 	trap_R_SetColor(NULL);
 }
