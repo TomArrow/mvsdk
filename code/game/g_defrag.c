@@ -4484,6 +4484,7 @@ void UpdateClientRaceVars(gclient_t* client) {
 			DF_RaceStateInvalidated(g_entities + (client - g_clients), qtrue);
 		}
 
+		client->ps.fd.forcePowerLevel[FP_LIGHTNING] = FORCE_LEVEL_2; // allow to "shoot open" doors
 		client->ps.fd.forcePowerLevel[FP_LEVITATION] = MAX(0,client->sess.raceStyle.jumpLevel);
 		if (client->sess.raceStyle.movementStyle == MV_FORCE) {
 			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 3; // TODO will this work ok when ppl go out of racemode? idk

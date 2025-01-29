@@ -223,6 +223,7 @@ struct gentity_s {
 //Health and damage fields
 	int			health;
 	qboolean	takedamage;
+	qboolean	damageindefrag;
 	material_t	material;
 
 	int			damage;

@@ -3128,7 +3128,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	//		return;
 	//}
 
-	if (attacker && attacker->client && attacker->client->sess.raceMode && !attacker->client->ps.duelInProgress) {
+	if (attacker && attacker->client && attacker->client->sess.raceMode && !(dflags & DAMAGE_IN_RACEMODE) && !(targ && targ->damageindefrag) && !attacker->client->ps.duelInProgress) {
 		//if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //I think this is a bug
 		//	//if (mod != MOD_BLASTER || (!targ->client || !targ->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA))
 		//	return;

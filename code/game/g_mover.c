@@ -1158,6 +1158,7 @@ void SP_func_door (gentity_t *ent) {
 		G_SpawnInt( "health", "0", &health );
 		if ( health ) {
 			ent->takedamage = qtrue;
+			ent->damageindefrag = qtrue; // we can shoot-open doors in defrag. or use force lightning :)
 		}
 		if ( ent->targetname || health ) {
 			// non touch/shoot doors

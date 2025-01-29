@@ -622,7 +622,7 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 	}
 
 	//Dueling fighters cannot use force powers on others, with the exception of force push when locked with each other
-	if (attacker && attacker->client && (attacker->client->ps.duelInProgress || attacker->client->sess.raceMode))
+	if (attacker && attacker->client && (attacker->client->ps.duelInProgress || (attacker->client->sess.raceMode && (forcePower != FP_LIGHTNING || other->client))))
 	{
 		return 0;
 	}
@@ -675,6 +675,9 @@ qboolean WP_ForcePowerUsable( gentity_t *self, forcePowers_t forcePower )
 
 	if (self->client && self->client->sess.raceMode) {
 		if (self->client->sess.raceStyle.movementStyle == MV_FORCE && (forcePower == FP_RAGE || forcePower == FP_SPEED)) {
+			return qtrue;
+		}
+		else if (forcePower == FP_LIGHTNING) { // allow us to "shoot open" doors
 			return qtrue;
 		}
 		else {
@@ -1611,14 +1614,14 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 
 	if ( traceEnt && traceEnt->takedamage )
 	{
-		if (!traceEnt->client && traceEnt->s.eType == ET_GRAPPLE)
+		if (!traceEnt->client && traceEnt->s.eType == ET_GRAPPLE && !self->client->sess.raceMode)
 		{ //g2animent
 			if (traceEnt->s.genericenemyindex < level.time)
 			{
 				traceEnt->s.genericenemyindex = level.time + 2000;
 			}
 		}
-		if ( traceEnt->client )
+		if ( traceEnt->client && !self->client->sess.raceMode )
 		{//an enemy or object
 			if (ForcePowerUsableOn(self, traceEnt, FP_LIGHTNING))
 			{
@@ -1666,6 +1669,12 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 				}
 			}
 		}
+		else if(self->client->sess.raceMode && traceEnt->damageindefrag){ // allow us to open doors that open when shot via force lightning
+			if (ForcePowerUsableOn(self, traceEnt, FP_LIGHTNING))
+			{
+				G_Damage(traceEnt, self, self, dir, impactPoint, 1, DAMAGE_IN_RACEMODE, MOD_FORCE_DARK);
+			}
+		}
 	}
 }
 
@@ -1682,7 +1691,7 @@ void ForceShootLightning( gentity_t *self )
 	AngleVectors( self->client->ps.viewangles, forward, NULL, NULL );
 	VectorNormalize( forward );
 
-	if ( self->client->ps.fd.forcePowerLevel[FP_LIGHTNING] > FORCE_LEVEL_2 )
+	if ( self->client->ps.fd.forcePowerLevel[FP_LIGHTNING] > FORCE_LEVEL_2 && !self->client->sess.raceMode )
 	{//arc
 		vec3_t	center, mins, maxs, dir, ent_org, size, v;
 		float	radius = FORCE_LIGHTNING_RADIUS, dot, dist;
@@ -1776,7 +1785,12 @@ void ForceShootLightning( gentity_t *self )
 	}
 	else
 	{//trace-line
-		VectorMA( self->client->ps.origin, 2048, forward, end );
+		if (self->client->sess.raceMode) {
+			VectorMA( self->client->ps.origin, 8192 * 16, forward, end ); // make it more like q3 assault rifle range
+		}
+		else {
+			VectorMA( self->client->ps.origin, 2048, forward, end );
+		}
 		
 		JP_Trace( &tr, self->client->ps.origin, vec3_origin, vec3_origin, end, self->s.number, MASK_SHOT );
 		if ( tr.entityNum == ENTITYNUM_NONE || tr.fraction == 1.0 || tr.allsolid || tr.startsolid )
