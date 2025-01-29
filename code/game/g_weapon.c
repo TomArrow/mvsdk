@@ -449,6 +449,10 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 			continue;
 		}
 
+		/*if (ent->client->sess.raceMode) {
+
+		}
+		else */
 		if ( Jedi_DodgeEvasion( traceEnt, ent, &tr, G_GetHitLocation(traceEnt, tr.endpos) ) )
 		{//act like we didn't even hit him
 			VectorCopy( tr.endpos, start );
@@ -482,7 +486,9 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 		break;
 	}
 
-	if ( tr.surfaceFlags & SURF_NOIMPACT ) 
+	traceEnt = &g_entities[tr.entityNum];
+
+	if ( tr.surfaceFlags & SURF_NOIMPACT && !(traceEnt->damageindefrag && ent->client->sess.raceMode)) // badly converted maps can have SURF_NOIMPACT without intention (SURF_NOOB?)
 	{
 		render_impact = qfalse;
 	}
@@ -491,8 +497,6 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 	tent = G_TempEntity( tr.endpos, EV_DISRUPTOR_MAIN_SHOT );
 	VectorCopy( muzzle, tent->s.origin2 );
 	tent->s.eventParm = ent->s.number;
-
-	traceEnt = &g_entities[tr.entityNum];
 
 	if ( render_impact )
 	{
@@ -602,12 +606,13 @@ void WP_DisruptorAltFire( gentity_t *ent )
 
 		JP_Trace ( &tr, start, NULL, NULL, end, skip, MASK_SHOT);
 
-		if ( tr.surfaceFlags & SURF_NOIMPACT ) 
+		traceEnt = &g_entities[tr.entityNum];
+
+		if ((tr.surfaceFlags & SURF_NOIMPACT) && !(traceEnt->damageindefrag && ent->client->sess.raceMode)) // badly converted maps can have SURF_NOIMPACT without intention (SURF_NOOB?)
 		{
 			render_impact = qfalse;
 		}
 
-		traceEnt = &g_entities[tr.entityNum];
 
 		if (traceEnt && traceEnt->client && traceEnt->client->ps.duelInProgress &&
 			traceEnt->client->ps.duelIndex != ent->s.number)
@@ -2825,8 +2830,13 @@ void FireWeapon( gentity_t *ent, qboolean altFire ) {
 	if (ent->client) {
 		//if (ent->client->pers.amfreeze)
 		//	return;
-		if (ent->client->sess.raceMode  && !MovementStyleAllowsWeapons(ent->client->sess.raceStyle.movementStyle))
-			return;
+		if (ent->client->sess.raceMode && !MovementStyleAllowsWeapons(ent->client->sess.raceStyle.movementStyle)) {
+			if (ent->s.weapon == WP_DISRUPTOR || ent->s.weapon == WP_STUN_BATON) {
+				// allow these (main weapons) to shoot open doors and such
+			} else{
+				return;
+			}
+		}
 	}
 
 	if (ent->client->ps.powerups[PW_QUAD] ) {
