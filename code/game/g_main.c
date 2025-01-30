@@ -1570,9 +1570,15 @@ void CalculateRanks( void ) {
 			}
 		}
 	} else {	
+		int		oldRanks[MAX_CLIENTS];
 		rank = -1;
 		score = 0;
 		raceBestTime = 0;
+		if (g_developer.integer > 1) {
+			for (i = 0; i < level.numPlayingClients; i++) {
+				oldRanks[level.sortedClients[i]] = level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK];
+			}
+		}
 		for ( i = 0;  i < level.numPlayingClients; i++ ) {
 			cl = &level.clients[ level.sortedClients[i] ];
 			newScore = cl->sess.raceMode ? 32767 : cl->ps.persistant[PERS_SCORE];
@@ -1589,6 +1595,21 @@ void CalculateRanks( void ) {
 			raceBestTime = cl->pers.raceBestTime;
 			if ( g_gametype.integer == GT_SINGLE_PLAYER && level.numPlayingClients == 1 ) {
 				level.clients[ level.sortedClients[i] ].ps.persistant[PERS_RANK] = rank | RANK_TIED_FLAG;
+			}
+		}
+		if (g_developer.integer > 1) {
+			for (i = 0; i < level.numPlayingClients; i++) {
+				if (oldRanks[level.sortedClients[i]] != level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK]) {
+					G_Printf("^3Rank changed for client %d (score %d, racebesttime %d) from %d (tied %d) to %d (tied %d)",
+						level.sortedClients[i],
+						level.clients[level.sortedClients[i]].ps.persistant[PERS_SCORE],
+						level.clients[level.sortedClients[i]].pers.raceBestTime,
+						oldRanks[level.sortedClients[i]] &~ RANK_TIED_FLAG,
+						!!(oldRanks[level.sortedClients[i]] & RANK_TIED_FLAG),
+						level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK] &~ RANK_TIED_FLAG,
+						!!(level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK] & RANK_TIED_FLAG)
+						);
+				}
 			}
 		}
 	}

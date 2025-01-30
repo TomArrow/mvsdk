@@ -315,21 +315,25 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 	clientInfo_t* ci = &cgs.clientinfo[ps->clientNum];
 	qboolean racing = cgs.isTommyTernal && ps->stats[STAT_RACEMODE];
 
-	if (cg_debugRank.integer && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK]) {
-		CG_Printf("rank change: %3i (tied %d) to %3i (tied %d, reward %d, cgAnnouncerTime<cg.time %d), teamchange %d\n",
+	if (cg_debugRank.integer && (ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM] || cg.intermissionStarted || ps->persistant[PERS_TEAM] == TEAM_SPECTATOR) && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK]) {
+		CG_Printf("rank change: %3i (tied %d) to %3i (tied %d, reward -, cgAnnouncerTime<cg.time %d), teamchange %d\n",
 			ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
 			(int)!!(ops->persistant[PERS_RANK] & RANK_TIED_FLAG),
 			ps->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
 			(int)!!(ps->persistant[PERS_RANK] & RANK_TIED_FLAG),
-			reward,
 			(qboolean)(cgAnnouncerTime < cg.time),
 			ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM]);
+	}
+
+	if (ps->persistant[PERS_TEAM] == TEAM_SPECTATOR) {
+		return;
 	}
 
 	// don't play the sounds if the player just changed teams
 	if ( ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM] ) {
 		return;
 	}
+
 
 	// hit changes
 	if ( ps->persistant[PERS_HITS] > ops->persistant[PERS_HITS] ) {
@@ -422,6 +426,18 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 #else
 	reward = qfalse;
 #endif
+
+
+	if (cg_debugRank.integer && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK]) {
+		CG_Printf("rank change: %3i (tied %d) to %3i (tied %d, reward %d, cgAnnouncerTime<cg.time %d), teamchange %d\n",
+			ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
+			(int)!!(ops->persistant[PERS_RANK] & RANK_TIED_FLAG),
+			ps->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
+			(int)!!(ps->persistant[PERS_RANK] & RANK_TIED_FLAG),
+			reward,
+			(qboolean)(cgAnnouncerTime < cg.time),
+			ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM]);
+	}
 
 	// lead changes
 	if ((!reward || !cg_drawRewards.integer) && cgAnnouncerTime < cg.time && cg_leadSounds.integer && (!racing || cg_leadSoundsRace.integer)) {
@@ -553,8 +569,7 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 		cg.mapRestart = qfalse;
 	}
 
-	if ( cg.snap->ps.pm_type != PM_INTERMISSION 
-		&& ps->persistant[PERS_TEAM] != TEAM_SPECTATOR ) {
+	if ( cg.snap->ps.pm_type != PM_INTERMISSION  ) {
 		CG_CheckLocalSounds( ps, ops );
 	}
 
