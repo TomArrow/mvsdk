@@ -1876,6 +1876,8 @@ extern	vmCvar_t		cg_drawEnemyInfo;
 
 extern	vmCvar_t		cg_strafebotFactor;
 
+extern	vmCvar_t		cg_leadSounds;
+
 extern	vmCvar_t		cg_mapDefaultMsec;
 extern	vmCvar_t		cg_mapDefaultJump;
 extern	vmCvar_t		cg_mapDefaultRunFlags;
