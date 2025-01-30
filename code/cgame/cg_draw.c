@@ -6368,12 +6368,16 @@ static void CG_MovementKeys(centity_t *cent)
 	if (!cg.snap)
 		return;
 
+	if (cg_movementKeysOnlySpec.integer && cg.clientNum == cg.predictedPlayerState.clientNum && !(cg.predictedPlayerState.pm_flags & PMF_FOLLOW) && !cg.demoPlayback) {
+		return; // no need to see our own keys while playing when cg_movementKeysOnlySpec is 1
+	}
+
 	moveDir = cg.snap->ps.movementDir;
 
 	//if (!pm)
 	//return;//idk
 
-	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback && cg_movementKeys.integer > 0)
+	if (cg.clientNum == cg.predictedPlayerState.clientNum && !(cg.predictedPlayerState.pm_flags & PMF_FOLLOW) && !cg.demoPlayback && cg_movementKeys.integer > 0)
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
 	else if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
 		entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;

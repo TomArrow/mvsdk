@@ -1018,6 +1018,7 @@ Ghoul2 Insert End
 	autoFollowState_t	autoFollowState;
 	int					lastAutoFollowStateChange;
 	int					lastTimeFollowing;
+	int					lastManualCommandInterruptingAutoFollow;
 
 	qboolean speccing;
 
@@ -1795,6 +1796,7 @@ extern	vmCvar_t		cg_movementKeys;
 extern	vmCvar_t		cg_movementKeysX;
 extern	vmCvar_t		cg_movementKeysY;
 extern	vmCvar_t		cg_movementKeysSize;
+extern	vmCvar_t		cg_movementKeysOnlySpec;
 
 //only for you, arto
 extern	vmCvar_t		cg_hudColors;
@@ -1956,6 +1958,7 @@ extern	vmCvar_t		cg_autoFollow;
 extern	vmCvar_t		cg_autoFollowUnfollowAFKDelay;
 extern	vmCvar_t		cg_autoFollowUnfollowAFKReDelay;
 extern	vmCvar_t		cg_autoFollowUnfollowAFKSwitchBackDelay;
+extern	vmCvar_t		cg_autoFollowManualInterruptDuration;
 
 extern	vmCvar_t		cg_scoreboardDisconnectedPlayersDrawTime;
 extern	vmCvar_t		cg_autoScoreboardFetchInterval;

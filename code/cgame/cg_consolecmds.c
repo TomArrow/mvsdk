@@ -1114,6 +1114,7 @@ static void CG_Follow_f(void) {
 		return;
 
 	CG_SendConsoleCommand("cmd follow %i", clientNum);
+	cg.lastManualCommandInterruptingAutoFollow = cg.time;
 }
 
 static void CG_Login_f(void) {
@@ -1350,6 +1351,7 @@ static void CG_FollowRedFlag_f(void) {
 
 		if (ci->powerups & (1 << PW_REDFLAG)) {
 			CG_SendConsoleCommand("cmd follow %i", i);
+			cg.lastManualCommandInterruptingAutoFollow = cg.time;
 			return;
 		}
 	}
@@ -1370,6 +1372,7 @@ static void CG_FollowBlueFlag_f(void) {
 
 		if (ci->powerups & (1 << PW_BLUEFLAG)) {
 			CG_SendConsoleCommand("follow %i", i);
+			cg.lastManualCommandInterruptingAutoFollow = cg.time;
 			return;
 		}
 	}
@@ -1393,6 +1396,7 @@ static void CG_FollowYellowFlag_f(void) {
 
 		if (ci->powerups & (1 << PW_NEUTRALFLAG)) {
 			CG_SendConsoleCommand("cmd follow %i", i);
+			cg.lastManualCommandInterruptingAutoFollow = cg.time;
 			return;
 		}
 	}
@@ -1425,8 +1429,10 @@ static void CG_FollowFastest_f(void) {
 		}
 
 	}
-	if (fastestPlayer >= 0 && fastestPlayer < MAX_CLIENTS)
+	if (fastestPlayer >= 0 && fastestPlayer < MAX_CLIENTS) {
 		CG_SendConsoleCommand("cmd follow %i", fastestPlayer);
+		cg.lastManualCommandInterruptingAutoFollow = cg.time;
+	}
 }
 
 static void CG_RemapShader_f(void) {

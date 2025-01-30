@@ -610,6 +610,7 @@ vmCvar_t	cg_movementKeys;
 vmCvar_t	cg_movementKeysX;
 vmCvar_t	cg_movementKeysY;
 vmCvar_t	cg_movementKeysSize;
+vmCvar_t	cg_movementKeysOnlySpec;
 
 //only for you, arto
 vmCvar_t	cg_hudColors;
@@ -783,6 +784,7 @@ vmCvar_t	cg_autoFollow;
 vmCvar_t	cg_autoFollowUnfollowAFKDelay;
 vmCvar_t	cg_autoFollowUnfollowAFKReDelay;
 vmCvar_t	cg_autoFollowUnfollowAFKSwitchBackDelay;
+vmCvar_t	cg_autoFollowManualInterruptDuration;
 
 vmCvar_t	cg_scoreboardDisconnectedPlayersDrawTime;
 vmCvar_t	cg_autoScoreboardFetchInterval;
@@ -897,6 +899,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_autoFollowUnfollowAFKDelay, "cg_autoFollowUnfollowAFKDelay", "300", CVAR_ARCHIVE },
 	{ &cg_autoFollowUnfollowAFKReDelay, "cg_autoFollowUnfollowAFKReDelay", "10", CVAR_ARCHIVE },
 	{ &cg_autoFollowUnfollowAFKSwitchBackDelay, "cg_autoFollowUnfollowAFKSwitchBackDelay", "600", CVAR_ARCHIVE },
+	{ &cg_autoFollowManualInterruptDuration, "cg_autoFollowManualInterruptDuration", "30", CVAR_ARCHIVE },
 
 	{ &cg_scoreboardDisconnectedPlayersDrawTime, "cg_scoreboardDisconnectedPlayersDrawTime", "30", CVAR_ARCHIVE },
 	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },
@@ -976,6 +979,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_movementKeysX, "cg_movementKeysX", "148", CVAR_ARCHIVE },
 	{ &cg_movementKeysY, "cg_movementKeysY", "428", CVAR_ARCHIVE },
 	{ &cg_movementKeysSize, "cg_movementKeysSize", "1.0", CVAR_ARCHIVE },
+	{ &cg_movementKeysOnlySpec, "cg_movementKeysOnlySpec", "1", CVAR_ARCHIVE },
 
 	//only for you, arto
 	{ &cg_hudColors, "cg_hudColors", "1", CVAR_ARCHIVE },

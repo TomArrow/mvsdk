@@ -1841,11 +1841,11 @@ void Cmd_NameTag_f(gentity_t* ent) {
 		return; // dunno
 	}
 	if (ent->client->sess.nameTag == type) {
-		trap_SendServerCommand(ent - g_entities, va("print \"^1Name tag disabled: %s\n\"", cmd));
+		trap_SendServerCommand(ent - g_entities, va("print \"^3Name tag disabled: %s\n\"", cmd));
 		ent->client->sess.nameTag = NAMETAG_NONE;
 	}
 	else {
-		trap_SendServerCommand(ent - g_entities, va("print \"^1Name tag applied: %s\n\"",cmd));
+		trap_SendServerCommand(ent - g_entities, va("print \"^2Name tag applied: %s\n\"",cmd));
 		ent->client->sess.nameTag = type;
 	}
 	ClientUserinfoChanged(ent-g_entities);

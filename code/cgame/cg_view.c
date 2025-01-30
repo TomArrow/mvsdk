@@ -1617,6 +1617,27 @@ ID_INLINE void CG_DoAsync(void) {
 	}
 }
 
+static void CG_AutoFollowCheckManualInputs() {
+	static int oldCmdnum = 0;
+	int cmdnum = trap_GetCurrentCmdNumber();
+	usercmd_t ucmd;
+
+	if (oldCmdnum < (cmdnum - 32)) {
+		oldCmdnum = cmdnum - 32;
+	}
+
+	while (oldCmdnum < cmdnum) {
+		trap_GetUserCmd(oldCmdnum + 1, &ucmd);
+		if ((ucmd.buttons & BUTTON_ATTACK) || (ucmd.buttons & BUTTON_ALT_ATTACK) || ucmd.upmove > 0) {
+			// i pressed attack or space. let me just spec or do whatever i want to for a while.
+			cg.lastManualCommandInterruptingAutoFollow = ucmd.serverTime;
+		}
+		oldCmdnum++;
+	}
+
+	oldCmdnum = cmdnum;
+}
+
 static void CG_AutoFollow() {
 	int i;
 	vec3_t deltaVector;
@@ -1625,6 +1646,12 @@ static void CG_AutoFollow() {
 	qboolean thisClientAfk;
 
 	if (cg.demoPlayback || cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || !cg.snap) return;
+
+	CG_AutoFollowCheckManualInputs();
+
+	if (cg_autoFollowManualInterruptDuration.integer && cg.lastManualCommandInterruptingAutoFollow > cg.time-(cg_autoFollowManualInterruptDuration.integer*1000) && cg.lastManualCommandInterruptingAutoFollow -1000 < cg.time) {
+		return;
+	}
 
 	currentClientAfk = ((cgs.afkInfo[cg.snap->ps.clientNum].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer*1000) < cg.time) && ((cgs.afkInfo[cg.snap->ps.clientNum].lastNotSeen + cg_autoFollowUnfollowAFKReDelay.integer * 1000) < cg.time);
 
@@ -1698,7 +1725,7 @@ static void CG_AutoFollow() {
 					}
 				}
 
-				if (highestRetCountClient != -1 && highestRetCount > currentRetCount) {
+				if (highestRetCountClient != -1 && (highestRetCount > currentRetCount || followNum == clientNum)) {
 					followNum = highestRetCountClient;
 				}
 			}
@@ -1725,7 +1752,7 @@ static void CG_AutoFollow() {
 					}
 				}
 
-				if (highestRetCountClient != -1 && highestRetCount > currentRetCount) {
+				if (highestRetCountClient != -1 && (highestRetCount > currentRetCount || followNum == clientNum)) {
 					followNum = highestRetCountClient;
 				}
 			}
