@@ -2798,6 +2798,10 @@ void ClientSpawn(gentity_t *ent) {
 		DF_RaceStateInvalidated(ent,qfalse);
 		ent->client->sess.raceStateInvalidated = qfalse;
 		ent->client->pers.antiLoop.yawAngleChangeSinceBaseSpeed = 0;
+		if (ent->client->pers.lastRaceTimerStartedCP > level.time-1000) {
+			G_CenterPrint(ent - g_entities, 3, "", qfalse, qtrue, qfalse); // just send an empty cp to clear the screen of the old "Timer started!"
+			ent->client->pers.lastRaceTimerStartedCP = 0;
+		}
 	}
 }
 

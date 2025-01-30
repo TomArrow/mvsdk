@@ -306,6 +306,7 @@ struct gentity_s {
 	int			laps; // q3 rally map support
 
 	gentity_t*	nextHashed; // next with same classname hash
+	qboolean	belongsToParent; // when sending customized snapshots and someone has solo mode activated, don't show him this item if it doesn't belong to himself (sniper shots etc)
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -523,6 +524,7 @@ typedef struct {
 
 	antiLoopState_t antiLoop;
 	rollState_t roll;
+	int			lastRaceTimerStartedCP;
 } clientPersistant_t;
 
 // this structure is cleared on each ClientSpawn(),

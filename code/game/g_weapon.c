@@ -469,6 +469,8 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 				tent = G_TempEntity( tr.endpos, EV_DISRUPTOR_MAIN_SHOT );
 				VectorCopy( muzzle, tent->s.origin2 );
 				tent->s.eventParm = ent->s.number;
+				tent->belongsToParent = qtrue;
+				tent->parent = ent;
 
 				te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
 				VectorCopy(tr.endpos, te->s.origin);
@@ -478,6 +480,8 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 					te->s.angles[1] = 1;
 				}
 				te->s.eventParm = 0;
+				tent->belongsToParent = qtrue;
+				tent->parent = ent;
 
 				return;
 			}
@@ -497,6 +501,8 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 	tent = G_TempEntity( tr.endpos, EV_DISRUPTOR_MAIN_SHOT );
 	VectorCopy( muzzle, tent->s.origin2 );
 	tent->s.eventParm = ent->s.number;
+	tent->belongsToParent = qtrue;
+	tent->parent = ent;
 
 	if ( render_impact )
 	{
@@ -518,6 +524,8 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 			{
 				tent->s.weapon = 1;
 			}
+			tent->belongsToParent = qtrue;
+			tent->parent = ent;
 		}
 		else 
 		{
@@ -525,6 +533,8 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 			tent = G_TempEntity( tr.endpos, EV_DISRUPTOR_SNIPER_MISS );
 			tent->s.eventParm = DirToByte( tr.plane.normal );
 			tent->s.weapon = 1;
+			tent->belongsToParent = qtrue;
+			tent->parent = ent;
 		}
 	}
 }
@@ -657,6 +667,8 @@ void WP_DisruptorAltFire( gentity_t *ent )
 		VectorCopy( muzzle, tent->s.origin2 );
 		tent->s.shouldtarget = fullCharge;
 		tent->s.eventParm = ent->s.number;
+		tent->belongsToParent = qtrue;
+		tent->parent = ent;
 
 		// If the beam hits a skybox, etc. it would look foolish to add impact effects
 		if ( render_impact ) 
@@ -670,6 +682,8 @@ void WP_DisruptorAltFire( gentity_t *ent )
 				tent = G_TempEntity(tr.endpos, EV_MISSILE_MISS);
 				tent->s.eventParm = DirToByte(tr.plane.normal);
 				tent->s.eFlags |= EF_ALT_FIRING;
+				tent->belongsToParent = qtrue;
+				tent->parent = ent;
 	
 				if ( LogAccuracyHit( traceEnt, ent )) 
 				{
@@ -693,6 +707,8 @@ void WP_DisruptorAltFire( gentity_t *ent )
 
 						tent = G_TempEntity( tr.endpos, EV_DISRUPTOR_HIT );
 						tent->s.eventParm = DirToByte( tr.plane.normal );
+						tent->belongsToParent = qtrue;
+						tent->parent = ent;
 					}
 				 }
 				 else
@@ -700,6 +716,8 @@ void WP_DisruptorAltFire( gentity_t *ent )
 					 // Hmmm, maybe don't make any marks on things that could break
 					tent = G_TempEntity( tr.endpos, EV_DISRUPTOR_SNIPER_MISS );
 					tent->s.eventParm = DirToByte( tr.plane.normal );
+					tent->belongsToParent = qtrue;
+					tent->parent = ent;
 				 }
 				break; // and don't try any more traces
 			}
@@ -737,6 +755,8 @@ void WP_DisruptorAltFire( gentity_t *ent )
 
 				tent = G_TempEntity( tr.endpos, EV_DISRUPTOR_HIT );
 				tent->s.eventParm = DirToByte( tr.plane.normal );
+				tent->belongsToParent = qtrue;
+				tent->parent = ent;
 				if (traceEnt->client)
 				{
 					tent->s.weapon = 1;

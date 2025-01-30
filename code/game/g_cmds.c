@@ -4042,7 +4042,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 		if (*s) {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", arg1, arg2, s );
-			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s" S_COLOR_WHITE "; set nextmap \"%s\"", arg1, arg2, s );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s" S_COLOR_WHITE "; set nextmap %s", arg1, arg2, s );
 		} else {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", arg1, arg2 );
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
@@ -4084,7 +4084,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 		if (*s) {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
-			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s" S_COLOR_WHITE "; set nextmap \"%s\"", "map", mapname, s );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s %s" S_COLOR_WHITE "; set nextmap %s", "map", mapname, s );
 		} else {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
@@ -4140,7 +4140,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 		if (*s) {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
-			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap) %s %s" S_COLOR_WHITE "; set nextmap \"%s\"", "map", mapname, s );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap) %s %s" S_COLOR_WHITE "; set nextmap %s", "map", mapname, s );
 		} else {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap) %s", level.voteString );
@@ -4212,6 +4212,9 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		}
 		Com_sprintf( level.voteString, sizeof( level.voteString ), "%s \"%s\"", arg1, arg2 );
 		Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
+	}
+	else {
+		return;
 	}
 
 

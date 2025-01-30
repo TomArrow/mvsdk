@@ -1056,6 +1056,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	else {
 		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started!", lbType == LB_MAIN ? '7' : 'O'),qfalse,qtrue,qfalse);
 	}
+	cl->pers.lastRaceTimerStartedCP = level.time;
 }
 
 
@@ -3989,6 +3990,15 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			}
 			else {
 				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = followedClient->sess.sessionTeam != TEAM_SPECTATOR && other->parent != followedEnt && followedClient->pers.raceStartCommandTime;
+			}
+		}
+
+		if (other->belongsToParent) { // sniper shots, lightning, etc
+			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
+				mvEnt->snapshotIgnoreRealClient[clientNum] = other->parent != ent && cl->sess.solo && other->parent != followedEnt; // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
+			}
+			else { // wait wtf. why so complicated? we can respect wishes of this player no? since it gets updated on each target client anyway
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = other->parent != followedEnt && followedClient->sess.solo; // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
 			}
 		}
 
