@@ -312,6 +312,19 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 #ifdef JK2AWARDS
 	sfxHandle_t sfx;
 #endif
+	clientInfo_t* ci = &cgs.clientinfo[ps->clientNum];
+	qboolean racing = cgs.isTommyTernal && ps->stats[STAT_RACEMODE];
+
+	if (cg_debugRank.integer && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK]) {
+		CG_Printf("rank change: %3i (tied %d) to %3i (tied %d, reward %d, cgAnnouncerTime<cg.time %d), teamchange %d\n",
+			ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
+			(int)!!(ops->persistant[PERS_RANK] & RANK_TIED_FLAG),
+			ps->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
+			(int)!!(ps->persistant[PERS_RANK] & RANK_TIED_FLAG),
+			reward,
+			(qboolean)(cgAnnouncerTime < cg.time),
+			ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM]);
+	}
 
 	// don't play the sounds if the player just changed teams
 	if ( ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM] ) {
@@ -410,12 +423,8 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 	reward = qfalse;
 #endif
 
-	if (cg_debugRank.integer && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK]) {
-		CG_Printf("rank change: %3i (tied %d) to %3i (tied %d, reward %d, cgAnnouncerTime<cg.time)\n", ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG, (int)!!(ops->persistant[PERS_RANK] & RANK_TIED_FLAG), ps->persistant[PERS_RANK] & ~RANK_TIED_FLAG, (int)!!(ps->persistant[PERS_RANK] & RANK_TIED_FLAG),reward,(qboolean)(cgAnnouncerTime < cg.time));
-	}
-
 	// lead changes
-	if (!reward && cgAnnouncerTime < cg.time && cg_leadSounds.integer) {
+	if ((!reward || !cg_drawRewards.integer) && cgAnnouncerTime < cg.time && cg_leadSounds.integer && (!racing || cg_leadSoundsRace.integer)) {
 		//
 		if ( !cg.warmup ) {
 			// never play lead changes during warmup
@@ -423,14 +432,20 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 
 				if ( cgs.gametype < GT_TEAM) {
 					if (  ps->persistant[PERS_RANK] == 0 ) {
-						CG_AddBufferedSound(cgs.media.takenLeadSound);
-						cgAnnouncerTime = cg.time + 3000;
+						if (!racing || ci->jkmod_race) {
+							CG_AddBufferedSound(cgs.media.takenLeadSound);
+							cgAnnouncerTime = cg.time + 3000;
+						}
 					} else if ( ps->persistant[PERS_RANK] == RANK_TIED_FLAG ) {
+						if (racing && ci->jkmod_race) {
+							CG_AddBufferedSound(cgs.media.tiedLeadSound);
+							cgAnnouncerTime = cg.time + 3000;
+						}
 						//CG_AddBufferedSound(cgs.media.tiedLeadSound);
 					} else if ( ( ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG ) == 0 ) {
 						//rww - only bother saying this if you have more than 1 kill already.
 						//joining the server and hearing "the force is not with you" is silly.
-						if (ps->persistant[PERS_SCORE] > 0)
+						if (ps->persistant[PERS_SCORE] > 0 || racing && ci->jkmod_race)
 						{
 							CG_AddBufferedSound(cgs.media.lostLeadSound);
 							cgAnnouncerTime = cg.time + 3000;

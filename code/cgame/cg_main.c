@@ -691,6 +691,7 @@ vmCvar_t	cg_drawEnemyInfo;
 vmCvar_t	cg_strafebotFactor;
 
 vmCvar_t	cg_leadSounds;
+vmCvar_t	cg_leadSoundsRace;
 
 vmCvar_t	cg_mapDefaultMsec;
 vmCvar_t	cg_mapDefaultJump;
@@ -839,6 +840,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawEnemyInfo, "cg_drawEnemyInfo", "1", CVAR_ARCHIVE  },
 	{ &cg_strafebotFactor, "cg_strafebotFactor", "1.0", CVAR_ARCHIVE  },
 	{ &cg_leadSounds, "cg_leadSounds", "1", CVAR_ARCHIVE  },
+	{ &cg_leadSoundsRace, "cg_leadSoundsRace", "1", CVAR_ARCHIVE  },
 	{ &cg_drawCrosshair, "cg_drawCrosshair", "1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE },
 	{ &cg_drawScores,		  "cg_drawScores", "1", CVAR_ARCHIVE },
