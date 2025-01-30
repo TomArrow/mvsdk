@@ -2517,7 +2517,15 @@ void UpdateForceStatus()
 		uiForceAvailable = forceMasteryPoints[uiForceRank];
 	}
 */
-	menu = Menus_FindByName("ingame_player");
+	if (ui_JKA.integer)
+	{
+		menu = Menus_FindByName("ingame_player_jka");
+	}
+	else
+	{
+		menu = Menus_FindByName("ingame_player");
+	}
+	
 	if (menu)
 	{
 		char	info[MAX_INFO_STRING];
@@ -9911,7 +9919,14 @@ void _UI_SetActiveMenu( uiMenuCommand_t menu ) {
 			trap_Key_SetCatcher( KEYCATCH_UI );
 			UI_BuildPlayerList();
 			Menus_CloseAll();
-			Menus_ActivateByName("ingame_player");
+			if (ui_JKA.integer)
+			{
+				Menus_ActivateByName("ingame_player_jka");
+			}
+			else
+			{
+				Menus_ActivateByName("ingame_player");
+			}
 			UI_UpdateForce(qtrue);
 		  return;
 	  case UIMENU_PLAYERFORCE:
@@ -10382,6 +10397,7 @@ vmCvar_t	ui_serverStatusTimeOut;
 vmCvar_t	ui_s_language;
 vmCvar_t	ui_bypassMainMenuLoad;
 vmCvar_t	ui_loadSkinsWithoutIcons;
+vmCvar_t	ui_JKA;
 
 // botfilter
 vmCvar_t	ui_botfilter;
@@ -10545,6 +10561,7 @@ static const cvarTable_t cvarTable[] = {
 
 	{ &ui_bypassMainMenuLoad, "ui_bypassMainMenuLoad", "0", CVAR_INTERNAL },
 	{ &ui_loadSkinsWithoutIcons, "ui_loadSkinsWithoutIcons", "0", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &ui_JKA, "ui_JKA", "1", CVAR_ARCHIVE },
 	{ &ui_widescreen, "ui_widescreen", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &ui_widescreenCursorScale, "ui_widescreenCursorScale", "1", CVAR_ARCHIVE },
 	{ &ui_sensitivity, "ui_sensitivity", "1", CVAR_ARCHIVE },

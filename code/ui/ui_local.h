@@ -115,6 +115,7 @@ extern vmCvar_t	ui_bigFont;
 extern vmCvar_t ui_serverStatusTimeOut;
 extern vmCvar_t ui_bypassMainMenuLoad;
 extern vmCvar_t ui_loadSkinsWithoutIcons;
+extern vmCvar_t ui_JKA;
 
 // botfilter
 extern vmCvar_t	ui_botfilter;
