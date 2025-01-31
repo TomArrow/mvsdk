@@ -161,7 +161,7 @@ int mvapi = 0;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
 vmCvar_t coolApi_supported_cgame;
-int coolApi_supported_cgame_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE | COOL_APIFEATURE_SETUSERANGLES | COOL_APIFEATURE_CUSTOMEPSILONTRACE;
+int coolApi_supported_cgame_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE | COOL_APIFEATURE_SETUSERANGLES | COOL_APIFEATURE_CUSTOMEPSILONTRACE | COOL_APIFEATURE_ADDMEMECOMMAND;
 qboolean submodelBypass = qfalse;
 int Init_serverMessageNum;
 int Init_serverCommandSequence;
@@ -800,6 +800,7 @@ vmCvar_t	x3_demoSeekTimescale;
 vmCvar_t	x3_ezdemoPreTime;
 vmCvar_t	x3_ezdemoPostTime;
 
+vmCvar_t	cg_acidtrip; // taken from openmohaa
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -1141,6 +1142,7 @@ Ghoul2 Insert Start
 	{ &x3_demoSeekTimescale, "x3_demoSeekTimescale", "60", CVAR_ARCHIVE }, // set the timescale used when fastforwarding with demoseek
 	{ &x3_ezdemoPreTime, "x3_ezdemoPreTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see before an event in ezdemo
 	{ &x3_ezdemoPostTime, "x3_ezdemoPostTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see after an event in ezdemo
+	{ &cg_acidtrip, "cg_acidtrip", "0", CVAR_TEMP }, // meme command from openmohaa
 /*
 Ghoul2 Insert End
 */

@@ -276,6 +276,9 @@ int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum)
 qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
 	return syscall(CG_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
 }
+qboolean	trap_CG_COOL_API_AddMemeCommand(const char* cmdName) {
+	return syscall(CG_COOL_API_ADDMEMECOMMAND, cmdName);
+}
 
 //void trap_CG_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
 //	syscall(CG_COOL_API_NONEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);

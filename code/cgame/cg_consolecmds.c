@@ -1525,6 +1525,41 @@ static void CG_Flipkick_f(void)
 	//trap_SendConsoleCommand("+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup\n");
 }
 
+static void CG_DiscoLights_f(void)
+{
+	if (cg_acidtrip.integer) {
+		trap_Cvar_Set("cg_acidtrip", "0");
+		CG_Printf("Turning off disco lights.\n");
+	}
+	else {
+		trap_Cvar_Set("cg_acidtrip", "20");
+		CG_Printf("^3ACTIVATING ^2DISCO ^1LIGHTS^7!\n");
+	}
+}
+static void CG_QuiGonJinn_f(void)
+{
+	char arg1[10];
+	char arg2[10];
+	qboolean nope = qfalse;
+	if (trap_Argc() < 3) {
+		nope = qtrue;
+	}
+	else {
+		trap_Argv(1, arg1, sizeof(arg1));
+		trap_Argv(2, arg2, sizeof(arg2));
+		if (Q_stricmp(arg1, "gon") && Q_stricmp(arg1, "gonn") || Q_stricmp(arg2, "jin") && Q_stricmp(arg2, "jinn")) {
+			nope = qtrue;
+		}
+	}
+
+	if (nope) {
+		trap_SendConsoleCommand("quit\n");
+		return;
+	}
+
+	CG_Printf("Qui-Gon Jinn hopes the force is with you.\n");
+}
+
 static void CG_Lowjump_f(void)
 {
 	trap_SendConsoleCommand("+moveup\n");
@@ -1697,6 +1732,10 @@ static consoleCommand_t	commands[] = {
 	{ "-duck", CG_NorollUp_f },
 	{ "weaplast", CG_LastWeapon_f }
 };
+static consoleCommand_t	memecommands[] = {
+	{ "disco", CG_DiscoLights_f },
+	{ "qui", CG_QuiGonJinn_f },
+};
 
 
 /*
@@ -1721,6 +1760,14 @@ qboolean CG_ConsoleCommand( void ) {
 	for ( i = 0 ; i < sizeof( commands ) / sizeof( commands[0] ) ; i++ ) {
 		if ( !Q_stricmp( cmd, commands[i].cmd ) ) {
 			commands[i].function();
+			misspelledCount = 0;
+			return qtrue;
+		}
+	}
+
+	for ( i = 0 ; i < sizeof( memecommands ) / sizeof(memecommands[0] ) ; i++ ) {
+		if ( !Q_stricmp( cmd, memecommands[i].cmd ) ) {
+			memecommands[i].function();
 			misspelledCount = 0;
 			return qtrue;
 		}
@@ -1808,6 +1855,12 @@ void CG_InitConsoleCommands( void ) {
 
 	for ( i = 0 ; i < sizeof( commands ) / sizeof( commands[0] ) ; i++ ) {
 		trap_AddCommand( commands[i].cmd );
+	}
+
+	if (coolApi & COOL_APIFEATURE_ADDMEMECOMMAND) {
+		for (i = 0; i < sizeof(memecommands) / sizeof(memecommands[0]); i++) {
+			trap_CG_COOL_API_AddMemeCommand(memecommands[i].cmd);
+		}
 	}
 
 	//
