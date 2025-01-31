@@ -1830,7 +1830,7 @@ void CG_AddLightShow()
 	fSlopeZ = tan(cg.refdef.fov_y * 0.5);
 
 	for (i = 0; i < cg_acidtrip.integer; i++) {
-		x = pow(random(), 1.0 / 3.0) * 2048.0;
+		x = powf(random(), 1.0 / 3.0) * 2048.0;
 		y = crandom() * x * fSlopeY;
 		z = crandom() * x * fSlopeZ;
 
