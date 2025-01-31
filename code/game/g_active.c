@@ -1631,14 +1631,6 @@ void ClientThink_real( gentity_t *ent ) {
 		ent->client->pers.cmd.angles[ROLL] = 0;
 	}
 
-	if(ent->client->sess.raceMode){ // in racemode we want all things to be consistent and deterministic, so we do this on every CLIENT frame and change level.time references to cmd.servertime where possible
-		// uh should we do this after handlesegmentedrunpre?
-		if ((!level.intermissiontime) && !(ent->client->ps.pm_flags & PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
-		{
-			WP_ForcePowersUpdate(ent, &ent->client->pers.cmd);
-			WP_SaberPositionUpdate(ent, &ent->client->pers.cmd);
-		}
-	}
 
 	moveStyle = client->sess.raceMode ? client->sess.raceStyle.movementStyle : MV_JK2;
 
@@ -1650,6 +1642,16 @@ void ClientThink_real( gentity_t *ent ) {
 	ucmd = &ent->client->pers.cmd;
 
 	DF_HandleSegmentedRunPre(ent);
+
+	// moved this under DF_HandleSegmentedRunPre. makes more sense?
+	if (ent->client->sess.raceMode) { // in racemode we want all things to be consistent and deterministic, so we do this on every CLIENT frame and change level.time references to cmd.servertime where possible
+		// uh should we do this after handlesegmentedrunpre?
+		if ((!level.intermissiontime) && !(ent->client->ps.pm_flags & PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
+		{
+			WP_ForcePowersUpdate(ent, &ent->client->pers.cmd);
+			WP_SaberPositionUpdate(ent, &ent->client->pers.cmd);
+		}
+	}
 
 	// sanity check the command time to prevent speedup cheating
 	if ( ucmd->serverTime > level.time + 200 ) {
