@@ -4716,6 +4716,13 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 
 	// retime
 	delta = backupPS.commandTime - storedPS->commandTime;
+
+	//restore some carefully selected persistant values that don't affect gameplay to make things feel better/more consistent clientside
+	// i can probably do way more if not all of the peristant values and others but better safe than sorry for now. can always fix that later.
+	client->client->ps.persistant[PERS_RANK] = backupPS.persistant[PERS_RANK]; // avoid "the force is with you" spam.
+	client->client->ps.persistant[PERS_PLAYEREVENTS] = backupPS.persistant[PERS_PLAYEREVENTS]; // its only for the rewards stuff
+	client->client->ps.persistant[PERS_SPAWN_COUNT] = backupPS.persistant[PERS_SPAWN_COUNT]+1; // makes it a teleport frame for cgame and makes it use the rright weapon
+
 	client->client->ps.commandTime = backupPS.commandTime;
 	client->client->ps.saberEntityNum = backupPS.saberEntityNum; // yea... better this way:)
 	if (storedPS->genericEnemyIndex >= 1024) client->client->ps.genericEnemyIndex += delta;

@@ -1600,7 +1600,7 @@ void CalculateRanks( void ) {
 		if (g_developer.integer > 1) {
 			for (i = 0; i < level.numPlayingClients; i++) {
 				if (oldRanks[level.sortedClients[i]] != level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK]) {
-					G_Printf("^3Rank changed for client %d (score %d, racebesttime %d) from %d (tied %d) to %d (tied %d)",
+					G_Printf("^3Rank changed for client %d (score %d, racebesttime %d) from %d (tied %d) to %d (tied %d)\n",
 						level.sortedClients[i],
 						level.clients[level.sortedClients[i]].ps.persistant[PERS_SCORE],
 						level.clients[level.sortedClients[i]].pers.raceBestTime,
