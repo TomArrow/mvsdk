@@ -1853,7 +1853,7 @@ void CG_AddLightShow()
 	}
 }
 
-
+void CG_CheckQuiGon();
 /*
 =================
 CG_DrawActiveFrame
@@ -1880,6 +1880,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 
 	// update cvars
 	CG_UpdateCvars();
+	CG_CheckQuiGon();
 
 	CG_DB_CheckResponses();
 
