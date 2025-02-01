@@ -6644,20 +6644,58 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
 			//if ( selModel == -1 ) selModel = trap_Cvar_VariableValue("ui_selectedModelIndex");
 			if (selModel == -1 && playerModel)
 			{
-				static q3Head_t noIconHead;
-				static char noIconHeadName[128];
+				if (!Q_stricmpn("secret_quigon/",playerModel,strlen("secret_quigon/"))) {
+					if (!Q_stricmp("secret_quigon/red",playerModel)) {
 
-				if (!noIconHead.name)
-				{
-					noIconHead.next = NULL;
-					noIconHead.icon = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
-					noIconHead.name = noIconHeadName;
+						static q3Head_t noIconHead;
+						static char noIconHeadName[128];
 
-					UI_InsertHeadRaw(&noIconHead);
+						if (!noIconHead.name)
+						{
+							noIconHead.next = NULL;
+							noIconHead.icon = trap_R_RegisterShaderNoMip("models/players/secret_quigon/icon_red");
+							noIconHead.name = noIconHeadName;
+
+							UI_InsertHeadRaw(&noIconHead);
+						}
+
+						Q_strncpyz(noIconHeadName, playerModel, sizeof(noIconHeadName));
+						selModel = UI_HeadIndexForModel(playerModel);
+					}
+					else {
+
+						static q3Head_t noIconHead;
+						static char noIconHeadName[128];
+
+						if (!noIconHead.name)
+						{
+							noIconHead.next = NULL;
+							noIconHead.icon = trap_R_RegisterShaderNoMip("models/players/secret_quigon/icon_default");
+							noIconHead.name = noIconHeadName;
+
+							UI_InsertHeadRaw(&noIconHead);
+						}
+
+						Q_strncpyz(noIconHeadName, playerModel, sizeof(noIconHeadName));
+						selModel = UI_HeadIndexForModel(playerModel);
+					}
 				}
+				else {
+					static q3Head_t noIconHead;
+					static char noIconHeadName[128];
 
-				Q_strncpyz( noIconHeadName, playerModel, sizeof(noIconHeadName) );
-				selModel = UI_HeadIndexForModel(playerModel);
+					if (!noIconHead.name)
+					{
+						noIconHead.next = NULL;
+						noIconHead.icon = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
+						noIconHead.name = noIconHeadName;
+
+						UI_InsertHeadRaw(&noIconHead);
+					}
+
+					Q_strncpyz(noIconHeadName, playerModel, sizeof(noIconHeadName));
+					selModel = UI_HeadIndexForModel(playerModel);
+				}
 			}
 
 			if (selModel != -1 && uiUpdateModel != -1)

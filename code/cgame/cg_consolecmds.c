@@ -1561,7 +1561,7 @@ static void CG_QuiGonJinn_f(void)
 
 	if (!secretQuiGonAllowed) {
 		secretQuiGonAllowed = qtrue;
-		CG_Printf("^3Secret^7 Qui-Gon Jinn skin ^2UNLOCKED.\n");
+		CG_Printf("^2SECRET QUI-GON JINN SKIN 2UNLOCKED!\n");
 		CG_Printf("Credit for original model/skin by yasuakiNk goes to yasuakiNk, Seven, Elek Andor and Toshi.\n");
 		trap_Cvar_Set("model", "secret_quigon/default");
 		cgQuigonUnlocked = qtrue;
