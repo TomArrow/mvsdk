@@ -3059,6 +3059,16 @@ void CG_InitAngleVectorsLUT() { // for realaccel strafehelper
 		Com_Printf("Initializing angle vector LUT done.\n");
 	}
 }
+extern qboolean secretQuiGonAllowed;
+void CG_CheckQuiGon() {
+	if (!secretQuiGonAllowed) {
+		char	model[MAX_STRING_CHARS];
+		trap_Cvar_VariableStringBuffer("model", model, sizeof(model));
+		if (!Q_stricmpn("secret_quigon/", model, strlen("secret_quigon/"))) {
+			trap_Cvar_Set("model","kyle/default");
+		}
+	}
+}
 
 /*
 =================
@@ -3136,6 +3146,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 Ghoul2 Insert Start
 */
 
+	CG_CheckQuiGon();
 	CG_InitAngleVectorsLUT();
 //	memset( cg_entities, 0, sizeof( cg_entities ) );
 	CG_Init_CGents();

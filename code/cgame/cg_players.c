@@ -108,6 +108,8 @@ qboolean CG_NeedAnimSequence(int anim)
 	return qfalse;
 }
 
+qboolean secretQuiGonAllowed = qfalse;
+
 //To see if the client is trying to use one of the included skins not meant for MP.
 //I don't much care for hardcoded strings, but this seems the best way to go.
 static qboolean CG_IsValidCharacterModel(const char *modelName, const char *skinName)
@@ -268,6 +270,13 @@ retryModel:
 	{
 		modelName = "kyle";
 		skinName = "default";
+	} 
+	else if (!Q_stricmp(modelName, "secret_quigon"))
+	{
+		if (!secretQuiGonAllowed) {
+			modelName = "kyle";
+			skinName = "default";
+		}
 	}
 
 	// First things first.  If this is a ghoul2 model, then let's make sure we demolish this first.
@@ -1383,6 +1392,7 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 
 qboolean cgQueueLoad = qfalse;
+qboolean cgQuigonUnlocked = qfalse;
 /*
 ======================
 CG_ActualLoadDeferredPlayers
@@ -1397,7 +1407,7 @@ void CG_ActualLoadDeferredPlayers( void )
 
 	// scan for a deferred player to load
 	for ( i = 0, ci = cgs.clientinfo ; i < cgs.maxclients ; i++, ci++ ) {
-		if ( ci->infoValid && ci->deferred ) {
+		if ( ci->infoValid && (ci->deferred || cgQuigonUnlocked) ) {
 			// if we are low on memory, leave it deferred
 			if ( trap_MemoryRemaining() < 4000000 ) {
 				CG_Printf( "Memory is low.  Using deferred model.\n" );
@@ -6065,10 +6075,11 @@ void CG_Player( centity_t *cent ) {
 	qboolean		gotLHandMatrix = qfalse;
 	qboolean		g2HasWeapon = qfalse;
 
-	if (cgQueueLoad)
+	if (cgQueueLoad || cgQuigonUnlocked)
 	{
 		CG_ActualLoadDeferredPlayers();
 		cgQueueLoad = qfalse;
+		cgQuigonUnlocked = qfalse;
 	}
 
 	// the client number is stored in clientNum.  It can't be derived

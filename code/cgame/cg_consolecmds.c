@@ -1536,6 +1536,8 @@ static void CG_DiscoLights_f(void)
 		CG_Printf("^3ACTIVATING ^2DISCO ^1LIGHTS^7!\n");
 	}
 }
+extern qboolean secretQuiGonAllowed;
+extern qboolean cgQuigonUnlocked;
 static void CG_QuiGonJinn_f(void)
 {
 	char arg1[10];
@@ -1557,7 +1559,13 @@ static void CG_QuiGonJinn_f(void)
 		return;
 	}
 
-	CG_Printf("Qui-Gon Jinn hopes the force is with you.\n");
+	if (!secretQuiGonAllowed) {
+		secretQuiGonAllowed = qtrue;
+		CG_Printf("^3Secret^7 Qui-Gon Jinn skin ^2UNLOCKED.\n");
+		CG_Printf("Credit for original model/skin by yasuakiNk goes to yasuakiNk, Seven, Elek Andor and Toshi.\n");
+		trap_Cvar_Set("model", "secret_quigon/default");
+		cgQuigonUnlocked = qtrue;
+	}
 }
 
 static void CG_Lowjump_f(void)

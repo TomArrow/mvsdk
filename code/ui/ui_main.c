@@ -7292,6 +7292,9 @@ static void UI_BuildQ3Model_List( void )
 		if ( !strcmp(model,".") || !strcmp(model,"..") )
 			continue;
 
+		if ( !stricmp(model,"secret_quigon")) // dont list this one
+			continue;
+
 		for ( skinLen = (int)strlen(skin)-1; skinLen >= 0; skinLen-- )
 		{
 			if ( skin[skinLen] == '.' )
