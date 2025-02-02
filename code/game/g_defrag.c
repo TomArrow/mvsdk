@@ -318,6 +318,41 @@ static int DF_GetNewDemoId() {
 	return num;
 }
 
+void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPrint) {
+	gclient_t* cl = ent->client;
+	if (!ent->client) {
+		return;
+	}
+	Com_Printf("^3Error demo requested: %s\n", errorPrint);
+	if (cl->pers.keepDemoMaybe) {
+		Com_Printf("^1Can't save error demo %s because the game seems to already need the demo elsewhere.\n",demoname);
+		return;
+	}
+	if (!ent->client->pers.recordingDemo) { // thanks to pre-recording we'll get a bit into the past too
+		int demoId = DF_GetNewDemoId();
+
+		Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
+		cl->pers.recordingDemo = qtrue;
+
+		trap_SendConsoleCommand(EXEC_APPEND, va("svrecord \"%s\" %i\n", cl->pers.tempDemoName, cl->ps.clientNum));
+		cl->pers.demoStartedTime = level.time;
+	}
+	if (cl->pers.tempDemoName[0]) {
+
+		char cvarstr[64];
+
+		qtime_t q;
+		trap_RealTime(&q);
+
+		cl->pers.keepDemoMaybe = qtrue;
+		cl->pers.stopRecordingTime = level.time + 10000;
+		trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"%s\"\n", cl->pers.tempDemoName
+			, va("errordemos/%4d-%02d-%02d_%02d-%02d-%02d_client%d_%s",q.tm_year+ 1900,q.tm_mon+1,q.tm_mday,q.tm_hour,q.tm_min,q.tm_sec,ent-g_entities,demoname)
+		));
+	}
+		
+}
+
 /*
 =====================================================================
 Race trigger functions
@@ -2631,6 +2666,39 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
 		cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
 		cl->pers.stats.startLevelTime = 0;
+		return;
+	}
+
+	if (timeLast <= 0) {
+		runInfo.warningFlags |= DF_WARNING_INVALIDRUNTIME;
+		PrintRaceTime(&runInfo, qfalse, qfalse, activator);
+		trap_SendServerCommand(-1, va("print \"^1Run invalid. Race time under or equal to 0 milliseconds: %d.\n\"",timeLast));
+		DF_SaveErrorDemo(activator,multiva("raceMillisecondsInvalid%d",timeLast), multiva("Race millisecond time invalid: %d", timeLast));
+		DF_RaceStateInvalidated(activator, qtrue);
+		return;
+	}
+	if (runInfo.millisecondsSegmentedTotal < 0) {
+		runInfo.warningFlags |= DF_WARNING_INVALIDRUNTIME;
+		PrintRaceTime(&runInfo, qfalse, qfalse, activator);
+		trap_SendServerCommand(-1, va("print \"^1Run invalid. Segmented total time under 0 milliseconds: %d.\n\"",runInfo.millisecondsSegmentedTotal));
+		DF_SaveErrorDemo(activator,multiva("raceSegTotalMillisecondsInvalid%d", runInfo.millisecondsSegmentedTotal), multiva("Race segmented total millisecond time invalid: %d", runInfo.millisecondsSegmentedTotal));
+		DF_RaceStateInvalidated(activator, qtrue);
+		return;
+	}
+	if (runInfo.distance <= 0) {
+		runInfo.warningFlags |= DF_WARNING_INVALIDRUNDISTANCE;
+		PrintRaceTime(&runInfo, qfalse, qfalse, activator);
+		trap_SendServerCommand(-1, va("print \"^1Run invalid. Distance is under or equal to 0 units: %f.\n\"",runInfo.distance));
+		DF_SaveErrorDemo(activator,multiva("raceDistanceInvalid%d", runInfo.distance), multiva("Distance invalid: %d", runInfo.distance));
+		DF_RaceStateInvalidated(activator, qtrue);
+		return;
+	}
+	if (runInfo.distanceXY <= 0) {
+		runInfo.warningFlags |= DF_WARNING_INVALIDRUNDISTANCE;
+		PrintRaceTime(&runInfo, qfalse, qfalse, activator);
+		trap_SendServerCommand(-1, va("print \"^1Run invalid. 2D Distance is under or equal to 0 units: %f.\n\"",runInfo.distanceXY));
+		DF_SaveErrorDemo(activator,multiva("race2DDistanceInvalid%d", runInfo.distanceXY), multiva("2D Distance invalid: %d", runInfo.distanceXY));
+		DF_RaceStateInvalidated(activator, qtrue);
 		return;
 	}
 

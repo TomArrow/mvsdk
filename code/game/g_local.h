@@ -1696,6 +1696,8 @@ int		trap_GeneticParentsAndChildSelection(int numranks, float *ranks, int *paren
 
 void	trap_SnapVector( float *v );
 
+int		trap_RealTime(qtime_t* qtime);
+
 qboolean trap_SP_RegisterServer( const char *package );
 qboolean trap_SP_Register(char *file );
 int trap_SP_GetStringTextString(const char *text, char *buffer, int bufferLength);
