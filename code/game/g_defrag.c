@@ -320,9 +320,11 @@ static int DF_GetNewDemoId() {
 
 void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPrint) {
 	gclient_t* cl = ent->client;
+	static char sanitizedCourseName[COURSENAME_MAX_LEN+1];
 	if (!ent->client) {
 		return;
 	}
+	sanitizeFilename(DF_GetCourseName(), sanitizedCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
 	Com_Printf("^3Error demo requested: %s\n", errorPrint);
 	if (cl->pers.keepDemoMaybe) {
 		Com_Printf("^1Can't save error demo %s because the game seems to already need the demo elsewhere.\n",demoname);
@@ -347,7 +349,7 @@ void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPri
 		cl->pers.keepDemoMaybe = qtrue;
 		cl->pers.stopRecordingTime = level.time + 10000;
 		trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"%s\"\n", cl->pers.tempDemoName
-			, va("errordemos/%4d-%02d-%02d_%02d-%02d-%02d_client%d_%s",q.tm_year+ 1900,q.tm_mon+1,q.tm_mday,q.tm_hour,q.tm_min,q.tm_sec,ent-g_entities,demoname)
+			, va("errordemos/%4d-%02d-%02d_%02d-%02d-%02d_%s_client%d_%s",q.tm_year+ 1900,q.tm_mon+1,q.tm_mday,q.tm_hour,q.tm_min,q.tm_sec, sanitizedCourseName,ent-g_entities,demoname)
 		));
 	}
 		
