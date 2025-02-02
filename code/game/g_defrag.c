@@ -317,7 +317,7 @@ static int DF_GetNewDemoId() {
 	trap_Cvar_Set("g_defragLastDemoId", va("%d", num));
 	return num;
 }
-
+const char* DF_GetCourseName();
 void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPrint) {
 	gclient_t* cl = ent->client;
 	static char sanitizedCourseName[COURSENAME_MAX_LEN+1];
