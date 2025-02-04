@@ -336,7 +336,7 @@ void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPri
 		Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
 		cl->pers.recordingDemo = qtrue;
 
-		trap_SendConsoleCommand(EXEC_APPEND, va("svrecord \"%s\" %i\n", cl->pers.tempDemoName, cl->ps.clientNum));
+		trap_SendConsoleCommand(EXEC_APPEND, va("svdemometa %d dfv %d;svrecord \"%s\" %i\n", cl->ps.clientNum, g_dfv.integer, cl->pers.tempDemoName, cl->ps.clientNum));
 		cl->pers.demoStartedTime = level.time;
 	}
 	if (cl->pers.tempDemoName[0]) {
@@ -1057,7 +1057,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 
 
-			trap_SendConsoleCommand(EXEC_APPEND, va("svrecord \"%s\" %i\n", cl->pers.tempDemoName, cl->ps.clientNum));
+			trap_SendConsoleCommand(EXEC_APPEND, va("svdemometa %d dfv %d;svrecord \"%s\" %i\n", cl->ps.clientNum, g_dfv.integer, cl->pers.tempDemoName, cl->ps.clientNum));
 			cl->pers.demoStartedTime = level.time;
 		}
 		else { //Check if we should "restart" the demo
@@ -1069,7 +1069,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 				cl->pers.recordingDemo = qtrue;
 				cl->pers.demoStoppedTime = level.time;
 				//trap_SendServerCommand( player-g_entities, "chat \"RECORDING RESTARTED\"");
-				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\";svrecord \"%s\" %i\n", cl->ps.clientNum, cl->pers.tempDemoName, cl->ps.clientNum, tempDemoName, cl->ps.clientNum));
+				trap_SendConsoleCommand(EXEC_APPEND, va("svdemometa %d dfv %d;svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\";svrecord \"%s\" %i\n", cl->ps.clientNum, g_dfv.integer, cl->ps.clientNum, cl->pers.tempDemoName, cl->ps.clientNum, tempDemoName, cl->ps.clientNum));
 				Q_strncpyz(cl->pers.tempDemoName, tempDemoName,sizeof(cl->pers.tempDemoName));
 				cl->pers.demoStartedTime = level.time;
 				//trap_SendConsoleCommand( EXEC_APPEND, va("svrecord temp/%s %i\n", cl->pers.userName, cl->ps.clientNum));

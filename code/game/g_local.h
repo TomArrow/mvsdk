@@ -1332,6 +1332,8 @@ extern  gentity_t*		g_logicalents;
 
 #define	FOFS(x) ((size_t)&(((gentity_t *)0)->x))
 
+extern	vmCvar_t	g_dfv;
+
 extern	vmCvar_t	g_gametype;
 extern	vmCvar_t	g_dedicated;
 extern	vmCvar_t	g_cheats;
