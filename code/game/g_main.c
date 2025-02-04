@@ -32,6 +32,11 @@ qboolean gDuelExit = qfalse;
 
 vmCvar_t	g_trueJedi;
 
+// defrag breaking change version number. just so that a client watching/analyzing a demo can find out.
+// version 0 (non existent cvar): up to 2025-02-04
+// version 1: 2025-02-04 antiloop upgrade to fix wallstrafe exploit
+vmCvar_t	g_dfv;
+
 vmCvar_t	g_gametype;
 vmCvar_t	g_MaxHolocronCarry;
 vmCvar_t	g_ff_objectives;
@@ -209,6 +214,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ NULL, "sv_mapname", "", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  },
 
 	// latched vars
+	{ &g_dfv, "dfv", "1", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  }, // we just wanna let the client know
 	{ &g_gametype, "g_gametype", "0", CVAR_SERVERINFO | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_MaxHolocronCarry, "g_MaxHolocronCarry", "3", CVAR_SERVERINFO | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 
