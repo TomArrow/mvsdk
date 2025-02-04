@@ -2231,18 +2231,21 @@ void ClientThink_real( gentity_t *ent ) {
 	
 	pm.handleStrafebotSlopes = g_strafebotSlopeHandling.integer;
 	pm.roll = ent->client->pers.roll;
+	pm.antiLoop = ent->client->pers.antiLoop;
 	pm.oldButtons = ent->client->oldbuttons;
 	DF_PreDeltaAngleChange(ent->client);
 	pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 	Pmove (&pm);
 	DF_PostDeltaAngleChange(ent->client,!(ent->client->sess.raceStyle.runFlags & RFL_BOT)); // qfalse if strafebot
 	ent->client->pers.roll = pm.roll;
+	ent->client->pers.antiLoop = pm.antiLoop;
 
 	if (ent->client->sess.raceStateInvalidated) {
 		ent->client->pers.roll.rollDisqualified = qtrue;
 	}
 
-	DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,prePmoveVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
+	//DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,prePmoveVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
+	DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,pm.lastAntiLoopVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
 	level.playerStats[ent - g_entities]->s.pos.trBase[0] = ent->client->pers.antiLoop.yawAngleChangeSinceBaseSpeed;
 	DF_CheckRollSpeed(ent);
 

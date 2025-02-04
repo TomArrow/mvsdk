@@ -76,7 +76,11 @@ float	pmcss_waterspeed = 400;
 
 */
 
-
+extern pmove_t* pm;
+static void PMCSS_UpdateAntiLoop() {
+	DF_AntiLoop_NewAngle(pmcss->antiLoop, pm->lastAntiLoopVelocity, pmlcss.velocity, pmcss->ps->basespeed, pmcss->ps->stats[STAT_RACEMODE] && pm->ps->duelTime);
+	VectorCopy(pmlcss.velocity, pm->lastAntiLoopVelocity);
+}
 
 /*
 ===============
@@ -601,8 +605,10 @@ void PMCSS_WaterMove(void)
 	wishspeed *= 0.5;
 
 	PMCSS_Accelerate(wishdir, wishspeed, pmcss_wateraccelerate);
+	PMCSS_UpdateAntiLoop();
 
 	PMCSS_StepSlideMove();
+	PMCSS_UpdateAntiLoop();
 }
 
 
@@ -655,6 +661,7 @@ void PMCSS_AirMove(void)
 	if (pmlcss.ladder)
 	{
 		PMCSS_Accelerate(wishdir, wishspeed, pmcss_accelerate);
+		PMCSS_UpdateAntiLoop();
 		if (!wishvel[2])
 		{
 			if (pmlcss.velocity[2] > 0)
@@ -671,11 +678,13 @@ void PMCSS_AirMove(void)
 			}
 		}
 		PMCSS_StepSlideMove();
+		PMCSS_UpdateAntiLoop();
 	}
 	else if (pmcss->ps->groundEntityNum != ENTITYNUM_NONE)
 	{	// walking on ground
 		pmlcss.velocity[2] = 0; //!!! this is before the accel
 		PMCSS_Accelerate(wishdir, wishspeed, pmcss_accelerate);
+		PMCSS_UpdateAntiLoop();
 
 		// PGM	-- fix for negative trigger_gravity fields
 		//		pmlcss.velocity[2] = 0;
@@ -688,6 +697,7 @@ void PMCSS_AirMove(void)
 		if (!pmlcss.velocity[0] && !pmlcss.velocity[1])
 			return;
 		PMCSS_StepSlideMove();
+		PMCSS_UpdateAntiLoop();
 	}
 	else
 	{	// not on ground, so little effect on velocity
@@ -695,9 +705,13 @@ void PMCSS_AirMove(void)
 			PMCSS_AirAccelerate(wishdir, wishspeed, pmcss_accelerate);
 		else
 			PMCSS_Accelerate(wishdir, wishspeed, 1);
+
+		PMCSS_UpdateAntiLoop();
+
 		// add gravity
 		pmlcss.velocity[2] -= pmcss->ps->gravity * pmlcss.frametime;
 		PMCSS_StepSlideMove();
+		PMCSS_UpdateAntiLoop();
 	}
 }
 
@@ -1421,6 +1435,7 @@ void PmoveCSS(pmovecss_t* pmove)
 		}
 
 		PMCSS_StepSlideMove();
+		PMCSS_UpdateAntiLoop();
 	}
 	else
 	{

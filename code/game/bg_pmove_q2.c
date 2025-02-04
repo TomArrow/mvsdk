@@ -80,6 +80,11 @@ float	pmq2_waterspeed = 400;
   walking up a step should kill some velocity
 
 */
+extern pmove_t* pm;
+static void PMQ2_UpdateAntiLoop() {
+	DF_AntiLoop_NewAngle(pmq2->antiLoop, pm->lastAntiLoopVelocity, pmlq2.velocity, pmq2->ps->basespeed, pmq2->ps->stats[STAT_RACEMODE] && pm->ps->duelTime);
+	VectorCopy(pmlq2.velocity, pm->lastAntiLoopVelocity);
+}
 
 
 /*
@@ -652,8 +657,10 @@ void PMQ2_WaterMove(void)
 	wishspeed *= 0.5;
 
 	PMQ2_Accelerate(wishdir, wishspeed, pmq2_wateraccelerate);
+	PMQ2_UpdateAntiLoop();
 
 	PMQ2_StepSlideMove();
+	PMQ2_UpdateAntiLoop();
 }
 
 
@@ -708,6 +715,7 @@ void PMQ2_AirMove(void)
 	if (pmlq2.ladder)
 	{
 		PMQ2_Accelerate(wishdir, wishspeed, pmq2_accelerate);
+		PMQ2_UpdateAntiLoop();
 		if (!wishvel[2])
 		{
 			if (pmlq2.velocity[2] > 0)
@@ -724,11 +732,13 @@ void PMQ2_AirMove(void)
 			}
 		}
 		PMQ2_StepSlideMove();
+		PMQ2_UpdateAntiLoop();
 	}
 	else if (pmq2->ps->groundEntityNum != ENTITYNUM_NONE)
 	{	// walking on ground
 		pmlq2.velocity[2] = 0; //!!! this is before the accel
 		PMQ2_Accelerate(wishdir, wishspeed, pmq2_accelerate);
+		PMQ2_UpdateAntiLoop();
 
 		// PGM	-- fix for negative trigger_gravity fields
 		//		pmlq2.velocity[2] = 0;
@@ -741,6 +751,7 @@ void PMQ2_AirMove(void)
 		if (!pmlq2.velocity[0] && !pmlq2.velocity[1])
 			return;
 		PMQ2_StepSlideMove();
+		PMQ2_UpdateAntiLoop();
 	}
 	else
 	{	// not on ground, so little effect on velocity
@@ -748,9 +759,13 @@ void PMQ2_AirMove(void)
 			PMQ2_AirAccelerate(wishdir, wishspeed, pmq2_accelerate);
 		else
 			PMQ2_Accelerate(wishdir, wishspeed, 1);
+
+		PMQ2_UpdateAntiLoop();
+
 		// add gravity
 		pmlq2.velocity[2] -= pmq2->ps->gravity * pmlq2.frametime;
 		PMQ2_StepSlideMove();
+		PMQ2_UpdateAntiLoop();
 	}
 }
 
@@ -838,6 +853,7 @@ void PMQ2_CatagorizePosition(int type)
 						if (runFlags & RFL_NODEADRAMPS) {
 
 							PMQ2_ClipVelocity(pmlq2.velocity, trace.plane.normal, pmlq2.velocity, 1.01);
+							PMQ2_UpdateAntiLoop();
 
 							if (pm->debugLevel) {
 								Com_Printf("%i:Dead ramp fixed\n", c_pmove);
@@ -1674,6 +1690,7 @@ void PmoveQ2(pmoveq2_t* pmove)
 		}
 
 		PMQ2_StepSlideMove();
+		PMQ2_UpdateAntiLoop();
 	}
 	else
 	{

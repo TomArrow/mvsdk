@@ -2265,7 +2265,7 @@ void ClientSpawn(gentity_t *ent) {
 	useSavedSpawn = raceSpawnPossible && !inSegmentedRun && !memcmp(&client->sess.raceStyle, &client->pers.savedSpawnRaceStyle, sizeof(client->sess.raceStyle));
 
 	if (raceSpawnPossible && !useSavedSpawn && !inSegmentedRun) {
-		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your spawn point is not valid for your changed race settings.",qfalse,qtrue,qtrue);
+		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your spawn point is not valid for your changed race settings.",qfalse,qtrue,qfalse);
 	}
 
 	// find a spawn point

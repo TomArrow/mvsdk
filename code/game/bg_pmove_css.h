@@ -3,6 +3,7 @@
 #define BG_PMOVE_CSS_H
 
 #include "../game/q_shared.h"
+#include "../game/bg_defrag_global.h"
 
 
 
@@ -67,6 +68,8 @@ typedef struct
 	int			waterlevel;
 
 	int			tracemask;
+
+	antiLoopState_t* antiLoop;
 
 	// callbacks to test the world
 	//trace_t(*trace) (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);

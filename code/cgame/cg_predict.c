@@ -1283,13 +1283,18 @@ restartpredict:
 		cg_pmove.roll = cg.roll;
 		cg_pmove.handleStrafebotSlopes = cg_strafebotSlopeHandling.integer;
 		cg_pmove.positionChangedOutsidePmove = !VectorCompare(cg_pmove.ps->origin, oldPos);
+
+		if (!cg_pmove.isSpecialPredict && (cg_pmove.cmd.serverTime > cg.antiLoopLastCommandTime || (cg_pmove.cmd.serverTime + 10000) < cg.antiLoopLastCommandTime)) { // the +10000 condition just in case commandtime ever gets reset or similar shenanigans. idk if its a real issue.
+			cg_pmove.antiLoop = cg.antiLoop;
+		}
 		Pmove (&cg_pmove);
 		VectorCopy(cg_pmove.ps->origin,oldPos );
 		cg.roll = cg_pmove.roll;
 		cg.accelMiss = cg_pmove.accelMiss;
 		cg.wishSpeed = cg_pmove.wishSpeed;
 		if (!cg_pmove.isSpecialPredict && (cg_pmove.ps->commandTime > cg.antiLoopLastCommandTime || (cg_pmove.ps->commandTime+10000) < cg.antiLoopLastCommandTime)) { // the +10000 condition just in case commandtime ever gets reset or similar shenanigans. idk if its a real issue.
-			DF_AntiLoop_NewAngle(&cg.antiLoop, prePmoveVelocity, cg_pmove.ps->velocity, cg_pmove.ps->basespeed, cgs.isTommyTernal && cg_pmove.ps->stats[STAT_RACEMODE] && cg_pmove.ps->duelTime);
+			cg.antiLoop = cg_pmove.antiLoop;
+			DF_AntiLoop_NewAngle(&cg.antiLoop, cg_pmove.lastAntiLoopVelocity, cg_pmove.ps->velocity, cg_pmove.ps->basespeed, cgs.isTommyTernal && cg_pmove.ps->stats[STAT_RACEMODE] && cg_pmove.ps->duelTime);
 			cg.antiLoopLastCommandTime = cg_pmove.ps->commandTime;
 		}
 

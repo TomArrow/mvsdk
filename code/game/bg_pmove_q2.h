@@ -3,6 +3,7 @@
 #define BG_PMOVE_Q2_H
 
 #include "../game/q_shared.h"
+#include "../game/bg_defrag_global.h"
 
 
 
@@ -86,6 +87,7 @@ typedef struct
 	// 5 = yes, always. 
 	// 6 = yes, always, long pm_time version
 	float		airAccelerate;
+	antiLoopState_t* antiLoop;
 } pmoveq2_t;
 
 

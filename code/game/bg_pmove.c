@@ -260,6 +260,11 @@ float forceJumpHeightMax[NUM_FORCE_POWER_LEVELS] =
 	418//(384+stepheight(18)+crouchdiff(24) = 426)
 };
 
+static void PM_UpdateAntiLoop() {
+	DF_AntiLoop_NewAngle(&pm->antiLoop, pm->lastAntiLoopVelocity, pm->ps->velocity, pm->ps->basespeed, pm->ps->stats[STAT_RACEMODE] && pm->ps->duelTime);
+	VectorCopy(pm->ps->velocity, pm->lastAntiLoopVelocity);
+}
+
 //rww - Get a pointer to the bgEntity by the index
 bgEntity_t* PM_BGEntForNum(int num)
 {
@@ -2137,6 +2142,7 @@ static void PM_WaterJumpMove( void ) {
 	// waterjump has no control, but falls
 
 	PM_StepSlideMove( qtrue );
+	PM_UpdateAntiLoop();
 
 	pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
 	if (pm->ps->velocity[2] < 0) {
@@ -2230,6 +2236,7 @@ static void PM_WaterMove( void ) {
 	else {
 		PM_Accelerate(wishdir, wishspeed, realWaterAccelerate);
 	}
+	PM_UpdateAntiLoop();
 
 	// make sure we can go up slopes easily under water
 	if ( pml.groundPlane && DotProduct( pm->ps->velocity, pml.groundTrace.plane.normal ) < 0 ) {
@@ -2240,9 +2247,11 @@ static void PM_WaterMove( void ) {
 
 		VectorNormalize(pm->ps->velocity);
 		VectorScale(pm->ps->velocity, vel, pm->ps->velocity);
+		PM_UpdateAntiLoop();
 	}
 
 	PM_SlideMove( qfalse );
+	PM_UpdateAntiLoop();
 }
 
 /*
@@ -2291,8 +2300,10 @@ static void PM_FlyMove( void ) {
 	wishspeed = VectorNormalize(wishdir);
 
 	PM_Accelerate (wishdir, wishspeed, pm_flyaccelerate);
+	PM_UpdateAntiLoop();
 
 	PM_StepSlideMove( qfalse );
+	PM_UpdateAntiLoop();
 }
 
 
@@ -2379,6 +2390,7 @@ static void PM_AirMove( void ) {
 	else {
 		PM_Accelerate(wishdir, wishspeed, pm_airaccelerate);
 	}
+	PM_UpdateAntiLoop();
 
 	// we may have a ground plane that is very steep, even
 	// though we don't have a groundentity
@@ -2391,16 +2403,19 @@ static void PM_AirMove( void ) {
 				{
 					PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
 						pm->ps->velocity, overbounce);
+					PM_UpdateAntiLoop();
 				}
 			}
 		}
 		else {
 			PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
 				pm->ps->velocity, overbounce);
+			PM_UpdateAntiLoop();
 		}
 	}
 
 	PM_StepSlideMove ( qtrue );
+	PM_UpdateAntiLoop();
 
 	if (pml.groundBounces) {
 		PM_CheckBounceJump(flatNormal, pm->ps->velocity);
@@ -2539,6 +2554,7 @@ static void PM_WalkMove( void ) {
 	}
 
 	PM_Accelerate (wishdir, wishspeed, accelerate);
+	PM_UpdateAntiLoop();
 
 	//Com_Printf("velocity = %1.1f %1.1f %1.1f\n", pm->ps->velocity[0], pm->ps->velocity[1], pm->ps->velocity[2]);
 	//Com_Printf("velocity1 = %1.1f\n", VectorLength(pm->ps->velocity));
@@ -2553,6 +2569,7 @@ static void PM_WalkMove( void ) {
 	// slide along the ground plane
 	PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
 		pm->ps->velocity, overbounce);
+	PM_UpdateAntiLoop();
 	PM_CheckBounceJump(pml.groundTrace.plane.normal, pm->ps->velocity);// allow jump out of a bounce
 
 	// don't decrease velocity when going up or down a slope
@@ -2566,6 +2583,7 @@ static void PM_WalkMove( void ) {
 	}
 
 	PM_StepSlideMove( qfalse );
+	PM_UpdateAntiLoop();
 
 	if (pml.groundBounces) {
 		PM_CheckBounceJump(flatNormal, pm->ps->velocity);
@@ -2664,6 +2682,7 @@ static void PM_NoclipMove( void ) {
 	wishspeed *= scale;
 
 	PM_Accelerate( wishdir, wishspeed, pm_accelerate );
+	PM_UpdateAntiLoop();
 
 	// move
 	VectorMA (pm->ps->origin, pml.frametime, pm->ps->velocity, pm->ps->origin);
@@ -3219,6 +3238,7 @@ static void PM_GroundTrace( void ) {
 					else {
 						PM_ClipVelocity(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
 					}
+					PM_UpdateAntiLoop();
 					PM_CheckBounceJump(trace.plane.normal, pm->ps->velocity); // do we need this here? not sure.
 
 					if (pm->debugLevel) {
@@ -5706,6 +5726,7 @@ void PmoveSingle (pmove_t *pmove) {
 			pmq2.snapinitial = pm->positionChangedOutsidePmove;
 			pmq2.pointcontents = pm->pointcontents;
 			pmq2.debugLevel = pm->debugLevel;
+			pmq2.antiLoop = &pm->antiLoop;
 			VectorCopy(pm->mins, pmq2.mins);
 			VectorCopy(pm->maxs, pmq2.maxs);
 			VectorCopy(pm->ps->velocity, oldVel);
@@ -5731,6 +5752,7 @@ void PmoveSingle (pmove_t *pmove) {
 			pmcss.trace = pm->trace;
 			pmcss.snapinitial = pm->positionChangedOutsidePmove;
 			pmcss.pointcontents = pm->pointcontents;
+			pmcss.antiLoop = &pm->antiLoop;
 			VectorCopy(pm->mins, pmcss.mins);
 			VectorCopy(pm->maxs, pmcss.maxs);
 			pmcss.oldbuttons = pm->oldButtons;
@@ -6409,6 +6431,8 @@ void Pmove (pmove_t *pmove) {
 	int			zeroahaha = 0.0f;
 
 	finalTime = pmove->cmd.serverTime;
+
+	VectorCopy(pmove->ps->velocity,pmove->lastAntiLoopVelocity);
 
 #ifdef Q3_VM
 	pmove->accelMiss =0.0f/0.0f; // putting NaN in there.
