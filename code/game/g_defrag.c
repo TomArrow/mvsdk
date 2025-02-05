@@ -4207,8 +4207,10 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 {
 	insertUpdateMapRaceDefaultsStruct_t	data;
 	raceStyle_t rs = level.mapDefaultRaceStyle;
+	int alwaysRunFlags = defaultRunFlags & ~allowedMapDefaultRunFlags; // they are default but we are not allowed to change their defaultness (?!)
 	if (!ent->client) return;
 
+	rs.runFlags |= alwaysRunFlags;
 
 	if (trap_Argc() > 2) {
 		char arg1[12] = { 0 };
@@ -4230,7 +4232,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			char arg2[8] = { 0 };
 			int index, index2, flag;
-			const uint32_t mask = allowedMapDefaultRunFlags & ((1 << MAX_RUN_FLAGS) - 1);
+			const uint32_t mask = (allowedMapDefaultRunFlags & ((1 << MAX_RUN_FLAGS) - 1)) | alwaysRunFlags;
 
 			trap_Argv(2, arg2, sizeof(arg2));
 			index = atoi(arg2);
