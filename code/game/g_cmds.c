@@ -2815,14 +2815,15 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 		data.style = MV_JK2;
 	}
 
-#define LONGESTSHORTESTQUERY "SELECT MIN(duration_ms) as fastest,runs.course,runs.subcourse FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) WHERE style = ? AND (runs.jump = mapdefaults.jump OR (mapdefaults.jump IS NULL AND runs.jump = 1)) GROUP BY runs.course,runs.subcourse ORDER BY fastest "
-#define MOSTPLAYEDQUERY "SELECT COUNT(DISTINCT userid) as playerCount, runs.course, runs.subcourse FROM runs WHERE style = ? GROUP BY runs.course, runs.subcourse ORDER BY playerCount DESC "
+#define LONGESTSHORTESTQUERY "SELECT MIN(duration_ms) as fastest,runs.course,runs.subcourse FROM runs LEFT JOIN mapdefaults ON (mapdefaults.course = runs.course AND mapdefaults.subcourse = runs.subcourse) WHERE hidden=0 AND style = ? AND (runs.jump = mapdefaults.jump OR (mapdefaults.jump IS NULL AND runs.jump = 1)) GROUP BY runs.course,runs.subcourse ORDER BY fastest "
+#define MOSTPLAYEDQUERY "SELECT COUNT(DISTINCT userid) as playerCount, runs.course, runs.subcourse FROM runs WHERE hidden=0 AND style = ? GROUP BY runs.course, runs.subcourse ORDER BY playerCount DESC "
 #define TOPRATEDQUERY "SELECT AVG(rating) AS avgRating,COUNT(DISTINCT userid) ratingCount, course FROM mapratings WHERE style=? GROUP BY course,style ORDER BY avgRating DESC "
 #define WRORNOTWRQUERY "SELECT runs.course,runs.subcourse,COUNT(subruns.userid) >0 AS anyruns,MIN(subruns.tmpRank) AS bestrank, COUNT(DISTINCT subruns2.userid) AS playerCount, AVG(mapratings.rating) AS rating, COUNT(DISTINCT mapratings.userid) AS ratingCount, mapratings2.rating as myRating, mapratings2.rating IS NOT NULL AS haveMyRating, MIN(subruns2.duration_ms) AS fastestTime  FROM runs \
-	LEFT JOIN runs AS subruns ON(subruns.userid = @userid AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
-	LEFT JOIN runs AS subruns2 ON(subruns2.course = runs.course AND subruns2.subcourse = runs.subcourse AND subruns2.style = ? AND subruns2.tmpLB = ?) \
+	LEFT JOIN runs AS subruns ON(subruns.hidden=0 AND subruns.userid = @userid AND subruns.course = runs.course AND subruns.subcourse = runs.subcourse AND subruns.style = ? AND subruns.tmpLB = ?) \
+	LEFT JOIN runs AS subruns2 ON(subruns2.hidden=0 AND subruns2.course = runs.course AND subruns2.subcourse = runs.subcourse AND subruns2.style = ? AND subruns2.tmpLB = ?) \
 	LEFT JOIN mapratings ON (mapratings.course=runs.course AND mapratings.style=?)\
 	LEFT JOIN mapratings AS mapratings2 ON (mapratings2.course=runs.course AND mapratings2.style=? AND mapratings2.userid=@userid)\
+	WHERE runs.hidden=0 \
 		GROUP BY course, subcourse  "
 #define WRORNOTWRQUERY_END " ORDER BY anyruns DESC, bestrank ASC, playerCount DESC,rating DESC, runs.course ASC "
 #define NOTWRQUERY WRORNOTWRQUERY " HAVING bestrank > 1 OR anyruns = 0 " WRORNOTWRQUERY_END
@@ -2836,15 +2837,15 @@ SELECT course,subcourse,AVG(playerDevDev)*100 AS avgdevdev, best, COUNT(*) as sa
 ( \
 	SELECT users.id,users.username,runs.course,runs.subcourse,MIN(runs.duration_ms) AS pb,MIN(subruns.duration_ms) AS best, MIN(runs.duration_ms) /MIN(subruns.duration_ms) AS dev,avgDev as playerAvgDev,(MIN(runs.duration_ms) /MIN(subruns.duration_ms))/avgDev as playerDevDev, COUNT(DISTINCT subruns.userid) AS players, COUNT(userDevs.id) as samples  \
 	FROM users  \
-	CROSS JOIN runs ON (users.id = runs.userid AND runs.style=@style AND runs.tmpLB=0) \
-	LEFT JOIN runs as subruns ON (subruns.course=runs.course AND subruns.subcourse=runs.subcourse AND subruns.style=runs.style AND subruns.tmpLB=0) \
+	CROSS JOIN runs ON (runs.hidden=0 AND users.id = runs.userid AND runs.style=@style AND runs.tmpLB=0) \
+	LEFT JOIN runs as subruns ON (subruns.hidden= 0 AND subruns.course=runs.course AND subruns.subcourse=runs.subcourse AND subruns.style=runs.style AND subruns.tmpLB=0) \
 	LEFT JOIN ( \
 		SELECT username,id,AVG(dev) AS avgDev,COUNT(*) as samples \
 		FROM ( \
 			SELECT users.id,users.username,runs.course,runs.subcourse,MIN(runs.duration_ms) AS pb,MIN(subruns.duration_ms) AS best, MIN(runs.duration_ms) /MIN(subruns.duration_ms) AS dev, COUNT(DISTINCT subruns.userid) AS players FROM users  \
-			CROSS JOIN runs ON (users.id = runs.userid AND runs.style=@style AND runs.tmpLB=0) \
+			CROSS JOIN runs ON (runs.hidden= 0 AND users.id = runs.userid AND runs.style=@style AND runs.tmpLB=0) \
 			LEFT JOIN mapdefaults ON (mapdefaults.course=runs.course AND mapdefaults.subcourse=runs.subcourse) \
-			LEFT JOIN runs as subruns ON (subruns.course=runs.course AND subruns.subcourse=runs.subcourse AND (subruns.jump=mapdefaults.jump OR (subruns.jump=1 AND mapdefaults.jump IS NULL)) AND subruns.style=@style AND subruns.tmpLB=0) \
+			LEFT JOIN runs as subruns ON (subruns.hidden=0 AND subruns.course=runs.course AND subruns.subcourse=runs.subcourse AND (subruns.jump=mapdefaults.jump OR (subruns.jump=1 AND mapdefaults.jump IS NULL)) AND subruns.style=@style AND subruns.tmpLB=0) \
 			WHERE users.id != -1 \
 			GROUP BY users.id,runs.course,runs.subcourse \
 			HAVING players>=4 \
@@ -3008,7 +3009,7 @@ void Cmd_Rank_f(gentity_t* ent) {
 FROM ( \
 SELECT username,users.id,runs.style,runs.tmpLB,runs.tmpRank,SUM(tmpRank) OVER (PARTITION BY runs.userid,runs.style,runs.tmpRank,runs.tmpLB) AS rankSum \
 FROM users \
-LEFT JOIN runs ON (runs.userid=users.id  ) \
+LEFT JOIN runs ON (runs.hidden=0 AND runs.userid=users.id  ) \
 WHERE style=? AND tmpLB=? AND tmpRank < 4 \
 ) rankstuff \
 GROUP BY id,style,tmpLB \
