@@ -1279,7 +1279,7 @@ void CG_DrawHUD(centity_t	*cent)
 	if (cg_movementKeys.integer)
 		CG_MovementKeys(cent);
 
-	if (cg_drawAntiLoopIndicator.integer && !cg.demoPlayback) { // TODO make work for demos?
+	if (cg_drawAntiLoopIndicator.integer/* && !cg.demoPlayback*/) { // TODO make work for demos?
 		CG_AntiLoopIndicator();
 	}
 
