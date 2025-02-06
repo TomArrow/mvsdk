@@ -245,7 +245,7 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 		other->client->invulnerableTimer = LEVELTIME(other->client) + g_spawnInvulnerability.integer;
 	}
 
-	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")), qtrue, qfalse,qtrue);
+	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")), qtrue, qfalse,qtrue, NULL);
 
 	other->client->ps.isJediMaster = qtrue;
 	other->client->ps.saberIndex = self->s.number;
@@ -2265,7 +2265,7 @@ void ClientSpawn(gentity_t *ent) {
 	useSavedSpawn = raceSpawnPossible && !inSegmentedRun && !memcmp(&client->sess.raceStyle, &client->pers.savedSpawnRaceStyle, sizeof(client->sess.raceStyle));
 
 	if (raceSpawnPossible && !useSavedSpawn && !inSegmentedRun) {
-		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your spawn point is not valid for your changed race settings.",qfalse,qtrue,qfalse);
+		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your spawn point is not valid for your changed race settings.",qfalse,qtrue,qfalse,NULL);
 	}
 
 	// find a spawn point
@@ -2799,7 +2799,7 @@ void ClientSpawn(gentity_t *ent) {
 		ent->client->sess.raceStateInvalidated = qfalse;
 		ent->client->pers.antiLoop.yawAngleChangeSinceBaseSpeed = 0;
 		if (ent->client->pers.lastRaceTimerStartedCP > level.time-1000) {
-			G_CenterPrint(ent - g_entities, 3, "", qfalse, qtrue, qfalse); // just send an empty cp to clear the screen of the old "Timer started!"
+			G_CenterPrint(ent - g_entities, 3, "", qfalse, qtrue, qfalse, NULL); // just send an empty cp to clear the screen of the old "Timer started!"
 			ent->client->pers.lastRaceTimerStartedCP = 0;
 		}
 	}
@@ -2962,17 +2962,32 @@ void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers)
 
 #define MAX_CLIENT_CENTERPRINT_LINELENGTH 50
 #define MAX_CLIENT_CENTERPRINT_LENGTH 1024
-void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint )
+void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra)
 {
 	int len = strlen(message);
 	if (printInDefrag && g_defrag.integer) {
-		G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+		if (extra) {
+			G_SendServerCommand(targetNum, va("print \"%s\n\" %s", message, extra), alsoFollowers);
+		}
+		else {
+			G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+		}
 	}
 	else if (!autoLineWraps || len <= MAX_CLIENT_CENTERPRINT_LINELENGTH) {
 		if (alwaysPrint) {
-			G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+			if (extra) {
+				G_SendServerCommand(targetNum, va("print \"%s\n\" %s", message,extra), alsoFollowers);
+			}
+			else {
+				G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+			}
 		}
-		G_SendServerCommand(targetNum, va("cp \"%s\"", message), alsoFollowers);
+		if (extra) {
+			G_SendServerCommand(targetNum, va("cp \"%s\" %s", message, extra), alsoFollowers);
+		}
+		else {
+			G_SendServerCommand(targetNum, va("cp \"%s\"", message), alsoFollowers);
+		}
 	}
 	else
 	{
@@ -2990,7 +3005,12 @@ void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qbool
 		int isMultiLang;
 
 		if (alwaysPrint) {
-			G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+			if (extra) {
+				G_SendServerCommand(targetNum, va("print \"%s\n\" %s", message,extra), alsoFollowers);
+			}
+			else {
+				G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+			}
 		}
 
 		*newMessage = 0;
@@ -3110,7 +3130,12 @@ void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qbool
 			lineStart = lineEnd + 1;
 			lineEnd = lineStart;
 		}
-		G_SendServerCommand( targetNum, va("cp \"%s\"", newMessage), alsoFollowers );
+		if (extra) {
+			G_SendServerCommand(targetNum, va("cp \"%s\" %s", newMessage, extra), alsoFollowers);
+		}
+		else {
+			G_SendServerCommand(targetNum, va("cp \"%s\"", newMessage), alsoFollowers);
+		}
 	}
 }
 

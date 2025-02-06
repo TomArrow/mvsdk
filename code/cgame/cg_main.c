@@ -579,6 +579,8 @@ vmCvar_t	cg_forcemeterY;
 vmCvar_t	cg_forceFieldOpacity;
 vmCvar_t	cg_forceFieldOpacityRace;
 
+vmCvar_t	cg_customizeRace;
+
 vmCvar_t	cg_strafeHelperCutoff;
 vmCvar_t	cg_strafeHelper;
 vmCvar_t	cg_strafeHelperPrecision;
@@ -942,6 +944,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_raceTimerNoSpeeds, "cg_raceTimerNoSpeeds", "0", CVAR_ARCHIVE },
 	{ &cg_raceTimerX, "cg_raceTimerX", "5", 0 },
 	{ &cg_raceTimerY, "cg_raceTimerY", "280", 0 },
+	{ &cg_customizeRace, "cg_customizeRace", "0", CVAR_ARCHIVE | CVAR_USERINFO }, // hide various things and stuff
 	{ &cg_speedometer, "cg_speedometer", "0", CVAR_ARCHIVE },
 	{ &cg_speedometerX, "cg_speedometerX", "98", CVAR_ARCHIVE },
 	{ &cg_speedometerY, "cg_speedometerY", "460", CVAR_ARCHIVE },

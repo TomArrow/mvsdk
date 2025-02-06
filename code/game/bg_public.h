@@ -60,6 +60,14 @@
 
 #define TTFLAGSSERVERINFO_HASANTILOOPSTATS		(1<<0) //unused
 
+
+//jk2pro
+#define CUSTOMIZERACE_HIDEROLLSPEEDCP		(1<<0)
+#define CUSTOMIZERACE_HIDECHECKPOINTCP		(1<<1)
+#define CUSTOMIZERACE_HIDEANTILOOPRESTART	(1<<2)
+#define CUSTOMIZERACE_ANTILOOPAUTORESPAWN	(1<<3)
+
+
 //
 // config strings are a general means of communicating variable length strings
 // from the server to all connected clients.

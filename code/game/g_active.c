@@ -915,7 +915,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 
 			if (level.time > client->inactivityToSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
 				client->randomLastCenterprint = level.time;
-				G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!", (client->inactivityToSpecTime - level.time) / 1000), qfalse, qtrue, qfalse);
+				G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!", (client->inactivityToSpecTime - level.time) / 1000), qfalse, qtrue, qfalse, NULL);
 			}
 		}
 	}
@@ -1847,7 +1847,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if (client->sess.login.forceLoggedIn && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
 		client->randomLastCenterprint = level.time;
-		G_CenterPrint(client - level.clients, 3, "^3You were force-logged in by an admin. Please change your password with /changepassword, log out and log in again.", qfalse, qtrue, qfalse);
+		G_CenterPrint(client - level.clients, 3, "^3You were force-logged in by an admin. Please change your password with /changepassword, log out and log in again.", qfalse, qtrue, qfalse, NULL);
 	}
 
 	if (client->sess.sessionTeam != TEAM_SPECTATOR) {
@@ -2023,11 +2023,11 @@ void ClientThink_real( gentity_t *ent ) {
 				//Private duel announcements are now made globally because we only want one duel at a time.
 				if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
 				{
-					G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) , qtrue,qfalse,qtrue);
+					G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) , qtrue,qfalse,qtrue, NULL);
 				}
 				else
 				{ //it was a draw, because we both managed to die in the same frame
-					G_CenterPrint( -1, 3, va("%s", G_GetStripEdString("SVINGAME", "PLDUELTIE")), qtrue, qfalse,qtrue);
+					G_CenterPrint( -1, 3, va("%s", G_GetStripEdString("SVINGAME", "PLDUELTIE")), qtrue, qfalse,qtrue, NULL);
 				}
 			}
 		}

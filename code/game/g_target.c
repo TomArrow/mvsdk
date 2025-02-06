@@ -144,7 +144,7 @@ If "private", only the activator gets the message.  If no checks, all clients ge
 */
 void Use_Target_Print (gentity_t *ent, gentity_t *other, gentity_t *activator) {
 	if ( activator->client && ( ent->spawnflags & 4 ) ) {
-		G_CenterPrint( activator-g_entities,3, ent->message,qfalse,qtrue,qfalse);
+		G_CenterPrint( activator-g_entities,3, ent->message,qfalse,qtrue,qfalse, NULL);
 		return;
 	}
 
@@ -158,7 +158,7 @@ void Use_Target_Print (gentity_t *ent, gentity_t *other, gentity_t *activator) {
 		return;
 	}
 
-	G_CenterPrint( -1, 3,ent->message,qfalse,qfalse ,qfalse);
+	G_CenterPrint( -1, 3,ent->message,qfalse,qfalse ,qfalse, NULL);
 }
 
 void SP_target_print( gentity_t *ent ) {

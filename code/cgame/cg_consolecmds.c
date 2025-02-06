@@ -820,6 +820,53 @@ void cg_speedometer_f(void)
 	}
 }
 
+static bitInfo_T customizeRaceSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
+	{ "Hide roll speed centerprints" },//0
+	{ "Hide checkpoint centerprints" },//1
+	{ "Hide anti-loop restart blocked centerprints" },//2
+	//{ "Auto-respawn when antiloop is triggered" },//3
+};
+static const int MAX_CUSTOMIZERACE_SETTINGS = ARRAY_LEN(customizeRaceSettings);
+
+void cg_customizeRace_f(void)
+{
+	if (trap_Argc() == 1) {
+		int i = 0, display = 0;
+
+		for (i = 0; i < MAX_CUSTOMIZERACE_SETTINGS; i++) {
+			if ((cg_customizeRace.integer & (1 << i))) {
+				Com_Printf("%2d [X] %s\n", display, customizeRaceSettings[i].string);
+			}
+			else {
+				Com_Printf("%2d [ ] %s\n", display, customizeRaceSettings[i].string);
+			}
+			display++;
+		}
+		return;
+	}
+	else {
+		char arg[8] = { 0 };
+		int index, index2;
+		const uint32_t mask = (1 << MAX_CUSTOMIZERACE_SETTINGS) - 1;
+
+		trap_Argv(1, arg, sizeof(arg));
+		index = atoi(arg);
+		index2 = index;
+
+		if (index2 < 0 || index2 >= MAX_CUSTOMIZERACE_SETTINGS) {
+			Com_Printf("customize race: Invalid range: %i [0, %i]\n", index2, MAX_CUSTOMIZERACE_SETTINGS - 1);
+			return;
+		}
+
+
+		trap_Cvar_Set("cg_customizeRace", va("%i", (1 << index) ^ (cg_customizeRace.integer & mask)));
+		trap_Cvar_Update(&cg_customizeRace);
+
+		Com_Printf("%s %s^7\n", customizeRaceSettings[index2].string, ((cg_customizeRace.integer & (1 << index2))
+			? "^2Enabled" : "^1Disabled"));
+	}
+}
+
 void CG_SanitizeString2(const char *in, char *out)
 {
 	int i = 0, r = 0;
@@ -1700,6 +1747,7 @@ static consoleCommand_t	commands[] = {
 	//jk2pro stuff
 	{ "strafeHelper", CG_StrafeHelper_f },
 	{ "speedometer", cg_speedometer_f },
+	{ "customizeRace", cg_customizeRace_f },
 
 	{ "+zoom", CG_ZoomDown_f },
 	{ "-zoom", CG_ZoomUp_f },

@@ -665,13 +665,13 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 
 	if ( client->sess.sessionTeam == TEAM_RED ) {
 		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEREDTEAM")), qtrue, qfalse,qtrue);
+			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEREDTEAM")), qtrue, qfalse,qtrue, NULL);
 	} else if ( client->sess.sessionTeam == TEAM_BLUE ) {
 		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBLUETEAM")), qtrue, qfalse,qtrue);
+		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBLUETEAM")), qtrue, qfalse,qtrue, NULL);
 	} else if ( client->sess.sessionTeam == TEAM_SPECTATOR && oldTeam != TEAM_SPECTATOR ) {
 		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHESPECTATORS")), qtrue, qfalse,qtrue);
+		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHESPECTATORS")), qtrue, qfalse,qtrue, NULL);
 	} else if ( client->sess.sessionTeam == TEAM_FREE ) {
 		if (g_gametype.integer == GT_TOURNAMENT)
 		{
@@ -694,7 +694,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 		else
 		{
 			G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")), qtrue, qfalse,qtrue);
+			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")), qtrue, qfalse,qtrue, NULL);
 		}
 	}
 
@@ -3242,12 +3242,12 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 			|| levenshtein("register", lowercaseCmd) <= 2
 			) && pseudoArgC >=3 && pseudoArgC <= 5) {
 			G_LogPrintf("clientSay accidental credentials? (mode %d): %s : %s %s ****** %s\n", mode, ent->client->pers.netname, pseudoCmd, pseudoArg1, BG_Cmd_ArgsFrom(3));
-			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed your account credentials in chat, so your message was blocked.", qfalse, qfalse, qtrue);
+			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed your account credentials in chat, so your message was blocked.", qfalse, qfalse, qtrue, NULL);
 			return;
 		}
 		else if (levenshtein("changepassword", lowercaseCmd) <= 3 && pseudoArgC >= 2 && pseudoArgC <= 4) {
 			G_LogPrintf("clientSay accidental credentials? (mode %d): %s : %s ****** %s\n", mode, ent->client->pers.netname, pseudoCmd, BG_Cmd_ArgsFrom(2));
-			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed a password in chat, so your message was blocked.", qfalse, qfalse, qtrue);
+			G_CenterPrint(ent - g_entities, 3, "^1You may have accidentally typed a password in chat, so your message was blocked.", qfalse, qfalse, qtrue, NULL);
 			return;
 		}
 	}
@@ -4887,8 +4887,8 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 		else
 		{
 			//Print the message that a player has been challenged in private, only announce the actual duel initiation in private
-			G_CenterPrint( challenged-g_entities, 3, va("%s" S_COLOR_WHITE " %s", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELCHALLENGE")),qfalse,qtrue,qfalse );
-			G_CenterPrint( ent-g_entities, 3, va("%s %s", G_GetStripEdString("SVINGAME", "PLDUELCHALLENGED"), challenged->client->pers.netname),qfalse,qtrue ,qfalse);
+			G_CenterPrint( challenged-g_entities, 3, va("%s" S_COLOR_WHITE " %s", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELCHALLENGE")),qfalse,qtrue,qfalse, NULL);
+			G_CenterPrint( ent-g_entities, 3, va("%s %s", G_GetStripEdString("SVINGAME", "PLDUELCHALLENGED"), challenged->client->pers.netname),qfalse,qtrue ,qfalse, NULL);
 		}
 
 		challenged->client->ps.fd.privateDuelTime = 0; //reset the timer in case this player just got out of a duel. He should still be able to accept the challenge.

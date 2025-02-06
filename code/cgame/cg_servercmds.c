@@ -1482,8 +1482,20 @@ static void CG_ServerCommand( void ) {
 
 	if ( !strcmp( cmd, "cp" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
-		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
-		CG_CenterPrint( strEd, cgs.screenHeight * 0.30, BIGCHAR_WIDTH );
+		char type[MAX_STRING_CHARS];
+		const char* subtype;
+ 		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
+		trap_Argv(2,type,sizeof(type));
+		subtype = CG_Argv(3);
+		if ((cg_customizeRace.integer & CUSTOMIZERACE_HIDECHECKPOINTCP) && !Q_stricmp("cptimer", type)
+			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEROLLSPEEDCP) && !Q_stricmp("rollspeed", type)
+			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEANTILOOPRESTART) && !Q_stricmp("antiloop", type) && !Q_stricmp("restart", subtype)
+			) {
+			// this type is deactivated
+		}
+		else {
+			CG_CenterPrint(strEd, cgs.screenHeight * 0.30, BIGCHAR_WIDTH);
+		}
 		return;
 	}
 

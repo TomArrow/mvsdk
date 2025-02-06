@@ -916,18 +916,18 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 	if (cl->sess.raceStateInvalidated) {
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue, NULL);
 		return;
 	}
 	if (cl->sess.login.forceLoggedIn) {
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7You were force-logged in by admin and cannot run. Please change your password with /changepassword, logout and log in again.",qfalse,qtrue,qtrue);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7You were force-logged in by admin and cannot run. Please change your password with /changepassword, logout and log in again.",qfalse,qtrue,qtrue, NULL);
 		return;
 	}
 	if (cl->sess.raceStateSoftInvalidated) {
 		//DF_RaceStateInvalidated(activator,qfalse); // dont reset or it becomes impossible to save spawn on maps with reverse course but without extra spawn
 		//if ((cl->pers.lastRaceFinishTime + 1000 > level.time || level.time < cl->pers.lastRaceFinishTime) && !(ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother player with message directly after run finished
 		if ((cl->pers.lastRaceFinishTime + 1000 < level.time || level.time < cl->pers.lastRaceFinishTime)) { // dont bother player with message directly after run finished (especially annoying on maps with reverse courses)
-			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue);
+			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue, NULL);
 		}
 		return;
 	}
@@ -935,10 +935,10 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	if ((cl->sess.raceStyle.runFlags & RFL_ANTILOOP) /*&& MovementStyleHasAntiLoop(cl->sess.raceStyle.movementStyle)*/ && cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed > ANTILOOP_MAXYAWCHANGE) {
 		if (cl->pers.raceStartCommandTime) {
-			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Restart blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse);
+			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Restart blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse, "antiloop restart");
 		}
 		else {
-			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse);
+			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse, "antiloop start");
 		}
 		return;
 	}
@@ -946,19 +946,19 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	segmented = cl->sess.raceStyle.runFlags & RFL_SEGMENTED;
 
 	if (segmented && cl->pers.segmented.state != SEG_RECORDING && cl->pers.segmented.state != SEG_REPLAY) {
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run in a faulty state. Please respawn and try again.",qfalse,qtrue,qtrue);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run in a faulty state. Please respawn and try again.",qfalse,qtrue,qtrue, NULL);
 		DF_RaceStateInvalidated(activator, qfalse);
 		return;
 	}
 	else if (segmented && cl->pers.segmented.state != SEG_REPLAY) {
 
 		if (segmented && cl->pers.segmented.msecProgress > 5000) {
-			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is over 5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse);
+			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is over 5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, NULL);
 			DF_RaceStateInvalidated(activator, qfalse);
 			return;
 		}
 		else if (segmented && cl->pers.segmented.msecProgress < 500) {
-			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse);
+			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, NULL);
 			DF_RaceStateInvalidated(activator, qfalse);
 			return;
 		}
@@ -968,7 +968,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7No valid pre-pmove info. Please restart.",qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7No valid pre-pmove info. Please restart.",qfalse,qtrue,qfalse, NULL);
 		return;
 	}
 	else {
@@ -1085,13 +1085,13 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 
 	if (!cl->sess.login.loggedIn) {
-		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O', level.nonDeterministicEntities), qfalse, qtrue, qfalse);
+		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O', level.nonDeterministicEntities), qfalse, qtrue, qfalse, NULL);
 	}
 	else if (segmented && level.nonDeterministicEntities) {
-		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started! ^1Warning: ^7Map has %i non-deterministic entities. Replay/run may fail.", lbType == LB_MAIN ? '7' : 'O', level.nonDeterministicEntities),qfalse, qtrue,qfalse);
+		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started! ^1Warning: ^7Map has %i non-deterministic entities. Replay/run may fail.", lbType == LB_MAIN ? '7' : 'O', level.nonDeterministicEntities),qfalse, qtrue,qfalse, NULL);
 	}
 	else {
-		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started!", lbType == LB_MAIN ? '7' : 'O'),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started!", lbType == LB_MAIN ? '7' : 'O'),qfalse,qtrue,qfalse, NULL);
 	}
 	cl->pers.lastRaceTimerStartedCP = level.time;
 }
@@ -2179,7 +2179,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		trap_SendServerCommand(-1, va("print \"%s\n\" %s %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
 
 		if(ent && !preliminary)
-			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse, NULL);
 	}
 	else if (runInfo->rankLB != -1) {
 		// todo what if i DONT get a pb but its still wr compared to other users?
@@ -2216,7 +2216,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			}
 
 			if(ent && !preliminary)
-				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse, NULL);
 		}
 		else if ((runInfo->pbStatus & PB_LB)) {
 			Q_strncpyz(messageStr, va("%s^%c%19s^7 %s ^%c[^%c%s^%c] %s a new %s%s %s best%s and %s ranked ^3#%i\n",
@@ -2238,17 +2238,17 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 				sizeof(messageStr));
 			if (runInfo->rankLB <= 10 && runInfo->lbType == LB_MAIN && ent && !preliminary) {
 				G_ScreenShake(ent->client->ps.origin, ent, 2.5f, 800, qfalse); // pb: shake a bit less. in NT, the distinction wasnt in intensity but WR would shake everyone. but lets not confuse other players who might be on track for WR too
-				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse, NULL);
 			}
 			if (runInfo->rankLB <= 10 && ent && !preliminary) {
-				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+				G_CenterPrint(ent - g_entities, 3, va("^2%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse, NULL);
 			}
 			else if(ent && !preliminary){
-				G_CenterPrint(ent - g_entities, 3, va("^5%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+				G_CenterPrint(ent - g_entities, 3, va("^5%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse, NULL);
 			}
 		}
 		else if(ent && !preliminary){
-			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse);
+			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse, NULL);
 		}
 
 		/*if (global_newRank > 0) { //Print global rank increased, global score added
@@ -2566,14 +2566,14 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		else if(cl->pers.stats.q3RallyState.isReverse && cl->pers.stats.q3RallyState.lastCheckpoint != 1) {
 			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
 				cl->randomLastCenterprint = level.time;
-				G_CenterPrint(activator - g_entities, 3, va("^1You haven't passed all checkpoints yet (reverse direction): %d/%d", level.q3r_numCheckpoints-cl->pers.stats.q3RallyState.lastCheckpoint+1, level.q3r_numCheckpoints), qfalse, qtrue, qfalse);
+				G_CenterPrint(activator - g_entities, 3, va("^1You haven't passed all checkpoints yet (reverse direction): %d/%d", level.q3r_numCheckpoints-cl->pers.stats.q3RallyState.lastCheckpoint+1, level.q3r_numCheckpoints), qfalse, qtrue, qfalse, NULL);
 				return;
 			}
 		}
 		else if(!cl->pers.stats.q3RallyState.isReverse && cl->pers.stats.q3RallyState.lastCheckpoint != level.q3r_numCheckpoints) {
 			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
 				cl->randomLastCenterprint = level.time;
-				G_CenterPrint(activator - g_entities, 3, va("^1You haven't passed all checkpoints yet: %d/%d", cl->pers.stats.q3RallyState.lastCheckpoint, level.q3r_numCheckpoints), qfalse, qtrue, qfalse);
+				G_CenterPrint(activator - g_entities, 3, va("^1You haven't passed all checkpoints yet: %d/%d", cl->pers.stats.q3RallyState.lastCheckpoint, level.q3r_numCheckpoints), qfalse, qtrue, qfalse, NULL);
 				return;
 			}
 		}
@@ -2585,7 +2585,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 			//if (cl->pers.stats.score || !(ent->ttFlags & TTFLAGS_FINISHTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother the player when hes starting/ending. nvm we do separate handling now
 				if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
 					cl->randomLastCenterprint = level.time;
-					G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too low: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse);
+					G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too low: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse, NULL);
 				}
 			//}
 			return;
@@ -2593,7 +2593,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		else if (ent->ttFlags & TTFLAGS_FINISHTIMER_SCOREREQUIRE_MATCH && cl->pers.stats.score != ent->checkpointScore) {
 			if (level.time - cl->randomLastCenterprint > 1000 || level.time < cl->randomLastCenterprint) {
 				cl->randomLastCenterprint = level.time;
-				G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score does not match: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse);
+				G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score does not match: %d/%d", cl->pers.stats.score, ent->checkpointScore), qfalse, qtrue, qfalse, NULL);
 			}
 			return;
 		}
@@ -2873,35 +2873,35 @@ void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t*
 
 	if (bestTime->time == 0)
 	{
-		G_CenterPrint(activator-g_entities,3, va("^2Checkpoint activated\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator-g_entities,3, va("^2Checkpoint activated\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse, "cptimer activated");
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (bestTime->courseId != cl->pers.stats.courseId) // last time logged on this checkpoint was a different course
 	{
-		G_CenterPrint(activator-g_entities,3, va("^2Different course, checkpoint reset\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator-g_entities,3, va("^2Different course, checkpoint reset\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse, "cptimer reset diffcourse");
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (memcmp(&bestTime->raceStyle, &cl->sess.raceStyle,sizeof(bestTime->raceStyle))) // last time logged on this checkpoint was a different style
 	{
-		G_CenterPrint(activator-g_entities,3, va("^2Style changed, checkpoint reset\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator-g_entities,3, va("^2Style changed, checkpoint reset\n%s%s", DF_MsToString(timeCheck), scoreAddExtraText),qfalse,qtrue,qfalse, "cptimer reset diffstyle");
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else if (timeCheck <= bestTime->time)
 	{
-		G_CenterPrint(activator - g_entities, 3, va("%s\n^2-%s%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time)), scoreAddExtraText),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities, 3, va("%s\n^2-%s%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time)), scoreAddExtraText),qfalse,qtrue,qfalse, "cptimer pb");
 		bestTime->time = timeCheck;
 		bestTime->raceStyle = cl->sess.raceStyle;
 		bestTime->courseId = cl->pers.stats.courseId;
 	}
 	else
 	{
-		G_CenterPrint(activator - g_entities,3, va("%s\n^1+%s%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time)), scoreAddExtraText),qfalse,qtrue,qfalse);
+		G_CenterPrint(activator - g_entities,3, va("%s\n^1+%s%s\n \n \n \n ", DF_MsToString(timeCheck), DF_MsToString(abs(timeCheck - bestTime->time)), scoreAddExtraText),qfalse,qtrue,qfalse, "cptimer slower");
 
 	}
 
@@ -3704,7 +3704,7 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 	memset(&ent->client->pers.stats, 0, sizeof(ent->client->pers.stats));
 
 	if (wasReset && print)
-		G_CenterPrint(ent - g_entities,3, "Timer reset!",qfalse,qtrue,qfalse);
+		G_CenterPrint(ent - g_entities,3, "Timer reset!",qfalse,qtrue,qfalse, NULL);
 		//G_CenterPrint(ent - g_entities,3, "Timer reset!\n\n\n\n\n\n\n\n\n\n\n\n",qfalse,qtrue,qfalse);
 }
 
@@ -5117,19 +5117,19 @@ void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs) {
 			sess->raceStyle.runFlags = newRunFlags;
 			sess->raceStyle.variant = newRs->variant;
 
-			G_CenterPrint(ent - g_entities,3, "^2Map defaults loaded/changed. Run reset.",qfalse,qtrue,qtrue);
+			G_CenterPrint(ent - g_entities,3, "^2Map defaults loaded/changed. Run reset.",qfalse,qtrue,qtrue, NULL);
 			G_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed. Run reset.\n\"",qtrue);
 		}
 		else if(sess->spectatorState != SPECTATOR_FOLLOW || sess->spectatorClient < 0) {
 
-			G_CenterPrint(ent - g_entities,3, "^2Map defaults loaded/changed.", qfalse,qtrue,qtrue);
+			G_CenterPrint(ent - g_entities,3, "^2Map defaults loaded/changed.", qfalse,qtrue,qtrue, NULL);
 			G_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"", qtrue);
 		}
 
 
 	}
 	else if (sess->spectatorState != SPECTATOR_FOLLOW || sess->spectatorClient < 0) {
-		G_CenterPrint(ent - g_entities, 3,"^2Map defaults loaded/changed.", qfalse,qtrue,qtrue);
+		G_CenterPrint(ent - g_entities, 3,"^2Map defaults loaded/changed.", qfalse,qtrue,qtrue, NULL);
 		G_SendServerCommand(ent - g_entities, "print \"^2Map defaults loaded/changed.\n\"", qtrue);
 	}
 
@@ -5264,17 +5264,17 @@ void DF_SaveSpawn(gentity_t* ent) {
 	}
 
 	if (ent->client->ps.fd.forcePowersActive) {
-		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7You must not have any force powers activated to save spawn.",qfalse,qtrue,qtrue);
+		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7You must not have any force powers activated to save spawn.",qfalse,qtrue,qtrue, NULL);
 		return;
 	}
 
 	if (ent->client->sess.raceStateInvalidated) {
-		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before saving spawn.",qfalse,qtrue,qtrue);
+		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before saving spawn.",qfalse,qtrue,qtrue, NULL);
 		return;
 	}
 	
 	if (ent->client->ps.velocity[0] || ent->client->ps.velocity[1] || ent->client->ps.velocity[2] || ent->client->ps.groundEntityNum != ENTITYNUM_WORLD) {
-		G_CenterPrint(ent - g_entities,3, va("^1Warning: ^7Cannot save spawn. Please stand still. (gen %d, v0 %f, v1 %f, v2 %f)", ent->client->ps.groundEntityNum, ent->client->ps.velocity[0], ent->client->ps.velocity[1], ent->client->ps.velocity[2]),qfalse,qtrue,qtrue);
+		G_CenterPrint(ent - g_entities,3, va("^1Warning: ^7Cannot save spawn. Please stand still. (gen %d, v0 %f, v1 %f, v2 %f)", ent->client->ps.groundEntityNum, ent->client->ps.velocity[0], ent->client->ps.velocity[1], ent->client->ps.velocity[2]),qfalse,qtrue,qtrue, NULL);
 		return;
 	}
 
@@ -5570,7 +5570,7 @@ void DF_CheckRollSpeed(gentity_t* ent) {
 	if (!ent->client->sess.raceMode) return; // dont bother outside defrag
 
 	if (roll->status == ROLL_ENDED) {
-		G_CenterPrint(ent - g_entities, 3, va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d", roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime), qfalse, qtrue, qfalse);
+		G_CenterPrint(ent - g_entities, 3, va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d", roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime), qfalse, qtrue, qfalse, "rollspeed");
 		if (!roll->rollDisqualified && !ent->client->sess.raceStateInvalidated) {
 			raceStyle_t defaults = defaultRaceStyle;
 			raceStyle_t clientRs = ent->client->sess.raceStyle;
