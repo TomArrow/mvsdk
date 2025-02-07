@@ -2709,6 +2709,7 @@ void ClientThink( int clientNum ) {
 
 	trap_GetUsercmd(clientNum, &tmpCmdForAfkCheck);
 	//if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || (tmpCmdForAfkCheck.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK)) || ((tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate) & BUTTON_TALK)) {
+	tmpCmdForAfkCheck.buttons &= ~65536; // netcode for usercmds is a bit weird. encoding does 1 bit less than decoding. buttons is a 16 bit val so 16th bit ends up "random", so we can't use it for afk detection
 	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || ent->client->sess.sessionInitialized && (tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate)) {
 		if (g_developer.integer) {
 			if ((level.time - ent->client->sess.lastHereTime) > 30000) {
