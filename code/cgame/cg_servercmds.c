@@ -1490,6 +1490,7 @@ static void CG_ServerCommand( void ) {
 		if ((cg_customizeRace.integer & CUSTOMIZERACE_HIDECHECKPOINTCP) && !Q_stricmp("cptimer", type)
 			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEROLLSPEEDCP) && !Q_stricmp("rollspeed", type)
 			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEANTILOOPRESTART) && !Q_stricmp("antiloop", type) && !Q_stricmp("restart", subtype)
+			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEDEFAULTRACESTART) && !Q_stricmp("racestarted", type) && !Q_stricmp("normal", subtype)
 			) {
 			// this type is deactivated
 		}

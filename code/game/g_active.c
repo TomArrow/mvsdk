@@ -2822,6 +2822,10 @@ void G_RunClient( gentity_t *ent ) {
 		ent->client->lastHereTime = level.time; // for demo stuff
 	}
 
+	if (g_autoScoresInterval.integer && (ent->client->lastScoresMessage < (level.time-clampedIntMult(g_autoScoresInterval.integer,1000)) || level.time < ent->client->lastScoresMessage)) {
+		DeathmatchScoreboardMessage(ent);
+	}
+
 	//if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state != SEG_REPLAY)) {
 	if ( !(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying) {
 		entityState_t* stats = &level.playerStats[ent - g_entities]->s;

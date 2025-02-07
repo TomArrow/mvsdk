@@ -1085,13 +1085,13 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 
 	if (!cl->sess.login.loggedIn) {
-		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O', level.nonDeterministicEntities), qfalse, qtrue, qfalse, NULL);
+		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O', level.nonDeterministicEntities), qfalse, qtrue, qfalse, "racestarted unlogged");
 	}
 	else if (segmented && level.nonDeterministicEntities) {
-		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started! ^1Warning: ^7Map has %i non-deterministic entities. Replay/run may fail.", lbType == LB_MAIN ? '7' : 'O', level.nonDeterministicEntities),qfalse, qtrue,qfalse, NULL);
+		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started! ^1Warning: ^7Map has %i non-deterministic entities. Replay/run may fail.", lbType == LB_MAIN ? '7' : 'O', level.nonDeterministicEntities),qfalse, qtrue,qfalse, "racestarted nondeterm");
 	}
 	else {
-		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started!", lbType == LB_MAIN ? '7' : 'O'),qfalse,qtrue,qfalse, NULL);
+		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started!", lbType == LB_MAIN ? '7' : 'O'),qfalse,qtrue,qfalse, "racestarted normal");
 	}
 	cl->pers.lastRaceTimerStartedCP = level.time;
 }

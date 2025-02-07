@@ -649,6 +649,8 @@ struct gclient_s {
 	vec3_t		oldPostPmovePosition;
 	char		bufferedPrintBuffer[MAX_STRING_CHARS]; // if we have a LOT of prints to send... concatenate them a bit.
 	int			bufferedPrintBufferLastFlushedOrUpdated; // so we dont accidentally forget or through an error
+
+	int			lastScoresMessage;
 };
 
 
@@ -1420,6 +1422,8 @@ extern	vmCvar_t	g_q2trace;
 extern	vmCvar_t	g_q2Skims;
 
 extern	vmCvar_t	g_strafebotSlopeHandling;
+
+extern	vmCvar_t	g_autoScoresInterval;
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

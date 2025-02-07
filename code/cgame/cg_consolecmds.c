@@ -824,7 +824,8 @@ static bitInfo_T customizeRaceSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Hide roll speed centerprints" },//0
 	{ "Hide checkpoint centerprints" },//1
 	{ "Hide anti-loop restart blocked centerprints" },//2
-	//{ "Auto-respawn when antiloop is triggered" },//3
+	{ "Hide non-warning race start centerprints" },//3
+	//{ "Auto-respawn when antiloop is triggered" },//4
 };
 static const int MAX_CUSTOMIZERACE_SETTINGS = ARRAY_LEN(customizeRaceSettings);
 
