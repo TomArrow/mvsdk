@@ -1540,15 +1540,20 @@ static qboolean PM_CheckJump( void )
 						//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
 						float lastJumpSpeed = pm->ps->stats[STAT_LASTJUMPSPEED];
 						float realForceJumpHeight;
-						if (lastJumpSpeed == 0) {
-							lastJumpSpeed = JUMP_VELOCITY_NEW; // avoid infinite velocity[2] which results in NaN. why does this happen anyway?
-						}
+						//if (lastJumpSpeed == 0) {
+						//	lastJumpSpeed = JUMP_VELOCITY_NEW; // avoid infinite velocity[2] which results in NaN. why does this happen anyway?
+						//}
 						realForceJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] * (lastJumpSpeed / (float)JUMP_VELOCITY_NEW);
 
-						pm->ps->velocity[2] = (realForceJumpHeight-curHeight)/realForceJumpHeight*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
-						pm->ps->velocity[2] /= 10;//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
-
-						pm->ps->velocity[2] += pm->ps->stats[STAT_LASTJUMPSPEED];
+						if (!realForceJumpHeight || !lastJumpSpeed) {
+							pm->ps->velocity[2] = 0; // can happen sometimes and messes everything up. this might feel weird if it happens but its a freak accident anyway. might be when pressing jump during spawn not sure.
+							Com_Printf("^3realForceJumpHeight is 0, weird.\n");
+						}
+						else {
+							pm->ps->velocity[2] = (realForceJumpHeight - curHeight) / realForceJumpHeight * forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
+							pm->ps->velocity[2] /= 10;//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
+							pm->ps->velocity[2] += pm->ps->stats[STAT_LASTJUMPSPEED];
+						}
 					}
 					else {
 						pm->ps->velocity[2] = (forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]-curHeight)/forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
