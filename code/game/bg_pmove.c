@@ -693,7 +693,7 @@ static void PM_SickoAccelerate( vec3_t wishdir, float wishspeed, float baseAccel
 	}
 	baseInc = pml.frametime * wishspeed;
 
-	accel = addspeed / baseInc;
+	accel = baseInc ? (addspeed / baseInc) : 0; // avoid division by 0 just in case
 
 	if (accel > maxAccel) {
 		accel = maxAccel;
@@ -737,7 +737,13 @@ static void PM_QuaJKAccelerate( vec3_t wishdir, float wishspeed, float baseAccel
 	neededSpeedSlow = wishspeed - accelAddSlow;
 	neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
 
-	f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+	if (neededSpeedSlow == neededSpeedHigh) {
+		// idk if this can happen but just to avoid division by 0
+		f = 1;
+	}
+	else {
+		f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+	}
 
 	if (f < 0) f = 0;
 	else if (f > 1) f = 1;
@@ -816,7 +822,12 @@ static void PM_DreamAccelerate( vec3_t wishdir, float wishspeed, float baseAccel
 		f = 1.0f - powf(1.0f - f, backpow);
 	}
 	else {
-		f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+		if (neededSpeedSlow == neededSpeedHigh) {
+			f = 1.0f;
+		}
+		else {
+			f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
+		}
 	}
 
 	if (f < 0) f = 0;
@@ -1527,7 +1538,12 @@ static qboolean PM_CheckJump( void )
 					
 					if (MovementIsQuake3Based(moveStyle)) {//Forcejump rampjump
 						//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
-						float realForceJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] * (pm->ps->stats[STAT_LASTJUMPSPEED] / (float)JUMP_VELOCITY_NEW);
+						float lastJumpSpeed = pm->ps->stats[STAT_LASTJUMPSPEED];
+						float realForceJumpHeight;
+						if (lastJumpSpeed == 0) {
+							lastJumpSpeed = JUMP_VELOCITY_NEW; // avoid infinite velocity[2] which results in NaN. why does this happen anyway?
+						}
+						realForceJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] * (lastJumpSpeed / (float)JUMP_VELOCITY_NEW);
 
 						pm->ps->velocity[2] = (realForceJumpHeight-curHeight)/realForceJumpHeight*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
 						pm->ps->velocity[2] /= 10;//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
