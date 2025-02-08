@@ -83,7 +83,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 
 	trap_SendServerCommand( ent-g_entities, string );
 
-	cl->lastScoresMessage = level.time;
+	ent->client->lastScoresMessage = level.time;
 }
 
 
