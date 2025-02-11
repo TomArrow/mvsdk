@@ -1232,7 +1232,7 @@ helpTip_t helpTips[] = {
 	{
 		"print \"\n^7Client binds (named binds work in TommyTernal client):\n\"",
 		"print \"Random tip: \n^7Client binds (named binds work in TommyTernal client):\n\"",
-		qfalse,
+		qtrue,
 		qfalse
 	},
 	{
