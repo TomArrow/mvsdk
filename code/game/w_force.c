@@ -499,6 +499,39 @@ void WP_InitForcePowers( gentity_t *ent )
 		}
 		ent->client->ps.fd.forceUsingAdded = 0;
 	}
+
+
+	if (ent->client->sess.mode == MODE_DUEL || ent->client->sess.mode == MODE_IRONMAN) {
+		// saber attack/defend is level 3, jump is level 1, rest is 0
+		i = 0; 
+		while (i < NUM_FORCE_POWERS)
+		{
+			if (i == FP_SABERATTACK || i == FP_SABERDEFEND) {
+				ent->client->ps.fd.forcePowerBaseLevel[i] = ent->client->ps.fd.forcePowerLevel[i] = FORCE_LEVEL_3;
+				ent->client->ps.fd.forcePowersKnown |= (1 << i);
+			}
+			else if (i == FP_LEVITATION) {
+				ent->client->ps.fd.forcePowerBaseLevel[i] = ent->client->ps.fd.forcePowerLevel[i] = FORCE_LEVEL_1;
+				ent->client->ps.fd.forcePowersKnown |= (1 << i);
+			}
+			else {
+				ent->client->ps.fd.forcePowerBaseLevel[i] = ent->client->ps.fd.forcePowerLevel[i] = FORCE_LEVEL_0;
+				ent->client->ps.fd.forcePowersKnown &= ~(1 << i);
+			}
+			i++;
+		}
+	}
+	else if (ent->client->sess.mode == MODE_ALLFORCE) { 
+		// just give us all of everything
+		i = 0;
+		while (i < NUM_FORCE_POWERS)
+		{
+			ent->client->ps.fd.forcePowerBaseLevel[i] = ent->client->ps.fd.forcePowerLevel[i] = FORCE_LEVEL_3;
+			ent->client->ps.fd.forcePowersKnown |= (1<<i);
+			i++;
+		}
+	}
+
 }
 
 void WP_SpawnInitForcePowers( gentity_t *ent )

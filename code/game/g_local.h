@@ -383,6 +383,7 @@ typedef struct {
 	int			updateUITime;		// only update userinfo for FP/SL if < level.time
 	qboolean	teamLeader;			// true when this client is a team leader
 
+	playerMode_e	mode; // 1 when normal, 2 when racemode, and then theres extra modes so ppl can play different gamestyles of their choice (duel, all force, ironman...)
 	qboolean	raceMode;
 	raceStyle_t	raceStyle;
 	raceStyle_t	mapStyleBaseline;	// The racestyle these settings are relative to. So that when we update a map style, we can update only the values that the player didn't customize.
@@ -1353,6 +1354,9 @@ extern	vmCvar_t	g_privateDuel;
 extern	vmCvar_t	g_saberLocking;
 extern	vmCvar_t	g_saberLockFactor;
 extern	vmCvar_t	g_saberTraceSaberFirst;
+
+extern	vmCvar_t	g_modes;
+extern	vmCvar_t	g_modesDefault;
 
 extern	vmCvar_t	g_defrag;
 extern	vmCvar_t	g_defragLastRunId;

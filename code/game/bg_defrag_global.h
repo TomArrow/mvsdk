@@ -9,7 +9,15 @@
 #define BOUNCEPOWER_POWERMASK ((1<<9)-1)
 #define BOUNCEPOWER_REGENMASK (((1<<7)-1)<<9)
 
-
+typedef enum playerMode_s {
+	MODE_INVALID,
+	MODE_NORMAL,
+	MODE_DEFRAG,
+	MODE_DUEL,
+	MODE_ALLFORCE,
+	MODE_IRONMAN,
+	MODE_NUM_MODES
+} playerMode_e;
 
 typedef enum //movementstyle enum
 {
@@ -102,6 +110,7 @@ extern const int MAX_RUN_FLAGS;
 extern bitInfo_t runFlagsNames[];
 extern bitInfo_t runFlagsShortNames[];
 extern bitInfo_t runFlagsVeryShortNames[];
+extern bitInfo_t modeNames[MODE_NUM_MODES];
 extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
 extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 
@@ -280,6 +289,7 @@ typedef struct finishedRunInfo_s {
 	//int timeStampMinus3Bill;
 //} evaluatedRunInfo_t;
 
+int PlayerModeNameToInteger(char* modeName);
 int RaceNameToInteger(char* style);
 int LeaderboardNameToInteger(char* lbType);
 //qboolean MovementStyleHasAntiLoop(int moveStyle);

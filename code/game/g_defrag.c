@@ -3564,12 +3564,17 @@ void ResetPhysicsFpsStuff(gentity_t* ent) {
 	SetClientPhysicsFps(ent, ent->client->pers.physicsFps.clientSetting); // set it again
 }
 
-void DF_SetRaceMode(gentity_t* ent, qboolean value) {
-	value = (qboolean)!!value;
-	if (ent->client->sess.raceMode == value) return;
-	ent->client->sess.raceMode = value;
+void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
+	qboolean isRace = (qboolean)( mode == MODE_DEFRAG);
+
+	if (ent->client->sess.mode == mode && ent->client->sess.raceMode == isRace) {
+		return;
+	}
+	ent->client->sess.mode = mode;
+	ent->client->sess.raceMode = isRace;
+	
 	ent->s.weapon = WP_SABER; //Dont drop our weapon
-	if(!value) Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S//Delete all their projectiles / saved stuff
+	if (!isRace) Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S//Delete all their projectiles / saved stuff
 
 	// reset physicsfps because racemode has different rules for validating that.
 	ResetPhysicsFpsStuff(ent);
@@ -3590,6 +3595,99 @@ void DF_SetRaceMode(gentity_t* ent, qboolean value) {
 		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
 	}
 	UpdateClientRaceVars(ent->client);
+	G_SendServerCommand(ent - g_entities, va("print \"^3Mode updated: %s\n\"",modeNames[mode].string), qtrue);
+}
+
+
+int GetDefaultPlayerMode() {
+	playerMode_e mode = MODE_NORMAL;
+
+	if (g_defrag.integer) {
+		mode = MODE_DEFRAG;
+	}
+	else if (g_modes.integer && g_modesDefault.integer >= 0 && g_modesDefault.integer < MODE_NUM_MODES) {
+		mode = g_modesDefault.integer;
+	}
+	return mode;
+}
+
+void SetClientMode(gentity_t* ent, playerMode_e mode) {
+	if (!ent->client)
+		return;
+
+	if ((ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) && ent->client->sess.mode != MODE_IRONMAN) { // maybe not let capper switch unless theres no other players left in ironman or theyre afk or whatever? meh.
+		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed when carrying a flag!\n\"");
+		return;
+	}
+
+	if (!g_defrag.integer && mode == MODE_DEFRAG) {
+		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed!\n\"");
+		//DF_SetRaceMode(ent, qfalse);
+		mode = MODE_NORMAL;
+		//return;
+	}
+
+	if (mode > MODE_DEFRAG && !g_modes.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed!\n\"");
+		mode = MODE_NORMAL;
+	}
+
+	if (mode >= MODE_NUM_MODES || mode < 0) {
+		trap_SendServerCommand(ent - g_entities, "print \"^5Invalid mode specified!\n\"");
+		mode = MODE_NORMAL;
+	}
+
+	if (g_gametype.integer != GT_FFA) { // TA: What the heck is this?!
+		if (g_gametype.integer >= GT_TEAM && g_defrag.integer && mode == MODE_DEFRAG)
+		{//this is ok
+
+			ent->s.weapon = WP_SABER; //Dont drop our weapon
+			Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
+
+			ent->client->sess.mode = MODE_INVALID; // we will reset this
+			ent->client->sess.raceMode = qfalse;//Set it false here cuz we are flipping it next // TA: (wut? oh.)
+			if (ent->client->sess.sessionTeam != TEAM_FREE) {
+				SetTeam(ent, "race");
+			}
+			else {
+				SetTeam(ent, "spec");
+			}
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed in this gametype!\n\"");
+			return;
+		}
+	}
+
+	// toggle
+	if (mode == ent->client->sess.mode && mode != MODE_NORMAL) {
+		int defaultMode = GetDefaultPlayerMode();
+		if (g_modes.integer && mode == defaultMode) {
+			mode = MODE_NORMAL;
+		}
+		else {
+			mode = defaultMode;
+		}
+	}
+
+	ClientSetModeReal(ent, mode);
+}
+
+qboolean ClientModeValid(gentity_t* ent) {
+	return ent->client->sess.mode == MODE_NORMAL || ent->client->sess.mode == MODE_DEFRAG && g_defrag.integer && ent->client->sess.raceMode || ent->client->sess.mode > MODE_DEFRAG && ent->client->sess.mode < MODE_NUM_MODES&& g_modes.integer;
+}
+
+
+void ClientSetDefaultMode(gentity_t* ent) {
+	ClientSetModeReal(ent, GetDefaultPlayerMode());
+}
+
+void ResetClientModeIfInvalid(gentity_t* ent) {
+	if (!ClientModeValid(ent)) {
+		Com_Printf("^3Client %d mode invalid, resetting: %d (racemode %d)\n",ent-g_entities,ent->client->sess.mode, ent->client->sess.raceMode);
+		G_SendServerCommand(ent-g_entities,va("print \"^3Mode invalid, resetting: %d (racemode %d)\n\"",ent-g_entities,ent->client->sess.mode, ent->client->sess.raceMode),qtrue);
+		ClientSetDefaultMode(ent);
+	}
 }
 
 // Adapted from jaPRO
@@ -3598,73 +3696,40 @@ void Cmd_Race_f(gentity_t* ent)
 	if (!ent->client)
 		return;
 
-	if (ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) {
-		trap_SendServerCommand(ent-g_entities, "print \"^5This command is not allowed when carrying a flag!\n\"");
+	SetClientMode(ent, MODE_DEFRAG);
+
+}
+
+void Cmd_Mode_f(gentity_t* ent)
+{
+	char mode[20];
+	int modeNum;
+	if (!ent->client)
 		return;
+
+	trap_Argv(1, mode, sizeof(mode));
+	if (!Q_stricmp(mode, "ironman"))
+	{
+		trap_SendServerCommand(ent - g_entities, "print \"^3Sorry, iron man mode not yet available.\n\"");
+		modeNum = -1;
 	}
-
-	if (!g_defrag.integer) {
-		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed!\n\"");
-		DF_SetRaceMode(ent, qfalse);
-		//ent->client->sess.raceMode = qfalse;
-		//Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
-		return;
-	}
-
-	if (g_gametype.integer != GT_FFA) { // TA: What the heck is this?!
-		if (g_gametype.integer >= GT_TEAM && g_defrag.integer)
-		{//this is ok
-
-			ent->s.weapon = WP_SABER; //Dont drop our weapon
-			Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
-
-			ent->client->sess.raceMode = qfalse;//Set it false here cuz we are flipping it next // TA: (wut? oh.)
-			if (ent->client->sess.sessionTeam != TEAM_FREE) {
-				SetTeam(ent, "race");// , qfalse);
-			}
-			else {
-				SetTeam(ent, "spec");// , qfalse);
-			}
-			//return;//duno..
+	else if (!Q_stricmp(mode, "reset"))
+	{
+		modeNum = GetDefaultPlayerMode();
+		if (modeNum == ent->client->sess.mode) {
+			ent->client->sess.mode = MODE_INVALID; // force a reset
 		}
-		else {
-			trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed in this gametype!\n\"");
-			return;
-		}
-	}
-
-	if (ent->client->sess.raceMode) {//Toggle it
-		//ent->client->sess.raceMode = qfalse;
-		//ent->s.weapon = WP_SABER; //Dont drop our weapon
-		//Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
-		DF_SetRaceMode(ent, qfalse);
-		G_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled off.\n\"",qtrue);
 	}
 	else {
-		//ent->client->sess.raceMode = qtrue;
-		DF_SetRaceMode(ent, qtrue);
-		G_SendServerCommand(ent - g_entities, "print \"^5Race mode toggled on.\n\"",qtrue);
+		modeNum = PlayerModeNameToInteger(mode);
 	}
+	if (modeNum == -1) {
+		trap_SendServerCommand(ent-g_entities,"print \"Invalid mode specified. Valid modes: reset, normal, defrag, duel, allforce, ironman (soon maybe)\n\"");
+		return;
+	}
+	
+	SetClientMode(ent, modeNum);
 
-
-	// reset physicsfps because racemode has different rules for validating that.
-	//ResetPhysicsFpsStuff(ent);
-
-	//if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
-	//	//Delete all their projectiles / saved stuff
-	//	RemoveLaserTraps(ent);
-	//	RemoveDetpacks(ent);
-	//	DeletePlayerProjectiles(ent);
-
-
-	//	G_Kill(ent); //stop abuse
-	//	ent->client->ps.persistant[PERS_SCORE] = 0;
-	//	ent->client->ps.persistant[PERS_KILLED] = 0;
-	//	ent->client->accuracy_shots = 0;
-	//	ent->client->accuracy_hits = 0;
-	//	ent->client->ps.fd.suicides = 0;
-	//	ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
-	//}
 }
 
 
@@ -3829,7 +3894,7 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 				}
 			}
 	}
-	else if (entity->client && entity->client->sess.raceMode) { //Have to check all entities because swoops can be racemode too :/
+	else if (entity->client && (entity->client->sess.raceMode || other->client && other->client->sess.mode != entity->client->sess.mode)) { //Have to check all entities because swoops can be racemode too :/
 			if (other != entity) {
 				if ((other->inuse) &&
 					((other->s.eType == ET_PLAYER) ||
@@ -3846,18 +3911,29 @@ static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 			}
 	}
 	else { // we are not dueling but make those that are nonsolid
+		int entityOrOwnerMode = entity->client ? entity->client->sess.mode : MODE_NORMAL;
+		const int saberOwner = entity->r.ownerNum;//Saberowner
 		if (entity->inuse) {//Saber
-			const int saberOwner = entity->r.ownerNum;//Saberowner
-			if (g_entities[saberOwner].client && g_entities[saberOwner].client->ps.duelInProgress) {
-				return qfalse;
+			if (g_entities[saberOwner].client) {
+				entityOrOwnerMode = g_entities[saberOwner].client->sess.mode;
+				if (g_entities[saberOwner].client->ps.duelInProgress) {
+					return qfalse;
+				}
 			}
 		}
 		//loda fixme? This should go through all entities... to also account for people lightsabers..? or is that too costly
 		if (other != entity) {
 			if (other->inuse && other->client &&
-				(other->client->ps.duelInProgress || other->client->sess.raceMode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
+				(other->client->ps.duelInProgress || other->client->sess.raceMode || !entity->client && saberOwner != ENTITYNUM_NONE && entityOrOwnerMode != other->client->sess.mode)) { //loda fixme? Or the ent is a saber, and its owner is in racemode or duel in progress
 
 				return qtrue; // uh so for example func_bobbing cannot touch us, but we can touch it? is that ok?
+			}
+			// yep just go and dont touch sabers of racers or othermoders either :) or we will make them trollable in segmented runs
+			if (!other->client && other->r.ownerNum != ENTITYNUM_NONE) {
+				gclient_t* owner = g_entities[other->r.ownerNum].client;
+				if (owner->sess.raceMode || entityOrOwnerMode != owner->sess.mode) {
+					return qtrue;
+				}
 			}
 		}
 	}

@@ -946,6 +946,18 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
+		"print \"^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman\n\"",
+		"print \"Random tip: ^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/players^7 - See info about players including client num and game mode\n\"",
+		"print \"Random tip: ^2/players^7 - See info about players including client num and game mode\n\"",
+		qfalse,
+		qfalse
+	},
+	{
 		"print \"^2/afk^7 - See who's afk and for how long\n\"",
 		"print \"Random tip: ^2/afk^7 - See who's afk and for how long\n\"",
 		qfalse,
@@ -3897,6 +3909,32 @@ void Cmd_Afk_f(gentity_t* ent) {
 	}
 }
 
+void Cmd_Players_f(gentity_t* ent) {
+	gentity_t* other;
+	gclient_t* cl;
+	int i;
+	int millisecs,minMillisecs = clampedIntMult(g_afkCmdMinSecs.integer, 1000);
+	trap_SendServerCommand(ent - g_entities, "print \"Players:\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2#  User       Mode            AFK        FPS  Jump  Name\n\"");
+	for (i = 0; i < level.maxclients; i++) {
+		other = g_entities + i;
+		if (!other->inuse || !other->client) {
+			continue;
+		}
+		cl = other->client;
+		millisecs = level.time - other->client->sess.lastHereTime;
+		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-15s %-10s %-4s %-5d %s\n\"", 
+			i,
+			cl->sess.login.loggedIn ? cl->sess.login.name : "",
+			cl->sess.raceMode ? multiva("Race:%s/%s", moveStyleNames[cl->sess.raceStyle.movementStyle].string, leaderboardNames[classifyLeaderBoard(&cl->sess.raceStyle,&level.mapDefaultRaceStyle)].string) : modeNames[cl->sess.mode].string,
+			millisecs >= minMillisecs ? DF_MsToString(millisecs) : "",
+			cl->sess.raceStyle.msec == -1 ? "togl" : (cl->sess.raceStyle.msec == -2 ? "flt" : (cl->sess.raceStyle.msec == 0 ? "unkn" : miniva("%d", 1000 / cl->sess.raceStyle.msec))),
+			cl->sess.raceStyle.jumpLevel,
+			other->client->pers.netname
+		));
+	}
+}
+
 extern int DF_GetSegmentedRunnerCount();
 
 /*
@@ -5009,6 +5047,7 @@ void DismembermentTest(gentity_t *self);
 void DismembermentByNum(gentity_t *self, int num);
 #endif
 extern void Cmd_Race_f(gentity_t* ent);
+extern void Cmd_Mode_f(gentity_t* ent);
 extern void Cmd_JumpChange_f(gentity_t* ent);
 extern void Cmd_DF_RunSettings_f(gentity_t* ent);
 extern void Cmd_MovementStyle_f(gentity_t* ent);
@@ -5196,6 +5235,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "pickmode"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "launch"))
 		{
 			giveError = qtrue;
@@ -5373,6 +5416,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "players"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "genArena"))
 		{
 			giveError = qtrue;
@@ -5463,6 +5510,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Team_f (ent);
 	else if (Q_stricmp (cmd, "race") == 0)
 		Cmd_Race_f(ent);
+	else if (Q_stricmp (cmd, "pickmode") == 0)
+		Cmd_Mode_f(ent);
 	else if (Q_stricmp (cmd, "launch") == 0)
 		Cmd_Launch_f(ent);
 	else if (Q_stricmp (cmd, "help") == 0)
@@ -5551,6 +5600,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_CallVote_f (ent);
 	else if (Q_stricmp(cmd, "afk") == 0)
 		Cmd_Afk_f(ent);
+	else if (Q_stricmp(cmd, "players") == 0)
+		Cmd_Players_f(ent);
 	else if (Q_stricmp (cmd, "genArena") == 0)
 		Cmd_GenArena_f(ent);
 	else if (Q_stricmp (cmd, "arenaless") == 0)

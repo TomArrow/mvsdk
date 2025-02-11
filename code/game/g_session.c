@@ -29,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -40,6 +40,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.setForce,
 		client->sess.saberLevel,
 		client->sess.selectedFP,
+		client->sess.mode,
 		client->sess.raceMode,
 		(int)client->sess.raceStyle.movementStyle,
 		(int)client->sess.raceStyle.runFlags,
@@ -91,6 +92,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	int spectatorState;
 	int sessionTeam;
 	int setForce;
+	int tempMode;
 	int tempRaceMode;
 	int movementStyle;
 	int runFlags;
@@ -106,7 +108,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -117,6 +119,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&setForce,
 		&client->sess.saberLevel,
 		&client->sess.selectedFP,
+		&tempMode,
 		&tempRaceMode,
 		&movementStyle,
 		&runFlags,
@@ -139,6 +142,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.spectatorState = (spectatorState_t)spectatorState;
 	client->sess.teamLeader = (qboolean)teamLeader;
 	client->sess.setForce = (qboolean)setForce;
+	client->sess.mode = (playerMode_e)tempRaceMode;
 	client->sess.raceMode = (qboolean)tempRaceMode;
 	client->sess.raceStyle.movementStyle = (byte)movementStyle;
 	client->sess.raceStyle.runFlags = (short)runFlags;

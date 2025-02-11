@@ -1590,7 +1590,8 @@ once for each server frame, which makes for smooth demo recording.
 */
 void DF_HandleSegmentedRunPre(gentity_t* ent);
 void UpdateClientRaceVars(gclient_t* client);
-void DF_SetRaceMode(gentity_t* ent, qboolean value); 
+//void DF_SetRaceMode(gentity_t* ent, qboolean value); 
+void ResetClientModeIfInvalid(gentity_t* ent);
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
@@ -1712,15 +1713,14 @@ void ClientThink_real( gentity_t *ent ) {
 		//	return;
 	}
 
-	if (client->sess.sessionTeam == TEAM_FREE && !g_defrag.integer) {
-		//if (client->ps.stats[STAT_RACEMODE] || g_gametype.integer >= GT_TEAM) {
-		if (client->sess.raceMode || g_gametype.integer >= GT_TEAM) {
-			SetTeam(ent, "spectator");// , qtrue);
-			DF_SetRaceMode(ent,qfalse);
-			//client->sess.raceMode = qfalse;
-			//Cmd_ForceChanged_f(ent);
-			//client->ps.stats[STAT_RACEMODE] = qfalse;
-		}
+	//if (client->sess.sessionTeam == TEAM_FREE && !g_defrag.integer) {
+	//	if (client->sess.raceMode || g_gametype.integer >= GT_TEAM) {
+	//		SetTeam(ent, "spectator");// , qtrue);
+	//		DF_SetRaceMode(ent,qfalse);
+	//	}
+	//}
+	if (client->sess.sessionTeam == TEAM_FREE) {
+		ResetClientModeIfInvalid(ent);
 	}
 
 	//if (client->ps.stats[STAT_RACEMODE]) {//Is this really needed..

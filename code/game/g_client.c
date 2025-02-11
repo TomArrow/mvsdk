@@ -1959,7 +1959,9 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 
 void G_WriteClientSessionData( gclient_t *client );
 extern void UpdateClientRaceVars(gclient_t* client);
-void DF_SetRaceMode(gentity_t* ent, qboolean value);
+//void DF_SetRaceMode(gentity_t* ent, qboolean value);
+void ClientSetDefaultMode(gentity_t* ent);
+void ResetClientModeIfInvalid(gentity_t* ent);
 /*
 ===========
 ClientBegin
@@ -2130,7 +2132,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	//} else {
 	//	client->sess.raceMode = g_defrag.integer;
 	//}
-	DF_SetRaceMode(ent,g_defrag.integer);
+	//DF_SetRaceMode(ent,g_defrag.integer);
+	ClientSetDefaultMode(ent);
 
 	//if (client->sess.raceMode)
 	//	client->ps.stats[STAT_RACEMODE] = 1;
@@ -2411,16 +2414,17 @@ void ClientSpawn(gentity_t *ent) {
 	ent->watertype = 0;
 	ent->flags = 0;
 
-	if (!g_defrag.integer) {
-		DF_SetRaceMode(ent,qfalse);
-		//if (client->sess.raceMode) {
-		//	client->sess.raceMode = qfalse;
-		//	Cmd_ForceChanged_f(ent);
-		//}
-		//else {
-		//	client->sess.raceMode = qfalse;
-		//}
-	}
+	ResetClientModeIfInvalid(ent);
+	//if (!g_defrag.integer) {
+	//	DF_SetRaceMode(ent,qfalse);
+	//	//if (client->sess.raceMode) {
+	//	//	client->sess.raceMode = qfalse;
+	//	//	Cmd_ForceChanged_f(ent);
+	//	//}
+	//	//else {
+	//	//	client->sess.raceMode = qfalse;
+	//	//}
+	//}
 
 	//if (client->sess.raceMode)
 	//	client->ps.stats[STAT_RACEMODE] = 1;

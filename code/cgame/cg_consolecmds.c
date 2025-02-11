@@ -2123,4 +2123,6 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("notwr");
 	trap_AddCommand("wrs");
 	trap_AddCommand("rank");
+	trap_AddCommand("pickmode");
+	trap_AddCommand("players");
 }

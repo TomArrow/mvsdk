@@ -2745,6 +2745,10 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 		return qfalse;
 	}
 
+	if (ent->client && ent->inuse && (saberOwner->client->sess.raceMode || ent->client->sess.raceMode || ent->client->sess.mode != saberOwner->client->sess.mode)) {
+		return qfalse;
+	}
+
 	if (ent && ent->client && ent->inuse && saberOwner && ent->s.number != saberOwner->s.number &&
 		ent->health > 0 && ent->takedamage &&
 		trap_InPVS(ent->client->ps.origin, saberent->r.currentOrigin) &&

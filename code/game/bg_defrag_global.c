@@ -60,6 +60,15 @@ bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 //	{ "wlsp" },//9 // was just a test for db column generation
 };
 
+bitInfo_t modeNames[MODE_NUM_MODES] = { // MAX_WEAPON_TWEAKS tweaks (24)
+	{ "Invalid" },
+	{ "Normal" },
+	{ "Defrag" },
+	{ "Duel" },
+	{ "AllForce" },
+	{ "Ironman" },
+};
+
 bitInfo_t moveStyleNames[MV_NUMSTYLES] = { 
 	{ "JK2" },//0
 	{ "PJK2" },//1
@@ -263,6 +272,22 @@ int LeaderboardNameToInteger(char* lbType) {
 		return LB_SEGMENTED;
 	if (!Q_stricmp(lbType, "cheat"))
 		return LB_CHEAT;
+	return -1;
+}
+int PlayerModeNameToInteger(char* modeName) {
+	Q_strlwr(modeName);
+	Q_CleanStr(modeName,qtrue,qtrue);
+
+	if (!Q_stricmp(modeName, "normal"))
+		return MODE_NORMAL;
+	if (!Q_stricmp(modeName, "defrag") || !Q_stricmp(modeName, "race"))
+		return MODE_DEFRAG;
+	if (!Q_stricmp(modeName, "duel"))
+		return MODE_DUEL;
+	if (!Q_stricmp(modeName, "allforce"))
+		return MODE_ALLFORCE;
+	if (!Q_stricmp(modeName, "ironman"))
+		return MODE_IRONMAN;
 	return -1;
 }
 qboolean MovementStyleAllowsWeapons(int moveStyle) {
