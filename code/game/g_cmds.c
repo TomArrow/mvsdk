@@ -3216,7 +3216,7 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, cons
 
 	trap_SendServerCommand( other-g_entities, va("%s \"%s%c%c%s\"", 
 		mode == SAY_TEAM ? "tchat" : "chat",
-		name, Q_COLOR_ESCAPE, color, message));
+		name, Q_COLOR_ESCAPE, color,message)); // lets have some privacy for private chatters
 }
 
 #define EC		"\x19"
@@ -3303,7 +3303,7 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 
 	// echo the text to the console
 	if ( g_dedicated.integer ) {
-		G_Printf( "%s%s\n", name, text);
+		G_Printf("%s%s\n", name, text);
 	}
 
 	// send it to all the apropriate clients
@@ -3370,7 +3370,7 @@ static void Cmd_Tell_f( gentity_t *ent ) {
 
 	p = ConcatArgs( 2 );
 
-	G_LogPrintf( "tell: %s to %s: %s\n", ent->client->pers.netname, target->client->pers.netname, p );
+	G_LogPrintf( "tell: %s to %s: %s\n", ent->client->pers.netname, target->client->pers.netname, "[private message]" /*p*/); // lets have some privacy
 	G_Say( ent, target, SAY_TELL, p );
 	// don't tell to the player self if it was already directed to this player
 	// also don't send the chat back to a bot
@@ -3915,7 +3915,7 @@ void Cmd_Players_f(gentity_t* ent) {
 	int i;
 	int millisecs,minMillisecs = clampedIntMult(g_afkCmdMinSecs.integer, 1000);
 	trap_SendServerCommand(ent - g_entities, "print \"Players:\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2#  User       Mode            AFK        FPS  Jump  Name\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2#  User       Mode                      AFK        FPS  Jump  Name\n\"");
 	for (i = 0; i < level.maxclients; i++) {
 		other = g_entities + i;
 		if (!other->inuse || !other->client) {
@@ -3923,7 +3923,7 @@ void Cmd_Players_f(gentity_t* ent) {
 		}
 		cl = other->client;
 		millisecs = level.time - other->client->sess.lastHereTime;
-		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-15s %-10s %-4s %-5d %s\n\"", 
+		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-25s %-10s %-4s %-5d %s\n\"", 
 			i,
 			cl->sess.login.loggedIn ? cl->sess.login.name : "",
 			cl->sess.raceMode ? multiva("Race:%s/%s", moveStyleNames[cl->sess.raceStyle.movementStyle].string, leaderboardNames[classifyLeaderBoard(&cl->sess.raceStyle,&level.mapDefaultRaceStyle)].string) : modeNames[cl->sess.mode].string,
