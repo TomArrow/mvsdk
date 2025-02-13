@@ -917,6 +917,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	}
 	if (cl->sess.raceStateInvalidated) {
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue, NULL);
+		cl->pers.lastRaceTimerStartedCP = level.time;
 		return;
 	}
 	if (cl->sess.login.forceLoggedIn) {
@@ -929,6 +930,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		if ((cl->pers.lastRaceFinishTime + 1000 < level.time || level.time < cl->pers.lastRaceFinishTime)) { // dont bother player with message directly after run finished (especially annoying on maps with reverse courses)
 			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue, NULL);
 		}
+		cl->pers.lastRaceTimerStartedCP = level.time;
 		return;
 	}
 
@@ -940,6 +942,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		else {
 			G_CenterPrint(activator - g_entities, 3, va("^1ANTI-LOOP: ^7Start blocked by anti-loop. You turned %.2f degrees (%.2f allowed).", cl->pers.antiLoop.yawAngleChangeSinceBaseSpeed, (float)ANTILOOP_MAXYAWCHANGE), qfalse, qtrue, qfalse, "antiloop start");
 		}
+		cl->pers.lastRaceTimerStartedCP = level.time;
 		return;
 	}
 
@@ -948,6 +951,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	if (segmented && cl->pers.segmented.state != SEG_RECORDING && cl->pers.segmented.state != SEG_REPLAY) {
 		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run in a faulty state. Please respawn and try again.",qfalse,qtrue,qtrue, NULL);
 		DF_RaceStateInvalidated(activator, qfalse);
+		cl->pers.lastRaceTimerStartedCP = level.time;
 		return;
 	}
 	else if (segmented && cl->pers.segmented.state != SEG_REPLAY) {
@@ -955,11 +959,13 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		if (segmented && cl->pers.segmented.msecProgress > 5000) {
 			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is over 5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, NULL);
 			DF_RaceStateInvalidated(activator, qfalse);
+			cl->pers.lastRaceTimerStartedCP = level.time;
 			return;
 		}
 		else if (segmented && cl->pers.segmented.msecProgress < 500) {
 			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, NULL);
 			DF_RaceStateInvalidated(activator, qfalse);
+			cl->pers.lastRaceTimerStartedCP = level.time;
 			return;
 		}
 	}
