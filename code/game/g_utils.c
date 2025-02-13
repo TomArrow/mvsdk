@@ -999,6 +999,7 @@ Kills all entities that would touch the proposed new positioning
 of ent.  Ent should be unlinked before calling this!
 =================
 */
+qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other);
 void G_KillBox (gentity_t *ent) {
 	int			i, num;
 	int			touch[MAX_GENTITIES];
@@ -1017,6 +1018,10 @@ void G_KillBox (gentity_t *ent) {
 
 		if (hit->client->sess.raceMode) {
 			continue;
+		}
+
+		if (ent && ShouldNotCollide(ent, hit)) {
+			continue; // they wont touch each other anyway, no need to kill
 		}
 
 		// nail it

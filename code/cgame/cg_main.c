@@ -2020,7 +2020,7 @@ static void CG_RegisterGraphics( void ) {
 
 	cgs.media.neutralFlagModel = trap_R_RegisterModel( "models/flags/n_flag.md3" );
 
-	if ( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY || cg_buildScript.integer ) {
+	if ( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY || cg_buildScript.integer || cgs.isTommyTernal ) {
 		if (cg_buildScript.integer)
 		{
 			trap_R_RegisterModel( "models/flags/r_flag.md3" );
@@ -2029,7 +2029,7 @@ static void CG_RegisterGraphics( void ) {
 			trap_R_RegisterModel( "models/flags/b_flag_ysal.md3" );
 		}
 
-		if (cgs.gametype == GT_CTF)
+		if (cgs.gametype == GT_CTF || cgs.isTommyTernal && cgs.gametype != GT_CTY)
 		{
 			cgs.media.redFlagModel = trap_R_RegisterModel( "models/flags/r_flag.md3" );
 			cgs.media.blueFlagModel = trap_R_RegisterModel( "models/flags/b_flag.md3" );

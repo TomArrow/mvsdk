@@ -946,8 +946,8 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
-		"print \"^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman\n\"",
-		"print \"Random tip: ^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman\n\"",
+		"print \"^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman (^2/duel^7,^2/allforce^7 and ^2/ironman^7 are their own commands too)\n\"",
+		"print \"Random tip: ^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman (^2/duel^7,^2/allforce^7 and ^2/ironman^7 are their own commands too)\n\"",
 		qfalse,
 		qfalse
 	},
@@ -5048,6 +5048,7 @@ void DismembermentByNum(gentity_t *self, int num);
 #endif
 extern void Cmd_Race_f(gentity_t* ent);
 extern void Cmd_Mode_f(gentity_t* ent);
+extern void Cmd_ModeCmd_f(gentity_t* ent);
 extern void Cmd_JumpChange_f(gentity_t* ent);
 extern void Cmd_DF_RunSettings_f(gentity_t* ent);
 extern void Cmd_MovementStyle_f(gentity_t* ent);
@@ -5236,6 +5237,18 @@ void ClientCommand( int clientNum ) {
 			giveError = qtrue;
 		}
 		else if (!Q_stricmp(cmd, "pickmode"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "duel"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "allforce"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "ironman"))
 		{
 			giveError = qtrue;
 		}
@@ -5512,6 +5525,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Race_f(ent);
 	else if (Q_stricmp (cmd, "pickmode") == 0)
 		Cmd_Mode_f(ent);
+	else if (Q_stricmp (cmd, "duel") == 0 || Q_stricmp(cmd, "allforce") == 0 || Q_stricmp(cmd, "ironman") == 0)
+		Cmd_ModeCmd_f(ent);
 	else if (Q_stricmp (cmd, "launch") == 0)
 		Cmd_Launch_f(ent);
 	else if (Q_stricmp (cmd, "help") == 0)

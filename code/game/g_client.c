@@ -340,33 +340,69 @@ void SP_info_jedimaster_start(gentity_t *ent)
 
 =======================================================================
 */
-
+qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other);
 /*
 ================
 SpotWouldTelefrag
 
 ================
 */
-qboolean SpotWouldTelefrag( gentity_t *spot ) {
+qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt) {
 	int			i, num;
 	int			touch[MAX_GENTITIES];
 	gentity_t	*hit;
 	vec3_t		mins, maxs;
 
-	VectorAdd( spot->s.origin, playerMins, mins );
-	VectorAdd( spot->s.origin, playerMaxs, maxs );
+	VectorAdd(origin, playerMins, mins );
+	VectorAdd(origin, playerMaxs, maxs );
 	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
 
 	for (i=0 ; i<num ; i++) {
 		hit = &g_entities[touch[i]];
 		//if ( hit->client && hit->client->ps.stats[STAT_HEALTH] > 0 ) {
 		if ( hit->client) {
-			return qtrue;
+			if (spawningEnt && !ShouldNotCollide(spawningEnt,hit)) {
+				return qtrue;
+			}
 		}
 
 	}
 
 	return qfalse;
+}
+
+void WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
+	vec3_t		original;
+	vec3_t		test,testdown;
+	trace_t		groundTrace;
+	int			height;
+	int			right;
+	int			front;
+
+	VectorCopy(origin, original);
+	for (height = 0; height < 3; height++) {
+		test[2] = original[2]+64.0f*height;
+		testdown[2] = test[2] -64.0f;
+		for (front = -1; front < 2; front++) {
+			testdown[0] = test[0] = original[0]+32.0f*front;
+			for (right = -1; right < 2; right++) {
+				testdown[1] = test[1] = original[1]+32.0f*right;
+				if (!SpotWouldTelefrag(test, spawningEnt)) { // cool, we could spawn here and not kill anyone.
+					JP_Trace(&groundTrace,test,playerMins,playerMaxs,testdown,-1, MASK_PLAYERSOLID);
+					if (groundTrace.startsolid || groundTrace.allsolid) {
+						continue; // welp, we can't spawn here, in a wall or sth
+					}
+					if (groundTrace.fraction == 1.0f) {
+						continue; // nah therer's no ground to stand on
+					}
+					VectorCopy(test, origin);
+					return;
+				}
+			}
+		}
+	}
+	VectorCopy(original, origin);
+
 }
 
 /*
@@ -409,7 +445,7 @@ go to a random point that doesn't telefrag
 ================
 */
 #define	MAX_SPAWN_POINTS	128
-gentity_t *SelectRandomDeathmatchSpawnPoint( void ) {
+gentity_t *SelectRandomDeathmatchSpawnPoint( gentity_t* spawningEnt ) {
 	gentity_t	*spot;
 	int			count;
 	int			selection;
@@ -419,7 +455,7 @@ gentity_t *SelectRandomDeathmatchSpawnPoint( void ) {
 	spot = NULL;
 
 	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
-		if ( SpotWouldTelefrag( spot ) ) {
+		if ( SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
 			continue;
 		}
 		spots[ count ] = spot;
@@ -441,7 +477,7 @@ SelectRandomFurthestSpawnPoint
 Chooses a player start, deathmatch start, etc
 ============
 */
-gentity_t *SelectRandomFurthestSpawnPoint ( vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
+gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
 	gentity_t	*spot;
 	vec3_t		delta;
 	float		dist;
@@ -453,7 +489,7 @@ gentity_t *SelectRandomFurthestSpawnPoint ( vec3_t avoidPoint, vec3_t origin, ve
 	spot = NULL;
 
 	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
-		if ( SpotWouldTelefrag( spot ) ) {
+		if ( SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
 			continue;
 		}
 		VectorSubtract( spot->s.origin, avoidPoint, delta );
@@ -487,6 +523,9 @@ gentity_t *SelectRandomFurthestSpawnPoint ( vec3_t avoidPoint, vec3_t origin, ve
 			G_Error( "Couldn't find a spawn point" );
 		}
 		VectorCopy (spot->s.origin, origin);
+		if (g_bubbleSpawn.integer && !(spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
+			WiggleSpotTelefrag(origin, spawningEnt);
+		}
 		origin[2] += 9;
 		VectorCopy (spot->s.angles, angles);
 		return spot;
@@ -509,8 +548,8 @@ SelectSpawnPoint
 Chooses a player start, deathmatch start, etc
 ============
 */
-gentity_t *SelectSpawnPoint ( vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
-	return SelectRandomFurthestSpawnPoint( avoidPoint, origin, angles );
+gentity_t *SelectSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
+	return SelectRandomFurthestSpawnPoint(spawningEnt,avoidPoint, origin, angles );
 
 	/*
 	gentity_t	*spot;
@@ -549,7 +588,7 @@ Try to find a spawn point marked 'initial', otherwise
 use normal spawn selection.
 ============
 */
-gentity_t *SelectInitialSpawnPoint( vec3_t origin, vec3_t angles ) {
+gentity_t *SelectInitialSpawnPoint(gentity_t* spawningEnt, vec3_t origin, vec3_t angles ) {
 	gentity_t	*spot;
 
 	spot = NULL;
@@ -559,8 +598,8 @@ gentity_t *SelectInitialSpawnPoint( vec3_t origin, vec3_t angles ) {
 		}
 	}
 
-	if ( !spot || SpotWouldTelefrag( spot ) ) {
-		return SelectSpawnPoint( vec3_origin, origin, angles );
+	if ( !spot || SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
+		return SelectSpawnPoint(spawningEnt,vec3_origin, origin, angles );
 	}
 
 	VectorCopy (spot->s.origin, origin);
@@ -2288,14 +2327,14 @@ void ClientSpawn(gentity_t *ent) {
 		VectorCopy(client->pers.savedSpawn.ps.viewangles, spawn_angles);
 	} else if (g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) {
 		// all base oriented team games use the CTF spawn points
-		spawnPoint = SelectCTFSpawnPoint ( 
+		spawnPoint = SelectCTFSpawnPoint ( ent,
 						client->sess.sessionTeam, 
 						client->pers.teamState.state, 
 						spawn_origin, spawn_angles);
 	}
 	else if (g_gametype.integer == GT_SAGA)
 	{
-		spawnPoint = SelectSagaSpawnPoint ( 
+		spawnPoint = SelectSagaSpawnPoint ( ent,
 						client->sess.sessionTeam, 
 						client->pers.teamState.state, 
 						spawn_origin, spawn_angles);
@@ -2305,10 +2344,10 @@ void ClientSpawn(gentity_t *ent) {
 			// the first spawn should be at a good looking spot
 			if ( !client->pers.initialSpawn && client->pers.localClient ) {
 				client->pers.initialSpawn = qtrue;
-				spawnPoint = SelectInitialSpawnPoint( spawn_origin, spawn_angles );
+				spawnPoint = SelectInitialSpawnPoint( ent,spawn_origin, spawn_angles );
 			} else {
 				// don't spawn near existing origin if possible
-				spawnPoint = SelectSpawnPoint ( 
+				spawnPoint = SelectSpawnPoint ( ent,
 					client->ps.origin, 
 					spawn_origin, spawn_angles);
 			}

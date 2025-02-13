@@ -3708,12 +3708,7 @@ void Cmd_Mode_f(gentity_t* ent)
 		return;
 
 	trap_Argv(1, mode, sizeof(mode));
-	if (!Q_stricmp(mode, "ironman"))
-	{
-		trap_SendServerCommand(ent - g_entities, "print \"^3Sorry, iron man mode not yet available.\n\"");
-		modeNum = -1;
-	}
-	else if (!Q_stricmp(mode, "reset"))
+	if (!Q_stricmp(mode, "reset"))
 	{
 		modeNum = GetDefaultPlayerMode();
 		if (modeNum == ent->client->sess.mode) {
@@ -3724,7 +3719,33 @@ void Cmd_Mode_f(gentity_t* ent)
 		modeNum = PlayerModeNameToInteger(mode);
 	}
 	if (modeNum == -1) {
-		trap_SendServerCommand(ent-g_entities,"print \"Invalid mode specified. Valid modes: reset, normal, defrag, duel, allforce, ironman (soon maybe)\n\"");
+		trap_SendServerCommand(ent-g_entities,"print \"Invalid mode specified. Valid modes: reset, normal, defrag, duel, allforce, ironman\n\"");
+		return;
+	}
+	
+	SetClientMode(ent, modeNum);
+
+}
+void Cmd_ModeCmd_f(gentity_t* ent)
+{
+	char mode[20];
+	int modeNum;
+	if (!ent->client)
+		return;
+
+	trap_Argv(0, mode, sizeof(mode));
+	if (!Q_stricmp(mode, "reset"))
+	{
+		modeNum = GetDefaultPlayerMode();
+		if (modeNum == ent->client->sess.mode) {
+			ent->client->sess.mode = MODE_INVALID; // force a reset
+		}
+	}
+	else {
+		modeNum = PlayerModeNameToInteger(mode);
+	}
+	if (modeNum == -1) {
+		trap_SendServerCommand(ent-g_entities,"print \"Invalid mode specified. Valid modes: reset, normal, defrag, duel, allforce, ironman\n\"");
 		return;
 	}
 	
@@ -3878,7 +3899,7 @@ saved - used to hold ownerNums
 static int saved[MAX_GENTITIES];
 
 
-static qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
+qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 {
 	// since we are in a duel, make everyone else nonsolid
 	if (entity->client && entity->client->ps.duelInProgress) {

@@ -99,7 +99,7 @@ void QDECL PrintMsg( gentity_t *ent, const char *fmt, ... ) {
 
 //plIndex used to print pl->client->pers.netname
 //teamIndex used to print team name
-void PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage)
+gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage)
 {
 	gentity_t *te;
 
@@ -710,17 +710,31 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	}
 
 	if ( ent->flags & FL_DROPPED_ITEM ) {
-		// hey, its not home.  return it by teleporting it back
-		//PrintMsg( NULL, "%s" S_COLOR_WHITE " returned the %s flag!\n", 
-		//	cl->pers.netname, TeamName(team));
-		PrintCTFMessage(other->s.number, team, CTFMESSAGE_PLAYER_RETURNED_FLAG);
+		if (other->client->sess.mode == MODE_IRONMAN) {
+			// hey, its not home.  return it by teleporting it back
+			//PrintMsg( NULL, "%s" S_COLOR_WHITE " returned the %s flag!\n", 
+			//	cl->pers.netname, TeamName(team));
+			PrintCTFMessage(other->s.number, team, CTFMESSAGE_PLAYER_RETURNED_FLAG);
 
-		AddScore(other, ent->r.currentOrigin, CTF_RECOVERY_BONUS);
-		other->client->pers.teamState.flagrecovery++;
-		other->client->pers.teamState.lastreturnedflag = LEVELTIME(other->client);
-		//ResetFlag will remove this entity!  We must return zero
-		Team_ReturnFlagSound(Team_ResetFlag(team), team);
-		return 0;
+			AddScore(other, ent->r.currentOrigin, CTF_RECOVERY_BONUS);
+
+			G_FreeEntity(ent);
+			Team_ReturnFlagSound(other, team);
+			return 0;
+		}
+		else {
+			// hey, its not home.  return it by teleporting it back
+			//PrintMsg( NULL, "%s" S_COLOR_WHITE " returned the %s flag!\n", 
+			//	cl->pers.netname, TeamName(team));
+			PrintCTFMessage(other->s.number, team, CTFMESSAGE_PLAYER_RETURNED_FLAG);
+
+			AddScore(other, ent->r.currentOrigin, CTF_RECOVERY_BONUS);
+			other->client->pers.teamState.flagrecovery++;
+			other->client->pers.teamState.lastreturnedflag = LEVELTIME(other->client);
+			//ResetFlag will remove this entity!  We must return zero
+			Team_ReturnFlagSound(Team_ResetFlag(team), team);
+			return 0;
+		}
 	}
 
 	// the flag is at home base.  if the player has the enemy
@@ -837,7 +851,7 @@ int Pickup_Team( gentity_t *ent, gentity_t *other ) {
 		return 0;
 	}
 	// GT_CTF
-	if( team == cl->sess.sessionTeam) {
+	if( team == cl->sess.sessionTeam || cl->sess.mode == MODE_IRONMAN) {
 		return Team_TouchOurFlag( ent, other, team );
 	}
 	return Team_TouchEnemyFlag( ent, other, team );
@@ -921,7 +935,7 @@ go to a random point that doesn't telefrag
 ================
 */
 #define	MAX_TEAM_SPAWN_POINTS	32
-gentity_t *SelectRandomTeamSpawnPoint( int teamstate, team_t team ) {
+gentity_t *SelectRandomTeamSpawnPoint(gentity_t* spawningEnt, int teamstate, team_t team ) {
 	gentity_t	*spot;
 	int			count;
 	int			selection;
@@ -962,7 +976,7 @@ gentity_t *SelectRandomTeamSpawnPoint( int teamstate, team_t team ) {
 	spot = NULL;
 
 	while ((spot = G_FindByClassNameFast(spot,  classname)) != NULL) {
-		if ( SpotWouldTelefrag( spot ) ) {
+		if ( SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
 			continue;
 		}
 		spots[ count ] = spot;
@@ -971,7 +985,9 @@ gentity_t *SelectRandomTeamSpawnPoint( int teamstate, team_t team ) {
 	}
 
 	if ( !count ) {	// no spots that won't telefrag
-		return G_FindByClassNameFast( NULL, classname);
+		spot = G_FindByClassNameFast( NULL, classname);
+		// can we bubble spawn here somehow? meh
+		return spot;
 	}
 
 	selection = rand() % count;
@@ -985,16 +1001,18 @@ SelectCTFSpawnPoint
 
 ============
 */
-gentity_t *SelectCTFSpawnPoint ( team_t team, int teamstate, vec3_t origin, vec3_t angles ) {
+gentity_t *SelectCTFSpawnPoint (gentity_t* spawningEnt, team_t team, int teamstate, vec3_t origin, vec3_t angles ) {
 	gentity_t	*spot;
 
-	spot = SelectRandomTeamSpawnPoint ( teamstate, team );
+	spot = SelectRandomTeamSpawnPoint (spawningEnt,teamstate, team );
 
 	if (!spot) {
-		return SelectSpawnPoint( vec3_origin, origin, angles );
+		return SelectSpawnPoint(spawningEnt,vec3_origin, origin, angles );
 	}
-
-	VectorCopy (spot->s.origin, origin);
+	VectorCopy(spot->s.origin, origin);
+	if (g_bubbleSpawn.integer && !(spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
+		WiggleSpotTelefrag(origin,spawningEnt);
+	}
 	origin[2] += 9;
 	VectorCopy (spot->s.angles, angles);
 
@@ -1007,16 +1025,18 @@ SelectSagaSpawnPoint
 
 ============
 */
-gentity_t *SelectSagaSpawnPoint ( team_t team, int teamstate, vec3_t origin, vec3_t angles ) {
+gentity_t *SelectSagaSpawnPoint (gentity_t* spawningEnt, team_t team, int teamstate, vec3_t origin, vec3_t angles ) {
 	gentity_t	*spot;
 
-	spot = SelectRandomTeamSpawnPoint ( teamstate, team );
+	spot = SelectRandomTeamSpawnPoint (spawningEnt, teamstate, team );
 
 	if (!spot) {
-		return SelectSpawnPoint( vec3_origin, origin, angles );
+		return SelectSpawnPoint(spawningEnt,vec3_origin, origin, angles );
 	}
-
-	VectorCopy (spot->s.origin, origin);
+	VectorCopy(spot->s.origin, origin);
+	if (g_bubbleSpawn.integer && !(spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
+		WiggleSpotTelefrag(origin, spawningEnt);
+	}
 	origin[2] += 9;
 	VectorCopy (spot->s.angles, angles);
 

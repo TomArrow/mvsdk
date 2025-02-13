@@ -526,6 +526,7 @@ typedef struct {
 	antiLoopState_t antiLoop;
 	rollState_t roll;
 	int			lastRaceTimerStartedCP;
+	int			lastIronmanFlagGiven;
 } clientPersistant_t;
 
 // this structure is cleared on each ClientSpawn(),
@@ -652,6 +653,8 @@ struct gclient_s {
 	int			bufferedPrintBufferLastFlushedOrUpdated; // so we dont accidentally forget or through an error
 
 	int			lastScoresMessage;
+
+	qboolean	isIronMan;
 };
 
 
@@ -796,6 +799,7 @@ typedef struct {
 
 	int			lastAllRankUpdate;
 	int			nextRandomTip;
+	int			lastIronManKilled;
 } level_locals_t;
 
 
@@ -841,7 +845,7 @@ void RespawnItem( gentity_t *ent );
 void UseHoldableItem( gentity_t *ent );
 void PrecacheItem (gitem_t *it);
 gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle );
-gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity );
+gentity_t *LaunchItem( gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t velocity );
 void SetRespawn (gentity_t *ent, float delay);
 void G_SpawnItem (gentity_t *ent, gitem_t *item);
 void FinishSpawningItem( gentity_t *ent );
@@ -1101,7 +1105,7 @@ team_t TeamCount( int ignoreClientNum, team_t team );
 int TeamLeader( team_t team );
 team_t PickTeam( int ignoreClientNum );
 void SetClientViewAngle( gentity_t *ent, vec3_t angle );
-gentity_t *SelectSpawnPoint ( vec3_t avoidPoint, vec3_t origin, vec3_t angles );
+gentity_t *SelectSpawnPoint ( gentity_t* spawningEnt, vec3_t avoidPoint, vec3_t origin, vec3_t angles );
 void CopyToBodyQue( gentity_t *ent );
 void respawn (gentity_t *ent);
 void BeginIntermission (void);
@@ -1112,7 +1116,8 @@ void G_Kill(gentity_t* ent);
 void player_die (gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int mod);
 void AddScore( gentity_t *ent, vec3_t origin, int score );
 void CalculateRanks( void );
-qboolean SpotWouldTelefrag( gentity_t *spot );
+qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt );
+void WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt);
 
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra);
 void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers);
@@ -1363,6 +1368,7 @@ extern	vmCvar_t	g_defragLastRunId;
 extern	vmCvar_t	g_defragLastDemoId;
 extern	vmCvar_t	g_defragAutoDemo;
 extern	vmCvar_t	g_triggersRobust;
+extern	vmCvar_t	g_bubbleSpawn;
 extern	vmCvar_t	g_defragForceRegenFps;
 extern	vmCvar_t	g_defragArenaAutoGen;
 

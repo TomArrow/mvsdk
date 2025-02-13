@@ -56,6 +56,7 @@ vmCvar_t	g_defragLastRunId;
 vmCvar_t	g_defragLastDemoId;
 vmCvar_t	g_defragAutoDemo;
 vmCvar_t	g_triggersRobust;
+vmCvar_t	g_bubbleSpawn;
 vmCvar_t	g_defragForceRegenFps;
 vmCvar_t	g_defragArenaAutoGen;
 
@@ -233,7 +234,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_autoMapCycle, "g_autoMapCycle", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
 	{ &g_dmflags, "dmflags", "0", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	
-	{ &g_maxForceRank, "g_maxForceRank", "6", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
+	{ &g_maxForceRank, "g_maxForceRank", "500", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_forceBasedTeams, "g_forceBasedTeams", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_privateDuel, "g_privateDuel", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberLocking, "g_saberLocking", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
@@ -247,6 +248,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_defragLastRunId, "g_defragLastRunId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_defragLastDemoId, "g_defragLastDemoId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_bubbleSpawn, "g_bubbleSpawn", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragForceRegenFps, "g_defragForceRegenFps", "100", CVAR_ARCHIVE | CVAR_CHEAT, 0, qtrue  },
 	{ &g_defragArenaAutoGen, "g_defragArenaAutoGen", "1", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena files when a course is finished running, if none exists
 	{ &g_arenaAutoGen, "g_arenaAutoGen", "0", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena file upon successful spawn in map, if none exists
@@ -1074,6 +1076,14 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	gDuelist1 = -1;
 	gDuelist2 = -1;
 
+	if (g_modes.integer) {
+		// for ironman we want client to be able to display the flag even if the map doesnt have it
+		gitem_t* flag = BG_FindItem("team_CTF_blueflag");
+		RegisterItem(flag);
+		flag = BG_FindItem("team_CTF_redflag");
+		RegisterItem(flag);
+	}
+
 	SaveRegisteredItems();
 
 	G_Printf ("-----------------------------------\n");
@@ -1748,7 +1758,7 @@ void FindIntermissionPoint( void ) {
 	// find the intermission spot
 	ent = G_FindByClassNameFast(NULL, "info_player_intermission");
 	if ( !ent ) {	// the map creator forgot to put in an intermission point...
-		SelectSpawnPoint ( vec3_origin, level.intermission_origin, level.intermission_angle );
+		SelectSpawnPoint ( NULL, vec3_origin, level.intermission_origin, level.intermission_angle );
 	} else {
 		VectorCopy (ent->s.origin, level.intermission_origin);
 		VectorCopy (ent->s.angles, level.intermission_angle);
@@ -2901,6 +2911,81 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists)
 	trap_FS_FCloseFile(f);
 }
 
+int sortironmanners(const void* a, const void* b) {
+	gentity_t* player1 = &g_entities[*(int*)a];
+	gentity_t* player2 = &g_entities[*(int*)b];
+	// whoever didnt get flag for longest time is most eligible to get it
+	return player1->client->pers.lastIronmanFlagGiven - player2->client->pers.lastIronmanFlagGiven;
+}
+gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage);
+void G_CheckIronManStatus() {
+	int i;
+	gentity_t* ent = g_entities;
+	int ironManners[MAX_CLIENTS];
+	int ironmannerCount = 0;
+	int flagCount = 0;
+	vec3_t spawnpoint;
+	vec3_t spawnpointAngles;
+	vec3_t spawnpointWiggled;
+	int randomteam;
+
+	if (level.intermissiontime || level.lastIronManKilled + IRONMAN_NEXTCAPPER_TIMEOUT > level.time) { // leave us 3 seconds to breathe after ironman is killed
+		return; 
+	}
+
+	for (i = 0; i < level.maxclients; i++, ent++) {
+		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN) {
+			continue;
+		}
+		if (ent->client->ps.powerups[PW_BLUEFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_NEUTRALFLAG]) {
+			flagCount++;
+		}
+		ironManners[ironmannerCount++] = i;
+	}
+	if (flagCount >= 1 || ironmannerCount <= 1) {
+		// > 1 would be very weird tho!
+		return;
+	}
+	// ok nobody has flag. take care of things.
+	qsort(ironManners,ironmannerCount,sizeof(ironManners[0]),sortironmanners);
+
+
+	// if any ironmanners are dead, revive them. set default health etc for all
+	for (i = 0; i < ironmannerCount; i++) {
+		ent = &g_entities[ironManners[i]];
+		if (ent->health <= 0) {
+			respawn(ent);
+		}
+		ent->health = 100;
+		ent->client->ps.stats[STAT_HEALTH] = 100;
+		ent->client->ps.stats[STAT_ARMOR] = 25;
+	}
+
+	ent = &g_entities[ironManners[0]];
+	ent->client->ps.stats[STAT_ARMOR] = 100; // ironman gets full armor
+	ent->client->ps.eFlags |= EF_INVULNERABLE;
+	ent->client->invulnerableTimer = level.time + 3000; // give ironman 2 seconds of invulnerability to not get insta killed
+	ent->client->pers.lastIronmanFlagGiven = level.time;
+	randomteam = Q_irand(PW_REDFLAG, 2, qfalse, PW_REDFLAG);
+	ent->client->ps.powerups[randomteam] = INT_MAX; // lets not do neutral flag cuz its not actually visible :/
+	PrintCTFMessage(ent-g_entities, randomteam == PW_REDFLAG ? TEAM_RED : TEAM_BLUE, CTFMESSAGE_PLAYER_GOT_FLAG);
+
+	// Spawn somewhere
+	SelectSpawnPoint(ent,vec3_origin, spawnpoint, spawnpointAngles);
+	TeleportPlayer(ent, spawnpoint, spawnpointAngles);
+
+	for (i = 1; i < ironmannerCount; i++) {
+		ent = &g_entities[ironManners[i]];
+		// spawn all others nearby.
+		VectorCopy(spawnpoint, spawnpointWiggled);
+		WiggleSpotTelefrag(spawnpointWiggled,ent);
+		TeleportPlayer(ent, spawnpointWiggled, spawnpointAngles);
+	}
+
+}
+
+
+
 /*
 =============
 G_RunThink
@@ -3171,6 +3256,10 @@ void G_RunFrame( int levelTime ) {
 	else if (level.shouldUpdateMapRanks && !activeRunnerCount) {
 		DF_UpdateRanksMainRequest(NULL, DF_GetCourseName(), qfalse, 0); // up to 5 maps at a time
 		level.shouldUpdateMapRanks = qfalse;
+	}
+
+	if (g_modes.integer) {
+		G_CheckIronManStatus();
 	}
 
 	// Process logical entities

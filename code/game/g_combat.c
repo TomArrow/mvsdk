@@ -604,7 +604,7 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	vel[1] = direction[1]*speed;
 	vel[2] = direction[2]*speed;
 
-	launched = LaunchItem(item, self->client->ps.origin, vel);
+	launched = LaunchItem(self, item, self->client->ps.origin, vel);
 
 	launched->s.generic1 = self->s.number;
 	launched->s.powerups = level.time + 1500;
@@ -1799,6 +1799,7 @@ player_die
 extern stringID_table_t animTable[MAX_ANIMATIONS+1];
 extern void DF_SegmentedRunStatusInvalidated(gentity_t* ent);
 extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
+gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage);
 void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath ) {
 	gentity_t	*ent;
 	int			anim;
@@ -2090,8 +2091,21 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 	}
 
-	// Add team bonuses
-	Team_FragBonuses(self, inflictor, attacker);
+	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN) {	// only happens in standard CTF
+		if (self->client->ps.powerups[PW_REDFLAG]) {
+			PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+		}
+		else if (self->client->ps.powerups[PW_BLUEFLAG]) {
+			PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+		}
+		AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
+		level.lastIronManKilled = level.time;
+	}
+	else {
+		// Add team bonuses
+		Team_FragBonuses(self, inflictor, attacker);
+	}
+
 
 	// if I committed suicide, the flag does not fall, it returns.
 	if (meansOfDeath == MOD_SUICIDE) {

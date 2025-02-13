@@ -2125,4 +2125,7 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("rank");
 	trap_AddCommand("pickmode");
 	trap_AddCommand("players");
+	trap_AddCommand("duel");
+	trap_AddCommand("allforce");
+	trap_AddCommand("ironman");
 }

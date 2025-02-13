@@ -1415,7 +1415,15 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 
 	// the same pickup rules are used for client side and server side
 	if ( !BG_CanItemBeGrabbed( g_gametype.integer, &ent->s, &other->client->ps ) ) {
-		return;
+		if (other->client->sess.mode == MODE_IRONMAN) {
+			gitem_t * item = &bg_itemlist[ent->s.modelindex];
+			if (item->giType != IT_TEAM) { // allow ironmanners to grab flags
+				return;
+			}
+		}
+		else {
+			return;
+		}
 	}
 
 	G_LogPrintf( "Item: %i %s\n", other->s.number, ent->item->classname );
@@ -1588,7 +1596,7 @@ LaunchItem
 Spawns an item and tosses it forward
 ================
 */
-gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity ) {
+gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t velocity ) {
 	gentity_t	*dropped;
 
 	dropped = G_Spawn();
@@ -1616,7 +1624,11 @@ gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity ) {
 	VectorCopy( velocity, dropped->s.pos.trDelta );
 
 	dropped->s.eFlags |= EF_BOUNCE_HALF;
-	if ((g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) && item->giType == IT_TEAM) { // Special case for CTF flags
+	if (oldOwner && oldOwner->client && oldOwner->client->sess.mode == MODE_IRONMAN && item->giType == IT_TEAM) { // Ironman flags are simplified
+		dropped->think = G_FreeEntity;
+		dropped->nextthink = level.time + IRONMAN_FLAGRESPAWNTIME;
+
+	} else if ((g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) && item->giType == IT_TEAM) { // Special case for CTF flags
 		dropped->think = Team_DroppedFlagThink;
 		dropped->nextthink = level.time + 30000;
 		Team_CheckDroppedItem( dropped );
@@ -1684,7 +1696,7 @@ gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
 	VectorScale( velocity, 150, velocity );
 	velocity[2] += 200 + ((ent->client && ent->client->sess.raceMode) ? 0 : (crandom() * 50));
 	
-	return LaunchItem( item, ent->s.pos.trBase, velocity );
+	return LaunchItem( ent, item, ent->s.pos.trBase, velocity );
 }
 
 
