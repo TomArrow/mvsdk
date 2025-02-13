@@ -922,6 +922,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 	if (client->markedAsInactive != wasInactive) {
 
 		G_Printf("^3g_inactivityToSpec: Client %d inactivity status changed to %d.\n", ent - g_entities, client->markedAsInactive);
+		G_ResetClientVote(client);
 		CalculateRanks(); // need to let the game know this client won't vote :)
 	}
 	return qtrue;

@@ -2981,6 +2981,8 @@ void ClientDisconnect( int clientNum ) {
 		return;
 	}
 
+	G_ResetClientVote(ent->client);
+
 	if (DF_KeepClientZombie(ent)) {
 		return;
 	}

@@ -477,6 +477,7 @@ typedef struct {
 	int			enterTime;			// level.time the client entered the game
 	playerTeamState_t teamState;	// status in teamplay games
 	int			voteCount;			// to prevent people from constantly calling votes
+	int			voteValue;			// to prevent people from constantly calling votes
 	int			teamVoteCount;		// to prevent people from constantly calling votes
 	qboolean	teamInfo;			// send team overlay updates?
 	qboolean	botDelayed;			// Is ClientBegin still outstanding for this bot, because it was delayed?
@@ -1783,5 +1784,5 @@ void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull);
 void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
 
 int	generateHashValue(const char* fname, const int size);
-
+void G_ResetClientVote(gclient_t* client);
 

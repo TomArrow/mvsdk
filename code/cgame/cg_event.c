@@ -913,7 +913,9 @@ void CG_GetCTFMessageEvent(entityState_t *es)
 		}
 	}
 
-	CG_PrintCTFMessage(ci, teamName, es->eventParm);
+	if (!(cg_customizeRace.integer & CUSTOMIZERACE_HIDECTFMESSAGESINRRACE) || !cgs.isTommyTernal || !cg.snap->ps.stats[STAT_RACEMODE]) {
+		CG_PrintCTFMessage(ci, teamName, es->eventParm);
+	}
 }
 
 void DoFall(centity_t *cent, entityState_t *es, int clientNum)

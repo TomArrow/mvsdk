@@ -706,6 +706,20 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 				  TeamName ( client->sess.sessionTeam ) );
 }
 
+void G_ResetClientVote(gclient_t* client) {
+	if ((client->ps.eFlags & EF_VOTED) && level.voteTime) { // reset his vote
+		if (client->pers.voteValue) {
+			level.voteYes--;
+			trap_SetConfigstring(CS_VOTE_YES, va("%i", level.voteYes));
+		}
+		else {
+			level.voteNo--;
+			trap_SetConfigstring(CS_VOTE_NO, va("%i", level.voteNo));
+		}
+		client->ps.eFlags &= ~EF_VOTED;
+	}
+}
+
 /*
 =================
 SetTeam
@@ -858,6 +872,8 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 	//
 	// execute the team change
 	//
+
+	G_ResetClientVote(client);
 
 	DF_RaceStateInvalidated(ent, qfalse);
 
@@ -4318,9 +4334,11 @@ void Cmd_Vote_f( gentity_t *ent ) {
 
 	if ( msg[0] == 'y' || msg[1] == 'Y' || msg[1] == '1' ) {
 		level.voteYes++;
+		ent->client->pers.voteValue = qtrue;
 		trap_SetConfigstring( CS_VOTE_YES, va("%i", level.voteYes ) );
 	} else {
 		level.voteNo++;
+		ent->client->pers.voteValue = qfalse;
 		trap_SetConfigstring( CS_VOTE_NO, va("%i", level.voteNo ) );	
 	}
 

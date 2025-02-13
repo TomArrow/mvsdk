@@ -2591,6 +2591,19 @@ void CheckTournament( void ) {
 }
 
 
+int G_CalculateVoteExecuteTime() {
+	int i;
+	gentity_t* ent = g_entities;
+	// check if anyone is racing
+	for (i = 0; i < level.maxclients; i++,ent++) {
+		if (ent->inuse && ent->client && ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime) {
+			trap_SendServerCommand(-1,va("print \"Giving %s (and others?) 60 seconds to finish his race.\n\"",ent->client->pers.netname));
+			return 60000;
+		}
+	}
+	return 3000;
+}
+
 /*
 ==================
 CheckVote
@@ -2676,7 +2689,7 @@ void CheckVote( void ) {
 			if (level.voteYes > level.numVotingClients / 2) {
 				// execute the command, then remove the vote
 				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED"), level.voteYes, level.voteNo));
-				level.voteExecuteTime = level.time + 3000;
+				level.voteExecuteTime = level.time + G_CalculateVoteExecuteTime();
 			}
 			else if (level.voteNo >= level.numVotingClients / 2) {
 				// same behavior as a timeout
