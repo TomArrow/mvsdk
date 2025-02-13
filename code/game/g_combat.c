@@ -3325,6 +3325,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			}
 		}
 
+		if (targ->client && attacker->client && targ->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN 
+			&& !attacker->client->isIronMan && !targ->client->isIronMan) {
+			return; // don't let "team mates" in iron man damage each other
+		}
+
 		if (g_gametype.integer == GT_JEDIMASTER && !g_friendlyFire.integer &&
 			targ && targ->client && attacker && attacker->client &&
 			targ != attacker && !targ->client->ps.isJediMaster && !attacker->client->ps.isJediMaster &&
@@ -3338,11 +3343,15 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		{
 			gentity_t *targown = &g_entities[targ->s.owner];
 
-			if (targown && targown->inuse && targown->client && OnSameTeam(targown, attacker))
+			if (targown && targown->inuse && targown->client)
 			{
-				if (!g_friendlyFire.integer)
+				if (OnSameTeam(targown, attacker) && !g_friendlyFire.integer)
 				{
 					return;
+				}
+				if (targown->client && attacker->client && targown->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN
+					&& !attacker->client->isIronMan && !targown->client->isIronMan) {
+					return; // don't let "team mates" in iron man damage each other (does it make sense to do this here too? idk)
 				}
 			}
 		}

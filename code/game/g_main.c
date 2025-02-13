@@ -2969,12 +2969,14 @@ void G_CheckIronManStatus() {
 		if (ent->health <= 0) {
 			respawn(ent);
 		}
+		ent->client->isIronMan = qfalse;
 		ent->health = 100;
 		ent->client->ps.stats[STAT_HEALTH] = 100;
 		ent->client->ps.stats[STAT_ARMOR] = 25;
 	}
 
 	ent = &g_entities[ironManners[0]];
+	ent->client->isIronMan = qtrue;
 	ent->client->ps.stats[STAT_ARMOR] = 100; // ironman gets full armor
 	ent->client->ps.eFlags |= EF_INVULNERABLE;
 	ent->client->invulnerableTimer = level.time + 3000; // give ironman 2 seconds of invulnerability to not get insta killed
