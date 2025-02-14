@@ -4669,16 +4669,24 @@ void UpdateClientRaceVars(gclient_t* client) {
 			DF_RaceStateInvalidated(g_entities + (client - g_clients), qtrue);
 		}
 
+		client->ps.fd.forcePowersKnown = 0;
 		client->ps.fd.forcePowerLevel[FP_LIGHTNING] = FORCE_LEVEL_2; // allow to "shoot open" doors
 		client->ps.fd.forcePowersKnown |= (1 << FP_LIGHTNING);
 		client->ps.fd.forcePowerLevel[FP_LEVITATION] = MAX(0,client->sess.raceStyle.jumpLevel);
+		if (client->sess.raceStyle.jumpLevel > 0) {
+			client->ps.fd.forcePowersKnown |= (1 << FP_LEVITATION);
+		}
+		client->ps.fd.forcePowerLevel[FP_SABERATTACK] = 3; //make sure its allowed on server? or?
+		client->ps.fd.forcePowersKnown |= (1 << FP_SABERATTACK);
+		client->ps.fd.forcePowerLevel[FP_SABERDEFEND] = 3; // should we set this at all? idk maybe some maps have guns firing at us or sth? make sure its consistent then i guess
+		client->ps.fd.forcePowersKnown |= (1 << FP_SABERDEFEND);
 		if (client->sess.raceStyle.movementStyle == MV_FORCE) {
 			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 3; // TODO will this work ok when ppl go out of racemode? idk
 			client->ps.fd.forcePowersKnown |= (1 << FP_RAGE) | (1 << FP_SPEED);
 		}
 		else {
 			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 0;
-			client->ps.fd.forcePowersKnown &= ~((1 << FP_RAGE) | (1 << FP_SPEED));
+			//client->ps.fd.forcePowersKnown &= ~((1 << FP_RAGE) | (1 << FP_SPEED));
 		}
 		if (client->sess.raceStyle.jumpLevel == -1) {
 			client->ps.powerups[PW_YSALAMIRI] = INT_MAX;

@@ -1756,9 +1756,6 @@ void ClientThink_real( gentity_t *ent ) {
 	//	client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->savedJumpLevel;
 	//}
 	//if (client->ps.stats[STAT_RACEMODE]) {
-	if (client->sess.raceMode) {
-		client->ps.fd.forcePowerLevel[FP_SABERATTACK] = 3; //make sure its allowed on server? or?
-	}
 
 	HandleClientLaserPointer(ent); // logically should be after intermission but eh, can use some memes
 
