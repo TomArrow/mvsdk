@@ -371,6 +371,7 @@ qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt) {
 	return qfalse;
 }
 
+#define BUBBLESPAWN_DOWNTRACE 120.0f // we can get up this much with force jump even at 1000fps (121)
 void WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 	vec3_t		original;
 	vec3_t		test,testdown;
@@ -382,7 +383,7 @@ void WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 	VectorCopy(origin, original);
 	for (height = 0; height < 3; height++) {
 		test[2] = original[2]+64.0f*height;
-		testdown[2] = test[2] -64.0f;
+		testdown[2] = original[2] - BUBBLESPAWN_DOWNTRACE;
 		for (front = -1; front < 2; front++) {
 			testdown[0] = test[0] = original[0]+32.0f*front;
 			for (right = -1; right < 2; right++) {

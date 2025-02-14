@@ -2947,7 +2947,7 @@ void G_CheckIronManStatus() {
 	}
 
 	for (i = 0; i < level.maxclients; i++, ent++) {
-		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN) {
+		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
 			continue;
 		}
 		if (ent->client->ps.powerups[PW_BLUEFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_NEUTRALFLAG]) {
@@ -2987,14 +2987,18 @@ void G_CheckIronManStatus() {
 
 	// Spawn somewhere
 	SelectSpawnPoint(ent,vec3_origin, spawnpoint, spawnpointAngles);
+	spawnpoint[2] -= 1.0f; // since teleportplayer adds that
 	TeleportPlayer(ent, spawnpoint, spawnpointAngles);
+	spawnpoint[2] += 1.0f;
 
 	for (i = 1; i < ironmannerCount; i++) {
 		ent = &g_entities[ironManners[i]];
 		// spawn all others nearby.
 		VectorCopy(spawnpoint, spawnpointWiggled);
 		WiggleSpotTelefrag(spawnpointWiggled,ent);
+		spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
 		TeleportPlayer(ent, spawnpointWiggled, spawnpointAngles);
+		spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
 	}
 
 }
