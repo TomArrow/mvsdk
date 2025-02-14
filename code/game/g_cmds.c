@@ -3972,6 +3972,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		return;
 	}
 
+	if ( level.voteExecuteTime ) {
+		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", "Cannot call a vote, old vote not yet exceuted, please wait.") );
+		return;
+	}
+
 	if ( level.voteTime ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEINPROGRESS")) );
 		return;
@@ -4017,7 +4022,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	}
 
 
-	// if there is still a vote to be executed
+	// if there is still a vote to be executed - wait HUH?
 	if ( level.voteExecuteTime ) {
 		level.voteExecuteTime = 0;
 		trap_SendConsoleCommand( EXEC_APPEND, va("%s\n", level.voteString ) );
