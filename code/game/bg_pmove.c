@@ -613,7 +613,12 @@ static void PM_Friction( void ) {
 	if (newspeed < 0) {
 		newspeed = 0;
 	}
-	newspeed /= speed;
+	if (speed == 0) { // normally we wouldnt get here but since bounce has a bit of hack ... lets avoid division by 0
+		newspeed = 0;
+	}
+	else {
+		newspeed /= speed;
+	}
 
 	vel[0] = vel[0] * newspeed;
 	vel[1] = vel[1] * newspeed;
