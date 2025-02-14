@@ -4670,12 +4670,15 @@ void UpdateClientRaceVars(gclient_t* client) {
 		}
 
 		client->ps.fd.forcePowerLevel[FP_LIGHTNING] = FORCE_LEVEL_2; // allow to "shoot open" doors
+		client->ps.fd.forcePowersKnown |= (1 << FP_LIGHTNING);
 		client->ps.fd.forcePowerLevel[FP_LEVITATION] = MAX(0,client->sess.raceStyle.jumpLevel);
 		if (client->sess.raceStyle.movementStyle == MV_FORCE) {
 			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 3; // TODO will this work ok when ppl go out of racemode? idk
+			client->ps.fd.forcePowersKnown |= (1 << FP_RAGE) | (1 << FP_SPEED);
 		}
 		else {
 			client->ps.fd.forcePowerLevel[FP_RAGE] = client->ps.fd.forcePowerLevel[FP_SPEED] = 0;
+			client->ps.fd.forcePowersKnown &= ~((1 << FP_RAGE) | (1 << FP_SPEED));
 		}
 		if (client->sess.raceStyle.jumpLevel == -1) {
 			client->ps.powerups[PW_YSALAMIRI] = INT_MAX;
