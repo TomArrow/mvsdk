@@ -2092,13 +2092,15 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 
 	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN) {	// only happens in standard CTF
-		if (self->client->ps.powerups[PW_REDFLAG]) {
-			PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+		if (attacker->client) {
+			if (self->client->ps.powerups[PW_REDFLAG]) {
+				PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+			}
+			else if (self->client->ps.powerups[PW_BLUEFLAG]) {
+				PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+			}
+			AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
 		}
-		else if (self->client->ps.powerups[PW_BLUEFLAG]) {
-			PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
-		}
-		AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
 		level.lastIronManKilled = level.time;
 	}
 	else {
