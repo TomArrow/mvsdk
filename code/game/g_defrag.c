@@ -4310,6 +4310,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 {
 	insertUpdateMapRaceDefaultsStruct_t	data;
 	raceStyle_t rs = level.mapDefaultRaceStyle;
+	const char* subcourse = DF_GetMainSubcourseName(); // TODO let us set this somehow
 	int alwaysRunFlags = defaultRunFlags & ~allowedMapDefaultRunFlags; // they are default but we are not allowed to change their defaultness (?!)
 	if (!ent->client) return;
 
@@ -4382,7 +4383,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"runFlags=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
-			G_COOL_API_DB_PreparedBindString(""); // subcourse
+			G_COOL_API_DB_PreparedBindString(subcourse); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);
@@ -4420,7 +4421,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"jump=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
-			G_COOL_API_DB_PreparedBindString(""); // subcourse
+			G_COOL_API_DB_PreparedBindString(subcourse); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);
@@ -4458,7 +4459,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"variant=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
-			G_COOL_API_DB_PreparedBindString(""); // subcourse
+			G_COOL_API_DB_PreparedBindString(subcourse); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);
@@ -4503,7 +4504,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 				"msec=?"
 			);
 			G_COOL_API_DB_PreparedBindString(data.course);
-			G_COOL_API_DB_PreparedBindString(""); // subcourse
+			G_COOL_API_DB_PreparedBindString(subcourse); // subcourse
 			G_COOL_API_DB_PreparedBindInt(rs.msec);
 			G_COOL_API_DB_PreparedBindInt(rs.jumpLevel);
 			G_COOL_API_DB_PreparedBindInt(rs.variant);
