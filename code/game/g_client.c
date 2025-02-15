@@ -372,7 +372,7 @@ qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt) {
 }
 
 #define BUBBLESPAWN_DOWNTRACE 120.0f // we can get up this much with force jump even at 1000fps (121)
-void WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
+qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 	vec3_t		original;
 	vec3_t		test,testdown;
 	trace_t		groundTrace;
@@ -397,13 +397,13 @@ void WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 						continue; // nah therer's no ground to stand on
 					}
 					VectorCopy(test, origin);
-					return;
+					return qtrue;
 				}
 			}
 		}
 	}
 	VectorCopy(original, origin);
-
+	return qfalse;
 }
 
 /*
@@ -1737,14 +1737,14 @@ void ClientUserinfoChanged( int clientNum ) {
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
 	if ( ent->r.svFlags & SVF_BOT ) {
-		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i",
+		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i\\bot\\1",
 			client->pers.netname, team, model,  c1, c2, 
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
 			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay );
 	} else {
-		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i",
+		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i",
 			client->pers.netname, client->sess.login.name, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
-			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime);
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode);
 	}
 
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );
@@ -2227,6 +2227,117 @@ static qboolean AllForceDisabled(int force)
 	return qfalse;
 }
 
+qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
+	int				i;
+	int				allowShortPos = 0;
+	vec3_t			delta;
+	//float normalSpawnDist; // wanted to check if normal spawn dist is closer but that might be too simplistic for complex level architectures
+	float			currentDist;
+	qboolean		good = qfalse;
+	simplePos_t*	pos;
+	//vec3_t			velNorm;
+	if (!level.ironManPosCount) {
+		return qfalse;
+	}
+
+	//VectorSubtract(level.ironManCurrentPosition, spawn_origin, delta);
+	//normalSpawnDist = VectorLengthSquared(delta);
+
+retry:
+	for (i = level.ironManPosCount - 1; i >= MAX(0, level.ironManPosCount - IRONMAN_MAX_PAST_POSITIONS_COUNT + 1); i--) {
+		pos = &level.ironManPos[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
+		if (pos->when + IRONMAN_RESPAWNPOSITION_MAXPOSITIONAGE < level.time) {
+			// position is too old
+			if (allowShortPos < 2) {
+				// let's try with allowing shorter distances
+				allowShortPos++;
+				goto retry;
+			}
+			else {
+				// fuck it
+				return qfalse;
+			}
+		}
+
+		VectorSubtract(pos->origin, level.ironManCurrentPosition, delta);
+		currentDist = VectorLengthSquared(delta);
+		
+		if (allowShortPos == 2) {
+			// we are desperate. spawn right on top of his head if needed! maybe hes camping or sth xd
+			good = qtrue;
+		}
+		else if (currentDist > IRONMAN_RESPAWNPOSITION_MINDISTANCE* IRONMAN_RESPAWNPOSITION_MINDISTANCE) {
+			good = qtrue;
+		}
+		else if (allowShortPos && currentDist > IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT* IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT) {
+			good = qtrue;
+		}
+
+		if (good) {
+			vec3_t goodOrigin;
+			float speed;
+
+			if (allowShortPos == 2) {
+				int side, front;
+				good = qfalse;
+				VectorCopy(pos->origin, goodOrigin);
+				// we might spawn right on the capper's ass
+				// try to move us a bit away if we can?
+				for (side = -1; side < 2 && !good; side++) {
+					for (front = -1; front < 2 && !good; front++) {
+						if (side == 0 && front == 0) {
+							continue;
+						}
+						goodOrigin[0] = pos->origin[0] + (float)front * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
+						goodOrigin[1] = pos->origin[1] + (float)side * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
+						goodOrigin[2] = pos->origin[2];
+						if (WiggleSpotTelefrag(goodOrigin, ent)) {
+							good = qtrue;
+							break;
+						}
+					}
+				}
+				if (!good) {
+					VectorCopy(pos->origin, goodOrigin);
+					good = WiggleSpotTelefrag(goodOrigin, ent);
+				}
+			}
+			else {
+				VectorCopy(pos->origin, goodOrigin);
+				good = WiggleSpotTelefrag(goodOrigin, ent);
+			}
+
+
+
+			if (good) {
+				// ok found a good pos
+				VectorCopy(pos->velocity, spawn_velocity);
+				VectorSubtract(level.ironManCurrentPosition,goodOrigin,delta);
+				VectorNormalize(delta);
+				vectoangles(delta, spawn_angles); // look at the iron man
+				spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
+
+				//VectorCopy(pos->velocity, velNorm);
+				//speed = VectorNormalize(velNorm);
+				//if (speed > 10) {
+				//	vectoangles(velNorm, spawn_angles);
+				//	spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
+				//}
+				//else {
+				//	VectorCopy(pos->angles,spawn_angles);
+				//}
+				VectorCopy(goodOrigin, spawn_origin);
+				return qtrue;
+			}
+
+		}
+
+	}
+	return qfalse;
+
+	
+}
+
 /*
 ===========
 ClientSpawn
@@ -2267,6 +2378,8 @@ void ClientSpawn(gentity_t *ent) {
 	qboolean	raceSpawnPossible = qfalse;
 	qboolean	useSavedSpawn = qfalse;
 	int			nowTime = LEVELTIME(ent->client); // at the start of a client (ClientBegin) pers.cmd.serverTime is empty
+	vec3_t		spawn_velocity;
+	qboolean	spawn_velocity_set = qfalse;
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -2367,6 +2480,14 @@ void ClientSpawn(gentity_t *ent) {
 
 		} while ( 1 );
 	}
+
+	if (client->sess.mode == MODE_IRONMAN && !client->isIronMan) {
+		if (G_CheckForCloserIronmanSpawn(ent,spawn_origin,spawn_angles,spawn_velocity)) {
+			spawnPoint = NULL;
+			spawn_velocity_set = qtrue;
+		}
+	}
+
 	client->pers.teamState.state = TEAM_ACTIVE;
 
 	if (g_arenaAutoGen.integer && !level.hasArenaInfo) {
@@ -2675,6 +2796,23 @@ void ClientSpawn(gentity_t *ent) {
 		}
 	}
 
+
+	switch (client->sess.mode) {
+		case MODE_NORMAL:
+		default:
+			break;
+		case MODE_DEFRAG:
+			client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER) + (1 << WP_DISRUPTOR) + (1 << WP_STUN_BATON);
+			client->ps.weapon = WP_SABER;
+			break;
+		case MODE_DUEL:
+		case MODE_ALLFORCE:
+		case MODE_IRONMAN:
+			client->ps.stats[STAT_WEAPONS] = 1 << WP_SABER;
+			client->ps.weapon = WP_SABER;
+			break;
+	}
+
 	/*
 	client->ps.stats[STAT_HOLDABLE_ITEMS] |= ( 1 << HI_BINOCULARS );
 	client->ps.stats[STAT_HOLDABLE_ITEM] = BG_GetItemIndexByTag(HI_BINOCULARS, IT_HOLDABLE);
@@ -2793,17 +2931,25 @@ void ClientSpawn(gentity_t *ent) {
 		}
 	}
 
+	if (spawn_velocity_set) {
+		VectorCopy(spawn_velocity, client->ps.velocity);
+	}
+
 	// run a client frame to drop exactly to the floor,
 	// initialize animations and other things
 	if (!inSegmentedRun) {
 		// dont do in racemode in segmented runs and with start spawn
 		client->ps.commandTime = nowTime - 100;
 		ent->client->pers.cmd.serverTime = nowTime;
+		if (spawn_velocity_set) {
+			ent->client->pers.cmd.upmove = 127; // jump to preserve the velocity if needed? might need more tweaking
+		}
 		ClientThink(ent - g_entities);
 	}
 	else {
 		client->ps.commandTime = (savedCommandTime >0) ? savedCommandTime : nowTime; // how will things work out when fps anti toggle is active?
 	}
+	
 
 	// positively link the client, even if the command times are weird
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {

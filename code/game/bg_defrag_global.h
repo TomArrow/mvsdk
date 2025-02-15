@@ -12,8 +12,18 @@
 
 #define IRONMAN_NEXTCAPPER_TIMEOUT 3000
 #define IRONMAN_FLAGRESPAWNTIME IRONMAN_NEXTCAPPER_TIMEOUT-500
+#define IRONMAN_JEDIMASTERSHELL_MINDRAWDISTANCE 2000.0f
+#define IRONMAN_MAX_PAST_POSITIONS_COUNT 50 // let's be robust
+#define IRONMAN_SAVEPOSITION_MINDISTANCE 1500.0f
+#define IRONMAN_SAVEPOSITION_MINDISTANCE_SHORT 100.0f
+#define IRONMAN_SAVEPOSITION_MINTIMEFORCE 3000
+#define IRONMAN_SAVEPOSITION_MINTIMEFORCESURELY 6000
+#define IRONMAN_RESPAWNPOSITION_MINDISTANCE 1500.0f
+#define IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT 350.0f // for emergencies idk
+#define IRONMAN_RESPAWNPOSITION_MAXPOSITIONAGE 10000
+#define IRONMAN_NEARBYBROADCASTRANGE 1000.0f
 
-typedef enum playerMode_s {
+typedef enum playerMode_s { // NEVER change the order in this as it's part of the player configstring. If adding something, add it at the end. If adding something in a fork, add 1000 plus a few hundred (check github for other ppl who extended it?) to distinguish from TommyTernal modes, ty.
 	MODE_INVALID,
 	MODE_NORMAL,
 	MODE_DEFRAG,
@@ -22,6 +32,13 @@ typedef enum playerMode_s {
 	MODE_IRONMAN,
 	MODE_NUM_MODES
 } playerMode_e;
+
+typedef struct ironManPos_s { // we periodically save ironman pos so we can spawn near him
+	vec3_t		origin;
+	vec3_t		velocity;
+	vec3_t		angles;
+	int			when;
+} simplePos_t;
 
 typedef enum //movementstyle enum
 {

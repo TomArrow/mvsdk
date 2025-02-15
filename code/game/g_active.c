@@ -1373,6 +1373,73 @@ static void G_UpdateJediMasterBroadcasts ( gentity_t *self )
 	}
 }
 
+static void G_UpdateIronmanBroadcasts ( gentity_t *self )
+{
+	int i;
+
+	// Not iron man mode then nothing to do
+	if ( self->client->sess.mode != MODE_IRONMAN )
+	{
+		return;
+	}
+
+	// This client isnt the ironman so it shouldnt broadcast
+	if ( !self->client->isIronMan )
+	{
+		// check if we are at least close to the ironman
+		if (level.ironManCurrentPositionSet) {
+			vec3_t delta;
+			VectorSubtract(level.ironManCurrentPosition,self->client->ps.origin,delta);
+			if (VectorLengthSquared(delta) > IRONMAN_NEARBYBROADCASTRANGE* IRONMAN_NEARBYBROADCASTRANGE) {
+				// broadcast players near the ironman as well. so demos dont miss out on any cool dbs :)
+				// we don't rly care about wallhack or anything in ironman anyway
+				return;
+			}
+		}
+		else {
+			return;
+		}
+	}
+
+	// Broadcast ourself to all iron manners
+	for ( i = 0; i < level.numConnectedClients; i ++ )
+	{
+		gentity_t *ent = &g_entities[level.sortedClients[i]];
+		float	  dist;
+		vec3_t	  angles;
+
+		if ( ent == self )
+		{
+			continue;
+		}
+
+		if (ent->client->sess.mode != MODE_IRONMAN) {
+			continue;
+		}
+
+		// for ironman ignore distance. does it matter?
+		/*VectorSubtract(self->client->ps.origin, ent->client->ps.origin, angles);
+		dist = VectorLengthSquared ( angles );
+		vectoangles ( angles, angles );
+
+		// Too far away then just forget it
+		if ( dist > MAX_JEDIMASTER_DISTANCE * MAX_JEDIMASTER_DISTANCE )
+		{
+			continue;
+		}
+		
+		// If not within the field of view then forget it
+		if ( !InFieldOfVision ( ent->client->ps.viewangles, MAX_JEDIMASTER_FOV, angles ) )
+		{
+			continue;
+		}*/
+
+		// Turn on the broadcast bit for the master and since there is only one
+		// master we are done
+		self->r.broadcastClients[ent->s.number/32] |= (1 << (ent->s.number%32));
+	}
+}
+
 void G_UpdateClientBroadcasts ( gentity_t *self )
 {
 	// Clear all the broadcast bits for this client
@@ -1380,6 +1447,9 @@ void G_UpdateClientBroadcasts ( gentity_t *self )
 
 	// The jedi master is broadcast to everyone in range
 	G_UpdateJediMasterBroadcasts ( self );
+
+	// The ironman is broadcast to everyone
+	G_UpdateIronmanBroadcasts( self );
 
 	// Anyone with force sight on should see this client
 	G_UpdateForceSightBroadcasts ( self );
@@ -1574,6 +1644,62 @@ void HandleClientLaserPointer(gentity_t* ent) {
 	else {
 		ClientKillLaserPointer(ent);
 	}
+}
+
+// save positions of the iron man so we can respawn his chasers at a reasonable distance to him and not make them run half a minute to reach him again
+void G_MaybeSaveIronmanPos(gentity_t* ent) {
+	gclient_t* client = ent->client;
+	vec3_t diffToOld;
+	trace_t trace;
+	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
+	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+
+	VectorCopy(client->ps.origin,level.ironManCurrentPosition);
+	level.ironManCurrentPositionSet = qtrue;
+
+	if (!client->isIronMan || client->sess.mode != MODE_IRONMAN || client->ps.groundEntityNum != ENTITYNUM_WORLD) {
+		return;
+	}
+
+	if (level.ironManPosCount > 0) {
+		VectorSubtract(level.ironManPos[(level.ironManPosCount - 1) % IRONMAN_MAX_PAST_POSITIONS_COUNT].origin, client->ps.origin, diffToOld);
+
+		if (level.lastIronManPosSaved + IRONMAN_SAVEPOSITION_MINTIMEFORCE > level.time) {
+			// not been long enough since last, so just check if maybe we traveled a long distance, otherwise skip.
+			if (VectorLengthSquared(diffToOld) < IRONMAN_SAVEPOSITION_MINDISTANCE * IRONMAN_SAVEPOSITION_MINDISTANCE) {
+				return;
+			}
+		}
+		else if (level.lastIronManPosSaved + IRONMAN_SAVEPOSITION_MINTIMEFORCESURELY > level.time) {
+			// even if enough time passed, let's make surer we travel at least a BIT.
+			// there MIGHT be a way to abuse this with maybe some specially designed complicated labyrinth or sth idk. gonne be mostly ok tho.
+			if (VectorLengthSquared(diffToOld) < IRONMAN_SAVEPOSITION_MINDISTANCE_SHORT * IRONMAN_SAVEPOSITION_MINDISTANCE_SHORT) {
+				return;
+			}
+		}
+		else {
+			// well now TRULY a lot of time passed. just go.
+		}
+	}
+	
+	JP_Trace(&trace, client->ps.origin, playerMins, playerMaxs, client->ps.origin,ent-g_entities, MASK_PLAYERSOLID);
+
+	if (trace.allsolid || trace.startsolid) {
+		return; // maybe hes crouching somewhere in a hole or sth. Can't save it because anyone spawning would get stuck.
+	}
+
+	VectorCopy(client->ps.origin,level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].origin);
+	VectorCopy(client->ps.velocity,level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].velocity);
+	VectorCopy(client->ps.viewangles,level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].angles);
+	client->ps.velocity, level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].when = level.time;
+
+	if (g_developer.integer) {
+		Com_Printf("Saving ironman position: %f %f %f", client->ps.origin[0], client->ps.origin[1], client->ps.origin[2]);
+	}
+
+	level.ironManPosCount++;
+	level.lastIronManPosSaved = level.time;
+
 }
 
 void DF_CheckRollSpeed(gentity_t* ent);
@@ -2237,6 +2363,10 @@ void ClientThink_real( gentity_t *ent ) {
 	DF_PostDeltaAngleChange(ent->client,!(ent->client->sess.raceStyle.runFlags & RFL_BOT)); // qfalse if strafebot
 	ent->client->pers.roll = pm.roll;
 	ent->client->pers.antiLoop = pm.antiLoop;
+
+	if (client->isIronMan) {
+		G_MaybeSaveIronmanPos(ent);
+	}
 
 	if (ent->client->sess.raceStateInvalidated) {
 		ent->client->pers.roll.rollDisqualified = qtrue;

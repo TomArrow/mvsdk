@@ -1078,6 +1078,11 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	v = Info_ValueForKey( configstring, "skill" );
 	newInfo.botSkill = atoi( v );
 
+	if (cgs.isTommyTernal) {
+		v = Info_ValueForKey( configstring, "mode" );
+		newInfo.playerMode = atoi( v );
+	}
+
 	// handicap
 	v = Info_ValueForKey( configstring, "hc" );
 	newInfo.handicap = atoi( v );
@@ -6074,6 +6079,7 @@ void CG_Player( centity_t *cent ) {
 	int				effectTimeLayer = 0;
 	qboolean		gotLHandMatrix = qfalse;
 	qboolean		g2HasWeapon = qfalse;
+	qboolean		drawIronmanShell = qfalse;
 
 	if (cgQueueLoad || cgQuigonUnlocked)
 	{
@@ -7533,7 +7539,20 @@ stillDoSaber:
 		legs.renderfx |= RF_MINLIGHT;
 	}
 
-	if (cg.snap->ps.clientNum != cent->currentState.number && (cg_wallhack.integer & 1) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1<<WALLHACK_DISABLE_PLAYERS)))
+
+	if (cgs.isTommyTernal && ci->playerMode == MODE_IRONMAN && cgs.clientinfo[cg.snap->ps.clientNum].playerMode == MODE_IRONMAN && (cent->currentState.powerups & ((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG) | (1 << PW_NEUTRALFLAG)))) {
+		vec3_t vectorTo;
+		VectorSubtract(cg.snap->ps.origin, cent->currentState.pos.trBase, vectorTo);
+		// is at least 2000 units away from us. make sure we can see him
+		if (VectorLengthSquared(vectorTo) > IRONMAN_JEDIMASTERSHELL_MINDRAWDISTANCE * IRONMAN_JEDIMASTERSHELL_MINDRAWDISTANCE) {
+			drawIronmanShell = qtrue;
+		}
+	}
+
+	if (cg.snap->ps.clientNum != cent->currentState.number &&
+		(drawIronmanShell || 
+		((cg_wallhack.integer & 1) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1<<WALLHACK_DISABLE_PLAYERS))))
+		)
 	{
 		legs.renderfx |= RF_DEPTHHACK;
 	}
@@ -7880,8 +7899,11 @@ doEssentialThree:
 		
 		trap_R_AddRefEntityToScene( &legs );
 	}
+	
 
-	if (cent->currentState.isJediMaster && cg.snap->ps.clientNum != cent->currentState.number)
+	if ((cent->currentState.isJediMaster  // jedi master
+		|| drawIronmanShell) // ironman
+		&& cg.snap->ps.clientNum != cent->currentState.number)
 	{
 		legs.shaderRGBA[0] = 100;
 		legs.shaderRGBA[1] = 100;

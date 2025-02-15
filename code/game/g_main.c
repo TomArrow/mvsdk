@@ -2962,38 +2962,34 @@ void G_CheckIronManStatus() {
 	// ok nobody has flag. take care of things.
 	qsort(ironManners,ironmannerCount,sizeof(ironManners[0]),sortironmanners);
 
+	level.ironManPosCount = 0;
+	level.lastIronManPosSaved = 0;
 
-	// if any ironmanners are dead, revive them. set default health etc for all
-	for (i = 0; i < ironmannerCount; i++) {
+	// unlink all ironmanners so we can teleport them without their old positions having any influence on anything.
+	for (i = 0; i < ironmannerCount; i++) { 
 		ent = &g_entities[ironManners[i]];
+
+		trap_UnlinkEntity(ent);
+	}
+
+	// Spawn somewhere
+	SelectSpawnPoint(ent, vec3_origin, spawnpoint, spawnpointAngles);
+
+	for (i = ironmannerCount-1; i >= 0; i--) { // spawn the ironman last so if theres anything dimension crushing, he still survives
+		ent = &g_entities[ironManners[i]];
+
+		// reset health/revive
 		if (ent->health <= 0) {
 			respawn(ent);
+			// unlink us so we can wiggle without our own position affecting us. teleportplayer will relink us anyway
+			trap_UnlinkEntity(ent);
 		}
 		ent->client->isIronMan = qfalse;
 		ent->health = 100;
 		ent->client->ps.stats[STAT_HEALTH] = 100;
 		ent->client->ps.stats[STAT_ARMOR] = 25;
-	}
+		ent->client->isIronMan = qfalse;
 
-	ent = &g_entities[ironManners[0]];
-	ent->client->isIronMan = qtrue;
-	ent->client->ps.stats[STAT_ARMOR] = 100; // ironman gets full armor
-	ent->client->ps.eFlags |= EF_INVULNERABLE;
-	ent->client->invulnerableTimer = level.time + 3000; // give ironman 2 seconds of invulnerability to not get insta killed
-	ent->client->pers.lastIronmanFlagGiven = level.time;
-	randomteam = Q_irand(PW_REDFLAG, 2, qfalse, PW_REDFLAG);
-	ent->client->ps.powerups[randomteam] = INT_MAX; // lets not do neutral flag cuz its not actually visible :/
-	PrintCTFMessage(ent-g_entities, randomteam == PW_REDFLAG ? TEAM_RED : TEAM_BLUE, CTFMESSAGE_PLAYER_GOT_FLAG);
-
-	// Spawn somewhere
-	SelectSpawnPoint(ent,vec3_origin, spawnpoint, spawnpointAngles);
-	spawnpoint[2] -= 1.0f; // since teleportplayer adds that
-	TeleportPlayer(ent, spawnpoint, spawnpointAngles);
-	spawnpoint[2] += 1.0f;
-
-	for (i = 1; i < ironmannerCount; i++) {
-		ent = &g_entities[ironManners[i]];
-		// spawn all others nearby.
 		VectorCopy(spawnpoint, spawnpointWiggled);
 		WiggleSpotTelefrag(spawnpointWiggled,ent);
 		spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
@@ -3001,6 +2997,18 @@ void G_CheckIronManStatus() {
 		spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
 	}
 
+	// set data for the iron man (ent will be the ironman as we counted backwards in the looop)
+	ent->client->isIronMan = qtrue;
+	ent->client->ps.stats[STAT_ARMOR] = 100; // ironman gets full armor
+	ent->client->ps.eFlags |= EF_INVULNERABLE;
+	ent->client->invulnerableTimer = level.time + 3000; // give ironman 2 seconds of invulnerability to not get insta killed
+	ent->client->pers.lastIronmanFlagGiven = level.time;
+	randomteam = Q_irand(PW_REDFLAG, 2, qfalse, PW_REDFLAG);
+	ent->client->ps.powerups[randomteam] = INT_MAX; // lets not do neutral flag cuz its not actually visible :/
+	PrintCTFMessage(ent - g_entities, randomteam == PW_REDFLAG ? TEAM_RED : TEAM_BLUE, CTFMESSAGE_PLAYER_GOT_FLAG);
+
+	VectorCopy(ent->client->ps.origin, level.ironManCurrentPosition);
+	level.ironManCurrentPositionSet = qtrue;
 }
 
 

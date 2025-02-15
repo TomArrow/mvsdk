@@ -801,6 +801,11 @@ typedef struct {
 	int			lastAllRankUpdate;
 	int			nextRandomTip;
 	int			lastIronManKilled;
+	vec3_t		ironManCurrentPosition;
+	qboolean	ironManCurrentPositionSet;
+	simplePos_t	ironManPos[IRONMAN_MAX_PAST_POSITIONS_COUNT];
+	int			ironManPosCount;
+	int			lastIronManPosSaved;
 } level_locals_t;
 
 
@@ -1118,7 +1123,7 @@ void player_die (gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 void AddScore( gentity_t *ent, vec3_t origin, int score );
 void CalculateRanks( void );
 qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt );
-void WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt);
+qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt);
 
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra);
 void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers);

@@ -142,7 +142,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.spectatorState = (spectatorState_t)spectatorState;
 	client->sess.teamLeader = (qboolean)teamLeader;
 	client->sess.setForce = (qboolean)setForce;
-	client->sess.mode = (playerMode_e)tempRaceMode;
+	client->sess.mode = (playerMode_e)tempMode;
 	client->sess.raceMode = (qboolean)tempRaceMode;
 	client->sess.raceStyle.movementStyle = (byte)movementStyle;
 	client->sess.raceStyle.runFlags = (short)runFlags;

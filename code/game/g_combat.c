@@ -1856,7 +1856,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	self->client->ps.fd.forceDeactivateAll = 1;
 
 	if ((self == attacker || !attacker->client) &&
-		(meansOfDeath == MOD_CRUSH || meansOfDeath == MOD_FALLING || meansOfDeath == MOD_TRIGGER_HURT || meansOfDeath == MOD_UNKNOWN) &&
+		(meansOfDeath == MOD_CRUSH || meansOfDeath == MOD_FALLING || meansOfDeath == MOD_TRIGGER_HURT || meansOfDeath == MOD_UNKNOWN || meansOfDeath == MOD_LAVA || meansOfDeath == MOD_SLIME) && // TA: Give credit for lava/slime kills too :)
 		self->client->ps.otherKillerTime > nowTime)
 	{
 		attacker = &g_entities[self->client->ps.otherKiller];
@@ -2102,6 +2102,15 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
 		}
 		level.lastIronManKilled = level.time;
+	}
+	else if (self->client->sess.mode == MODE_IRONMAN && attacker && attacker->client && attacker->client->sess.mode == MODE_IRONMAN && attacker->client->isIronMan) {
+		// give shield bonus to iron man if he kills someone
+		if (attacker->client->ps.stats[STAT_ARMOR] < 100) {
+			attacker->client->ps.stats[STAT_ARMOR] += 20;
+			if (attacker->client->ps.stats[STAT_ARMOR] > 100) {
+				attacker->client->ps.stats[STAT_ARMOR] = 100;
+			}
+		}
 	}
 	else {
 		// Add team bonuses

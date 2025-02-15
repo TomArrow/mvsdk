@@ -3578,6 +3578,8 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 	}
 	ent->client->sess.mode = mode;
 	ent->client->sess.raceMode = isRace;
+
+	ClientUserinfoChanged(ent-g_entities);
 	
 	ent->s.weapon = WP_SABER; //Dont drop our weapon
 	if (!isRace) Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S//Delete all their projectiles / saved stuff
@@ -3685,6 +3687,7 @@ qboolean ClientModeValid(gentity_t* ent) {
 
 
 void ClientSetDefaultMode(gentity_t* ent) {
+	ent->client->sess.mode = MODE_INVALID; // force it 
 	ClientSetModeReal(ent, GetDefaultPlayerMode());
 }
 

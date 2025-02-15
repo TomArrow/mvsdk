@@ -602,6 +602,8 @@ typedef struct {
 	mvversion_t		jk2gameplay;
 	int				jkmod_race; // jk+ and tommyternal
 	char			username[MAX_QPATH];
+
+	playerMode_e	playerMode; // tommyternal gamemodes (duel, ironman etc)
 } clientInfo_t;
 
 
