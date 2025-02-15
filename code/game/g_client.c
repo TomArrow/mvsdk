@@ -2227,6 +2227,7 @@ static qboolean AllForceDisabled(int force)
 	return qfalse;
 }
 
+
 qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
 	int				i;
 	int				allowShortPos = 0;
@@ -2235,8 +2236,9 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 	float			currentDist;
 	qboolean		good = qfalse;
 	simplePos_t*	pos;
+	trace_t			trace;
 	//vec3_t			velNorm;
-	if (!level.ironManPosCount) {
+	if (!level.ironManPosCount || !level.ironManCurrentPositionSet || level.ironManClientNum == -1) {
 		return qfalse;
 	}
 
@@ -2278,22 +2280,32 @@ retry:
 			float speed;
 
 			if (allowShortPos == 2) {
-				int side, front;
+				int side, front, up;
 				good = qfalse;
 				VectorCopy(pos->origin, goodOrigin);
 				// we might spawn right on the capper's ass
 				// try to move us a bit away if we can?
-				for (side = -1; side < 2 && !good; side++) {
-					for (front = -1; front < 2 && !good; front++) {
-						if (side == 0 && front == 0) {
-							continue;
-						}
-						goodOrigin[0] = pos->origin[0] + (float)front * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
-						goodOrigin[1] = pos->origin[1] + (float)side * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
-						goodOrigin[2] = pos->origin[2];
-						if (WiggleSpotTelefrag(goodOrigin, ent)) {
-							good = qtrue;
-							break;
+				for(up=0;up<2;up++){
+					for (side = -1; side < 2 && !good; side++) {
+						for (front = -1; front < 2 && !good; front++) {
+							if (side == 0 && front == 0) {
+								continue;
+							}
+							goodOrigin[0] = pos->origin[0] + (float)front * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
+							goodOrigin[1] = pos->origin[1] + (float)side * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
+							goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
+							//if (WiggleSpotTelefrag(goodOrigin, ent)) {
+
+								JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID);
+								// make sure we could actually reach the capper from that place
+								if (!trace.allsolid && !trace.startsolid && trace.fraction>0.4f) { // let's be at least 0.6*min distance away
+									VectorCopy(trace.endpos, goodOrigin);
+									if (WiggleSpotTelefrag(goodOrigin, ent)) {
+										good = qtrue;
+										break;
+									}
+								}
+							//}
 						}
 					}
 				}

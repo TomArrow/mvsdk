@@ -2946,12 +2946,15 @@ void G_CheckIronManStatus() {
 		return; 
 	}
 
+	level.ironManClientNum = -1;
+
 	for (i = 0; i < level.maxclients; i++, ent++) {
 		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
 			continue;
 		}
 		if (ent->client->ps.powerups[PW_BLUEFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_NEUTRALFLAG]) {
 			flagCount++;
+			level.ironManClientNum = i;
 		}
 		ironManners[ironmannerCount++] = i;
 	}

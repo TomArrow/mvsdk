@@ -803,6 +803,7 @@ typedef struct {
 	int			lastIronManKilled;
 	vec3_t		ironManCurrentPosition;
 	qboolean	ironManCurrentPositionSet;
+	int			ironManClientNum;
 	simplePos_t	ironManPos[IRONMAN_MAX_PAST_POSITIONS_COUNT];
 	int			ironManPosCount;
 	int			lastIronManPosSaved;
