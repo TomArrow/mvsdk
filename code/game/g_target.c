@@ -421,12 +421,38 @@ void SP_target_relay (gentity_t *self) {
 /*QUAKED target_kill (.5 .5 .5) (-8 -8 -8) (8 8 8)
 Kills the activator.
 */
+void target_kill_markcallers( gentity_t *self) {
+	gentity_t* caller;
+	self->think = NULL;
+	self->nextthink = 0;
+
+	if (!self->targetname) {
+		return;
+	}
+
+	caller = NULL;
+	// find anyone who calls us
+	while (caller = G_Find(caller, FOFS(target), self->targetname)) {
+
+		if (caller->r.bmodel && (caller->r.contents & CONTENTS_TRIGGER)) { // this is a trigger that calls kill. make sure bubble spawn never spawns us inside this or on top of it
+			caller->r.contents |= CONTENTS_NOSPAWN;
+			if (coolApi & COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS) {
+				// this way our bubble spawn can tell not to spawn on top of or in this
+				trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_NOSPAWN, COOLAPI_BMODELCFLAGS_ADD);
+			}
+		}
+	}
+}
 void target_kill_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 	G_Damage ( activator, NULL, NULL, NULL, NULL, 100000, DAMAGE_NO_PROTECTION| DAMAGE_IN_RACEMODE, MOD_TELEFRAG);
 }
 
 void SP_target_kill( gentity_t *self ) {
 	self->use = target_kill_use;
+	if (self->targetname) {
+		self->think = target_kill_markcallers;
+		self->nextthink = level.time + 300;
+	}
 }
 
 /*QUAKED target_position (0 0.5 0) (-4 -4 -4) (4 4 4)

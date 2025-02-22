@@ -33,6 +33,7 @@
 #define	CONTENTS_TRANSLUCENT	0x80000000	// don't consume surface fragments inside
 
 #define	CONTENTS_TRIGGER_EXIT	0x40000000	// contains a defrag timer. special case of trigger
+#define	CONTENTS_NOSPAWN		0x20000000u	// can't spawn on top of or in this (trigger_hurt etc)
 
 #define	SURF_SKY				0x00002000	// lighting from environment map
 #define	SURF_SLICK				0x00004000	// affects game physics

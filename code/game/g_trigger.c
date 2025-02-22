@@ -633,7 +633,12 @@ void SP_trigger_hurt( gentity_t *self ) {
 		self->damage = 5;
 	}
 
-	self->r.contents = CONTENTS_TRIGGER;
+	self->r.contents = CONTENTS_TRIGGER | CONTENTS_NOSPAWN;
+
+	if (coolApi & COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS) {
+		// this way our bubble spawn can tell not to spawn on top of or in this
+		trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_NOSPAWN, COOLAPI_BMODELCFLAGS_ADD);
+	}
 
 	if ( self->spawnflags & 2 ) {
 		self->use = hurt_use;

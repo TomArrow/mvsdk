@@ -379,6 +379,7 @@ qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 	int			height;
 	int			right;
 	int			front;
+	qboolean	errorMsgShown = qfalse;
 
 	VectorCopy(origin, original);
 	for (height = 0; height < 3; height++) {
@@ -389,14 +390,25 @@ qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 			for (right = -1; right < 2; right++) {
 				testdown[1] = test[1] = original[1]+32.0f*right;
 				if (!SpotWouldTelefrag(test, spawningEnt)) { // cool, we could spawn here and not kill anyone.
-					JP_Trace(&groundTrace,test,playerMins,playerMaxs,testdown,-1, MASK_PLAYERSOLID);
-					if (groundTrace.startsolid || groundTrace.allsolid) {
-						continue; // welp, we can't spawn here, in a wall or sth
+					JP_Trace(&groundTrace,test,playerMins,playerMaxs,testdown,-1, MASK_PLAYERSOLID | MASK_WATER | CONTENTS_NOSPAWN);
+					if (groundTrace.startsolid || groundTrace.allsolid || (groundTrace.contents & (MASK_WATER | CONTENTS_NOSPAWN))) {
+						continue; // welp, we can't spawn here, in a wall/water/lava/kill trigger or sth
 					}
 					if (groundTrace.fraction == 1.0f) {
 						continue; // nah therer's no ground to stand on
 					}
+					if (groundTrace.fraction == 0.0f) {
+						// this is a weird bug on at least one map i found where you dont get the proper startsolid/allsolid but you get 0 here. its really really odd.
+						//if (g_developer.integer) {
+						if (!errorMsgShown) {
+							Com_Printf("^1WiggleSpotTelefrag: Fraction is 0 but startsolid and allsolid are false. Skipping spawn.\n"); // debug buut it spams :/ screw it
+							errorMsgShown = qtrue;
+						}
+						//}
+						continue;
+					}
 					VectorCopy(test, origin);
+					JP_Trace(&groundTrace, test, playerMins, playerMaxs, testdown, -1, MASK_PLAYERSOLID | MASK_WATER | CONTENTS_NOSPAWN); // debug
 					return qtrue;
 				}
 			}
@@ -2280,32 +2292,53 @@ retry:
 			float speed;
 
 			if (allowShortPos == 2) {
-				int side, front, up;
+				int side, front, up, dist, skipvis;
+				float traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
+				float fracRequired = 0.4;
 				good = qfalse;
 				VectorCopy(pos->origin, goodOrigin);
 				// we might spawn right on the capper's ass
 				// try to move us a bit away if we can?
-				for(up=0;up<2;up++){
-					for (side = -1; side < 2 && !good; side++) {
-						for (front = -1; front < 2 && !good; front++) {
-							if (side == 0 && front == 0) {
-								continue;
-							}
-							goodOrigin[0] = pos->origin[0] + (float)front * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
-							goodOrigin[1] = pos->origin[1] + (float)side * IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
-							goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
-							//if (WiggleSpotTelefrag(goodOrigin, ent)) {
+				for (skipvis = 0; skipvis < 2 && !good; skipvis++) { // in emergency, dont require visual contact to capper
+					for (dist = 0; dist < 2 && !good; dist++) { // try shorter distance if nothing fouund
+						if (dist == 1) {
+							traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
+							fracRequired = 0.8f;
+						}
+						for (up = 0; up < 2 && !good; up++) {
+							for (side = -1; side < 2 && !good; side++) {
+								for (front = -1; front < 2 && !good; front++) {
+									if (side == 0 && front == 0) {
+										continue;
+									}
+									goodOrigin[0] = pos->origin[0] + (float)front * traceDist;
+									goodOrigin[1] = pos->origin[1] + (float)side * traceDist;
+									goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
+									//if (WiggleSpotTelefrag(goodOrigin, ent)) {
 
-								JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID);
-								// make sure we could actually reach the capper from that place
-								if (!trace.allsolid && !trace.startsolid && trace.fraction>0.4f) { // let's be at least 0.6*min distance away
-									VectorCopy(trace.endpos, goodOrigin);
-									if (WiggleSpotTelefrag(goodOrigin, ent)) {
-										good = qtrue;
-										break;
+									if (skipvis) {
+										if (WiggleSpotTelefrag(goodOrigin, ent)) {
+											good = qtrue;
+											break;
+										}
+									}
+									else {
+										JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | MASK_WATER | CONTENTS_NOSPAWN);
+										// make sure we could actually reach the capper from that place
+										if (!trace.allsolid && !trace.startsolid && !(trace.contents & (MASK_WATER | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
+											// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
+											VectorCopy(trace.endpos, goodOrigin);
+											JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition, level.ironManClientNum, MASK_PLAYERSOLID);
+											if (trace.fraction == 1.0f) {
+												if (WiggleSpotTelefrag(goodOrigin, ent)) {
+													good = qtrue;
+													break;
+												}
+											}
+										}
 									}
 								}
-							//}
+							}
 						}
 					}
 				}

@@ -2220,7 +2220,8 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if (ent->client->ps.otherKillerTime > nowTime &&
 		ent->client->ps.groundEntityNum != ENTITYNUM_NONE &&
-		ent->client->ps.otherKillerDebounceTime < nowTime)
+		ent->client->ps.otherKillerDebounceTime < nowTime &&
+		(!ent->waterlevel || !(ent->watertype & (CONTENTS_LAVA | CONTENTS_SLIME))))
 	{
 		ent->client->ps.otherKillerTime = 0;
 		ent->client->ps.otherKiller = ENTITYNUM_NONE;
