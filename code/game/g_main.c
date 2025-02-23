@@ -368,7 +368,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_fixHighFPSAbuse, "g_fixHighFPSAbuse", "0", CVAR_SYSTEMINFO, 0, qtrue},
-	{ &g_ttFlags, "ttFlags", "1", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue}, // not currently used, maybe for the future to communicate special tommyternal server settings to the client. value 1 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS))
+	{ &g_ttFlags, "ttFlags", "3", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue}, // not currently used, maybe for the future to communicate special tommyternal server settings to the client. value 3 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH))
 	{ &g_entHUDFields, "g_entHUDFields", "1", CVAR_SYSTEMINFO|CVAR_ARCHIVE, 0, qtrue},
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},

@@ -2373,6 +2373,8 @@ void ClientThink_real( gentity_t *ent ) {
 		ent->client->pers.roll.rollDisqualified = qtrue;
 	}
 
+	level.playerStats[ent - g_entities]->s.pos.trBase[1] = ent->client->ps.fd.forceSpeedSmash; // for nicer force speed client prediction
+
 	//DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,prePmoveVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
 	DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,pm.lastAntiLoopVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
 	level.playerStats[ent - g_entities]->s.pos.trBase[0] = ent->client->pers.antiLoop.yawAngleChangeSinceBaseSpeed;

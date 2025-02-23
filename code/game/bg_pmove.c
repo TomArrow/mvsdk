@@ -5437,6 +5437,27 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 
 	if (ps->fd.forcePowersActive & (1 << FP_SPEED))
 	{
+		
+
+#if JK2_CGAME
+		if (pm->haveForceSpeedSmash) { // got it tunneled. can actually predict nicely then :)
+			if (ps->fd.forceSpeedSmash < 1.2)
+			{
+				ps->fd.forceSpeedSmash = 1.2f;
+			}
+			if (ps->fd.forceSpeedSmash > forceSpeedLevels[3]) //2.8
+			{
+				ps->fd.forceSpeedSmash = forceSpeedLevels[3];
+			}
+		}
+		else {
+			//ps->fd.forceSpeedSmash = 2.0f; // not networked. just force setting to the force level 3 level. UNLESS it is tunneled somehow TODO
+			//if (ps->fd.forceSpeedSmash > forceSpeedLevels[3]) //2.8
+			{
+				ps->fd.forceSpeedSmash = forceSpeedLevels[3]; // it's not networked so we stutter because we predict ourselves without the actual speedgain. assume level 3 i guess, should be correct in 99% of cases of actual gameplay. 
+			}
+		}
+#else
 		if (ps->fd.forceSpeedSmash < 1.2)
 		{
 			ps->fd.forceSpeedSmash = 1.2f;
@@ -5445,6 +5466,7 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 		{
 			ps->fd.forceSpeedSmash = forceSpeedLevels[ps->fd.forcePowerLevel[FP_SPEED]];
 		}
+#endif
 		ps->speed *= ps->fd.forceSpeedSmash;
 		ps->fd.forceSpeedSmash += 0.005f;
 	}

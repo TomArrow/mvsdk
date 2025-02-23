@@ -58,7 +58,8 @@
 #define MVSDK_CGFLAG_SUBMODEL_BYPASS        (1 << 2)        // Set by the client in mvsdk_cgFlags to inform the server that it is capable of loading more than 256 submodels (only set when the engine supports it, too)
 
 
-#define TTFLAGSSERVERINFO_HASANTILOOPSTATS		(1<<0) //unused
+#define TTFLAGSSERVERINFO_HASANTILOOPSTATS		(1<<0) 
+#define TTFLAGSSERVERINFO_HASFORCESPEEDSMASH	(1<<1) 
 
 
 //jk2pro
@@ -335,7 +336,9 @@ typedef struct {
 	int			q2Skims;
 
 	qboolean	positionChangedOutsidePmove;
-
+#if JK2_CGAME
+	qboolean	haveForceSpeedSmash; // for cgame
+#endif
 	playerState_t	*bgClients[MAX_CLIENTS];
 	int			checkDuelLoss;
 	int			requiredCmdMsec;

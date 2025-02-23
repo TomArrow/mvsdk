@@ -918,6 +918,9 @@ void CG_PredictPlayerState( void ) {
 	antiLoopState_t extraPredictRestoreAntiloop;
 	int			oldButtons = 0;
 	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
+	centity_t* statsEnt = NULL;
+	float		forceSpeedSmash;
+	qboolean	haveForceSpeedSmash = qfalse;
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
 	cg.teleporterPredicted = qfalse;	// teleporter was predicted so ignore areamask
@@ -935,14 +938,25 @@ void CG_PredictPlayerState( void ) {
 	}
 	lastSnapPsCommandTime = cg.snap->ps.commandTime;
 
-	if (cg_statsEntities[cg.predictedPlayerState.clientNum] && (cgs.ttFlags & TTFLAGSSERVERINFO_HASANTILOOPSTATS)) {
+	statsEnt = cg_statsEntities[cg.predictedPlayerState.clientNum];
+
+	if (statsEnt && cgs.ttFlags) {
+		entityState_t* statsState;
 		if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
-			cg.antiLoop.yawAngleChangeSinceBaseSpeed = cg_statsEntities[cg.predictedPlayerState.clientNum]->nextState.pos.trBase[0];
+			statsState = &statsEnt->nextState;
 		}
 		else {
-			cg.antiLoop.yawAngleChangeSinceBaseSpeed = cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState.pos.trBase[0];
+			statsState = &statsEnt->currentState;
 		}
-		haveAntiLoopStats = qtrue;
+
+		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASANTILOOPSTATS) {
+			cg.antiLoop.yawAngleChangeSinceBaseSpeed = statsState->pos.trBase[0];
+			haveAntiLoopStats = qtrue;
+		}
+		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCESPEEDSMASH) {
+			forceSpeedSmash = statsState->pos.trBase[1];
+			haveForceSpeedSmash = qtrue;
+		}
 	}
 
 	cg.strafehelperVelocityIsInterpolated = qfalse;
@@ -1056,6 +1070,11 @@ void CG_PredictPlayerState( void ) {
 			extraPredictRestorePhysicsTime = cg.snap->serverTime;
 			cg.physicsTime = cg.snap->serverTime;
 		}
+	}
+
+	cg_pmove.haveForceSpeedSmash = haveForceSpeedSmash;
+	if (haveForceSpeedSmash) {
+		cg.predictedPlayerState.fd.forceSpeedSmash = forceSpeedSmash; // TA: Nicer force speed prediction :)
 	}
 
 	if (cg_strafeHelper.integer && latestCmd.serverTime == cg.predictedPlayerState.commandTime/* && !cg_optimizedPredict.integer*/) {

@@ -43,7 +43,7 @@ netField_t	entityStateFields15[] =
 {
 	{ NETF(pos.trTime), 32 }, // respos count of last cut mark in segmented
 	{ NETF(pos.trBase[0]), 0 }, // antiloop angle change
-	{ NETF(pos.trBase[1]), 0 },
+	{ NETF(pos.trBase[1]), 0 }, // forceSpeedSmash
 	{ NETF(pos.trDelta[0]), 0 },
 	{ NETF(pos.trDelta[1]), 0 },
 	{ NETF(pos.trBase[2]), 0 },
