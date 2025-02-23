@@ -1414,7 +1414,7 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	}
 
 	// the same pickup rules are used for client side and server side
-	if ( !BG_CanItemBeGrabbed( g_gametype.integer, &ent->s, &other->client->ps ) ) {
+	if ( !BG_CanItemBeGrabbed( g_gametype.integer, &ent->s, &other->client->ps, other->client->sess.mode ) ) {
 		if (other->client->sess.mode == MODE_IRONMAN) {
 			gitem_t * item = &bg_itemlist[ent->s.modelindex];
 			if (item->giType != IT_TEAM) { // allow ironmanners to grab flags

@@ -1631,7 +1631,7 @@ Returns false if the item should not be picked up.
 This needs to be the same for client side prediction and server use.
 ================
 */
-qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps ) {
+qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps, int playerMode) {
 	gitem_t	*item;
 
 	if ( ent->modelindex < 1 || ent->modelindex >= bg_numItems ) {
@@ -1694,6 +1694,11 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 		{ //weaponstay stuff.. if this isn't dropped, and you already have it, you don't get it.
 			return qfalse;
 		}
+		if (playerMode > MODE_DEFRAG) {
+			if (playerMode != MODE_IRONMAN || item->giTag != WP_TRIP_MINE && item->giTag != WP_TURRET && item->giTag != WP_EMPLACED_GUN) {
+				return qfalse; // in ironman mode we can pick up mines and turrets (and emplaced gun? what even is that?). just going by the default ctf configs with weapondisable
+			}
+		}
 		return qtrue;	// weapons are always picked up
 
 	case IT_AMMO:
@@ -1736,10 +1741,15 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 				return qfalse;
 			}
 		}
+		if (playerMode > MODE_DEFRAG) {
+			if (playerMode != MODE_IRONMAN || item->giTag != PW_REDFLAG && item->giTag != PW_BLUEFLAG && item->giTag != PW_NEUTRALFLAG) { // wait, ... flags arent even IT_POWERUP are they? lol
+				return qfalse; // in ironman mode we can pick up flags. but nothing else. and other modes outside of normal we cant pick up anything
+			}
+		}
 		return qtrue;	// powerups are always picked up
 
 	case IT_TEAM: // team items, such as flags
-		if( gametype == GT_CTF || gametype == GT_CTY ) {
+		if( (gametype == GT_CTF || gametype == GT_CTY) && playerMode == MODE_NORMAL ) {
 			// ent->modelindex2 is non-zero on items if they are dropped
 			// we need to know this because we can pick up our dropped flag (and return it)
 			// but we can't pick up our flag at base
@@ -1754,6 +1764,9 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 					(item->giTag == PW_BLUEFLAG && ps->powerups[PW_REDFLAG]) )
 					return qtrue;
 			}
+		}
+		else if (playerMode == MODE_IRONMAN && ent->modelindex2) { // allow us to "return" the flag
+			return qtrue;
 		}
 
 		return qfalse;

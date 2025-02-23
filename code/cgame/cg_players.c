@@ -1082,6 +1082,9 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		v = Info_ValueForKey( configstring, "mode" );
 		newInfo.playerMode = atoi( v );
 	}
+	else {
+		newInfo.playerMode = MODE_NORMAL;
+	}
 
 	// handicap
 	v = Info_ValueForKey( configstring, "hc" );

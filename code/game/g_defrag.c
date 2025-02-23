@@ -3947,7 +3947,7 @@ qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 			if (g_entities[saberOwner].client) {
 				entityOrOwnerMode = g_entities[saberOwner].client->sess.mode;
 				if (g_entities[saberOwner].client->ps.duelInProgress) {
-					return qfalse;
+					return qfalse; // wait so... if we are in a duel we can touch EVERYONE? or. i guess the game will already filter it elsewhere?
 				}
 			}
 		}
@@ -3960,9 +3960,50 @@ qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 			}
 			// yep just go and dont touch sabers of racers or othermoders either :) or we will make them trollable in segmented runs
 			if (!other->client && other->r.ownerNum != ENTITYNUM_NONE) {
-				gclient_t* owner = g_entities[other->r.ownerNum].client;
-				if (owner->sess.raceMode || entityOrOwnerMode != owner->sess.mode) {
-					return qtrue;
+				gentity_t* owner = &g_entities[other->r.ownerNum];
+				if (owner->client) {
+					if (owner->client->sess.raceMode || entityOrOwnerMode != owner->client->sess.mode) {
+						return qtrue;
+					}
+				}
+				// bit of "recursion" here .. eh we should rewrite this entire function someday its kinda chaotic and disgusting.
+				// one crash ive had from not checking for if client is an event that belongs to a detpack that belongs to a player. meh. this is all disgusting.
+				// we should prolly just do a better check based on clients, and then for items we just take the owner and recurse the entire function
+				else if (owner->r.ownerNum != ENTITYNUM_NONE){ 
+					owner = &g_entities[owner->r.ownerNum];
+					if (owner->client) {
+						if (owner->client->sess.raceMode || entityOrOwnerMode != owner->client->sess.mode) {
+							return qtrue;
+						}
+					}
+					else if (owner->r.ownerNum != ENTITYNUM_NONE) {
+						owner = &g_entities[owner->r.ownerNum];
+						if (owner->client) {
+							if (owner->client->sess.raceMode || entityOrOwnerMode != owner->client->sess.mode) {
+								return qtrue;
+							}
+						}
+						else if (owner->r.ownerNum != ENTITYNUM_NONE) {
+							owner = &g_entities[owner->r.ownerNum];
+							if (owner->client) {
+								if (owner->client->sess.raceMode || entityOrOwnerMode != owner->client->sess.mode) {
+									return qtrue;
+								}
+							}
+							else {
+								Com_Printf("^1ShouldNotCollide: Ownernum max recursion level reached for item %d of class '%s'\n",other-g_entities,other->classname ? other->classname: "");
+							}
+						}
+						else {
+							Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", other - g_entities, other->classname ? other->classname : "", owner - g_entities, owner->classname ? owner->classname : "");
+						}
+					}
+					else {
+						Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", other - g_entities, other->classname ? other->classname : "", owner - g_entities, owner->classname ? owner->classname : "");
+					}
+				}
+				else {
+					Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", other - g_entities, other->classname ? other->classname : "", owner - g_entities, owner->classname ? owner->classname : "");
 				}
 			}
 		}
