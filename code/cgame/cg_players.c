@@ -3832,6 +3832,7 @@ void CG_AddRefEntityWithPowerups( refEntity_t *ent, entityState_t *state, int te
 			ent->customShader = cgs.media.quadShader;
 		trap_R_AddRefEntityToScene( ent );
 	}
+
 	if ( state->powerups & ( 1 << PW_BATTLESUIT ) ) {
 		ent->customShader = cgs.media.battleSuitShader;
 		trap_R_AddRefEntityToScene( ent );
@@ -6639,7 +6640,7 @@ doEssentialOne:
 	}
 
 	//rww - force speed "trail" effect
-	if (!(cent->currentState.powerups & (1 << PW_SPEED)) || doAlpha || !cg_speedTrail.integer)
+	if (!(cent->currentState.powerups & (1 << PW_SPEED)) || doAlpha || !cg_speedTrail.integer || cg_speedTrailSP.integer)
 	{
 		cent->frame_minus1_refreshed = 0;
 		cent->frame_minus2_refreshed = 0;
@@ -6691,6 +6692,29 @@ doEssentialOne:
 		cent->frame_minus2.origin[2] = cent->frame_minus1.origin[2]+tDir[2]*distVelBase;
 
 		trap_R_AddRefEntityToScene(&cent->frame_minus2);
+	}
+
+
+
+	if (cg_speedTrail.integer && cg_speedTrailSP.integer && (cent->currentState.powerups & (1 << PW_SPEED)) // gent->client->ps.forcePowersActive & (1 << FP_SPEED)
+		//&& (gent->s.number || cg.renderingThirdPerson)) // looks dumb doing this with first peron mode on
+		)
+	{
+		localEntity_t* ex;
+
+		ex = CG_AllocLocalEntity();
+		ex->leType = LE_FADE_MODEL;
+		memcpy(&ex->refEntity, &legs, sizeof(refEntity_t));
+
+		//ex->refEntity.renderfx |= RF_ALPHA_FADE;
+		ex->refEntity.renderfx |= RF_FORCE_ENT_ALPHA;
+		ex->startTime = cg.time;
+		ex->endTime = ex->startTime + 75;
+		VectorCopy(ex->refEntity.origin, ex->pos.trBase);
+		VectorClear(ex->pos.trDelta);
+
+		ex->color[0] = ex->color[1] = ex->color[2] = 255.0f;
+		ex->color[3] = 50.0f;
 	}
 
 doEssentialTwo:

@@ -354,6 +354,29 @@ void CG_AddFadeRGB( localEntity_t *le ) {
 	trap_R_AddRefEntityToScene( re );
 }
 
+static void CG_AddFadeModel(localEntity_t* le)
+{
+	refEntity_t* ent = &le->refEntity;
+
+	if (cg.time < le->startTime)
+	{
+		CG_FreeLocalEntity(le);
+		return;
+	}
+
+	float frac = 1.0f - ((float)(cg.time - le->startTime) / (float)(le->endTime - le->startTime));
+
+	ent->shaderRGBA[0] = le->color[0] * frac;
+	ent->shaderRGBA[1] = le->color[1] * frac;
+	ent->shaderRGBA[2] = le->color[2] * frac;
+	ent->shaderRGBA[3] = le->color[3] * frac;
+
+	BG_EvaluateTrajectory(&le->pos, cg.time, ent->origin);
+
+	// add the entity
+	trap_R_AddRefEntityToScene(ent);
+}
+
 static void CG_AddFadeScaleModel( localEntity_t *le )
 {
 	refEntity_t	*ent = &le->refEntity;
@@ -801,6 +824,10 @@ void CG_AddLocalEntities( void ) {
 			break;
 
 		case LE_MARK:
+			break;
+
+		case LE_FADE_MODEL:
+			CG_AddFadeModel(le);
 			break;
 
 		case LE_SPRITE_EXPLOSION:

@@ -554,6 +554,7 @@ vmCvar_t	cg_saberTrail;
 vmCvar_t	cg_duelHeadAngles;
 
 vmCvar_t	cg_speedTrail;
+vmCvar_t	cg_speedTrailSP;
 vmCvar_t	cg_auraShell;
 
 vmCvar_t	cg_animBlend;
@@ -931,6 +932,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_duelHeadAngles, "cg_duelHeadAngles", "0", 0 },
 
 	{ &cg_speedTrail, "cg_speedTrail", "1", 0 },
+	{ &cg_speedTrailSP, "cg_speedTrailSP", "0", CVAR_ARCHIVE },
 	{ &cg_auraShell, "cg_auraShell", "1", 0 },
 
 	{ &cg_animBlend, "cg_animBlend", "1", 0 },

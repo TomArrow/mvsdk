@@ -349,7 +349,8 @@ typedef enum {
 	LE_SCOREPLUM,
 	LE_OLINE,
 	LE_SHOWREFENTITY,
-	LE_LINE
+	LE_LINE,
+	LE_FADE_MODEL
 } leType_t;
 
 typedef enum {
@@ -1743,6 +1744,7 @@ extern	vmCvar_t		cg_saberTrail;
 extern	vmCvar_t		cg_duelHeadAngles;
 
 extern	vmCvar_t		cg_speedTrail;
+extern	vmCvar_t		cg_speedTrailSP;
 extern	vmCvar_t		cg_auraShell;
 
 extern	vmCvar_t		cg_animBlend;
