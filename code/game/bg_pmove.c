@@ -55,6 +55,10 @@ const float	pm_cpm_airstopaccelerate = 2.5f;
 const float	pm_cpm_airstrafeaccelerate = 70.0f;
 const float	pm_cpm_airstrafewishspeed = 30.0f;
 
+const float	pm_sp_accelerate = 12.0f;
+const float	pm_sp_airaccelerate = 4.0f; 
+const float	pm_sp_frictionModifier = 3.0f;	//Used for "careful" mode (when pressing use)
+const float pm_sp_airDecelRate = 1.35f;	//Used for air decelleration away from current movement velocity
 
 int		c_pmove = 0;
 
@@ -543,7 +547,7 @@ static void PM_Friction( void ) {
 	vec3_t	vec;
 	float	*vel;
 	float	speed, newspeed, control;
-	float	drop, realfriction = pm_friction;
+	float	drop, realfriction = pm_friction; // for sp there is pm->ps->friction. is that relevant for us?
 	const int moveStyle = PM_GetMovePhysics();
 	
 	vel = pm->ps->velocity;
@@ -577,6 +581,10 @@ static void PM_Friction( void ) {
 		if ( pml.walking && !(pml.groundTrace.surfaceFlags & SURF_SLICK) ) {
 			// if getting knocked back, no friction
 			if ( ! (pm->ps->pm_flags & PMF_TIME_KNOCKBACK) ) {
+				//If the use key is pressed. slow the player more quickly
+				if (moveStyle == MV_JK2SP && pm->cmd.buttons & BUTTON_USE)
+					realfriction *= pm_sp_frictionModifier;
+
 				control = speed < pm_stopspeed ? pm_stopspeed : speed;
 				drop += control* realfriction *pml.frametime;
 			}
@@ -896,6 +904,11 @@ static float PM_CmdScale( usercmd_t *cmd ) {
 	float	scale;
 	int		umove = 0; //cmd->upmove;
 			//don't factor upmove into scaling speed
+	int moveStyle = PM_GetMovePhysics();
+
+	if (moveStyle == MV_JK2SP) {
+		umove = cmd->upmove;
+	}
 
 	max = abs( cmd->forwardmove );
 	if ( abs( cmd->rightmove ) > max ) {
@@ -1328,14 +1341,16 @@ static qboolean PM_CheckJump( void )
 	const int moveStyle = PM_GetMovePhysics();
 	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
 
-	if (pm->ps->usingATST)
-	{
-		return qfalse;
-	}
+	if (moveStyle != MV_JK2SP) {
+		if (pm->ps->usingATST)
+		{
+			return qfalse;
+		}
 
-	if (pm->ps->forceHandExtend == HANDEXTEND_KNOCKDOWN)
-	{
-		return qfalse;
+		if (pm->ps->forceHandExtend == HANDEXTEND_KNOCKDOWN)
+		{
+			return qfalse;
+		}
 	}
 
 	//Don't allow jump until all buttons are up
@@ -1416,7 +1431,7 @@ static qboolean PM_CheckJump( void )
 				if ( ( curHeight<=forceJumpHeight[0] ||//still below minimum jump height
 						(pm->ps->fd.forcePower&&pm->cmd.upmove>=10) ) &&////still have force power available and still trying to jump up 
 					curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] &&
-					(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04 && !(runFlags & RFL_JUMPBUGDISABLE)))//still below maximum jump height
+					(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04 && moveStyle != MV_JK2SP && !(runFlags & RFL_JUMPBUGDISABLE)))//still below maximum jump height
 				{//can still go up
 					if ( curHeight > forceJumpHeight[0] )
 					{//passed normal jump height  *2?
@@ -1576,18 +1591,23 @@ static qboolean PM_CheckJump( void )
 				}
 				else
 				{
-					//pm->ps->velocity[2] = 0;
-					//rww - changed for the sake of balance in multiplayer
+					if (moveStyle == MV_JK2SP) {
+						pm->ps->velocity[2] = 0;
+					}
+					else {
+						//pm->ps->velocity[2] = 0;
+						//rww - changed for the sake of balance in multiplayer
 
-					if ( pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
-					{
-						pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
+						if (pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
+						{
+							pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
+						}
 					}
 				}
 				pm->cmd.upmove = 0;
 				return qfalse;
 			}
-			else if ( jk2gameplay == VERSION_1_02 && pm->ps->groundEntityNum == ENTITYNUM_NONE )
+			else if ( jk2gameplay == VERSION_1_02 && moveStyle != MV_JK2SP && pm->ps->groundEntityNum == ENTITYNUM_NONE )
 			{
 				int legsAnim = (pm->ps->legsAnim&~ANIM_TOGGLEBIT);
 				if ( legsAnim != BOTH_WALL_RUN_LEFT && legsAnim != BOTH_WALL_RUN_RIGHT )
@@ -2395,7 +2415,9 @@ static void PM_AirMove( void ) {
 
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
-	wishspeed *= scale;
+	if (movePhysics != MV_JK2SP) {
+		wishspeed *= scale;
+	}
 
 	// not on ground, so little effect on velocity
 	if (movePhysics == MV_SICKO) {
@@ -2414,7 +2436,7 @@ static void PM_AirMove( void ) {
 		PM_DreamAccelerate(wishdir, wishspeed, pm_airaccelerate,100,200.0f);
 	}
 	else {
-		PM_Accelerate(wishdir, wishspeed, pm_airaccelerate);
+		PM_Accelerate(wishdir, wishspeed, movePhysics == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate);
 	}
 	PM_UpdateAntiLoop();
 
@@ -2437,6 +2459,19 @@ static void PM_AirMove( void ) {
 			PM_ClipVelocity(pm->ps->velocity, pml.groundTrace.plane.normal,
 				pm->ps->velocity, overbounce);
 			PM_UpdateAntiLoop();
+		}
+	}
+
+	if (movePhysics == MV_JK2SP) {
+		if (!pm->ps->clientNum
+			&& pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_0
+			&& pm->ps->fd.forceJumpZStart
+			&& pm->ps->velocity[2] > 0) {//I am force jumping and I'm not holding the button anymore
+			float curHeight = pm->ps->origin[2] - pm->ps->fd.forceJumpZStart + (pm->ps->velocity[2] * pml.frametime);
+			float maxJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
+			if (curHeight >= maxJumpHeight) {//reached top, cut velocity
+				pm->ps->velocity[2] = 0;
+			}
 		}
 	}
 
@@ -2543,13 +2578,13 @@ static void PM_WalkMove( void ) {
 	wishspeed *= scale;
 
 	// clamp the speed lower if ducking
-	if ( pm->ps->pm_flags & PMF_DUCKED ) {
+	if ( pm->ps->pm_flags & PMF_DUCKED && (moveStyle != MV_JK2SP || !PM_InKnockDown(pm->ps)) ) {
 		if ( wishspeed > pm->ps->speed * pm_duckScale ) {
 			wishspeed = pm->ps->speed * pm_duckScale;
 		}
 	}
 	else if ( (pm->ps->pm_flags & PMF_ROLLING) && !BG_InRoll(pm->ps, pm->ps->legsAnim) &&
-		!PM_InRollComplete(pm->ps, pm->ps->legsAnim))
+		!PM_InRollComplete(pm->ps, pm->ps->legsAnim) && moveStyle != MV_JK2SP)
 	{
 		if ( wishspeed > pm->ps->speed * pm_duckScale ) {
 			wishspeed = pm->ps->speed * pm_duckScale;
@@ -2571,12 +2606,21 @@ static void PM_WalkMove( void ) {
 	// full control, which allows them to be moved a bit
 	if ( ( pml.groundTrace.surfaceFlags & SURF_SLICK ) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK ) {
 		accelerate = pm_airaccelerate;
-		if (MovementIsQuake3Based(moveStyle))
+		if (moveStyle == MV_JK2SP)
+			accelerate = pm_sp_airaccelerate; 
+		else if (MovementIsQuake3Based(moveStyle))
 			accelerate = pm_cpm_accelerate;
 	} else {
 		accelerate = pm_accelerate;
-		if (MovementIsQuake3Based(moveStyle))
+		if (moveStyle == MV_JK2SP)
+			accelerate = pm_sp_accelerate;
+		else if (MovementIsQuake3Based(moveStyle))
 			accelerate = pm_cpm_accelerate;
+	}
+
+	if (moveStyle == MV_JK2SP && (DotProduct(pm->ps->velocity, wishdir)) < 0.0f)
+	{//Encourage deceleration away from the current velocity
+		wishspeed *= pm_sp_airDecelRate;
 	}
 
 	PM_Accelerate (wishdir, wishspeed, accelerate);
@@ -2587,7 +2631,22 @@ static void PM_WalkMove( void ) {
 
 	if ( ( pml.groundTrace.surfaceFlags & SURF_SLICK ) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK )
 	{
-		pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
+		if (moveStyle == MV_JK2SP) {
+			if (pm->ps->gravity >= 0 && pm->ps->groundEntityNum != ENTITYNUM_NONE && !VectorLengthSquared(pm->ps->velocity) && pml.groundTrace.plane.normal[2] == 1.0)
+			{//on ground and not moving and on level ground, no reason to do stupid fucking gravity with the clipvelocity!!!!
+			}
+			else
+			{
+				//if (!(pm->ps->eFlags & EF_FORCE_GRIPPED))
+				if (!(pm->ps->fd.forceGripBeingGripped)) // is this correct? not that it matters in defrag anyway prolly
+				{
+					pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
+				}
+			}
+		}
+		else {
+			pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
+		}
 	}
 
 	vel = VectorLength(pm->ps->velocity);
@@ -2738,9 +2797,15 @@ static int PM_FootstepForSurface( void )
 
 static int PM_TryRoll( void )
 {
+	float rollDist = 64;
 	trace_t	trace;
 	int		anim = -1;
 	vec3_t fwd, right, traceto, mins, maxs, fwdAngles;
+	int moveStyle = PM_GetMovePhysics();
+
+	if (moveStyle == MV_JK2SP) {
+		rollDist = 192;
+	}
 
 	if ( BG_SaberInAttack( pm->ps->saberMove ) || BG_SaberInSpecialAttack( pm->ps->torsoAnim ) 
 		|| BG_SpinningSaberAnim( pm->ps->legsAnim ) 
@@ -2769,23 +2834,23 @@ static int PM_TryRoll( void )
 		if ( pm->ps->pm_flags & PMF_BACKWARDS_RUN ) 
 		{
 			anim = BOTH_ROLL_B;
-			VectorMA( pm->ps->origin, -64, fwd, traceto );
+			VectorMA( pm->ps->origin, -rollDist, fwd, traceto );
 		}
 		else
 		{
 			anim = BOTH_ROLL_F;
-			VectorMA( pm->ps->origin, 64, fwd, traceto );
+			VectorMA( pm->ps->origin, rollDist, fwd, traceto );
 		}
 	}
 	else if ( pm->cmd.rightmove > 0 )
 	{ //right
 		anim = BOTH_ROLL_R;
-		VectorMA( pm->ps->origin, 64, right, traceto );
+		VectorMA( pm->ps->origin, rollDist, right, traceto );
 	}
 	else if ( pm->cmd.rightmove < 0 )
 	{ //left
 		anim = BOTH_ROLL_L;
-		VectorMA( pm->ps->origin, -64, right, traceto );
+		VectorMA( pm->ps->origin, -rollDist, right, traceto );
 	}
 
 	if ( anim != -1 )
@@ -5360,8 +5425,8 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 				| BOTH_RUN1;
 		}
 	}
-	else if ( cmd->forwardmove < 0 && !(cmd->buttons&BUTTON_WALKING) && pm->ps->groundEntityNum != ENTITYNUM_NONE && jk2gameplay == VERSION_1_04 )
-	{//running backwards is slower than running forwards (like SP)
+	else if ( cmd->forwardmove < 0 && !(cmd->buttons&BUTTON_WALKING) && pm->ps->groundEntityNum != ENTITYNUM_NONE && (jk2gameplay == VERSION_1_04 || moveStyle == MV_JK2SP) )
+	{//running backwards is slower than running forwards (like SP)// TA: Actually... is this even correct?! this is in a way different place in sp. and this whole func doesnt exist there
 		ps->speed *= 0.75;
 	}
 
@@ -6125,17 +6190,17 @@ void PmoveSingle (pmove_t *pmove) {
 				float optimalDeltaAngle = 0;
 				qboolean CJ = qtrue;
 				float realFriction = MovementIsQuake3Based(moveStyle) ? pm_vq3_friction : pm_friction;
-				float realAccel = MovementIsQuake3Based(moveStyle) ? pm_cpm_accelerate : pm_accelerate;
+				float realAccel = MovementIsQuake3Based(moveStyle) ? pm_cpm_accelerate : (moveStyle == MV_JK2SP ? pm_sp_accelerate : pm_accelerate);
 				float strafeFactor = fp16_ieee_to_fp32_value(USHORT2SHORT(oldCmdRoll))+1.0f;  // USHORT2SHORT to normalize to short range since fp16 conversion relies on it
 				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || pm->cmd.upmove > 0) {
-					realAccel = pm_airaccelerate;
+					realAccel = moveStyle == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate;
 					CJ = qfalse;
 				}
 				//else if (moveStyle == MV_SLICK)
 				//	CJ = qfalse;
 				else if (pml.walking && pml.groundTrace.surfaceFlags & SURF_SLICK) { //Lmao fuck this bullshit. no way to tell if we are on slick i guess.
 					if (!MovementIsQuake3Based(moveStyle)) {
-						realAccel = pm_airaccelerate;
+						realAccel = moveStyle == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate;
 					}
 					realFriction = 0;
 				}
