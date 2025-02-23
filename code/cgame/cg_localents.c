@@ -357,6 +357,7 @@ void CG_AddFadeRGB( localEntity_t *le ) {
 static void CG_AddFadeModel(localEntity_t* le)
 {
 	refEntity_t* ent = &le->refEntity;
+	float frac;
 
 	if (cg.time < le->startTime)
 	{
@@ -364,7 +365,13 @@ static void CG_AddFadeModel(localEntity_t* le)
 		return;
 	}
 
-	float frac = 1.0f - ((float)(cg.time - le->startTime) / (float)(le->endTime - le->startTime));
+	if (!trap_G2_HaveWeGhoul2Models(ent->ghoul2)) { // changed model or sth (this is a speed trail and mp lets us switch models/skins)
+
+		CG_FreeLocalEntity(le);
+		return;
+	}
+
+	frac = 1.0f - ((float)(cg.time - le->startTime) / (float)(le->endTime - le->startTime));
 
 	ent->shaderRGBA[0] = le->color[0] * frac;
 	ent->shaderRGBA[1] = le->color[1] * frac;
