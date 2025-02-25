@@ -2876,8 +2876,10 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qbool
 			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
 		}
 
-		if (G_DoesMapHaveArena(thisMapName) && !silentSkip) {
-			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
+		if (G_DoesMapHaveArena(thisMapName)) {
+			if (!silentSkip) {
+				G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
+			}
 			return;
 		}
 
