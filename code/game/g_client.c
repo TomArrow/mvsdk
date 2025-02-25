@@ -2565,6 +2565,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	saveSaberNum = client->ps.saberEntityNum;
 
+	G_BufferedSendOrPrintFlush(ent, qfalse);
 	memset (client, 0, sizeof(*client)); // bk FIXME: Com_Memset?
 
 	VectorCopy(savedDeltaAngles, client->ps.delta_angles); // to make sure my segmented runs work

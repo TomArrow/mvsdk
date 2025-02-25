@@ -843,7 +843,7 @@ static void G_ArenaGenMapListResult(int status, const char* errorMessage, int af
 	while (G_COOL_API_DB_NextRow()) {
 		G_COOL_API_DB_GetString(0, courseName,sizeof(courseName));
 		resultsFound++;
-		G_AutoGenerateArena(courseName, qtrue, qfalse,qfalse);
+		G_AutoGenerateArena(courseName, qtrue, qfalse, qtrue);
 		level.allRaceGenerationAlreadyCalled = qtrue;
 	}
 	G_BufferedSendOrPrintFlush(NULL, qtrue);
@@ -1798,19 +1798,11 @@ static void G_MapListUnplayedResult(int status, const char* errorMessage, int af
 
 		int			mapsinmessage = 0;
 		const char*	mapName = NULL;
-		char		mapListString[1024];
-		char		currentMapString[1024];
 		char		currentMap[COURSENAME_MAX_LEN + 1];
-		qboolean	first = qtrue;
-		//int			n = 0;
-		//int			milliseconds = 0;
-		int			mapsInFrame = 0;
 		int			mapNum;
 		infoHashed_t* mapInfo;
 
-
-		Q_strncpyz(mapListString, "", sizeof(mapListString));
-		trap_SendServerCommand(ent - g_entities, va("print \"^2----------^7INSTALLED MAPS^2---------\n\""));
+		G_BufferedSendOrPrint(ent, qfalse, qfalse, "^2----------^7INSTALLED MAPS (UNPLAYED)^2---------\n");
 
 		while (G_COOL_API_DB_NextRow()) {
 			G_COOL_API_DB_GetString(0, currentMap, sizeof(currentMap));
@@ -1820,56 +1812,35 @@ static void G_MapListUnplayedResult(int status, const char* errorMessage, int af
 				continue;
 			}
 
-			mapName = mapInfo->name; //Info_ValueForKey(g_arenaInfosHashed[n]., "map");
+			mapName = mapInfo->name; 
 			mapNum = mapInfo - g_arenaInfosHashed;
 
 			if (strlen(mapName) < 1 || !Q_stricmp(mapName, "<NULL>")) {
 
 				if (mapNum == (g_numArenas - 1)) {
-					mapsInFrame += 5;
-					trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
-					if (mapsInFrame >= 300) {
-						mapsInFrame = 0;
-						//milliseconds += 100;
-					}
-					Q_strncpyz(mapListString, "", sizeof(mapListString));
+					G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n");
 					mapsinmessage = 0;
 				}
 				continue;
 			}
 
 			Q_strncpyz(currentMap, mapName, 24);
-			Com_sprintf(currentMapString, sizeof(currentMapString), "^7[^2%03i^7] %-24s", mapNum, currentMap);
-			Q_strcat(mapListString, sizeof(mapListString), currentMapString);
+			G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^7[^2%03i^7] %-24s", mapNum, currentMap));
 
-			mapsinmessage = mapsinmessage + 1;
+			mapsinmessage++;
 
 			if ((mapsinmessage >= 5) || (mapNum == (g_numArenas - 1))) {
-				mapsInFrame += 5;
-				trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
-				if (mapsInFrame >= 300) {
-					mapsInFrame = 0;
-					//milliseconds += 100;
-				}
-
-				Q_strncpyz(mapListString, "", sizeof(mapListString));
+				G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n");
 				mapsinmessage = 0;
 			}
 		}
 
 		if ((mapsinmessage >= 1)) {
-			mapsInFrame += 5;
-			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
-			if (mapsInFrame >= 300) {
-				mapsInFrame = 0;
-				//milliseconds += 100;
-			}
-
-			Q_strncpyz(mapListString, "", sizeof(mapListString));
+			G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n");
 			mapsinmessage = 0;
 		}
 
-
+		G_BufferedSendOrPrintFlush(ent, qfalse);
 	}
 
 

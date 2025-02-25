@@ -269,21 +269,24 @@ void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean
 		bufferedPrint_t* bufferedPrint = broadcast ? &broadcastPrint : (playerOrNull ? &playerOrNull->client->bufferedPrint : NULL);
 		if (bufferedPrint) {
 			int clNum = broadcast ? -1 : (playerOrNull - g_entities);
-			int lenOld = strlen(bufferedPrint->buffer);
+			int lenOld = bufferedPrint->curLen;
 			int lenNew = strlen(text);
 			if ((lenOld + lenNew) > BUFFERED_TEXT_MAX_LENGTH) {
 				// overflowing, flush what's already there and buffer the new text
 				trap_SendServerCommand(clNum, va("print \"%s\"", bufferedPrint->buffer));
 				Q_strncpyz(bufferedPrint->buffer, text, sizeof(bufferedPrint->buffer));
+				bufferedPrint->curLen = lenNew;
 			}
 			else if ((lenOld + lenNew) == BUFFERED_TEXT_MAX_LENGTH) {
 				// can't fit any more after this, so just send immediately
 				trap_SendServerCommand(clNum, va("print \"%s%s\"", bufferedPrint->buffer, text));
 				*bufferedPrint->buffer = '\0';
+				bufferedPrint->curLen = 0;
 			}
 			else {
 				// still room. buffer it
-				Q_strcat(bufferedPrint->buffer, sizeof(bufferedPrint->buffer), text);
+				Q_strncpyz(bufferedPrint->buffer+lenOld, text, sizeof(bufferedPrint->buffer)-lenOld);
+				bufferedPrint->curLen = lenOld + lenNew;
 			}
 			bufferedPrint->bufferLastFlushedOrUpdated = level.time;
 		}
@@ -298,6 +301,7 @@ void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast) {
 		int clNum = broadcast ? -1 : (playerOrNull - g_entities);
 		trap_SendServerCommand(clNum,va("print \"%s\"", bufferedPrint->buffer));
 		*bufferedPrint->buffer = '\0';
+		bufferedPrint->curLen = 0;
 		bufferedPrint->bufferLastFlushedOrUpdated = level.time;
 	}
 }

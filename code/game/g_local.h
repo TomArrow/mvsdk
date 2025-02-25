@@ -533,6 +533,7 @@ typedef struct {
 typedef struct bufferPrint_s {
 	char		buffer[MAX_STRING_CHARS]; // if we have a LOT of prints to send... concatenate them a bit.
 	int			bufferLastFlushedOrUpdated; // so we dont accidentally forget or through an error
+	int			curLen;
 } bufferedPrint_t; 
 
 // this structure is cleared on each ClientSpawn(),

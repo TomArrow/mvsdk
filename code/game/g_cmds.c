@@ -2474,13 +2474,9 @@ void Cmd_Maplist_f(gentity_t* ent) {
 
 	int			mapsinmessage = 0;
 	const char*	type = NULL;
-	char		mapListString[1024];
-	char		currentMapString[1024];
 	char		currentMap[COURSENAME_MAX_LEN+1];
 	qboolean	first = qtrue;
 	int			n = 0;
-	//int			milliseconds = 0;
-	int			mapsInFrame = 0;
 
 	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
@@ -2509,48 +2505,33 @@ void Cmd_Maplist_f(gentity_t* ent) {
 		}
 	}
 
-
-	Q_strncpyz(mapListString, "", sizeof(mapListString));
-	trap_SendServerCommand(ent - g_entities, va("print \"^2----------^7INSTALLED MAPS^2---------\n\"",type));
+	G_BufferedSendOrPrint(ent, qfalse, qfalse, "^2----------^7INSTALLED MAPS^2---------\n");
 
 	for (n = 0; n < g_numArenas; n++) {
 
-		type = g_arenaInfosHashed[n].name; //Info_ValueForKey(g_arenaInfosHashed[n]., "map");
+		type = g_arenaInfosHashed[n].name; 
 
 		if (strlen(type) < 1 || !Q_stricmp(type, "<NULL>")) {
 
 			if (n == (g_numArenas - 1)) {
-				mapsInFrame += 5;
-				trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
-				if (mapsInFrame >= 300) {
-					mapsInFrame = 0;
-					//milliseconds += 100;
-				}
-				Q_strncpyz(mapListString, "", sizeof(mapListString));
+				G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n");
 				mapsinmessage = 0;
 			}
 			continue;
 		}
 
 		Q_strncpyz(currentMap, type, 24);
-		Com_sprintf(currentMapString, sizeof(currentMapString), "^7[^2%03i^7] %-24s", n , currentMap);
-		Q_strcat(mapListString,sizeof(mapListString),currentMapString);
+		G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^7[^2%03i^7] %-24s", n, currentMap));
 
-		mapsinmessage = mapsinmessage + 1;
+		mapsinmessage++;
 
 		if ((mapsinmessage >= 5) || (n == (g_numArenas - 1))) {
-			mapsInFrame += 5;
-			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", mapListString));
-			if (mapsInFrame >= 300) {
-				mapsInFrame = 0;
-				//milliseconds += 100;
-			}
-
-			Q_strncpyz(mapListString, "", sizeof(mapListString));
+			G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n");
 			mapsinmessage = 0;
 		}
 	}
-	trap_SendServerCommand(ent - g_entities, va("print \"\nWhen logged in, you can call ^2/maplist unplayed^7 to see maps that were finished by other people that you haven't played yet.\n\""));
+	G_BufferedSendOrPrint(ent, qfalse, qfalse, "\nWhen logged in, you can call ^2/maplist unplayed^7 to see maps that were finished by other people that you haven't played yet.\n");
+	G_BufferedSendOrPrintFlush(ent, qfalse);
 
 }
 
