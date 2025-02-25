@@ -1739,7 +1739,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if ( !ent || !ent->client ) return;
 
-	G_BufferedSendOrPrintFlushIfNeeded(ent);
+	G_BufferedSendOrPrintFlushIfNeeded(ent,qfalse);
 
 	for (i = 0; i < level.maxclients; i++) {
 		otherClientEnt = g_entities + i;

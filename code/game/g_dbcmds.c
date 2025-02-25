@@ -818,7 +818,7 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 
 }
 
-void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists);
+void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qboolean immediatePrint, qboolean silentSkip);
 
 static void G_ArenaGenMapListResult(int status, const char* errorMessage, int affectedRows) {
 	static char courseName[COURSENAME_MAX_LEN + 1];
@@ -843,9 +843,10 @@ static void G_ArenaGenMapListResult(int status, const char* errorMessage, int af
 	while (G_COOL_API_DB_NextRow()) {
 		G_COOL_API_DB_GetString(0, courseName,sizeof(courseName));
 		resultsFound++;
-		G_AutoGenerateArena(courseName, qtrue);
+		G_AutoGenerateArena(courseName, qtrue, qfalse,qfalse);
 		level.allRaceGenerationAlreadyCalled = qtrue;
 	}
+	G_BufferedSendOrPrintFlush(NULL, qtrue);
 	if (!resultsFound) {
 		G_SendServerCommand(-1, "print \"^1No maps found for arena generation.\n\"", qtrue);
 	}
@@ -1095,29 +1096,29 @@ static void G_RankUpdateResult(int status, const char* errorMessage, int affecte
 		// table doesn't exist. create it.
 		G_CreateUserTable();
 		G_CreateRunsTable();
-		G_BufferedSendOrPrint(ent,"^1Rank update failed due to table not existing. Attempting to create. Please try again shortly.\n");
+		G_BufferedSendOrPrint(ent, qfalse, qfalse,"^1Rank update failed due to table not existing. Attempting to create. Please try again shortly.\n");
 		return;
 	}
 	else if (status) {
-		G_BufferedSendOrPrint(ent, va("^1Rank update failed with status %d and error message %s.\n", status, errorMessage));
+		G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^1Rank update failed with status %d and error message %s.\n", status, errorMessage));
 		return;
 	}
 
 	if (lbRequestData.style == 0) {
 		// first row so to speak
-		G_BufferedSendOrPrint(ent, va("^7Rank updates for %s/%s:\n", lbRequestData.course, lbRequestData.subcourse));
+		G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^7Rank updates for %s/%s:\n", lbRequestData.course, lbRequestData.subcourse));
 	}
 
 	//if (affectedRows) 
 	{
-		G_BufferedSendOrPrint(ent, va("^%cStyle %s: %d changes.\n", affectedRows ? '2' : '3',  lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
+		G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^%cStyle %s: %d changes.\n", affectedRows ? '2' : '3',  lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
 	}
 	//else {
 	//	trap_SendServerCommand(lbRequestData.clientnum, va("print \".\"", lbRequestData.course, lbRequestData.subcourse, lbRequestData.style < MV_NUMSTYLES ? moveStyleNames[lbRequestData.style].string : "UNKNOWN", affectedRows));
 	//}
 
 	if (lbRequestData.flush) {
-		G_BufferedSendOrPrintFlush(ent);
+		G_BufferedSendOrPrintFlush(ent,qfalse);
 	}
 
 }
@@ -1135,7 +1136,7 @@ static void G_RankUpdateMapLatestSetResult(int status, const char* errorMessage,
 	}
 
 	// all of the spammy requests are finished now so... 
-	G_BufferedSendOrPrintFlush(ent);
+	G_BufferedSendOrPrintFlush(ent,qfalse);
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
@@ -1344,7 +1345,7 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 
 				Com_Printf("^3Clientless rank update map request result returned.\n", lbRequestData.clientnum);
 			}
-			G_BufferedSendOrPrint(ent, "Requesting map rank updates:\n");
+			G_BufferedSendOrPrint(ent, qfalse, qfalse, "Requesting map rank updates:\n");
 		}
 
 		runCount = G_COOL_API_DB_GetInt(0);
@@ -1363,10 +1364,10 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		}
 		G_COOL_API_DB_GetString(8, time, sizeof(time)); // results are ordered from map with oldest newest time to newest newest time, so last one will be representative of how far we actually got with this.
 		if (resultIndex == 0) {
-			G_BufferedSendOrPrint(ent, va("%s/%s", course, subcourse));
+			G_BufferedSendOrPrint(ent, qfalse, qfalse, va("%s/%s", course, subcourse));
 		}
 		else {
-			G_BufferedSendOrPrint(ent, va(", %s/%s", course, subcourse));
+			G_BufferedSendOrPrint(ent, qfalse,qfalse, va(", %s/%s", course, subcourse));
 		}
 		DF_UpdateRanks(ent,course,subcourse,&mapDefaultRaceStyle, !lbRequestData.all);
 		resultIndex++;
@@ -1376,8 +1377,8 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 	}
 
 	if (resultIndex) {
-		G_BufferedSendOrPrint(ent, "\n");
-		G_BufferedSendOrPrintFlush(ent);
+		G_BufferedSendOrPrint(ent,qfalse,qfalse, "\n");
+		G_BufferedSendOrPrintFlush(ent, qfalse);
 	}
 
 	if (!resultIndex || !lbRequestData.all) {

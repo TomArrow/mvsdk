@@ -256,43 +256,57 @@ void G_SendOrPrint(gentity_t* playerOrNull, const char* text) {
 }
 #define BUFFERED_TEXT_MAX_LENGTH (MAX_STRING_CHARS-sizeof("print \"\"")-1)
 
+
+static bufferedPrint_t broadcastPrint = { 0 };
 // to avoid server command overflow when sending a LOT of prints
-void G_BufferedSendOrPrint(gentity_t* playerOrNull, const char* text) {
-	if (playerOrNull) {
-		int lenOld = strlen(playerOrNull->client->bufferedPrintBuffer);
-		int lenNew = strlen(text);
-		if ((lenOld+lenNew)>BUFFERED_TEXT_MAX_LENGTH) {
-			// overflowing, flush what's already there and buffer the new text
-			trap_SendServerCommand(playerOrNull - g_entities, va("print \"%s\"", playerOrNull->client->bufferedPrintBuffer));
-			Q_strncpyz(playerOrNull->client->bufferedPrintBuffer,text,sizeof(playerOrNull->client->bufferedPrintBuffer));
-		}
-		else if ((lenOld+lenNew) == BUFFERED_TEXT_MAX_LENGTH) {
-			// can't fit any more after this, so just send immediately
-			trap_SendServerCommand(playerOrNull - g_entities, va("print \"%s%s\"", playerOrNull->client->bufferedPrintBuffer,text));
-			*playerOrNull->client->bufferedPrintBuffer = '\0';
+void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text) {
+	if (normalPrint && (playerOrNull || broadcast)) {
+		int clNum = broadcast ? -1 : (playerOrNull - g_entities);
+		trap_SendServerCommand(clNum, va("print \"%s\"", text));
+	}
+	else
+	{
+		bufferedPrint_t* bufferedPrint = broadcast ? &broadcastPrint : (playerOrNull ? &playerOrNull->client->bufferedPrint : NULL);
+		if (bufferedPrint) {
+			int clNum = broadcast ? -1 : (playerOrNull - g_entities);
+			int lenOld = strlen(bufferedPrint->buffer);
+			int lenNew = strlen(text);
+			if ((lenOld + lenNew) > BUFFERED_TEXT_MAX_LENGTH) {
+				// overflowing, flush what's already there and buffer the new text
+				trap_SendServerCommand(clNum, va("print \"%s\"", bufferedPrint->buffer));
+				Q_strncpyz(bufferedPrint->buffer, text, sizeof(bufferedPrint->buffer));
+			}
+			else if ((lenOld + lenNew) == BUFFERED_TEXT_MAX_LENGTH) {
+				// can't fit any more after this, so just send immediately
+				trap_SendServerCommand(clNum, va("print \"%s%s\"", bufferedPrint->buffer, text));
+				*bufferedPrint->buffer = '\0';
+			}
+			else {
+				// still room. buffer it
+				Q_strcat(bufferedPrint->buffer, sizeof(bufferedPrint->buffer), text);
+			}
+			bufferedPrint->bufferLastFlushedOrUpdated = level.time;
 		}
 		else {
-			// still room. buffer it
-			Q_strcat(playerOrNull->client->bufferedPrintBuffer, sizeof(playerOrNull->client->bufferedPrintBuffer), text);
+			Com_Printf("%s", text);
 		}
-		playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated = level.time;
-	}
-	else {
-		Com_Printf("%s",text);
 	}
 }
-void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull) {
-	if (playerOrNull && *playerOrNull->client->bufferedPrintBuffer) {
-		trap_SendServerCommand(playerOrNull-g_entities,va("print \"%s\"", playerOrNull->client->bufferedPrintBuffer));
-		*playerOrNull->client->bufferedPrintBuffer = '\0';
-		playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated = level.time;
+void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast) {
+	bufferedPrint_t* bufferedPrint = broadcast ? &broadcastPrint : (playerOrNull ? &playerOrNull->client->bufferedPrint : NULL);
+	if (bufferedPrint && *bufferedPrint->buffer) {
+		int clNum = broadcast ? -1 : (playerOrNull - g_entities);
+		trap_SendServerCommand(clNum,va("print \"%s\"", bufferedPrint->buffer));
+		*bufferedPrint->buffer = '\0';
+		bufferedPrint->bufferLastFlushedOrUpdated = level.time;
 	}
 }
-void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull) {
-	if (playerOrNull && *playerOrNull->client->bufferedPrintBuffer) {
-		if (playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated + 1000 < level.time || level.time < playerOrNull->client->bufferedPrintBufferLastFlushedOrUpdated) {
-			Com_Printf("^3Flushing client print buffer due to 1000ms passing without flush or update. Code logic problem?");
-			G_BufferedSendOrPrintFlush(playerOrNull);
+void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast) {
+	bufferedPrint_t* bufferedPrint = broadcast ? &broadcastPrint : (playerOrNull ? &playerOrNull->client->bufferedPrint : NULL);
+	if (bufferedPrint && *bufferedPrint->buffer) {
+		if (bufferedPrint->bufferLastFlushedOrUpdated + 1000 < level.time || level.time < bufferedPrint->bufferLastFlushedOrUpdated) {
+			Com_Printf("^3Flushing client print buffer due to 1000ms passing without flush or update. Code logic problem? (broadcast %d)\n",broadcast);
+			G_BufferedSendOrPrintFlush(playerOrNull, broadcast);
 		}
 	}
 }

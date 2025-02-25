@@ -530,6 +530,11 @@ typedef struct {
 	int			lastIronmanFlagGiven;
 } clientPersistant_t;
 
+typedef struct bufferPrint_s {
+	char		buffer[MAX_STRING_CHARS]; // if we have a LOT of prints to send... concatenate them a bit.
+	int			bufferLastFlushedOrUpdated; // so we dont accidentally forget or through an error
+} bufferedPrint_t; 
+
 // this structure is cleared on each ClientSpawn(),
 // except for 'client->pers' and 'client->sess'
 struct gclient_s {
@@ -650,8 +655,8 @@ struct gclient_s {
 	qboolean	clientIsZombified; // technically disconnected but we're necromancing and keeping him around to finish a segmented replay
 
 	vec3_t		oldPostPmovePosition;
-	char		bufferedPrintBuffer[MAX_STRING_CHARS]; // if we have a LOT of prints to send... concatenate them a bit.
-	int			bufferedPrintBufferLastFlushedOrUpdated; // so we dont accidentally forget or through an error
+
+	bufferedPrint_t	bufferedPrint;
 
 	int			lastScoresMessage;
 
@@ -1784,9 +1789,9 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int page);
 qboolean DF_KeepClientZombie(gentity_t* ent);
 void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
-void G_BufferedSendOrPrint(gentity_t* playerOrNull, const char* text);
-void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull);
-void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull);
+void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text);
+void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast);
+void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast);
 void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
 
 int	generateHashValue(const char* fname, const int size);
