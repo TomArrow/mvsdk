@@ -910,6 +910,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 		else {
 			if (level.time > client->inactivityToSpecTime) {
 				G_Printf("^3g_inactivityToSpec: Sending client %d to spec.\n", ent - g_entities);
+				trap_SendServerCommand(-1, va("print \"^3Sending %s ^3to spec for being AFK.\n\"",client->pers.netname));
 				SetTeam(ent, "s");
 				return qfalse;
 			}
@@ -1719,7 +1720,7 @@ once for each server frame, which makes for smooth demo recording.
 void DF_HandleSegmentedRunPre(gentity_t* ent);
 void UpdateClientRaceVars(gclient_t* client);
 //void DF_SetRaceMode(gentity_t* ent, qboolean value); 
-void ResetClientModeIfInvalid(gentity_t* ent);
+void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag);
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 void ClientThink_real( gentity_t *ent ) {
 	gclient_t	*client;
@@ -1848,7 +1849,7 @@ void ClientThink_real( gentity_t *ent ) {
 	//	}
 	//}
 	if (client->sess.sessionTeam == TEAM_FREE) {
-		ResetClientModeIfInvalid(ent);
+		ResetClientModeIfInvalid(ent, (qboolean)!(ent->r.svFlags& SVF_BOT));
 	}
 
 	//if (client->ps.stats[STAT_RACEMODE]) {//Is this really needed..
@@ -2871,6 +2872,9 @@ void ClientThink( int clientNum ) {
 			ClientThink_real(ent);
 			index++;
 		}
+	}
+	else if (!segmentedReplay){
+		ent->client->pers.cmd = tmpCmdForAfkCheck; // make sure bots work.
 	}
 }
 

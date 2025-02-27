@@ -1847,6 +1847,9 @@ qboolean MV_SetClientIP( int clientNum, char *value )
 
 extern void DF_ClearCheckPointTimes(gentity_t* playerent);
 
+extern int GetDefaultPlayerMode(qboolean allowDefrag);
+void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag);
+
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	char		*value;
 //	char		*areabits;
@@ -1966,6 +1969,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	// read or initialize the session data
 	if ( firstTime || level.newSession ) {
 		G_InitSessionData( client, userinfo, isBot );
+		ClientSetDefaultMode(ent,!isBot);
 	}
 	G_ReadSessionData( client );
 
@@ -1974,6 +1978,10 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		ent->inuse = qtrue;
 		if( !G_BotConnect( clientNum, !firstTime ) ) {
 			return "BotConnectfailed";
+		}
+		if (ent->client->sess.mode == MODE_DEFRAG) {
+			// bots cant race
+			ClientSetDefaultMode(ent, qfalse);
 		}
 	}
 
@@ -2012,8 +2020,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 void G_WriteClientSessionData( gclient_t *client );
 extern void UpdateClientRaceVars(gclient_t* client);
 //void DF_SetRaceMode(gentity_t* ent, qboolean value);
-void ClientSetDefaultMode(gentity_t* ent);
-void ResetClientModeIfInvalid(gentity_t* ent);
+void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag);
 /*
 ===========
 ClientBegin
@@ -2185,7 +2192,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	//	client->sess.raceMode = g_defrag.integer;
 	//}
 	//DF_SetRaceMode(ent,g_defrag.integer);
-	ClientSetDefaultMode(ent);
+	ResetClientModeIfInvalid(ent,(qboolean)!(ent->r.svFlags& SVF_BOT));
 
 	//if (client->sess.raceMode)
 	//	client->ps.stats[STAT_RACEMODE] = 1;
@@ -2621,7 +2628,7 @@ void ClientSpawn(gentity_t *ent) {
 	ent->watertype = 0;
 	ent->flags = 0;
 
-	ResetClientModeIfInvalid(ent);
+	ResetClientModeIfInvalid(ent, (qboolean)!(ent->r.svFlags& SVF_BOT));
 	//if (!g_defrag.integer) {
 	//	DF_SetRaceMode(ent,qfalse);
 	//	//if (client->sess.raceMode) {
