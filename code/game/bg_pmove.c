@@ -6039,6 +6039,8 @@ void PmoveSingle (pmove_t *pmove) {
 	// clear all pmove local vars
 	memset (&pml, 0, sizeof(pml));
 
+	pml.randomAdd = pmove->unlockRandom ? 1 : 0;
+
 	// determine the time
 	pml.seed = pmove->cmd.serverTime;
 	pml.msec = pmove->cmd.serverTime - pm->ps->commandTime;

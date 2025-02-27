@@ -36,6 +36,8 @@ typedef struct
 
 	int			seed;
 
+	int			randomAdd;
+
 	qboolean	clippedPre;
 	qboolean	clipped;
 	qboolean	clippedWalkable;

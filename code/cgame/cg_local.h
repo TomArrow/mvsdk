@@ -1890,6 +1890,7 @@ extern	vmCvar_t		cg_mapDefaultJump;
 extern	vmCvar_t		cg_mapDefaultRunFlags;
 extern	vmCvar_t		cg_q2trace;
 extern	vmCvar_t		cg_q2Skims;
+extern	vmCvar_t		cg_g_unlockRandom;
 
 extern	vmCvar_t		cg_strafebotSlopeHandling;
 

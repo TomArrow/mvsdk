@@ -1274,6 +1274,7 @@ restartpredict:
 		cg_pmove.gametype = cgs.gametype;
 
 		cg_pmove.debugMelee = cgs.debugMelee;
+		cg_pmove.unlockRandom = cg_g_unlockRandom.integer;
 
 		for ( i = 0 ; i < MAX_CLIENTS ; i++ )
 		{

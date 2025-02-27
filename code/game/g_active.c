@@ -813,6 +813,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		pm.entSize = sizeof(gentity_t);
 		pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 		pm.oldButtons = ent->client->oldbuttons;
+		pm.unlockRandom = g_unlockRandom.integer;
 
 		// perform a pmove
 		Pmove (&pm);
@@ -2263,6 +2264,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.pointcontents = trap_PointContents;
 	pm.debugLevel = g_debugMove.integer;
 	pm.noFootsteps = ( g_dmflags.integer & DF_NO_FOOTSTEPS ) > 0;
+	pm.unlockRandom = g_unlockRandom.integer;
 
 	pm.pmove_fixed = g_pmove_fixed.integer | client->pers.pmoveFixed;
 	pm.pmove_msec = g_pmove_msec.integer;
@@ -2353,7 +2355,7 @@ void ClientThink_real( gentity_t *ent ) {
 	ent->client->prePmoveEFlags = ent->client->ps.eFlags;
 	ent->client->prePmovePositionSet = qtrue;
 	ent->client->prePmoveCommandTime = ent->client->ps.commandTime;
-	
+
 	pm.handleStrafebotSlopes = g_strafebotSlopeHandling.integer;
 	pm.roll = ent->client->pers.roll;
 	pm.antiLoop = ent->client->pers.antiLoop;

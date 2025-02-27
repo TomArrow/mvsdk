@@ -204,8 +204,12 @@ vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 
 vmCvar_t	g_randomTipInterval;
 
+vmCvar_t	g_unlockRandom;
+
 int gDuelist1 = -1;
 int gDuelist2 = -1;
+
+int gRandomUnlockAdd = 0;
 
 // bk001129 - made static to avoid aliasing
 static cvarTable_t		gameCvarTable[] = {
@@ -322,7 +326,9 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_dedicated, "dedicated", "0", 0, 0, qfalse  },
 
-	{ &g_randomTipInterval, "g_randomTipInterval", "600", 0, 0, qfalse  },
+	{ &g_randomTipInterval, "g_randomTipInterval", "600", CVAR_ARCHIVE, 0, qfalse  },
+
+	{ &g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO | CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_speed, "g_speed", "250", 0, 0, qtrue  },
 	{ &g_gravity, "g_gravity", "800", 0, 0, qtrue  },
@@ -790,6 +796,15 @@ void G_RegisterCvars( void ) {
 	level.warmupModificationCount = g_warmup.modificationCount;
 
 	MV_UpdateSvFlags();
+}
+
+
+void G_CheckCvarChanges() {
+	static int lastModCountRandomUnlock = -1;
+	if (lastModCountRandomUnlock != g_unlockRandom.modificationCount) {
+		gRandomUnlockAdd = g_unlockRandom.integer ? 1 : 0;
+		lastModCountRandomUnlock = g_unlockRandom.modificationCount;
+	}
 }
 
 /*
@@ -3145,6 +3160,8 @@ void G_RunFrame( int levelTime ) {
 
 	// get any cvar changes
 	G_UpdateCvars();
+
+	G_CheckCvarChanges();
 
 	DF_CheckRaceCvarChanges(qfalse);
 

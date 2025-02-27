@@ -358,6 +358,7 @@ typedef struct {
 	float			accelMiss;
 	float			wishSpeed;
 	qboolean		handleStrafebotSlopes;
+	int				unlockRandom;
 
 } pmove_t;
 

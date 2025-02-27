@@ -1511,6 +1511,8 @@ extern	vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 
 extern	vmCvar_t	g_randomTipInterval;
 
+extern	vmCvar_t	g_unlockRandom;
+
 void	trap_Printf( const char *fmt );
 Q_NORETURN void	trap_Error( const char *fmt );
 int		trap_Milliseconds( void );
@@ -1744,6 +1746,8 @@ qboolean	trap_ROFF_Purge_Ent( int entID );
 
 extern int coolApi;
 extern int coolApi_dbVersion;
+
+extern int gRandomUnlockAdd;
 
 extern int mvapi;
 extern qboolean mvStructConversionDisabled;
