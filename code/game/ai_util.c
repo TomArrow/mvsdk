@@ -503,7 +503,7 @@ int BotDoChat(bot_state_t *bs, char *section, int always)
 	{
 		bs->doChat = 1;
 	}
-	bs->chatTime_stored = (strlen(bs->currentChat)*45)+Q_irand(1300, 1500, qfalse, 1400);
+	bs->chatTime_stored = (strlen(bs->currentChat)*45)+ Q_irandExpectedIf(gRandomUnlockAdd, 1300, 1500, qfalse, 1400);
 	bs->chatTime = level.time + bs->chatTime_stored;
 
 	B_TempFree(MAX_CHAT_BUFFER_SIZE); //chatgroup

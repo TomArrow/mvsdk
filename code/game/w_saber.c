@@ -599,7 +599,7 @@ qboolean WP_SabersCheckLock2( gentity_t *attacker, gentity_t *defender, sabersLo
 	//MATCH ANIMS
 	if ( lockMode == LOCK_RANDOM )
 	{
-		lockMode = (sabersLockMode_t)Q_irand( (int)LOCK_FIRST, (int)(LOCK_RANDOM)-1, qfalse, (int)LOCK_FIRST);
+		lockMode = (sabersLockMode_t)Q_irand( (int)LOCK_FIRST, (int)(LOCK_RANDOM)-1 + gRandomUnlockAdd, qfalse, (int)LOCK_FIRST);
 	}
 	switch ( lockMode )
 	{
@@ -677,7 +677,7 @@ qboolean WP_SabersCheckLock2( gentity_t *attacker, gentity_t *defender, sabersLo
 	defender->client->ps.saberLockTime = nowTimeDefender + 10000;
 	attacker->client->ps.saberLockEnemy = defender->s.number;
 	defender->client->ps.saberLockEnemy = attacker->s.number;
-	attacker->client->ps.weaponTime = defender->client->ps.weaponTime = Q_irand( 1000, 3000, qfalse, 2000);//delay 1 to 3 seconds before pushing
+	attacker->client->ps.weaponTime = defender->client->ps.weaponTime = Q_irandExpectedIf(gRandomUnlockAdd, 1000, 3000, qfalse, 2000);//delay 1 to 3 seconds before pushing
 
 	VectorSubtract( defender->r.currentOrigin, attacker->r.currentOrigin, defDir );
 	VectorCopy( attacker->client->ps.viewangles, attAngles );
@@ -1047,7 +1047,7 @@ qboolean WP_SabersCheckLock( gentity_t *ent1, gentity_t *ent2 )
 		}
 		return qfalse;
 	}
-	if ( !Q_irand( 0, 10, qfalse, 5) )
+	if ( !Q_irand( 0, 10 + gRandomUnlockAdd, qfalse, 5) )
 	{
 		return WP_SabersCheckLock2( ent1, ent2, LOCK_RANDOM );
 	}
@@ -1168,8 +1168,8 @@ qboolean WP_GetSaberDeflectionAngle( gentity_t *attacker, gentity_t *defender, f
 			quadDiff = 4 - (quadDiff - 4);
 		}
 		//have the quads, find a good anim to use
-		if ( (!quadDiff || (quadDiff == 1 && Q_irand(0,1, qfalse, 0))) //defender pretty much stopped the attack at a 90 degree angle
-			&& (defender->client->ps.fd.saberAnimLevel == attacker->client->ps.fd.saberAnimLevel || Q_irand( 0, defender->client->ps.fd.saberAnimLevel-attacker->client->ps.fd.saberAnimLevel, qfalse, 0) >= 0) )//and the defender's style is stronger
+		if ( (!quadDiff || (quadDiff == 1 && Q_irand(0,1 + gRandomUnlockAdd, qfalse, 0))) //defender pretty much stopped the attack at a 90 degree angle
+			&& (defender->client->ps.fd.saberAnimLevel == attacker->client->ps.fd.saberAnimLevel || Q_irand( 0, defender->client->ps.fd.saberAnimLevel-attacker->client->ps.fd.saberAnimLevel + gRandomUnlockAdd, qfalse, 0) >= 0) )//and the defender's style is stronger
 		{
 			//bounce straight back
 			int attMove = attacker->client->ps.saberMove;
@@ -1204,7 +1204,7 @@ qboolean WP_GetSaberDeflectionAngle( gentity_t *attacker, gentity_t *defender, f
 			}
 			if ( newQuad == attQuadStart )
 			{//never come off at the same angle that we would have if the attack was not interrupted
-				if ( Q_irand(0, 1, qfalse, 0) )
+				if ( Q_irand(0, 1 + gRandomUnlockAdd, qfalse, 0) )
 				{
 					newQuad--;
 				}
@@ -2499,7 +2499,7 @@ blockStuff:
 			&& !PM_SaberInDeflect(otherOwner->client->ps.saberMove)
 			&& !PM_SaberInReflect(otherOwner->client->ps.saberMove)
 
-			&& (otherOwner->client->ps.fd.saberAnimLevel > FORCE_LEVEL_2 || ( otherOwner->client->ps.fd.forcePowerLevel[FP_SABERDEFEND] >= 3 && Q_irand(0, otherOwner->client->ps.fd.saberAnimLevel, qfalse, 0) ))
+			&& (otherOwner->client->ps.fd.saberAnimLevel > FORCE_LEVEL_2 || ( otherOwner->client->ps.fd.forcePowerLevel[FP_SABERDEFEND] >= 3 && Q_irand(0, otherOwner->client->ps.fd.saberAnimLevel + gRandomUnlockAdd, qfalse, 0) ))
 			&& !unblockable
 			&& !otherUnblockable
 			&& dmg > SABER_NONATTACK_DAMAGE
@@ -3052,9 +3052,9 @@ void MakeDeadSaber(gentity_t *ent)
 	VectorCopy(startang, saberent->r.currentAngles);
 
 	saberent->s.apos.trType = TR_GRAVITY;
-	saberent->s.apos.trDelta[0] = Q_irand(200, 800, qfalse, 500);
-	saberent->s.apos.trDelta[1] = Q_irand(200, 800, qfalse, 500);
-	saberent->s.apos.trDelta[2] = Q_irand(200, 800, qfalse, 500);
+	saberent->s.apos.trDelta[0] = Q_irandExpectedIf(gRandomUnlockAdd, 200, 800, qfalse, 500);
+	saberent->s.apos.trDelta[1] = Q_irandExpectedIf(gRandomUnlockAdd, 200, 800, qfalse, 500);
+	saberent->s.apos.trDelta[2] = Q_irandExpectedIf(gRandomUnlockAdd, 200, 800, qfalse, 500);
 	saberent->s.apos.trTime = level.time-50;
 
 	saberent->s.pos.trType = TR_GRAVITY;
@@ -3681,7 +3681,7 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd)
 				VectorCopy(dir, te->s.angles);
 				te->s.eventParm = 1;
 
-				self->client->ps.saberIdleWound = nowTime + (self->client->sess.raceMode ? 500 : Q_irand(400, 600, qfalse, 500));
+				self->client->ps.saberIdleWound = nowTime + (self->client->sess.raceMode ? 500 : Q_irandExpectedIf(gRandomUnlockAdd, 400, 600, qfalse, 500));
 			}
 
 			VectorCopy(boltOrigin, self->client->lastSaberBase);
@@ -4093,12 +4093,12 @@ void WP_SaberBlock( gentity_t *playerent, vec3_t hitloc, qboolean missileBlock )
 	AngleVectors( fwdangles, NULL, right, NULL );
 
 	rightdot = DotProduct(right, diff) + RandFloat(-0.2f,0.2f);
-	zdiff = hitloc[2] - playerent->client->ps.origin[2] + Q_irand(-8,8, qfalse, 0);
+	zdiff = hitloc[2] - playerent->client->ps.origin[2] + Q_irandExpectedIf(gRandomUnlockAdd,-8,8, qfalse, 0);
 	
 	// Figure out what quadrant the block was in.
 	if (zdiff > 24)
 	{	// Attack from above
-		if (Q_irand(0,1, qfalse, 0))
+		if (Q_irand(0,1 + gRandomUnlockAdd, qfalse, 0))
 		{
 			playerent->client->ps.saberBlocked = BLOCKED_TOP;
 		}
@@ -4111,7 +4111,7 @@ void WP_SaberBlock( gentity_t *playerent, vec3_t hitloc, qboolean missileBlock )
 	{	// The upper half has three viable blocks...
 		if (rightdot > 0.25)
 		{	// In the right quadrant...
-			if (Q_irand(0,1, qfalse, 0))
+			if (Q_irand(0,1 + gRandomUnlockAdd, qfalse, 0))
 			{
 				playerent->client->ps.saberBlocked = BLOCKED_UPPER_LEFT;
 			}
@@ -4122,7 +4122,7 @@ void WP_SaberBlock( gentity_t *playerent, vec3_t hitloc, qboolean missileBlock )
 		}
 		else
 		{
-			switch(Q_irand(0,3, qfalse, 1))
+			switch(Q_irand(0,3 + gRandomUnlockAdd, qfalse, 1))
 			{
 			case 0:
 				playerent->client->ps.saberBlocked = BLOCKED_UPPER_RIGHT;
@@ -4139,7 +4139,7 @@ void WP_SaberBlock( gentity_t *playerent, vec3_t hitloc, qboolean missileBlock )
 	}
 	else
 	{	// The lower half is a bit iffy as far as block coverage.  Pick one of the "low" ones at random.
-		if (Q_irand(0,1, qfalse, 0))
+		if (Q_irand(0,1 + gRandomUnlockAdd, qfalse, 0))
 		{
 			playerent->client->ps.saberBlocked = BLOCKED_LOWER_RIGHT;
 		}

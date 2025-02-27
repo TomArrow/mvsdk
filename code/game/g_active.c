@@ -2408,7 +2408,7 @@ void ClientThink_real( gentity_t *ent ) {
 		{
 			gentity_t *clientLost = &g_entities[pm.checkDuelLoss-1];
 
-			if (clientLost && clientLost->inuse && clientLost->client && Q_irand(0, 40, clientLost->client->sess.raceMode, 20) > clientLost->health)
+			if (clientLost && clientLost->inuse && clientLost->client && Q_irand(0, 40 + gRandomUnlockAdd, clientLost->client->sess.raceMode, 20) > clientLost->health)
 			{
 				vec3_t attDir;
 				VectorSubtract(ent->client->ps.origin, clientLost->client->ps.origin, attDir);

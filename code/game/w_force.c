@@ -1690,7 +1690,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 				}
 				if ( traceEnt->client )
 				{
-					if ( !Q_irand( 0, 2, qfalse, 1 ) )
+					if ( !Q_irand( 0, 2 + gRandomUnlockAdd, qfalse, 1 ) )
 					{
 						G_Sound( traceEnt, CHAN_BODY, G_SoundIndex( "sound/weapons/force/lightninghit.wav" ) );
 					}
@@ -1974,7 +1974,7 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 				}
 				*/
 
-				if ( !Q_irand( 0, 2, self->client && self->client->sess.raceMode, 1) )
+				if ( !Q_irand( 0, 2 + gRandomUnlockAdd, self->client && self->client->sess.raceMode, 1) )
 				{
 					//G_Sound( traceEnt, CHAN_BODY, G_SoundIndex( "sound/weapons/force/lightninghit.wav" ) );
 				}
@@ -4412,7 +4412,7 @@ void SeekerDroneUpdate(gentity_t *self)
 				WP_FireGenericBlasterMissile(self, org, endir, 0, 15, 2000, MOD_BLASTER);
 				G_SoundAtLoc( org, CHAN_WEAPON, G_SoundIndex("sound/weapons/bryar/fire.wav") );
 
-				self->client->ps.droneFireTime = nowTime + (self->client->sess.raceMode? 550: Q_irand(400, 700, self->client && self->client->sess.raceMode, 550));
+				self->client->ps.droneFireTime = nowTime + (self->client->sess.raceMode? 550: Q_irandExpectedIf(gRandomUnlockAdd, 400, 700, self->client && self->client->sess.raceMode, 550));
 			}
 		}
 	}

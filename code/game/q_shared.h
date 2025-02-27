@@ -2184,6 +2184,7 @@ void Rand_Init(int seed);
 float flrand(float min, float max, qboolean useDefault, float defaultValue);
 int irand(int min, int max, qboolean useDefault, int defaultValue);
 int Q_irand(int value1, int value2, qboolean useDefault, int defaultValue);
+int Q_irandExpectedIf(qboolean expected,int value1, int value2, qboolean useDefault, int defaultValue); // the behavior the devs actually intended if expected is qtrue
 
 /*
 Ghoul2 Insert Start

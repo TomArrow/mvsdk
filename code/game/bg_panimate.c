@@ -365,7 +365,7 @@ int BG_BrokenParryForParry( int move, qboolean raceMode )
 	{
 	case LS_PARRY_UP:
 		//Hmm... since we don't know what dir the hit came from, randomly pick knock down or knock back
-		if ( Q_irand( 0, 1, raceMode, 0 ) )
+		if ( Q_irand( 0, 1 + pml.randomAdd, raceMode, 0 ) )
 		{
 			return LS_H1_B_;
 		}

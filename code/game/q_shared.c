@@ -1514,6 +1514,34 @@ int Q_irand(int value1, int value2, qboolean useDefault, int defaultValue)
 	
 	return r;
 }
+//rww - convience function..
+int Q_irandExpectedIf(qboolean expected, int value1, int value2, qboolean useDefault, int defaultValue)
+{
+	int r;
+
+//#ifdef DEBUG
+//	// find bad calls: rand\s*\([^,]+,\s*([^,\s]+)\s*,[^,]+,\s*\1\s*\)
+//	if (defaultValue >= value2 || defaultValue < value1) {
+//		Com_Printf("Q_irand(%d,%d,%d,%d), bad call", value1, value2, useDefault, defaultValue);
+//	}
+//#endif
+	if (useDefault) {
+		return defaultValue;
+	}
+
+	if (expected) {
+		// e.g.:
+		// 100, 500: then value2 becomes 401, so addvalue becomes 0 to 400, so 100 + up to 400 = es expected
+		// -300, 300: then value2 becomes 601, so addvalue becomes 0 to 600, so -300 + up to 600 = es expected
+		// proof that this was their intent? check WP_SabersCheckLock2 dev comment where Q_irand was used. called with 1000,3000 and comment states 1-3 seconds
+		value2 += 1 - value1;
+	}
+
+	r = rand()%value2;
+	r += value1;
+	
+	return r;
+}
 
 //====================================================================
 
