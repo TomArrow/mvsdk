@@ -1287,7 +1287,8 @@ qboolean PM_AdjustAngleForWallJump(playerState_t* ps, usercmd_t* ucmd, qboolean 
 			//ent->client->ps.forcePowersActive |= (1<<FP_LEVITATION);
 			if (ps->origin[2] < ps->fd.forceJumpZStart)
 			{
-				ps->fd.forceJumpZStart = ps->origin[2];
+				PM_SetForceJumpZStart(ps->origin[2]);
+				//ps->fd.forceJumpZStart = ps->origin[2];
 			}
 			//FIXME do I need this?
 
@@ -1322,8 +1323,10 @@ qboolean PM_AdjustAngleForWallJump(playerState_t* ps, usercmd_t* ucmd, qboolean 
 //Set the height for when a force jump was started. If it's 0, nuge it up (slight hack to prevent holding jump over slopes)
 void PM_SetForceJumpZStart(float value)
 {
+	const int runFlags = PM_GetRunFlags();
+	const int moveStyle = PM_GetMovePhysics();
 	pm->ps->fd.forceJumpZStart = value;
-	if (!pm->ps->fd.forceJumpZStart && jk2gameplay == VERSION_1_04)
+	if (!pm->ps->fd.forceJumpZStart && (jk2gameplay == VERSION_1_04 || (runFlags & RFL_JUMPBUGDISABLE) || moveStyle == MV_JK2SP))
 	{
 		pm->ps->fd.forceJumpZStart -= 0.1f;
 	}

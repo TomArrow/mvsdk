@@ -2322,6 +2322,11 @@ void ForceJump( gentity_t *self, usercmd_t *ucmd )
 
 	//FIXME: sound effect
 	self->client->ps.fd.forceJumpZStart = self->client->ps.origin[2];//remember this for when we land
+	
+	if (self->client->ps.fd.forceJumpZStart && self->client->sess.raceMode && (self->client->sess.raceStyle.runFlags & RFL_JUMPBUGDISABLE)) {
+		self->client->ps.fd.forceJumpZStart -= 0.1f;
+	}
+
 	VectorCopy( jumpVel, self->client->ps.velocity );
 	//wasn't allowing them to attack when jumping, but that was annoying
 	//self->client->ps.weaponTime = self->client->ps.torsoAnimTimer;
