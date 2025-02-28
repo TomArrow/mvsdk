@@ -2137,6 +2137,8 @@ void G_RunItem( gentity_t *ent ) {
 	// get current position
 	BG_EvaluateTrajectory( &ent->s.pos, level.time, origin );
 
+	trap_UnlinkEntity(ent);	// In the case of my engine trace mod: don't let the entity block itself
+
 	// trace a line from the previous position to the current position
 	if ( ent->clipmask ) {
 		mask = ent->clipmask;
