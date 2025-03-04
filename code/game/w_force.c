@@ -4954,35 +4954,38 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 		self->client->fjDidJump = qfalse;
 	}
 
-	if (self->client->ps.fd.forceJumpCharge && self->client->ps.groundEntityNum == ENTITYNUM_NONE && self->client->fjDidJump)
-	{ //this was for the "charge" jump method... I guess
-		if (ucmd->upmove < 10 && (!(ucmd->buttons & BUTTON_FORCEPOWER) || self->client->ps.fd.forcePowerSelected != FP_LEVITATION))
-		{
-			G_MuteSound(self->client->ps.fd.killSoundEntIndex[TRACK_CHANNEL_1-50], CHAN_VOICE);
-			self->client->ps.fd.forceJumpCharge = 0;
-		}
-	}
+	if(moveStyle != MV_CHARGEJUMP){ // moved and adjusted/fixed up this part to pmove for chargejump movement style
 
-#ifndef METROID_JUMP
-	else if ( (ucmd->upmove > 10) && (self->client->ps.pm_flags & PMF_JUMP_HELD) && self->client->ps.groundTime && (nowTime - self->client->ps.groundTime) > 150 && !BG_HasYsalamiri(g_gametype.integer, &self->client->ps) && BG_CanUseFPNow(g_gametype.integer, &self->client->ps, nowTime, FP_LEVITATION) )
-	{//just charging up
-		ForceJumpCharge( self, ucmd );
-		usingForce = qtrue;
-	}
-	else if (ucmd->upmove < 10 && self->client->ps.groundEntityNum == ENTITYNUM_NONE && self->client->ps.fd.forceJumpCharge)
-	{
-		self->client->ps.pm_flags &= ~(PMF_JUMP_HELD);
-	}
-#endif
-
-	if (!(self->client->ps.pm_flags & PMF_JUMP_HELD) && self->client->ps.fd.forceJumpCharge)
-	{
-		if (!(ucmd->buttons & BUTTON_FORCEPOWER) ||
-			self->client->ps.fd.forcePowerSelected != FP_LEVITATION)
-		{
-			if (WP_DoSpecificPower( self, ucmd, FP_LEVITATION ))
+		if (self->client->ps.fd.forceJumpCharge && self->client->ps.groundEntityNum == ENTITYNUM_NONE && self->client->fjDidJump)
+		{ //this was for the "charge" jump method... I guess
+			if (ucmd->upmove < 10 && (!(ucmd->buttons & BUTTON_FORCEPOWER) || self->client->ps.fd.forcePowerSelected != FP_LEVITATION))
 			{
-				usingForce = qtrue;
+				G_MuteSound(self->client->ps.fd.killSoundEntIndex[TRACK_CHANNEL_1-50], CHAN_VOICE);
+				self->client->ps.fd.forceJumpCharge = 0;
+			}
+		}
+
+	#ifndef METROID_JUMP
+		else if ( (ucmd->upmove > 10) && (self->client->ps.pm_flags & PMF_JUMP_HELD) && self->client->ps.groundTime && (nowTime - self->client->ps.groundTime) > 150 && !BG_HasYsalamiri(g_gametype.integer, &self->client->ps) && BG_CanUseFPNow(g_gametype.integer, &self->client->ps, nowTime, FP_LEVITATION) )
+		{//just charging up
+			ForceJumpCharge( self, ucmd );
+			usingForce = qtrue;
+		}
+		else if (ucmd->upmove < 10 && self->client->ps.groundEntityNum == ENTITYNUM_NONE && self->client->ps.fd.forceJumpCharge)
+		{
+			self->client->ps.pm_flags &= ~(PMF_JUMP_HELD);
+		}
+	#endif
+
+		if (!(self->client->ps.pm_flags & PMF_JUMP_HELD) && self->client->ps.fd.forceJumpCharge)
+		{
+			if (!(ucmd->buttons & BUTTON_FORCEPOWER) ||
+				self->client->ps.fd.forcePowerSelected != FP_LEVITATION)
+			{
+				if (WP_DoSpecificPower( self, ucmd, FP_LEVITATION ))
+				{
+					usingForce = qtrue;
+				}
 			}
 		}
 	}
@@ -5049,7 +5052,7 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 	//}
 
 	if ( (ucmd->buttons & BUTTON_FORCEPOWER) &&
-		BG_CanUseFPNow(g_gametype.integer, &self->client->ps, nowTime, self->client->ps.fd.forcePowerSelected) && (!chargeJumping || self->client->ps.fd.forcePowerSelected != FP_LEVITATION))
+		BG_CanUseFPNow(g_gametype.integer, &self->client->ps, nowTime, self->client->ps.fd.forcePowerSelected) && (moveStyle != MV_CHARGEJUMP || self->client->ps.fd.forcePowerSelected != FP_LEVITATION))
 	{
 		if (self->client->ps.fd.forcePowerSelected == FP_LEVITATION)
 		{

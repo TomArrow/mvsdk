@@ -2572,16 +2572,17 @@ static void PM_CheckChargeJump( void ) {
 		//self->client->fjDidJump = qfalse;
 	}
 
-	if (pm->ps->fd.forceJumpCharge && pm->ps->groundEntityNum == ENTITYNUM_NONE && (pm->ps->pm_flags & PMF_FJDIDJUMP))
+	// feels bad. just clear when we land without anything pressed
+	/*if (pm->ps->fd.forceJumpCharge && pm->ps->groundEntityNum == ENTITYNUM_NONE && (pm->ps->pm_flags & PMF_FJDIDJUMP))
 	{
 		if (pm->cmd.upmove < 10 && !(pm->cmd.buttons & BUTTON_BOUNCEPOWER) && (!(pm->cmd.buttons & BUTTON_FORCEPOWER) || pm->ps->fd.forcePowerSelected != FP_LEVITATION))
 		{
 #if JK2_GAME
 			G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
 #endif
-			pm->ps->fd.forceJumpCharge = 0;
+ 			pm->ps->fd.forceJumpCharge = 0;
 		}
-	}
+	}*/
 
 	if ( /*!self->client->fjDidJump &&*/ (pm->cmd.buttons & BUTTON_BOUNCEPOWER) && !BG_HasYsalamiri(pm->gametype, pm->ps) && BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION))
 	{//just charging up
@@ -2591,8 +2592,10 @@ static void PM_CheckChargeJump( void ) {
 //#ifndef METROID_JUMP
 	else if ( /*!self->client->fjDidJump &&*/ (pm->cmd.upmove > 10) && (pm->ps->pm_flags & PMF_JUMP_HELD) && pm->ps->groundTime && (pm->cmd.serverTime - pm->ps->groundTime) > 150 && !BG_HasYsalamiri(pm->gametype, pm->ps) && BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION)/*&& !pm->ps->fd.forceJumpZStart*/)
 	{//just charging up
-		PM_ForceJumpCharge();
-		usingForce = qtrue;
+
+		// meh doesnt feel great/hardly noticable/weird
+		//PM_ForceJumpCharge();
+		//usingForce = qtrue;
 	}
 	else if (pm->cmd.upmove < 10 && pm->ps->groundEntityNum == ENTITYNUM_NONE && pm->ps->fd.forceJumpCharge)
 	{
@@ -2607,10 +2610,13 @@ static void PM_CheckChargeJump( void ) {
 		{
 			if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
 			{
-				pm->ps->fd.forceJumpCharge = 0;
+				/* TA: Actually nvm this always feels bad pretty much
+				if (pm->cmd.upmove < 10) { //  TA keep the charge if we are still keeping jump pressed, perhaps for the following jump
+					pm->ps->fd.forceJumpCharge = 0;
 #if JK2_GAME
-				G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
+					G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
 #endif
+				}*/
 				//This only happens if the groundEntityNum == ENTITYNUM_NONE when the button is actually released
 			}
 			else
@@ -3811,6 +3817,16 @@ static void PM_GroundTrace( void ) {
 #endif
 		}
 		
+		if (moveStyle == MV_CHARGEJUMP && pm->cmd.upmove < 10 && !(pm->ps->pm_flags & PMF_JUMP_HELD) && !(pm->cmd.buttons & BUTTON_BOUNCEPOWER)) { //  TA instead of canceling the charging in air when nothing pressed, cancel when we land if we arent pressing jump and not pressing charge.
+			if (!(pm->cmd.buttons & BUTTON_FORCEPOWER) ||
+				pm->ps->fd.forcePowerSelected != FP_LEVITATION) {
+				pm->ps->fd.forceJumpCharge = 0;
+#if JK2_GAME
+				G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
+#endif
+			}
+		}
+
 		PM_CrashLand();
 
 		// don't do landing time if we were just going down a slope
