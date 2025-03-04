@@ -12,7 +12,7 @@
 #else
 #define LEVELTIME(client) (((client) && (client)->sess.raceMode) ? (((client)->pers.cmd.serverTime > 0) ? (client)->pers.cmd.serverTime : level.time) : level.time)
 #endif
-
+#define MOVESTYLE(client) (((client) && (client)->sess.raceMode) ? (client->sess.raceStyle.movementStyle) : MV_JK2)
 
 //#define ACTIVATORTIMEHELPERTIMEOLD(client) (((client) && (client)->sess.raceMode) ? (((client)->ps.commandTime > 0) ? (client)->ps.commandTime : level.time) : level.time)
 

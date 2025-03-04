@@ -268,10 +268,12 @@ extern int bgForcePowerCost[NUM_FORCE_POWERS][NUM_FORCE_POWER_LEVELS];
 #define	PMF_TIME_WATERJUMP	256		// pm_time is waterjump
 #define	PMF_RESPAWNED		512		// clear after attack and jump buttons come up
 #define	PMF_USE_ITEM_HELD	1024
-#define PMF_UPDATE_ANIM		2048	// The server updated the animation, the pmove should set the ghoul2 anim to match.
+#define PMF_UPDATE_ANIM		2048	// UNUSED: The server updated the animation, the pmove should set the ghoul2 anim to match.
 #define PMF_FOLLOW			4096	// spectate following another player
-#define PMF_SCOREBOARD		8192	// spectate as a scoreboard
+#define PMF_SCOREBOARD		8192	// USED ONLY FOR SPECTATORS: spectate as a scoreboard
 #define PMF_STUCK_TO_WALL	16384	// grabbing a wall
+
+#define PMF_FJDIDJUMP		2048	// Reusing PMF_UPDATE_ANIM (because unused) for MV_CHARGEJUMP
 
 #define	PMF_ALL_TIMES	(PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK)
 

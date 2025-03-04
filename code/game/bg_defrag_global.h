@@ -55,7 +55,7 @@ typedef enum //movementstyle enum
 	MV_Q2,//MV_JETPACK,
 	MV_FORCE,//MV_SPEED,
 	MV_DREAM,//MV_SP,
-	//MV_SLICK,
+	MV_CHARGEJUMP,//MV_SLICK,
 	//MV_BOTCPM,
 	MV_NUMSTYLES
 } movementStyle_e;

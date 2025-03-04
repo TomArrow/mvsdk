@@ -1332,6 +1332,18 @@ void PM_SetForceJumpZStart(float value)
 	}
 }
 
+void PM_SetGroundEntityNum(int num)
+{
+	if (num != ENTITYNUM_NONE) {
+		pm->ps->groundTime = 0;
+	}
+	else if (pm->ps->groundEntityNum != ENTITYNUM_NONE) {
+		pm->ps->groundTime = pm->cmd.serverTime; // remember time we left ground for charge jump movement
+	}
+	pm->ps->groundEntityNum = num;
+
+}
+
 /*
 =============
 PM_CheckJump
@@ -1421,214 +1433,216 @@ static qboolean PM_CheckJump( void )
 		pm->ps->forceJumpFlip = qfalse;
 		return qtrue;
 	}
-#if METROID_JUMP
-	if ( pm->waterlevel < 2 ) 
-	{
-		if ( pm->ps->gravity > 0 )
-		{//can't do this in zero-G
-			if ( PM_ForceJumpingUp() )
-			{//holding jump in air
-				float curHeight = pm->ps->origin[2] - pm->ps->fd.forceJumpZStart;
-				//check for max force jump level and cap off & cut z vel
-				int runFlags = PM_GetRunFlags();
-				if ( ( curHeight<=forceJumpHeight[0] ||//still below minimum jump height
-						(pm->ps->fd.forcePower&&pm->cmd.upmove>=10) ) &&////still have force power available and still trying to jump up 
-					curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] &&
-					(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04 && moveStyle != MV_JK2SP && !(runFlags & RFL_JUMPBUGDISABLE)))//still below maximum jump height
-				{//can still go up
-					if ( curHeight > forceJumpHeight[0] )
-					{//passed normal jump height  *2?
-						if ( !(pm->ps->fd.forcePowersActive&(1<<FP_LEVITATION)) )//haven't started forcejump yet
-						{
-							//start force jump
-							pm->ps->fd.forcePowersActive |= (1<<FP_LEVITATION);
-							pm->ps->fd.forceJumpSound = 1;
-							//play flip
-							if ((pm->cmd.forwardmove || pm->cmd.rightmove) && //pushing in a dir
-								(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_F &&//not already flipping
-								(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_B &&
-								(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_R &&
-								(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_L )
-							{ 
-								int anim = BOTH_FORCEINAIR1;
-								int	parts = SETANIM_BOTH;
 
-								if ( pm->cmd.forwardmove > 0 )
-								{
-									anim = BOTH_FLIP_F;
-								}
-								else if ( pm->cmd.forwardmove < 0 )
-								{
-									anim = BOTH_FLIP_B;
-								}
-								else if ( pm->cmd.rightmove > 0 )
-								{
-									anim = BOTH_FLIP_R;
-								}
-								else if ( pm->cmd.rightmove < 0 )
-								{
-									anim = BOTH_FLIP_L;
-								}
-								if ( pm->ps->weaponTime )
-								{
-									parts = SETANIM_LEGS;
-								}
+	if (moveStyle != MV_CHARGEJUMP) { // mirrors the old #if METROID_JUMP clause
 
-								PM_SetAnim( parts, anim, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 150 );
-							}
-							else if ( pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_1 )
+		if ( pm->waterlevel < 2 ) 
+		{
+			if ( pm->ps->gravity > 0 )
+			{//can't do this in zero-G
+				if ( PM_ForceJumpingUp() )
+				{//holding jump in air
+					float curHeight = pm->ps->origin[2] - pm->ps->fd.forceJumpZStart;
+					//check for max force jump level and cap off & cut z vel
+					int runFlags = PM_GetRunFlags();
+					if ( ( curHeight<=forceJumpHeight[0] ||//still below minimum jump height
+							(pm->ps->fd.forcePower&&pm->cmd.upmove>=10) ) &&////still have force power available and still trying to jump up 
+						curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] &&
+						(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04 && moveStyle != MV_JK2SP && !(runFlags & RFL_JUMPBUGDISABLE)))//still below maximum jump height
+					{//can still go up
+						if ( curHeight > forceJumpHeight[0] )
+						{//passed normal jump height  *2?
+							if ( !(pm->ps->fd.forcePowersActive&(1<<FP_LEVITATION)) )//haven't started forcejump yet
 							{
-								vec3_t facingFwd, facingRight, facingAngles;
-								int	anim = -1;
-								float dotR, dotF;
-								
-								VectorSet(facingAngles, 0, pm->ps->viewangles[YAW], 0);
+								//start force jump
+								pm->ps->fd.forcePowersActive |= (1<<FP_LEVITATION);
+								pm->ps->fd.forceJumpSound = 1;
+								//play flip
+								if ((pm->cmd.forwardmove || pm->cmd.rightmove) && //pushing in a dir
+									(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_F &&//not already flipping
+									(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_B &&
+									(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_R &&
+									(pm->ps->legsAnim&~ANIM_TOGGLEBIT) != BOTH_FLIP_L )
+								{ 
+									int anim = BOTH_FORCEINAIR1;
+									int	parts = SETANIM_BOTH;
 
-								AngleVectors( facingAngles, facingFwd, facingRight, NULL );
-								dotR = DotProduct( facingRight, pm->ps->velocity );
-								dotF = DotProduct( facingFwd, pm->ps->velocity );
-
-								if ( fabs(dotR) > fabs(dotF) * 1.5 )
-								{
-									if ( dotR > 150 )
+									if ( pm->cmd.forwardmove > 0 )
 									{
-										anim = BOTH_FORCEJUMPRIGHT1;
+										anim = BOTH_FLIP_F;
 									}
-									else if ( dotR < -150 )
+									else if ( pm->cmd.forwardmove < 0 )
 									{
-										anim = BOTH_FORCEJUMPLEFT1;
+										anim = BOTH_FLIP_B;
 									}
-								}
-								else
-								{
-									if ( dotF > 150 )
+									else if ( pm->cmd.rightmove > 0 )
 									{
-										anim = BOTH_FORCEJUMP1;
+										anim = BOTH_FLIP_R;
 									}
-									else if ( dotF < -150 )
+									else if ( pm->cmd.rightmove < 0 )
 									{
-										anim = BOTH_FORCEJUMPBACK1;
+										anim = BOTH_FLIP_L;
 									}
-								}
-								if ( anim != -1 )
-								{
-									int parts = SETANIM_BOTH;
 									if ( pm->ps->weaponTime )
-									{//FIXME: really only care if we're in a saber attack anim...
+									{
 										parts = SETANIM_LEGS;
 									}
 
 									PM_SetAnim( parts, anim, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 150 );
 								}
-							}
-						}
-						else
-						{ //jump is already active (the anim has started)
-							if ( pm->ps->legsTimer < 1 )
-							{//not in the middle of a legsAnim
-								int anim = (pm->ps->legsAnim&~ANIM_TOGGLEBIT);
-								int newAnim = -1;
-								switch ( anim )
+								else if ( pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_1 )
 								{
-								case BOTH_FORCEJUMP1:
-									newAnim = BOTH_FORCELAND1;//BOTH_FORCEINAIR1;
-									break;
-								case BOTH_FORCEJUMPBACK1:
-									newAnim = BOTH_FORCELANDBACK1;//BOTH_FORCEINAIRBACK1;
-									break;
-								case BOTH_FORCEJUMPLEFT1:
-									newAnim = BOTH_FORCELANDLEFT1;//BOTH_FORCEINAIRLEFT1;
-									break;
-								case BOTH_FORCEJUMPRIGHT1:
-									newAnim = BOTH_FORCELANDRIGHT1;//BOTH_FORCEINAIRRIGHT1;
-									break;
-								}
-								if ( newAnim != -1 )
-								{
-									int parts = SETANIM_BOTH;
-									if ( pm->ps->weaponTime )
+									vec3_t facingFwd, facingRight, facingAngles;
+									int	anim = -1;
+									float dotR, dotF;
+								
+									VectorSet(facingAngles, 0, pm->ps->viewangles[YAW], 0);
+
+									AngleVectors( facingAngles, facingFwd, facingRight, NULL );
+									dotR = DotProduct( facingRight, pm->ps->velocity );
+									dotF = DotProduct( facingFwd, pm->ps->velocity );
+
+									if ( fabs(dotR) > fabs(dotF) * 1.5 )
 									{
-										parts = SETANIM_LEGS;
+										if ( dotR > 150 )
+										{
+											anim = BOTH_FORCEJUMPRIGHT1;
+										}
+										else if ( dotR < -150 )
+										{
+											anim = BOTH_FORCEJUMPLEFT1;
+										}
 									}
+									else
+									{
+										if ( dotF > 150 )
+										{
+											anim = BOTH_FORCEJUMP1;
+										}
+										else if ( dotF < -150 )
+										{
+											anim = BOTH_FORCEJUMPBACK1;
+										}
+									}
+									if ( anim != -1 )
+									{
+										int parts = SETANIM_BOTH;
+										if ( pm->ps->weaponTime )
+										{//FIXME: really only care if we're in a saber attack anim...
+											parts = SETANIM_LEGS;
+										}
 
-									PM_SetAnim( parts, newAnim, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 150 );
+										PM_SetAnim( parts, anim, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 150 );
+									}
+								}
+							}
+							else
+							{ //jump is already active (the anim has started)
+								if ( pm->ps->legsTimer < 1 )
+								{//not in the middle of a legsAnim
+									int anim = (pm->ps->legsAnim&~ANIM_TOGGLEBIT);
+									int newAnim = -1;
+									switch ( anim )
+									{
+									case BOTH_FORCEJUMP1:
+										newAnim = BOTH_FORCELAND1;//BOTH_FORCEINAIR1;
+										break;
+									case BOTH_FORCEJUMPBACK1:
+										newAnim = BOTH_FORCELANDBACK1;//BOTH_FORCEINAIRBACK1;
+										break;
+									case BOTH_FORCEJUMPLEFT1:
+										newAnim = BOTH_FORCELANDLEFT1;//BOTH_FORCEINAIRLEFT1;
+										break;
+									case BOTH_FORCEJUMPRIGHT1:
+										newAnim = BOTH_FORCELANDRIGHT1;//BOTH_FORCEINAIRRIGHT1;
+										break;
+									}
+									if ( newAnim != -1 )
+									{
+										int parts = SETANIM_BOTH;
+										if ( pm->ps->weaponTime )
+										{
+											parts = SETANIM_LEGS;
+										}
+
+										PM_SetAnim( parts, newAnim, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 150 );
+									}
 								}
 							}
 						}
-					}
 
-					//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
-					
-					if (MovementIsQuake3Based(moveStyle)) {//Forcejump rampjump
 						//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
-						float lastJumpSpeed = pm->ps->stats[STAT_LASTJUMPSPEED];
-						float realForceJumpHeight;
-						//if (lastJumpSpeed == 0) {
-						//	lastJumpSpeed = JUMP_VELOCITY_NEW; // avoid infinite velocity[2] which results in NaN. why does this happen anyway?
-						//}
-						realForceJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] * (lastJumpSpeed / (float)JUMP_VELOCITY_NEW);
+					
+						if (MovementIsQuake3Based(moveStyle)) {//Forcejump rampjump
+							//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
+							float lastJumpSpeed = pm->ps->stats[STAT_LASTJUMPSPEED];
+							float realForceJumpHeight;
+							//if (lastJumpSpeed == 0) {
+							//	lastJumpSpeed = JUMP_VELOCITY_NEW; // avoid infinite velocity[2] which results in NaN. why does this happen anyway?
+							//}
+							realForceJumpHeight = forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] * (lastJumpSpeed / (float)JUMP_VELOCITY_NEW);
 
-						if (!realForceJumpHeight || !lastJumpSpeed) {
-							pm->ps->velocity[2] = 0; // can happen sometimes and messes everything up. this might feel weird if it happens but its a freak accident anyway. might be when pressing jump during spawn not sure.
-							Com_Printf("^3realForceJumpHeight is 0, weird.\n");
+							if (!realForceJumpHeight || !lastJumpSpeed) {
+								pm->ps->velocity[2] = 0; // can happen sometimes and messes everything up. this might feel weird if it happens but its a freak accident anyway. might be when pressing jump during spawn not sure.
+								Com_Printf("^3realForceJumpHeight is 0, weird.\n");
+							}
+							else {
+								pm->ps->velocity[2] = (realForceJumpHeight - curHeight) / realForceJumpHeight * forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
+								pm->ps->velocity[2] /= 10;//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
+								pm->ps->velocity[2] += pm->ps->stats[STAT_LASTJUMPSPEED];
+							}
 						}
 						else {
-							pm->ps->velocity[2] = (realForceJumpHeight - curHeight) / realForceJumpHeight * forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
-							pm->ps->velocity[2] /= 10;//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
-							pm->ps->velocity[2] += pm->ps->stats[STAT_LASTJUMPSPEED];
+							pm->ps->velocity[2] = (forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]-curHeight)/forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
+							pm->ps->velocity[2] /= 10;
+							pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
 						}
+						pm->ps->pm_flags |= PMF_JUMP_HELD;
 					}
-					else {
-						pm->ps->velocity[2] = (forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]-curHeight)/forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]]*forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];//JUMP_VELOCITY;
-						pm->ps->velocity[2] /= 10;
-						pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
-					}
-					pm->ps->pm_flags |= PMF_JUMP_HELD;
-				}
-				else if ( curHeight > forceJumpHeight[0] && curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] - forceJumpHeight[0] )
-				{//still have some headroom, don't totally stop it
-					if ( pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
-					{
-						pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
-					}
-				}
-				else
-				{
-					if (moveStyle == MV_JK2SP) {
-						pm->ps->velocity[2] = 0;
-					}
-					else {
-						//pm->ps->velocity[2] = 0;
-						//rww - changed for the sake of balance in multiplayer
-
-						if (pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
+					else if ( curHeight > forceJumpHeight[0] && curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] - forceJumpHeight[0] )
+					{//still have some headroom, don't totally stop it
+						if ( pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
 						{
 							pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
 						}
 					}
-				}
-				pm->cmd.upmove = 0;
-				return qfalse;
-			}
-			else if ( jk2gameplay == VERSION_1_02 && moveStyle != MV_JK2SP && pm->ps->groundEntityNum == ENTITYNUM_NONE )
-			{
-				int legsAnim = (pm->ps->legsAnim&~ANIM_TOGGLEBIT);
-				if ( legsAnim != BOTH_WALL_RUN_LEFT && legsAnim != BOTH_WALL_RUN_RIGHT )
-				{//special case.. these let you jump off a wall
-					if (runFlags & RFL_CLIMBTECH) {
-						// gotta allow for wallgrab
-						onlyWallGrab = qtrue;
-					}
-					else {
-						return qfalse;
-					}
-				}
-			}
+					else
+					{
+						if (moveStyle == MV_JK2SP) {
+							pm->ps->velocity[2] = 0;
+						}
+						else {
+							//pm->ps->velocity[2] = 0;
+							//rww - changed for the sake of balance in multiplayer
 
+							if (pm->ps->velocity[2] > JUMP_VELOCITY_NEW)
+							{
+								pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
+							}
+						}
+					}
+					pm->cmd.upmove = 0;
+					return qfalse;
+				}
+				else if ( jk2gameplay == VERSION_1_02 && moveStyle != MV_JK2SP && pm->ps->groundEntityNum == ENTITYNUM_NONE )
+				{
+					int legsAnim = (pm->ps->legsAnim&~ANIM_TOGGLEBIT);
+					if ( legsAnim != BOTH_WALL_RUN_LEFT && legsAnim != BOTH_WALL_RUN_RIGHT )
+					{//special case.. these let you jump off a wall
+						if (runFlags & RFL_CLIMBTECH) {
+							// gotta allow for wallgrab
+							onlyWallGrab = qtrue;
+						}
+						else {
+							return qfalse;
+						}
+					}
+				}
+
+			}
 		}
-	}
 
-#endif
+	}
 
 	//Not jumping
 	if ( pm->cmd.upmove < 10 && (pm->ps->groundEntityNum != ENTITYNUM_NONE || jk2gameplay == VERSION_1_02)) {
@@ -2065,7 +2079,7 @@ static qboolean PM_CheckJump( void )
 							pml.groundPlane = qfalse;
 							pml.walking = qfalse;
 							pm->ps->pm_flags |= PMF_JUMP_HELD;
-							pm->ps->groundEntityNum = ENTITYNUM_NONE;
+							PM_SetGroundEntityNum(ENTITYNUM_NONE);
 							VectorClear(pml.groundTrace.plane.normal);
 
 							pm->ps->weaponTime = pm->ps->torsoTimer;
@@ -2084,7 +2098,7 @@ static qboolean PM_CheckJump( void )
 						pml.groundPlane = qfalse;
 						pml.walking = qfalse;
 						pm->ps->pm_flags |= PMF_JUMP_HELD;
-						pm->ps->groundEntityNum = ENTITYNUM_NONE;
+						PM_SetGroundEntityNum(ENTITYNUM_NONE);
 						VectorClear(pml.groundTrace.plane.normal);
 
 						pm->ps->weaponTime = pm->ps->torsoTimer;
@@ -2117,7 +2131,7 @@ static qboolean PM_CheckJump( void )
 	pml.groundPlane = qfalse;
 	pml.walking = qfalse;
 	pm->ps->pm_flags |= PMF_JUMP_HELD;
-	pm->ps->groundEntityNum = ENTITYNUM_NONE;
+	PM_SetGroundEntityNum(ENTITYNUM_NONE);
 	PM_SetForceJumpZStart(pm->ps->origin[2]);
 
 	PM_AddEvent( EV_JUMP );
@@ -2179,7 +2193,437 @@ static qboolean	PM_CheckWaterJump( void ) {
 
 //============================================================================
 
+/*
+* 
+* CHARGE JUMP MECHANICS
+* Have some extra vars we need to network via stats entities: ps.groundTime, ps->fd->forcejumpcharge
+* Using new PMF_FJDIDJUMP
+* 
+*/
 
+qboolean PM_ForcePowerAvailable(forcePowers_t forcePower)
+{
+	int	drain = forcePowerNeeded[pm->ps->fd.forcePowerLevel[forcePower]][forcePower];
+
+	if (pm->ps->fd.forcePowersActive & (1 << forcePower))
+	{ //we're probably going to deactivate it..
+		return qtrue;
+	}
+
+	if (forcePower == FP_LEVITATION)
+	{
+		return qtrue;
+	}
+	if (!drain)
+	{
+		return qtrue;
+	}
+	if (pm->ps->fd.forcePower < drain)
+	{
+		return qfalse;
+	}
+	return qtrue;
+}
+
+qboolean PM_ForcePowerUsable(forcePowers_t forcePower)
+{
+	int moveStyle = PM_GetMovePhysics();
+
+	if (BG_HasYsalamiri(pm->gametype, pm->ps))
+	{
+		return qfalse;
+	}
+
+	//if (pm->ps->pm_flags & PMF_FOLLOW)
+	//{ //specs can't use powers through people
+	//	return qfalse;
+	//}
+	//if (self->client->sess.sessionTeam == TEAM_SPECTATOR)
+	//{
+	//	return qfalse;
+	//}
+
+	if (!BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, forcePower))
+	{
+		return qfalse;
+	}
+
+	if (!(pm->ps->fd.forcePowersKnown & (1 << forcePower)))
+	{//don't know this power
+		return qfalse;
+	}
+
+	if ((pm->ps->fd.forcePowersActive & (1 << forcePower)))
+	{//already using this power
+		if (forcePower != FP_LEVITATION)
+		{
+			return qfalse;
+		}
+	}
+
+	if (forcePower == FP_LEVITATION && (moveStyle == MV_CHARGEJUMP && (pm->ps->pm_flags & PMF_FJDIDJUMP)))
+	{
+		return qfalse;
+	}
+
+	if (!pm->ps->fd.forcePowerLevel[forcePower])
+	{
+		return qfalse;
+	}
+
+	return PM_ForcePowerAvailable(forcePower);
+}
+
+#define PM_FORCE_JUMP_CHARGE_TIME 1000.0f
+#define PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY (PM_FORCE_JUMP_CHARGE_TIME/100.0f)
+void PM_ForceJumpCharge()
+{
+	//float jumpStrengthChargeSpeedBase = forceJumpStrength[0];
+	float jumpStrengthChargeSpeedBase = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
+	//float forceJumpChargeInterval = forceJumpStrength[0] / (PM_FORCE_JUMP_CHARGE_TIME / 100.0f);
+	float forceJumpChargeInterval = jumpStrengthChargeSpeedBase * pml.frametime * 1000.0f / PM_FORCE_JUMP_CHARGE_TIME;
+
+	if (pm->ps->pm_type == PM_DEAD)
+	{
+		return;
+	}
+
+	//if (!pm->ps->fd.forceJumpCharge && pm->ps->groundEntityNum == ENTITYNUM_NONE) // TA I think the original version intended for charge to be possible in air
+	//{
+	//	return;
+	//}
+
+	if (pm->ps->fd.forcePower < forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION])
+	{
+#if JK2_GAME
+		G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE); 
+#endif
+		return;
+	}
+
+	//if (!pm->ps->fd.forceJumpCharge)
+	//{
+	//	pm->ps->fd.forceJumpAddTime = 0;
+	//}
+
+	//if (pm->ps->fd.forceJumpAddTime >= level.time)
+	//{
+	//	return;
+	//}
+
+	//need to play sound
+	if (!pm->ps->fd.forceJumpCharge)
+	{
+#if JK2_GAME
+		G_Sound(g_entities+pm->ps->clientNum, TRACK_CHANNEL_1, G_SoundIndex("sound/weapons/force/jumpbuild.wav")); 
+#endif
+	}
+
+	//Increment
+	//if (pm->ps->fd.forceJumpAddTime < pm->cmd.serverTime)
+	{
+		pm->ps->fd.forceJumpCharge += forceJumpChargeInterval;// *50;// TA: wtf no, why times 50!?
+		//pm->ps->fd.forceJumpAddTime = level.time + 500;
+	}
+
+	//clamp to max strength for current level
+	if (pm->ps->fd.forceJumpCharge > forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]])
+	{
+		pm->ps->fd.forceJumpCharge = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
+		//G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE); // TA restore this somehow idk
+	}
+
+
+	//clamp to max available force power
+	if (pm->ps->fd.forceJumpCharge / jumpStrengthChargeSpeedBase * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION] > pm->ps->fd.forcePower)
+	{//can't use more than you have
+#if JK2_GAME
+		G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
+#endif
+		pm->ps->fd.forceJumpCharge = jumpStrengthChargeSpeedBase * pm->ps->fd.forcePower / forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION];
+	}
+
+	//G_Printf("%f\n", self->client->ps.fd.forceJumpCharge);
+}
+typedef enum
+{
+	PM_FJ_FORWARD,
+	PM_FJ_BACKWARD,
+	PM_FJ_RIGHT,
+	PM_FJ_LEFT,
+	PM_FJ_UP
+};
+
+int PM_GetVelocityForForceJump( vec3_t jumpVel)
+{
+	float pushFwd = 0, pushRt = 0;
+	vec3_t	view, forward, right;
+	int moveStyle = PM_GetMovePhysics();
+	VectorCopy(pm->ps->viewangles, view);
+	view[0] = 0;
+	AngleVectors(view, forward, right, NULL);
+	if (pm->cmd.forwardmove && pm->cmd.rightmove)
+	{
+		if (pm->cmd.forwardmove > 0)
+		{
+			pushFwd = 50;
+		}
+		else
+		{
+			pushFwd = -50;
+		}
+		if (pm->cmd.rightmove > 0)
+		{
+			pushRt = 50;
+		}
+		else
+		{
+			pushRt = -50;
+		}
+	}
+	else if (pm->cmd.forwardmove || pm->cmd.rightmove)
+	{
+		if (pm->cmd.forwardmove > 0)
+		{
+			pushFwd = 100;
+		}
+		else if (pm->cmd.forwardmove < 0)
+		{
+			pushFwd = -100;
+		}
+		else if (pm->cmd.rightmove > 0)
+		{
+			pushRt = 100;
+		}
+		else if (pm->cmd.rightmove < 0)
+		{
+			pushRt = -100;
+		}
+	}
+
+#if JK2_GAME
+	G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
+
+	G_Sound(g_entities+pm->ps->clientNum, CHAN_AUTO, G_SoundIndex("sound/weapons/force/jump.wav"));
+#endif
+
+	if (pm->ps->fd.forceJumpCharge < JUMP_VELOCITY + 40)
+	{ //give him at least a tiny boost from just a tap
+		pm->ps->fd.forceJumpCharge = JUMP_VELOCITY + 40;
+	}
+
+	if (pm->ps->velocity[2] < -30)
+	{ //so that we can get a good boost when force jumping in a fall
+		pm->ps->velocity[2] = -30;
+	}
+
+	VectorMA(pm->ps->velocity, pushFwd, forward, jumpVel);
+	if (moveStyle == MV_CHARGEJUMP) {
+		// i think this was the intended behavior.
+		VectorMA(jumpVel, pushRt, right, jumpVel);
+	}
+	else {
+		VectorMA(pm->ps->velocity, pushRt, right, jumpVel);
+	}
+	jumpVel[2] += pm->ps->fd.forceJumpCharge;//forceJumpStrength;
+	if (pushFwd > 0 && pm->ps->fd.forceJumpCharge > 200)
+	{
+		return PM_FJ_FORWARD;
+	}
+	else if (pushFwd < 0 && pm->ps->fd.forceJumpCharge > 200)
+	{
+		return PM_FJ_BACKWARD;
+	}
+	else if (pushRt > 0 && pm->ps->fd.forceJumpCharge > 200)
+	{
+		return PM_FJ_RIGHT;
+	}
+	else if (pushRt < 0 && pm->ps->fd.forceJumpCharge > 200)
+	{
+		return PM_FJ_LEFT;
+	}
+	else
+	{//FIXME: jump straight up anim
+		return PM_FJ_UP;
+	}
+}
+
+#if JK2_GAME
+void WP_ForcePowerStart(gentity_t* self, forcePowers_t forcePower, int overrideAmt);
+#endif
+
+void PM_ChargeForceJump()
+{
+	float jumpStrengthChargeSpeedBase;
+	float forceJumpChargeInterval;
+	//	int anim;
+	vec3_t	jumpVel;
+	//	int	parts = SETANIM_BOTH;
+
+	if (pm->ps->fd.forcePowerDuration[FP_LEVITATION] > pm->cmd.serverTime)
+	{
+		return;
+	}
+	if (BG_HasYsalamiri(pm->gametype, pm->ps)) {
+		return;
+	}
+	if (!BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION)) {
+		return;
+	}
+	if (!PM_ForcePowerUsable(FP_LEVITATION))
+	{
+		return;
+	}
+	//if (self->s.groundEntityNum == ENTITYNUM_NONE)
+	if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
+	{
+		return;
+	}
+	//	if ( pm->ps->pm_flags&PMF_JUMP_HELD )
+	//	{
+	//		return;
+	//	}
+	//if (self->health <= 0) // should already be excluded at this point
+	//{
+	//	return;
+	//}
+
+	//G_SoundOnEnt( self, CHAN_BODY, "sound/weapons/force/jump.wav" );
+	//play sound here
+
+	//self->client->fjDidJump = qtrue;
+	pm->ps->pm_flags |= PMF_FJDIDJUMP;
+
+	//forceJumpChargeInterval = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] / PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY;
+	jumpStrengthChargeSpeedBase = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
+	forceJumpChargeInterval = jumpStrengthChargeSpeedBase * pml.frametime * 1000.0f / PM_FORCE_JUMP_CHARGE_TIME;
+
+	switch (PM_GetVelocityForForceJump(jumpVel))
+	{
+	case PM_FJ_FORWARD:
+		//		anim = BOTH_FLIP_F;
+				//dmEvent = DM_FLIP;
+		break;
+	case PM_FJ_BACKWARD:
+		//		anim = BOTH_FLIP_B;
+				//dmEvent = DM_FLIP;
+		break;
+	case PM_FJ_RIGHT:
+		//		anim = BOTH_FLIP_R;
+				//dmEvent = DM_FLIP;
+		break;
+	case PM_FJ_LEFT:
+		//		anim = BOTH_FLIP_L;
+				//dmEvent = DM_FLIP;
+		break;
+	default:
+	case PM_FJ_UP:
+		//		anim = BOTH_JUMP1;
+				//dmEvent = DM_JUMP;
+		break;
+	}
+
+	if (pm->ps->weaponTime)
+	{//FIXME: really only care if we're in a saber attack anim.. maybe trail length?
+//		parts = SETANIM_LEGS;
+	}
+
+	//NPC_SetAnim( self, parts, anim, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD );
+	//if (!self->s.number)
+	//{
+		//G_DynaMixEvent( dmEvent );
+	//}
+
+	//FIXME: sound effect
+	PM_SetForceJumpZStart(pm->ps->origin[2]);
+	//pm->ps->fd.forceJumpZStart = pm->ps->origin[2];//remember this for when we land
+	VectorCopy(jumpVel, pm->ps->velocity);
+	pml.groundPlane = qfalse;
+	pml.walking = qfalse;
+	//wasn't allowing them to attack when jumping, but that was annoying
+	//pm->ps->weaponTime = pm->ps->torsoAnimTimer;
+
+#if JK2_GAME
+	WP_ForcePowerStart(g_entities+pm->ps->clientNum, FP_LEVITATION, pm->ps->fd.forceJumpCharge / forceJumpChargeInterval / PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION]);
+#else
+	pm->ps->fd.forcePowersActive |= (1 << FP_LEVITATION);
+	BG_ForcePowerDrain(pm->ps, FP_LEVITATION, pm->ps->fd.forceJumpCharge / forceJumpChargeInterval / PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION]);
+	pm->ps->fd.forcePowerDebounce[FP_LEVITATION] = 0;
+	pm->ps->fd.forcePowerDuration[FP_LEVITATION] = 0;
+#endif
+	//pm->ps->fd.forcePowerDuration[FP_LEVITATION] = pm->cmd.serverTime + pm->ps->weaponTime;
+	pm->ps->fd.forceJumpCharge = 0;
+	pm->ps->forceJumpFlip = qtrue;
+}
+
+/*
+===================
+PM_CheckChargeJump
+
+Was in w_force but unused and rly should be predicted...
+===================
+*/
+static void PM_CheckChargeJump( void ) {
+	qboolean usingForce = qfalse;
+
+	if (pm->ps->groundEntityNum != ENTITYNUM_NONE)
+	{
+		pm->ps->pm_flags &= ~PMF_FJDIDJUMP;
+		//self->client->fjDidJump = qfalse;
+	}
+
+	if (pm->ps->fd.forceJumpCharge && pm->ps->groundEntityNum == ENTITYNUM_NONE && (pm->ps->pm_flags & PMF_FJDIDJUMP))
+	{
+		if (pm->cmd.upmove < 10 && !(pm->cmd.buttons & BUTTON_BOUNCEPOWER) && (!(pm->cmd.buttons & BUTTON_FORCEPOWER) || pm->ps->fd.forcePowerSelected != FP_LEVITATION))
+		{
+#if JK2_GAME
+			G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
+#endif
+			pm->ps->fd.forceJumpCharge = 0;
+		}
+	}
+
+	if ( /*!self->client->fjDidJump &&*/ (pm->cmd.buttons & BUTTON_BOUNCEPOWER) && !BG_HasYsalamiri(pm->gametype, pm->ps) && BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION))
+	{//just charging up
+		PM_ForceJumpCharge();
+		usingForce = qtrue;
+	}
+//#ifndef METROID_JUMP
+	else if ( /*!self->client->fjDidJump &&*/ (pm->cmd.upmove > 10) && (pm->ps->pm_flags & PMF_JUMP_HELD) && pm->ps->groundTime && (pm->cmd.serverTime - pm->ps->groundTime) > 150 && !BG_HasYsalamiri(pm->gametype, pm->ps) && BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION)/*&& !pm->ps->fd.forceJumpZStart*/)
+	{//just charging up
+		PM_ForceJumpCharge();
+		usingForce = qtrue;
+	}
+	else if (pm->cmd.upmove < 10 && pm->ps->groundEntityNum == ENTITYNUM_NONE && pm->ps->fd.forceJumpCharge)
+	{
+		pm->ps->pm_flags &= ~(PMF_JUMP_HELD);
+	}
+//#endif
+
+	if (!(pm->cmd.buttons & BUTTON_BOUNCEPOWER) && !(pm->ps->pm_flags & PMF_JUMP_HELD) && pm->ps->fd.forceJumpCharge)
+	{
+		if (!(pm->cmd.buttons & BUTTON_FORCEPOWER) ||
+			pm->ps->fd.forcePowerSelected != FP_LEVITATION)
+		{
+			if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
+			{
+				pm->ps->fd.forceJumpCharge = 0;
+#if JK2_GAME
+				G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
+#endif
+				//This only happens if the groundEntityNum == ENTITYNUM_NONE when the button is actually released
+			}
+			else
+			{//still on ground, so jump
+				PM_ChargeForceJump();
+			}
+			//if (WP_DoSpecificPower(self, &pm->cmd, FP_LEVITATION))
+			//{
+				//usingForce = qtrue;
+			//}
+		}
+	}
+}
 /*
 ===================
 PM_WaterJumpMove
@@ -2376,15 +2820,17 @@ static void PM_AirMove( void ) {
 
 	if (pm->ps->pm_type != PM_SPECTATOR)
 	{
-#if METROID_JUMP
-		PM_CheckJump();
-#else
-		if (pm->ps->fd.forceJumpZStart &&
-			pm->ps->forceJumpFlip)
-		{
+		if (movePhysics != MV_CHARGEJUMP) { // mirrors the old #if METROID_JUMP clause
+
 			PM_CheckJump();
 		}
-#endif
+		else {
+			if (pm->ps->fd.forceJumpZStart &&
+				pm->ps->forceJumpFlip)
+			{
+				PM_CheckJump();
+			}
+		}
 	}
 	PM_Friction();
 
@@ -3120,7 +3566,7 @@ static int PM_CorrectAllSolid( trace_t *trace ) {
 		}
 	}
 
-	pm->ps->groundEntityNum = ENTITYNUM_NONE;
+	PM_SetGroundEntityNum(ENTITYNUM_NONE);
 	pml.groundPlane = qfalse;
 	pml.walking = qfalse;
 
@@ -3204,7 +3650,7 @@ static void PM_GroundTraceMissed( void ) {
 		pm->ps->inAirAnim = qtrue;
 	}
 
-	pm->ps->groundEntityNum = ENTITYNUM_NONE;
+	PM_SetGroundEntityNum(ENTITYNUM_NONE);
 	pml.groundPlane = qfalse;
 	pml.walking = qfalse;
 }
@@ -3230,7 +3676,7 @@ static void PM_GroundTrace( void ) {
 		if (pm->debugLevel) {
 			Com_Printf("%i:q2ramp\n", c_pmove);
 		}
-		pm->ps->groundEntityNum = ENTITYNUM_NONE;
+		PM_SetGroundEntityNum(ENTITYNUM_NONE);
 		pml.groundPlane = qtrue;
 		pml.walking = qfalse;
 		return;
@@ -3275,7 +3721,7 @@ static void PM_GroundTrace( void ) {
 			pm->ps->pm_flags |= PMF_BACKWARDS_JUMP;
 		}
 
-		pm->ps->groundEntityNum = ENTITYNUM_NONE;
+		PM_SetGroundEntityNum(ENTITYNUM_NONE);
 		pml.groundPlane = qfalse;
 		pml.walking = qfalse;
 		return;
@@ -3286,7 +3732,7 @@ static void PM_GroundTrace( void ) {
 		if ( pm->debugLevel ) {
 			Com_Printf("%i:steep\n", c_pmove);
 		}
-		pm->ps->groundEntityNum = ENTITYNUM_NONE;
+		PM_SetGroundEntityNum(ENTITYNUM_NONE);
 		if (moveStyle != MV_DREAM) {
 			pml.groundPlane = qtrue;
 		}
@@ -3376,7 +3822,7 @@ static void PM_GroundTrace( void ) {
 	}
 
 	if (!pml.bounceJumped && moveStyle != MV_PINBALL) {
-		pm->ps->groundEntityNum = trace.entityNum;
+		PM_SetGroundEntityNum(trace.entityNum);
 	}
 	pm->ps->lastOnGround = pm->cmd.serverTime;
 
@@ -6054,6 +6500,7 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 	pm->ps->commandTime = pmove->cmd.serverTime;
 
+
 	// save old org in case we get stuck
 	VectorCopy (pm->ps->origin, pml.previous_origin);
 
@@ -6444,6 +6891,9 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 	else if((!pm->requiredCmdMsec || pml.msec == pm->requiredCmdMsec) && (pm->isSpecialPredict || msecRestrict <= 0 || msecRestrict == pml.msec))
 	{
+		if (moveStyle == MV_CHARGEJUMP) {
+			PM_CheckChargeJump();
+		}
 		if (pm->ps->pm_flags & PMF_TIME_WATERJUMP) {
 			PM_WaterJumpMove();
 		} else if ( pm->waterlevel > 1 ) {

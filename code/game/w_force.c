@@ -706,7 +706,7 @@ qboolean WP_ForcePowerUsable( gentity_t *self, forcePowers_t forcePower )
 {
 	int		nowTime = LEVELTIME(self->client);
 
-	if (self->client && self->client->sess.raceMode) {
+	if (self->client && self->client->sess.raceMode && forcePower != FP_LEVITATION) {
 		if (self->client->sess.raceStyle.movementStyle == MV_FORCE && (forcePower == FP_RAGE || forcePower == FP_SPEED)) {
 			return qtrue;
 		}
@@ -2133,8 +2133,13 @@ void ForceJumpCharge( gentity_t *self, usercmd_t *ucmd )
 { //I guess this is unused now. Was used for the "charge" jump type.
 	float forceJumpChargeInterval = forceJumpStrength[0] / (FORCE_JUMP_CHARGE_TIME/FRAMETIME);
 	int nowTime = LEVELTIME(self->client);
+	int moveStyle = MOVESTYLE(self->client);
 	
-	if ( g_mv_blockchargejump.integer )
+	if (g_mv_blockchargejump.integer && !self->client->sess.raceMode)
+	{
+		return;
+	}
+	if (self->client->sess.raceMode)
 	{
 		return;
 	}
@@ -2199,7 +2204,7 @@ int WP_GetVelocityForForceJump( gentity_t *self, vec3_t jumpVel, usercmd_t *ucmd
 {
 	float pushFwd = 0, pushRt = 0;
 	vec3_t	view, forward, right;
-	const int moveStyle = self->client->sess.raceMode ? self->client->sess.raceStyle.movementStyle : MV_JK2;
+	const int moveStyle = MOVESTYLE(self->client);
 	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
 
 	if (MovementIsQuake3Based(moveStyle)) {
@@ -2254,7 +2259,7 @@ int WP_GetVelocityForForceJump( gentity_t *self, vec3_t jumpVel, usercmd_t *ucmd
 
 	if (self->client->ps.fd.forceJumpCharge < JUMP_VELOCITY_NEW +40)
 	{ //give him at least a tiny boost from just a tap
-		self->client->ps.fd.forceJumpCharge = JUMP_VELOCITY_NEW +400;
+		self->client->ps.fd.forceJumpCharge = JUMP_VELOCITY_NEW +400; // this supposed to be 40? in v054 it was 40, but in v055 it changed to 400 but condition stayed 40?
 	}
 
 	if (self->client->ps.velocity[2] < -30)
@@ -2263,7 +2268,13 @@ int WP_GetVelocityForForceJump( gentity_t *self, vec3_t jumpVel, usercmd_t *ucmd
 	}
 
 	VectorMA( self->client->ps.velocity, pushFwd, forward, jumpVel );
-	VectorMA( self->client->ps.velocity, pushRt, right, jumpVel );
+	if (moveStyle == MV_CHARGEJUMP) {
+		// i think this was the intended behavior.
+		VectorMA(jumpVel, pushRt, right, jumpVel);
+	}
+	else {
+		VectorMA(self->client->ps.velocity, pushRt, right, jumpVel);
+	}
 	jumpVel[2] += self->client->ps.fd.forceJumpCharge;
 	if ( pushFwd > 0 && self->client->ps.fd.forceJumpCharge > 200 )
 	{
@@ -2292,8 +2303,13 @@ void ForceJump( gentity_t *self, usercmd_t *ucmd )
 	float forceJumpChargeInterval;
 	vec3_t	jumpVel;
 	int nowTime = LEVELTIME(self->client);
+	int moveStyle = MOVESTYLE(self->client);
 
-	if ( g_mv_blockchargejump.integer )
+	if ( g_mv_blockchargejump.integer && !self->client->sess.raceMode)
+	{
+		return;
+	}
+	if ( self->client->sess.raceMode)
 	{
 		return;
 	}
@@ -4592,10 +4608,12 @@ qboolean WP_HasForcePowers( const playerState_t *ps )
 void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 {
 	qboolean	usingForce = qfalse;
+	qboolean	chargeJumping = qfalse;
 	vec3_t		dmgdir;
 	int			i, holo, holoregen;
 	int			prepower = 0;
 	int			nowTime = LEVELTIME(self->client);
+	int			moveStyle = self->client->sess.raceMode ? self->client->sess.raceStyle.movementStyle : MV_JK2;
 	//see if any force powers are running
 	if ( !self )
 	{
@@ -5023,8 +5041,15 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 		}
 	}
 
+	//if (moveStyle == MV_CHARGEJUMP &&(ucmd->buttons & BUTTON_BOUNCEPOWER) &&
+	//	BG_CanUseFPNow(g_gametype.integer, &self->client->ps, nowTime, FP_LEVITATION)) {
+	//	ForceJumpCharge(self, ucmd);
+	//	usingForce = qtrue;
+	//	chargeJumping = qtrue;
+	//}
+
 	if ( (ucmd->buttons & BUTTON_FORCEPOWER) &&
-		BG_CanUseFPNow(g_gametype.integer, &self->client->ps, nowTime, self->client->ps.fd.forcePowerSelected))
+		BG_CanUseFPNow(g_gametype.integer, &self->client->ps, nowTime, self->client->ps.fd.forcePowerSelected) && (!chargeJumping || self->client->ps.fd.forcePowerSelected != FP_LEVITATION))
 	{
 		if (self->client->ps.fd.forcePowerSelected == FP_LEVITATION)
 		{

@@ -1,6 +1,9 @@
 #include "q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
+#if JK2_CGAME
+#include "../cgame/cg_local.h"
+#endif
 
 int PM_irand_timesync(int val1, int val2,qboolean useDefault, int defaultValue)
 {
@@ -29,10 +32,38 @@ int PM_irand_timesync(int val1, int val2,qboolean useDefault, int defaultValue)
 	return i;
 }
 
+int BG_GetMovePhysics(playerState_t* ps)
+{
+	if (!ps)
+		return MV_JK2;
+#if JK2_GAME
+	if (ps->stats[STAT_RACEMODE])
+		return (ps->stats[STAT_MOVEMENTSTYLE]);
+	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
+	//	return (g_movementStyle.integer);
+	//else if (g_movementStyle.integer < MV_SIEGE)
+	//	return 0;
+	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
+	//	return MV_JK2;
+#elif JK2_CGAME
+	if (cgs.isJK2Pro) {
+		return ps->stats[STAT_MOVEMENTSTYLE];
+	}
+	if (cgs.isTommyTernal && ps->stats[STAT_RACEMODE]) {
+		if (!ps) return MV_JK2; // not sure why this is needed. from japro.
+		return ps->stats[STAT_MOVEMENTSTYLE];
+	}
+	//if (cgs.gametype == GT_SIEGE)
+	//	return MV_SIEGE;
+#endif
+	return MV_JK2; // this can happen when we die in racemode too!
+}
+
 void BG_ForcePowerDrain( playerState_t *ps, forcePowers_t forcePower, int overrideAmt )
 {
 	//take away the power
 	int	drain = overrideAmt;
+	int moveStyle = BG_GetMovePhysics(ps);
 
 	/*
 	if (ps->powerups[PW_FORCE_BOON])
@@ -51,7 +82,7 @@ void BG_ForcePowerDrain( playerState_t *ps, forcePowers_t forcePower, int overri
 		return;
 	}
 
-	if (forcePower == FP_LEVITATION)
+	if (forcePower == FP_LEVITATION && moveStyle != MV_CHARGEJUMP)
 	{ //special case
 		int jumpDrain = 0;
 
@@ -2112,10 +2143,10 @@ weapChecks:
 	}
 	pm->ps->weaponTime = addTime;
 }
-
+/*
 #ifdef JK2_CGAME
 #include "../cgame/cg_local.h" //ahahahahhahahaha@$!$!
-#endif
+#endif*/
 
 void PM_SetSaberMove(short newMove)
 {
