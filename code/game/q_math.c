@@ -689,6 +689,19 @@ float Q_fabs( float f ) {
 	return fi.f;
 }
 
+float intfloat(intptr_t x)
+{
+	floatint_t fi;
+	fi.i = (int)x;
+	return fi.f;
+}
+intptr_t floatint(float x)
+{
+	floatint_t fi;
+	fi.f = (float)x;
+	return (intptr_t)fi.i;
+}
+
 //============================================================
 
 /*

@@ -2377,6 +2377,8 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	level.playerStats[ent - g_entities]->s.pos.trBase[1] = ent->client->ps.fd.forceSpeedSmash; // for nicer force speed client prediction
+	level.playerStats[ent - g_entities]->s.pos.trDelta[0] = ent->client->ps.fd.forceJumpCharge; // for chargejump movement prediction
+	//level.playerStats[ent - g_entities]->s.pos.trDelta[1] = intfloat(ent->client->ps.groundTime); // for chargejump movement prediction. nvm got rid of the groundtime thingie kinda
 
 	//DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,prePmoveVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);
 	DF_AntiLoop_NewAngle(&ent->client->pers.antiLoop,pm.lastAntiLoopVelocity,ent->client->ps.velocity,ent->client->ps.basespeed,ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime);

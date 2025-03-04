@@ -2407,10 +2407,11 @@ int PM_GetVelocityForForceJump( vec3_t jumpVel)
 	G_Sound(g_entities+pm->ps->clientNum, CHAN_AUTO, G_SoundIndex("sound/weapons/force/jump.wav"));
 #endif
 
-	if (pm->ps->fd.forceJumpCharge < JUMP_VELOCITY + 40)
-	{ //give him at least a tiny boost from just a tap
-		pm->ps->fd.forceJumpCharge = JUMP_VELOCITY + 40;
-	}
+	// TA: We are racing. Give us detailed stepless control.
+	//if (pm->ps->fd.forceJumpCharge < JUMP_VELOCITY + 40)
+	//{ //give him at least a tiny boost from just a tap
+	//	pm->ps->fd.forceJumpCharge = JUMP_VELOCITY + 40;
+	//}
 
 	if (pm->ps->velocity[2] < -30)
 	{ //so that we can get a good boost when force jumping in a fall
@@ -2590,6 +2591,7 @@ static void PM_CheckChargeJump( void ) {
 		usingForce = qtrue;
 	}
 //#ifndef METROID_JUMP
+#if 0 // nvm this feels weird and needs a whole extra var to network
 	else if ( /*!self->client->fjDidJump &&*/ (pm->cmd.upmove > 10) && (pm->ps->pm_flags & PMF_JUMP_HELD) && pm->ps->groundTime && (pm->cmd.serverTime - pm->ps->groundTime) > 150 && !BG_HasYsalamiri(pm->gametype, pm->ps) && BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION)/*&& !pm->ps->fd.forceJumpZStart*/)
 	{//just charging up
 
@@ -2597,6 +2599,7 @@ static void PM_CheckChargeJump( void ) {
 		//PM_ForceJumpCharge();
 		//usingForce = qtrue;
 	}
+#endif
 	else if (pm->cmd.upmove < 10 && pm->ps->groundEntityNum == ENTITYNUM_NONE && pm->ps->fd.forceJumpCharge)
 	{
 		pm->ps->pm_flags &= ~(PMF_JUMP_HELD);

@@ -687,6 +687,9 @@ extern	vec3_t	axisDefault[3];
 float Q_fabs( float f );
 float Q_rsqrt( float f );		// reciprocal square root
 
+float intfloat(intptr_t x);
+intptr_t floatint(float x);
+
 #define SQRTFAST( x ) ( (x) * Q_rsqrt( x ) )
 
 signed char ClampChar( int i );

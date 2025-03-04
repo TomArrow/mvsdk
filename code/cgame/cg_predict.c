@@ -921,6 +921,8 @@ void CG_PredictPlayerState( void ) {
 	centity_t* statsEnt = NULL;
 	float		forceSpeedSmash;
 	qboolean	haveForceSpeedSmash = qfalse;
+	float		forceJumpCharge;
+	qboolean	haveForceJumpCharge = qfalse;
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
 	cg.teleporterPredicted = qfalse;	// teleporter was predicted so ignore areamask
@@ -956,6 +958,10 @@ void CG_PredictPlayerState( void ) {
 		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCESPEEDSMASH) {
 			forceSpeedSmash = statsState->pos.trBase[1];
 			haveForceSpeedSmash = qtrue;
+		}
+		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE) {
+			forceJumpCharge = statsState->pos.trDelta[0];
+			haveForceJumpCharge = qtrue;
 		}
 	}
 
@@ -1075,6 +1081,9 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.haveForceSpeedSmash = haveForceSpeedSmash;
 	if (haveForceSpeedSmash) {
 		cg.predictedPlayerState.fd.forceSpeedSmash = forceSpeedSmash; // TA: Nicer force speed prediction :)
+	}
+	if (haveForceJumpCharge) {
+		cg.predictedPlayerState.fd.forceJumpCharge = forceJumpCharge; // TA: Charge jump movement style prediction
 	}
 
 	if (cg_strafeHelper.integer && latestCmd.serverTime == cg.predictedPlayerState.commandTime/* && !cg_optimizedPredict.integer*/) {
