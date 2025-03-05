@@ -6772,6 +6772,9 @@ static void CG_DrawForceJumpCharge(void) // TODO draw the proper predicted value
 	if (!cg_forceMeterJumpCharge.integer) {
 		return;
 	}
+	if (cg.predictedPlayerState.fd.forcePowerLevel[FP_LEVITATION] <= 0) {
+		return;
+	}
 	if (!cgs.isTommyTernal || !cg.predictedPlayerState.stats[STAT_RACEMODE] || cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_CHARGEJUMP) {
 		if (cg_forceMeterJumpCharge.integer != 2) {
 			return;
@@ -6788,7 +6791,8 @@ static void CG_DrawForceJumpCharge(void) // TODO draw the proper predicted value
 	}
 	forceJumpCharge = statsState->pos.trDelta[0];
 
-	forcePercent = (float)forceJumpCharge / forceJumpStrength[cg.predictedPlayerState.fd.forcePowerLevel[FP_LEVITATION]];
+	forcePercent = (float)(forceJumpCharge-forceJumpStrength[0]) / (forceJumpStrength[cg.predictedPlayerState.fd.forcePowerLevel[FP_LEVITATION]]- forceJumpStrength[0]);
+
 
 	CG_DrawRect(cg_forcemeterX.value - 0.75,
 		cg_forcemeterY.value + 12.0f - 0.85f,
@@ -6796,12 +6800,15 @@ static void CG_DrawForceJumpCharge(void) // TODO draw the proper predicted value
 		10.75,
 		0.5f,
 		colorTable[CT_BLACK]);
-	CG_FillRect(cg_forcemeterX.value,
-		cg_forcemeterY.value + 12.0f,
-		36 * forcePercent,
-		9,
-		colorTable[CT_GREEN]);
 
+	if (forcePercent > 0) {
+		CG_FillRect(cg_forcemeterX.value,
+			cg_forcemeterY.value + 12.0f,
+			36 * forcePercent,
+			9,
+			colorTable[CT_GREEN]);
+
+	}
 }
 
 

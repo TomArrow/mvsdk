@@ -2612,7 +2612,6 @@ void ClientSpawn(gentity_t *ent) {
 		client->pers.maxHealth = 100;
 	}
 	// clear entity values
-	client->ps.stats[STAT_BOUNCEPOWER] = BOUNCEPOWER_MAX;
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;
 	client->ps.eFlags = flags;
 
@@ -2648,6 +2647,17 @@ void ClientSpawn(gentity_t *ent) {
 	//client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
 	//client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
 	UpdateClientRaceVars(client);
+
+	if (client->sess.raceMode && client->sess.raceStyle.movementStyle == MV_BOUNCE) {
+		client->ps.stats[STAT_BOUNCEPOWER] = BOUNCEPOWER_MAX;
+	}
+	else if (client->sess.raceMode && client->sess.raceStyle.movementStyle == MV_CHARGEJUMP) {
+		client->ps.stats[STAT_CHARGEJUMPDATA] = 0;
+	}
+	else {
+		client->ps.stats[STAT_BOUNCEPOWER] = 0;
+	}
+
 	
 	VectorCopy (playerMins, ent->r.mins);
 	VectorCopy (playerMaxs, ent->r.maxs);

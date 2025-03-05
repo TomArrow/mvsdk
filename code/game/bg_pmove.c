@@ -2275,16 +2275,19 @@ qboolean PM_ForcePowerUsable(forcePowers_t forcePower)
 }
 
 #define PM_FORCE_JUMP_CHARGE_TIME 1000.0f
-#define PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY (PM_FORCE_JUMP_CHARGE_TIME/100.0f)
+//#define PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY (PM_FORCE_JUMP_CHARGE_TIME/100.0f)
 void PM_ForceJumpCharge()
 {
-	//float jumpStrengthChargeSpeedBase = forceJumpStrength[0];
+	float baseJumpStrength = forceJumpStrength[0];
 	float jumpStrengthChargeSpeedBase = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
-	//float forceJumpChargeInterval = forceJumpStrength[0] / (PM_FORCE_JUMP_CHARGE_TIME / 100.0f);
-	float forceJumpChargeInterval = jumpStrengthChargeSpeedBase * pml.frametime * 1000.0f / PM_FORCE_JUMP_CHARGE_TIME;
+	float forceJumpChargeInterval = (jumpStrengthChargeSpeedBase- baseJumpStrength) * pml.frametime * 1000.0f / PM_FORCE_JUMP_CHARGE_TIME;
 
 	if (pm->ps->pm_type == PM_DEAD)
 	{
+		return;
+	}
+
+	if (pm->ps->fd.forcePowerLevel[FP_LEVITATION] <= 0) {
 		return;
 	}
 
@@ -2312,12 +2315,15 @@ void PM_ForceJumpCharge()
 	//}
 
 	//need to play sound
-	if (!pm->ps->fd.forceJumpCharge)
+	if (!pm->ps->fd.forceJumpCharge || !(pm->ps->stats[STAT_CHARGEJUMPDATA] & CHARGEJUMPFLAG_CHARGING)) // if we interrupt our charging, restart.
 	{
 #if JK2_GAME
 		G_Sound(g_entities+pm->ps->clientNum, TRACK_CHANNEL_1, G_SoundIndex("sound/weapons/force/jumpbuild.wav")); 
 #endif
+		pm->ps->fd.forceJumpCharge = baseJumpStrength; // always keep this as the basis
 	}
+
+	pm->ps->stats[STAT_CHARGEJUMPDATA] |= CHARGEJUMPFLAG_CHARGING;
 
 	//Increment
 	//if (pm->ps->fd.forceJumpAddTime < pm->cmd.serverTime)
@@ -2335,12 +2341,12 @@ void PM_ForceJumpCharge()
 
 
 	//clamp to max available force power
-	if (pm->ps->fd.forceJumpCharge / jumpStrengthChargeSpeedBase * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION] > pm->ps->fd.forcePower)
+	if (pm->ps->fd.forceJumpCharge / baseJumpStrength * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION] > pm->ps->fd.forcePower)
 	{//can't use more than you have
 #if JK2_GAME
 		G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
 #endif
-		pm->ps->fd.forceJumpCharge = jumpStrengthChargeSpeedBase * pm->ps->fd.forcePower / forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION];
+		pm->ps->fd.forceJumpCharge = baseJumpStrength * pm->ps->fd.forcePower / forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION];
 	}
 
 	//G_Printf("%f\n", self->client->ps.fd.forceJumpCharge);
@@ -2457,12 +2463,17 @@ void PM_ChargeForceJump()
 {
 	float jumpStrengthChargeSpeedBase;
 	float forceJumpChargeInterval;
+	float forceDeduction;
 	//	int anim;
-	vec3_t	jumpVel;
+	vec3_t	jumpVel; 
+	float baseJumpStrength = forceJumpStrength[0];
 	//	int	parts = SETANIM_BOTH;
 
 	if (pm->ps->fd.forcePowerDuration[FP_LEVITATION] > pm->cmd.serverTime)
 	{
+		return;
+	}
+	if (pm->ps->fd.forcePowerLevel[FP_LEVITATION] <= 0) {
 		return;
 	}
 	if (BG_HasYsalamiri(pm->gametype, pm->ps)) {
@@ -2497,7 +2508,7 @@ void PM_ChargeForceJump()
 
 	//forceJumpChargeInterval = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] / PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY;
 	jumpStrengthChargeSpeedBase = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
-	forceJumpChargeInterval = jumpStrengthChargeSpeedBase * pml.frametime * 1000.0f / PM_FORCE_JUMP_CHARGE_TIME;
+	forceJumpChargeInterval = (jumpStrengthChargeSpeedBase- baseJumpStrength) * pml.frametime * 1000.0f / PM_FORCE_JUMP_CHARGE_TIME;
 
 	switch (PM_GetVelocityForForceJump(jumpVel))
 	{
@@ -2541,14 +2552,19 @@ void PM_ChargeForceJump()
 	VectorCopy(jumpVel, pm->ps->velocity);
 	pml.groundPlane = qfalse;
 	pml.walking = qfalse;
+	pm->ps->groundEntityNum = ENTITYNUM_NONE;
 	//wasn't allowing them to attack when jumping, but that was annoying
 	//pm->ps->weaponTime = pm->ps->torsoAnimTimer;
 
+	//forceDeduction = pm->ps->fd.forceJumpCharge / forceJumpChargeInterval / PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION];
+	//forceDeduction = (pm->ps->fd.forceJumpCharge - baseJumpStrength) / (jumpStrengthChargeSpeedBase - baseJumpStrength) * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION];
+	forceDeduction = pm->ps->fd.forceJumpCharge / baseJumpStrength * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION];
+
 #if JK2_GAME
-	WP_ForcePowerStart(g_entities+pm->ps->clientNum, FP_LEVITATION, pm->ps->fd.forceJumpCharge / forceJumpChargeInterval / PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION]);
+	WP_ForcePowerStart(g_entities+pm->ps->clientNum, FP_LEVITATION, forceDeduction);
 #else
 	pm->ps->fd.forcePowersActive |= (1 << FP_LEVITATION);
-	BG_ForcePowerDrain(pm->ps, FP_LEVITATION, pm->ps->fd.forceJumpCharge / forceJumpChargeInterval / PM_FORCE_JUMP_CHARGE_TIME_SEGMENTSLEGACY * forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_LEVITATION]][FP_LEVITATION]);
+	BG_ForcePowerDrain(pm->ps, FP_LEVITATION, forceDeduction);
 	pm->ps->fd.forcePowerDebounce[FP_LEVITATION] = 0;
 	pm->ps->fd.forcePowerDuration[FP_LEVITATION] = 0;
 #endif
@@ -2566,6 +2582,8 @@ Was in w_force but unused and rly should be predicted...
 */
 static void PM_CheckChargeJump( void ) {
 	qboolean usingForce = qfalse;
+	qboolean buttonPressed = (pm->cmd.buttons & BUTTON_FORCEPOWER) &&
+		pm->ps->fd.forcePowerSelected == FP_LEVITATION || (pm->cmd.buttons & BUTTON_BOUNCEPOWER);
 
 	if (pm->ps->groundEntityNum != ENTITYNUM_NONE)
 	{
@@ -2585,7 +2603,11 @@ static void PM_CheckChargeJump( void ) {
 		}
 	}*/
 
-	if ( /*!self->client->fjDidJump &&*/ (pm->cmd.buttons & BUTTON_BOUNCEPOWER) && !BG_HasYsalamiri(pm->gametype, pm->ps) && BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION))
+	if (!buttonPressed) { // if no longer pressing this
+		pm->ps->stats[STAT_CHARGEJUMPDATA] &= ~CHARGEJUMPFLAG_CHARGING;
+	}
+
+	if ( /*!self->client->fjDidJump &&*/ buttonPressed && !BG_HasYsalamiri(pm->gametype, pm->ps) && BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_LEVITATION))
 	{//just charging up
 		PM_ForceJumpCharge();
 		usingForce = qtrue;
@@ -2606,10 +2628,13 @@ static void PM_CheckChargeJump( void ) {
 	}
 //#endif
 
-	if (!(pm->cmd.buttons & BUTTON_BOUNCEPOWER) && !(pm->ps->pm_flags & PMF_JUMP_HELD) && pm->ps->fd.forceJumpCharge)
+
+	if (!buttonPressed && !(pm->ps->pm_flags & PMF_JUMP_HELD) && pm->ps->fd.forceJumpCharge)
 	{
-		if (!(pm->cmd.buttons & BUTTON_FORCEPOWER) ||
-			pm->ps->fd.forcePowerSelected != FP_LEVITATION)
+
+
+		//if (!(pm->cmd.buttons & BUTTON_FORCEPOWER) ||
+		//	pm->ps->fd.forcePowerSelected != FP_LEVITATION)
 		{
 			if (pm->ps->groundEntityNum == ENTITYNUM_NONE)
 			{
@@ -2624,7 +2649,9 @@ static void PM_CheckChargeJump( void ) {
 			}
 			else
 			{//still on ground, so jump
-				PM_ChargeForceJump();
+				if (pm->cmd.upmove > 10) { // allow us to do delayed jumps and cool things like that.
+					PM_ChargeForceJump();
+				}
 			}
 			//if (WP_DoSpecificPower(self, &pm->cmd, FP_LEVITATION))
 			//{
@@ -3820,7 +3847,7 @@ static void PM_GroundTrace( void ) {
 #endif
 		}
 		
-		if (moveStyle == MV_CHARGEJUMP && pm->cmd.upmove < 10 && !(pm->ps->pm_flags & PMF_JUMP_HELD) && !(pm->cmd.buttons & BUTTON_BOUNCEPOWER)) { //  TA instead of canceling the charging in air when nothing pressed, cancel when we land if we arent pressing jump and not pressing charge.
+		/*if (moveStyle == MV_CHARGEJUMP && pm->cmd.upmove < 10 && !(pm->ps->pm_flags & PMF_JUMP_HELD) && !(pm->cmd.buttons & BUTTON_BOUNCEPOWER)) { //  TA instead of canceling the charging in air when nothing pressed, cancel when we land if we arent pressing jump and not pressing charge.
 			if (!(pm->cmd.buttons & BUTTON_FORCEPOWER) ||
 				pm->ps->fd.forcePowerSelected != FP_LEVITATION) {
 				pm->ps->fd.forceJumpCharge = 0;
@@ -3828,7 +3855,7 @@ static void PM_GroundTrace( void ) {
 				G_MuteSound(pm->ps->fd.killSoundEntIndex[TRACK_CHANNEL_1 - 50], CHAN_VOICE);
 #endif
 			}
-		}
+		}*/
 
 		PM_CrashLand();
 

@@ -404,6 +404,7 @@ typedef enum {
 	STAT_MOVEMENTSTYLE,
 	STAT_RUNFLAGS,//STAT_JUMPTIME, 
 	STAT_PLACEHOLDER4,//STAT_WJTIME // unused rn
+	STAT_CHARGEJUMPDATA = STAT_BOUNCEPOWER, // used in chargejumpmode ( reuses STAT_BOUNCEPOWER ). we just set some flags here for example
 } statIndex_t;
 
 
