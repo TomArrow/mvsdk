@@ -1403,7 +1403,7 @@ static qboolean PM_CheckJump( void )
 		}
 	}
 
-	if (pm->ps->forceJumpFlip)
+	if (moveStyle != MV_CHARGEJUMP && pm->ps->forceJumpFlip) // this is just for the charge jump. we're gonna set the anim in the charge jump place itself
 	{ //Forced jump anim
 		int anim = BOTH_FORCEINAIR1;
 		int	parts = SETANIM_BOTH;
@@ -2365,6 +2365,16 @@ int PM_GetVelocityForForceJump( vec3_t jumpVel)
 	float pushFwd = 0, pushRt = 0;
 	vec3_t	view, forward, right;
 	int moveStyle = PM_GetMovePhysics();
+	static const float sideAmt = 70.710678118654752440084436210485f;//100.0f*sqrtf(0.5f); // TA: it does 50 in vanilla but eh, then the WA/WD behavior isnt consistent with A/D behavior. sucks.
+	float maxCharge = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
+	float baseCharge = forceJumpStrength[0];
+	float chargePercent;
+
+	if (pm->ps->fd.forcePowerLevel[FP_LEVITATION]<= 0) {
+		VectorCopy(pm->ps->velocity,jumpVel);
+		return PM_FJ_UP;
+	}
+
 	VectorCopy(pm->ps->viewangles, view);
 	view[0] = 0;
 	AngleVectors(view, forward, right, NULL);
@@ -2372,19 +2382,19 @@ int PM_GetVelocityForForceJump( vec3_t jumpVel)
 	{
 		if (pm->cmd.forwardmove > 0)
 		{
-			pushFwd = 50;
+			pushFwd = sideAmt;
 		}
 		else
 		{
-			pushFwd = -50;
+			pushFwd = -sideAmt;
 		}
 		if (pm->cmd.rightmove > 0)
 		{
-			pushRt = 50;
+			pushRt = sideAmt;
 		}
 		else
 		{
-			pushRt = -50;
+			pushRt = -sideAmt;
 		}
 	}
 	else if (pm->cmd.forwardmove || pm->cmd.rightmove)
@@ -2433,19 +2443,20 @@ int PM_GetVelocityForForceJump( vec3_t jumpVel)
 		VectorMA(pm->ps->velocity, pushRt, right, jumpVel);
 	}
 	jumpVel[2] += pm->ps->fd.forceJumpCharge;//forceJumpStrength;
-	if (pushFwd > 0 && pm->ps->fd.forceJumpCharge > 200)
+	chargePercent = (pm->ps->fd.forceJumpCharge - baseCharge)/(maxCharge - baseCharge);
+	if (pushFwd > 0 && chargePercent > 0.5f)// && pm->ps->fd.forceJumpCharge > 200) // TA changed this so there is a bit of variability.
 	{
 		return PM_FJ_FORWARD;
 	}
-	else if (pushFwd < 0 && pm->ps->fd.forceJumpCharge > 200)
+	else if (pushFwd < 0 && chargePercent > 0.5f)//  && pm->ps->fd.forceJumpCharge > 200)
 	{
 		return PM_FJ_BACKWARD;
 	}
-	else if (pushRt > 0 && pm->ps->fd.forceJumpCharge > 200)
+	else if (pushRt > 0 && chargePercent > 0.5f)//  && pm->ps->fd.forceJumpCharge > 200)
 	{
 		return PM_FJ_RIGHT;
 	}
-	else if (pushRt < 0 && pm->ps->fd.forceJumpCharge > 200)
+	else if (pushRt < 0 && chargePercent > 0.5f)//  && pm->ps->fd.forceJumpCharge > 200)
 	{
 		return PM_FJ_LEFT;
 	}
@@ -2464,7 +2475,8 @@ void PM_ChargeForceJump()
 	float jumpStrengthChargeSpeedBase;
 	float forceJumpChargeInterval;
 	float forceDeduction;
-	//	int anim;
+	int anim = BOTH_FORCEINAIR1;
+	int	parts = SETANIM_BOTH;
 	vec3_t	jumpVel; 
 	float baseJumpStrength = forceJumpStrength[0];
 	//	int	parts = SETANIM_BOTH;
@@ -2513,33 +2525,34 @@ void PM_ChargeForceJump()
 	switch (PM_GetVelocityForForceJump(jumpVel))
 	{
 	case PM_FJ_FORWARD:
-		//		anim = BOTH_FLIP_F;
+		anim = BOTH_FLIP_F;
 				//dmEvent = DM_FLIP;
 		break;
 	case PM_FJ_BACKWARD:
-		//		anim = BOTH_FLIP_B;
+		anim = BOTH_FLIP_B;
 				//dmEvent = DM_FLIP;
 		break;
 	case PM_FJ_RIGHT:
-		//		anim = BOTH_FLIP_R;
+		anim = BOTH_FLIP_R;
 				//dmEvent = DM_FLIP;
 		break;
 	case PM_FJ_LEFT:
-		//		anim = BOTH_FLIP_L;
+		anim = BOTH_FLIP_L;
 				//dmEvent = DM_FLIP;
 		break;
 	default:
 	case PM_FJ_UP:
-		//		anim = BOTH_JUMP1;
+		anim = BOTH_JUMP1;
 				//dmEvent = DM_JUMP;
 		break;
 	}
 
 	if (pm->ps->weaponTime)
 	{//FIXME: really only care if we're in a saber attack anim.. maybe trail length?
-//		parts = SETANIM_LEGS;
+		parts = SETANIM_LEGS;
 	}
-
+	
+	PM_SetAnim(parts, anim, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD, 150);
 	//NPC_SetAnim( self, parts, anim, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD );
 	//if (!self->s.number)
 	//{
