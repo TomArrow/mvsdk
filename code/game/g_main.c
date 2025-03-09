@@ -9,14 +9,20 @@
 
 level_locals_t	level;
 
-typedef struct {
+typedef struct cvarTable_s {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
 	char		*defaultString;
 	int			cvarFlags;
 	int			modificationCount;  // for tracking changes
 	qboolean	trackChange;	    // track this variable, and announce if changed
-  qboolean teamShader;        // track and if changed, update shader state
+	qboolean	teamShader;        // track and if changed, update shader state
+	struct {
+		void		(*func)(struct cvarTable_s*);
+		void*		pparam1; // some pointer
+		const char* cparam1;
+		int			iparam1;
+	} update;
 } cvarTable_t;
 
 gentity_t		g_entities[MAX_ENTITIESTOTAL];
@@ -151,6 +157,7 @@ vmCvar_t	g_pmove_fixed;
 vmCvar_t	g_pmove_msec;
 vmCvar_t	g_pmove_float;
 vmCvar_t	g_ttFlags;
+vmCvar_t	g_ttFlagsGp;
 vmCvar_t	g_fixHighFPSAbuse;
 vmCvar_t	g_entHUDFields;
 vmCvar_t	g_rankings;
@@ -205,14 +212,38 @@ vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 vmCvar_t	g_randomTipInterval;
 
 vmCvar_t	g_unlockRandom;
+vmCvar_t	g_mineSwitchFix;
 
 int gDuelist1 = -1;
 int gDuelist2 = -1;
 
 int gRandomUnlockAdd = 0;
 
+void	G_BitMaskCvarUpdated(cvarTable_t* cvar) {
+	vmCvar_t* cvarBase = (vmCvar_t*)cvar->update.pparam1;
+
+	if (!cvar) {
+		Com_Error(ERR_FATAL,"G_BitMaskCvarUpdated: pparam1 must be a vmCvar_t* pointer");
+	}
+
+	if (cvar->vmCvar->integer) {
+		cvarBase->integer |= cvar->update.iparam1;
+	}
+	else {
+		cvarBase->integer &= ~cvar->update.iparam1;
+	}
+
+	trap_Cvar_Set(cvar->update.cparam1, va("%d", cvarBase->integer));
+	trap_Cvar_Update(cvarBase);
+}
+
 // bk001129 - made static to avoid aliasing
 static cvarTable_t		gameCvarTable[] = {
+
+	//must be at the start so that its already registered when other cvars are evaluated that affect it
+	{ &g_ttFlags, "ttFlags", "7", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue }, // to communicate special tommyternal server features to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE))
+	{ &g_ttFlagsGp, "ttFlagsGp", "0", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse }, // gameplay ttflags. 
+
 	// don't override the cheat state set by the system
 	{ &g_cheats, "sv_cheats", "", 0, 0, qfalse },
 
@@ -328,7 +359,6 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_randomTipInterval, "g_randomTipInterval", "600", CVAR_ARCHIVE, 0, qfalse  },
 
-	{ &g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO | CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_speed, "g_speed", "250", 0, 0, qtrue  },
 	{ &g_gravity, "g_gravity", "800", 0, 0, qtrue  },
@@ -374,8 +404,10 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_fixHighFPSAbuse, "g_fixHighFPSAbuse", "0", CVAR_SYSTEMINFO, 0, qtrue},
-	{ &g_ttFlags, "ttFlags", "7", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue}, // not currently used, maybe for the future to communicate special tommyternal server settings to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE))
 	{ &g_entHUDFields, "g_entHUDFields", "1", CVAR_SYSTEMINFO|CVAR_ARCHIVE, 0, qtrue},
+
+	{ &g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO | CVAR_ARCHIVE, 0, qtrue },
+	{ &g_mineSwitchFix, "g_mineSwitchFix", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 
@@ -433,6 +465,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_blockIdenticalUserSnapsMinFps, "g_blockIdenticalUserSnapsMinFps", "30", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_MVSDK, "g_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_SERVERINFO, 0, qfalse },
+
 };
 
 // bk001129 - made static to avoid aliasing
@@ -767,6 +800,8 @@ void G_RegisterCvars( void ) {
 			cv->defaultString, cv->cvarFlags );
 		if ( cv->vmCvar )
 			cv->modificationCount = cv->vmCvar->modificationCount;
+		if (cv->update.func)
+			cv->update.func(cv);
 
 		if (cv->teamShader) {
 			remapped = qtrue;
@@ -823,6 +858,10 @@ void G_UpdateCvars( void ) {
 
 			if ( cv->modificationCount != cv->vmCvar->modificationCount ) {
 				cv->modificationCount = cv->vmCvar->modificationCount;
+
+				if ( cv->update.func ) {
+					cv->update.func(cv);
+				}
 
 				if ( cv->trackChange ) {
 					trap_SendServerCommand( -1, va("print \"Server: %s changed to %s\n\"", 

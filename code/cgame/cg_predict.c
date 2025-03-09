@@ -1001,6 +1001,7 @@ void CG_PredictPlayerState( void ) {
 
 	// prepare for pmove
 	cg_pmove.ps = &cg.predictedPlayerState;
+	cg_pmove.mineSwitchFix = !!(cgs.ttFlagsGp & TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX);
 	cg_pmove.trace = CG_Trace;
 	cg_pmove.rawtrace = CG_RawTrace;
 	cg_pmove.q2Skims = cg_q2Skims.integer;

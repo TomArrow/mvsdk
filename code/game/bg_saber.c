@@ -427,7 +427,7 @@ qboolean PM_SaberKataDone(int curmove, int newmove);
 int PM_SaberAnimTransitionAnim( int curmove, int newmove )
 {
 	int retmove = newmove;
-	if ( curmove == LS_READY )
+	if (curmove == LS_READY || pm->mineSwitchFix && BG_SaberInIdle(curmove) )
 	{//just standing there
 		switch ( newmove )
 		{

@@ -63,6 +63,9 @@
 #define TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE	(1<<2) 
 
 
+#define TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX		(1<<0) 
+
+
 //jk2pro
 #define CUSTOMIZERACE_HIDEROLLSPEEDCP			(1<<0)
 #define CUSTOMIZERACE_HIDECHECKPOINTCP			(1<<1)
@@ -362,6 +365,7 @@ typedef struct {
 	float			wishSpeed;
 	qboolean		handleStrafebotSlopes;
 	int				unlockRandom;
+	qboolean		mineSwitchFix;
 
 } pmove_t;
 

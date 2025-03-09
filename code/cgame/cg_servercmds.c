@@ -263,6 +263,7 @@ static void CG_ParseServerinfo( const char *info ) {
 		if (!Q_stricmpn(v, "tommyternal", 11)) {
 			cgs.isTommyTernal = qtrue;
 			cgs.ttFlags = atoi(Info_ValueForKey(info, "ttFlags"));
+			cgs.ttFlagsGp = atoi(Info_ValueForKey(info, "ttFlagsGp"));
 			v = Info_ValueForKey(info, "jcinfo");
 			cgs.jcinfo = atoi(v);//[JAPRO - Clientside - All - Add gamename variable to get jcinfo from japro servers]
 			v = Info_ValueForKey(info, "g_fixHighFPSAbuse");

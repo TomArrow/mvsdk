@@ -1638,7 +1638,8 @@ Ghoul2 Insert End
 	int				debugMelee;
 
 	qboolean		isTommyTernal;
-	qboolean		ttFlags; // tommyternal flags
+	int				ttFlags; // tommyternal flags
+	int				ttFlagsGp; // tommyternal flags
 } cgs_t;
 
 //==============================================================================
