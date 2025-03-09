@@ -427,7 +427,7 @@ qboolean PM_SaberKataDone(int curmove, int newmove);
 int PM_SaberAnimTransitionAnim( int curmove, int newmove )
 {
 	int retmove = newmove;
-	if (curmove == LS_READY || pm->mineSwitchFix && BG_SaberInIdle(curmove) )
+	if (curmove == LS_READY || !pm->ps->stats[STAT_RACEMODE] && pm->mineSwitchFix &&BG_SaberInIdle(curmove)) // in racemode we stay on vanilla behavior always. prolly irrelevant but eh
 	{//just standing there
 		switch ( newmove )
 		{
