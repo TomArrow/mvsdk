@@ -384,12 +384,28 @@ typedef enum
 
 typedef enum
 {
+	SS_NONE = 0,
+	SS_FAST,
+	SS_MEDIUM,
+	SS_STRONG,
+	SS_DESANN,
+	SS_TAVION,
+	SS_DUAL,
+	SS_STAFF,
+	SS_NUM_SABER_STYLES
+} saber_styles_t;
+
+typedef enum
+{
 	FORCE_LEVEL_0,
 	FORCE_LEVEL_1,
 	FORCE_LEVEL_2,
 	FORCE_LEVEL_3,
 	NUM_FORCE_POWER_LEVELS
 } forceLevels_t;
+
+#define	FORCE_LEVEL_4 (FORCE_LEVEL_3+1)
+#define	FORCE_LEVEL_5 (FORCE_LEVEL_4+1)
 
 #define ATST_HEADSIZE		90
 #define ATST_MINS0			-40
@@ -515,6 +531,24 @@ typedef	int	fixed16_t;
 #ifndef M_PI
 #define M_PI		3.14159265358979323846f	// matches value in gcc v2 math.h
 #endif
+
+typedef enum
+{
+	SABER_NONE = 0,
+	SABER_SINGLE,
+	SABER_STAFF,
+	SABER_DAGGER,
+	SABER_BROAD,
+	SABER_PRONG,
+	SABER_ARC,
+	SABER_SAI,
+	SABER_CLAW,
+	SABER_LANCE,
+	SABER_STAR,
+	SABER_TRIDENT,
+	SABER_SITH_SWORD,
+	NUM_SABERS
+} saberType_t;
 
 #define NUMVERTEXNORMALS	162
 extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
@@ -957,6 +991,14 @@ typedef enum {
 	FS_SEEK_END,
 	FS_SEEK_SET
 } fsOrigin_t;
+
+typedef enum {
+	FILE_VERSION_UNKNOWN = 0,
+	FILE_VERSION_1_02 = (1 << 0),
+	FILE_VERSION_1_03 = (1 << 1),
+	FILE_VERSION_1_04 = (1 << 2),
+	FILE_VERSION_JKA = (1 << 3),
+} fs_file_version_t;
 
 //=============================================
 
@@ -2265,7 +2307,8 @@ enum {
 	FONT_NONE,
 	FONT_SMALL=1,
 	FONT_MEDIUM,
-	FONT_LARGE
+	FONT_LARGE,
+	FONT_SMALL2
 };
 
 typedef struct ezDemoEvent_s {

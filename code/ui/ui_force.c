@@ -997,7 +997,7 @@ qboolean UI_ForcePowerRank_HandleKey(int flags, float *special, int key, int num
 {
 	qboolean raising;
 
-	if (key == A_MOUSE1 || key == A_MOUSE2 || key == A_ENTER || key == A_KP_ENTER) 
+	if (key == A_MOUSE1 || key == A_MOUSE2 || key == A_ENTER || key == A_KP_ENTER || key == A_BACKSPACE) 
 	{
 		int forcepower, rank;
 
@@ -1036,7 +1036,7 @@ qboolean UI_ForcePowerRank_HandleKey(int flags, float *special, int key, int num
 			min += 1;
 		}
 
-		if (key == A_MOUSE2)
+		if (key == A_MOUSE2 || key == A_BACKSPACE)
 		{	// Lower a point.
 			if (uiForcePowersRank[forcepower]<=min)
 			{

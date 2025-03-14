@@ -144,6 +144,23 @@ Ghoul2 Insert End
 */
 
 	UI_COOL_API_GLRESOLUTIONCHANGED = 1104,
+	// COMPAT_FIX
+	UI_SP_GETNUMLANGUAGES,
+	UI_SP_GETLANGUAGENAME,
+	UI_G2_HAVEWEGHOULMODELS,
+	UI_G2_GIVEMEVECTORFROMMATRIX,
+	UI_G2_GETBOLT,
+	UI_G2_INITGHOUL2MODEL,
+	UI_G2_SETSKIN,
+	UI_G2_CLEANMODELS,
+	UI_G2_PLAYANIM,
+	UI_G2_GETGLANAME,
+	UI_G2_HASGHOUL2MODELONINDEX,
+	UI_G2_REMOVEGHOUL2MODEL,
+	UI_G2_ADDBOLT,
+	UI_G2_SETTIME,
+	UI_G2_ATTACHG2MODEL,
+	UI_FS_GET_FILE_VERSION,
 } uiImport_t;
 
 typedef enum {
@@ -281,7 +298,13 @@ typedef enum {
 	UIMENU_TEAM,
 	UIMENU_POSTGAME,
 	UIMENU_PLAYERFORCE,
-	UIMENU_MV_DOWNLOAD_POPUP
+	UIMENU_MV_DOWNLOAD_POPUP,
+	// COMPAT_FIX
+	UIMENU_SIEGEMESSAGE,
+	UIMENU_SIEGEOBJECTIVES,
+	UIMENU_VOICECHAT,
+	UIMENU_CLOSEALL,
+	UIMENU_CLASSSEL,
 } uiMenuCommand_t;
 
 #define SORT_HOST			0
@@ -319,10 +342,13 @@ typedef enum {
 
 	UI_DRAW_CONNECT_SCREEN,
 //	void	UI_DrawConnectScreen( qboolean overlay );
-	UI_HASUNIQUECDKEY
+	UI_HASUNIQUECDKEY,
 // if !overlay, the background will be drawn, otherwise it will be
 // overlayed over whatever the cgame has drawn.
 // a GetClientState syscall will be made to get the current strings
+
+	// COMPAT_FIX
+	UI_MENU_RESET,
 } uiExport_t;
 
 #endif

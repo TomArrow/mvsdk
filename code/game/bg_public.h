@@ -214,6 +214,18 @@ extern animation_t		bgGlobalAnimations[MAX_TOTALANIMATIONS];
 // changes so a restart of the same anim can be detected
 #define	ANIM_TOGGLEBIT		2048		// Maximum number of animation sequences is 2048 (0-2047).  12th bit is the toggle
 
+#define MAX_ANIM_FILES	64
+
+typedef struct
+{
+	char			filename[MAX_QPATH];
+	animation_t		*anims;
+//	animsounds_t	torsoAnimSnds[MAX_ANIM_SOUNDS];
+//	animsounds_t	legsAnimSnds[MAX_ANIM_SOUNDS];
+//	qboolean		soundsCached;
+} bgLoadedAnim_t;
+
+extern bgLoadedAnim_t bgAllAnims[MAX_ANIM_FILES];
 
 typedef enum {
 	PM_NORMAL,		// can accelerate and turn

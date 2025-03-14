@@ -107,26 +107,7 @@ vec4_t colorTable[CT_MAX] =
 
 };
 
-char *HolocronIcons[] = {
-	"gfx/mp/f_icon_lt_heal",		//FP_HEAL,
-	"gfx/mp/f_icon_levitation",		//FP_LEVITATION,
-	"gfx/mp/f_icon_speed",			//FP_SPEED,
-	"gfx/mp/f_icon_push",			//FP_PUSH,
-	"gfx/mp/f_icon_pull",			//FP_PULL,
-	"gfx/mp/f_icon_lt_telepathy",	//FP_TELEPATHY,
-	"gfx/mp/f_icon_dk_grip",		//FP_GRIP,
-	"gfx/mp/f_icon_dk_l1",			//FP_LIGHTNING,
-	"gfx/mp/f_icon_dk_rage",		//FP_RAGE,
-	"gfx/mp/f_icon_lt_protect",		//FP_PROTECT,
-	"gfx/mp/f_icon_lt_absorb",		//FP_ABSORB,
-	"gfx/mp/f_icon_lt_healother",	//FP_TEAM_HEAL,
-	"gfx/mp/f_icon_dk_forceother",	//FP_TEAM_FORCE,
-	"gfx/mp/f_icon_dk_drain",		//FP_DRAIN,
-	"gfx/mp/f_icon_sight",			//FP_SEE,
-	"gfx/mp/f_icon_saber_attack",	//FP_SABERATTACK,
-	"gfx/mp/f_icon_saber_defend",	//FP_SABERDEFEND,
-	"gfx/mp/f_icon_saber_throw"		//FP_SABERTHROW
-};
+#include "holocronicons.h"
 
 int forceMyModelModificationCount = -1;
 int forceModelModificationCount = -1;
@@ -1763,7 +1744,7 @@ static void CG_RegisterSounds( void ) {
 	cgs.media.lostLeadSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM052");
 
 	cgs.media.rollSound					= trap_S_RegisterSound( "sound/player/roll1.wav");
-
+	cgs.media.noforceSound				= trap_S_RegisterSound( "sound/weapons/force/noforce" );
 	cgs.media.watrInSound				= trap_S_RegisterSound( "sound/player/watr_in.wav");
 	cgs.media.watrOutSound				= trap_S_RegisterSound( "sound/player/watr_out.wav");
 	cgs.media.watrUnSound				= trap_S_RegisterSound( "sound/player/watr_un.wav");
@@ -2369,7 +2350,6 @@ char *CG_GetMenuBuffer(const char *filename) {
 //
 qboolean CG_Asset_Parse(int handle) {
 	pc_token_t token;
-	const char *tempStr;
 
 	if (!trap_PC_ReadToken(handle, &token))
 		return qfalse;
@@ -2388,79 +2368,90 @@ qboolean CG_Asset_Parse(int handle) {
 		// font
 		if (Q_stricmp(token.string, "font") == 0) {
 			int pointSize;
-			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
 
-//			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.textFont);
-			cgDC.Assets.qhMediumFont = cgDC.RegisterFont(tempStr);
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.textFont);
+			cgDC.Assets.qhMediumFont = cgDC.RegisterFont(token.string);
 			continue;
 		}
 
 		// smallFont
 		if (Q_stricmp(token.string, "smallFont") == 0) {
 			int pointSize;
-			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
-//			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.smallFont);
-			cgDC.Assets.qhSmallFont = cgDC.RegisterFont(tempStr);
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.smallFont);
+			cgDC.Assets.qhSmallFont = cgDC.RegisterFont(token.string);
+			continue;
+		}
+
+		// smallFont
+		if (Q_stricmp(token.string, "small2Font") == 0) {
+			int pointSize;
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
+				return qfalse;
+			}
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.smallFont);
+			cgDC.Assets.qhSmall2Font = cgDC.RegisterFont(token.string);
 			continue;
 		}
 
 		// font
 		if (Q_stricmp(token.string, "bigfont") == 0) {
 			int pointSize;
-			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
-//			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.bigFont);
-			cgDC.Assets.qhBigFont = cgDC.RegisterFont(tempStr);
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.bigFont);
+			cgDC.Assets.qhBigFont = cgDC.RegisterFont(token.string);
 			continue;
 		}
 
 		// gradientbar
 		if (Q_stricmp(token.string, "gradientbar") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.gradientBar = trap_R_RegisterShaderNoMip(tempStr);
+			cgDC.Assets.gradientBar = trap_R_RegisterShaderNoMip(token.string);
 			continue;
 		}
 
 		// enterMenuSound
 		if (Q_stricmp(token.string, "menuEnterSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.menuEnterSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.menuEnterSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
 		// exitMenuSound
 		if (Q_stricmp(token.string, "menuExitSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.menuExitSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.menuExitSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
 		// itemFocusSound
 		if (Q_stricmp(token.string, "itemFocusSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.itemFocusSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.itemFocusSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
 		// menuBuzzSound
 		if (Q_stricmp(token.string, "menuBuzzSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.menuBuzzSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.menuBuzzSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
@@ -2558,16 +2549,16 @@ void CG_ParseMenu(const char *menuFile) {
 
 		if (Q_stricmp(token.string, "menudef") == 0) {
 			// start a new menu
-			Menu_New(handle);
+			Menu_New(handle, qfalse);
 		}
 	}
 	trap_PC_FreeSource(handle);
 }
 
-qboolean CG_Load_Menu(char **p) {
+qboolean CG_Load_Menu(const char **p) {
 	char *token;
 
-	token = COM_ParseExt((const char **)p, qtrue);
+	token = COM_ParseExt(p, qtrue);
 
 	if (token[0] != '{') {
 		return qfalse;
@@ -2575,7 +2566,7 @@ qboolean CG_Load_Menu(char **p) {
 
 	while ( 1 ) {
 
-		token = COM_ParseExt((const char **)p, qtrue);
+		token = COM_ParseExt(p, qtrue);
     
 		if (Q_stricmp(token, "}") == 0) {
 			return qtrue;
@@ -2762,7 +2753,7 @@ static qhandle_t CG_FeederItemImage(float feederID, int index) {
 	return 0;
 }
 
-static qboolean CG_FeederSelection(float feederID, int index) {
+static qboolean CG_FeederSelection(float feederID, int index, itemDef_t *item) {
 	if ( cgs.gametype >= GT_TEAM ) {
 		int i, count;
 		int team = (feederID == FEEDER_REDTEAM_LIST) ? TEAM_RED : TEAM_BLUE;
@@ -2832,6 +2823,67 @@ static void CG_RunCinematicFrame(int handle) {
   trap_CIN_RunCinematic(handle);
 }
 
+void CG_LoadMenus(const char *menuFile) 
+{
+	const char	*token;
+	const char	*p;
+	int	len;
+	fileHandle_t	f;
+	static char buf[MAX_MENUDEFFILE];
+
+	len = trap_FS_FOpenFile( menuFile, &f, FS_READ );
+
+	if ( !f ) 
+	{
+		trap_Print( va( S_COLOR_RED "menu file not found: %s, using default\n", menuFile ) );
+
+		len = trap_FS_FOpenFile( "ui/jk2hud.txt", &f, FS_READ );
+		if (!f) 
+		{
+			trap_Print( va( S_COLOR_RED "default menu file not found: ui/jk2hud.txt, unable to continue!\n", menuFile ) );
+		}
+	}
+
+	if ( len >= MAX_MENUDEFFILE ) 
+	{
+		trap_Print( va( S_COLOR_RED "menu file too large: %s is %i, max allowed is %i", menuFile, len, MAX_MENUDEFFILE ) );
+		trap_FS_FCloseFile( f );
+		return;
+	}
+
+	trap_FS_Read( buf, len, f );
+	buf[len] = 0;
+	trap_FS_FCloseFile( f );
+	
+	p = buf;
+
+	while ( 1 ) 
+	{
+		token = COM_ParseExt( &p, qtrue );
+		if( !token || token[0] == 0 || token[0] == '}') 
+		{
+			break;
+		}
+
+		if ( Q_stricmp( token, "}" ) == 0 ) 
+		{
+			break;
+		}
+
+		if (Q_stricmp(token, "loadmenu") == 0) 
+		{
+			if (CG_Load_Menu(&p)) 
+			{
+				continue;
+			} 
+			else 
+			{
+				break;
+			}
+		}
+	}
+}
+
 /*
 =================
 CG_LoadHudMenu();
@@ -2840,6 +2892,8 @@ CG_LoadHudMenu();
 */
 void CG_LoadHudMenu() 
 {
+	const char *hudSet;
+
 	cgDC.registerShaderNoMip = &trap_R_RegisterShaderNoMip;
 	cgDC.setColor = &trap_R_SetColor;
 	cgDC.drawHandlePic = &CG_DrawPic;
@@ -2901,6 +2955,20 @@ void CG_LoadHudMenu()
 	Init_Display(&cgDC);
 
 	Menu_Reset();
+
+	switch (cg_hudFiles.integer)
+	{
+	default:
+	case 0:
+	case 1:
+		hudSet = "ui/jk2hud.txt";
+		break;
+	case 2:
+		hudSet = "ui/jahud.txt";
+		break;
+	}
+
+	CG_LoadMenus(hudSet);
 }
 
 void CG_AssetCache() {

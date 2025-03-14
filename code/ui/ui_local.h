@@ -15,20 +15,15 @@
 
 extern vmCvar_t	ui_ffa_fraglimit;
 extern vmCvar_t	ui_ffa_timelimit;
-
 extern vmCvar_t	ui_tourney_fraglimit;
 extern vmCvar_t	ui_tourney_timelimit;
-
 extern vmCvar_t ui_selectedModelIndex;
-
 extern vmCvar_t	ui_team_fraglimit;
 extern vmCvar_t	ui_team_timelimit;
 extern vmCvar_t	ui_team_friendly;
-
 extern vmCvar_t	ui_ctf_capturelimit;
 extern vmCvar_t	ui_ctf_timelimit;
 extern vmCvar_t	ui_ctf_friendly;
-
 extern vmCvar_t	ui_arenasFile;
 extern vmCvar_t	ui_botsFile;
 extern vmCvar_t	ui_spScores1;
@@ -39,19 +34,15 @@ extern vmCvar_t	ui_spScores5;
 extern vmCvar_t	ui_spAwards;
 extern vmCvar_t	ui_spVideos;
 extern vmCvar_t	ui_spSkill;
-
 extern vmCvar_t	ui_spSelection;
-
 extern vmCvar_t	ui_browserMaster;
 extern vmCvar_t	ui_browserGameType;
 extern vmCvar_t	ui_browserSortKey;
 extern vmCvar_t	ui_browserShowFull;
 extern vmCvar_t	ui_browserShowEmpty;
-
 extern vmCvar_t	ui_drawCrosshair;
 extern vmCvar_t	ui_drawCrosshairNames;
 extern vmCvar_t	ui_marks;
-
 extern vmCvar_t	ui_server1;
 extern vmCvar_t	ui_server2;
 extern vmCvar_t	ui_server3;
@@ -68,10 +59,8 @@ extern vmCvar_t	ui_server13;
 extern vmCvar_t	ui_server14;
 extern vmCvar_t	ui_server15;
 extern vmCvar_t	ui_server16;
-
 extern vmCvar_t	ui_cdkey;
 extern vmCvar_t	ui_cdkeychecked;
-
 extern vmCvar_t	ui_captureLimit;
 extern vmCvar_t	ui_fragLimit;
 extern vmCvar_t	ui_gameType;
@@ -112,16 +101,14 @@ extern vmCvar_t	ui_scoreTime;
 extern vmCvar_t	ui_smallFont;
 extern vmCvar_t	ui_bigFont;
 extern vmCvar_t ui_serverStatusTimeOut;
-
-// botfilter
+extern vmCvar_t ui_bypassMainMenuLoad;
 extern vmCvar_t	ui_botfilter;
-
 extern vmCvar_t	ui_model;
 extern vmCvar_t	ui_team_model;
-
 extern vmCvar_t	ui_widescreen;
 extern vmCvar_t	ui_widescreenCursorScale;
 extern vmCvar_t	ui_sensitivity;
+extern vmCvar_t	ui_JKA;
 
 //
 // ui_qmenu.c
@@ -344,7 +331,7 @@ extern sfxHandle_t	MenuField_Key( menufield_s* m, int* key );
 //
 // ui_main.c
 //
-qboolean UI_FeederSelection(float feederID, int index);
+qboolean UI_FeederSelection( float feederID, int index, itemDef_t *item );
 void UI_Report();
 void UI_Load();
 void UI_LoadMenus(const char *menuFile, qboolean reset);
@@ -637,7 +624,8 @@ typedef struct {
 #define MAX_DOWNLOADS 512
 #define MAX_DEMOS 256
 #define MAX_MOVIES 256
-//#define MAX_PLAYERMODELS 256
+#define MAX_Q3PLAYERMODELS 256
+#define MAX_PLAYERMODELS 32
 
 #define MAX_SCROLLTEXT_SIZE		4096
 #define MAX_SCROLLTEXT_LINES		64
@@ -764,6 +752,19 @@ typedef struct {
 	const char *modDescr;
 } modInfo_t;
 
+typedef struct {
+	char		Name[64];
+	int			SkinHeadCount;
+	char		SkinHeadNames[MAX_PLAYERMODELS][16];
+	int			SkinTorsoCount;
+	char		SkinTorsoNames[MAX_PLAYERMODELS][16];
+	int			SkinLegCount;
+	char		SkinLegNames[MAX_PLAYERMODELS][16];
+	char		ColorShader[MAX_PLAYERMODELS][64];
+	int			ColorCount;
+	char		ColorActionText[MAX_PLAYERMODELS][128];
+} playerSpeciesInfo_t;
+
 typedef struct q3Head_s q3Head_t;
 struct q3Head_s {
 	const char *name;
@@ -862,6 +863,7 @@ typedef struct {
 	sfxHandle_t newHighScoreSound;
 
 	int				q3HeadCount;
+	// COMPAT_FIX
 	q3Head_t		*q3Heads;
 	int				q3SelectedHead;
 
@@ -875,6 +877,18 @@ typedef struct {
 	int effectsColor;
 
 	qboolean inGameLoad;
+
+	// COMPAT_FIX
+	int					playerSpeciesCount;
+	playerSpeciesInfo_t	playerSpecies[MAX_PLAYERMODELS];
+	int					playerSpeciesIndex;
+
+	short		movesTitleIndex;
+	char		*movesBaseAnim;
+	int			moveAnimTime;
+
+	int			languageCount;
+	int			languageCountIndex;
 
 	float		virtualScreenHeightOn;	// renderer virtual screen height when widescreen is on
 	float		virtualScreenHeightOff;	// renderer virtual screen height when widescreen is off
@@ -1061,6 +1075,22 @@ void			trap_R_RemapShader( const char *oldShader, const char *newShader, const c
 */
 
 qboolean		trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
+int				trap_SP_GetNumLanguages( void );
+void			trap_GetLanguageName( const int languageIndex, char *buffer );
+qboolean		trap_G2_HaveWeGhoul2Models(void *ghoul2);
+void			trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+qboolean		trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int				trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias);
+qboolean		trap_G2API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin);
+void			trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean		trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame, const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+void			trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean		trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean		trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+int				trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+void			trap_G2API_SetTime(int time, int clock);
+qboolean		trap_G2API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
+uint32_t		trap_FS_GetFileVersion(const char *fileName);
 
 /*
 Ghoul2 Insert Start

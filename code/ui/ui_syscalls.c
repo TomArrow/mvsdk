@@ -650,3 +650,86 @@ void trap_MVAPI_Print( int flags, const char *string )
 qboolean	trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
 	return syscall(UI_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
 }
+
+int trap_SP_GetNumLanguages( void )
+{
+	return syscall( UI_SP_GETNUMLANGUAGES );
+}
+
+void trap_GetLanguageName( const int languageIndex, char *buffer )
+{
+	syscall( UI_SP_GETLANGUAGENAME, languageIndex, buffer);
+}
+
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2)
+{
+	return (qboolean)(syscall(UI_G2_HAVEWEGHOULMODELS, ghoul2));
+}
+
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec)
+{
+	syscall(UI_G2_GIVEMEVECTORFROMMATRIX, boltMatrix, flags, vec);
+}
+
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale)
+{
+	return (qboolean)(syscall(UI_G2_GETBOLT, ghoul2, modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale));
+}
+
+int trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias)
+{
+	return syscall(UI_G2_INITGHOUL2MODEL, ghoul2Ptr, fileName, modelIndex, customSkin, customShader, modelFlags, lodBias);
+}
+
+qboolean trap_G2API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin)
+{
+	return syscall(UI_G2_SETSKIN, ghoul2, modelIndex, customSkin, renderSkin);
+}
+
+void trap_G2API_CleanGhoul2Models(void **ghoul2Ptr)
+{
+	syscall(UI_G2_CLEANMODELS, ghoul2Ptr);
+}
+
+qboolean trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime )
+{
+	return syscall(UI_G2_PLAYANIM, ghoul2, modelIndex, boneName, startFrame, endFrame, flags, PASSFLOAT(animSpeed), currentTime, PASSFLOAT(setFrame), blendTime);
+}
+
+void trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf)
+{
+	syscall(UI_G2_GETGLANAME, ghoul2, modelIndex, fillBuf);
+}
+
+qboolean trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_G2_HASGHOUL2MODELONINDEX, ghlInfo, modelIndex);
+}
+
+qboolean trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_G2_REMOVEGHOUL2MODEL, ghlInfo, modelIndex);
+}
+
+int	trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName)
+{
+	return syscall(UI_G2_ADDBOLT, ghoul2, modelIndex, boneName);
+}
+
+void trap_G2API_SetTime(int time, int clock)
+{
+	syscall(UI_G2_SETTIME, time, clock);
+}
+
+qboolean trap_G2API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel)
+{
+	return syscall(UI_G2_ATTACHG2MODEL, ghoul2From, modelIndexFrom, ghoul2To, toBoltIndex, toModel);
+}
+
+uint32_t trap_FS_GetFileVersion(const char *fileName)
+{
+	return syscall(UI_FS_GET_FILE_VERSION, fileName);
+}

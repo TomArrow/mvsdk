@@ -77,7 +77,47 @@
 
 #define FEEDER_FORCECFG						0x10			// force config list
 
-#define FEEDER_DOWNLOADS					0x11			// list of downloaded / blocked files
+#define FEEDER_SIEGE_TEAM1					0x11			// siege class list for team1
+#define FEEDER_SIEGE_TEAM2					0x12			// siege class list for team2
+
+#define FEEDER_PLAYER_SPECIES				0x13			// models/player/*
+#define FEEDER_PLAYER_SKIN_HEAD				0x14			// head*.skin files in species folder
+#define FEEDER_PLAYER_SKIN_TORSO			0x15			// torso*.skin files in species folder
+#define FEEDER_PLAYER_SKIN_LEGS				0x16			// lower*.skin files in species folder
+#define FEEDER_COLORCHOICES					0x17			// special hack to feed text/actions from playerchoice.txt in species folder
+
+#define FEEDER_TEAM1_INFANTRY				0x18			// for siege team choice
+#define FEEDER_TEAM1_VANGUARD				0x19			// for siege team choice
+#define FEEDER_TEAM1_SUPPORT				0x1a			// for siege team choice
+#define FEEDER_TEAM1_JEDI					0x1b			// for siege team choice
+#define FEEDER_TEAM1_DEMO					0x1c			// for siege team choice
+#define FEEDER_TEAM1_HEAVY					0x1d			// for siege team choice
+
+#define FEEDER_TEAM2_INFANTRY				0x1e			// for siege team choice
+#define FEEDER_TEAM2_VANGUARD				0x1f			// for siege team choice
+#define FEEDER_TEAM2_SUPPORT				0x20			// for siege team choice
+#define FEEDER_TEAM2_JEDI					0x21			// for siege team choice
+#define FEEDER_TEAM2_DEMO					0x22			// for siege team choice
+#define FEEDER_TEAM2_HEAVY					0x23			// for siege team choice
+
+#define FEEDER_SIEGE_BASE_CLASS				0x24			// for siege team choice
+#define FEEDER_SIEGE_CLASS_WEAPONS			0x25			// for siege team choice
+#define FEEDER_SIEGE_CLASS_INVENTORY		0x26			// for siege team choice
+#define FEEDER_SIEGE_CLASS_FORCE			0x27			// for siege team choice
+#define FEEDER_LANGUAGES					0x28			// for language choice
+#define FEEDER_MOVES						0x29			// moves for the data pad moves screen
+#define FEEDER_MOVES_TITLES					0x2a			// move titles for the data pad moves screen
+#define FEEDER_SABER_SINGLE_INFO			0x2b			// saber single
+#define FEEDER_SABER_STAFF_INFO				0x2c			// saber staff
+
+
+// Xbox specific, hope no one minds
+#define FEEDER_XBL_ACCOUNTS					0xA0			// list of available XBL accounts
+#define FEEDER_XBL_PLAYERS					0xA1			// players (current and recent)
+#define FEEDER_XBL_FRIENDS					0xA2			// friends
+#define FEEDER_XBL_SERVERS					0xA3			// results of an optimatch query
+
+#define FEEDER_DOWNLOADS					0xA4			// list of downloaded / blocked files
 
 // display flags
 #define CG_SHOW_BLUE_TEAM_HAS_REDFLAG     0x00000001
@@ -302,6 +342,17 @@
 
 //extra, for patch
 #define UI_JEDI_NONJEDI 289
+
+// Xbox-only, for complicated passcode entry screen. Sorry.
+#define UI_XBOX_PASSCODE 290
+
+#define UI_CHAT_MAIN		291
+#define UI_CHAT_ATTACK		292
+#define UI_CHAT_DEFEND		293
+#define UI_CHAT_REQUEST		294
+#define UI_CHAT_REPLY		295
+#define UI_CHAT_SPOT		296
+#define UI_CHAT_TACTICAL	297
 
 #define VOICECHAT_GETFLAG			"getflag"				// command someone to get the flag
 #define VOICECHAT_OFFENSE			"offense"				// command someone to go on offense

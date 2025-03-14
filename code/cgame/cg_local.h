@@ -1301,6 +1301,7 @@ typedef struct {
 	sfxHandle_t watrInSound;
 	sfxHandle_t watrOutSound;
 	sfxHandle_t watrUnSound;
+	sfxHandle_t noforceSound;
 
 	sfxHandle_t deploySeeker;
 	sfxHandle_t medkitSound;

@@ -196,4 +196,21 @@ equ trap_FS_RMDLPrefix                      -303    ; UI_MVAPI_RMDLPREFIX
 equ trap_UI_DeleteDLFile                    -304    ; UI_MVAPI_DELDLFILE
 
 
-equ trap_UI_COOL_API_GlResolutionChanged	-1105	; UI_COOL_API_GLRESOLUTIONCHANGED
+equ trap_UI_COOL_API_GlResolutionChanged    -1105   ; UI_COOL_API_GLRESOLUTIONCHANGED
+; COMPAT_FIX
+equ trap_SP_GetNumLanguages                 -1106   ; UI_SP_GETNUMLANGUAGES
+equ trap_GetLanguageName                    -1107   ; UI_SP_GETLANGUAGENAME
+equ trap_G2_HaveWeGhoul2Models              -1108   ; UI_G2_HAVEWEGHOULMODELS
+equ trap_G2API_GiveMeVectorFromMatrix       -1109   ; UI_G2_GIVEMEVECTORFROMMATRIX
+equ trap_G2API_GetBoltMatrix                -1110   ; UI_G2_GETBOLT
+equ trap_G2API_InitGhoul2Model              -1111   ; UI_G2_INITGHOUL2MODEL
+equ trap_G2API_SetSkin                      -1112   ; UI_G2_SETSKIN
+equ trap_G2API_CleanGhoul2Models            -1113   ; UI_G2_CLEANMODELS
+equ trap_G2API_SetBoneAnim                  -1114   ; UI_G2_PLAYANIM
+equ trap_G2API_GetGLAName                   -1115   ; UI_G2_GETGLANAME
+equ trap_G2API_HasGhoul2ModelOnIndex        -1116   ; UI_G2_HASGHOUL2MODELONINDEX
+equ trap_G2API_RemoveGhoul2Model            -1117   ; UI_G2_REMOVEGHOUL2MODEL
+equ trap_G2API_AddBolt                      -1118   ; UI_G2_ADDBOLT
+equ trap_G2API_SetTime                      -1119   ; UI_G2_SETTIME
+equ trap_G2API_AttachG2Model                -1120   ; UI_G2_ATTACHG2MODEL
+equ trap_FS_GetFileVersion                  -1121   ; UI_FS_GET_FILE_VERSION

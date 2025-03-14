@@ -45,18 +45,15 @@
 #define WINDOW_POPUP				0x00200000	// popup
 #define WINDOW_BACKCOLORSET			0x00400000	// backcolor was explicitly set 
 #define WINDOW_TIMEDVISIBLE			0x00800000	// visibility timing ( NOT implemented )
-
+#define WINDOW_PLAYERCOLOR			0x01000000	// hack the forecolor to match ui_char_color_*
+#define WINDOW_INTRANSITIONMODEL	0x04000000	// delayed script waiting to run
 
 // CGAME cursor type bits
 #define CURSOR_NONE					0x00000001
 #define CURSOR_ARROW				0x00000002
 #define CURSOR_SIZER				0x00000004
 
-#ifdef CGAME
-#define STRING_POOL_SIZE 128*1024
-#else
-#define STRING_POOL_SIZE 384*1024
-#endif
+#define STRING_POOL_SIZE (384*1024)
 #define MAX_STRING_HANDLES 4096
 
 #define MAX_SCRIPT_ARGS 12
@@ -167,6 +164,8 @@ typedef struct listBoxDef_s {
 	columnInfo_t columnInfo[MAX_LB_COLUMNS];
 	const char *doubleClick;
 	qboolean notselectable;
+	//JLF MPMOVED
+	qboolean	scrollhidden;
 } listBoxDef_t;
 
 typedef struct editFieldDef_s {
@@ -195,6 +194,16 @@ typedef struct modelDef_s {
 	float fov_x;
 	float fov_y;
 	int rotationSpeed;
+
+	vec3_t g2mins; //required
+	vec3_t g2maxs; //required
+	vec3_t g2scale; //optional
+	int g2skin; //optional
+	int g2anim; //optional
+	//JLF
+//Transition extras
+	vec3_t g2mins2, g2maxs2, g2minsEffect, g2maxsEffect;
+	float fov_x2, fov_y2, fov_Effectx, fov_Effecty;
 } modelDef_t;
 
 typedef struct textScrollDef_s 
@@ -222,6 +231,13 @@ typedef struct textScrollDef_s
 #define CVAR_SHOW			0x00000004
 #define CVAR_HIDE			0x00000008
 
+#define ITF_G2VALID			0x0001					// indicates whether or not g2 instance is valid.
+#define ITF_ISCHARACTER		0x0002					// a character item, uses customRGBA
+#define ITF_ISSABER			0x0004					// first saber item, draws blade
+#define ITF_ISSABER2		0x0008					// second saber item, draws blade
+
+#define ITF_ISANYSABER		(ITF_ISSABER|ITF_ISSABER2)	//either saber
+
 typedef struct itemDef_s {
 	Window		window;						// common positional, border, style, layout info
 	Rectangle	textRect;					// rectangle the text ( if any ) consumes
@@ -238,11 +254,19 @@ typedef struct itemDef_s {
 	float		text2aligny;				// ( optional ) text2 alignment y coord
 	void		*parent;					// menu owner
 	qhandle_t	asset;						// handle to asset
+	void		*ghoul2;					// ghoul2 instance if available instead of a model.
+	int			flags;						// flags like g2valid, character, saber, saber2, etc.
 	const char	*mouseEnterText;			// mouse enter script
 	const char	*mouseExitText;				// mouse exit script
 	const char	*mouseEnter;				// mouse enter script
 	const char	*mouseExit;					// mouse exit script 
 	const char	*action;					// select script
+//JLFACCEPT MPMOVED
+	const char  *accept;
+//JLFDPADSCRIPT
+	const char * selectionNext;
+	const char * selectionPrev;
+
 	const char	*onFocus;					// select script
 	const char	*leaveFocus;				// select script
 	const char	*cvar;						// associated cvar 
@@ -258,6 +282,9 @@ typedef struct itemDef_s {
 	const char	*descText;					//	Description text
 	int			appearanceSlot;				// order of appearance
 	int			iMenuFont;					// FONT_SMALL,FONT_MEDIUM,FONT_LARGE	// changed from 'font' so I could see what didn't compile, and differentiate between font handles returned from RegisterFont -ste
+	qboolean	disabled;					// Does this item ignore mouse and keyboard focus
+	int			invertYesNo;
+	int			xoffset;
 } itemDef_t;
 
 typedef struct {
@@ -272,6 +299,9 @@ typedef struct {
 	float fadeAmount;						//
 	const char *onOpen;						// run when the menu is first opened
 	const char *onClose;					// run when the menu is closed
+//JLFACCEPT
+	const char  *onAccept;					// run when menu is closed with acceptance
+
 	const char *onESC;						// run when the menu is closed
 	const char *soundName;					// background loop sound for menu
 
@@ -286,6 +316,7 @@ typedef struct {
 	float		appearanceTime;				//	when next item should appear
 	int			appearanceCnt;				//	current item displayed
 	float		appearanceIncrement;		//
+	qboolean	isJKA;
 } menuDef_t;
 
 typedef struct {
@@ -293,6 +324,7 @@ typedef struct {
 	const char *cursorStr;
 	const char *gradientStr;
 	qhandle_t	qhSmallFont;
+	qhandle_t	qhSmall2Font;
 	qhandle_t	qhMediumFont;
 	qhandle_t	qhBigFont;
 	qhandle_t cursor;
@@ -320,6 +352,21 @@ typedef struct {
 	vec4_t shadowColor;
 	float shadowFadeClamp;
 	qboolean fontRegistered;
+
+    qhandle_t needPass;
+    qhandle_t noForce;
+    qhandle_t forceRestrict;
+    qhandle_t saberOnly;
+    qhandle_t trueJedi;
+
+	sfxHandle_t moveRollSound;
+	sfxHandle_t moveJumpSound;
+	sfxHandle_t datapadmoveSaberSound1;
+	sfxHandle_t datapadmoveSaberSound2;
+	sfxHandle_t datapadmoveSaberSound3;
+	sfxHandle_t datapadmoveSaberSound4;
+	sfxHandle_t datapadmoveSaberSound5;
+	sfxHandle_t datapadmoveSaberSound6;
 
 	// player settings
 	qhandle_t fxBasePic;
@@ -377,7 +424,7 @@ typedef struct {
 	int (*feederCount)(float feederID);
   const char *(*feederItemText)(float feederID, int index, int column, qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6);
 	qhandle_t (*feederItemImage)(float feederID, int index);
-	qboolean (*feederSelection)(float feederID, int index);
+	qboolean (*feederSelection)(float feederID, int index, itemDef_t *item);
 	void (*keynumToStringBuf)( int keynum, char *buf, int buflen );
 	void (*getBindingBuf)( int keynum, char *buf, int buflen );
 	void (*setBinding)( int keynum, const char *binding );
@@ -422,7 +469,7 @@ void String_Init();
 void String_Report();
 void Init_Display(displayContextDef_t *dc);
 void Display_ExpandMacros(char * buff);
-void Menu_Init(menuDef_t *menu);
+void Menu_Init(menuDef_t *menu, qboolean isJKA);
 void Item_Init(itemDef_t *item);
 void Menu_PostParse(menuDef_t *menu);
 menuDef_t *Menu_GetFocused();
@@ -441,12 +488,13 @@ qboolean PC_Rect_Parse(int handle, rectDef_t *r);
 qboolean PC_String_Parse(int handle, const char **out);
 qboolean PC_Script_Parse(int handle, const char **out);
 int Menu_Count();
-void Menu_New(int handle);
+void Menu_New(int handle, qboolean isJKA);
 void Menu_PaintAll();
 menuDef_t *Menus_ActivateByName(const char *p);
 void Menu_Reset();
 qboolean Menus_AnyFullScreenVisible();
 void  Menus_Activate(menuDef_t *menu);
+itemDef_t *Menu_FindItemByName(menuDef_t *menu, const char *p);
 
 displayContextDef_t *Display_GetContext();
 void *Display_CaptureItem(int x, int y);
@@ -463,6 +511,7 @@ void Menus_CloseAll();
 void Menu_Paint(menuDef_t *menu, qboolean forcePaint);
 void Menu_SetFeederSelection(menuDef_t *menu, int feeder, int index, const char *name);
 void Display_CacheAll();
+void Menu_SetItemBackground(const menuDef_t *menu,const char *itemName, const char *background);
 
 void *UI_Alloc( int size );
 void UI_InitMemory( void );
@@ -471,7 +520,7 @@ qboolean UI_OutOfMemory();
 void Controls_GetConfig( void );
 void Controls_SetConfig(qboolean restart);
 
-/*
+#ifdef JK2_CGAME
 int			trap_PC_AddGlobalDefine			( char *define );
 int			trap_PC_LoadSource				( const char *filename );
 int			trap_PC_FreeSource				( int handle );
@@ -479,13 +528,14 @@ int			trap_PC_ReadToken				( int handle, pc_token_t *pc_token );
 int			trap_PC_SourceFileAndLine		( int handle, char *filename, int *line );
 int			trap_PC_LoadGlobalDefines		( const char* filename );
 void		trap_PC_RemoveAllGlobalDefines	( void );
-*/
+#else
 extern int			(*trap_PC_AddGlobalDefine)					(char *define);
 extern int			(*trap_PC_LoadSource)						(const char *filename);
 extern int			(*trap_PC_FreeSource)						(int handle);
 extern int			(*trap_PC_ReadToken)						(int handle, pc_token_t *pc_token);
 extern int			(*trap_PC_SourceFileAndLine)				(int handle, char *filename, int *line);
 extern int			(*trap_PC_LoadGlobalDefines)				(const char* filename);
+#endif
 
 int			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
 int			trap_R_Font_StrLenChars(const char *text);
@@ -509,5 +559,9 @@ unsigned int trap_AnyLanguage_ReadCharFromString_1_04( const char *psText, int *
 int Item_ListBox_MaxScroll(itemDef_t *item);
 
 extern qboolean menuInJK2MV;
+
+void Menu_SetJKA(qboolean isJKA);
+qboolean Menu_IsJKA(menuDef_t *menu);
+qboolean Item_IsJKA(itemDef_t *item);
 
 #endif
