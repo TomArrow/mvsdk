@@ -211,6 +211,5 @@ equ trap_G2API_GetGLAName                   -1115   ; UI_G2_GETGLANAME
 equ trap_G2API_HasGhoul2ModelOnIndex        -1116   ; UI_G2_HASGHOUL2MODELONINDEX
 equ trap_G2API_RemoveGhoul2Model            -1117   ; UI_G2_REMOVEGHOUL2MODEL
 equ trap_G2API_AddBolt                      -1118   ; UI_G2_ADDBOLT
-equ trap_G2API_SetTime                      -1119   ; UI_G2_SETTIME
-equ trap_G2API_AttachG2Model                -1120   ; UI_G2_ATTACHG2MODEL
-equ trap_FS_GetFileVersion                  -1121   ; UI_FS_GET_FILE_VERSION
+equ trap_G2API_AttachG2Model                -1119   ; UI_G2_ATTACHG2MODEL
+equ trap_FS_GetFileVersion                  -1120   ; UI_FS_GET_FILE_VERSION

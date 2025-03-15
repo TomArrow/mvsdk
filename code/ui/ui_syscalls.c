@@ -719,11 +719,6 @@ int	trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName)
 	return syscall(UI_G2_ADDBOLT, ghoul2, modelIndex, boneName);
 }
 
-void trap_G2API_SetTime(int time, int clock)
-{
-	syscall(UI_G2_SETTIME, time, clock);
-}
-
 qboolean trap_G2API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel)
 {
 	return syscall(UI_G2_ATTACHG2MODEL, ghoul2From, modelIndexFrom, ghoul2To, toBoltIndex, toModel);

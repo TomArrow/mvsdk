@@ -1088,7 +1088,6 @@ void			trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
 qboolean		trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
 qboolean		trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
 int				trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
-void			trap_G2API_SetTime(int time, int clock);
 qboolean		trap_G2API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
 uint32_t		trap_FS_GetFileVersion(const char *fileName);
 

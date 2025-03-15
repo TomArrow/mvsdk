@@ -1211,10 +1211,6 @@ void _UI_Refresh( int realtime )
 	//	return;
 	//}
 
-	trap_G2API_SetTime(realtime, 0);
-	trap_G2API_SetTime(realtime, 1);
-	//ghoul2 timer must be explicitly updated during ui rendering.
-
 	// check if window size changed
 	_UI_CheckWindowResize();
 
