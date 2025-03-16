@@ -14,7 +14,6 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/cgame/cg_public.h"
 	"${SRCDir}/cgame/fx_local.h"
 	"${SRCDir}/cgame/tr_types.h"
-	"${SRCDir}/cgame/holocronicons.h"
 	"${SRCDir}/cgame/cg_multiversion.h"
 	"${SRCDir}/cgame/cg_multiversion_syscalls.h"
 

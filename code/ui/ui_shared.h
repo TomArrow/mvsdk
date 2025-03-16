@@ -559,6 +559,7 @@ unsigned int trap_AnyLanguage_ReadCharFromString_1_04( const char *psText, int *
 int Item_ListBox_MaxScroll(itemDef_t *item);
 
 extern qboolean menuInJK2MV;
+extern const char *HolocronIcons[];
 
 void Menu_SetJKA(qboolean isJKA);
 qboolean Menu_IsJKA(menuDef_t *menu);

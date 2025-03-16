@@ -107,8 +107,6 @@ vec4_t colorTable[CT_MAX] =
 
 };
 
-#include "holocronicons.h"
-
 int forceMyModelModificationCount = -1;
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
