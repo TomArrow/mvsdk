@@ -296,13 +296,7 @@ typedef enum {
 	UIMENU_TEAM,
 	UIMENU_POSTGAME,
 	UIMENU_PLAYERFORCE,
-	UIMENU_MV_DOWNLOAD_POPUP,
-	// COMPAT_FIX
-	UIMENU_SIEGEMESSAGE,
-	UIMENU_SIEGEOBJECTIVES,
-	UIMENU_VOICECHAT,
-	UIMENU_CLOSEALL,
-	UIMENU_CLASSSEL,
+	UIMENU_MV_DOWNLOAD_POPUP
 } uiMenuCommand_t;
 
 #define SORT_HOST			0
@@ -340,13 +334,10 @@ typedef enum {
 
 	UI_DRAW_CONNECT_SCREEN,
 //	void	UI_DrawConnectScreen( qboolean overlay );
-	UI_HASUNIQUECDKEY,
+	UI_HASUNIQUECDKEY
 // if !overlay, the background will be drawn, otherwise it will be
 // overlayed over whatever the cgame has drawn.
 // a GetClientState syscall will be made to get the current strings
-
-	// COMPAT_FIX
-	UI_MENU_RESET,
 } uiExport_t;
 
 #endif

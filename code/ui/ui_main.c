@@ -340,9 +340,6 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 		  return 0;
 	  case UI_HASUNIQUECDKEY: // mod authors need to observe this
 	    return qtrue; // bk010117 - change this to qfalse for mods!
-	  case UI_MENU_RESET:
-		  Menu_Reset();
-		  return 0;
 	}
 
 	return -1;
@@ -10506,39 +10503,6 @@ void _UI_SetActiveMenu( uiMenuCommand_t menu ) {
 			Menus_CloseAll();
 			Menus_ActivateByName("download_popup");
 			return;
-	  case UIMENU_SIEGEMESSAGE:
-		 // trap_Cvar_Set( "cl_paused", "1" );
-			trap_Key_SetCatcher( KEYCATCH_UI );
-			Menus_CloseAll();
-			Menus_ActivateByName("siege_popmenu");
-		  return;
-	  case UIMENU_SIEGEOBJECTIVES:
-		 // trap_Cvar_Set( "cl_paused", "1" );
-			trap_Key_SetCatcher( KEYCATCH_UI );
-			Menus_CloseAll();
-			Menus_ActivateByName("ingame_siegeobjectives");
-			return;
-	  case UIMENU_VOICECHAT:
-		 // trap_Cvar_Set( "cl_paused", "1" );
-			// No chatin non-siege games.
-		 
-		  	if (trap_Cvar_VariableValue( "g_gametype" ) < GT_TEAM)
-			{
-				return;
-			}
-				 
-			trap_Key_SetCatcher( KEYCATCH_UI );
-			Menus_CloseAll();
-			Menus_ActivateByName("ingame_voicechat");
-			return;
-	  case UIMENU_CLOSEALL:
-			Menus_CloseAll();
-			return;
-	  case UIMENU_CLASSSEL:
-			trap_Key_SetCatcher( KEYCATCH_UI );
-			Menus_CloseAll();
-			Menus_ActivateByName("ingame_siegeclass");
-		  return;
 	  }
   }
 }
