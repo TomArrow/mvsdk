@@ -423,20 +423,22 @@ CG_TouchItem
 */
 static void CG_TouchItem( centity_t *cent ) {
 	gitem_t		*item;
+	entityState_t* state = (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) ? &cent->nextState : &cent->currentState;
+
 
 	if ( !cg_predictItems.integer ) {
 		return;
 	}
-	if ( !BG_PlayerTouchesItem( &cg.predictedPlayerState, &cent->currentState, cg.time ) ) {
+	if ( !BG_PlayerTouchesItem( &cg.predictedPlayerState, state, cg.time ) ) {
 		return;
 	}
 
-	if (cent->currentState.eFlags & EF_ITEMPLACEHOLDER)
+	if (state->eFlags & EF_ITEMPLACEHOLDER)
 	{
 		return;
 	}
 
-	if (cent->currentState.eFlags & EF_NODRAW)
+	if (state->eFlags & EF_NODRAW)
 	{
 		return;
 	}
@@ -446,11 +448,11 @@ static void CG_TouchItem( centity_t *cent ) {
 		return;
 	}
 
-	if ( !BG_CanItemBeGrabbed( cgs.gametype, &cent->currentState, &cg.predictedPlayerState, cgs.clientinfo[cg.predictedPlayerState.clientNum].playerMode ) ) {
+	if ( !BG_CanItemBeGrabbed( cgs.gametype, state, &cg.predictedPlayerState, cgs.clientinfo[cg.predictedPlayerState.clientNum].playerMode ) ) {
 		return;		// can't hold it
 	}
 
-	item = &bg_itemlist[ cent->currentState.modelindex ];
+	item = &bg_itemlist[state->modelindex ];
 
 	//Currently there is no reliable way of knowing if the client has touched a certain item before another if they are next to each other, or rather
 	//if the server has touched them in the same order. This results often in grabbing an item in the prediction and the server giving you the other
