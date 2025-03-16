@@ -753,9 +753,16 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
 		isJKAModel = !!(trap_CG_COOL_API_GetFileVersion(va("models/players/%s/model.glm", dir)) & FILE_VERSION_JKA);
 
-	if ( ci->skinName[0] == '\0' || !Q_stricmp( "default", ci->skinName ) )
+	if ( ci->skinName[0] == '\0' || !Q_stricmp( "default", ci->skinName ) || strchr(ci->skinName, '|') != NULL )
 	{//try default sounds.cfg first
-		fLen = CG_OpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ, isJKAModel);
+		if (isJKAModel)
+		{
+			fLen = trap_FS_FOpenFile(va("models/players/%s/sounds.cfg_jka", dir), &f, FS_READ);
+		}
+		else
+		{
+			fLen = trap_FS_FOpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ);
+		}
 		if ( !f ) 
 		{//no?  Look for _default sounds.cfg
 			fLen = CG_OpenFile(va("models/players/%s/sounds_default.cfg", dir), &f, FS_READ, isJKAModel);
@@ -766,7 +773,14 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		fLen = CG_OpenFile(va("models/players/%s/sounds_%s.cfg", dir, ci->skinName), &f, FS_READ, isJKAModel);
 		if ( !f ) 
 		{//fall back to default sounds
-			fLen = CG_OpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ, isJKAModel);
+			if (isJKAModel)
+			{
+				fLen = trap_FS_FOpenFile(va("models/players/%s/sounds.cfg_jka", dir), &f, FS_READ);
+			}
+			else
+			{
+				fLen = trap_FS_FOpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ);
+			}
 		}
 	}
 
