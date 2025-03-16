@@ -240,3 +240,5 @@ equ trap_CG_COOL_API_DB_FinishAndSendPreparedStatement	-1215	;CG_COOL_API_DB_FIN
 equ trap_CG_COOL_API_DB_GetBinary						-1216	;CG_COOL_API_DB_GETBINARY
 equ trap_CG_COOL_API_DB_PreparedBindNull				-1217	;CG_COOL_API_DB_PREPAREDBINDNULL
 equ trap_CG_COOL_API_DB_GetMoreResults					-1218	;CG_COOL_API_DB_GETMORERESULTS
+
+equ trap_FS_GetFileVersion                      -1219   ; CG_FS_GET_FILE_VERSION
