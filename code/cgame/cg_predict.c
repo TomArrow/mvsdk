@@ -7,6 +7,10 @@
 
 #include "cg_local.h"
 
+
+#define ITEMPREDICTDEBUG 0
+
+
 static	pmove_t		cg_pmove;
 
 static	int			cg_numSolidEntities;
@@ -196,7 +200,6 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 			VectorCopy( vec3_origin, angles );
 			VectorCopy( cent->lerpOrigin, origin );
 		}
-
 
 		trap_CM_TransformedBoxTrace ( &trace, start, end,
 			mins, maxs, cmodel,  mask, origin, angles, customEpsilonTrace,customEpsilon,traceCustomFlags);
@@ -518,6 +521,9 @@ static void CG_TouchItem( centity_t *cent ) {
 
 	// grab it
 	BG_AddPredictableEventToPlayerstate( EV_ITEM_PICKUP, cent->currentState.number , &cg.predictedPlayerState);
+#if ITEMPREDICTDEBUG
+	Com_Printf("^3CG Predict: Adding EV_ITEM_PICKUP at %d, cmdtime %d\n",cg.time,cg.predictedPlayerState.commandTime);
+#endif
 
 	// remove it from the frame so it won't be drawn
 	cent->currentState.eFlags |= EF_NODRAW;

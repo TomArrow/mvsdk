@@ -1010,7 +1010,7 @@ also called by CG_CheckPlayerstateEvents
 ==============
 */
 #define	DEBUGNAME(x) if(cg_debugEvents.integer){CG_Printf(x"\n");}
-void CG_EntityEvent( centity_t *cent, vec3_t position ) {
+void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboolean changedPredictable) {
 	entityState_t	*es;
 	int				event;
 	vec3_t			dir;
@@ -1025,7 +1025,13 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 	event = es->event & ~EV_EVENT_BITS;
 
 	if ( cg_debugEvents.integer ) {
-		CG_Printf( "ent:%3i  event:%3i ", es->number, event );
+		if (psEventSequence == -1) {
+			CG_Printf("ent:%3i  event:%3i ", es->number, event);
+		}
+		else {
+			CG_Printf("ent:%3i  event:%3i evSeq:%d changepred:%d ", es->number, event, psEventSequence, changedPredictable);
+			//CG_Printf("ent:%3i  event:%3i evSeq:%d ", es->number, event, psEventSequence, changedPredictable);
+		}
 	}
 
 	if ( !event ) {
@@ -2505,6 +2511,6 @@ void CG_CheckEvents( centity_t *cent ) {
 	BG_EvaluateTrajectory( &cent->currentState.pos, cg.snap->serverTime, cent->lerpOrigin );
 	CG_SetEntitySoundPosition( cent );
 
-	CG_EntityEvent( cent, cent->lerpOrigin );
+	CG_EntityEvent( cent, cent->lerpOrigin, -1, qfalse );
 }
 
