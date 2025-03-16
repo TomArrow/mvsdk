@@ -526,7 +526,8 @@ static void CG_TouchItem( centity_t *cent ) {
 #endif
 
 	// remove it from the frame so it won't be drawn
-	cent->currentState.eFlags |= EF_NODRAW;
+	//cent->currentState.eFlags |= EF_NODRAW;
+	cent->predictedEFlags |= EF_NODRAW; // TA: don't change the currentstate, instead use our own variable, to not catastrophically mess up prediction leading to frame-to-frame prediction differences (in practical terms: ear rape at high fps when picking up items). Note: Sometimes a double event still happens, for example when picking up mines, my suspicion is that it's related to them bobbing up and down (in which case the desync between cg.time and level.time could be to blame), but I might be completely wrong on that, maybe that's just a visual effect that doesn't influence the actual position at all.
 
 	// don't touch it again this prediction
 	cent->miscTime = cg.time;
