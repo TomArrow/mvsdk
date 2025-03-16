@@ -156,6 +156,7 @@ const int coolApi_supported_cgame_int =
 | COOL_APIFEATURE_SETUSERANGLES
 | COOL_APIFEATURE_CUSTOMEPSILONTRACE
 | COOL_APIFEATURE_ADDMEMECOMMAND
+| COOL_APIFEATURE_JEDI_ACADEMY
 ;
 qboolean submodelBypass = qfalse;
 int Init_serverMessageNum;
