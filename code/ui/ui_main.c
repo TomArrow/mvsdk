@@ -1726,8 +1726,8 @@ void UI_ParseMenu(const char *menuFile) {
 
 	if (ui_JKA.integer == 0) {
 		menuIsJKA = qfalse;
-	} else if (ui_JKA.integer == 1) {
-		menuIsJKA = (trap_FS_GetFileVersion(menuFile) & FILE_VERSION_JKA);
+	} else if (ui_JKA.integer == 1 && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)) {
+		menuIsJKA = !!(trap_UI_COOL_API_GetFileVersion(menuFile) & FILE_VERSION_JKA);
 	} else if (ui_JKA.integer == 2) {
 		menuIsJKA = qtrue;
 	} else {
@@ -10074,16 +10074,16 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 				continue;
 			}
 			uiInfo.playerSpeciesCount++;
-			if (!inGameLoad && ui_PrecacheModels.integer)
+			if (!inGameLoad && ui_PrecacheModels.integer && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
 			{
 				int g2Model;
 				void *ghoul2 = 0;
 				Com_sprintf( fpath, sizeof( fpath ), "models/players/%s/model.glm", dirptr );
-				g2Model = trap_G2API_InitGhoul2Model(&ghoul2, fpath, 0, 0, 0, 0, 0);
+				g2Model = trap_UI_COOL_API_InitGhoul2Model(&ghoul2, fpath, 0, 0, 0, 0, 0);
 				if (g2Model >= 0)
 				{
 //					trap_G2API_RemoveGhoul2Model( &ghoul2, 0 );
-					trap_G2API_CleanGhoul2Models (&ghoul2);
+					trap_UI_COOL_API_CleanGhoul2Models(&ghoul2);
 				}
 			}
 			if (uiInfo.playerSpeciesCount >= MAX_PLAYERMODELS)
@@ -10106,7 +10106,10 @@ void _UI_Init( qboolean inGameLoad ) {
 	uiClientState_t cstate;
 
 	// Get the list of possible languages
-	uiInfo.languageCount = trap_SP_GetNumLanguages();	// this does a dir scan, so use carefully
+	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+		uiInfo.languageCount = trap_UI_COOL_API_GetNumLanguages();	// this does a dir scan, so use carefully
+	else
+		uiInfo.languageCount = 1;
 
 	uiInfo.inGameLoad = inGameLoad;
 
@@ -11167,12 +11170,14 @@ void UI_UpdateCvars( void ) {
 		uiUpdateModel = 1;
 	}
 
-	if (spLanguageModificationCount != ui_sp_language.modificationCount) {
-		UI_UpdateTextLanguageCvar(qtrue);
-	}
+	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) {
+		if (spLanguageModificationCount != ui_sp_language.modificationCount) {
+			UI_UpdateTextLanguageCvar(qtrue);
+		}
 
-	if (seLanguageModificationCount != ui_se_language.modificationCount) {
-		UI_UpdateTextLanguageCvar(qfalse);
+		if (seLanguageModificationCount != ui_se_language.modificationCount) {
+			UI_UpdateTextLanguageCvar(qfalse);
+		}
 	}
 }
 
@@ -11322,7 +11327,7 @@ void UI_UpdateTextLanguageCvar(qboolean updateCvarFromJKA)
 	trap_Cvar_VariableStringBuffer("se_language", se_language_cvar, sizeof(se_language_cvar));
 	trap_Cvar_VariableStringBuffer("sp_language", sp_language_cvar, sizeof(sp_language_cvar));
 
-	numLanguages = trap_SP_GetNumLanguages();
+	numLanguages = trap_UI_COOL_API_GetNumLanguages();
 	languageIndex = atoi(sp_language_cvar);
 
 	if (languageIndex < 0 || languageIndex >= numLanguages)
@@ -11330,7 +11335,7 @@ void UI_UpdateTextLanguageCvar(qboolean updateCvarFromJKA)
 		languageIndex = 0;
 	}
 
-	trap_GetLanguageName(languageIndex, languageName);
+	trap_UI_COOL_API_GetLanguageName(languageIndex, languageName);
 
 	if (Q_stricmp(se_language_cvar, languageName) != 0)
 	{
@@ -11342,7 +11347,7 @@ void UI_UpdateTextLanguageCvar(qboolean updateCvarFromJKA)
 		{
 			for (languageIndex = 0; languageIndex < numLanguages; languageIndex++)
 			{
-				trap_GetLanguageName(languageIndex, languageName);
+				trap_UI_COOL_API_GetLanguageName(languageIndex, languageName);
 				if (Q_stricmp(languageName, se_language_cvar) == 0)
 				{
 					break;

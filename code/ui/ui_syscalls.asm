@@ -197,19 +197,18 @@ equ trap_UI_DeleteDLFile                    -304    ; UI_MVAPI_DELDLFILE
 
 
 equ trap_UI_COOL_API_GlResolutionChanged    -1105   ; UI_COOL_API_GLRESOLUTIONCHANGED
-; COMPAT_FIX
-equ trap_SP_GetNumLanguages                 -1106   ; UI_SP_GETNUMLANGUAGES
-equ trap_GetLanguageName                    -1107   ; UI_SP_GETLANGUAGENAME
-equ trap_G2_HaveWeGhoul2Models              -1108   ; UI_G2_HAVEWEGHOULMODELS
-equ trap_G2API_GiveMeVectorFromMatrix       -1109   ; UI_G2_GIVEMEVECTORFROMMATRIX
-equ trap_G2API_GetBoltMatrix                -1110   ; UI_G2_GETBOLT
-equ trap_G2API_InitGhoul2Model              -1111   ; UI_G2_INITGHOUL2MODEL
-equ trap_G2API_SetSkin                      -1112   ; UI_G2_SETSKIN
-equ trap_G2API_CleanGhoul2Models            -1113   ; UI_G2_CLEANMODELS
-equ trap_G2API_SetBoneAnim                  -1114   ; UI_G2_PLAYANIM
-equ trap_G2API_GetGLAName                   -1115   ; UI_G2_GETGLANAME
-equ trap_G2API_HasGhoul2ModelOnIndex        -1116   ; UI_G2_HASGHOUL2MODELONINDEX
-equ trap_G2API_RemoveGhoul2Model            -1117   ; UI_G2_REMOVEGHOUL2MODEL
-equ trap_G2API_AddBolt                      -1118   ; UI_G2_ADDBOLT
-equ trap_G2API_AttachG2Model                -1119   ; UI_G2_ATTACHG2MODEL
-equ trap_FS_GetFileVersion                  -1120   ; UI_FS_GET_FILE_VERSION
+equ trap_UI_COOL_API_GetNumLanguages        -1219   ; UI_COOL_API_GET_NUM_LANGUAGES
+equ trap_UI_COOL_API_GetLanguageName        -1220   ; UI_COOL_API_GET_LANGUAGE_NAME
+equ trap_UI_COOL_API_HaveWeGhoul2Models     -1221   ; UI_COOL_API_HAVE_WE_GHOUL2_MODELS
+equ trap_UI_COOL_API_GiveMeVectorFromMatrix -1222   ; UI_COOL_API_GIVE_ME_VECTOR_FROM_MATRIX
+equ trap_UI_COOL_API_GetBoltMatrix          -1223   ; UI_COOL_API_GET_BOLT_MATRIX
+equ trap_UI_COOL_API_InitGhoul2Model        -1224   ; UI_COOL_API_INIT_GHOUL2_MODEL
+equ trap_UI_COOL_API_SetSkin                -1225   ; UI_COOL_API_SET_SKIN
+equ trap_UI_COOL_API_CleanGhoul2Models      -1226   ; UI_COOL_API_CLEAN_GHOUL2_MODELS
+equ trap_UI_COOL_API_SetBoneAnim            -1227   ; UI_COOL_API_SET_BONE_ANIM
+equ trap_UI_COOL_API_GetGlaName             -1228   ; UI_COOL_API_GET_GLA_NAME
+equ trap_UI_COOL_API_HasGhoul2ModelOnIndex  -1229   ; UI_COOL_API_HAS_GHOUL2_MODEL_ON_INDEX
+equ trap_UI_COOL_API_RemoveGhoul2Model      -1230   ; UI_COOL_API_REMOVE_GHOUL2_MODEL
+equ trap_UI_COOL_API_AddBolt                -1231   ; UI_COOL_API_ADD_BOLT
+equ trap_UI_COOL_API_AttachG2Model          -1232   ; UI_COOL_API_ATTACH_G2_MODEL
+equ trap_UI_COOL_API_GetFileVersion         -1233   ; UI_COOL_API_GET_FILE_VERSION

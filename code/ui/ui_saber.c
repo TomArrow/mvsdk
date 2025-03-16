@@ -635,7 +635,10 @@ void UI_SaberDrawBlade( itemDef_t *item, char *saberName, int saberModel, saberT
 		trap_Cvar_VariableStringBuffer("ui_saber2_color", bladeColorString, sizeof(bladeColorString) );
 	}
 
-	if ( !trap_G2API_HasGhoul2ModelOnIndex(&(item->ghoul2),saberModel) )
+	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+		return;
+
+	if ( !trap_UI_COOL_API_HasGhoul2ModelOnIndex(&(item->ghoul2),saberModel) )
 	{//invalid index!
 		return;
 	}
@@ -646,13 +649,13 @@ void UI_SaberDrawBlade( itemDef_t *item, char *saberName, int saberModel, saberT
 	bladeRadius = UI_SaberBladeRadiusForSaber( saberName, bladeNum );
 
 	tagName = va( "*blade%d", bladeNum+1 );
-	bolt = trap_G2API_AddBolt( item->ghoul2,saberModel, tagName );
+	bolt = trap_UI_COOL_API_AddBolt( item->ghoul2,saberModel, tagName );
 	
 	if ( bolt == -1 )
 	{
 		tagHack = qtrue;
 		//hmm, just fall back to the most basic tag (this will also make it work with pre-JKA saber models
-		bolt = trap_G2API_AddBolt( item->ghoul2,saberModel, "*flash" );
+		bolt = trap_UI_COOL_API_AddBolt( item->ghoul2,saberModel, "*flash" );
 		if ( bolt == -1 )
 		{//no tag_flash either?!!
 			bolt = 0;
@@ -662,14 +665,14 @@ void UI_SaberDrawBlade( itemDef_t *item, char *saberName, int saberModel, saberT
 //	angles[PITCH] = curYaw;
 //	angles[ROLL] = 0;
 
-	trap_G2API_GetBoltMatrix( item->ghoul2, saberModel, bolt, &boltMatrix, angles, origin, uiInfo.uiDC.realTime, NULL, vec3_origin );//NULL was cgs.model_draw
+	trap_UI_COOL_API_GetBoltMatrix( item->ghoul2, saberModel, bolt, &boltMatrix, angles, origin, uiInfo.uiDC.realTime, NULL, vec3_origin );//NULL was cgs.model_draw
 
 	// work the matrix axis stuff into the original axis and origins used.
-	trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, ORIGIN, bladeOrigin);
-	trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, NEGATIVE_Y, axis[0]);//front (was NEGATIVE_Y, but the md3->glm exporter screws up this tag somethin' awful)
+	trap_UI_COOL_API_GiveMeVectorFromMatrix(&boltMatrix, ORIGIN, bladeOrigin);
+	trap_UI_COOL_API_GiveMeVectorFromMatrix(&boltMatrix, NEGATIVE_Y, axis[0]);//front (was NEGATIVE_Y, but the md3->glm exporter screws up this tag somethin' awful)
 																//		...changed this back to NEGATIVE_Y		
-	trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, NEGATIVE_X, axis[1]);//right ... and changed this to NEGATIVE_X
-	trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, POSITIVE_Z, axis[2]);//up
+	trap_UI_COOL_API_GiveMeVectorFromMatrix(&boltMatrix, NEGATIVE_X, axis[1]);//right ... and changed this to NEGATIVE_X
+	trap_UI_COOL_API_GiveMeVectorFromMatrix(&boltMatrix, POSITIVE_Z, axis[2]);//up
 
 	// Where do I get scale from?
 //	scale = DC->xscale;
@@ -1021,13 +1024,16 @@ void UI_SaberAttachToChar( itemDef_t *item )
 	int	numSabers = 1;
  	int	saberNum = 0;
 
-	if ( trap_G2API_HasGhoul2ModelOnIndex(&(item->ghoul2),2) )
+	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+		return;
+
+	if ( trap_UI_COOL_API_HasGhoul2ModelOnIndex(&(item->ghoul2),2) )
 	{//remove any extra models
-		trap_G2API_RemoveGhoul2Model(&(item->ghoul2), 2);
+		trap_UI_COOL_API_RemoveGhoul2Model(&(item->ghoul2), 2);
 	}
-	if ( trap_G2API_HasGhoul2ModelOnIndex(&(item->ghoul2),1) )
+	if ( trap_UI_COOL_API_HasGhoul2ModelOnIndex(&(item->ghoul2),1) )
 	{//remove any extra models
-		trap_G2API_RemoveGhoul2Model(&(item->ghoul2), 1);
+		trap_UI_COOL_API_RemoveGhoul2Model(&(item->ghoul2), 1);
 	}
 
 	if ( uiInfo.movesTitleIndex == 4 /*MD_DUAL_SABERS*/ )
@@ -1046,7 +1052,7 @@ void UI_SaberAttachToChar( itemDef_t *item )
 
 		if ( UI_SaberModelForSaber( saber, modelPath ) )
 		{//successfully found a model
-			int g2Saber = trap_G2API_InitGhoul2Model( &(item->ghoul2), modelPath, 0, 0, 0, 0, 0 ); //add the model
+			int g2Saber = trap_UI_COOL_API_InitGhoul2Model( &(item->ghoul2), modelPath, 0, 0, 0, 0, 0 ); //add the model
 			if ( g2Saber )
 			{
 				int boltNum;
@@ -1054,21 +1060,21 @@ void UI_SaberAttachToChar( itemDef_t *item )
 				if ( UI_SaberSkinForSaber( saber, skinPath ) )
 				{
 					int g2skin = trap_R_RegisterSkin(skinPath);
-					trap_G2API_SetSkin( item->ghoul2, g2Saber, 0, g2skin );//this is going to set the surfs on/off matching the skin file
+					trap_UI_COOL_API_SetSkin( item->ghoul2, g2Saber, 0, g2skin );//this is going to set the surfs on/off matching the skin file
 				}
 				else
 				{
-					trap_G2API_SetSkin( item->ghoul2, g2Saber, 0, 0 );//turn off custom skin
+					trap_UI_COOL_API_SetSkin( item->ghoul2, g2Saber, 0, 0 );//turn off custom skin
 				}
 				if ( saberNum == 0 )
 				{
-					boltNum = trap_G2API_AddBolt( item->ghoul2, 0, "*r_hand");
+					boltNum = trap_UI_COOL_API_AddBolt( item->ghoul2, 0, "*r_hand");
 				}
 				else
 				{
-					boltNum = trap_G2API_AddBolt( item->ghoul2, 0, "*l_hand");
+					boltNum = trap_UI_COOL_API_AddBolt( item->ghoul2, 0, "*l_hand");
 				}
-				trap_G2API_AttachG2Model( item->ghoul2, g2Saber, item->ghoul2, boltNum, 0);
+				trap_UI_COOL_API_AttachG2Model( item->ghoul2, g2Saber, item->ghoul2, boltNum, 0);
 			}
 		}
 	}

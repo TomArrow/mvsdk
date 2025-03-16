@@ -355,9 +355,9 @@ qboolean	trap_CG_COOL_API_DB_GetMoreResults(int* affectedRows) {
 }
 
 
-uint32_t trap_FS_GetFileVersion(const char *fileName)
+uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName)
 {
-	return syscall(CG_FS_GET_FILE_VERSION, fileName);
+	return syscall(CG_COOL_API_GET_FILE_VERSION, fileName);
 }
 
 

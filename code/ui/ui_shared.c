@@ -7289,11 +7289,14 @@ void UI_CleanupGhoul2(void)
 #ifndef JK2_CGAME
 	uiG2PtrTracker_t *next = ui_G2PtrTracker;
 
+	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+		return;
+
 	while (next)
 	{
-		if (next->ghoul2 && trap_G2_HaveWeGhoul2Models(next->ghoul2))
+		if (next->ghoul2 && trap_UI_COOL_API_HaveWeGhoul2Models(next->ghoul2))
 		{ //found a g2 instance, clean it.
-			trap_G2API_CleanGhoul2Models(&next->ghoul2);
+			trap_UI_COOL_API_CleanGhoul2Models(&next->ghoul2);
 		}
 
 		next = next->next;
@@ -7319,16 +7322,16 @@ qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTim
 	modelPtr = (modelDef_t*)item->typeData;
 	*runTimeLength =0.0f;
 
-	if (!Q_stricmp(&name[strlen(name) - 4], ".glm"))
+	if (!Q_stricmp(&name[strlen(name) - 4], ".glm") && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
 	{ //it's a ghoul2 model then
 		if ( item->ghoul2 )
 		{
 			UI_ClearG2Pointer(item->ghoul2);	//remove from tracking list
-			trap_G2API_CleanGhoul2Models(&item->ghoul2);	//remove ghoul info
+			trap_UI_COOL_API_CleanGhoul2Models(&item->ghoul2);	//remove ghoul info
 			item->flags &= ~ITF_G2VALID;
 		}
 
-		g2Model = trap_G2API_InitGhoul2Model(&item->ghoul2, name, 0, modelPtr->g2skin, 0, 0, 0);
+		g2Model = trap_UI_COOL_API_InitGhoul2Model(&item->ghoul2, name, 0, modelPtr->g2skin, 0, 0, 0);
 		if (g2Model >= 0)
 		{
 			UI_InsertG2Pointer(item->ghoul2); //remember it so we can free it when the ui shuts down.
@@ -7341,7 +7344,7 @@ qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTim
 				char GLAName[MAX_QPATH];	
 
 				GLAName[0] = 0;
-				trap_G2API_GetGLAName(item->ghoul2, 0, GLAName);
+				trap_UI_COOL_API_GetGlaName(item->ghoul2, 0, GLAName);
 
 				if (GLAName[0])
 				{
@@ -7371,7 +7374,7 @@ qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTim
 								flags |= BONE_ANIM_OVERRIDE_LOOP;
 							}
 
-							trap_G2API_SetBoneAnim(item->ghoul2, 0, "model_root", sFrame, eFrame, flags, animSpeed, time, -1, blendTime);
+							trap_UI_COOL_API_SetBoneAnim(item->ghoul2, 0, "model_root", sFrame, eFrame, flags, animSpeed, time, -1, blendTime);
 							*runTimeLength =((anim->frameLerp * (anim->numFrames-2)));					
 						}
 					}
@@ -7383,7 +7386,7 @@ qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTim
 //					DC->g2_SetSkin( &item->ghoul2[0], 0, modelPtr->g2skin );//this is going to set the surfs on/off matching the skin file
 				//trap_G2API_InitGhoul2Model(&item->ghoul2, name, 0, modelPtr->g2skin, 0, 0, 0);
 				//ahh, what are you doing?!
-				trap_G2API_SetSkin(item->ghoul2, 0, modelPtr->g2skin, modelPtr->g2skin);
+				trap_UI_COOL_API_SetSkin(item->ghoul2, 0, modelPtr->g2skin, modelPtr->g2skin);
 			}
 		}
 		/*
@@ -7617,10 +7620,13 @@ qboolean ItemParse_model_g2skin_go( itemDef_t *item, const char *skinName )
 	Item_ValidateTypeData(item);
 	modelPtr = (modelDef_t*)item->typeData;
 
+	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+		return qtrue;
+
 	if (!skinName || !skinName[0])
 	{ //it was parsed correctly so still return true.
 		modelPtr->g2skin = 0;
-		trap_G2API_SetSkin(item->ghoul2, 0, 0, 0);
+		trap_UI_COOL_API_SetSkin(item->ghoul2, 0, 0, 0);
 
 		return qtrue;
 	}
@@ -7629,7 +7635,7 @@ qboolean ItemParse_model_g2skin_go( itemDef_t *item, const char *skinName )
 	if ( item->ghoul2 )
 	{
 		defSkin = trap_R_RegisterSkin(skinName);
-		trap_G2API_SetSkin(item->ghoul2, 0, defSkin, defSkin);
+		trap_UI_COOL_API_SetSkin(item->ghoul2, 0, defSkin, defSkin);
 	}
 #endif
 
@@ -8386,10 +8392,13 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 		for (; multiPtr->count < uiInfo.languageCount; multiPtr->count++)
 		{
 			// The displayed text
-			trap_GetLanguageName( (const int) multiPtr->count,(char *) currLanguage[multiPtr->count]  );	// eg "English"
-			multiPtr->cvarList[multiPtr->count] = languageString;
-			// The cvar value that goes into ui_s_language
-			trap_GetLanguageName( (const int) multiPtr->count,(char *) currLanguage[multiPtr->count] );
+			multiPtr->cvarList[multiPtr->count] = languageString; // eg "English"
+
+			// The cvar value that goes into ui_se_language
+			if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+				trap_UI_COOL_API_GetLanguageName( (const int) multiPtr->count,(char *) currLanguage[multiPtr->count] );
+			else
+				Q_strncpyz(currLanguage[multiPtr->count], "english", 128);
 			multiPtr->cvarStr[multiPtr->count] = currLanguage[multiPtr->count];
 		}
 #endif

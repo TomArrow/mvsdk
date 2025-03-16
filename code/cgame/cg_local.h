@@ -2459,7 +2459,7 @@ int			CG_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
 qboolean	CG_COOL_API_DB_PreparedBindNull();
 qboolean	CG_COOL_API_DB_GetMoreResults(int* affectedRows);
 
-uint32_t	trap_FS_GetFileVersion(const char *fileName);
+uint32_t	trap_CG_COOL_API_GetFileVersion(const char *fileName);
 
 /*
 qboolean	trap_Language_IsAsian(void);

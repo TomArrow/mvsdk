@@ -1074,22 +1074,22 @@ int				trap_RealTime(qtime_t *qtime);
 void			trap_R_RemapShader( const char *oldShader, const char *newShader, const char *timeOffset );
 */
 
-qboolean		trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
-int				trap_SP_GetNumLanguages( void );
-void			trap_GetLanguageName( const int languageIndex, char *buffer );
-qboolean		trap_G2_HaveWeGhoul2Models(void *ghoul2);
-void			trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
-qboolean		trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
-int				trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias);
-qboolean		trap_G2API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin);
-void			trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
-qboolean		trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame, const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
-void			trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
-qboolean		trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
-qboolean		trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
-int				trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
-qboolean		trap_G2API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
-uint32_t		trap_FS_GetFileVersion(const char *fileName);
+qboolean        trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
+int             trap_UI_COOL_API_GetNumLanguages(void);
+void            trap_UI_COOL_API_GetLanguageName(const int languageIndex, char *buffer);
+qboolean        trap_UI_COOL_API_HaveWeGhoul2Models(void *ghoul2);
+void            trap_UI_COOL_API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+qboolean        trap_UI_COOL_API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int             trap_UI_COOL_API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias);
+qboolean        trap_UI_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin);
+void            trap_UI_COOL_API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean        trap_UI_COOL_API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame, const int flags, const float animSpeed, const int currentTime, const float setFrame, const int blendTime);
+void            trap_UI_COOL_API_GetGlaName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean        trap_UI_COOL_API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean        trap_UI_COOL_API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+int             trap_UI_COOL_API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+qboolean        trap_UI_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
+uint32_t        trap_UI_COOL_API_GetFileVersion(const char *fileName);
 
 /*
 Ghoul2 Insert Start
