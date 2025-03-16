@@ -715,30 +715,29 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		}
 	}
 
-	soundpath[0] = 0;
+	soundpath[0] = '\0';
 
-	if (f)
+	if (f && fLen >= 0)
 	{
 		trap_FS_Read(soundpath, fLen, f);
+		soundpath[fLen] = '\0';
 
 		i = fLen;
 
-		while (i > 0)
+		while (i >= 0 && soundpath[i] != '\n')
 		{
-			i--;
-
 			if (soundpath[i] == 'f')
 			{
 				isFemale = qtrue;
+				soundpath[i] = '\0';
 			}
-			else if (soundpath[i] == '\n')
-			{
-				if (i > 0) // && soundpath[i - 1] == '\r')
-				{
-					i--;
-				}
-				break;
-			}
+			i--;
+		}
+
+		i = 0;
+
+		while (soundpath[i] && soundpath[i] != '\r' && soundpath[i] != '\n') {
+			i++;
 		}
 
 		soundpath[i] = '\0';
