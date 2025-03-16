@@ -572,6 +572,54 @@ static void CG_ColorFromString( const char *v, vec3_t color ) {
 	}
 }
 
+int CG_OpenFile(const char *qpath, fileHandle_t *f, fsMode_t mode, qboolean isJKA)
+{
+	if (isJKA == (trap_FS_GetFileVersion(qpath) & FILE_VERSION_JKA))
+	{
+		return trap_FS_FOpenFile(qpath, f, mode);
+	}
+	else
+	{
+		*f = 0;
+		return -1;
+	}
+}
+
+static sfxHandle_t CG_LoadPlayerSound(const char *soundPath, const char *soundName, qboolean isJKA)
+{
+	sfxHandle_t sound = 0;
+	if (isJKA)
+	{
+		sound = trap_S_RegisterSound(va("sound/chars/%s/misc/%s", soundPath, soundName));
+	}
+	else
+	{
+		sound = trap_S_RegisterSound(va("sound/%s/%s", soundPath, soundName));
+	}
+	return sound;
+}
+
+static sfxHandle_t CG_RemapPlayerSound(const char *soundPath, const char *soundName, clientInfo_t *ci, qboolean isJKA)
+{
+	int i = 0;
+	if (Q_stricmp(soundName, "taunt") == 0)
+	{
+		return CG_LoadPlayerSound(soundPath, "taunt1", isJKA);
+	}
+	for (i = 1; i <= 5; i++)
+	{
+		if (Q_stricmp(soundName, va("taunt%d", i)) == 0)
+		{
+			return ci->sounds[14]; // "*taunt.wav"
+		}
+	}
+	if (Q_stricmp(soundName, "roll1") == 0)
+	{
+		return ci->sounds[3]; // "*jump1.wav"
+	}
+	return 0;
+}
+
 #define DEFAULT_FEMALE_SOUNDPATH "chars/mp_generic_female/misc"//"chars/tavion/misc"
 #define DEFAULT_MALE_SOUNDPATH "chars/mp_generic_male/misc"//"chars/kyle/misc"
 /*
@@ -590,10 +638,11 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	char		teamname[MAX_QPATH];
 	int			fLen = 0;
 	char		soundpath[MAX_QPATH];
-	char		soundName[1024];
+	char		soundName[MAX_QPATH];
 	const char	*defaultModel;
 	qboolean	isDefaultModel = qfalse;
 	qboolean	isFemale = qfalse;
+	qboolean	isJKAModel = qfalse;
 	fileHandle_t f;
 
 	clientNum = ci - cgs.clientinfo;
@@ -697,21 +746,22 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 
 	fallback = isFemale ? DEFAULT_FEMALE_SOUNDPATH : DEFAULT_MALE_SOUNDPATH;
 	
+	isJKAModel = (trap_FS_GetFileVersion(va("models/players/%s/model.glm", dir)) & FILE_VERSION_JKA);
 
 	if ( ci->skinName[0] == '\0' || !Q_stricmp( "default", ci->skinName ) )
 	{//try default sounds.cfg first
-		fLen = trap_FS_FOpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ);
+		fLen = CG_OpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ, isJKAModel);
 		if ( !f ) 
 		{//no?  Look for _default sounds.cfg
-			fLen = trap_FS_FOpenFile(va("models/players/%s/sounds_default.cfg", dir), &f, FS_READ);
+			fLen = CG_OpenFile(va("models/players/%s/sounds_default.cfg", dir), &f, FS_READ, isJKAModel);
 		}
 	}
 	else
 	{//use the .skin associated with this skin
-		fLen = trap_FS_FOpenFile(va("models/players/%s/sounds_%s.cfg", dir, ci->skinName), &f, FS_READ);
+		fLen = CG_OpenFile(va("models/players/%s/sounds_%s.cfg", dir, ci->skinName), &f, FS_READ, isJKAModel);
 		if ( !f ) 
 		{//fall back to default sounds
-			fLen = trap_FS_FOpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ);
+			fLen = CG_OpenFile(va("models/players/%s/sounds.cfg", dir), &f, FS_READ, isJKAModel);
 		}
 	}
 
@@ -763,8 +813,11 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		// if the model didn't load use the sounds of the default model
 		if (soundpath[0])
 		{
-			ci->sounds[i] = trap_S_RegisterSound( va("sound/%s/%s", soundpath, soundName) );
-
+			ci->sounds[i] = CG_LoadPlayerSound(soundpath, soundName, isJKAModel);
+			if (!ci->sounds[i])
+			{
+				ci->sounds[i] = CG_RemapPlayerSound(soundpath, soundName, ci, isJKAModel);
+			}
 			if (!ci->sounds[i])
 			{
 				if (isFemale)
@@ -783,15 +836,15 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 			{
 				ci->sounds[i] = trap_S_RegisterSound( va("sound/chars/%s/misc/%s", dir, soundName) );
 			}
-
+			if (!ci->sounds[i])
+			{
+				ci->sounds[i] = CG_RemapPlayerSound(fallback, soundName, ci, isJKAModel);
+			}
 			if ( !ci->sounds[i] )
 			{
 				ci->sounds[i] = trap_S_RegisterSound( va("sound/%s/%s", fallback, soundName) );
 			}
 		}
-
-		if (!ci->sounds[i] && i == 15) //"*roll1"
-			ci->sounds[i] = ci->sounds[3]; //fallback to jumpsound if model doesn't have a custom roll sound
 	}
 
 	ci->deferred = qfalse;
