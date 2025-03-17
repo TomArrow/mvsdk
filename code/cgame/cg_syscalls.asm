@@ -241,4 +241,7 @@ equ trap_CG_COOL_API_DB_GetBinary						-1216	;CG_COOL_API_DB_GETBINARY
 equ trap_CG_COOL_API_DB_PreparedBindNull				-1217	;CG_COOL_API_DB_PREPAREDBINDNULL
 equ trap_CG_COOL_API_DB_GetMoreResults					-1218	;CG_COOL_API_DB_GETMORERESULTS
 
+equ trap_CG_COOL_API_SetSkin                    -1225   ; CG_COOL_API_SET_SKIN
 equ trap_CG_COOL_API_GetFileVersion             -1233   ; CG_COOL_API_GET_FILE_VERSION
+equ trap_CG_COOL_API_GetSurfaceRenderStatus     -1234   ; CG_COOL_API_GET_SURFACE_RENDER_STATUS
+equ trap_CG_COOL_API_SkinlessModel              -1235   ; CG_COOL_API_SKINLESS_MODEL

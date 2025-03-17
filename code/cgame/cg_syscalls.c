@@ -354,12 +354,25 @@ qboolean	trap_CG_COOL_API_DB_GetMoreResults(int* affectedRows) {
 	return syscall(CG_COOL_API_DB_GETMORERESULTS, affectedRows);
 }
 
+qboolean trap_CG_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin)
+{
+	return syscall(CG_COOL_API_SET_SKIN, ghoul2, modelIndex, customSkin, renderSkin);
+}
 
 uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName)
 {
 	return syscall(CG_COOL_API_GET_FILE_VERSION, fileName);
 }
 
+int trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, const int modelIndex, const char *surfaceName)
+{
+	return syscall(CG_COOL_API_GET_SURFACE_RENDER_STATUS, ghoul2, modelIndex, surfaceName);
+}
+
+qboolean trap_CG_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex)
+{
+	return syscall(CG_COOL_API_SKINLESS_MODEL, ghlInfo, modelIndex);
+}
 
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
