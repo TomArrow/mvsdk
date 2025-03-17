@@ -174,6 +174,7 @@ qboolean CG_ParseSurfsFile( const char *modelName, const char *skinName, char *s
 	if ( len >= (int)sizeof( text ) - 1 ) 
 	{
 		Com_Printf( "File %s too long\n", sfilename );
+		trap_FS_FCloseFile( f );
 		return qfalse;
 	}
 
@@ -185,6 +186,8 @@ qboolean CG_ParseSurfsFile( const char *modelName, const char *skinName, char *s
 	text_p = text;
 
 	surfOff[0] = surfOn[0] = '\0';
+
+	COM_BeginParseSession ("CG_ParseSurfsFile");
 
 	// read information for surfOff and surfOn
 	while ( 1 ) 
