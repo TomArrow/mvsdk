@@ -2562,7 +2562,7 @@ void CG_ParseMenu(const char *menuFile) {
 
 		if (Q_stricmp(token.string, "menudef") == 0) {
 			// start a new menu
-			Menu_New(handle, qfalse);
+			Menu_New(handle);
 		}
 	}
 	trap_PC_FreeSource(handle);

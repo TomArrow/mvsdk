@@ -6775,13 +6775,13 @@ void Item_Paint(itemDef_t *item)
 
 }
 
-void Menu_Init(menuDef_t *menu, qboolean isJKA) {
+void Menu_Init(menuDef_t *menu) {
 	memset(menu, 0, sizeof(menuDef_t));
 	menu->cursorItem = -1;
 	menu->fadeAmount = DC->Assets.fadeAmount;
 	menu->fadeClamp = DC->Assets.fadeClamp;
 	menu->fadeCycle = DC->Assets.fadeCycle;
-	menu->isJKA = isJKA;
+	menu->isJKA = Menu_IsJKA(NULL);
 
 	Window_Init(&menu->window);
 }
@@ -9603,11 +9603,11 @@ qboolean Menu_Parse(int handle, menuDef_t *menu) {
 Menu_New
 ===============
 */
-void Menu_New(int handle, qboolean isJKA) {
+void Menu_New(int handle) {
 	menuDef_t *menu = &Menus[menuCount];
 
 	if (menuCount < MAX_MENUS) {
-		Menu_Init(menu, isJKA);
+		Menu_Init(menu);
 		if (Menu_Parse(handle, menu)) {
 			Menu_PostParse(menu);
 			menuCount++;

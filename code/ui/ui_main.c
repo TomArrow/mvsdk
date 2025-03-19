@@ -1713,21 +1713,83 @@ void UI_Report() {
 void UI_ParseMenu(const char *menuFile) {
 	int handle;
 	pc_token_t token;
-	qboolean menuIsJKA;
+	qboolean menuIsJKA = qfalse;
+	const char *menuExtension;
+	char menuPath[MAX_QPATH];
+	int fileHandle = -1;
 
 	if (ui_menuFileParseSpam.integer) {
 		Com_Printf("Parsing menu file:%s\n", menuFile);
 	}
 
-	if (ui_JKA.integer == 0) {
-		menuIsJKA = qfalse;
-	} else if (ui_JKA.integer == 1 && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)) {
-		menuIsJKA = !!(trap_UI_COOL_API_GetFileVersion(menuFile) & FILE_VERSION_JKA);
-	} else if (ui_JKA.integer == 2) {
-		menuIsJKA = qtrue;
-	} else {
+	menuExtension = Q_strrchr(menuFile, '.');
+	if (menuExtension == NULL)
+	{
+		menuExtension = "";
+	}
+
+	if (ui_JKA.integer < 0 || ui_JKA.integer > 2)
+	{
+		trap_Cvar_SetValue("ui_JKA", 0.0f);
+		trap_Cvar_Update(&ui_JKA);
+	}
+
+	if (ui_JKA.integer == 0)
+	{ // load menu files from JK2 paths, discard files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			if (ui_menuFileParseSpam.integer)
+			{
+				Com_Printf("Skipping menu file:%s\n", menuFile);
+			}
+			return;
+		}
 		menuIsJKA = qfalse;
 	}
+	else if (ui_JKA.integer == 1)
+	{ // load menu files from JK2 paths, override ".menu" files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu") == 0)
+		{
+			COM_StripExtension(menuFile, menuPath, sizeof(menuPath));
+			COM_DefaultExtension(menuPath, sizeof(menuPath), ".menu_jka");
+			trap_FS_FOpenFile(menuPath, &fileHandle, FS_READ);
+			if (fileHandle)
+			{
+				trap_FS_FCloseFile(fileHandle);
+				if (ui_menuFileParseSpam.integer)
+				{
+					Com_Printf("Skipping menu file:%s\n", menuFile);
+				}
+				return;
+			}
+		}
+		if ((coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+		{
+			menuIsJKA = !!(trap_UI_COOL_API_GetFileVersion(menuFile) & FILE_VERSION_JKA);
+		}
+		else
+		{
+			menuIsJKA = qfalse;
+		}
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			menuIsJKA = qtrue;
+		}
+	}
+	else if (ui_JKA.integer == 2)
+	{ // load menu files from JKA paths, discard files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			if (ui_menuFileParseSpam.integer)
+			{
+				Com_Printf("Skipping menu file:%s\n", menuFile);
+			}
+			return;
+		}
+		menuIsJKA = qtrue;
+	}
+
+	Menu_SetJKA(menuIsJKA);
 
 	handle = trap_PC_LoadSource(menuFile);
 	if (!handle) {
@@ -1764,7 +1826,7 @@ void UI_ParseMenu(const char *menuFile) {
 
 		if (Q_stricmp(token.string, "menudef") == 0) {
 			// start a new menu
-			Menu_New(handle, menuIsJKA);
+			Menu_New(handle);
 		}
 	}
 	trap_PC_FreeSource(handle);
