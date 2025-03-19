@@ -2405,4 +2405,9 @@ int safeatoi(const char* nptr, char** endptr, int base, int* error);
 int clampedIntMult(int a, int b);
 int clampedIntAdd(int a, int b);
 
+byte ParseHexDigit(int c);
+int WriteHexDigit(byte c);
+uint32_t ParseHexNumber(const char *string);
+void WriteHexNumber(uint32_t number, char *string, int stringLength);
+
 #endif	// __Q_SHARED_H

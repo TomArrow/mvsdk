@@ -519,6 +519,7 @@ static void CG_General( centity_t *cent ) {
 	vec3_t				beamOrg;
 	mdxaBone_t			matrix;
 	qboolean			doNotSetModel = qfalse;
+	clientInfo_t		*clientInfo = NULL;
 
 	if (cent->currentState.modelGhoul2 == 127)
 	{ //not ready to be drawn or initialized..
@@ -538,6 +539,21 @@ static void CG_General( centity_t *cent ) {
 
 	if (cent->currentState.eType == ET_BODY && cg.predictedPlayerState.duelInProgress) {
 		return;
+	}
+
+	memset (&ent, 0, sizeof(ent));
+
+	if (cent->currentState.clientNum >= 0 && cent->currentState.clientNum < MAX_CLIENTS)
+	{
+		clientInfo = &cgs.clientinfo[cent->currentState.clientNum];
+	}
+
+	if (clientInfo != NULL)
+	{
+		ent.shaderRGBA[0] = clientInfo->modelColor[0];
+		ent.shaderRGBA[1] = clientInfo->modelColor[1];
+		ent.shaderRGBA[2] = clientInfo->modelColor[2];
+		ent.shaderRGBA[3] = clientInfo->modelColor[3];
 	}
 
 	if (cent->currentState.modelGhoul2 >= G2_MODELPART_HEAD &&
@@ -1022,8 +1038,6 @@ Ghoul2 Insert Start
 /*
 Ghoul2 Insert End
 */
-
-	memset (&ent, 0, sizeof(ent));
 
 	// set frame
 

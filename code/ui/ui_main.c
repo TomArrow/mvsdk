@@ -9137,10 +9137,6 @@ qboolean UI_FeederSelection(float feederFloat, int index, itemDef_t *item)
 				//Update team_model for now here also, because we're using a different team skin system
 				trap_Cvar_Set( "team_model", head->name);
 				//trap_Cvar_Set( "team_headmodel", head->name);
-
-				trap_Cvar_Set ( "char_color_red", "255" ); //standard colors
-				trap_Cvar_Set ( "char_color_green", "255" );
-				trap_Cvar_Set ( "char_color_blue", "255" );
 			}
 
 			updateModel = qtrue;

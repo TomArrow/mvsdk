@@ -1435,6 +1435,45 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		}
 	}
 
+	// model color
+	{
+		uint32_t mc = 0;
+		v = Info_ValueForKey(configstring, "mc");
+		mc = ParseHexNumber(v);
+		if (mc == 0)
+		{
+			mc = 0x646464FF;
+		}
+		newInfo.modelColor[0] = (mc & 0xFF000000) >> 24;
+		newInfo.modelColor[1] = (mc & 0x00FF0000) >> 16;
+		newInfo.modelColor[2] = (mc & 0x0000FF00) >> 8;
+		newInfo.modelColor[3] = (mc & 0x000000FF) >> 0;
+		if (cg_forceModel.integer)
+		{
+			char colorStr[4];
+			trap_Cvar_VariableStringBuffer("char_color_red", colorStr, sizeof(colorStr));
+			newInfo.modelColor[0] = atoi(colorStr);
+			trap_Cvar_VariableStringBuffer("char_color_green", colorStr, sizeof(colorStr));
+			newInfo.modelColor[1] = atoi(colorStr);
+			trap_Cvar_VariableStringBuffer("char_color_blue", colorStr, sizeof(colorStr));
+			newInfo.modelColor[2] = atoi(colorStr);
+			newInfo.modelColor[3] = 255;
+		}
+	}
+
+	// saber model
+	{
+		v = Info_ValueForKey(configstring, "saber1");
+		if (v[0] != '\0')
+		{
+			Q_strncpyz(newInfo.saberModel, v, MAX_QPATH);
+		}
+		else
+		{
+			Q_strncpyz(newInfo.saberModel, "Kyle", MAX_QPATH);
+		}
+	}
+
 	// head model
 /*
 	v = Info_ValueForKey( configstring, "hmodel" );
@@ -6667,6 +6706,23 @@ void CG_Player( centity_t *cent ) {
 	if (cent->isATST)
 	{
 		legs.radius = 400;
+	}
+
+	if (ci->colorOverride[0] != 0.0f ||
+		ci->colorOverride[1] != 0.0f ||
+		ci->colorOverride[2] != 0.0f)
+	{
+		legs.shaderRGBA[0] = ci->colorOverride[0]*255.0f;
+		legs.shaderRGBA[1] = ci->colorOverride[1]*255.0f;
+		legs.shaderRGBA[2] = ci->colorOverride[2]*255.0f;
+		legs.shaderRGBA[3] = ci->modelColor[3];
+	}
+	else
+	{
+		legs.shaderRGBA[0] = ci->modelColor[0];
+		legs.shaderRGBA[1] = ci->modelColor[1];
+		legs.shaderRGBA[2] = ci->modelColor[2];
+		legs.shaderRGBA[3] = ci->modelColor[3];
 	}
 
 // minimal_add:
