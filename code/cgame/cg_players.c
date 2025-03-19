@@ -4,6 +4,10 @@
 #include "cg_local.h"
 #include "../ghoul2/g2.h"
 
+//for g2 surface routines
+#define TURN_ON				0x00000000
+#define TURN_OFF			0x00000100
+
 extern stringID_table_t animTable [MAX_ANIMATIONS+1];
 
 char	*cg_customSoundNames[MAX_CUSTOM_SOUNDS] = {
@@ -146,6 +150,133 @@ static qboolean CG_IsValidCharacterModel(const char *modelName, const char *skin
 	return qtrue;
 }
 
+qboolean CG_FileExists(const char *fileName)
+{
+	if (fileName && fileName[0])
+	{
+		int fh = 0;
+		trap_FS_FOpenFile(fileName, &fh, FS_READ);
+		if (fh > 0)
+		{
+			trap_FS_FCloseFile(fh);
+			return qtrue;
+		}
+	}
+
+	return qfalse;
+}
+
+qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team, float *colors )
+{
+	if (!Q_stricmpn(modelName, "jedi_",5))
+	{ //argh, it's a custom player skin!
+		if (team == TEAM_RED && colors)
+		{
+			colors[0] = 1.0f;
+			colors[1] = 0.0f;
+			colors[2] = 0.0f;
+		}
+		else if (team == TEAM_BLUE && colors)
+		{
+			colors[0] = 0.0f;
+			colors[1] = 0.0f;
+			colors[2] = 1.0f;
+		}
+		return qtrue;
+	}
+
+	if (team == TEAM_RED)
+	{
+		if ( Q_stricmp( "red", skinName ) != 0 )
+		{//not "red"
+			if ( Q_stricmp( "blue", skinName ) == 0
+				|| Q_stricmp( "default", skinName ) == 0
+				|| strchr(skinName, '|')//a multi-skin playerModel
+				|| !CG_IsValidCharacterModel(modelName, skinName) )
+			{
+				Q_strncpyz(skinName, "red", MAX_QPATH);
+				return qfalse;
+			}
+			else
+			{//need to set it to red
+				int len = strlen( skinName );
+				if ( len < 3 )
+				{//too short to be "red"
+					Q_strcat(skinName, MAX_QPATH, "_red");
+				}
+				else
+				{
+					char	*start = &skinName[len-3];
+					if ( Q_strncmp( "red", start, 3 ) != 0 )
+					{//doesn't already end in "red"
+						if ( len+4 >= MAX_QPATH )
+						{//too big to append "_red"
+							Q_strncpyz(skinName, "red", MAX_QPATH);
+							return qfalse;
+						}
+						else
+						{
+							Q_strcat(skinName, MAX_QPATH, "_red");
+						}
+					}
+				}
+				//if file does not exist, set to "red"
+				if ( !CG_FileExists( va( "models/players/%s/model_%s.skin", modelName, skinName ) ) )
+				{
+					Q_strncpyz(skinName, "red", MAX_QPATH);
+				}
+				return qfalse;
+			}
+		}
+
+	}
+	else if (team == TEAM_BLUE)
+	{
+		if ( Q_stricmp( "blue", skinName ) != 0 )
+		{
+			if ( Q_stricmp( "red", skinName ) == 0
+				|| Q_stricmp( "default", skinName ) == 0
+				|| strchr(skinName, '|')//a multi-skin playerModel
+				|| !CG_IsValidCharacterModel(modelName, skinName) )
+			{
+				Q_strncpyz(skinName, "blue", MAX_QPATH);
+				return qfalse;
+			}
+			else
+			{//need to set it to blue
+				int len = strlen( skinName );
+				if ( len < 4 )
+				{//too short to be "blue"
+					Q_strcat(skinName, MAX_QPATH, "_blue");
+				}
+				else 
+				{
+					char	*start = &skinName[len-4];
+					if ( Q_strncmp( "blue", start, 4 ) != 0 )
+					{//doesn't already end in "blue"
+						if ( len+5 >= MAX_QPATH )
+						{//too big to append "_blue"
+							Q_strncpyz(skinName, "blue", MAX_QPATH);
+							return qfalse;
+						}
+						else
+						{
+							Q_strcat(skinName, MAX_QPATH, "_blue");
+						}
+					}
+				}
+				//if file does not exist, set to "blue"
+				if ( !CG_FileExists( va( "models/players/%s/model_%s.skin", modelName, skinName ) ) )
+				{
+					Q_strncpyz(skinName, "blue", MAX_QPATH);
+				}
+				return qfalse;
+			}
+		}
+	}
+	return qtrue;
+}
+
 #define MAX_SURF_LIST_SIZE	1024
 qboolean CG_ParseSurfsFile( const char *modelName, const char *skinName, char *surfOff, char *surfOn ) 
 {
@@ -254,6 +385,10 @@ static qboolean CG_RegisterClientModelname( clientInfo_t *ci, const char *modelN
 	qboolean retriedAlready = qfalse;
 	char	surfOff[MAX_SURF_LIST_SIZE];
 	char	surfOn[MAX_SURF_LIST_SIZE];
+	int		checkSkin;
+	char	*useSkinName;
+	char	iconName[MAX_QPATH * 2];
+	const char *iconStart;
 
 retryModel:
 	if (ci->ATST && clientNum == -1)
@@ -295,16 +430,21 @@ retryModel:
 
 	if ( cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
 	{
-		if (ci->team == TEAM_RED)
-		{
-			Q_strncpyz(ci->skinName, "red", sizeof(ci->skinName));
-			skinName = "red";
-		}
-		else if (ci->team == TEAM_BLUE)
-		{
-			Q_strncpyz(ci->skinName, "blue", sizeof(ci->skinName));
-			skinName = "blue";
-		}
+		CG_ValidateSkinForTeam( ci->modelName, ci->skinName, ci->team, ci->colorOverride );
+		skinName = ci->skinName;
+	}
+	else
+	{
+		ci->colorOverride[0] = ci->colorOverride[1] = ci->colorOverride[2] = 0.0f;
+	}
+
+	if (strchr(skinName, '|'))
+	{//three part skin
+		useSkinName = va("models/players/%s/|%s", modelName, skinName);
+	}
+	else
+	{
+		useSkinName = va("models/players/%s/model_%s.skin", modelName, skinName);
 	}
 
 	if (clientNum != -1 && cg_entities[clientNum].currentState.teamowner && !cg_entities[clientNum].isATST)
@@ -315,7 +455,16 @@ retryModel:
 	}
 	else
 	{
-		ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", modelName, skinName));
+		checkSkin = trap_R_RegisterSkin(useSkinName);
+	
+		if (checkSkin)
+		{
+			ci->torsoSkin = checkSkin;
+		}
+		else
+		{ //fallback to the default skin
+			ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", modelName, skinName));
+		}
 		ci->ATST = qfalse;
 		Com_sprintf( afilename, sizeof( afilename ), "models/players/%s/model.glm", modelName );
 		handle = trap_G2API_InitGhoul2Model(&ci->ghoul2Model, afilename, 0, ci->torsoSkin, 0, 0, 0);
@@ -326,6 +475,9 @@ retryModel:
 	}
 
 	// The model is now loaded.
+
+	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+		trap_CG_COOL_API_SetSkin(ci->ghoul2Model, 0, ci->torsoSkin, ci->torsoSkin);
 
 	GLAName[0] = 0;
 
@@ -409,6 +561,7 @@ retryModel:
 		if ( surfOff[0] )
 		{
 			p = surfOff;
+			COM_BeginParseSession ("CG_RegisterClientModelname: surfOff");
 			while ( 1 ) 
 			{
 				token = COM_ParseExt( &p, qtrue );
@@ -423,6 +576,7 @@ retryModel:
 		if ( surfOn[0] )
 		{
 			p = surfOn;
+			COM_BeginParseSession ("CG_RegisterClientModelname: surfOn");
 			while ( 1 )
 			{
 				token = COM_ParseExt( &p, qtrue );
@@ -484,6 +638,13 @@ retryModel:
 		if (badModel)
 		{
 			goto retryModel;
+		}
+
+		if (!Q_stricmp(modelName, "boba_fett"))
+		{ //special case, turn off the jetpack surfs
+			trap_G2API_SetSurfaceOnOff(ci->ghoul2Model, "torso_rjet", TURN_OFF);
+			trap_G2API_SetSurfaceOnOff(ci->ghoul2Model, "torso_cjet", TURN_OFF);
+			trap_G2API_SetSurfaceOnOff(ci->ghoul2Model, "torso_ljet", TURN_OFF);
 		}
 	}
 
@@ -547,8 +708,30 @@ retryModel:
 	Q_strncpyz (ci->teamName, teamName, sizeof(ci->teamName));
 
 	// Model icon for drawing the portrait on screen
-	ci->modelIcon = trap_R_RegisterShaderNoMip ( va ( "models/players/%s/icon_%s", modelName, skinName ) );
+	if (skinName[0] == '|')
+	{
+		iconStart = &skinName[1];
+	}
+	else
+	{
+		iconStart = &skinName[0];
+	}
 
+	Com_sprintf(iconName, sizeof(iconName), "models/players/%s/icon_%s", modelName, iconStart);
+
+	if (strchr(iconName, '|') != NULL)
+	{
+		char *p = strchr(iconName, '|');
+		*p = '\0';
+	}
+
+	ci->modelIcon = trap_R_RegisterShaderNoMip(iconName);
+
+	if (ci->modelIcon == 0)
+	{
+		Com_sprintf(iconName, sizeof(iconName), "models/players/%s/icon_siege", modelName);
+		ci->modelIcon = trap_R_RegisterShaderNoMip(iconName);
+	}
 	return qtrue;
 }
 
@@ -1340,16 +1523,11 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc )
 	{
-		if (newInfo.team == TEAM_RED)
-		{
-			strcpy(newInfo.skinName, "red");
-//			strcpy(newInfo.headSkinName, "red");
-		}
-		if (newInfo.team == TEAM_BLUE)
-		{
-			strcpy(newInfo.skinName, "blue");
-//			strcpy(newInfo.headSkinName, "blue");
-		}
+		CG_ValidateSkinForTeam( newInfo.modelName, newInfo.skinName, newInfo.team, newInfo.colorOverride );
+	}
+	else
+	{
+		newInfo.colorOverride[0] = newInfo.colorOverride[1] = newInfo.colorOverride[2] = 0.0f;
 	}
 
 	// scan for an existing clientinfo that matches this modelname
@@ -6974,14 +7152,14 @@ doEssentialTwo:
 			//Render a scaled version of the model's hand with a n337 looking shader
 			{
 				const char *rotateBone;
-				char *limbName;
-				char *limbCapName;
+				char limbName[MAX_QPATH];
+				char limbCapName[MAX_QPATH];
 				vec3_t armAng;
 				float wv = sin( cg.time * 0.003f ) * 0.08f + 0.1f;
 
 				rotateBone = "lradius";
-				limbName = "l_arm";
-				limbCapName = "l_arm_cap_torso_off";
+				CG_GetRootSurfNameWithVariant( cent->ghoul2, "l_arm", limbName, sizeof(limbName) );
+				Com_sprintf( limbCapName, sizeof( limbCapName ), "%s_cap_torso_off", limbName );
 
 				if (cent->grip_arm.ghoul2 && trap_G2_HaveWeGhoul2Models(cent->grip_arm.ghoul2))
 				{
@@ -7687,14 +7865,15 @@ stillDoSaber:
 		if (cent->currentState.number != cg.snap->ps.duelIndex &&
 			cent->currentState.number != cg.snap->ps.clientNum)
 		{ //everyone not involved in the duel is drawn very dark
-			legs.shaderRGBA[0] = 50;
-			legs.shaderRGBA[1] = 50;
-			legs.shaderRGBA[2] = 50;
+			legs.shaderRGBA[0] /= 5.0f;
+			legs.shaderRGBA[1] /= 5.0f;
+			legs.shaderRGBA[2] /= 5.0f;
 			legs.renderfx |= RF_RGB_TINT;
 		}
 		else if (cg_privateDuelShell.integer)
 		{ //adjust the glow by how far away you are from your dueling partner
 			centity_t *duelEnt;
+			const unsigned char savRGBA[3] = {legs.shaderRGBA[0],legs.shaderRGBA[1],legs.shaderRGBA[2]};
 
 			duelEnt = &cg_entities[cg.snap->ps.duelIndex];
 			
@@ -7716,32 +7895,21 @@ stillDoSaber:
 					subLen = 1020;
 				}
 
-				legs.shaderRGBA[0] = 255 - subLen/4;
-				legs.shaderRGBA[1] = 255 - subLen/4;
-				legs.shaderRGBA[2] = 255 - subLen/4;
-
-				if (legs.shaderRGBA[2] < 1) legs.shaderRGBA[2] = 1;
+				legs.shaderRGBA[0] = max(255-subLen/4,1);
+				legs.shaderRGBA[1] = max(255-subLen/4,1);
+				legs.shaderRGBA[2] = max(255-subLen/4,1);
 
 				legs.renderfx &= ~RF_RGB_TINT;
 				legs.renderfx &= ~RF_FORCE_ENT_ALPHA;
 				legs.customShader = cgs.media.forceShell;
 		
-				trap_R_AddRefEntityToScene( &legs );
+				trap_R_AddRefEntityToScene( &legs );	//draw the shell
 
-				legs.customShader = 0;
+				legs.customShader = 0;	//reset to player model
 
-				legs.shaderRGBA[0] = 255 - subLen/8;
-				legs.shaderRGBA[1] = 255 - subLen/8;
-				legs.shaderRGBA[2] = 255 - subLen/8;
-
-				if (legs.shaderRGBA[2] < 1)
-				{
-					legs.shaderRGBA[2] = 1;
-				}
-				if (legs.shaderRGBA[2] > 255)
-				{
-					legs.shaderRGBA[2] = 255;
-				}
+				legs.shaderRGBA[0] = max(savRGBA[0]-subLen/8,1);
+				legs.shaderRGBA[1] = max(savRGBA[1]-subLen/8,1);
+				legs.shaderRGBA[2] = max(savRGBA[2]-subLen/8,1);
 
 				if (subLen <= 1024)
 				{

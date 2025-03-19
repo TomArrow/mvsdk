@@ -482,6 +482,30 @@ char *forceHolocronModels[] = {
 	"models/map_objects/mp/saber_throw.md3"		//FP_SABERTHROW
 };
 
+#define	MAX_VARIANTS 8
+qboolean CG_GetRootSurfNameWithVariant( void *ghoul2, const char *rootSurfName, char *returnSurfName, int returnSize )
+{
+	if ( !ghoul2 || !(coolApi & COOL_APIFEATURE_JEDI_ACADEMY) || !trap_CG_COOL_API_GetSurfaceRenderStatus( ghoul2, 0, rootSurfName ) )
+	{//see if the basic name without variants is on
+		Q_strncpyz( returnSurfName, rootSurfName, returnSize );
+		return qtrue;
+	}
+	else
+	{//check variants
+		int i;
+		for ( i = 0; i < MAX_VARIANTS; i++ )
+		{
+			Com_sprintf( returnSurfName, returnSize, "%s%c", rootSurfName, 'a'+i );
+			if ( !trap_CG_COOL_API_GetSurfaceRenderStatus( ghoul2, 0, returnSurfName ) )
+			{
+				return qtrue;
+			}
+		}
+	}
+	Q_strncpyz( returnSurfName, rootSurfName, returnSize );
+	return qfalse;
+}
+
 /*
 ==================
 CG_General
@@ -548,11 +572,12 @@ static void CG_General( centity_t *cent ) {
 
 		if (!cent->ghoul2)
 		{
-			// const char *limbBone;
+			const char *limbBone;
 			const char *rotateBone;
-			char *limbName;
-			char *limbCapName;
-			char *stubCapName;
+			char	limbName[MAX_QPATH];
+			char	stubName[MAX_QPATH];
+			char	limbCapName[MAX_QPATH];
+			char	stubCapName[MAX_QPATH];
 			char *limbTagName;
 			char *stubTagName;
 			int limb_anim;
@@ -574,88 +599,94 @@ static void CG_General( centity_t *cent ) {
 
 			if (cent->currentState.modelGhoul2 == G2_MODELPART_HEAD)
 			{
-				// limbBone = "cervical";
+				limbBone = "cervical";
 				rotateBone = "cranium";
-				limbName = "head";
-				limbCapName = "head_cap_torso_off";
-				stubCapName = "torso_cap_head_off";
+				Q_strncpyz( limbName , "head", sizeof( limbName  ) );
+				Q_strncpyz( limbCapName, "head_cap_torso_off", sizeof( limbCapName ) );
+				Q_strncpyz( stubCapName, "torso_cap_head_off", sizeof( stubCapName ) );
 				limbTagName = "*head_cap_torso";
 				stubTagName = "*torso_cap_head";
 				limb_anim = BOTH_DISMEMBER_HEAD1;
 			}
 			else if (cent->currentState.modelGhoul2 == G2_MODELPART_WAIST)
 			{
-				// limbBone = "pelvis";
+				limbBone = "pelvis";
 				rotateBone = "thoracic";
-				limbName = "torso";
-				limbCapName = "torso_cap_hips_off";
-				stubCapName = "hips_cap_torso_off";
+				Q_strncpyz( limbName, "torso", sizeof( limbName ) );
+				Q_strncpyz( limbCapName, "torso_cap_hips_off", sizeof( limbCapName ) );
+				Q_strncpyz( stubCapName, "hips_cap_torso_off", sizeof( stubCapName ) );
 				limbTagName = "*torso_cap_hips";
 				stubTagName = "*hips_cap_torso";
 				limb_anim = BOTH_DISMEMBER_TORSO1;
 			}
 			else if (cent->currentState.modelGhoul2 == G2_MODELPART_LARM)
 			{
-				// limbBone = "lhumerus";
+				limbBone = "lhumerus";
 				rotateBone = "lradius";
-				limbName = "l_arm";
-				limbCapName = "l_arm_cap_torso_off";
-				stubCapName = "torso_cap_l_arm_off";
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "l_arm", limbName, sizeof(limbName) );
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "torso", stubName, sizeof(stubName) );
+				Com_sprintf( limbCapName, sizeof( limbCapName ), "%s_cap_torso_off", limbName );
+				Com_sprintf( stubCapName, sizeof( stubCapName), "%s_cap_l_arm_off", stubName );
 				limbTagName = "*l_arm_cap_torso";
 				stubTagName = "*torso_cap_l_arm";
 				limb_anim = BOTH_DISMEMBER_LARM;
 			}
 			else if (cent->currentState.modelGhoul2 == G2_MODELPART_RARM)
 			{
-				// limbBone = "rhumerus";
+				limbBone = "rhumerus";
 				rotateBone = "rradius";
-				limbName = "r_arm";
-				limbCapName = "r_arm_cap_torso_off";
-				stubCapName = "torso_cap_r_arm_off";
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "r_arm", limbName, sizeof(limbName) );
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "torso", stubName, sizeof(stubName) );
+				Com_sprintf( limbCapName, sizeof( limbCapName ), "%s_cap_torso_off", limbName );
+				Com_sprintf( stubCapName, sizeof( stubCapName), "%s_cap_r_arm_off", stubName );
 				limbTagName = "*r_arm_cap_torso";
 				stubTagName = "*torso_cap_r_arm";
 				limb_anim = BOTH_DISMEMBER_RARM;
 			}
 			else if (cent->currentState.modelGhoul2 == G2_MODELPART_RHAND)
 			{
-				// limbBone = "rradiusX";
+				limbBone = "rradiusX";
 				rotateBone = "rhand";
-				limbName = "r_hand";
-				limbCapName = "r_hand_cap_r_arm_off";
-				stubCapName = "r_arm_cap_r_hand_off";
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "r_hand", limbName, sizeof(limbName) );
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "r_arm", stubName, sizeof(stubName) );
+				Com_sprintf( limbCapName, sizeof( limbCapName ), "%s_cap_r_arm_off", limbName );
+				Com_sprintf( stubCapName, sizeof( stubCapName), "%s_cap_r_hand_off", stubName );
 				limbTagName = "*r_hand_cap_r_arm";
 				stubTagName = "*r_arm_cap_r_hand";
 				limb_anim = BOTH_DISMEMBER_RARM;
 			}
 			else if (cent->currentState.modelGhoul2 == G2_MODELPART_LLEG)
 			{
-				// limbBone = "lfemurYZ";
+				limbBone = "lfemurYZ";
 				rotateBone = "ltibia";
-				limbName = "l_leg";
-				limbCapName = "l_leg_cap_hips_off";
-				stubCapName = "hips_cap_l_leg_off";
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "l_leg", limbName, sizeof(limbName) );
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "hips", stubName, sizeof(stubName) );
+				Com_sprintf( limbCapName, sizeof( limbCapName ), "%s_cap_hips_off", limbName );
+				Com_sprintf( stubCapName, sizeof( stubCapName), "%s_cap_l_leg_off", stubName );
 				limbTagName = "*l_leg_cap_hips";
 				stubTagName = "*hips_cap_l_leg";
 				limb_anim = BOTH_DISMEMBER_LLEG;
 			}
 			else if (cent->currentState.modelGhoul2 == G2_MODELPART_RLEG)
 			{
-				// limbBone = "rfemurYZ";
+				limbBone = "rfemurYZ";
 				rotateBone = "rtibia";
-				limbName = "r_leg";
-				limbCapName = "r_leg_cap_hips_off";
-				stubCapName = "hips_cap_r_leg_off";
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "r_leg", limbName, sizeof(limbName) );
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "hips", stubName, sizeof(stubName) );
+				Com_sprintf( limbCapName, sizeof( limbCapName ), "%s_cap_hips_off", limbName );
+				Com_sprintf( stubCapName, sizeof( stubCapName), "%s_cap_r_leg_off", stubName );
 				limbTagName = "*r_leg_cap_hips";
 				stubTagName = "*hips_cap_r_leg";
 				limb_anim = BOTH_DISMEMBER_RLEG;
 			}
 			else
-			{
-				// limbBone = "rfemurYZ";
+			{//umm... just default to the right leg, I guess (same as on server)
+				limbBone = "rfemurYZ";
 				rotateBone = "rtibia";
-				limbName = "r_leg";
-				limbCapName = "r_leg_cap_hips_off";
-				stubCapName = "hips_cap_r_leg_off";
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "r_leg", limbName, sizeof(limbName) );
+				CG_GetRootSurfNameWithVariant( clEnt->ghoul2, "hips", stubName, sizeof(stubName) );
+				Com_sprintf( limbCapName, sizeof( limbCapName ), "%s_cap_hips_off", limbName );
+				Com_sprintf( stubCapName, sizeof( stubCapName), "%s_cap_r_leg_off", stubName );
 				limbTagName = "*r_leg_cap_hips";
 				stubTagName = "*hips_cap_r_leg";
 				limb_anim = BOTH_DISMEMBER_RLEG;
@@ -1015,7 +1046,30 @@ Ghoul2 Insert End
 	{ //If the game says this guy uses a ghoul2 model and the g2 instance handle is null, then initialize it
 		if (!cent->ghoul2 && !cent->currentState.bolt1)
 		{
-			trap_G2API_InitGhoul2Model(&cent->ghoul2, CG_ConfigString( CS_MODELS+cent->currentState.modelindex ), 0, 0, 0, 0, 0);
+			char skinName[MAX_QPATH];
+			const char *modelName = CG_ConfigString( CS_MODELS+cent->currentState.modelindex );
+			int l;
+			int skin = 0;
+
+			trap_G2API_InitGhoul2Model(&cent->ghoul2, modelName, 0, 0, 0, 0, 0);
+			if (cent->ghoul2 && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) && trap_CG_COOL_API_SkinlessModel(cent->ghoul2, 0))
+			{ //well, you'd never want a skinless model, so try to get his skin...
+				Q_strncpyz(skinName, modelName, MAX_QPATH);
+				l = strlen(skinName);
+				while (l > 0 && skinName[l] != '/')
+				{ //parse back to first /
+					l--;
+				}
+				if (skinName[l] == '/')
+				{ //got it
+					l++;
+					skinName[l] = 0;
+					Q_strcat(skinName, MAX_QPATH, "model_default.skin");
+		
+					skin = trap_R_RegisterSkin(skinName);
+				}
+				trap_CG_COOL_API_SetSkin(cent->ghoul2, 0, skin, skin);
+			}
 		}
 		else if (cent->currentState.bolt1)
 		{

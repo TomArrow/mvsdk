@@ -605,6 +605,7 @@ typedef struct {
 	char			username[MAX_QPATH];
 
 	playerMode_e	playerMode; // tommyternal gamemodes (duel, ironman etc)
+	float			colorOverride[3];
 } clientInfo_t;
 
 
@@ -2125,7 +2126,7 @@ qhandle_t CG_StatusHandle(int task);
 
 
 //
-// cg_player.c
+// cg_players.c
 //
 void CG_Player( centity_t *cent );
 void CG_ResetPlayerEntity( centity_t *cent );
@@ -2177,6 +2178,7 @@ void CG_PositionEntityOnTag( refEntity_t *entity, const refEntity_t *parent,
 							qhandle_t parentModel, char *tagName );
 void CG_PositionRotatedEntityOnTag( refEntity_t *entity, const refEntity_t *parent, 
 							qhandle_t parentModel, char *tagName );
+qboolean CG_GetRootSurfNameWithVariant( void *ghoul2, const char *rootSurfName, char *returnSurfName, int returnSize );
 
 /*
 Ghoul2 Insert Start
