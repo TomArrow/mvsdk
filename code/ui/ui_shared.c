@@ -8398,10 +8398,25 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 	if (!Q_stricmp(token.string,"feeder") && item->special == FEEDER_PLAYER_SPECIES) 
 	{
 #ifndef JK2_CGAME
+		char buffer[2];
+		char name[MAX_QPATH];
+		const char *pName;
 		for (; multiPtr->count < uiInfo.playerSpeciesCount; multiPtr->count++)
 		{
-			multiPtr->cvarList[multiPtr->count] = String_Alloc(Q_strupr(va("@MENUS_%s",uiInfo.playerSpecies[multiPtr->count].Name )));	//look up translation
-			multiPtr->cvarStr[multiPtr->count] = uiInfo.playerSpecies[multiPtr->count].Name;	//value
+			Com_sprintf(name, sizeof(name), "@MENUS_%s", uiInfo.playerSpecies[multiPtr->count].Name);
+			Q_strupr(name);
+			if (trap_SP_GetStringTextString(&name[1], buffer, sizeof(buffer)))
+			{
+				pName = name;
+			}
+			else
+			{
+				// @MENUS_JEDI_TF
+				//        ^
+				pName = &name[7];
+			}
+			multiPtr->cvarList[multiPtr->count] = String_Alloc(pName);
+			multiPtr->cvarStr[multiPtr->count] = uiInfo.playerSpecies[multiPtr->count].Name;
 		}
 #endif
 		return qtrue;

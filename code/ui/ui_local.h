@@ -756,14 +756,14 @@ typedef struct {
 } modInfo_t;
 
 typedef struct {
-	char		Name[64];
+	char		Name[MAX_QPATH];
 	int			SkinHeadCount;
 	char		SkinHeadNames[MAX_PLAYERMODELS][16];
 	int			SkinTorsoCount;
 	char		SkinTorsoNames[MAX_PLAYERMODELS][16];
 	int			SkinLegCount;
 	char		SkinLegNames[MAX_PLAYERMODELS][16];
-	char		ColorShader[MAX_PLAYERMODELS][64];
+	char		ColorShader[MAX_PLAYERMODELS][MAX_QPATH];
 	int			ColorCount;
 	char		ColorActionText[MAX_PLAYERMODELS][128];
 } playerSpeciesInfo_t;
