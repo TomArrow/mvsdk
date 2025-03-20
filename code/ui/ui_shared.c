@@ -7365,7 +7365,7 @@ qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTim
 				char GLAName[MAX_QPATH];	
 
 				GLAName[0] = 0;
-				trap_UI_COOL_API_GetGlaName(item->ghoul2, 0, GLAName);
+				trap_UI_COOL_API_GetGlaName(item->ghoul2, 0, GLAName, sizeof(GLAName));
 
 				if (GLAName[0])
 				{
@@ -8417,7 +8417,7 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 
 			// The cvar value that goes into ui_se_language
 			if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
-				trap_UI_COOL_API_GetLanguageName( (const int) multiPtr->count,(char *) currLanguage[multiPtr->count] );
+				trap_UI_COOL_API_GetLanguageName(multiPtr->count, currLanguage[multiPtr->count], 128);
 			else
 				Q_strncpyz(currLanguage[multiPtr->count], "english", 128);
 			multiPtr->cvarStr[multiPtr->count] = currLanguage[multiPtr->count];

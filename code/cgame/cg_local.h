@@ -2465,7 +2465,7 @@ qboolean	CG_COOL_API_DB_GetMoreResults(int* affectedRows);
 
 qboolean	trap_CG_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin);
 uint32_t	trap_CG_COOL_API_GetFileVersion(const char *fileName);
-int			trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, const int modelIndex, const char *surfaceName);
+int			trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName);
 qboolean	trap_CG_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex);
 
 /*

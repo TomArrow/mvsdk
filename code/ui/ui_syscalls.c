@@ -656,9 +656,9 @@ int trap_UI_COOL_API_GetNumLanguages(void)
 	return syscall(UI_COOL_API_GET_NUM_LANGUAGES);
 }
 
-void trap_UI_COOL_API_GetLanguageName(const int languageIndex, char *buffer)
+void trap_UI_COOL_API_GetLanguageName(int languageIndex, char *buffer, unsigned int bufferSize)
 {
-	syscall(UI_COOL_API_GET_LANGUAGE_NAME, languageIndex, buffer);
+	syscall(UI_COOL_API_GET_LANGUAGE_NAME, languageIndex, buffer, bufferSize);
 }
 
 qboolean trap_UI_COOL_API_HaveWeGhoul2Models(void *ghoul2)
@@ -671,7 +671,7 @@ void trap_UI_COOL_API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, 
 	syscall(UI_COOL_API_GIVE_ME_VECTOR_FROM_MATRIX, boltMatrix, flags, vec);
 }
 
-qboolean trap_UI_COOL_API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale)
+qboolean trap_UI_COOL_API_GetBoltMatrix(void *ghoul2, int modelIndex, int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, int frameNum, qhandle_t *modelList, vec3_t scale)
 {
 	return (qboolean)(syscall(UI_COOL_API_GET_BOLT_MATRIX, ghoul2, modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale));
 }
@@ -691,14 +691,14 @@ void trap_UI_COOL_API_CleanGhoul2Models(void **ghoul2Ptr)
 	syscall(UI_COOL_API_CLEAN_GHOUL2_MODELS, ghoul2Ptr);
 }
 
-qboolean trap_UI_COOL_API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame, const int flags, const float animSpeed, const int currentTime, const float setFrame, const int blendTime)
+qboolean trap_UI_COOL_API_SetBoneAnim(void *ghoul2, int modelIndex, const char *boneName, int startFrame, int endFrame, int flags, float animSpeed, int currentTime, float setFrame, int blendTime)
 {
 	return syscall(UI_COOL_API_SET_BONE_ANIM, ghoul2, modelIndex, boneName, startFrame, endFrame, flags, PASSFLOAT(animSpeed), currentTime, PASSFLOAT(setFrame), blendTime);
 }
 
-void trap_UI_COOL_API_GetGlaName(void *ghoul2, int modelIndex, char *fillBuf)
+void trap_UI_COOL_API_GetGlaName(void *ghoul2, int modelIndex, char *fillBuf, unsigned int bufferSize)
 {
-	syscall(UI_COOL_API_GET_GLA_NAME, ghoul2, modelIndex, fillBuf);
+	syscall(UI_COOL_API_GET_GLA_NAME, ghoul2, modelIndex, fillBuf, bufferSize);
 }
 
 qboolean trap_UI_COOL_API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex)

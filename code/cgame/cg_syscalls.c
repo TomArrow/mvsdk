@@ -364,7 +364,7 @@ uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName)
 	return syscall(CG_COOL_API_GET_FILE_VERSION, fileName);
 }
 
-int trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, const int modelIndex, const char *surfaceName)
+int trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName)
 {
 	return syscall(CG_COOL_API_GET_SURFACE_RENDER_STATUS, ghoul2, modelIndex, surfaceName);
 }

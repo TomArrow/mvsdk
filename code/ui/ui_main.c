@@ -11355,7 +11355,7 @@ void UI_UpdateTextLanguageCvar(qboolean updateCvarFromJKA)
 		languageIndex = 0;
 	}
 
-	trap_UI_COOL_API_GetLanguageName(languageIndex, languageName);
+	trap_UI_COOL_API_GetLanguageName(languageIndex, languageName, sizeof(languageName));
 
 	if (Q_stricmp(se_language_cvar, languageName) != 0)
 	{
@@ -11367,7 +11367,7 @@ void UI_UpdateTextLanguageCvar(qboolean updateCvarFromJKA)
 		{
 			for (languageIndex = 0; languageIndex < numLanguages; languageIndex++)
 			{
-				trap_UI_COOL_API_GetLanguageName(languageIndex, languageName);
+				trap_UI_COOL_API_GetLanguageName(languageIndex, languageName, sizeof(languageName));
 				if (Q_stricmp(languageName, se_language_cvar) == 0)
 				{
 					break;
