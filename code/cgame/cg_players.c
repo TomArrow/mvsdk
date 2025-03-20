@@ -7929,7 +7929,9 @@ stillDoSaber:
 		else if (cg_privateDuelShell.integer)
 		{ //adjust the glow by how far away you are from your dueling partner
 			centity_t *duelEnt;
-			const unsigned char savRGBA[3] = {legs.shaderRGBA[0],legs.shaderRGBA[1],legs.shaderRGBA[2]};
+			unsigned char savRGBA[3];
+
+			VectorCopy(legs.shaderRGBA, savRGBA);
 
 			duelEnt = &cg_entities[cg.snap->ps.duelIndex];
 			
