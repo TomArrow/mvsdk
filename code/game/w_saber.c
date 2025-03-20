@@ -2,7 +2,7 @@
 #include "bg_local.h" //Only because we use PM_SetAnim here once.
 #include "w_saber.h"
 #include "ai_main.h"
-#include "../ghoul2/g2.h"
+#include "../ghoul2/G2.h"
 
 extern bot_state_t *botstates[MAX_CLIENTS];
 extern qboolean InFront( vec3_t spot, vec3_t from, vec3_t fromAngles, float threshHold );

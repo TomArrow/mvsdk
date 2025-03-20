@@ -39,7 +39,7 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/qcommon/fp16.h"
 	"${SRCDir}/qcommon/levenshtein.h"
 
-	"${SRCDir}/ghoul2/g2.h"
+	"${SRCDir}/ghoul2/G2.h"
 )
 
 set(MVCGAMESOURCES
