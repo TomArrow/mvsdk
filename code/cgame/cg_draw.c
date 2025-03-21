@@ -2831,7 +2831,12 @@ static float CG_DrawEnemyInfo ( float y )
 
 	if ( ci->modelIcon )
 	{
+		if (ci->useModelColor)
+		{
+			trap_R_SetColor(ci->modelColorNormalized);
+		}
 		CG_DrawPic( cgs.screenWidth - size - 5, y, size, size, ci->modelIcon );
+		trap_R_SetColor(NULL);
 	}
 
 	y += size;

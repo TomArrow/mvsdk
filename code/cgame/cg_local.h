@@ -607,6 +607,8 @@ typedef struct {
 	playerMode_e	playerMode; // tommyternal gamemodes (duel, ironman etc)
 	float			colorOverride[3];
 	byte			modelColor[4];
+	vec4_t			modelColorNormalized;
+	qboolean		useModelColor;
 	char			saberModel[MAX_QPATH];
 } clientInfo_t;
 

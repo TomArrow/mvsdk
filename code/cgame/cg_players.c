@@ -1459,6 +1459,14 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 			newInfo.modelColor[2] = atoi(colorStr);
 			newInfo.modelColor[3] = 255;
 		}
+		if (strchr(newInfo.skinName, '|') != NULL)
+		{
+			newInfo.useModelColor = qtrue;
+			newInfo.modelColorNormalized[0] = newInfo.modelColor[0] / 255.0f;
+			newInfo.modelColorNormalized[1] = newInfo.modelColor[1] / 255.0f;
+			newInfo.modelColorNormalized[2] = newInfo.modelColor[2] / 255.0f;
+			newInfo.modelColorNormalized[3] = 1.0f;
+		}
 	}
 
 	// saber model
