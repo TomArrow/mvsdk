@@ -1019,6 +1019,15 @@ int			G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
 qboolean	G_COOL_API_DB_PreparedBindNull();
 qboolean	G_COOL_API_DB_GetMoreResults(int* affectedRows);
 
+// COOL_APIFEATURE_JEDI_ACADEMY
+int         trap_G_COOL_API_GetNumLanguages(void);
+void        trap_G_COOL_API_GetLanguageName(int languageIndex, char *buffer, unsigned int bufferSize);
+void        trap_G_COOL_API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+qboolean    trap_G_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin);
+qboolean    trap_G_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex);
+int         trap_G_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName);
+qboolean    trap_G_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
+uint32_t    trap_G_COOL_API_GetFileVersion(const char *fileName);
 
 //qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
 qboolean	G_InsertRun(finishedRunInfo_t* runInfo);

@@ -354,14 +354,25 @@ qboolean	trap_CG_COOL_API_DB_GetMoreResults(int* affectedRows) {
 	return syscall(CG_COOL_API_DB_GETMORERESULTS, affectedRows);
 }
 
+// COOL_APIFEATURE_JEDI_ACADEMY
+int trap_CG_COOL_API_GetNumLanguages(void)
+{
+	return syscall(CG_COOL_API_GET_NUM_LANGUAGES);
+}
+
+void trap_CG_COOL_API_GetLanguageName(int languageIndex, char *buffer, unsigned int bufferSize)
+{
+	syscall(CG_COOL_API_GET_LANGUAGE_NAME, languageIndex, buffer, bufferSize);
+}
+
 qboolean trap_CG_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin)
 {
 	return syscall(CG_COOL_API_SET_SKIN, ghoul2, modelIndex, customSkin, renderSkin);
 }
 
-uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName)
+qboolean trap_CG_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex)
 {
-	return syscall(CG_COOL_API_GET_FILE_VERSION, fileName);
+	return syscall(CG_COOL_API_SKINLESS_MODEL, ghlInfo, modelIndex);
 }
 
 int trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName)
@@ -369,9 +380,14 @@ int trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const 
 	return syscall(CG_COOL_API_GET_SURFACE_RENDER_STATUS, ghoul2, modelIndex, surfaceName);
 }
 
-qboolean trap_CG_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex)
+qboolean trap_CG_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel)
 {
-	return syscall(CG_COOL_API_SKINLESS_MODEL, ghlInfo, modelIndex);
+	return syscall(CG_COOL_API_ATTACH_G2_MODEL, ghoul2From, modelIndexFrom, ghoul2To, toBoltIndex, toModel);
+}
+
+uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName)
+{
+	return syscall(CG_COOL_API_GET_FILE_VERSION, fileName);
 }
 
 /* 1.04 */

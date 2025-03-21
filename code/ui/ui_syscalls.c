@@ -651,6 +651,7 @@ qboolean	trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
 	return syscall(UI_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
 }
 
+// COOL_APIFEATURE_JEDI_ACADEMY
 int trap_UI_COOL_API_GetNumLanguages(void)
 {
 	return syscall(UI_COOL_API_GET_NUM_LANGUAGES);
@@ -684,6 +685,16 @@ int trap_UI_COOL_API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int
 qboolean trap_UI_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin)
 {
 	return syscall(UI_COOL_API_SET_SKIN, ghoul2, modelIndex, customSkin, renderSkin);
+}
+
+qboolean trap_UI_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_COOL_API_SKINLESS_MODEL, ghlInfo, modelIndex);
+}
+
+int trap_UI_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName)
+{
+	return syscall(UI_COOL_API_GET_SURFACE_RENDER_STATUS, ghoul2, modelIndex, surfaceName);
 }
 
 void trap_UI_COOL_API_CleanGhoul2Models(void **ghoul2Ptr)

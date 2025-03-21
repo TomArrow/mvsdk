@@ -1078,6 +1078,8 @@ void			trap_R_RemapShader( const char *oldShader, const char *newShader, const c
 */
 
 qboolean        trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
+
+// COOL_APIFEATURE_JEDI_ACADEMY
 int             trap_UI_COOL_API_GetNumLanguages(void);
 void            trap_UI_COOL_API_GetLanguageName(int languageIndex, char *buffer, unsigned int bufferSize);
 qboolean        trap_UI_COOL_API_HaveWeGhoul2Models(void *ghoul2);
@@ -1085,6 +1087,8 @@ void            trap_UI_COOL_API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, 
 qboolean        trap_UI_COOL_API_GetBoltMatrix(void *ghoul2, int modelIndex, int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, int frameNum, qhandle_t *modelList, vec3_t scale);
 int             trap_UI_COOL_API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias);
 qboolean        trap_UI_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin);
+qboolean        trap_UI_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex);
+int             trap_UI_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName);
 void            trap_UI_COOL_API_CleanGhoul2Models(void **ghoul2Ptr);
 qboolean        trap_UI_COOL_API_SetBoneAnim(void *ghoul2, int modelIndex, const char *boneName, int startFrame, int endFrame, int flags, float animSpeed, int currentTime, float setFrame, int blendTime);
 void            trap_UI_COOL_API_GetGlaName(void *ghoul2, int modelIndex, char *fillBuf, unsigned int bufferSize);

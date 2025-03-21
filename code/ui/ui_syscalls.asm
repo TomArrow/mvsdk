@@ -197,18 +197,22 @@ equ trap_UI_DeleteDLFile                    -304    ; UI_MVAPI_DELDLFILE
 
 
 equ trap_UI_COOL_API_GlResolutionChanged    -1105   ; UI_COOL_API_GLRESOLUTIONCHANGED
-equ trap_UI_COOL_API_GetNumLanguages        -1219   ; UI_COOL_API_GET_NUM_LANGUAGES
-equ trap_UI_COOL_API_GetLanguageName        -1220   ; UI_COOL_API_GET_LANGUAGE_NAME
-equ trap_UI_COOL_API_HaveWeGhoul2Models     -1221   ; UI_COOL_API_HAVE_WE_GHOUL2_MODELS
-equ trap_UI_COOL_API_GiveMeVectorFromMatrix -1222   ; UI_COOL_API_GIVE_ME_VECTOR_FROM_MATRIX
-equ trap_UI_COOL_API_GetBoltMatrix          -1223   ; UI_COOL_API_GET_BOLT_MATRIX
-equ trap_UI_COOL_API_InitGhoul2Model        -1224   ; UI_COOL_API_INIT_GHOUL2_MODEL
-equ trap_UI_COOL_API_SetSkin                -1225   ; UI_COOL_API_SET_SKIN
-equ trap_UI_COOL_API_CleanGhoul2Models      -1226   ; UI_COOL_API_CLEAN_GHOUL2_MODELS
-equ trap_UI_COOL_API_SetBoneAnim            -1227   ; UI_COOL_API_SET_BONE_ANIM
-equ trap_UI_COOL_API_GetGlaName             -1228   ; UI_COOL_API_GET_GLA_NAME
-equ trap_UI_COOL_API_HasGhoul2ModelOnIndex  -1229   ; UI_COOL_API_HAS_GHOUL2_MODEL_ON_INDEX
-equ trap_UI_COOL_API_RemoveGhoul2Model      -1230   ; UI_COOL_API_REMOVE_GHOUL2_MODEL
-equ trap_UI_COOL_API_AddBolt                -1231   ; UI_COOL_API_ADD_BOLT
-equ trap_UI_COOL_API_AttachG2Model          -1232   ; UI_COOL_API_ATTACH_G2_MODEL
-equ trap_UI_COOL_API_GetFileVersion         -1233   ; UI_COOL_API_GET_FILE_VERSION
+
+; COOL_APIFEATURE_JEDI_ACADEMY
+equ trap_UI_COOL_API_GetNumLanguages           -2001    ; UI_COOL_API_GET_NUM_LANGUAGES
+equ trap_UI_COOL_API_GetLanguageName           -2002    ; UI_COOL_API_GET_LANGUAGE_NAME
+equ trap_UI_COOL_API_HaveWeGhoul2Models        -2003    ; UI_COOL_API_HAVE_WE_GHOUL2_MODELS
+equ trap_UI_COOL_API_GiveMeVectorFromMatrix    -2004    ; UI_COOL_API_GIVE_ME_VECTOR_FROM_MATRIX
+equ trap_UI_COOL_API_GetBoltMatrix             -2005    ; UI_COOL_API_GET_BOLT_MATRIX
+equ trap_UI_COOL_API_InitGhoul2Model           -2006    ; UI_COOL_API_INIT_GHOUL2_MODEL
+equ trap_UI_COOL_API_SetSkin                   -2007    ; UI_COOL_API_SET_SKIN
+equ trap_UI_COOL_API_SkinlessModel             -2008    ; UI_COOL_API_SKINLESS_MODEL
+equ trap_UI_COOL_API_GetSurfaceRenderStatus    -2009    ; UI_COOL_API_GET_SURFACE_RENDER_STATUS
+equ trap_UI_COOL_API_CleanGhoul2Models         -2010    ; UI_COOL_API_CLEAN_GHOUL2_MODELS
+equ trap_UI_COOL_API_SetBoneAnim               -2011    ; UI_COOL_API_SET_BONE_ANIM
+equ trap_UI_COOL_API_GetGlaName                -2012    ; UI_COOL_API_GET_GLA_NAME
+equ trap_UI_COOL_API_HasGhoul2ModelOnIndex     -2013    ; UI_COOL_API_HAS_GHOUL2_MODEL_ON_INDEX
+equ trap_UI_COOL_API_RemoveGhoul2Model         -2014    ; UI_COOL_API_REMOVE_GHOUL2_MODEL
+equ trap_UI_COOL_API_AddBolt                   -2015    ; UI_COOL_API_ADD_BOLT
+equ trap_UI_COOL_API_AttachG2Model             -2016    ; UI_COOL_API_ATTACH_G2_MODEL
+equ trap_UI_COOL_API_GetFileVersion            -2017    ; UI_COOL_API_GET_FILE_VERSION

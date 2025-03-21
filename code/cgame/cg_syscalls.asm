@@ -241,7 +241,11 @@ equ trap_CG_COOL_API_DB_GetBinary						-1216	;CG_COOL_API_DB_GETBINARY
 equ trap_CG_COOL_API_DB_PreparedBindNull				-1217	;CG_COOL_API_DB_PREPAREDBINDNULL
 equ trap_CG_COOL_API_DB_GetMoreResults					-1218	;CG_COOL_API_DB_GETMORERESULTS
 
-equ trap_CG_COOL_API_SetSkin                    -1225   ; CG_COOL_API_SET_SKIN
-equ trap_CG_COOL_API_GetFileVersion             -1233   ; CG_COOL_API_GET_FILE_VERSION
-equ trap_CG_COOL_API_GetSurfaceRenderStatus     -1234   ; CG_COOL_API_GET_SURFACE_RENDER_STATUS
-equ trap_CG_COOL_API_SkinlessModel              -1235   ; CG_COOL_API_SKINLESS_MODEL
+; COOL_APIFEATURE_JEDI_ACADEMY
+equ trap_CG_COOL_API_GetNumLanguages           -2001    ; CG_COOL_API_GET_NUM_LANGUAGES
+equ trap_CG_COOL_API_GetLanguageName           -2002    ; CG_COOL_API_GET_LANGUAGE_NAME
+equ trap_CG_COOL_API_SetSkin                   -2003    ; CG_COOL_API_SET_SKIN
+equ trap_CG_COOL_API_SkinlessModel             -2004    ; CG_COOL_API_SKINLESS_MODEL
+equ trap_CG_COOL_API_GetSurfaceRenderStatus    -2005    ; CG_COOL_API_GET_SURFACE_RENDER_STATUS
+equ trap_CG_COOL_API_AttachG2Model             -2006    ; CG_COOL_API_ATTACH_G2_MODEL
+equ trap_CG_COOL_API_GetFileVersion            -2007    ; CG_COOL_API_GET_FILE_VERSION
