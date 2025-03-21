@@ -2816,7 +2816,7 @@ void UpdateForceStatus()
 			break;
 		}
 
-		if ( oldColor != uiSkinColor )
+		if ( oldColor != uiSkinColor && strchr(ui_model.string, '|') == NULL )
 		{ // Scroll to the skin
 			int selModel = UI_HeadIndexForModel(UI_GetModelWithTeamColor(ui_model.string));
 
@@ -7452,7 +7452,7 @@ static qboolean UI_HeadBelongsToCurrentTeamColor( q3Head_t *head )
 
 	if ( uiSkinColor == SKINCOLOR_OTHER && !(strstr(head->name, "/red") || strstr(head->name, "/blue") || strstr(head->name, "/default")) )
 		return qtrue;
-	if ( uiSkinColor != SKINCOLOR_OTHER && strstr(head->name, teamname) )
+	if ( uiSkinColor != SKINCOLOR_OTHER && strstr(head->name, teamname) || strchr(head->name, '|') != NULL )
 		return qtrue;
 
 	return qfalse;
@@ -8427,7 +8427,11 @@ const char *UI_GetModelWithSkin(const char *model) {
 			currentColor = SKINCOLOR_OTHER;
 		}
 
-		if ( currentColor == uiSkinColor || (myTeam != TEAM_RED && myTeam != TEAM_BLUE) ) return model;
+		if (strchr(model, '|') != NULL) {
+			currentColor = serverGameType;
+		}
+
+		if ( currentColor == uiSkinColor || (myTeam != TEAM_RED && myTeam != TEAM_BLUE) || strchr(model, '|') != NULL ) return model;
 		ptr = strchr(model, '/');
 
 		if ( !ptr ) Q_strncpyz( modelWithSkin, model, sizeof(modelWithSkin) );
@@ -8477,6 +8481,10 @@ qboolean UI_SetTeamColorFromModel(const char *model) {
 		uiSkinColor = SKINCOLOR_OTHER;
 	}
 
+	if (strchr(model, '|') != NULL) {
+		uiSkinColor = serverGameType;
+	}
+
 	if ( uiSkinColor != oldSkinColor ) {
 		return qtrue;
 	}
@@ -8490,7 +8498,7 @@ const char *UI_GetModelWithTeamColor(const char *model) {
 
 	ptr = strchr(model, '/');
 
-	if ( model[0] && ptr ) {
+	if ( model[0] && ptr && strchr(model, '|') == NULL ) {
 		Q_strncpyz( newModel, model, ptr-model+1 );
 		Q_strcat( newModel, sizeof(newModel), teamname );
 		return newModel;
@@ -9018,40 +9026,7 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
 					static q3Head_t noIconHead;
 					static char noIconHeadName[128];
 
-					if (strchr(playerModel, '|') != NULL)
-					{
-						char iconName[MAX_QPATH];
-						char iconPath[MAX_QPATH];
-						char *p;
-
-						Com_sprintf(iconPath, sizeof(iconPath), "models/players/%s", playerModel);
-						p = Q_strrchr(iconPath, '/');
-						if (p != NULL)
-						{
-							*p = '\0';							
-							Com_sprintf(iconName, sizeof(iconName), "icon_%s", &p[1]);
-							p = strchr(iconName, '|');
-							if (p != NULL)
-							{
-								q3Head_t *newHead;
-								*p = '\0';
-								Q_strcat(iconPath, sizeof(iconPath), "/");
-								Q_strcat(iconPath, sizeof(iconPath), iconName);
-								newHead = BG_Alloc(sizeof(q3Head_t));
-								newHead->name = BG_Alloc(strlen(playerModel) + 1);
-								strcpy((char *)newHead->name, playerModel);
-								newHead->icon = trap_R_RegisterShaderNoMip(iconPath);
-								if (!newHead->icon)
-								{
-									newHead->icon = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
-								}
-								newHead->next = NULL;
-
-								UI_InsertHeadRaw(newHead);
-							}
-						}
-					}
-					else
+					if (strchr(playerModel, '|') == NULL)
 					{
 						if (!noIconHead.name)
 						{
@@ -11227,7 +11202,12 @@ void UI_UpdateCvars( void ) {
 	}
 
 	if (modelModificationCount != ui_model.modificationCount) {
+		char cvarBuffer[MAX_STRING_CHARS];
 		modelModificationCount = ui_model.modificationCount;
+		trap_Cvar_VariableStringBuffer("model", cvarBuffer, sizeof(cvarBuffer));
+		trap_Cvar_Set("team_model", cvarBuffer);
+		teamModelModificationCount++;
+		trap_Cvar_Update(&ui_team_model);
 		uiUpdateModel = 1;
 	}
 	if (teamModelModificationCount != ui_team_model.modificationCount) {
