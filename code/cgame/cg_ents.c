@@ -485,7 +485,7 @@ char *forceHolocronModels[] = {
 #define	MAX_VARIANTS 8
 qboolean CG_GetRootSurfNameWithVariant( void *ghoul2, const char *rootSurfName, char *returnSurfName, int returnSize )
 {
-	if ( !ghoul2 || !(coolApi & COOL_APIFEATURE_JEDI_ACADEMY) || !trap_CG_COOL_API_GetSurfaceRenderStatus( ghoul2, 0, rootSurfName ) )
+	if ( !ghoul2 || !coolApi_jkaVersion || !trap_CG_COOL_API_GetSurfaceRenderStatus( ghoul2, 0, rootSurfName ) )
 	{//see if the basic name without variants is on
 		Q_strncpyz( returnSurfName, rootSurfName, returnSize );
 		return qtrue;
@@ -1066,7 +1066,7 @@ Ghoul2 Insert End
 			int skin = 0;
 
 			trap_G2API_InitGhoul2Model(&cent->ghoul2, modelName, 0, 0, 0, 0, 0);
-			if (cent->ghoul2 && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) && trap_CG_COOL_API_SkinlessModel(cent->ghoul2, 0))
+			if (cent->ghoul2 && coolApi_jkaVersion && trap_CG_COOL_API_SkinlessModel(cent->ghoul2, 0))
 			{ //well, you'd never want a skinless model, so try to get his skin...
 				Q_strncpyz(skinName, modelName, MAX_QPATH);
 				l = strlen(skinName);

@@ -459,6 +459,7 @@ qboolean mvStructConversionDisabled = qfalse;
 
 int coolApi = 0;
 int coolApi_dbVersion = 0;
+int coolApi_jkaVersion = 0;
 vmCvar_t coolApi_supported_game;
 const int coolApi_supported_game_int =
   COOL_APIFEATURE_SETPREDICTEDMOVEMENT
@@ -515,6 +516,13 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		}
 		else {
 			coolApi_dbVersion = 0;
+		}
+		if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) {
+			trap_Cvar_VariableStringBuffer("cool_apiJKAVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_jkaVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else {
+			coolApi_jkaVersion = 0;
 		}
 
 		trap_Cvar_Register(&coolApi_supported_game, "coolApi_supported_game", va("%d", coolApi_supported_game_int), CVAR_ROM);

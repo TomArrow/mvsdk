@@ -1746,6 +1746,7 @@ qboolean	trap_ROFF_Purge_Ent( int entID );
 
 extern int coolApi;
 extern int coolApi_dbVersion;
+extern int coolApi_jkaVersion;
 
 extern int gRandomUnlockAdd;
 

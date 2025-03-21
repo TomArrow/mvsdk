@@ -139,6 +139,7 @@ qboolean menuInJK2MV = qfalse;
 int mvapi = 0;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
+int coolApi_jkaVersion = 0;
 vmCvar_t coolApi_supported_cgame;
 const int coolApi_supported_cgame_int =
   COOL_APIFEATURE_SETPREDICTEDMOVEMENT
@@ -174,6 +175,13 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 		}
 		else {
 			coolApi_dbVersion = 0;
+		}
+		if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) {
+			trap_Cvar_VariableStringBuffer("cool_apiJKAVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_jkaVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else {
+			coolApi_jkaVersion = 0;
 		}
 		trap_Cvar_Register(&coolApi_supported_cgame,"coolApi_supported_cgame",va("%d", coolApi_supported_cgame_int),CVAR_ROM);
 		trap_Cvar_Set("coolApi_supported_cgame", va("%d", coolApi_supported_cgame_int));

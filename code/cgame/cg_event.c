@@ -645,7 +645,7 @@ void CG_ReattachLimb(centity_t *source)
 		ci = &cgs.clientinfo[source->currentState.number];
 	}
 
-	if (ci && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+	if (ci && coolApi_jkaVersion)
 	{//re-apply the skin
 		if (ci->torsoSkin > 0)
 		{

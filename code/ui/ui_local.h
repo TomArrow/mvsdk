@@ -1249,6 +1249,7 @@ typedef struct postGameInfo_s {
 extern int mvapi; 
 extern int coolApi;
 extern int coolApi_dbVersion;
+extern int coolApi_jkaVersion;
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel, int inGameLoad );

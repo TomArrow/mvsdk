@@ -7310,7 +7310,7 @@ void UI_CleanupGhoul2(void)
 #ifndef JK2_CGAME
 	uiG2PtrTracker_t *next = ui_G2PtrTracker;
 
-	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+	if (!coolApi_jkaVersion)
 		return;
 
 	while (next)
@@ -7343,7 +7343,7 @@ qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTim
 	modelPtr = (modelDef_t*)item->typeData;
 	*runTimeLength =0.0f;
 
-	if (!Q_stricmp(&name[strlen(name) - 4], ".glm") && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+	if (!Q_stricmp(&name[strlen(name) - 4], ".glm") && coolApi_jkaVersion)
 	{ //it's a ghoul2 model then
 		if ( item->ghoul2 )
 		{
@@ -7641,7 +7641,7 @@ qboolean ItemParse_model_g2skin_go( itemDef_t *item, const char *skinName )
 	Item_ValidateTypeData(item);
 	modelPtr = (modelDef_t*)item->typeData;
 
-	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+	if (!coolApi_jkaVersion)
 		return qtrue;
 
 	if (!skinName || !skinName[0])
@@ -8431,7 +8431,7 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 			multiPtr->cvarList[multiPtr->count] = languageString; // eg "English"
 
 			// The cvar value that goes into ui_se_language
-			if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+			if (coolApi_jkaVersion)
 				trap_UI_COOL_API_GetLanguageName(multiPtr->count, currLanguage[multiPtr->count], 128);
 			else
 				Q_strncpyz(currLanguage[multiPtr->count], "english", 128);

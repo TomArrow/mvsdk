@@ -635,7 +635,7 @@ void UI_SaberDrawBlade( itemDef_t *item, char *saberName, int saberModel, saberT
 		trap_Cvar_VariableStringBuffer("ui_saber2_color", bladeColorString, sizeof(bladeColorString) );
 	}
 
-	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+	if (!coolApi_jkaVersion)
 		return;
 
 	if ( !trap_UI_COOL_API_HasGhoul2ModelOnIndex(&(item->ghoul2),saberModel) )
@@ -1024,7 +1024,7 @@ void UI_SaberAttachToChar( itemDef_t *item )
 	int	numSabers = 1;
  	int	saberNum = 0;
 
-	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+	if (!coolApi_jkaVersion)
 		return;
 
 	if ( trap_UI_COOL_API_HasGhoul2ModelOnIndex(&(item->ghoul2),2) )

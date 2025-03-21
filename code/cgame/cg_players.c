@@ -476,7 +476,7 @@ retryModel:
 
 	// The model is now loaded.
 
-	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+	if (coolApi_jkaVersion)
 		trap_CG_COOL_API_SetSkin(ci->ghoul2Model, 0, ci->torsoSkin, ci->torsoSkin);
 
 	GLAName[0] = 0;
@@ -765,7 +765,7 @@ static void CG_ColorFromString( const char *v, vec3_t color ) {
 
 int CG_OpenFile(const char *qpath, fileHandle_t *f, fsMode_t mode, qboolean isJKA)
 {
-	if (!(coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+	if (!coolApi_jkaVersion)
 	{
 		return trap_FS_FOpenFile(qpath, f, mode);
 	}
@@ -941,7 +941,7 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 
 	fallback = isFemale ? DEFAULT_FEMALE_SOUNDPATH : DEFAULT_MALE_SOUNDPATH;
 	
-	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+	if (coolApi_jkaVersion)
 		isJKAModel = !!(trap_CG_COOL_API_GetFileVersion(va("models/players/%s/model.glm", dir)) & FILE_VERSION_JKA);
 
 	if ( ci->skinName[0] == '\0' || !Q_stricmp( "default", ci->skinName ) || strchr(ci->skinName, '|') != NULL )

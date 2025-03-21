@@ -228,6 +228,7 @@ qboolean isMainMenu = qfalse;
 int mvapi = 0;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
+int coolApi_jkaVersion = 0;
 
 vmCvar_t coolApi_supported_ui;
 const int coolApi_supported_ui_int =
@@ -286,6 +287,13 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 		  }
 		  else {
 			  coolApi_dbVersion = 0;
+		  }
+		  if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) {
+			  trap_Cvar_VariableStringBuffer("cool_apiJKAVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			  coolApi_jkaVersion = atoi(coolApiFeaturesBuffer);
+		  }
+		  else {
+			  coolApi_jkaVersion = 0;
 		  }
 
 		  trap_Cvar_Register(&coolApi_supported_ui, "coolApi_supported_ui", va("%d", coolApi_supported_ui_int), CVAR_ROM);
@@ -1763,7 +1771,7 @@ void UI_ParseMenu(const char *menuFile) {
 				return;
 			}
 		}
-		if ((coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+		if (coolApi_jkaVersion)
 		{
 			menuIsJKA = !!(trap_UI_COOL_API_GetFileVersion(menuFile) & FILE_VERSION_JKA);
 		}
@@ -10164,7 +10172,7 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 				continue;
 			}
 			uiInfo.playerSpeciesCount++;
-			if (!inGameLoad && ui_PrecacheModels.integer && (coolApi & COOL_APIFEATURE_JEDI_ACADEMY))
+			if (!inGameLoad && ui_PrecacheModels.integer && coolApi_jkaVersion)
 			{
 				int g2Model;
 				void *ghoul2 = 0;
@@ -10196,7 +10204,7 @@ void _UI_Init( qboolean inGameLoad ) {
 	uiClientState_t cstate;
 
 	// Get the list of possible languages
-	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+	if (coolApi_jkaVersion)
 		uiInfo.languageCount = trap_UI_COOL_API_GetNumLanguages();	// this does a dir scan, so use carefully
 	else
 		uiInfo.languageCount = 1;
@@ -11227,7 +11235,7 @@ void UI_UpdateCvars( void ) {
 		uiUpdateModel = 1;
 	}
 
-	if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) {
+	if (coolApi_jkaVersion) {
 		if (spLanguageModificationCount != ui_sp_language.modificationCount) {
 			UI_UpdateTextLanguageCvar(qtrue);
 		}
