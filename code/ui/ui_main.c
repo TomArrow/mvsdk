@@ -9010,16 +9010,53 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
 					static q3Head_t noIconHead;
 					static char noIconHeadName[128];
 
-					if (!noIconHead.name)
+					if (strchr(playerModel, '|') != NULL)
 					{
-						noIconHead.next = NULL;
-						noIconHead.icon = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
-						noIconHead.name = noIconHeadName;
+						char iconName[MAX_QPATH];
+						char iconPath[MAX_QPATH];
+						char *p;
 
-						UI_InsertHeadRaw(&noIconHead);
+						Com_sprintf(iconPath, sizeof(iconPath), "models/players/%s", playerModel);
+						p = Q_strrchr(iconPath, '/');
+						if (p != NULL)
+						{
+							*p = '\0';							
+							Com_sprintf(iconName, sizeof(iconName), "icon_%s", &p[1]);
+							p = strchr(iconName, '|');
+							if (p != NULL)
+							{
+								q3Head_t *newHead;
+								*p = '\0';
+								Q_strcat(iconPath, sizeof(iconPath), "/");
+								Q_strcat(iconPath, sizeof(iconPath), iconName);
+								newHead = BG_Alloc(sizeof(q3Head_t));
+								newHead->name = BG_Alloc(strlen(playerModel) + 1);
+								strcpy((char *)newHead->name, playerModel);
+								newHead->icon = trap_R_RegisterShaderNoMip(iconPath);
+								if (!newHead->icon)
+								{
+									newHead->icon = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
+								}
+								newHead->next = NULL;
+
+								UI_InsertHeadRaw(newHead);
+							}
+						}
+					}
+					else
+					{
+						if (!noIconHead.name)
+						{
+							noIconHead.next = NULL;
+							noIconHead.icon = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
+							noIconHead.name = noIconHeadName;
+
+							UI_InsertHeadRaw(&noIconHead);
+						}
+
+						Q_strncpyz(noIconHeadName, playerModel, sizeof(noIconHeadName));
 					}
 
-					Q_strncpyz(noIconHeadName, playerModel, sizeof(noIconHeadName));
 					selModel = UI_HeadIndexForModel(playerModel);
 				}
 			}
