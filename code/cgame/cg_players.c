@@ -1279,7 +1279,7 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 
 
 extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance
-
+extern qboolean useLocalCharacterColors;
 
 /*
 ======================
@@ -1442,23 +1442,25 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		mc = ParseHexNumber(v);
 		if (mc == 0)
 		{
-			mc = 0x646464FF;
+			mc = 0xFFFFFFFF;
+			useLocalCharacterColors = qtrue;
 		}
-		newInfo.modelColor[0] = (mc & 0xFF000000) >> 24;
-		newInfo.modelColor[1] = (mc & 0x00FF0000) >> 16;
-		newInfo.modelColor[2] = (mc & 0x0000FF00) >> 8;
-		newInfo.modelColor[3] = (mc & 0x000000FF) >> 0;
-		if (cg_forceModel.integer)
+
+		if ((useLocalCharacterColors && cg.snap && clientNum == cg.snap->ps.clientNum) || cg_forceModel.integer)
 		{
-			char colorStr[4];
-			trap_Cvar_VariableStringBuffer("char_color_red", colorStr, sizeof(colorStr));
-			newInfo.modelColor[0] = atoi(colorStr);
-			trap_Cvar_VariableStringBuffer("char_color_green", colorStr, sizeof(colorStr));
-			newInfo.modelColor[1] = atoi(colorStr);
-			trap_Cvar_VariableStringBuffer("char_color_blue", colorStr, sizeof(colorStr));
-			newInfo.modelColor[2] = atoi(colorStr);
+			newInfo.modelColor[0] = cg_char_color_red.integer;
+			newInfo.modelColor[1] = cg_char_color_green.integer;
+			newInfo.modelColor[2] = cg_char_color_blue.integer;
 			newInfo.modelColor[3] = 255;
 		}
+		else
+		{
+			newInfo.modelColor[0] = (mc & 0xFF000000) >> 24;
+			newInfo.modelColor[1] = (mc & 0x00FF0000) >> 16;
+			newInfo.modelColor[2] = (mc & 0x0000FF00) >> 8;
+			newInfo.modelColor[3] = (mc & 0x000000FF) >> 0;
+		}
+
 		if (strchr(newInfo.skinName, '|') != NULL)
 		{
 			newInfo.useModelColor = qtrue;

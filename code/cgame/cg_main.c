@@ -811,6 +811,9 @@ vmCvar_t	x3_ezdemoPostTime;
 
 vmCvar_t	cg_acidtrip; // taken from openmohaa
 
+vmCvar_t	cg_char_color_red;
+vmCvar_t	cg_char_color_green;
+vmCvar_t	cg_char_color_blue;
 vmCvar_t	cg_saberModel;
 
 typedef struct {
@@ -1161,6 +1164,9 @@ Ghoul2 Insert Start
 Ghoul2 Insert End
 */
 	{ &cg_saberModel, "cl_saberModel", "models/weapons2/saber/saber_w.glm", CVAR_ARCHIVE },
+	{ &cg_char_color_red, "char_color_red", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );

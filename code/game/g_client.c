@@ -1692,12 +1692,36 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// model color
 	{
-		byte mc[4];
-		mc[0] = atoi(Info_ValueForKey(userinfo, "char_color_red"));
-		mc[1] = atoi(Info_ValueForKey(userinfo, "char_color_green"));
-		mc[2] = atoi(Info_ValueForKey(userinfo, "char_color_blue"));
-		mc[3] = 255;
-		WriteHexNumber((mc[3] << 0) | (mc[2] << 8) | (mc[1] << 16) | (mc[0] << 24), modelColor, sizeof(modelColor));
+		byte color_integer[4];
+		char color_string[3][4];
+		uint32_t hex_number;
+
+		Q_strncpyz(color_string[0], Info_ValueForKey(userinfo, "char_color_red"), sizeof(color_string[0]));
+		Q_strncpyz(color_string[1], Info_ValueForKey(userinfo, "char_color_green"), sizeof(color_string[1]));
+		Q_strncpyz(color_string[2], Info_ValueForKey(userinfo, "char_color_blue"), sizeof(color_string[2]));
+
+		if (color_string[0][0] == '\0' || color_string[1][0] == '\0' || color_string[2][0] == '\0')
+		{
+			color_integer[0] = 255;
+			color_integer[1] = 255;
+			color_integer[2] = 255;
+			color_integer[3] = 255;
+		}
+		else
+		{
+			color_integer[0] = atoi(color_string[0]);
+			color_integer[1] = atoi(color_string[1]);
+			color_integer[2] = atoi(color_string[2]);
+			color_integer[3] = 255;
+		}
+
+		hex_number = 0;
+		hex_number |= (color_integer[3] << 0);
+		hex_number |= (color_integer[2] << 8);
+		hex_number |= (color_integer[1] << 16);
+		hex_number |= (color_integer[0] << 24);
+
+		WriteHexNumber(hex_number, modelColor, sizeof(modelColor));
 	}
 
 	Q_strncpyz( forcePowers, Info_ValueForKey (userinfo, "forcepowers"), sizeof( forcePowers ) );
