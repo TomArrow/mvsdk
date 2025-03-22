@@ -609,7 +609,6 @@ typedef struct {
 	byte			modelColor[4];
 	vec4_t			modelColorNormalized;
 	qboolean		useModelColor;
-	char			saberModel[MAX_QPATH];
 } clientInfo_t;
 
 
@@ -1988,6 +1987,8 @@ extern	vmCvar_t		x3_ezdemoPreTime;
 extern	vmCvar_t		x3_ezdemoPostTime;
 
 extern	vmCvar_t		cg_acidtrip;
+
+extern	vmCvar_t		cg_saberModel;
 
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;

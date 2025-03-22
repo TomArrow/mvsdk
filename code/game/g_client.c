@@ -1509,7 +1509,6 @@ void ClientUserinfoChanged( int clientNum ) {
 	char	*s;
 	char	model[MAX_QPATH];
 	char	modelColor[9];
-	char	saberModel[MAX_QPATH];
 	//char	headModel[MAX_QPATH];
 	char	forcePowers[MAX_QPATH];
 	char	oldname[MAX_STRING_CHARS];
@@ -1701,9 +1700,6 @@ void ClientUserinfoChanged( int clientNum ) {
 		WriteHexNumber((mc[3] << 0) | (mc[2] << 8) | (mc[1] << 16) | (mc[0] << 24), modelColor, sizeof(modelColor));
 	}
 
-	// saber model
-	Q_strncpyz(saberModel, Info_ValueForKey(userinfo, "saber1"), sizeof(saberModel));
-
 	Q_strncpyz( forcePowers, Info_ValueForKey (userinfo, "forcepowers"), sizeof( forcePowers ) );
 
 	team = client->sess.sessionTeam;
@@ -1764,14 +1760,14 @@ void ClientUserinfoChanged( int clientNum ) {
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
 	if ( ent->r.svFlags & SVF_BOT ) {
-		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i\\bot\\1\\mc\\%s\\saber1\\%s",
+		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i\\bot\\1\\mc\\%s",
 			client->pers.netname, team, model,  c1, c2, 
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
-			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay, modelColor, saberModel );
+			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay, modelColor );
 	} else {
-		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mc\\%s\\saber1\\%s",
+		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mc\\%s",
 			client->pers.netname, client->sess.login.name, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
-			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modelColor, saberModel);
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modelColor);
 	}
 
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );
