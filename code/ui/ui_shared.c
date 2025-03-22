@@ -5649,6 +5649,10 @@ void Item_Model_Paint(itemDef_t *item)
 		}
 		if ( item->flags&ITF_ISANYSABER )
 		{//UGH, draw the saber blade!
+			if (!trap_UI_COOL_API_HasGhoul2ModelOnIndex(&(item->ghoul2), 0))
+			{//invalid index!
+				return;
+			}
 			UI_SaberDrawBlades( item, origin, angles );
 		}
 #endif
