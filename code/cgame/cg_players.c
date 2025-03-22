@@ -827,7 +827,7 @@ This will usually be deferred to a safe time
 */
 void CG_LoadClientInfo( clientInfo_t *ci ) {
 	const char	*dir, *fallback;
-	int			i, modelloaded;
+	int			i;
 	const char	*s;
 	int			clientNum;
 	char		teamname[MAX_QPATH];
@@ -835,7 +835,6 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	char		soundpath[MAX_QPATH];
 	char		soundName[MAX_QPATH];
 	const char	*defaultModel;
-	qboolean	isDefaultModel = qfalse;
 	qboolean	isFemale = qfalse;
 	qboolean	isJKAModel = qfalse;
 	fileHandle_t f;
@@ -880,13 +879,12 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	if( teamname[0] ) {
 		strcat( teamname, "/" );
 	}
-	modelloaded = qtrue;
+	ci->isDefaultModel = qfalse;
 	if ( !CG_RegisterClientModelname( ci, ci->modelName, ci->skinName, teamname, clientNum ) ) {
 		//CG_Error( "CG_RegisterClientModelname( %s, %s, %s, %s %s ) failed", ci->modelName, ci->skinName, ci->headModelName, ci->headSkinName, teamname );
 		//rww - DO NOT error out here! Someone could just type in a nonsense model name and crash everyone's client.
 		//Give it a chance to load default model for this client instead.
 
-		isDefaultModel = qtrue;
 		if (ci->gender != GENDER_FEMALE) {
 			defaultModel = DEFAULT_MODEL;
 			isFemale = qfalse;
@@ -912,7 +910,16 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 				CG_Error( "DEFAULT_MODEL (%s) failed to register", defaultModel );
 			}
 		}
-		modelloaded = qfalse;
+		ci->isDefaultModel = qtrue;
+	}
+
+	if (strchr(ci->skinName, '|') != NULL && !ci->isDefaultModel)
+	{
+		ci->useModelColor = qtrue;
+	}
+	else
+	{
+		ci->useModelColor = qfalse;
 	}
 
 	if (clientNum != -1 && ci->ghoul2Model && trap_G2_HaveWeGhoul2Models(ci->ghoul2Model))
@@ -934,7 +941,7 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	}
 
 	// sounds
-	if (!isDefaultModel)
+	if (!ci->isDefaultModel)
 		dir = ci->modelName;
 	else
 		dir = isFemale ? DEFAULT_FEMALE_SOUNDPATH : DEFAULT_MALE_SOUNDPATH;
@@ -1042,7 +1049,7 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		}
 		else
 		{
-			if (modelloaded)
+			if (!ci->isDefaultModel)
 			{
 				ci->sounds[i] = trap_S_RegisterSound( va("sound/chars/%s/misc/%s", dir, soundName) );
 			}
@@ -1461,14 +1468,10 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 			newInfo.modelColor[3] = (mc & 0x000000FF) >> 0;
 		}
 
-		if (strchr(newInfo.skinName, '|') != NULL)
-		{
-			newInfo.useModelColor = qtrue;
-			newInfo.modelColorNormalized[0] = newInfo.modelColor[0] / 255.0f;
-			newInfo.modelColorNormalized[1] = newInfo.modelColor[1] / 255.0f;
-			newInfo.modelColorNormalized[2] = newInfo.modelColor[2] / 255.0f;
-			newInfo.modelColorNormalized[3] = 1.0f;
-		}
+		newInfo.modelColorNormalized[0] = newInfo.modelColor[0] / 255.0f;
+		newInfo.modelColorNormalized[1] = newInfo.modelColor[1] / 255.0f;
+		newInfo.modelColorNormalized[2] = newInfo.modelColor[2] / 255.0f;
+		newInfo.modelColorNormalized[3] = 1.0f;
 	}
 
 	// head model

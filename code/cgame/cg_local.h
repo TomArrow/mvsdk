@@ -609,6 +609,7 @@ typedef struct {
 	byte			modelColor[4];
 	vec4_t			modelColorNormalized;
 	qboolean		useModelColor;
+	qboolean		isDefaultModel;
 } clientInfo_t;
 
 

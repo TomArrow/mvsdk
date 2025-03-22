@@ -1889,14 +1889,10 @@ void CG_UpdateCharacterColors(void)
 			ci->modelColor[3] = 255;
 		}
 
-		if (strchr(ci->skinName, '|') != NULL)
-		{
-			ci->useModelColor = qtrue;
-			ci->modelColorNormalized[0] = ci->modelColor[0] / 255.0f;
-			ci->modelColorNormalized[1] = ci->modelColor[1] / 255.0f;
-			ci->modelColorNormalized[2] = ci->modelColor[2] / 255.0f;
-			ci->modelColorNormalized[3] = 1.0f;
-		}
+		ci->modelColorNormalized[0] = ci->modelColor[0] / 255.0f;
+		ci->modelColorNormalized[1] = ci->modelColor[1] / 255.0f;
+		ci->modelColorNormalized[2] = ci->modelColor[2] / 255.0f;
+		ci->modelColorNormalized[3] = 1.0f;
 	}
 }
 
