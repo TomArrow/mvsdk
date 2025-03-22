@@ -1028,6 +1028,9 @@ qboolean    trap_G_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex);
 int         trap_G_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName);
 qboolean    trap_G_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
 uint32_t    trap_G_COOL_API_GetFileVersion(const char *fileName);
+int         trap_G_COOL_API_CreateFileList(const char *path, const char *extension);
+void        trap_G_COOL_API_CloseFileList(void);
+void        trap_G_COOL_API_GetNextFile(char *buffer, int bufferSize);
 
 //qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
 qboolean	G_InsertRun(finishedRunInfo_t* runInfo);

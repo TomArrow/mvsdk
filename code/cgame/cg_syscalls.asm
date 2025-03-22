@@ -249,3 +249,7 @@ equ trap_CG_COOL_API_SkinlessModel             -2004    ; CG_COOL_API_SKINLESS_M
 equ trap_CG_COOL_API_GetSurfaceRenderStatus    -2005    ; CG_COOL_API_GET_SURFACE_RENDER_STATUS
 equ trap_CG_COOL_API_AttachG2Model             -2006    ; CG_COOL_API_ATTACH_G2_MODEL
 equ trap_CG_COOL_API_GetFileVersion            -2007    ; CG_COOL_API_GET_FILE_VERSION
+equ trap_CG_COOL_API_GetFileList               -2008    ; CG_COOL_API_GET_FILE_LIST
+equ trap_CG_COOL_API_CreateFileList            -2009    ; CG_COOL_API_CREATE_FILE_LIST
+equ trap_CG_COOL_API_CloseFileList             -2010    ; CG_COOL_API_CLOSE_FILE_LIST
+equ trap_CG_COOL_API_GetNextFile               -2011    ; CG_COOL_API_GET_NEXT_FILE

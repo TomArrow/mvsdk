@@ -302,3 +302,6 @@ equ trap_G_COOL_API_SkinlessModel             -2005    ; G_COOL_API_SKINLESS_MOD
 equ trap_G_COOL_API_GetSurfaceRenderStatus    -2006    ; G_COOL_API_GET_SURFACE_RENDER_STATUS
 equ trap_G_COOL_API_AttachG2Model             -2007    ; G_COOL_API_ATTACH_G2_MODEL
 equ trap_G_COOL_API_GetFileVersion            -2008    ; G_COOL_API_GET_FILE_VERSION
+equ trap_G_COOL_API_CreateFileList            -2009    ; G_COOL_API_CREATE_FILE_LIST
+equ trap_G_COOL_API_CloseFileList             -2010    ; G_COOL_API_CLOSE_FILE_LIST
+equ trap_G_COOL_API_GetNextFile               -2011    ; G_COOL_API_GET_NEXT_FILE

@@ -298,6 +298,10 @@ Ghoul2 Insert End
 	CG_COOL_API_GET_SURFACE_RENDER_STATUS     = 2004,
 	CG_COOL_API_ATTACH_G2_MODEL               = 2005,
 	CG_COOL_API_GET_FILE_VERSION              = 2006,
+	CG_COOL_API_GET_FILE_LIST                 = 2007,
+	CG_COOL_API_CREATE_FILE_LIST              = 2008,
+	CG_COOL_API_CLOSE_FILE_LIST               = 2009,
+	CG_COOL_API_GET_NEXT_FILE                 = 2010,
 } cgameImport_t;
 
 

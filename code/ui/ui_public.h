@@ -163,6 +163,9 @@ Ghoul2 Insert End
 	UI_COOL_API_ADD_BOLT                      = 2014,
 	UI_COOL_API_ATTACH_G2_MODEL               = 2015,
 	UI_COOL_API_GET_FILE_VERSION              = 2016,
+	UI_COOL_API_CREATE_FILE_LIST              = 2017,
+	UI_COOL_API_CLOSE_FILE_LIST               = 2018,
+	UI_COOL_API_GET_NEXT_FILE                 = 2019,
 } uiImport_t;
 
 typedef enum {

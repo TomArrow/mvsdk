@@ -2477,6 +2477,10 @@ qboolean    trap_CG_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex);
 int         trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName);
 qboolean    trap_CG_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
 uint32_t    trap_CG_COOL_API_GetFileVersion(const char *fileName);
+int         trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
+int         trap_CG_COOL_API_CreateFileList(const char *path, const char *extension);
+void        trap_CG_COOL_API_CloseFileList(void);
+void        trap_CG_COOL_API_GetNextFile(char *buffer, int bufferSize);
 
 /*
 qboolean	trap_Language_IsAsian(void);

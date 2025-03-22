@@ -1204,3 +1204,18 @@ uint32_t trap_G_COOL_API_GetFileVersion(const char *fileName)
 {
 	return syscall(G_COOL_API_GET_FILE_VERSION, fileName);
 }
+
+int trap_G_COOL_API_CreateFileList(const char *path, const char *extension)
+{
+	return syscall(G_COOL_API_CREATE_FILE_LIST, path, extension);
+}
+
+void trap_G_COOL_API_CloseFileList(void)
+{
+	syscall(G_COOL_API_CLOSE_FILE_LIST);
+}
+
+void trap_G_COOL_API_GetNextFile(char *buffer, int bufferSize)
+{
+	syscall(G_COOL_API_GET_NEXT_FILE, buffer, bufferSize);
+}

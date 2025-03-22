@@ -390,6 +390,26 @@ uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName)
 	return syscall(CG_COOL_API_GET_FILE_VERSION, fileName);
 }
 
+int trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize)
+{
+	return syscall(CG_COOL_API_GET_FILE_LIST, path, extension, listbuf, bufsize);
+}
+
+int trap_CG_COOL_API_CreateFileList(const char *path, const char *extension)
+{
+	return syscall(CG_COOL_API_CREATE_FILE_LIST, path, extension);
+}
+
+void trap_CG_COOL_API_CloseFileList(void)
+{
+	syscall(CG_COOL_API_CLOSE_FILE_LIST);
+}
+
+void trap_CG_COOL_API_GetNextFile(char *buffer, int bufferSize)
+{
+	syscall(CG_COOL_API_GET_NEXT_FILE, buffer, bufferSize);
+}
+
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
 {

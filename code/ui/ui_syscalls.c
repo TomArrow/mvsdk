@@ -736,3 +736,18 @@ uint32_t trap_UI_COOL_API_GetFileVersion(const char *fileName)
 {
 	return syscall(UI_COOL_API_GET_FILE_VERSION, fileName);
 }
+
+int trap_UI_COOL_API_CreateFileList(const char *path, const char *extension)
+{
+	return syscall(UI_COOL_API_CREATE_FILE_LIST, path, extension);
+}
+
+void trap_UI_COOL_API_CloseFileList(void)
+{
+	syscall(UI_COOL_API_CLOSE_FILE_LIST);
+}
+
+void trap_UI_COOL_API_GetNextFile(char *buffer, int bufferSize)
+{
+	syscall(UI_COOL_API_GET_NEXT_FILE, buffer, bufferSize);
+}

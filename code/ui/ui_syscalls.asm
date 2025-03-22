@@ -216,3 +216,6 @@ equ trap_UI_COOL_API_RemoveGhoul2Model         -2014    ; UI_COOL_API_REMOVE_GHO
 equ trap_UI_COOL_API_AddBolt                   -2015    ; UI_COOL_API_ADD_BOLT
 equ trap_UI_COOL_API_AttachG2Model             -2016    ; UI_COOL_API_ATTACH_G2_MODEL
 equ trap_UI_COOL_API_GetFileVersion            -2017    ; UI_COOL_API_GET_FILE_VERSION
+equ trap_UI_COOL_API_CreateFileList            -2018    ; UI_COOL_API_CREATE_FILE_LIST
+equ trap_UI_COOL_API_CloseFileList             -2019    ; UI_COOL_API_CLOSE_FILE_LIST
+equ trap_UI_COOL_API_GetNextFile               -2020    ; UI_COOL_API_GET_NEXT_FILE
