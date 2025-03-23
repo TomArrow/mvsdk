@@ -1474,6 +1474,19 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		newInfo.modelColorNormalized[3] = 1.0f;
 	}
 
+	// saber model
+	{
+		v = Info_ValueForKey(configstring, "saber1");
+		if (v[0] != '\0')
+		{
+			Q_strncpyz(newInfo.saberModel, v, MAX_QPATH);
+		}
+		else
+		{
+			Q_strncpyz(newInfo.saberModel, "Kyle", MAX_QPATH);
+		}
+	}
+
 	// head model
 /*
 	v = Info_ValueForKey( configstring, "hmodel" );
@@ -7677,7 +7690,6 @@ stillDoSaber:
 
 			if (/*!cent->bolt4 &&*/ g2HasWeapon)
 			{ //saber is in flight, do not have it as a standard weapon model
-				int bolt = -1;
 				trap_G2API_RemoveGhoul2Model(&(cent->ghoul2), 1);
 				g2HasWeapon = qfalse;
 
@@ -7697,21 +7709,15 @@ stillDoSaber:
 				if (saberEnt->ghoul2)
 				{
 					// now set up the gun bolt on it
-					bolt = trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*flash");
-
-					if (bolt == -1)
-						trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*blade1");
+					trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*flash");
 				}
 				else
 				{
-					trap_G2API_InitGhoul2Model(&saberEnt->ghoul2, cg_saberModel.string, 0, 0, 0, 0, 0);
+					trap_G2API_InitGhoul2Model(&saberEnt->ghoul2, "models/weapons2/saber/saber_w.glm", 0, 0, 0, 0, 0);
 
 					if (saberEnt->ghoul2)
 					{
-						bolt = trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*flash");
-						if (bolt == -1)
-							trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*blade1");
-
+						trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*flash");
 						//cent->bolt4 = 2;
 						
 						VectorCopy(saberEnt->currentState.pos.trBase, saberEnt->lerpOrigin);

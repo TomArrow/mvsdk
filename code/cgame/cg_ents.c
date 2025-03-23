@@ -1996,7 +1996,7 @@ static void CG_Missile( centity_t *cent ) {
 	{
 		if (!cent->ghoul2 && !(s1->eFlags & EF_NODRAW))
 		{
-			trap_G2API_InitGhoul2Model(&cent->ghoul2, cg_saberModel.string, 0, 0, 0, 0, 0);
+			trap_G2API_InitGhoul2Model(&cent->ghoul2, "models/weapons2/saber/saber_w.glm", 0, 0, 0, 0, 0);
 			return;
 		}
 		else if (s1->eFlags & EF_NODRAW)

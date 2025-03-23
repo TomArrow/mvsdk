@@ -5867,20 +5867,9 @@ saber_colors_t TranslateSaberColor( const char *name );
 static void UI_UpdateSaberCvars ( void )
 {
 	saber_colors_t colorI;
-	char *saber1;
-	char *saber2;
-	char saberModel[MAX_TOKEN_CHARS];
 
-	saberModel[0] = '\0';
-
-	saber1 = UI_Cvar_VariableString ( "ui_saber" );
-	trap_Cvar_Set ( "saber1", saber1 );
-	UI_SaberModelForSaber(saber1, saberModel);
-
-	saber2 = UI_Cvar_VariableString ( "ui_saber2" );
-	trap_Cvar_Set ( "saber2", saber2 );
-	
-	trap_Cvar_Set ( "cl_saberModel", saberModel );
+	trap_Cvar_Set ( "saber1", UI_Cvar_VariableString ( "ui_saber" ) );
+	trap_Cvar_Set ( "saber2", UI_Cvar_VariableString ( "ui_saber2" ) );
 
 	colorI = TranslateSaberColor( UI_Cvar_VariableString ( "ui_saber_color" ) );
 	trap_Cvar_Set ( "color1", va("%d",colorI));

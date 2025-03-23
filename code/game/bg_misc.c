@@ -806,11 +806,7 @@ Don't place this
 	{
 		"weapon_saber", 
 		"sound/weapons/w_pkup.wav",
-#ifdef JK2_CGAME
-        { cg_saberModel.string,
-#else
         { "models/weapons2/saber/saber_w.glm",
-#endif
 		0, 0, 0},
 /* view */		"models/weapons2/saber/saber_w.md3",
 /* icon */		"gfx/hud/w_icon_lightsaber",

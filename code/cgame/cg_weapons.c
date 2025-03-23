@@ -2139,7 +2139,6 @@ void CG_InitG2Weapons(void)
 {
 	int i = 0;
 	gitem_t		*item;
-	int bolt = -1;
 	memset(g2WeaponInstances, 0, sizeof(g2WeaponInstances));
 	for ( item = bg_itemlist + 1 ; item->classname ; item++ ) 
 	{
@@ -2153,10 +2152,7 @@ void CG_InitG2Weapons(void)
 				// indicate we will be bolted to model 0 (ie the player) on bolt 0 (always the right hand) when we get copied
 				trap_G2API_SetBoltInfo(g2WeaponInstances[/*i*/item->giTag], 0, 0);
 				// now set up the gun bolt on it
-				bolt = trap_G2API_AddBolt(g2WeaponInstances[/*i*/item->giTag], 0, "*flash");
-				if (bolt == -1)
-					trap_G2API_AddBolt(g2WeaponInstances[/*i*/item->giTag], 0, "*blade1");
-
+				trap_G2API_AddBolt(g2WeaponInstances[/*i*/item->giTag], 0, "*flash");
 				i++;
 			}
 			if (i == MAX_WEAPONS)
@@ -2200,8 +2196,6 @@ void CG_CopyG2WeaponInstance(int weaponNum, void *toGhoul2)
 	}
 }
 
-qboolean updateSaberModel = qfalse;
-
 void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent) 
 {
 	// should we change the gun model on this player?
@@ -2231,23 +2225,6 @@ void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent)
 	{
 		cent->ghoul2weapon = NULL;
 		return;
-	}
-
-	if (updateSaberModel)
-	{
-		trap_G2API_CleanGhoul2Models(&g2WeaponInstances[WP_SABER]);
-		trap_G2API_InitGhoul2Model(&g2WeaponInstances[WP_SABER], cg_saberModel.string, 0, 0, 0, 0, 0);
-
-		if (g2WeaponInstances[WP_SABER])
-		{
-			int bolt = -1;
-			trap_G2API_SetBoltInfo(g2WeaponInstances[WP_SABER], 0, 0);
-			bolt = trap_G2API_AddBolt(g2WeaponInstances[WP_SABER], 0, "*flash");
-			if (bolt == -1)
-				trap_G2API_AddBolt(g2WeaponInstances[WP_SABER], 0, "*blade1");
-		}
-
-		updateSaberModel = qfalse;
 	}
 
 	if (cent->ghoul2 && ps && cent->ghoul2weapon != g2WeaponInstances[ps->weapon] &&
