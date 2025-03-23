@@ -1476,7 +1476,7 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	// saber model
 	{
-		v = Info_ValueForKey(configstring, "saber1");
+		v = Info_ValueForKey(configstring, "st");
 		if (v[0] != '\0')
 		{
 			Q_strncpyz(newInfo.saberModel, v, MAX_QPATH);
