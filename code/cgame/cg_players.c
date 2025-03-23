@@ -7960,9 +7960,9 @@ stillDoSaber:
 					subLen = 1020;
 				}
 
-				legs.shaderRGBA[0] = max(255-subLen/4,1);
-				legs.shaderRGBA[1] = max(255-subLen/4,1);
-				legs.shaderRGBA[2] = max(255-subLen/4,1);
+				legs.shaderRGBA[0] = MAX(255-subLen/4,1);
+				legs.shaderRGBA[1] = MAX(255-subLen/4,1);
+				legs.shaderRGBA[2] = MAX(255-subLen/4,1);
 
 				legs.renderfx &= ~RF_RGB_TINT;
 				legs.renderfx &= ~RF_FORCE_ENT_ALPHA;
@@ -7972,9 +7972,9 @@ stillDoSaber:
 
 				legs.customShader = 0;	//reset to player model
 
-				legs.shaderRGBA[0] = max(savRGBA[0]-subLen/8,1);
-				legs.shaderRGBA[1] = max(savRGBA[1]-subLen/8,1);
-				legs.shaderRGBA[2] = max(savRGBA[2]-subLen/8,1);
+				legs.shaderRGBA[0] = MAX(savRGBA[0]-subLen/8,1);
+				legs.shaderRGBA[1] = MAX(savRGBA[1]-subLen/8,1);
+				legs.shaderRGBA[2] = MAX(savRGBA[2]-subLen/8,1);
 
 				if (subLen <= 1024)
 				{

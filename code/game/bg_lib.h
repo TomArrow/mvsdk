@@ -135,6 +135,3 @@ bsearch (const void *key,
 #define UINT32_C(x)	(x##UL)
 
 #define ERANGE          34
-
-#define max(a,b) (((a) > (b)) ? (a) : (b))
-#define min(a,b) (((a) < (b)) ? (a) : (b))
