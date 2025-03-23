@@ -783,7 +783,7 @@ int CG_OpenFile(const char *qpath, fileHandle_t *f, fsMode_t mode, qboolean isJK
 static sfxHandle_t CG_LoadPlayerSound(const char *soundPath, const char *soundName, qboolean isJKA)
 {
 	sfxHandle_t sound = 0;
-	if (isJKA)
+	if (isJKA || Q_stricmpn(soundPath, "chars/", 6) != 0)
 	{
 		sound = trap_S_RegisterSound(va("sound/chars/%s/misc/%s", soundPath, soundName));
 	}
