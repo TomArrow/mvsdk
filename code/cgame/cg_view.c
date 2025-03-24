@@ -1853,49 +1853,6 @@ void CG_AddLightShow()
 	}
 }
 
-qboolean useLocalCharacterColors = qfalse;
-
-void CG_UpdateCharacterColors(void)
-{
-	clientInfo_t *ci = NULL;
-	int i = 0;
-
-	if (!useLocalCharacterColors)
-	{
-		return;
-	}
-
-	for (i = 0; i < MAX_CLIENTS; i++)
-	{
-		ci = &cgs.clientinfo[i];
-
-		if (ci == NULL || !ci->infoValid)
-		{
-			continue;
-		}
-
-		if ((cg.snap && i == cg.snap->ps.clientNum) || cg_forceModel.integer)
-		{
-			ci->modelColor[0] = cg_char_color_red.integer;
-			ci->modelColor[1] = cg_char_color_green.integer;
-			ci->modelColor[2] = cg_char_color_blue.integer;
-			ci->modelColor[3] = 255;
-		}
-		else
-		{
-			ci->modelColor[0] = 255;
-			ci->modelColor[1] = 255;
-			ci->modelColor[2] = 255;
-			ci->modelColor[3] = 255;
-		}
-
-		ci->modelColorNormalized[0] = ci->modelColor[0] / 255.0f;
-		ci->modelColorNormalized[1] = ci->modelColor[1] / 255.0f;
-		ci->modelColorNormalized[2] = ci->modelColor[2] / 255.0f;
-		ci->modelColorNormalized[3] = 1.0f;
-	}
-}
-
 void CG_CheckQuiGon();
 /*
 =================
@@ -2161,7 +2118,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		CG_AddLightShow();
 	}
 
-	CG_UpdateCharacterColors();
+	CG_UpdateLocalCharacterColors();
 
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );

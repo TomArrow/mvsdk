@@ -232,7 +232,12 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 
 		if (ci->useModelColor)
 		{
-			trap_R_SetColor(ci->modelColorNormalized);
+			vec4_t modelColor;
+			modelColor[0] = ((float) ci->modelColor[0]) / 255.0f;
+			modelColor[1] = ((float) ci->modelColor[1]) / 255.0f;
+			modelColor[2] = ((float) ci->modelColor[2]) / 255.0f;
+			modelColor[3] = 1.0f;
+			trap_R_SetColor(modelColor);
 		}
 
 		if (drawIcon)

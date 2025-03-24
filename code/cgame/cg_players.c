@@ -913,15 +913,6 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		ci->isDefaultModel = qtrue;
 	}
 
-	if (strchr(ci->skinName, '|') != NULL && !ci->isDefaultModel)
-	{
-		ci->useModelColor = qtrue;
-	}
-	else
-	{
-		ci->useModelColor = qfalse;
-	}
-
 	if (clientNum != -1 && ci->ghoul2Model && trap_G2_HaveWeGhoul2Models(ci->ghoul2Model))
 	{
 		if (cg_entities[clientNum].ghoul2 && trap_G2_HaveWeGhoul2Models(cg_entities[clientNum].ghoul2))
@@ -1120,6 +1111,8 @@ static void CG_CopyClientInfoModel( clientInfo_t *from, clientInfo_t *to ) {
 //	to->ATST = from->ATST;
 
 	memcpy( to->sounds, from->sounds, sizeof( to->sounds ) );
+
+	to->isDefaultModel = from->isDefaultModel;
 }
 
 /*
@@ -1191,6 +1184,8 @@ static qboolean CG_ScanForExistingClientInfo( clientInfo_t *ci, int clientNum ) 
 					//The pointer itself and the ghoul2 instance is never actually changed, just passed between
 					//clientinfo structures.
 					ci->ghoul2Model = match->ghoul2Model;
+
+					ci->isDefaultModel = match->isDefaultModel;
 				}
 			}
 			else
@@ -1284,9 +1279,100 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 	CG_LoadClientInfo( ci );
 }
 
+void CG_SetModelColor(const char *color, clientInfo_t *ci)
+{
+	char modelColor[12];
+	char *start;
+	char *end;
+	qboolean colorsValid;
+	int clientNum;
+	
+	clientNum = ci - cgs.clientinfo;
+	if ((cg.useLocalCharacterColors && cg.snap != NULL && cg.snap->ps.clientNum == clientNum) || cg_forceModel.integer)
+	{
+		ci->modelColor[0] = cg_char_color_red.integer;
+		ci->modelColor[1] = cg_char_color_green.integer;
+		ci->modelColor[2] = cg_char_color_blue.integer;
+		return;
+	}
+
+	Q_strncpyz(modelColor, color, sizeof(modelColor));
+	colorsValid = qfalse;
+
+	start = modelColor;
+	end = strchr(start, '-');
+	if (end != NULL)
+	{
+		*end = '\0';
+		end++;
+		ci->modelColor[0] = atoi(start);
+
+		start = end;
+		end = strchr(start, '-');
+		if (end != NULL)
+		{
+			*end = '\0';
+			end++;
+			ci->modelColor[1] = atoi(start);
+			ci->modelColor[2] = atoi(end);
+			colorsValid = qtrue;
+		}
+	}
+
+	if (!colorsValid)
+	{
+		ci->modelColor[0] = 255;
+		ci->modelColor[1] = 255;
+		ci->modelColor[2] = 255;
+	}
+}
+
+void CG_UpdateLocalCharacterColors(void)
+{
+	clientInfo_t *ci = NULL;
+	int i = 0;
+
+	if (!cg.useLocalCharacterColors)
+	{
+		return;
+	}
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		ci = &cgs.clientinfo[i];
+
+		if (ci == NULL || !ci->infoValid)
+		{
+			continue;
+		}
+
+		if ((cg.snap && i == cg.snap->ps.clientNum) || cg_forceModel.integer)
+		{
+			ci->modelColor[0] = cg_char_color_red.integer;
+			ci->modelColor[1] = cg_char_color_green.integer;
+			ci->modelColor[2] = cg_char_color_blue.integer;
+		}
+		else
+		{
+			ci->modelColor[0] = 255;
+			ci->modelColor[1] = 255;
+			ci->modelColor[2] = 255;
+		}
+	}
+}
+
+void CG_SetSaberModel(const char *model, clientInfo_t *ci)
+{
+	if (model[0] == '\0')
+	{
+		Q_strncpyz(ci->saberModel, "Kyle", MAX_QPATH);
+		return;
+	}
+
+	Q_strncpyz(ci->saberModel, model, MAX_QPATH);
+}
 
 extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance
-extern qboolean useLocalCharacterColors;
 
 /*
 ======================
@@ -1443,49 +1529,13 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	}
 
 	// model color
-	{
-		uint32_t mc = 0;
-		v = Info_ValueForKey(configstring, "mc");
-		mc = ParseHexNumber(v);
-		if (mc == 0)
-		{
-			mc = 0xFFFFFFFF;
-			useLocalCharacterColors = qtrue;
-		}
-
-		if ((useLocalCharacterColors && cg.snap && clientNum == cg.snap->ps.clientNum) || cg_forceModel.integer)
-		{
-			newInfo.modelColor[0] = cg_char_color_red.integer;
-			newInfo.modelColor[1] = cg_char_color_green.integer;
-			newInfo.modelColor[2] = cg_char_color_blue.integer;
-			newInfo.modelColor[3] = 255;
-		}
-		else
-		{
-			newInfo.modelColor[0] = (mc & 0xFF000000) >> 24;
-			newInfo.modelColor[1] = (mc & 0x00FF0000) >> 16;
-			newInfo.modelColor[2] = (mc & 0x0000FF00) >> 8;
-			newInfo.modelColor[3] = (mc & 0x000000FF) >> 0;
-		}
-
-		newInfo.modelColorNormalized[0] = newInfo.modelColor[0] / 255.0f;
-		newInfo.modelColorNormalized[1] = newInfo.modelColor[1] / 255.0f;
-		newInfo.modelColorNormalized[2] = newInfo.modelColor[2] / 255.0f;
-		newInfo.modelColorNormalized[3] = 1.0f;
-	}
+	v = Info_ValueForKey(configstring, "mc");
+	cg.useLocalCharacterColors = v[0] == '\0';
+	CG_SetModelColor(v, &newInfo);
 
 	// saber model
-	{
-		v = Info_ValueForKey(configstring, "st");
-		if (v[0] != '\0')
-		{
-			Q_strncpyz(newInfo.saberModel, v, MAX_QPATH);
-		}
-		else
-		{
-			Q_strncpyz(newInfo.saberModel, "Kyle", MAX_QPATH);
-		}
-	}
+	v = Info_ValueForKey(configstring, "st");
+	CG_SetSaberModel(v, &newInfo);
 
 	// head model
 /*
@@ -1619,6 +1669,15 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		if (cg_deferPlayersDebug.integer) {
 			CG_Printf("Playermodel MATCH FOUND: clientNum %d, %s/%s, cg_buildscript %d, cg.loading %d, ci->jk2gameplay %d, newInfo.jk2gameplay %d.\n", clientNum, newInfo.modelName, newInfo.skinName, cg_buildScript.integer, cg.loading, (int)ci->jk2gameplay, (int)newInfo.jk2gameplay);
 		}
+	}
+
+	if (strchr(newInfo.skinName, '|') != NULL && !newInfo.isDefaultModel)
+	{
+		newInfo.useModelColor = qtrue;
+	}
+	else
+	{
+		newInfo.useModelColor = qfalse;
 	}
 
 	// replace whatever was there with the new one
@@ -6728,14 +6787,14 @@ void CG_Player( centity_t *cent ) {
 		legs.shaderRGBA[0] = ci->colorOverride[0]*255.0f;
 		legs.shaderRGBA[1] = ci->colorOverride[1]*255.0f;
 		legs.shaderRGBA[2] = ci->colorOverride[2]*255.0f;
-		legs.shaderRGBA[3] = ci->modelColor[3];
+		legs.shaderRGBA[3] = 255;
 	}
 	else
 	{
 		legs.shaderRGBA[0] = ci->modelColor[0];
 		legs.shaderRGBA[1] = ci->modelColor[1];
 		legs.shaderRGBA[2] = ci->modelColor[2];
-		legs.shaderRGBA[3] = ci->modelColor[3];
+		legs.shaderRGBA[3] = 255;
 	}
 
 // minimal_add:

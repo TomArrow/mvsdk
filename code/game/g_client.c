@@ -1508,7 +1508,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	int		teamTask, teamLeader, team, health;
 	char	*s;
 	char	model[MAX_QPATH];
-	char	modelColor[9];
+	char	modelColor[12];
 	char	saberModel[MAX_QPATH];
 	//char	headModel[MAX_QPATH];
 	char	forcePowers[MAX_QPATH];
@@ -1693,9 +1693,8 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// model color
 	{
-		byte color_integer[4];
+		byte color_integer[3];
 		char color_string[3][4];
-		uint32_t hex_number;
 
 		Q_strncpyz(color_string[0], Info_ValueForKey(userinfo, "char_color_red"), sizeof(color_string[0]));
 		Q_strncpyz(color_string[1], Info_ValueForKey(userinfo, "char_color_green"), sizeof(color_string[1]));
@@ -1706,23 +1705,15 @@ void ClientUserinfoChanged( int clientNum ) {
 			color_integer[0] = 255;
 			color_integer[1] = 255;
 			color_integer[2] = 255;
-			color_integer[3] = 255;
 		}
 		else
 		{
 			color_integer[0] = atoi(color_string[0]);
 			color_integer[1] = atoi(color_string[1]);
 			color_integer[2] = atoi(color_string[2]);
-			color_integer[3] = 255;
 		}
 
-		hex_number = 0;
-		hex_number |= (color_integer[3] << 0);
-		hex_number |= (color_integer[2] << 8);
-		hex_number |= (color_integer[1] << 16);
-		hex_number |= (color_integer[0] << 24);
-
-		WriteHexNumber(hex_number, modelColor, sizeof(modelColor));
+		Com_sprintf(modelColor, sizeof(modelColor), "%u-%u-%u", color_integer[0], color_integer[1], color_integer[2]);
 	}
 
 	// saber model

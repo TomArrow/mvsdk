@@ -606,8 +606,7 @@ typedef struct {
 
 	playerMode_e	playerMode; // tommyternal gamemodes (duel, ironman etc)
 	float			colorOverride[3];
-	byte			modelColor[4];
-	vec4_t			modelColorNormalized;
+	byte			modelColor[3];
 	qboolean		useModelColor;
 	char			saberModel[MAX_QPATH];
 	qboolean		isDefaultModel;
@@ -1032,6 +1031,7 @@ Ghoul2 Insert End
 	qboolean speccing;
 
 	qboolean			nextCGTraceExplicitlyDeluxe;
+	qboolean			useLocalCharacterColors;
 } cg_t;
 
 #define MAX_TICS	14
@@ -2142,6 +2142,7 @@ void CG_AddRefEntityWithPowerups( refEntity_t *ent, entityState_t *state, int te
 void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized );
 sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName );
 void CG_PlayerShieldHit(int entitynum, vec3_t angles, int amount);
+void CG_UpdateLocalCharacterColors(void);
 
 
 //
