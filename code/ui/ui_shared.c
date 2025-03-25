@@ -3875,7 +3875,10 @@ static void Scroll_Slider_ThumbFunc(void *p) {
 	value /= SLIDER_WIDTH;
 	value *= (editDef->maxVal - editDef->minVal);
 	value += editDef->minVal;
-	DC->setCVar(si->item->cvar, va("%f", value));
+	if (si->item->type == ITEM_TYPE_INTSLIDER)
+		DC->setCVar(si->item->cvar, va("%i", (int)value));
+	else
+		DC->setCVar(si->item->cvar, va("%f", value));
 }
 
 void Item_StartCapture(itemDef_t *item, int key) 
@@ -3937,6 +3940,7 @@ void Item_StartCapture(itemDef_t *item, int key)
 			break;
 
 		case ITEM_TYPE_SLIDER:
+		case ITEM_TYPE_INTSLIDER:
 		{
 			flags = Item_Slider_OverSlider(item, DC->cursorx, DC->cursory);
 			if (flags & WINDOW_LB_THUMB) {
@@ -3987,7 +3991,11 @@ qboolean Item_Slider_HandleKey(itemDef_t *item, int key, qboolean down) {
 					// vm fuckage
 					// value = (((float)(DC->cursorx - x)/ SLIDER_WIDTH) * (editDef->maxVal - editDef->minVal));
 					value += editDef->minVal;
-					DC->setCVar(item->cvar, va("%f", value));
+					if (item->type == ITEM_TYPE_INTSLIDER) {
+						DC->setCVar(item->cvar, va("%i", (int)value));
+					} else {
+						DC->setCVar(item->cvar, va("%f", value));
+					}
 					return qtrue;
 				}
 			}
@@ -4006,7 +4014,12 @@ qboolean Item_Slider_HandleKey(itemDef_t *item, int key, qboolean down) {
 				if (value > editDef->maxVal) value = editDef->maxVal;
 				if (value < editDef->minVal) value = editDef->minVal;
 
-				DC->setCVar(item->cvar, va("%f", value));
+				if (item->type == ITEM_TYPE_INTSLIDER) {
+					DC->setCVar(item->cvar, va("%i", (int)value));
+				} else {
+					DC->setCVar(item->cvar, va("%f", value));
+				}
+				
 				return qtrue;
 			}
 		}
@@ -4075,6 +4088,7 @@ qboolean Item_HandleKey(itemDef_t *item, int key, qboolean down) {
 			return Item_Bind_HandleKey(item, key, down);
       break;
     case ITEM_TYPE_SLIDER:
+    case ITEM_TYPE_INTSLIDER:
       return Item_Slider_HandleKey(item, key, down);
       break;
     //case ITEM_TYPE_IMAGE:
@@ -4440,7 +4454,7 @@ void Menu_HandleKey(menuDef_t *menu, int key, qboolean down) {
 */
 
 //JLFACCEPT MPMOVED
-				else if (Menu_IsJKA(menu) && (item->type == ITEM_TYPE_MULTI || item->type == ITEM_TYPE_YESNO || item->type == ITEM_TYPE_SLIDER))
+				else if (Menu_IsJKA(menu) && (item->type == ITEM_TYPE_MULTI || item->type == ITEM_TYPE_YESNO || item->type == ITEM_TYPE_SLIDER || item->type == ITEM_TYPE_INTSLIDER))
 				{
 					if (Item_HandleAccept(item))
 					{
@@ -6771,6 +6785,7 @@ void Item_Paint(itemDef_t *item)
       Item_Bind_Paint(item);
       break;
     case ITEM_TYPE_SLIDER:
+    case ITEM_TYPE_INTSLIDER:
       Item_Slider_Paint(item);
       break;
     default:
@@ -7062,7 +7077,7 @@ void Item_ValidateTypeData(itemDef_t *item)
 		item->typeData = UI_Alloc(sizeof(listBoxDef_t));
 		memset(item->typeData, 0, sizeof(listBoxDef_t));
 	}
-	else if (item->type == ITEM_TYPE_EDITFIELD || item->type == ITEM_TYPE_NUMERICFIELD || item->type == ITEM_TYPE_YESNO || item->type == ITEM_TYPE_BIND || item->type == ITEM_TYPE_SLIDER || item->type == ITEM_TYPE_TEXT) 
+	else if (item->type == ITEM_TYPE_EDITFIELD || item->type == ITEM_TYPE_NUMERICFIELD || item->type == ITEM_TYPE_YESNO || item->type == ITEM_TYPE_BIND || item->type == ITEM_TYPE_SLIDER || item->type == ITEM_TYPE_INTSLIDER || item->type == ITEM_TYPE_TEXT) 
 	{
 		editFieldDef_t *editPtr;
 
@@ -8259,6 +8274,7 @@ qboolean ItemParse_cvar( itemDef_t *item, int handle )
 			case ITEM_TYPE_YESNO:
 			case ITEM_TYPE_BIND:
 			case ITEM_TYPE_SLIDER:
+			case ITEM_TYPE_INTSLIDER:
 			case ITEM_TYPE_TEXT:
 				editPtr = (editFieldDef_t*)item->typeData;
 				editPtr->minVal = -1;
@@ -8361,6 +8377,26 @@ qboolean ItemParse_lineHeight( itemDef_t *item, int handle )
 	scrollPtr->lineHeight = height;
 
 	return qtrue;
+}
+
+qboolean ItemParse_cvarInt(itemDef_t *item, int handle) {
+	editFieldDef_t *editPtr;
+
+	Item_ValidateTypeData(item);
+	if (!item->typeData)
+		return qfalse;
+	editPtr = (editFieldDef_t*)item->typeData;
+	if (PC_String_Parse(handle, &item->cvar)) {
+		int defVal, minVal, maxVal;
+		PC_Int_Parse(handle, &defVal);
+		PC_Int_Parse(handle, &minVal);
+		PC_Int_Parse(handle, &maxVal);
+		editPtr->defVal = defVal;
+		editPtr->minVal = minVal;
+		editPtr->maxVal = maxVal;
+		return qtrue;
+	}
+	return qfalse;
 }
 
 qboolean ItemParse_cvarFloat( itemDef_t *item, int handle ) {
@@ -8704,6 +8740,7 @@ static keywordHash_t itemParseKeywords[] = {
 	{"cinematic",		ItemParse_cinematic,		NULL	},
 	{"columns",			ItemParse_columns,			NULL	},
 	{"cvar",			ItemParse_cvar,				NULL	},
+	{"cvarInt",			ItemParse_cvarInt,			NULL	},
 	{"cvarFloat",		ItemParse_cvarFloat,		NULL	},
 	{"cvarFloatList",	ItemParse_cvarFloatList,	NULL	},
 	{"cvarStrList",		ItemParse_cvarStrList,		NULL	},
