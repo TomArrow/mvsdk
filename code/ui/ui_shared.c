@@ -8452,7 +8452,7 @@ qboolean ItemParse_cvarStrList( itemDef_t *item, int handle ) {
 	if (!Q_stricmp(token.string,"feeder") && item->special == FEEDER_PLAYER_SPECIES) 
 	{
 #ifndef JK2_CGAME
-		char buffer[2];
+		char buffer[MAX_STRING_CHARS];
 		char name[MAX_QPATH];
 		const char *pName;
 		for (; multiPtr->count < uiInfo.playerSpeciesCount; multiPtr->count++)
