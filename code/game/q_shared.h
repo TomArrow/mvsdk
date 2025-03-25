@@ -2401,6 +2401,8 @@ typedef enum {
 void sanitizeFilename(const char* input, char* output, qboolean allowExtension);
 
 int safeatoi(const char* nptr, char** endptr, int base, int* error);
+const char* colorToHex(veci4_t color);
+qboolean parseHex(const char* hex, veci4_t outColor);
 
 int clampedIntMult(int a, int b);
 int clampedIntAdd(int a, int b);
