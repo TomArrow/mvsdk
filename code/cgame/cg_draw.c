@@ -1962,7 +1962,7 @@ void CG_DrawHUD(centity_t	*cent)
 		UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7f);
 	}
 
-	if (cg_hudFiles.integer == 1)
+	if (cg_hudFiles.integer)
 	{
 		int x = 0;
 		int y = cgs.screenHeight - 80;
@@ -2035,7 +2035,7 @@ void CG_DrawHUD(centity_t	*cent)
 	menuHUD = Menus_FindByName("lefthud");
 	if (menuHUD)
 	{
-		if (cg_hudFiles.integer == 2)
+		if (Menu_IsJKA(menuHUD))
 		{
 			itemDef_t *focusItem;
 
@@ -2130,7 +2130,7 @@ void CG_DrawHUD(centity_t	*cent)
 	menuHUD = Menus_FindByName("righthud");
 	if (menuHUD)
 	{
-		if (cg_hudFiles.integer == 2)
+		if (Menu_IsJKA(menuHUD))
 		{
 			itemDef_t *focusItem;
 

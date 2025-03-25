@@ -811,6 +811,8 @@ vmCvar_t	cg_acidtrip; // taken from openmohaa
 vmCvar_t	cg_char_color_red;
 vmCvar_t	cg_char_color_green;
 vmCvar_t	cg_char_color_blue;
+vmCvar_t	cg_JKA;
+vmCvar_t	cg_menuFileParseSpam;
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -1119,7 +1121,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0", 0},
 	{ &cg_timescale, "timescale", "1", 0},
 	{ &cg_scorePlum, "cg_scorePlums", "1", CVAR_USERINFO | CVAR_ARCHIVE},
-	{ &cg_hudFiles, "cg_hudFiles", "0", CVAR_USERINFO | CVAR_ARCHIVE},
+	{ &cg_hudFiles, "cg_hudFiles", "ui/jk2hud.txt", CVAR_ARCHIVE},
 	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
@@ -1162,6 +1164,8 @@ Ghoul2 Insert End
 	{ &cg_char_color_red, "char_color_red", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
@@ -2538,16 +2542,93 @@ qboolean CG_Asset_Parse(int handle) {
 }
 
 void CG_ParseMenu(const char *menuFile) {
-	pc_token_t token;
 	int handle;
+	pc_token_t token;
+	qboolean menuIsJKA = qfalse;
+	const char *menuExtension;
+	char menuPath[MAX_QPATH];
+	int fileHandle = -1;
+
+	if (cg_menuFileParseSpam.integer) {
+		Com_Printf("Parsing menu file:%s\n", menuFile);
+	}
+
+	menuExtension = Q_strrchr(menuFile, '.');
+	if (menuExtension == NULL)
+	{
+		menuExtension = "";
+	}
+
+	if (cg_JKA.integer < 0 || cg_JKA.integer > 2)
+	{
+		trap_Cvar_Set("ui_JKA", "0");
+		trap_Cvar_Update(&cg_JKA);
+	}
+
+	if (cg_JKA.integer == 0)
+	{ // load menu files from JK2 paths, discard files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			if (cg_menuFileParseSpam.integer)
+			{
+				Com_Printf("Skipping menu file:%s\n", menuFile);
+			}
+			return;
+		}
+		menuIsJKA = qfalse;
+	}
+	else if (cg_JKA.integer == 1)
+	{ // load menu files from JK2 paths, override ".menu" files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu") == 0)
+		{
+			COM_StripExtension(menuFile, menuPath, sizeof(menuPath));
+			COM_DefaultExtension(menuPath, sizeof(menuPath), ".menu_jka");
+			trap_FS_FOpenFile(menuPath, &fileHandle, FS_READ);
+			if (fileHandle)
+			{
+				trap_FS_FCloseFile(fileHandle);
+				if (cg_menuFileParseSpam.integer)
+				{
+					Com_Printf("Skipping menu file:%s\n", menuFile);
+				}
+				return;
+			}
+		}
+		if (coolApi_jkaVersion)
+		{
+			menuIsJKA = !!(trap_CG_COOL_API_GetFileVersion(menuFile) & FILE_VERSION_JKA);
+		}
+		else
+		{
+			menuIsJKA = qfalse;
+		}
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			menuIsJKA = qtrue;
+		}
+	}
+	else if (cg_JKA.integer == 2)
+	{ // load menu files from JKA paths, discard files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			if (cg_menuFileParseSpam.integer)
+			{
+				Com_Printf("Skipping menu file:%s\n", menuFile);
+			}
+			return;
+		}
+		menuIsJKA = qtrue;
+	}
+
+	Menu_SetJKA(menuIsJKA);
 
 	handle = trap_PC_LoadSource(menuFile);
-	if (!handle)
-		handle = trap_PC_LoadSource("ui/testhud.menu");
-	if (!handle)
+	if (!handle) {
 		return;
+	}
 
 	while ( 1 ) {
+		memset(&token, 0, sizeof(pc_token_t));
 		if (!trap_PC_ReadToken( handle, &token )) {
 			break;
 		}
@@ -2574,7 +2655,6 @@ void CG_ParseMenu(const char *menuFile) {
 			}
 		}
 
-
 		if (Q_stricmp(token.string, "menudef") == 0) {
 			// start a new menu
 			Menu_New(handle);
@@ -2583,28 +2663,29 @@ void CG_ParseMenu(const char *menuFile) {
 	trap_PC_FreeSource(handle);
 }
 
-qboolean CG_Load_Menu(const char **p) {
-	char *token;
+qboolean CG_Load_Menu(int handle) {
+	pc_token_t token;
 
-	token = COM_ParseExt(p, qtrue);
-
-	if (token[0] != '{') {
+	if (!trap_PC_ReadToken(handle, &token))
+		return qfalse;
+	if (token.string[0] != '{') {
 		return qfalse;
 	}
 
 	while ( 1 ) {
 
-		token = COM_ParseExt(p, qtrue);
+		if (!trap_PC_ReadToken(handle, &token))
+			return qfalse;
     
-		if (Q_stricmp(token, "}") == 0) {
-			return qtrue;
-		}
-
-		if ( !token || token[0] == 0 ) {
+		if ( token.string[0] == 0 ) {
 			return qfalse;
 		}
 
-		CG_ParseMenu(token); 
+		if ( token.string[0] == '}' ) {
+			return qtrue;
+		}
+
+		CG_ParseMenu(token.string); 
 	}
 	return qfalse;
 }
@@ -2851,65 +2932,59 @@ static void CG_RunCinematicFrame(int handle) {
   trap_CIN_RunCinematic(handle);
 }
 
-void CG_LoadMenus(const char *menuFile) 
-{
-	const char	*token;
-	const char	*p;
-	int	len;
-	fileHandle_t	f;
-	static char buf[MAX_MENUDEFFILE];
+void CG_LoadMenus(const char *menuFile, qboolean reset) {
+	pc_token_t token;
+	int handle;
+	int start;
 
-	len = trap_FS_FOpenFile( menuFile, &f, FS_READ );
+	start = trap_Milliseconds();
 
-	if ( !f ) 
-	{
-		trap_Print( va( S_COLOR_RED "menu file not found: %s, using default\n", menuFile ) );
+	if (cg_JKA.integer == 2)
+		trap_PC_LoadGlobalDefines ( "ui/jamp/menudef.h" );
+	else
+		trap_PC_LoadGlobalDefines ( "ui/jk2mp/menudef.h" );
 
-		len = trap_FS_FOpenFile( "ui/jk2hud.txt", &f, FS_READ );
-		if (!f) 
-		{
-			trap_Print( va( S_COLOR_RED "default menu file not found: ui/jk2hud.txt, unable to continue!\n", menuFile ) );
+	handle = trap_PC_LoadSource( menuFile );
+	if (!handle) {
+		Com_Printf( S_COLOR_YELLOW "menu file not found: %s, using default\n", menuFile );
+
+		if (cg_JKA.integer == 2)
+			handle = trap_PC_LoadSource( "ui/jahud.txt" );
+		else
+			handle = trap_PC_LoadSource( "ui/jk2hud.txt" );
+
+		if (!handle) {
+			Com_Error( ERR_DROP, "default menu file not found: ui/menus.txt, unable to continue!" );
 		}
 	}
 
-	if ( len >= MAX_MENUDEFFILE ) 
-	{
-		trap_Print( va( S_COLOR_RED "menu file too large: %s is %i, max allowed is %i", menuFile, len, MAX_MENUDEFFILE ) );
-		trap_FS_FCloseFile( f );
-		return;
+	if (reset) {
+		Menu_Reset();
 	}
 
-	trap_FS_Read( buf, len, f );
-	buf[len] = 0;
-	trap_FS_FCloseFile( f );
-	
-	p = buf;
-
-	while ( 1 ) 
-	{
-		token = COM_ParseExt( &p, qtrue );
-		if( !token || token[0] == 0 || token[0] == '}') 
-		{
+	while ( 1 ) {
+		if (!trap_PC_ReadToken(handle, &token))
+			break;
+		if( token.string[0] == 0 || token.string[0] == '}') {
 			break;
 		}
 
-		if ( Q_stricmp( token, "}" ) == 0 ) 
-		{
+		if ( token.string[0] == '}' ) {
 			break;
 		}
 
-		if (Q_stricmp(token, "loadmenu") == 0) 
-		{
-			if (CG_Load_Menu(&p)) 
-			{
+		if (Q_stricmp(token.string, "loadmenu") == 0) {
+			if (CG_Load_Menu(handle)) {
 				continue;
-			} 
-			else 
-			{
+			} else {
 				break;
 			}
 		}
 	}
+
+	trap_PC_FreeSource( handle );
+
+	trap_PC_RemoveAllGlobalDefines ( );
 }
 
 /*
@@ -2984,19 +3059,13 @@ void CG_LoadHudMenu()
 
 	Menu_Reset();
 
-	switch (cg_hudFiles.integer)
+	hudSet = cg_hudFiles.string;
+	if (hudSet[0] == '\0') 
 	{
-	default:
-	case 0:
-	case 1:
 		hudSet = "ui/jk2hud.txt";
-		break;
-	case 2:
-		hudSet = "ui/jahud.txt";
-		break;
 	}
 
-	CG_LoadMenus(hudSet);
+	CG_LoadMenus(hudSet, qtrue);
 }
 
 void CG_AssetCache() {

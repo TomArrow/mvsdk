@@ -1992,6 +1992,8 @@ extern	vmCvar_t		cg_acidtrip;
 extern	vmCvar_t		cg_char_color_red;
 extern	vmCvar_t		cg_char_color_green;
 extern	vmCvar_t		cg_char_color_blue;
+extern	vmCvar_t		cg_JKA;
+extern	vmCvar_t		cg_menuFileParseSpam;
 
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
@@ -2027,7 +2029,7 @@ void CG_UpdateCvars( void );
 
 int CG_CrosshairPlayer( void );
 int CG_LastAttacker( void );
-void CG_LoadMenus(const char *menuFile);
+void CG_LoadMenus(const char *menuFile, qboolean reset);
 void CG_KeyEvent(int key, qboolean down);
 void CG_MouseEvent(int x, int y);
 void CG_EventHandling(int type);

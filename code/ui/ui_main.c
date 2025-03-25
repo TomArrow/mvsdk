@@ -1738,7 +1738,7 @@ void UI_ParseMenu(const char *menuFile) {
 
 	if (ui_JKA.integer < 0 || ui_JKA.integer > 2)
 	{
-		trap_Cvar_SetValue("ui_JKA", 0.0f);
+		trap_Cvar_Set("ui_JKA", "0");
 		trap_Cvar_Update(&ui_JKA);
 	}
 
