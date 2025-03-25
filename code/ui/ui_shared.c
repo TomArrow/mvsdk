@@ -6669,7 +6669,14 @@ void Item_Paint(itemDef_t *item)
 					{
 						if (Item_IsJKA(item))
 						{
-							textWidth = DC->textWidth(textPtr,fDescScale, FONT_SMALL2);
+							if (MenuFontToHandle(FONT_SMALL2) > 0)
+							{
+								textWidth = DC->textWidth(textPtr,fDescScale, FONT_SMALL2);
+							}
+							else
+							{
+								textWidth = DC->textWidth(textPtr,fDescScale * 0.75f, FONT_MEDIUM);
+							}
 						}
 						else
 						{
@@ -6709,7 +6716,14 @@ void Item_Paint(itemDef_t *item)
 
 						if (Item_IsJKA(item))
 						{
-							DC->drawText(xPos, parent->descY + iYadj, fDescScale, parent->descColor, textPtr, 0, 0, item->textStyle, FONT_SMALL2);
+							if (MenuFontToHandle(FONT_SMALL2) > 0)
+							{
+								DC->drawText(xPos, parent->descY + iYadj, fDescScale, parent->descColor, textPtr, 0, 0, item->textStyle, FONT_SMALL2);
+							}
+							else
+							{
+								DC->drawText(xPos, parent->descY + iYadj, fDescScale * 0.75f, parent->descColor, textPtr, 0, 0, item->textStyle, FONT_MEDIUM);
+							}
 						}
 						else
 						{
