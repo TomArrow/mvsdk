@@ -811,6 +811,7 @@ vmCvar_t	cg_acidtrip; // taken from openmohaa
 vmCvar_t	cg_char_color_red;
 vmCvar_t	cg_char_color_green;
 vmCvar_t	cg_char_color_blue;
+vmCvar_t	cg_char_color_alpha;
 vmCvar_t	cg_JKA;
 vmCvar_t	cg_menuFileParseSpam;
 
@@ -1164,6 +1165,7 @@ Ghoul2 Insert End
 	{ &cg_char_color_red, "char_color_red", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_char_color_alpha, "char_color_alpha", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 };

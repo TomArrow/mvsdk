@@ -2837,7 +2837,7 @@ static float CG_DrawEnemyInfo ( float y )
 			modelColor[0] = ((float) ci->modelColor[0]) / 255.0f;
 			modelColor[1] = ((float) ci->modelColor[1]) / 255.0f;
 			modelColor[2] = ((float) ci->modelColor[2]) / 255.0f;
-			modelColor[3] = 1.0f;
+			modelColor[3] = ((float) ci->modelColor[3]) / 255.0f;
 			trap_R_SetColor(modelColor);
 		}
 		CG_DrawPic( cgs.screenWidth - size - 5, y, size, size, ci->modelIcon );

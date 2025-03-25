@@ -1713,21 +1713,12 @@ int safeatoi(const char* nptr, char** endptr, int base, int* error)
 	return (acc);
 }
 
-char hexChars[16] = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
-// accepts int[4] array of 0-255 colors 
-const char* colorToHex(veci4_t color){
+const char* colorToHex(byte color[4]){
 	int i,a,b;
+	static const char hexChars[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 	static char hex[9] = {0};
 	char* s = hex;
 	for(i=0;i<4;i++){
-		if(color[i] < 0 || color[i] > 255){
-			Com_Printf("Hex write warning: Number outside range of 0-255 (%d)\n",color[i]);
-			*s = 'f';
-			s++;
-			*s = 'f';
-			s++;
-			continue;
-		}
 		a= color[i] % 16;
 		b= color[i] / 16;
 		*s = hexChars[b];
@@ -1739,35 +1730,23 @@ const char* colorToHex(veci4_t color){
 	return hex;
 }
 
-#define HEXTOVALUE(a) ((a) >= '0' && a<='9') ? ((a)-'0') : (((a) >= 'a' && a<='f') ? (a)-'a'+10 : 15);  
+#define HEXTOVALUE(a) ((a) >= '0' && a<='9') ? ((a)-'0') : (((a) >= 'A' && a<='F') ? (a)-'A'+10 : 15);  
 
-qboolean parseHex(const char* hex, veci4_t outColor){
+qboolean parseHex(const char* hex, byte outColor[4]){
 	int i,a,b;
 	int len = strlen(hex);
 	int pairs = len/2;
 	const char* pair= NULL;
-	char value;
-	if(!pairs){
+	if(pairs != 4){
 		return qfalse;
-	}
-	if(pairs > 4){
-		Com_Printf("Hex parse warning (%s): More than 4 pairs\n",hex);
-		pairs = 4;
 	}
 	for(i=0;i<pairs;i++){
 		pair = hex+i*2;
-		a = tolower(pair[0]);
-		b = tolower(pair[1]);
+		a = toupper(pair[0]);
+		b = toupper(pair[1]);
 		a = HEXTOVALUE(a);
 		b = HEXTOVALUE(b);
 		outColor[i] = a*16+b;
 	}
-	if(pairs < 4){
-		Com_Printf("Hex parse warning (%s): Less than 4 pairs\n",hex);
-		for(i=pairs;i<4;i++){
-			outColor[i] = 255; // if hex string is cut off, just set rest to 255 (e.g. alpha)
-		}
-	}
-	
 	return qtrue;
 }

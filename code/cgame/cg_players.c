@@ -175,12 +175,14 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 			colors[0] = 1.0f;
 			colors[1] = 0.0f;
 			colors[2] = 0.0f;
+			colors[3] = 1.0f;
 		}
 		else if (team == TEAM_BLUE && colors)
 		{
 			colors[0] = 0.0f;
 			colors[1] = 0.0f;
 			colors[2] = 1.0f;
+			colors[3] = 1.0f;
 		}
 		return qtrue;
 	}
@@ -435,7 +437,7 @@ retryModel:
 	}
 	else
 	{
-		ci->colorOverride[0] = ci->colorOverride[1] = ci->colorOverride[2] = 0.0f;
+		ci->colorOverride[0] = ci->colorOverride[1] = ci->colorOverride[2] = ci->colorOverride[3] = 0.0f;
 	}
 
 	if (strchr(skinName, '|'))
@@ -1281,9 +1283,7 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 
 void CG_SetModelColor(const char *color, clientInfo_t *ci)
 {
-	char modelColor[12];
-	char *start;
-	char *end;
+	char modelColor[9];
 	qboolean colorsValid;
 	int clientNum;
 	
@@ -1293,37 +1293,19 @@ void CG_SetModelColor(const char *color, clientInfo_t *ci)
 		ci->modelColor[0] = cg_char_color_red.integer;
 		ci->modelColor[1] = cg_char_color_green.integer;
 		ci->modelColor[2] = cg_char_color_blue.integer;
+		ci->modelColor[3] = cg_char_color_alpha.integer;
 		return;
 	}
 
 	Q_strncpyz(modelColor, color, sizeof(modelColor));
-	colorsValid = qfalse;
-
-	start = modelColor;
-	end = strchr(start, '-');
-	if (end != NULL)
-	{
-		*end = '\0';
-		end++;
-		ci->modelColor[0] = atoi(start);
-
-		start = end;
-		end = strchr(start, '-');
-		if (end != NULL)
-		{
-			*end = '\0';
-			end++;
-			ci->modelColor[1] = atoi(start);
-			ci->modelColor[2] = atoi(end);
-			colorsValid = qtrue;
-		}
-	}
+	colorsValid = parseHex(modelColor, ci->modelColor);
 
 	if (!colorsValid)
 	{
 		ci->modelColor[0] = 255;
 		ci->modelColor[1] = 255;
 		ci->modelColor[2] = 255;
+		ci->modelColor[3] = 255;
 	}
 }
 
@@ -1351,12 +1333,14 @@ void CG_UpdateLocalCharacterColors(void)
 			ci->modelColor[0] = cg_char_color_red.integer;
 			ci->modelColor[1] = cg_char_color_green.integer;
 			ci->modelColor[2] = cg_char_color_blue.integer;
+			ci->modelColor[3] = cg_char_color_alpha.integer;
 		}
 		else
 		{
 			ci->modelColor[0] = 255;
 			ci->modelColor[1] = 255;
 			ci->modelColor[2] = 255;
+			ci->modelColor[3] = 255;
 		}
 	}
 }
@@ -1629,7 +1613,7 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	}
 	else
 	{
-		newInfo.colorOverride[0] = newInfo.colorOverride[1] = newInfo.colorOverride[2] = 0.0f;
+		newInfo.colorOverride[0] = newInfo.colorOverride[1] = newInfo.colorOverride[2] = newInfo.colorOverride[3] = 0.0f;
 	}
 
 	// scan for an existing clientinfo that matches this modelname
@@ -6782,19 +6766,20 @@ void CG_Player( centity_t *cent ) {
 
 	if (ci->colorOverride[0] != 0.0f ||
 		ci->colorOverride[1] != 0.0f ||
-		ci->colorOverride[2] != 0.0f)
+		ci->colorOverride[2] != 0.0f ||
+		ci->colorOverride[3] != 0.0f)
 	{
 		legs.shaderRGBA[0] = ci->colorOverride[0]*255.0f;
 		legs.shaderRGBA[1] = ci->colorOverride[1]*255.0f;
 		legs.shaderRGBA[2] = ci->colorOverride[2]*255.0f;
-		legs.shaderRGBA[3] = 255;
+		legs.shaderRGBA[3] = ci->colorOverride[3]*255.0f;
 	}
 	else
 	{
 		legs.shaderRGBA[0] = ci->modelColor[0];
 		legs.shaderRGBA[1] = ci->modelColor[1];
 		legs.shaderRGBA[2] = ci->modelColor[2];
-		legs.shaderRGBA[3] = 255;
+		legs.shaderRGBA[3] = ci->modelColor[3];
 	}
 
 // minimal_add:

@@ -553,7 +553,7 @@ static void CG_General( centity_t *cent ) {
 		ent.shaderRGBA[0] = clientInfo->modelColor[0];
 		ent.shaderRGBA[1] = clientInfo->modelColor[1];
 		ent.shaderRGBA[2] = clientInfo->modelColor[2];
-		ent.shaderRGBA[3] = 255;
+		ent.shaderRGBA[3] = clientInfo->modelColor[3];
 	}
 
 	if (cent->currentState.modelGhoul2 >= G2_MODELPART_HEAD &&

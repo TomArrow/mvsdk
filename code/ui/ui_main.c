@@ -221,6 +221,7 @@ vmCvar_t  ui_initialized;
 vmCvar_t	ui_char_color_red;
 vmCvar_t	ui_char_color_green;
 vmCvar_t	ui_char_color_blue;
+vmCvar_t	ui_char_color_alpha;
 vmCvar_t	ui_PrecacheModels;
 vmCvar_t	ui_char_anim;
 qboolean menuInJK2MV = qfalse;
@@ -5782,6 +5783,7 @@ static void UI_UpdateCharacterCvars ( void )
 	trap_Cvar_Set ( "char_color_red", UI_Cvar_VariableString ( "ui_char_color_red" ) );
 	trap_Cvar_Set ( "char_color_green", UI_Cvar_VariableString ( "ui_char_color_green" ) );
 	trap_Cvar_Set ( "char_color_blue", UI_Cvar_VariableString ( "ui_char_color_blue" ) );
+	trap_Cvar_Set ( "char_color_alpha", UI_Cvar_VariableString ( "ui_char_color_alpha" ) );
 	trap_Cvar_Set ( "ui_selectedModelIndex", "-1");
 
 }
@@ -5795,6 +5797,7 @@ static void UI_GetCharacterCvars ( void )
 	trap_Cvar_Set ( "ui_char_color_red", UI_Cvar_VariableString ( "char_color_red" ) );
 	trap_Cvar_Set ( "ui_char_color_green", UI_Cvar_VariableString ( "char_color_green" ) );
 	trap_Cvar_Set ( "ui_char_color_blue", UI_Cvar_VariableString ( "char_color_blue" ) );
+	trap_Cvar_Set ( "ui_char_color_alpha", UI_Cvar_VariableString ( "char_color_alpha" ) );
 
 	model = UI_Cvar_VariableString ( "model" );
 	skin = Q_strrchr(model,'/');
@@ -11029,6 +11032,7 @@ static const cvarTable_t cvarTable[] = {
 	{ &ui_char_color_red,		"ui_char_color_red",	"255", CVAR_ROM|CVAR_INTERNAL}, 
 	{ &ui_char_color_green,		"ui_char_color_green",	"255", CVAR_ROM|CVAR_INTERNAL}, 
 	{ &ui_char_color_blue,		"ui_char_color_blue",	"255", CVAR_ROM|CVAR_INTERNAL}, 
+	{ &ui_char_color_alpha,		"ui_char_color_alpha",	"255", CVAR_ROM|CVAR_INTERNAL}, 
 	{ &ui_PrecacheModels,		"ui_PrecacheModels",	"0", CVAR_ARCHIVE}, 
 	{ &ui_team_fraglimit, "ui_team_fraglimit", "0", CVAR_ARCHIVE|CVAR_INTERNAL },
 	{ &ui_team_timelimit, "ui_team_timelimit", "20", CVAR_ARCHIVE|CVAR_INTERNAL },

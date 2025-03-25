@@ -1492,6 +1492,34 @@ void NameDedupe_SanitizeString(char* in, char* out) {
 	*out = 0;
 }
 
+void G_SetModelColor(char color[9], const char *userinfo)
+{
+	byte serverColor[4];
+	char clientColor[4][4];
+
+	Q_strncpyz(clientColor[0], Info_ValueForKey(userinfo, "char_color_red"), sizeof(clientColor[0]));
+	Q_strncpyz(clientColor[1], Info_ValueForKey(userinfo, "char_color_green"), sizeof(clientColor[1]));
+	Q_strncpyz(clientColor[2], Info_ValueForKey(userinfo, "char_color_blue"), sizeof(clientColor[2]));
+	Q_strncpyz(clientColor[3], Info_ValueForKey(userinfo, "char_color_alpha"), sizeof(clientColor[3]));
+
+	if (clientColor[0][0] == '\0' || clientColor[1][0] == '\0' || clientColor[2][0] == '\0' || clientColor[3][0] == '\0')
+	{
+		serverColor[0] = 255;
+		serverColor[1] = 255;
+		serverColor[2] = 255;
+		serverColor[3] = 255;
+	}
+	else
+	{
+		serverColor[0] = atoi(clientColor[0]);
+		serverColor[1] = atoi(clientColor[1]);
+		serverColor[2] = atoi(clientColor[2]);
+		serverColor[3] = atoi(clientColor[3]);
+	}
+
+	Q_strncpyz(color, colorToHex(serverColor), 9);
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -1508,7 +1536,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	int		teamTask, teamLeader, team, health;
 	char	*s;
 	char	model[MAX_QPATH];
-	char	modelColor[12];
+	char	modelColor[9];
 	char	saberModel[MAX_QPATH];
 	//char	headModel[MAX_QPATH];
 	char	forcePowers[MAX_QPATH];
@@ -1692,29 +1720,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	}
 
 	// model color
-	{
-		byte color_integer[3];
-		char color_string[3][4];
-
-		Q_strncpyz(color_string[0], Info_ValueForKey(userinfo, "char_color_red"), sizeof(color_string[0]));
-		Q_strncpyz(color_string[1], Info_ValueForKey(userinfo, "char_color_green"), sizeof(color_string[1]));
-		Q_strncpyz(color_string[2], Info_ValueForKey(userinfo, "char_color_blue"), sizeof(color_string[2]));
-
-		if (color_string[0][0] == '\0' || color_string[1][0] == '\0' || color_string[2][0] == '\0')
-		{
-			color_integer[0] = 255;
-			color_integer[1] = 255;
-			color_integer[2] = 255;
-		}
-		else
-		{
-			color_integer[0] = atoi(color_string[0]);
-			color_integer[1] = atoi(color_string[1]);
-			color_integer[2] = atoi(color_string[2]);
-		}
-
-		Com_sprintf(modelColor, sizeof(modelColor), "%u-%u-%u", color_integer[0], color_integer[1], color_integer[2]);
-	}
+	G_SetModelColor(modelColor, userinfo);
 
 	// saber model
 	Q_strncpyz(saberModel, Info_ValueForKey(userinfo, "saber1"), sizeof(saberModel));

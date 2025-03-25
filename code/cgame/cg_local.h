@@ -605,8 +605,8 @@ typedef struct {
 	char			username[MAX_QPATH];
 
 	playerMode_e	playerMode; // tommyternal gamemodes (duel, ironman etc)
-	float			colorOverride[3];
-	byte			modelColor[3];
+	float			colorOverride[4];
+	byte			modelColor[4];
 	qboolean		useModelColor;
 	char			saberModel[MAX_QPATH];
 	qboolean		isDefaultModel;
@@ -1992,6 +1992,7 @@ extern	vmCvar_t		cg_acidtrip;
 extern	vmCvar_t		cg_char_color_red;
 extern	vmCvar_t		cg_char_color_green;
 extern	vmCvar_t		cg_char_color_blue;
+extern	vmCvar_t		cg_char_color_alpha;
 extern	vmCvar_t		cg_JKA;
 extern	vmCvar_t		cg_menuFileParseSpam;
 

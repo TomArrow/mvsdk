@@ -35,6 +35,7 @@ typedef struct scrollInfo_s {
 extern vmCvar_t	ui_char_color_red;
 extern vmCvar_t	ui_char_color_green;
 extern vmCvar_t	ui_char_color_blue;
+extern vmCvar_t	ui_char_color_alpha;
 extern vmCvar_t	ui_s_language;
 
 // Some extern functions hoisted from the middle of this file to get all the non-cgame,
@@ -792,7 +793,7 @@ void Window_Paint(Window *w, float fadeAmount, float fadeClamp, float fadeCycle)
 			color[0] = ui_char_color_red.integer/255.0f;
 			color[1] = ui_char_color_green.integer/255.0f;
 			color[2] = ui_char_color_blue.integer/255.0f;
-			color[3] = 1;
+			color[3] = ui_char_color_alpha.integer/255.0f;
 			DC->setColor(color);
 		}
 #endif // 
@@ -5658,7 +5659,7 @@ void Item_Model_Paint(itemDef_t *item)
 			ent.shaderRGBA[0] = ui_char_color_red.integer;
 			ent.shaderRGBA[1] = ui_char_color_green.integer;
 			ent.shaderRGBA[2] = ui_char_color_blue.integer;
-			ent.shaderRGBA[3] = 255;
+			ent.shaderRGBA[3] = ui_char_color_alpha.integer;
 //			UI_TalkingHead(item);
 		}
 		if ( item->flags&ITF_ISANYSABER )
@@ -5857,7 +5858,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 						color[0] = ui_char_color_red.integer/COLOR_MAX;
 						color[1] = ui_char_color_green.integer/COLOR_MAX;
 						color[2] = ui_char_color_blue.integer/COLOR_MAX;
-						color[3] = 1.0f;
+						color[3] = ui_char_color_alpha.integer/COLOR_MAX;
 						DC->setColor(color);
 					}
 #endif
@@ -5949,7 +5950,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 								color[0] = ui_char_color_red.integer/COLOR_MAX;
 								color[1] = ui_char_color_green.integer/COLOR_MAX;
 								color[2] = ui_char_color_blue.integer/COLOR_MAX;
-								color[3] = 1.0f;
+								color[3] = ui_char_color_alpha.integer/COLOR_MAX;
 								DC->setColor(color);
 							}
 #endif
