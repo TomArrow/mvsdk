@@ -80,6 +80,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/cgame/cg_multiversion_syscalls.c"
 	"${SRCDir}/game/bg_multiversion.c"
 	"${SRCDir}/game/bg_defrag_global.c"
+	"${SRCDir}/game/bg_saberLoad.c"
 	"${SRCDir}/game/animMappingTable.c"
 
 	"${SRCDir}/game/bg_misc.c"
