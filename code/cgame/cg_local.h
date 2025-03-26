@@ -728,6 +728,12 @@ typedef struct chatBoxItem_s
 
 
 #define MAX_PREDICTED_EVENTS	16
+
+typedef enum {
+	HUD_TYPE_JK2,
+	HUD_TYPE_TEXT,
+	HUD_TYPE_JKA,
+} hudType_t;
  
 typedef struct {
 	int			clientFrame;		// incremented each frame
@@ -1032,6 +1038,8 @@ Ghoul2 Insert End
 
 	qboolean			nextCGTraceExplicitlyDeluxe;
 	qboolean			useLocalCharacterColors;
+	hudType_t			hudType;
+	qboolean			updateHud;
 } cg_t;
 
 #define MAX_TICS	14
@@ -2044,6 +2052,7 @@ void CG_PrevForcePower_f(void);
 void MV_LoadSettings( const char *info );
 void MV_UpdateCgFlags( void );
 void CG_WideScreenMode(qboolean on);
+void CG_UpdateHud(const char *path);
 
 //
 // cg_view.c

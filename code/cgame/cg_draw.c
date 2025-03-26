@@ -1848,7 +1848,7 @@ void CG_DrawHUD(centity_t	*cent)
 
 	speedometerXPos = cg_speedometerX.value;
 
-	if (cg_hudFiles.integer)
+	if (cg.hudType == HUD_TYPE_TEXT)
 		speedometerXPos -= 8;
 
 	if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
@@ -1959,10 +1959,13 @@ void CG_DrawHUD(centity_t	*cent)
 		{	// Don't draw a bias.
 			scoreStr = va("Score: %i", cg.snap->ps.persistant[PERS_SCORE]);
 		}
-		UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7f);
+		if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+		{
+			UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7f);
+		}
 	}
 
-	if (cg_hudFiles.integer)
+	if (cg.hudType == HUD_TYPE_TEXT)
 	{
 		int x = 0;
 		int y = cgs.screenHeight - 80;
@@ -2035,7 +2038,7 @@ void CG_DrawHUD(centity_t	*cent)
 	menuHUD = Menus_FindByName("lefthud");
 	if (menuHUD)
 	{
-		if (Menu_IsJKA(menuHUD))
+		if (cg.hudType == HUD_TYPE_JKA)
 		{
 			itemDef_t *focusItem;
 
@@ -2130,7 +2133,7 @@ void CG_DrawHUD(centity_t	*cent)
 	menuHUD = Menus_FindByName("righthud");
 	if (menuHUD)
 	{
-		if (Menu_IsJKA(menuHUD))
+		if (cg.hudType == HUD_TYPE_JKA)
 		{
 			itemDef_t *focusItem;
 
@@ -6323,7 +6326,7 @@ static void CG_Draw2D( void ) {
 
 			speedometerXPos = cg_speedometerX.value;
 
-			if (cg_hudFiles.integer)
+			if (cg.hudType == HUD_TYPE_TEXT)
 				speedometerXPos -= 8;
 
 			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
@@ -6793,6 +6796,13 @@ static void CG_Draw2D( void ) {
 		return;
 	}
 */
+
+	if (cg.updateHud)
+	{
+		CG_UpdateHud(cg_hudFiles.string);
+		cg.updateHud = qfalse;
+	}
+
 	if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) {
 		CG_DrawSpectator();
 		CG_DrawCrosshair(NULL, 0);

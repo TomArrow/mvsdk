@@ -879,8 +879,13 @@ void CG_DrawIconBackground(void)
 		return;
 	}
 
-	if (cg_hudFiles.integer)
+	if (cg.hudType == HUD_TYPE_TEXT)
 	{ //simple hud
+		return;
+	}
+
+	if (cg.hudType == HUD_TYPE_JKA)
+	{
 		return;
 	}
 

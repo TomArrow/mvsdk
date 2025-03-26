@@ -112,6 +112,7 @@ int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
 int strafeHelperActiveColorModificationCount = -1;//japro
+int hudModificationCount = -1;
 
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum );
 void CG_Shutdown( void );
@@ -1392,6 +1393,11 @@ void CG_UpdateCvars( void ) {
 	if (strafeHelperActiveColorModificationCount != cg_strafeHelperActiveColor.modificationCount) {
 		strafeHelperActiveColorModificationCount = cg_strafeHelperActiveColor.modificationCount;
 		CG_StrafeHelperActiveColorChange();
+	}
+
+	if (hudModificationCount != cg_hudFiles.modificationCount) {
+		hudModificationCount = cg_hudFiles.modificationCount;
+		cg.updateHud = qtrue;
 	}
 }
 
@@ -2989,6 +2995,55 @@ void CG_LoadMenus(const char *menuFile, qboolean reset) {
 	trap_PC_RemoveAllGlobalDefines ( );
 }
 
+hudType_t CG_GetHudTypeFromString(const char *string)
+{
+	if (Q_stricmp(string, "0") == 0)
+	{
+		return HUD_TYPE_JK2;
+	}
+	else if (Q_stricmp(string, "1") == 0)
+	{
+		return HUD_TYPE_TEXT;
+	}
+	else if (Q_stricmp(string, "2") == 0)
+	{
+		return HUD_TYPE_JKA;
+	}
+	else if (Q_stricmp(string, "ui/jk2hud.txt") == 0)
+	{
+		return HUD_TYPE_JK2;
+	}
+	else if (Q_stricmp(string, "ui/jahud.txt") == 0)
+	{
+		return HUD_TYPE_JKA;
+	}
+	else
+	{
+		return HUD_TYPE_JKA;
+	}
+}
+
+void CG_UpdateHud(const char *path)
+{
+	const char *hudSet;
+
+	cg.hudType = CG_GetHudTypeFromString(path);
+
+	switch (cg.hudType)
+	{
+	default:
+	case HUD_TYPE_JK2:
+	case HUD_TYPE_TEXT:
+		hudSet = "ui/jk2hud.txt";
+		break;
+	case HUD_TYPE_JKA:
+		hudSet = "ui/jahud.txt";
+		break;
+	}
+
+	CG_LoadMenus(hudSet, qtrue);
+}
+
 /*
 =================
 CG_LoadHudMenu();
@@ -2997,8 +3052,6 @@ CG_LoadHudMenu();
 */
 void CG_LoadHudMenu() 
 {
-	const char *hudSet;
-
 	cgDC.registerShaderNoMip = &trap_R_RegisterShaderNoMip;
 	cgDC.setColor = &trap_R_SetColor;
 	cgDC.drawHandlePic = &CG_DrawPic;
@@ -3059,15 +3112,8 @@ void CG_LoadHudMenu()
 	
 	Init_Display(&cgDC);
 
-	Menu_Reset();
-
-	hudSet = cg_hudFiles.string;
-	if (hudSet[0] == '\0') 
-	{
-		hudSet = "ui/jk2hud.txt";
-	}
-
-	CG_LoadMenus(hudSet, qtrue);
+	CG_UpdateHud(cg_hudFiles.string);
+	cg.updateHud = qfalse;
 }
 
 void CG_AssetCache() {
