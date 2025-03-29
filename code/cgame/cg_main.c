@@ -108,6 +108,7 @@ vec4_t colorTable[CT_MAX] =
 };
 
 int forceMyModelModificationCount = -1;
+int forceMySaberModificationCount = -1;
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
@@ -716,6 +717,7 @@ vmCvar_t 	cg_stats;
 vmCvar_t 	cg_buildScript;
 vmCvar_t 	cg_forceModel;
 vmCvar_t 	cg_forceMyModel;
+vmCvar_t 	cg_forceMySaber;
 vmCvar_t	cg_paused;
 vmCvar_t	cg_blood;
 vmCvar_t	cg_predictItems;
@@ -1079,6 +1081,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_teamChatHeight, "cg_teamChatHeight", "0", CVAR_ARCHIVE  },
 	{ &cg_forceModel, "cg_forceModel", "0", CVAR_ARCHIVE  },
 	{ &cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE  },
+	{ &cg_forceMySaber, "cg_forceMySaber", "", CVAR_ARCHIVE },
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	//{ &cg_optimizedPredict, "cg_optimizedPredict", "0", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
@@ -1194,6 +1197,7 @@ void CG_RegisterCvars( void ) {
 
 	forceModelModificationCount = cg_forceModel.modificationCount;
 	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
+	forceMySaberModificationCount = cg_forceMySaber.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -1377,6 +1381,11 @@ void CG_UpdateCvars( void ) {
 	}
 	if ( forceMyModelModificationCount != cg_forceMyModel.modificationCount ) {
 		forceMyModelModificationCount = cg_forceMyModel.modificationCount;
+		CG_ForceModelChange();
+	}
+
+	if ( forceMySaberModificationCount != cg_forceMySaber.modificationCount ) {
+		forceMySaberModificationCount = cg_forceMySaber.modificationCount;
 		CG_ForceModelChange();
 	}
 

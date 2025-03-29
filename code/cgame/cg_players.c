@@ -1591,6 +1591,11 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		v = "Kyle";
 	}
 
+	if (strlen(cg_forceMySaber.string) && cg.snap && clientNum == cg.snap->ps.clientNum)
+	{
+		v = cg_forceMySaber.string;
+	}
+
 	if (Q_stricmp(v, ci->saberName))
 	{
 		Q_strncpyz( newInfo.saberName, v, MAX_QPATH );
