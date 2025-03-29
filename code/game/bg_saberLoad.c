@@ -4,6 +4,10 @@
 #include "bg_local.h"
 #include "w_saber.h"
 
+#ifdef JK2_CGAME
+#include "../cgame/cg_local.h"
+#endif
+
 extern stringID_table_t animTable [MAX_ANIMATIONS+1];
 
 //Could use strap stuff but I don't particularly care at the moment anyway.
@@ -14,9 +18,9 @@ extern void	trap_FS_FCloseFile( fileHandle_t f );
 extern int	trap_FS_GetFileList(  const char *path, const char *extension, char *listbuf, int bufsize );
 extern qhandle_t trap_R_RegisterSkin( const char *name );
 
-#ifdef QAGAME
+#ifdef JK2_GAME
 extern int G_SoundIndex( const char *name );
-#elif defined CGAME
+#elif defined JK2_CGAME
 sfxHandle_t trap_S_RegisterSound( const char *sample);
 qhandle_t	trap_R_RegisterShader( const char *name );			// returns all white if not found
 int	trap_FX_RegisterEffect(const char *file);
@@ -24,14 +28,35 @@ int	trap_FX_RegisterEffect(const char *file);
 
 int BG_SoundIndex(char *sound)
 {
-#ifdef QAGAME
+#ifdef JK2_GAME
 	return G_SoundIndex(sound);
-#elif defined CGAME
+#elif defined JK2_CGAME
 	return trap_S_RegisterSound(sound);
 #endif
 }
 
-extern stringID_table_t FPTable[];
+stringID_table_t FPTable[] =
+{
+	ENUM2STRING(FP_HEAL),
+	ENUM2STRING(FP_LEVITATION),
+	ENUM2STRING(FP_SPEED),
+	ENUM2STRING(FP_PUSH),
+	ENUM2STRING(FP_PULL),
+	ENUM2STRING(FP_TELEPATHY),
+	ENUM2STRING(FP_GRIP),
+	ENUM2STRING(FP_LIGHTNING),
+	ENUM2STRING(FP_RAGE),
+	ENUM2STRING(FP_PROTECT),
+	ENUM2STRING(FP_ABSORB),
+	ENUM2STRING(FP_TEAM_HEAL),
+	ENUM2STRING(FP_TEAM_FORCE),
+	ENUM2STRING(FP_DRAIN),
+	ENUM2STRING(FP_SEE),
+	ENUM2STRING(FP_SABERATTACK),
+	ENUM2STRING(FP_SABERDEFEND),
+	ENUM2STRING(FP_SABERTHROW),
+	"",	-1
+};
 
 #define MAX_SABER_DATA_SIZE 0x80000
 static char SaberParms[MAX_SABER_DATA_SIZE];
@@ -67,54 +92,12 @@ stringID_table_t SaberMoveTable[] =
 	ENUM2STRING(LS_A_BACKSTAB),
 	ENUM2STRING(LS_A_BACK),
 	ENUM2STRING(LS_A_BACK_CR),
-	ENUM2STRING(LS_ROLL_STAB),
 	ENUM2STRING(LS_A_LUNGE),
 	ENUM2STRING(LS_A_JUMP_T__B_),
 	ENUM2STRING(LS_A_FLIP_STAB),
 	ENUM2STRING(LS_A_FLIP_SLASH),
-	ENUM2STRING(LS_JUMPATTACK_DUAL),
 	ENUM2STRING(LS_JUMPATTACK_ARIAL_LEFT),
 	ENUM2STRING(LS_JUMPATTACK_ARIAL_RIGHT),
-	ENUM2STRING(LS_JUMPATTACK_CART_LEFT),
-	ENUM2STRING(LS_JUMPATTACK_CART_RIGHT),
-	ENUM2STRING(LS_JUMPATTACK_STAFF_LEFT),
-	ENUM2STRING(LS_JUMPATTACK_STAFF_RIGHT),
-	ENUM2STRING(LS_BUTTERFLY_LEFT),
-	ENUM2STRING(LS_BUTTERFLY_RIGHT),
-	ENUM2STRING(LS_A_BACKFLIP_ATK),
-	ENUM2STRING(LS_SPINATTACK_DUAL),
-	ENUM2STRING(LS_SPINATTACK),
-	ENUM2STRING(LS_LEAP_ATTACK),
-	ENUM2STRING(LS_SWOOP_ATTACK_RIGHT),
-	ENUM2STRING(LS_SWOOP_ATTACK_LEFT),
-	ENUM2STRING(LS_TAUNTAUN_ATTACK_RIGHT),
-	ENUM2STRING(LS_TAUNTAUN_ATTACK_LEFT),
-	ENUM2STRING(LS_KICK_F),
-	ENUM2STRING(LS_KICK_B),
-	ENUM2STRING(LS_KICK_R),
-	ENUM2STRING(LS_KICK_L),
-	ENUM2STRING(LS_KICK_S),
-	ENUM2STRING(LS_KICK_BF),
-	ENUM2STRING(LS_KICK_RL),
-	ENUM2STRING(LS_KICK_F_AIR),
-	ENUM2STRING(LS_KICK_B_AIR),
-	ENUM2STRING(LS_KICK_R_AIR),
-	ENUM2STRING(LS_KICK_L_AIR),
-	ENUM2STRING(LS_STABDOWN),
-	ENUM2STRING(LS_STABDOWN_STAFF),
-	ENUM2STRING(LS_STABDOWN_DUAL),
-	ENUM2STRING(LS_DUAL_SPIN_PROTECT),
-	ENUM2STRING(LS_STAFF_SOULCAL),
-	ENUM2STRING(LS_A1_SPECIAL),
-	ENUM2STRING(LS_A2_SPECIAL),
-	ENUM2STRING(LS_A3_SPECIAL),
-	ENUM2STRING(LS_UPSIDE_DOWN_ATTACK),
-	ENUM2STRING(LS_PULL_ATTACK_STAB),
-	ENUM2STRING(LS_PULL_ATTACK_SWING),
-	ENUM2STRING(LS_SPINATTACK_ALORA),
-	ENUM2STRING(LS_DUAL_FB),
-	ENUM2STRING(LS_DUAL_LR),
-	ENUM2STRING(LS_HILT_BASH),
 	"",	-1
 };
 
@@ -167,7 +150,7 @@ saber_colors_t TranslateSaberColor( const char *name )
 	}
 	if ( !Q_stricmp( name, "random" ) ) 
 	{
-		return ((saber_colors_t)(Q_irand( SABER_ORANGE, SABER_PURPLE )));
+		return ((saber_colors_t)(Q_irand( SABER_ORANGE, SABER_PURPLE, qfalse, SABER_ORANGE )));
 	}
 	return SABER_BLUE;
 }
@@ -487,16 +470,16 @@ void WP_SaberSetDefaults( saberInfo_t *saber )
 	{
 		saber->blade[i].color = SABER_RED;
 		saber->blade[i].radius = SABER_RADIUS_STANDARD;
-		saber->blade[i].lengthMax = 32;
+		saber->blade[i].lengthMax = 40;
 	}
 
-	strcpy(saber->name, "default");
-	strcpy(saber->fullName, "lightsaber");
-	strcpy(saber->model, "models/weapons2/saber_reborn/saber_w.glm");
+	strcpy(saber->name, "Kyle");
+	strcpy(saber->fullName, "Katarn");
+	strcpy(saber->model, "models/weapons2/saber/saber_w.glm");
 	saber->skin = 0;
-	saber->soundOn = BG_SoundIndex( "sound/weapons/saber/enemy_saber_on.wav" );
-	saber->soundLoop = BG_SoundIndex( "sound/weapons/saber/saberhum3.wav" );
-	saber->soundOff = BG_SoundIndex( "sound/weapons/saber/enemy_saber_off.wav" );
+	saber->soundOn = BG_SoundIndex( "sound/weapons/saber/saberon.wav" );
+	saber->soundLoop = BG_SoundIndex( "sound/weapons/saber/saberhum1.wav" );
+	saber->soundOff = BG_SoundIndex( "sound/weapons/saber/saberoffquick.wav" );
 	saber->numBlades = 1;
 	saber->type = SABER_SINGLE;
 	saber->stylesLearned = 0;
@@ -1794,9 +1777,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 				SkipRestOfLine( &p );
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->g2MarksShader = trap_R_RegisterShader( value );
 #else
 			SkipRestOfLine(&p);
@@ -1812,9 +1795,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 				SkipRestOfLine( &p );
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->g2WeaponMarkShader = trap_R_RegisterShader( value );
 #else
 			SkipRestOfLine(&p);
@@ -2063,9 +2046,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->blockEffect = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2080,9 +2063,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->hitPersonEffect = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2097,9 +2080,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->hitOtherEffect = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2114,9 +2097,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->bladeEffect = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2205,9 +2188,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 				SkipRestOfLine( &p );
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->g2MarksShader2 = trap_R_RegisterShader( value );
 #else
 			SkipRestOfLine(&p);
@@ -2223,9 +2206,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 				SkipRestOfLine( &p );
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->g2WeaponMarkShader2 = trap_R_RegisterShader( value );
 #else
 			SkipRestOfLine(&p);
@@ -2474,9 +2457,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->blockEffect2 = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2491,9 +2474,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->hitPersonEffect2 = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2508,9 +2491,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->hitOtherEffect2 = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2525,9 +2508,9 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{
 				continue;
 			}
-#ifdef QAGAME//cgame-only cares about this
+#ifdef JK2_GAME//cgame-only cares about this
 			SkipRestOfLine(&p);
-#elif defined CGAME
+#elif defined JK2_CGAME
 			saber->bladeEffect2 = trap_FX_RegisterEffect( (char *)value );
 #else
 			SkipRestOfLine(&p);
@@ -2743,8 +2726,16 @@ void WP_SaberLoadParms( void )
 	marker = SaberParms+totallen;
 	*marker = 0;
 
+#ifdef JK2_CGAME
+	if (!coolApi_jkaVersion)
+		return;
+
+	//now load in the extra .sab extensions
+	fileCnt = trap_CG_COOL_API_GetFileList("ext_data/sabers", ".sab", saberExtensionListBuf, sizeof(saberExtensionListBuf) );
+#else
 	//now load in the extra .sab extensions
 	fileCnt = trap_FS_GetFileList("ext_data/sabers", ".sab", saberExtensionListBuf, sizeof(saberExtensionListBuf) );
+#endif
 
 	holdChar = saberExtensionListBuf;
 	for ( i = 0; i < fileCnt; i++, holdChar += saberExtFNLen + 1 ) 

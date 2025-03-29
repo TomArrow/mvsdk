@@ -196,24 +196,6 @@ typedef enum {
 } teamForcePowers_t;
 
 #define MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS 32
-typedef struct
-{
-	// Actual trail stuff
-	int		inAction;	// controls whether should we even consider starting one
-	int		duration;	// how long each trail seg stays in existence
-	int		lastTime;	// time a saber segement was last stored
-	vec3_t	base;
-	vec3_t	tip;
-
-	vec3_t	dualbase;
-	vec3_t	dualtip;
-
-	// Marks stuff
-	qboolean	haveOldPos[2];
-	vec3_t		oldPos[2];
-	vec3_t		oldNormal[2];	// store this in case we don't have a connect-the-dots situation
-							//	..then we'll need the normal to project a mark blob onto the impact point
-} saberTrail_t;
 
 // centity_t have a direct corespondence with gentity_t in the game, but
 // only the entityState_t is directly communicated to the cgame
@@ -315,6 +297,7 @@ typedef struct centity_s {
 
 	saberTrail_t	saberTrail;
 	int				saberHitWallSoundDebounceTime;
+	int				serverSaberHitIndex;
 } centity_t;
 
 extern centity_t* cg_statsEntities[MAX_CLIENTS];
@@ -608,8 +591,11 @@ typedef struct {
 	float			colorOverride[4];
 	byte			modelColor[4];
 	qboolean		useModelColor;
-	char			saberModel[MAX_QPATH];
 	qboolean		isDefaultModel;
+	saberInfo_t		saber[MAX_SABERS];
+	char			saberName[MAX_QPATH];
+	char			saber2Name[MAX_QPATH];
+	void			*ghoul2Weapons[MAX_SABERS];
 } clientInfo_t;
 
 
@@ -2765,10 +2751,10 @@ void CG_CreateBBRefEnts(entityState_t *s1, vec3_t origin );
 
 void CG_InitG2Weapons(void);
 void CG_ShutDownG2Weapons(void);
-void CG_CopyG2WeaponInstance(int weaponNum, void *toGhoul2);
+void CG_CopyG2WeaponInstance(centity_t *cent, int weaponNum, void *toGhoul2);
+void *CG_G2WeaponInstance(centity_t *cent, int weapon);
 void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent);
 
-extern void *g2WeaponInstances[MAX_WEAPONS];
 /*
 Ghoul2 Insert End
 */

@@ -1070,8 +1070,60 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 	}
 }
 
+//Take care of initializing all the ghoul2 saber stuff based on clientinfo data. -rww
+static void CG_InitG2SaberData(int saberNum, clientInfo_t *ci)
+{
+	trap_G2API_InitGhoul2Model(&ci->ghoul2Weapons[saberNum], ci->saber[saberNum].model, 0, ci->saber[saberNum].skin, 0, 0, 0);
 
+	if (ci->ghoul2Weapons[saberNum])
+	{
+		int k = 0;
+		int tagBolt;
+		char *tagName;
 
+		if (ci->saber[saberNum].skin && coolApi_jkaVersion)
+		{
+			trap_CG_COOL_API_SetSkin(ci->ghoul2Weapons[saberNum], 0, ci->saber[saberNum].skin, ci->saber[saberNum].skin);
+		}
+
+		if (ci->saber[saberNum].saberFlags & SFL_BOLT_TO_WRIST)
+		{
+			trap_G2API_SetBoltInfo(ci->ghoul2Weapons[saberNum], 0, 3+saberNum);
+		}
+		else
+		{
+			trap_G2API_SetBoltInfo(ci->ghoul2Weapons[saberNum], 0, saberNum);
+		}
+
+		while (k < ci->saber[saberNum].numBlades)
+		{
+			tagName = va("*blade%i", k+1);
+			tagBolt = trap_G2API_AddBolt(ci->ghoul2Weapons[saberNum], 0, tagName);
+
+			if (tagBolt == -1)
+			{
+				if (k == 0)
+				{ //guess this is an 0ldsk3wl saber
+					tagBolt = trap_G2API_AddBolt(ci->ghoul2Weapons[saberNum], 0, "*flash");
+
+					if (tagBolt == -1)
+					{
+						assert(0);
+					}
+					break;
+				}
+
+				if (tagBolt == -1)
+				{
+					assert(0);
+					break;
+				}
+			}
+
+			k++;
+		}
+	}
+}
 
 /*
 ======================
@@ -1345,18 +1397,9 @@ void CG_UpdateLocalCharacterColors(void)
 	}
 }
 
-void CG_SetSaberModel(const char *model, clientInfo_t *ci)
-{
-	if (model[0] == '\0')
-	{
-		Q_strncpyz(ci->saberModel, "Kyle", MAX_QPATH);
-		return;
-	}
-
-	Q_strncpyz(ci->saberModel, model, MAX_QPATH);
-}
-
 extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance
+
+void WP_SetSaber( int entNum, saberInfo_t *sabers, int saberNum, const char *saberName );
 
 /*
 ======================
@@ -1370,15 +1413,35 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	const char	*v;
 	char		*slash;
 	void *oldGhoul2;
+	void *oldG2Weapons[MAX_SABERS];
 	int i = 0;
+	int j = 0;
 	qboolean wasATST = qfalse;
+	qboolean saberUpdate[MAX_SABERS];
 
 	ci = &cgs.clientinfo[clientNum];
 
 	oldGhoul2 = ci->ghoul2Model;
 
+	for (i = 0; i < MAX_SABERS; i++)
+	{
+		oldG2Weapons[i] = ci->ghoul2Weapons[i];
+	}
+
 	configstring = CG_ConfigString( clientNum + CS_PLAYERS );
 	if ( !configstring[0] ) {
+		if (ci->ghoul2Model && trap_G2_HaveWeGhoul2Models(ci->ghoul2Model))
+		{ //clean this stuff up first
+			trap_G2API_CleanGhoul2Models(&ci->ghoul2Model);
+		}
+		for (i = 0; i < MAX_SABERS; i++)
+		{
+			if (ci->ghoul2Weapons[i] && trap_G2_HaveWeGhoul2Models(ci->ghoul2Weapons[i]))
+			{
+				trap_G2API_CleanGhoul2Models(&ci->ghoul2Weapons[i]);
+			}
+		}
+
 		memset( ci, 0, sizeof( *ci ) );
 		if (!cgs.disconnectTime[clientNum]) {
 			cgs.disconnectTime[clientNum] = cg.time;
@@ -1517,9 +1580,85 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	cg.useLocalCharacterColors = v[0] == '\0';
 	CG_SetModelColor(v, &newInfo);
 
-	// saber model
-	v = Info_ValueForKey(configstring, "st");
-	CG_SetSaberModel(v, &newInfo);
+	saberUpdate[0] = qfalse;
+	saberUpdate[1] = qfalse;
+
+	//saber being used
+	v = Info_ValueForKey( configstring, "st" );
+
+	if (v[0] == '\0')
+	{
+		v = "Kyle";
+	}
+
+	if (Q_stricmp(v, ci->saberName))
+	{
+		Q_strncpyz( newInfo.saberName, v, MAX_QPATH );
+		WP_SetSaber(clientNum, newInfo.saber, 0, newInfo.saberName);
+		saberUpdate[0] = qtrue;
+	}
+	else
+	{
+		Q_strncpyz( newInfo.saberName, ci->saberName, MAX_QPATH );
+		memcpy(&newInfo.saber[0], &ci->saber[0], sizeof(newInfo.saber[0]));
+		newInfo.ghoul2Weapons[0] = ci->ghoul2Weapons[0];
+	}
+
+	//v = Info_ValueForKey( configstring, "st2" );
+	v = "none";
+
+	if (Q_stricmp(v, ci->saber2Name))
+	{
+		Q_strncpyz( newInfo.saber2Name, v, MAX_QPATH );
+		WP_SetSaber(clientNum, newInfo.saber, 1, newInfo.saber2Name);
+		saberUpdate[1] = qtrue;
+	}
+	else
+	{
+		Q_strncpyz( newInfo.saber2Name, ci->saber2Name, MAX_QPATH );
+		memcpy(&newInfo.saber[1], &ci->saber[1], sizeof(newInfo.saber[1]));
+		newInfo.ghoul2Weapons[1] = ci->ghoul2Weapons[1];
+	}
+
+	if (saberUpdate[0] || saberUpdate[1])
+	{
+		for (i = 0; i < MAX_SABERS; i++)
+		{
+			if (saberUpdate[i])
+			{
+				if (newInfo.saber[i].model[0])
+				{
+					if (oldG2Weapons[i])
+					{ //free the old instance(s)
+						trap_G2API_CleanGhoul2Models(&oldG2Weapons[i]);
+						oldG2Weapons[i] = 0;
+					}
+
+					CG_InitG2SaberData(i, &newInfo);
+				}
+				else
+				{
+					if (oldG2Weapons[i])
+					{ //free the old instance(s)
+						trap_G2API_CleanGhoul2Models(&oldG2Weapons[i]);
+						oldG2Weapons[i] = 0;
+					}
+				}
+
+				cg_entities[clientNum].weapon = 0;
+				cg_entities[clientNum].ghoul2weapon = NULL; //force a refresh
+			}
+		}
+	}
+
+	//Check for any sabers that didn't get set again, if they didn't, then reassign the pointers for the new ci
+	for (i = 0; i < MAX_SABERS; i++)
+	{
+		if (oldG2Weapons[i])
+		{
+			newInfo.ghoul2Weapons[i] = oldG2Weapons[i];
+		}
+	}
 
 	// head model
 /*
@@ -1679,10 +1818,9 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	cgs.lastValidClientinfo[clientNum] = newInfo; // We may wanna show people on the scoreboard who already disconnected. Remember stuff about them.
 
 	//force a weapon change anyway, for all clients being rendered to the current client
-	while (i < MAX_CLIENTS)
+	for (i = 0; i < MAX_CLIENTS; i++)
 	{
 		cg_entities[i].ghoul2weapon = NULL;
-		i++;
 	}
 
 	// Check if the ghoul2 model changed in any way.  This is safer than assuming we have a legal cent shile loading info.
@@ -1747,6 +1885,30 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 			trap_G2API_CleanGhoul2Models(&cg_entities[clientNum].ghoul2);
 		}
 		trap_G2API_DuplicateGhoul2Instance(ci->ghoul2Model, &cg_entities[clientNum].ghoul2);
+
+		if (cg_entities[clientNum].currentState.number != cg.predictedPlayerState.clientNum &&
+			cg_entities[clientNum].currentState.weapon == WP_SABER)
+		{
+			cg_entities[clientNum].weapon = cg_entities[clientNum].currentState.weapon;
+			if (cg_entities[clientNum].ghoul2 && ci->ghoul2Model)
+			{
+				CG_CopyG2WeaponInstance(&cg_entities[clientNum], cg_entities[clientNum].currentState.weapon, cg_entities[clientNum].ghoul2);
+				cg_entities[clientNum].ghoul2weapon = CG_G2WeaponInstance(&cg_entities[clientNum], cg_entities[clientNum].currentState.weapon);
+			}
+			if (!cg_entities[clientNum].currentState.shouldtarget)
+			{ //if not holstered set length and desired length for both blades to full right now.
+				BG_SI_SetDesiredLength(&ci->saber[0], 0, -1);
+				BG_SI_SetDesiredLength(&ci->saber[1], 0, -1);
+
+				for (i = 0; i < MAX_SABERS; i++)
+				{
+					for (j = 0; j < ci->saber[i].numBlades; j++)
+					{
+						ci->saber[i].blade[j].length = ci->saber[i].blade[j].lengthMax;
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -4331,7 +4493,7 @@ int CG_LightVerts( vec3_t normal, int numVerts, polyVert_t *verts )
 	return qtrue;
 }
 
-void CG_DoSaber( vec3_t origin, vec3_t dir, float length, saber_colors_t color, int rfx )
+void CG_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, saber_colors_t color, int rfx )
 {
 	vec3_t		mid, rgb={1,1,1};
 	qhandle_t	blade = 0, glow = 0;
@@ -4397,7 +4559,7 @@ void CG_DoSaber( vec3_t origin, vec3_t dir, float length, saber_colors_t color, 
 
 	// Jeff, I did this because I foolishly wished to have a bright halo as the saber is unleashed.  
 	// It's not quite what I'd hoped tho.  If you have any ideas, go for it!  --Pat
-	if (length < SABER_LENGTH_MAX)
+	if (length < lengthMax)
 	{
 		radiusmult = 1.0f + (2.0f / length);		// Note this creates a curve, and length cannot be < 0.5.
 	}
@@ -4737,9 +4899,9 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 		axis_[3] = {{0}};	// shut the compiler up
 	trace_t	trace;
 	int i = 0;
-	float saberLen, dualSaberLen;
+	float saberLen, saberLenMax, dualSaberLen;
 	float diff;
-	clientInfo_t *client;
+	clientInfo_t *client = NULL;
 	centity_t *saberEnt;
 	saberTrail_t *saberTrail;
 	mdxaBone_t	boltMatrix;
@@ -4749,8 +4911,26 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	vec3_t otherPos, otherDir, otherEnd;
 	float dualLen = 0.7f;
 
+	if ( VALID_INDEX(cgs.clientinfo, cent->currentState.number) )
+	{ // basejk used the number value for this even though the clientNum would make more sense, so try the number first
+		client = &cgs.clientinfo[cent->currentState.number];
+	}
+	else if ( VALID_INDEX(cgs.clientinfo, cent->currentState.clientNum) )
+	{ // if the number wasn't within the clientinfo range try the clientNum
+		client = &cgs.clientinfo[cent->currentState.clientNum];
+	}
+
 	saberEnt = &cg_entities[cent->currentState.saberEntityNum];
 	saberTrail = &cent->saberTrail;
+
+	if (client != NULL)
+	{
+		saberLenMax = client->saber[0].blade[0].lengthMax;
+	}
+	else
+	{
+		saberLenMax = SABER_LENGTH_MAX;
+	}
 
 	if (/*cg.snap->ps.clientNum == cent->currentState.number && */
 		cgs.clientinfo[ cent->currentState.clientNum ].team != TEAM_SPECTATOR &&
@@ -4762,14 +4942,14 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 			cent->saberExtendTime = cg.time;
 		}
 
-		if (cent->saberLength < SABER_LENGTH_MAX)
+		if (cent->saberLength < saberLenMax)
 		{
 			cent->saberLength += (cg.time - cent->saberExtendTime)*0.05;
 		}
 
-		if (cent->saberLength > SABER_LENGTH_MAX)
+		if (cent->saberLength > saberLenMax)
 		{
-			cent->saberLength = SABER_LENGTH_MAX;
+			cent->saberLength = saberLenMax;
 		}
 
 		cent->saberExtendTime = cg.time;
@@ -4777,7 +4957,7 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	}
 	else
 	{
-		saberLen = SABER_LENGTH_MAX;
+		saberLen = saberLenMax;
 	}
 
 /*
@@ -4840,16 +5020,8 @@ Ghoul2 Insert Start
 		VectorAdd( otherEnd, otherDir, otherEnd );
 	}
 
-	if ( VALID_INDEX(cgs.clientinfo, cent->currentState.number) )
-	{ // basejk used the number value for this even though the clientNum would make more sense, so try the number first
-		client = &cgs.clientinfo[cent->currentState.number];
-	}
-	else if ( VALID_INDEX(cgs.clientinfo, cent->currentState.clientNum) )
-	{ // if the number wasn't within the clientinfo range try the clientNum
-		client = &cgs.clientinfo[cent->currentState.clientNum];
-	}
-	else
-	{ // if neither were within the range fallback to just rendering a blade
+	if (client == NULL)
+	{
 		goto CheckTrail;
 	}
 
@@ -5173,15 +5345,15 @@ JustDoIt:
 			sideOneLen = 1;
 		}
 		
-		CG_DoSaber( org_, axis_[0], sideOneLen, scolor, renderfx );
+		CG_DoSaber( org_, axis_[0], sideOneLen, saberLenMax, scolor, renderfx );
 
-		CG_DoSaber( otherPos, otherDir, sideTwoLen, scolor, renderfx );
+		CG_DoSaber( otherPos, otherDir, sideTwoLen, saberLenMax, scolor, renderfx );
 	}
 	else
 	{
 		// Pass in the renderfx flags attached to the saber weapon model...this is done so that saber glows
 		//	will get rendered properly in a mirror...not sure if this is necessary??
-		CG_DoSaber( org_, axis_[0], saberLen, scolor, renderfx );
+		CG_DoSaber( org_, axis_[0], saberLen, saberLenMax, scolor, renderfx );
 	}
 }
 
@@ -6159,7 +6331,7 @@ void CG_G2Animated( centity_t *cent )
 		!trap_G2API_HasGhoul2ModelOnIndex(&(cent->ghoul2), 1) &&
 		!(cent->currentState.eFlags & EF_DEAD))
 	{ //if the server says we have a weapon and we haven't copied one onto ourselves yet, then do so.
-		trap_G2API_CopySpecificGhoul2Model(g2WeaponInstances[cent->currentState.weapon], 0, cent->ghoul2, 1);
+		trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, cent->currentState.weapon), 0, cent->ghoul2, 1);
 	}
 
 	if (cent->torsoBolt && !(cent->currentState.eFlags & EF_DEAD))
@@ -6710,14 +6882,14 @@ void CG_Player( centity_t *cent ) {
 	// weapon bolted on
 	if (cent->currentState.saberInFlight)
 	{
-		cent->ghoul2weapon = g2WeaponInstances[WP_SABER];
+		cent->ghoul2weapon = CG_G2WeaponInstance(cent, WP_SABER);
 	}
 
 	if (cent->ghoul2 && 
-		cent->ghoul2weapon != g2WeaponInstances[cent->currentState.weapon] &&
+		cent->ghoul2weapon != CG_G2WeaponInstance(cent, cent->currentState.weapon) &&
 		!(cent->currentState.eFlags & EF_DEAD) && !cent->torsoBolt && !cent->isATST)
 	{
-		CG_CopyG2WeaponInstance(cent->currentState.weapon, cent->ghoul2);
+		CG_CopyG2WeaponInstance(cent, cent->currentState.weapon, cent->ghoul2);
 
 		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW))
 		{
@@ -6732,7 +6904,7 @@ void CG_Player( centity_t *cent ) {
 		}
 
 		cent->weapon = cent->currentState.weapon;
-		cent->ghoul2weapon = g2WeaponInstances[cent->currentState.weapon];
+		cent->ghoul2weapon = CG_G2WeaponInstance(cent, cent->currentState.weapon);
 	}
 	else if ((cent->currentState.eFlags & EF_DEAD) || cent->torsoBolt)
 	{
@@ -7734,6 +7906,8 @@ stillDoSaber:
 
 			if (/*!cent->bolt4 &&*/ g2HasWeapon)
 			{ //saber is in flight, do not have it as a standard weapon model
+				qboolean addBolts = qfalse;
+
 				trap_G2API_RemoveGhoul2Model(&(cent->ghoul2), 1);
 				g2HasWeapon = qfalse;
 
@@ -7750,24 +7924,77 @@ stillDoSaber:
 
 				saberEnt->currentState.bolt2 = 123;
 
-				if (saberEnt->ghoul2)
+				if (saberEnt->ghoul2 &&
+					CG_G2WeaponInstance(cent, WP_SABER) == saberEnt->ghoul2 &&
+					saberEnt->serverSaberHitIndex == saberEnt->currentState.modelindex)
 				{
 					// now set up the gun bolt on it
-					trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*flash");
+					addBolts = qtrue;
 				}
 				else
 				{
-					trap_G2API_InitGhoul2Model(&saberEnt->ghoul2, "models/weapons2/saber/saber_w.glm", 0, 0, 0, 0, 0);
+					saberEnt->serverSaberHitIndex = saberEnt->currentState.modelindex;
+
+					if (saberEnt->ghoul2)
+					{ //clean if we already have one (because server changed model string index)
+						trap_G2API_CleanGhoul2Models(&(saberEnt->ghoul2));
+						saberEnt->ghoul2 = 0;
+					}
+
+					if (ci->saber[0].model[0])
+					{
+						trap_G2API_InitGhoul2Model(&saberEnt->ghoul2, ci->saber[0].model, 0, 0, 0, 0, 0);
+					}
+					else
+					{
+						trap_G2API_InitGhoul2Model(&saberEnt->ghoul2, "models/weapons2/saber/saber_w.glm", 0, 0, 0, 0, 0);
+					}
+					//trap_G2API_DuplicateGhoul2Instance(cent->ghoul2, &saberEnt->ghoul2);
 
 					if (saberEnt->ghoul2)
 					{
-						trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*flash");
+						addBolts = qtrue;
 						//cent->bolt4 = 2;
 						
 						VectorCopy(saberEnt->currentState.pos.trBase, saberEnt->lerpOrigin);
 						VectorCopy(saberEnt->currentState.apos.trBase, saberEnt->lerpAngles);
 						saberEnt->currentState.pos.trTime = cg.time;
 						saberEnt->currentState.apos.trTime = cg.time;
+					}
+				}
+
+				if (addBolts)
+				{
+					int m = 0;
+					int tagBolt;
+					char *tagName;
+
+					while (m < ci->saber[0].numBlades)
+					{
+						tagName = va("*blade%i", m+1);
+						tagBolt = trap_G2API_AddBolt(saberEnt->ghoul2, 0, tagName);
+
+						if (tagBolt == -1)
+						{
+							if (m == 0)
+							{ //guess this is an 0ldsk3wl saber
+								tagBolt = trap_G2API_AddBolt(saberEnt->ghoul2, 0, "*flash");
+
+								if (tagBolt == -1)
+								{
+									assert(0);
+								}
+								break;
+							}
+
+							if (tagBolt == -1)
+							{
+								assert(0);
+								break;
+							}
+						}
+
+						m++;
 					}
 				}
 			}
@@ -7890,7 +8117,7 @@ stillDoSaber:
 
 			if (/*cent->bolt4 && */!g2HasWeapon)
 			{
-				trap_G2API_CopySpecificGhoul2Model(g2WeaponInstances[WP_SABER], 0, cent->ghoul2, 1);
+				trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, WP_SABER), 0, cent->ghoul2, 1);
 
 				if (saberEnt && saberEnt->ghoul2)
 				{
@@ -8439,41 +8666,96 @@ CG_ResetPlayerEntity
 A player just came into view or teleported, so reset all animation info
 ===============
 */
-void CG_ResetPlayerEntity( centity_t *cent ) 
+void CG_ResetPlayerEntity(centity_t *cent)
 {
-	cent->errorTime = -99999;		// guarantee no error decay added
-	cent->extrapolated = qfalse;	
+	clientInfo_t *ci;
+	int i = 0;
+	int j = 0;
 
-	CG_ClearLerpFrame( cent, &cgs.clientinfo[ cent->currentState.clientNum ], &cent->pe.legs, cent->currentState.legsAnim, qfalse);
-	CG_ClearLerpFrame( cent, &cgs.clientinfo[ cent->currentState.clientNum ], &cent->pe.torso, cent->currentState.torsoAnim, qtrue);
+	//	cent->errorTime = -99999;		// guarantee no error decay added
+	//	cent->extrapolated = qfalse;	
 
-	BG_EvaluateTrajectory( &cent->currentState.pos, cg.time, cent->lerpOrigin );
-	BG_EvaluateTrajectory( &cent->currentState.apos, cg.time, cent->lerpAngles );
+	ci = &cgs.clientinfo[cent->currentState.clientNum];
 
-	VectorCopy( cent->lerpOrigin, cent->rawOrigin );
-	VectorCopy( cent->lerpAngles, cent->rawAngles );
+	while (i < MAX_SABERS)
+	{
+		j = 0;
+		while (j < ci->saber[i].numBlades)
+		{
+			ci->saber[i].blade[j].trail.lastTime = -20000;
+			j++;
+		}
+		i++;
+	}
 
-	memset( &cent->pe.legs, 0, sizeof( cent->pe.legs ) );
+	//reset lerp origin smooth point
+	VectorCopy(cent->lerpOrigin, cent->beamEnd);
+
+
+	CG_ClearLerpFrame(cent, ci, &cent->pe.legs, cent->currentState.legsAnim, qfalse);
+	CG_ClearLerpFrame(cent, ci, &cent->pe.torso, cent->currentState.torsoAnim, qtrue);
+
+	BG_EvaluateTrajectory(&cent->currentState.pos, cg.time, cent->lerpOrigin);
+	BG_EvaluateTrajectory(&cent->currentState.apos, cg.time, cent->lerpAngles);
+
+	//		VectorCopy( cent->lerpOrigin, cent->rawOrigin );
+	VectorCopy(cent->lerpAngles, cent->rawAngles);
+
+	memset(&cent->pe.legs, 0, sizeof(cent->pe.legs));
 	cent->pe.legs.yawAngle = cent->rawAngles[YAW];
 	cent->pe.legs.yawing = qfalse;
 	cent->pe.legs.pitchAngle = 0;
 	cent->pe.legs.pitching = qfalse;
 
-	memset( &cent->pe.torso, 0, sizeof( cent->pe.legs ) );
+	memset(&cent->pe.torso, 0, sizeof(cent->pe.legs));
 	cent->pe.torso.yawAngle = cent->rawAngles[YAW];
 	cent->pe.torso.yawing = qfalse;
 	cent->pe.torso.pitchAngle = cent->rawAngles[PITCH];
 	cent->pe.torso.pitching = qfalse;
 
-	if ((cent->ghoul2 == NULL) && trap_G2_HaveWeGhoul2Models(cgs.clientinfo[cent->currentState.clientNum].ghoul2Model))
+	if ((cent->ghoul2 == NULL) && ci->ghoul2Model && trap_G2_HaveWeGhoul2Models(ci->ghoul2Model))
 	{
-		trap_G2API_DuplicateGhoul2Instance(cgs.clientinfo[cent->currentState.clientNum].ghoul2Model, &cent->ghoul2);
-		CG_CopyG2WeaponInstance(cent->currentState.weapon, cgs.clientinfo[cent->currentState.clientNum].ghoul2Model);
-		cent->weapon = cent->currentState.weapon;
+		trap_G2API_DuplicateGhoul2Instance(ci->ghoul2Model, &cent->ghoul2);
+		cent->weapon = 0;
+		cent->ghoul2weapon = NULL;
+
+		//CG_CopyG2WeaponInstance(cent->currentState.weapon, ci->ghoul2Model);
+		//cent->weapon = cent->currentState.weapon;
 	}
 
-	if ( cg_debugPosition.integer ) {
-		CG_Printf("%i ResetPlayerEntity yaw=%i\n", cent->currentState.number, (int)cent->pe.torso.yawAngle );
+	//do this to prevent us from making a saber unholster sound the first time we enter the pvs
+	if (cent->currentState.number != cg.predictedPlayerState.clientNum &&
+		cent->currentState.weapon == WP_SABER &&
+		cent->weapon != cent->currentState.weapon)
+	{
+		cent->weapon = cent->currentState.weapon;
+		if (cent->ghoul2 && ci->ghoul2Model)
+		{
+			CG_CopyG2WeaponInstance(cent, cent->currentState.weapon, cent->ghoul2);
+			cent->ghoul2weapon = CG_G2WeaponInstance(cent, cent->currentState.weapon);
+		}
+		if (!cent->currentState.shouldtarget)
+		{ //if not holstered set length and desired length for both blades to full right now.
+			BG_SI_SetDesiredLength(&ci->saber[0], 0, -1);
+			BG_SI_SetDesiredLength(&ci->saber[1], 0, -1);
+
+			i = 0;
+			while (i < MAX_SABERS)
+			{
+				j = 0;
+				while (j < ci->saber[i].numBlades)
+				{
+					ci->saber[i].blade[j].length = ci->saber[i].blade[j].lengthMax;
+					j++;
+				}
+				i++;
+			}
+		}
+	}
+
+
+	if (cg_debugPosition.integer) {
+		CG_Printf("%i ResetPlayerEntity yaw=%i\n", cent->currentState.number, (int)cent->pe.torso.yawAngle);
 	}
 }
 

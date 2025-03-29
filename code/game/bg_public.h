@@ -1186,6 +1186,21 @@ void BG_TempFree( int size );
 char *BG_StringAlloc ( const char *source );
 qboolean BG_OutOfMemory ( void );
 
+void BG_BLADE_ActivateTrail ( bladeInfo_t *blade, float duration );
+void BG_BLADE_DeactivateTrail ( bladeInfo_t *blade, float duration );
+void BG_SI_Activate( saberInfo_t *saber );
+void BG_SI_Deactivate( saberInfo_t *saber );
+void BG_SI_BladeActivate( saberInfo_t *saber, int iBlade, qboolean bActive );
+qboolean BG_SI_Active(saberInfo_t *saber);
+void BG_SI_SetLength( saberInfo_t *saber, float length );
+void BG_SI_SetDesiredLength(saberInfo_t *saber, float len, int bladeNum);
+void BG_SI_SetLengthGradual( saberInfo_t *saber, int time );
+float BG_SI_Length(saberInfo_t *saber);
+float BG_SI_LengthMax(saberInfo_t *saber);
+void BG_SI_ActivateTrail ( saberInfo_t *saber, float duration );
+void BG_SI_DeactivateTrail ( saberInfo_t *saber, float duration );
+void WP_SetSaber( int entNum, saberInfo_t *sabers, int saberNum, const char *saberName );
+
 extern int WeaponReadyAnim[WP_NUM_WEAPONS];
 extern int WeaponAttackAnim[WP_NUM_WEAPONS];
 

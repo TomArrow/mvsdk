@@ -3290,6 +3290,8 @@ void CG_CheckQuiGon() {
 	}
 }
 
+void WP_SaberLoadParms( void );
+
 /*
 =================
 CG_Init
@@ -3380,6 +3382,9 @@ Ghoul2 Insert Start
 /*
 Ghoul2 Insert End
 */
+
+	//Load sabers.cfg data
+	WP_SaberLoadParms();
 
 	// this is kinda dumb as well, but I need to pre-load some fonts in order to have the text available
 	//	to say I'm loading the assets.... which includes loading the fonts. So I'll set these up as reasonable
