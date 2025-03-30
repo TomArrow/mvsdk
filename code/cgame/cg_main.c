@@ -3038,13 +3038,15 @@ void CG_UpdateHud(const char *path)
 
 	cg.hudType = CG_GetHudTypeFromString(path);
 
+	Menu_Reset();
+
 	switch (cg.hudType)
 	{
 	default:
 	case HUD_TYPE_JK2:
 	case HUD_TYPE_TEXT:
-		hudSet = "ui/jk2hud.txt";
-		break;
+		//hudSet = "ui/jk2hud.txt";
+		return;
 	case HUD_TYPE_JKA:
 		hudSet = "ui/jahud.txt";
 		break;

@@ -772,9 +772,9 @@ void CG_DrawHealthJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( calcColor);
 
 		CG_DrawPic( 
-			focusItem->window.rect.x,
+			focusItem->window.rect.x * cgs.screenXFactorInv,
 			focusItem->window.rect.y,
-			focusItem->window.rect.w, 
+			focusItem->window.rect.w * cgs.screenXFactorInv, 
 			focusItem->window.rect.h, 
 			focusItem->window.background
 			);
@@ -790,11 +790,11 @@ void CG_DrawHealthJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( focusItem->window.foreColor );	
 
 		CG_DrawNumField (
-			focusItem->window.rect.x, 
+			focusItem->window.rect.x * cgs.screenXFactorInv, 
 			focusItem->window.rect.y, 
 			3, 
 			ps->stats[STAT_HEALTH], 
-			focusItem->window.rect.w, 
+			focusItem->window.rect.w * cgs.screenXFactorInv, 
 			focusItem->window.rect.h, 
 			NUM_FONT_SMALL,
 			qfalse);
@@ -951,9 +951,9 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 			if (cg.HUDArmorFlag)
 			{
 				CG_DrawPic( 
-					focusItem->window.rect.x,
+					focusItem->window.rect.x * cgs.screenXFactorInv,
 					focusItem->window.rect.y,
-					focusItem->window.rect.w, 
+					focusItem->window.rect.w * cgs.screenXFactorInv, 
 					focusItem->window.rect.h, 
 					focusItem->window.background
 					);
@@ -962,9 +962,9 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 		else 
 		{
 				CG_DrawPic( 
-					focusItem->window.rect.x,
+					focusItem->window.rect.x * cgs.screenXFactorInv,
 					focusItem->window.rect.y,
-					focusItem->window.rect.w, 
+					focusItem->window.rect.w * cgs.screenXFactorInv, 
 					focusItem->window.rect.h, 
 					focusItem->window.background
 					);
@@ -981,11 +981,11 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( focusItem->window.foreColor );	
 
 		CG_DrawNumField (
-			focusItem->window.rect.x, 
+			focusItem->window.rect.x * cgs.screenXFactorInv, 
 			focusItem->window.rect.y, 
 			3, 
 			armor, 
-			focusItem->window.rect.w, 
+			focusItem->window.rect.w * cgs.screenXFactorInv, 
 			focusItem->window.rect.h, 
 			NUM_FONT_SMALL,
 			qfalse);
@@ -1088,9 +1088,9 @@ static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
 			trap_R_SetColor( hudTintColor );
 
 			CG_DrawPic( 
-				focusItem->window.rect.x,
+				focusItem->window.rect.x * cgs.screenXFactorInv,
 				focusItem->window.rect.y,
-				focusItem->window.rect.w, 
+				focusItem->window.rect.w * cgs.screenXFactorInv, 
 				focusItem->window.rect.h, 
 				focusItem->window.background
 				);
@@ -1107,9 +1107,9 @@ static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
 			trap_R_SetColor( hudTintColor );
 
 			CG_DrawPic( 
-				focusItem->window.rect.x,
+				focusItem->window.rect.x * cgs.screenXFactorInv,
 				focusItem->window.rect.y,
-				focusItem->window.rect.w, 
+				focusItem->window.rect.w * cgs.screenXFactorInv, 
 				focusItem->window.rect.h, 
 				focusItem->window.background
 				);
@@ -1124,9 +1124,9 @@ static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
 			trap_R_SetColor( hudTintColor );
 
 			CG_DrawPic( 
-				focusItem->window.rect.x,
+				focusItem->window.rect.x * cgs.screenXFactorInv,
 				focusItem->window.rect.y,
-				focusItem->window.rect.w, 
+				focusItem->window.rect.w * cgs.screenXFactorInv, 
 				focusItem->window.rect.h, 
 				focusItem->window.background
 				);
@@ -1320,11 +1320,11 @@ static void CG_DrawAmmoJKA(centity_t *cent, menuDef_t *menuHUD)
 			value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
 
 			CG_DrawNumField (
-				focusItem->window.rect.x, 
+				focusItem->window.rect.x * cgs.screenXFactorInv, 
 				focusItem->window.rect.y, 
 				3, 
 				value, 
-				focusItem->window.rect.w, 
+				focusItem->window.rect.w * cgs.screenXFactorInv, 
 				focusItem->window.rect.h, 
 				NUM_FONT_SMALL,
 				qfalse);
@@ -1356,9 +1356,9 @@ static void CG_DrawAmmoJKA(centity_t *cent, menuDef_t *menuHUD)
 		trap_R_SetColor( calcColor);
 
 		CG_DrawPic( 
-			focusItem->window.rect.x,
+			focusItem->window.rect.x * cgs.screenXFactorInv,
 			focusItem->window.rect.y,
-			focusItem->window.rect.w, 
+			focusItem->window.rect.w * cgs.screenXFactorInv, 
 			focusItem->window.rect.h, 
 			focusItem->window.background
 			);
@@ -1505,9 +1505,9 @@ void CG_DrawForcePowerJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( calcColor);
 
 		CG_DrawPic( 
-			focusItem->window.rect.x,
+			focusItem->window.rect.x * cgs.screenXFactorInv,
 			focusItem->window.rect.y,
-			focusItem->window.rect.w, 
+			focusItem->window.rect.w * cgs.screenXFactorInv,
 			focusItem->window.rect.h, 
 			focusItem->window.background
 			);
@@ -1523,11 +1523,11 @@ void CG_DrawForcePowerJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( focusItem->window.foreColor );	
 
 		CG_DrawNumField (
-			focusItem->window.rect.x, 
+			focusItem->window.rect.x * cgs.screenXFactorInv,
 			focusItem->window.rect.y, 
 			3, 
 			cg.snap->ps.fd.forcePower, 
-			focusItem->window.rect.w, 
+			focusItem->window.rect.w * cgs.screenXFactorInv,
 			focusItem->window.rect.h, 
 			NUM_FONT_SMALL,
 			qfalse);
@@ -2048,9 +2048,9 @@ void CG_DrawHUD(centity_t	*cent)
 			{
 				trap_R_SetColor( hudTintColor );	
 				CG_DrawPic( 
-					focusItem->window.rect.x, 
+					focusItem->window.rect.x * cgs.screenXFactorInv, 
 					focusItem->window.rect.y, 
-					focusItem->window.rect.w, 
+					focusItem->window.rect.w * cgs.screenXFactorInv, 
 					focusItem->window.rect.h, 
 					focusItem->window.background 
 					);			
@@ -2062,9 +2062,9 @@ void CG_DrawHUD(centity_t	*cent)
 			{
 				trap_R_SetColor( hudTintColor );	
 				CG_DrawPic( 
-					focusItem->window.rect.x, 
+					focusItem->window.rect.x * cgs.screenXFactorInv, 
 					focusItem->window.rect.y, 
-					focusItem->window.rect.w, 
+					focusItem->window.rect.w * cgs.screenXFactorInv, 
 					focusItem->window.rect.h, 
 					focusItem->window.background 
 					);			
@@ -2141,7 +2141,7 @@ void CG_DrawHUD(centity_t	*cent)
 			if (focusItem)
 			{
 				UI_DrawScaledProportionalString(
-					focusItem->window.rect.x, 
+					focusItem->window.rect.x * cgs.screenXFactorInv, 
 					focusItem->window.rect.y, 
 					scoreStr, 
 					UI_RIGHT|UI_DROPSHADOW, 
@@ -2155,9 +2155,9 @@ void CG_DrawHUD(centity_t	*cent)
 			{
 				trap_R_SetColor( hudTintColor );	
 				CG_DrawPic( 
-					focusItem->window.rect.x, 
+					focusItem->window.rect.x * cgs.screenXFactorInv, 
 					focusItem->window.rect.y, 
-					focusItem->window.rect.w, 
+					focusItem->window.rect.w * cgs.screenXFactorInv, 
 					focusItem->window.rect.h, 
 					focusItem->window.background 
 					);			
@@ -2168,9 +2168,9 @@ void CG_DrawHUD(centity_t	*cent)
 			{
 				trap_R_SetColor( hudTintColor );	
 				CG_DrawPic( 
-					focusItem->window.rect.x, 
+					focusItem->window.rect.x * cgs.screenXFactorInv, 
 					focusItem->window.rect.y, 
-					focusItem->window.rect.w, 
+					focusItem->window.rect.w * cgs.screenXFactorInv, 
 					focusItem->window.rect.h, 
 					focusItem->window.background 
 					);			
