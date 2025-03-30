@@ -772,9 +772,9 @@ void CG_DrawHealthJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( calcColor);
 
 		CG_DrawPic( 
-			focusItem->window.rect.x * cgs.screenXFactorInv,
+			focusItem->window.rect.x,
 			focusItem->window.rect.y,
-			focusItem->window.rect.w * cgs.screenXFactorInv, 
+			focusItem->window.rect.w, 
 			focusItem->window.rect.h, 
 			focusItem->window.background
 			);
@@ -790,11 +790,11 @@ void CG_DrawHealthJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( focusItem->window.foreColor );	
 
 		CG_DrawNumField (
-			focusItem->window.rect.x * cgs.screenXFactorInv, 
+			focusItem->window.rect.x, 
 			focusItem->window.rect.y, 
 			3, 
 			ps->stats[STAT_HEALTH], 
-			focusItem->window.rect.w * cgs.screenXFactorInv, 
+			focusItem->window.rect.w, 
 			focusItem->window.rect.h, 
 			NUM_FONT_SMALL,
 			qfalse);
@@ -951,9 +951,9 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 			if (cg.HUDArmorFlag)
 			{
 				CG_DrawPic( 
-					focusItem->window.rect.x * cgs.screenXFactorInv,
+					focusItem->window.rect.x,
 					focusItem->window.rect.y,
-					focusItem->window.rect.w * cgs.screenXFactorInv, 
+					focusItem->window.rect.w, 
 					focusItem->window.rect.h, 
 					focusItem->window.background
 					);
@@ -962,9 +962,9 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 		else 
 		{
 				CG_DrawPic( 
-					focusItem->window.rect.x * cgs.screenXFactorInv,
+					focusItem->window.rect.x,
 					focusItem->window.rect.y,
-					focusItem->window.rect.w * cgs.screenXFactorInv, 
+					focusItem->window.rect.w, 
 					focusItem->window.rect.h, 
 					focusItem->window.background
 					);
@@ -981,11 +981,11 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( focusItem->window.foreColor );	
 
 		CG_DrawNumField (
-			focusItem->window.rect.x * cgs.screenXFactorInv, 
+			focusItem->window.rect.x, 
 			focusItem->window.rect.y, 
 			3, 
 			armor, 
-			focusItem->window.rect.w * cgs.screenXFactorInv, 
+			focusItem->window.rect.w, 
 			focusItem->window.rect.h, 
 			NUM_FONT_SMALL,
 			qfalse);
@@ -1028,11 +1028,17 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 CG_DrawHUDRightFrame1
 ================
 */
-void CG_DrawHUDRightFrame1(float x, float y)
+void CG_DrawHUDRightFrame1(float x, float y, float w, float h)
 {
-	trap_R_SetColor( hudTintColor );
+	trap_R_SetColor(hudTintColor);
 	// Inner gray wire frame
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDInnerRight );
+	CG_DrawPic(
+		SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+		y,
+		w * cgs.screenXFactor,
+		h,
+		cgs.media.HUDInnerRight
+	);
 }
 
 /*
@@ -1040,10 +1046,17 @@ void CG_DrawHUDRightFrame1(float x, float y)
 CG_DrawHUDRightFrame2
 ================
 */
-void CG_DrawHUDRightFrame2(float x, float y)
+void CG_DrawHUDRightFrame2(float x, float y, float w, float h)
 {
-	trap_R_SetColor( hudTintColor );
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDRightFrame );		// Metal frame
+	trap_R_SetColor(hudTintColor);
+	// Metal frame
+	CG_DrawPic(
+		SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+		y,
+		w * cgs.screenXFactor,
+		h,
+		cgs.media.HUDRightFrame
+	);
 }
 
 /*
@@ -1088,9 +1101,9 @@ static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
 			trap_R_SetColor( hudTintColor );
 
 			CG_DrawPic( 
-				focusItem->window.rect.x * cgs.screenXFactorInv,
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
 				focusItem->window.rect.y,
-				focusItem->window.rect.w * cgs.screenXFactorInv, 
+				focusItem->window.rect.w * cgs.screenXFactor, 
 				focusItem->window.rect.h, 
 				focusItem->window.background
 				);
@@ -1107,9 +1120,9 @@ static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
 			trap_R_SetColor( hudTintColor );
 
 			CG_DrawPic( 
-				focusItem->window.rect.x * cgs.screenXFactorInv,
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
 				focusItem->window.rect.y,
-				focusItem->window.rect.w * cgs.screenXFactorInv, 
+				focusItem->window.rect.w * cgs.screenXFactor, 
 				focusItem->window.rect.h, 
 				focusItem->window.background
 				);
@@ -1124,9 +1137,9 @@ static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
 			trap_R_SetColor( hudTintColor );
 
 			CG_DrawPic( 
-				focusItem->window.rect.x * cgs.screenXFactorInv,
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
 				focusItem->window.rect.y,
-				focusItem->window.rect.w * cgs.screenXFactorInv, 
+				focusItem->window.rect.w * cgs.screenXFactor, 
 				focusItem->window.rect.h, 
 				focusItem->window.background
 				);
@@ -1140,13 +1153,15 @@ static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
 CG_DrawAmmo
 ================
 */
-static void CG_DrawAmmo(centity_t *cent, float x, float y)
+static void CG_DrawAmmo(centity_t *cent, float x, float y, float w, float h)
 {
 	playerState_t	*ps;
 	int			numColor_i;
 	int			i;
 	vec4_t		calcColor;
 	float		value,inc,percent;
+	qhandle_t	hShader;
+	qboolean	drawPic;
 
 	ps = &cg.snap->ps;
 
@@ -1159,18 +1174,37 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 	{
 		trap_R_SetColor( colorTable[CT_WHITE] );
 		// don't need to draw ammo, but we will draw the current saber style in this window
-		switch ( cg.predictedPlayerState.fd.saberDrawAnimLevel )
+		switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
 		{
-		case 1://FORCE_LEVEL_1:
-			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle1 );
+		case FORCE_LEVEL_1:
+			hShader = cgs.media.HUDSaberStyle1;
+			drawPic = qtrue;
 			break;
-		case 2://FORCE_LEVEL_2:
-			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle2 );
+		case FORCE_LEVEL_2:
+			hShader = cgs.media.HUDSaberStyle2;
+			drawPic = qtrue;
 			break;
-		case 3://FORCE_LEVEL_3:
-			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle3 );
+		case FORCE_LEVEL_3:
+			hShader = cgs.media.HUDSaberStyle3;
+			drawPic = qtrue;
+			break;
+		default:
+			hShader = 0;
+			drawPic = qfalse;
 			break;
 		}
+
+		if (drawPic)
+		{
+			CG_DrawPic(
+				SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+				y,
+				w * cgs.screenXFactor,
+				h,
+				hShader
+			);
+		}
+
 		return;
 	}
 	else
@@ -1227,7 +1261,16 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 	numColor_i = CT_HUD_ORANGE;
 
 	trap_R_SetColor( colorTable[numColor_i] );	
-	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+	CG_DrawNumField(
+		SCREEN_WIDTH - (SCREEN_WIDTH - (x + 30)) * cgs.screenXFactor,
+		y + 26,
+		3,
+		value,
+		6 * cgs.screenXFactor,
+		12,
+		NUM_FONT_SMALL,
+		qfalse
+	);
 
 
 //cg.snap->ps.ammo[weaponData[cg.snap->ps.weapon].ammoIndex]
@@ -1256,11 +1299,13 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 		}
 
 		trap_R_SetColor( calcColor);
-		CG_DrawPic( x + ammoTicPos[i].x, 
-			y + ammoTicPos[i].y, 
-			ammoTicPos[i].width, 
-			ammoTicPos[i].height, 
-			ammoTicPos[i].tic );
+		CG_DrawPic(
+			SCREEN_WIDTH - (SCREEN_WIDTH - (x + ammoTicPos[i].x)) * cgs.screenXFactor,
+			y + ammoTicPos[i].y,
+			ammoTicPos[i].width * cgs.screenXFactor,
+			ammoTicPos[i].height,
+			ammoTicPos[i].tic
+		);
 
 		value -= inc;
 	}
@@ -1307,7 +1352,13 @@ static void CG_DrawAmmoJKA(centity_t *cent, menuDef_t *menuHUD)
 		trap_R_SetColor( hudTintColor );
 		if (focusItem)
 		{
-			UI_DrawProportionalString(focusItem->window.rect.x, focusItem->window.rect.y, "--", NUM_FONT_SMALL, focusItem->window.foreColor);
+			UI_DrawProportionalString(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				"--",
+				NUM_FONT_SMALL,
+				focusItem->window.foreColor
+			);
 		}
 	}
 	else
@@ -1320,11 +1371,11 @@ static void CG_DrawAmmoJKA(centity_t *cent, menuDef_t *menuHUD)
 			value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
 
 			CG_DrawNumField (
-				focusItem->window.rect.x * cgs.screenXFactorInv, 
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
 				focusItem->window.rect.y, 
 				3, 
 				value, 
-				focusItem->window.rect.w * cgs.screenXFactorInv, 
+				focusItem->window.rect.w * cgs.screenXFactor, 
 				focusItem->window.rect.h, 
 				NUM_FONT_SMALL,
 				qfalse);
@@ -1356,9 +1407,9 @@ static void CG_DrawAmmoJKA(centity_t *cent, menuDef_t *menuHUD)
 		trap_R_SetColor( calcColor);
 
 		CG_DrawPic( 
-			focusItem->window.rect.x * cgs.screenXFactorInv,
+			SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
 			focusItem->window.rect.y,
-			focusItem->window.rect.w * cgs.screenXFactorInv, 
+			focusItem->window.rect.w * cgs.screenXFactor, 
 			focusItem->window.rect.h, 
 			focusItem->window.background
 			);
@@ -1402,11 +1453,13 @@ void CG_DrawForcePower(float x, float y)
 		}
 
 		trap_R_SetColor( calcColor);
-		CG_DrawPic( x + forceTicPos[i].x, 
-			y + forceTicPos[i].y, 
-			forceTicPos[i].width, 
-			forceTicPos[i].height, 
-			forceTicPos[i].tic );
+		CG_DrawPic(
+			SCREEN_WIDTH - (SCREEN_WIDTH - (x + forceTicPos[i].x)) * cgs.screenXFactor,
+			y + forceTicPos[i].y,
+			forceTicPos[i].width * cgs.screenXFactor,
+			forceTicPos[i].height,
+			forceTicPos[i].tic
+		);
 
 		value -= inc;
 	}
@@ -1505,9 +1558,9 @@ void CG_DrawForcePowerJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( calcColor);
 
 		CG_DrawPic( 
-			focusItem->window.rect.x * cgs.screenXFactorInv,
+			SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
 			focusItem->window.rect.y,
-			focusItem->window.rect.w * cgs.screenXFactorInv,
+			focusItem->window.rect.w * cgs.screenXFactor,
 			focusItem->window.rect.h, 
 			focusItem->window.background
 			);
@@ -1523,11 +1576,11 @@ void CG_DrawForcePowerJKA( menuDef_t *menuHUD )
 		trap_R_SetColor( focusItem->window.foreColor );	
 
 		CG_DrawNumField (
-			focusItem->window.rect.x * cgs.screenXFactorInv,
+			SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
 			focusItem->window.rect.y, 
 			3, 
 			cg.snap->ps.fd.forcePower, 
-			focusItem->window.rect.w * cgs.screenXFactorInv,
+			focusItem->window.rect.w * cgs.screenXFactor,
 			focusItem->window.rect.h, 
 			NUM_FONT_SMALL,
 			qfalse);
@@ -2048,9 +2101,9 @@ void CG_DrawHUD(centity_t	*cent)
 			{
 				trap_R_SetColor( hudTintColor );	
 				CG_DrawPic( 
-					focusItem->window.rect.x * cgs.screenXFactorInv, 
+					focusItem->window.rect.x, 
 					focusItem->window.rect.y, 
-					focusItem->window.rect.w * cgs.screenXFactorInv, 
+					focusItem->window.rect.w, 
 					focusItem->window.rect.h, 
 					focusItem->window.background 
 					);			
@@ -2062,9 +2115,9 @@ void CG_DrawHUD(centity_t	*cent)
 			{
 				trap_R_SetColor( hudTintColor );	
 				CG_DrawPic( 
-					focusItem->window.rect.x * cgs.screenXFactorInv, 
+					focusItem->window.rect.x, 
 					focusItem->window.rect.y, 
-					focusItem->window.rect.w * cgs.screenXFactorInv, 
+					focusItem->window.rect.w, 
 					focusItem->window.rect.h, 
 					focusItem->window.background 
 					);			
@@ -2129,80 +2182,80 @@ void CG_DrawHUD(centity_t	*cent)
 	}
 	UI_DrawScaledProportionalString(cgs.screenWidth-101, cgs.screenHeight-23, scoreStr, UI_RIGHT|UI_DROPSHADOW, colorTable[CT_WHITE], 0.7);*/
 
+	CG_WideScreenMode(qfalse);
 
 	menuHUD = Menus_FindByName("righthud");
-	if (menuHUD)
+	if (menuHUD && cg.hudType == HUD_TYPE_JKA)
 	{
-		if (cg.hudType == HUD_TYPE_JKA)
+		itemDef_t *focusItem;
+
+		focusItem = Menu_FindItemByName(menuHUD, "score_line");
+		if (focusItem)
 		{
-			itemDef_t *focusItem;
+			UI_DrawScaledProportionalString(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				scoreStr,
+				UI_RIGHT | UI_DROPSHADOW,
+				focusItem->window.foreColor,
+				0.7f);
+		}
 
-			focusItem = Menu_FindItemByName(menuHUD, "score_line");
-			if (focusItem)
-			{
-				UI_DrawScaledProportionalString(
-					focusItem->window.rect.x * cgs.screenXFactorInv, 
-					focusItem->window.rect.y, 
-					scoreStr, 
-					UI_RIGHT|UI_DROPSHADOW, 
-					focusItem->window.foreColor, 
-					0.7);
-			}
+		// Print scanline
+		focusItem = Menu_FindItemByName(menuHUD, "scanline");
+		if (focusItem)
+		{
+			trap_R_SetColor(hudTintColor);
+			CG_DrawPic(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				focusItem->window.rect.w * cgs.screenXFactor,
+				focusItem->window.rect.h,
+				focusItem->window.background
+			);
+		}
 
-			// Print scanline
-			focusItem = Menu_FindItemByName(menuHUD, "scanline");
-			if (focusItem)
-			{
-				trap_R_SetColor( hudTintColor );	
-				CG_DrawPic( 
-					focusItem->window.rect.x * cgs.screenXFactorInv, 
-					focusItem->window.rect.y, 
-					focusItem->window.rect.w * cgs.screenXFactorInv, 
-					focusItem->window.rect.h, 
-					focusItem->window.background 
-					);			
-			}
+		focusItem = Menu_FindItemByName(menuHUD, "frame");
+		if (focusItem)
+		{
+			trap_R_SetColor(hudTintColor);
+			CG_DrawPic(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				focusItem->window.rect.w * cgs.screenXFactor,
+				focusItem->window.rect.h,
+				focusItem->window.background
+			);
+		}
 
-			focusItem = Menu_FindItemByName(menuHUD, "frame");
-			if (focusItem)
-			{
-				trap_R_SetColor( hudTintColor );	
-				CG_DrawPic( 
-					focusItem->window.rect.x * cgs.screenXFactorInv, 
-					focusItem->window.rect.y, 
-					focusItem->window.rect.w * cgs.screenXFactorInv, 
-					focusItem->window.rect.h, 
-					focusItem->window.background 
-					);			
-			}
+		CG_DrawForcePowerJKA(menuHUD);
 
-			CG_DrawForcePowerJKA(menuHUD);
-
-			// Draw ammo tics or saber style
-			if ( cent->currentState.weapon == WP_SABER )
-			{
-				CG_DrawSaberStyle(cent,menuHUD);
-			}
-			else
-			{
-				CG_DrawAmmoJKA(cent,menuHUD);
-			}
+		// Draw ammo tics or saber style
+		if (cent->currentState.weapon == WP_SABER)
+		{
+			CG_DrawSaberStyle(cent, menuHUD);
 		}
 		else
 		{
-			CG_DrawHUDRightFrame1(menuHUD->window.rect.x,menuHUD->window.rect.y);
-			CG_DrawForcePower(menuHUD->window.rect.x,menuHUD->window.rect.y);
-			CG_DrawAmmo(cent,menuHUD->window.rect.x,menuHUD->window.rect.y);
-			CG_DrawHUDRightFrame2(menuHUD->window.rect.x,menuHUD->window.rect.y);
+			CG_DrawAmmoJKA(cent, menuHUD);
 		}
+	}
+	else if (menuHUD && cg.hudType == HUD_TYPE_JK2)
+	{
+		CG_DrawHUDRightFrame1(menuHUD->window.rect.x, menuHUD->window.rect.y, 80.0f, 80.0f);
+		CG_DrawForcePower(menuHUD->window.rect.x, menuHUD->window.rect.y);
+		CG_DrawAmmo(cent, menuHUD->window.rect.x, menuHUD->window.rect.y, 80.0f, 40.0f);
+		CG_DrawHUDRightFrame2(menuHUD->window.rect.x, menuHUD->window.rect.y, 80.0f, 80.0f);
 	}
 	else
 	{ //Apparently we failed to get proper coordinates from the menu, so resort to manually inputting them.
-		CG_DrawHUDRightFrame1(cgs.screenWidth-80,cgs.screenHeight-80);
-		CG_DrawForcePower(cgs.screenWidth-80,cgs.screenHeight-80);
-		CG_DrawAmmo(cent, cgs.screenWidth-80,cgs.screenHeight-80);
-		CG_DrawHUDRightFrame2(cgs.screenWidth-80,cgs.screenHeight-80);
+		CG_DrawHUDRightFrame1(SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f, 80.0f, 80.0f);
+		CG_DrawForcePower(SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f);
+		CG_DrawAmmo(cent, SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f, 80.0f, 40.0f);
+		CG_DrawHUDRightFrame2(SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f, 80.0f, 80.0f);
 	}
+
+	CG_WideScreenMode(qtrue);
 }
 
 #define MAX_SHOWPOWERS NUM_FORCE_POWERS

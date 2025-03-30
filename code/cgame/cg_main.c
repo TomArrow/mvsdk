@@ -3045,8 +3045,8 @@ void CG_UpdateHud(const char *path)
 	default:
 	case HUD_TYPE_JK2:
 	case HUD_TYPE_TEXT:
-		//hudSet = "ui/jk2hud.txt";
-		return;
+		hudSet = "ui/jk2hud.txt";
+		break;
 	case HUD_TYPE_JKA:
 		hudSet = "ui/jahud.txt";
 		break;
