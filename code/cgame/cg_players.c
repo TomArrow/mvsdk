@@ -6925,7 +6925,7 @@ void CG_Player( centity_t *cent ) {
 	{
 		CG_CopyG2WeaponInstance(cent, cent->currentState.weapon, cent->ghoul2);
 
-		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW))
+		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW) && cg.snap->ps.persistant[PERS_TEAM] != TEAM_SPECTATOR)
 		{
 			if (cent->weapon == WP_SABER && cent->weapon != cent->currentState.weapon && !cent->currentState.shouldtarget)
 			{ //switching away from the saber

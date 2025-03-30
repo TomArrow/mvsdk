@@ -2337,34 +2337,11 @@ void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent)
 		cent->ghoul2weapon = CG_G2WeaponInstance(cent, ps->weapon);
 		if (cent->weapon == WP_SABER && cent->weapon != ps->weapon && !ps->saberHolstered)
 		{ //switching away from the saber
-			//trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberoffquick.wav" ));
-			if (cgs.clientinfo[ps->clientNum].saber[0].soundOff && !ps->saberHolstered)
-			{
-				trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, cgs.clientinfo[ps->clientNum].saber[0].soundOff);
-			}
-
-			if (cgs.clientinfo[ps->clientNum].saber[1].soundOff &&
-				cgs.clientinfo[ps->clientNum].saber[1].model[0] &&
-				!ps->saberHolstered)
-			{
-				trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, cgs.clientinfo[ps->clientNum].saber[1].soundOff);
-			}
+			trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberoffquick.wav" ));
 		}
 		else if (ps->weapon == WP_SABER && cent->weapon != ps->weapon)
 		{ //switching to the saber
-			//trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberon.wav" ));
-			if (cgs.clientinfo[ps->clientNum].saber[0].soundOn)
-			{
-				trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, cgs.clientinfo[ps->clientNum].saber[0].soundOn);
-			}
-
-			if (cgs.clientinfo[ps->clientNum].saber[1].soundOn)
-			{
-				trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, cgs.clientinfo[ps->clientNum].saber[1].soundOn);
-			}
-
-			BG_SI_SetDesiredLength(&cgs.clientinfo[ps->clientNum].saber[0], 0, -1);
-			BG_SI_SetDesiredLength(&cgs.clientinfo[ps->clientNum].saber[1], 0, -1);
+			trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberon.wav" ));
 		}
 		cent->weapon = ps->weapon;
 	}
