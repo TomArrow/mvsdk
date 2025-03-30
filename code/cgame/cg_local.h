@@ -1024,6 +1024,7 @@ Ghoul2 Insert End
 
 	qboolean			nextCGTraceExplicitlyDeluxe;
 	qboolean			useLocalCharacterColors;
+	qboolean			useLocalSaberName;
 	hudType_t			hudType;
 	qboolean			updateHud;
 } cg_t;
@@ -1988,6 +1989,8 @@ extern	vmCvar_t		cg_char_color_red;
 extern	vmCvar_t		cg_char_color_green;
 extern	vmCvar_t		cg_char_color_blue;
 extern	vmCvar_t		cg_char_color_alpha;
+extern	vmCvar_t		cg_saber1;
+extern	vmCvar_t		cg_saber2;
 extern	vmCvar_t		cg_JKA;
 extern	vmCvar_t		cg_menuFileParseSpam;
 
@@ -2142,6 +2145,7 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized );
 sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName );
 void CG_PlayerShieldHit(int entitynum, vec3_t angles, int amount);
 void CG_UpdateLocalCharacterColors(void);
+void CG_UpdateLocalSaberName(void);
 
 
 //

@@ -1333,13 +1333,11 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 	CG_LoadClientInfo( ci );
 }
 
-void CG_SetModelColor(const char *color, clientInfo_t *ci)
+void CG_SetModelColor(const char *color, clientInfo_t *ci, int clientNum)
 {
 	char modelColor[9];
 	qboolean colorsValid;
-	int clientNum;
-	
-	clientNum = ci - cgs.clientinfo;
+
 	if ((cg.useLocalCharacterColors && cg.snap != NULL && cg.snap->ps.clientNum == clientNum) || cg_forceModel.integer)
 	{
 		ci->modelColor[0] = cg_char_color_red.integer;
@@ -1380,7 +1378,7 @@ void CG_UpdateLocalCharacterColors(void)
 			continue;
 		}
 
-		if ((cg.snap && i == cg.snap->ps.clientNum) || cg_forceModel.integer)
+		if ((cg.snap != NULL && i == cg.snap->ps.clientNum) || cg_forceModel.integer)
 		{
 			ci->modelColor[0] = cg_char_color_red.integer;
 			ci->modelColor[1] = cg_char_color_green.integer;
@@ -1393,6 +1391,116 @@ void CG_UpdateLocalCharacterColors(void)
 			ci->modelColor[1] = 255;
 			ci->modelColor[2] = 255;
 			ci->modelColor[3] = 255;
+		}
+	}
+}
+
+void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum, void *oldG2Weapons[MAX_SABERS])
+{
+	const char *clientSaberName = name;
+	int i;
+
+	if (clientSaberName[0] == '\0')
+	{
+		clientSaberName = "Kyle";
+	}
+
+	if (cg.snap != NULL && clientNum == cg.snap->ps.clientNum)
+	{
+		if (strlen(cg_forceMySaber.string))
+		{
+			clientSaberName = cg_forceMySaber.string;
+		}
+		else if (cg.useLocalSaberName && strlen(cg_saber1.string))
+		{
+			clientSaberName = cg_saber1.string;
+		}
+	}
+
+	Q_strncpyz(ci->saberName, clientSaberName, MAX_QPATH);
+	WP_SetSaber(clientNum, ci->saber, 0, ci->saberName);
+
+	clientSaberName = "none";
+
+	Q_strncpyz(ci->saber2Name, clientSaberName, MAX_QPATH);
+	WP_SetSaber(clientNum, ci->saber, 1, ci->saber2Name);
+
+	for (i = 0; i < MAX_SABERS; i++)
+	{
+		if (oldG2Weapons[i])
+		{
+			trap_G2API_CleanGhoul2Models(&oldG2Weapons[i]);
+			oldG2Weapons[i] = 0;
+		}
+
+		if (ci->saber[i].model[0])
+		{
+			CG_InitG2SaberData(i, ci);
+		}
+
+		cg_entities[clientNum].weapon = 0;
+		cg_entities[clientNum].ghoul2weapon = NULL;
+	}
+}
+
+void CG_UpdateLocalSaberName(void)
+{
+	const char *clientSaberName;
+	int i;
+	int j;
+	clientInfo_t *ci;
+
+	if (!cg.useLocalSaberName)
+	{
+		return;
+	}
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		ci = &cgs.clientinfo[i];
+
+		if (ci == NULL || !ci->infoValid)
+		{
+			continue;
+		}
+
+		clientSaberName = "Kyle";
+
+		if (cg.snap && i == cg.snap->ps.clientNum)
+		{
+			if (strlen(cg_forceMySaber.string))
+			{
+				clientSaberName = cg_forceMySaber.string;
+			}
+			else if (strlen(cg_saber1.string))
+			{
+				clientSaberName = cg_saber1.string;
+			}
+		}
+
+		Q_strncpyz(ci->saberName, clientSaberName, MAX_QPATH);
+		WP_SetSaber(i, ci->saber, 0, ci->saberName);
+
+		clientSaberName = "none";
+
+		Q_strncpyz(ci->saber2Name, clientSaberName, MAX_QPATH);
+		WP_SetSaber(i, ci->saber, 1, ci->saber2Name);
+
+		for (j = 0; j < MAX_SABERS; j++)
+		{
+			if (ci->ghoul2Weapons[j])
+			{
+				trap_G2API_CleanGhoul2Models(&ci->ghoul2Weapons[j]);
+				ci->ghoul2Weapons[j] = 0;
+			}
+
+			if (ci->saber[j].model[0])
+			{
+				CG_InitG2SaberData(j, ci);
+			}
+
+			cg_entities[i].weapon = 0;
+			cg_entities[i].ghoul2weapon = NULL;
 		}
 	}
 }
@@ -1417,7 +1525,6 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	int i = 0;
 	int j = 0;
 	qboolean wasATST = qfalse;
-	qboolean saberUpdate[MAX_SABERS];
 
 	ci = &cgs.clientinfo[clientNum];
 
@@ -1578,92 +1685,12 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	// model color
 	v = Info_ValueForKey(configstring, "mc");
 	cg.useLocalCharacterColors = v[0] == '\0';
-	CG_SetModelColor(v, &newInfo);
+	CG_SetModelColor(v, &newInfo, clientNum);
 
-	saberUpdate[0] = qfalse;
-	saberUpdate[1] = qfalse;
-
-	//saber being used
-	v = Info_ValueForKey( configstring, "st" );
-
-	if (v[0] == '\0')
-	{
-		v = "Kyle";
-	}
-
-	if (strlen(cg_forceMySaber.string) && cg.snap && clientNum == cg.snap->ps.clientNum)
-	{
-		v = cg_forceMySaber.string;
-	}
-
-	if (Q_stricmp(v, ci->saberName))
-	{
-		Q_strncpyz( newInfo.saberName, v, MAX_QPATH );
-		WP_SetSaber(clientNum, newInfo.saber, 0, newInfo.saberName);
-		saberUpdate[0] = qtrue;
-	}
-	else
-	{
-		Q_strncpyz( newInfo.saberName, ci->saberName, MAX_QPATH );
-		memcpy(&newInfo.saber[0], &ci->saber[0], sizeof(newInfo.saber[0]));
-		newInfo.ghoul2Weapons[0] = ci->ghoul2Weapons[0];
-	}
-
-	//v = Info_ValueForKey( configstring, "st2" );
-	v = "none";
-
-	if (Q_stricmp(v, ci->saber2Name))
-	{
-		Q_strncpyz( newInfo.saber2Name, v, MAX_QPATH );
-		WP_SetSaber(clientNum, newInfo.saber, 1, newInfo.saber2Name);
-		saberUpdate[1] = qtrue;
-	}
-	else
-	{
-		Q_strncpyz( newInfo.saber2Name, ci->saber2Name, MAX_QPATH );
-		memcpy(&newInfo.saber[1], &ci->saber[1], sizeof(newInfo.saber[1]));
-		newInfo.ghoul2Weapons[1] = ci->ghoul2Weapons[1];
-	}
-
-	if (saberUpdate[0] || saberUpdate[1])
-	{
-		for (i = 0; i < MAX_SABERS; i++)
-		{
-			if (saberUpdate[i])
-			{
-				if (newInfo.saber[i].model[0])
-				{
-					if (oldG2Weapons[i])
-					{ //free the old instance(s)
-						trap_G2API_CleanGhoul2Models(&oldG2Weapons[i]);
-						oldG2Weapons[i] = 0;
-					}
-
-					CG_InitG2SaberData(i, &newInfo);
-				}
-				else
-				{
-					if (oldG2Weapons[i])
-					{ //free the old instance(s)
-						trap_G2API_CleanGhoul2Models(&oldG2Weapons[i]);
-						oldG2Weapons[i] = 0;
-					}
-				}
-
-				cg_entities[clientNum].weapon = 0;
-				cg_entities[clientNum].ghoul2weapon = NULL; //force a refresh
-			}
-		}
-	}
-
-	//Check for any sabers that didn't get set again, if they didn't, then reassign the pointers for the new ci
-	for (i = 0; i < MAX_SABERS; i++)
-	{
-		if (oldG2Weapons[i])
-		{
-			newInfo.ghoul2Weapons[i] = oldG2Weapons[i];
-		}
-	}
+	// saber name
+	v = Info_ValueForKey(configstring, "st");
+	cg.useLocalSaberName = v[0] == '\0';
+	CG_SetSaberName(v, &newInfo, clientNum, oldG2Weapons);
 
 	// head model
 /*

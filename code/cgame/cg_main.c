@@ -109,6 +109,7 @@ vec4_t colorTable[CT_MAX] =
 
 int forceMyModelModificationCount = -1;
 int forceMySaberModificationCount = -1;
+int saber1ModificationCount = -1;
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
@@ -815,6 +816,8 @@ vmCvar_t	cg_char_color_red;
 vmCvar_t	cg_char_color_green;
 vmCvar_t	cg_char_color_blue;
 vmCvar_t	cg_char_color_alpha;
+vmCvar_t	cg_saber1;
+vmCvar_t	cg_saber2;
 vmCvar_t	cg_JKA;
 vmCvar_t	cg_menuFileParseSpam;
 
@@ -1170,6 +1173,8 @@ Ghoul2 Insert End
 	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_alpha, "char_color_alpha", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_saber1, "saber1", "Kyle", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_saber2, "saber2", "none", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 };
@@ -1198,6 +1203,7 @@ void CG_RegisterCvars( void ) {
 	forceModelModificationCount = cg_forceModel.modificationCount;
 	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
 	forceMySaberModificationCount = cg_forceMySaber.modificationCount;
+	saber1ModificationCount = cg_saber1.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -1387,6 +1393,11 @@ void CG_UpdateCvars( void ) {
 	if ( forceMySaberModificationCount != cg_forceMySaber.modificationCount ) {
 		forceMySaberModificationCount = cg_forceMySaber.modificationCount;
 		CG_ForceModelChange();
+	}
+
+	if ( saber1ModificationCount != cg_saber1.modificationCount ) {
+		saber1ModificationCount = cg_saber1.modificationCount;
+		CG_UpdateLocalSaberName();
 	}
 
 	if (widescreenModificationCount != cg_widescreen.modificationCount) {
