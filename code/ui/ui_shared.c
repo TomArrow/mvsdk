@@ -5923,6 +5923,8 @@ void Item_ListBox_Paint(itemDef_t *item) {
 
 		if (listPtr->elementStyle == LISTBOX_IMAGE) 
 		{
+			const char *text;
+
 			// Multiple rows and columns (since it's more than twice as wide as an element)
 			if ( item->window.rect.w > (listPtr->elementWidth*2) )
 			{
@@ -6023,6 +6025,13 @@ void Item_ListBox_Paint(itemDef_t *item) {
 					}
 					y += listPtr->elementHeight;
 				}
+			}
+
+			// Show pic name
+			text = DC->feederItemText(item->special, item->cursorPos, 0, &optionalImage1, &optionalImage2, &optionalImage3, &optionalImage4, NULL, NULL);
+			if (text)
+			{
+				DC->drawText(item->window.rect.x, item->window.rect.y + item->window.rect.h, item->textscale, item->window.foreColor, text, 0, 0, item->textStyle, item->iMenuFont);
 			}
 		} 
 		else 
