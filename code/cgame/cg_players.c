@@ -1450,7 +1450,7 @@ void CG_UpdateLocalSaberName(void)
 	int j;
 	clientInfo_t *ci;
 
-	if (!cg.useLocalSaberName)
+	if (!cg.useLocalSaberName || cg.localSaberNameUpdated)
 	{
 		return;
 	}
@@ -1503,6 +1503,8 @@ void CG_UpdateLocalSaberName(void)
 			cg_entities[i].ghoul2weapon = NULL;
 		}
 	}
+
+	cg.localSaberNameUpdated = qtrue;
 }
 
 extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance

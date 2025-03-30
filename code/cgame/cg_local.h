@@ -1025,6 +1025,7 @@ Ghoul2 Insert End
 	qboolean			nextCGTraceExplicitlyDeluxe;
 	qboolean			useLocalCharacterColors;
 	qboolean			useLocalSaberName;
+	qboolean			localSaberNameUpdated;
 	hudType_t			hudType;
 	qboolean			updateHud;
 } cg_t;

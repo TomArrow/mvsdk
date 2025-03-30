@@ -1203,7 +1203,6 @@ void CG_RegisterCvars( void ) {
 	forceModelModificationCount = cg_forceModel.modificationCount;
 	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
 	forceMySaberModificationCount = cg_forceMySaber.modificationCount;
-	saber1ModificationCount = cg_saber1.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -1397,7 +1396,7 @@ void CG_UpdateCvars( void ) {
 
 	if ( saber1ModificationCount != cg_saber1.modificationCount ) {
 		saber1ModificationCount = cg_saber1.modificationCount;
-		CG_UpdateLocalSaberName();
+		cg.localSaberNameUpdated = qfalse;
 	}
 
 	if (widescreenModificationCount != cg_widescreen.modificationCount) {
