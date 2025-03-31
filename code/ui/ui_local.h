@@ -109,6 +109,7 @@ extern vmCvar_t	ui_widescreen;
 extern vmCvar_t	ui_widescreenCursorScale;
 extern vmCvar_t	ui_sensitivity;
 extern vmCvar_t	ui_JKA;
+extern vmCvar_t	ui_headSize;
 
 //
 // ui_qmenu.c

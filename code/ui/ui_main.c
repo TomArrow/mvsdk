@@ -11039,6 +11039,7 @@ vmCvar_t	ui_model;
 vmCvar_t	ui_team_model;
 vmCvar_t	ui_MVSDK;
 vmCvar_t	ui_JKA;
+vmCvar_t	ui_headSize;
 
 // bk001129 - made static to avoid aliasing
 static const cvarTable_t cvarTable[] = {
@@ -11185,6 +11186,7 @@ static const cvarTable_t cvarTable[] = {
 	{ &ui_model, "model", "", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &ui_team_model, "team_model", "", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &ui_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &ui_headSize, "ui_headSize", "64", CVAR_ARCHIVE },
 };
 
 // bk001129 - made static to avoid aliasing

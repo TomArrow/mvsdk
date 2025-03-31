@@ -5918,7 +5918,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 		}
 
 		// adjust size for item painting
-		sizeWidth = item->window.rect.w - 2;
+		sizeWidth = item->window.rect.w - 2 - SCROLLBAR_SIZE;
 		sizeHeight = item->window.rect.h - 2;
 
 		if (listPtr->elementStyle == LISTBOX_IMAGE) 
@@ -5931,11 +5931,20 @@ void Item_ListBox_Paint(itemDef_t *item) {
 				startPos = listPtr->startPos;
 				x = item->window.rect.x + 1;
 				y = item->window.rect.y + 1;
+
+#ifndef JK2_CGAME
+				if (item->window.rect.w > (ui_headSize.value * 2) && item->window.rect.h > ui_headSize.value && ui_headSize.value >= 1)
+				{
+					listPtr->elementWidth = ui_headSize.value * uiInfo.screenXFactor;
+					listPtr->elementHeight = ui_headSize.value;
+				}
+#endif
+
 				// Next row
 				for (i2 = startPos; i2 < count; i2++) 
 				{
 					x = item->window.rect.x + 1;
-					sizeWidth = item->window.rect.w - 2;
+					sizeWidth = item->window.rect.w - 2 - SCROLLBAR_SIZE;
 					// print a row
 					for (i = startPos; i < count; i++) 
 					{
