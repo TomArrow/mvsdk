@@ -4548,14 +4548,13 @@ static void CG_DrawActivePowers(void)
 	int i = 0;
 	int startx = icon_size*2+16;
 	int starty = cgs.screenHeight - icon_size*2;
+	int endx = icon_size;
+	int endy = icon_size;
 
 	if (cg.hudType == HUD_TYPE_JKA)
 	{
 		startx += 32;
 	}
-
-	int endx = icon_size;
-	int endy = icon_size;
 
 	if (cg.snap->ps.zoomMode)
 	{ //don't display over zoom mask
