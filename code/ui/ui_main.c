@@ -9903,6 +9903,19 @@ static int UI_GetFileList( const char *path, const char *extension, char *listbu
 	}
 	return 0; // Make lcc happy
 }
+
+static const char *hiddenIcons[][2] =
+{
+	{"secret_quigon", "blue"},
+	{"secret_quigon", "default"},
+	{"secret_quigon", "red"},
+	{"kyle", "fpls"},
+	{"kyle", "fpls2"},
+	{"morgan", "default"},
+};
+
+static const size_t hiddenIconsCount = sizeof(hiddenIcons) / sizeof(hiddenIcons[0]);
+
 static void UI_BuildQ3Model_List( void )
 {
 	int    numfiles;
@@ -9912,9 +9925,11 @@ static void UI_BuildQ3Model_List( void )
 	char   *skin;
 	char   *model;
 	int    i;
+	int    j;
 	int    k, p;
 	int    f = 0;
 	int    skinLen;
+	qboolean skipIcon;
 
 	size_t filelen;
 	size_t fileBufSize = 8192;
@@ -9939,9 +9954,6 @@ static void UI_BuildQ3Model_List( void )
 		if ( !strcmp(model,".") || !strcmp(model,"..") )
 			continue;
 
-		if ( !Q_stricmp(model,"secret_quigon")) // dont list this one
-			continue;
-
 		for ( skinLen = (int)strlen(skin)-1; skinLen >= 0; skinLen-- )
 		{
 			if ( skin[skinLen] == '.' )
@@ -9963,6 +9975,22 @@ static void UI_BuildQ3Model_List( void )
 		}
 
 		check = &skin[1];
+
+		skipIcon = qfalse;
+
+		for (j = 0; j < hiddenIconsCount; j++)
+		{
+			if (Q_stricmp(hiddenIcons[j][0], model) == 0 && Q_stricmp(hiddenIcons[j][1], check) == 0)
+			{
+				skipIcon = qtrue;
+				break;
+			}
+		}
+
+		if (skipIcon)
+		{
+			continue;
+		}
 
 		if (bIsImageFile(model, check))
 		{ //if it exists
