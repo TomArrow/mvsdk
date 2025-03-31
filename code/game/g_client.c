@@ -1529,7 +1529,7 @@ void G_SetSaberName(char saberName[MAX_QPATH], const char *userinfo)
 
 	if (clientSaberName[0] == '\0')
 	{
-		serverSaberName = "Kyle";
+		serverSaberName = "default";
 	}
 	else
 	{

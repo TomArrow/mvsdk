@@ -1173,7 +1173,7 @@ Ghoul2 Insert End
 	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_alpha, "char_color_alpha", "255", CVAR_USERINFO | CVAR_ARCHIVE },
-	{ &cg_saber1, "saber1", "Kyle", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_saber1, "saber1", "default", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_saber2, "saber2", "none", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },

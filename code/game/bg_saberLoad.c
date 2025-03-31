@@ -468,13 +468,13 @@ void WP_SaberSetDefaults( saberInfo_t *saber )
 	//Set defaults so that, if it fails, there's at least something there
 	for ( i = 0; i < MAX_BLADES; i++ )
 	{
-		saber->blade[i].color = SABER_RED;
+		saber->blade[i].color = SABER_BLUE;
 		saber->blade[i].radius = SABER_RADIUS_STANDARD;
 		saber->blade[i].lengthMax = 40;
 	}
 
-	strcpy(saber->name, "Kyle");
-	strcpy(saber->fullName, "Katarn");
+	strcpy(saber->name, "default");
+	strcpy(saber->fullName, "@MENUS0_DEFAULT");
 	strcpy(saber->model, "models/weapons2/saber/saber_w.glm");
 	saber->skin = 0;
 	saber->soundOn = BG_SoundIndex( "sound/weapons/saber/saberon.wav" );
@@ -588,7 +588,7 @@ void WP_SaberSetDefaults( saberInfo_t *saber )
 //=========================================================================================================================================
 }
 
-#define DEFAULT_SABER "Kyle"
+#define DEFAULT_SABER "default"
 
 qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber ) 
 {
@@ -2681,7 +2681,7 @@ void WP_SetSaber( int entNum, saberInfo_t *sabers, int saberNum, const char *sab
 	if ( entNum < MAX_CLIENTS &&
 		!WP_SaberValidForPlayerInMP( saberName ) )
 	{
-		WP_SaberParseParms( "Kyle", &sabers[saberNum] );//get saber info
+		WP_SaberParseParms( "default", &sabers[saberNum] );//get saber info
 	}
 	else
 	{

@@ -1402,7 +1402,7 @@ void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum
 
 	if (clientSaberName[0] == '\0')
 	{
-		clientSaberName = "Kyle";
+		clientSaberName = "default";
 	}
 
 	if (cg.snap != NULL && clientNum == cg.snap->ps.clientNum)
@@ -1464,7 +1464,7 @@ void CG_UpdateLocalSaberName(void)
 			continue;
 		}
 
-		clientSaberName = "Kyle";
+		clientSaberName = "default";
 
 		if (cg.snap && i == cg.snap->ps.clientNum)
 		{
