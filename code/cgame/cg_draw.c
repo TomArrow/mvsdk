@@ -3903,8 +3903,16 @@ static void CG_DrawLagometer( void ) {
 	//
 	// draw the graph
 	//
-	x = cgs.screenWidth - 48;
-	y = cgs.screenHeight - 144;
+	if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+	{
+		x = cgs.screenWidth - 48;
+		y = cgs.screenHeight - 144;
+	}
+	else if (cg.hudType == HUD_TYPE_JKA)
+	{
+		x = cgs.screenWidth - 48;
+		y = cgs.screenHeight - 176;
+	}
 
 	trap_R_SetColor( NULL );
 	if (cg_lagometer.integer < 3)
@@ -4540,6 +4548,11 @@ static void CG_DrawActivePowers(void)
 	int i = 0;
 	int startx = icon_size*2+16;
 	int starty = cgs.screenHeight - icon_size*2;
+
+	if (cg.hudType == HUD_TYPE_JKA)
+	{
+		startx += 32;
+	}
 
 	int endx = icon_size;
 	int endy = icon_size;
