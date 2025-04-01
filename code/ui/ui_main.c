@@ -1405,6 +1405,11 @@ void _UI_Shutdown( void ) {
 	trap_LAN_SaveCachedServers();
 	UI_CleanupGhoul2();
 
+	if (coolApi_jkaVersion)
+	{
+		trap_UI_COOL_API_FreeAllMemory();
+	}
+
 	// We don't get a new force rank from the server during vid_restart (the server sends "nfr" on force init, the cgame
 	// receives it and tells the engine to change the "ui_rankChange" cvar and ui just checks the value of that cvar each
 	// refresh). So when shutting down the UI module we have to store the old ui_rankChange to restore it afterwards.
@@ -10199,6 +10204,119 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 
 }
 
+static playerSpeciesInfo_t playerSpecieTest;
+
+void UI_MemoryAllocationTest(void)
+{
+	int i;
+	char buffer[MAX_QPATH];
+	qboolean result;
+	uint32_t elementSize;
+	int count;
+	int count2;
+	uint32_t memoryIndex;
+	uint32_t memoryIndex2;
+	uint32_t memoryIndex3;
+	
+
+
+	// =======================================
+	count = trap_UI_COOL_API_CreateFileList("models/players/", ".skin");
+	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex, count, sizeof(buffer));
+
+	if (!result)
+	{
+		trap_UI_COOL_API_CloseFileList();
+		return;
+	}
+
+	for (i = 0; i < count; i++)
+	{
+		trap_UI_COOL_API_GetNextFile(buffer, sizeof(buffer));
+		Com_Printf("%d: %s\n", i, buffer);
+		trap_UI_COOL_API_WriteMemory(memoryIndex, i, (const uint8_t *) buffer);
+	}
+
+	trap_UI_COOL_API_CloseFileList();
+	// =======================================
+
+
+	// =======================================
+	count2 = trap_UI_COOL_API_CreateFileList("models/players/", ".glm");
+	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex2, count2, sizeof(buffer));
+
+	if (!result)
+	{
+		trap_UI_COOL_API_CloseFileList();
+		return;
+	}
+
+	for (i = 0; i < count2; i++)
+	{
+		trap_UI_COOL_API_GetNextFile(buffer, sizeof(buffer));
+		Com_Printf("%d: %s\n", i, buffer);
+		trap_UI_COOL_API_WriteMemory(memoryIndex2, i, (const uint8_t *) buffer);
+	}
+
+	trap_UI_COOL_API_CloseFileList();
+	// =======================================
+
+
+	// =======================================
+	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex3, MAX_PLAYERMODELS, sizeof(playerSpeciesInfo_t));
+
+	if (!result)
+	{
+		return;
+	}
+
+	Com_Printf("uiInfo.playerSpecies[5].Name = %s\n", uiInfo.playerSpecies[5].Name);
+	trap_UI_COOL_API_WriteMemory(memoryIndex3, 5, (const uint8_t *) &uiInfo.playerSpecies[5]);
+	// =======================================
+
+
+	// =======================================
+	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex);
+	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex, elementSize);
+
+	for (i = 0; i < count; i++)
+	{
+		trap_UI_COOL_API_ReadMemory(memoryIndex, i, (uint8_t *) buffer);
+		Com_Printf("%d: %s\n", i, buffer);
+	}
+
+	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex2);
+	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex2, elementSize);
+
+	for (i = 0; i < count2; i++)
+	{
+		trap_UI_COOL_API_ReadMemory(memoryIndex2, i, (uint8_t *) buffer);
+		Com_Printf("%d: %s\n", i, buffer);
+	}
+
+	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex3);
+	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex3, elementSize);
+
+	trap_UI_COOL_API_ReadMemory(memoryIndex3, 5, (uint8_t *) &playerSpecieTest);
+	Com_Printf("playerSpecies.Name = %s\n", playerSpecieTest.Name);
+	// =======================================
+
+
+	// =======================================
+	//trap_UI_COOL_API_ReadMemory(memoryIndex2, i, buffer);
+	//trap_UI_COOL_API_ReadMemory(100500, i, buffer);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex2, 100500, buffer);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex2, i, NULL);
+
+	trap_UI_COOL_API_FreeMemory(memoryIndex);
+	trap_UI_COOL_API_FreeMemory(memoryIndex2);
+	trap_UI_COOL_API_FreeMemory(memoryIndex3);
+
+	//trap_UI_COOL_API_ReadMemory(memoryIndex, i, buffer);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex2, i, buffer);
+	// =======================================
+}
+
 /*
 =================
 UI_Init
@@ -10321,6 +10439,9 @@ void _UI_Init( qboolean inGameLoad ) {
 	Init_Display(&uiInfo.uiDC);
 
 	UI_BuildPlayerModel_List(inGameLoad);
+
+	if (coolApi_jkaVersion)
+		UI_MemoryAllocationTest();
 
 	String_Init();
   

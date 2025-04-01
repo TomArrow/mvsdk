@@ -305,3 +305,10 @@ equ trap_G_COOL_API_GetFileVersion            -2008    ; G_COOL_API_GET_FILE_VER
 equ trap_G_COOL_API_CreateFileList            -2009    ; G_COOL_API_CREATE_FILE_LIST
 equ trap_G_COOL_API_CloseFileList             -2010    ; G_COOL_API_CLOSE_FILE_LIST
 equ trap_G_COOL_API_GetNextFile               -2011    ; G_COOL_API_GET_NEXT_FILE
+equ trap_G_COOL_API_AllocateMemory            -2012    ; G_COOL_API_ALLOCATE_MEMORY
+equ trap_G_COOL_API_ReallocateMemory          -2013    ; G_COOL_API_REALLOCATE_MEMORY
+equ trap_G_COOL_API_FreeMemory                -2014    ; G_COOL_API_FREE_MEMORY
+equ trap_G_COOL_API_WriteMemory               -2015    ; G_COOL_API_WRITE_MEMORY
+equ trap_G_COOL_API_ReadMemory                -2016    ; G_COOL_API_READ_MEMORY
+equ trap_G_COOL_API_GetElementSizeFromMemory  -2017    ; G_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY
+equ trap_G_COOL_API_FreeAllMemory             -2018    ; G_COOL_API_FREE_ALL_MEMORY

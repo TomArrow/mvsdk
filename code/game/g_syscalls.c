@@ -1219,3 +1219,38 @@ void trap_G_COOL_API_GetNextFile(char *buffer, int bufferSize)
 {
 	syscall(G_COOL_API_GET_NEXT_FILE, buffer, bufferSize);
 }
+
+qboolean trap_G_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize)
+{
+	return syscall(G_COOL_API_ALLOCATE_MEMORY, memoryIndex, elementCount, elementSize);
+}
+
+qboolean trap_G_COOL_API_ReallocateMemory(uint32_t memoryIndex, uint32_t elementCount)
+{
+	return syscall(G_COOL_API_REALLOCATE_MEMORY, memoryIndex, elementCount);
+}
+
+void trap_G_COOL_API_FreeMemory(uint32_t memoryIndex)
+{
+	syscall(G_COOL_API_FREE_MEMORY, memoryIndex);
+}
+
+void trap_G_COOL_API_WriteMemory(uint32_t memoryIndex, uint32_t elementIndex, const uint8_t *sourceMemory)
+{
+	syscall(G_COOL_API_WRITE_MEMORY, memoryIndex, elementIndex, sourceMemory);
+}
+
+void trap_G_COOL_API_ReadMemory(uint32_t memoryIndex, uint32_t elementIndex, uint8_t *destinationMemory)
+{
+	syscall(G_COOL_API_READ_MEMORY, memoryIndex, elementIndex, destinationMemory);
+}
+
+uint32_t trap_G_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex)
+{
+	return syscall(G_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY, memoryIndex);
+}
+
+void trap_G_COOL_API_FreeAllMemory(void)
+{
+	syscall(G_COOL_API_FREE_ALL_MEMORY);
+}

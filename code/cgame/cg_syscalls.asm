@@ -253,3 +253,10 @@ equ trap_CG_COOL_API_GetFileList               -2008    ; CG_COOL_API_GET_FILE_L
 equ trap_CG_COOL_API_CreateFileList            -2009    ; CG_COOL_API_CREATE_FILE_LIST
 equ trap_CG_COOL_API_CloseFileList             -2010    ; CG_COOL_API_CLOSE_FILE_LIST
 equ trap_CG_COOL_API_GetNextFile               -2011    ; CG_COOL_API_GET_NEXT_FILE
+equ trap_CG_COOL_API_AllocateMemory            -2012    ; CG_COOL_API_ALLOCATE_MEMORY
+equ trap_CG_COOL_API_ReallocateMemory          -2013    ; CG_COOL_API_REALLOCATE_MEMORY
+equ trap_CG_COOL_API_FreeMemory                -2014    ; CG_COOL_API_FREE_MEMORY
+equ trap_CG_COOL_API_WriteMemory               -2015    ; CG_COOL_API_WRITE_MEMORY
+equ trap_CG_COOL_API_ReadMemory                -2016    ; CG_COOL_API_READ_MEMORY
+equ trap_CG_COOL_API_GetElementSizeFromMemory  -2017    ; CG_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY
+equ trap_CG_COOL_API_FreeAllMemory             -2018    ; CG_COOL_API_FREE_ALL_MEMORY

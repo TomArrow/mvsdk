@@ -1101,6 +1101,13 @@ uint32_t        trap_UI_COOL_API_GetFileVersion(const char *fileName);
 int             trap_UI_COOL_API_CreateFileList(const char *path, const char *extension);
 void            trap_UI_COOL_API_CloseFileList(void);
 void            trap_UI_COOL_API_GetNextFile(char *buffer, int bufferSize);
+qboolean        trap_UI_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize);
+qboolean        trap_UI_COOL_API_ReallocateMemory(uint32_t memoryIndex, uint32_t elementCount);
+void            trap_UI_COOL_API_FreeMemory(uint32_t memoryIndex);
+void            trap_UI_COOL_API_WriteMemory(uint32_t memoryIndex, uint32_t elementIndex, const uint8_t *sourceMemory);
+void            trap_UI_COOL_API_ReadMemory(uint32_t memoryIndex, uint32_t elementIndex, uint8_t *destinationMemory);
+uint32_t        trap_UI_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex);
+void            trap_UI_COOL_API_FreeAllMemory(void);
 
 /*
 Ghoul2 Insert Start

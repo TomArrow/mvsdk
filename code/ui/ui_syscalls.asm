@@ -219,3 +219,10 @@ equ trap_UI_COOL_API_GetFileVersion            -2017    ; UI_COOL_API_GET_FILE_V
 equ trap_UI_COOL_API_CreateFileList            -2018    ; UI_COOL_API_CREATE_FILE_LIST
 equ trap_UI_COOL_API_CloseFileList             -2019    ; UI_COOL_API_CLOSE_FILE_LIST
 equ trap_UI_COOL_API_GetNextFile               -2020    ; UI_COOL_API_GET_NEXT_FILE
+equ trap_UI_COOL_API_AllocateMemory            -2021    ; UI_COOL_API_ALLOCATE_MEMORY
+equ trap_UI_COOL_API_ReallocateMemory          -2022    ; UI_COOL_API_REALLOCATE_MEMORY
+equ trap_UI_COOL_API_FreeMemory                -2023    ; UI_COOL_API_FREE_MEMORY
+equ trap_UI_COOL_API_WriteMemory               -2024    ; UI_COOL_API_WRITE_MEMORY
+equ trap_UI_COOL_API_ReadMemory                -2025    ; UI_COOL_API_READ_MEMORY
+equ trap_UI_COOL_API_GetElementSizeFromMemory  -2026    ; UI_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY
+equ trap_UI_COOL_API_FreeAllMemory             -2027    ; UI_COOL_API_FREE_ALL_MEMORY
