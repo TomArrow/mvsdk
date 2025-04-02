@@ -9914,10 +9914,6 @@ static const char *hiddenIcons[][2] =
 	{"secret_quigon", "blue"},
 	{"secret_quigon", "default"},
 	{"secret_quigon", "red"},
-	{"kyle", "fpls"},
-	{"kyle", "fpls2"},
-	{"morgan", "default"},
-	{"stormtrooper", "officer"},
 };
 
 static const size_t hiddenIconsCount = sizeof(hiddenIcons) / sizeof(hiddenIcons[0]);
