@@ -473,7 +473,7 @@ void WP_SaberSetDefaults( saberInfo_t *saber )
 		saber->blade[i].lengthMax = 40;
 	}
 
-	strcpy(saber->name, "default");
+	strcpy(saber->name, DEFAULT_SABER1);
 	strcpy(saber->fullName, "@MENUS0_DEFAULT");
 	strcpy(saber->model, "models/weapons2/saber/saber_w.glm");
 	saber->skin = 0;
@@ -588,8 +588,6 @@ void WP_SaberSetDefaults( saberInfo_t *saber )
 //=========================================================================================================================================
 }
 
-#define DEFAULT_SABER "default"
-
 qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber ) 
 {
 	const char	*token;
@@ -612,7 +610,7 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 
 	if ( !SaberName || !SaberName[0] ) 
 	{
-		strcpy(useSaber, DEFAULT_SABER); //default
+		strcpy(useSaber, DEFAULT_SABER1); //default
 		triedDefault = qtrue;
 	}
 	else
@@ -634,7 +632,7 @@ qboolean WP_SaberParseParms( const char *SaberName, saberInfo_t *saber )
 			{ //fall back to default and restart, should always be there
 				p = SaberParms;
 				COM_BeginParseSession("saberinfo");
-				strcpy(useSaber, DEFAULT_SABER);
+				strcpy(useSaber, DEFAULT_SABER1);
 				triedDefault = qtrue;
 			}
 			else
@@ -2681,7 +2679,7 @@ void WP_SetSaber( int entNum, saberInfo_t *sabers, int saberNum, const char *sab
 	if ( entNum < MAX_CLIENTS &&
 		!WP_SaberValidForPlayerInMP( saberName ) )
 	{
-		WP_SaberParseParms( "default", &sabers[saberNum] );//get saber info
+		WP_SaberParseParms( DEFAULT_SABER1, &sabers[saberNum] );//get saber info
 	}
 	else
 	{

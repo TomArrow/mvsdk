@@ -858,7 +858,7 @@ void UI_SaberDrawBlades( itemDef_t *item, vec3_t origin, vec3_t angles )
 		trap_Cvar_VariableStringBuffer("ui_saber", saber, sizeof(saber) );
 		if ( !UI_SaberValidForPlayerInMP( saber ) )
 		{
-			trap_Cvar_Set( "ui_saber", "default" );
+			trap_Cvar_Set( "ui_saber", DEFAULT_SABER1 );
 			trap_Cvar_VariableStringBuffer("ui_saber", saber, sizeof(saber) );
 		}
 	}
@@ -867,7 +867,7 @@ void UI_SaberDrawBlades( itemDef_t *item, vec3_t origin, vec3_t angles )
 		trap_Cvar_VariableStringBuffer("ui_saber2", saber, sizeof(saber) );
 		if ( !UI_SaberValidForPlayerInMP( saber ) )
 		{
-			trap_Cvar_Set( "ui_saber2", "default" );
+			trap_Cvar_Set( "ui_saber2", DEFAULT_SABER1 );
 			trap_Cvar_VariableStringBuffer("ui_saber2", saber, sizeof(saber) );
 		}
 	}
@@ -904,7 +904,7 @@ void UI_GetSaberForMenu( char *saber, int saberNum )
 		trap_Cvar_VariableStringBuffer("ui_saber", saber, MAX_QPATH );
 		if ( !UI_SaberValidForPlayerInMP( saber ) )
 		{
-			trap_Cvar_Set( "ui_saber", "default" );
+			trap_Cvar_Set( "ui_saber", DEFAULT_SABER1 );
 			trap_Cvar_VariableStringBuffer("ui_saber", saber, MAX_QPATH );
 		}
 	}
@@ -913,7 +913,7 @@ void UI_GetSaberForMenu( char *saber, int saberNum )
 		trap_Cvar_VariableStringBuffer("ui_saber2", saber, MAX_QPATH );
 		if ( !UI_SaberValidForPlayerInMP( saber ) )
 		{
-			trap_Cvar_Set( "ui_saber2", "default" );
+			trap_Cvar_Set( "ui_saber2", DEFAULT_SABER1 );
 			trap_Cvar_VariableStringBuffer("ui_saber2", saber, MAX_QPATH );
 		}
 	}
@@ -933,13 +933,13 @@ void UI_GetSaberForMenu( char *saber, int saberNum )
 	case 3://MD_SINGLE_STRONG:
 		if ( saberType != SABER_SINGLE )
 		{
-			Q_strncpyz(saber,"single_1",MAX_QPATH);
+			Q_strncpyz(saber,DEFAULT_SABER1,MAX_QPATH);
 		}
 		break;
 	case 4://MD_DUAL_SABERS:
 		if ( saberType != SABER_SINGLE )
 		{
-			Q_strncpyz(saber,"single_1",MAX_QPATH);
+			Q_strncpyz(saber,DEFAULT_SABER1,MAX_QPATH);
 		}
 		break;
 	case 5://MD_SABER_STAFF:
@@ -978,7 +978,7 @@ void UI_SaberDrawBlades( itemDef_t *item, vec3_t origin, vec3_t angles )
 			trap_Cvar_VariableStringBuffer("ui_saber", saber, sizeof(saber) );
 			if ( !UI_SaberValidForPlayerInMP( saber ) )
 			{
-				trap_Cvar_Set( "ui_saber", "default" );
+				trap_Cvar_Set( "ui_saber", DEFAULT_SABER1 );
 				trap_Cvar_VariableStringBuffer("ui_saber", saber, sizeof(saber) );
 			}
 			saberModel = 0;
@@ -988,7 +988,7 @@ void UI_SaberDrawBlades( itemDef_t *item, vec3_t origin, vec3_t angles )
 			trap_Cvar_VariableStringBuffer("ui_saber2", saber, sizeof(saber) );
 			if ( !UI_SaberValidForPlayerInMP( saber ) )
 			{
-				trap_Cvar_Set( "ui_saber2", "default" );
+				trap_Cvar_Set( "ui_saber2", DEFAULT_SABER1 );
 				trap_Cvar_VariableStringBuffer("ui_saber2", saber, sizeof(saber) );
 			}
 			saberModel = 0;

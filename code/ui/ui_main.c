@@ -5907,8 +5907,8 @@ static void UI_SetSaberBoxesandHilts (void)
 
 	if ( Q_stricmp( "dual", sType ) != 0 )
 	{
-//		trap_Cvar_Set("ui_saber", "single_1");
-//		trap_Cvar_Set("ui_saber2", "single_1");
+//		trap_Cvar_Set("ui_saber", DEFAULT_SABER1);
+//		trap_Cvar_Set("ui_saber2", DEFAULT_SABER1);
 		getBig = qtrue;
 	}
 
@@ -11175,8 +11175,8 @@ static const cvarTable_t cvarTable[] = {
 	{ &ui_char_skin_legs,		"ui_char_skin_legs",	"lower_a1",CVAR_ROM|CVAR_INTERNAL}, 
 	{ &ui_char_anim,			"ui_char_anim",			"BOTH_WALK1",CVAR_ROM|CVAR_INTERNAL}, 
 	{ &ui_saber_type,			"ui_saber_type",		"single",CVAR_ROM|CVAR_INTERNAL},
-	{ &ui_saber,				"ui_saber",				"single_1",CVAR_ROM|CVAR_INTERNAL}, 
-	{ &ui_saber2,				"ui_saber2",			"none",CVAR_ROM|CVAR_INTERNAL}, 
+	{ &ui_saber,				"ui_saber",				DEFAULT_SABER1,CVAR_ROM|CVAR_INTERNAL}, 
+	{ &ui_saber2,				"ui_saber2",			DEFAULT_SABER2,CVAR_ROM|CVAR_INTERNAL}, 
 	{ &ui_saber_color,			"ui_saber_color",		"yellow",CVAR_ROM|CVAR_INTERNAL},
 	{ &ui_saber2_color,			"ui_saber2_color",		"yellow",CVAR_ROM|CVAR_INTERNAL},
 	{ &ui_char_color_red,		"ui_char_color_red",	"255", CVAR_ROM|CVAR_INTERNAL}, 

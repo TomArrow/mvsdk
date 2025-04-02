@@ -1402,7 +1402,7 @@ void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum
 
 	if (clientSaberName[0] == '\0')
 	{
-		clientSaberName = "default";
+		clientSaberName = DEFAULT_SABER1;
 	}
 
 	if (cg.snap != NULL && clientNum == cg.snap->ps.clientNum)
@@ -1420,7 +1420,7 @@ void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum
 	Q_strncpyz(ci->saberName, clientSaberName, MAX_QPATH);
 	WP_SetSaber(clientNum, ci->saber, 0, ci->saberName);
 
-	clientSaberName = "none";
+	clientSaberName = DEFAULT_SABER2;
 
 	Q_strncpyz(ci->saber2Name, clientSaberName, MAX_QPATH);
 	WP_SetSaber(clientNum, ci->saber, 1, ci->saber2Name);
@@ -1464,7 +1464,7 @@ void CG_UpdateLocalSaberName(void)
 			continue;
 		}
 
-		clientSaberName = "default";
+		clientSaberName = DEFAULT_SABER1;
 
 		if (cg.snap && i == cg.snap->ps.clientNum)
 		{
@@ -1481,7 +1481,7 @@ void CG_UpdateLocalSaberName(void)
 		Q_strncpyz(ci->saberName, clientSaberName, MAX_QPATH);
 		WP_SetSaber(i, ci->saber, 0, ci->saberName);
 
-		clientSaberName = "none";
+		clientSaberName = DEFAULT_SABER2;
 
 		Q_strncpyz(ci->saber2Name, clientSaberName, MAX_QPATH);
 		WP_SetSaber(i, ci->saber, 1, ci->saber2Name);

@@ -729,7 +729,10 @@ typedef struct
 //=========================================================================================================================================
 
 } saberInfo_t;
+
 #define MAX_SABERS 2
+#define DEFAULT_SABER1 "default"
+#define DEFAULT_SABER2 "none"
 
 typedef enum
 {
