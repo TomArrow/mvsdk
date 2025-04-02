@@ -474,7 +474,7 @@ void WP_SaberSetDefaults( saberInfo_t *saber )
 	}
 
 	strcpy(saber->name, DEFAULT_SABER1);
-	strcpy(saber->fullName, "@MENUS0_DEFAULT");
+	strcpy(saber->fullName, "@ETERNAL_SABER_KYLE");
 	strcpy(saber->model, "models/weapons2/saber/saber_w.glm");
 	saber->skin = 0;
 	saber->soundOn = BG_SoundIndex( "sound/weapons/saber/saberon.wav" );
