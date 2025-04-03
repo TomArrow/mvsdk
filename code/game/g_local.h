@@ -1037,7 +1037,7 @@ void        trap_G_COOL_API_FreeMemory(uint32_t memoryIndex);
 void        trap_G_COOL_API_WriteMemory(uint32_t memoryIndex, uint32_t elementIndex, const uint8_t *sourceMemory);
 void        trap_G_COOL_API_ReadMemory(uint32_t memoryIndex, uint32_t elementIndex, uint8_t *destinationMemory);
 uint32_t    trap_G_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex);
-void        trap_G_COOL_API_FreeAllMemory(void);
+void        trap_G_COOL_API_ClearMemory(void);
 
 //qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
 qboolean	G_InsertRun(finishedRunInfo_t* runInfo);

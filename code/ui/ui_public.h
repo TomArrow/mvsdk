@@ -172,7 +172,7 @@ Ghoul2 Insert End
 	UI_COOL_API_WRITE_MEMORY                  = 2023,
 	UI_COOL_API_READ_MEMORY                   = 2024,
 	UI_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY  = 2025,
-	UI_COOL_API_FREE_ALL_MEMORY               = 2026,
+	UI_COOL_API_CLEAR_MEMORY                  = 2026,
 } uiImport_t;
 
 typedef enum {

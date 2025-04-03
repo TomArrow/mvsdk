@@ -225,4 +225,4 @@ equ trap_UI_COOL_API_FreeMemory                -2023    ; UI_COOL_API_FREE_MEMOR
 equ trap_UI_COOL_API_WriteMemory               -2024    ; UI_COOL_API_WRITE_MEMORY
 equ trap_UI_COOL_API_ReadMemory                -2025    ; UI_COOL_API_READ_MEMORY
 equ trap_UI_COOL_API_GetElementSizeFromMemory  -2026    ; UI_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY
-equ trap_UI_COOL_API_FreeAllMemory             -2027    ; UI_COOL_API_FREE_ALL_MEMORY
+equ trap_UI_COOL_API_ClearMemory               -2027    ; UI_COOL_API_CLEAR_MEMORY

@@ -1205,7 +1205,7 @@ void G_ShutdownGame( int restart ) {
 
 	if (coolApi_jkaVersion)
 	{
-		trap_G_COOL_API_FreeAllMemory();
+		trap_G_COOL_API_ClearMemory();
 	}
 }
 

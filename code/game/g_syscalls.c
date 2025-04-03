@@ -1250,7 +1250,7 @@ uint32_t trap_G_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex)
 	return syscall(G_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY, memoryIndex);
 }
 
-void trap_G_COOL_API_FreeAllMemory(void)
+void trap_G_COOL_API_ClearMemory(void)
 {
-	syscall(G_COOL_API_FREE_ALL_MEMORY);
+	syscall(G_COOL_API_CLEAR_MEMORY);
 }

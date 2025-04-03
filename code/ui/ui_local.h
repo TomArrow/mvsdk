@@ -1107,7 +1107,7 @@ void            trap_UI_COOL_API_FreeMemory(uint32_t memoryIndex);
 void            trap_UI_COOL_API_WriteMemory(uint32_t memoryIndex, uint32_t elementIndex, const uint8_t *sourceMemory);
 void            trap_UI_COOL_API_ReadMemory(uint32_t memoryIndex, uint32_t elementIndex, uint8_t *destinationMemory);
 uint32_t        trap_UI_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex);
-void            trap_UI_COOL_API_FreeAllMemory(void);
+void            trap_UI_COOL_API_ClearMemory(void);
 
 /*
 Ghoul2 Insert Start

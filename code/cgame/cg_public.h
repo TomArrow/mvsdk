@@ -308,7 +308,7 @@ Ghoul2 Insert End
 	CG_COOL_API_WRITE_MEMORY                  = 2014,
 	CG_COOL_API_READ_MEMORY                   = 2015,
 	CG_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY  = 2016,
-	CG_COOL_API_FREE_ALL_MEMORY               = 2017,
+	CG_COOL_API_CLEAR_MEMORY                  = 2017,
 } cgameImport_t;
 
 

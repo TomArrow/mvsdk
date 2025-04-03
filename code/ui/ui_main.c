@@ -1407,7 +1407,7 @@ void _UI_Shutdown( void ) {
 
 	if (coolApi_jkaVersion)
 	{
-		trap_UI_COOL_API_FreeAllMemory();
+		trap_UI_COOL_API_ClearMemory();
 	}
 
 	// We don't get a new force rank from the server during vid_restart (the server sends "nfr" on force init, the cgame

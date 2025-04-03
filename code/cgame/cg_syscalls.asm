@@ -259,4 +259,4 @@ equ trap_CG_COOL_API_FreeMemory                -2014    ; CG_COOL_API_FREE_MEMOR
 equ trap_CG_COOL_API_WriteMemory               -2015    ; CG_COOL_API_WRITE_MEMORY
 equ trap_CG_COOL_API_ReadMemory                -2016    ; CG_COOL_API_READ_MEMORY
 equ trap_CG_COOL_API_GetElementSizeFromMemory  -2017    ; CG_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY
-equ trap_CG_COOL_API_FreeAllMemory             -2018    ; CG_COOL_API_FREE_ALL_MEMORY
+equ trap_CG_COOL_API_ClearMemory               -2018    ; CG_COOL_API_CLEAR_MEMORY

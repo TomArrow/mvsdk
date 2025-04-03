@@ -3658,7 +3658,7 @@ void CG_Shutdown( void )
 
 	if (coolApi_jkaVersion)
 	{
-		trap_CG_COOL_API_FreeAllMemory();
+		trap_CG_COOL_API_ClearMemory();
 	}
 }
 
