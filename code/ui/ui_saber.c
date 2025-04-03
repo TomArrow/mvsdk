@@ -1086,9 +1086,11 @@ void UI_SaberAttachToChar( itemDef_t *item )
 void UI_SaberGetHiltInfo( const char *singleHilts[MAX_SABER_HILTS], const char *staffHilts[MAX_SABER_HILTS] )
 {
 	int	numSingleHilts = 0, numStaffHilts = 0;
+	int i;
 	const char	*saberName;
 	const char	*token;
 	const char	*p;
+	qboolean skipSaber;
 
 	//go through all the loaded sabers and put the valid ones in the proper list
 	p = SaberParms;
@@ -1115,6 +1117,35 @@ void UI_SaberGetHiltInfo( const char *singleHilts[MAX_SABER_HILTS], const char *
 		if ( !UI_SaberValidForPlayerInMP( saberName ) )
 		{
 			SkipBracedSection( &p );
+			continue;
+		}
+
+		// skip duplicates
+		skipSaber = qfalse;
+		for (i = 0; i < numSingleHilts; i++)
+		{
+			if (Q_stricmp(singleHilts[i], saberName) == 0)
+			{
+				skipSaber = qtrue;
+				break;
+			}
+		}
+
+		if (!skipSaber)
+		{
+			for (i = 0; i < numStaffHilts; i++)
+			{
+				if (Q_stricmp(staffHilts[i], saberName) == 0)
+				{
+					skipSaber = qtrue;
+					break;
+				}
+			}
+		}
+
+		if (skipSaber)
+		{
+			SkipBracedSection(&p);
 			continue;
 		}
 
