@@ -165,7 +165,7 @@ Ghoul2 Insert End
 	UI_COOL_API_GET_FILE_VERSION              = 2016,
 	UI_COOL_API_CREATE_FILE_LIST              = 2017,
 	UI_COOL_API_CLOSE_FILE_LIST               = 2018,
-	UI_COOL_API_GET_NEXT_FILE                 = 2019,
+	UI_COOL_API_READ_FROM_FILE_LIST           = 2019,
 	UI_COOL_API_ALLOCATE_MEMORY               = 2020,
 	UI_COOL_API_REALLOCATE_MEMORY             = 2021,
 	UI_COOL_API_FREE_MEMORY                   = 2022,

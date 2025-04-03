@@ -10205,62 +10205,73 @@ static playerSpeciesInfo_t playerSpecieTest;
 
 void UI_MemoryAllocationTest(void)
 {
-	int i;
+	uint32_t i;
 	char buffer[MAX_QPATH];
 	qboolean result;
 	uint32_t elementSize;
-	int count;
-	int count2;
-	uint32_t memoryIndex;
-	uint32_t memoryIndex2;
-	uint32_t memoryIndex3;
-	
+	uint32_t filesCount[2];
+	uint32_t listIndex[2];
+	uint32_t memoryIndex[3];
 
 
 	// =======================================
-	count = trap_UI_COOL_API_CreateFileList("models/players/", ".skin");
-	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex, count, sizeof(buffer));
+	result = trap_UI_COOL_API_CreateFileList(&listIndex[0], "models/players/", ".skin", NULL, &filesCount[0]);
 
 	if (!result)
 	{
-		trap_UI_COOL_API_CloseFileList();
+		trap_UI_COOL_API_ClearMemory();
 		return;
 	}
 
-	for (i = 0; i < count; i++)
-	{
-		trap_UI_COOL_API_GetNextFile(buffer, sizeof(buffer));
-		Com_Printf("%d: %s\n", i, buffer);
-		trap_UI_COOL_API_WriteMemory(memoryIndex, i, (const uint8_t *) buffer);
-	}
-
-	trap_UI_COOL_API_CloseFileList();
-	// =======================================
-
-
-	// =======================================
-	count2 = trap_UI_COOL_API_CreateFileList("models/players/", ".glm");
-	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex2, count2, sizeof(buffer));
+	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex[0], filesCount[0], sizeof(buffer));
 
 	if (!result)
 	{
-		trap_UI_COOL_API_CloseFileList();
+		trap_UI_COOL_API_ClearMemory();
 		return;
 	}
 
-	for (i = 0; i < count2; i++)
+	for (i = 0; i < filesCount[0]; i++)
 	{
-		trap_UI_COOL_API_GetNextFile(buffer, sizeof(buffer));
+		trap_UI_COOL_API_ReadFromFileList(listIndex[0], i, buffer, sizeof(buffer));
 		Com_Printf("%d: %s\n", i, buffer);
-		trap_UI_COOL_API_WriteMemory(memoryIndex2, i, (const uint8_t *) buffer);
+		trap_UI_COOL_API_WriteMemory(memoryIndex[0], i, (const uint8_t *) buffer);
 	}
 
-	trap_UI_COOL_API_CloseFileList();
+	trap_UI_COOL_API_CloseFileList(listIndex[0]);
 	// =======================================
 
 
 	// =======================================
-	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex3, MAX_PLAYERMODELS, sizeof(playerSpeciesInfo_t));
+	result = trap_UI_COOL_API_CreateFileList(&listIndex[1], "models/players/", ".glm", NULL, &filesCount[1]);
+
+	if (!result)
+	{
+		trap_UI_COOL_API_ClearMemory();
+		return;
+	}
+
+	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex[1], filesCount[1], sizeof(buffer));
+
+	if (!result)
+	{
+		trap_UI_COOL_API_ClearMemory();
+		return;
+	}
+
+	for (i = 0; i < filesCount[1]; i++)
+	{
+		trap_UI_COOL_API_ReadFromFileList(listIndex[1], i, buffer, sizeof(buffer));
+		Com_Printf("%d: %s\n", i, buffer);
+		trap_UI_COOL_API_WriteMemory(memoryIndex[1], i, (const uint8_t *) buffer);
+	}
+
+	trap_UI_COOL_API_CloseFileList(listIndex[1]);
+	// =======================================
+
+
+	// =======================================
+	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex[2], MAX_PLAYERMODELS, sizeof(playerSpeciesInfo_t));
 
 	if (!result)
 	{
@@ -10268,49 +10279,49 @@ void UI_MemoryAllocationTest(void)
 	}
 
 	Com_Printf("uiInfo.playerSpecies[5].Name = %s\n", uiInfo.playerSpecies[5].Name);
-	trap_UI_COOL_API_WriteMemory(memoryIndex3, 5, (const uint8_t *) &uiInfo.playerSpecies[5]);
+	trap_UI_COOL_API_WriteMemory(memoryIndex[2], 5, (const uint8_t *) &uiInfo.playerSpecies[5]);
 	// =======================================
 
 
 	// =======================================
-	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex);
-	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex, elementSize);
+	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex[0]);
+	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex[0], elementSize);
 
-	for (i = 0; i < count; i++)
+	for (i = 0; i < filesCount[0]; i++)
 	{
-		trap_UI_COOL_API_ReadMemory(memoryIndex, i, (uint8_t *) buffer);
+		trap_UI_COOL_API_ReadMemory(memoryIndex[0], i, (uint8_t *) buffer);
 		Com_Printf("%d: %s\n", i, buffer);
 	}
 
-	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex2);
-	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex2, elementSize);
+	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex[1]);
+	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex[1], elementSize);
 
-	for (i = 0; i < count2; i++)
+	for (i = 0; i < filesCount[1]; i++)
 	{
-		trap_UI_COOL_API_ReadMemory(memoryIndex2, i, (uint8_t *) buffer);
+		trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, (uint8_t *) buffer);
 		Com_Printf("%d: %s\n", i, buffer);
 	}
 
-	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex3);
-	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex3, elementSize);
+	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex[2]);
+	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex[2], elementSize);
 
-	trap_UI_COOL_API_ReadMemory(memoryIndex3, 5, (uint8_t *) &playerSpecieTest);
+	trap_UI_COOL_API_ReadMemory(memoryIndex[2], 5, (uint8_t *) &playerSpecieTest);
 	Com_Printf("playerSpecies.Name = %s\n", playerSpecieTest.Name);
 	// =======================================
 
 
 	// =======================================
-	//trap_UI_COOL_API_ReadMemory(memoryIndex2, i, buffer);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, buffer);
 	//trap_UI_COOL_API_ReadMemory(100500, i, buffer);
-	//trap_UI_COOL_API_ReadMemory(memoryIndex2, 100500, buffer);
-	//trap_UI_COOL_API_ReadMemory(memoryIndex2, i, NULL);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], 100500, buffer);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, NULL);
 
-	trap_UI_COOL_API_FreeMemory(memoryIndex);
-	trap_UI_COOL_API_FreeMemory(memoryIndex2);
-	trap_UI_COOL_API_FreeMemory(memoryIndex3);
+	trap_UI_COOL_API_FreeMemory(memoryIndex[0]);
+	trap_UI_COOL_API_FreeMemory(memoryIndex[1]);
+	trap_UI_COOL_API_FreeMemory(memoryIndex[2]);
 
-	//trap_UI_COOL_API_ReadMemory(memoryIndex, i, buffer);
-	//trap_UI_COOL_API_ReadMemory(memoryIndex2, i, buffer);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex[0], i, buffer);
+	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, buffer);
 	// =======================================
 }
 

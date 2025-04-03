@@ -1098,9 +1098,9 @@ qboolean        trap_UI_COOL_API_RemoveGhoul2Model(void *ghlInfo, int modelIndex
 int             trap_UI_COOL_API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
 qboolean        trap_UI_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
 uint32_t        trap_UI_COOL_API_GetFileVersion(const char *fileName);
-int             trap_UI_COOL_API_CreateFileList(const char *path, const char *extension);
-void            trap_UI_COOL_API_CloseFileList(void);
-void            trap_UI_COOL_API_GetNextFile(char *buffer, int bufferSize);
+qboolean        trap_UI_COOL_API_CreateFileList(uint32_t *listIndex, const char *path, const char *extension, const char *filter, uint32_t *filesCount);
+void            trap_UI_COOL_API_CloseFileList(uint32_t listIndex);
+void            trap_UI_COOL_API_ReadFromFileList(uint32_t listIndex, uint32_t fileIndex, char *destinationFileName, uint32_t destinationSize);
 qboolean        trap_UI_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize);
 qboolean        trap_UI_COOL_API_ReallocateMemory(uint32_t memoryIndex, uint32_t elementCount);
 void            trap_UI_COOL_API_FreeMemory(uint32_t memoryIndex);

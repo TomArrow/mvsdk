@@ -395,19 +395,19 @@ int trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *
 	return syscall(CG_COOL_API_GET_FILE_LIST, path, extension, listbuf, bufsize);
 }
 
-int trap_CG_COOL_API_CreateFileList(const char *path, const char *extension)
+qboolean trap_CG_COOL_API_CreateFileList(uint32_t *listIndex, const char *path, const char *extension, const char *filter, uint32_t *filesCount)
 {
-	return syscall(CG_COOL_API_CREATE_FILE_LIST, path, extension);
+	return syscall(CG_COOL_API_CREATE_FILE_LIST, listIndex, path, extension, filter, filesCount);
 }
 
-void trap_CG_COOL_API_CloseFileList(void)
+void trap_CG_COOL_API_CloseFileList(uint32_t listIndex)
 {
-	syscall(CG_COOL_API_CLOSE_FILE_LIST);
+	syscall(CG_COOL_API_CLOSE_FILE_LIST, listIndex);
 }
 
-void trap_CG_COOL_API_GetNextFile(char *buffer, int bufferSize)
+void trap_CG_COOL_API_ReadFromFileList(uint32_t listIndex, uint32_t fileIndex, char *destinationFileName, uint32_t destinationSize)
 {
-	syscall(CG_COOL_API_GET_NEXT_FILE, buffer, bufferSize);
+	syscall(CG_COOL_API_READ_FROM_FILE_LIST, listIndex, fileIndex, destinationFileName, destinationSize);
 }
 
 qboolean trap_CG_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize)

@@ -1205,19 +1205,19 @@ uint32_t trap_G_COOL_API_GetFileVersion(const char *fileName)
 	return syscall(G_COOL_API_GET_FILE_VERSION, fileName);
 }
 
-int trap_G_COOL_API_CreateFileList(const char *path, const char *extension)
+qboolean trap_G_COOL_API_CreateFileList(uint32_t *listIndex, const char *path, const char *extension, const char *filter, uint32_t *filesCount)
 {
-	return syscall(G_COOL_API_CREATE_FILE_LIST, path, extension);
+	return syscall(G_COOL_API_CREATE_FILE_LIST, listIndex, path, extension, filter, filesCount);
 }
 
-void trap_G_COOL_API_CloseFileList(void)
+void trap_G_COOL_API_CloseFileList(uint32_t listIndex)
 {
-	syscall(G_COOL_API_CLOSE_FILE_LIST);
+	syscall(G_COOL_API_CLOSE_FILE_LIST, listIndex);
 }
 
-void trap_G_COOL_API_GetNextFile(char *buffer, int bufferSize)
+void trap_G_COOL_API_ReadFromFileList(uint32_t listIndex, uint32_t fileIndex, char *destinationFileName, uint32_t destinationSize)
 {
-	syscall(G_COOL_API_GET_NEXT_FILE, buffer, bufferSize);
+	syscall(G_COOL_API_READ_FROM_FILE_LIST, listIndex, fileIndex, destinationFileName, destinationSize);
 }
 
 qboolean trap_G_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize)

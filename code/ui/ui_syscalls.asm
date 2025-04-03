@@ -218,7 +218,7 @@ equ trap_UI_COOL_API_AttachG2Model             -2016    ; UI_COOL_API_ATTACH_G2_
 equ trap_UI_COOL_API_GetFileVersion            -2017    ; UI_COOL_API_GET_FILE_VERSION
 equ trap_UI_COOL_API_CreateFileList            -2018    ; UI_COOL_API_CREATE_FILE_LIST
 equ trap_UI_COOL_API_CloseFileList             -2019    ; UI_COOL_API_CLOSE_FILE_LIST
-equ trap_UI_COOL_API_GetNextFile               -2020    ; UI_COOL_API_GET_NEXT_FILE
+equ trap_UI_COOL_API_ReadFromFileList          -2020    ; UI_COOL_API_READ_FROM_FILE_LIST
 equ trap_UI_COOL_API_AllocateMemory            -2021    ; UI_COOL_API_ALLOCATE_MEMORY
 equ trap_UI_COOL_API_ReallocateMemory          -2022    ; UI_COOL_API_REALLOCATE_MEMORY
 equ trap_UI_COOL_API_FreeMemory                -2023    ; UI_COOL_API_FREE_MEMORY

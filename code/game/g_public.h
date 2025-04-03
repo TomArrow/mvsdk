@@ -472,7 +472,7 @@ Ghoul2 Insert End
 	G_COOL_API_GET_FILE_VERSION              = 2007,
 	G_COOL_API_CREATE_FILE_LIST              = 2008,
 	G_COOL_API_CLOSE_FILE_LIST               = 2009,
-	G_COOL_API_GET_NEXT_FILE                 = 2010,
+	G_COOL_API_READ_FROM_FILE_LIST           = 2010,
 	G_COOL_API_ALLOCATE_MEMORY               = 2011,
 	G_COOL_API_REALLOCATE_MEMORY             = 2012,
 	G_COOL_API_FREE_MEMORY                   = 2013,
