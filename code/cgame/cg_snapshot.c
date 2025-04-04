@@ -163,6 +163,7 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 		// check for events
 		CG_CheckEvents( cent );
 
+		cent->predictedEFlags = 0;
 	}
 }
 
@@ -213,6 +214,7 @@ static void CG_TransitionSnapshot( void ) {
 
 		// remember time of snapshot this entity was last updated in
 		cent->snapShotTime = cg.snap->serverTime;
+		cent->predictedEFlags = 0;
 	}
 
 	cg.nextSnap = NULL;

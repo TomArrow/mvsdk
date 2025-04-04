@@ -298,6 +298,7 @@ typedef struct centity_s {
 	saberTrail_t	saberTrail;
 	int				saberHitWallSoundDebounceTime;
 	int				serverSaberHitIndex;
+	int				predictedEFlags; // So we don't mess up everything by setting it on currentState (like in CG_TouchItem)
 } centity_t;
 
 extern centity_t* cg_statsEntities[MAX_CLIENTS];
@@ -1641,7 +1642,8 @@ Ghoul2 Insert End
 	int				debugMelee;
 
 	qboolean		isTommyTernal;
-	qboolean		ttFlags; // tommyternal flags
+	int				ttFlags; // tommyternal flags
+	int				ttFlagsGp; // tommyternal flags
 } cgs_t;
 
 //==============================================================================
@@ -1768,6 +1770,7 @@ extern	vmCvar_t		cg_showpos;
 extern	vmCvar_t		cg_forcemeter;
 extern	vmCvar_t		cg_forcemeterX;
 extern	vmCvar_t		cg_forcemeterY;
+extern	vmCvar_t		cg_forceMeterJumpCharge;
 
 extern	vmCvar_t		cg_forceFieldOpacity;
 extern	vmCvar_t		cg_forceFieldOpacityRace;
@@ -2174,7 +2177,7 @@ void CG_LoadDeferredPlayers( void );
 //
 void CG_CheckEvents( centity_t *cent );
 const char	*CG_PlaceString( int rank );
-void CG_EntityEvent( centity_t *cent, vec3_t position );
+void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboolean changedPredictable);
 void CG_PainEvent( centity_t *cent, int health );
 void CG_ReattachLimb(centity_t *source);
 

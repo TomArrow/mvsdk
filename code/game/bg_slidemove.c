@@ -507,7 +507,7 @@ void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 	pml.walking = qfalse;
 	pml.bounceJumped = qtrue;
 	pm->ps->pm_flags |= PMF_JUMP_HELD;
-	pm->ps->groundEntityNum = ENTITYNUM_NONE;
+	PM_SetGroundEntityNum(ENTITYNUM_NONE);
 	PM_AddEvent(EV_JUMP);
 	
 	// make sure skims work

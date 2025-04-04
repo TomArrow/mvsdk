@@ -7,6 +7,10 @@
 
 #include "cg_local.h"
 
+
+#define ITEMPREDICTDEBUG 0
+
+
 static	pmove_t		cg_pmove;
 
 static	int			cg_numSolidEntities;
@@ -196,7 +200,6 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 			VectorCopy( vec3_origin, angles );
 			VectorCopy( cent->lerpOrigin, origin );
 		}
-
 
 		trap_CM_TransformedBoxTrace ( &trace, start, end,
 			mins, maxs, cmodel,  mask, origin, angles, customEpsilonTrace,customEpsilon,traceCustomFlags);
@@ -420,20 +423,22 @@ CG_TouchItem
 */
 static void CG_TouchItem( centity_t *cent ) {
 	gitem_t		*item;
+	entityState_t* state = (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) ? &cent->nextState : &cent->currentState;
+
 
 	if ( !cg_predictItems.integer ) {
 		return;
 	}
-	if ( !BG_PlayerTouchesItem( &cg.predictedPlayerState, &cent->currentState, cg.time ) ) {
+	if ( !BG_PlayerTouchesItem( &cg.predictedPlayerState, state, cg.time ) ) {
 		return;
 	}
 
-	if (cent->currentState.eFlags & EF_ITEMPLACEHOLDER)
+	if (state->eFlags & EF_ITEMPLACEHOLDER)
 	{
 		return;
 	}
 
-	if (cent->currentState.eFlags & EF_NODRAW)
+	if (state->eFlags & EF_NODRAW)
 	{
 		return;
 	}
@@ -443,11 +448,11 @@ static void CG_TouchItem( centity_t *cent ) {
 		return;
 	}
 
-	if ( !BG_CanItemBeGrabbed( cgs.gametype, &cent->currentState, &cg.predictedPlayerState, cgs.clientinfo[cg.predictedPlayerState.clientNum].playerMode ) ) {
+	if ( !BG_CanItemBeGrabbed( cgs.gametype, state, &cg.predictedPlayerState, cgs.clientinfo[cg.predictedPlayerState.clientNum].playerMode ) ) {
 		return;		// can't hold it
 	}
 
-	item = &bg_itemlist[ cent->currentState.modelindex ];
+	item = &bg_itemlist[state->modelindex ];
 
 	//Currently there is no reliable way of knowing if the client has touched a certain item before another if they are next to each other, or rather
 	//if the server has touched them in the same order. This results often in grabbing an item in the prediction and the server giving you the other
@@ -518,9 +523,13 @@ static void CG_TouchItem( centity_t *cent ) {
 
 	// grab it
 	BG_AddPredictableEventToPlayerstate( EV_ITEM_PICKUP, cent->currentState.number , &cg.predictedPlayerState);
+#if ITEMPREDICTDEBUG
+	Com_Printf("^3CG Predict: Adding EV_ITEM_PICKUP at %d, cmdtime %d\n",cg.time,cg.predictedPlayerState.commandTime);
+#endif
 
 	// remove it from the frame so it won't be drawn
-	cent->currentState.eFlags |= EF_NODRAW;
+	//cent->currentState.eFlags |= EF_NODRAW;
+	cent->predictedEFlags |= EF_NODRAW; // TA: don't change the currentstate, instead use our own variable, to not catastrophically mess up prediction leading to frame-to-frame prediction differences (in practical terms: ear rape at high fps when picking up items). Note: Sometimes a double event still happens, for example when picking up mines, my suspicion is that it's related to them bobbing up and down (in which case the desync between cg.time and level.time could be to blame), but I might be completely wrong on that, maybe that's just a visual effect that doesn't influence the actual position at all.
 
 	// don't touch it again this prediction
 	cent->miscTime = cg.time;
@@ -921,6 +930,8 @@ void CG_PredictPlayerState( void ) {
 	centity_t* statsEnt = NULL;
 	float		forceSpeedSmash;
 	qboolean	haveForceSpeedSmash = qfalse;
+	float		forceJumpCharge;
+	qboolean	haveForceJumpCharge = qfalse;
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
 	cg.teleporterPredicted = qfalse;	// teleporter was predicted so ignore areamask
@@ -956,6 +967,10 @@ void CG_PredictPlayerState( void ) {
 		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCESPEEDSMASH) {
 			forceSpeedSmash = statsState->pos.trBase[1];
 			haveForceSpeedSmash = qtrue;
+		}
+		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE) {
+			forceJumpCharge = statsState->pos.trDelta[0];
+			haveForceJumpCharge = qtrue;
 		}
 	}
 
@@ -995,6 +1010,7 @@ void CG_PredictPlayerState( void ) {
 
 	// prepare for pmove
 	cg_pmove.ps = &cg.predictedPlayerState;
+	cg_pmove.mineSwitchFix = !!(cgs.ttFlagsGp & TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX);
 	cg_pmove.trace = CG_Trace;
 	cg_pmove.rawtrace = CG_RawTrace;
 	cg_pmove.q2Skims = cg_q2Skims.integer;
@@ -1075,6 +1091,9 @@ void CG_PredictPlayerState( void ) {
 	cg_pmove.haveForceSpeedSmash = haveForceSpeedSmash;
 	if (haveForceSpeedSmash) {
 		cg.predictedPlayerState.fd.forceSpeedSmash = forceSpeedSmash; // TA: Nicer force speed prediction :)
+	}
+	if (haveForceJumpCharge) {
+		cg.predictedPlayerState.fd.forceJumpCharge = forceJumpCharge; // TA: Charge jump movement style prediction
 	}
 
 	if (cg_strafeHelper.integer && latestCmd.serverTime == cg.predictedPlayerState.commandTime/* && !cg_optimizedPredict.integer*/) {

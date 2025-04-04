@@ -19,6 +19,7 @@ static void CG_RealAccelHelper(); //tommyternal :)
 static void CG_StrafeHelper(centity_t *cent); //jk2pro
 static void CG_DrawAccelMeter(void); //jk2pro
 static void CG_DrawForceMeter(void);  //tommyternal :)
+static void CG_DrawForceJumpCharge(void);  //tommyternal :)
 static void CG_DrawBouncePowerMeter(void); //tommyternal :)
 static void CG_AntiLoopIndicator(void); // tommyternal
 static void CG_JumpHeight(centity_t *cent); //jk2pro
@@ -1895,6 +1896,7 @@ void CG_DrawHUD(centity_t	*cent)
 
 	CG_DrawBouncePowerMeter();
 	CG_DrawForceMeter();
+	CG_DrawForceJumpCharge();
 
 	if(cg_drawStrafeBotFactor.integer)
 		CG_DrawStrafeBotFactor();
@@ -6380,7 +6382,8 @@ static void CG_Draw2D( void ) {
 			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
 
 			CG_DrawBouncePowerMeter(); 
-			CG_DrawForceMeter(); 
+			CG_DrawForceMeter();
+			CG_DrawForceJumpCharge();
 			
 			//if (cg_drawAntiLoopIndicator.integer && !cg.demoPlayback) { // TODO make work for demos?
 			//	CG_AntiLoopIndicator();
@@ -7493,6 +7496,56 @@ static void CG_DrawForceMeter(void)
 		9,
 		colorTable[CT_CYAN]);
 
+}
+
+extern float forceJumpStrength[NUM_FORCE_POWER_LEVELS];
+static void CG_DrawForceJumpCharge(void) // TODO draw the proper predicted value
+{
+	centity_t* statsEnt = cg_statsEntities[cg.predictedPlayerState.clientNum];
+	entityState_t* statsState;
+	float forceJumpCharge;
+	float forcePercent;
+
+	if (!cg_forceMeterJumpCharge.integer) {
+		return;
+	}
+	if (cg.predictedPlayerState.fd.forcePowerLevel[FP_LEVITATION] <= 0) {
+		return;
+	}
+	if (!cgs.isTommyTernal || !cg.predictedPlayerState.stats[STAT_RACEMODE] || cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_CHARGEJUMP) {
+		if (cg_forceMeterJumpCharge.integer != 2) {
+			return;
+		}
+	}
+	if (!statsEnt || !(cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE)) {
+		return;
+	}
+	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
+		statsState = &statsEnt->nextState;
+	}
+	else {
+		statsState = &statsEnt->currentState;
+	}
+	forceJumpCharge = statsState->pos.trDelta[0];
+
+	forcePercent = (float)(forceJumpCharge-forceJumpStrength[0]) / (forceJumpStrength[cg.predictedPlayerState.fd.forcePowerLevel[FP_LEVITATION]]- forceJumpStrength[0]);
+
+
+	CG_DrawRect(cg_forcemeterX.value - 0.75,
+		cg_forcemeterY.value + 12.0f - 0.85f,
+		37.75,
+		10.75,
+		0.5f,
+		colorTable[CT_BLACK]);
+
+	if (forcePercent > 0) {
+		CG_FillRect(cg_forcemeterX.value,
+			cg_forcemeterY.value + 12.0f,
+			36 * forcePercent,
+			9,
+			colorTable[CT_GREEN]);
+
+	}
 }
 
 

@@ -1556,7 +1556,7 @@ Ghoul2 Insert Start
 	}
 
 	// if set to invisible, skip
-	if ( ( es->eFlags & EF_NODRAW ) ) 
+	if ( ( es->eFlags & EF_NODRAW ) || (cent->predictedEFlags & EF_NODRAW)) // TA: CG_TouchItem was setting EF_NODRAW on currentState, leading to catastrophic prediction issues. Set in cent->predictedEFlags insteaad. It gets reset to 0 when the item is received in a snapshot
 	{
 		return;
 	}

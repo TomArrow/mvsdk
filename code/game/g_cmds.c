@@ -3770,7 +3770,7 @@ void Cmd_GenArena_f(gentity_t* ent) {
 void Cmd_Arenaless_f(gentity_t* ent) {
 	qboolean		allRace = qfalse;
 	char			arg1[10];
-	static char		dirlistBsp[8192];
+	static char		dirlistBsp[524288];
 	char*			bspptr,*strptr;
 	int				numBsps;
 	int				i,bspLen;

@@ -1521,6 +1521,7 @@ extern	vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 extern	vmCvar_t	g_randomTipInterval;
 
 extern	vmCvar_t	g_unlockRandom;
+extern	vmCvar_t	g_mineSwitchFix;
 
 void	trap_Printf( const char *fmt );
 Q_NORETURN void	trap_Error( const char *fmt );

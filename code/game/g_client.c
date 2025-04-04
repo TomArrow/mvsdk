@@ -408,7 +408,7 @@ qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 						continue;
 					}
 					VectorCopy(test, origin);
-					JP_Trace(&groundTrace, test, playerMins, playerMaxs, testdown, -1, MASK_PLAYERSOLID | MASK_WATER | CONTENTS_NOSPAWN); // debug
+					JP_Trace(&groundTrace, test, playerMins, playerMaxs, testdown, -1, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN); // debug
 					return qtrue;
 				}
 			}
@@ -2385,9 +2385,9 @@ retry:
 										}
 									}
 									else {
-										JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | MASK_WATER | CONTENTS_NOSPAWN);
+										JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
 										// make sure we could actually reach the capper from that place
-										if (!trace.allsolid && !trace.startsolid && !(trace.contents & (MASK_WATER | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
+										if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
 											// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
 											VectorCopy(trace.endpos, goodOrigin);
 											JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition, level.ironManClientNum, MASK_PLAYERSOLID);
@@ -2667,7 +2667,6 @@ void ClientSpawn(gentity_t *ent) {
 		client->pers.maxHealth = 100;
 	}
 	// clear entity values
-	client->ps.stats[STAT_BOUNCEPOWER] = BOUNCEPOWER_MAX;
 	client->ps.stats[STAT_MAX_HEALTH] = client->pers.maxHealth;
 	client->ps.eFlags = flags;
 
@@ -2703,6 +2702,17 @@ void ClientSpawn(gentity_t *ent) {
 	//client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
 	//client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
 	UpdateClientRaceVars(client);
+
+	if (client->sess.raceMode && client->sess.raceStyle.movementStyle == MV_BOUNCE) {
+		client->ps.stats[STAT_BOUNCEPOWER] = BOUNCEPOWER_MAX;
+	}
+	else if (client->sess.raceMode && client->sess.raceStyle.movementStyle == MV_CHARGEJUMP) {
+		client->ps.stats[STAT_CHARGEJUMPDATA] = 0;
+	}
+	else {
+		client->ps.stats[STAT_BOUNCEPOWER] = 0;
+	}
+
 	
 	VectorCopy (playerMins, ent->r.mins);
 	VectorCopy (playerMaxs, ent->r.maxs);
