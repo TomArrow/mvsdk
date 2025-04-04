@@ -1028,16 +1028,6 @@ qboolean    trap_G_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex);
 int         trap_G_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName);
 qboolean    trap_G_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
 uint32_t    trap_G_COOL_API_GetFileVersion(const char *fileName);
-qboolean    trap_G_COOL_API_CreateFileList(uint32_t *listIndex, const char *path, const char *extension, const char *filter, uint32_t *filesCount);
-void        trap_G_COOL_API_CloseFileList(uint32_t listIndex);
-void        trap_G_COOL_API_ReadFromFileList(uint32_t listIndex, uint32_t fileIndex, char *destinationFileName, uint32_t destinationSize);
-qboolean    trap_G_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize);
-qboolean    trap_G_COOL_API_ReallocateMemory(uint32_t memoryIndex, uint32_t elementCount);
-void        trap_G_COOL_API_FreeMemory(uint32_t memoryIndex);
-void        trap_G_COOL_API_WriteMemory(uint32_t memoryIndex, uint32_t elementIndex, const uint8_t *sourceMemory);
-void        trap_G_COOL_API_ReadMemory(uint32_t memoryIndex, uint32_t elementIndex, uint8_t *destinationMemory);
-uint32_t    trap_G_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex);
-void        trap_G_COOL_API_ClearMemory(void);
 
 //qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
 qboolean	G_InsertRun(finishedRunInfo_t* runInfo);

@@ -3657,11 +3657,6 @@ void CG_Shutdown( void )
 
 	// some mods may need to do cleanup work here,
 	// like closing files or archiving session data
-
-	if (coolApi_jkaVersion)
-	{
-		trap_CG_COOL_API_ClearMemory();
-	}
 }
 
 //do we have any force powers that we would normally need to cycle to?

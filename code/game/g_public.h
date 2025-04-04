@@ -470,16 +470,6 @@ Ghoul2 Insert End
 	G_COOL_API_GET_SURFACE_RENDER_STATUS     = 2005,
 	G_COOL_API_ATTACH_G2_MODEL               = 2006,
 	G_COOL_API_GET_FILE_VERSION              = 2007,
-	G_COOL_API_CREATE_FILE_LIST              = 2008,
-	G_COOL_API_CLOSE_FILE_LIST               = 2009,
-	G_COOL_API_READ_FROM_FILE_LIST           = 2010,
-	G_COOL_API_ALLOCATE_MEMORY               = 2011,
-	G_COOL_API_REALLOCATE_MEMORY             = 2012,
-	G_COOL_API_FREE_MEMORY                   = 2013,
-	G_COOL_API_WRITE_MEMORY                  = 2014,
-	G_COOL_API_READ_MEMORY                   = 2015,
-	G_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY  = 2016,
-	G_COOL_API_CLEAR_MEMORY                  = 2017,
 } gameImport_t;
 
 

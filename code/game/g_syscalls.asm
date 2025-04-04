@@ -302,13 +302,3 @@ equ trap_G_COOL_API_SkinlessModel             -2005    ; G_COOL_API_SKINLESS_MOD
 equ trap_G_COOL_API_GetSurfaceRenderStatus    -2006    ; G_COOL_API_GET_SURFACE_RENDER_STATUS
 equ trap_G_COOL_API_AttachG2Model             -2007    ; G_COOL_API_ATTACH_G2_MODEL
 equ trap_G_COOL_API_GetFileVersion            -2008    ; G_COOL_API_GET_FILE_VERSION
-equ trap_G_COOL_API_CreateFileList            -2009    ; G_COOL_API_CREATE_FILE_LIST
-equ trap_G_COOL_API_CloseFileList             -2010    ; G_COOL_API_CLOSE_FILE_LIST
-equ trap_G_COOL_API_ReadFromFileList          -2011    ; G_COOL_API_READ_FROM_FILE_LIST
-equ trap_G_COOL_API_AllocateMemory            -2012    ; G_COOL_API_ALLOCATE_MEMORY
-equ trap_G_COOL_API_ReallocateMemory          -2013    ; G_COOL_API_REALLOCATE_MEMORY
-equ trap_G_COOL_API_FreeMemory                -2014    ; G_COOL_API_FREE_MEMORY
-equ trap_G_COOL_API_WriteMemory               -2015    ; G_COOL_API_WRITE_MEMORY
-equ trap_G_COOL_API_ReadMemory                -2016    ; G_COOL_API_READ_MEMORY
-equ trap_G_COOL_API_GetElementSizeFromMemory  -2017    ; G_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY
-equ trap_G_COOL_API_ClearMemory               -2018    ; G_COOL_API_CLEAR_MEMORY

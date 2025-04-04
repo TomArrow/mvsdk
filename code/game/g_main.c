@@ -1202,11 +1202,6 @@ void G_ShutdownGame( int restart ) {
 			trap_LocateGameData( level.gentities, level.num_entities, sizeof( gentity_t ), &level.clients[0].ps, sizeof( level.clients[0] ) );
 		}
 	}
-
-	if (coolApi_jkaVersion)
-	{
-		trap_G_COOL_API_ClearMemory();
-	}
 }
 
 

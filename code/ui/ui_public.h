@@ -163,16 +163,6 @@ Ghoul2 Insert End
 	UI_COOL_API_ADD_BOLT                      = 2014,
 	UI_COOL_API_ATTACH_G2_MODEL               = 2015,
 	UI_COOL_API_GET_FILE_VERSION              = 2016,
-	UI_COOL_API_CREATE_FILE_LIST              = 2017,
-	UI_COOL_API_CLOSE_FILE_LIST               = 2018,
-	UI_COOL_API_READ_FROM_FILE_LIST           = 2019,
-	UI_COOL_API_ALLOCATE_MEMORY               = 2020,
-	UI_COOL_API_REALLOCATE_MEMORY             = 2021,
-	UI_COOL_API_FREE_MEMORY                   = 2022,
-	UI_COOL_API_WRITE_MEMORY                  = 2023,
-	UI_COOL_API_READ_MEMORY                   = 2024,
-	UI_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY  = 2025,
-	UI_COOL_API_CLEAR_MEMORY                  = 2026,
 } uiImport_t;
 
 typedef enum {

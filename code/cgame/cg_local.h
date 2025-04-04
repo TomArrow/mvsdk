@@ -2484,16 +2484,6 @@ int         trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex
 qboolean    trap_CG_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
 uint32_t    trap_CG_COOL_API_GetFileVersion(const char *fileName);
 int         trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
-qboolean    trap_CG_COOL_API_CreateFileList(uint32_t *listIndex, const char *path, const char *extension, const char *filter, uint32_t *filesCount);
-void        trap_CG_COOL_API_CloseFileList(uint32_t listIndex);
-void        trap_CG_COOL_API_ReadFromFileList(uint32_t listIndex, uint32_t fileIndex, char *destinationFileName, uint32_t destinationSize);
-qboolean    trap_CG_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize);
-qboolean    trap_CG_COOL_API_ReallocateMemory(uint32_t memoryIndex, uint32_t elementCount);
-void        trap_CG_COOL_API_FreeMemory(uint32_t memoryIndex);
-void        trap_CG_COOL_API_WriteMemory(uint32_t memoryIndex, uint32_t elementIndex, const uint8_t *sourceMemory);
-void        trap_CG_COOL_API_ReadMemory(uint32_t memoryIndex, uint32_t elementIndex, uint8_t *destinationMemory);
-uint32_t    trap_CG_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex);
-void        trap_CG_COOL_API_ClearMemory(void);
 
 /*
 qboolean	trap_Language_IsAsian(void);

@@ -1405,11 +1405,6 @@ void _UI_Shutdown( void ) {
 	trap_LAN_SaveCachedServers();
 	UI_CleanupGhoul2();
 
-	if (coolApi_jkaVersion)
-	{
-		trap_UI_COOL_API_ClearMemory();
-	}
-
 	// We don't get a new force rank from the server during vid_restart (the server sends "nfr" on force init, the cgame
 	// receives it and tells the engine to change the "ui_rankChange" cvar and ui just checks the value of that cvar each
 	// refresh). So when shutting down the UI module we have to store the old ui_rankChange to restore it afterwards.
@@ -10201,130 +10196,6 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 
 }
 
-static playerSpeciesInfo_t playerSpecieTest;
-
-void UI_MemoryAllocationTest(void)
-{
-	uint32_t i;
-	char buffer[MAX_QPATH];
-	qboolean result;
-	uint32_t elementSize;
-	uint32_t filesCount[2];
-	uint32_t listIndex[2];
-	uint32_t memoryIndex[3];
-
-
-	// =======================================
-	result = trap_UI_COOL_API_CreateFileList(&listIndex[0], "models/players/", ".skin", NULL, &filesCount[0]);
-
-	if (!result)
-	{
-		trap_UI_COOL_API_ClearMemory();
-		return;
-	}
-
-	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex[0], filesCount[0], sizeof(buffer));
-
-	if (!result)
-	{
-		trap_UI_COOL_API_ClearMemory();
-		return;
-	}
-
-	for (i = 0; i < filesCount[0]; i++)
-	{
-		trap_UI_COOL_API_ReadFromFileList(listIndex[0], i, buffer, sizeof(buffer));
-		Com_Printf("%d: %s\n", i, buffer);
-		trap_UI_COOL_API_WriteMemory(memoryIndex[0], i, (const uint8_t *) buffer);
-	}
-
-	trap_UI_COOL_API_CloseFileList(listIndex[0]);
-	// =======================================
-
-
-	// =======================================
-	result = trap_UI_COOL_API_CreateFileList(&listIndex[1], "models/players/", ".glm", NULL, &filesCount[1]);
-
-	if (!result)
-	{
-		trap_UI_COOL_API_ClearMemory();
-		return;
-	}
-
-	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex[1], filesCount[1], sizeof(buffer));
-
-	if (!result)
-	{
-		trap_UI_COOL_API_ClearMemory();
-		return;
-	}
-
-	for (i = 0; i < filesCount[1]; i++)
-	{
-		trap_UI_COOL_API_ReadFromFileList(listIndex[1], i, buffer, sizeof(buffer));
-		Com_Printf("%d: %s\n", i, buffer);
-		trap_UI_COOL_API_WriteMemory(memoryIndex[1], i, (const uint8_t *) buffer);
-	}
-
-	trap_UI_COOL_API_CloseFileList(listIndex[1]);
-	// =======================================
-
-
-	// =======================================
-	result = trap_UI_COOL_API_AllocateMemory(&memoryIndex[2], MAX_PLAYERMODELS, sizeof(playerSpeciesInfo_t));
-
-	if (!result)
-	{
-		return;
-	}
-
-	Com_Printf("uiInfo.playerSpecies[5].Name = %s\n", uiInfo.playerSpecies[5].Name);
-	trap_UI_COOL_API_WriteMemory(memoryIndex[2], 5, (const uint8_t *) &uiInfo.playerSpecies[5]);
-	// =======================================
-
-
-	// =======================================
-	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex[0]);
-	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex[0], elementSize);
-
-	for (i = 0; i < filesCount[0]; i++)
-	{
-		trap_UI_COOL_API_ReadMemory(memoryIndex[0], i, (uint8_t *) buffer);
-		Com_Printf("%d: %s\n", i, buffer);
-	}
-
-	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex[1]);
-	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex[1], elementSize);
-
-	for (i = 0; i < filesCount[1]; i++)
-	{
-		trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, (uint8_t *) buffer);
-		Com_Printf("%d: %s\n", i, buffer);
-	}
-
-	elementSize = trap_UI_COOL_API_GetElementSizeFromMemory(memoryIndex[2]);
-	Com_Printf("memoryIndex: %u\nelementSize: %u\n", memoryIndex[2], elementSize);
-
-	trap_UI_COOL_API_ReadMemory(memoryIndex[2], 5, (uint8_t *) &playerSpecieTest);
-	Com_Printf("playerSpecies.Name = %s\n", playerSpecieTest.Name);
-	// =======================================
-
-
-	// =======================================
-	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, buffer);
-	//trap_UI_COOL_API_ReadMemory(100500, i, buffer);
-	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], 100500, buffer);
-	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, NULL);
-
-	trap_UI_COOL_API_FreeMemory(memoryIndex[0]);
-	trap_UI_COOL_API_FreeMemory(memoryIndex[1]);
-	trap_UI_COOL_API_FreeMemory(memoryIndex[2]);
-
-	//trap_UI_COOL_API_ReadMemory(memoryIndex[0], i, buffer);
-	//trap_UI_COOL_API_ReadMemory(memoryIndex[1], i, buffer);
-	// =======================================
-}
-
 /*
 =================
 UI_Init
@@ -10447,9 +10318,6 @@ void _UI_Init( qboolean inGameLoad ) {
 	Init_Display(&uiInfo.uiDC);
 
 	UI_BuildPlayerModel_List(inGameLoad);
-
-	if (coolApi_jkaVersion)
-		UI_MemoryAllocationTest();
 
 	String_Init();
   

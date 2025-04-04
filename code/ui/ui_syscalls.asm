@@ -216,13 +216,3 @@ equ trap_UI_COOL_API_RemoveGhoul2Model         -2014    ; UI_COOL_API_REMOVE_GHO
 equ trap_UI_COOL_API_AddBolt                   -2015    ; UI_COOL_API_ADD_BOLT
 equ trap_UI_COOL_API_AttachG2Model             -2016    ; UI_COOL_API_ATTACH_G2_MODEL
 equ trap_UI_COOL_API_GetFileVersion            -2017    ; UI_COOL_API_GET_FILE_VERSION
-equ trap_UI_COOL_API_CreateFileList            -2018    ; UI_COOL_API_CREATE_FILE_LIST
-equ trap_UI_COOL_API_CloseFileList             -2019    ; UI_COOL_API_CLOSE_FILE_LIST
-equ trap_UI_COOL_API_ReadFromFileList          -2020    ; UI_COOL_API_READ_FROM_FILE_LIST
-equ trap_UI_COOL_API_AllocateMemory            -2021    ; UI_COOL_API_ALLOCATE_MEMORY
-equ trap_UI_COOL_API_ReallocateMemory          -2022    ; UI_COOL_API_REALLOCATE_MEMORY
-equ trap_UI_COOL_API_FreeMemory                -2023    ; UI_COOL_API_FREE_MEMORY
-equ trap_UI_COOL_API_WriteMemory               -2024    ; UI_COOL_API_WRITE_MEMORY
-equ trap_UI_COOL_API_ReadMemory                -2025    ; UI_COOL_API_READ_MEMORY
-equ trap_UI_COOL_API_GetElementSizeFromMemory  -2026    ; UI_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY
-equ trap_UI_COOL_API_ClearMemory               -2027    ; UI_COOL_API_CLEAR_MEMORY

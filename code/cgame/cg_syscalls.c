@@ -395,56 +395,6 @@ int trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *
 	return syscall(CG_COOL_API_GET_FILE_LIST, path, extension, listbuf, bufsize);
 }
 
-qboolean trap_CG_COOL_API_CreateFileList(uint32_t *listIndex, const char *path, const char *extension, const char *filter, uint32_t *filesCount)
-{
-	return syscall(CG_COOL_API_CREATE_FILE_LIST, listIndex, path, extension, filter, filesCount);
-}
-
-void trap_CG_COOL_API_CloseFileList(uint32_t listIndex)
-{
-	syscall(CG_COOL_API_CLOSE_FILE_LIST, listIndex);
-}
-
-void trap_CG_COOL_API_ReadFromFileList(uint32_t listIndex, uint32_t fileIndex, char *destinationFileName, uint32_t destinationSize)
-{
-	syscall(CG_COOL_API_READ_FROM_FILE_LIST, listIndex, fileIndex, destinationFileName, destinationSize);
-}
-
-qboolean trap_CG_COOL_API_AllocateMemory(uint32_t *memoryIndex, uint32_t elementCount, uint32_t elementSize)
-{
-	return syscall(CG_COOL_API_ALLOCATE_MEMORY, memoryIndex, elementCount, elementSize);
-}
-
-qboolean trap_CG_COOL_API_ReallocateMemory(uint32_t memoryIndex, uint32_t elementCount)
-{
-	return syscall(CG_COOL_API_REALLOCATE_MEMORY, memoryIndex, elementCount);
-}
-
-void trap_CG_COOL_API_FreeMemory(uint32_t memoryIndex)
-{
-	syscall(CG_COOL_API_FREE_MEMORY, memoryIndex);
-}
-
-void trap_CG_COOL_API_WriteMemory(uint32_t memoryIndex, uint32_t elementIndex, const uint8_t *sourceMemory)
-{
-	syscall(CG_COOL_API_WRITE_MEMORY, memoryIndex, elementIndex, sourceMemory);
-}
-
-void trap_CG_COOL_API_ReadMemory(uint32_t memoryIndex, uint32_t elementIndex, uint8_t *destinationMemory)
-{
-	syscall(CG_COOL_API_READ_MEMORY, memoryIndex, elementIndex, destinationMemory);
-}
-
-uint32_t trap_CG_COOL_API_GetElementSizeFromMemory(uint32_t memoryIndex)
-{
-	return syscall(CG_COOL_API_GET_ELEMENT_SIZE_FROM_MEMORY, memoryIndex);
-}
-
-void trap_CG_COOL_API_ClearMemory(void)
-{
-	syscall(CG_COOL_API_CLEAR_MEMORY);
-}
-
 /* 1.04 */
 qboolean trap_Language_IsAsian_1_04(void)
 {
