@@ -820,6 +820,7 @@ vmCvar_t	cg_saber1;
 vmCvar_t	cg_saber2;
 vmCvar_t	cg_JKA;
 vmCvar_t	cg_menuFileParseSpam;
+vmCvar_t	cg_randomTaunts;
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -1177,6 +1178,7 @@ Ghoul2 Insert End
 	{ &cg_saber2, "saber2", DEFAULT_SABER2, CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
+	{ &cg_randomTaunts, "cg_randomTaunts", "1", CVAR_ARCHIVE },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );

@@ -1016,6 +1016,39 @@ int CG_InClientBitflags(entityState_t *ent, int client)
 	return 0;
 }
 
+static void CG_DoTauntSound(int entityNumber)
+{
+	const char *s;
+	int i = Q_irand(0, 6, qfalse, 0);
+	switch (i)
+	{
+	case 0:
+		s = "*taunt.wav";
+		break;
+	case 1:
+		s = "*taunt1.wav";
+		break;
+	case 2:
+		s = "*taunt2.wav";
+		break;
+	case 3:
+		s = "*taunt3.wav";
+		break;
+	case 4:
+		s = "*taunt4.wav";
+		break;
+	case 5:
+	default:
+		s = "*taunt5.wav";
+		break;
+	}
+	if (!cg_randomTaunts.integer)
+	{
+		s = "*taunt.wav";
+	}
+	trap_S_StartSound(NULL, entityNumber, CHAN_VOICE, CG_CustomSound(entityNumber, s));
+}
+
 /*
 ==============
 CG_EntityEvent
@@ -1253,7 +1286,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 	case EV_TAUNT:
 		DEBUGNAME("EV_TAUNT");
-		trap_S_StartSound (NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*taunt.wav" ) );
+		CG_DoTauntSound(es->number);
 		break;
 	case EV_TAUNT_YES:
 		DEBUGNAME("EV_TAUNT_YES");

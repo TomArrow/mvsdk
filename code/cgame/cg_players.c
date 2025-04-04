@@ -26,6 +26,11 @@ char	*cg_customSoundNames[MAX_CUSTOM_SOUNDS] = {
 	"*gasp.wav",
 	"*land1.wav",
 	"*taunt.wav",
+	"*taunt1.wav",
+	"*taunt2.wav",
+	"*taunt3.wav",
+	"*taunt4.wav",
+	"*taunt5.wav",
 	"*roll1.wav"
 };
 

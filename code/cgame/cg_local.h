@@ -1994,6 +1994,7 @@ extern	vmCvar_t		cg_saber1;
 extern	vmCvar_t		cg_saber2;
 extern	vmCvar_t		cg_JKA;
 extern	vmCvar_t		cg_menuFileParseSpam;
+extern	vmCvar_t		cg_randomTaunts;
 
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
