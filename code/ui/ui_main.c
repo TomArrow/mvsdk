@@ -10069,6 +10069,11 @@ static void UI_BuildPlayerModel_List( qboolean inGameLoad )
 	uiInfo.playerSpeciesIndex = 0;
 	memset(uiInfo.playerSpecies, 0, sizeof (uiInfo.playerSpecies) );
 
+	if (!ui_JKA.integer)
+	{
+		return;
+	}
+
 	// iterate directory of all player models
 	numdirs = trap_FS_GetFileList("models/players", "/", dirlist, 2048 );
 	dirptr  = dirlist;
