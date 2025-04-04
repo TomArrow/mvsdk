@@ -16,12 +16,12 @@
 	TAGDEF(FILESYS),					// general filesystem usage
 	TAGDEF(GENERAL),
 	TAGDEF(GHOUL2),						// Ghoul2 stuff
-	TAGDEF(CLIPBOARD),					
+	TAGDEF(CLIPBOARD),
 	TAGDEF(LISTFILES),					// for "*.blah" lists
 	TAGDEF(STRING),
 	TAGDEF(RENDERER),
 	TAGDEF(AMBIENTSET),
-	TAGDEF(GAME),						// used by SV_GMalloc(), which becomes Malloc() for the game DLL		
+	TAGDEF(GAME),						// used by SV_GMalloc(), which becomes Malloc() for the game DLL
 	TAGDEF(SAVEGAME),					// used for allocating chunks during savegame file read
 //	TAGDEF(WINDING),					// used in cm_polylib stuff
 	TAGDEF(STATIC),						// special usage for 1-byte allocations from 0..9 to avoid CopyString() slowdowns during cvar value copies
@@ -46,28 +46,32 @@
 	TAGDEF(VM),							// stuff for VM, may be zapped later?
 	TAGDEF(GRIDMESH),					// some specific temp workspace that only seems to be in the MP codebase
 	TAGDEF(SPECIAL_MEM_TEST),			// special usage for testing z_malloc recover only
+
+	TAGDEF(DOWNLOADBLACKLIST),
+	TAGDEF(AVI),						// image buffers for avi recording
+
 /*	TAGDEF(SHADER),
 	TAGDEF(RMAP),
 	TAGDEF(CURVES),
 	TAGDEF(FILE_TEMP),
-	TAGDEF(SOUND_TEMP),	
-	TAGDEF(TEMP_IMAGE),					// Temporary storage when loading images 
+	TAGDEF(SOUND_TEMP),
+	TAGDEF(TEMP_IMAGE),					// Temporary storage when loading images
 	TAGDEF(MENU_INIT),					// Menu intialisation
-	TAGDEF(MENU_RUN),					// Menu execution	
+	TAGDEF(MENU_RUN),					// Menu execution
 	TAGDEF(DATA_IMAGE_LOAD),			// Temp storage when loading data images (eg heightmaps), hit location maps)
 	TAGDEF(WEAPON_SYSTEM),				// Anything done in the weapon system (almost all of it's at load time)
 	TAGDEF(ZIP_TEMP),					// Temp memory used by unzip
-	TAGDEF(ZIPFILE),					// 
-	TAGDEF(SEARCHPATH),					// 
+	TAGDEF(ZIPFILE),					//
+	TAGDEF(SEARCHPATH),					//
 	TAGDEF(RESAMPLE),					// Temp memory used by the heightmap resampling code
 	TAGDEF(JPEG),						// Hooked into jpeg lib allocator
 	TAGDEF(GAME),
-	TAGDEF(TERRAIN),					// Memory used by the terrain system	
-	TAGDEF(DOWNLOAD),					// For blocks of downloaded data	
-	TAGDEF(NETWORK),					// 
-	TAGDEF(EVENT),						// 
-	
-	TAGDEF(LISTFILES),					// 
+	TAGDEF(TERRAIN),					// Memory used by the terrain system
+	TAGDEF(DOWNLOAD),					// For blocks of downloaded data
+	TAGDEF(NETWORK),					//
+	TAGDEF(EVENT),						//
+
+	TAGDEF(LISTFILES),					//
 	TAGDEF(LP_ADD),						// Local path add
 	TAGDEF(MINIHEAP),					// mini heap memory
 	TAGDEF(SKIN),						// 	   "

@@ -65,9 +65,22 @@ int UI_ParseInfos( const char *buf, int max, char *infos[] ) {
 			Info_SetValueForKey( info, key, token );
 		}
 		//NOTE: extra space for arena number
-		infos[count] = UI_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
+		infos[count] = (char *) UI_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
 		if (infos[count]) {
 			strcpy(infos[count], info);
+			if (trap_Cvar_VariableValue("com_buildScript"))
+			{
+				char *botFile = Info_ValueForKey(info, "personality");
+				if (botFile && botFile[0])
+				{
+					int fh = 0;
+					trap_FS_FOpenFile(botFile, &fh, FS_READ);
+					if (fh)
+					{
+						trap_FS_FCloseFile(fh);
+					}
+				}
+			}
 			count++;
 		}
 	}
@@ -158,6 +171,9 @@ void UI_LoadArenas( void ) {
 			if( strstr( type, "ffa" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_FFA);
 			}
+			if( strstr( type, "team" ) ) {
+				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_TEAM);
+			}
 			if( strstr( type, "holocron" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_HOLOCRON);
 			}
@@ -167,7 +183,13 @@ void UI_LoadArenas( void ) {
 			if( strstr( type, "duel" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_TOURNAMENT);
 			}
+			if( strstr( type, "powerduel" ) ) {
+				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_TOURNAMENT);
+			}
 			if( strstr( type, "saga" ) ) {
+				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_SAGA);
+			}
+			if( strstr( type, "siege" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_SAGA);
 			}
 			if( strstr( type, "ctf" ) ) {

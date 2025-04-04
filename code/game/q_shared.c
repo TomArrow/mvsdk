@@ -100,7 +100,7 @@ http://ioqsrc.vampireducks.com/d8/dbe/q__shared_8c-source.html#l00061
 */
 void COM_StripExtension(const char *in, char *out, int destsize) {
 	int length;
-	//assert(out != in); // NO! SHUT UP!
+	assert(out != in);
 	Q_strncpyz(out, in, destsize);
 	length = (int)strlen(out) - 1;
 	while (length > 0 && out[length] != '.') {
@@ -1713,3 +1713,40 @@ int safeatoi(const char* nptr, char** endptr, int base, int* error)
 	return (acc);
 }
 
+const char* colorToHex(byte color[4]){
+	int i,a,b;
+	static const char hexChars[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	static char hex[9] = {0};
+	char* s = hex;
+	for(i=0;i<4;i++){
+		a= color[i] % 16;
+		b= color[i] / 16;
+		*s = hexChars[b];
+		s++;
+		*s = hexChars[a];
+		s++;
+	}
+	hex[8] = '\0';
+	return hex;
+}
+
+#define HEXTOVALUE(a) ((a) >= '0' && a<='9') ? ((a)-'0') : (((a) >= 'A' && a<='F') ? (a)-'A'+10 : 15);  
+
+qboolean parseHex(const char* hex, byte outColor[4]){
+	int i,a,b;
+	int len = strlen(hex);
+	int pairs = len/2;
+	const char* pair= NULL;
+	if(pairs != 4){
+		return qfalse;
+	}
+	for(i=0;i<pairs;i++){
+		pair = hex+i*2;
+		a = toupper(pair[0]);
+		b = toupper(pair[1]);
+		a = HEXTOVALUE(a);
+		b = HEXTOVALUE(b);
+		outColor[i] = a*16+b;
+	}
+	return qtrue;
+}

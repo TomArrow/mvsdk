@@ -107,6 +107,39 @@ char systemChat[256];
 char teamChat1[256];
 char teamChat2[256];
 
+#define MAX_HUD_TICS 4
+const char *armorTicName[MAX_HUD_TICS] = 
+{
+"armor_tic1", 
+"armor_tic2", 
+"armor_tic3", 
+"armor_tic4", 
+};
+
+const char *healthTicName[MAX_HUD_TICS] = 
+{
+"health_tic1", 
+"health_tic2", 
+"health_tic3", 
+"health_tic4", 
+};
+
+const char *forceTicName[MAX_HUD_TICS] = 
+{
+"force_tic1", 
+"force_tic2", 
+"force_tic3", 
+"force_tic4", 
+};
+
+const char *ammoTicName[MAX_HUD_TICS] = 
+{
+"ammo_tic1", 
+"ammo_tic2", 
+"ammo_tic3", 
+"ammo_tic4", 
+};
+
 char *showPowersName[] = 
 {
 	"HEAL2",//FP_HEAL
@@ -136,6 +169,7 @@ int MenuFontToHandle(int iMenuFont)
 	switch (iMenuFont)
 	{
 		case FONT_SMALL:	return cgDC.Assets.qhSmallFont;
+		case FONT_SMALL2:	return cgDC.Assets.qhSmall2Font;
 		case FONT_MEDIUM:	return cgDC.Assets.qhMediumFont;
 		case FONT_LARGE:	return cgDC.Assets.qhBigFont;
 	}
@@ -685,6 +719,88 @@ void CG_DrawHealth(float x, float y)
 		NUM_FONT_SMALL, qfalse);
 }
 
+void CG_DrawHealthJKA( menuDef_t *menuHUD )
+{
+	vec4_t			calcColor;
+	playerState_t	*ps;
+	int				healthAmt;
+	int				i,currValue,inc;
+	itemDef_t		*focusItem;
+	float percent;
+
+	// Can we find the menu?
+	if (!menuHUD)
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	// What's the health?
+	healthAmt = ps->stats[STAT_HEALTH];
+	if (healthAmt > ps->stats[STAT_MAX_HEALTH])
+	{
+		healthAmt = ps->stats[STAT_MAX_HEALTH];
+	}
+
+
+	inc = (float) ps->stats[STAT_MAX_HEALTH] / MAX_HUD_TICS;
+	currValue = healthAmt;
+
+	// Print the health tics, fading out the one which is partial health
+	for (i=(MAX_HUD_TICS-1);i>=0;i--)
+	{
+		focusItem = Menu_FindItemByName(menuHUD, healthTicName[i]);
+
+		if (!focusItem)	// This is bad
+		{
+			continue;
+		}
+
+		memcpy(calcColor, hudTintColor, sizeof(vec4_t));
+
+		if (currValue <= 0)	// don't show tic
+		{
+			break;
+		}
+		else if (currValue < inc)	// partial tic (alpha it out)
+		{
+			percent = (float) currValue / inc;
+			calcColor[3] *= percent;		// Fade it out
+		}
+
+		trap_R_SetColor( calcColor);
+
+		CG_DrawPic( 
+			focusItem->window.rect.x,
+			focusItem->window.rect.y,
+			focusItem->window.rect.w, 
+			focusItem->window.rect.h, 
+			focusItem->window.background
+			);
+
+		currValue -= inc;
+	}
+
+	// Print the mueric amount
+	focusItem = Menu_FindItemByName(menuHUD, "healthamount");
+	if (focusItem)
+	{
+		// Print health amount
+		trap_R_SetColor( focusItem->window.foreColor );	
+
+		CG_DrawNumField (
+			focusItem->window.rect.x, 
+			focusItem->window.rect.y, 
+			3, 
+			ps->stats[STAT_HEALTH], 
+			focusItem->window.rect.w, 
+			focusItem->window.rect.h, 
+			NUM_FONT_SMALL,
+			qfalse);
+	}
+}
+
 /*
 ================
 CG_DrawArmor
@@ -777,16 +893,152 @@ void CG_DrawArmor(float x, float y)
 
 }
 
+void CG_DrawArmorJKA( menuDef_t *menuHUD )
+{
+	vec4_t			calcColor;
+	playerState_t	*ps;
+	int				armor, maxArmor;
+	itemDef_t		*focusItem;
+	float			percent,quarterArmor;
+	int				i,currValue,inc;
+
+	//ps = &cg.snap->ps;
+	ps = &cg.predictedPlayerState;
+
+	// Can we find the menu?
+	if (!menuHUD)
+	{
+		return;
+	}
+
+	armor = ps->stats[STAT_ARMOR];
+	maxArmor = ps->stats[STAT_MAX_HEALTH];
+
+	if (armor> maxArmor)
+	{
+		armor = maxArmor;
+	}
+
+	currValue = armor;
+	inc = (float) maxArmor / MAX_HUD_TICS;
+
+	memcpy(calcColor, hudTintColor, sizeof(vec4_t));
+	for (i=(MAX_HUD_TICS-1);i>=0;i--)
+	{
+		focusItem = Menu_FindItemByName(menuHUD, armorTicName[i]);
+
+		if (!focusItem)	// This is bad
+		{
+			continue;
+		}
+
+		memcpy(calcColor, hudTintColor, sizeof(vec4_t));
+
+		if (currValue <= 0)	// don't show tic
+		{
+			break;
+		}
+		else if (currValue < inc)	// partial tic (alpha it out)
+		{
+			percent = (float) currValue / inc;
+			calcColor[3] *= percent;
+		}
+
+		trap_R_SetColor( calcColor);
+
+		if ((i==(MAX_HUD_TICS-1)) && (currValue < inc))
+		{
+			if (cg.HUDArmorFlag)
+			{
+				CG_DrawPic( 
+					focusItem->window.rect.x,
+					focusItem->window.rect.y,
+					focusItem->window.rect.w, 
+					focusItem->window.rect.h, 
+					focusItem->window.background
+					);
+			}
+		}
+		else 
+		{
+				CG_DrawPic( 
+					focusItem->window.rect.x,
+					focusItem->window.rect.y,
+					focusItem->window.rect.w, 
+					focusItem->window.rect.h, 
+					focusItem->window.background
+					);
+		}
+
+		currValue -= inc;
+	}
+
+	focusItem = Menu_FindItemByName(menuHUD, "armoramount");
+
+	if (focusItem)
+	{
+		// Print armor amount
+		trap_R_SetColor( focusItem->window.foreColor );	
+
+		CG_DrawNumField (
+			focusItem->window.rect.x, 
+			focusItem->window.rect.y, 
+			3, 
+			armor, 
+			focusItem->window.rect.w, 
+			focusItem->window.rect.h, 
+			NUM_FONT_SMALL,
+			qfalse);
+	}
+
+	// If armor is low, flash a graphic to warn the player
+	if (armor)	// Is there armor? Draw the HUD Armor TIC
+	{
+		quarterArmor = (float) (ps->stats[STAT_MAX_HEALTH] / 4.0f);
+
+		// Make tic flash if armor is at 25% of full armor
+		if (ps->stats[STAT_ARMOR] < quarterArmor)		// Do whatever the flash timer says
+		{
+			if (cg.HUDTickFlashTime < cg.time)			// Flip at the same time
+			{
+				cg.HUDTickFlashTime = cg.time + 400;
+				if (cg.HUDArmorFlag)
+				{
+					cg.HUDArmorFlag = qfalse;
+				}
+				else
+				{
+					cg.HUDArmorFlag = qtrue;
+				}
+			}
+		}
+		else
+		{
+			cg.HUDArmorFlag=qtrue;
+		}
+	}
+	else						// No armor? Don't show it.
+	{
+		cg.HUDArmorFlag=qfalse;
+	}
+}
+
 /*
 ================
 CG_DrawHUDRightFrame1
 ================
 */
-void CG_DrawHUDRightFrame1(float x, float y)
+void CG_DrawHUDRightFrame1(float x, float y, float w, float h)
 {
-	trap_R_SetColor( hudTintColor );
+	trap_R_SetColor(hudTintColor);
 	// Inner gray wire frame
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDInnerRight );
+	CG_DrawPic(
+		SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+		y,
+		w * cgs.screenXFactor,
+		h,
+		cgs.media.HUDInnerRight
+	);
 }
 
 /*
@@ -794,10 +1046,106 @@ void CG_DrawHUDRightFrame1(float x, float y)
 CG_DrawHUDRightFrame2
 ================
 */
-void CG_DrawHUDRightFrame2(float x, float y)
+void CG_DrawHUDRightFrame2(float x, float y, float w, float h)
 {
-	trap_R_SetColor( hudTintColor );
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDRightFrame );		// Metal frame
+	trap_R_SetColor(hudTintColor);
+	// Metal frame
+	CG_DrawPic(
+		SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+		y,
+		w * cgs.screenXFactor,
+		h,
+		cgs.media.HUDRightFrame
+	);
+}
+
+/*
+================
+CG_DrawSaberStyle
+
+If the weapon is a light saber (which needs no ammo) then draw a graphic showing
+the saber style (fast, medium, strong)
+================
+*/
+static void CG_DrawSaberStyle( centity_t *cent, menuDef_t *menuHUD)
+{
+	itemDef_t		*focusItem;
+
+	if (!cent->currentState.weapon ) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if ( cent->currentState.weapon != WP_SABER )
+	{
+		return;
+	}
+
+	// Can we find the menu?
+	if (!menuHUD)
+	{
+		return;
+	}
+
+
+	// draw the current saber style in this window
+	switch ( cg.predictedPlayerState.fd.saberDrawAnimLevel )
+	{
+	case FORCE_LEVEL_1:
+	case FORCE_LEVEL_5: // Tavion
+
+		focusItem = Menu_FindItemByName(menuHUD, "saberstyle_fast");
+
+		if (focusItem)
+		{
+			trap_R_SetColor( hudTintColor );
+
+			CG_DrawPic( 
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				focusItem->window.rect.w * cgs.screenXFactor, 
+				focusItem->window.rect.h, 
+				focusItem->window.background
+				);
+		}
+
+		break;
+	case FORCE_LEVEL_2:
+	case SS_DUAL:
+	case SS_STAFF:
+		focusItem = Menu_FindItemByName(menuHUD, "saberstyle_medium");
+
+		if (focusItem)
+		{
+			trap_R_SetColor( hudTintColor );
+
+			CG_DrawPic( 
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				focusItem->window.rect.w * cgs.screenXFactor, 
+				focusItem->window.rect.h, 
+				focusItem->window.background
+				);
+		}
+		break;
+	case FORCE_LEVEL_3:
+	case FORCE_LEVEL_4: // Desann
+		focusItem = Menu_FindItemByName(menuHUD, "saberstyle_strong");
+
+		if (focusItem)
+		{
+			trap_R_SetColor( hudTintColor );
+
+			CG_DrawPic( 
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				focusItem->window.rect.w * cgs.screenXFactor, 
+				focusItem->window.rect.h, 
+				focusItem->window.background
+				);
+		}
+		break;
+	}
 }
 
 /*
@@ -805,13 +1153,15 @@ void CG_DrawHUDRightFrame2(float x, float y)
 CG_DrawAmmo
 ================
 */
-static void CG_DrawAmmo(centity_t *cent, float x, float y)
+static void CG_DrawAmmo(centity_t *cent, float x, float y, float w, float h)
 {
 	playerState_t	*ps;
 	int			numColor_i;
 	int			i;
 	vec4_t		calcColor;
 	float		value,inc,percent;
+	qhandle_t	hShader;
+	qboolean	drawPic;
 
 	ps = &cg.snap->ps;
 
@@ -824,18 +1174,37 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 	{
 		trap_R_SetColor( colorTable[CT_WHITE] );
 		// don't need to draw ammo, but we will draw the current saber style in this window
-		switch ( cg.predictedPlayerState.fd.saberDrawAnimLevel )
+		switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
 		{
-		case 1://FORCE_LEVEL_1:
-			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle1 );
+		case FORCE_LEVEL_1:
+			hShader = cgs.media.HUDSaberStyle1;
+			drawPic = qtrue;
 			break;
-		case 2://FORCE_LEVEL_2:
-			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle2 );
+		case FORCE_LEVEL_2:
+			hShader = cgs.media.HUDSaberStyle2;
+			drawPic = qtrue;
 			break;
-		case 3://FORCE_LEVEL_3:
-			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle3 );
+		case FORCE_LEVEL_3:
+			hShader = cgs.media.HUDSaberStyle3;
+			drawPic = qtrue;
+			break;
+		default:
+			hShader = 0;
+			drawPic = qfalse;
 			break;
 		}
+
+		if (drawPic)
+		{
+			CG_DrawPic(
+				SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+				y,
+				w * cgs.screenXFactor,
+				h,
+				hShader
+			);
+		}
+
 		return;
 	}
 	else
@@ -892,7 +1261,16 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 	numColor_i = CT_HUD_ORANGE;
 
 	trap_R_SetColor( colorTable[numColor_i] );	
-	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+	CG_DrawNumField(
+		SCREEN_WIDTH - (SCREEN_WIDTH - (x + 30)) * cgs.screenXFactor,
+		y + 26,
+		3,
+		value,
+		6 * cgs.screenXFactor,
+		12,
+		NUM_FONT_SMALL,
+		qfalse
+	);
 
 
 //cg.snap->ps.ammo[weaponData[cg.snap->ps.weapon].ammoIndex]
@@ -921,15 +1299,123 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 		}
 
 		trap_R_SetColor( calcColor);
-		CG_DrawPic( x + ammoTicPos[i].x, 
-			y + ammoTicPos[i].y, 
-			ammoTicPos[i].width, 
-			ammoTicPos[i].height, 
-			ammoTicPos[i].tic );
+		CG_DrawPic(
+			SCREEN_WIDTH - (SCREEN_WIDTH - (x + ammoTicPos[i].x)) * cgs.screenXFactor,
+			y + ammoTicPos[i].y,
+			ammoTicPos[i].width * cgs.screenXFactor,
+			ammoTicPos[i].height,
+			ammoTicPos[i].tic
+		);
 
 		value -= inc;
 	}
 
+}
+
+static void CG_DrawAmmoJKA(centity_t *cent, menuDef_t *menuHUD)
+{
+	playerState_t	*ps;
+	int				i;
+	vec4_t			calcColor;
+	float			value,inc = 0.0f,percent;
+	itemDef_t		*focusItem;
+
+	ps = &cg.snap->ps;
+
+	// Can we find the menu?
+	if (!menuHUD)
+	{
+		return;
+	}
+
+	if (!cent->currentState.weapon ) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	value = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+	if (value < 0)	// No ammo
+	{
+		return;
+	}
+
+	focusItem = Menu_FindItemByName(menuHUD, "ammoamount");
+	trap_R_SetColor( hudTintColor );
+
+	if (weaponData[cent->currentState.weapon].energyPerShot == 0 &&
+		weaponData[cent->currentState.weapon].altEnergyPerShot == 0)
+	{ //just draw "infinite"
+		inc = 8 / MAX_HUD_TICS;
+		value = 8;
+
+		focusItem = Menu_FindItemByName(menuHUD, "ammoinfinite");
+		trap_R_SetColor( hudTintColor );
+		if (focusItem)
+		{
+			UI_DrawProportionalString(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				"--",
+				NUM_FONT_SMALL,
+				focusItem->window.foreColor
+			);
+		}
+	}
+	else
+	{
+		focusItem = Menu_FindItemByName(menuHUD, "ammoamount");
+		trap_R_SetColor( hudTintColor );
+		if (focusItem)
+		{
+			inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_HUD_TICS;
+			value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+			CG_DrawNumField (
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y, 
+				3, 
+				value, 
+				focusItem->window.rect.w * cgs.screenXFactor, 
+				focusItem->window.rect.h, 
+				NUM_FONT_SMALL,
+				qfalse);
+		}
+	}
+
+	// Draw tics
+	for (i=MAX_HUD_TICS-1;i>=0;i--)
+	{
+		focusItem = Menu_FindItemByName(menuHUD, ammoTicName[i]);
+
+		if (!focusItem)
+		{
+			continue;
+		}
+
+		memcpy(calcColor, hudTintColor, sizeof(vec4_t));
+
+		if ( value <= 0 )	// done
+		{
+			break;
+		}
+		else if (value < inc)	// partial tic
+		{
+			percent = value / inc;
+			calcColor[3] = percent;
+		}
+
+		trap_R_SetColor( calcColor);
+
+		CG_DrawPic( 
+			SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+			focusItem->window.rect.y,
+			focusItem->window.rect.w * cgs.screenXFactor, 
+			focusItem->window.rect.h, 
+			focusItem->window.background
+			);
+
+		value -= inc;
+	}
 }
 
 /*
@@ -967,13 +1453,137 @@ void CG_DrawForcePower(float x, float y)
 		}
 
 		trap_R_SetColor( calcColor);
-		CG_DrawPic( x + forceTicPos[i].x, 
-			y + forceTicPos[i].y, 
-			forceTicPos[i].width, 
-			forceTicPos[i].height, 
-			forceTicPos[i].tic );
+		CG_DrawPic(
+			SCREEN_WIDTH - (SCREEN_WIDTH - (x + forceTicPos[i].x)) * cgs.screenXFactor,
+			y + forceTicPos[i].y,
+			forceTicPos[i].width * cgs.screenXFactor,
+			forceTicPos[i].height,
+			forceTicPos[i].tic
+		);
 
 		value -= inc;
+	}
+}
+
+void CG_DrawForcePowerJKA( menuDef_t *menuHUD )
+{
+	int				i;
+	vec4_t			calcColor;
+	float			value,inc,percent;
+	itemDef_t		*focusItem;
+	const int		maxForcePower = 100;
+	qboolean	flash=qfalse;
+
+	// Can we find the menu?
+	if (!menuHUD)
+	{
+		return;
+	}
+
+	// Make the hud flash by setting forceHUDTotalFlashTime above cg.time
+	if (cg.forceHUDTotalFlashTime > cg.time )
+	{
+		flash = qtrue;
+		if (cg.forceHUDNextFlashTime < cg.time)	
+		{
+			cg.forceHUDNextFlashTime = cg.time + 400;
+			trap_S_StartSound (NULL, 0, CHAN_LOCAL, cgs.media.noforceSound );
+
+			if (cg.forceHUDActive)
+			{
+				cg.forceHUDActive = qfalse;
+			}
+			else
+			{
+				cg.forceHUDActive = qtrue;
+			}
+
+		}
+	}
+	else	// turn HUD back on if it had just finished flashing time.
+	{
+		cg.forceHUDNextFlashTime = 0;
+		cg.forceHUDActive = qtrue;
+	}
+
+//	if (!cg.forceHUDActive)
+//	{
+//		return;
+//	}
+
+	inc = (float)  maxForcePower / MAX_HUD_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_HUD_TICS-1;i>=0;i--)
+	{
+		focusItem = Menu_FindItemByName(menuHUD, forceTicName[i]);
+
+		if (!focusItem)
+		{
+			continue;
+		}
+
+//		memcpy(calcColor, hudTintColor, sizeof(vec4_t));
+
+		if ( value <= 0 )	// done
+		{
+			break;
+		}
+		else if (value < inc)	// partial tic
+		{
+			if (flash)
+			{
+				memcpy(calcColor,  colorTable[CT_RED], sizeof(vec4_t));
+			}
+			else 
+			{
+				memcpy(calcColor,  colorTable[CT_WHITE], sizeof(vec4_t));
+			}
+
+			percent = value / inc;
+			calcColor[3] = percent;
+		}
+		else
+		{
+			if (flash)
+			{
+				memcpy(calcColor,  colorTable[CT_RED], sizeof(vec4_t));
+			}
+			else 
+			{
+				memcpy(calcColor,  colorTable[CT_WHITE], sizeof(vec4_t));
+			}
+		}
+
+		trap_R_SetColor( calcColor);
+
+		CG_DrawPic( 
+			SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+			focusItem->window.rect.y,
+			focusItem->window.rect.w * cgs.screenXFactor,
+			focusItem->window.rect.h, 
+			focusItem->window.background
+			);
+
+		value -= inc;
+	}
+
+	focusItem = Menu_FindItemByName(menuHUD, "forceamount");
+
+	if (focusItem)
+	{
+		// Print force amount
+		trap_R_SetColor( focusItem->window.foreColor );	
+
+		CG_DrawNumField (
+			SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+			focusItem->window.rect.y, 
+			3, 
+			cg.snap->ps.fd.forcePower, 
+			focusItem->window.rect.w * cgs.screenXFactor,
+			focusItem->window.rect.h, 
+			NUM_FONT_SMALL,
+			qfalse);
 	}
 }
 
@@ -1291,7 +1901,7 @@ void CG_DrawHUD(centity_t	*cent)
 
 	speedometerXPos = cg_speedometerX.value;
 
-	if (cg_hudFiles.integer)
+	if (cg.hudType == HUD_TYPE_TEXT)
 		speedometerXPos -= 8;
 
 	if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
@@ -1402,10 +2012,13 @@ void CG_DrawHUD(centity_t	*cent)
 		{	// Don't draw a bias.
 			scoreStr = va("Score: %i", cg.snap->ps.persistant[PERS_SCORE]);
 		}
-		UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7f);
+		if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+		{
+			UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7f);
+		}
 	}
 
-	if (cg_hudFiles.integer)
+	if (cg.hudType == HUD_TYPE_TEXT)
 	{
 		int x = 0;
 		int y = cgs.screenHeight - 80;
@@ -1478,10 +2091,48 @@ void CG_DrawHUD(centity_t	*cent)
 	menuHUD = Menus_FindByName("lefthud");
 	if (menuHUD)
 	{
-		CG_DrawHUDLeftFrame1(menuHUD->window.rect.x,menuHUD->window.rect.y);
-		CG_DrawArmor(menuHUD->window.rect.x,menuHUD->window.rect.y);
-		CG_DrawHealth(menuHUD->window.rect.x,menuHUD->window.rect.y);
-		CG_DrawHUDLeftFrame2(menuHUD->window.rect.x,menuHUD->window.rect.y);
+		if (cg.hudType == HUD_TYPE_JKA)
+		{
+			itemDef_t *focusItem;
+
+			// Print scanline
+			focusItem = Menu_FindItemByName(menuHUD, "scanline");
+			if (focusItem)
+			{
+				trap_R_SetColor( hudTintColor );	
+				CG_DrawPic( 
+					focusItem->window.rect.x, 
+					focusItem->window.rect.y, 
+					focusItem->window.rect.w, 
+					focusItem->window.rect.h, 
+					focusItem->window.background 
+					);			
+			}
+	
+			// Print frame
+			focusItem = Menu_FindItemByName(menuHUD, "frame");
+			if (focusItem)
+			{
+				trap_R_SetColor( hudTintColor );	
+				CG_DrawPic( 
+					focusItem->window.rect.x, 
+					focusItem->window.rect.y, 
+					focusItem->window.rect.w, 
+					focusItem->window.rect.h, 
+					focusItem->window.background 
+					);			
+			}
+
+			CG_DrawArmorJKA(menuHUD);
+			CG_DrawHealthJKA(menuHUD);
+		}
+		else
+		{
+			CG_DrawHUDLeftFrame1(menuHUD->window.rect.x,menuHUD->window.rect.y);
+			CG_DrawArmor(menuHUD->window.rect.x,menuHUD->window.rect.y);
+			CG_DrawHealth(menuHUD->window.rect.x,menuHUD->window.rect.y);
+			CG_DrawHUDLeftFrame2(menuHUD->window.rect.x,menuHUD->window.rect.y);
+		}
 	}
 	else
 	{ //Apparently we failed to get proper coordinates from the menu, so resort to manually inputting them.
@@ -1531,23 +2182,80 @@ void CG_DrawHUD(centity_t	*cent)
 	}
 	UI_DrawScaledProportionalString(cgs.screenWidth-101, cgs.screenHeight-23, scoreStr, UI_RIGHT|UI_DROPSHADOW, colorTable[CT_WHITE], 0.7);*/
 
+	CG_WideScreenMode(qfalse);
 
 	menuHUD = Menus_FindByName("righthud");
-	if (menuHUD)
+	if (menuHUD && cg.hudType == HUD_TYPE_JKA)
 	{
-		CG_DrawHUDRightFrame1(menuHUD->window.rect.x,menuHUD->window.rect.y);
-		CG_DrawForcePower(menuHUD->window.rect.x,menuHUD->window.rect.y);
-		CG_DrawAmmo(cent,menuHUD->window.rect.x,menuHUD->window.rect.y);
-		CG_DrawHUDRightFrame2(menuHUD->window.rect.x,menuHUD->window.rect.y);
+		itemDef_t *focusItem;
 
+		focusItem = Menu_FindItemByName(menuHUD, "score_line");
+		if (focusItem)
+		{
+			UI_DrawScaledProportionalString(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				scoreStr,
+				UI_RIGHT | UI_DROPSHADOW,
+				focusItem->window.foreColor,
+				0.7f);
+		}
+
+		// Print scanline
+		focusItem = Menu_FindItemByName(menuHUD, "scanline");
+		if (focusItem)
+		{
+			trap_R_SetColor(hudTintColor);
+			CG_DrawPic(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				focusItem->window.rect.w * cgs.screenXFactor,
+				focusItem->window.rect.h,
+				focusItem->window.background
+			);
+		}
+
+		focusItem = Menu_FindItemByName(menuHUD, "frame");
+		if (focusItem)
+		{
+			trap_R_SetColor(hudTintColor);
+			CG_DrawPic(
+				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+				focusItem->window.rect.y,
+				focusItem->window.rect.w * cgs.screenXFactor,
+				focusItem->window.rect.h,
+				focusItem->window.background
+			);
+		}
+
+		CG_DrawForcePowerJKA(menuHUD);
+
+		// Draw ammo tics or saber style
+		if (cent->currentState.weapon == WP_SABER)
+		{
+			CG_DrawSaberStyle(cent, menuHUD);
+		}
+		else
+		{
+			CG_DrawAmmoJKA(cent, menuHUD);
+		}
+	}
+	else if (menuHUD && cg.hudType == HUD_TYPE_JK2)
+	{
+		CG_DrawHUDRightFrame1(menuHUD->window.rect.x, menuHUD->window.rect.y, 80.0f, 80.0f);
+		CG_DrawForcePower(menuHUD->window.rect.x, menuHUD->window.rect.y);
+		CG_DrawAmmo(cent, menuHUD->window.rect.x, menuHUD->window.rect.y, 80.0f, 40.0f);
+		CG_DrawHUDRightFrame2(menuHUD->window.rect.x, menuHUD->window.rect.y, 80.0f, 80.0f);
 	}
 	else
 	{ //Apparently we failed to get proper coordinates from the menu, so resort to manually inputting them.
-		CG_DrawHUDRightFrame1(cgs.screenWidth-80,cgs.screenHeight-80);
-		CG_DrawForcePower(cgs.screenWidth-80,cgs.screenHeight-80);
-		CG_DrawAmmo(cent, cgs.screenWidth-80,cgs.screenHeight-80);
-		CG_DrawHUDRightFrame2(cgs.screenWidth-80,cgs.screenHeight-80);
+		CG_DrawHUDRightFrame1(SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f, 80.0f, 80.0f);
+		CG_DrawForcePower(SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f);
+		CG_DrawAmmo(cent, SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f, 80.0f, 40.0f);
+		CG_DrawHUDRightFrame2(SCREEN_WIDTH - 80.0f, SCREEN_HEIGHT - 80.0f, 80.0f, 80.0f);
 	}
+
+	CG_WideScreenMode(qtrue);
 }
 
 #define MAX_SHOWPOWERS NUM_FORCE_POWERS
@@ -2179,7 +2887,17 @@ static float CG_DrawEnemyInfo ( float y )
 
 	if ( ci->modelIcon )
 	{
+		if (ci->useModelColor)
+		{
+			vec4_t modelColor;
+			modelColor[0] = ((float) ci->modelColor[0]) / 255.0f;
+			modelColor[1] = ((float) ci->modelColor[1]) / 255.0f;
+			modelColor[2] = ((float) ci->modelColor[2]) / 255.0f;
+			modelColor[3] = ((float) ci->modelColor[3]) / 255.0f;
+			trap_R_SetColor(modelColor);
+		}
 		CG_DrawPic( cgs.screenWidth - size - 5, y, size, size, ci->modelIcon );
+		trap_R_SetColor(NULL);
 	}
 
 	y += size;
@@ -3185,8 +3903,16 @@ static void CG_DrawLagometer( void ) {
 	//
 	// draw the graph
 	//
-	x = cgs.screenWidth - 48;
-	y = cgs.screenHeight - 144;
+	if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+	{
+		x = cgs.screenWidth - 48;
+		y = cgs.screenHeight - 144;
+	}
+	else if (cg.hudType == HUD_TYPE_JKA)
+	{
+		x = cgs.screenWidth - 48;
+		y = cgs.screenHeight - 176;
+	}
 
 	trap_R_SetColor( NULL );
 	if (cg_lagometer.integer < 3)
@@ -3822,9 +4548,13 @@ static void CG_DrawActivePowers(void)
 	int i = 0;
 	int startx = icon_size*2+16;
 	int starty = cgs.screenHeight - icon_size*2;
-
 	int endx = icon_size;
 	int endy = icon_size;
+
+	if (cg.hudType == HUD_TYPE_JKA)
+	{
+		startx += 32;
+	}
 
 	if (cg.snap->ps.zoomMode)
 	{ //don't display over zoom mask
@@ -5661,7 +6391,7 @@ static void CG_Draw2D( void ) {
 
 			speedometerXPos = cg_speedometerX.value;
 
-			if (cg_hudFiles.integer)
+			if (cg.hudType == HUD_TYPE_TEXT)
 				speedometerXPos -= 8;
 
 			if ((cg_speedometer.integer & SPEEDOMETER_ENABLE)) {
@@ -6131,6 +6861,13 @@ static void CG_Draw2D( void ) {
 		return;
 	}
 */
+
+	if (cg.updateHud)
+	{
+		CG_UpdateHud(cg_hudFiles.string);
+		cg.updateHud = qfalse;
+	}
+
 	if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) {
 		CG_DrawSpectator();
 		CG_DrawCrosshair(NULL, 0);

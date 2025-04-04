@@ -292,3 +292,13 @@ equ trap_G_COOL_API_DB_FinishAndSendPreparedStatement	-1215	;G_COOL_API_DB_FINIS
 equ trap_G_COOL_API_DB_GetBinary						-1216	;G_COOL_API_DB_GETBINARY
 equ trap_G_COOL_API_DB_PreparedBindNull					-1217	;G_COOL_API_DB_PREPAREDBINDNULL
 equ trap_G_COOL_API_DB_GetMoreResults					-1218	;G_COOL_API_DB_GETMORERESULTS
+
+; COOL_APIFEATURE_JEDI_ACADEMY
+equ trap_G_COOL_API_GetNumLanguages           -2001    ; G_COOL_API_GET_NUM_LANGUAGES
+equ trap_G_COOL_API_GetLanguageName           -2002    ; G_COOL_API_GET_LANGUAGE_NAME
+equ trap_G_COOL_API_GiveMeVectorFromMatrix    -2003    ; G_COOL_API_GIVE_ME_VECTOR_FROM_MATRIX
+equ trap_G_COOL_API_SetSkin                   -2004    ; G_COOL_API_SET_SKIN
+equ trap_G_COOL_API_SkinlessModel             -2005    ; G_COOL_API_SKINLESS_MODEL
+equ trap_G_COOL_API_GetSurfaceRenderStatus    -2006    ; G_COOL_API_GET_SURFACE_RENDER_STATUS
+equ trap_G_COOL_API_AttachG2Model             -2007    ; G_COOL_API_ATTACH_G2_MODEL
+equ trap_G_COOL_API_GetFileVersion            -2008    ; G_COOL_API_GET_FILE_VERSION

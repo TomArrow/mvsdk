@@ -7,6 +7,17 @@ typedef int intptr_t;
 
 typedef unsigned int size_t;
 
+#ifndef VM_STDINT
+    #define VM_STDINT
+    typedef unsigned char uint8_t;
+    typedef unsigned short uint16_t;
+    typedef unsigned int uint32_t;
+
+    typedef signed char int8_t;
+    typedef signed short int16_t;
+    typedef signed int int32_t;
+#endif
+
 typedef char *  va_list;
 #define _INTSIZEOF(n)   ( (sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1) )
 #define va_start(ap,v)  ( ap = (va_list)&v + _INTSIZEOF(v) )
@@ -124,4 +135,3 @@ bsearch (const void *key,
 #define UINT32_C(x)	(x##UL)
 
 #define ERANGE          34
-

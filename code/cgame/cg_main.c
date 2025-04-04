@@ -107,32 +107,14 @@ vec4_t colorTable[CT_MAX] =
 
 };
 
-char *HolocronIcons[] = {
-	"gfx/mp/f_icon_lt_heal",		//FP_HEAL,
-	"gfx/mp/f_icon_levitation",		//FP_LEVITATION,
-	"gfx/mp/f_icon_speed",			//FP_SPEED,
-	"gfx/mp/f_icon_push",			//FP_PUSH,
-	"gfx/mp/f_icon_pull",			//FP_PULL,
-	"gfx/mp/f_icon_lt_telepathy",	//FP_TELEPATHY,
-	"gfx/mp/f_icon_dk_grip",		//FP_GRIP,
-	"gfx/mp/f_icon_dk_l1",			//FP_LIGHTNING,
-	"gfx/mp/f_icon_dk_rage",		//FP_RAGE,
-	"gfx/mp/f_icon_lt_protect",		//FP_PROTECT,
-	"gfx/mp/f_icon_lt_absorb",		//FP_ABSORB,
-	"gfx/mp/f_icon_lt_healother",	//FP_TEAM_HEAL,
-	"gfx/mp/f_icon_dk_forceother",	//FP_TEAM_FORCE,
-	"gfx/mp/f_icon_dk_drain",		//FP_DRAIN,
-	"gfx/mp/f_icon_sight",			//FP_SEE,
-	"gfx/mp/f_icon_saber_attack",	//FP_SABERATTACK,
-	"gfx/mp/f_icon_saber_defend",	//FP_SABERDEFEND,
-	"gfx/mp/f_icon_saber_throw"		//FP_SABERTHROW
-};
-
 int forceMyModelModificationCount = -1;
+int forceMySaberModificationCount = -1;
+int saber1ModificationCount = -1;
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
 int strafeHelperActiveColorModificationCount = -1;//japro
+int hudModificationCount = -1;
 
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum );
 void CG_Shutdown( void );
@@ -160,8 +142,24 @@ qboolean menuInJK2MV = qfalse;
 int mvapi = 0;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
+int coolApi_jkaVersion = 0;
 vmCvar_t coolApi_supported_cgame;
-int coolApi_supported_cgame_int = COOL_APIFEATURE_SETPREDICTEDMOVEMENT | COOL_APIFEATURE_GETTEMPORARYUSERCMD | COOL_APIFEATURE_EZDEMOCGAMEBUFFER | COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED | COOL_APIFEATURE_MARIADB | COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK | COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS | COOL_APIFEATURE_G_USERCMDSTORE | COOL_APIFEATURE_RESOLUTIONCHANGED | COOL_APIFEATURE_NONEPSILONTRACE | COOL_APIFEATURE_SETUSERANGLES | COOL_APIFEATURE_CUSTOMEPSILONTRACE | COOL_APIFEATURE_ADDMEMECOMMAND;
+const int coolApi_supported_cgame_int =
+  COOL_APIFEATURE_SETPREDICTEDMOVEMENT
+| COOL_APIFEATURE_GETTEMPORARYUSERCMD
+| COOL_APIFEATURE_EZDEMOCGAMEBUFFER
+| COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED
+| COOL_APIFEATURE_MARIADB
+| COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK
+| COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS
+| COOL_APIFEATURE_G_USERCMDSTORE
+| COOL_APIFEATURE_RESOLUTIONCHANGED
+| COOL_APIFEATURE_NONEPSILONTRACE
+| COOL_APIFEATURE_SETUSERANGLES
+| COOL_APIFEATURE_CUSTOMEPSILONTRACE
+| COOL_APIFEATURE_ADDMEMECOMMAND
+| COOL_APIFEATURE_JEDI_ACADEMY
+;
 qboolean submodelBypass = qfalse;
 int Init_serverMessageNum;
 int Init_serverCommandSequence;
@@ -180,6 +178,13 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 		}
 		else {
 			coolApi_dbVersion = 0;
+		}
+		if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) {
+			trap_Cvar_VariableStringBuffer("cool_apiJKAVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_jkaVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else {
+			coolApi_jkaVersion = 0;
 		}
 		trap_Cvar_Register(&coolApi_supported_cgame,"coolApi_supported_cgame",va("%d", coolApi_supported_cgame_int),CVAR_ROM);
 		trap_Cvar_Set("coolApi_supported_cgame", va("%d", coolApi_supported_cgame_int));
@@ -713,6 +718,7 @@ vmCvar_t 	cg_stats;
 vmCvar_t 	cg_buildScript;
 vmCvar_t 	cg_forceModel;
 vmCvar_t 	cg_forceMyModel;
+vmCvar_t 	cg_forceMySaber;
 vmCvar_t	cg_paused;
 vmCvar_t	cg_blood;
 vmCvar_t	cg_predictItems;
@@ -805,6 +811,16 @@ vmCvar_t	x3_ezdemoPreTime;
 vmCvar_t	x3_ezdemoPostTime;
 
 vmCvar_t	cg_acidtrip; // taken from openmohaa
+
+vmCvar_t	cg_char_color_red;
+vmCvar_t	cg_char_color_green;
+vmCvar_t	cg_char_color_blue;
+vmCvar_t	cg_char_color_alpha;
+vmCvar_t	cg_saber1;
+vmCvar_t	cg_saber2;
+vmCvar_t	cg_JKA;
+vmCvar_t	cg_menuFileParseSpam;
+vmCvar_t	cg_randomTaunts;
 
 typedef struct {
 	vmCvar_t	*vmCvar;
@@ -1069,6 +1085,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_teamChatHeight, "cg_teamChatHeight", "0", CVAR_ARCHIVE  },
 	{ &cg_forceModel, "cg_forceModel", "0", CVAR_ARCHIVE  },
 	{ &cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE  },
+	{ &cg_forceMySaber, "cg_forceMySaber", "", CVAR_ARCHIVE },
 	{ &cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE },
 	//{ &cg_optimizedPredict, "cg_optimizedPredict", "0", CVAR_ARCHIVE },
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
@@ -1113,7 +1130,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0", 0},
 	{ &cg_timescale, "timescale", "1", 0},
 	{ &cg_scorePlum, "cg_scorePlums", "1", CVAR_USERINFO | CVAR_ARCHIVE},
-	{ &cg_hudFiles, "cg_hudFiles", "0", CVAR_USERINFO | CVAR_ARCHIVE},
+	{ &cg_hudFiles, "cg_hudFiles", "ui/jk2hud.txt", CVAR_ARCHIVE},
 	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
@@ -1153,6 +1170,15 @@ Ghoul2 Insert Start
 /*
 Ghoul2 Insert End
 */
+	{ &cg_char_color_red, "char_color_red", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_char_color_alpha, "char_color_alpha", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_saber1, "saber1", DEFAULT_SABER1, CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_saber2, "saber2", DEFAULT_SABER2, CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
+	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
+	{ &cg_randomTaunts, "cg_randomTaunts", "0", CVAR_ARCHIVE },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
@@ -1178,6 +1204,7 @@ void CG_RegisterCvars( void ) {
 
 	forceModelModificationCount = cg_forceModel.modificationCount;
 	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
+	forceMySaberModificationCount = cg_forceMySaber.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -1364,6 +1391,16 @@ void CG_UpdateCvars( void ) {
 		CG_ForceModelChange();
 	}
 
+	if ( forceMySaberModificationCount != cg_forceMySaber.modificationCount ) {
+		forceMySaberModificationCount = cg_forceMySaber.modificationCount;
+		CG_ForceModelChange();
+	}
+
+	if ( saber1ModificationCount != cg_saber1.modificationCount ) {
+		saber1ModificationCount = cg_saber1.modificationCount;
+		cg.localSaberNameUpdated = qfalse;
+	}
+
 	if (widescreenModificationCount != cg_widescreen.modificationCount) {
 		widescreenModificationCount = cg_widescreen.modificationCount;
 		CG_UpdateWidescreen();
@@ -1377,6 +1414,11 @@ void CG_UpdateCvars( void ) {
 	if (strafeHelperActiveColorModificationCount != cg_strafeHelperActiveColor.modificationCount) {
 		strafeHelperActiveColorModificationCount = cg_strafeHelperActiveColor.modificationCount;
 		CG_StrafeHelperActiveColorChange();
+	}
+
+	if (hudModificationCount != cg_hudFiles.modificationCount) {
+		hudModificationCount = cg_hudFiles.modificationCount;
+		cg.updateHud = qtrue;
 	}
 }
 
@@ -1763,7 +1805,7 @@ static void CG_RegisterSounds( void ) {
 	cgs.media.lostLeadSound = trap_S_RegisterSound( "sound/chars/mothma/misc/40MOM052");
 
 	cgs.media.rollSound					= trap_S_RegisterSound( "sound/player/roll1.wav");
-
+	cgs.media.noforceSound				= trap_S_RegisterSound( "sound/weapons/force/noforce" );
 	cgs.media.watrInSound				= trap_S_RegisterSound( "sound/player/watr_in.wav");
 	cgs.media.watrOutSound				= trap_S_RegisterSound( "sound/player/watr_out.wav");
 	cgs.media.watrUnSound				= trap_S_RegisterSound( "sound/player/watr_un.wav");
@@ -2369,7 +2411,6 @@ char *CG_GetMenuBuffer(const char *filename) {
 //
 qboolean CG_Asset_Parse(int handle) {
 	pc_token_t token;
-	const char *tempStr;
 
 	if (!trap_PC_ReadToken(handle, &token))
 		return qfalse;
@@ -2388,79 +2429,90 @@ qboolean CG_Asset_Parse(int handle) {
 		// font
 		if (Q_stricmp(token.string, "font") == 0) {
 			int pointSize;
-			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
 
-//			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.textFont);
-			cgDC.Assets.qhMediumFont = cgDC.RegisterFont(tempStr);
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.textFont);
+			cgDC.Assets.qhMediumFont = cgDC.RegisterFont(token.string);
 			continue;
 		}
 
 		// smallFont
 		if (Q_stricmp(token.string, "smallFont") == 0) {
 			int pointSize;
-			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
-//			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.smallFont);
-			cgDC.Assets.qhSmallFont = cgDC.RegisterFont(tempStr);
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.smallFont);
+			cgDC.Assets.qhSmallFont = cgDC.RegisterFont(token.string);
+			continue;
+		}
+
+		// smallFont
+		if (Q_stricmp(token.string, "small2Font") == 0) {
+			int pointSize;
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
+				return qfalse;
+			}
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.smallFont);
+			cgDC.Assets.qhSmall2Font = cgDC.RegisterFont(token.string);
 			continue;
 		}
 
 		// font
 		if (Q_stricmp(token.string, "bigfont") == 0) {
 			int pointSize;
-			if (!PC_String_Parse(handle, &tempStr) || !PC_Int_Parse(handle, &pointSize)) {
+			if (!trap_PC_ReadToken(handle, &token) || !PC_Int_Parse(handle, &pointSize)) {
 				return qfalse;
 			}
-//			cgDC.registerFont(tempStr, pointSize, &cgDC.Assets.bigFont);
-			cgDC.Assets.qhBigFont = cgDC.RegisterFont(tempStr);
+//			cgDC.registerFont(token.string, pointSize, &cgDC.Assets.bigFont);
+			cgDC.Assets.qhBigFont = cgDC.RegisterFont(token.string);
 			continue;
 		}
 
 		// gradientbar
 		if (Q_stricmp(token.string, "gradientbar") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.gradientBar = trap_R_RegisterShaderNoMip(tempStr);
+			cgDC.Assets.gradientBar = trap_R_RegisterShaderNoMip(token.string);
 			continue;
 		}
 
 		// enterMenuSound
 		if (Q_stricmp(token.string, "menuEnterSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.menuEnterSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.menuEnterSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
 		// exitMenuSound
 		if (Q_stricmp(token.string, "menuExitSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.menuExitSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.menuExitSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
 		// itemFocusSound
 		if (Q_stricmp(token.string, "itemFocusSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.itemFocusSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.itemFocusSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
 		// menuBuzzSound
 		if (Q_stricmp(token.string, "menuBuzzSound") == 0) {
-			if (!PC_String_Parse(handle, &tempStr)) {
+			if (!trap_PC_ReadToken(handle, &token)) {
 				return qfalse;
 			}
-			cgDC.Assets.menuBuzzSound = trap_S_RegisterSound( tempStr );
+			cgDC.Assets.menuBuzzSound = trap_S_RegisterSound( token.string );
 			continue;
 		}
 
@@ -2519,16 +2571,93 @@ qboolean CG_Asset_Parse(int handle) {
 }
 
 void CG_ParseMenu(const char *menuFile) {
-	pc_token_t token;
 	int handle;
+	pc_token_t token;
+	qboolean menuIsJKA = qfalse;
+	const char *menuExtension;
+	char menuPath[MAX_QPATH];
+	int fileHandle = -1;
+
+	if (cg_menuFileParseSpam.integer) {
+		Com_Printf("Parsing menu file:%s\n", menuFile);
+	}
+
+	menuExtension = Q_strrchr(menuFile, '.');
+	if (menuExtension == NULL)
+	{
+		menuExtension = "";
+	}
+
+	if (cg_JKA.integer < 0 || cg_JKA.integer > 2)
+	{
+		trap_Cvar_Set("ui_JKA", "0");
+		trap_Cvar_Update(&cg_JKA);
+	}
+
+	if (cg_JKA.integer == 0)
+	{ // load menu files from JK2 paths, discard files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			if (cg_menuFileParseSpam.integer)
+			{
+				Com_Printf("Skipping menu file:%s\n", menuFile);
+			}
+			return;
+		}
+		menuIsJKA = qfalse;
+	}
+	else if (cg_JKA.integer == 1)
+	{ // load menu files from JK2 paths, override ".menu" files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu") == 0)
+		{
+			COM_StripExtension(menuFile, menuPath, sizeof(menuPath));
+			COM_DefaultExtension(menuPath, sizeof(menuPath), ".menu_jka");
+			trap_FS_FOpenFile(menuPath, &fileHandle, FS_READ);
+			if (fileHandle)
+			{
+				trap_FS_FCloseFile(fileHandle);
+				if (cg_menuFileParseSpam.integer)
+				{
+					Com_Printf("Skipping menu file:%s\n", menuFile);
+				}
+				return;
+			}
+		}
+		if (coolApi_jkaVersion)
+		{
+			menuIsJKA = !!(trap_CG_COOL_API_GetFileVersion(menuFile) & FILE_VERSION_JKA);
+		}
+		else
+		{
+			menuIsJKA = qfalse;
+		}
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			menuIsJKA = qtrue;
+		}
+	}
+	else if (cg_JKA.integer == 2)
+	{ // load menu files from JKA paths, discard files with ".menu_jka"
+		if (Q_stricmp(menuExtension, ".menu_jka") == 0)
+		{
+			if (cg_menuFileParseSpam.integer)
+			{
+				Com_Printf("Skipping menu file:%s\n", menuFile);
+			}
+			return;
+		}
+		menuIsJKA = qtrue;
+	}
+
+	Menu_SetJKA(menuIsJKA);
 
 	handle = trap_PC_LoadSource(menuFile);
-	if (!handle)
-		handle = trap_PC_LoadSource("ui/testhud.menu");
-	if (!handle)
+	if (!handle) {
 		return;
+	}
 
 	while ( 1 ) {
+		memset(&token, 0, sizeof(pc_token_t));
 		if (!trap_PC_ReadToken( handle, &token )) {
 			break;
 		}
@@ -2555,7 +2684,6 @@ void CG_ParseMenu(const char *menuFile) {
 			}
 		}
 
-
 		if (Q_stricmp(token.string, "menudef") == 0) {
 			// start a new menu
 			Menu_New(handle);
@@ -2564,28 +2692,29 @@ void CG_ParseMenu(const char *menuFile) {
 	trap_PC_FreeSource(handle);
 }
 
-qboolean CG_Load_Menu(char **p) {
-	char *token;
+qboolean CG_Load_Menu(int handle) {
+	pc_token_t token;
 
-	token = COM_ParseExt((const char **)p, qtrue);
-
-	if (token[0] != '{') {
+	if (!trap_PC_ReadToken(handle, &token))
+		return qfalse;
+	if (token.string[0] != '{') {
 		return qfalse;
 	}
 
 	while ( 1 ) {
 
-		token = COM_ParseExt((const char **)p, qtrue);
+		if (!trap_PC_ReadToken(handle, &token))
+			return qfalse;
     
-		if (Q_stricmp(token, "}") == 0) {
-			return qtrue;
-		}
-
-		if ( !token || token[0] == 0 ) {
+		if ( token.string[0] == 0 ) {
 			return qfalse;
 		}
 
-		CG_ParseMenu(token); 
+		if ( token.string[0] == '}' ) {
+			return qtrue;
+		}
+
+		CG_ParseMenu(token.string); 
 	}
 	return qfalse;
 }
@@ -2762,7 +2891,7 @@ static qhandle_t CG_FeederItemImage(float feederID, int index) {
 	return 0;
 }
 
-static qboolean CG_FeederSelection(float feederID, int index) {
+static qboolean CG_FeederSelection(float feederID, int index, itemDef_t *item) {
 	if ( cgs.gametype >= GT_TEAM ) {
 		int i, count;
 		int team = (feederID == FEEDER_REDTEAM_LIST) ? TEAM_RED : TEAM_BLUE;
@@ -2830,6 +2959,112 @@ static void CG_DrawCinematic(int handle, float x, float y, float w, float h) {
 
 static void CG_RunCinematicFrame(int handle) {
   trap_CIN_RunCinematic(handle);
+}
+
+void CG_LoadMenus(const char *menuFile, qboolean reset) {
+	pc_token_t token;
+	int handle;
+	int start;
+
+	start = trap_Milliseconds();
+
+	if (cg_JKA.integer == 2)
+		trap_PC_LoadGlobalDefines ( "ui/jamp/menudef.h" );
+	else
+		trap_PC_LoadGlobalDefines ( "ui/jk2mp/menudef.h" );
+
+	handle = trap_PC_LoadSource( menuFile );
+	if (!handle) {
+		Com_Printf( S_COLOR_YELLOW "menu file not found: %s, using default\n", menuFile );
+
+		if (cg_JKA.integer == 2)
+			handle = trap_PC_LoadSource( "ui/jahud.txt" );
+		else
+			handle = trap_PC_LoadSource( "ui/jk2hud.txt" );
+
+		if (!handle) {
+			Com_Error( ERR_DROP, "default menu file not found: ui/menus.txt, unable to continue!" );
+		}
+	}
+
+	if (reset) {
+		Menu_Reset();
+	}
+
+	while ( 1 ) {
+		if (!trap_PC_ReadToken(handle, &token))
+			break;
+		if( token.string[0] == 0 || token.string[0] == '}') {
+			break;
+		}
+
+		if ( token.string[0] == '}' ) {
+			break;
+		}
+
+		if (Q_stricmp(token.string, "loadmenu") == 0) {
+			if (CG_Load_Menu(handle)) {
+				continue;
+			} else {
+				break;
+			}
+		}
+	}
+
+	trap_PC_FreeSource( handle );
+
+	trap_PC_RemoveAllGlobalDefines ( );
+}
+
+hudType_t CG_GetHudTypeFromString(const char *string)
+{
+	if (Q_stricmp(string, "0") == 0)
+	{
+		return HUD_TYPE_JK2;
+	}
+	else if (Q_stricmp(string, "1") == 0)
+	{
+		return HUD_TYPE_TEXT;
+	}
+	else if (Q_stricmp(string, "2") == 0)
+	{
+		return HUD_TYPE_JKA;
+	}
+	else if (Q_stricmp(string, "ui/jk2hud.txt") == 0)
+	{
+		return HUD_TYPE_JK2;
+	}
+	else if (Q_stricmp(string, "ui/jahud.txt") == 0)
+	{
+		return HUD_TYPE_JKA;
+	}
+	else
+	{
+		return HUD_TYPE_JKA;
+	}
+}
+
+void CG_UpdateHud(const char *path)
+{
+	const char *hudSet;
+
+	cg.hudType = CG_GetHudTypeFromString(path);
+
+	Menu_Reset();
+
+	switch (cg.hudType)
+	{
+	default:
+	case HUD_TYPE_JK2:
+	case HUD_TYPE_TEXT:
+		hudSet = "ui/jk2hud.txt";
+		break;
+	case HUD_TYPE_JKA:
+		hudSet = "ui/jahud.txt";
+		break;
+	}
+
+	CG_LoadMenus(hudSet, qtrue);
 }
 
 /*
@@ -2900,7 +3135,8 @@ void CG_LoadHudMenu()
 	
 	Init_Display(&cgDC);
 
-	Menu_Reset();
+	CG_UpdateHud(cg_hudFiles.string);
+	cg.updateHud = qfalse;
 }
 
 void CG_AssetCache() {
@@ -3077,6 +3313,8 @@ void CG_CheckQuiGon() {
 	}
 }
 
+void WP_SaberLoadParms( void );
+
 /*
 =================
 CG_Init
@@ -3167,6 +3405,9 @@ Ghoul2 Insert Start
 /*
 Ghoul2 Insert End
 */
+
+	//Load sabers.cfg data
+	WP_SaberLoadParms();
 
 	// this is kinda dumb as well, but I need to pre-load some fonts in order to have the text available
 	//	to say I'm loading the assets.... which includes loading the fonts. So I'll set these up as reasonable

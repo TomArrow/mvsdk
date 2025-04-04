@@ -196,24 +196,6 @@ typedef enum {
 } teamForcePowers_t;
 
 #define MAX_PLAYER_COMMANDTIME_SERVERTIME_OFFSETS 32
-typedef struct
-{
-	// Actual trail stuff
-	int		inAction;	// controls whether should we even consider starting one
-	int		duration;	// how long each trail seg stays in existence
-	int		lastTime;	// time a saber segement was last stored
-	vec3_t	base;
-	vec3_t	tip;
-
-	vec3_t	dualbase;
-	vec3_t	dualtip;
-
-	// Marks stuff
-	qboolean	haveOldPos[2];
-	vec3_t		oldPos[2];
-	vec3_t		oldNormal[2];	// store this in case we don't have a connect-the-dots situation
-							//	..then we'll need the normal to project a mark blob onto the impact point
-} saberTrail_t;
 
 // centity_t have a direct corespondence with gentity_t in the game, but
 // only the entityState_t is directly communicated to the cgame
@@ -315,6 +297,7 @@ typedef struct centity_s {
 
 	saberTrail_t	saberTrail;
 	int				saberHitWallSoundDebounceTime;
+	int				serverSaberHitIndex;
 } centity_t;
 
 extern centity_t* cg_statsEntities[MAX_CLIENTS];
@@ -605,6 +588,14 @@ typedef struct {
 	char			username[MAX_QPATH];
 
 	playerMode_e	playerMode; // tommyternal gamemodes (duel, ironman etc)
+	float			colorOverride[4];
+	byte			modelColor[4];
+	qboolean		useModelColor;
+	qboolean		isDefaultModel;
+	saberInfo_t		saber[MAX_SABERS];
+	char			saberName[MAX_QPATH];
+	char			saber2Name[MAX_QPATH];
+	void			*ghoul2Weapons[MAX_SABERS];
 } clientInfo_t;
 
 
@@ -723,6 +714,12 @@ typedef struct chatBoxItem_s
 
 
 #define MAX_PREDICTED_EVENTS	16
+
+typedef enum {
+	HUD_TYPE_JK2,
+	HUD_TYPE_TEXT,
+	HUD_TYPE_JKA,
+} hudType_t;
  
 typedef struct {
 	int			clientFrame;		// incremented each frame
@@ -1026,6 +1023,11 @@ Ghoul2 Insert End
 	qboolean speccing;
 
 	qboolean			nextCGTraceExplicitlyDeluxe;
+	qboolean			useLocalCharacterColors;
+	qboolean			useLocalSaberName;
+	qboolean			localSaberNameUpdated;
+	hudType_t			hudType;
+	qboolean			updateHud;
 } cg_t;
 
 #define MAX_TICS	14
@@ -1301,6 +1303,7 @@ typedef struct {
 	sfxHandle_t watrInSound;
 	sfxHandle_t watrOutSound;
 	sfxHandle_t watrUnSound;
+	sfxHandle_t noforceSound;
 
 	sfxHandle_t deploySeeker;
 	sfxHandle_t medkitSound;
@@ -1901,6 +1904,7 @@ extern	vmCvar_t		cg_teamChatHeight;
 extern	vmCvar_t		cg_stats;
 extern	vmCvar_t 		cg_forceModel;
 extern	vmCvar_t 		cg_forceMyModel;
+extern	vmCvar_t 		cg_forceMySaber;
 extern	vmCvar_t 		cg_buildScript;
 extern	vmCvar_t		cg_paused;
 extern	vmCvar_t		cg_blood;
@@ -1982,6 +1986,15 @@ extern	vmCvar_t		x3_ezdemoPreTime;
 extern	vmCvar_t		x3_ezdemoPostTime;
 
 extern	vmCvar_t		cg_acidtrip;
+extern	vmCvar_t		cg_char_color_red;
+extern	vmCvar_t		cg_char_color_green;
+extern	vmCvar_t		cg_char_color_blue;
+extern	vmCvar_t		cg_char_color_alpha;
+extern	vmCvar_t		cg_saber1;
+extern	vmCvar_t		cg_saber2;
+extern	vmCvar_t		cg_JKA;
+extern	vmCvar_t		cg_menuFileParseSpam;
+extern	vmCvar_t		cg_randomTaunts;
 
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
@@ -2017,7 +2030,7 @@ void CG_UpdateCvars( void );
 
 int CG_CrosshairPlayer( void );
 int CG_LastAttacker( void );
-void CG_LoadMenus(const char *menuFile);
+void CG_LoadMenus(const char *menuFile, qboolean reset);
 void CG_KeyEvent(int key, qboolean down);
 void CG_MouseEvent(int x, int y);
 void CG_EventHandling(int type);
@@ -2031,6 +2044,7 @@ void CG_PrevForcePower_f(void);
 void MV_LoadSettings( const char *info );
 void MV_UpdateCgFlags( void );
 void CG_WideScreenMode(qboolean on);
+void CG_UpdateHud(const char *path);
 
 //
 // cg_view.c
@@ -2124,7 +2138,7 @@ qhandle_t CG_StatusHandle(int task);
 
 
 //
-// cg_player.c
+// cg_players.c
 //
 void CG_Player( centity_t *cent );
 void CG_ResetPlayerEntity( centity_t *cent );
@@ -2132,6 +2146,8 @@ void CG_AddRefEntityWithPowerups( refEntity_t *ent, entityState_t *state, int te
 void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized );
 sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName );
 void CG_PlayerShieldHit(int entitynum, vec3_t angles, int amount);
+void CG_UpdateLocalCharacterColors(void);
+void CG_UpdateLocalSaberName(void);
 
 
 //
@@ -2176,6 +2192,7 @@ void CG_PositionEntityOnTag( refEntity_t *entity, const refEntity_t *parent,
 							qhandle_t parentModel, char *tagName );
 void CG_PositionRotatedEntityOnTag( refEntity_t *entity, const refEntity_t *parent, 
 							qhandle_t parentModel, char *tagName );
+qboolean CG_GetRootSurfNameWithVariant( void *ghoul2, const char *rootSurfName, char *returnSurfName, int returnSize );
 
 /*
 Ghoul2 Insert Start
@@ -2458,6 +2475,16 @@ int			CG_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
 qboolean	CG_COOL_API_DB_PreparedBindNull();
 qboolean	CG_COOL_API_DB_GetMoreResults(int* affectedRows);
 
+// COOL_APIFEATURE_JEDI_ACADEMY
+int         trap_CG_COOL_API_GetNumLanguages(void);
+void        trap_CG_COOL_API_GetLanguageName(int languageIndex, char *buffer, unsigned int bufferSize);
+qboolean    trap_CG_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin);
+qboolean    trap_CG_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex);
+int         trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName);
+qboolean    trap_CG_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel);
+uint32_t    trap_CG_COOL_API_GetFileVersion(const char *fileName);
+int         trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
+
 /*
 qboolean	trap_Language_IsAsian(void);
 qboolean	trap_Language_UsesSpaces(void);
@@ -2728,10 +2755,10 @@ void CG_CreateBBRefEnts(entityState_t *s1, vec3_t origin );
 
 void CG_InitG2Weapons(void);
 void CG_ShutDownG2Weapons(void);
-void CG_CopyG2WeaponInstance(int weaponNum, void *toGhoul2);
+void CG_CopyG2WeaponInstance(centity_t *cent, int weaponNum, void *toGhoul2);
+void *CG_G2WeaponInstance(centity_t *cent, int weapon);
 void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent);
 
-extern void *g2WeaponInstances[MAX_WEAPONS];
 /*
 Ghoul2 Insert End
 */
@@ -2739,6 +2766,7 @@ Ghoul2 Insert End
 extern int mvapi;
 extern int coolApi;
 extern int coolApi_dbVersion;
+extern int coolApi_jkaVersion;
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel );

@@ -1,7 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "g_local.h"
-#include "../ghoul2/g2.h"
+#include "../ghoul2/G2.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1492,6 +1492,53 @@ void NameDedupe_SanitizeString(char* in, char* out) {
 	*out = 0;
 }
 
+void G_SetModelColor(char color[9], const char *userinfo)
+{
+	byte serverColor[4];
+	char clientColor[4][4];
+
+	Q_strncpyz(clientColor[0], Info_ValueForKey(userinfo, "char_color_red"), sizeof(clientColor[0]));
+	Q_strncpyz(clientColor[1], Info_ValueForKey(userinfo, "char_color_green"), sizeof(clientColor[1]));
+	Q_strncpyz(clientColor[2], Info_ValueForKey(userinfo, "char_color_blue"), sizeof(clientColor[2]));
+	Q_strncpyz(clientColor[3], Info_ValueForKey(userinfo, "char_color_alpha"), sizeof(clientColor[3]));
+
+	if (clientColor[0][0] == '\0' || clientColor[1][0] == '\0' || clientColor[2][0] == '\0' || clientColor[3][0] == '\0')
+	{
+		serverColor[0] = 255;
+		serverColor[1] = 255;
+		serverColor[2] = 255;
+		serverColor[3] = 255;
+	}
+	else
+	{
+		serverColor[0] = atoi(clientColor[0]);
+		serverColor[1] = atoi(clientColor[1]);
+		serverColor[2] = atoi(clientColor[2]);
+		serverColor[3] = atoi(clientColor[3]);
+	}
+
+	Q_strncpyz(color, colorToHex(serverColor), 9);
+}
+
+void G_SetSaberName(char saberName[MAX_QPATH], const char *userinfo)
+{
+	const char *serverSaberName;
+	const char *clientSaberName;
+
+	clientSaberName = Info_ValueForKey(userinfo, "saber1");
+
+	if (clientSaberName[0] == '\0')
+	{
+		serverSaberName = DEFAULT_SABER1;
+	}
+	else
+	{
+		serverSaberName = clientSaberName;
+	}
+
+	Q_strncpyz(saberName, serverSaberName, MAX_QPATH);
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -1508,6 +1555,8 @@ void ClientUserinfoChanged( int clientNum ) {
 	int		teamTask, teamLeader, team, health;
 	char	*s;
 	char	model[MAX_QPATH];
+	char	modelColor[9];
+	char	saberName[MAX_QPATH];
 	//char	headModel[MAX_QPATH];
 	char	forcePowers[MAX_QPATH];
 	char	oldname[MAX_STRING_CHARS];
@@ -1689,6 +1738,12 @@ void ClientUserinfoChanged( int clientNum ) {
 		Q_strncpyz( model, "kyle/default", sizeof(model) );
 	}
 
+	// model color
+	G_SetModelColor(modelColor, userinfo);
+
+	// saber name
+	G_SetSaberName(saberName, userinfo);
+
 	Q_strncpyz( forcePowers, Info_ValueForKey (userinfo, "forcepowers"), sizeof( forcePowers ) );
 
 	team = client->sess.sessionTeam;
@@ -1749,14 +1804,14 @@ void ClientUserinfoChanged( int clientNum ) {
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
 	if ( ent->r.svFlags & SVF_BOT ) {
-		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i\\bot\\1",
+		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i\\bot\\1\\mc\\%s\\st\\%s",
 			client->pers.netname, team, model,  c1, c2, 
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
-			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay );
+			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay, modelColor, saberName );
 	} else {
-		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i",
+		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mc\\%s\\st\\%s",
 			client->pers.netname, client->sess.login.name, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
-			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode);
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modelColor, saberName);
 	}
 
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );

@@ -4,7 +4,7 @@
 
 #include "cg_local.h"
 #include "fx_local.h"
-#include "../ghoul2/g2.h"
+#include "../ghoul2/G2.h"
 #include "../ui/ui_shared.h"
 
 // for the voice chats
@@ -638,48 +638,63 @@ void CG_ReattachLimb(centity_t *source)
 {
 	char *limbName;
 	char *stubCapName;
+	clientInfo_t *ci = NULL;
 
-	switch (source->torsoBolt)
+	if (source->currentState.number >= 0 && source->currentState.number < MAX_CLIENTS)
 	{
-	case G2_MODELPART_HEAD:
-		limbName = "head";
-		stubCapName = "torso_cap_head_off";
-		break;
-	case G2_MODELPART_WAIST:
-		limbName = "torso";
-		stubCapName = "hips_cap_torso_off";
-		break;
-	case G2_MODELPART_LARM:
-		limbName = "l_arm";
-		stubCapName = "torso_cap_l_arm_off";
-		break;
-	case G2_MODELPART_RARM:
-		limbName = "r_arm";
-		stubCapName = "torso_cap_r_arm_off";
-		break;
-	case G2_MODELPART_RHAND:
-		limbName = "r_hand";
-		stubCapName = "r_arm_cap_r_hand_off";
-		break;
-	case G2_MODELPART_LLEG:
-		limbName = "l_leg";
-		stubCapName = "hips_cap_l_leg_off";
-		break;
-	case G2_MODELPART_RLEG:
-		limbName = "r_leg";
-		stubCapName = "hips_cap_r_leg_off";
-		break;
-	default:
-		source->torsoBolt = 0;
-		source->ghoul2weapon = NULL;
-		return;
+		ci = &cgs.clientinfo[source->currentState.number];
 	}
 
-	trap_G2API_SetSurfaceOnOff(source->ghoul2, limbName, 0);
-	trap_G2API_SetSurfaceOnOff(source->ghoul2, stubCapName, 0x00000100);
+	if (ci && coolApi_jkaVersion)
+	{//re-apply the skin
+		if (ci->torsoSkin > 0)
+		{
+			trap_CG_COOL_API_SetSkin(source->ghoul2,0,ci->torsoSkin,ci->torsoSkin);
+		}
+	}
+	else
+	{
+		switch (source->torsoBolt)
+		{
+		case G2_MODELPART_HEAD:
+			limbName = "head";
+			stubCapName = "torso_cap_head_off";
+			break;
+		case G2_MODELPART_WAIST:
+			limbName = "torso";
+			stubCapName = "hips_cap_torso_off";
+			break;
+		case G2_MODELPART_LARM:
+			limbName = "l_arm";
+			stubCapName = "torso_cap_l_arm_off";
+			break;
+		case G2_MODELPART_RARM:
+			limbName = "r_arm";
+			stubCapName = "torso_cap_r_arm_off";
+			break;
+		case G2_MODELPART_RHAND:
+			limbName = "r_hand";
+			stubCapName = "r_arm_cap_r_hand_off";
+			break;
+		case G2_MODELPART_LLEG:
+			limbName = "l_leg";
+			stubCapName = "hips_cap_l_leg_off";
+			break;
+		case G2_MODELPART_RLEG:
+			limbName = "r_leg";
+			stubCapName = "hips_cap_r_leg_off";
+			break;
+		default:
+			source->torsoBolt = 0;
+			source->ghoul2weapon = NULL;
+			return;
+		}
+
+		trap_G2API_SetSurfaceOnOff(source->ghoul2, limbName, 0);
+		trap_G2API_SetSurfaceOnOff(source->ghoul2, stubCapName, 0x00000100);
+	}
 
 	source->torsoBolt = 0;
-
 	source->ghoul2weapon = NULL;
 }
 
@@ -725,7 +740,7 @@ static void CG_BodyQueueCopy(centity_t *cent, int clientNum, int knownWeapon)
 	}
 	else if (trap_G2API_HasGhoul2ModelOnIndex(&(cent->ghoul2), 1))
 	{
-		trap_G2API_CopySpecificGhoul2Model(g2WeaponInstances[knownWeapon], 0, cent->ghoul2, 1);
+		trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, knownWeapon), 0, cent->ghoul2, 1);
 	}
 
 	anim = &bgGlobalAnimations[ cent->currentState.torsoAnim ];
@@ -1001,6 +1016,39 @@ int CG_InClientBitflags(entityState_t *ent, int client)
 	return 0;
 }
 
+static void CG_DoTauntSound(int entityNumber)
+{
+	const char *s;
+	int i = Q_irand(0, 6, qfalse, 0);
+	switch (i)
+	{
+	case 0:
+		s = "*taunt.wav";
+		break;
+	case 1:
+		s = "*taunt1.wav";
+		break;
+	case 2:
+		s = "*taunt2.wav";
+		break;
+	case 3:
+		s = "*taunt3.wav";
+		break;
+	case 4:
+		s = "*taunt4.wav";
+		break;
+	case 5:
+	default:
+		s = "*taunt5.wav";
+		break;
+	}
+	if (!cg_randomTaunts.integer)
+	{
+		s = "*taunt.wav";
+	}
+	trap_S_StartSound(NULL, entityNumber, CHAN_VOICE, CG_CustomSound(entityNumber, s));
+}
+
 /*
 ==============
 CG_EntityEvent
@@ -1238,7 +1286,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 
 	case EV_TAUNT:
 		DEBUGNAME("EV_TAUNT");
-		trap_S_StartSound (NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*taunt.wav" ) );
+		CG_DoTauntSound(es->number);
 		break;
 	case EV_TAUNT_YES:
 		DEBUGNAME("EV_TAUNT_YES");

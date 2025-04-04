@@ -46,7 +46,7 @@ set(MVGAMEHEADERS
 
 	"${SRCDir}/qcommon/tags.h"
 
-	"${SRCDir}/ghoul2/g2.h"
+	"${SRCDir}/ghoul2/G2.h"
 
 	"${SRCDir}/qcommon/crypt_blowfish.h"
 	"${SRCDir}/qcommon/fp16.h"

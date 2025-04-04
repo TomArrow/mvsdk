@@ -195,18 +195,58 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		CG_FillRect( scoreLineX - 5, y + 2, scoreLineWidth + 10, largeFormat?SB_NORMAL_HEIGHT:SB_INTER_HEIGHT, hcolor );
 	}
 
-	if (!cg_drawScoreboardIcons.integer) {
-		CG_Text_Paint((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X), y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
-	}
-	else {
-		if (largeFormat) {
-			CG_DrawPic((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) -5, y+2, 25, 25, ci->modelIcon);
-			CG_Text_Paint((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) +24, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+	{
+		float picX, picY, picWidth, picHeight;
+		float textX, textY, textScale;
+		qboolean drawIcon;
+
+		picX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) - 5;
+		picY = y + 2;
+		picWidth = 15;
+		picHeight = 15;
+
+		textX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) + 12;
+		textY = y;
+		textScale = 0.9f * scale;
+
+		drawIcon = qtrue;
+
+		if (largeFormat)
+		{
+			picWidth = 25;
+			picHeight = 25;
+
+			textX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) + 24;
 		}
-		else {
-			CG_DrawPic((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) -5, y+2, 15, 15, ci->modelIcon);
-			CG_Text_Paint((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) +12, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+
+		if (!cg_drawScoreboardIcons.integer)
+		{
+			textX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X);
+			drawIcon = qfalse;
 		}
+
+		if (!ci->modelIcon)
+		{
+			drawIcon = qfalse;
+		}
+
+		if (ci->useModelColor)
+		{
+			vec4_t modelColor;
+			modelColor[0] = ((float) ci->modelColor[0]) / 255.0f;
+			modelColor[1] = ((float) ci->modelColor[1]) / 255.0f;
+			modelColor[2] = ((float) ci->modelColor[2]) / 255.0f;
+			modelColor[3] = ((float) ci->modelColor[3]) / 255.0f;
+			trap_R_SetColor(modelColor);
+		}
+
+		if (drawIcon)
+		{
+			CG_DrawPic(picX, picY, picWidth, picHeight, ci->modelIcon);
+		}
+
+		trap_R_SetColor(NULL);
+		CG_Text_Paint(textX, textY, textScale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
 	}
 
 	if (score->ping != -1)

@@ -650,3 +650,89 @@ void trap_MVAPI_Print( int flags, const char *string )
 qboolean	trap_UI_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
 	return syscall(UI_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
 }
+
+// COOL_APIFEATURE_JEDI_ACADEMY
+int trap_UI_COOL_API_GetNumLanguages(void)
+{
+	return syscall(UI_COOL_API_GET_NUM_LANGUAGES);
+}
+
+void trap_UI_COOL_API_GetLanguageName(int languageIndex, char *buffer, unsigned int bufferSize)
+{
+	syscall(UI_COOL_API_GET_LANGUAGE_NAME, languageIndex, buffer, bufferSize);
+}
+
+qboolean trap_UI_COOL_API_HaveWeGhoul2Models(void *ghoul2)
+{
+	return (qboolean)(syscall(UI_COOL_API_HAVE_WE_GHOUL2_MODELS, ghoul2));
+}
+
+void trap_UI_COOL_API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec)
+{
+	syscall(UI_COOL_API_GIVE_ME_VECTOR_FROM_MATRIX, boltMatrix, flags, vec);
+}
+
+qboolean trap_UI_COOL_API_GetBoltMatrix(void *ghoul2, int modelIndex, int boltIndex, mdxaBone_t *matrix, const vec3_t angles, const vec3_t position, int frameNum, qhandle_t *modelList, vec3_t scale)
+{
+	return (qboolean)(syscall(UI_COOL_API_GET_BOLT_MATRIX, ghoul2, modelIndex, boltIndex, matrix, angles, position, frameNum, modelList, scale));
+}
+
+int trap_UI_COOL_API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin, qhandle_t customShader, int modelFlags, int lodBias)
+{
+	return syscall(UI_COOL_API_INIT_GHOUL2_MODEL, ghoul2Ptr, fileName, modelIndex, customSkin, customShader, modelFlags, lodBias);
+}
+
+qboolean trap_UI_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin)
+{
+	return syscall(UI_COOL_API_SET_SKIN, ghoul2, modelIndex, customSkin, renderSkin);
+}
+
+qboolean trap_UI_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_COOL_API_SKINLESS_MODEL, ghlInfo, modelIndex);
+}
+
+int trap_UI_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName)
+{
+	return syscall(UI_COOL_API_GET_SURFACE_RENDER_STATUS, ghoul2, modelIndex, surfaceName);
+}
+
+void trap_UI_COOL_API_CleanGhoul2Models(void **ghoul2Ptr)
+{
+	syscall(UI_COOL_API_CLEAN_GHOUL2_MODELS, ghoul2Ptr);
+}
+
+qboolean trap_UI_COOL_API_SetBoneAnim(void *ghoul2, int modelIndex, const char *boneName, int startFrame, int endFrame, int flags, float animSpeed, int currentTime, float setFrame, int blendTime)
+{
+	return syscall(UI_COOL_API_SET_BONE_ANIM, ghoul2, modelIndex, boneName, startFrame, endFrame, flags, PASSFLOAT(animSpeed), currentTime, PASSFLOAT(setFrame), blendTime);
+}
+
+void trap_UI_COOL_API_GetGlaName(void *ghoul2, int modelIndex, char *fillBuf, unsigned int bufferSize)
+{
+	syscall(UI_COOL_API_GET_GLA_NAME, ghoul2, modelIndex, fillBuf, bufferSize);
+}
+
+qboolean trap_UI_COOL_API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_COOL_API_HAS_GHOUL2_MODEL_ON_INDEX, ghlInfo, modelIndex);
+}
+
+qboolean trap_UI_COOL_API_RemoveGhoul2Model(void *ghlInfo, int modelIndex)
+{
+	return syscall(UI_COOL_API_REMOVE_GHOUL2_MODEL, ghlInfo, modelIndex);
+}
+
+int trap_UI_COOL_API_AddBolt(void *ghoul2, int modelIndex, const char *boneName)
+{
+	return syscall(UI_COOL_API_ADD_BOLT, ghoul2, modelIndex, boneName);
+}
+
+qboolean trap_UI_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel)
+{
+	return syscall(UI_COOL_API_ATTACH_G2_MODEL, ghoul2From, modelIndexFrom, ghoul2To, toBoltIndex, toModel);
+}
+
+uint32_t trap_UI_COOL_API_GetFileVersion(const char *fileName)
+{
+	return syscall(UI_COOL_API_GET_FILE_VERSION, fileName);
+}

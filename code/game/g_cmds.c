@@ -4257,6 +4257,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 	}
 	else {
+		trap_SendServerCommand(ent - g_entities, "print \"Can't vote for that.\n\"");
 		return;
 	}
 

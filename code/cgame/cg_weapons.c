@@ -879,8 +879,13 @@ void CG_DrawIconBackground(void)
 		return;
 	}
 
-	if (cg_hudFiles.integer)
+	if (cg.hudType == HUD_TYPE_TEXT)
 	{ //simple hud
+		return;
+	}
+
+	if (cg.hudType == HUD_TYPE_JKA)
+	{
 		return;
 	}
 
@@ -2134,7 +2139,8 @@ Ghoul2 Insert Start
 */
 
 // create one instance of all the weapons we are going to use so we can just copy this info into each clients gun ghoul2 object in fast way
-void *g2WeaponInstances[MAX_WEAPONS];
+static void *g2WeaponInstances[MAX_WEAPONS];
+
 void CG_InitG2Weapons(void)
 {
 	int i = 0;
@@ -2175,33 +2181,122 @@ void CG_ShutDownG2Weapons(void)
 	}
 }
 
+void *CG_G2WeaponInstance(centity_t *cent, int weapon)
+{
+	clientInfo_t *ci = NULL;
+
+	if (weapon != WP_SABER)
+	{
+		return g2WeaponInstances[weapon];
+	}
+
+	if (cent->currentState.eType != ET_PLAYER)
+	{
+		return g2WeaponInstances[weapon];
+	}
+
+	ci = &cgs.clientinfo[cent->currentState.number];
+
+	if (!ci)
+	{
+		return g2WeaponInstances[weapon];
+	}
+
+	//Try to return the custom saber instance if we can.
+	if (ci->saber[0].model[0] &&
+		ci->ghoul2Weapons[0])
+	{
+		return ci->ghoul2Weapons[0];
+	}
+
+	//If no custom then just use the default.
+	return g2WeaponInstances[weapon];
+}
+
 // what ghoul2 model do we want to copy ?
-void CG_CopyG2WeaponInstance(int weaponNum, void *toGhoul2)
+void CG_CopyG2WeaponInstance(centity_t *cent, int weaponNum, void *toGhoul2)
 {
 	//rww - the -1 is because there is no "weapon" for WP_NONE
 	assert(weaponNum < MAX_WEAPONS);
-	if (g2WeaponInstances[weaponNum/*-1*/])
+	if (CG_G2WeaponInstance(cent, weaponNum/*-1*/))
 	{
-		if (weaponNum == WP_EMPLACED_GUN)
-		{ //a bit of a hack to remove gun model when using an emplaced weap
-			if (trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 1))
+		if (weaponNum == WP_SABER)
+		{
+			clientInfo_t *ci = NULL;
+
+			ci = &cgs.clientinfo[cent->currentState.number];
+
+			if (!ci)
 			{
-				trap_G2API_RemoveGhoul2Model(&(toGhoul2), 1);
+				trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, weaponNum/*-1*/), 0, toGhoul2, 1); 
+			}
+			else
+			{ //Try both the left hand saber and the right hand saber
+				int i = 0;
+
+				while (i < MAX_SABERS)
+				{
+					if (ci->saber[i].model[0] &&
+						ci->ghoul2Weapons[i])
+					{
+						trap_G2API_CopySpecificGhoul2Model(ci->ghoul2Weapons[i], 0, toGhoul2, i+1); 
+					}
+					else if (ci->ghoul2Weapons[i])
+					{ //if the second saber has been removed, then be sure to remove it and free the instance.
+						qboolean g2HasSecondSaber = trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 2);
+
+						if (g2HasSecondSaber)
+						{ //remove it now since we're switching away from sabers
+							trap_G2API_RemoveGhoul2Model(&(toGhoul2), 2);
+						}
+						trap_G2API_CleanGhoul2Models(&ci->ghoul2Weapons[i]);
+					}
+
+					i++;
+				}
 			}
 		}
 		else
 		{
-			trap_G2API_CopySpecificGhoul2Model(g2WeaponInstances[weaponNum/*-1*/], 0, toGhoul2, 1); 
+			qboolean g2HasSecondSaber = trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 2);
+
+			if (g2HasSecondSaber)
+			{ //remove it now since we're switching away from sabers
+				trap_G2API_RemoveGhoul2Model(&(toGhoul2), 2);
+			}
+
+			if (weaponNum == WP_EMPLACED_GUN)
+			{ //a bit of a hack to remove gun model when using an emplaced weap
+				if (trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 1))
+				{
+					trap_G2API_RemoveGhoul2Model(&(toGhoul2), 1);
+				}
+			}
+			else
+			{
+				trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, weaponNum/*-1*/), 0, toGhoul2, 1); 
+			}
 		}
 	}
 }
 
 void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent) 
 {
+	if (!ps)
+	{
+		assert(0);
+		return;
+	}
+
+	if (ps->pm_flags & PMF_FOLLOW)
+	{
+		return;
+	}
+
 	// should we change the gun model on this player?
 	if (cent->currentState.saberInFlight)
 	{
-		cent->ghoul2weapon = g2WeaponInstances[WP_SABER];
+		cent->ghoul2weapon = CG_G2WeaponInstance(cent, WP_SABER);
 	}
 
 	if (cent->currentState.eFlags & EF_DEAD)
@@ -2227,21 +2322,28 @@ void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent)
 		return;
 	}
 
-	if (cent->ghoul2 && ps && cent->ghoul2weapon != g2WeaponInstances[ps->weapon] &&
+	if (cgs.clientinfo[ps->clientNum].team == TEAM_SPECTATOR ||
+		ps->persistant[PERS_TEAM] == TEAM_SPECTATOR)
+	{
+		cent->ghoul2weapon = cg_entities[ps->clientNum].ghoul2weapon = NULL;
+		cent->weapon = cg_entities[ps->clientNum].weapon = 0;
+		return;
+	}
+
+	if (cent->ghoul2 && ps && cent->ghoul2weapon != CG_G2WeaponInstance(cent, ps->weapon) &&
 		ps->clientNum == cent->currentState.number) //don't want spectator mode forcing one client's weapon instance over another's
 	{
-		CG_CopyG2WeaponInstance(ps->weapon, cent->ghoul2);
-		cent->ghoul2weapon = g2WeaponInstances[ps->weapon];
-		if (cent->weapon == WP_SABER && cg_entities[cent->currentState.number].weapon != ps->weapon && !ps->saberHolstered)
+		CG_CopyG2WeaponInstance(cent, ps->weapon, cent->ghoul2);
+		cent->ghoul2weapon = CG_G2WeaponInstance(cent, ps->weapon);
+		if (cent->weapon == WP_SABER && cent->weapon != ps->weapon && !ps->saberHolstered)
 		{ //switching away from the saber
 			trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberoffquick.wav" ));
 		}
-		else if (ps->weapon == WP_SABER && cg_entities[cent->currentState.number].weapon != ps->weapon)
+		else if (ps->weapon == WP_SABER && cent->weapon != ps->weapon)
 		{ //switching to the saber
 			trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberon.wav" ));
 		}
 		cent->weapon = ps->weapon;
-		cg_entities[cent->currentState.number].weapon = ps->weapon;
 	}
 }
 
