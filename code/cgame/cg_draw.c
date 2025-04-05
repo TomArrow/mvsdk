@@ -2726,14 +2726,14 @@ static float CG_DrawMiniScoreboard ( float y )
 
 	if ( cgs.gametype >= GT_TEAM )
 	{
-		strcpy ( temp, "Red: " );
-		Q_strcat ( temp, MAX_QPATH, cgs.scores1 == SCORE_NOT_PRESENT ? "-" : va("%i", cgs.scores1) );
-		Q_strcat ( temp, MAX_QPATH, " Blue: " );
-		Q_strcat ( temp, MAX_QPATH, cgs.scores2 == SCORE_NOT_PRESENT ? "-" : va("%i", cgs.scores2) );
+		Q_strncpyz ( temp, "Red: ",sizeof(temp));
+		Q_strcat ( temp, sizeof(temp), cgs.scores1 == SCORE_NOT_PRESENT ? "-" : va("%i", cgs.scores1) );
+		Q_strcat ( temp, sizeof(temp), " Blue: " );
+		Q_strcat ( temp, sizeof(temp), cgs.scores2 == SCORE_NOT_PRESENT ? "-" : va("%i", cgs.scores2) );
 
 		if (cgs.isCTFMod && cgs.CTF3ModeActive) {
-			Q_strcat ( temp, MAX_QPATH, " Yellow: " );
-			Q_strcat(temp, MAX_QPATH, cgs.scores3 == SCORE_NOT_PRESENT ? "-" : va("%i", cgs.scores3));
+			Q_strcat ( temp, sizeof(temp), " Yellow: " );
+			Q_strcat(temp, sizeof(temp), cgs.scores3 == SCORE_NOT_PRESENT ? "-" : va("%i", cgs.scores3));
 		}
 
 		CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width( temp, 0.7f, FONT_MEDIUM ), y, 0.7f, colorWhite, temp, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM );
@@ -2742,7 +2742,7 @@ static float CG_DrawMiniScoreboard ( float y )
 	else
 	{
 		/*
-		strcpy ( temp, "1st: " );
+		Q_strncpyz ( temp, "1st: " );
 		Q_strcat ( temp, MAX_QPATH, cgs.scores1==SCORE_NOT_PRESENT?"-":(va("%i",cgs.scores1)) );
 		
 		Q_strcat ( temp, MAX_QPATH, " 2nd: " );
@@ -6101,7 +6101,7 @@ char *Q_strtokm(char *str, const char *delim)
 }
 
 //add chatbox string
-void CG_ChatBox_AddString(char *chatStr)
+void CG_ChatBox_AddString(char *chatStr, int chatSize)
 {
 	chatBoxItem_t *chat = &cg.chatItems[cg.chatItemActive];
 	float chatLen;
@@ -6179,10 +6179,10 @@ void CG_ChatBox_AddString(char *chatStr)
 
 		Q_strcat(name, sizeof(name), msg);
 
-		strcpy(chatStr, name);
+		Q_strncpyz(chatStr, name,chatSize);
 	}
 
-	strcpy(chat->string, chatStr);
+	Q_strncpyz(chat->string, chatStr,sizeof(chat->string));
 	chat->time = cg.time + cg_chatBox.integer;
 
 	chat->lines = 1;

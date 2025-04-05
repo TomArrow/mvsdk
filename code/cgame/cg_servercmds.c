@@ -371,12 +371,12 @@ static void CG_ShaderStateChanged( const char *o ) {
 	while (o && *o) {
 		n = strstr(o, "=");
 		if (n && *n) {
-			strncpy(originalShader, o, n-o);
+			Q_strnncpyz(originalShader, o, n-o,sizeof(originalShader));
 			originalShader[n-o] = 0;
 			n++;
 			t = strstr(n, ":");
 			if (t && *t) {
-				strncpy(newShader, n, t-n);
+				Q_strnncpyz(newShader, n, t-n,sizeof(newShader));
 				newShader[t-n] = 0;
 			} else {
 				break;
@@ -384,7 +384,7 @@ static void CG_ShaderStateChanged( const char *o ) {
 			t++;
 			o = strstr(t, "@");
 			if (o) {
-				strncpy(timeOffset, t, o-t);
+				Q_strnncpyz(timeOffset, t, o-t,sizeof(timeOffset));
 				timeOffset[o-t] = 0;
 				o++;
 				if (cg_remaps.integer && Q_stricmpn(originalShader, "console", 7)) //JAPRO - Clientside - Allow noremaps
@@ -1278,7 +1278,7 @@ static void CG_RemoveChatEscapeChar( char *text ) {
 
 #define MAX_STRIPED_SV_STRING 1024
 
-void CG_CheckSVStripEdRef(char *buf, const char *str)
+void CG_CheckSVStripEdRef(char *buf, int bufSize, const char *str)
 { //I don't really like doing this. But it utilizes the system that was already in place.
 	int i = 0;
 	int b = 0;
@@ -1289,12 +1289,12 @@ void CG_CheckSVStripEdRef(char *buf, const char *str)
 	{
 		if (str)
 		{
-			strcpy(buf, str);
+			Q_strncpyz(buf, str, bufSize);
 		}
 		return;
 	}
 
-	strcpy(buf, str);
+	Q_strncpyz(buf, str, bufSize);
 
 	strLen = strlen(str);
 
@@ -1378,7 +1378,7 @@ The string has been tokenized and can be retrieved with
 Cmd_Argc() / Cmd_Argv()
 =================
 */
-extern void CG_ChatBox_AddString(char *chatStr);
+extern void CG_ChatBox_AddString(char *chatStr, int chatSize);
 static void CG_ServerCommand( void ) {
 	const char	*cmd;
 	char		text[MAX_STRING_CHARS] = { 0 };
@@ -1485,7 +1485,7 @@ static void CG_ServerCommand( void ) {
 		char strEd[MAX_STRIPED_SV_STRING];
 		char type[MAX_STRING_CHARS];
 		const char* subtype;
- 		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
+ 		CG_CheckSVStripEdRef(strEd,sizeof(strEd), CG_Argv(1));
 		trap_Argv(2,type,sizeof(type));
 		subtype = CG_Argv(3);
 		if ((cg_customizeRace.integer & CUSTOMIZERACE_HIDECHECKPOINTCP) && !Q_stricmp("cptimer", type)
@@ -1508,7 +1508,7 @@ static void CG_ServerCommand( void ) {
 
 	if ( !strcmp( cmd, "print" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
-		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
+		CG_CheckSVStripEdRef(strEd, sizeof(strEd), CG_Argv(1));
 
 		if (CG_StringStartsWith(strEd, "Server: nt_PauseGame changed to ")) {
 
@@ -1573,7 +1573,7 @@ static void CG_ServerCommand( void ) {
 
 			if (cg_chatBox.integer) {
 				CG_Printf("[skipnotify]%s\n", text); 
-				CG_ChatBox_AddString(text);
+				CG_ChatBox_AddString(text,sizeof(text));
 			}
 			else {
 				CG_Printf( "%s\n", text );
@@ -1613,7 +1613,7 @@ static void CG_ServerCommand( void ) {
 		CG_AddToTeamChat( text );
 		if (cg_chatBox.integer) {
 			CG_Printf("[skipnotify]%s\n", text);
-			CG_ChatBox_AddString(text);
+			CG_ChatBox_AddString(text,sizeof(text));
 		}
 		else {
 			CG_Printf( "%s\n", text );

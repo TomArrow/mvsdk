@@ -38,7 +38,7 @@ const char	*CG_PlaceString( int rank ) {
 	trap_SP_GetStringTextString("INGAMETEXT_NUMBER_RD",sRD, sizeof(sRD) );
 	trap_SP_GetStringTextString("INGAMETEXT_NUMBER_TH",sTH, sizeof(sTH) );
 	trap_SP_GetStringTextString("INGAMETEXT_TIED_FOR" ,sTiedFor,sizeof(sTiedFor) );
-	strcat(sTiedFor," ");	// save worrying about translators adding spaces or not
+	Q_strcat(sTiedFor,sizeof(sTiedFor)," ");	// save worrying about translators adding spaces or not
 
 	if ( rank & RANK_TIED_FLAG ) {
 		rank &= ~RANK_TIED_FLAG;

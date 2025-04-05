@@ -28,6 +28,7 @@ int UI_ParseInfos( const char *buf, int max, char *infos[] ) {
 	int		count;
 	char	key[MAX_TOKEN_CHARS];
 	char	info[MAX_INFO_STRING];
+	int		allocsize;
 
 	count = 0;
 
@@ -65,9 +66,10 @@ int UI_ParseInfos( const char *buf, int max, char *infos[] ) {
 			Info_SetValueForKey( info, key, token );
 		}
 		//NOTE: extra space for arena number
-		infos[count] = (char *) UI_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
+		allocsize = strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1;
+		infos[count] = (char *) UI_Alloc(allocsize);
 		if (infos[count]) {
-			strcpy(infos[count], info);
+			Q_strncpyz(infos[count], info, allocsize);
 			if (trap_Cvar_VariableValue("com_buildScript"))
 			{
 				char *botFile = Info_ValueForKey(info, "personality");
@@ -146,8 +148,8 @@ void UI_LoadArenas( void ) {
 	dirptr  = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
 		dirlen = strlen(dirptr);
-		strcpy(filename, "scripts/");
-		strcat(filename, dirptr);
+		Q_strncpyz(filename, "scripts/",sizeof(filename));
+		Q_strcat(filename,sizeof(filename), dirptr);
 		UI_LoadArenasFromFile(filename);
 	}
 	trap_Print( va( "%i arenas parsed\n", ui_numArenas ) );
@@ -289,8 +291,8 @@ void UI_LoadBots( void ) {
 	dirptr  = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
 		dirlen = strlen(dirptr);
-		strcpy(filename, "scripts/");
-		strcat(filename, dirptr);
+		Q_strncpyz(filename, "scripts/",sizeof(filename));
+		Q_strcat(filename,sizeof(filename), dirptr);
 		UI_LoadBotsFromFile(filename);
 	}
 	trap_Print( va( "%i bots parsed\n", ui_numBots ) );

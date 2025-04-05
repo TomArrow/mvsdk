@@ -1334,7 +1334,7 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 		slash = Q_strrchr( afilename, '/' );
 		if ( slash )
 		{
-			strcpy(slash, "/animation.cfg");
+			Q_strncpyz(slash, "/animation.cfg",sizeof(afilename) - (slash-afilename));
 		}	// Now afilename holds just the path to the animation.cfg
 		else 
 		{	// Didn't find any slashes, this is a raw filename right in base (whish isn't a good thing)
@@ -1579,7 +1579,7 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// check for malformed or illegal info strings
 	if ( !Info_Validate(userinfo) ) {
-		strcpy (userinfo, "\\name\\badinfo");
+		Q_strncpyz (userinfo, "\\name\\badinfo",sizeof(userinfo));
 	}
 
 	// check for local client
@@ -1795,11 +1795,11 @@ void ClientUserinfoChanged( int clientNum ) {
 	teamLeader = client->sess.teamLeader;
 
 	// colors
-	strcpy(c1, Info_ValueForKey( userinfo, "color1" ));
-	strcpy(c2, Info_ValueForKey( userinfo, "color2" ));
+	Q_strncpyz(c1, Info_ValueForKey( userinfo, "color1" ),sizeof(c1));
+	Q_strncpyz(c2, Info_ValueForKey( userinfo, "color2" ),sizeof(c2));
 
-	strcpy(redTeam, Info_ValueForKey( userinfo, "g_redteam" ));
-	strcpy(blueTeam, Info_ValueForKey( userinfo, "g_blueteam" ));
+	Q_strncpyz(redTeam, Info_ValueForKey( userinfo, "g_redteam" ),sizeof(redTeam));
+	Q_strncpyz(blueTeam, Info_ValueForKey( userinfo, "g_blueteam" ),sizeof(blueTeam));
 
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds

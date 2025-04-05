@@ -1714,8 +1714,8 @@ void ExampleAnimEntCustomDataEntry(gentity_t *self, int alignment, int weapon, c
 			return;
 		}
 
-		strcpy(find->modelPath, modelname);
-		strcpy(find->soundPath, soundpath);
+		Q_strncpyz(find->modelPath, modelname, strlen(modelname) + 1);
+		Q_strncpyz(find->soundPath, soundpath, strlen(soundpath) + 1);
 
 		find->modelPath[strlen(modelname)] = 0;
 		find->soundPath[strlen(modelname)] = 0;

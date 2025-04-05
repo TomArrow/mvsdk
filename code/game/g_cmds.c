@@ -77,7 +77,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 		j = strlen(entry);
 		if (stringlength + j > 1022)
 			break;
-		strcpy (string + stringlength, entry);
+		Q_strncpyz (string + stringlength, entry,sizeof(string)-stringlength);
 		stringlength += j;
 	}
 
@@ -1613,7 +1613,7 @@ void Cmd_ForceChanged_f( gentity_t *ent )
 
 	buf = G_GetStripEdString("SVINGAME", "FORCEPOWERCHANGED");
 
-	strcpy(fpChStr, buf);
+	Q_strncpyz(fpChStr, buf,sizeof(fpChStr));
 
 	trap_SendServerCommand( ent-g_entities, va("print \"%s%s\n\n\"", S_COLOR_GREEN, fpChStr) );
 
@@ -4375,7 +4375,7 @@ void Cmd_CallTeamVote_f( gentity_t *ent ) {
 	arg2[0] = '\0';
 	for ( i = 2; i < trap_Argc(); i++ ) {
 		if (i > 2)
-			strcat(arg2, " ");
+			Q_strcat(arg2,sizeof(arg2), " ");
 		trap_Argv( i, &arg2[strlen(arg2)], sizeof( arg2 ) - strlen(arg2) );
 	}
 

@@ -91,7 +91,7 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 
 			token = COM_ParseExt( (const char **)(&buf), qfalse );
 			if ( !token[0] ) {
-				strcpy( token, "<NULL>" );
+				Q_strncpyz( token, "<NULL>", MAX_TOKEN_CHARS);
 			}
 			Info_SetValueForKey( info, key, token );
 		}
@@ -130,12 +130,13 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 		hash = generateHashValue(keyValue,INFO_HASH_SIZE);
 		infos[count].name = G_Alloc(strlen(keyValue) + 1);
 		if (infos[count].name) {
-			strcpy(infos[count].name, keyValue);
-			infos[count].info = G_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
+			int infoLen = strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1;
+			Q_strncpyz(infos[count].name, keyValue, strlen(keyValue) + 1);
+			infos[count].info = G_Alloc(infoLen);
 			if (infos[count].info) {
 				infoHashed_t* cmp;
 				qboolean dupe = qfalse;
-				strcpy(infos[count].info, info);
+				Q_strncpyz(infos[count].info, info, infoLen);
 
 				// check for dupes
 				for (cmp = g_arenaInfosHashTable[hash]; cmp; cmp = cmp->next) {
@@ -525,8 +526,8 @@ static void G_LoadMapBlacklists() {
 	dirptr = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen + 1) {
 		dirlen = strlen(dirptr);
-		strcpy(filename, "mapblacklists/");
-		strcat(filename, dirptr);
+		Q_strncpyz(filename, "mapblacklists/",sizeof(filename));
+		Q_strcat(filename,sizeof(filename), dirptr);
 		G_LoadMapBlacklist(filename);
 		numBlacklists++;
 	}
@@ -683,8 +684,8 @@ static void G_LoadArenas( void ) {
 	dirptr  = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
 		dirlen = strlen(dirptr);
-		strcpy(filename, "scripts/");
-		strcat(filename, dirptr);
+		Q_strncpyz(filename, "scripts/",sizeof(filename));
+		Q_strcat(filename,sizeof(filename), dirptr);
 		G_LoadArenasFromFile(filename, dirlistBsp, numBsps);
 	}
 	trap_Printf( va( "%i arenas parsed\n", g_numArenas ) );
@@ -828,7 +829,7 @@ void G_AddRandomBot( int team ) {
 				if (team == TEAM_RED) teamstr = "red";
 				else if (team == TEAM_BLUE) teamstr = "blue";
 				else teamstr = "";
-				strncpy(netname, value, sizeof(netname)-1);
+				Q_strncpyz(netname, value, sizeof(netname));
 				netname[sizeof(netname)-1] = '\0';
 				Q_CleanStr(netname, (qboolean)(jk2startversion == VERSION_1_02),qtrue);
 				trap_SendConsoleCommand( EXEC_INSERT, va("addbot %s %f %s %i\n", netname, skill, teamstr, 0) );
@@ -1377,22 +1378,22 @@ void Svcmd_BotList_f( void ) {
 
 	trap_Printf("^1name             model            personality              funname\n");
 	for (i = 0; i < g_numBots; i++) {
-		//strcpy(name, Info_ValueForKey( g_botInfos[i], "name" ));
-		strcpy(name, g_botInfosHashed[i].name);
+		//Q_strncpyz(name, Info_ValueForKey( g_botInfos[i], "name" ));
+		Q_strncpyz(name, g_botInfosHashed[i].name,sizeof(name));
 		if ( !*name ) {
-			strcpy(name, "Padawan");
+			Q_strncpyz(name, "Padawan", sizeof(name));
 		}
-		strcpy(funname, Info_ValueForKey(g_botInfosHashed[i].info, "funname" ));
+		Q_strncpyz(funname, Info_ValueForKey(g_botInfosHashed[i].info, "funname" ),sizeof(funname));
 		if ( !*funname ) {
-			strcpy(funname, "");
+			Q_strncpyz(funname, "", sizeof(funname));
 		}
-		strcpy(model, Info_ValueForKey(g_botInfosHashed[i].info, "model" ));
+		Q_strncpyz(model, Info_ValueForKey(g_botInfosHashed[i].info, "model" ),sizeof(model));
 		if ( !*model ) {
-			strcpy(model, "visor/default");
+			Q_strncpyz(model, "visor/default",sizeof(model));
 		}
-		strcpy(personality, Info_ValueForKey(g_botInfosHashed[i].info, "personality"));
+		Q_strncpyz(personality, Info_ValueForKey(g_botInfosHashed[i].info, "personality"),sizeof(personality));
 		if (!*personality ) {
-			strcpy(personality, "botfiles/default.jkb");
+			Q_strncpyz(personality, "botfiles/default.jkb", sizeof(personality));
 		}
 		trap_Printf(va("%-16s %-16s %-20s %-20s\n", name, model, personality, funname));
 	}
@@ -1520,8 +1521,8 @@ static void G_LoadBots( void ) {
 	dirptr  = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
 		dirlen = strlen(dirptr);
-		strcpy(filename, "scripts/");
-		strcat(filename, dirptr);
+		Q_strncpyz(filename, "scripts/",sizeof(filename));
+		Q_strcat(filename,sizeof(filename), dirptr);
 		G_LoadBotsFromFile(filename);
 	}
 	trap_Printf( va( "%i bots parsed\n", g_numBots ) );

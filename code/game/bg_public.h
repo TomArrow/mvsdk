@@ -1130,7 +1130,7 @@ typedef struct
 
 extern saberMoveData_t	saberMoveData[LS_MOVE_MAX];
 
-qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled);
+qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled);
 
 //BG anim utility functions:
 qboolean BG_InSpecialJump( int anim, int runFlags);

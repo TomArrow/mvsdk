@@ -579,7 +579,7 @@ int COM_ParseInfos( char *buf, int max, char infos[][MAX_INFO_STRING] ) {
 
 			token = COM_ParseExt( &buf, qfalse );
 			if ( !token[0] ) {
-				strcpy( token, "<NULL>" );
+				Q_strncpyz( token, "<NULL>" );
 			}
 			Info_SetValueForKey( infos[count], key, token );
 		}
@@ -1467,8 +1467,8 @@ void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 		return;
 	}
 
-	strcat (newi, s);
-	strcpy (s, newi);
+	Q_strcat (newi, MAX_INFO_STRING, s);
+	Q_strncpyz (s, newi, MAX_INFO_STRING); // this feels dangerous. what if the user doesn't respect this. but tons of places this would need to be changed TODO
 }
 
 /*
@@ -1515,7 +1515,7 @@ void Info_SetValueForKey_Big( char *s, const char *key, const char *value ) {
 		return;
 	}
 
-	strcat (s, newi);
+	Q_strcat (s, BIG_INFO_STRING, newi);
 }
 
 

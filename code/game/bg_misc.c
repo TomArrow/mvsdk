@@ -172,7 +172,7 @@ fpDisabled is actually only expected (needed) from the server, because the ui di
 force power selection anyway when force powers are disabled on the server.
 ================
 */
-qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled)
+qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled)
 {
 	char powerBuf[128];
 	char readBuf[128];
@@ -192,16 +192,16 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber
 	if (powerLen >= 128)
 	{ //This should not happen. If it does, this is obviously a bogus string.
 		//They can have this string. Because I said so.
-		strcpy(powerBuf, "7-1-032330000000001333");
+		Q_strncpyz(powerBuf, "7-1-032330000000001333",sizeof(powerBuf));
 		maintainsValidity = qfalse;
 	}
 	else
 	{
-		strcpy(powerBuf, powerOut); //copy it as the original
+		Q_strncpyz(powerBuf, powerOut,sizeof(powerBuf)); //copy it as the original
 	}
 
 	//first of all, print the max rank into the string as the rank
-	strcpy(powerOut, va("%i-", maxRank));
+	Q_strncpyz(powerOut, va("%i-", maxRank), powerOutSize);
 
 	while (i < 128 && powerBuf[i] && powerBuf[i] != '-')
 	{
@@ -477,13 +477,13 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber
 	//We finally have all the force powers legalized and stored locally.
 	//Put them all into the string and return the result. We already have
 	//the rank there, so print the side and the powers now.
-	Q_strcat(powerOut, 128, va("%i-", final_Side));
+	Q_strcat(powerOut, powerOutSize, va("%i-", final_Side));
 
 	i = strlen(powerOut);
 	c = 0;
 	while (c < NUM_FORCE_POWERS)
 	{
-		strcpy(readBuf, va("%i", final_Powers[c]));
+		Q_strncpyz(readBuf, va("%i", final_Powers[c]),sizeof(readBuf));
 		powerOut[i] = readBuf[0];
 		c++;
 		i++;
@@ -2681,9 +2681,10 @@ void BG_TempFree( int size )
 char *BG_StringAlloc ( const char *source )
 {
 	char *dest;
+	int size = strlen(source) + 1;
 
-	dest = BG_Alloc ( strlen ( source ) + 1 );
-	strcpy ( dest, source );
+	dest = BG_Alloc (size);
+	Q_strncpyz ( dest, source, size);
 	return dest;
 }
 

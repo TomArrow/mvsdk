@@ -26,7 +26,7 @@ char *GetFlagStr( int flags )
 
 	if (!flags)
 	{
-		strcpy(flagstr, "none\0");
+		Q_strncpyz(flagstr, "none\0",128);
 		goto fend;
 	}
 
@@ -196,7 +196,7 @@ char *GetFlagStr( int flags )
 
 	if (i == 0)
 	{
-		strcpy(flagstr, "unknown\0");
+		Q_strncpyz(flagstr, "unknown\0",128);
 	}
 
 fend:
@@ -2121,7 +2121,7 @@ int SavePathData(const char *filename)
 
 		Com_sprintf(storeString, 4096, "%s} %f\n", storeString, flLen);
 
-		strcat(fileString, storeString);
+		Q_strcat(fileString, 524288, storeString);
 
 		i++;
 	}
