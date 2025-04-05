@@ -470,7 +470,7 @@ retryModel:
 		}
 		else
 		{ //fallback to the default skin
-			ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", modelName, skinName));
+			ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_default.skin", modelName));
 		}
 		ci->ATST = qfalse;
 		Com_sprintf( afilename, sizeof( afilename ), "models/players/%s/model.glm", modelName );
