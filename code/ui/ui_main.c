@@ -555,7 +555,7 @@ int UI_ParseAnimationFile(const char *filename, animation_t *animset, qboolean i
 	if (isHumanoid)
 	{
 		bgAllAnims[0].anims = animset;
-		strcpy(bgAllAnims[0].filename, filename);
+		Q_strncpyz(bgAllAnims[0].filename, filename,sizeof(bgAllAnims[0].filename));
 		UIPAFtextLoaded = qtrue;
 
 		usedIndex = 0;
@@ -563,7 +563,7 @@ int UI_ParseAnimationFile(const char *filename, animation_t *animset, qboolean i
 	else
 	{
 		bgAllAnims[nextIndex].anims = animset;
-		strcpy(bgAllAnims[nextIndex].filename, filename);
+		Q_strncpyz(bgAllAnims[nextIndex].filename, filename,sizeof(bgAllAnims[nextIndex].filename));
 
 		usedIndex = nextIndex;
 
@@ -896,7 +896,7 @@ static const char *GetCRDelineatedString( const char *psStripFileRef, const char
 		psList++;
 	}
 
-	strcpy(sTemp,psList);
+	Q_strncpyz(sTemp,psList,sizeof(sTemp));
 	p = strchr(sTemp,'\n');
 	if (p) {
 		*p = '\0';
@@ -1937,7 +1937,7 @@ void UI_Load() {
 	menuDef_t *menu = Menu_GetFocused();
 
 	if (menu && menu->window.name) {
-		strcpy(lastName, menu->window.name);
+		Q_strncpyz(lastName, menu->window.name,sizeof(lastName));
 	}
 	else
 	{
@@ -2846,8 +2846,8 @@ static void UI_DrawPlayerModel(rectDef_t *rect) {
 	vec3_t	moveangles;
 
 	  if (trap_Cvar_VariableValue("ui_Q3Model")) {
-	  strcpy(model, UI_Cvar_VariableString("model"));
-		strcpy(head, UI_Cvar_VariableString("headmodel"));
+	  Q_strncpyz(model, UI_Cvar_VariableString("model"));
+		Q_strncpyz(head, UI_Cvar_VariableString("headmodel"));
 		if (!q3Model) {
 			q3Model = qtrue;
 			updateModel = qtrue;
@@ -2855,9 +2855,9 @@ static void UI_DrawPlayerModel(rectDef_t *rect) {
 		team[0] = '\0';
 	} else {
 
-		strcpy(team, UI_Cvar_VariableString("ui_teamName"));
-		strcpy(model, UI_Cvar_VariableString("team_model"));
-		strcpy(head, UI_Cvar_VariableString("team_headmodel"));
+		Q_strncpyz(team, UI_Cvar_VariableString("ui_teamName"));
+		Q_strncpyz(model, UI_Cvar_VariableString("team_model"));
+		Q_strncpyz(head, UI_Cvar_VariableString("team_headmodel"));
 		if (q3Model) {
 			q3Model = qfalse;
 			updateModel = qtrue;
@@ -3016,8 +3016,8 @@ static void UI_DrawOpponent(rectDef_t *rect) {
   
 	if (updateOpponentModel) {
 		
-		strcpy(model, UI_Cvar_VariableString("ui_opponentModel"));
-	  strcpy(headmodel, UI_Cvar_VariableString("ui_opponentModel"));
+		Q_strncpyz(model, UI_Cvar_VariableString("ui_opponentModel"));
+	  Q_strncpyz(headmodel, UI_Cvar_VariableString("ui_opponentModel"));
 		team[0] = '\0';
 
   	memset( &info2, 0, sizeof(playerInfo_t) );
@@ -5817,7 +5817,7 @@ static void UI_GetCharacterCvars ( void )
 		assert(p2);
 		*p2=0;
 		p2++;
-		strcpy (skinhead, skin);
+		Q_strncpyz (skinhead, skin,sizeof(skinhead));
 
 
 		//advance to third
@@ -5825,9 +5825,9 @@ static void UI_GetCharacterCvars ( void )
 		assert(skin);
 		*skin=0;
 		skin++;
-		strcpy (skintorso,p2);
+		Q_strncpyz (skintorso,p2,sizeof(skintorso));
 
-		strcpy (skinlower,skin);
+		Q_strncpyz (skinlower,skin,sizeof(skinlower));
 
 
 
@@ -6632,7 +6632,7 @@ static void UI_RunMenuScript(const char **args)
 			if (String_Parse(args, &orders)) {
 				int selectedPlayer = trap_Cvar_VariableValue("cg_selectedPlayer");
 				if (selectedPlayer < uiInfo.myTeamCount) {
-					strcpy(buff, orders);
+					Q_strncpyz(buff, orders,sizeof(buff));
 					trap_Cmd_ExecuteText( EXEC_APPEND, va(buff, uiInfo.teamClientNums[selectedPlayer]) );
 					trap_Cmd_ExecuteText( EXEC_APPEND, "\n" );
 				} else {
@@ -6641,7 +6641,7 @@ static void UI_RunMenuScript(const char **args)
 						if (Q_stricmp(UI_Cvar_VariableString("name"), uiInfo.teamNames[i]) == 0) {
 							continue;
 						}
-						strcpy(buff, orders);
+						Q_strncpyz(buff, orders,sizeof(buff));
 						trap_Cmd_ExecuteText( EXEC_APPEND, va(buff, uiInfo.teamNames[i]) );
 						trap_Cmd_ExecuteText( EXEC_APPEND, "\n" );
 					}
@@ -6672,12 +6672,12 @@ static void UI_RunMenuScript(const char **args)
 				if (selectedPlayer == uiInfo.myTeamCount)
 				{
 					selectedPlayer = -1;
-					strcpy(buff, orders);
+					Q_strncpyz(buff, orders, sizeof(buff));
 					trap_Cmd_ExecuteText( EXEC_APPEND, va(buff, selectedPlayer) );
 				}
 				else
 				{
-					strcpy(buff, orders);
+					Q_strncpyz(buff, orders, sizeof(buff));
 					trap_Cmd_ExecuteText( EXEC_APPEND, va(buff, uiInfo.teamClientNums[selectedPlayer]) );
 				}
 				trap_Cmd_ExecuteText( EXEC_APPEND, "\n" );
@@ -6851,7 +6851,7 @@ static void UI_RunMenuScript(const char **args)
 		}
 		else if (Q_stricmp(name, "dualForcePowers") == 0) 
 		{
-			int	dualforcePower,i, forcePowerDisable;
+			int	dualforcePower,i, forcePowerDisable=0;
 			dualforcePower = trap_Cvar_VariableValue("ui_dualforcepower");
 
 			if (dualforcePower==0)	// All force powers
@@ -7425,7 +7425,7 @@ static void UI_InsertHead( const char *name )
 	// Get the memory and copy the string
 	newHead = BG_Alloc( sizeof(q3Head_t) );
 	newHead->name = BG_Alloc( strlen(name) + 1 );
-	strcpy( (char*)newHead->name, name );
+	Q_strncpyz( (char*)newHead->name, name, strlen(name) + 1);
 	newHead->icon = 0;
 	newHead->next = NULL;
 
@@ -7594,7 +7594,7 @@ static void UI_BuildServerDisplayList(int force) {
 	trap_Cvar_VariableStringBuffer( "cl_motdString", uiInfo.serverStatus.motd, sizeof(uiInfo.serverStatus.motd) );
 	len = (int)strlen(uiInfo.serverStatus.motd);
 	if (len == 0) {
-		strcpy(uiInfo.serverStatus.motd, "Welcome to JK2MP!");
+		Q_strncpyz(uiInfo.serverStatus.motd, "Welcome to JK2MP!",sizeof(uiInfo.serverStatus.motd));
 		len = (int)strlen(uiInfo.serverStatus.motd);
 	} 
 	if (len != uiInfo.serverStatus.motdLen) {
@@ -8774,13 +8774,13 @@ static const char *UI_FeederItemText(float feederID, int index, int column,
 				case SORT_GAME : 
 					game = atoi(Info_ValueForKey(info, "gametype"));
 					if (game >= 0 && game < numTeamArenaGameTypes) {
-						strcpy(needPass,teamArenaGameTypes[game]);
+						Q_strncpyz(needPass,teamArenaGameTypes[game],sizeof(needPass));
 					} else {
 						if (ping <= 0)
 						{
-							strcpy(needPass,"Inactive");
+							Q_strncpyz(needPass,"Inactive",sizeof(needPass));
 						}
-						strcpy(needPass,"Unknown");
+						Q_strncpyz(needPass,"Unknown",sizeof(needPass));
 					}
 
 					return needPass;
@@ -10688,17 +10688,17 @@ static void UI_DisplayDownloadInfo( const char *downloadName, float centerPoint,
 	downloadSize = trap_Cvar_VariableValue("cl_downloadSize");
 	if (downloadSize) {
 		s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 0);	// "Downloading:"
-		strcpy(sDownLoading,s?s:"");
+		Q_strncpyz(sDownLoading,s?s:"",sizeof(sDownLoading));
 		s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 1);	// "Estimated time left:"
-		strcpy(sEstimatedTimeLeft,s?s:"");
+		Q_strncpyz(sEstimatedTimeLeft,s?s:"",sizeof(sEstimatedTimeLeft));
 		s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 2);	// "Transfer rate:"
-		strcpy(sTransferRate,s?s:"");
+		Q_strncpyz(sTransferRate,s?s:"",sizeof(sTransferRate));
 		s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 3);	// "of"
-		strcpy(sOf,s?s:"");
+		Q_strncpyz(sOf,s?s:"",sizeof(sOf));
 		s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 4);	// "copied"
-		strcpy(sCopied,s?s:"");
+		Q_strncpyz(sCopied,s?s:"",sizeof(sCopied));
 		s = GetCRDelineatedString("MENUS3","DOWNLOAD_STUFF", 5);	// "sec."
-		strcpy(sSec,s?s:"");
+		Q_strncpyz(sSec,s?s:"",sizeof(sSec));
 
 		downloadCount = trap_Cvar_VariableValue( "cl_downloadCount" );
 		downloadTime = trap_Cvar_VariableValue( "cl_downloadTime" );
@@ -10835,7 +10835,7 @@ void UI_DrawConnectScreen( qboolean overlay ) {
 		Text_PaintCenter(centerPoint, yStart + 48, scale, colorWhite, sStripEdTemp, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
 	} else {
 		trap_SP_GetStringTextString("MENUS3_CONNECTING_TO", sStripEdTemp, sizeof(sStripEdTemp));
-		strcpy(text, va(/*"Connecting to %s"*/sStripEdTemp, cstate.servername));
+		Q_strncpyz(text, va(/*"Connecting to %s"*/sStripEdTemp, cstate.servername),sizeof(text));
 		Text_PaintCenter(centerPoint, yStart + 48, scale, colorWhite,text , ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
 	}
 

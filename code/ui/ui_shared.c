@@ -274,7 +274,7 @@ const char *String_Alloc(const char *p) {
 	len = strlen(p);
 	if (len + strPoolIndex + 1 < STRING_POOL_SIZE) {
 		size_t ph = strPoolIndex;
-		strcpy(&strPool[strPoolIndex], p);
+		Q_strncpyz(&strPool[strPoolIndex], p, sizeof(strPool)- strPoolIndex);
 		strPoolIndex += len + 1;
 
 		str = strHandle[hash];
@@ -741,7 +741,7 @@ void Fade(int *flags, float *f, float clamp, int *nextTime, int offsetTime, qboo
 void Window_Paint(Window *w, float fadeAmount, float fadeClamp, float fadeCycle) 
 {
 	//float bordersize = 0;
-	vec4_t color;
+	vec4_t color = {0};
 	rectDef_t fillRect = w->rect;
 
 
@@ -1313,7 +1313,7 @@ qboolean Script_SetItemColorCvar(itemDef_t *item, const char **args)
 	const char *colorCvarName,*holdBuf,*holdVal;
 	char cvarBuf[1024];
 	const char *name;
-	vec4_t color;
+	vec4_t color = { 0 };
 	int i;
 	vec4_t *out;
 
@@ -4746,7 +4746,7 @@ void Item_Text_Wrapped_Paint(itemDef_t *item) {
 	start = textPtr;
 	p = strchr(textPtr, '\r');
 	while (p && *p) {
-		strncpy(buff, start, p-start+1);
+		Q_strnncpyz(buff, start, p-start+1,sizeof(buff));
 		buff[p-start] = '\0';
 		DC->drawText(x, y, item->textscale, color, buff, 0, 0, item->textStyle, item->iMenuFont);
 		y += height + 2;
@@ -5219,13 +5219,13 @@ void BindingFromName(const char *cvar) {
 
 					trap_SP_GetStringTextString("MENUS3_KEYBIND_OR",sOR, sizeof(sOR));
 
-					strcat( g_nameBind1, va(" %s ",sOR));
-					strcat( g_nameBind1, g_nameBind2 );
+					Q_strcat( g_nameBind1, sizeof(g_nameBind1), va(" %s ",sOR));
+					Q_strcat( g_nameBind1, sizeof(g_nameBind1), g_nameBind2 );
 				}
 			return;
 		}
 	}
-	strcpy(g_nameBind1, "???");
+	Q_strncpyz(g_nameBind1, "???", sizeof(g_nameBind1));
 }
 
 void Item_Slider_Paint(itemDef_t *item) {
@@ -7431,7 +7431,7 @@ qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTim
 
 					if ( slash )
 					{ //If this isn't true the gla path must be messed up somehow.
-						strcpy(slash, "/animation.cfg");
+						Q_strncpyz(slash, "/animation.cfg",sizeof(GLAName)-(slash- GLAName));
 					
 						animIndex = UI_ParseAnimationFile(GLAName, NULL, qfalse);
 						if (animIndex != -1)

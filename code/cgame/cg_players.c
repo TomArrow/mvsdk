@@ -513,7 +513,7 @@ retryModel:
 		slash = Q_strrchr( afilename, '/' );
 		if ( slash )
 		{
-			strcpy(slash, "/animation.cfg");
+			Q_strncpyz(slash, "/animation.cfg",sizeof(afilename)-(slash-afilename));
 		}	// Now afilename holds just the path to the animation.cfg
 		else 
 		{	// Didn't find any slashes, this is a raw filename right in base (whish isn't a good thing)
@@ -884,7 +884,7 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		}
 	}
 	if( teamname[0] ) {
-		strcat( teamname, "/" );
+		Q_strcat( teamname,sizeof(teamname), "/" );
 	}
 	ci->isDefaultModel = qfalse;
 	if ( !CG_RegisterClientModelname( ci, ci->modelName, ci->skinName, teamname, clientNum ) ) {
@@ -4949,6 +4949,11 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	int scolor = 0;
 	vec3_t otherPos, otherDir, otherEnd;
 	float dualLen = 0.7f;
+	int clientnum = cent->currentState.clientNum;
+
+	if (clientnum < 0 || clientnum >= MAX_CLIENTS) {
+		return;
+	}
 
 	if ( VALID_INDEX(cgs.clientinfo, cent->currentState.number) )
 	{ // basejk used the number value for this even though the clientNum would make more sense, so try the number first
@@ -4972,7 +4977,7 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	}
 
 	if (/*cg.snap->ps.clientNum == cent->currentState.number && */
-		cgs.clientinfo[ cent->currentState.clientNum ].team != TEAM_SPECTATOR &&
+		cgs.clientinfo[clientnum].team != TEAM_SPECTATOR &&
 		!(cg.snap->ps.pm_flags & PMF_FOLLOW))
 	{
 		if (cent->saberLength < 1)
@@ -6647,12 +6652,17 @@ void CG_Player( centity_t *cent ) {
 	qboolean		gotLHandMatrix = qfalse;
 	qboolean		g2HasWeapon = qfalse;
 	qboolean		drawIronmanShell = qfalse;
+	int				entNumOrClient0 = cent->currentState.number;
 
 	if (cgQueueLoad || cgQuigonUnlocked)
 	{
 		CG_ActualLoadDeferredPlayers();
 		cgQueueLoad = qfalse;
 		cgQuigonUnlocked = qfalse;
+	}
+
+	if (entNumOrClient0 < 0 || entNumOrClient0 >= MAX_CLIENTS) {
+		entNumOrClient0 = 0;
 	}
 
 	// the client number is stored in clientNum.  It can't be derived
@@ -7146,7 +7156,7 @@ doEssentialOne:
 	//frame. Yes, this is stupid and needs to be fixed properly.
 	//The current solution is to force it not to reconstruct the skeleton for the first GBM call in G2PlayerAngles.
 	//It works and we end up only reconstructing it once, but it doesn't seem like the best solution.
-	trap_G2API_GetBoltMatrix(cent->ghoul2, 0, cgs.clientinfo[cent->currentState.number].bolt_lhand, &lHandMatrix, cent->turAngles, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
+	trap_G2API_GetBoltMatrix(cent->ghoul2, 0, cgs.clientinfo[entNumOrClient0].bolt_lhand, &lHandMatrix, cent->turAngles, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
 	gotLHandMatrix = qtrue;
 
 	if (cg.renderingThirdPerson)
@@ -8541,7 +8551,7 @@ doEssentialThree:
 	}
 	//if (cent->currentState.forcePowersActive & (1 << FP_ABSORB))
 	//Showing only when the power has been active (absorbed something) recently now, instead of always.
-	if ( (cgs.clientinfo[cent->currentState.number].jk2gameplay == VERSION_1_02 && cent->currentState.forcePowersActive & (1 << FP_ABSORB)) || (cgs.clientinfo[cent->currentState.number].jk2gameplay != VERSION_1_02 && cg_entities[cent->currentState.number].teamPowerEffectTime > cg.time && cg_entities[cent->currentState.number].teamPowerType == TFP_ABSORB) )
+	if ( (cgs.clientinfo[entNumOrClient0].jk2gameplay == VERSION_1_02 && cent->currentState.forcePowersActive & (1 << FP_ABSORB)) || (cgs.clientinfo[entNumOrClient0].jk2gameplay != VERSION_1_02 && cg_entities[cent->currentState.number].teamPowerEffectTime > cg.time && cg_entities[cent->currentState.number].teamPowerType == TFP_ABSORB) )
 	{ //aborb is represented by blue..
 		legs.shaderRGBA[0] = 0;
 		legs.shaderRGBA[1] = 0;

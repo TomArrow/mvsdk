@@ -848,6 +848,31 @@ void Q_strncpyz( char *dest, const char *src, int destsize ) {
 	strncpy( dest, src, destsize-1 );
   dest[destsize-1] = 0;
 }
+
+/*
+=============
+Q_strnncpyz
+
+Safe strncpy that ensures a trailing zero (and lets us still specify amount of chars to copy)
+=============
+*/
+void Q_strnncpyz(char* dest, const char* src, int charsToCopy, int destsize) {
+
+	if (!dest) {
+		Com_Error(ERR_FATAL, "Q_strncpyz: NULL dest");
+	}
+	if (!src) {
+		Com_Error(ERR_FATAL, "Q_strncpyz: NULL src");
+	}
+	if (destsize < 1) {
+		Com_Error(ERR_FATAL, "Q_strncpyz: destsize < 1");
+	}
+	if (charsToCopy >= destsize) {
+		charsToCopy = destsize - 1;
+	}
+	strncpy(dest, src, charsToCopy);
+	dest[charsToCopy] = 0;
+}
                  
 int Q_stricmpn (const char *s1, const char *s2, int n) {
 	int		c1, c2;

@@ -416,6 +416,9 @@ void G2_BoltToGhoul2Model(centity_t *cent, refEntity_t *ent)
 	//NOTENOTE I put this here because the cgs.gamemodels array no longer gets initialized.
 	assert(0);		
 
+	if (entNum < 0 || entNum >= MAX_GENTITIES) {
+		return;
+	}
 
  	// go away and get me the bolt position for this frame please
 	trap_G2API_GetBoltMatrix(cent->ghoul2, modelNum, boltNum, &boltMatrix, cg_entities[entNum].currentState.angles, cg_entities[entNum].currentState.origin, cg.time, cgs.gameModels, cent->modelScale);

@@ -758,7 +758,7 @@ void CG_DrawHealthJKA( menuDef_t *menuHUD )
 			continue;
 		}
 
-		memcpy(calcColor, hudTintColor, sizeof(vec4_t));
+		Vector4Copy(hudTintColor, calcColor);
 
 		if (currValue <= 0)	// don't show tic
 		{
@@ -766,7 +766,7 @@ void CG_DrawHealthJKA( menuDef_t *menuHUD )
 		}
 		else if (currValue < inc)	// partial tic (alpha it out)
 		{
-			percent = (float) currValue / inc;
+			percent = (float) currValue / (float)inc;
 			calcColor[3] *= percent;		// Fade it out
 		}
 
@@ -933,7 +933,7 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 			continue;
 		}
 
-		memcpy(calcColor, hudTintColor, sizeof(vec4_t));
+		Vector4Copy(hudTintColor, calcColor);
 
 		if (currValue <= 0)	// don't show tic
 		{
@@ -941,7 +941,7 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 		}
 		else if (currValue < inc)	// partial tic (alpha it out)
 		{
-			percent = (float) currValue / inc;
+			percent = (float) currValue / (float)inc;
 			calcColor[3] *= percent;
 		}
 
@@ -3891,7 +3891,7 @@ CG_DrawLagometer
 */
 static void CG_DrawLagometer( void ) {
 	int		a, i;
-	float	x, y;
+	float	x=0, y=0;
 	float	v;
 	float	ax, ay, aw, ah, mid, range;
 	int		color;
