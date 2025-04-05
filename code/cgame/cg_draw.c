@@ -2065,7 +2065,7 @@ void CG_DrawHUD(centity_t	*cent)
 		return;
 	}
 
-	if (cgs.gametype >= GT_TEAM)
+	if (cgs.gametype >= GT_TEAM && cg.hudType != HUD_TYPE_JKA)
 	{	// tint the hud items based on team
 		switch (cg.snap->ps.persistant[PERS_TEAM])
 		{
