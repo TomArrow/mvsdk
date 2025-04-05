@@ -1207,7 +1207,7 @@ float BG_SI_Length(saberInfo_t *saber);
 float BG_SI_LengthMax(saberInfo_t *saber);
 void BG_SI_ActivateTrail ( saberInfo_t *saber, float duration );
 void BG_SI_DeactivateTrail ( saberInfo_t *saber, float duration );
-void WP_SetSaber( int entNum, saberInfo_t *sabers, int saberNum, const char *saberName );
+void WP_SetSaber( saberInfo_t *sabers, int saberNum, const char *saberName );
 
 extern int WeaponReadyAnim[WP_NUM_WEAPONS];
 extern int WeaponAttackAnim[WP_NUM_WEAPONS];
