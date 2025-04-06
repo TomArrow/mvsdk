@@ -553,10 +553,23 @@ static void CG_General( centity_t *cent ) {
 
 	if (clientInfo != NULL)
 	{
-		ent.shaderRGBA[0] = clientInfo->modelColor[0];
-		ent.shaderRGBA[1] = clientInfo->modelColor[1];
-		ent.shaderRGBA[2] = clientInfo->modelColor[2];
-		ent.shaderRGBA[3] = clientInfo->modelColor[3];
+		if (clientInfo->colorOverride[0] != 0.0f ||
+			clientInfo->colorOverride[1] != 0.0f ||
+			clientInfo->colorOverride[2] != 0.0f ||
+			clientInfo->colorOverride[3] != 0.0f)
+		{
+			ent.shaderRGBA[0] = clientInfo->colorOverride[0]*255.0f;
+			ent.shaderRGBA[1] = clientInfo->colorOverride[1]*255.0f;
+			ent.shaderRGBA[2] = clientInfo->colorOverride[2]*255.0f;
+			ent.shaderRGBA[3] = clientInfo->colorOverride[3]*255.0f;
+		}
+		else
+		{
+			ent.shaderRGBA[0] = clientInfo->modelColor[0];
+			ent.shaderRGBA[1] = clientInfo->modelColor[1];
+			ent.shaderRGBA[2] = clientInfo->modelColor[2];
+			ent.shaderRGBA[3] = clientInfo->modelColor[3];
+		}
 	}
 
 	if (cent->currentState.modelGhoul2 >= G2_MODELPART_HEAD &&

@@ -233,10 +233,25 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		if (ci->useModelColor)
 		{
 			vec4_t modelColor;
-			modelColor[0] = ((float) ci->modelColor[0]) / 255.0f;
-			modelColor[1] = ((float) ci->modelColor[1]) / 255.0f;
-			modelColor[2] = ((float) ci->modelColor[2]) / 255.0f;
-			modelColor[3] = ((float) ci->modelColor[3]) / 255.0f;
+
+			if (ci->colorOverride[0] != 0.0f ||
+				ci->colorOverride[1] != 0.0f ||
+				ci->colorOverride[2] != 0.0f ||
+				ci->colorOverride[3] != 0.0f)
+			{
+				modelColor[0] = ci->colorOverride[0];
+				modelColor[1] = ci->colorOverride[1];
+				modelColor[2] = ci->colorOverride[2];
+				modelColor[3] = ci->colorOverride[3];
+			}
+			else
+			{
+				modelColor[0] = ((float) ci->modelColor[0]) / 255.0f;
+				modelColor[1] = ((float) ci->modelColor[1]) / 255.0f;
+				modelColor[2] = ((float) ci->modelColor[2]) / 255.0f;
+				modelColor[3] = ((float) ci->modelColor[3]) / 255.0f;
+			}
+
 			trap_R_SetColor(modelColor);
 		}
 

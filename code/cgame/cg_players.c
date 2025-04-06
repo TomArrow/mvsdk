@@ -470,7 +470,14 @@ retryModel:
 		}
 		else
 		{ //fallback to the default skin
-			ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", modelName, skinName));
+			if (!Q_stricmpn(modelName, "jedi_", 5))
+			{
+				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_default.skin", modelName));
+			}
+			else
+			{
+				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", modelName, skinName));
+			}
 		}
 		ci->ATST = qfalse;
 		Com_sprintf( afilename, sizeof( afilename ), "models/players/%s/model.glm", modelName );
@@ -822,6 +829,8 @@ static sfxHandle_t CG_RemapPlayerSound(const char *soundPath, const char *soundN
 	return 0;
 }
 
+static void CG_InitG2SaberData(int saberNum, clientInfo_t *ci);
+
 #define DEFAULT_FEMALE_SOUNDPATH "chars/mp_generic_female/misc"//"chars/tavion/misc"
 #define DEFAULT_MALE_SOUNDPATH "chars/mp_generic_male/misc"//"chars/kyle/misc"
 /*
@@ -1062,6 +1071,17 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		}
 	}
 
+	WP_SetSaber(ci->saber, 0, ci->saberName);
+	WP_SetSaber(ci->saber, 1, ci->saber2Name);
+
+	for (i = 0; i < MAX_SABERS; i++)
+	{
+		if (ci->saber[i].model[0])
+		{
+			CG_InitG2SaberData(i, ci);
+		}
+	}
+
 	ci->deferred = qfalse;
 
 	// reset any existing players and bodies, because they might be in bad
@@ -1078,6 +1098,11 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 //Take care of initializing all the ghoul2 saber stuff based on clientinfo data. -rww
 static void CG_InitG2SaberData(int saberNum, clientInfo_t *ci)
 {
+	if (ci->ghoul2Weapons[saberNum] && trap_G2_HaveWeGhoul2Models(ci->ghoul2Weapons[saberNum]))
+	{
+		trap_G2API_CleanGhoul2Models(&ci->ghoul2Weapons[saberNum]);
+	}
+
 	trap_G2API_InitGhoul2Model(&ci->ghoul2Weapons[saberNum], ci->saber[saberNum].model, 0, ci->saber[saberNum].skin, 0, 0, 0);
 
 	if (ci->ghoul2Weapons[saberNum])
@@ -1136,6 +1161,8 @@ CG_CopyClientInfoModel
 ======================
 */
 static void CG_CopyClientInfoModel( clientInfo_t *from, clientInfo_t *to ) {
+	int i;
+
 	VectorCopy( from->headOffset, to->headOffset );
 	to->footsteps = from->footsteps;
 	to->gender = from->gender;
@@ -1172,6 +1199,19 @@ static void CG_CopyClientInfoModel( clientInfo_t *from, clientInfo_t *to ) {
 	memcpy( to->sounds, from->sounds, sizeof( to->sounds ) );
 
 	to->isDefaultModel = from->isDefaultModel;
+	memcpy(to->saber, from->saber, sizeof(to->saber));
+
+	for (i = 0; i < MAX_SABERS; i++)
+	{
+		if (to->ghoul2Weapons[i] && trap_G2_HaveWeGhoul2Models(to->ghoul2Weapons[i]))
+		{
+			trap_G2API_CleanGhoul2Models(&to->ghoul2Weapons[i]);
+		}
+		if (from->ghoul2Weapons[i] && trap_G2_HaveWeGhoul2Models(from->ghoul2Weapons[i]))
+		{
+			trap_G2API_DuplicateGhoul2Instance(from->ghoul2Weapons[i], &to->ghoul2Weapons[i]);
+		}
+	}
 }
 
 /*
@@ -1193,6 +1233,8 @@ static qboolean CG_ScanForExistingClientInfo( clientInfo_t *ci, int clientNum ) 
 		}
 		if ( !Q_stricmp( ci->modelName, match->modelName )
 			&& !Q_stricmp( ci->skinName, match->skinName )
+			&& !Q_stricmp( ci->saberName, match->saberName)
+			&& !Q_stricmp( ci->saber2Name, match->saber2Name)
 //			&& !Q_stricmp( ci->headModelName, match->headModelName )
 //			&& !Q_stricmp( ci->headSkinName, match->headSkinName ) 
 			&& !Q_stricmp( ci->blueTeam, match->blueTeam ) 
@@ -1245,6 +1287,17 @@ static qboolean CG_ScanForExistingClientInfo( clientInfo_t *ci, int clientNum ) 
 					ci->ghoul2Model = match->ghoul2Model;
 
 					ci->isDefaultModel = match->isDefaultModel;
+					memcpy(ci->saber, match->saber, sizeof(ci->saber));
+
+					for (i = 0; i < MAX_SABERS; i++)
+					{
+						if (ci->ghoul2Weapons[i] && trap_G2_HaveWeGhoul2Models(ci->ghoul2Weapons[i]))
+						{
+							trap_G2API_CleanGhoul2Models(&ci->ghoul2Weapons[i]);
+						}
+					}
+
+					memcpy(ci->ghoul2Weapons, match->ghoul2Weapons, sizeof(ci->ghoul2Weapons));
 				}
 			}
 			else
@@ -1281,6 +1334,8 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 		}
 		if ( Q_stricmp( ci->skinName, match->skinName ) ||
 			 Q_stricmp( ci->modelName, match->modelName ) ||
+			 Q_stricmp(ci->saberName, match->saberName) ||
+			 Q_stricmp(ci->saber2Name, match->saber2Name) ||
 //			 Q_stricmp( ci->headModelName, match->headModelName ) ||
 //			 Q_stricmp( ci->headSkinName, match->headSkinName ) ||
 			 (cgs.gametype >= GT_TEAM && ci->team != match->team) ) {
@@ -1301,8 +1356,8 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 			if (match->jk2gameplay != ci->jk2gameplay) {
 				continue;
 			}
-			if ( Q_stricmp( ci->skinName, match->skinName ) ||
-				(cgs.gametype >= GT_TEAM && ci->team != match->team) ) {
+			if ((Q_stricmp(ci->skinName, match->skinName) && Q_stricmpn(ci->modelName, "jedi_", 5)) ||
+				(cgs.gametype >= GT_TEAM && ci->team != match->team)) {
 				continue;
 			}
 			ci->deferred = qtrue;
@@ -1400,10 +1455,9 @@ void CG_UpdateLocalCharacterColors(void)
 	}
 }
 
-void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum, void *oldG2Weapons[MAX_SABERS])
+void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum)
 {
 	const char *clientSaberName = name;
-	int i;
 
 	if (clientSaberName[0] == '\0')
 	{
@@ -1423,34 +1477,13 @@ void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum
 	}
 
 	Q_strncpyz(ci->saberName, clientSaberName, MAX_QPATH);
-	WP_SetSaber(clientNum, ci->saber, 0, ci->saberName);
 
 	clientSaberName = DEFAULT_SABER2;
-
 	Q_strncpyz(ci->saber2Name, clientSaberName, MAX_QPATH);
-	WP_SetSaber(clientNum, ci->saber, 1, ci->saber2Name);
-
-	for (i = 0; i < MAX_SABERS; i++)
-	{
-		if (oldG2Weapons[i])
-		{
-			trap_G2API_CleanGhoul2Models(&oldG2Weapons[i]);
-			oldG2Weapons[i] = 0;
-		}
-
-		if (ci->saber[i].model[0])
-		{
-			CG_InitG2SaberData(i, ci);
-		}
-
-		cg_entities[clientNum].weapon = 0;
-		cg_entities[clientNum].ghoul2weapon = NULL;
-	}
 }
 
 void CG_UpdateLocalSaberName(void)
 {
-	const char *clientSaberName;
 	int i;
 	int j;
 	clientInfo_t *ci;
@@ -1469,36 +1502,10 @@ void CG_UpdateLocalSaberName(void)
 			continue;
 		}
 
-		clientSaberName = DEFAULT_SABER1;
-
-		if (cg.snap && i == cg.snap->ps.clientNum)
-		{
-			if (strlen(cg_forceMySaber.string))
-			{
-				clientSaberName = cg_forceMySaber.string;
-			}
-			else if (strlen(cg_saber1.string))
-			{
-				clientSaberName = cg_saber1.string;
-			}
-		}
-
-		Q_strncpyz(ci->saberName, clientSaberName, MAX_QPATH);
-		WP_SetSaber(i, ci->saber, 0, ci->saberName);
-
-		clientSaberName = DEFAULT_SABER2;
-
-		Q_strncpyz(ci->saber2Name, clientSaberName, MAX_QPATH);
-		WP_SetSaber(i, ci->saber, 1, ci->saber2Name);
+		CG_SetSaberName(DEFAULT_SABER1, ci, i);
 
 		for (j = 0; j < MAX_SABERS; j++)
 		{
-			if (ci->ghoul2Weapons[j])
-			{
-				trap_G2API_CleanGhoul2Models(&ci->ghoul2Weapons[j]);
-				ci->ghoul2Weapons[j] = 0;
-			}
-
 			if (ci->saber[j].model[0])
 			{
 				CG_InitG2SaberData(j, ci);
@@ -1514,7 +1521,7 @@ void CG_UpdateLocalSaberName(void)
 
 extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance
 
-void WP_SetSaber( int entNum, saberInfo_t *sabers, int saberNum, const char *saberName );
+void WP_SetSaber( saberInfo_t *sabers, int saberNum, const char *saberName );
 
 /*
 ======================
@@ -1528,7 +1535,6 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	const char	*v;
 	char		*slash;
 	void *oldGhoul2;
-	void *oldG2Weapons[MAX_SABERS];
 	int i = 0;
 	int j = 0;
 	qboolean wasATST = qfalse;
@@ -1536,11 +1542,6 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	ci = &cgs.clientinfo[clientNum];
 
 	oldGhoul2 = ci->ghoul2Model;
-
-	for (i = 0; i < MAX_SABERS; i++)
-	{
-		oldG2Weapons[i] = ci->ghoul2Weapons[i];
-	}
 
 	configstring = CG_ConfigString( clientNum + CS_PLAYERS );
 	if ( !configstring[0] ) {
@@ -1653,20 +1654,14 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 		char modelStr[MAX_QPATH];
 		char *skin;
 
-		if( cgs.gametype >= GT_TEAM ) {
-			Q_strncpyz( newInfo.modelName, DEFAULT_TEAM_MODEL, sizeof( newInfo.modelName ) );
-			Q_strncpyz( newInfo.skinName, "default", sizeof( newInfo.skinName ) );
+		trap_Cvar_VariableStringBuffer( "model", modelStr, sizeof( modelStr ) );
+		if ( ( skin = strchr( modelStr, '/' ) ) == NULL) {
+			skin = "default";
 		} else {
-			trap_Cvar_VariableStringBuffer( "model", modelStr, sizeof( modelStr ) );
-			if ( ( skin = strchr( modelStr, '/' ) ) == NULL) {
-				skin = "default";
-			} else {
-				*skin++ = 0;
-			}
-
-			Q_strncpyz( newInfo.skinName, skin, sizeof( newInfo.skinName ) );
-			Q_strncpyz( newInfo.modelName, modelStr, sizeof( newInfo.modelName ) );
+			*skin++ = 0;
 		}
+		Q_strncpyz( newInfo.skinName, skin, sizeof( newInfo.skinName ) );
+		Q_strncpyz( newInfo.modelName, modelStr, sizeof( newInfo.modelName ) );
 
 		if ( cgs.gametype >= GT_TEAM ) {
 			// keep skin name
@@ -1697,7 +1692,7 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	// saber name
 	v = Info_ValueForKey(configstring, "st");
 	cg.useLocalSaberName = v[0] == '\0';
-	CG_SetSaberName(v, &newInfo, clientNum, oldG2Weapons);
+	CG_SetSaberName(v, &newInfo, clientNum);
 
 	// head model
 /*

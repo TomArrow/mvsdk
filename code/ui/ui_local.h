@@ -625,11 +625,29 @@ typedef struct {
 #define MAX_DOWNLOADS 512
 #define MAX_DEMOS 256
 #define MAX_MOVIES 256
-#define MAX_PLAYERMODELS 1024
 
-#if MAX_PLAYERMODELS != MAX_MULTI_CVARS
-	#error MAX_PLAYERMODELS != MAX_MULTI_CVARS
+// skins: kyle/default, kyle/red, kyle/blue, ...
+#define MAX_PLAYER_SKINS 1024
+
+// species: jedi_tf, jedi_hm, jedi_rm, ...
+#define MAX_PLAYER_SPECIES 1024
+
+#if MAX_PLAYER_SPECIES != MAX_MULTI_CVARS
+	// switching player specie will be bugged, if these don't match
+	#error MAX_PLAYER_SPECIES != MAX_MULTI_CVARS
 #endif
+
+// heads: head_a1, head_b1, head_c1, ...
+#define MAX_PLAYER_SPECIE_HEADS 32
+
+// torsos: torso_a1, torso_b1, torso_c1, ...
+#define MAX_PLAYER_SPECIE_TORSOS 32
+
+// lowers: lower_a1, lower_b1, lower_c1, ...
+#define MAX_PLAYER_SPECIE_LOWERS 32
+
+// predefined colors from PlayerChoice.txt: green, purple, white, ...
+#define MAX_PLAYER_SPECIE_COLORS 32
 
 #define MAX_SCROLLTEXT_SIZE		4096
 #define MAX_SCROLLTEXT_LINES		64
@@ -756,26 +774,36 @@ typedef struct {
 	const char *modDescr;
 } modInfo_t;
 
+#define SKIN_LENGTH			16
+#define ACTION_BUFFER_SIZE	128
+
 typedef struct {
-	char		Name[MAX_QPATH];
-	int			SkinHeadCount;
-	char		SkinHeadNames[MAX_PLAYERMODELS][16];
-	int			SkinTorsoCount;
-	char		SkinTorsoNames[MAX_PLAYERMODELS][16];
-	int			SkinLegCount;
-	char		SkinLegNames[MAX_PLAYERMODELS][16];
-	char		ColorShader[MAX_PLAYERMODELS][MAX_QPATH];
-	int			ColorCount;
-	char		ColorActionText[MAX_PLAYERMODELS][128];
+	char name[SKIN_LENGTH];
+	qhandle_t icon;
+} skinName_t;
+
+typedef struct {
+	char shader[MAX_QPATH];
+	char actionText[ACTION_BUFFER_SIZE];
+	qhandle_t icon;
+} playerColor_t;
+
+typedef struct playerSpeciesInfo_s {
+	char			Name[MAX_QPATH];
+	int				SkinHeadCount;
+	int				SkinTorsoCount;
+	int				SkinLegCount;
+	int				ColorCount;
+	skinName_t		SkinHead[MAX_PLAYER_SPECIE_HEADS];
+	skinName_t		SkinTorso[MAX_PLAYER_SPECIE_TORSOS];
+	skinName_t		SkinLeg[MAX_PLAYER_SPECIE_LOWERS];
+	playerColor_t	Color[MAX_PLAYER_SPECIE_COLORS];
 } playerSpeciesInfo_t;
 
-typedef struct q3Head_s q3Head_t;
-struct q3Head_s {
-	const char *name;
+typedef struct q3Head_s {
+	char name[MAX_QPATH];
 	qhandle_t  icon;
-
-	q3Head_t *next;
-};
+} q3Head_t;
 
 typedef struct {
 	displayContextDef_t uiDC;
@@ -867,8 +895,7 @@ typedef struct {
 	sfxHandle_t newHighScoreSound;
 
 	int				q3HeadCount;
-	// COMPAT_FIX
-	q3Head_t		*q3Heads;
+	q3Head_t		q3Heads[MAX_PLAYER_SKINS];
 	int				q3SelectedHead;
 
 	int				forceConfigCount;
@@ -882,9 +909,8 @@ typedef struct {
 
 	qboolean inGameLoad;
 
-	// COMPAT_FIX
 	int					playerSpeciesCount;
-	playerSpeciesInfo_t	playerSpecies[MAX_PLAYERMODELS];
+	playerSpeciesInfo_t	playerSpecies[MAX_PLAYER_SPECIES];
 	int					playerSpeciesIndex;
 
 	short		movesTitleIndex;
