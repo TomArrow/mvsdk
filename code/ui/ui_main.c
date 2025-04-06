@@ -5960,7 +5960,7 @@ static void UI_SetSaberBoxesandHilts (void)
 	}
 }
 
-//extern qboolean UI_SaberModelForSaber( const char *saberName, char *saberModel );
+//extern qboolean UI_SaberModelForSaber( const char *saberName, char *saberModel, int saberModelSize );
 extern qboolean UI_SaberSkinForSaber( const char *saberName, char *saberSkin, int saberSkinSize );
 extern qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTimeLength );
 extern qboolean ItemParse_model_g2skin_go( itemDef_t *item, const char *skinName );
@@ -9183,7 +9183,7 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
   return 0;
 }
 
-extern qboolean UI_SaberTypeForSaber( const char *saberName, char *saberType );
+extern qboolean UI_SaberTypeForSaber( const char *saberName, char *saberType, int saberTypeSize);
 
 int g_siegedFeederForcedSet = 0;
 

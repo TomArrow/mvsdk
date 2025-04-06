@@ -887,7 +887,7 @@ void UI_SaberDrawBlades( itemDef_t *item, vec3_t origin, vec3_t angles )
 		if ( numBlades )
 		{//okay, here we go, time to draw each blade...
 			char	saberTypeString[MAX_QPATH]={0};
-			UI_SaberTypeForSaber( saber, saberTypeString );
+			UI_SaberTypeForSaber( saber, saberTypeString, sizeof(saberTypeString) );
 			saberType = TranslateSaberType( saberTypeString );
 			for ( curBlade = 0; curBlade < numBlades; curBlade++ )
 			{
