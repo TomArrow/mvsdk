@@ -1075,9 +1075,6 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		}
 	}
 
-	cg_entities[clientNum].weapon = 0;
-	cg_entities[clientNum].ghoul2weapon = NULL;
-
 	ci->deferred = qfalse;
 
 	// reset any existing players and bodies, because they might be in bad
