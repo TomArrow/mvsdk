@@ -470,7 +470,14 @@ retryModel:
 		}
 		else
 		{ //fallback to the default skin
-			ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_default.skin", modelName));
+			if (!Q_stricmpn(modelName, "jedi_", 5))
+			{
+				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_default.skin", modelName));
+			}
+			else
+			{
+				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", modelName, skinName));
+			}
 		}
 		ci->ATST = qfalse;
 		Com_sprintf( afilename, sizeof( afilename ), "models/players/%s/model.glm", modelName );
@@ -1477,7 +1484,6 @@ void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum
 
 void CG_UpdateLocalSaberName(void)
 {
-	const char *clientSaberName;
 	int i;
 	int j;
 	clientInfo_t *ci;
