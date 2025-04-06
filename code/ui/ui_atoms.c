@@ -170,7 +170,7 @@ void UI_ClearScores() {
 }
 
 
-extern q3Head_t *UI_GetHeadByIndex( int index );
+q3Head_t *UI_GetHeadByIndex(int index);
 static void	UI_Cache_f() {
 	int i;
 	Display_CacheAll();
