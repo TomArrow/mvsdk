@@ -255,7 +255,7 @@ void _UI_KeyEvent( int key, qboolean down );
 void _UI_MouseEvent( int dx, int dy );
 void _UI_Refresh( int realtime );
 qboolean _UI_IsFullscreen( void );
-extern qboolean UI_SaberModelForSaber( const char *saberName, char *saberModel );
+extern qboolean UI_SaberModelForSaber( const char *saberName, char *saberModel, int saberModelSize);
 void UI_ClampMaxPlayers(void);
 static void UI_CheckServerName( void );
 static qboolean UI_CheckPassword( void );
@@ -5961,7 +5961,7 @@ static void UI_SetSaberBoxesandHilts (void)
 }
 
 //extern qboolean UI_SaberModelForSaber( const char *saberName, char *saberModel );
-extern qboolean UI_SaberSkinForSaber( const char *saberName, char *saberSkin );
+extern qboolean UI_SaberSkinForSaber( const char *saberName, char *saberSkin, int saberSkinSize );
 extern qboolean ItemParse_asset_model_go( itemDef_t *item, const char *name,int *runTimeLength );
 extern qboolean ItemParse_model_g2skin_go( itemDef_t *item, const char *skinName );
 
@@ -6017,13 +6017,13 @@ static void UI_UpdateSaberHilt( qboolean secondSaber )
 
 	item->text = model;
 	//read this from the sabers.cfg
-	if ( UI_SaberModelForSaber( model, modelPath ) )
+	if ( UI_SaberModelForSaber( model, modelPath, sizeof(modelPath)) )
 	{//successfully found a model
 		ItemParse_asset_model_go( item, modelPath, &animRunLength );//set the model
 		//get the customSkin, if any
 		//COM_StripExtension( modelPath, skinPath );
 		//COM_DefaultExtension( skinPath, sizeof( skinPath ), ".skin" );
-		if ( UI_SaberSkinForSaber( model, skinPath ) )
+		if ( UI_SaberSkinForSaber( model, skinPath, sizeof(skinPath)) )
 		{
 			ItemParse_model_g2skin_go( item, skinPath );//apply the skin
 		}
@@ -6161,7 +6161,7 @@ static void UI_ResetCharacterListBoxes( void )
 char *saberSingleHiltInfo [MAX_SABER_HILTS];
 char *saberStaffHiltInfo [MAX_SABER_HILTS];
 
-qboolean UI_SaberProperNameForSaber( const char *saberName, char *saberProperName );
+extern qboolean UI_SaberProperNameForSaber( const char *saberName, char *saberProperName, int saberProperNameSize);
 void UI_SaberGetHiltInfo( char *singleHilts[MAX_SABER_HILTS],char *staffHilts[MAX_SABER_HILTS] );
 
 
@@ -8548,13 +8548,13 @@ static const char *UI_FeederItemText(float feederID, int index, int column,
 	else if (feederID == FEEDER_SABER_SINGLE_INFO)
 	{
 		//char *saberProperName=0;
-		UI_SaberProperNameForSaber( saberSingleHiltInfo[index], info );
+		UI_SaberProperNameForSaber(saberSingleHiltInfo[index], info, sizeof(info));
 		return info;
 	}
 	else if	(feederID == FEEDER_SABER_STAFF_INFO)
 	{
 		//char *saberProperName=0;
-		UI_SaberProperNameForSaber( saberStaffHiltInfo[index], info );
+		UI_SaberProperNameForSaber(saberStaffHiltInfo[index], info, sizeof(info));
 		return info;
 	}
 	else if (feederID == FEEDER_Q3HEADS) {
