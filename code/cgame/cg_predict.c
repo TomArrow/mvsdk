@@ -35,12 +35,14 @@ void CG_BuildSolidList( void ) {
 	centity_t	*cent;
 	snapshot_t	*snap;
 	entityState_t	*ent;
+	qboolean	useNextSnap = qfalse;
 
 	cg_numSolidEntities = 0;
 	cg_numTriggerEntities = 0;
 
 	if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
 		snap = cg.nextSnap;
+		useNextSnap = qtrue;
 	} else {
 		snap = cg.snap;
 	}
@@ -49,7 +51,7 @@ void CG_BuildSolidList( void ) {
 
 	for ( i = 0 ; i < snap->numEntities ; i++ ) {
 		cent = &cg_entities[ snap->entities[ i ].number ];
-		ent = &cent->currentState;
+		ent = useNextSnap ? &cent->nextState : &cent->currentState;
 
 		if (cgs.isTommyTernal && ent->number >= MAX_CLIENTS && ent->eType == ET_INVISIBLE && ent->modelGhoul2 == 15 && ent->clientNum >= 0 && ent->clientNum < MAX_CLIENTS) { // client stats entity
 			cg_statsEntities[ent->clientNum] = cent;
@@ -87,10 +89,11 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 	centity_t	*cent;
 	static vec3_t	playerMinsDefault = { -15, -15, DEFAULT_MINS_2 };
 	static vec3_t	playerMaxsDefault = { 15, 15, DEFAULT_MAXS_2 };
+	qboolean	useNextSnap = cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport;
 
 	for ( i = 0 ; i < cg_numSolidEntities ; i++ ) {
 		cent = cg_solidEntities[ i ];
-		ent = &cent->currentState;
+		ent = useNextSnap ? &cent->nextState : &cent->currentState;
 
 		if (!ent->solid && !rawTrace) continue; // we are putting nonsolid players in this array too, because we want to rawtrace them for crosshair.
 
@@ -140,15 +143,15 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 
 			cmodel = trap_CM_InlineModel( ent->modelindex );
 			VectorCopy( cent->lerpAngles, angles );
-			BG_EvaluateTrajectory( &cent->currentState.pos, cg.physicsTime, origin );
+			BG_EvaluateTrajectory( &ent->pos, cg.physicsTime, origin );
 		} else {
 			// calculate mins/maxs
-			if ( cent->currentState.eType == ET_SPECIAL &&
-				cent->currentState.modelindex == HI_SHIELD &&
-				cent->currentState.time2)
+			if (ent->eType == ET_SPECIAL &&
+				ent->modelindex == HI_SHIELD &&
+				ent->time2)
 			{
 				// special case for forcefield's non-symmetric bbox
-				int	solid = cent->currentState.time2;
+				int	solid = ent->time2;
 				qboolean xaxis = (solid >> 24) & 1;
 				int height = (solid >> 16) & 255;
 				int posWidth = (solid >> 8) & 255;
@@ -162,7 +165,7 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 					VectorSet( bmaxs, SHIELD_HALFTHICKNESS, posWidth, height );
 				}
 			}
-			else if (cent->currentState.eType == ET_PLAYER && !ent->solid && rawTrace && !(cent->currentState.eFlags & EF_DEAD)) {
+			else if (ent->eType == ET_PLAYER && !ent->solid && rawTrace && !(ent->eFlags & EF_DEAD)) {
 				// what about dead players?
 				VectorCopy(playerMinsDefault, bmins);
 				VectorCopy(playerMaxsDefault, bmaxs);
@@ -304,13 +307,14 @@ int		CG_PointContents( const vec3_t point, int passEntityNum ) {
 	centity_t	*cent;
 	clipHandle_t cmodel;
 	int			contents;
+	qboolean	useNextSnap = cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport;
 
 	contents = trap_CM_PointContents (point, 0);
 
 	for ( i = 0 ; i < cg_numSolidEntities ; i++ ) {
 		cent = cg_solidEntities[ i ];
 
-		ent = &cent->currentState;
+		ent = useNextSnap ? &cent->nextState  : &cent->currentState;
 
 		if (!ent->solid) continue; // we are putting nonsolid players in this array too, because we want to rawtrace them for crosshair.
 
@@ -558,6 +562,7 @@ static void CG_TouchTriggerPrediction( int msec ) {
 	clipHandle_t cmodel;
 	centity_t	*cent;
 	qboolean	spectator;
+	qboolean	useNextSnap;
 
 	// dead clients don't activate triggers
 	if ( cg.predictedPlayerState.stats[STAT_HEALTH] <= 0 ) {
@@ -570,9 +575,11 @@ static void CG_TouchTriggerPrediction( int msec ) {
 		return;
 	}
 
+	useNextSnap = cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport;
+
 	for ( i = 0 ; i < cg_numTriggerEntities ; i++ ) {
 		cent = cg_triggerEntities[ i ];
-		ent = &cent->currentState;
+		ent = useNextSnap  ? &cent->currentState : &cent->currentState;
 
 		if ( ent->eType == ET_ITEM && !spectator ) {
 			CG_TouchItem( cent );
