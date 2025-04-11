@@ -225,7 +225,7 @@ spawn_t	spawns[] = {
 	{"info_player_imperial", qtrue, SP_info_player_imperial},
 	{"info_player_rebel", qtrue, SP_info_player_rebel},
 	{"info_player_intermission", qtrue, SP_info_player_intermission},
-	{"info_jedimaster_start", qtrue, SP_info_jedimaster_start},
+	{"info_jedimaster_start", qfalse, SP_info_jedimaster_start}, // for some reason it needs svent
 	{"info_null", qtrue, SP_info_null},
 	{"info_notnull", qtrue, SP_info_notnull},		// use target_position instead
 	{"info_camp", qtrue, SP_info_camp},
