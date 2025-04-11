@@ -6125,11 +6125,15 @@ void Item_ListBox_Paint(itemDef_t *item) {
 				} 
 				else 
 				{
-					float textY = y + listPtr->elementHeight;
+					float textY;
 
 					if (Item_IsJKA(item))
 					{
-						textY += item->textaligny;
+						textY = y + item->textaligny;
+					}
+					else
+					{
+						textY = y + listPtr->elementHeight;
 					}
 
 					text = DC->feederItemText(item->special, i, 0, &optionalImage1, &optionalImage2, &optionalImage3, &optionalImage4, NULL, NULL);
