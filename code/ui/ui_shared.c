@@ -6125,8 +6125,12 @@ void Item_ListBox_Paint(itemDef_t *item) {
 				} 
 				else 
 				{
-					int textyOffset;
-					textyOffset = (Item_IsJKA(item)) ? 0 : listPtr->elementHeight;
+					float textY = y + listPtr->elementHeight;
+
+					if (Item_IsJKA(item))
+					{
+						textY += item->textaligny;
+					}
 
 					text = DC->feederItemText(item->special, i, 0, &optionalImage1, &optionalImage2, &optionalImage3, &optionalImage4, NULL, NULL);
 					if (optionalImage1 >= 0 || optionalImage2 >= 0 || optionalImage3 >= 0 || optionalImage4 >= 0)
@@ -6134,7 +6138,7 @@ void Item_ListBox_Paint(itemDef_t *item) {
 					} 
 					else if (text) 
 					{
-						DC->drawText(x + 4, y + textyOffset + item->textaligny, item->textscale, item->window.foreColor, text, 0, 0, item->textStyle, item->iMenuFont);
+						DC->drawText(x + 4, textY, item->textscale, item->window.foreColor, text, 0, 0, item->textStyle, item->iMenuFont);
 					}
 				}
 
