@@ -219,24 +219,7 @@ int gDuelist2 = -1;
 
 int gRandomUnlockAdd = 0;
 
-void	G_BitMaskCvarUpdated(cvarTable_t* cvar) {
-	vmCvar_t* cvarBase = (vmCvar_t*)cvar->update.pparam1;
-
-	if (!cvar) {
-		Com_Error(ERR_FATAL,"G_BitMaskCvarUpdated: pparam1 must be a vmCvar_t* pointer");
-	}
-
-	if (cvar->vmCvar->integer) {
-		cvarBase->integer |= cvar->update.iparam1;
-	}
-	else {
-		cvarBase->integer &= ~cvar->update.iparam1;
-	}
-
-	trap_Cvar_Set(cvar->update.cparam1, va("%d", cvarBase->integer));
-	trap_Cvar_Update(cvarBase);
-}
-
+static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 // bk001129 - made static to avoid aliasing
 static cvarTable_t		gameCvarTable[] = {
 
@@ -651,6 +634,26 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 
 	return -1;
 }
+
+
+static void	G_BitMaskCvarUpdated(cvarTable_t* cvar) {
+	vmCvar_t* cvarBase = (vmCvar_t*)cvar->update.pparam1;
+
+	if (!cvarBase) {
+		Com_Error(ERR_FATAL, "G_BitMaskCvarUpdated: pparam1 must be a vmCvar_t* pointer");
+	}
+
+	if (cvar->vmCvar->integer) {
+		cvarBase->integer |= cvar->update.iparam1;
+	}
+	else {
+		cvarBase->integer &= ~cvar->update.iparam1;
+	}
+
+	trap_Cvar_Set(cvar->update.cparam1, va("%d", cvarBase->integer));
+	trap_Cvar_Update(cvarBase);
+}
+
 
 
 void QDECL G_Printf( const char *fmt, ... ) {
