@@ -985,7 +985,7 @@ void CG_DrawArmorJKA( menuDef_t *menuHUD )
 			focusItem->window.rect.x, 
 			focusItem->window.rect.y, 
 			3, 
-			armor, 
+			ps->stats[STAT_ARMOR], 
 			focusItem->window.rect.w, 
 			focusItem->window.rect.h, 
 			NUM_FONT_SMALL,
