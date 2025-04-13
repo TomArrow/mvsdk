@@ -6971,7 +6971,14 @@ void CG_Player( centity_t *cent ) {
 
 	CG_SetGhoul2Info(&legs, cent);
 
-	VectorSet(legs.modelScale, 1,1,1);
+
+	if (cg_statsEntities[clientNum] && ci->playerMode == MODE_DEFRAG && cg_statsEntities[clientNum]->currentState.bolt1 == MV_Q2){
+		// quake 2 has smaller player boxes
+		VectorSet(legs.modelScale, 0.875f, 0.875f, 0.875f);
+	}
+	else {
+		VectorSet(legs.modelScale, 1, 1, 1);
+	}
 	legs.radius = 64;
 	VectorClear(legs.angles);
 
