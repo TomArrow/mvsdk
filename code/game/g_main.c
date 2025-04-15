@@ -1075,6 +1075,9 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 		trap_SetConfigstring(CS_SHADERSTATE, BuildShaderStateConfig());
 	}
 
+	AddRemap("gfx/mp/chat_icon", "gfx/mp/dmgshader_shields", level.time); // looks nice
+	trap_SetConfigstring(CS_SHADERSTATE, BuildShaderStateConfig());
+
 	// initialize all entities for this game
 	memset( g_entities, 0, MAX_ENTITIESTOTAL * sizeof(g_entities[0]) );
 	level.gentities = g_entities;
