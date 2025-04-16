@@ -2705,7 +2705,7 @@ void Cmd_RateMap_f(gentity_t* ent) {
 	str = arg;
 	while (*str) {
 		if (*str == ',') {
-			*str == '.'; // normalize fractional numbers
+			*str = '.'; // normalize fractional numbers
 		}
 		if (*str != '.' && !(*str >= '0' && *str <= '9')) {
 			trap_SendServerCommand(ent - g_entities, va("print \"Character '%c' is not supported for rating value.\n\"", *str));

@@ -1228,7 +1228,7 @@ void ClientEndFrameInClientThink(gentity_t* ent);
 void SpectatorClientEndFrame(gentity_t* ent);
 void G_RunClient			( gentity_t *ent );
 qboolean G_GetUserCmd			(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance); 
-qboolean G_ResetUserCmdStore(int clientNum);
+void G_ResetUserCmdStore(int clientNum);
 
 //
 // g_team.c

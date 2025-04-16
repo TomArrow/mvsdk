@@ -131,6 +131,8 @@ gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage)
 	{
 		te->s.trickedentindex2 = teamIndex;
 	}
+
+	return te;
 }
 
 /*

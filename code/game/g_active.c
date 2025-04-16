@@ -2742,7 +2742,7 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 	}
 }
 
-qboolean G_ResetUserCmdStore(int clientNum) {
+void G_ResetUserCmdStore(int clientNum) {
 	userCmdBuffer[clientNum].nextBufferIndex = userCmdBuffer[clientNum].nextToExecute = userCmdBuffer[clientNum].msecThisFrame = 0;
 }
 
