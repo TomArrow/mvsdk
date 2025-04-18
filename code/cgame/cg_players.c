@@ -3903,7 +3903,7 @@ static void CG_PlayerFlag( centity_t *cent, qhandle_t hModel ) {
 	ent.modelScale[0] = 0.5;
 	ent.modelScale[1] = 0.5;
 	ent.modelScale[2] = 0.5;
-	ScaleModelAxis(&ent);
+	ScaleModelAxis(&ent, qfalse);
 
 	
 	ent.shaderRGBA[3] = 255;
@@ -6441,6 +6441,10 @@ void CG_G2Animated( centity_t *cent )
 	CG_SetGhoul2Info(&legs, cent);
 
 	VectorSet(legs.modelScale, 1,1,1);
+	if (cent->modelScale[0]) legs.modelScale[0] = cent->modelScale[0];
+	if (cent->modelScale[1]) legs.modelScale[1] = cent->modelScale[1];
+	if (cent->modelScale[2]) legs.modelScale[2] = cent->modelScale[2];
+
 	legs.radius = cent->currentState.g2radius;
 	VectorClear(legs.angles);
 
@@ -6467,7 +6471,7 @@ void CG_G2Animated( centity_t *cent )
 		//return;
 	}
 
-	ScaleModelAxis(&legs);
+	ScaleModelAxis(&legs, qtrue);
 
 	memset( &torso, 0, sizeof(torso) );
 
@@ -6972,13 +6976,11 @@ void CG_Player( centity_t *cent ) {
 	CG_SetGhoul2Info(&legs, cent);
 
 
-	if (cg_statsEntities[clientNum] && ci->playerMode == MODE_DEFRAG && cg_statsEntities[clientNum]->currentState.bolt1 == MV_Q2){
-		// quake 2 has smaller player boxes
-		VectorSet(legs.modelScale, 0.875f, 0.875f, 0.875f);
-	}
-	else {
-		VectorSet(legs.modelScale, 1, 1, 1);
-	}
+	VectorSet(legs.modelScale, 1, 1, 1);
+	if (cent->modelScale[0]) legs.modelScale[0] = cent->modelScale[0];
+	if (cent->modelScale[1]) legs.modelScale[1] = cent->modelScale[1];
+	if (cent->modelScale[2]) legs.modelScale[2] = cent->modelScale[2];
+
 	legs.radius = 64;
 	VectorClear(legs.angles);
 
@@ -7223,7 +7225,7 @@ doEssentialOne:
 		//return;
 	}
 
-	ScaleModelAxis(&legs);
+	ScaleModelAxis(&legs, qtrue);
 
 	memset( &torso, 0, sizeof(torso) );
 
@@ -7549,7 +7551,7 @@ doEssentialTwo:
 				cent->grip_arm.modelScale[0] = 1;//+(wv*6);
 				cent->grip_arm.modelScale[1] = 1;//+(wv*6);
 				cent->grip_arm.modelScale[2] = 1;//+(wv*6);
-				ScaleModelAxis(&cent->grip_arm);
+				ScaleModelAxis(&cent->grip_arm,qfalse);
 
 				cent->grip_arm.radius = 64;
 
@@ -7785,7 +7787,7 @@ doEssentialTwo:
 				holoRef.modelScale[0] = 0.5;
 				holoRef.modelScale[1] = 0.5;
 				holoRef.modelScale[2] = 0.5;
-				ScaleModelAxis(&holoRef);
+				ScaleModelAxis(&holoRef, qfalse);
 
 				{
 					float wv;

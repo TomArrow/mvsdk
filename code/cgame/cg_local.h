@@ -2200,7 +2200,7 @@ qboolean CG_GetRootSurfNameWithVariant( void *ghoul2, const char *rootSurfName, 
 /*
 Ghoul2 Insert Start
 */
-void ScaleModelAxis(refEntity_t	*ent);
+void ScaleModelAxis(refEntity_t	*ent, qboolean playerModelZAdjust);
 /*
 Ghoul2 Insert End
 */

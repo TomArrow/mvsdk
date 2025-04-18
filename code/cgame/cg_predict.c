@@ -49,12 +49,19 @@ void CG_BuildSolidList( void ) {
 
 	memset(cg_statsEntities, 0, sizeof(cg_statsEntities));
 
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		VectorClear(cg_entities[i].modelScale);
+	}
 	for ( i = 0 ; i < snap->numEntities ; i++ ) {
 		cent = &cg_entities[ snap->entities[ i ].number ];
 		ent = useNextSnap ? &cent->nextState : &cent->currentState;
 
 		if (cgs.isTommyTernal && ent->number >= MAX_CLIENTS && ent->eType == ET_INVISIBLE && ent->modelGhoul2 == 15 && ent->clientNum >= 0 && ent->clientNum < MAX_CLIENTS) { // client stats entity
 			cg_statsEntities[ent->clientNum] = cent;
+			if (cgs.clientinfo[ent->clientNum].playerMode == MODE_DEFRAG && ent->bolt1 == MV_Q2) {
+				// quake 2 has smaller player boxes
+				VectorSet(cg_entities[ent->clientNum].modelScale, 0.875f, 0.875f, 0.875f);
+			}
 			continue;
 		}
 

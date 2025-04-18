@@ -441,7 +441,7 @@ void G2_BoltToGhoul2Model(centity_t *cent, refEntity_t *ent)
  	ent->axis[2][2] = boltMatrix.matrix[2][2];
 }
 
-void ScaleModelAxis(refEntity_t	*ent)
+void ScaleModelAxis(refEntity_t	*ent, qboolean playerModelZAdjust)
 
 {		// scale the model should we need to
 		if (ent->modelScale[0] && ent->modelScale[0] != 1.0f)
@@ -458,6 +458,11 @@ void ScaleModelAxis(refEntity_t	*ent)
 		{
 			VectorScale( ent->axis[2], ent->modelScale[2] , ent->axis[2] );
 			ent->nonNormalizedAxes = qtrue;
+			if (playerModelZAdjust) {
+				// ported from jk2sp
+				//FIXME:? need to know actual height of leg model bottom to origin, not hardcoded
+				ent->origin[2] += 24 * (ent->modelScale[2] - 1);
+			}
 		}
 }
 /*
@@ -1327,7 +1332,7 @@ Ghoul2 Insert End
 		ent.modelScale[2] = 1.1f;
 
 		ent.origin[2] -= 2;
-		ScaleModelAxis(&ent);
+		ScaleModelAxis(&ent,qfalse);
 
 		trap_R_AddRefEntityToScene (&ent);
 		
@@ -1917,7 +1922,7 @@ Ghoul2 Insert End
 			ent.modelScale[0] = 0.7f;
 			ent.modelScale[1] = 0.7f;
 			ent.modelScale[2] = 0.7f;
-			ScaleModelAxis(&ent);
+			ScaleModelAxis(&ent, qfalse);
 		}
 
 		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
