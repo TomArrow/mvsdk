@@ -660,7 +660,7 @@ int ForcePowerUsableOn(gentity_t *attacker, gentity_t *other, forcePowers_t forc
 		return 0;
 	}
 
-	if (other && other->client && (other->client->ps.duelInProgress || other->client->sess.raceMode))
+	if (other && other->client && (other->client->ps.duelInProgress || other->client->sess.raceMode || (attacker && attacker->client && other->client->sess.mode != attacker->client->sess.mode)))
 	{
 		return 0;
 	}
@@ -1654,7 +1654,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 				traceEnt->s.genericenemyindex = level.time + 2000;
 			}
 		}
-		if ( traceEnt->client && !self->client->sess.raceMode )
+		if ( traceEnt->client && !self->client->sess.raceMode && self->client->sess.mode == traceEnt->client->sess.mode )
 		{//an enemy or object
 			if (ForcePowerUsableOn(self, traceEnt, FP_LIGHTNING))
 			{
