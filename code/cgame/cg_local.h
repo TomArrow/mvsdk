@@ -720,6 +720,7 @@ typedef enum {
 	HUD_TYPE_JK2,
 	HUD_TYPE_TEXT,
 	HUD_TYPE_JKA,
+	HUD_TYPE_JK2CONSOLE,
 } hudType_t;
  
 typedef struct {
@@ -1376,6 +1377,8 @@ typedef struct {
 
 	//other HUD parts
 	qhandle_t	HUDLeftFrame;
+	qhandle_t	HUDLeftFrame256;
+	qhandle_t	HUDLeftFrameStatic;
 	qhandle_t	HUDArmor1;
 	qhandle_t	HUDArmor2;
 	qhandle_t	HUDHealth;
@@ -1389,6 +1392,8 @@ typedef struct {
 	qhandle_t	HUDSaberStyle3;
 
 	qhandle_t	HUDRightFrame;
+	qhandle_t	HUDRightFrame256;
+	qhandle_t	HUDRightFrameStatic;
 	qhandle_t	HUDInnerRight;
 
 	int			currentBackground;

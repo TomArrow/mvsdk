@@ -1000,6 +1000,10 @@ char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors) {
 	char*	s;
 	int		c;
 
+	if (!string || !*string) {
+		return;
+	}
+
 	s = string;
 	d = string;
 	while ((c = *s) != 0 ) {
@@ -1205,11 +1209,13 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 	char	pkey[BIG_INFO_KEY];
 	static	char value[2][BIG_INFO_VALUE];	// use two buffers so compares
 											// work without stomping on each other
+	static	char emptyValue[BIG_INFO_VALUE] = { '\0' };
 	static	int	valueindex = 0;
 	char	*o;
 	
 	if ( !s || !key ) {
-		return "";
+		emptyValue[0] = '\0';
+		return emptyValue;
 	}
 
 	if ( strlen( s ) >= BIG_INFO_STRING ) {
@@ -1224,8 +1230,10 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		o = pkey;
 		while (*s != '\\')
 		{
-			if (!*s)
-				return "";
+			if (!*s) {
+				emptyValue[0] = '\0';
+				return emptyValue;
+			}
 			*o++ = *s++;
 		}
 		*o = 0;
@@ -1247,7 +1255,8 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		s++;
 	}
 
-	return "";
+	emptyValue[0] = '\0';
+	return emptyValue;
 }
 
 

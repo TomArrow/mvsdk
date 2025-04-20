@@ -1135,7 +1135,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0", 0},
 	{ &cg_timescale, "timescale", "1", 0},
 	{ &cg_scorePlum, "cg_scorePlums", "1", CVAR_USERINFO | CVAR_ARCHIVE},
-	{ &cg_hudFiles, "cg_hudFiles", "ui/jk2hud.txt", CVAR_ARCHIVE},
+	{ &cg_hudFiles, "cg_hudFiles", "0", CVAR_ARCHIVE},
 	{ &cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
 	{ &cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
 
@@ -3001,6 +3001,10 @@ void CG_LoadMenus(const char *menuFile, qboolean reset) {
 		trap_PC_LoadGlobalDefines ( "ui/jk2mp/menudef.h" );
 
 	handle = trap_PC_LoadSource( menuFile );
+	if (!handle && !Q_stricmp("jk2consolehud.txt", menuFile)) {
+		Com_Printf(S_COLOR_YELLOW "jk2 console hud menu file not found: %s, using jk2hud.txt\n", menuFile);
+		handle = trap_PC_LoadSource("jk2hud.txt");
+	}
 	if (!handle) {
 		Com_Printf( S_COLOR_YELLOW "menu file not found: %s, using default\n", menuFile );
 
@@ -3057,6 +3061,10 @@ hudType_t CG_GetHudTypeFromString(const char *string)
 	{
 		return HUD_TYPE_JKA;
 	}
+	else if (Q_stricmp(string, "3") == 0)
+	{
+		return HUD_TYPE_JK2CONSOLE;
+	}
 	else if (Q_stricmp(string, "ui/jk2hud.txt") == 0)
 	{
 		return HUD_TYPE_JK2;
@@ -3065,9 +3073,13 @@ hudType_t CG_GetHudTypeFromString(const char *string)
 	{
 		return HUD_TYPE_JKA;
 	}
+	else if (Q_stricmp(string, "ui/jk2consolehud.txt") == 0)
+	{
+		return HUD_TYPE_JK2CONSOLE;
+	}
 	else
 	{
-		return HUD_TYPE_JKA;
+		return HUD_TYPE_JK2;
 	}
 }
 
@@ -3082,6 +3094,9 @@ void CG_UpdateHud(const char *path)
 	switch (cg.hudType)
 	{
 	default:
+	case HUD_TYPE_JK2CONSOLE:
+		hudSet = "ui/jk2consolehud.txt";
+		break;
 	case HUD_TYPE_JK2:
 	case HUD_TYPE_TEXT:
 		hudSet = "ui/jk2hud.txt";
@@ -3549,6 +3564,8 @@ Ghoul2 Insert End
 
 	//rww - precache other HUD graphics
 	cgs.media.HUDLeftFrame		= trap_R_RegisterShaderNoMip( "gfx/hud/static_test" );
+	cgs.media.HUDLeftFrame256	= trap_R_RegisterShaderNoMip( "gfx/hud/hudleft_256" ); // console variant
+	cgs.media.HUDLeftFrameStatic	= trap_R_RegisterShaderNoMip( "gfx/hud/hudleft_static" ); // console variant
 	cgs.media.HUDInnerLeft		= trap_R_RegisterShaderNoMip( "gfx/hud/hudleft_innerframe" );
 	cgs.media.HUDArmor1			= trap_R_RegisterShaderNoMip( "gfx/hud/armor1" );
 	cgs.media.HUDArmor2			= trap_R_RegisterShaderNoMip( "gfx/hud/armor2" );
@@ -3564,6 +3581,8 @@ Ghoul2 Insert End
 	cgs.media.HUDSaberStyle3	= trap_R_RegisterShader( "gfx/hud/saber_stylesStrong" );
 
 	cgs.media.HUDRightFrame		= trap_R_RegisterShaderNoMip("gfx/hud/hudrightframe");
+	cgs.media.HUDRightFrame256	= trap_R_RegisterShaderNoMip("gfx/hud/hudrightframe_256"); // console variant
+	cgs.media.HUDRightFrameStatic	= trap_R_RegisterShaderNoMip("gfx/hud/hudrightframe_static"); // console variant
 	cgs.media.HUDInnerRight		= trap_R_RegisterShaderNoMip( "gfx/hud/hudright_innerframe" );
 
 	// Load tics

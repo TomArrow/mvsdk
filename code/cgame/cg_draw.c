@@ -639,9 +639,20 @@ CG_DrawHUDLeftFrame2
 */
 void CG_DrawHUDLeftFrame2(float x, float y)
 {
+	float w = 80.0f, h=80.0f;
 	// Inner gray wire frame
 	trap_R_SetColor( hudTintColor );
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDLeftFrame );		// Metal frame
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		CG_DrawPic(x, y, w, h, cgs.media.HUDLeftFrameStatic);
+		x -= w * 0.5f;
+		y -= h * 0.5f;
+		w *= 2.0f;
+		h *= 2.0f;
+		CG_DrawPic(x, y, w, h, cgs.media.HUDLeftFrame256);
+	}
+	else {
+		CG_DrawPic(x, y, w, h, cgs.media.HUDLeftFrame);		// Metal frame
+	}
 }
 
 /*
@@ -1051,13 +1062,35 @@ void CG_DrawHUDRightFrame2(float x, float y, float w, float h)
 {
 	trap_R_SetColor(hudTintColor);
 	// Metal frame
-	CG_DrawPic(
-		SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
-		y,
-		w * cgs.screenXFactor,
-		h,
-		cgs.media.HUDRightFrame
-	);
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		CG_DrawPic(
+			SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+			y,
+			w * cgs.screenXFactor,
+			h,
+			cgs.media.HUDRightFrameStatic
+		);
+		x -= w * 0.5f;
+		y -= h * 0.5f;
+		w *= 2.0f;
+		h *= 2.0f;
+		CG_DrawPic(
+			SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+			y,
+			w * cgs.screenXFactor,
+			h,
+			cgs.media.HUDRightFrame256
+		);
+	}
+	else {
+		CG_DrawPic(
+			SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
+			y,
+			w * cgs.screenXFactor,
+			h,
+			cgs.media.HUDRightFrame
+		);
+	}
 }
 
 /*
@@ -2014,7 +2047,7 @@ void CG_DrawHUD(centity_t	*cent)
 		{	// Don't draw a bias.
 			scoreStr = va("Score: %i", cg.snap->ps.persistant[PERS_SCORE]);
 		}
-		if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+		if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_JK2CONSOLE || cg.hudType == HUD_TYPE_TEXT)
 		{
 			UI_DrawScaledProportionalString(cgs.screenWidth - 101, SCREEN_HEIGHT - 23, scoreStr, UI_RIGHT | UI_DROPSHADOW, colorTable[CT_WHITE], 0.7f);
 		}
@@ -2242,7 +2275,7 @@ void CG_DrawHUD(centity_t	*cent)
 			CG_DrawAmmoJKA(cent, menuHUD);
 		}
 	}
-	else if (menuHUD && cg.hudType == HUD_TYPE_JK2)
+	else if (menuHUD && (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_JK2CONSOLE))
 	{
 		CG_DrawHUDRightFrame1(menuHUD->window.rect.x, menuHUD->window.rect.y, 80.0f, 80.0f);
 		CG_DrawForcePower(menuHUD->window.rect.x, menuHUD->window.rect.y);
@@ -2293,6 +2326,9 @@ void CG_DrawForceSelect( void )
 	float	holdX,x,y,pad;
 	int		sideLeftIconCnt,sideRightIconCnt;
 	int		sideMax,holdCount,iconCnt;
+	float	bottomOffset = 70.0f;
+	menuDef_t* menuHUD = NULL; 
+	float	sideBuffer = 240;
 
 	// don't display if dead
 	if ( cg.snap->ps.stats[STAT_HEALTH] <= 0 ) 
@@ -2331,9 +2367,21 @@ void CG_DrawForceSelect( void )
 	bigIconSize = 60;
 	pad = 12;
 
+	menuHUD = Menus_FindByName("lefthud");
+	if (menuHUD) {
+		sideBuffer += menuHUD->window.rect.x;
+		menuHUD = Menus_FindByName("righthud");
+		if (menuHUD) {
+			sideBuffer += 560.0f - menuHUD->window.rect.x;
+		}
+	}
+	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		sideBuffer += 100.0f;
+	}
+
 	// Max number of icons on the side
 	if (cg_widescreen.integer)
-		sideMax = (cgs.screenWidth - 240 - bigIconSize) / (smallIconSize + pad) / 2;
+		sideMax = (cgs.screenWidth - sideBuffer - bigIconSize) / (smallIconSize + pad) / 2;
 	else
 		sideMax = 3;
  
@@ -2357,7 +2405,18 @@ void CG_DrawForceSelect( void )
 	}
 
 	x = 0.5 * cgs.screenWidth;
-	y = cgs.screenHeight - 55;
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		bottomOffset = 110;
+	}
+
+	menuHUD = Menus_FindByName("forceselecthud");
+	if (menuHUD) {
+		bottomOffset = 480 - menuHUD->window.rect.y;
+	}
+
+	bottomOffset -= 15; // idk it was 55  by default here idk why, its 70 for inventory and weapons
+	y = cgs.screenHeight - bottomOffset;
 
 	i = BG_ProperForceIndex(cg.forceSelect) - 1;
 	if (i < 0)
@@ -2446,6 +2505,9 @@ void CG_DrawInvenSelect( void )
 	int				sideLeftIconCnt,sideRightIconCnt;
 	int				count;
 	float			holdX,x,y,y2,pad;
+	float			bottomOffset = 70;
+	menuDef_t*		menuHUD = NULL; 
+	float	sideBuffer = 240;
 	// int				height;
 	// float			addX;
 
@@ -2494,9 +2556,21 @@ void CG_DrawInvenSelect( void )
 	bigIconSize = 80;
 	pad = 16;
 
+	menuHUD = Menus_FindByName("lefthud");
+	if (menuHUD) {
+		sideBuffer += menuHUD->window.rect.x;
+		menuHUD = Menus_FindByName("righthud");
+		if (menuHUD) {
+			sideBuffer += 560.0f - menuHUD->window.rect.x;
+		}
+	}
+	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		sideBuffer += 100.0f;
+	}
+
 	// Max number of icons on the side
 	if (cg_widescreen.integer)
-		sideMax = (cgs.screenWidth - 240 - bigIconSize) / (smallIconSize + pad) / 2;
+		sideMax = (cgs.screenWidth - sideBuffer - bigIconSize) / (smallIconSize + pad) / 2;
 	else
 		sideMax = 3;
 
@@ -2525,7 +2599,17 @@ void CG_DrawInvenSelect( void )
 	}
 
 	x = 0.5 * cgs.screenWidth;
-	y = cgs.screenHeight - 70;
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		bottomOffset = 110;
+	}
+
+	menuHUD = Menus_FindByName("inventoryselecthud");
+	if (menuHUD) {
+		bottomOffset = 480 - menuHUD->window.rect.y;
+	}
+
+	y = cgs.screenHeight - bottomOffset;
 
 	// Left side ICONS
 	// Work backwards from current icon
@@ -3920,7 +4004,7 @@ static void CG_DrawLagometer( void ) {
 	//
 	// draw the graph
 	//
-	if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+	if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_JK2CONSOLE || cg.hudType == HUD_TYPE_TEXT)
 	{
 		x = cgs.screenWidth - 48;
 		y = cgs.screenHeight - 144;

@@ -3,6 +3,7 @@
 // cg_weapons.c -- events and effects dealing with weapons
 #include "cg_local.h"
 #include "fx_local.h"
+#include "../ui/ui_shared.h"
 
 extern vec4_t	bluehudtint;
 extern vec4_t	redhudtint;
@@ -863,7 +864,7 @@ WEAPON SELECTION
 
 void CG_DrawIconBackground(void)
 {
-	float			height,xAdd,x2,y2,t;
+	float			height,xAdd,x2,y2,x3,t;
 	float			prongLeftX, prongRightX;
 	float			prongWidth;
 	float			inTime = cg.invenSelectTime+WEAPON_SELECT_TIME;
@@ -872,6 +873,8 @@ void CG_DrawIconBackground(void)
 	qhandle_t		background;
 	int				drawType = cgs.media.weaponIconBackground;
 	int				prongsOn = cgs.media.weaponProngsOn;
+	float			bottomOffset = 70.0f; 
+	menuDef_t*		menuHUD = NULL;
 		
 	// don't display if dead
 	if ( cg.snap->ps.stats[STAT_HEALTH] <= 0 ) 
@@ -889,24 +892,24 @@ void CG_DrawIconBackground(void)
 		return;
 	}
 
-	x2 = 30;
-	y2 = cgs.screenHeight-70;
-
-	prongLeftX = x2 + 37; 
-	prongRightX = cgs.screenWidth - x2 - 37 + 1;
-	prongWidth = cgs.screenWidth - 2 * (x2 + 60);
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE)
+	{
+		bottomOffset = 110;
+	}
 
 	if (inTime > wpTime)
 	{
 		drawType = cgs.media.inventoryIconBackground;
 		prongsOn = cgs.media.inventoryProngsOn;
 		cg.iconSelectTime = cg.invenSelectTime;
+		menuHUD = Menus_FindByName("inventoryselecthud");
 	}
 	else
 	{
 		drawType = cgs.media.weaponIconBackground;
 		prongsOn = cgs.media.weaponProngsOn;
 		cg.iconSelectTime = cg.weaponSelectTime;
+		menuHUD = Menus_FindByName("weaponselecthud");
 	}
 
 	if (fpTime > inTime && fpTime > wpTime)
@@ -914,7 +917,40 @@ void CG_DrawIconBackground(void)
 		drawType = cgs.media.forceIconBackground;
 		prongsOn = cgs.media.forceProngsOn;
 		cg.iconSelectTime = cg.forceSelectTime;
+		menuHUD = Menus_FindByName("forceselecthud");
 	}
+
+	x2 = 30;
+
+	if (menuHUD) {
+		x2 = menuHUD->window.rect.x;
+		bottomOffset = 480 - menuHUD->window.rect.y;
+	}
+
+	menuHUD = Menus_FindByName("lefthud");
+
+	x3 = x2;
+
+	if (menuHUD) { // e.g. console style hud has the huds more inside, so we put a higher offset
+		x2 += menuHUD->window.rect.x;
+
+		menuHUD = Menus_FindByName("righthud");
+
+		if (menuHUD) {
+			x3 += 560.0f-menuHUD->window.rect.x;
+		}
+	}
+	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x2 += 50;
+		x3 += 50;
+	}
+
+	y2 = cgs.screenHeight- bottomOffset;
+
+	prongLeftX = x2 + 37; 
+	prongRightX = cgs.screenWidth - x3 - 37 + 1;
+	prongWidth = cgs.screenWidth - (x2 + 60) - (x3 + 60);
+
 
 	if ((cg.iconSelectTime+WEAPON_SELECT_TIME)<cg.time)	// Time is up for the HUD to display
 	{
@@ -1057,6 +1093,9 @@ void CG_DrawWeaponSelect( void ) {
 	float			holdX,x,y,pad;
 	int				sideLeftIconCnt,sideRightIconCnt;
 	int				sideMax,holdCount,iconCnt;
+	float			bottomOffset = 70.0f;
+	menuDef_t*		menuHUD = NULL;
+	float			sideBuffer = 240.0f;
 
 	if (cg.predictedPlayerState.emplacedIndex)
 	{ //can't cycle when on a weapon
@@ -1110,9 +1149,21 @@ void CG_DrawWeaponSelect( void ) {
 	bigIconSize = 80;
 	pad = 12;
 
+	menuHUD = Menus_FindByName("lefthud");
+	if (menuHUD) {
+		sideBuffer += menuHUD->window.rect.x;
+		menuHUD = Menus_FindByName("righthud");
+		if (menuHUD) {
+			sideBuffer += 560.0f - menuHUD->window.rect.x;
+		}
+	}
+	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		sideBuffer += 100.0f;
+	}
+
 	// Max number of icons on the side
 	if (cg_widescreen.integer)
-		sideMax = (cgs.screenWidth - 240 - bigIconSize) / (smallIconSize + pad) / 2;
+		sideMax = (cgs.screenWidth - sideBuffer - bigIconSize) / (smallIconSize + pad) / 2;
 	else
 		sideMax = 3;
 
@@ -1141,7 +1192,17 @@ void CG_DrawWeaponSelect( void ) {
 	}
 
 	x = 0.5f * cgs.screenWidth;
-	y = cgs.screenHeight - 70;
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		bottomOffset = 110;
+	}
+
+	menuHUD = Menus_FindByName("weaponselecthud");
+	if (menuHUD) {
+		bottomOffset = 480 - menuHUD->window.rect.y;
+	}
+
+	y = cgs.screenHeight - bottomOffset;
 
 	// Background
 //	memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
