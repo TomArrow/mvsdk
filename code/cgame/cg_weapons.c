@@ -944,6 +944,12 @@ void CG_DrawIconBackground(void)
 		x2 += 50;
 		x3 += 50;
 	}
+	
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x2 += cg_consoleHudOffsetX.value;
+		x3 += cg_consoleHudOffsetX.value;
+		bottomOffset += cg_consoleHudOffsetY.value;
+	}
 
 	y2 = cgs.screenHeight- bottomOffset;
 
@@ -1159,6 +1165,10 @@ void CG_DrawWeaponSelect( void ) {
 	}
 	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
 		sideBuffer += 100.0f;
+	}	
+	
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		sideBuffer += cg_consoleHudOffsetX.value * 2.0f;
 	}
 
 	// Max number of icons on the side
@@ -1200,6 +1210,10 @@ void CG_DrawWeaponSelect( void ) {
 	menuHUD = Menus_FindByName("weaponselecthud");
 	if (menuHUD) {
 		bottomOffset = 480 - menuHUD->window.rect.y;
+	}
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		bottomOffset += cg_consoleHudOffsetY.value;
 	}
 
 	y = cgs.screenHeight - bottomOffset;

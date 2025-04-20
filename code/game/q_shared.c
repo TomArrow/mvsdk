@@ -1001,7 +1001,7 @@ char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors) {
 	int		c;
 
 	if (!string || !*string) {
-		return;
+		return string;
 	}
 
 	s = string;

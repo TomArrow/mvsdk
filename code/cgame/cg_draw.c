@@ -629,6 +629,10 @@ void CG_DrawHUDLeftFrame1(float x, float y)
 {
 	// Inner gray wire frame
 	trap_R_SetColor( hudTintColor );
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x += cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
+	}
 	CG_DrawPic( x, y, 80, 80, cgs.media.HUDInnerLeft );			
 }
 
@@ -643,6 +647,8 @@ void CG_DrawHUDLeftFrame2(float x, float y)
 	// Inner gray wire frame
 	trap_R_SetColor( hudTintColor );
 	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x += cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
 		CG_DrawPic(x, y, w, h, cgs.media.HUDLeftFrameStatic);
 		x -= w * 0.5f;
 		y -= h * 0.5f;
@@ -666,6 +672,11 @@ void CG_DrawHealth(float x, float y)
 	float	healthPercent, armorPercent;
 	playerState_t	*ps;
 	int healthAmt;
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x += cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
+	}
 
 	ps = &cg.snap->ps;
 
@@ -824,6 +835,11 @@ void CG_DrawArmor(float x, float y)
 	float			armorPercent,hold;
 	playerState_t	*ps;
 	int				armor;
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x += cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
+	}
 
 	ps = &cg.snap->ps;
 
@@ -1043,6 +1059,11 @@ CG_DrawHUDRightFrame1
 void CG_DrawHUDRightFrame1(float x, float y, float w, float h)
 {
 	trap_R_SetColor(hudTintColor);
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x -= cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
+	}
 	// Inner gray wire frame
 	CG_DrawPic(
 		SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
@@ -1063,6 +1084,8 @@ void CG_DrawHUDRightFrame2(float x, float y, float w, float h)
 	trap_R_SetColor(hudTintColor);
 	// Metal frame
 	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x -= cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
 		CG_DrawPic(
 			SCREEN_WIDTH - (SCREEN_WIDTH - x) * cgs.screenXFactor,
 			y,
@@ -1196,6 +1219,11 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y, float w, float h)
 	float		value,inc,percent;
 	qhandle_t	hShader;
 	qboolean	drawPic;
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x -= cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
+	}
 
 	ps = &cg.snap->ps;
 
@@ -1462,6 +1490,11 @@ void CG_DrawForcePower(float x, float y)
 	int			i;
 	vec4_t		calcColor;
 	float		value,inc,percent;
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		x -= cg_consoleHudOffsetX.value;
+		y -= cg_consoleHudOffsetY.value;
+	}
 
 	inc = (float)  100 / MAX_TICS;
 	value = cg.snap->ps.fd.forcePower;
@@ -2377,6 +2410,10 @@ void CG_DrawForceSelect( void )
 	}
 	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
 		sideBuffer += 100.0f;
+	}	
+	
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		sideBuffer += cg_consoleHudOffsetX.value * 2.0f;
 	}
 
 	// Max number of icons on the side
@@ -2413,6 +2450,10 @@ void CG_DrawForceSelect( void )
 	menuHUD = Menus_FindByName("forceselecthud");
 	if (menuHUD) {
 		bottomOffset = 480 - menuHUD->window.rect.y;
+	}
+
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		bottomOffset += cg_consoleHudOffsetY.value;
 	}
 
 	bottomOffset -= 15; // idk it was 55  by default here idk why, its 70 for inventory and weapons
@@ -2507,7 +2548,7 @@ void CG_DrawInvenSelect( void )
 	float			holdX,x,y,y2,pad;
 	float			bottomOffset = 70;
 	menuDef_t*		menuHUD = NULL; 
-	float	sideBuffer = 240;
+	float			sideBuffer = 240;
 	// int				height;
 	// float			addX;
 
@@ -2567,6 +2608,10 @@ void CG_DrawInvenSelect( void )
 	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
 		sideBuffer += 100.0f;
 	}
+	
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		sideBuffer += cg_consoleHudOffsetX.value * 2.0f;
+	}
 
 	// Max number of icons on the side
 	if (cg_widescreen.integer)
@@ -2607,6 +2652,10 @@ void CG_DrawInvenSelect( void )
 	menuHUD = Menus_FindByName("inventoryselecthud");
 	if (menuHUD) {
 		bottomOffset = 480 - menuHUD->window.rect.y;
+	}
+	
+	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		bottomOffset += cg_consoleHudOffsetY.value;
 	}
 
 	y = cgs.screenHeight - bottomOffset;
