@@ -358,6 +358,25 @@ static void CG_ParseServerinfo( const char *info ) {
 
 
 /*
+================
+CG_ParseSysteminfo
+
+This is called explicitly when the gamestate is first received,
+and whenever the server updates any systeminfo flagged cvars
+
+TA: This is an addition by me. If a server isn't sending a particular systeminfo cvar that we 
+rely on, reset it to the default value, otherwise it stays on whatever the previously connected server
+had set it to, which can lead to prediction errors etc.
+================
+*/
+static void CG_ParseSysteminfo( const char *info ) {
+
+	CG_ClearUnsetSystemInfoCvars(info);
+
+}
+
+
+/*
 =====================
 CG_ShaderStateChanged
 =====================
@@ -462,6 +481,9 @@ void CG_UpdateConfigString( int num, qboolean init )
 			break;
 		case CS_SERVERINFO:
 			CG_ParseServerinfo( str );
+			break;
+		case CS_SYSTEMINFO:
+			CG_ParseSysteminfo( str );
 			break;
 		case CS_WARMUP:
 			cg.warmupCount = -1;

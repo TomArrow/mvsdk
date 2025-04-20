@@ -823,12 +823,15 @@ vmCvar_t	cg_JKA;
 vmCvar_t	cg_menuFileParseSpam;
 vmCvar_t	cg_randomTaunts;
 
-typedef struct {
+typedef struct cvarTable_s {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
 	char		*defaultString;
 	int			cvarFlags;
+	struct cvarTable_s* nextSystemInfoCvar;
 } cvarTable_t;
+
+static cvarTable_t* systemInfoCvars = NULL;
 
 static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_ignore, "cg_ignore", "0", 0 },	// used for debugging
@@ -1185,6 +1188,22 @@ Ghoul2 Insert End
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
 
+
+void CG_ClearUnsetSystemInfoCvars(const char* systemInfo) {
+	cvarTable_t* cv = systemInfoCvars;
+
+	while (cv) {
+		if (!Info_HasKey(systemInfo, cv->cvarName)) {
+			if (cg_developer.integer) {
+				Com_Printf("^3Cvar '%s' has the CVAR_SYSTEMINFO flag but server did not send it. Resetting value from '%s' to '%s'\n", cv->cvarName, cv->vmCvar->string, cv->defaultString);
+			}
+			trap_Cvar_Set(cv->cvarName, cv->defaultString);
+			trap_Cvar_Update(cv->vmCvar);
+		}
+		cv = cv->nextSystemInfoCvar;
+	}
+}
+
 /*
 =================
 CG_RegisterCvars
@@ -1198,6 +1217,12 @@ void CG_RegisterCvars( void ) {
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Register( cv->vmCvar, cv->cvarName,
 			cv->defaultString, cv->cvarFlags );
+
+		// remember all systeminfo cvars so we can reset them if they're not in systeminfo.
+		if (cv->cvarFlags & CVAR_SYSTEMINFO) {
+			cv->nextSystemInfoCvar = systemInfoCvars;
+			systemInfoCvars = cv;
+		}
 	}
 
 	// see if we are also running the server on this machine

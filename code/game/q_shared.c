@@ -1252,6 +1252,60 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 
 
 /*
+===============
+Info_HasKey
+
+Searches the string for the given
+key and returns qtrue if found, or qfalse if not found
+FIXME: overflow check?
+===============
+*/
+qboolean Info_HasKey( const char *s, const char *key ) {
+	char	pkey[BIG_INFO_KEY];
+	static	int	valueindex = 0;
+	char	*o;
+	
+	if ( !s || !key ) {
+		return qfalse;
+	}
+
+	if ( strlen( s ) >= BIG_INFO_STRING ) {
+		Com_Error( ERR_DROP, "Info_HasKey: oversize infostring" );
+	}
+
+	valueindex ^= 1;
+	if (*s == '\\')
+		s++;
+	while (1)
+	{
+		o = pkey;
+		while (*s != '\\')
+		{
+			if (!*s)
+				return qfalse;
+			*o++ = *s++;
+		}
+		*o = 0;
+		s++;
+
+		while (*s != '\\' && *s)
+		{
+			*s++;
+		}
+
+		if (!Q_stricmp (key, pkey) )
+			return qtrue;
+
+		if (!*s)
+			break;
+		s++;
+	}
+
+	return qfalse;
+}
+
+
+/*
 ===================
 Info_NextPair
 

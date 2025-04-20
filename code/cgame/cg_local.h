@@ -2030,6 +2030,7 @@ void QDECL CG_SendConsoleCommand(const char *fmt, ...);
 void CG_StartMusic( qboolean bForceStart );
 
 void CG_UpdateCvars( void );
+void CG_ClearUnsetSystemInfoCvars(const char* systemInfo);
 
 int CG_CrosshairPlayer( void );
 int CG_LastAttacker( void );
