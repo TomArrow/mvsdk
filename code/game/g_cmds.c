@@ -4277,6 +4277,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	}
 	if (!level.votingOpinion) {
 		ent->client->ps.eFlags |= EF_VOTED;
+		ent->client->pers.voteValue = qtrue;
 	}
 
 	// Append white colorcode at the end of the display string as workaround for cgame leaking colors

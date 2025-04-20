@@ -2680,9 +2680,9 @@ void CheckTournament( void ) {
 int G_CalculateVoteExecuteTime() {
 	int i;
 	gentity_t* ent = g_entities;
-	// check if anyone is racing
+	// check if anyone is racing who didn't vote yes
 	for (i = 0; i < level.maxclients; i++,ent++) {
-		if (ent->inuse && ent->client && ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime) {
+		if (ent->inuse && ent->client && ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime && !ent->client->pers.voteValue) {
 			trap_SendServerCommand(-1,va("print \"Giving %s (and others?) 60 seconds to finish his race.\n\"",ent->client->pers.netname));
 			return 60000;
 		}

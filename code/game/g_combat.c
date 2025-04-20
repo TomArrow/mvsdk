@@ -2091,7 +2091,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 	}
 
-	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN) {	// only happens in standard CTF
+	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN && self != attacker) {	// only happens in standard CTF
 		if (attacker->client) {
 			if (self->client->ps.powerups[PW_REDFLAG]) {
 				PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
@@ -2103,7 +2103,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 		level.lastIronManKilled = level.time;
 	}
-	else if (self->client->sess.mode == MODE_IRONMAN && attacker && attacker->client && attacker->client->sess.mode == MODE_IRONMAN && attacker->client->isIronMan) {
+	else if (self->client->sess.mode == MODE_IRONMAN && attacker && attacker->client && attacker->client->sess.mode == MODE_IRONMAN && attacker->client->isIronMan && attacker != self) {
 		// give shield bonus to iron man if he kills someone
 		if (attacker->client->ps.stats[STAT_ARMOR] < 100) {
 			attacker->client->ps.stats[STAT_ARMOR] += 20;
@@ -3337,7 +3337,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		}
 
 		if (targ->client && attacker->client && targ->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN 
-			&& !attacker->client->isIronMan && !targ->client->isIronMan) {
+			&& !attacker->client->isIronMan && !targ->client->isIronMan && attacker != targ) {
 			return; // don't let "team mates" in iron man damage each other
 		}
 
