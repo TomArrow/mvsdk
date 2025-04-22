@@ -465,11 +465,16 @@ static void CG_EzdemoSeek(const int pdCount) {
 	const int curtime = cg.time;
 	const int pretime = x3_ezdemoPreTime.integer;	//we want to skip up to the particular event X ms before it happens
 	const int protime = x3_ezdemoPostTime.integer;	// after the event happened, wait X ms before skipping forward...
+	const int pretimeSlow = x3_ezdemoPreSlowmoTime.integer;
+	const int protimeSlow = x3_ezdemoPostSlowmoTime.integer;
+	const float slowmoScale = x3_ezdemoSlowmoTimescale.value;
+	const qboolean doSlowmo = (qboolean)(slowmoScale != 1.0f);
 
 	static int 		client;
 	static int 		eventtime;
 	static qboolean awaitingEvent = qfalse;
 	static qboolean eventStarted = qfalse;		//so we can allow the user to alter timescale as he sees fit during the event.
+	static qboolean slowmoStarted = qfalse;
 
 	if (i > pdCount) {
 		static qboolean printedMsg = qfalse;		//ARF
@@ -530,6 +535,7 @@ static void CG_EzdemoSeek(const int pdCount) {
 
 			//By here, we have a valid element that has not happened yet. Break out and fastforward to it!
 			eventStarted = qfalse;
+			slowmoStarted = qfalse;
 			break;
 		}
 	}
@@ -611,6 +617,15 @@ static void CG_EzdemoSeek(const int pdCount) {
 				trap_Cvar_Set("s_forcevol", "0");
 				eventStarted = qtrue;	//allow the user to modify timescale
 			}
+			else if(doSlowmo && !slowmoStarted && curtime >= eventtime - pretimeSlow && curtime <= eventtime + protimeSlow) {
+
+				trap_Cvar_Set(timescaleString, va("%f", slowmoScale));
+				slowmoStarted = qtrue;
+			}
+			else if(slowmoStarted && curtime > eventtime + protimeSlow) {
+				trap_Cvar_Set(timescaleString, va("%i", 1));
+				slowmoStarted = qfalse;
+			}
 
 		}
 		else if (curtime > eventtime) {
@@ -618,6 +633,7 @@ static void CG_EzdemoSeek(const int pdCount) {
 			//if an event happened and we're not past posttime, and we can no longer see who did it, just skip to next event.
 			awaitingEvent = qfalse;
 			eventStarted = qfalse;
+			slowmoStarted = qfalse;
 			//the loop will now continue to find next event
 			trap_Cvar_Set(timescaleString, va("%i", 11));
 		}
@@ -630,6 +646,7 @@ static void CG_EzdemoSeek(const int pdCount) {
 		//the event happened already
 		awaitingEvent = qfalse;
 		eventStarted = qfalse;
+		slowmoStarted = qfalse;
 		//the loop will now continue to find next event
 	}
 }

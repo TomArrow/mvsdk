@@ -1993,6 +1993,9 @@ extern	vmCvar_t		x3_screenshotAfterEachRound;
 extern	vmCvar_t		x3_demoSkipPauses;
 extern	vmCvar_t		x3_demoSeekTimescale;
 extern	vmCvar_t		x3_ezdemoPreTime;
+extern	vmCvar_t		x3_ezdemoPreSlowmoTime;
+extern	vmCvar_t		x3_ezdemoPostSlowmoTime;
+extern	vmCvar_t		x3_ezdemoSlowmoTimescale;
 extern	vmCvar_t		x3_ezdemoPostTime;
 
 extern	vmCvar_t		cg_acidtrip;

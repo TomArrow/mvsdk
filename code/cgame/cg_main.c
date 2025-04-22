@@ -811,6 +811,9 @@ vmCvar_t	x3_screenshotAfterEachRound;
 vmCvar_t	x3_demoSkipPauses;
 vmCvar_t	x3_demoSeekTimescale;
 vmCvar_t	x3_ezdemoPreTime;
+vmCvar_t	x3_ezdemoPreSlowmoTime;
+vmCvar_t	x3_ezdemoPostSlowmoTime;
+vmCvar_t	x3_ezdemoSlowmoTimescale;
 vmCvar_t	x3_ezdemoPostTime;
 
 vmCvar_t	cg_acidtrip; // taken from openmohaa
@@ -1174,6 +1177,9 @@ Ghoul2 Insert Start
 	{ &x3_demoSkipPauses, "x3_demoSkipPauses", "0", CVAR_ARCHIVE }, // pauses (either by g_speed 0 or nt_pausegame 1) are fastforwarded through in demos
 	{ &x3_demoSeekTimescale, "x3_demoSeekTimescale", "60", CVAR_ARCHIVE }, // set the timescale used when fastforwarding with demoseek
 	{ &x3_ezdemoPreTime, "x3_ezdemoPreTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see before an event in ezdemo
+	{ &x3_ezdemoPreSlowmoTime, "x3_ezdemoPreSlowmoTime", "500", CVAR_ARCHIVE }, // number of ms that count as shortly before the event
+	{ &x3_ezdemoPostSlowmoTime, "x3_ezdemoPostSlowmoTime", "500", CVAR_ARCHIVE }, // number of ms that count as shortly before the event
+	{ &x3_ezdemoSlowmoTimescale, "x3_ezdemoSlowmoTimescale", "0.1", CVAR_ARCHIVE }, // timescale for shortly around event
 	{ &x3_ezdemoPostTime, "x3_ezdemoPostTime", "5000", CVAR_ARCHIVE }, // number of ms that we want to see after an event in ezdemo
 	{ &cg_acidtrip, "cg_acidtrip", "0", CVAR_TEMP }, // meme command from openmohaa
 /*
