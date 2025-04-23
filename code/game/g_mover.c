@@ -956,16 +956,20 @@ Touch_DoorTriggerSpectator
 static void Touch_DoorTriggerSpectator( gentity_t *ent, gentity_t *other, trace_t *trace ) {
 	int i, axis;
 	vec3_t origin, dir, angles;
+	int extraForBoundingBox = 15;
 
 	axis = ent->count;
 	VectorClear(dir);
+	if (axis == 2) {
+		extraForBoundingBox = 40; // TODO depending on above/below?
+	}
 	if (fabs(other->s.origin[axis] - ent->r.absmax[axis]) <
 		fabs(other->s.origin[axis] - ent->r.absmin[axis])) {
-		origin[axis] = ent->r.absmin[axis] - 10;
+		origin[axis] = ent->r.absmin[axis] - 10 - extraForBoundingBox;
 		dir[axis] = -1;
 	}
 	else {
-		origin[axis] = ent->r.absmax[axis] + 10;
+		origin[axis] = ent->r.absmax[axis] + 10 + extraForBoundingBox; // TA our bounding box is 15 wide
 		dir[axis] = 1;
 	}
 	for (i = 0; i < 3; i++) {
