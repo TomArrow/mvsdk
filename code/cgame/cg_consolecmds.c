@@ -1613,6 +1613,7 @@ static void CG_QuiGonJinn_f(void)
 		CG_Printf("^2SECRET QUI-GON JINN SKIN UNLOCKED!\n");
 		CG_Printf("Credit for original model/skin by yasuakiNk goes to yasuakiNk, Seven, Elek Andor and Toshi.\n");
 		trap_Cvar_Set("model", "secret_quigon/default");
+		trap_Cvar_Set("team_model", "secret_quigon/default");
 		cgQuigonUnlocked = qtrue;
 	}
 }

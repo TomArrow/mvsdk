@@ -3362,6 +3362,10 @@ void CG_CheckQuiGon() {
 		if (!Q_stricmpn("secret_quigon/", model, strlen("secret_quigon/"))) {
 			trap_Cvar_Set("model","kyle/default");
 		}
+		trap_Cvar_VariableStringBuffer("team_model", model, sizeof(model));
+		if (!Q_stricmpn("secret_quigon/", model, strlen("secret_quigon/"))) {
+			trap_Cvar_Set("team_model","kyle/default");
+		}
 	}
 }
 
