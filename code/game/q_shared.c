@@ -1495,8 +1495,10 @@ Changes or adds a key/value pair
 */
 void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 	char	newi[MAX_INFO_STRING];
+	int		newlen,oldlen;
 
-	if ( strlen( s ) >= MAX_INFO_STRING ) {
+	oldlen = strlen(s);
+	if (oldlen >= MAX_INFO_STRING ) {
 		Com_Error( ERR_DROP, "Info_SetValueForKey: oversize infostring" );
 	}
 
@@ -1530,8 +1532,10 @@ void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 		return;
 	}
 
-	Q_strcat (newi, MAX_INFO_STRING, s);
-	Q_strncpyz (s, newi, MAX_INFO_STRING); // this feels dangerous. what if the user doesn't respect this. but tons of places this would need to be changed TODO
+	Q_strcat (newi, sizeof(newi), s);
+	newlen = strlen(newi);
+	Q_strncpyz (s, newi, MIN(MAX(oldlen+1, newlen+1),MAX_INFO_STRING)); // this feels dangerous. what if the user doesn't respect this. but tons of places this would need to be changed TODO
+	// DEFINITELY fix this. not doing the MIN(a,b) here results in disaster cause this function is SADLY called on shorter strings than MAX_INFO_STRING. DEFINITELY fix soon. provide size param.
 }
 
 /*

@@ -139,7 +139,7 @@ int G_ParseInfos( char *buf, int max, infoHashed_t infos[], infoHashed_t *hashTa
 				Q_strncpyz(infos[count].info, info, infoLen);
 
 				// check for dupes
-				for (cmp = g_arenaInfosHashTable[hash]; cmp; cmp = cmp->next) {
+				for (cmp = hashTable[hash]; cmp; cmp = cmp->next) {
 					//if( Q_stricmp( Info_ValueForKey( g_arenaInfos[n], "map" ), map ) == 0 ) {
 					if (Q_stricmp(cmp->name, keyValue) == 0) {
 						dupe = qtrue;
@@ -533,7 +533,7 @@ static void G_LoadMapBlacklists() {
 	}
 
 	if (numBlacklists) {
-		Com_Printf("%d blacklist files were parsed.\n");
+		Com_Printf("%d blacklist files were parsed.\n", numBlacklists);
 	}
 
 	if (g_defrag.integer) {

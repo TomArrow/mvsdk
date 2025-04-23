@@ -4141,6 +4141,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		int				mapnum = -1; //atoi(arg2);
 		int				tries = 0;
 
+		if (g_numArenas < 1) {
+			trap_SendServerCommand(ent - g_entities, "print \"No maps found.\n\"");
+			return;
+		}
+
 		while (mapnum == -1 && tries< 10) {
 			mapnum = Q_irand(0, g_numArenas, qfalse, 0); //atoi(arg2);
 			if (mapnum < 0 || mapnum >= g_numArenas) {
