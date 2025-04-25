@@ -1397,8 +1397,22 @@ void CG_SetModelColor(const char *color, clientInfo_t *ci, int clientNum)
 {
 	char modelColor[9];
 	qboolean colorsValid;
+	qboolean useLocalColor = qfalse;
 
-	if ((cg.useLocalCharacterColors && cg.snap != NULL && cg.snap->ps.clientNum == clientNum) || cg_forceModel.integer)
+	if (!cg.demoPlayback)
+	{
+		if (color[0] == '\0' && clientNum == cg.clientNum)
+		{
+			useLocalColor = qtrue;
+		}
+	
+		if (cg_forceModel.integer)
+		{
+			useLocalColor = qtrue;
+		}
+	}
+
+	if (useLocalColor)
 	{
 		ci->modelColor[0] = cg_char_color_red.integer;
 		ci->modelColor[1] = cg_char_color_green.integer;
@@ -1419,104 +1433,32 @@ void CG_SetModelColor(const char *color, clientInfo_t *ci, int clientNum)
 	}
 }
 
-void CG_UpdateLocalCharacterColors(void)
-{
-	clientInfo_t *ci = NULL;
-	int i = 0;
-
-	if (!cg.useLocalCharacterColors)
-	{
-		return;
-	}
-
-	for (i = 0; i < MAX_CLIENTS; i++)
-	{
-		ci = &cgs.clientinfo[i];
-
-		if (ci == NULL || !ci->infoValid)
-		{
-			continue;
-		}
-
-		if ((cg.snap != NULL && i == cg.snap->ps.clientNum) || cg_forceModel.integer)
-		{
-			ci->modelColor[0] = cg_char_color_red.integer;
-			ci->modelColor[1] = cg_char_color_green.integer;
-			ci->modelColor[2] = cg_char_color_blue.integer;
-			ci->modelColor[3] = cg_char_color_alpha.integer;
-		}
-		else
-		{
-			ci->modelColor[0] = 255;
-			ci->modelColor[1] = 255;
-			ci->modelColor[2] = 255;
-			ci->modelColor[3] = 255;
-		}
-	}
-}
-
-void CG_SetSaberName(const char name[MAX_QPATH], clientInfo_t *ci, int clientNum)
+void CG_SetSaberName(const char *name, clientInfo_t *ci, int clientNum)
 {
 	const char *clientSaberName = name;
+
+	if (clientNum == cg.clientNum)
+	{
+		if (cg_forceMySaber.string[0] != '\0')
+		{
+			clientSaberName = cg_forceMySaber.string;
+		}
+
+		if (clientSaberName[0] == '\0' && !cg.demoPlayback)
+		{
+			clientSaberName = cg_saber1.string;
+		}
+	}
 
 	if (clientSaberName[0] == '\0')
 	{
 		clientSaberName = DEFAULT_SABER1;
 	}
 
-	if (cg.snap != NULL && clientNum == cg.snap->ps.clientNum)
-	{
-		if (strlen(cg_forceMySaber.string))
-		{
-			clientSaberName = cg_forceMySaber.string;
-		}
-		else if (cg.useLocalSaberName && strlen(cg_saber1.string))
-		{
-			clientSaberName = cg_saber1.string;
-		}
-	}
-
-	Q_strncpyz(ci->saberName, clientSaberName, MAX_QPATH);
+	Q_strncpyz(ci->saberName, clientSaberName, sizeof(ci->saberName));
 
 	clientSaberName = DEFAULT_SABER2;
-	Q_strncpyz(ci->saber2Name, clientSaberName, MAX_QPATH);
-}
-
-void CG_UpdateLocalSaberName(void)
-{
-	int i;
-	int j;
-	clientInfo_t *ci;
-
-	if (!cg.useLocalSaberName || cg.localSaberNameUpdated)
-	{
-		return;
-	}
-
-	for (i = 0; i < MAX_CLIENTS; i++)
-	{
-		ci = &cgs.clientinfo[i];
-
-		if (ci == NULL || !ci->infoValid)
-		{
-			continue;
-		}
-
-		CG_SetSaberName(DEFAULT_SABER1, ci, i);
-
-		for (j = 0; j < MAX_SABERS; j++)
-		{
-			if (ci->saber[j].model[0])
-			{
-				CG_InitG2SaberData(j, ci);
-			}
-
-			cg_entities[i].weapon = 0;
-			cg_entities[i].ghoul2weapon = NULL;
-		}
-	}
-
-	cg.localSaberNameUpdated = qtrue;
+	Q_strncpyz(ci->saber2Name, clientSaberName, sizeof(ci->saber2Name));
 }
 
 extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance
@@ -1686,12 +1628,10 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	// model color
 	v = Info_ValueForKey(configstring, "mc");
-	cg.useLocalCharacterColors = v[0] == '\0';
 	CG_SetModelColor(v, &newInfo, clientNum);
 
 	// saber name
 	v = Info_ValueForKey(configstring, "st");
-	cg.useLocalSaberName = v[0] == '\0';
 	CG_SetSaberName(v, &newInfo, clientNum);
 
 	// head model

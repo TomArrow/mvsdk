@@ -1025,9 +1025,6 @@ Ghoul2 Insert End
 	qboolean speccing;
 
 	qboolean			nextCGTraceExplicitlyDeluxe;
-	qboolean			useLocalCharacterColors;
-	qboolean			useLocalSaberName;
-	qboolean			localSaberNameUpdated;
 	hudType_t			hudType;
 	qboolean			updateHud;
 } cg_t;
@@ -2160,8 +2157,6 @@ void CG_AddRefEntityWithPowerups( refEntity_t *ent, entityState_t *state, int te
 void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized );
 sfxHandle_t	CG_CustomSound( int clientNum, const char *soundName );
 void CG_PlayerShieldHit(int entitynum, vec3_t angles, int amount);
-void CG_UpdateLocalCharacterColors(void);
-void CG_UpdateLocalSaberName(void);
 
 
 //
