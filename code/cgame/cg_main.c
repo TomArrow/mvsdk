@@ -111,6 +111,7 @@ int forceMyModelModificationCount = -1;
 int forceMySaberModificationCount = -1;
 int saber1ModificationCount = -1;
 int charColorModificationCount[4] = {-1, -1, -1, -1};
+int charColorForcedModificationCount[4] = {-1, -1, -1, -1};
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
@@ -1255,6 +1256,10 @@ void CG_RegisterCvars( void ) {
 	charColorModificationCount[1] = cg_char_color_green.modificationCount;
 	charColorModificationCount[2] = cg_char_color_blue.modificationCount;
 	charColorModificationCount[3] = cg_char_color_alpha.modificationCount;
+	charColorForcedModificationCount[0] = cg_char_color_red_forced.modificationCount;
+	charColorForcedModificationCount[1] = cg_char_color_green_forced.modificationCount;
+	charColorForcedModificationCount[2] = cg_char_color_blue_forced.modificationCount;
+	charColorForcedModificationCount[3] = cg_char_color_alpha_forced.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
@@ -1464,6 +1469,21 @@ void CG_UpdateCvars( void ) {
 		charColorModificationCount[2] = cg_char_color_blue.modificationCount;
 		charColorModificationCount[3] = cg_char_color_alpha.modificationCount;
 		updateModel = qtrue;
+	}
+	if (
+		charColorForcedModificationCount[0] != cg_char_color_red_forced.modificationCount ||
+		charColorForcedModificationCount[1] != cg_char_color_green_forced.modificationCount ||
+		charColorForcedModificationCount[2] != cg_char_color_blue_forced.modificationCount ||
+		charColorForcedModificationCount[3] != cg_char_color_alpha_forced.modificationCount
+	)
+	{
+		charColorForcedModificationCount[0] = cg_char_color_red_forced.modificationCount;
+		charColorForcedModificationCount[1] = cg_char_color_green_forced.modificationCount;
+		charColorForcedModificationCount[2] = cg_char_color_blue_forced.modificationCount;
+		charColorForcedModificationCount[3] = cg_char_color_alpha_forced.modificationCount;
+		if (cg_forceMyModel.string[0] != '\0') {
+			updateModel = qtrue;
+		}
 	}
 
 	if (widescreenModificationCount != cg_widescreen.modificationCount) {
