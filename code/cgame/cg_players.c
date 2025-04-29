@@ -1504,10 +1504,10 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 			}
 		}
 
-		memset( ci, 0, sizeof( *ci ) );
-		if (!cgs.disconnectTime[clientNum]) {
+		if (!cgs.disconnectTime[clientNum] && ci->infoValid) { // was valid before. isnt anymore.
 			cgs.disconnectTime[clientNum] = cg.time;
 		}
+		memset( ci, 0, sizeof( *ci ) );
 		return;		// player just left
 	}
 

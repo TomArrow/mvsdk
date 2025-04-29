@@ -1251,6 +1251,10 @@ void CG_RegisterCvars( void ) {
 	forceModelModificationCount = cg_forceModel.modificationCount;
 	forceMyModelModificationCount = cg_forceMyModel.modificationCount;
 	forceMySaberModificationCount = cg_forceMySaber.modificationCount;
+	charColorModificationCount[0] = cg_char_color_red.modificationCount;
+	charColorModificationCount[1] = cg_char_color_green.modificationCount;
+	charColorModificationCount[2] = cg_char_color_blue.modificationCount;
+	charColorModificationCount[3] = cg_char_color_alpha.modificationCount;
 
 	widescreenModificationCount = cg_widescreen.modificationCount;
 
