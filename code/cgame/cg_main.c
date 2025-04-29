@@ -110,6 +110,7 @@ vec4_t colorTable[CT_MAX] =
 int forceMyModelModificationCount = -1;
 int forceMySaberModificationCount = -1;
 int saber1ModificationCount = -1;
+int charColorModificationCount[4] = {-1, -1, -1, -1};
 int forceModelModificationCount = -1;
 int widescreenModificationCount = -1;
 int crosshairColorModificationCount = -1;//japro
@@ -1397,6 +1398,7 @@ CG_UpdateCvars
 void CG_UpdateCvars( void ) {
 	int			i;
 	cvarTable_t	*cv;
+	qboolean updateModel = qfalse;
 
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Update( cv->vmCvar );
@@ -1421,21 +1423,35 @@ void CG_UpdateCvars( void ) {
 	// if force model changed
 	if ( forceModelModificationCount != cg_forceModel.modificationCount ) {
 		forceModelModificationCount = cg_forceModel.modificationCount;
-		CG_ForceModelChange();
+		updateModel = qtrue;
 	}
 	if ( forceMyModelModificationCount != cg_forceMyModel.modificationCount ) {
 		forceMyModelModificationCount = cg_forceMyModel.modificationCount;
-		CG_ForceModelChange();
+		updateModel = qtrue;
 	}
 
 	if ( forceMySaberModificationCount != cg_forceMySaber.modificationCount ) {
 		forceMySaberModificationCount = cg_forceMySaber.modificationCount;
-		CG_ForceModelChange();
+		updateModel = qtrue;
 	}
 
 	if ( saber1ModificationCount != cg_saber1.modificationCount ) {
 		saber1ModificationCount = cg_saber1.modificationCount;
-		cg.localSaberNameUpdated = qfalse;
+		updateModel = qtrue;
+	}
+
+	if (
+		charColorModificationCount[0] != cg_char_color_red.modificationCount ||
+		charColorModificationCount[1] != cg_char_color_green.modificationCount ||
+		charColorModificationCount[2] != cg_char_color_blue.modificationCount ||
+		charColorModificationCount[3] != cg_char_color_alpha.modificationCount
+	)
+	{
+		charColorModificationCount[0] = cg_char_color_red.modificationCount;
+		charColorModificationCount[1] = cg_char_color_green.modificationCount;
+		charColorModificationCount[2] = cg_char_color_blue.modificationCount;
+		charColorModificationCount[3] = cg_char_color_alpha.modificationCount;
+		updateModel = qtrue;
 	}
 
 	if (widescreenModificationCount != cg_widescreen.modificationCount) {
@@ -1456,6 +1472,11 @@ void CG_UpdateCvars( void ) {
 	if (hudModificationCount != cg_hudFiles.modificationCount) {
 		hudModificationCount = cg_hudFiles.modificationCount;
 		cg.updateHud = qtrue;
+	}
+
+	if (updateModel)
+	{
+		CG_ForceModelChange();
 	}
 }
 

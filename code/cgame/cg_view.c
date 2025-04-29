@@ -2118,9 +2118,6 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		CG_AddLightShow();
 	}
 
-	CG_UpdateLocalCharacterColors();
-	CG_UpdateLocalSaberName();
-
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );
 
