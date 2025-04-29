@@ -1905,6 +1905,11 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// set up cg.snap and possibly cg.nextSnap
 	CG_ProcessSnapshots();
 
+	if (cg.snap && cgs.lastPsClientNum != cg.snap->ps.clientNum && (cg_forceMyModel.string[0] != '\0' || cg_forceMySaber.string[0] != '\0')) {
+		cgs.lastPsClientNum = cg.snap->ps.clientNum;
+		CG_ForceModelChange(); // if forcemysaber/forcemymodel is active, we need to update when playerstate clientnum changes (e.g. when in spectator mode)
+	}
+
 	trap_ROFF_UpdateEntities();
 
 	// if we haven't received any snapshots yet, all

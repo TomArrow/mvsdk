@@ -1822,9 +1822,9 @@ const char* colorToHex(byte color[4]){
 	return hex;
 }
 
-#define HEXTOVALUE(a) ((a) >= '0' && a<='9') ? ((a)-'0') : (((a) >= 'A' && a<='F') ? (a)-'A'+10 : 15);  
+#define HEXTOVALUE(a) ((a) >= '0' && (a)<='9') ? ((a)-'0') : (((a) >= 'A' && (a)<='F') ? (a)-'A'+10 : 15);  
 
-qboolean parseHex(const char* hex, byte outColor[4]){
+qboolean parseHex(const char hex[9], byte outColor[4]){
 	int i,a,b;
 	int len = strlen(hex);
 	int pairs = len/2;

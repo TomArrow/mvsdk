@@ -823,6 +823,10 @@ vmCvar_t	cg_char_color_red;
 vmCvar_t	cg_char_color_green;
 vmCvar_t	cg_char_color_blue;
 vmCvar_t	cg_char_color_alpha;
+vmCvar_t	cg_char_color_red_forced;// when using cg_forcemymodel
+vmCvar_t	cg_char_color_green_forced;// when using cg_forcemymodel
+vmCvar_t	cg_char_color_blue_forced;// when using cg_forcemymodel
+vmCvar_t	cg_char_color_alpha_forced;// when using cg_forcemymodel
 vmCvar_t	cg_saber1;
 vmCvar_t	cg_saber2;
 vmCvar_t	cg_JKA;
@@ -1190,6 +1194,10 @@ Ghoul2 Insert End
 	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_alpha, "char_color_alpha", "255", CVAR_USERINFO | CVAR_ARCHIVE },
+	{ &cg_char_color_red_forced, "cg_cchar_color_red_forced", "255",  CVAR_ARCHIVE }, // when using cg_forcemymodel
+	{ &cg_char_color_green_forced, "cg_cchar_color_green_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
+	{ &cg_char_color_blue_forced, "cg_cchar_color_blue_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
+	{ &cg_char_color_alpha_forced, "cg_cchar_color_alpha_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
 	{ &cg_saber1, "saber1", DEFAULT_SABER1, CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_saber2, "saber2", DEFAULT_SABER2, CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
@@ -1274,7 +1282,7 @@ void CG_RegisterCvars( void ) {
 CG_ForceModelChange
 ===================
 */
-static void CG_ForceModelChange( void ) {
+void CG_ForceModelChange( void ) {
 	int		i;
 
 	for (i=0 ; i<MAX_CLIENTS ; i++) {

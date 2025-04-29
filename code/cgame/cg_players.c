@@ -1395,11 +1395,17 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 
 void CG_SetModelColor(const char *color, clientInfo_t *ci, int clientNum)
 {
-	char modelColor[9];
-	qboolean colorsValid;
+	qboolean colorsValid = qfalse;
 	qboolean useLocalColor = qfalse;
 
-	if (!cg.demoPlayback)
+	if (cg_forceMyModel.string[0] != '\0' && cg.snap && cg.snap->ps.clientNum == clientNum) {
+		ci->modelColor[0] = cg_char_color_red_forced.integer;
+		ci->modelColor[1] = cg_char_color_green_forced.integer;
+		ci->modelColor[2] = cg_char_color_blue_forced.integer;
+		ci->modelColor[3] = cg_char_color_alpha_forced.integer;
+		return;
+	}
+	else if (!cg.demoPlayback)
 	{
 		if (color[0] == '\0' && clientNum == cg.clientNum)
 		{
@@ -1421,8 +1427,11 @@ void CG_SetModelColor(const char *color, clientInfo_t *ci, int clientNum)
 		return;
 	}
 
-	Q_strncpyz(modelColor, color, sizeof(modelColor));
-	colorsValid = parseHex(modelColor, ci->modelColor);
+	if (color[0] != '\0') {
+		char modelColor[9];
+		Q_strncpyz(modelColor, color, sizeof(modelColor));
+		colorsValid = parseHex(modelColor, ci->modelColor);
+	}
 
 	if (!colorsValid)
 	{
@@ -1437,17 +1446,13 @@ void CG_SetSaberName(const char *name, clientInfo_t *ci, int clientNum)
 {
 	const char *clientSaberName = name;
 
-	if (clientNum == cg.clientNum)
+	if (cg_forceMySaber.string[0] != '\0' && cg.snap && cg.snap->ps.clientNum == clientNum)
 	{
-		if (cg_forceMySaber.string[0] != '\0')
-		{
-			clientSaberName = cg_forceMySaber.string;
-		}
-
-		if (clientSaberName[0] == '\0' && !cg.demoPlayback)
-		{
-			clientSaberName = cg_saber1.string;
-		}
+		clientSaberName = cg_forceMySaber.string;
+	}
+	else if (!cg.demoPlayback && clientNum == cg.clientNum && clientSaberName[0] == '\0')
+	{
+		clientSaberName = cg_saber1.string;
 	}
 
 	if (clientSaberName[0] == '\0')

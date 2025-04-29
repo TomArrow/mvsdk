@@ -1646,6 +1646,7 @@ Ghoul2 Insert End
 	qboolean		isTommyTernal;
 	int				ttFlags; // tommyternal flags
 	int				ttFlagsGp; // tommyternal flags
+	int				lastPsClientNum;
 } cgs_t;
 
 //==============================================================================
@@ -2000,6 +2001,10 @@ extern	vmCvar_t		cg_char_color_red;
 extern	vmCvar_t		cg_char_color_green;
 extern	vmCvar_t		cg_char_color_blue;
 extern	vmCvar_t		cg_char_color_alpha;
+extern	vmCvar_t		cg_char_color_red_forced;// when using cg_forcemymodel
+extern	vmCvar_t		cg_char_color_green_forced;// when using cg_forcemymodel
+extern	vmCvar_t		cg_char_color_blue_forced;// when using cg_forcemymodel
+extern	vmCvar_t		cg_char_color_alpha_forced;// when using cg_forcemymodel
 extern	vmCvar_t		cg_saber1;
 extern	vmCvar_t		cg_saber2;
 extern	vmCvar_t		cg_JKA;
@@ -2056,6 +2061,7 @@ void MV_LoadSettings( const char *info );
 void MV_UpdateCgFlags( void );
 void CG_WideScreenMode(qboolean on);
 void CG_UpdateHud(const char *path);
+void CG_ForceModelChange(void);
 
 //
 // cg_view.c

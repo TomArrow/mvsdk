@@ -2603,7 +2603,7 @@ void sanitizeFilename(const char* input, char* output, qboolean allowExtension);
 
 int safeatoi(const char* nptr, char** endptr, int base, int* error);
 const char* colorToHex(byte color[4]);
-qboolean parseHex(const char* hex, byte outColor[4]);
+qboolean parseHex(const char hex[9], byte outColor[4]);
 
 int clampedIntMult(int a, int b);
 int clampedIntAdd(int a, int b);
