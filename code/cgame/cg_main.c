@@ -1194,10 +1194,10 @@ Ghoul2 Insert End
 	{ &cg_char_color_green, "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_blue, "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_char_color_alpha, "char_color_alpha", "255", CVAR_USERINFO | CVAR_ARCHIVE },
-	{ &cg_char_color_red_forced, "cg_cchar_color_red_forced", "255",  CVAR_ARCHIVE }, // when using cg_forcemymodel
-	{ &cg_char_color_green_forced, "cg_cchar_color_green_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
-	{ &cg_char_color_blue_forced, "cg_cchar_color_blue_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
-	{ &cg_char_color_alpha_forced, "cg_cchar_color_alpha_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
+	{ &cg_char_color_red_forced, "cg_char_color_red_forced", "255",  CVAR_ARCHIVE }, // when using cg_forcemymodel
+	{ &cg_char_color_green_forced, "cg_char_color_green_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
+	{ &cg_char_color_blue_forced, "cg_char_color_blue_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
+	{ &cg_char_color_alpha_forced, "cg_char_color_alpha_forced", "255",  CVAR_ARCHIVE },// when using cg_forcemymodel
 	{ &cg_saber1, "saber1", DEFAULT_SABER1, CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_saber2, "saber2", DEFAULT_SABER2, CVAR_USERINFO | CVAR_ARCHIVE },
 	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
