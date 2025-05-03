@@ -2516,6 +2516,7 @@ typedef struct ezDemoEvent_s {
 	int serverTime;
 	byte clientNum;
 	byte clientNum2;
+	int duration;
 } ezDemoEvent_t;
 
 typedef struct ezDemoBuffer_s {

@@ -449,6 +449,43 @@ qboolean CG_EntityIsValid(const int clientNum) {
 }
 
 
+static qboolean CG_EzDemoGetEventTime(int num, int* eventtime, int* client, int* duration) {
+
+	if (ezDemoBuffer.eventCount) {
+		if (num > ezDemoBuffer.eventCount) {
+			return qfalse;
+		}
+		*eventtime = ezDemoBuffer.events[num - 1].serverTime;
+		*duration = ezDemoBuffer.events[num - 1].duration;
+		*client = ezDemoBuffer.events[num - 1].clientNum;
+	}
+	else {
+
+		char buf[32];
+		char cl[8], tm[32];
+		char* pch = NULL;
+		trap_Cvar_VariableStringBuffer(va("pd%i", num), buf, sizeof(buf));
+
+		pch = strchr(buf, '\\');
+
+		if (!pch) {
+			return qfalse; // continue;	//was "break;"
+		}
+
+		// parse target servertime
+		Q_strncpyz(tm, pch + 1, sizeof(tm));
+		*eventtime = atoi(tm);
+
+
+		//parse target client num
+		Q_strncpyz(cl, buf, strlen(buf) - strlen(pch) + 1);
+		*client = atoi(cl);
+
+		*duration = 0;
+	}
+	return qtrue;
+}
+
 // #define MAX_PREDEMO_FRAGS 100
 
 extern const char* timescaleString;
@@ -472,9 +509,16 @@ static void CG_EzdemoSeek(const int pdCount) {
 
 	static int 		client;
 	static int 		eventtime;
+	static int 		duration;
+	static int 		eventendtime;
+	static int 		nextclient;
+	static int 		nexteventtime;
+	static int 		nexteventduration;
+	static int 		nexteventendtime;
 	static qboolean awaitingEvent = qfalse;
 	static qboolean eventStarted = qfalse;		//so we can allow the user to alter timescale as he sees fit during the event.
 	static qboolean slowmoStarted = qfalse;
+	static qboolean nextEventExists = qfalse;
 
 	if (i > pdCount) {
 		static qboolean printedMsg = qfalse;		//ARF
@@ -491,41 +535,21 @@ static void CG_EzdemoSeek(const int pdCount) {
 
 	if (!awaitingEvent) {
 		//i as a static var .. nice!
+
 		for (; i <= pdCount; ++i) {
-			char buf[32];
-			char cl[8], tm[32];
-			char* pch = NULL;
 
-			if (ezDemoBuffer.eventCount) {
-				eventtime = ezDemoBuffer.events[i - 1].serverTime;
-				client = ezDemoBuffer.events[i - 1].clientNum;
+			if (!CG_EzDemoGetEventTime(i, &eventtime, &client, &duration)) {
+				continue;
 			}
-			else {
 
-				trap_Cvar_VariableStringBuffer(va("pd%i", i), buf, sizeof(buf));
-
-				pch = strchr(buf, '\\');
-
-				if (!pch) {
-					continue;	//was "break;"
-				}
-
-				// parse target servertime
-				Q_strncpyz(tm, pch + 1, sizeof(tm));
-				eventtime = atoi(tm);
-
-
-				//parse target client num
-				Q_strncpyz(cl, buf, strlen(buf) - strlen(pch) + 1);
-				client = atoi(cl);
-			}
+			eventendtime = eventtime + duration;
 
 			//check if we're psat this time, in which case skip this element.
 			// if (time > eventtime + protime){
 			// if ( !(curtime <= eventtime - pretime) ) {
 			// if (curtime >= eventtime + protime) {
 #define OK_EXTRA_MS	30
-			if (curtime > eventtime + protime - OK_EXTRA_MS) {
+			if (curtime > eventendtime + protimeSlow - OK_EXTRA_MS) {
 				// CG_Printf("Skipping this element because servertime (%i) > %i. (it already happened)\n", curtime, eventtime-OK_EXTRA_MS);
 				continue;
 			}
@@ -536,8 +560,15 @@ static void CG_EzdemoSeek(const int pdCount) {
 			//By here, we have a valid element that has not happened yet. Break out and fastforward to it!
 			eventStarted = qfalse;
 			slowmoStarted = qfalse;
+
+			nextEventExists = CG_EzDemoGetEventTime(i+1, &nexteventtime, &nextclient, &nexteventduration);
+			if (nextEventExists) {
+				nexteventendtime = nexteventtime + nexteventduration;
+			}
+
 			break;
 		}
+		
 	}
 
 
@@ -603,7 +634,7 @@ static void CG_EzdemoSeek(const int pdCount) {
 		awaitingEvent = qtrue;
 		trap_Cvar_Set("s_forcevol", "0.01");
 	}
-	else if (curtime >= eventtime - pretime && curtime <= eventtime + protime) {
+	else if (curtime >= eventtime - pretime && curtime <= eventendtime + protime) {
 		//this event is currently happening! dont fastforward, lets see it in normal motion.
 		// Com_Printf("event is currently happening.. timescale forced to 1. setting viewpos to client %i '%s'\n", client, cgs.clientinfo[client].name);
 
@@ -616,34 +647,51 @@ static void CG_EzdemoSeek(const int pdCount) {
 				trap_Cvar_Set(timescaleString, va("%i", 1));
 				trap_Cvar_Set("s_forcevol", "0");
 				eventStarted = qtrue;	//allow the user to modify timescale
+				slowmoStarted = qfalse;
 			}
-			else if(doSlowmo && !slowmoStarted && curtime >= eventtime - pretimeSlow && curtime <= eventtime + protimeSlow) {
+			
+			if(eventStarted && doSlowmo && !slowmoStarted && curtime >= eventtime - pretimeSlow && curtime <= eventendtime + protimeSlow) {
 
 				trap_Cvar_Set(timescaleString, va("%f", slowmoScale));
 				slowmoStarted = qtrue;
 			}
-			else if(slowmoStarted && curtime > eventtime + protimeSlow) {
-				trap_Cvar_Set(timescaleString, va("%i", 1));
-				slowmoStarted = qfalse;
+			else if(slowmoStarted && curtime > eventendtime + protimeSlow) {
+				if (!(nextEventExists && curtime >= nexteventtime - pretimeSlow && curtime <= nexteventendtime + protimeSlow)) {
+					// if the next event is already coming up and we are in its slowmo range, don't speed up to avoid weirdness
+					trap_Cvar_Set(timescaleString, va("%i", 1));
+					slowmoStarted = qfalse;
+				}
 			}
 
+			awaitingEvent = qtrue;
 		}
-		else if (curtime > eventtime) {
+		else if (curtime > eventendtime) {
 			// Com_Printf("^5can no longer see who did this frag, fastforwarding!\n");
 			//if an event happened and we're not past posttime, and we can no longer see who did it, just skip to next event.
 			awaitingEvent = qfalse;
 			eventStarted = qfalse;
 			slowmoStarted = qfalse;
 			//the loop will now continue to find next event
-			trap_Cvar_Set(timescaleString, va("%i", 11));
+			//trap_Cvar_Set(timescaleString, va("%i", 11));
 		}
 		else {
 			//cant see the guy who gets the frag yet, so fastforward A LITTLE
 			trap_Cvar_Set(timescaleString, "1.8");
+			eventStarted = qfalse;
+			slowmoStarted = qfalse;
+			awaitingEvent = qtrue;
 		}
 	}
-	else if (curtime > eventtime + protime) {
+	else if (curtime > eventendtime + protime) {
 		//the event happened already
+		awaitingEvent = qfalse;
+		eventStarted = qfalse;
+		slowmoStarted = qfalse;
+		//the loop will now continue to find next event
+	}
+
+	if (awaitingEvent && nextEventExists && curtime > eventendtime + protimeSlow && curtime >= nexteventtime - pretimeSlow) {
+		// let's not miss out on slowmotion for the next event
 		awaitingEvent = qfalse;
 		eventStarted = qfalse;
 		slowmoStarted = qfalse;
