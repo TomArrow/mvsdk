@@ -634,7 +634,7 @@ static void CG_EzdemoSeek(const int pdCount) {
 		awaitingEvent = qtrue;
 		trap_Cvar_Set("s_forcevol", "0.01");
 	}
-	else if (curtime >= eventtime - pretime && curtime <= eventendtime + protime) {
+	else if (curtime >= (eventtime - pretime) && curtime <= (eventendtime + protime)) {
 		//this event is currently happening! dont fastforward, lets see it in normal motion.
 		// Com_Printf("event is currently happening.. timescale forced to 1. setting viewpos to client %i '%s'\n", client, cgs.clientinfo[client].name);
 

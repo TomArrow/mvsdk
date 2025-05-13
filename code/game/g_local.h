@@ -1515,6 +1515,7 @@ extern	vmCvar_t	g_submodelWorkaround;
 extern	vmCvar_t	g_botTeamAutoBalance;
 
 extern	vmCvar_t	g_userCmdBuffer;
+extern	vmCvar_t	g_userCmdBufferSmoothen;
 extern	vmCvar_t	g_blockIdenticalUserSnaps;
 extern	vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 

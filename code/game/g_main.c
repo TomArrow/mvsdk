@@ -206,6 +206,7 @@ vmCvar_t	g_botTeamAutoBalance;
 vmCvar_t	g_MVSDK;
 
 vmCvar_t	g_userCmdBuffer;
+vmCvar_t	g_userCmdBufferSmoothen;
 vmCvar_t	g_blockIdenticalUserSnaps;
 vmCvar_t	g_blockIdenticalUserSnapsMinFps;
 
@@ -444,6 +445,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_botTeamAutoBalance, "g_botTeamAutoBalance", "1", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_userCmdBuffer, "g_userCmdBuffer", "1", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_userCmdBufferSmoothen, "g_userCmdBufferSmoothen", "1", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_blockIdenticalUserSnaps, "g_blockIdenticalUserSnaps", "1", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_blockIdenticalUserSnapsMinFps, "g_blockIdenticalUserSnapsMinFps", "30", CVAR_ARCHIVE, 0, qtrue },
 

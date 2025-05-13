@@ -2750,7 +2750,10 @@ void G_ResetUserCmdStore(int clientNum) {
 qboolean G_GetUserCmd(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance) {
 	usercmd_t* newCmd = &userCmdBuffer[clientNum].buf[userCmdBuffer[clientNum].nextBufferIndex % USERCMD_BUFFER_MAX];
 	usercmd_t* oldCmd = NULL;
-	int maxFrameAdvance = level.frameTimeMsec ? ((level.frameTimeMsec*5) > USERCMD_BUFFER_MAX_FRAMEADVANCE_MAX ? MAX(level.frameTimeMsec*2, USERCMD_BUFFER_MAX_FRAMEADVANCE_MAX) : (level.frameTimeMsec * 5)) : INT_MAX;
+	gentity_t* userEnt = clientNum >= 0 && clientNum < MAX_CLIENTS?  g_entities + clientNum : NULL;
+	qboolean superSmooth = g_userCmdBufferSmoothen.integer > 1 || g_userCmdBufferSmoothen.integer == 1 && userEnt && userEnt->client && userEnt->client->sess.raceMode; // reduces how much client can advance per frame and also keeps a 3-4 frame buffer to smooth out clients with low maxpackets. think of it a bit similar to double/triple buffering on GPUS. Bit of delay but smoother. TODO make it buffer only up to 50ms in this case? TODO dynamically adjust the amount of buffering up if someone is lagging a LOT?
+	int baseFrameAdvanceMultiplier = superSmooth ? 2 : 5;
+	int maxFrameAdvance = level.frameTimeMsec ? ((level.frameTimeMsec* baseFrameAdvanceMultiplier) > USERCMD_BUFFER_MAX_FRAMEADVANCE_MAX ? MAX(level.frameTimeMsec*2, USERCMD_BUFFER_MAX_FRAMEADVANCE_MAX) : (level.frameTimeMsec * baseFrameAdvanceMultiplier)) : INT_MAX;
 	qboolean didAdvance = qfalse;
 	int currentServerTime;
 
@@ -2788,12 +2791,14 @@ qboolean G_GetUserCmd(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance) 
 	// check if we want to & can advance
 	if (!didAdvance && advance && userCmdBuffer[clientNum].nextToExecute < (userCmdBuffer[clientNum].nextBufferIndex-1)) {
 		int nextMsec;
+		qboolean superSmoothAllows;
 		oldCmd = &userCmdBuffer[clientNum].buf[(userCmdBuffer[clientNum].nextToExecute) % USERCMD_BUFFER_MAX]; // we just keep reusing these pointers like dirty animals :)
 		newCmd = &userCmdBuffer[clientNum].buf[(userCmdBuffer[clientNum].nextToExecute+1) % USERCMD_BUFFER_MAX];
 		nextMsec = newCmd->serverTime - oldCmd->serverTime;
+		superSmoothAllows = !superSmooth || (userCmdBuffer[clientNum].nextBufferIndex - userCmdBuffer[clientNum].nextToExecute) > 4; // in super smooth mode, always keep 4 packets on the back burner.
 		if (nextMsec <= 0 // something weird is happening. best not to interfere, just go
 			|| !userCmdBuffer[clientNum].msecThisFrame // no cmds have been executed this frame yet, just go
-			|| (userCmdBuffer[clientNum].msecThisFrame + nextMsec) < maxFrameAdvance // we still have some room to squeeze it in this frame, go.
+			|| (userCmdBuffer[clientNum].msecThisFrame + nextMsec) < maxFrameAdvance && superSmoothAllows // we still have some room to squeeze it in this frame, go.
 			|| (currentServerTime- oldCmd->serverTime) > USERCMD_BUFFER_MAX_DELAY // delay is too big, just go
 			|| (userCmdBuffer[clientNum].nextBufferIndex - userCmdBuffer[clientNum].nextToExecute) > USERCMD_BUFFER_MAX_BLOCKING // let's keep ~10% as buffer so we never overflow. just go.
 			|| !g_userCmdBuffer.integer
