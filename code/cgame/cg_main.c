@@ -711,6 +711,9 @@ vmCvar_t	cg_q2trace;
 vmCvar_t	cg_q2Skims;
 vmCvar_t	cg_g_unlockRandom;
 
+vmCvar_t	cg_cl_timeNudgeAntiLagHack; // special physicsfps predict needs to know
+vmCvar_t	cg_cl_timeNudgeSafeServerTime; // special physicsfps predict needs this if we are using cl_timeNudgeAntiLagHack 
+
 vmCvar_t	cg_strafebotSlopeHandling;
 
 vmCvar_t	cg_synchronousClients;
@@ -1126,6 +1129,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_q2Skims, "g_q2Skims", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_synchronousClients, "g_synchronousClients", "0", 0 },	// communicated by systeminfo
+	{ &cg_cl_timeNudgeAntiLagHack, "cl_timeNudgeAntiLagHack", "0", 0 },
+	{ &cg_cl_timeNudgeSafeServerTime, "cl_timeNudgeSafeServerTime", "0", 0 },
 
 	{ &cg_debugMove, "cg_debugMove", "0", CVAR_TEMP },
 

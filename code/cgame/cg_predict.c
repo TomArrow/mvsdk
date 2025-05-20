@@ -894,6 +894,18 @@ void CG_TeleporterTouch(playerState_t* ps, usercmd_t* ucmd, entityState_t* telep
 }
 
 
+int	CG_GetSpecialPredictPhysicsFPSTargetTime() {
+
+	// TODO maybe make this nicer with a dedicated API. But for now it will do.
+	if (cg_cl_timeNudgeAntiLagHack.integer && cg_cl_timeNudgeSafeServerTime.integer > 0) {
+		return cg_cl_timeNudgeSafeServerTime.integer; // Kinda ugly...
+	}
+	else {
+		return cg.time;
+	}
+
+}
+
 /*
 =================
 CG_PredictPlayerState
@@ -946,6 +958,7 @@ void CG_PredictPlayerState( void ) {
 	qboolean	haveForceSpeedSmash = qfalse;
 	float		forceJumpCharge;
 	qboolean	haveForceJumpCharge = qfalse;
+	int			physicsFpsTargetTime = CG_GetSpecialPredictPhysicsFPSTargetTime();
 
 	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
 	cg.teleporterPredicted = qfalse;	// teleporter was predicted so ignore areamask
@@ -1177,7 +1190,7 @@ restartpredict:
 
 			// Fucky experimental prediction to try and get com_physicsfps with low values to look smooth(er)
 			if (!cg_specialPredictPhysicsFps.integer || !cg_com_physicsFps.integer) break; // This type of prediction is disabled.
-			if (cg.time == latestCmd.serverTime) break; // Nothing to further predict
+			if (physicsFpsTargetTime == latestCmd.serverTime) break; // Nothing to further predict
 			if (lastCmdWasWrongFps) break; // avoid jittering if server is blocking us from moving based on wrong fps value
 			
 			if (cg_specialPredictPhysicsFps.integer) { 
@@ -1187,7 +1200,7 @@ restartpredict:
 			if (cg_specialPredictPhysicsFps.integer & 1) { // Give more up to date view angles (nice on higher fps)
 				if (coolApi & COOL_APIFEATURE_GETTEMPORARYUSERCMD) {
 					trap_GetUserCmd(-1, &temporaryCmd);
-					if (temporaryCmd.serverTime > cg_pmove.cmd.serverTime && temporaryCmd.serverTime <= cg.time) {
+					if (temporaryCmd.serverTime > cg_pmove.cmd.serverTime && temporaryCmd.serverTime <= physicsFpsTargetTime) {
 						VectorCopy(temporaryCmd.angles, cg_pmove.cmd.angles);
 
 						if (!(cg_specialPredictPhysicsFps.integer & 2)) { // If we aren't special predicting movement (since that's buggy-ish and leads to prediction errors), only force the view angles.
@@ -1203,7 +1216,7 @@ restartpredict:
 				}
 			}
 			
-			cg_pmove.cmd.serverTime = cg.time;
+			cg_pmove.cmd.serverTime = physicsFpsTargetTime;
 			cg_pmove.cmd.generic_cmd = 0;
 			cg_pmove.isSpecialPredict = qtrue;
 			if (!(cg_specialPredictPhysicsFps.integer & 2)) break; // 2 means predict movement (buggy-ish)
@@ -1237,7 +1250,7 @@ restartpredict:
 		}
 
 		// don't do anything if the command was from a previous map_restart
-		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime && !(cg_specialPredictPhysicsFps.integer && cg_com_physicsFps.integer && latestCmd.serverTime < cg.time && cg_pmove.cmd.serverTime <= cg.time)) {
+		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime && !(cg_specialPredictPhysicsFps.integer && cg_com_physicsFps.integer && latestCmd.serverTime < physicsFpsTargetTime && cg_pmove.cmd.serverTime <= cg.time)) {
 			continue;
 		}
 
