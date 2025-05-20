@@ -3084,7 +3084,8 @@ void DF_trigger_checkpoint(gentity_t* ent) {
 #define Q3SPAWNFLAG_TARGET_FRAGSFILTER_RESET		(1<<3)
 #define Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH		(1<<4)
 
-qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3DefragTargetType_t targetType, qboolean* anyTriggerFound, int depth ) {
+qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3DefragTargetType_t targetType, qboolean* anyTriggerFound, int depth, triggerConversionProperties_t* props) {
+	triggerConversionProperties_t propsLocal;
 	char* oldModel;
 	q3CourseType_t q3CourseType = Q3COURSE_UNIVERSAL;
 	qboolean specificQ3SpawnTypeOverride = qfalse;
@@ -3092,6 +3093,11 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 	gentity_t* otherTarget = NULL;
 	const char* oldClass;
 	int oldWait;
+
+	if (!props) {
+		memset(&propsLocal, 0, sizeof(propsLocal));
+		props = &propsLocal;
+	}
 
 	if (!trigger->r.bmodel || !(trigger->r.contents & CONTENTS_TRIGGER) || !trigger->model) {
 		// check if this is a target_fragsfilter or such
@@ -3104,22 +3110,51 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		}
 
 		if (!Q_stricmp(trigger->classname, "target_fragsFilter") && targetType == TARGET_STOPTIMER) {
+			triggerConversionProperties_t propsHere = *props;
+			propsHere.checkpointScore = trigger->count;
+			propsHere.triggerPropsToSet |= TRIGPROP_CHECKPOINTSCORE;
+			propsHere.ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE;
+			if (trigger->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT) {
+				propsHere.ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE_SILENT;
+			}
+			if (trigger->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH) {
+				propsHere.ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE_MATCH;
+			}
 			if (trigger->targetname && trigger->targetname[0]) {
 				qboolean anyMatch = qfalse;
 				// Then find all triggers that do something with them
 				while ((trueTrigger = G_Find(trueTrigger, FOFS(target), trigger->targetname)) != NULL) {
 
 					anyMatch = qtrue;
-					if (G_Q3DefragTriggerConvert(trueTrigger, target, targetType, anyTriggerFound, depth+1)) {
-						trueTrigger->checkpointScore = trigger->count;
-						trueTrigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE;
-						if (trigger->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT) {
-							trueTrigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE_SILENT;
-						}
-						if (trigger->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH) {
-							trueTrigger->ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE_MATCH;
-						}
+					if (G_Q3DefragTriggerConvert(trueTrigger, target, targetType, anyTriggerFound, depth+1, &propsHere)) {
 						G_Printf("DEFRAG: ^3%s referenced by %s successfully converted at depth %d.\n", target->classname, trigger->classname, depth+1);
+					}
+					else {
+						G_Printf("DEFRAG: ^3%s referenced by %s, which was not converted to a trigger at depth %d.\n", target->classname, trigger->classname, depth + 1);
+					}
+				}
+				if (!anyMatch) {
+					G_Printf("DEFRAG: ^1%s referenced by %s, but latter is not referenced by anything.\n", target->classname, trigger->classname);
+				}
+			}
+			else {
+				G_Printf("DEFRAG: ^1%s referenced by %s, but latter has no targetname.\n", target->classname, trigger->classname);
+			}
+		}
+		else if (!Q_stricmp(trigger->classname, "target_relay")) {
+			if (trigger->spawnflags & 4) {
+				G_Printf("DEFRAG: ^1%s referenced by %s, but latter has spawnflag 4 (random). Weird, not supported. But converting anyway, ignoring the flag.\n", target->classname, trigger->classname);
+			}
+			if (trigger->targetname && trigger->targetname[0]) {
+				qboolean anyMatch = qfalse;
+				// Then find all triggers that do something with them
+				while ((trueTrigger = G_Find(trueTrigger, FOFS(target), trigger->targetname)) != NULL) {
+					anyMatch = qtrue;
+					if (G_Q3DefragTriggerConvert(trueTrigger, target, targetType, anyTriggerFound, depth+1, props)) {
+						G_Printf("DEFRAG: ^3%s referenced by %s successfully converted at depth %d.\n", target->classname, trigger->classname, depth+1);
+					}
+					else {
+						G_Printf("DEFRAG: ^3%s referenced by %s, which was not converted to a trigger at depth %d.\n", target->classname, trigger->classname, depth + 1);
 					}
 				}
 				if (!anyMatch) {
@@ -3316,6 +3351,11 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		break;
 	}
 
+	trigger->ttFlags |= props->ttFlags;
+	if (props->triggerPropsToSet & TRIGPROP_CHECKPOINTSCORE) {
+		trigger->checkpointScore |= props->checkpointScore;
+	}
+
 	return qtrue;
 }
 
@@ -3360,7 +3400,7 @@ void G_ConvertDefragTriggerTypes() {
 			// Then find all triggers that do something with them
 			while ((trigger = G_Find(trigger, FOFS(target), target->targetname)) != NULL) {
 
-				G_Q3DefragTriggerConvert(trigger,target,i,&anyTriggerFound,0);
+				G_Q3DefragTriggerConvert(trigger,target,i,&anyTriggerFound,0,NULL);
 			}
 			if (!anyTriggerFound) {
 				G_Printf("DEFRAG: ^1untargeted %s at %s (targetname %s)\n", target->classname, vtos(target->s.origin),target->targetname);

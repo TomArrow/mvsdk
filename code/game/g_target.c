@@ -116,8 +116,9 @@ void SP_target_delay( gentity_t *ent ) {
 The activator is given this many points.
 */
 void Use_Target_Score (gentity_t *ent, gentity_t *other, gentity_t *activator) {
-	if (ent->client && ent->client->sess.raceMode) {
-		ent->client->pers.stats.score += ent->count; // checkpoint score, kinda.
+	if (activator->client && activator->client->sess.raceMode) {
+		activator->client->pers.stats.score += ent->count; // checkpoint score, kinda.
+		G_CenterPrint(activator -g_entities,3, va("^7Checkpoint score ^%c%s%d: %d", ent->count > 0 ? '3' : '1', ent->count > 0 ? "+" : "", ent->count, activator->client->pers.stats.score),qfalse,qtrue,qfalse,NULL);
 		return;
 	}
 	AddScore( activator, ent->r.currentOrigin, ent->count );

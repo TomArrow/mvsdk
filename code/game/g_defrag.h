@@ -191,6 +191,16 @@ typedef struct {
 	char* typeName;
 } debugField_t;
 
+typedef enum {
+	TRIGPROP_CHECKPOINTSCORE = (1<<0)
+} triggerPropsToSet_t;
+
+typedef struct { // while traversing backwards to find root trigger, all stuff that has to be set on the trigger itself is added here. At the end it is set.
+	int	ttFlags;
+	int	checkpointScore;
+	triggerPropsToSet_t triggerPropsToSet;
+} triggerConversionProperties_t;
+
 typedef signed char schar_t;
 
 typedef struct {
