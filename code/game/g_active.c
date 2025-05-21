@@ -878,6 +878,26 @@ qboolean ClientInactivityTimer( gclient_t *client ) {
 	}
 	return qtrue;
 }
+
+/*
+=================
+ClientInactivitySpecTimerReset
+
+Call manually to reset the timer for sending a player to spec. E.g. on /kill
+=================
+*/
+qboolean ClientInactivitySpecTimerReset(gentity_t* ent) {
+	gclient_t* client = ent->client;
+	if (g_inactivityToSpec.integer <= 0) {
+		// give everyone some time, so if the operator sets g_inactivityToSpec during
+		// gameplay, everyone isn't spectated
+		client->inactivityToSpecTime = clampedIntAdd(level.time, 60 * 1000);
+	}
+	else {
+		client->inactivityToSpecTime = clampedIntAdd(level.time, clampedIntMult(g_inactivityToSpec.integer, 1000));
+	}
+}
+
 /*
 =================
 ClientInactivitySpecTimer
@@ -890,8 +910,8 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 	qboolean wasInactive = client->markedAsInactive;
 	client->markedAsInactive = qfalse;
 	if (g_inactivityToSpec.integer <= 0 || client->sess.sessionTeam == TEAM_SPECTATOR || level.intermissiontime) {
-		// give everyone some time, so if the operator sets g_inactivity during
-		// gameplay, everyone isn't kicked
+		// give everyone some time, so if the operator sets g_inactivityToSpec during
+		// gameplay, everyone isn't spectated
 		client->inactivityToSpecTime = clampedIntAdd(level.time, 60 * 1000);
 	}
 	else if (client->pers.cmd.forwardmove ||
@@ -901,7 +921,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 		client->inactivityToSpecTime = clampedIntAdd( level.time , clampedIntMult(g_inactivityToSpec.integer, 1000));
 	}
 	else {
-		if (ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime && !g_inactivityToSpecRacers.integer) {
+		if (ent->client->sess.raceMode && (ent->client->pers.raceStartCommandTime || ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe) && !g_inactivityToSpecRacers.integer) {
 			// dont spec ppl in the middle of a run, but mark them as inactive
 			if (level.time > client->inactivityToSpecTime) {
 				client->markedAsInactive = qtrue;
@@ -2721,6 +2741,7 @@ Checks whether a client has exceded any timeouts and act accordingly
 */
 void G_CheckClientTimeouts ( gentity_t *ent )
 {
+	qboolean isReplaying;
 	// Only timeout supported right now is the timeout to spectator mode
 	if ( g_timeouttospec.integer <= 0 ) // one may accidentally set 9999999999999 and cause overflow and that would lead to unintended consequences
 	{
@@ -2731,6 +2752,12 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR )
 	{
 		return;
+	}
+
+	isReplaying = ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state == SEG_REPLAY;
+
+	if ((isReplaying || ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe && !ent->client->pers.raceStartCommandTime)) {
+		return; // dont send zombies to spec until dmeo is finished
 	}
 
 	// See how long its been since a command was received by the client and if its 

@@ -1813,4 +1813,5 @@ void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNam
 
 int	generateHashValue(const char* fname, const int size);
 void G_ResetClientVote(gclient_t* client);
+qboolean ClientInactivitySpecTimerReset(gentity_t* ent);
 

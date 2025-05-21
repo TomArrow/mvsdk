@@ -3887,6 +3887,7 @@ void DF_SegmentedRunStatusInvalidated(gentity_t* ent) {
 
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print)
 {
+	ClientInactivitySpecTimerReset(ent); // the client did something to invalidate his racetime, e.g. /kill. Reset his afk timer so he doesn't get sent to spec immediately
 	ResetSpecificPlayerTimers(ent, print);
 	DF_ResetSegmentedRun(ent);
 	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!
