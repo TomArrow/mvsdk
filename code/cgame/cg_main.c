@@ -972,7 +972,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_animBlend, "cg_animBlend", "1", 0 },
 
-	{ &cg_dismember, "cg_dismember", "0", CVAR_ARCHIVE },
+	{ &cg_dismember, "cg_dismember", "2", CVAR_ARCHIVE },
 
 	//jk2pro Client Cvars start
 	{ &cjp_client, "cjp_client", "1.4JAPRO", CVAR_USERINFO|CVAR_ROM },
