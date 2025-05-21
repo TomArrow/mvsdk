@@ -2490,6 +2490,7 @@ static void G_CreateRunsTable() {
 			warningFlags INT NOT NULL, \
 			fpsString VARCHAR(255) NOT NULL, \
 			server VARCHAR(255) NOT NULL, \
+			semiBreakingChangeVersion INT NOT NULL, \
 			hidden TINYINT(1) NOT NULL DEFAULT 0, \
 			tmpRank INT, \
 			tmpLB INT, \
@@ -2614,10 +2615,10 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		va("SET @now=NOW();"
 			"INSERT INTO runs (userid,course,subcourse,duration_ms,duration_ms_segmented_total,topspeed,startTriggerSpeed,rollSpeed,rollTakeoffClientSpeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
-			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount,server)"
+			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount,server,semiBreakingChangeVersion) "
 			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
-			"@now,@now,?,?,?,?,?,?,?,?,?," GETCONNECTIONIP ")"
+			"@now,@now,?,?,?,?,?,?,?,?,?," GETCONNECTIONIP "," QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG) ") "
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms_segmented_total = IF(?<duration_ms,?,duration_ms_segmented_total),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
@@ -2637,6 +2638,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount),"
 			"server = IF(?<duration_ms," GETCONNECTIONIP ",server),"
+			"semiBreakingChangeVersion = IF(?<duration_ms," QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG) ",semiBreakingChangeVersion),"
 			"duration_ms = IF(?<duration_ms,?,duration_ms);" // duration_ms has to be set last or else all other columns arent updated
 			// check if we had a better time on this leaderboard before. (return value of INSERT OR UPDATE only tells us if it was the best with the unique key, but leaderboards accumulate ranges of race settings, especially "custom" leaderboard and such)
 			"SELECT COUNT(id) AS countOwnFaster FROM runs WHERE userid=? AND course=? AND subcourse=? AND style=? AND variant=? AND %s AND (duration_ms<? OR (duration_ms=? AND runwhen<@now));"
@@ -2740,6 +2742,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // server (value is hardcoded)
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // semiBreakingChangeVersion (value is hardcoded)
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);

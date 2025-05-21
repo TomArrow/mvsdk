@@ -3,6 +3,8 @@
 #include "g_local.h"
 #include "g_dbcmds.h"
 
+int semiBreakingChangeVersionDefrag = SEMIBREAKINGCHANGEVERSIONDEFRAG;
+
 // Many parts of defrag code are lifted/adapted from Triforce's JediKnightPlus and loda's japro. Thanks!
 
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
@@ -3079,10 +3081,6 @@ void DF_trigger_checkpoint(gentity_t* ent) {
 	trap_LinkEntity(ent);
 }
 
-#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_REMOVER		(1<<0)
-#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT		(1<<2)
-#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_RESET		(1<<3)
-#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH		(1<<4)
 
 qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3DefragTargetType_t targetType, qboolean* anyTriggerFound, int depth, triggerConversionProperties_t* props) {
 	triggerConversionProperties_t propsLocal;

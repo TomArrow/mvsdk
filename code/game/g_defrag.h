@@ -7,6 +7,17 @@
 
 #define SEGMENTEDDEBUG 1
 
+#define QUOT2(a) #a
+#define QUOTE(a) QUOT2(a)
+
+// Documenting semi-breaking changes that won't affect most situations/maps, but might potentially impact some.
+// With this we can tell old runs from new ones in case issues do arise.
+// Version 1: Old
+// Version 2: 2025-05-21 - Added support for target_fragsfilter
+#define SEMIBREAKINGCHANGEVERSIONDEFRAG 2
+
+extern int semiBreakingChangeVersionDefrag;
+
 #if 0
 #define LEVELTIME(client) (((client) && (client)->sess.raceMode) ? ((assert((client)->pers.cmd.serverTime != 0), (client)->pers.cmd.serverTime > 0) ? (client)->pers.cmd.serverTime : level.time) : level.time)
 #else
@@ -277,6 +288,12 @@ typedef struct userCmdBuffer_s {
 	int			nextToExecute;
 	int			msecThisFrame;
 } userCmdBuffer_t;
+
+
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_REMOVER		(1<<0)
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT		(1<<2)
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_RESET		(1<<3)
+#define Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH		(1<<4)
 
 extern userCmdBuffer_t		userCmdBuffer[MAX_CLIENTS]; 
 

@@ -132,8 +132,45 @@ void SP_target_score( gentity_t *ent ) {
 }
 
 
+// ignore this outside racemode
+void DF_target_fragsFilter_use(gentity_t* ent, gentity_t* other, gentity_t* activator) {
+	char*	s;
+
+	if (!activator || !activator->client || !activator->client->sess.raceMode) {
+		return;
+	}
+
+	// TODO global fragsfilter? i guess ppl arent supposed to be using it anyway tho, as its supposedly broken?
+	if (activator->client) {
+		gclient_t* cl = activator->client;
+		int* clientScore = cl->sess.raceMode ? &cl->pers.stats.score : &cl->ps.persistant[PERS_SCORE]; // technically not needed since we dont allow it outside defrag but maybe we change our mind someday.
+		if (*clientScore == ent->count || !(ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH) && *clientScore > ent->count) {
+			if (ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_REMOVER) {
+				*clientScore -= ent->count;
+			}
+			if (ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_RESET) {
+				*clientScore = 0;
+			}
+			G_UseTargets(ent, activator);
+		}
+		else if (!(ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT) && !(ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH)) {
+			G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too %s: %d/%d", *clientScore > ent->count ? "high" : "low", cl->pers.stats.score, ent->count), qfalse, qtrue, qfalse, NULL);
+		}
+		
+	}
+}
+
 void DF_target_fragsFilter_husk(gentity_t* ent) {
+	char* s;
+	if (!g_defrag.integer) {
+		G_FreeEntity(ent);
+		return;
+	}
 	G_SpawnInt("frags", "1", &ent->count);
+	//if (!ent->targetname || !ent->targetname[0]) {
+	//	ent->s.generic1 = 1;
+	//}
+	ent->use = DF_target_fragsFilter_use;
 }
 
 
