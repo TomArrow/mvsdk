@@ -2190,6 +2190,109 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompens
 	}
 }
 
+#define Q3BUG 1
+
+void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float compensate)
+{
+	int spawnFlags = jumppad->forceFrame;
+	float speed = jumppad->origin2[0];
+
+	int i;
+	vec3_t pushVelocity;
+	vec3_t oldVelocity;
+	vec3_t normalized;
+	float oldSpeed;
+	qboolean launcher = spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_LAUNCHER;
+	float launchSpeed = 0;
+
+#define CLASSIFYSISGN(flags,plus,minus) ((flags & plus) && (flags & minus)) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0))
+//#define CLASSIFYSISGN(flags,plus,minus) ((flags & (plus|minus))>plus) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0)) // faster? idk.
+
+	float	sign[3]; // 0 == none. 1 == positive. -1 == negative. 2 = both
+	sign[0] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSX, Q3SPAWNFLAG_TARGET_SPEED_NEGX);
+	sign[1] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSY, Q3SPAWNFLAG_TARGET_SPEED_NEGY);
+	sign[2] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSZ, Q3SPAWNFLAG_TARGET_SPEED_NEGZ);
+
+#undef CLASSIFYSISGN
+
+	// speed cannot be negative except when subtracting
+	if (!(spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD))
+	{
+		speed = MAX(speed, 0);
+	}
+
+	VectorCopy(ps->velocity, pushVelocity);
+	VectorCopy(ps->velocity, oldVelocity);
+
+	for (i = 0; i < 3; ++i)
+	{
+		if (launcher && sign[i] == 2) sign[i] = 0;
+		if (!sign[i]) pushVelocity[i] = 0;
+	}
+
+	oldSpeed = VectorLength(pushVelocity);
+
+	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_PERCENTAGE) {
+		speed = oldSpeed * speed / 100.0f;
+		//if (compensate) {
+		//	speed *= compensate;
+		//}
+	}
+
+#if !Q3BUG
+	launchSpeed += speed;
+	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) launchSpeed += oldSpeed;
+#endif
+
+	for (i = 0; i < 3; ++i)
+	{
+		if (((pushVelocity[i] != 0) || launcher) && (fabsf(sign[i])==1))
+		{
+			if (launcher)
+			{
+				pushVelocity[i] = 1;
+#if Q3BUG
+				launchSpeed += speed;
+				if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) launchSpeed += oldSpeed;
+#endif
+			}
+
+			pushVelocity[i] = copysignf(pushVelocity[i],sign[i]);
+		}
+	}
+
+	VectorCopy(pushVelocity, normalized);
+	VectorNormalize(normalized);
+
+	if (compensate) {
+		VectorScale(normalized, compensate, normalized);
+	}
+
+	if (launcher)
+	{
+		VectorScale(normalized, fabs(launchSpeed), pushVelocity);
+	}
+	else
+	{
+		if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) {
+			VectorMA(oldVelocity, speed, normalized, pushVelocity);
+		}
+		else {
+			VectorScale(normalized, speed, pushVelocity);
+		}
+	}
+
+	for (i = 0; i < 3; ++i)
+	{
+		if (!sign[i]) pushVelocity[i] = oldVelocity[i];
+	}
+
+	VectorCopy(pushVelocity, ps->velocity);
+
+	ps->jumppad_ent = jumppad->number;
+	ps->jumppad_frame = ps->pmove_framecount;
+}
+
 
 #define JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY 1
 #define JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY 2
@@ -2205,12 +2308,17 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msec
 	int flags = jumppad->weapon;
 	float speedHorz = jumppad->angles2[0];
 	float speedVert = jumppad->angles2[2];
-	float compensate = 1.0f;
+	float compensate = 0.0f;
 	qboolean isFirstFrame = ps->jumppad_ent != jumppad->number;
 
 
 	if (msecCompensate) {
 		compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f, style);
+	}
+
+	if (jumppad->saberInFlight) { // its a target_speed converted to a jumppad
+		BG_TouchJumpPadTargetSpeed(jumppad,ps,compensate);
+		return;
 	}
 
 	/*

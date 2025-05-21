@@ -134,7 +134,6 @@ void SP_target_score( gentity_t *ent ) {
 
 // ignore this outside racemode
 void DF_target_fragsFilter_use(gentity_t* ent, gentity_t* other, gentity_t* activator) {
-	char*	s;
 
 	if (!activator || !activator->client || !activator->client->sess.raceMode) {
 		return;
@@ -160,8 +159,7 @@ void DF_target_fragsFilter_use(gentity_t* ent, gentity_t* other, gentity_t* acti
 	}
 }
 
-void DF_target_fragsFilter_husk(gentity_t* ent) {
-	char* s;
+void DF_target_fragsFilter(gentity_t* ent) {
 	if (!g_defrag.integer) {
 		G_FreeEntity(ent);
 		return;
@@ -171,6 +169,13 @@ void DF_target_fragsFilter_husk(gentity_t* ent) {
 	//	ent->s.generic1 = 1;
 	//}
 	ent->use = DF_target_fragsFilter_use;
+}
+
+// this is just a husk, we will convert it to a trigger_push_velocity.
+void DF_target_speed_husk(gentity_t* ent) {
+	if (!G_SpawnFloat("speed", "100", &ent->speed)) {
+		ent->speed = 100;
+	}
 }
 
 

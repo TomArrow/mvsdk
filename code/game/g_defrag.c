@@ -226,6 +226,7 @@ typedef enum q3DefragTargetType_s {
 	TARGET_STARTTIMER,
 	TARGET_STOPTIMER,
 	TARGET_CHECKPOINT,
+	TARGET_SPEED,
 	TARGET_TYPE_COUNT
 } q3DefragTargetType_t;
 
@@ -239,7 +240,8 @@ typedef enum q3CourseType_s {
 static const char* q3DefragTargetNames[] = {
 	"target_startTimer",
 	"target_stopTimer",
-	"target_checkpoint"
+	"target_checkpoint",
+	"target_speed"
 };
 
 void DF_InvalidateSpawn(gentity_t* ent) {
@@ -361,7 +363,7 @@ void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPri
 	}
 	if (cl->pers.tempDemoName[0]) {
 
-		char cvarstr[64];
+		//char cvarstr[64];
 
 		qtime_t q;
 		trap_RealTime(&q);
@@ -1863,7 +1865,7 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 	const char* customLBWhere = getLeaderboardSQLConditions(LB_CUSTOM, thisMapDefaultRaceStyle);
 	const char* segmentedLBWhere = getLeaderboardSQLConditions(LB_SEGMENTED, thisMapDefaultRaceStyle);
 	const char* cheatLBWhere = getLeaderboardSQLConditions(LB_CHEAT, thisMapDefaultRaceStyle);
-	int i,style;
+	int style;
 
 	data.clientnum = ent ? ent - g_entities : -1;
 
@@ -3000,6 +3002,30 @@ void DF_trigger_finish_converted(gentity_t* ent,qboolean registerSubCourse) {
 
 	trap_LinkEntity(ent);
 }
+void trigger_push_velocity_touch(gentity_t* self, gentity_t* other, trace_t* trace);
+
+void DF_trigger_push_velocity_converted(gentity_t* ent) {
+
+	if (!ent->model) {
+		// broken dumb trigger (srsly i dont get what some ppl are thinking)
+		G_Printf("DEFRAG: ^1Broken %s (no model), deleting. WTF\n", ent->classname);
+		G_FreeEntity(ent);
+		return;
+	}
+
+	InitTrigger(ent);
+
+	// unlike other triggers, we need to send this one to the client
+	ent->r.svFlags &= ~SVF_NOCLIENT;
+
+	// make sure the client precaches this sound
+	G_SoundIndex("sound/weapons/force/jump.wav");
+
+	ent->s.eType = ET_PUSH_TRIGGER;
+	ent->touch = trigger_push_velocity_touch;
+
+	trap_LinkEntity(ent);
+}
 void DF_trigger_checkpoint_converted(gentity_t* ent) {
 
 	if (!ent->model) {
@@ -3090,7 +3116,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 	const char* typeString = NULL;
 	gentity_t* otherTarget = NULL;
 	const char* oldClass;
-	int oldWait;
+	float oldWait;
 
 	if (!props) {
 		memset(&propsLocal, 0, sizeof(propsLocal));
@@ -3298,13 +3324,29 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		if (otherTarget == target) {
 			continue;
 		}
-		if (!Q_stricmp(otherTarget->classname, "target_score")) {
+		if (!Q_stricmp(otherTarget->classname, "target_score") && targetType == TARGET_CHECKPOINT) {
 			//checkpointScore
 			trigger->checkpointScore = otherTarget->count ? otherTarget->count : 1;
 			if (oldWait < 0) {
 				trigger->ttFlags |= TTFLAGS_CHECKPOINTTIMER_SCOREONCE;
 			}
 			G_Printf("DEFRAG: ^3%s which references %s also references %s. Applying.\n", oldClass, target->classname, otherTarget->classname);
+		}
+		else if (!Q_stricmp(otherTarget->classname, "target_speed") && targetType == TARGET_SPEED) {
+			// eeeew. trigger references multiple target_speeds
+			gentity_t* triggerCopy = G_SpawnAfter(trigger); // disgusting but we need to preserve the order of execution.
+			triggerCopy->model = trigger->model;
+			G_SetClassName(triggerCopy, "trigger_push_velocity");
+			DF_trigger_push_velocity_converted(triggerCopy);
+			triggerCopy->s.saberInFlight = 1;
+			triggerCopy->s.forceFrame = otherTarget->spawnflags;
+			triggerCopy->s.origin2[0] = otherTarget->speed;
+			triggerCopy->s.origin2[1] = oldWait;
+			triggerCopy->wait = oldWait;
+			triggerCopy->s.generic1 = otherTarget->notCPM;
+			triggerCopy->s.genericenemyindex = otherTarget->notVQ3;
+			G_Printf("DEFRAG: ^3%s which references %s also references %s. Making extra trigger.\n", oldClass, target->classname, otherTarget->classname);
+			G_Printf("DEFRAG: ^2%s converted (via copy).\n", triggerCopy->classname);
 		}
 		else {
 			G_Printf("DEFRAG: ^1%s which references %s also references %s. Not implemented.\n", oldClass, target->classname, otherTarget->classname);
@@ -3338,6 +3380,19 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		}
 		DF_trigger_finish_converted(trigger, q3CourseType && typeString || !level.hasQ3StyleSpecificSpawns);
 		level.dfEndTriggerTypes |= (1 << DFTRIG_Q3);
+		G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
+		break;
+	case TARGET_SPEED:
+		// TODO Ability to activate/deactivate?
+		G_SetClassName(trigger, "trigger_push_velocity");
+		DF_trigger_push_velocity_converted(trigger);
+		trigger->s.saberInFlight = 1;
+		trigger->s.forceFrame = target->spawnflags;
+		trigger->s.origin2[0] = target->speed;
+		trigger->s.origin2[1] = oldWait; // maybe we predict it someday?
+		trigger->wait = oldWait;
+		trigger->s.generic1 = target->notCPM;
+		trigger->s.genericenemyindex = target->notVQ3;
 		G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
 		break;
 	default:
@@ -3406,7 +3461,7 @@ void G_ConvertDefragTriggerTypes() {
 			G_FreeEntity(target);
 		}
 
-		if (i == TARGET_STARTTIMER && level.dfStartTriggerTypes || i == TARGET_STOPTIMER && level.dfEndTriggerTypes || i == TARGET_CHECKPOINT && level.dfCheckPointTriggerTypes) {
+		if (i == TARGET_STARTTIMER && level.dfStartTriggerTypes || i == TARGET_STOPTIMER && level.dfEndTriggerTypes || i == TARGET_CHECKPOINT && level.dfCheckPointTriggerTypes || i == TARGET_SPEED) {
 			continue; // already got this type covered.
 		}
 

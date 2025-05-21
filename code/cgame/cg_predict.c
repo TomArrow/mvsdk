@@ -631,7 +631,21 @@ static void CG_TouchTriggerPrediction( int msec ) {
 				// genericenemyindex = notvq3
 			}
 			else {
-				BG_TouchJumpPadVelocity(&cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer,(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) ? cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] : MV_JK2);
+				qboolean prevent = qfalse;
+				if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && ent->saberInFlight) {
+					float wait = ent->origin2[1];
+					int nextTouchAllowed;
+					if (wait <= 0) wait = 0.5f; // bit of a simplification but it will do in most cases
+					nextTouchAllowed = cent->targetSpeedLastTouched + wait * 1000;
+					// we must predict timeouts here... very messy.
+					if (cg.predictedPlayerState.commandTime > cent->targetSpeedLastTouched && nextTouchAllowed >= cg.predictedPlayerState.commandTime) {
+						prevent = qtrue;
+					}
+				}
+				if (!prevent) {
+					BG_TouchJumpPadVelocity(&cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer, (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) ? cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] : MV_JK2);
+					cent->targetSpeedLastTouched = cg.predictedPlayerState.commandTime;
+				}
 			}
 		}
 	}

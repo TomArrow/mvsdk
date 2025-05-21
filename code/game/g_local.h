@@ -892,6 +892,7 @@ void	G_InitGentity( gentity_t *e );
 void		G_UnlistFromHashTable(gentity_t* ent);
 void		G_SetClassName(gentity_t* ent, char* classname);
 gentity_t	*G_Spawn (void); 
+gentity_t	*G_SpawnAfter (gentity_t* ent); 
 gentity_t	*G_SpawnLogical(void);
 gentity_t *G_TempEntity( vec3_t origin, int event );
 gentity_t	*G_PlayEffect(int fxID, vec3_t org, vec3_t ang);

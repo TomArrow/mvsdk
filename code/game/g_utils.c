@@ -569,6 +569,7 @@ void G_SetClassName(gentity_t* ent, char* classname) {
 	ent->classname = classname;
 }
 
+
 /*
 =================
 G_Spawn
@@ -584,17 +585,18 @@ instead of being removed and recreated, which can cause interpolated
 angles and bad trails.
 =================
 */
-gentity_t *G_Spawn( void ) {
+gentity_t *G_SpawnReal(gentity_t* after) {
 	int			i, force;
 	gentity_t	*e;
+	int			startNum = after ? MAX(MAX_CLIENTS, MIN(after - g_entities + 1,ENTITYNUM_MAX_NORMAL-1)) : MAX_CLIENTS;
 
 	e = NULL;	// shut up warning
 	i = 0;		// shut up warning
 	for ( force = 0 ; force < 2 ; force++ ) {
 		// if we go through all entities and can't find one to free,
 		// override the normal minimum times before use
-		e = &g_entities[MAX_CLIENTS];
-		for ( i = MAX_CLIENTS ; i<level.num_entities ; i++, e++) {
+		e = &g_entities[startNum];
+		for ( i = startNum; i<level.num_entities ; i++, e++) {
 			if ( e->inuse ) {
 				continue;
 			}
@@ -619,7 +621,7 @@ gentity_t *G_Spawn( void ) {
 		if ( g_mv_fixturretcrash.integer )
 		{ // TurretCrashFix - One last try!
 			G_Printf("G_Spawn: no free entities, trying to make room by deleting temp entities and missiles\n");
-			for ( i = MAX_CLIENTS; i < MAX_GENTITIES; i++ )
+			for ( i = startNum; i < MAX_GENTITIES; i++ )
 			{
 				e = &g_entities[i];
 
@@ -671,6 +673,15 @@ gentity_t *G_Spawn( void ) {
 
 	G_InitGentity( e );
 	return e;
+}
+
+
+gentity_t* G_Spawn() {
+	return G_SpawnReal(NULL);
+}
+// yuck. needed for weirdo trigger conversion.
+gentity_t* G_SpawnAfter(gentity_t* ent) {
+	return G_SpawnReal(ent);
 }
 
 // G_SpawnLogical: Creates a logical entity (ent nums 1024 to 4097)

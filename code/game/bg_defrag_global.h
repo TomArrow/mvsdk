@@ -138,6 +138,18 @@ extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 
 
 
+
+#define Q3SPAWNFLAG_TARGET_SPEED_PERCENTAGE			(1<<0)
+#define Q3SPAWNFLAG_TARGET_SPEED_ADD				(1<<1)
+#define Q3SPAWNFLAG_TARGET_SPEED_POSX				(1<<2)
+#define Q3SPAWNFLAG_TARGET_SPEED_NEGX				(1<<3)
+#define Q3SPAWNFLAG_TARGET_SPEED_POSY				(1<<4)
+#define Q3SPAWNFLAG_TARGET_SPEED_NEGY				(1<<5)
+#define Q3SPAWNFLAG_TARGET_SPEED_POSZ				(1<<6)
+#define Q3SPAWNFLAG_TARGET_SPEED_NEGZ				(1<<7)
+#define Q3SPAWNFLAG_TARGET_SPEED_LAUNCHER			(1<<8)
+
+
 #define SF_FINISHTIMER_JUMP1_ONLY							(1<<0)	// japro, irrelevant for us
 #define SF_FINISHTIMER_JUMP2_ONLY							(1<<1)	// japro, irrelevant for us
 #define SF_FINISHTIMER_JUMP3_ONLY							(1<<2)	// japro, irrelevant for us

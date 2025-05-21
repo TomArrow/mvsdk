@@ -260,12 +260,21 @@ void trigger_push_touch(gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	BG_TouchJumpPad( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? (other->client->sess.raceStyle.msec == -2 ? -2 : other->client->lastMsecValue) : 0, level.mapDefaultRaceStyle.msec, other->client->sess.raceMode ? other->client->sess.raceStyle.movementStyle : MV_JK2);
 }
+// the wait time has passed, so set back up for another activation
+void trigger_push_velocity_touch_wait(gentity_t* ent) {
+	ent->nextthink = 0;
+}
 
 void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
+
+	qboolean isRacer;
+	int nowTime = LEVELTIME(other->client);
 
 	if ( !other->client ) {
 		return;
 	}
+
+	isRacer = other->client && other->client->sess.raceMode;
 
 	if (other->client->sess.raceMode && 
 		(self->notCPM && !MovementStyleHasVQ3OnlyJumppads(other->client->sess.raceStyle.movementStyle)
@@ -276,7 +285,51 @@ void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *tr
 
 	other->client->pers.roll.segmentDisqualified = qtrue;
 
+	if (self->s.saberInFlight) { // its a target_speed converted to a jumppad, so we must consider what would have been "wait" of the trigger_multiple
+		// evaluate wait.
+		if (g_defrag.integer && self->wait < 0 && other->client->entityStates[self - g_entities]) { // once per respawn in defrag.
+			return;
+		}
+		else if (isRacer) {
+			if (other->client->triggerTimes[self - g_entities] >= nowTime) {
+				return; // i hope this somewhat replicates the behavior accurately while keeping things deterministic?
+			}
+		}
+		else {
+			if (self->nextthink) {
+				return;		// can't retrigger until the wait is over
+			}
+		}
+	}
+
 	BG_TouchJumpPadVelocity( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? (other->client->sess.raceStyle.msec == -2 ? -2 : other->client->lastMsecValue) : 0, level.mapDefaultRaceStyle.msec,other->client->sess.raceMode ? other->client->sess.raceStyle.movementStyle : MV_JK2);
+
+	if (self->s.saberInFlight) { // its a target_speed converted to a jumppad, so we must consider what would have been "wait" of the trigger_multiple
+		if (self->wait > 0) {
+			if (isRacer) {
+				other->client->triggerTimes[self - g_entities] = nowTime + (self->wait /* + ent->random * crandom() */) * 1000; // no random stuff in racemode
+			}
+			else {
+				self->think = multi_wait;
+				self->nextthink = level.time + (self->wait + self->random * crandom()) * 1000;
+			}
+		}
+		else { // why?!
+		 // we can't just remove (self) here, because this is a touch function
+		 // called while looping through area links...
+			if (g_defrag.integer) {
+				if (other->client) {
+					other->client->entityStates[self - g_entities] = 1;
+				}
+			}
+			else {
+				self->touch = 0;
+				self->nextthink = level.time + FRAMETIME;
+				self->think = G_FreeEntity;
+			}
+		}
+	}
+
 }
 
 

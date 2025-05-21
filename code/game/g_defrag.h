@@ -14,7 +14,8 @@
 // With this we can tell old runs from new ones in case issues do arise.
 // Version 1: Old
 // Version 2: 2025-05-21 - Added support for target_fragsfilter
-#define SEMIBREAKINGCHANGEVERSIONDEFRAG 2
+// Version 3: 2025-05-21 - Added support for target_speed and fixed wait being read as int on trigger_multiple (0.5->0) in conversion
+#define SEMIBREAKINGCHANGEVERSIONDEFRAG 3
 
 extern int semiBreakingChangeVersionDefrag;
 

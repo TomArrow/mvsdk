@@ -299,6 +299,7 @@ typedef struct centity_s {
 	int				saberHitWallSoundDebounceTime;
 	int				serverSaberHitIndex;
 	int				predictedEFlags; // So we don't mess up everything by setting it on currentState (like in CG_TouchItem)
+	int				targetSpeedLastTouched;
 } centity_t;
 
 extern centity_t* cg_statsEntities[MAX_CLIENTS];
