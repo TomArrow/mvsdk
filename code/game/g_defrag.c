@@ -3116,6 +3116,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 	const char* typeString = NULL;
 	gentity_t* otherTarget = NULL;
 	const char* oldClass;
+	qboolean oldNotCPM, oldNotVQ3;
 	float oldWait;
 
 	if (!props) {
@@ -3124,8 +3125,13 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 	}
 
 	if (!trigger->r.bmodel || !(trigger->r.contents & CONTENTS_TRIGGER) || !trigger->model) {
+		triggerConversionProperties_t propsHere = *props;
 		// check if this is a target_fragsfilter or such
 		gentity_t* trueTrigger = NULL;
+
+		// upward inherit this stuff. if any part of the chain has one of these values set, the others must too
+		propsHere.notCPM = (qboolean)(propsHere.notCPM || trigger->notCPM);
+		propsHere.notVQ3 = (qboolean)(propsHere.notVQ3 || trigger->notVQ3);
 
 		if (depth > 10) {
 			// we might be stuck in a loop
@@ -3134,7 +3140,6 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		}
 
 		if (!Q_stricmp(trigger->classname, "target_fragsFilter") && targetType == TARGET_STOPTIMER) {
-			triggerConversionProperties_t propsHere = *props;
 			propsHere.checkpointScore = trigger->count;
 			propsHere.triggerPropsToSet |= TRIGPROP_CHECKPOINTSCORE;
 			propsHere.ttFlags |= TTFLAGS_FINISHTIMER_SCOREREQUIRE;
@@ -3174,7 +3179,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 				// Then find all triggers that do something with them
 				while ((trueTrigger = G_Find(trueTrigger, FOFS(target), trigger->targetname)) != NULL) {
 					anyMatch = qtrue;
-					if (G_Q3DefragTriggerConvert(trueTrigger, target, targetType, anyTriggerFound, depth+1, props)) {
+					if (G_Q3DefragTriggerConvert(trueTrigger, target, targetType, anyTriggerFound, depth+1, &propsHere)) {
 						G_Printf("DEFRAG: ^3%s referenced by %s successfully converted at depth %d.\n", target->classname, trigger->classname, depth+1);
 					}
 					else {
@@ -3201,11 +3206,11 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 	oldModel = trigger->model;
 
 	q3CourseType = Q3COURSE_UNIVERSAL;
-	if (target->notVQ3 || trigger->notVQ3)
+	if (target->notVQ3 || trigger->notVQ3 || props->notVQ3)
 	{
 		q3CourseType = Q3COURSE_CPMONLY;
 	}
-	else if (target->notCPM || trigger->notCPM)
+	else if (target->notCPM || trigger->notCPM || props->notCPM)
 	{
 		q3CourseType = Q3COURSE_VQ3ONLY;
 	}
@@ -3310,10 +3315,14 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 
 	oldClass = trigger->classname;
 	oldWait = trigger->wait;
+	oldNotCPM = trigger->notCPM;
+	oldNotVQ3 = trigger->notVQ3;
 
 	G_FreeEntity(trigger);
 	G_InitGentity(trigger); // Is this too disgusting and evil? xd. I wanna reuse this slot tho.
 	trigger->model = oldModel;
+	trigger->notCPM = oldNotCPM;
+	trigger->notVQ3 = oldNotVQ3;
 
 
 	otherTarget = NULL;
@@ -3343,8 +3352,8 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			triggerCopy->s.origin2[0] = otherTarget->speed;
 			triggerCopy->s.origin2[1] = oldWait;
 			triggerCopy->wait = oldWait;
-			triggerCopy->s.generic1 = otherTarget->notCPM;
-			triggerCopy->s.genericenemyindex = otherTarget->notVQ3;
+			triggerCopy->notCPM = triggerCopy->s.generic1 = otherTarget->notCPM || oldNotCPM;
+			triggerCopy->notVQ3 = triggerCopy->s.genericenemyindex = otherTarget->notVQ3 || oldNotVQ3;
 			G_Printf("DEFRAG: ^3%s which references %s also references %s. Making extra trigger.\n", oldClass, target->classname, otherTarget->classname);
 			G_Printf("DEFRAG: ^2%s converted (via copy).\n", triggerCopy->classname);
 		}
@@ -3391,8 +3400,8 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 		trigger->s.origin2[0] = target->speed;
 		trigger->s.origin2[1] = oldWait; // maybe we predict it someday?
 		trigger->wait = oldWait;
-		trigger->s.generic1 = target->notCPM;
-		trigger->s.genericenemyindex = target->notVQ3;
+		trigger->s.generic1 = (qboolean)(target->notCPM || props->notCPM || oldNotCPM);
+		trigger->s.genericenemyindex = (qboolean)(target->notVQ3 || props->notVQ3 || oldNotVQ3);
 		G_Printf("DEFRAG: ^2Q3 %s (%s) at %s converted.\n", target->classname, q3CourseType ? typeString : "", vtos(target->s.origin));
 		break;
 	default:

@@ -211,6 +211,7 @@ typedef struct { // while traversing backwards to find root trigger, all stuff t
 	int	ttFlags;
 	int	checkpointScore;
 	triggerPropsToSet_t triggerPropsToSet;
+	qboolean notVQ3, notCPM;
 } triggerConversionProperties_t;
 
 typedef signed char schar_t;

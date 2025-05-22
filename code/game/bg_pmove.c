@@ -6725,7 +6725,7 @@ void PmoveSingle (pmove_t *pmove) {
 				float realFriction = MovementIsQuake3Based(moveStyle) ? pm_vq3_friction : pm_friction;
 				float realAccel = MovementIsQuake3Based(moveStyle) ? pm_cpm_accelerate : (moveStyle == MV_JK2SP ? pm_sp_accelerate : pm_accelerate);
 				float strafeFactor = fp16_ieee_to_fp32_value(USHORT2SHORT(oldCmdRoll))+1.0f;  // USHORT2SHORT to normalize to short range since fp16 conversion relies on it
-				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || pm->cmd.upmove > 0) {
+				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || (pm->cmd.upmove > 0 && !(pm->ps->pm_flags & PMF_JUMP_HELD))) {
 					realAccel = moveStyle == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate;
 					CJ = qfalse;
 				}
