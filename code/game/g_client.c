@@ -1926,6 +1926,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 
 	memset( &userCmdBuffer[clientNum],0,sizeof(userCmdBuffer[clientNum]));
 	memset( &mv_clientSessions[clientNum], 0, sizeof(mv_clientSessions[clientNum]) );
+	G_ResetUserCmdStore(ent - g_entities);
 	if ( (ent->r.svFlags & SVF_BOT) || isBot || !Q_stricmp(value, "localhost") )
 	{ // Bots and localhost get 127.0.0.1
 		mvSess->clientIP[0] = 127;
@@ -3125,6 +3126,7 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 	G_ClearEntityActivator(ent); // this one not needed prolly cuz client has no activator, but lets be safe.
 	G_ClearActivatedEntities(ent);
 	DF_ClearCheckPointTimes(ent);
+	G_ResetUserCmdStore(ent - g_entities);
 
 	DF_RemoveCheckPoints(ent);
 

@@ -2947,7 +2947,7 @@ void G_RunClient( gentity_t *ent ) {
 	qboolean areSegReplaying = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
 
 	// check if we should execute a few client frames that got buffered
-	if (!(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying && g_userCmdBuffer.integer) {
+	if (!(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying && g_userCmdBuffer.integer && ent->client->pers.connected == CON_CONNECTED) {
 		while (G_GetUserCmd(ent - g_entities, &ent->client->pers.cmd, GETUSERCMD_ADVANCERUNCLIENT)) {
 			if (g_developer.integer > 10) {
 				G_Printf("^3executing buffered cmd for client %d\n", ent-g_entities);

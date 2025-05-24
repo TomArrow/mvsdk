@@ -8689,7 +8689,7 @@ void CG_ResetPlayerEntity(centity_t *cent)
 	//reset lerp origin smooth point
 	VectorCopy(cent->lerpOrigin, cent->beamEnd);
 
-
+	//CG_Printf("CG_ClearLerpFrame: %d, %d\n", cent->currentState.legsAnim, cent->currentState.torsoAnim);
 	CG_ClearLerpFrame(cent, ci, &cent->pe.legs, cent->currentState.legsAnim, qfalse);
 	CG_ClearLerpFrame(cent, ci, &cent->pe.torso, cent->currentState.torsoAnim, qtrue);
 
