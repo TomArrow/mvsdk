@@ -3713,8 +3713,9 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 		RemoveDetpacks(ent);
 		DeletePlayerProjectiles(ent);
 
-
-		G_Kill(ent); //stop abuse
+		if (ent->client->pers.connected == CON_CONNECTED) { // killing a player links him. catastrophe if not yet inuse :)
+			G_Kill(ent); //stop abuse
+		}
 		ent->client->ps.persistant[PERS_SCORE] = 0;
 		ent->client->ps.persistant[PERS_KILLED] = 0;
 		ent->client->accuracy_shots = 0;
