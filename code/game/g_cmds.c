@@ -943,6 +943,12 @@ to free floating spectator mode
 =================
 */
 void StopFollowing( gentity_t *ent ) {
+	if (ent->client->sess.spectatorState == SPECTATOR_FOLLOW && ent->client->sess.spectatorClient >= 0 && ent->client->sess.spectatorClient < MAX_CLIENTS) {
+		gentity_t* followed = g_entities + ent->client->sess.spectatorClient;
+		if (followed->client && followed != ent && followed->client->sess.raceMode && (followed->client->sess.raceStyle.runFlags & RFL_BOT)) {
+			ent->client->ps.viewangles[ROLL] = 0; // in case we were following a strafebotter. so we don't get stuck with a weird angled view
+		}
+	}
 	ent->client->ps.persistant[ PERS_TEAM ] = TEAM_SPECTATOR;	
 	ent->client->sess.sessionTeam = TEAM_SPECTATOR;	
 	ent->client->sess.spectatorState = SPECTATOR_FREE;
