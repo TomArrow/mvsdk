@@ -493,6 +493,7 @@ vmCvar_t	cg_drawIcons;
 vmCvar_t	cg_drawAmmoWarning;
 vmCvar_t	cg_drawCrosshair;
 vmCvar_t	cg_drawCrosshairNames;
+vmCvar_t	cg_drawCrosshairNamesDetails;
 vmCvar_t	cg_dynamicCrosshair;
 vmCvar_t	cg_drawRewards;
 vmCvar_t	cg_drawScores;
@@ -882,6 +883,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_leadSoundsRace, "cg_leadSoundsRace", "1", CVAR_ARCHIVE  },
 	{ &cg_drawCrosshair, "cg_drawCrosshair", "1", CVAR_ARCHIVE },
 	{ &cg_drawCrosshairNames, "cg_drawCrosshairNames", "1", CVAR_ARCHIVE },
+	{ &cg_drawCrosshairNamesDetails, "cg_drawCrosshairNamesDetails", "1", CVAR_ARCHIVE },
 	{ &cg_drawScores,		  "cg_drawScores", "1", CVAR_ARCHIVE },
 	{ &cg_dynamicCrosshair, "cg_dynamicCrosshair", "1", CVAR_ARCHIVE },
 	{ &cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE },

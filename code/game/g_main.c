@@ -1537,9 +1537,21 @@ int QDECL SortRanks( const void *a, const void *b ) {
 		return -1;
 	}
 
+	raceA = ca->pers.raceBestTime ? ca->pers.raceBestTime : INT_MAX;
+	raceB = cb->pers.raceBestTime ? cb->pers.raceBestTime : INT_MAX;
 
 	// then spectators
 	if ( ca->sess.sessionTeam == TEAM_SPECTATOR && cb->sess.sessionTeam == TEAM_SPECTATOR ) {
+		if (g_gametype.integer != GT_TOURNAMENT) { // spectator order matters in tournaments i guess. racing doesn't rly make sense in duel mode anyway
+			if (raceA
+				< raceB) {
+				return -1;
+			}
+			if (raceA
+				> raceB) {
+				return 1;
+			}
+		}
 		if ( ca->sess.spectatorOrder > cb->sess.spectatorOrder ) {
 			return -1;
 		}
@@ -1555,8 +1567,6 @@ int QDECL SortRanks( const void *a, const void *b ) {
 		return -1;
 	}
 
-	raceA = ca->pers.raceBestTime ? ca->pers.raceBestTime : INT_MAX;
-	raceB = cb->pers.raceBestTime ? cb->pers.raceBestTime : INT_MAX;
 	if (raceA
 		< raceB) {
 		return -1;

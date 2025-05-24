@@ -5010,8 +5010,10 @@ static void CG_DrawCrosshairNames( void ) {
 	float		*color;
 	vec4_t		tcolor;
 	char		*name;
+	static char	details[100];
 	int			baseColor;
 	qboolean	blackColor;
+	clientInfo_t*	ci;
 
 	if ( !cg_drawCrosshair.integer ) {
 		return;
@@ -5037,7 +5039,8 @@ static void CG_DrawCrosshairNames( void ) {
 		return;
 	}
 
-	name = cgs.clientinfo[ cg.crosshairClientNum ].name;
+	ci = &cgs.clientinfo[cg.crosshairClientNum];
+	name = ci->name;
 
 	/*if (cgs.gametype >= GT_TEAM)
 	{
@@ -5081,6 +5084,91 @@ static void CG_DrawCrosshairNames( void ) {
 		blackColor = qtrue;
 	}
 
+	details[0] = '\0';
+	if (cg_drawCrosshairNamesDetails.integer && cgs.isTommyTernal) {
+		qboolean first = qtrue;
+		if (ci->playerMode > MODE_INVALID && ci->playerMode < MODE_NUM_MODES) {
+			if (!first) {
+				Q_strcat(details, sizeof(details), ", ");
+			}
+			first = qfalse;
+			Q_strcat(details, sizeof(details), modeNames[ci->playerMode].string);
+
+			if (ci->playerMode == MODE_DEFRAG && cg_statsEntities[cg.crosshairClientNum]) {
+				raceStyle_t raceStyle;
+				mainLeaderboardType_t leaderboardType;
+				entityState_t* stats = &cg_statsEntities[cg.crosshairClientNum]->currentState;
+				movementStyle_e movementStyle;
+				BG_StatsToRaceStyle(stats, &raceStyle);
+				movementStyle = raceStyle.movementStyle;
+				leaderboardType = stats->activeForcePass;
+				if (leaderboardType < 0 || leaderboardType >= LB_TYPES_COUNT) {
+					leaderboardType = -1;
+				}
+				if (movementStyle < 0 || movementStyle >= MV_NUMSTYLES) {
+					movementStyle = -1;
+				}
+
+				// style
+				if (!first) {
+					Q_strcat(details, sizeof(details), ", ");
+				}
+				first = qfalse;
+				Q_strcat(details, sizeof(details), movementStyle == -1 ? "Unknown style" : moveStyleNames[movementStyle].string);
+				if (leaderboardType != -1) {
+					if (!first) {
+						Q_strcat(details, sizeof(details), ", ");
+					}
+					first = qfalse;
+					Q_strcat(details, sizeof(details), va("^%c%s^7", leaderboardType == LB_MAIN ? '7': 'O', leaderboardNames[leaderboardType].string));
+				}
+				
+
+				if (!first) {
+					Q_strcat(details, sizeof(details), ", ");
+				}
+				first = qfalse;
+				if (raceStyle.msec > 0) {
+					Q_strcat(details, sizeof(details), va("%d fps", 1000 / raceStyle.msec));
+				}
+				else if (raceStyle.msec == -1) {
+					Q_strcat(details, sizeof(details), "^3fps toggle^7");
+				}
+				else if (raceStyle.msec == -2) {
+					Q_strcat(details, sizeof(details), "float physics^7");
+				}
+				else {
+					Q_strcat(details, sizeof(details), "^1unknown fps^7");
+				}
+				if (leaderboardType != LB_MAIN && leaderboardType != LB_NOJUMPBUG) {
+					const char* runFlagsString;
+					if (raceStyle.jumpLevel != cg_mapDefaultJump.integer) {
+						if (!first) {
+							Q_strcat(details, sizeof(details), ", ");
+						}
+						first = qfalse;
+						Q_strcat(details, sizeof(details), va("j%d", raceStyle.jumpLevel));
+					}
+					runFlagsString = RunFlagsToString(raceStyle.runFlags, cg_mapDefaultRunFlags.integer, 1, NULL, NULL);
+					if (strlen(runFlagsString)) {
+						if (!first) {
+							Q_strcat(details, sizeof(details), ", ");
+						}
+						first = qfalse;
+						Q_strcat(details, sizeof(details), runFlagsString);
+					}
+					if (raceStyle.variant) {
+						if (!first) {
+							Q_strcat(details, sizeof(details), ", ");
+						}
+						first = qfalse;
+						Q_strcat(details, sizeof(details), va("variant %d", raceStyle.variant));
+					}
+				}
+			}
+		}
+	}
+
 	if (!blackColor) {
 		baseColor = CT_WHITE;
 		tcolor[0] = colorTable[baseColor][0];
@@ -5091,6 +5179,10 @@ static void CG_DrawCrosshairNames( void ) {
 		//JAPRO - Clientside - Colored crosshair names - Start
 		UI_DrawProportionalString(0.5f * cgs.screenWidth, 170, name, UI_CENTER | UI_DROPSHADOW, tcolor);
 		//JAPRO - Clientside - Colored crosshair names - End
+
+		if (details[0]) {
+			UI_DrawScaledProportionalString(0.5f * cgs.screenWidth, 193, details, UI_CENTER, tcolor, 0.35f);
+		}
 	}
 	else {
 		baseColor = CT_BLACK;
@@ -5102,6 +5194,10 @@ static void CG_DrawCrosshairNames( void ) {
 		//JAPRO - Clientside - Colored crosshair names - Start
 		UI_DrawProportionalString(0.5f * cgs.screenWidth, 170, name, UI_CENTER, tcolor);
 		//JAPRO - Clientside - Colored crosshair names - End
+
+		if (details[0]) {
+			UI_DrawScaledProportionalString(0.5f * cgs.screenWidth, 193, details, UI_CENTER, tcolor,0.35f);
+		}
 	}
 
 	trap_R_SetColor( NULL );
@@ -5414,9 +5510,10 @@ static qboolean CG_DrawFollow( void )
 	}
 	else {
 		movementStyle = cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-		if (movementStyle < 0 || movementStyle >= MV_NUMSTYLES) {
-			movementStyle = -1;
-		}
+	}
+
+	if (movementStyle < 0 || movementStyle >= MV_NUMSTYLES) {
+		movementStyle = -1;
 	}
 
 	//Loda - add their movemnt style here..?f

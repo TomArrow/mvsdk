@@ -3713,7 +3713,7 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 		RemoveDetpacks(ent);
 		DeletePlayerProjectiles(ent);
 
-		if (ent->client->pers.connected == CON_CONNECTED) { // killing a player links him. catastrophe if not yet inuse :)
+		if (ent->client->pers.connected == CON_CONNECTED && ent->client->sess.sessionTeam != TEAM_SPECTATOR) { // killing a player links him. catastrophe if not yet inuse :) also not great when in spec.
 			G_Kill(ent); //stop abuse
 		}
 		ent->client->ps.persistant[PERS_SCORE] = 0;
@@ -3747,7 +3747,7 @@ void SetClientMode(gentity_t* ent, playerMode_e mode) {
 	if (!ent->client)
 		return;
 
-	if ((ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) && ent->client->sess.mode != MODE_IRONMAN) { // maybe not let capper switch unless theres no other players left in ironman or theyre afk or whatever? meh.
+	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR && (ent->client->ps.powerups[PW_NEUTRALFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]) && ent->client->sess.mode != MODE_IRONMAN) { // maybe not let capper switch unless theres no other players left in ironman or theyre afk or whatever? meh.
 		trap_SendServerCommand(ent - g_entities, "print \"^5This command is not allowed when carrying a flag!\n\"");
 		return;
 	}
@@ -4439,7 +4439,14 @@ void DF_SetMapDefaults(raceStyle_t rs) {
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		client = (g_entities + i);
 		if (!client->client) continue;
-		DF_CarryClientOverToNewRaceStyle(client,&rs);
+		DF_CarryClientOverToNewRaceStyle(client,&rs); 
+		// TODO is this right? hm
+		if (client->client->sess.login.loggedIn) {
+			DF_RequestPlayerDefaultTime(client);
+		}
+		else {
+			client->client->pers.raceBestTime = 0;
+		}
 		//oldMsec = client->client->sess.raceStyle.msec;
 		//client->client->sess.raceStyle = rs;
 		//client->client->sess.raceStyle.msec = oldMsec;
@@ -5418,7 +5425,6 @@ void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs) {
 	}
 
 	sess->mapStyleBaseline = *newRs;
-
 }
 
 void Cmd_MovementStyle_f(gentity_t* ent)
