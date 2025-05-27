@@ -2257,16 +2257,19 @@ void CG_DrawHUD(centity_t	*cent)
 	{
 		itemDef_t *focusItem;
 
-		focusItem = Menu_FindItemByName(menuHUD, "score_line");
-		if (focusItem)
+		if (cg_drawScore.integer)
 		{
-			UI_DrawScaledProportionalString(
-				SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
-				focusItem->window.rect.y,
-				scoreStr,
-				UI_RIGHT | UI_DROPSHADOW,
-				focusItem->window.foreColor,
-				0.7f);
+			focusItem = Menu_FindItemByName(menuHUD, "score_line");
+			if (focusItem)
+			{
+				UI_DrawScaledProportionalString(
+					SCREEN_WIDTH - (SCREEN_WIDTH - focusItem->window.rect.x) * cgs.screenXFactor,
+					focusItem->window.rect.y,
+					scoreStr,
+					UI_RIGHT | UI_DROPSHADOW,
+					focusItem->window.foreColor,
+					0.7f);
+			}
 		}
 
 		// Print scanline
