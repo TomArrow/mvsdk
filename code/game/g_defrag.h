@@ -318,15 +318,6 @@ typedef enum nameTagType_s {
 
 extern const char* nameTagTypeNames[NAMETAG_COUNT];
 
-typedef struct helpTip_s {
-	const char* helpPrint;
-	const char* randomTipPrint;
-	qboolean header;
-	qboolean raceOnly;
-} helpTip_t;
-
-extern helpTip_t helpTips[];
-extern const int helpTipCount;
 
 typedef struct subContestParams_s {
 	subContestType_t type;

@@ -320,6 +320,60 @@ void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadc
 }
 
 
+// We try to find out the current mod running, or something to distinguish multiple instances of the mod running,
+// so that we can store temporary demo files without interfering with the other instances
+// bit cringe but nicer than having to set an extra g_ cvar
+void G_SetupTempDemoSubfolderName() {
+	char comb[20];
+	char cvar[MAX_QPATH];
+	int i;
+	char* s;
+	comb[0] = '\0';
+	trap_Cvar_VariableStringBuffer("net_portReal", cvar, sizeof(cvar));
+	if (cvar[0]) {
+		Q_strcat(comb, sizeof(comb), cvar);
+		Q_strcat(comb, sizeof(comb), "-");
+	}
+	trap_Cvar_VariableStringBuffer("fs_game", cvar, sizeof(cvar));
+	if (cvar[0]) {
+		Q_strcat(comb, sizeof(comb), cvar);
+		Q_strcat(comb, sizeof(comb), "-");
+	}
+	trap_Cvar_VariableStringBuffer("fs_cfgLogPath", cvar, sizeof(cvar));
+	if (cvar[0]) {
+		Q_strcat(comb, sizeof(comb), cvar);
+	}
+	for (i = 0, s=comb; i < sizeof(comb); i++,s++) {
+		if (*s == '\0') break;
+		if (*s >= 'a' && *s <= 'z'
+			|| *s >= 'A' && *s <= 'Z'
+			|| *s >= '0' && *s <= '9'
+			|| *s == '_'
+			|| *s == '-'
+			//|| *s == '.' // could mess with filenames/paths (checkdirtraversal)
+			//|| *s == '/' // could mess with filenames (as it is a folder separator)
+			|| *s == '['
+			|| *s == ']'
+			|| *s == '('
+			|| *s == ')'
+			//|| *s == '<'	// demonames: windows wont allow this in filenames
+			//|| *s == '>'	// demonames: windows wont allow this in filenames
+			|| *s == '='
+			//|| *s == ':'	// demonames: windows wont allow this in filenames
+			|| *s == ';'
+			|| *s == '+'
+			//|| *s == '*'	// demonames: windows wont allow this in filenames
+			|| *s == '@'
+			) {
+			// whitelist. ok.
+		}
+		else {
+			(*s) = '_';
+		}
+	}
+	Q_strncpyz(level.tempDemoNamePrefix,va("%s/",comb), sizeof(level.tempDemoNamePrefix));
+}
+
 static int DF_GetNewRunId() {
 	char s[15];
 	int num;
@@ -355,7 +409,7 @@ void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPri
 	if (!ent->client->pers.recordingDemo) { // thanks to pre-recording we'll get a bit into the past too
 		int demoId = DF_GetNewDemoId();
 
-		Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
+		Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "%stemp/temp%d_%d",level.tempDemoNamePrefix, cl->ps.clientNum, demoId);
 		cl->pers.recordingDemo = qtrue;
 
 		trap_SendConsoleCommand(EXEC_APPEND, va("svdemometa %d dfv %d;svrecord \"%s\" %i\n", cl->ps.clientNum, g_dfv.integer, cl->pers.tempDemoName, cl->ps.clientNum));
@@ -886,7 +940,7 @@ void DF_HandleUnfinishedDemos() {
 			ent->client->pers.recordingDemo = qfalse;
 			ent->client->pers.demoStoppedTime = level.time;
 			if (!ent->client->pers.keepDemoMaybe) {
-				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", i, ent->client->pers.tempDemoName, i));
+				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"%strash/trash%d\"\n", i, ent->client->pers.tempDemoName, level.tempDemoNamePrefix, i));
 			}
 			else {
 				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", i, ent->client->pers.tempDemoName, i));
@@ -1063,9 +1117,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	if (cl->pers.recordingDemo && cl->pers.keepDemoMaybe) {
 		//We are still recording a demo that we want to keep? -shouldn't ever happen?
-		//Stop and rename it
-		//trap_SendServerCommand( player-g_entities, "chat \"RECORDING STOPPED (at startline), HIGHSCORE\"");
-		//trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo temp/%s races/%s\n", cl->ps.clientNum, cl->pers.oldDemoName, cl->pers.demoName));
+		//Stop and rename it (renaming happens automatically no worries)
 		trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", cl->ps.clientNum));
 		cl->pers.recordingDemo = qfalse;
 		cl->pers.demoStoppedTime = level.time;
@@ -1078,7 +1130,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		if (!cl->pers.recordingDemo) { //Start the new demo
 			int demoId = DF_GetNewDemoId();
 
-			Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
+			Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "%stemp/temp%d_%d", level.tempDemoNamePrefix, cl->ps.clientNum, demoId);
 			cl->pers.recordingDemo = qtrue;
 			//trap_SendServerCommand( player-g_entities, "chat \"RECORDING STARTED\"");
 			//trap_SendConsoleCommand(EXEC_APPEND, va("svrecord %s/%s %i\n", cl->sess.login.loggedIn ? "temp":"tempanon", cl->sess.login.loggedIn ? cl->sess.login.name : miniva("anon%d",activator-g_entities), cl->ps.clientNum));
@@ -1093,14 +1145,13 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 				int demoId = DF_GetNewDemoId(); 
 				char		tempDemoName[MAX_OSPATH];
 
-				Com_sprintf(tempDemoName, sizeof(tempDemoName), "temp/temp%d_%d", cl->ps.clientNum, demoId);
+				Com_sprintf(tempDemoName, sizeof(tempDemoName), "%stemp/temp%d_%d", level.tempDemoNamePrefix, cl->ps.clientNum, demoId);
 				cl->pers.recordingDemo = qtrue;
 				cl->pers.demoStoppedTime = level.time;
 				//trap_SendServerCommand( player-g_entities, "chat \"RECORDING RESTARTED\"");
-				trap_SendConsoleCommand(EXEC_APPEND, va("svdemometa %d dfv %d;svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\";svrecord \"%s\" %i\n", cl->ps.clientNum, g_dfv.integer, cl->ps.clientNum, cl->pers.tempDemoName, cl->ps.clientNum, tempDemoName, cl->ps.clientNum));
+				trap_SendConsoleCommand(EXEC_APPEND, va("svdemometa %d dfv %d;svstoprecord %i;svrenamedemo \"%s\" \"%strash/trash%d\";svrecord \"%s\" %i\n", cl->ps.clientNum, g_dfv.integer, cl->ps.clientNum, cl->pers.tempDemoName, level.tempDemoNamePrefix, cl->ps.clientNum, tempDemoName, cl->ps.clientNum));
 				Q_strncpyz(cl->pers.tempDemoName, tempDemoName,sizeof(cl->pers.tempDemoName));
 				cl->pers.demoStartedTime = level.time;
-				//trap_SendConsoleCommand( EXEC_APPEND, va("svrecord temp/%s %i\n", cl->pers.userName, cl->ps.clientNum));
 			}
 		}
 	}
@@ -2044,7 +2095,7 @@ int DF_GetSegmentedRunnerCount() {
 		oEnt = g_entities + i;
 
 		// extend this to any segmented runner? but how to avoid trolling?
-		if (oEnt->client->sess.raceMode && (oEnt->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && oEnt->client->pers.segmented.state == SEG_REPLAY) {
+		if (oEnt->client->sess.raceMode && (oEnt->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && oEnt->client->pers.segmented.state == SEG_REPLAY && oEnt->client->pers.connected == CON_CONNECTED) {
 			segReplays++;
 		}
 	}

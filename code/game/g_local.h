@@ -528,6 +528,7 @@ typedef struct {
 	rollState_t roll;
 	int			lastRaceTimerStartedCP;
 	int			lastIronmanFlagGiven;
+	qboolean	stayOnMap; // when g_slowvote enabled
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -813,6 +814,7 @@ typedef struct {
 	simplePos_t	ironManPos[IRONMAN_MAX_PAST_POSITIONS_COUNT];
 	int			ironManPosCount;
 	int			lastIronManPosSaved;
+	char		tempDemoNamePrefix[20];
 } level_locals_t;
 
 
@@ -1464,6 +1466,8 @@ extern	vmCvar_t	g_warmup;
 extern	vmCvar_t	g_doWarmup;
 extern	vmCvar_t	g_blood;
 extern	vmCvar_t	g_allowVote;
+extern	vmCvar_t	g_slowVote;
+extern	vmCvar_t	g_slowVoteAFKThreshold;
 extern	vmCvar_t	g_teamAutoJoin;
 extern	vmCvar_t	g_teamForceBalance;
 extern	vmCvar_t	g_banIPs;
@@ -1798,6 +1802,18 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 
 #include "../api/mvapi.h"
 #include "g_multiversion.h"
+
+
+typedef struct helpTip_s {
+	const char* helpPrint;
+	const char* randomTipPrint;
+	qboolean header;
+	qboolean raceOnly;
+	qboolean(*allowfunc)(gentity_t*); // whether to show tip. must allow ent to be NULL for randomtip check
+} helpTip_t;
+
+extern helpTip_t helpTips[];
+extern const int helpTipCount;
 
 
 void DF_PreDeltaAngleChange(gclient_t* client);

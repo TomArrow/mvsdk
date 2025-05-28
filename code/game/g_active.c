@@ -2980,13 +2980,11 @@ void G_RunClient( gentity_t *ent ) {
 		ent->client->pers.demoStoppedTime = level.time;
 
 		if (ent->client->pers.keepDemoMaybe) {
-			//trap_SendServerCommand( ent-g_entities, "chat \"RECORDING STOPPED (timeout), HIGHSCORE\"");
-			//trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo temp/%s races/%s\n", ent->s.number, ent->client->pers.oldDemoName, ent->client->pers.demoName));
+			// rename happens automatically
 			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", ent->s.number));
 		}
 		else {
-			//trap_SendServerCommand( ent-g_entities, va("chat \"RECORDING STOPPED for client %i\"", ent->client->ps.clientNum));
-			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"trash/trash%d\"\n", ent->s.number, ent->client->pers.tempDemoName, ent->s.number));
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"%strash/trash%d\"\n", ent->s.number, ent->client->pers.tempDemoName, level.tempDemoNamePrefix, ent->s.number));
 		}
 	}
 	

@@ -960,6 +960,10 @@ void StopFollowing( gentity_t *ent ) {
 	SetClientViewAngle(ent, ent->client->ps.viewangles); //Fix viewangles getting fucked up when we stop spectating someone?
 }
 
+qboolean SlowVotingActive(gentity_t* ent) {
+	return g_slowVote.integer;
+}
+
 helpTip_t helpTips[] = {
 	{
 		"print \"\n^7Various commands:\n\"",
@@ -984,6 +988,13 @@ helpTip_t helpTips[] = {
 		"print \"Random tip: ^2/afk^7 - See who's afk and for how long\n\"",
 		qfalse,
 		qfalse
+	},
+	{
+		"print \"^2/stay^7 - Stay on this map. Prevents others from voting for another map while you are ingame and not AFK.\n\"",
+		"print \"Random tip: ^2/stay^7 - Stay on this map. Prevents others from voting for another map while you are ingame and not AFK.\n\"",
+		qfalse,
+		qfalse,
+		SlowVotingActive
 	},
 	{
 		"print \"\n^7Map commands:\n\"",
@@ -1339,7 +1350,7 @@ void Cmd_Help_f(gentity_t* ent) {
 	}
 
 	for (i = 0; i < helpTipCount; i++) {
-		if (!helpTips[i].raceOnly || ent->client->sess.raceMode) {
+		if ((!helpTips[i].raceOnly || ent->client->sess.raceMode) && (!helpTips[i].allowfunc || helpTips[i].allowfunc(ent))) {
 			trap_SendServerCommand(ent - g_entities, helpTips[i].helpPrint);
 		}
 	}
@@ -3916,7 +3927,7 @@ void Cmd_Players_f(gentity_t* ent) {
 	gentity_t* other;
 	gclient_t* cl;
 	int i;
-	int millisecs,minMillisecs = clampedIntMult(g_afkCmdMinSecs.integer, 1000);
+	int millisecs,minMillisecs = clampedIntMult(g_afkCmdMinSecs.integer, 1000), minMillisecsStayOnMap = clampedIntMult(g_slowVoteAFKThreshold.integer, 1000);
 	trap_SendServerCommand(ent - g_entities, "print \"Players:\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2#  User       Mode                      AFK        FPS  Jump  Name\n\"");
 	for (i = 0; i < level.maxclients; i++) {
@@ -3926,19 +3937,42 @@ void Cmd_Players_f(gentity_t* ent) {
 		}
 		cl = other->client;
 		millisecs = level.time - other->client->sess.lastHereTime;
-		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-25s %-10s %-4s %-5d %s\n\"", 
+		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-25s %-10s %-4s %-5d %s %s\n\"", 
 			i,
 			cl->sess.login.loggedIn ? cl->sess.login.name : "",
 			cl->sess.raceMode ? multiva("Race:%s/%s", moveStyleNames[cl->sess.raceStyle.movementStyle].string, leaderboardNames[classifyLeaderBoard(&cl->sess.raceStyle,&level.mapDefaultRaceStyle)].string) : modeNames[cl->sess.mode].string,
 			millisecs >= minMillisecs ? DF_MsToString(millisecs) : "",
 			cl->sess.raceStyle.msec == -1 ? "togl" : (cl->sess.raceStyle.msec == -2 ? "flt" : (cl->sess.raceStyle.msec == 0 ? "unkn" : miniva("%d", 1000 / cl->sess.raceStyle.msec))),
 			cl->sess.raceStyle.jumpLevel,
-			other->client->pers.netname
+			other->client->pers.netname,
+			other->client->pers.stayOnMap && g_slowVote.integer ?((level.time-cl->sess.lastHereTime) < minMillisecsStayOnMap ? " ^7(wants to stay on map)" : " ^7(wants to stay on map but ^1AFK^7)") : ""
 		));
 	}
 }
 
 extern int DF_GetSegmentedRunnerCount();
+
+int G_SlowVoteProhibits(int ownclientNum) {
+	gentity_t* oEnt;
+	int i;
+	int stayers = 0;
+	int minMillisecs = clampedIntMult(g_slowVoteAFKThreshold.integer, 1000);
+
+	if (!g_slowVote.integer) return 0;
+
+	for (i = 0; i < level.maxclients; i++) {
+		oEnt = g_entities + i;
+
+		if (i == ownclientNum || oEnt->client->pers.connected != CON_CONNECTED) {
+			continue;
+		}
+		// extend this to any segmented runner? but how to avoid trolling?
+		if (oEnt->client->pers.stayOnMap && oEnt->client->sess.sessionTeam != TEAM_SPECTATOR && (level.time - oEnt->client->sess.lastHereTime) < minMillisecs) {
+			stayers++;
+		}
+	}
+	return stayers;
+}
 
 /*
 ==================
@@ -3947,6 +3981,7 @@ Cmd_CallVote_f
 */
 void Cmd_CallVote_f( gentity_t *ent ) {
 	int		i;
+	int		tmp;
 	char	arg1[MAX_STRING_TOKENS];
 	char	arg2[MAX_STRING_TOKENS];
 	//int		clientPermissions;
@@ -4018,6 +4053,16 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	// special case for g_gametype, check for bad values
 	if ( !Q_stricmp( arg1, "g_gametype" ) && canVoteBesideMap)
 	{
+		if (DF_GetSegmentedRunnerCount()) {
+			trap_SendServerCommand(ent - g_entities, "print \"Cannot vote for a new gametype while segmented runs are being replayed.\n\"");
+			return;
+		}
+
+		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new gametype, slow voting is active and %d other active players with to stay.\n\"", tmp));
+			return;
+		}
+
 		i = atoi( arg2 );
 		if( i == GT_SINGLE_PLAYER || i < GT_FFA || i >= GT_MAX_GAME_TYPE) {
 			trap_SendServerCommand( ent-g_entities, "print \"Invalid gametype.\n\"" );
@@ -4081,6 +4126,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 			return;
 		}
 
+		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"", tmp));
+			return;
+		}
+
 		if (!G_DoesMapSupportGametype(arg2, trap_Cvar_VariableIntegerValue("g_gametype")))
 		{
 			//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
@@ -4120,6 +4170,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 
 		if (DF_GetSegmentedRunnerCount()) {
 			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
+			return;
+		}
+
+		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"", tmp));
 			return;
 		}
 
@@ -4184,6 +4239,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 			return;
 		}
 
+		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"", tmp));
+			return;
+		}
+
 		if (!G_DoesMapSupportGametype(mapname, trap_Cvar_VariableIntegerValue("g_gametype")))
 		{
 			//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
@@ -4243,6 +4303,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 
 		if (DF_GetSegmentedRunnerCount()) {
 			trap_SendServerCommand(ent - g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"");
+			return;
+		}
+		
+		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"",tmp));
 			return;
 		}
 
@@ -4577,6 +4642,23 @@ void Cmd_Stats_f( gentity_t *ent ) {
 	//trap_SendServerCommand( ent-g_entities, va("print \"visited %d of %d areas\n\"", n, max));
 	trap_SendServerCommand( ent-g_entities, va("print \"%d%% level coverage\n\"", n * 100 / max));
 */
+}
+
+void Cmd_Stay_f(gentity_t* ent) {
+	if (!g_slowVote.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"^3Slow voting is not enabled on this server.\n\"");
+		return;
+	}
+	if (!ent->client->pers.stayOnMap) {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^3Locking in this map. Others can not vote for other maps while you are not in spec and not AFK.\n\"");
+		ent->client->pers.stayOnMap = qtrue;
+	}
+	else {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^1You are no longer locking this map. People can vote for another map.\n\"");
+		ent->client->pers.stayOnMap = qfalse;
+	}
 }
 
 int G_ItemUsable(playerState_t *ps, int forcedUse)
@@ -5498,6 +5580,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "stay"))
+		{
+			giveError = qtrue;
+		}
 
 		if (giveError)
 		{
@@ -5658,6 +5744,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_SetViewpos_f( ent );
 	else if (Q_stricmp (cmd, "stats") == 0)
 		Cmd_Stats_f( ent );
+	else if (Q_stricmp (cmd, "stay") == 0)
+		Cmd_Stay_f( ent );
 	/*
 	else if (Q_stricmp(cmd, "#mm") == 0 && CheatsOk( ent ))
 	{

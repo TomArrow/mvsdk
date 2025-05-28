@@ -144,6 +144,8 @@ vmCvar_t	g_blood;
 vmCvar_t	g_podiumDist;
 vmCvar_t	g_podiumDrop;
 vmCvar_t	g_allowVote;
+vmCvar_t	g_slowVote;
+vmCvar_t	g_slowVoteAFKThreshold;
 vmCvar_t	g_teamAutoJoin;
 vmCvar_t	g_teamForceBalance;
 vmCvar_t	g_banIPs;
@@ -367,6 +369,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_podiumDrop, "g_podiumDrop", "70", 0, 0, qfalse },
 
 	{ &g_allowVote, "g_allowVote", "1", CVAR_ARCHIVE, 0, qfalse },
+	{ &g_slowVote, "g_slowVote", "0", CVAR_ARCHIVE, 0, qfalse },
+	{ &g_slowVoteAFKThreshold, "g_slowVoteAFKThreshold", "300", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_listEntity, "g_listEntity", "0", 0, 0, qfalse },
 
 	{ &g_developer, "developer", "0", 0, 0, qfalse },
@@ -964,6 +968,8 @@ void MV_UpdateSvFlags( void )
 	lastValue = intValue;
 }
 
+void G_SetupTempDemoSubfolderName();
+
 
 void InitClanTagHashTable();
 
@@ -1041,6 +1047,12 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	level.time = levelTime;
 	level.startTime = levelTime;
 	level.frameTimeMsec = 0;
+
+	G_SetupTempDemoSubfolderName();
+
+	if (g_defrag.integer && g_defragAutoDemo.integer) {
+		trap_Cvar_Set("sv_autoDemo", "0"); // disable autodemo if we are doing defrag auto demo. it will interfere when ppl first connect
+	}
 
 	memset( &userCmdBuffer, 0, sizeof(userCmdBuffer));
 
@@ -2784,10 +2796,13 @@ void CheckVote( void ) {
 			trap_SendServerCommand(-1, va("print \"%s: %d Yes vs %d No\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
 		}
 		else {
-			if (level.voteYes > level.numVotingClients / 2) {
+			if (level.voteYes > level.numVotingClients / 2 && (!g_slowVote.integer || level.voteYes == level.numVotingClients)) {
 				// execute the command, then remove the vote
 				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED"), level.voteYes, level.voteNo));
 				level.voteExecuteTime = level.time + G_CalculateVoteExecuteTime();
+			}
+			else if (level.voteNo > 0 && g_slowVote.integer) {
+				trap_SendServerCommand(-1, va("print \"%s (slow voting enabled): %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
 			}
 			else if (level.voteNo >= level.numVotingClients / 2) {
 				// same behavior as a timeout
@@ -3371,7 +3386,7 @@ void G_RunFrame( int levelTime ) {
 		qboolean failed = qfalse;
 		helpTip_t* tip = NULL;
 		tip = &helpTips[Q_irand(0,helpTipCount,qfalse,0)];
-		while (tip->header || !tip->randomTipPrint || tip->raceOnly && !g_defrag.integer) {
+		while (tip->header || !tip->randomTipPrint || tip->raceOnly && !g_defrag.integer || tip->allowfunc && !tip->allowfunc(NULL)) {
 			tip = &helpTips[Q_irand(0, helpTipCount, qfalse, 0)];
 			tries++;
 			if (tries >= 10) {

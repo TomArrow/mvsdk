@@ -488,7 +488,7 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 		}
 		else {
 			// "delete" it.
-			trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"trash/trash%d\"\n", runData.runInfo.tempDemoName, runData.runInfo.clientNum));
+			trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"%strash/trash%d\"\n", runData.runInfo.tempDemoName, level.tempDemoNamePrefix, runData.runInfo.clientNum));
 		}
 	}
 
