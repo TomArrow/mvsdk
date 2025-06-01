@@ -28,8 +28,9 @@ static void G_CrossServerChatAll() {
 }
 static void G_CrossServerPrint() {
 	char	firstArg[MAX_TOKEN_CHARS];
+	const char* reprint;
 	trap_Argv(3,firstArg,sizeof(firstArg));
-	const char* reprint = va("print \"cross-server: %s\" %s", firstArg,ConcatArgsQuoted(4));
+	reprint = va("print \"cross-server: %s\" %s", firstArg,ConcatArgsQuoted(4));
 	trap_SendServerCommand(-1, reprint);
 }
 
