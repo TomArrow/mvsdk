@@ -3,6 +3,23 @@
 #include "g_defrag.h"
 #include "g_dbcmds.h"
 
+static void G_CrossServerChatAll() {
+	int i;
+	gentity_t* other;
+	char	name[MAX_TOKEN_CHARS];
+	char	text[MAX_TOKEN_CHARS];
+	int thelen;
+	Q_strncpyz(name, "(cross-server) ", sizeof(name));
+	thelen = strlen(name);
+	trap_Argv(3, name + thelen, sizeof(name) - thelen);
+	trap_Argv(4, text, sizeof(text));
+	// send it to all the apropriate clients
+	for (i = 0; i < level.maxclients; i++) {
+		other = &g_entities[i];
+		G_SayTo(NULL, other, SAY_ALL, COLOR_GREEN, name, text, " crossServer");
+	}
+}
+
 qboolean G_CrossServerCommand() {
 
 	char	cmd[MAX_TOKEN_CHARS];
@@ -24,19 +41,8 @@ qboolean G_CrossServerCommand() {
 	//trap_Argv(0, cmd, sizeof(cmd));
 	trap_Argv(2, cmd, sizeof(cmd)); // 0 is serverident and 1 is sv_hostname
 	G_Printf("G_CrossServerCommand: received %s.\n",cmd);
-	if (!stricmp(cmd, "chatAll")) {
-		gentity_t* other;
-		char	name[MAX_TOKEN_CHARS];
-		int thelen;
-		Q_strncpyz(name, "(cross-server) ", sizeof(name));
-		thelen = strlen(name);
-		trap_Argv(3, name+ thelen, sizeof(name)- thelen);
-		trap_Argv(4, token, sizeof(token));
-		// send it to all the apropriate clients
-		for (i = 0; i < level.maxclients; i++) {
-			other = &g_entities[i];
-			G_SayTo(NULL, other, SAY_ALL, COLOR_GREEN, name, token," crossServer");
-		}
+	if (!Q_stricmp(cmd, "chatAll")) {
+		G_CrossServerChatAll();
 		return qtrue;
 	}
 	return qfalse;
