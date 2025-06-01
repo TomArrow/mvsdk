@@ -74,6 +74,7 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/g_bot.c"
 	"${SRCDir}/game/g_client.c"
 	"${SRCDir}/game/g_cmds.c"
+	"${SRCDir}/game/g_crossserver.c"
 	"${SRCDir}/game/g_combat.c"
 	"${SRCDir}/game/g_defrag.c"
 	"${SRCDir}/game/g_dbcmds.c"

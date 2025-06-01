@@ -841,6 +841,7 @@ void Cmd_SaberAttackCycle_f(gentity_t *ent);
 int G_ItemUsable(playerState_t *ps, int forcedUse);
 void Cmd_ToggleSaber_f(gentity_t *ent);
 void Cmd_EngageDuel_f(gentity_t *ent);
+void G_SayTo(gentity_t* ent, gentity_t* other, int mode, int color, const char* name, const char* message, const char* append);
 
 gentity_t *G_GetDuelWinner(gclient_t *client);
 
@@ -981,6 +982,7 @@ void trap_G_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start
 void trap_G_COOL_API_SendBackUCMD_GameGenerated(int clientNum, usercmd_t* ucmd);
 void trap_G_COOL_API_CustomEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags);
 void trap_G_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags);
+void trap_G_COOL_API_CrossServerCommand(const char* cmd);
 
 //qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
 //qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
@@ -1220,6 +1222,12 @@ qboolean ClientPhysicsFpsChanged( int clientNum );
 void ClientDisconnect( int clientNum );
 void ClientBegin( int clientNum, qboolean allowTeamReset );
 void ClientCommand( int clientNum );
+
+//
+// g_crossserver.c
+//
+qboolean G_CrossServerCommand();
+void G_SendCrossServerCommand(const char* cmd);
 
 //
 // g_active.c

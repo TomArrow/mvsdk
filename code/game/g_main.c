@@ -501,6 +501,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_KEEPZOMBIE
 | COOL_APIFEATURE_CUSTOMEPSILONTRACE
 | COOL_APIFEATURE_JEDI_ACADEMY
+| COOL_APIFEATURE_CROSS_SERVER_COMMANDS
 ;
 const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY;
 
@@ -584,6 +585,10 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 	case GAME_COOL_API_PHYSICSFPSUPDATE:
 		if (coolApi & COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE) {
 			return (int)ClientPhysicsFpsChanged(arg0);
+		}
+	case GAME_COOL_API_CROSS_SERVER_COMMAND_RECEIVED:
+		if (coolApi & COOL_APIFEATURE_CROSS_SERVER_COMMANDS) {
+			return G_CrossServerCommand();
 		}
 	case GAME_COOL_API_KEEPZOMBIE:
 		if (coolApi & COOL_APIFEATURE_KEEPZOMBIE) {

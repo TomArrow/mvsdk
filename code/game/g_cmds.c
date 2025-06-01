@@ -947,6 +947,7 @@ void StopFollowing( gentity_t *ent ) {
 		gentity_t* followed = g_entities + ent->client->sess.spectatorClient;
 		if (followed->client && followed != ent && followed->client->sess.raceMode && (followed->client->sess.raceStyle.runFlags & RFL_BOT)) {
 			ent->client->ps.viewangles[ROLL] = 0; // in case we were following a strafebotter. so we don't get stuck with a weird angled view
+			//ent->client->sess.rollAngleInvalidated = qtrue; // does this make sense? idk
 		}
 	}
 	ent->client->ps.persistant[ PERS_TEAM ] = TEAM_SPECTATOR;	
@@ -3201,7 +3202,7 @@ G_Say
 ==================
 */
 
-static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, const char *name, const char *message ) {
+void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, const char *name, const char *message, const char* append ) {
 	if (!other) {
 		return;
 	}
@@ -3214,23 +3215,23 @@ static void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, cons
 	if ( other->client->pers.connected != CON_CONNECTED ) {
 		return;
 	}
-	if ( mode == SAY_TEAM  && !(OnSameTeam(ent, other) || g_alwaysAllowTeamChat.integer && (ent->client->sess.sessionTeam == TEAM_SPECTATOR || g_alwaysAllowTeamChat.integer >=2) && ent->client->sess.sessionTeam == other->client->sess.sessionTeam) ) {
+	if ( mode == SAY_TEAM && ent && ent->client && !(OnSameTeam(ent, other) || g_alwaysAllowTeamChat.integer && (ent->client->sess.sessionTeam == TEAM_SPECTATOR || g_alwaysAllowTeamChat.integer >=2) && ent->client->sess.sessionTeam == other->client->sess.sessionTeam) ) {
 		return;
 	}
-	if ( other->client->sess.ignore & (1 << (ent-g_entities))) {
+	if ( ent && other->client->sess.ignore & (1 << (ent-g_entities))) {
 		return;
 	}
 	// no chatting to players in tournements
-	if ( (g_gametype.integer == GT_TOURNAMENT )
+	if ( ent && ent->client && (g_gametype.integer == GT_TOURNAMENT )
 		&& other->client->sess.sessionTeam == TEAM_FREE
 		&& ent->client->sess.sessionTeam != TEAM_FREE ) {
 		//Hmm, maybe some option to do so if allowed?  Or at least in developer mode...
 		return;
 	}
 
-	trap_SendServerCommand( other-g_entities, va("%s \"%s%c%c%s\"", 
+	trap_SendServerCommand( other-g_entities, va("%s \"%s%c%c%s\"%s", 
 		mode == SAY_TEAM ? "tchat" : "chat",
-		name, Q_COLOR_ESCAPE, color,message)); // lets have some privacy for private chatters
+		name, Q_COLOR_ESCAPE, color,message,append?append:"")); // lets have some privacy for private chatters
 }
 
 #define EC		"\x19"
@@ -3311,7 +3312,7 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	Q_strncpyz( text, chatText, sizeof(text) );
 
 	if ( target ) {
-		G_SayTo( ent, target, mode, color, name, text );
+		G_SayTo( ent, target, mode, color, name, text, NULL);
 		return;
 	}
 
@@ -3320,10 +3321,14 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 		G_Printf("%s%s\n", name, text);
 	}
 
+	if (mode == SAY_ALL && (coolApi & COOL_APIFEATURE_CROSS_SERVER_COMMANDS)) {
+		G_SendCrossServerCommand(va("chatAll \"%s\" \"%s\" ", name, text));
+	}
+
 	// send it to all the apropriate clients
 	for (j = 0; j < level.maxclients; j++) {
 		other = &g_entities[j];
-		G_SayTo( ent, other, mode, color, name, text );
+		G_SayTo( ent, other, mode, color, name, text, NULL);
 	}
 }
 
@@ -5201,6 +5206,7 @@ void ClientCommand( int clientNum ) {
 			&& Q_stricmp(cmd, "say_team") 
 			&& Q_stricmp(cmd, "tell")
 			&& Q_stricmp(cmd, "score")
+			&& Q_stricmp(cmd, "login") // is login ok?
 			) { // allow a few.
 			trap_SendServerCommand(clientNum, "print \"Cannot send commands during segmented run replay.\n\"");
 			return;

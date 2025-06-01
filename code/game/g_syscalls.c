@@ -1104,6 +1104,9 @@ void trap_G_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t st
 void trap_G_COOL_API_SendBackUCMD_GameGenerated(int clientNum, usercmd_t* ucmd) {
 	syscall(G_COOL_API_SENDBACKUCMD_GAMEGENERATED, clientNum, ucmd);
 }
+void trap_G_COOL_API_CrossServerCommand(const char* cmd) {
+	syscall(G_COOL_API_CROSS_SERVER_COMMAND, cmd);
+}
 
 
 qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size) {
