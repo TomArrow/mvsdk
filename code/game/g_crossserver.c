@@ -13,36 +13,52 @@ static void G_CrossServerChatAll() {
 	thelen = strlen(name);
 	trap_Argv(3, name + thelen, sizeof(name) - thelen);
 	trap_Argv(4, text, sizeof(text));
+
+	G_LogPrintf("say(cross-server): %s: %s\n", name, text);
+	// echo the text to the console
+	if (g_dedicated.integer) {
+		G_Printf("%s%s\n", name, text);
+	}
+
 	// send it to all the apropriate clients
 	for (i = 0; i < level.maxclients; i++) {
 		other = &g_entities[i];
 		G_SayTo(NULL, other, SAY_ALL, COLOR_GREEN, name, text, " crossServer");
 	}
 }
+static void G_CrossServerPrint() {
+	char	firstArg[MAX_TOKEN_CHARS];
+	trap_Argv(3,firstArg,sizeof(firstArg));
+	const char* reprint = va("print \"cross-server: %s\" %s", firstArg,ConcatArgsQuoted(4));
+	trap_SendServerCommand(-1, reprint);
+}
 
 qboolean G_CrossServerCommand() {
 
 	char	cmd[MAX_TOKEN_CHARS];
 	int i, argc;
-	char token[BIG_INFO_STRING]; // As the engine uses Cmd_TokenizeString2 a single parameter is theoretically not limited by MAX_TOKEN_CHARS, but by BIG_INFO_STRING
+	//char token[BIG_INFO_STRING]; // As the engine uses Cmd_TokenizeString2 a single parameter is theoretically not limited by MAX_TOKEN_CHARS, but by BIG_INFO_STRING
 
 	// Filter '\n' and '\r'
-	argc = trap_Argc();
-	for (i = 0; i < argc; i++)
-	{
-		trap_Argv(i, token, sizeof(token));
-		if (strchr(token, '\n') || strchr(token, '\r'))
-		{
-			G_Printf("G_CrossServerCommand: got an invalid command - command blocked.\n");
-			return;
-		}
-	}
+	//argc = trap_Argc();
+	//for (i = 0; i < argc; i++)
+	//{
+	//	trap_Argv(i, token, sizeof(token));
+	//	if (strchr(token, '\n') || strchr(token, '\r'))
+	//	{
+	//		G_Printf("G_CrossServerCommand: got an invalid command - command blocked.\n");
+	//		return;
+	//	}
+	//}
 
 	//trap_Argv(0, cmd, sizeof(cmd));
 	trap_Argv(2, cmd, sizeof(cmd)); // 0 is serverident and 1 is sv_hostname
 	G_Printf("G_CrossServerCommand: received %s.\n",cmd);
-	if (!Q_stricmp(cmd, "chatAll")) {
+	if (!Q_stricmp(cmd, "chatAll") && g_crossServerChat.integer) {
 		G_CrossServerChatAll();
+		return qtrue;
+	} else if (!Q_stricmp(cmd, "defragPrint") && g_crossServerDefragTimes.integer) {
+		G_CrossServerPrint();
 		return qtrue;
 	}
 	return qfalse;

@@ -217,6 +217,9 @@ vmCvar_t	g_randomTipInterval;
 vmCvar_t	g_unlockRandom;
 vmCvar_t	g_mineSwitchFix;
 
+vmCvar_t	g_crossServerChat;
+vmCvar_t	g_crossServerDefragTimes;
+
 int gDuelist1 = -1;
 int gDuelist2 = -1;
 
@@ -227,7 +230,7 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 static cvarTable_t		gameCvarTable[] = {
 
 	//must be at the start so that its already registered when other cvars are evaluated that affect it
-	{ &g_ttFlags, "ttFlags", "7", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue }, // to communicate special tommyternal server features to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE))
+	{ &g_ttFlags, "ttFlags", "15", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue }, // to communicate special tommyternal server features to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE|TTFLAGSSERVERINFO_HASCROSSSERVERCHAT))
 	{ &g_ttFlagsGp, "ttFlagsGp", "0", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse }, // gameplay ttflags. 
 
 	// don't override the cheat state set by the system
@@ -396,6 +399,9 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO | CVAR_ARCHIVE, 0, qtrue },
 	{ &g_mineSwitchFix, "g_mineSwitchFix", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
+
+	{ &g_crossServerChat, "g_crossServerChat", "2", CVAR_ARCHIVE, 0, qtrue}, // 1 = receive. 2 = need special say_cross cmd to allow sharing. 3 = share all
+	{ &g_crossServerDefragTimes, "g_crossServerDefragTimes", "2", CVAR_ARCHIVE, 0, qtrue}, // Share achieved defrag time prints across servers. 1 = receive. 2 = send
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 

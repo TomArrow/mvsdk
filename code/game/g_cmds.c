@@ -152,6 +152,41 @@ char	*ConcatArgs( int start ) {
 
 /*
 ==================
+ConcatArgsQuoted
+==================
+*/
+char* ConcatArgsQuoted(int start) {
+	int		i, c, tlen;
+	static char	line[MAX_STRING_CHARS];
+	int		len;
+	char	arg[MAX_STRING_CHARS];
+
+	len = 0;
+	c = trap_Argc();
+	for (i = start; i < c; i++) {
+		trap_Argv(i, arg, sizeof(arg));
+		tlen = strlen(arg);
+		if (len + tlen + 2 >= MAX_STRING_CHARS - 1) {
+			break;
+		}
+		*(line + len) = '"';
+		memcpy(line + len + 1, arg, tlen);
+		len += tlen + 1;
+		*(line + len) = '"';
+		len += 1;
+		if (i != c - 1) {
+			line[len] = ' ';
+			len++;
+		}
+	}
+
+	line[len] = 0;
+
+	return line;
+}
+
+/*
+==================
 SanitizeString
 
 Remove case and control characters
@@ -998,6 +1033,12 @@ helpTip_t helpTips[] = {
 		SlowVotingActive
 	},
 	{
+		"print \"^2/say_cross^7 - Like (^2/say^7) but your chat is broadcasted across all connected servers (bind ^7/messagemode6^7 in new TommyTernal clients for comfortable writing).\n\"",
+		"print \"Random tip: ^2/say_cross^7 - Like (^2/say^7) but your chat is broadcasted across all connected servers (bind ^7/messagemode6^7 in new TommyTernal clients for comfortable writing).\n\"",
+		qfalse,
+		qfalse
+	},
+	{
 		"print \"\n^7Map commands:\n\"",
 		"print \"Random tip: \n^7Map commands:\n\"",
 		qtrue,
@@ -1296,6 +1337,12 @@ helpTip_t helpTips[] = {
 	{
 		"print \"^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"",
 		"print \"Random tip: ^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"",
+		qfalse,
+		qfalse
+	},
+	{
+		"print \"^2/messagemode6^7 - Exists in recent TommyTernal versions. Like ^2/messagemode^7, the normal chat bind. Opens a prompt for chat, in this case for cross-server public chats.\n\"",
+		"print \"Random tip: ^2/messagemode6^7 - Exists in recent TommyTernal versions. Like ^2/messagemode^7, the normal chat bind. Opens a prompt for chat, in this case for cross-server public chats.\n\"",
 		qfalse,
 		qfalse
 	},
@@ -3241,6 +3288,7 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	gentity_t	*other;
 	int			color;
 	char		name[64];
+	char		nameToAll[64];
 	// don't let text be too long for malicious reasons
 	char		text[MAX_SAY_TEXT];
 	char		location[64];
@@ -3249,6 +3297,13 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	const char* pseudoArg1;
 	char		lowercaseCmd[20]; // for levenshtein check. doesnt need to be longer. that long of a cmd wouldn't trigger it anyway
 	int			cmdLen,i;
+	int			originalMode = mode;
+	qboolean	allowCrossServer = mode == SAY_CROSSSERVER && g_crossServerChat.integer >1 || g_crossServerChat.integer > 2;
+	qboolean	toAllServers = qfalse;
+
+	if (mode == SAY_CROSSSERVER) {
+		mode = SAY_ALL;
+	}
 
 	if ( g_gametype.integer < GT_TEAM && mode == SAY_TEAM && !(g_alwaysAllowTeamChat.integer && ent->client->sess.sessionTeam == TEAM_SPECTATOR || g_alwaysAllowTeamChat.integer >= 2) ) {
 		mode = SAY_ALL;
@@ -3281,10 +3336,12 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 		}
 	}
 
+	nameToAll[0] = '\0';
+
 	switch ( mode ) {
 	default:
 	case SAY_ALL:
-		G_LogPrintf( "say: %s: %s\n", ent->client->pers.netname, chatText );
+		G_LogPrintf( "say%s: %s: %s\n", originalMode == SAY_CROSSSERVER ? "(to all servers)" : "", ent->client->pers.netname, chatText);
 		Com_sprintf (name, sizeof(name), "%s%c%c"EC": ", ent->client->pers.netname, Q_COLOR_ESCAPE, COLOR_WHITE );
 		color = COLOR_GREEN;
 		break;
@@ -3321,14 +3378,16 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 		G_Printf("%s%s\n", name, text);
 	}
 
-	if (mode == SAY_ALL && (coolApi & COOL_APIFEATURE_CROSS_SERVER_COMMANDS)) {
+	if (mode == SAY_ALL && (coolApi & COOL_APIFEATURE_CROSS_SERVER_COMMANDS) && allowCrossServer) {
 		G_SendCrossServerCommand(va("chatAll \"%s\" \"%s\" ", name, text));
+		Com_sprintf(nameToAll, sizeof(nameToAll), "(to all servers) %s", name);
+		toAllServers = qtrue;
 	}
 
 	// send it to all the apropriate clients
 	for (j = 0; j < level.maxclients; j++) {
 		other = &g_entities[j];
-		G_SayTo( ent, other, mode, color, name, text, NULL);
+		G_SayTo( ent, other, mode, color, toAllServers ? nameToAll : name, text, toAllServers ? " crossServerBroadcast" : "");
 	}
 }
 
@@ -5233,6 +5292,10 @@ void ClientCommand( int clientNum ) {
 	}
 	//end rww
 
+	if (Q_stricmp (cmd, "say_cross") == 0) {
+		Cmd_Say_f (ent, SAY_CROSSSERVER, qfalse);
+		return;
+	}
 	if (Q_stricmp (cmd, "say") == 0) {
 		Cmd_Say_f (ent, SAY_ALL, qfalse);
 		return;

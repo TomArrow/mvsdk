@@ -2257,6 +2257,10 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 
 		trap_SendServerCommand(-1, va("print \"%s\n\" %s %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
 
+		if (g_crossServerDefragTimes.integer > 1) {
+			G_SendCrossServerCommand(va("defragPrint \"%s\n\" %s_crossServer %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
+		}
+
 		if(ent && !preliminary)
 			G_CenterPrint(ent - g_entities, 3, va("^7%s", DF_MsToString(runInfo->milliseconds)), qfalse, qtrue, qfalse, NULL);
 	}

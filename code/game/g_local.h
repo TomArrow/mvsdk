@@ -842,6 +842,7 @@ int G_ItemUsable(playerState_t *ps, int forcedUse);
 void Cmd_ToggleSaber_f(gentity_t *ent);
 void Cmd_EngageDuel_f(gentity_t *ent);
 void G_SayTo(gentity_t* ent, gentity_t* other, int mode, int color, const char* name, const char* message, const char* append);
+char* ConcatArgsQuoted(int start);
 
 gentity_t *G_GetDuelWinner(gclient_t *client);
 
@@ -1536,6 +1537,9 @@ extern	vmCvar_t	g_randomTipInterval;
 
 extern	vmCvar_t	g_unlockRandom;
 extern	vmCvar_t	g_mineSwitchFix;
+
+extern	vmCvar_t	g_crossServerChat;
+extern	vmCvar_t	g_crossServerDefragTimes;
 
 void	trap_Printf( const char *fmt );
 Q_NORETURN void	trap_Error( const char *fmt );
