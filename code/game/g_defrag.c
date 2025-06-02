@@ -2355,7 +2355,13 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		}*/
 
 		if (g_crossServerDefragTimes.integer > 1) {
-			G_SendCrossServerCommand(va("defragPrint \"^l>^j%s^l>^7:%s\" %s_crossServer %s",DF_GetCourseName(qtrue), messageStr, type, DF_RacePrintAppendage(runInfo)));
+			if (messageStr[0]) {
+				G_SendCrossServerCommand(va("defragPrint \"^l>^j%s^l>^7:%s\" %s_crossServer %s", DF_GetCourseName(qtrue), messageStr, type, DF_RacePrintAppendage(runInfo)));
+			}
+			else {
+				// dont prepend if its empty anyway
+				G_SendCrossServerCommand(va("defragPrint \"%s\" %s_crossServer %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
+			}
 		}
 
 		trap_SendServerCommand(-1, va("print \"%s\" %s %s", messageStr,type, DF_RacePrintAppendage(runInfo)));
