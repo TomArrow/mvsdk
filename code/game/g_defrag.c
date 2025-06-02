@@ -393,14 +393,14 @@ static int DF_GetNewDemoId() {
 	trap_Cvar_Set("g_defragLastDemoId", va("%d", num));
 	return num;
 }
-const char* DF_GetCourseName();
+
 void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPrint) {
 	gclient_t* cl = ent->client;
 	static char sanitizedCourseName[COURSENAME_MAX_LEN+1];
 	if (!ent->client) {
 		return;
 	}
-	sanitizeFilename(DF_GetCourseName(), sanitizedCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
+	sanitizeFilename(DF_GetCourseName(qfalse), sanitizedCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
 	Com_Printf("^3Error demo requested: %s\n", errorPrint);
 	if (cl->pers.keepDemoMaybe) {
 		Com_Printf("^1Can't save error demo %s because the game seems to already need the demo elsewhere.\n",demoname);
@@ -2102,8 +2102,8 @@ int DF_GetSegmentedRunnerCount() {
 	return segReplays;
 }
 
-
-const char* DF_GetCourseName() {
+// stripColor is only for printing and such. generrally leave it at qfalse unless you know what you're doing
+const char* DF_GetCourseName(qboolean stripColor) { 
 	static char serverInfo[BIG_INFO_STRING];
 	static char course[COURSENAME_MAX_LEN + 1];
 	char* s = course;
@@ -2112,6 +2112,9 @@ const char* DF_GetCourseName() {
 	while (*s) { // make it lowercase
 		*s = tolower(*s);
 		s++;
+	}
+	if (stripColor) { // only for printing and such
+		Q_StripColor(course);
 	}
 	return course;
 }
@@ -2139,7 +2142,7 @@ const char* DF_GetMainSubcourseName() {
 
 void DF_RequestPlayerDefaultTime(gentity_t* ent) {
 
-	DF_TimeRequest(ent, DF_GetCourseName(), DF_GetMainSubcourseName(), MV_JK2, qtrue);
+	DF_TimeRequest(ent, DF_GetCourseName(qfalse), DF_GetMainSubcourseName(), MV_JK2, qtrue);
 }
 
 void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean showRank, gentity_t* ent) {
@@ -2258,7 +2261,7 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 		trap_SendServerCommand(-1, va("print \"%s\n\" %s %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
 
 		if (g_crossServerDefragTimes.integer > 1) {
-			G_SendCrossServerCommand(va("defragPrint \"%s\n\" %s_crossServer %s", messageStr, type, DF_RacePrintAppendage(runInfo)));
+			G_SendCrossServerCommand(va("defragPrint \"^l>^j%s^l>^7:%s\n\" %s_crossServer %s", DF_GetCourseName(qtrue), messageStr, type, DF_RacePrintAppendage(runInfo)));
 		}
 
 		if(ent && !preliminary)
@@ -2350,6 +2353,10 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 					Q_strcat(awardString, sizeof(awardString), va(" (%i +%.1f)", season_newRank, addedScore));
 			}
 		}*/
+
+		if (g_crossServerDefragTimes.integer > 1) {
+			G_SendCrossServerCommand(va("defragPrint \"^l>^j%s^l>^7:%s\" %s_crossServer %s",DF_GetCourseName(qtrue), messageStr, type, DF_RacePrintAppendage(runInfo)));
+		}
 
 		trap_SendServerCommand(-1, va("print \"%s\" %s %s", messageStr,type, DF_RacePrintAppendage(runInfo)));
 	}
@@ -4522,7 +4529,7 @@ void DF_SetMapDefaults(raceStyle_t rs) {
 void DF_LoadMapDefaults() {
 	insertUpdateMapRaceDefaultsStruct_t	data;
 	memset(&data, 0, sizeof(data));
-	Q_strncpyz(data.course, DF_GetCourseName(), sizeof(data.course));
+	Q_strncpyz(data.course, DF_GetCourseName(qfalse), sizeof(data.course));
 
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_LOADMAPRACEDEFAULTS,
 		"SELECT msec,jump,variant,runFlags FROM mapdefaults WHERE course=? AND subcourse=?"
@@ -4561,7 +4568,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 		memset(&data, 0, sizeof(data));
 		data.clientnum = ent - g_entities;
 		memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
-		Q_strncpyz(data.course, DF_GetCourseName(), sizeof(data.course));
+		Q_strncpyz(data.course, DF_GetCourseName(qfalse), sizeof(data.course));
 			
 		if (!Q_stricmp("run", arg1)) {
 
@@ -5863,7 +5870,7 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 
 		// insert
 		G_COOL_API_DB_PreparedBindInt(data.userid);
-		G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+		G_COOL_API_DB_PreparedBindString(DF_GetCourseName(qfalse));
 		G_COOL_API_DB_PreparedBindInt(subcontest);
 		G_COOL_API_DB_PreparedBindFloat(value);
 		G_COOL_API_DB_PreparedBindInt(ent->client->sess.raceStyle.msec);
@@ -5874,7 +5881,7 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 
 		// or update
 		G_COOL_API_DB_PreparedBindFloat(value);
-		G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+		G_COOL_API_DB_PreparedBindString(DF_GetCourseName(qfalse));
 
 		G_COOL_API_DB_PreparedBindFloat(value); //date
 

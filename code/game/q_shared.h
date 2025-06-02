@@ -1231,6 +1231,8 @@ void Q_strstrip( char *string, const char *strip, const char *repl );
 const char *Q_strchrs( const char *string, const char *search );
 void Q_strstrip( char *string, const char *strip, const char *repl );
 
+void Q_StripColor(char* text);
+
 //=============================================
 
 // 64-bit integers for global rankings interface

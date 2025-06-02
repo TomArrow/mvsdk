@@ -1067,6 +1067,58 @@ size_t Q_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
 #endif
 
 /*
+==================
+Q_StripColor
+
+Strips coloured strings in-place using multiple passes: "fgs^^56fds" -> "fgs^6fds" -> "fgsfds"
+
+This function modifies INPUT (is mutable)
+
+(Also strips ^8 and ^9)
+==================
+*/
+void Q_StripColor(char* text)//, qboolean doHex)
+{
+	qboolean doPass = qtrue;
+	char* read;
+	char* write;
+
+	while (doPass)
+	{
+		doPass = qfalse;
+		read = write = text;
+		while (*read)
+		{
+			/*if (doHex && *read == Q_COLOR_ESCAPE && Q_IsColorStringHex(read + 1)) {
+				int skipCount = 0;
+				Q_parseColorHex(read + 1, 0, &skipCount);
+				read += 1 + skipCount;
+			}
+			else */if (Q_IsColorString(read) || Q_IsColorString_1_02(read))
+			{
+				doPass = qtrue;
+				read += 2;
+			}
+			else
+			{
+				// Avoid writing the same data over itself
+				if (write != read)
+				{
+					*write = *read;
+				}
+				write++;
+				read++;
+			}
+		}
+		if (write < read)
+		{
+			// Add trailing NUL byte if string has shortened
+			*write = '\0';
+		}
+	}
+}
+
+/*
 Q_strstrip
 
 Description:	Replace strip[x] in string with repl[x] or remove characters entirely

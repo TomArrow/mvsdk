@@ -2023,7 +2023,7 @@ void Cmd_Logout_f( gentity_t *ent )
 	}
 	ClientUserinfoChanged(ent - g_entities);
 }
-extern const char* DF_GetCourseName();
+
 extern const char* DF_GetMainSubcourseName();
 extern void Cmd_DF_MapDefaults_f(gentity_t* ent);
 
@@ -2270,7 +2270,7 @@ Cmd_Time_f
 =================
 */
 void Cmd_Time_f(gentity_t* ent) {
-	DF_TimeRequest(ent,DF_GetCourseName(),ent->client->pers.lastSubcourseFinishedName,ent->client->sess.raceStyle.movementStyle,qfalse);
+	DF_TimeRequest(ent,DF_GetCourseName(qfalse),ent->client->pers.lastSubcourseFinishedName,ent->client->sess.raceStyle.movementStyle,qfalse);
 }
 
 /*
@@ -2292,7 +2292,7 @@ void Cmd_Top_f( gentity_t *ent )
 	char courseName[COURSENAME_MAX_LEN + 1] = { 0 };
 	char subcourseName[COURSENAME_MAX_LEN + 1] = { 0 };
 	char cmd[MAX_TOKEN_CHARS];
-	const char* thisMapName = DF_GetCourseName();
+	const char* thisMapName = DF_GetCourseName(qfalse);
 	const char* mainSubCourseName = DF_GetMainSubcourseName();
 
 	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
@@ -2489,7 +2489,7 @@ Cmd_Top_f
 */
 void Cmd_UpdateRanks_f( gentity_t *ent )
 {
-	const char* thisMapName = DF_GetCourseName();
+	const char* thisMapName = DF_GetCourseName(qfalse);
 	const char* mainSubCourseName = DF_GetMainSubcourseName();
 	char arg[10];
 	qboolean all = qfalse;
@@ -2515,7 +2515,7 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 			forceAll = qtrue;
 		}
 	}
-	DF_UpdateRanksMainRequest(ent, all ? NULL : DF_GetCourseName(), forceAll, 0);
+	DF_UpdateRanksMainRequest(ent, all ? NULL : DF_GetCourseName(qfalse), forceAll, 0);
 
 }
 
@@ -2751,7 +2751,7 @@ void Cmd_RateMap_f(gentity_t* ent) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error fetching own ratings of current map: Database error, query could not be sent.\n\"");
 			return;
 		}
-		G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+		G_COOL_API_DB_PreparedBindString(DF_GetCourseName(qfalse));
 		G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
 
 		G_COOL_API_DB_FinishAndSendPreparedStatement();
@@ -2793,7 +2793,7 @@ void Cmd_RateMap_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"Error rating map: Database error, query could not be sent.\n\"");
 		return;
 	}
-	G_COOL_API_DB_PreparedBindString(DF_GetCourseName());
+	G_COOL_API_DB_PreparedBindString(DF_GetCourseName(qfalse));
 	G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
 	G_COOL_API_DB_PreparedBindInt(data.style);
 	G_COOL_API_DB_PreparedBindFloat(data.value);
@@ -3379,8 +3379,9 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	}
 
 	if (mode == SAY_ALL && (coolApi & COOL_APIFEATURE_CROSS_SERVER_COMMANDS) && allowCrossServer) {
-		G_SendCrossServerCommand(va("chatAll \"%s\" \"%s\" ", name, text));
-		Com_sprintf(nameToAll, sizeof(nameToAll), "(to all servers) %s", name);
+		G_SendCrossServerCommand(va("chatAll \"%s\" \"%s\" \"%s\"", name, text, DF_GetCourseName(qfalse)));
+		//Com_sprintf(nameToAll, sizeof(nameToAll), "(to all servers) %s", name);
+		Com_sprintf(nameToAll, sizeof(nameToAll), "^d<^fto all servers^d<^7: %s", name);
 		toAllServers = qtrue;
 	}
 
@@ -3934,7 +3935,7 @@ void Cmd_BlacklistMap_f(gentity_t* ent) {
 		trap_Argv(1, arg, sizeof(arg));
 	}
 	else {
-		Q_strncpyz(arg, DF_GetCourseName(), sizeof(arg));
+		Q_strncpyz(arg, DF_GetCourseName(qfalse), sizeof(arg));
 	}
 	if (G_IsMapBlacklisted(arg)) {
 		trap_SendServerCommand(ent - g_entities, "print \"^1Cannot blacklist map. Already blacklisted.\n\"");
@@ -4278,7 +4279,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 				Com_Printf("WEIRD! randommap Map could not be found from mapnum %d, g_numArenas %d.\n", mapnum, g_numArenas);
 				return;
 			}
-			if (!Q_stricmp(g_arenaInfosHashed[mapnum].name,DF_GetCourseName())) { // dont go on the same map we are on now
+			if (!Q_stricmp(g_arenaInfosHashed[mapnum].name,DF_GetCourseName(qfalse))) { // dont go on the same map we are on now
 				mapnum = -1;
 			}
 			tries++;

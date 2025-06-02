@@ -2971,7 +2971,6 @@ void CheckCvars( void ) {
 }
 
 #define AUTOGEN_ARENA_NAME "_autoGenArenas" // changed back to _ from 0. doesnt affect ordering anyway
-extern const char* DF_GetCourseName();
 /*
 =============
 G_AutoGenerateArena
@@ -2996,7 +2995,7 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qbool
 	if (checkBspExists) {
 		int i;
 
-		if (!Q_stricmp(thisMapName, DF_GetCourseName()) && level.hasArenaInfo) {
+		if (!Q_stricmp(thisMapName, DF_GetCourseName(qfalse)) && level.hasArenaInfo) {
 			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
 		}
 
@@ -3383,7 +3382,7 @@ void G_RunFrame( int levelTime ) {
 	}
 
 	if (!activeRunnerCount && !level.hasArenaInfo && level.mustGenerateArena) {
-		G_AutoGenerateArena(DF_GetCourseName(),qfalse,qtrue,qfalse);
+		G_AutoGenerateArena(DF_GetCourseName(qfalse),qfalse,qtrue,qfalse);
 		level.mustGenerateArena = qfalse;
 		level.hasArenaInfo = qtrue;
 	}
@@ -3419,7 +3418,7 @@ void G_RunFrame( int levelTime ) {
 		DF_UpdateRanksMainRequest(NULL,NULL,qfalse,5); // up to 5 maps at a time
 	}
 	else if (level.shouldUpdateMapRanks && !activeRunnerCount) {
-		DF_UpdateRanksMainRequest(NULL, DF_GetCourseName(), qfalse, 0); // up to 5 maps at a time
+		DF_UpdateRanksMainRequest(NULL, DF_GetCourseName(qfalse), qfalse, 0); // up to 5 maps at a time
 		level.shouldUpdateMapRanks = qfalse;
 	}
 

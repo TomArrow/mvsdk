@@ -18,7 +18,6 @@ static void G_CreateSubContestsTable();
 static void G_CreateMapRaceDefaultsTable();
 static void G_CreateMetaTable();
 static void G_CreateMapRatingsTable();
-extern const char* DF_GetCourseName(); 
 const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
@@ -618,7 +617,7 @@ static void G_LoadMapDefaultsResult(int status, const char* errorMessage, int af
 		return;
 	}
 
-	currentCoursename = DF_GetCourseName();
+	currentCoursename = DF_GetCourseName(qfalse);
 	if (Q_stricmp(currentCoursename, data.course)) {
 		if (currentCoursename[0]) {
 			trap_SendServerCommand(-1, "print \"^1Map defaults load failed; course name changed (?). Retrying.\n\"");
@@ -1938,7 +1937,7 @@ static void G_TimeResult(int status, const char* errorMessage, int affectedRows)
 		return;
 	}
 	
-	if (Q_stricmp(lbRequestData.course, DF_GetCourseName()) && lbRequestData.forUserInfo) {
+	if (Q_stricmp(lbRequestData.course, DF_GetCourseName(qfalse)) && lbRequestData.forUserInfo) {
 		// this isn't the correct course.
 		Com_Printf("^1Coursename changed, requested time not useful. Requesting new pb for client %d",ent-g_entities);
 		DF_RequestPlayerDefaultTime(ent);
@@ -1958,7 +1957,7 @@ static void G_TimeResult(int status, const char* errorMessage, int affectedRows)
 		}
 		else {
 
-			if (!Q_stricmp(DF_GetCourseName(), lbRequestData.course)) {
+			if (!Q_stricmp(DF_GetCourseName(qfalse), lbRequestData.course)) {
 				if (lbRequestData.subcourse[0]) {
 					trap_SendServerCommand(-1, va("print \"%s's ^7best time on %s leaderboard in style %s on subcourse %s is %s\n\"", ent->client->pers.netname, leaderboardNames[lbRequestData.lbType].string, moveStyleNames[lbRequestData.style].string, lbRequestData.subcourse, DF_MsToString(time)));
 				}
@@ -2341,7 +2340,7 @@ void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
 		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to save checkpoints.\n\"",qtrue);
 		return;
 	}
-	coursename = DF_GetCourseName();
+	coursename = DF_GetCourseName(qfalse);
 
 	// DELETE
 	G_COOL_API_DB_PreparedBindString(coursename);
@@ -2382,7 +2381,7 @@ void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 		return;
 	}
 
-	coursename = DF_GetCourseName();
+	coursename = DF_GetCourseName(qfalse);
 
 	G_COOL_API_DB_PreparedBindString(coursename);
 	G_COOL_API_DB_PreparedBindInt(playerent->client->sess.login.id);

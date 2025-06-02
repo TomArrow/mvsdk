@@ -344,4 +344,6 @@ void DF_HandleUnfinishedDemos();
 const char* DF_FormatFpsString(char* rawFpsString);
 void DF_CheckRaceCvarChanges(qboolean init);
 
+const char* DF_GetCourseName(qboolean stripColor);
+
 #endif

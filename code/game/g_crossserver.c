@@ -6,18 +6,38 @@
 static void G_CrossServerChatAll() {
 	int i;
 	gentity_t* other;
+	char	ourIdent[MAX_TOKEN_CHARS];
+	char	ourHostname[MAX_TOKEN_CHARS];
+	char	source[MAX_TOKEN_CHARS];
 	char	name[MAX_TOKEN_CHARS];
 	char	text[MAX_TOKEN_CHARS];
 	int thelen;
-	Q_strncpyz(name, "(cross-server) ", sizeof(name));
+	trap_Cvar_VariableStringBuffer("sv_crossServerCommandIdent", ourIdent, sizeof(ourIdent));
+	trap_Cvar_VariableStringBuffer("sv_hostname", ourHostname, sizeof(ourHostname));
+	trap_Argv(0, source, sizeof(source)); // 0 is ident
+	if (!source[0] || !Q_stricmp(ourIdent,source)) { // use hostname if ident is identical to ours
+		trap_Argv(1, source, sizeof(source)); // 1 is sv_hostname
+	}
+	if (!source[0] || !Q_stricmp(source,"noname") || !Q_stricmp(source, ourHostname)) { // use mapname if server has no name or is identical to ours
+		trap_Argv(5, source, sizeof(source)); // 5 is mapname
+	}
+
+	if (!source[0]) {
+		// huh..
+		Q_strncpyz(name, "^l>^jCROSS-SERVER^l>^7: ", sizeof(name));
+	}
+	else {
+		Q_StripColor(source);
+		Com_sprintf(name, sizeof(name), "^l>^j%s^l>^7: ", source);
+	}
 	thelen = strlen(name);
 	trap_Argv(3, name + thelen, sizeof(name) - thelen);
 	trap_Argv(4, text, sizeof(text));
 
-	G_LogPrintf("say(cross-server): %s: %s\n", name, text);
+	G_LogPrintf("say(cross-server from %s): %s: %s\n",source, name, text);
 	// echo the text to the console
 	if (g_dedicated.integer) {
-		G_Printf("%s%s\n", name, text);
+		G_Printf("(cross-server from %s) %s%s\n", source, name, text);
 	}
 
 	// send it to all the apropriate clients
@@ -30,7 +50,8 @@ static void G_CrossServerPrint() {
 	char	firstArg[MAX_TOKEN_CHARS];
 	const char* reprint;
 	trap_Argv(3,firstArg,sizeof(firstArg));
-	reprint = va("print \"cross-server: %s\" %s", firstArg,ConcatArgsQuoted(4));
+	//reprint = va("print \"cross-server: %s\" %s", firstArg,ConcatArgsQuoted(4));
+	reprint = va("print \"%s\" %s", firstArg,ConcatArgsQuoted(4));
 	trap_SendServerCommand(-1, reprint);
 }
 
