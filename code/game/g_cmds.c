@@ -3276,16 +3276,9 @@ void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, const char 
 		return;
 	}
 
-	if (ent) {
-		trap_SendServerCommand(other - g_entities, va("%s \"%s%c%c%s\" %i%s",
-			mode == SAY_TEAM ? "tchat" : "chat",
-			name, Q_COLOR_ESCAPE, color, message, (ent-g_entities), append ? append : "")); // lets have some privacy for private chatters
-	}
-	else {
-		trap_SendServerCommand(other - g_entities, va("%s \"%s%c%c%s\"%s",
-			mode == SAY_TEAM ? "tchat" : "chat",
-			name, Q_COLOR_ESCAPE, color, message, append ? append : "")); // lets have some privacy for private chatters
-	}
+	trap_SendServerCommand(other - g_entities, va("%s \"%s%c%c%s\"%s%s",
+		mode == SAY_TEAM ? "tchat" : "chat",
+		name, Q_COLOR_ESCAPE, color, message, ent ? miniva(" %i",ent - g_entities) : "", append ? append : "")); // lets have some privacy for private chatters
 }
 
 #define EC		"\x19"
