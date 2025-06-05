@@ -1501,6 +1501,64 @@ typedef struct
 } cgEffects_t;
 
 
+
+// Media (for features from TriForce's JediKnightPlus mod)
+typedef struct
+{
+	//qhandle_t	saberModel;
+	//qhandle_t	bactaModel;
+	//qhandle_t	jetpackModel;
+	//qhandle_t	hatSanta;
+	//qhandle_t	hatPumpkin;
+	//qhandle_t	hatCap;
+	//qhandle_t	hatCowboy;
+	//qhandle_t	hatCringe;
+	//qhandle_t	hatSombrero;
+	//qhandle_t	hatGentleman;
+	//qhandle_t	hatPirate;
+	//qhandle_t	hatProbe;
+	//qhandle_t	hatDroid;
+	//qhandle_t	hatYsalamiri;
+
+	//qhandle_t	hitBox;
+	//qhandle_t	hitBoxNoCull;
+	//qhandle_t	dotRed;
+	//qhandle_t	dotGreen;
+	//qhandle_t	dotYellow;
+	//qhandle_t	arrowLeft;
+	qhandle_t	clockBg;
+	//qhandle_t	jetpackIcon;
+	//qhandle_t	missingIcon;
+	//qhandle_t	forceSwirl;
+	//qhandle_t	useableHint;
+
+	//sfxHandle_t	strafeHelperSound;
+	//sfxHandle_t	jetpackActiveSound;
+	//sfxHandle_t	jetpackIdleSound;
+
+	//fxHandle_t	jetpackActive;
+	//fxHandle_t	jetpackIdle;
+
+	//qhandle_t	keyCrouchOff;
+	//qhandle_t	keyCrouchOn;
+	//qhandle_t	keyJumpOff;
+	//qhandle_t	keyJumpOn;
+	//qhandle_t	keyBackOff;
+	//qhandle_t	keyBackOn;
+	//qhandle_t	keyForwardOff;
+	//qhandle_t	keyForwardOn;
+	//qhandle_t	keyLeftOff;
+	//qhandle_t	keyLeftOn;
+	//qhandle_t	keyRightOff;
+	//qhandle_t	keyRightOn;
+	//qhandle_t	keyAttackOn;
+	//qhandle_t	keyAttackOff;
+	//qhandle_t	keyAltOn;
+	//qhandle_t	keyAltOff;
+
+} jkmod_media_t;
+
+
 // The client game static (cgs) structure hold everything
 // loaded or calculated from the gamestate.  It will NOT
 // be cleared when a tournement restart is done, allowing
@@ -1648,6 +1706,8 @@ Ghoul2 Insert End
 	int				ttFlags; // tommyternal flags
 	int				ttFlagsGp; // tommyternal flags
 	int				lastPsClientNum;
+
+	jkmod_media_t	jkmodMedia; // for features from TriForce's JediKnightPlus mod
 } cgs_t;
 
 //==============================================================================
@@ -2015,6 +2075,9 @@ extern	vmCvar_t		cg_saber2;
 extern	vmCvar_t		cg_JKA;
 extern	vmCvar_t		cg_menuFileParseSpam;
 extern	vmCvar_t		cg_randomTaunts;
+
+
+extern	vmCvar_t		jkcvar_cg_drawClock;
 
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
@@ -2441,7 +2504,8 @@ void		trap_S_UpdateEntityPosition( int entityNum, const vec3_t origin );
 void		trap_S_Respatialize( int entityNum, const vec3_t origin, vec3_t axis[3], int inwater );
 sfxHandle_t	trap_S_RegisterSound( const char *sample);		// returns buzz if not found
 void		trap_S_StartBackgroundTrack( const char *intro, const char *loop, qboolean bReturnWithoutStarting);	// empty name stops music
-void	trap_S_StopBackgroundTrack( void );
+void		trap_S_StopBackgroundTrack( void );
+int			trap_RealTime(qtime_t* qtime);
 
 
 void		trap_R_LoadWorldMap( const char *mapname );

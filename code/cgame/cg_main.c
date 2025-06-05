@@ -838,6 +838,11 @@ vmCvar_t	cg_JKA;
 vmCvar_t	cg_menuFileParseSpam;
 vmCvar_t	cg_randomTaunts;
 
+
+vmCvar_t	jkcvar_cg_drawClock;
+
+
+
 typedef struct cvarTable_s {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
@@ -1211,6 +1216,7 @@ Ghoul2 Insert End
 	{ &cg_JKA, "ui_JKA", "1", CVAR_ARCHIVE | CVAR_LATCH },
 	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 	{ &cg_randomTaunts, "cg_randomTaunts", "0", CVAR_ARCHIVE },
+	{ &jkcvar_cg_drawClock, "cg_drawClock", "0", CVAR_ARCHIVE },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
@@ -3430,6 +3436,12 @@ void CG_CheckQuiGon() {
 	}
 }
 
+// for stuff from TriForce's JediKnightPlus mod
+void JKMod_CG_RegisterMedia(void) {
+	cgs.jkmodMedia.clockBg = trap_R_RegisterShaderNoMip("gfx/hud/jkmod_clock_bg");
+}
+
+
 void WP_SaberLoadParms( void );
 
 /*
@@ -3719,6 +3731,8 @@ Ghoul2 Insert End
 	CG_LoadingString( "graphics" );
 
 	CG_RegisterGraphics();
+
+	JKMod_CG_RegisterMedia();
 
 	CG_LoadingString( "clients" );
 

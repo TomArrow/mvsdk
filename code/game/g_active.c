@@ -1660,7 +1660,7 @@ void HandleClientLaserPointer(gentity_t* ent) {
 	if (!g_defrag.integer) {
 		return;
 	}
-	if (ent->client->pers.cmd.buttons & BUTTON_LASERPOINTER) {
+	if ((ent->client->pers.cmd.buttons & BUTTON_LASERPOINTER) && ent->client->sess.spectatorState != SPECTATOR_FOLLOW ) {
 		ClientLaserPointer(ent);
 	}
 	else {

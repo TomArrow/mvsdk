@@ -61,6 +61,7 @@ vmCvar_t	g_defrag;
 vmCvar_t	g_defragLastRunId;
 vmCvar_t	g_defragLastDemoId;
 vmCvar_t	g_defragAutoDemo;
+vmCvar_t	g_defragKillSafetyMinSecs;
 vmCvar_t	g_triggersRobust;
 vmCvar_t	g_bubbleSpawn;
 vmCvar_t	g_defragForceRegenFps;
@@ -269,6 +270,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_modesDefault, "g_modesDefault", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  }, // default value from playerModes_e enum
 	{ &g_defrag, "g_defrag", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_defragAutoDemo, "g_defragAutoDemo", "1", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_defragKillSafetyMinSecs, "g_defragKillSafetyMinSecs", "240", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragLastRunId, "g_defragLastRunId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_defragLastDemoId, "g_defragLastDemoId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },

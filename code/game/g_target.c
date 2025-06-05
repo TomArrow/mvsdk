@@ -400,6 +400,8 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 
 	if (!activator->client)
 		return;
+	if (activator->client->noclip)
+		return;
 	dest = 	G_PickTarget( self->target, !activator->client->sess.raceMode, NULL);
 	if (!dest) {
 		G_Printf ("Couldn't find teleporter destination\n");

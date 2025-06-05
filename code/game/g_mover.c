@@ -344,7 +344,7 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 		check = &g_entities[ entityList[ e ] ];
 
 		// only push items and players
-		if ( /*check->s.eType != ET_ITEM &&*/ check->s.eType != ET_PLAYER && !check->physicsObject ) {
+		if ( /*check->s.eType != ET_ITEM &&*/ (check->s.eType != ET_PLAYER || check->client && check->client->noclip) && !check->physicsObject ) {
 			continue;
 		}
 
@@ -957,6 +957,10 @@ static void Touch_DoorTriggerSpectator( gentity_t *ent, gentity_t *other, trace_
 	int i, axis;
 	vec3_t origin, dir, angles;
 	int extraForBoundingBox = 15;
+
+	if (other->client && other->client->noclip) {
+		return;
+	}
 
 	axis = ent->count;
 	VectorClear(dir);

@@ -502,7 +502,10 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 	if ( !other->client ) {
 		return;
 	}
-	if ( other->client->ps.pm_type == PM_DEAD ) {
+	if ( other->client->ps.pm_type == PM_DEAD) {
+		return;
+	}
+	if (other->client->noclip) {
 		return;
 	}
 	// Spectators only?

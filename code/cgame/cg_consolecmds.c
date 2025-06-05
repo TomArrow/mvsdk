@@ -766,6 +766,7 @@ static bitInfo_T speedometerSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Display speed in imperial miles instead of units" },//9
 	{ "Disable speed display" },//10
 	{ "Accel miss" },//11
+	{ "Z position display" },//12
 };
 static const int MAX_SPEEDOMETER_SETTINGS = ARRAY_LEN(speedometerSettings);
 

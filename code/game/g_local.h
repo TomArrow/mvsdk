@@ -451,7 +451,12 @@ typedef struct raceDropped_s { // zero'd out every time we leave start timer
 	int			lastNotificationPacketCount;
 } raceDropped_t ;
 
-
+typedef enum doubleTapType_s {
+	DOUBLETAP_NONE,
+	DOUBLETAP_KILL,
+	DOUBLETAP_RESPOS,
+	DOUBLETAP_NOCLIP,
+} doubleTapType_t;
 
 #define MAX_CUSTOM_CHECKPOINT_COUNT 10
 #define MAX_TOTAL_CHECKPOINT_COUNT 200
@@ -529,6 +534,11 @@ typedef struct {
 	int			lastRaceTimerStartedCP;
 	int			lastIronmanFlagGiven;
 	qboolean	stayOnMap; // when g_slowvote enabled
+
+	struct {
+		doubleTapType_t lastType;
+		int lastTime;
+	} doubleTap;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -1401,6 +1411,7 @@ extern	vmCvar_t	g_defrag;
 extern	vmCvar_t	g_defragLastRunId;
 extern	vmCvar_t	g_defragLastDemoId;
 extern	vmCvar_t	g_defragAutoDemo;
+extern	vmCvar_t	g_defragKillSafetyMinSecs;
 extern	vmCvar_t	g_triggersRobust;
 extern	vmCvar_t	g_bubbleSpawn;
 extern	vmCvar_t	g_defragForceRegenFps;

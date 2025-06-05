@@ -371,6 +371,7 @@ qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt) {
 	return qfalse;
 }
 
+#define	MIN_WALK_NORMAL	0.7f		// can't walk on very steep slopes
 #define BUBBLESPAWN_DOWNTRACE 120.0f // we can get up this much with force jump even at 1000fps (121)
 qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 	vec3_t		original;
@@ -407,8 +408,11 @@ qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 						//}
 						continue;
 					}
+					if (groundTrace.plane.normal[2] < MIN_WALK_NORMAL) {
+						continue; // we'd slide down.
+					}
 					VectorCopy(test, origin);
-					JP_Trace(&groundTrace, test, playerMins, playerMaxs, testdown, -1, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN); // debug
+					//JP_Trace(&groundTrace, test, playerMins, playerMaxs, testdown, -1, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN); // debug
 					return qtrue;
 				}
 			}

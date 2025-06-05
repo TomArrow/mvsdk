@@ -562,7 +562,7 @@ CG_TouchTriggerPrediction
 Predict push triggers and items
 =========================
 */
-static void CG_TouchTriggerPrediction( int msec ) {
+static void CG_TouchTriggerPrediction( int msec, qboolean isSpecialPredict ) {
 	int			i;
 	trace_t		trace;
 	entityState_t	*ent;
@@ -644,7 +644,10 @@ static void CG_TouchTriggerPrediction( int msec ) {
 				}
 				if (!prevent) {
 					BG_TouchJumpPadVelocity(&cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer, (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) ? cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] : MV_JK2);
-					cent->targetSpeedLastTouched = cg.predictedPlayerState.commandTime;
+					if (!isSpecialPredict) {
+						// if we do this in the special prediction for physicsfps, we will sometimes lose the prediction due to the special predicted frame having a timing that will never actually happen
+						cent->targetSpeedLastTouched = cg.predictedPlayerState.commandTime;
+					}
 				}
 			}
 		}
@@ -1389,7 +1392,7 @@ restartpredict:
 		moved = qtrue;
 
 		// add push trigger movement effects
-		CG_TouchTriggerPrediction((cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_JUMPPADCOMPENSATE)) ? (cg.predictedPlayerState.stats[STAT_MSECRESTRICT] == -2 ? -2: msec ): 0);
+		CG_TouchTriggerPrediction((cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_JUMPPADCOMPENSATE)) ? (cg.predictedPlayerState.stats[STAT_MSECRESTRICT] == -2 ? -2: msec ): 0, cg_pmove.isSpecialPredict);
 
 		// check for predictable events that changed from previous predictions
 		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);

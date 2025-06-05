@@ -23,6 +23,7 @@ static void CG_DrawForceJumpCharge(void);  //tommyternal :)
 static void CG_DrawBouncePowerMeter(void); //tommyternal :)
 static void CG_AntiLoopIndicator(void); // tommyternal
 static void CG_JumpHeight(centity_t *cent); //jk2pro
+static void CG_ZPos(centity_t* cent); // tommyternal
 //static void CG_RaceTimer(centity_t *cent); //jk2pro
 static void CG_DrawSpeedGraph(rectDef_t* rect, vec4_t foreColor,
 	vec4_t backColor); //jk2pro
@@ -63,6 +64,7 @@ static void CG_DrawAccelMiss(); //tommyternal :)
 #define SPEEDOMETER_MPH				(1<<9)
 #define SPEEDOMETER_NOSPEED			(1<<10)
 #define SPEEDOMETER_ACCELMISS		(1<<11)
+#define SPEEDOMETER_ZPOS			(1<<12)
 
 
 #define KEY_W       0
@@ -1985,6 +1987,8 @@ void CG_DrawHUD(centity_t	*cent)
 			CG_JumpDistance();
 		if (cg_speedometer.integer & SPEEDOMETER_VERTICALSPEED)
 			CG_DrawVerticalSpeed();
+		if (cg_speedometer.integer & SPEEDOMETER_ZPOS)
+			CG_ZPos(cent);
 	}
 
 	if (cg_snapHud.integer)
@@ -3984,8 +3988,8 @@ CG_DrawDisconnect
 Should we draw something differnet for long lag vs no packets?
 ==============
 */
-static void CG_DrawDisconnect( void ) {
-	float		x, y;
+static void CG_DrawDisconnect(float x, float y) {
+	//float		x, y;
 	int			cmdNum;
 	usercmd_t	cmd;
 	const char		*s;
@@ -4025,10 +4029,75 @@ static void CG_DrawDisconnect( void ) {
 		return;
 	}
 
-	x = cgs.screenWidth - 48;
-	y = cgs.screenHeight - 48;
+	// Tr!Force: [CGameGeneral] Adjust for lagometer
+	// x = cgs.screenWidth - 48;
+	// y = cgs.screenHeight - 48;
 
 	CG_DrawPic( x, y, 48, 48, trap_R_RegisterShader("gfx/2d/net.tga" ) );
+}
+
+
+/*
+* From JediKnightPlus mod by TriForce
+=====================================================================
+Draw clock function
+=====================================================================
+*/
+void JKMod_CG_DrawClock(void)
+{
+	qtime_t		systemTime;
+	char* systemTimeType;
+	int			systemTimeHour;
+	int			x, y;
+
+	if (trap_Key_GetCatcher() & KEYCATCH_UI) return;
+
+	trap_R_SetColor(colorTable[CT_WHITE]); // Don't tint hud
+	trap_RealTime(&systemTime);
+	systemTimeType = systemTime.tm_hour > 12 ? "pm" : "am";
+	systemTimeHour = systemTime.tm_hour > 12 && jkcvar_cg_drawClock.integer == 2 ? systemTime.tm_hour - 12 : systemTime.tm_hour;
+
+	x = cgs.screenWidth - 68;
+	y = cgs.screenHeight - 123;
+	if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+	{
+	}
+	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		y -= 40 + cg_consoleHudOffsetY.value;
+	}
+	else if (cg.hudType == HUD_TYPE_JKA)
+	{
+		y -= 32;
+	}
+	//y = cgs.screenHeight - (cg.snap->ps.pm_type == PM_SPECTATOR || JKMod_CG_ShowScores() ? 36 : 123);
+
+	if (cg.snap->ps.pm_type == PM_SPECTATOR && cgs.gametype == GT_TOURNAMENT) y -= 97;
+
+	CG_DrawPic(x, y, 64, 32, cgs.jkmodMedia.clockBg);
+
+	CG_Text_Paint(x + 8, y + 4, 0.85f, colorTable[CT_HUD_GREEN], va("%02i", systemTimeHour), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
+	CG_Text_Paint(x + 29, y + 4, 0.85f, colorTable[CT_HUD_GREEN], va("%02i", systemTime.tm_min), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
+	CG_Text_Paint(x + 47, y + (jkcvar_cg_drawClock.integer == 2 ? 8.5f : 13.5f), 0.4f, colorTable[CT_HUD_GREEN], va("%02i", systemTime.tm_sec), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
+
+	if (jkcvar_cg_drawClock.integer == 2) CG_Text_Paint(x + 47, y + 13.5f, 0.4f, colorTable[CT_HUD_GREEN], va("%s", systemTimeType), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
+	if ((cg.time >> 9) & 1) CG_Text_Paint(x + 24, y + 6, 0.7f, colorTable[CT_HUD_GREEN], ":", 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
+}
+/*
+* From JediKnightPlus mod by TriForce
+=====================================================================
+Custom draw functions
+=====================================================================
+*/
+void JKMod_CG_Draw2D(void)
+{
+	centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
+
+	// Draw clock
+	if (jkcvar_cg_drawClock.integer)
+	{
+		JKMod_CG_DrawClock();
+	}
+
 }
 
 
@@ -4048,25 +4117,32 @@ static void CG_DrawLagometer( void ) {
 	int		color;
 	float	vscale;
 
-	if ( !cg_lagometer.integer || cgs.localServer ) {
-		CG_DrawDisconnect();
+	// Tr!Force: [DrawClock] Adjust for clock
+	x = cgs.screenWidth - (jkcvar_cg_drawClock.integer ? 53 : 48);
+	y = cgs.screenHeight - (jkcvar_cg_drawClock.integer ? 176 : 144);
+	if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_TEXT)
+	{
+		//y = cgs.screenHeight - 144;
+	}
+	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
+		y -= 40 + cg_consoleHudOffsetY.value;
+	}
+	else if (cg.hudType == HUD_TYPE_JKA)
+	{
+		//y = cgs.screenHeight - 176;
+		y -= 32;
+	}
+	//if (cg.snap->ps.pm_type == PM_SPECTATOR || JKMod_CG_ShowScores()) y = cgs.screenHeight - (jkcvar_cg_drawClock.integer ? 89 : 48); // not sure what these do, im scared
+	//if (cg.snap->ps.pm_type == PM_SPECTATOR && cgs.gametype == GT_TOURNAMENT) y -= 97; // not sure what these do, im scared
+
+	if ( !cg_lagometer.integer /*|| cgs.localServer*/ ) {
+		CG_DrawDisconnect(x,y);
 		return;
 	}
 
 	//
 	// draw the graph
 	//
-	if (cg.hudType == HUD_TYPE_JK2 || cg.hudType == HUD_TYPE_JK2CONSOLE || cg.hudType == HUD_TYPE_TEXT)
-	{
-		x = cgs.screenWidth - 48;
-		y = cgs.screenHeight - 144;
-	}
-	else if (cg.hudType == HUD_TYPE_JKA)
-	{
-		x = cgs.screenWidth - 48;
-		y = cgs.screenHeight - 176;
-	}
-
 	trap_R_SetColor( NULL );
 	if (cg_lagometer.integer < 3)
 		CG_DrawPic( x, y, 48, 48, cgs.media.lagometerShader );
@@ -4175,7 +4251,7 @@ static void CG_DrawLagometer( void ) {
 		CG_Text_Paint(ax + aw - strW, ay - 1.0f, 0.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_SMALL);
 	}
 
-	CG_DrawDisconnect();
+	CG_DrawDisconnect(x,y);
 }
 
 
@@ -6658,6 +6734,8 @@ static void CG_Draw2D( void ) {
 					CG_JumpDistance();
 				if (cg_speedometer.integer & SPEEDOMETER_VERTICALSPEED)
 					CG_DrawVerticalSpeed();
+				if (cg_speedometer.integer & SPEEDOMETER_ZPOS)
+					CG_ZPos(cent);
 			}
 
 			if (cg_snapHud.integer)
@@ -7243,6 +7321,9 @@ static void CG_Draw2D( void ) {
 	if ( !CG_DrawFollow() ) {
 		CG_DrawWarmup();
 	}
+
+	// Tr!Force: [Draw2D] Load custom draw 2d functions
+	JKMod_CG_Draw2D();
 
 	// don't draw center string if scoreboard is up
 	cg.scoreBoardShowing = CG_DrawScoreboard();
@@ -7885,6 +7966,17 @@ static void CG_AntiLoopIndicator(void)
 	//	bouncePowerRegenPercentage * 50,
 	//	colorTable[CT_RED]);
 
+}
+
+static void CG_ZPos(centity_t *cent)
+{
+	const vec_t* const origin = (cent->currentState.clientNum == cg.clientNum ? cg.predictedPlayerState.origin : cent->currentState.pos.trBase);
+	char zPosString[32] = { 0 };
+
+	Com_sprintf(zPosString, sizeof(zPosString), "%.1fZ", origin[2]);
+	CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], zPosString, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+
+	speedometerXPos += 42;
 }
 
 static void CG_JumpHeight(centity_t *cent)

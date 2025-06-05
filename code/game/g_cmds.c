@@ -16,6 +16,28 @@ void BG_CycleInven(playerState_t *ps, int direction);
 void BG_CycleForce(playerState_t *ps, int direction);
 
 extern void DF_SetSubContestDefaults(gclient_t* client);
+
+
+
+static qboolean DefragDoubleTapSafety(gentity_t* ent, doubleTapType_t type, const char* cmd ) {
+	if (!g_defragKillSafetyMinSecs.integer) {
+		return qtrue;
+	}
+	if (!ent->client->sess.raceMode || !ent->client->pers.raceStartCommandTime || (ent->client->ps.commandTime-clampedIntMult(1000, g_defragKillSafetyMinSecs.integer)) < ent->client->pers.raceStartCommandTime || ent->client->ps.commandTime < ent->client->pers.raceStartCommandTime) {
+		// nothing to worry about
+		memset(&ent->client->pers.doubleTap, 0, sizeof(ent->client->pers.doubleTap));
+		return qtrue;
+	}
+	if (ent->client->pers.doubleTap.lastType == type && (level.time - 500) < ent->client->pers.doubleTap.lastTime && ent->client->pers.doubleTap.lastTime < level.time) {
+		memset(&ent->client->pers.doubleTap, 0, sizeof(ent->client->pers.doubleTap));
+		return qtrue;
+	}
+	G_CenterPrint(ent - g_entities, 3, va("^3You are more than ^1%d ^3seconds into a run. Please double-tap your %s bind to confirm intent.", g_defragKillSafetyMinSecs.integer, cmd),qfalse,qtrue,qfalse,NULL);
+	ent->client->pers.doubleTap.lastType = type;
+	ent->client->pers.doubleTap.lastTime = level.time;
+	return qfalse;
+}
+
 /*
 ==================
 DeathmatchScoreboardMessage
@@ -456,6 +478,10 @@ extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 void Cmd_Noclip_f( gentity_t *ent ) {
 	char	*msg;
 
+	if (!DefragDoubleTapSafety(ent, DOUBLETAP_NOCLIP, "noclip")) {
+		return;
+	}
+
 	if (g_defrag.integer && ent->client->sess.raceMode) {
 		DF_RaceStateInvalidated(ent, qtrue);
 		if (ent->health <= 0) {
@@ -466,7 +492,7 @@ void Cmd_Noclip_f( gentity_t *ent ) {
 	else if ( !CheatsOk( ent ) ) {
 		return;
 	}
-	
+		
 
 	if ( ent->client->noclip ) {
 		msg = "noclip OFF\n";
@@ -561,6 +587,7 @@ void Cmd_Respos_f( gentity_t *ent ) {
 	}
 
 	if ( ent->client->pers.savePosUsed ) {
+		int tmpScore;
 		//VectorCopy(ent->client->pers.savePosPosition, ent->client->ps.origin);
 		//VectorCopy(ent->client->pers.savePosVelocity, ent->client->ps.velocity);
 		//SetClientViewAngle(ent,ent->client->pers.savePosAngle);
@@ -576,8 +603,14 @@ void Cmd_Respos_f( gentity_t *ent ) {
 			return;
 		}
 
+		if (!DefragDoubleTapSafety(ent, DOUBLETAP_RESPOS, "respos")) {
+			return;
+		}
+
 		RestorePosition(ent,&ent->client->pers.savedPosition,NULL);
+		tmpScore = ent->client->pers.stats.score;
 		DF_RaceStateInvalidated(ent, qtrue);
+		ent->client->pers.stats.score = tmpScore; // so we can continue testing map that kills u with wrong score. hope this is safe but it gets nulled when you start a new run anyway?
 	}
 	else {
 		msg = "Cannot restore position, velocity and angle. None saved.\n";
@@ -654,6 +687,9 @@ void Cmd_Kill_f( gentity_t *ent ) {
 		return;
 	}
 	if (ent->health <= 0) {
+		return;
+	}
+	if (!DefragDoubleTapSafety(ent,DOUBLETAP_KILL,"kill")) {
 		return;
 	}
 
@@ -3081,15 +3117,15 @@ void Cmd_Rank_f(gentity_t* ent) {
 		data.style = MV_JK2;
 	}
 
-#define RANKREQUEST "SELECT username,SUM(tmpRank=1) as golds,SUM(tmpRank=2) as silvers,SUM(tmpRank=3) as bronzes, ROW_NUMBER() OVER (ORDER BY golds DESC) AS realrank \
+#define RANKREQUEST "SELECT username,SUM(tmpRank=1) as golds,SUM(tmpRank=2) as silvers,SUM(tmpRank=3) as bronzes, ROW_NUMBER() OVER (ORDER BY golds DESC) AS realrank, MAX(goldtime) as mostRecentGold \
 FROM ( \
-SELECT username,users.id,runs.style,runs.tmpLB,runs.tmpRank,SUM(tmpRank) OVER (PARTITION BY runs.userid,runs.style,runs.tmpRank,runs.tmpLB) AS rankSum \
+SELECT username,users.id,runs.style,runs.tmpLB,runs.tmpRank,SUM(tmpRank) OVER (PARTITION BY runs.userid,runs.style,runs.tmpRank,runs.tmpLB) AS rankSum, IF(runs.tmpRank=1,runs.runwhen,NULL) AS goldtime \
 FROM users \
 LEFT JOIN runs ON (runs.hidden=0 AND runs.userid=users.id  ) \
 WHERE style=? AND tmpLB=? AND tmpRank < 4 \
 ) rankstuff \
 GROUP BY id,style,tmpLB \
-ORDER BY golds DESC"
+ORDER BY golds DESC, mostRecentGold ASC"
 
 
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANK, RANKREQUEST PAGINGLIMIT)) {
