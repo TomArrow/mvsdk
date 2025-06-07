@@ -4356,7 +4356,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	int followedClientNum = (cl->sess.spectatorState == SPECTATOR_FOLLOW && cl->sess.spectatorClient >= 0 && cl->sess.spectatorClient < MAX_CLIENTS) ? cl->sess.spectatorClient : clientNum;
 	gentity_t* followedEnt = g_entities + followedClientNum;
 	gclient_t* followedClient = followedEnt->client;
-	int i;
+	int i, originalValueReusable;
 	for (i = 0; i < level.num_entities; i++, backup++, mvEnt++) {
 		other = g_entities + i;
 		if (!other->r.linked || !other->inuse) {
@@ -4364,6 +4364,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 		es = &other->s;
 		if (saveState) {
+			originalValueReusable = es->solid;
 			backup->solidValue = es->solid;
 			//backup->event = es->event;
 			//if (es->eType == ET_MOVER) { // hackily "fix" client-timed mover prediction for cgame
@@ -4371,11 +4372,14 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 				//es->pos.trTime += level.time - ACTIVATORTIME(other->activatorReal);
 			//}
 		}
-		if (ShouldNotCollide(ent,other)) {
+		else {
+			originalValueReusable = backup->solidValue;
+		}
+		if (originalValueReusable && ShouldNotCollide(ent,other)) { // no need to check if it never was solid to begin with, and it caused console spam from misc_portal_surface owner shit
 			es->solid = 0;
 		}
 		else if (!saveState){
-			es->solid = backup->solidValue;
+			es->solid = originalValueReusable;
 		}
 
 		if (es->eFlags & EF_PLAYER_EVENT) {
