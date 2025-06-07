@@ -5255,6 +5255,7 @@ extern void Cmd_DF_RunSettings_f(gentity_t* ent);
 extern void Cmd_DF_RestartSegmentedRun_f(gentity_t* ent);
 extern void Cmd_MovementStyle_f(gentity_t* ent);
 extern void DF_SaveSpawn(gentity_t* ent);
+extern void DF_SelectSpawn(gentity_t* ent);
 extern void DF_ResetSpawn(gentity_t* ent);
 extern void Cmd_ToggleFPS_f(gentity_t* ent);
 extern void Cmd_FloatPhysics_f(gentity_t* ent);
@@ -5481,6 +5482,10 @@ void ClientCommand( int clientNum ) {
 			giveError = qtrue;
 		}
 		else if (!Q_stricmp(cmd, "savespawn"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "selectspawn"))
 		{
 			giveError = qtrue;
 		}
@@ -5755,6 +5760,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_MovementStyle_f(ent);
 	else if (Q_stricmp (cmd, "savespawn") == 0)
 		DF_SaveSpawn(ent);
+	else if (Q_stricmp (cmd, "selectspawn") == 0)
+		DF_SelectSpawn(ent);
 	else if (Q_stricmp (cmd, "checkpoint") == 0)
 		DF_CreateCustomCheckpoint(ent);
 	else if (Q_stricmp (cmd, "removecheckpoints") == 0)

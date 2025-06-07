@@ -18,7 +18,8 @@ Targets will be fired when someone spawns in on them.
 "nohumans" will prevent non-bots from using this spot.
 */
 void SP_info_player_deathmatch( gentity_t *ent ) {
-	int		i;
+	int			i;
+	const char* s;
 
 	ent->specialType = "playerspawn";
 	G_SpawnInt( "nobots", "0", &i);
@@ -28,6 +29,13 @@ void SP_info_player_deathmatch( gentity_t *ent ) {
 	G_SpawnInt( "nohumans", "0", &i );
 	if ( i ) {
 		ent->flags |= FL_NO_HUMANS;
+	}
+	G_SpawnString("spawntype", "", &s);
+	if (s && !Q_stricmp(s,"defrag")) {
+		ent->spawnDefragPriority = 2;
+	}
+	if (level.highestDefragSpawnPriority < ent->spawnDefragPriority) {
+		level.highestDefragSpawnPriority = ent->spawnDefragPriority;
 	}
 	if (ent->notVQ3 || ent->notCPM) {
 		G_Printf("^3Q3 style specific spawn found: %s, notvq3 %d, notcpm %d\n",ent->classname,ent->notVQ3,ent->notCPM);
@@ -40,6 +48,7 @@ equivelant to info_player_deathmatch
 */
 void SP_info_player_start(gentity_t *ent) {
 	G_SetClassName(ent, "info_player_deathmatch");
+	ent->spawnDefragPriority = 1;
 	SP_info_player_deathmatch( ent );
 }
 
@@ -487,6 +496,72 @@ gentity_t *SelectRandomDeathmatchSpawnPoint( gentity_t* spawningEnt ) {
 	return spots[ selection ];
 }
 
+
+gentity_t* SelectDefragSpawnPoint(gentity_t* spawningEnt, vec3_t avoidPoint, vec3_t origin, vec3_t angles)
+{
+	gentity_t* spot,*startSpot;
+	int			 i, j;
+
+	if (spawningEnt->client->pers.chosenDefragSpawnPoint) { // for maps where /savespawn isn't possible
+		spot = g_entities + spawningEnt->client->pers.chosenDefragSpawnPoint;
+		if (!Q_stricmp(spot->classname, "info_player_deathmatch")) {
+			if (!SpotWouldTelefrag(spot->s.origin, spawningEnt)) {
+
+				VectorCopy(spot->s.origin, origin);
+				origin[2] += 9;
+				VectorCopy(spot->s.angles, angles);
+				return spot;
+			}
+		}
+	}
+
+	startSpot = NULL;
+
+	if (spawningEnt->client->pers.lastSpawnPoint) {
+		startSpot = g_entities + spawningEnt->client->pers.lastSpawnPoint;
+	}
+
+	spot = startSpot;
+	for (i = 0; i < 2; i++) {
+		// we start out at startSpot and try to find the next in line, so that there's a clean "cycling" through them instead of randomness
+		// if there is none after, spot will be NULL and we do a second round as a "wrap around" from the start of g_entities
+		while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
+			if (SpotWouldTelefrag(spot->s.origin, spawningEnt)) {
+				continue;
+			}
+			if (spot->spawnDefragPriority < level.highestDefragSpawnPriority) {
+				continue; // some types of spawns get priority in defrag
+			}
+			//if (spot == startSpot) { // not rly needed
+			//	break;
+			//}
+			break;
+		}
+		if (spot || !spot && !startSpot) {
+			break;
+		}
+	}
+
+	if (!spot) {
+		spot = G_FindByClassNameFast(NULL, "info_player_deathmatch");
+		if (!spot)
+		{
+			G_Error("Couldn't find a defrag spawn point");
+		}
+		VectorCopy(spot->s.origin, origin);
+		if (g_bubbleSpawn.integer && !(spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
+			WiggleSpotTelefrag(origin, spawningEnt);
+		}
+		origin[2] += 9;
+		VectorCopy(spot->s.angles, angles);
+		return spot;
+	}
+
+	VectorCopy(spot->s.origin, origin);
+	origin[2] += 9;
+	VectorCopy(spot->s.angles, angles);
+	return spot;
+}
 /*
 ===========
 SelectRandomFurthestSpawnPoint
@@ -505,9 +580,16 @@ gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPo
 	numSpots = 0;
 	spot = NULL;
 
+	if (spawningEnt && spawningEnt->client && spawningEnt->client->sess.raceMode) {
+		return SelectDefragSpawnPoint(spawningEnt,avoidPoint,origin,angles);
+	}
+
 	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
 		if ( SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
 			continue;
+		}
+		if (spawningEnt && spawningEnt->client && spawningEnt->client->sess.raceMode && spot->spawnDefragPriority < level.highestDefragSpawnPriority) {
+			continue; // some types of spawns get priority in defrag
 		}
 		VectorSubtract( spot->s.origin, avoidPoint, delta );
 		dist = VectorLength( delta );
@@ -540,7 +622,7 @@ gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPo
 			G_Error( "Couldn't find a spawn point" );
 		}
 		VectorCopy (spot->s.origin, origin);
-		if (g_bubbleSpawn.integer && !(spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
+		if (g_bubbleSpawn.integer && !(spawningEnt && spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
 			WiggleSpotTelefrag(origin, spawningEnt);
 		}
 		origin[2] += 9;
@@ -610,7 +692,7 @@ gentity_t *SelectInitialSpawnPoint(gentity_t* spawningEnt, vec3_t origin, vec3_t
 
 	spot = NULL;
 	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
-		if ( spot->spawnflags & 1 ) {
+		if ( spot->spawnflags & 1 && (!(spawningEnt->client && spawningEnt->client->sess.raceMode) || spot->spawnDefragPriority == level.highestDefragSpawnPriority)) {
 			break;
 		}
 	}
@@ -2475,6 +2557,7 @@ void ClientSpawn(gentity_t *ent) {
 	vec3_t				savedDeltaAngles;
 	int		persistant[MAX_PERSISTANT];
 	gentity_t	*spawnPoint;
+	qboolean	lastSpawnPointRaceValid = qfalse;
 	int		flags;
 	int		savedPing;
 	int		savedCommandTime;
@@ -2542,6 +2625,7 @@ void ClientSpawn(gentity_t *ent) {
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		spawnPoint = SelectSpectatorSpawnPoint ( 
 						spawn_origin, spawn_angles);
+		lastSpawnPointRaceValid = qfalse;
 	} else if (inSegmentedRun) {
 		spawnPoint = NULL;
 		VectorCopy(client->pers.segmented.lastPos.ps.origin, spawn_origin);
@@ -2557,6 +2641,7 @@ void ClientSpawn(gentity_t *ent) {
 						client->sess.sessionTeam, 
 						client->pers.teamState.state, 
 						spawn_origin, spawn_angles);
+		lastSpawnPointRaceValid = qfalse;
 	}
 	else if (g_gametype.integer == GT_SAGA)
 	{
@@ -2564,8 +2649,10 @@ void ClientSpawn(gentity_t *ent) {
 						client->sess.sessionTeam, 
 						client->pers.teamState.state, 
 						spawn_origin, spawn_angles);
+		lastSpawnPointRaceValid = qfalse;
 	}
 	else {
+		int iters = 1;
 		do {
 			// the first spawn should be at a good looking spot
 			if ( !client->pers.initialSpawn && client->pers.localClient ) {
@@ -2588,9 +2675,15 @@ void ClientSpawn(gentity_t *ent) {
 				continue;	// try again
 			}
 
+			lastSpawnPointRaceValid = qtrue;
+
 			break;
 
-		} while ( 1 );
+		} while (iters-- > 0); // TA: this looks like it could potentially cause an infinite loop. limit it to 2.
+		if (!spawnPoint) {
+
+			G_Error("Couldn't find a spawn point (#3)");
+		}
 	}
 
 	if (client->sess.mode == MODE_IRONMAN && !client->isIronMan) {
@@ -3056,6 +3149,10 @@ void ClientSpawn(gentity_t *ent) {
 
 	if (spawn_velocity_set) {
 		VectorCopy(spawn_velocity, client->ps.velocity);
+	}
+
+	if (spawnPoint && lastSpawnPointRaceValid) {
+		client->pers.lastSpawnPoint = spawnPoint - g_entities;
 	}
 
 	// run a client frame to drop exactly to the floor,

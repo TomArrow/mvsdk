@@ -5707,6 +5707,80 @@ void DF_SaveSpawn(gentity_t* ent) {
 	),qtrue);
 }
 
+
+void DF_SelectSpawn(gentity_t* ent) {
+
+	qboolean allRace = qfalse;
+	char	arg1[10];
+
+	if (!ent->client->sess.raceMode) {
+		trap_SendServerCommand(ent - g_entities, "print \"You must be in racemode to use this command!\n\"");
+		return;
+	}
+
+	if (trap_Argc() < 2) {
+		if (g_defragSimpleResetSpawn.integer) {
+			trap_SendServerCommand(ent - g_entities, "print \"Usage: selectSpawn [closest|last].\n\"");
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"Usage: selectSpawn [closest|last|reset].\n\"");
+		}
+		return;
+	}
+	trap_Argv(1, arg1, sizeof(arg1));
+
+	if (!Q_stricmp(arg1, "closest")) {
+		gentity_t* spawnPoint = SelectNearestDeathmatchSpawnPoint(ent->client->ps.origin);
+
+		if (!spawnPoint) {
+			G_SendServerCommand(ent - g_entities, "print \"^1No near spawnpoint found, WTF.\n\"", qtrue);
+		}
+
+		// TA: does this rly make sense here tho? idk
+		// Tim needs to prevent bots from spawning at the initial point
+		// on q3dm0...
+		if ((spawnPoint->flags & FL_NO_BOTS) && (ent->r.svFlags & SVF_BOT)) {
+			G_SendServerCommand(ent - g_entities, "print \"^1Closest spawn point is only for humans and you are a bot.\n\"", qtrue);
+			return;	// try again
+		}
+		// just to be symetric, we have a nohumans option...
+		if ((spawnPoint->flags & FL_NO_HUMANS) && !(ent->r.svFlags & SVF_BOT)) {
+			G_SendServerCommand(ent - g_entities, "print \"^1Closest spawn point is only for bots and you are a human.\n\"", qtrue);
+			return;	// try again
+		}
+
+		ent->client->pers.chosenDefragSpawnPoint = spawnPoint - g_entities;
+		G_SendServerCommand(ent - g_entities, va("print \"^2Nearest point with entity number %d has been selected as your defrag spawn point.\n\"", ent->client->pers.chosenDefragSpawnPoint), qtrue);
+
+	}
+	else if (!Q_stricmp(arg1, "last")) {
+		if (!ent->client->pers.lastSpawnPoint) {
+			G_SendServerCommand(ent - g_entities, "print \"^1Did not find a previous spawn point, sorry about that.\n\"", qtrue);
+			return;
+		}
+		ent->client->pers.chosenDefragSpawnPoint = ent->client->pers.lastSpawnPoint;
+		G_SendServerCommand(ent - g_entities, va("print \"^2Previous spawn point with entity number %d has been selected as your defrag spawn point.\n\"", ent->client->pers.chosenDefragSpawnPoint), qtrue);
+	}
+	else if (!g_defragSimpleResetSpawn.integer && !Q_stricmp(arg1, "reset")) {
+		if (!ent->client->pers.chosenDefragSpawnPoint) {
+			G_SendServerCommand(ent - g_entities, "print \"^1Can not reset. No spawn point saved.\n\"", qtrue);
+			return;
+		}
+		ent->client->pers.chosenDefragSpawnPoint = 0;
+		G_SendServerCommand(ent - g_entities, "print \"^2Your defrag spawn point has been reset (this does not affect spawns saved with ^7/savespawn^2).\n\"", qtrue);
+	}
+	else {
+		if (g_defragSimpleResetSpawn.integer) {
+			trap_SendServerCommand(ent - g_entities, "print \"Usage: selectSpawn [closest|last].\n\"");
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"Usage: selectSpawn [closest|last|reset].\n\"");
+		}
+		return;
+	}
+
+}
+
 void DF_ResetSpawn(gentity_t* ent) {
 	if (!ent->client) return;
 
@@ -5717,7 +5791,13 @@ void DF_ResetSpawn(gentity_t* ent) {
 
 	ent->client->pers.savedSpawnUsed = qfalse;
 
-	G_SendServerCommand(ent - g_entities, "print \"Spawnpoint has been reset.\n\"",qtrue);
+	if (ent->client->pers.chosenDefragSpawnPoint && !g_defragSimpleResetSpawn.integer) {
+		G_SendServerCommand(ent - g_entities, "print \"Spawnpoint has been reset (this does not affect spawns saved with ^2/selectspawn^7. Use ^2/selectspawn reset^7 for those.).\n\"", qtrue);
+	}
+	else {
+		ent->client->pers.chosenDefragSpawnPoint = 0;
+		G_SendServerCommand(ent - g_entities, "print \"Spawnpoint has been reset.\n\"", qtrue);
+	}
 }
 
 

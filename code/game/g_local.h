@@ -305,6 +305,8 @@ struct gentity_s {
 	int			number; // q3 rally map support
 	int			laps; // q3 rally map support
 
+	int			spawnDefragPriority;
+
 	gentity_t*	nextHashed; // next with same classname hash
 	qboolean	belongsToParent; // when sending customized snapshots and someone has solo mode activated, don't show him this item if it doesn't belong to himself (sniper shots etc)
 };
@@ -539,6 +541,9 @@ typedef struct {
 		doubleTapType_t lastType;
 		int lastTime;
 	} doubleTap;
+
+	int			lastSpawnPoint;
+	int			chosenDefragSpawnPoint;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -824,6 +829,9 @@ typedef struct {
 	simplePos_t	ironManPos[IRONMAN_MAX_PAST_POSITIONS_COUNT];
 	int			ironManPosCount;
 	int			lastIronManPosSaved;
+	
+	int			highestDefragSpawnPriority;
+
 	char		tempDemoNamePrefix[20];
 } level_locals_t;
 
@@ -1156,6 +1164,7 @@ void AddScore( gentity_t *ent, vec3_t origin, int score );
 void CalculateRanks( void );
 qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt );
 qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt);
+gentity_t* SelectNearestDeathmatchSpawnPoint(vec3_t from);
 
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra);
 void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers);
@@ -1412,6 +1421,7 @@ extern	vmCvar_t	g_defragLastRunId;
 extern	vmCvar_t	g_defragLastDemoId;
 extern	vmCvar_t	g_defragAutoDemo;
 extern	vmCvar_t	g_defragKillSafetyMinSecs;
+extern	vmCvar_t	g_defragSimpleResetSpawn;
 extern	vmCvar_t	g_triggersRobust;
 extern	vmCvar_t	g_bubbleSpawn;
 extern	vmCvar_t	g_defragForceRegenFps;
