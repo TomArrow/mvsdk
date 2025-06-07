@@ -5,7 +5,7 @@
 #include "bg_defrag_global.h"
 #include "q_shared.h"
 
-#define SEGMENTEDDEBUG 1
+#define SEGMENTEDDEBUG 0
 
 #define QUOT2(a) #a
 #define QUOTE(a) QUOT2(a)
@@ -37,7 +37,7 @@ extern int semiBreakingChangeVersionDefrag;
 #define MOVERTIME_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->pers.cmd.serverTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->pers.cmd.serverTime+(e)->activatorLevelTimeDelta) : level.time)
 #define MOVERTIMEOLD_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->ps.commandTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->ps.commandTime+(e)->activatorLevelTimeDelta) : level.time) // is commandtime really adequate?
 
-
+typedef unsigned char posHashType_t;
 
 typedef struct checkpointSeed_s {
 	vec3_t	trEndpos;
@@ -184,6 +184,16 @@ typedef enum segmentedRunState_s {
 } segmentedRunState_t;
 
 
+typedef enum {
+	TRIGPROP_CHECKPOINTSCORE = (1 << 0)
+} triggerPropsToSet_t;
+
+typedef struct { // while traversing backwards to find root trigger, all stuff that has to be set on the trigger itself is added here. At the end it is set.
+	int	ttFlags;
+	int	checkpointScore;
+	triggerPropsToSet_t triggerPropsToSet;
+	qboolean notVQ3, notCPM;
+} triggerConversionProperties_t;
 
 #if SEGMENTEDDEBUG
 typedef enum {
@@ -203,16 +213,6 @@ typedef struct {
 	char* typeName;
 } debugField_t;
 
-typedef enum {
-	TRIGPROP_CHECKPOINTSCORE = (1<<0)
-} triggerPropsToSet_t;
-
-typedef struct { // while traversing backwards to find root trigger, all stuff that has to be set on the trigger itself is added here. At the end it is set.
-	int	ttFlags;
-	int	checkpointScore;
-	triggerPropsToSet_t triggerPropsToSet;
-	qboolean notVQ3, notCPM;
-} triggerConversionProperties_t;
 
 typedef signed char schar_t;
 
@@ -266,6 +266,9 @@ typedef struct segmented_s {
 	
 	int					totalStartCommandTime;
 	int					totalDurationMinusReplay;
+
+	qboolean			playbackErrored;
+	int					lastPlaybackErroredCenterprint;
 
 #if SEGMENTEDDEBUG
 	//vec3_t				debugOrigin[1000]; // every 1/10 of a second we make a backup here and later we compare

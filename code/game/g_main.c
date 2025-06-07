@@ -490,6 +490,9 @@ qboolean mvStructConversionDisabled = qfalse;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
 int coolApi_jkaVersion = 0;
+int coolApi_userCmdVersion = 0;
+vmCvar_t coolApi_supported_game_userCmdStoreVersion;
+const int coolApi_supported_game_userCmdStoreVersion_int = 1;
 vmCvar_t coolApi_supported_game;
 const int coolApi_supported_game_int =
   COOL_APIFEATURE_SETPREDICTEDMOVEMENT
@@ -542,6 +545,13 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 	case GAME_INIT:
 		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
 		coolApi = atoi(coolApiFeaturesBuffer);
+		if (coolApi & COOL_APIFEATURE_G_USERCMDSTORE) {
+			trap_Cvar_VariableStringBuffer("cool_apiUserCmdStoreVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_userCmdVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else {
+			coolApi_userCmdVersion = 0;
+		}
 		if (coolApi & COOL_APIFEATURE_MARIADB) {
 			trap_Cvar_VariableStringBuffer("cool_apiDBVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
 			coolApi_dbVersion = atoi(coolApiFeaturesBuffer);
@@ -558,7 +568,9 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		}
 
 		trap_Cvar_Register(&coolApi_supported_game, "coolApi_supported_game", va("%d", coolApi_supported_game_int), CVAR_ROM);
+		trap_Cvar_Register(&coolApi_supported_game_userCmdStoreVersion, "coolApi_supported_game_userCmdStoreVersion", va("%d", coolApi_supported_game_userCmdStoreVersion_int), CVAR_ROM);
 		trap_Cvar_Set("coolApi_supported_game", va("%d", coolApi_supported_game_int));
+		trap_Cvar_Set("coolApi_supported_game_userCmdStoreVersion", va("%d", coolApi_supported_game_userCmdStoreVersion_int));
 		trap_Cvar_Set("coolApi_supported_game_vmflags", va("%d", coolApi_supported_game_vmflags_int));
 
 		requestedMvApi = MVAPI_Init(arg11);

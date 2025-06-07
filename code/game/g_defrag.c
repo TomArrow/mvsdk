@@ -12,6 +12,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace);
 void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs);
 void UpdateClientRaceVars(gclient_t* client);
+void DF_StartSegmentedReplay(gentity_t* ent, qboolean restart);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
 #define VALIDATEPTRCMP(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
@@ -2752,18 +2753,19 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		//trap_SendServerCommand(-1, va("print \"%s " S_COLOR_WHITE "has finished the segmented race in %f units [^2%s^7]: ^1Estimate! Starting rerun now.\n\" dfsegprelim %s", cl->pers.netname, cl->pers.stats.distanceTraveled, timeLastStr, DF_RacePrintAppendage(&runInfo))); // extra params: type runId clientNum milliseconds leveltimeend endcommandtime endInterpolationReduction warningFlags top average distance username
 
 		PrintRaceTime(&runInfo, qtrue, qfalse, activator);
-		cl->pers.segmented.state = SEG_REPLAY;
-		cl->pers.segmented.playbackStartedTime = level.time;
-		cl->pers.segmented.playbackStartedCommandTimeOffset = cl->ps.commandTime - level.time;
-		cl->pers.segmented.playbackNextCmdIndex = 0;
-		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
-			// during replay, we are providing usercmds for server to send to spectators and player for demos
-			activator->r.svFlags |= SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
-		}
-		ent->s.eFlags |= EF_SEGMENTEDREPLAY;
-		cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
-		cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
-		cl->pers.stats.startLevelTime = 0;
+		DF_StartSegmentedReplay(activator,qfalse);
+		//cl->pers.segmented.state = SEG_REPLAY;
+		//cl->pers.segmented.playbackStartedTime = level.time;
+		//cl->pers.segmented.playbackStartedCommandTimeOffset = cl->ps.commandTime - level.time;
+		//cl->pers.segmented.playbackNextCmdIndex = 0;
+		//if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+		//	// during replay, we are providing usercmds for server to send to spectators and player for demos
+		//	activator->r.svFlags |= SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
+		//}
+		//activator->s.eFlags |= EF_SEGMENTEDREPLAY;
+		//cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
+		//cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
+		//cl->pers.stats.startLevelTime = 0;
 		return;
 	}
 
@@ -3999,7 +4001,7 @@ void DF_ResetSegmentedRun(gentity_t* ent) {
 	ent->client->pers.segmented.state = SEG_DISABLED;
 	trap_G_COOL_API_PlayerUserCmdClear(ent - g_entities); 
 	ent->client->pers.segmented.lastPosResposCount = 0;
-#ifdef SEGMENTEDDEBUG
+#if SEGMENTEDDEBUG
 	memset(ent->client->pers.segmented.debugTime, 0, sizeof(ent->client->pers.segmented.debugTime));
 #endif
 }
@@ -4779,6 +4781,18 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 	}
 }
 
+void Cmd_DF_RestartSegmentedRun_f(gentity_t* ent) {
+	if (!DF_ClientInSegmentedRunMode(ent->client) || ent->client->pers.segmented.state < SEG_REPLAY) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Cannot restart segmented replay. No replay active.\n\"");
+		return;
+	}
+	else if (!ent->client->pers.segmented.playbackErrored) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Cannot restart segmented replay. Replay has not failed so far.\n\"");
+		return;
+	}
+	DF_StartSegmentedReplay(ent, qtrue);
+}
+
 void Cmd_DF_RunSettings_f(gentity_t* ent)
 {
 	qboolean strafebotButtonMessage = qfalse;
@@ -5216,6 +5230,42 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	// if ( ( ent->client->buttons & BUTTON_ATTACK ) && ! ( ent->client->oldbuttons & BUTTON_ATTACK ) )
 }
 
+void DF_StartSegmentedReplay(gentity_t* ent, qboolean restart) {
+	gclient_t* cl = ent->client;
+	cl->pers.segmented.state = SEG_REPLAY;
+	cl->pers.segmented.playbackStartedTime = level.time;
+	if (!restart) {
+		cl->pers.segmented.playbackStartedCommandTimeOffset = cl->ps.commandTime - level.time;
+	}
+	cl->pers.segmented.playbackNextCmdIndex = 0;
+	cl->pers.segmented.playbackErrored = qfalse;
+	if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
+		// during replay, we are providing usercmds for server to send to spectators and player for demos
+		ent->r.svFlags |= SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
+	}
+	ent->s.eFlags |= EF_SEGMENTEDREPLAY;
+	cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
+	cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
+	cl->pers.stats.startLevelTime = 0;
+}
+
+posHashType_t DF_GetPositionHash(playerState_t* ps) {
+	floatint_t f;
+	unsigned int hash = 0;
+	posHashType_t realhash = 0;
+#define ADDTOHASH(a) f.f = (a);hash ^= f.i
+	ADDTOHASH(ps->origin[0]);
+	ADDTOHASH(ps->origin[1]);
+	ADDTOHASH(ps->origin[2]);
+	ADDTOHASH(ps->velocity[0]);
+	ADDTOHASH(ps->velocity[1]);
+	ADDTOHASH(ps->velocity[2]);
+#undef ADDTOHASH
+	realhash = (hash & 0xFF) | ((hash >> 8) & 0xFF) | ((hash >> 16) & 0xFF) | ((hash >> 24) & 0xFF);
+	//return hash;
+	return realhash;
+}
+
 void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	gclient_t* cl;
 	usercmd_t* ucmdPtr;
@@ -5224,6 +5274,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	qboolean resposRequested, saveposRequested;
 	qboolean strafeBotActive;
 	int msec;
+	posHashType_t posHash;
 	if (!ent->client) return;
 	if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) return;
 
@@ -5240,7 +5291,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		ent->s.eFlags &= ~EF_SEGMENTEDREPLAY;
 		cl->ps.eFlags &= ~EF_SEGMENTEDREPLAY;
 
-#ifdef SEGMENTEDDEBUG
+#if SEGMENTEDDEBUG
 		memset(ent->client->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif
 		cl->pers.segmented.state = SEG_DISABLED;
@@ -5270,6 +5321,10 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 		if (resposRequested || saveposRequested) {
 			// TODO we shouldnt even get here. commands from client should be blocked during a replay.
 			G_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available during the replay of a run.\n\"",qtrue);
+		}
+		if (cl->pers.segmented.playbackErrored && (!cl->pers.segmented.lastPlaybackErroredCenterprint || level.time-2500 > cl->pers.segmented.lastPlaybackErroredCenterprint || cl->pers.segmented.lastPlaybackErroredCenterprint < level.time)) {
+			G_CenterPrint(ent-g_entities,3,"^3Segmented replay failing. You can try ^2/resseg^3 to restart the replay.\n",qfalse,qtrue,qfalse,NULL);
+			cl->pers.segmented.lastPlaybackErroredCenterprint = level.time;
 		}
 		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
 			// during replay, we are providing usercmds for server to send to spectators and player for demos
@@ -5306,7 +5361,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			// wait i know! we can disable movers for segmented runs. ez.
 			//if (cl->ps.groundEntityNum == ENTITYNUM_WORLD || cl->ps.groundEntityNum == ENTITYNUM_NONE) {
 				trap_G_COOL_API_PlayerUserCmdClear(clientNum);
-#ifdef SEGMENTEDDEBUG
+#if SEGMENTEDDEBUG
 				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif
 				VectorClear(cl->pers.segmented.anglesDiffAccum);
@@ -5321,8 +5376,9 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 		ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
 		cl->pers.segmented.msecProgress += msec;
-		trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
-#ifdef SEGMENTEDDEBUG
+
+		trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd, DF_GetPositionHash(&cl->ps));
+#if SEGMENTEDDEBUG
 		{
 			int timeIndex = cl->pers.segmented.msecProgress / 100;
 			if (timeIndex >= 0 && timeIndex < 1000) {
@@ -5362,7 +5418,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 				usercmd_t cutmarker;
 				memset(&cutmarker, 0, sizeof(cutmarker));
 				cutmarker.serverTime = -1;
-				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker);
+				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker,0);
 			}
 			cl->pers.stats.saveposCount++;
 			cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
@@ -5399,7 +5455,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 				memset(&cutmarker2, 0, sizeof(cutmarker2));
 				cutmarker2.serverTime = -2;
 				cutmarker2.buttons = cl->pers.segmented.lastPosResposCount;
-				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker2);
+				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker2,0);
 			}
 		}
 	}
@@ -5417,8 +5473,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	}
 	ucmd.serverTime = cl->pers.segmented.msecProgress + msec;
 	cl->pers.segmented.msecProgress += msec;
-	trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd);
-#ifdef SEGMENTEDDEBUG
+	trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &ucmd, DF_GetPositionHash(&cl->ps));
+#if SEGMENTEDDEBUG
 	{
 		int timeIndex = cl->pers.segmented.msecProgress / 100;
 		if (timeIndex >= 0 && timeIndex < 1000) {

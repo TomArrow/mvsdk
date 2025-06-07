@@ -1738,6 +1738,7 @@ once for each server frame, which makes for smooth demo recording.
 ==============
 */
 void DF_HandleSegmentedRunPre(gentity_t* ent);
+posHashType_t DF_GetPositionHash(playerState_t* ps);
 void UpdateClientRaceVars(gclient_t* client);
 //void DF_SetRaceMode(gentity_t* ent, qboolean value); 
 void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag);
@@ -3024,10 +3025,11 @@ void G_RunClient( gentity_t *ent ) {
 		}
 		while (qtrue) {
 			qboolean success=qtrue;
+			posHashType_t posHash =0,currentPosHash=0;
 			int targetServerTime;
 			ucmd.serverTime = -1;
 			while (success && (ucmd.serverTime == -1 || ucmd.serverTime == -2)) { // -1 is just a marker for cuts
-				success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd);
+				success = trap_G_COOL_API_PlayerUserCmdGet(ent - g_entities, cl->pers.segmented.playbackNextCmdIndex, &ucmd, &posHash);
 				if (success && (ucmd.serverTime == -1 || ucmd.serverTime == -2)) {
 					entityState_t* stats = &level.playerStats[ent - g_entities]->s;
 					switch (ucmd.serverTime) {
@@ -3051,7 +3053,7 @@ void G_RunClient( gentity_t *ent ) {
 			if (!success) {
 				trap_G_COOL_API_PlayerUserCmdClear(ent-g_entities);
 				cl->pers.segmented.lastPosResposCount = 0;
-#ifdef SEGMENTEDDEBUG
+#if SEGMENTEDDEBUG
 				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif
 				G_ResetUserCmdStore(ent - g_entities); // clear this so it doesn't execute very old ones now.
@@ -3068,9 +3070,18 @@ void G_RunClient( gentity_t *ent ) {
 				break;
 			}
 			targetServerTime = cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset + ucmd.serverTime;
+
+			currentPosHash = DF_GetPositionHash(&cl->ps);
+			if (coolApi_userCmdVersion >= 1 && currentPosHash != posHash) {
+				if (!cl->pers.segmented.playbackErrored) {
+					G_SendServerCommand(ent - g_entities, va("print \"^3Segmented replay failing. You can try ^2/resseg^3 to restart the replay. (position hash does not match: ^1%d -> %d^3, further failed frame messages will be suppressed)\n\"", (int)posHash, (int)currentPosHash), qtrue);
+				}
+				cl->pers.segmented.playbackErrored = qtrue;
+			}
+
 			if (targetServerTime <= (level.time + cl->pers.segmented.playbackStartedCommandTimeOffset)) {
 				cl->pers.cmd = ucmd;
-#ifdef SEGMENTEDDEBUG
+#if SEGMENTEDDEBUG
 				{
 					int timeIndex = ucmd.serverTime / 100;
 					if (timeIndex >= 0 && timeIndex < 1000) {

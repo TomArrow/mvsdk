@@ -1069,9 +1069,9 @@ int trap_G_COOL_API_SetBrushModelContentFlags(gentity_t* entity, int flags, cool
 	return syscall(G_COOL_API_SETBRUSHMODELCONTENTFLAGS, entity, flags, mode);
 }
 
-int trap_G_COOL_API_PlayerUserCmdAdd(int clientNum, usercmd_t* ucmd)
+int trap_G_COOL_API_PlayerUserCmdAdd(int clientNum, usercmd_t* ucmd, posHashType_t posHash)
 {
-	return syscall(G_COOL_API_PLAYERUSERCMD_ADD, clientNum, ucmd);
+	return syscall(G_COOL_API_PLAYERUSERCMD_ADD, clientNum, ucmd, posHash);
 } // returns index
 int trap_G_COOL_API_PlayerUserCmdRemove(int clientNum, int from, int to)
 {
@@ -1081,9 +1081,9 @@ int trap_G_COOL_API_PlayerUserCmdClear(int clientNum)
 {
 	return syscall(G_COOL_API_PLAYERUSERCMD_CLEAR, clientNum);
 }
-qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd)
+qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd, posHashType_t* posHash)
 {
-	return syscall(G_COOL_API_PLAYERUSERCMD_GET, clientNum, index, ucmd);
+	return syscall(G_COOL_API_PLAYERUSERCMD_GET, clientNum, index, ucmd, posHash);
 }
 int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum)
 {

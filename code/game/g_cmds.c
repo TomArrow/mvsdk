@@ -1409,6 +1409,7 @@ void Cmd_Help_f(gentity_t* ent) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/run 5^7 - Enables/disables segmented running\n\"");
 			trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state (only works after your timer starts)\n\"");
 			trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state (only works in a run after using savepos)\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2/resseg^7 - If your run is failing, this command will allow you to restart the playback.\n\"");
 
 			trap_SendServerCommand(ent - g_entities, "print \"\n^1Important rules:\n\"");
 			trap_SendServerCommand(ent - g_entities, "print \"^11.^7 If you touch the start timer again during your run, your run ends\n\"");
@@ -5251,6 +5252,7 @@ extern void Cmd_Mode_f(gentity_t* ent);
 extern void Cmd_ModeCmd_f(gentity_t* ent);
 extern void Cmd_JumpChange_f(gentity_t* ent);
 extern void Cmd_DF_RunSettings_f(gentity_t* ent);
+extern void Cmd_DF_RestartSegmentedRun_f(gentity_t* ent);
 extern void Cmd_MovementStyle_f(gentity_t* ent);
 extern void DF_SaveSpawn(gentity_t* ent);
 extern void DF_ResetSpawn(gentity_t* ent);
@@ -5303,6 +5305,7 @@ void ClientCommand( int clientNum ) {
 			&& Q_stricmp(cmd, "tell")
 			&& Q_stricmp(cmd, "score")
 			&& Q_stricmp(cmd, "login") // is login ok?
+			&& Q_stricmp(cmd, "resseg")
 			) { // allow a few.
 			trap_SendServerCommand(clientNum, "print \"Cannot send commands during segmented run replay.\n\"");
 			return;
@@ -5518,6 +5521,10 @@ void ClientCommand( int clientNum ) {
 			giveError = qtrue;
 		}
 		else if (!Q_stricmp(cmd, "run"))
+		{
+			giveError = qtrue;
+		}
+		else if (!Q_stricmp(cmd, "resseg"))
 		{
 			giveError = qtrue;
 		}
@@ -5768,6 +5775,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_JumpChange_f(ent);
 	else if (Q_stricmp (cmd, "run") == 0)
 		Cmd_DF_RunSettings_f(ent);
+	else if (Q_stricmp (cmd, "resseg") == 0)
+		Cmd_DF_RestartSegmentedRun_f(ent);
 	else if (Q_stricmp (cmd, "login") == 0)
 		Cmd_Login_f(ent);
 	else if (Q_stricmp (cmd, "logout") == 0)

@@ -2469,7 +2469,7 @@ void ClientSpawn(gentity_t *ent) {
 #if SEGMENTEDDEBUG
 	static clientPersistant_t	saved;
 #else
-	clientPersistant_t	saved;
+	static clientPersistant_t	saved;
 #endif
 	clientSession_t		savedSess;
 	vec3_t				savedDeltaAngles;

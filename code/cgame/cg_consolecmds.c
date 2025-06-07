@@ -2133,4 +2133,5 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("ironman");
 	trap_AddCommand("stay");
 	trap_AddCommand("say_cross");
+	trap_AddCommand("resseg");
 }

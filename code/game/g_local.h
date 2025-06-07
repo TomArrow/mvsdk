@@ -983,10 +983,10 @@ Ghoul2 Insert End
 
 int trap_G_COOL_API_SetBrushModelContentFlags(gentity_t* entity, int flags, coolApiSetBModelCFlagsMode_t mode);
 
-int trap_G_COOL_API_PlayerUserCmdAdd(int clientNum, usercmd_t* ucmd); // returns index
+int trap_G_COOL_API_PlayerUserCmdAdd(int clientNum, usercmd_t* ucmd, posHashType_t posHash); // returns index
 int trap_G_COOL_API_PlayerUserCmdRemove(int clientNum, int from, int to); // from and to are inclusive
 int trap_G_COOL_API_PlayerUserCmdClear(int clientNum);
-qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd);
+qboolean trap_G_COOL_API_PlayerUserCmdGet(int clientNum, int index, usercmd_t* ucmd, posHashType_t* posHash);
 int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum);
 void trap_G_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
 void trap_G_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask);
@@ -1786,6 +1786,7 @@ qboolean	trap_ROFF_Purge_Ent( int entID );
 extern int coolApi;
 extern int coolApi_dbVersion;
 extern int coolApi_jkaVersion;
+extern int coolApi_userCmdVersion;
 
 extern int gRandomUnlockAdd;
 
