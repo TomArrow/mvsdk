@@ -5322,7 +5322,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			// TODO we shouldnt even get here. commands from client should be blocked during a replay.
 			G_SendServerCommand(ent - g_entities, "print \"Respos/savepos are not available during the replay of a run.\n\"",qtrue);
 		}
-		if (cl->pers.segmented.playbackErrored && (!cl->pers.segmented.lastPlaybackErroredCenterprint || level.time-2500 > cl->pers.segmented.lastPlaybackErroredCenterprint || cl->pers.segmented.lastPlaybackErroredCenterprint < level.time)) {
+		if (cl->pers.segmented.playbackErrored && (!cl->pers.segmented.lastPlaybackErroredCenterprint || level.time-2500 > cl->pers.segmented.lastPlaybackErroredCenterprint || cl->pers.segmented.lastPlaybackErroredCenterprint > level.time)) {
 			G_CenterPrint(ent-g_entities,3,"^3Segmented replay failing. You can try ^2/resseg^3 to restart the replay.\n",qfalse,qtrue,qfalse,NULL);
 			cl->pers.segmented.lastPlaybackErroredCenterprint = level.time;
 		}
