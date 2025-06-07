@@ -19,7 +19,7 @@ Targets will be fired when someone spawns in on them.
 */
 void SP_info_player_deathmatch( gentity_t *ent ) {
 	int			i;
-	const char* s;
+	char* s;
 
 	ent->specialType = "playerspawn";
 	G_SpawnInt( "nobots", "0", &i);
