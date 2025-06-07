@@ -1233,6 +1233,12 @@ helpTip_t helpTips[] = {
 		qtrue
 	},
 	{
+		"print \"^2/selectspawn^7 - Alternatively, select one of the real map spawn points for your start, e.g. for maps where ^2/savespawn^7 doesn't work. Call with ^2last^7 to remember the last point you spawned at or ^2closest^7 to select the spawn point closest to you. You can do this even from noclip.\n\"",
+		"print \"Random tip: ^2/selectspawn^7 - As an alternative to ^2/selectspawn^7, select one of the real map spawn points for your start, e.g. for maps where ^2/savespawn^7 doesn't work. Call with ^2last^7 to remember the last point you spawned at or ^2closest^7 to select the spawn point closest to you. You can do this even from noclip.\n\"",
+		qfalse,
+		qtrue
+	},
+	{
 		"print \"^2/resetspawn^7 - Deletes/resets your saved spawn point\n\"",
 		"print \"Random tip: ^2/resetspawn^7 - Deletes/resets your saved spawn point\n\"",
 		qfalse,
