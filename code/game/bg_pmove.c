@@ -6946,7 +6946,6 @@ void PmoveSingle (pmove_t *pmove) {
 	else {
 		if (/*pm->modParms.raceMode || */pm->pmove_float > 2  && !pm->modParms.raceMode || pm->modParms.msecRestrict == -2) {
 		}
-#if 1
 		else if (pm->highFpsFix
 			&& !pm->modParms.raceMode
 			&& (pml.msec <= 4 || pml.msec > 25)

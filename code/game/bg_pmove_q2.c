@@ -82,7 +82,7 @@ float	pmq2_waterspeed = 400;
 */
 extern pmove_t* pm;
 static void PMQ2_UpdateAntiLoop() {
-	DF_AntiLoop_NewAngle(pmq2->antiLoop, pm->lastAntiLoopVelocity, pmlq2.velocity, pmq2->ps->basespeed, pmq2->ps->stats[STAT_RACEMODE] && pm->ps->duelTime);
+	DF_AntiLoop_NewAngle(pmq2->antiLoop, pm->lastAntiLoopVelocity, pmlq2.velocity, pmq2->ps->basespeed, pm->modParms.raceMode && pm->ps->duelTime);
 	VectorCopy(pmlq2.velocity, pm->lastAntiLoopVelocity);
 }
 
