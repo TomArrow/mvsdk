@@ -352,21 +352,21 @@ Q_INLINE int PM_GetMsecRestrict(void)
 
 	return 0; // this can happen when we die in racemode too!
 }
-*/
+
 
 Q_INLINE int PM_GetRaceMode(pmove_t* pmove)
 {
 	if (!pmove || !pmove->ps)
 		return 0;
-	if (pm->mod == SVMOD_TOMMYTERNAL) {
-		return pm->ps->stats[STAT_RACEMODE];
+	if (pmove->mod == SVMOD_TOMMYTERNAL) {
+		return pmove->ps->stats[STAT_RACEMODE];
 	}
-	else if (pm->mod == SVMOD_JK2PRO) {
-		return pm->ps->stats[STAT_RACEMODE];
+	else if (pmove->mod == SVMOD_JK2PRO) {
+		return pmove->ps->stats[STAT_RACEMODE];
 	}
 	return 0; // this can happen when we die in racemode too!
 }
-
+*/
 int PM_GetSaberStance(void)
 {
 	if ( pm->ps->dualBlade )
@@ -6975,7 +6975,7 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 }
 
-extern Q_INLINE int PM_GetRaceMode(pmove_t* pmove);
+//extern Q_INLINE int PM_GetRaceMode(pmove_t* pmove);
 
 /*
 ================
@@ -7042,7 +7042,7 @@ void Pmove (pmove_t *pmove) {
 			}
 		}
 		else {
-			qboolean isRaceMode = PM_GetRaceMode(pmove);
+			qboolean isRaceMode = pmove->modParms.raceMode;
 			if ( msec > 66 && !isRaceMode) { // if racemode, let other places handle this. we are not really concerned about someone gaining an undue advantage then. (is that even what its for? what even is the point since ppl can just send a bunch of shorter cmds at once)
 				msec = 66;
 			}
