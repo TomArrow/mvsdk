@@ -265,7 +265,7 @@ float forceJumpHeightMax[NUM_FORCE_POWER_LEVELS] =
 };
 
 static void PM_UpdateAntiLoop() {
-	DF_AntiLoop_NewAngle(&pm->antiLoop, pm->lastAntiLoopVelocity, pm->ps->velocity, pm->ps->basespeed, pm->ps->stats[STAT_RACEMODE] && pm->ps->duelTime);
+	DF_AntiLoop_NewAngle(&pm->antiLoop, pm->lastAntiLoopVelocity, pm->ps->velocity, pm->ps->basespeed, pm->modParms.raceMode && pm->ps->duelTime);
 	VectorCopy(pm->ps->velocity, pm->lastAntiLoopVelocity);
 }
 
@@ -314,30 +314,19 @@ float forceJumpStrength[NUM_FORCE_POWER_LEVELS] =
 	840
 };
 
+/*
 Q_INLINE int PM_GetMovePhysics(void)
 {
 	if (!pm || !pm->ps)
 		return MV_JK2;
-#if JK2_GAME
-	if (pm->ps->stats[STAT_RACEMODE])
-		return (pm->ps->stats[STAT_MOVEMENTSTYLE]);
-	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
-	//	return (g_movementStyle.integer);
-	//else if (g_movementStyle.integer < MV_SIEGE)
-	//	return 0;
-	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
-	//	return MV_JK2;
-#elif JK2_CGAME
-	if (cgs.isJK2Pro) {
-		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-	}
-	if (cgs.isTommyTernal && pm->ps->stats[STAT_RACEMODE]) {
-		if (!pm) return MV_JK2; // not sure why this is needed. from japro.
+
+	if (pm->mod == SVMOD_TOMMYTERNAL && pm->ps->stats[STAT_RACEMODE]) {
 		return pm->ps->stats[STAT_MOVEMENTSTYLE];
 	}
-	//if (cgs.gametype == GT_SIEGE)
-	//	return MV_SIEGE;
-#endif
+	else if(pm->mod == SVMOD_JK2PRO) {
+		return pm->ps->stats[STAT_MOVEMENTSTYLE];
+	}
+
 	return MV_JK2; // this can happen when we die in racemode too!
 }
 
@@ -345,23 +334,11 @@ Q_INLINE int PM_GetRunFlags(void)
 {
 	if (!pm || !pm->ps)
 		return 0;
-#if JK2_GAME
-	if (pm->ps->stats[STAT_RACEMODE])
-		return (pm->ps->stats[STAT_RUNFLAGS]);
-	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
-	//	return (g_movementStyle.integer);
-	//else if (g_movementStyle.integer < MV_SIEGE)
-	//	return 0;
-	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
-	//	return MV_JK2;
-#elif JK2_CGAME
-	if (cgs.isTommyTernal && pm->ps->stats[STAT_RACEMODE]) {
-		if (!pm) return defaultRunFlags; // not sure why this is needed. from japro.
+
+	if (pm->mod == SVMOD_TOMMYTERNAL && pm->ps->stats[STAT_RACEMODE]) {
 		return pm->ps->stats[STAT_RUNFLAGS];
 	}
-	//if (cgs.gametype == GT_SIEGE)
-	//	return MV_SIEGE;
-#endif
+
 	return 0; // this can happen when we die in racemode too!
 }
 
@@ -369,34 +346,24 @@ Q_INLINE int PM_GetMsecRestrict(void)
 {
 	if (!pm || !pm->ps)
 		return 0;
-#if JK2_GAME
-	if (pm->ps->stats[STAT_RACEMODE])
-		return (pm->ps->stats[STAT_MSECRESTRICT]);
-	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
-	//	return (g_movementStyle.integer);
-	//else if (g_movementStyle.integer < MV_SIEGE)
-	//	return 0;
-	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
-	//	return MV_JK2;
-#elif JK2_CGAME
-	if (cgs.isTommyTernal && pm->ps->stats[STAT_RACEMODE]) {
-		if (!pm) return 0; // not sure why this is needed. from japro.
+	if (pm->mod == SVMOD_TOMMYTERNAL && pm->ps->stats[STAT_RACEMODE]) {
 		return pm->ps->stats[STAT_MSECRESTRICT];
 	}
-	//if (cgs.gametype == GT_SIEGE)
-	//	return MV_SIEGE;
-#endif
+
 	return 0; // this can happen when we die in racemode too!
 }
+*/
+
 Q_INLINE int PM_GetRaceMode(pmove_t* pmove)
 {
 	if (!pmove || !pmove->ps)
 		return 0;
-#if JK2_GAME
-	return pmove->ps->stats[STAT_RACEMODE];
-#elif JK2_CGAME
-	return cgs.isTommyTernal && pmove->ps->stats[STAT_RACEMODE];
-#endif
+	if (pm->mod == SVMOD_TOMMYTERNAL) {
+		return pm->ps->stats[STAT_RACEMODE];
+	}
+	else if (pm->mod == SVMOD_JK2PRO) {
+		return pm->ps->stats[STAT_RACEMODE];
+	}
 	return 0; // this can happen when we die in racemode too!
 }
 
@@ -513,9 +480,8 @@ void PM_ClipVelocity( vec3_t in, vec3_t normal, vec3_t out, float overbounce ) {
 	float	backoff;
 	float	change;
 	int		i;
-	const int runFlags = PM_GetRunFlags();
 
-	if ((runFlags & RFL_CLIMBTECH)&& (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	if ((pm->modParms.runFlags & RFL_CLIMBTECH)&& (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 	{//no sliding!
 		VectorCopy(in, out);
 		return;
@@ -548,7 +514,6 @@ static void PM_Friction( void ) {
 	float	*vel;
 	float	speed, newspeed, control;
 	float	drop, realfriction = pm_friction; // for sp there is pm->ps->friction. is that relevant for us?
-	const int moveStyle = PM_GetMovePhysics();
 	
 	vel = pm->ps->velocity;
 	
@@ -559,7 +524,7 @@ static void PM_Friction( void ) {
 
 	speed = VectorLength(vec);
 	if (speed < 1) {
-		if ((moveStyle == MV_BOUNCE || moveStyle == MV_PINBALL) && vel[2]) {
+		if ((pm->modParms.physics == MV_BOUNCE || pm->modParms.physics == MV_PINBALL) && vel[2]) {
 			vec[2] = vel[2]; // otherwise we stay forever in a bouncy vel[2] state on spawn and cant savespawn
 			speed = VectorLength(vec);
 		}
@@ -571,7 +536,7 @@ static void PM_Friction( void ) {
 		}
 	}
 
-	if (MovementIsQuake3Based(moveStyle))
+	if (MovementIsQuake3Based(pm->modParms.physics))
 		realfriction = pm_vq3_friction;
 
 	drop = 0;
@@ -582,7 +547,7 @@ static void PM_Friction( void ) {
 			// if getting knocked back, no friction
 			if ( ! (pm->ps->pm_flags & PMF_TIME_KNOCKBACK) ) {
 				//If the use key is pressed. slow the player more quickly
-				if (moveStyle == MV_JK2SP && pm->cmd.buttons & BUTTON_USE)
+				if (pm->modParms.physics == MV_JK2SP && pm->cmd.buttons & BUTTON_USE)
 					realfriction *= pm_sp_frictionModifier;
 
 				control = speed < pm_stopspeed ? pm_stopspeed : speed;
@@ -594,11 +559,11 @@ static void PM_Friction( void ) {
 	// apply water friction even if just wading
 	if ( pm->waterlevel ) {
 		float waterFriction = pm_waterfriction;
-		if (moveStyle == MV_SICKO) {
+		if (pm->modParms.physics == MV_SICKO) {
 			waterFriction = 0.4f;
 		}
 		else 
-		if (MovementIsQuake3Based(moveStyle)) {
+		if (MovementIsQuake3Based(pm->modParms.physics)) {
 			waterFriction = 0.8f;
 		}
 		drop += speed* waterFriction *pm->waterlevel*pml.frametime;
@@ -904,9 +869,8 @@ static float PM_CmdScale( usercmd_t *cmd ) {
 	float	scale;
 	int		umove = 0; //cmd->upmove;
 			//don't factor upmove into scaling speed
-	int moveStyle = PM_GetMovePhysics();
 
-	if (moveStyle == MV_JK2SP) {
+	if (pm->modParms.physics == MV_JK2SP) {
 		umove = cmd->upmove;
 	}
 
@@ -977,7 +941,7 @@ qboolean PM_ForceJumpingUp(void)
 		return qfalse;
 	}
 
-	if ( BG_InSpecialJump( pm->ps->legsAnim, PM_GetRunFlags() ) )
+	if ( BG_InSpecialJump( pm->ps->legsAnim, pm->modParms.runFlags ) )
 	{
 		return qfalse;
 	}
@@ -1323,10 +1287,8 @@ qboolean PM_AdjustAngleForWallJump(playerState_t* ps, usercmd_t* ucmd, qboolean 
 //Set the height for when a force jump was started. If it's 0, nuge it up (slight hack to prevent holding jump over slopes)
 void PM_SetForceJumpZStart(float value)
 {
-	const int runFlags = PM_GetRunFlags();
-	const int moveStyle = PM_GetMovePhysics();
 	pm->ps->fd.forceJumpZStart = value;
-	if (!pm->ps->fd.forceJumpZStart && (jk2gameplay == VERSION_1_04 || (runFlags & RFL_JUMPBUGDISABLE) || moveStyle == MV_JK2SP))
+	if (!pm->ps->fd.forceJumpZStart && (jk2gameplay == VERSION_1_04 || (pm->modParms.runFlags & RFL_JUMPBUGDISABLE) || pm->modParms.physics == MV_JK2SP))
 	{
 		pm->ps->fd.forceJumpZStart -= 0.1f;
 	}
@@ -1352,11 +1314,9 @@ PM_CheckJump
 static qboolean PM_CheckJump( void ) 
 {
 	qboolean onlyWallGrab = qfalse; // in jk 1.02, if we are in air and not wallrunning, we skip out early. but we need to go further for wallgrab. in that case ignore all but wallgrab
-	const int runFlags = PM_GetRunFlags();
-	const int moveStyle = PM_GetMovePhysics();
 	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
 
-	if (moveStyle != MV_JK2SP) {
+	if (pm->modParms.physics != MV_JK2SP) {
 		if (pm->ps->usingATST)
 		{
 			return qfalse;
@@ -1378,7 +1338,7 @@ static qboolean PM_CheckJump( void )
 		return qfalse;		
 	}
 
-	if (MovementIsQuake3Based(moveStyle)) {
+	if (MovementIsQuake3Based(pm->modParms.physics)) {
 		JUMP_VELOCITY_NEW = 270;
 	}
 
@@ -1403,7 +1363,7 @@ static qboolean PM_CheckJump( void )
 		}
 	}
 
-	if (moveStyle != MV_CHARGEJUMP && pm->ps->forceJumpFlip) // this is just for the charge jump. we're gonna set the anim in the charge jump place itself
+	if (pm->modParms.physics != MV_CHARGEJUMP && pm->ps->forceJumpFlip) // this is just for the charge jump. we're gonna set the anim in the charge jump place itself
 	{ //Forced jump anim
 		int anim = BOTH_FORCEINAIR1;
 		int	parts = SETANIM_BOTH;
@@ -1434,7 +1394,7 @@ static qboolean PM_CheckJump( void )
 		return qtrue;
 	}
 
-	if (moveStyle != MV_CHARGEJUMP) { // mirrors the old #if METROID_JUMP clause
+	if (pm->modParms.physics != MV_CHARGEJUMP) { // mirrors the old #if METROID_JUMP clause
 
 		if ( pm->waterlevel < 2 ) 
 		{
@@ -1444,11 +1404,10 @@ static qboolean PM_CheckJump( void )
 				{//holding jump in air
 					float curHeight = pm->ps->origin[2] - pm->ps->fd.forceJumpZStart;
 					//check for max force jump level and cap off & cut z vel
-					int runFlags = PM_GetRunFlags();
 					if ( ( curHeight<=forceJumpHeight[0] ||//still below minimum jump height
 							(pm->ps->fd.forcePower&&pm->cmd.upmove>=10) ) &&////still have force power available and still trying to jump up 
 						curHeight < forceJumpHeight[pm->ps->fd.forcePowerLevel[FP_LEVITATION]] &&
-						(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04 && moveStyle != MV_JK2SP && !(runFlags & RFL_JUMPBUGDISABLE)))//still below maximum jump height
+						(pm->ps->fd.forceJumpZStart || jk2gameplay != VERSION_1_04 && pm->modParms.physics != MV_JK2SP && !(pm->modParms.runFlags & RFL_JUMPBUGDISABLE)))//still below maximum jump height
 					{//can still go up
 						if ( curHeight > forceJumpHeight[0] )
 						{//passed normal jump height  *2?
@@ -1573,7 +1532,7 @@ static qboolean PM_CheckJump( void )
 
 						//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
 					
-						if (MovementIsQuake3Based(moveStyle)) {//Forcejump rampjump
+						if (MovementIsQuake3Based(pm->modParms.physics)) {//Forcejump rampjump
 							//need to scale this down, start with height velocity (based on max force jump height) and scale down to regular jump vel
 							float lastJumpSpeed = pm->ps->stats[STAT_LASTJUMPSPEED];
 							float realForceJumpHeight;
@@ -1608,7 +1567,7 @@ static qboolean PM_CheckJump( void )
 					}
 					else
 					{
-						if (moveStyle == MV_JK2SP) {
+						if (pm->modParms.physics == MV_JK2SP) {
 							pm->ps->velocity[2] = 0;
 						}
 						else {
@@ -1624,12 +1583,12 @@ static qboolean PM_CheckJump( void )
 					pm->cmd.upmove = 0;
 					return qfalse;
 				}
-				else if ( jk2gameplay == VERSION_1_02 && moveStyle != MV_JK2SP && pm->ps->groundEntityNum == ENTITYNUM_NONE )
+				else if ( jk2gameplay == VERSION_1_02 && pm->modParms.physics != MV_JK2SP && pm->ps->groundEntityNum == ENTITYNUM_NONE )
 				{
 					int legsAnim = (pm->ps->legsAnim&~ANIM_TOGGLEBIT);
 					if ( legsAnim != BOTH_WALL_RUN_LEFT && legsAnim != BOTH_WALL_RUN_RIGHT )
 					{//special case.. these let you jump off a wall
-						if (runFlags & RFL_CLIMBTECH) {
+						if (pm->modParms.runFlags & RFL_CLIMBTECH) {
 							// gotta allow for wallgrab
 							onlyWallGrab = qtrue;
 						}
@@ -1914,7 +1873,7 @@ static qboolean PM_CheckJump( void )
 				&& pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_1
 				&& pm->ps->velocity[2] > 200
 				&& PM_GroundDistance() <= 80 //unfortunately we do not have a happy ground timer like SP (this would use up more bandwidth if we wanted prediction workign right), so we'll just use the actual ground distance.
-				&& !BG_InSpecialJump(pm->ps->legsAnim, runFlags) )
+				&& !BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) )
 			{//run up wall, flip backwards
 				vec3_t fwd, traceto, mins, maxs, fwdAngles;
 				trace_t	trace;
@@ -1961,8 +1920,8 @@ static qboolean PM_CheckJump( void )
 					}
 				}
 			} 
-			else if ( (runFlags & RFL_CLIMBTECH) &&
-					(!BG_InSpecialJump( legsAnim ,runFlags)//not in a special jump anim
+			else if ( (pm->modParms.runFlags & RFL_CLIMBTECH) &&
+					(!BG_InSpecialJump( legsAnim , pm->modParms.runFlags)//not in a special jump anim
 						||BG_InReboundJump( legsAnim )//we're already in a rebound
 						||BG_InBackFlip( legsAnim ) )//a backflip (needed so you can jump off a wall behind you)
 					//&& pm->ps->velocity[2] <= 0
@@ -2064,12 +2023,10 @@ static qboolean PM_CheckJump( void )
 			{//just started the saberMove
 				//check for special-case jump attacks
 
-				//const int runFlags = PM_GetMovePhysics();
-
 				if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 )
 				{//using medium attacks
 					if (PM_GroundDistance() < 32 &&
-						!BG_InSpecialJump(pm->ps->legsAnim, runFlags))
+						!BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags))
 					{ //FLIP AND DOWNWARD ATTACK
 						trace_t tr;
 
@@ -2092,7 +2049,7 @@ static qboolean PM_CheckJump( void )
 						pm->cmd.forwardmove > 0 && //going forward
 						((pm->cmd.buttons & BUTTON_ATTACK) || jk2gameplay == VERSION_1_02) && //must be holding attack still
 						PM_GroundDistance() < 32 &&
-						!BG_InSpecialJump(pm->ps->legsAnim, runFlags))
+						!BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags))
 					{//strong attack: jump-hack
 						PM_SetSaberMove( PM_SaberJumpAttackMove() );
 						pml.groundPlane = qfalse;
@@ -2113,7 +2070,7 @@ static qboolean PM_CheckJump( void )
 	}
 	if ( pm->cmd.upmove > 0 )
 	{//no special jumps
-		if (MovementIsQuake3Based(moveStyle)) {
+		if (MovementIsQuake3Based(pm->modParms.physics)) {
 			// TODO flood protect jumps? idk
 			pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
 			if (pm->ps->velocity[2] < 270)
@@ -2137,7 +2094,7 @@ static qboolean PM_CheckJump( void )
 	PM_AddEvent( EV_JUMP );
 
 	//Set the animations
-	if ( pm->ps->gravity > 0 && !BG_InSpecialJump( pm->ps->legsAnim, runFlags) )
+	if ( pm->ps->gravity > 0 && !BG_InSpecialJump( pm->ps->legsAnim, pm->modParms.runFlags) )
 	{
 		PM_JumpForDir();
 	}
@@ -2227,7 +2184,6 @@ qboolean PM_ForcePowerAvailable(forcePowers_t forcePower)
 
 qboolean PM_ForcePowerUsable(forcePowers_t forcePower)
 {
-	int moveStyle = PM_GetMovePhysics();
 
 	if (BG_HasYsalamiri(pm->gametype, pm->ps))
 	{
@@ -2261,7 +2217,7 @@ qboolean PM_ForcePowerUsable(forcePowers_t forcePower)
 		}
 	}
 
-	if (forcePower == FP_LEVITATION && (moveStyle == MV_CHARGEJUMP && (pm->ps->pm_flags & PMF_FJDIDJUMP)))
+	if (forcePower == FP_LEVITATION && (pm->modParms.physics == MV_CHARGEJUMP && (pm->ps->pm_flags & PMF_FJDIDJUMP)))
 	{
 		return qfalse;
 	}
@@ -2364,7 +2320,6 @@ int PM_GetVelocityForForceJump( vec3_t jumpVel)
 {
 	float pushFwd = 0, pushRt = 0;
 	vec3_t	view, forward, right;
-	int moveStyle = PM_GetMovePhysics();
 	static const float sideAmt = 70.710678118654752440084436210485f;//100.0f*sqrtf(0.5f); // TA: it does 50 in vanilla but eh, then the WA/WD behavior isnt consistent with A/D behavior. sucks.
 	float maxCharge = forceJumpStrength[pm->ps->fd.forcePowerLevel[FP_LEVITATION]];
 	float baseCharge = forceJumpStrength[0];
@@ -2435,7 +2390,7 @@ int PM_GetVelocityForForceJump( vec3_t jumpVel)
 	}
 
 	VectorMA(pm->ps->velocity, pushFwd, forward, jumpVel);
-	if (moveStyle == MV_CHARGEJUMP) {
+	if (pm->modParms.physics == MV_CHARGEJUMP) {
 		// i think this was the intended behavior.
 		VectorMA(jumpVel, pushRt, right, jumpVel);
 	}
@@ -2707,7 +2662,6 @@ static void PM_WaterMove( void ) {
 	vec3_t	wishdir;
 	float	scale;
 	float	vel;
-	int moveStyle = PM_GetMovePhysics();
 	float	realWaterAccelerate = pm_wateraccelerate;
 	float	realSwimScale = pm_swimScale;
 
@@ -2750,7 +2704,7 @@ static void PM_WaterMove( void ) {
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
 
-	if (MovementIsQuake3Based(moveStyle)) {
+	if (MovementIsQuake3Based(pm->modParms.physics)) {
 		// just feels better
 		realWaterAccelerate = 10.0f;
 		realSwimScale = 0.75f; 
@@ -2760,10 +2714,10 @@ static void PM_WaterMove( void ) {
 		wishspeed = pm->ps->speed * realSwimScale;
 	}
 
-	if (moveStyle == MV_SICKO) {
+	if (pm->modParms.physics == MV_SICKO) {
 		PM_SickoAccelerate(wishdir, wishspeed, realWaterAccelerate, 200.0f);
 	}
-	else if (moveStyle == MV_QUAJK) {
+	else if (pm->modParms.physics == MV_QUAJK) {
 		float		accel;
 
 		if (DotProduct(pm->ps->velocity, wishdir) < 0)
@@ -2772,7 +2726,7 @@ static void PM_WaterMove( void ) {
 			accel = realWaterAccelerate;
 		PM_QuaJKAccelerate(wishdir, wishspeed, accel, pm_cpm_airstrafeaccelerate, 30.0f);
 	}
-	else if (moveStyle == MV_DREAM) {
+	else if (pm->modParms.physics == MV_DREAM) {
 		PM_DreamAccelerate(wishdir, wishspeed, realWaterAccelerate, 100, 200.0f);
 	}
 	else {
@@ -2785,7 +2739,7 @@ static void PM_WaterMove( void ) {
 		vel = VectorLength(pm->ps->velocity);
 		// slide along the ground plane
 		PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
-			pm->ps->velocity, MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd));
+			pm->ps->velocity, MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd));
 
 		VectorNormalize(pm->ps->velocity);
 		VectorScale(pm->ps->velocity, vel, pm->ps->velocity);
@@ -2863,13 +2817,11 @@ static void PM_AirMove( void ) {
 	float		wishspeed;
 	float		scale;
 	usercmd_t	cmd;
-	const int	runFlags = PM_GetRunFlags();
-	const int	movePhysics = PM_GetMovePhysics();
-	float		overbounce = MovementOverbounceFactor(movePhysics, pm->ps, &pm->cmd);
+	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 
 	if (pm->ps->pm_type != PM_SPECTATOR)
 	{
-		if (movePhysics != MV_CHARGEJUMP) { // mirrors the old #if METROID_JUMP clause
+		if (pm->modParms.physics != MV_CHARGEJUMP) { // mirrors the old #if METROID_JUMP clause
 
 			PM_CheckJump();
 		}
@@ -2913,15 +2865,15 @@ static void PM_AirMove( void ) {
 
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
-	if (movePhysics != MV_JK2SP) {
+	if (pm->modParms.physics != MV_JK2SP) {
 		wishspeed *= scale;
 	}
 
 	// not on ground, so little effect on velocity
-	if (movePhysics == MV_SICKO) {
+	if (pm->modParms.physics == MV_SICKO) {
 		PM_SickoAccelerate(wishdir, wishspeed, pm_airaccelerate,200.0f);
 	}
-	else if (movePhysics == MV_QUAJK) {
+	else if (pm->modParms.physics == MV_QUAJK) {
 		float		accel;
 
 		if (DotProduct(pm->ps->velocity, wishdir) < 0)
@@ -2930,11 +2882,11 @@ static void PM_AirMove( void ) {
 			accel = pm_airaccelerate;
 		PM_QuaJKAccelerate(wishdir, wishspeed, accel,pm_cpm_airstrafeaccelerate,30.0f);
 	}
-	else if (movePhysics == MV_DREAM) {
+	else if (pm->modParms.physics == MV_DREAM) {
 		PM_DreamAccelerate(wishdir, wishspeed, pm_airaccelerate,100,200.0f);
 	}
 	else {
-		PM_Accelerate(wishdir, wishspeed, movePhysics == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate);
+		PM_Accelerate(wishdir, wishspeed, pm->modParms.physics == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate);
 	}
 	PM_UpdateAntiLoop();
 
@@ -2942,7 +2894,7 @@ static void PM_AirMove( void ) {
 	// though we don't have a groundentity
 	// slide along the steep plane
 	if ( pml.groundPlane ) {
-		if (runFlags & RFL_CLIMBTECH) {
+		if (pm->modParms.runFlags & RFL_CLIMBTECH) {
 			if (!(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 			{//don't slide when stuck to a wall
 				if (PM_GroundSlideOkay(pml.groundTrace.plane.normal[2]))
@@ -2960,7 +2912,7 @@ static void PM_AirMove( void ) {
 		}
 	}
 
-	if (movePhysics == MV_JK2SP) {
+	if (pm->modParms.physics == MV_JK2SP) {
 		if (!pm->ps->clientNum
 			&& pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_0
 			&& pm->ps->fd.forceJumpZStart
@@ -2998,8 +2950,7 @@ static void PM_WalkMove( void ) {
 	float		accelerate;
 	float		vel;
 	float		totalVel;
-	const int	moveStyle = PM_GetMovePhysics();
-	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
+	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 
 	if (pm->ps->velocity[0] < 0)
 	{
@@ -3076,13 +3027,13 @@ static void PM_WalkMove( void ) {
 	wishspeed *= scale;
 
 	// clamp the speed lower if ducking
-	if ( pm->ps->pm_flags & PMF_DUCKED && (moveStyle != MV_JK2SP || !PM_InKnockDown(pm->ps)) ) {
+	if ( pm->ps->pm_flags & PMF_DUCKED && (pm->modParms.physics != MV_JK2SP || !PM_InKnockDown(pm->ps)) ) {
 		if ( wishspeed > pm->ps->speed * pm_duckScale ) {
 			wishspeed = pm->ps->speed * pm_duckScale;
 		}
 	}
 	else if ( (pm->ps->pm_flags & PMF_ROLLING) && !BG_InRoll(pm->ps, pm->ps->legsAnim) &&
-		!PM_InRollComplete(pm->ps, pm->ps->legsAnim) && moveStyle != MV_JK2SP)
+		!PM_InRollComplete(pm->ps, pm->ps->legsAnim) && pm->modParms.physics != MV_JK2SP)
 	{
 		if ( wishspeed > pm->ps->speed * pm_duckScale ) {
 			wishspeed = pm->ps->speed * pm_duckScale;
@@ -3104,19 +3055,19 @@ static void PM_WalkMove( void ) {
 	// full control, which allows them to be moved a bit
 	if ( ( pml.groundTrace.surfaceFlags & SURF_SLICK ) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK ) {
 		accelerate = pm_airaccelerate;
-		if (moveStyle == MV_JK2SP)
+		if (pm->modParms.physics == MV_JK2SP)
 			accelerate = pm_sp_airaccelerate; 
-		else if (MovementIsQuake3Based(moveStyle))
+		else if (MovementIsQuake3Based(pm->modParms.physics))
 			accelerate = pm_cpm_accelerate;
 	} else {
 		accelerate = pm_accelerate;
-		if (moveStyle == MV_JK2SP)
+		if (pm->modParms.physics == MV_JK2SP)
 			accelerate = pm_sp_accelerate;
-		else if (MovementIsQuake3Based(moveStyle))
+		else if (MovementIsQuake3Based(pm->modParms.physics))
 			accelerate = pm_cpm_accelerate;
 	}
 
-	if (moveStyle == MV_JK2SP && (DotProduct(pm->ps->velocity, wishdir)) < 0.0f)
+	if (pm->modParms.physics == MV_JK2SP && (DotProduct(pm->ps->velocity, wishdir)) < 0.0f)
 	{//Encourage deceleration away from the current velocity
 		wishspeed *= pm_sp_airDecelRate;
 	}
@@ -3129,7 +3080,7 @@ static void PM_WalkMove( void ) {
 
 	if ( ( pml.groundTrace.surfaceFlags & SURF_SLICK ) || pm->ps->pm_flags & PMF_TIME_KNOCKBACK )
 	{
-		if (moveStyle == MV_JK2SP) {
+		if (pm->modParms.physics == MV_JK2SP) {
 			if (pm->ps->gravity >= 0 && pm->ps->groundEntityNum != ENTITYNUM_NONE && !VectorLengthSquared(pm->ps->velocity) && pml.groundTrace.plane.normal[2] == 1.0)
 			{//on ground and not moving and on level ground, no reason to do stupid fucking gravity with the clipvelocity!!!!
 			}
@@ -3299,9 +3250,8 @@ static int PM_TryRoll( void )
 	trace_t	trace;
 	int		anim = -1;
 	vec3_t fwd, right, traceto, mins, maxs, fwdAngles;
-	int moveStyle = PM_GetMovePhysics();
 
-	if (moveStyle == MV_JK2SP) {
+	if (pm->modParms.physics == MV_JK2SP) {
 		rollDist = 192;
 	}
 
@@ -3377,8 +3327,6 @@ static void PM_CrashLand( void ) {
 	float		t;
 	float		a, b, c, den;
 	qboolean	didRoll = qfalse;
-	const int	runFlags = PM_GetRunFlags();
-	const int	moveStyle = PM_GetMovePhysics();
 
 	// calculate the exact velocity on landing
 	dist = pm->ps->origin[2] - pml.previous_origin[2];
@@ -3437,7 +3385,7 @@ static void PM_CrashLand( void ) {
 		}
 	}
 
-	if (!BG_InSpecialJump(pm->ps->legsAnim, runFlags) ||
+	if (!BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) ||
 		pm->ps->legsTimer < 1 ||
 		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_WALL_RUN_LEFT ||
 		(pm->ps->legsAnim&~ANIM_TOGGLEBIT) == BOTH_WALL_RUN_RIGHT)
@@ -3565,7 +3513,7 @@ static void PM_CrashLand( void ) {
 	}
 
 	// make sure velocity resets so we don't bounce back up again in case we miss the clear elsewhere
-	if (!pml.bounceJumped && moveStyle != MV_PINBALL) {
+	if (!pml.bounceJumped && pm->modParms.physics != MV_PINBALL) {
 		pm->ps->velocity[2] = 0;
 	}
 
@@ -3714,14 +3662,13 @@ PM_GroundTrace
 static void PM_GroundTrace( void ) {
 	vec3_t		point;
 	trace_t		trace;
-	const int	moveStyle = PM_GetMovePhysics();
-	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
+	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 
 	point[0] = pm->ps->origin[0];
 	point[1] = pm->ps->origin[1];
 	point[2] = pm->ps->origin[2] - 0.25;
 
-	if (MovementStyleHasQuake2Ramps(moveStyle) && pm->ps->velocity[2] > 180) {
+	if (MovementStyleHasQuake2Ramps(pm->modParms.physics) && pm->ps->velocity[2] > 180) {
 		if (pm->debugLevel) {
 			Com_Printf("%i:q2ramp\n", c_pmove);
 		}
@@ -3782,7 +3729,7 @@ static void PM_GroundTrace( void ) {
 			Com_Printf("%i:steep\n", c_pmove);
 		}
 		PM_SetGroundEntityNum(ENTITYNUM_NONE);
-		if (moveStyle != MV_DREAM) {
+		if (pm->modParms.physics != MV_DREAM) {
 			pml.groundPlane = qtrue;
 		}
 		pml.walking = qfalse;
@@ -3790,7 +3737,7 @@ static void PM_GroundTrace( void ) {
 		return;
 	}
 
-	if (!pml.bounceJumped && moveStyle != MV_PINBALL) {
+	if (!pml.bounceJumped && pm->modParms.physics != MV_PINBALL) {
 		pml.groundPlane = qtrue;
 		pml.walking = qtrue;
 	}
@@ -3817,9 +3764,8 @@ static void PM_GroundTrace( void ) {
 				// the trace.plane.normal[2] != 1.0f check in particular seems sus no? since the slidemove stuff
 				// works more with various dot products to determine whether to clip etc. oh well. fuck it.
 
-				const int runFlags = PM_GetRunFlags();
-				if (runFlags & RFL_NODEADRAMPS) {
-					if (moveStyle == MV_PINBALL) {
+				if (pm->modParms.runFlags & RFL_NODEADRAMPS) {
+					if (pm->modParms.physics == MV_PINBALL) {
 						//PM_LimitedClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,100000.0f);
 						overbounce -= trace.plane.normal[2] * 0.6f * (MIN(1600.0f, fabsf(pm->ps->velocity[2])) / 1600.0f); // dont let ground and ceiling bounce as as insanely much.
 						PM_LimitedClipVelocity2(pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce, 10000.0f);
@@ -3880,7 +3826,7 @@ static void PM_GroundTrace( void ) {
 		}
 	}
 
-	if (!pml.bounceJumped && moveStyle != MV_PINBALL) {
+	if (!pml.bounceJumped && pm->modParms.physics != MV_PINBALL) {
 		PM_SetGroundEntityNum(trace.entityNum);
 	}
 	pm->ps->lastOnGround = pm->cmd.serverTime;
@@ -4431,7 +4377,7 @@ static qboolean PM_DoChargedWeapons( void )
 				altFire = qfalse;
 
 
-	if (pm->ps->stats[STAT_RACEMODE])
+	if (pm->modParms.raceMode)
 		return qfalse;
 
 	// If you want your weapon to be a charging weapon, just set this bit up
@@ -4796,7 +4742,6 @@ static void PM_Weapon( void )
 	int		addTime;
 	int amount;
 	int		killAfterItem = 0;
-	const int	runFlags = PM_GetRunFlags();
 
 	if (pm->ps->usingATST)
 	{
@@ -4993,7 +4938,7 @@ static void PM_Weapon( void )
 		return;
 	}
 
-	if (BG_InSpecialJump(pm->ps->legsAnim, runFlags) ||
+	if (BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) ||
 		BG_InRoll(pm->ps, pm->ps->legsAnim) ||
 		PM_InRollComplete(pm->ps, pm->ps->legsAnim))
 	{
@@ -5586,7 +5531,6 @@ PM_DropTimers
 ================
 */
 static void PM_DropTimers( void ) {
-	const int moveStyle = PM_GetMovePhysics();
 
 	// drop misc timing counter
 	if ( pm->ps->pm_time ) {
@@ -5614,7 +5558,7 @@ static void PM_DropTimers( void ) {
 	}
 
 	// handle bounce power
-	if (moveStyle == MV_BOUNCE) {
+	if (pm->modParms.physics == MV_BOUNCE) {
 		int bouncePower = pm->ps->stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK;
 		int bounceRegenTimer = (pm->ps->stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_REGENMASK) >> 9;
 		if (pm->cmd.buttons & BUTTON_BOUNCEPOWER) {
@@ -5696,7 +5640,7 @@ void PM_AdjustAttackStates( pmove_t *pm )
 			pm->cmd.upmove <= 0 && !pm->cmd.forwardmove && !pm->cmd.rightmove*/)
 		{
 			// We just pressed the alt-fire key
-			if ( !pm->ps->zoomMode && !pm->ps->stats[STAT_RACEMODE])
+			if ( !pm->ps->zoomMode && !pm->modParms.raceMode)
 			{
 				// not already zooming, so do it now
 				pm->ps->zoomMode = 1;
@@ -5855,7 +5799,6 @@ qboolean PM_SaberInTransition( int move );
 
 void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 {
-	int moveStyle = PM_GetMovePhysics();
 	//For prediction, always reset speed back to the last known server base speed
 	//If we didn't do this, under lag we'd eventually dwindle speed down to 0 even though
 	//that would not be the correct predicted value.
@@ -5933,7 +5876,7 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 				| BOTH_RUN1;
 		}
 	}
-	else if ( cmd->forwardmove < 0 && !(cmd->buttons&BUTTON_WALKING) && pm->ps->groundEntityNum != ENTITYNUM_NONE && (jk2gameplay == VERSION_1_04 || moveStyle == MV_JK2SP) )
+	else if ( cmd->forwardmove < 0 && !(cmd->buttons&BUTTON_WALKING) && pm->ps->groundEntityNum != ENTITYNUM_NONE && (jk2gameplay == VERSION_1_04 || pm->modParms.physics == MV_JK2SP) )
 	{//running backwards is slower than running forwards (like SP)// TA: Actually... is this even correct?! this is in a way different place in sp. and this whole func doesnt exist there
 		ps->speed *= 0.75;
 	}
@@ -6071,7 +6014,7 @@ void BG_AdjustClientSpeed(playerState_t *ps, usercmd_t *cmd, int svTime)
 		{
 			ps->speed = ps->legsTimer/1.5;//450;
 		}
-		if (moveStyle == MV_DREAM) {
+		if (pm->modParms.physics == MV_DREAM) {
 			ps->speed *= 1.28f;
 		}
 		else {
@@ -6314,6 +6257,20 @@ newanim:
 	}
 }
 
+void PM_SetModData(pmove_t* pmove) {
+	memset(&pmove->modParms, 0, sizeof(pmove->modParms));
+	if (pmove->mod == SVMOD_TOMMYTERNAL && pmove->ps->stats[STAT_RACEMODE]) {
+		pmove->modParms.raceMode = qtrue;
+		pmove->modParms.physics = pmove->ps->stats[STAT_MOVEMENTSTYLE];
+		pmove->modParms.runFlags = pmove->ps->stats[STAT_RUNFLAGS];
+		pmove->modParms.msecRestrict = pmove->ps->stats[STAT_MSECRESTRICT];
+	}
+	else if (pmove->mod == SVMOD_JK2PRO) {
+		pmove->modParms.raceMode = qtrue;
+		pmove->modParms.physics = pmove->ps->stats[STAT_MOVEMENTSTYLE];
+	}
+}
+
 /*
 ================
 PmoveSingle
@@ -6324,15 +6281,11 @@ void trap_SnapVector( float *v );
 void PmoveQ2(pmoveq2_t* pmove);
 void PmoveCSS(pmovecss_t* pmove);
 void PmoveSingle (pmove_t *pmove) {
-	int runFlags;
-	int msecRestrict;
 	int oldCmdRoll;
-	int moveStyle;
 	pm = pmove;
-	moveStyle = PM_GetMovePhysics();
 
 	if (pm->ps->pm_type != PM_SPECTATOR && pm->ps->pm_type != PM_NOCLIP && pm->ps->pm_type != PM_INTERMISSION) {
-		if (moveStyle == MV_Q2) {
+		if (pm->modParms.physics == MV_Q2) {
 			pmoveq2_t pmq2;
 			vec3_t oldVel;
 			int oldGEN = pm->ps->groundEntityNum;
@@ -6363,7 +6316,7 @@ void PmoveSingle (pmove_t *pmove) {
 			VectorCopy(pmq2.maxs, pm->maxs);
 			return;
 		}
-		else if (moveStyle == MV_CSS) {
+		else if (pm->modParms.physics == MV_CSS) {
 			pmovecss_t pmcss;
 			vec3_t oldVel;
 			memset(&pmcss, 0, sizeof(pmcss));
@@ -6389,14 +6342,10 @@ void PmoveSingle (pmove_t *pmove) {
 		}
 	}
 
-	runFlags = PM_GetRunFlags();
-	msecRestrict = PM_GetMsecRestrict();
-	moveStyle = PM_GetMovePhysics();
-
 	gPMDoSlowFall = PM_DoSlowFall();
 
 	oldCmdRoll = pm->cmd.angles[ROLL];
-	if (runFlags & RFL_BOT) {
+	if (pm->modParms.runFlags & RFL_BOT) {
 		pm->cmd.angles[ROLL] = 0;
 	}
 
@@ -6554,7 +6503,7 @@ void PmoveSingle (pmove_t *pmove) {
 	pml.msec = pmove->cmd.serverTime - pm->ps->commandTime;
 	if ( pml.msec < 1 ) {
 		pml.msec = 1;
-	} else if ( pml.msec > 200 && (pml.msec > msecRestrict && msecRestrict != -1)) { // racemode can allow higher for shits and giggles
+	} else if ( pml.msec > 200 && (pml.msec > pm->modParms.msecRestrict && pm->modParms.msecRestrict != -1)) { // racemode can allow higher for shits and giggles
 		pml.msec = 200;
 	}
 	pm->ps->commandTime = pmove->cmd.serverTime;
@@ -6568,7 +6517,7 @@ void PmoveSingle (pmove_t *pmove) {
 
 	pml.frametime = pml.msec * 0.001;
 
-	if (runFlags & RFL_CLIMBTECH) {
+	if (pm->modParms.runFlags & RFL_CLIMBTECH) {
 		PM_AdjustAngleForWallJump(pm->ps, &pm->cmd, qtrue);
 	}
 	PM_AdjustAngleForWallRun(pm->ps, &pm->cmd, qtrue);
@@ -6590,7 +6539,7 @@ void PmoveSingle (pmove_t *pmove) {
 	// update the viewangles
 	PM_UpdateViewAngles( pm->ps, &pm->cmd );
 
-	if (runFlags & RFL_BOT) {
+	if (pm->modParms.runFlags & RFL_BOT) {
 		// in strafebot mode, we tunnel strafebot factor through ROLL value
 		float oldRoll = pm->ps->viewangles[ROLL];
 		pm->ps->viewangles[ROLL] = 0;
@@ -6616,7 +6565,7 @@ void PmoveSingle (pmove_t *pmove) {
 #endif
 	}
 
-	if ( pm->cmd.upmove < 10 && (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))) {
+	if ( pm->cmd.upmove < 10 && (!(pm->modParms.runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))) {
 		// not holding jump
 		pm->ps->pm_flags &= ~PMF_JUMP_HELD;
 	}
@@ -6645,7 +6594,7 @@ void PmoveSingle (pmove_t *pmove) {
 		PM_CheckDuck ();
 		PM_FlyMove ();
 		PM_DropTimers ();
-		if (runFlags & RFL_BOT) {
+		if (pm->modParms.runFlags & RFL_BOT) {
 			pm->cmd.angles[ROLL] = oldCmdRoll;
 		}
 		return;
@@ -6654,21 +6603,21 @@ void PmoveSingle (pmove_t *pmove) {
 	if ( pm->ps->pm_type == PM_NOCLIP ) {
 		PM_NoclipMove ();
 		PM_DropTimers (); 
-		if (runFlags & RFL_BOT) {
+		if (pm->modParms.runFlags & RFL_BOT) {
 			pm->cmd.angles[ROLL] = oldCmdRoll;
 		}
 		return;
 	}
 
 	if (pm->ps->pm_type == PM_FREEZE) {
-		if (runFlags & RFL_BOT) {
+		if (pm->modParms.runFlags & RFL_BOT) {
 			pm->cmd.angles[ROLL] = oldCmdRoll;
 		}
 		return;		// no movement at all
 	}
 
 	if ( pm->ps->pm_type == PM_INTERMISSION || pm->ps->pm_type == PM_SPINTERMISSION) {
-		if (runFlags & RFL_BOT) {
+		if (pm->modParms.runFlags & RFL_BOT) {
 			pm->cmd.angles[ROLL] = oldCmdRoll;
 		}
 		return;		// no movement at all
@@ -6702,18 +6651,8 @@ void PmoveSingle (pmove_t *pmove) {
 
 
 	// TODO MAYBE jaPRO fix strafebot up.
-#if JK2_CGAME
-	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT){// && !(cgs.restricts & RESTRICT_SB)) {
-#else
-	if (pm->ps->stats[STAT_RACEMODE] && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT) {
-#endif
-		//const int moveStyle = PM_GetMovePhysics();
-		const int runFlags = PM_GetRunFlags();
-#if JK2_CGAME
-		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (runFlags & RFL_BOT))// (moveStyle == MV_BOTJKA /*|| (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
-#else
-		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (runFlags & RFL_BOT))// (moveStyle == MV_BOTJKA /* || (g_entities[pm->ps->clientNum].client && g_entities[pm->ps->clientNum].client->pers.practice)*/))
-#endif
+	if (pm->modParms.raceMode && pm->ps->pm_type == PM_NORMAL && pm->cmd.buttons & BUTTON_STRAFEBOT) {
+		if (pm->ps->clientNum >= 0 && pm->ps->clientNum < MAX_CLIENTS && (pm->modParms.runFlags & RFL_BOT))
 		{
 			float realCurrentSpeed = sqrtf((pm->ps->velocity[0] * pm->ps->velocity[0]) + (pm->ps->velocity[1] * pm->ps->velocity[1]));
 			if (realCurrentSpeed > 0) {
@@ -6722,18 +6661,18 @@ void PmoveSingle (pmove_t *pmove) {
 				float optimalAngle2 = 0; // option B
 				float optimalDeltaAngle = 0;
 				qboolean CJ = qtrue;
-				float realFriction = MovementIsQuake3Based(moveStyle) ? pm_vq3_friction : pm_friction;
-				float realAccel = MovementIsQuake3Based(moveStyle) ? pm_cpm_accelerate : (moveStyle == MV_JK2SP ? pm_sp_accelerate : pm_accelerate);
+				float realFriction = MovementIsQuake3Based(pm->modParms.physics) ? pm_vq3_friction : pm_friction;
+				float realAccel = MovementIsQuake3Based(pm->modParms.physics) ? pm_cpm_accelerate : (pm->modParms.physics == MV_JK2SP ? pm_sp_accelerate : pm_accelerate);
 				float strafeFactor = fp16_ieee_to_fp32_value(USHORT2SHORT(oldCmdRoll))+1.0f;  // USHORT2SHORT to normalize to short range since fp16 conversion relies on it
 				if (pm->ps->groundEntityNum != ENTITYNUM_WORLD || (pm->cmd.upmove > 0 && !(pm->ps->pm_flags & PMF_JUMP_HELD))) {
-					realAccel = moveStyle == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate;
+					realAccel = pm->modParms.physics == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate;
 					CJ = qfalse;
 				}
 				//else if (moveStyle == MV_SLICK)
 				//	CJ = qfalse;
 				else if (pml.walking && pml.groundTrace.surfaceFlags & SURF_SLICK) { //Lmao fuck this bullshit. no way to tell if we are on slick i guess.
-					if (!MovementIsQuake3Based(moveStyle)) {
-						realAccel = moveStyle == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate;
+					if (!MovementIsQuake3Based(pm->modParms.physics)) {
+						realAccel = pm->modParms.physics == MV_JK2SP ? pm_sp_airaccelerate : pm_airaccelerate;
 					}
 					realFriction = 0;
 				}
@@ -6744,10 +6683,6 @@ void PmoveSingle (pmove_t *pmove) {
 					float middleOffset = 0; //Idk
 					qboolean calculationFailed = qfalse;
 					qboolean wSuggestsRightWard;
-#if JK2_GAME
-					//middleOffset = bot_strafeOffset.integer;
-					middleOffset = 0;
-#endif
 
 					vel[0] = pm->ps->velocity[0];
 					vel[1] = pm->ps->velocity[1];
@@ -6772,7 +6707,7 @@ void PmoveSingle (pmove_t *pmove) {
 							vec3_t velNorm,forwardTmp,rightTmp, forwardFlat, accelVec;
 							float		angle,angle2,angleTmp,angleTmp2; 
 							float		inverseAngleScaleFactor;
-							float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
+							float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 							float		forward, right;
 							float deprojectFactor;
 
@@ -6948,9 +6883,9 @@ void PmoveSingle (pmove_t *pmove) {
 	{
 		PM_FlyMove ();
 	}
-	else if((!pm->requiredCmdMsec || pml.msec == pm->requiredCmdMsec) && (pm->isSpecialPredict || msecRestrict <= 0 || msecRestrict == pml.msec))
+	else if((!pm->requiredCmdMsec || pml.msec == pm->requiredCmdMsec) && (pm->isSpecialPredict || pm->modParms.msecRestrict <= 0 || pm->modParms.msecRestrict == pml.msec))
 	{
-		if (moveStyle == MV_CHARGEJUMP) {
+		if (pm->modParms.physics == MV_CHARGEJUMP) {
 			PM_CheckChargeJump();
 		}
 		if (pm->ps->pm_flags & PMF_TIME_WATERJUMP) {
@@ -7009,27 +6944,24 @@ void PmoveSingle (pmove_t *pmove) {
 		trap_SnapVector( pm->ps->velocity );
 	}
 	else {
-		if (/*pm->ps->stats[STAT_RACEMODE] || */pm->pmove_float > 2  && !pm->ps->stats[STAT_RACEMODE] || msecRestrict == -2) {
+		if (/*pm->modParms.raceMode || */pm->pmove_float > 2  && !pm->modParms.raceMode || pm->modParms.msecRestrict == -2) {
 		}
-#if JK2_GAME
-		else if (g_fixHighFPSAbuse.integer
-#elif JK2_CGAME
-		else if ((cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX) //could move these checks to cg_predict, and just set pm->pmove_float accordingly?
-#endif
-			&& !pm->ps->stats[STAT_RACEMODE]
+#if 1
+		else if (pm->highFpsFix
+			&& !pm->modParms.raceMode
 			&& (pml.msec <= 4 || pml.msec > 25)
 			|| pm->requiredCmdMsec && pm->requiredCmdMsec != pml.msec
-			|| !pm->isSpecialPredict && msecRestrict > 0 && msecRestrict != pml.msec
+			|| !pm->isSpecialPredict && pm->modParms.msecRestrict > 0 && pm->modParms.msecRestrict != pml.msec
 			) { //do nothing above 250FPS or below 40FPS, or if a certain msec timing is demanded by the game via requiredCmdMsec (used for toggle limiting via g_fpsToggleDelay)
 		}
-		else if (pm->pmove_float == 2 && !pm->ps->stats[STAT_RACEMODE]) { //pmove_float 2: snaps vertical velocity only, so 125/142fps jumps are still the same height?
+		else if (pm->pmove_float == 2 && !pm->modParms.raceMode) { //pmove_float 2: snaps vertical velocity only, so 125/142fps jumps are still the same height?
 			// TODO allow this option in racemode somehow too?
 			vec3_t oldVelocity = { 0 };
 			VectorCopy( pm->ps->velocity, oldVelocity );
 			trap_SnapVector( pm->ps->velocity );
 			pm->ps->velocity[2] = oldVelocity[2];
 		}
-		else if (!pm->pmove_float || pm->ps->stats[STAT_RACEMODE] && msecRestrict > -2) {
+		else if (!pm->pmove_float || pm->modParms.raceMode && pm->modParms.msecRestrict > -2) {
 			trap_SnapVector( pm->ps->velocity );
 		}
 	}
@@ -7039,7 +6971,7 @@ void PmoveSingle (pmove_t *pmove) {
 		pm->ps->gravity *= 2;
 	}
 
-	if (runFlags & RFL_BOT) {
+	if (pm->modParms.runFlags & RFL_BOT) {
 		pm->cmd.angles[ROLL] = oldCmdRoll;
 	}
 }
@@ -7056,6 +6988,8 @@ Can be called by either the server or the client
 void Pmove (pmove_t *pmove) {
 	int			finalTime;
 	int			zeroahaha = 0.0f;
+
+	PM_SetModData(pmove);
 
 	finalTime = pmove->cmd.serverTime;
 

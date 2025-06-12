@@ -815,6 +815,10 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 		pm.oldButtons = ent->client->oldbuttons;
 		pm.unlockRandom = g_unlockRandom.integer;
 
+		pm.highFpsFix = g_fixHighFPSAbuse.integer;
+
+		pm.mod = SVMOD_TOMMYTERNAL;
+
 		// perform a pmove
 		Pmove (&pm);
 		// save results of pmove
@@ -2292,6 +2296,10 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.pmove_fixed = g_pmove_fixed.integer | client->pers.pmoveFixed;
 	pm.pmove_msec = g_pmove_msec.integer;
 	pm.pmove_float = g_pmove_float.integer;
+
+	pm.mod = SVMOD_TOMMYTERNAL;
+
+	pm.highFpsFix = g_fixHighFPSAbuse.integer;
 
 	pm.animations = bgGlobalAnimations;//NULL;
 

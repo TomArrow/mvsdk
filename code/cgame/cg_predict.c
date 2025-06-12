@@ -1194,6 +1194,10 @@ restartpredict:
 	cg_pmove.debugLevel = cg_debugMove.integer;
 	cg_pmove.isSpecialPredict = qfalse;
 
+	cg_pmove.highFpsFix = (cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX);
+
+	cg_pmove.mod = cgs.isTommyTernal ? SVMOD_TOMMYTERNAL : (cgs.isJK2Pro ? SVMOD_JK2PRO : SVMOD_NONE_UNKNOWN);
+
 	VectorClear(oldPos);
 
 	// run cmds

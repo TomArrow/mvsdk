@@ -1172,10 +1172,9 @@ void PM_ContinueLegsAnim( int anim ) {
 }
 
 void PM_ForceLegsAnim( int anim) {
-	const int runFlags = PM_GetRunFlags();
-	if (BG_InSpecialJump(pm->ps->legsAnim, runFlags) &&
+	if (BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) &&
 		pm->ps->legsTimer > 0 &&
-		!BG_InSpecialJump(anim, runFlags))
+		!BG_InSpecialJump(anim, pm->modParms.runFlags))
 	{
 		return;
 	}
@@ -1431,7 +1430,7 @@ void PM_SetAnim(int setAnimParts,int anim,int setAnimFlags, int blendTime)
 			bgGlobalAnimations[anim].numFrames != 0);
 #endif
 
-	if (BG_InSpecialJump(anim,PM_GetRunFlags()))
+	if (BG_InSpecialJump(anim, pm->modParms.runFlags))
 	{
 		setAnimFlags |= SETANIM_FLAG_RESTART;
 	}

@@ -78,7 +78,7 @@ float	pmcss_waterspeed = 400;
 
 extern pmove_t* pm;
 static void PMCSS_UpdateAntiLoop() {
-	DF_AntiLoop_NewAngle(pmcss->antiLoop, pm->lastAntiLoopVelocity, pmlcss.velocity, pmcss->ps->basespeed, pmcss->ps->stats[STAT_RACEMODE] && pm->ps->duelTime);
+	DF_AntiLoop_NewAngle(pmcss->antiLoop, pm->lastAntiLoopVelocity, pmlcss.velocity, pmcss->ps->basespeed, pm->modParms.raceMode && pm->ps->duelTime);
 	VectorCopy(pmlcss.velocity, pm->lastAntiLoopVelocity);
 }
 

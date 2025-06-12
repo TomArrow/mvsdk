@@ -427,7 +427,7 @@ qboolean PM_SaberKataDone(int curmove, int newmove);
 int PM_SaberAnimTransitionAnim( int curmove, int newmove )
 {
 	int retmove = newmove;
-	if (curmove == LS_READY || !pm->ps->stats[STAT_RACEMODE] && pm->mineSwitchFix &&BG_SaberInIdle(curmove)) // in racemode we stay on vanilla behavior always. prolly irrelevant but eh
+	if (curmove == LS_READY || !pm->modParms.raceMode && pm->mineSwitchFix &&BG_SaberInIdle(curmove)) // in racemode we stay on vanilla behavior always. prolly irrelevant but eh
 	{//just standing there
 		switch ( newmove )
 		{
@@ -752,8 +752,8 @@ int PM_SaberAttackChainAngle( int move1, int move2 )
 
 qboolean PM_SaberKataDone_1_02( void )
 {
-	if ( (pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 0 )) ||
-		( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 4) ) )
+	if ( (pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0 )) ||
+		( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 + pml.randomAdd, pm->modParms.raceMode, 4) ) )
 	{
 		return qtrue;
 	}
@@ -766,12 +766,12 @@ qboolean PM_SaberKataDone(int curmove, int newmove)
 	{
 		if ( curmove == LS_NONE || newmove == LS_NONE )
 		{
-			if ( pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 0) )
+			if ( pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0) )
 			{
 				return qtrue;
 			}
 		}
-		else if ( pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 3 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 2) )
+		else if ( pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 3 + pml.randomAdd, pm->modParms.raceMode, 2) )
 		{
 			return qtrue;
 		}
@@ -818,12 +818,12 @@ qboolean PM_SaberKataDone(int curmove, int newmove)
 				chainTolerance = 3;
 			}
 
-			if (pm->ps->saberAttackChainCount >= chainTolerance && PM_irand_timesync(1, pm->ps->saberAttackChainCount + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], pm->ps->saberAttackChainCount-1) > chainTolerance)
+			if (pm->ps->saberAttackChainCount >= chainTolerance && PM_irand_timesync(1, pm->ps->saberAttackChainCount + pml.randomAdd, pm->modParms.raceMode, pm->ps->saberAttackChainCount-1) > chainTolerance)
 			{
 				return qtrue;
 			}
 		}
-		if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 4) )
+		if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 + pml.randomAdd, pm->modParms.raceMode, 4) )
 		{
 			return qtrue;
 		}
@@ -959,9 +959,9 @@ void PM_SaberLockBreak( playerState_t *genemy, qboolean victory )
 	}
 	else
 	{
-		if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 0) : PM_irand_timesync( 0, 1 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 0)) )
+		if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0) : PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0)) )
 		{
-			BG_AddPredictableEventToPlayerstate(EV_JUMP, PM_irand_timesync( 0, 75 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 74), genemy); // what is this eventparm? doesnt seem used for anything?
+			BG_AddPredictableEventToPlayerstate(EV_JUMP, PM_irand_timesync( 0, 75 + pml.randomAdd, pm->modParms.raceMode, 74), genemy); // what is this eventparm? doesnt seem used for anything?
 		}
 	}
 }
@@ -1049,7 +1049,7 @@ void PM_SaberLocked( void )
 						remaining = anim->firstFrame+anim->numFrames-curFrame;
 					}
 				}
-				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 1) : PM_irand_timesync( 0, 2 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 1)) )
+				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1) : PM_irand_timesync( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1)) )
 				{
 					PM_AddEvent( EV_JUMP );
 				}
@@ -1064,7 +1064,7 @@ void PM_SaberLocked( void )
 			if ( (genemy->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_CWCIRCLELOCK ||
 				(genemy->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_BF1LOCK )
 			{
-				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 1) : PM_irand_timesync( 0, 2 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 1)) )
+				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1) : PM_irand_timesync( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1)) )
 				{
 					BG_AddPredictableEventToPlayerstate(EV_PAIN, floor((float)80/100*100.0f), genemy);
 				}
@@ -1196,7 +1196,7 @@ saberMoveName_t PM_SaberFlipOverAttackMove(trace_t *tr)
 	pm->ps->fd.forceJumpSound = 1;
 	pm->cmd.upmove = 0;
 
-	if ( ((jk2gameplay == VERSION_1_02 && !pm->unlockRandom) ? Q_irand( 0, 1, pm->ps->stats[STAT_RACEMODE], 0) : PM_irand_timesync( 0, 1 + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], 0)) ) // if we unlock random make sure we are synced. normally just 0 always anyway so nothing changes (except for esoteric qvm random propagation which for our little experiment we'll ignore)
+	if ( ((jk2gameplay == VERSION_1_02 && !pm->unlockRandom) ? Q_irand( 0, 1, pm->modParms.raceMode, 0) : PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0)) ) // if we unlock random make sure we are synced. normally just 0 always anyway so nothing changes (except for esoteric qvm random propagation which for our little experiment we'll ignore)
 	{
 		return LS_A_FLIP_STAB;
 	}
@@ -1293,12 +1293,11 @@ float PM_GroundDistance(void)
 saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 {
 	saberMoveName_t newmove = LS_INVALID;
-	const int runFlags = PM_GetRunFlags();
 
 	if ( pm->cmd.rightmove > 0 )
 	{//moving right
 		if (//!noSpecials
-			(runFlags & RFL_CLIMBTECH)
+			(pm->modParms.runFlags & RFL_CLIMBTECH)
 			//&& overrideJumpRightAttackMove != LS_NONE
 			&& pm->ps->velocity[2] > 20.0f //pm->ps->groundEntityNum != ENTITYNUM_NONE//on ground
 			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
@@ -1365,7 +1364,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 	else if ( pm->cmd.rightmove < 0 )
 	{//moving left
 		if (//!noSpecials
-			(runFlags & RFL_CLIMBTECH)
+			(pm->modParms.runFlags & RFL_CLIMBTECH)
 			//&& overrideJumpLeftAttackMove != LS_NONE
 			&& pm->ps->velocity[2] > 20.0f //pm->ps->groundEntityNum != ENTITYNUM_NONE//on ground
 			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
@@ -1436,7 +1435,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			if (pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 &&
 				pm->ps->velocity[2] > 100 &&
 				PM_GroundDistance() < 32 &&
-				!BG_InSpecialJump(pm->ps->legsAnim,runFlags) &&
+				!BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) &&
 				(!BG_SaberInSpecialAttack(pm->ps->torsoAnim) || jk2gameplay != VERSION_1_04))
 			{ //FLIP AND DOWNWARD ATTACK
 				trace_t tr;
@@ -1447,11 +1446,11 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 				}
 			}
 			else if (
-				(runFlags & RFL_CLIMBTECH) &&
+				(pm->modParms.runFlags & RFL_CLIMBTECH) &&
 				pm->ps->fd.saberAnimLevel == FORCE_LEVEL_3 &&
 				pm->ps->velocity[2] > 100 &&
 				PM_GroundDistance() < 32 &&
-				!BG_InSpecialJump(pm->ps->legsAnim, runFlags) &&
+				!BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) &&
 				!BG_SaberInSpecialAttack(pm->ps->torsoAnim) 
 				&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_FB)
 				)
@@ -1524,7 +1523,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			//prediction values. Under laggy conditions this will cause the appearance of rapid swing
 			//sequence changes.
 			
-			if ( jk2gameplay == VERSION_1_02 ) newmove = PM_irand_timesync(LS_A_TL2BR, LS_A_T2B + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], LS_A_TL2BR);
+			if ( jk2gameplay == VERSION_1_02 ) newmove = PM_irand_timesync(LS_A_TL2BR, LS_A_T2B + pml.randomAdd, pm->modParms.raceMode, LS_A_TL2BR);
 			else							   newmove = LS_A_T2B; //decided we don't like random attacks when idle, use an overhead instead.
 		}
 	}
@@ -1611,7 +1610,7 @@ void PM_WeaponLightsaber(void)
 
 		if (pm->ps->weaponTime < 1 && ((pm->cmd.buttons & BUTTON_ALT_ATTACK) || (pm->cmd.buttons & BUTTON_ATTACK)))
 		{
-			if (pm->ps->duelTime < pm->cmd.serverTime || pm->ps->stats[STAT_RACEMODE])// && !pm->ps->stats[STAT_RACEMODE]) // is this the correct way to account for racemode?
+			if (pm->ps->duelTime < pm->cmd.serverTime || pm->modParms.raceMode)// && !pm->modParms.raceMode) // is this the correct way to account for racemode?
 			{
 				pm->ps->saberHolstered = qfalse;
 				PM_AddEvent(EV_SABER_UNHOLSTER);
@@ -1633,7 +1632,7 @@ void PM_WeaponLightsaber(void)
 		pm->ps->fd.forcePower >= forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_SABERTHROW]][FP_SABERTHROW] &&
 		!BG_HasYsalamiri(pm->gametype, pm->ps) &&
 		BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_SABERTHROW) &&
-		!pm->ps->stats[STAT_RACEMODE] // don't throw sabers in racemode, its unpredictable what they will do, and they will affect our force power
+		!pm->modParms.raceMode // don't throw sabers in racemode, its unpredictable what they will do, and they will affect our force power
 		)
 	{ //might as well just check for a saber throw right here
 		//This will get set to false again once the saber makes it back to its owner game-side
@@ -1761,7 +1760,7 @@ void PM_WeaponLightsaber(void)
 						{//player is still in same attack quad, don't repeat that attack because it looks bad, 
 							//FIXME: try to pick one that might look cool?
 							//newQuad = Q_irand( Q_BR, Q_BL );
-							newQuad = PM_irand_timesync( Q_BR, Q_BL + pml.randomAdd, pm->ps->stats[STAT_RACEMODE], Q_BR); // idk what else to do meh
+							newQuad = PM_irand_timesync( Q_BR, Q_BL + pml.randomAdd, pm->modParms.raceMode, Q_BR); // idk what else to do meh
 							//FIXME: sanity check, just in case?
 						}//else player is switching up anyway, take the new attack dir
 						bounceMove = transitionMove[saberMoveData[pm->ps->saberMove].startQuad][newQuad];
@@ -2008,7 +2007,6 @@ weapChecks:
 				}
 				else//if ( pm->cmd.buttons&BUTTON_ATTACK && !(pm->ps->pm_flags&PMF_ATTACK_HELD) )//only do this if just pressed attack button?
 				{//get attack move from movement command
-					const int runFlags = PM_GetRunFlags();
 					if ( jk2gameplay != VERSION_1_02 )
 					{
 						saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
@@ -2030,7 +2028,7 @@ weapChecks:
 					}
 					else
 					{
-						if (runFlags & RFL_CLIMBTECH) {
+						if (pm->modParms.runFlags & RFL_CLIMBTECH) {
 							// flip the order so we can trigger the jka dfa
  							saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
 							if (checkMove != LS_INVALID)
@@ -2153,7 +2151,6 @@ void PM_SetSaberMove(short newMove)
 	unsigned int setflags = saberMoveData[newMove].animSetFlags;
 	int	anim = saberMoveData[newMove].animToUse;
 	int parts = SETANIM_TORSO;
-	const int runFlags = PM_GetRunFlags();
 	
 	if ( newMove == LS_READY || ((newMove == LS_A_FLIP_STAB || newMove == LS_A_FLIP_SLASH) &&
 		jk2gameplay != VERSION_1_02) )
@@ -2264,7 +2261,7 @@ void PM_SetSaberMove(short newMove)
 			!BG_InRoll( pm->ps, pm->ps->legsAnim ) && 
 			!PM_InKnockDown( pm->ps ) && 
 			!PM_JumpingAnim( pm->ps->legsAnim ) &&
-			!BG_InSpecialJump( pm->ps->legsAnim, runFlags) &&
+			!BG_InSpecialJump( pm->ps->legsAnim, pm->modParms.runFlags) &&
 			anim != PM_GetSaberStance() &&
 			pm->ps->groundEntityNum != ENTITYNUM_NONE &&
 			!(pm->ps->pm_flags & PMF_DUCKED))

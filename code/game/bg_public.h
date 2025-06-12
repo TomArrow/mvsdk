@@ -196,9 +196,6 @@ movement on the server game.
 ===================================================================================
 */
 
-extern Q_INLINE int PM_GetMovePhysics(void);
-extern Q_INLINE int PM_GetRunFlags(void);
-extern Q_INLINE int PM_GetMsecRestrict(void);
 
 
 
@@ -307,6 +304,19 @@ typedef struct bgEntity_s
 } bgEntity_t;
 //#endif
 
+typedef enum serverModType_s {
+	SVMOD_NONE_UNKNOWN,
+	SVMOD_JK2PRO,
+	SVMOD_TOMMYTERNAL
+}serverModType_t;
+
+typedef struct pmoveModMovement_s {
+	int physics;
+	int runFlags;
+	int msecRestrict;
+	qboolean raceMode;
+} pmoveModMovement_t;
+
 typedef struct {
 	// state (in / out)
 	playerState_t	*ps;
@@ -346,6 +356,10 @@ typedef struct {
 	int			pmove_msec;
 	int			pmove_float;
 
+	serverModType_t	mod;
+
+	pmoveModMovement_t modParms;
+
 	// callbacks to test the world
 	// these will be different functions during game and cgame
 	void		(*trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
@@ -379,7 +393,7 @@ typedef struct {
 	qboolean		handleStrafebotSlopes;
 	int				unlockRandom;
 	qboolean		mineSwitchFix;
-
+	qboolean		highFpsFix;
 } pmove_t;
 
 extern	pmove_t		*pm;

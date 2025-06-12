@@ -9066,7 +9066,17 @@ static void CG_RealAccelHelper() {
 	}
 	trap_R_SetColor(NULL);
 }
+int CG_GetMovePhysics(void)
+{
+	if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
+		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+	}
+	else if (cgs.isJK2Pro) {
+		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+	}
 
+	return MV_JK2; // this can happen when we die in racemode too!
+}
 static void CG_StrafeHelper(centity_t *cent)
 {
 	vec3_t velocity;
@@ -9074,7 +9084,7 @@ static void CG_StrafeHelper(centity_t *cent)
 	static vec3_t velocityAngle;
 	float currentSpeed; //cg.currentSpeed;
 	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.strafehelperPredictedPlayerState.speed;
-	const int moveStyle = PM_GetMovePhysics();
+	const int moveStyle = CG_GetMovePhysics();
 	int referenceFrameTime;
 	qboolean onGround;
 	usercmd_t cmd = { 0 };

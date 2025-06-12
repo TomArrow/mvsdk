@@ -21,8 +21,7 @@ qboolean PM_GroundSlideOkay(float zNormal)
 {
 	int legsAnim = pm->ps->legsAnim & ~ANIM_TOGGLEBIT;
 	// nvm, already guarded in all calls
-	//const int runFlags = PM_GetRunFlags();
-	//if (!(runFlags & RFL_CLIMBTECH)) return qtrue;
+	//if (!(pml.mod.runFlags & RFL_CLIMBTECH)) return qtrue;
 
 	if (zNormal > 0)
 	{
@@ -60,14 +59,13 @@ void PM_LimitedClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overboun
 	float	backoff;
 	float	change;
 	int		i;
-	const int runFlags = PM_GetRunFlags();
 	vec3_t	normalComponent;
 	vec3_t	nonNormalComponent;
 	float	maxLenOut;
 	float	lenOut;
 	float	lenNonNormal;
 
-	if ((runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	if ((pm->modParms.runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 	{//no sliding!
 		VectorCopy(in, out);
 		return;
@@ -117,14 +115,13 @@ void PM_LimitedClipVelocity2(vec3_t in, vec3_t normal, vec3_t out, float overbou
 	float	backoff;
 	float	change;
 	int		i;
-	const int runFlags = PM_GetRunFlags();
 	vec3_t	normalComponent;
 	vec3_t	nonNormalComponent;
 	//float	maxLenOut;
 	float	lenOut;
 	float	lenNonNormal;
 
-	if ((runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	if ((pm->modParms.runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 	{//no sliding!
 		VectorCopy(in, out);
 		return;
@@ -181,9 +178,7 @@ void PM_Q2StepSlideMove_(void)
 	vec3_t		end;
 	float		time_left;
 	float		tmp;
-	const int	runFlags = PM_GetRunFlags();
-	const int	moveStyle = PM_GetMovePhysics();
-	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps,&pm->cmd);
+	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps,&pm->cmd);
 
 	if (overbounce == OVERCLIP) {
 		overbounce = 1.01f; // if we arent overriding aanything, we use the q2 standard instead (1.01 instead of 1.001)
@@ -236,7 +231,7 @@ void PM_Q2StepSlideMove_(void)
 
 		VectorCopy(trace.plane.normal,normal);
 
-		if ((runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
+		if ((pm->modParms.runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
 		{//wall-running
 			//never push up off a sloped wall
 			normal[2] = 0;
@@ -250,7 +245,7 @@ void PM_Q2StepSlideMove_(void)
 		// 
 		// TA: Copied this over from the normal jk function and it makes the movement smoother while keeping it overall nice. Nice!
 		//
-		if (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+		if (!(pm->modParms.runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 		{//no sliding if stuck to wall!
 			for (i = 0; i < numplanes; i++) {
 				if (DotProduct(normal, planes[i]) > 0.99f) {
@@ -313,7 +308,7 @@ void PM_Q2StepSlideMove_(void)
 		//
 		for (i = 0; i < numplanes; i++)
 		{
-			if (moveStyle == MV_PINBALL) {
+			if (pm->modParms.physics == MV_PINBALL) {
 				//PM_LimitedClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,100000.0f);
 				overbounce -= planes[i][2]*0.6f* (MIN(1600.0f,fabsf(pm->ps->velocity[2]))/1600.0f); // dont let ground and ceiling bounce as as insanely much unless we have no proper speed to begin wtih.
 				PM_LimitedClipVelocity2(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,10000.0f);
@@ -358,7 +353,7 @@ void PM_Q2StepSlideMove_(void)
 		// if velocity is against the original velocity, stop dead
 		// to avoid tiny occilations in sloping corners
 		//
-		if (DotProduct(pm->ps->velocity, primal_velocity) <= 0 && moveStyle != MV_PINBALL)
+		if (DotProduct(pm->ps->velocity, primal_velocity) <= 0 && pm->modParms.physics != MV_PINBALL)
 		{
 			VectorCopy(vec3_origin, pm->ps->velocity);
 			break;
@@ -454,10 +449,8 @@ void PM_Q2StepSlideMove(qboolean gravity)
 extern void PM_JumpForDir(void);
 void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 
-	const int moveStyle = PM_GetMovePhysics();
-	const int	runFlags = PM_GetRunFlags();
 	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
-	if (moveStyle != MV_BOUNCE || pm->cmd.upmove <= 0 || (pm->ps->pm_flags & PMF_JUMP_HELD) || normal[2] < MIN_WALK_NORMAL) {
+	if (pm->modParms.physics != MV_BOUNCE || pm->cmd.upmove <= 0 || (pm->ps->pm_flags & PMF_JUMP_HELD) || normal[2] < MIN_WALK_NORMAL) {
 		return;
 	}
 
@@ -480,7 +473,7 @@ void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 	{//in knockdown
 		return;
 	}
-	if (MovementIsQuake3Based(moveStyle)) {
+	if (MovementIsQuake3Based(pm->modParms.physics)) {
 		JUMP_VELOCITY_NEW = 270;
 	}
 	
@@ -515,7 +508,7 @@ void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 	pm->ps->pm_time = 250;
 
 	//Set the animations
-	if (pm->ps->gravity > 0 && !BG_InSpecialJump(pm->ps->legsAnim, runFlags))
+	if (pm->ps->gravity > 0 && !BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags))
 	{
 		PM_JumpForDir();
 	}
@@ -545,9 +538,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	float		into;
 	vec3_t		endVelocity;
 	vec3_t		endClipVelocity;
-	const int	runFlags = PM_GetRunFlags();
-	const int	moveStyle = PM_GetMovePhysics();
-	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
+	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 	
 	VectorClear( endVelocity );
 	VectorClear( endClipVelocity );
@@ -564,7 +555,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		pm->ps->velocity[2] = ( pm->ps->velocity[2] + endVelocity[2] ) * 0.5;
 		primal_velocity[2] = endVelocity[2];
 		if ( pml.groundPlane ) {
-			if(!(runFlags & RFL_CLIMBTECH) || PM_GroundSlideOkay(pml.groundTrace.plane.normal[2])){
+			if(!(pm->modParms.runFlags & RFL_CLIMBTECH) || PM_GroundSlideOkay(pml.groundTrace.plane.normal[2])){
 				// slide along the ground plane
 				PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
 					pm->ps->velocity, overbounce);
@@ -583,7 +574,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	if ( pml.groundPlane ) {
 		numplanes = 1;
 		VectorCopy( pml.groundTrace.plane.normal, planes[0] );
-		if ((runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(planes[0][2]))
+		if ((pm->modParms.runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(planes[0][2]))
 		{
 			planes[0][2] = 0;
 			VectorNormalize(planes[0]);
@@ -592,7 +583,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		numplanes = 0;
 	}
 
-	if (moveStyle != MV_BOUNCE && moveStyle != MV_PINBALL) {
+	if (pm->modParms.physics != MV_BOUNCE && pm->modParms.physics != MV_PINBALL) {
 		// never turn against original velocity
 		VectorNormalize2(pm->ps->velocity, planes[numplanes]);
 		numplanes++;
@@ -634,7 +625,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 
 		VectorCopy(trace.plane.normal, normal);
 
-		if ((runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
+		if ((pm->modParms.runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
 		{//wall-running
 			//never push up off a sloped wall
 			normal[2] = 0;
@@ -646,7 +637,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		// out along it, which fixes some epsilon issues with
 		// non-axial planes
 		//
-		if (!(runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+		if (!(pm->modParms.runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
 		{//no sliding if stuck to wall!
 			for (i = 0; i < numplanes; i++) {
 				if (DotProduct(normal, planes[i]) > 0.99f) {
@@ -853,11 +844,10 @@ void PM_StepSlideMove( qboolean gravity ) {
 	float		pre_z;
 	int			usingspeed;
 	int			i;
-	const int	moveStyle = PM_GetMovePhysics();
-	float		overbounce = MovementOverbounceFactor(moveStyle, pm->ps, &pm->cmd);
+	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 	int			NEW_STEPSIZE = STEPSIZE;
 
-	if (MovementStyleHasQuake2Ramps(moveStyle)) {
+	if (MovementStyleHasQuake2Ramps(pm->modParms.physics)) {
 		PM_Q2StepSlideMove(gravity);
 		return;
 		if (pm->ps->velocity[2] > 0 && pm->cmd.upmove > 0) { // do we really need this?

@@ -835,7 +835,6 @@ void PMQ2_CatagorizePosition(int type)
 			if (oldGroundEntityNum == ENTITYNUM_NONE)
 			{	// just hit the ground
 
-				const int runFlags = PM_GetRunFlags();
 
 				if (pm->debugLevel) {
 					Com_Printf("%i:landed, pmlq2.velocity[2] %f (call %d)\n", c_pmove, pmlq2.velocity[2],type);
@@ -850,7 +849,7 @@ void PMQ2_CatagorizePosition(int type)
 						// the trace.plane.normal[2] != 1.0f check in particular seems sus no? since the slidemove stuff
 						// works more with various dot products to determine whether to clip etc. oh well. fuck it.
 
-						if (runFlags & RFL_NODEADRAMPS) {
+						if (pm->modParms.runFlags & RFL_NODEADRAMPS) {
 
 							PMQ2_ClipVelocity(pmlq2.velocity, trace.plane.normal, pmlq2.velocity, 1.01);
 							PMQ2_UpdateAntiLoop();
@@ -923,7 +922,7 @@ void PMQ2_CatagorizePosition(int type)
 				}
 				//pmq2->ps->pm_flags |= PMF_ON_GROUND;
 				// don't do landing time if we were just going down a slope
-				else if (pmlq2.velocity[2] < -200 && !(runFlags & RFL_NODEADRAMPS)) 
+				else if (pmlq2.velocity[2] < -200 && !(pm->modParms.runFlags & RFL_NODEADRAMPS))
 				{
 					// rampfix removes rng-feeling vanilla behavior here by not setting pm_time ever.
 					// in normal gameplay pm_time is almost never set but when it IS set, it wont let us jump and feel terrible
@@ -1003,7 +1002,6 @@ void PMQ2_CheckJump(void)
 {
 	if (pmq2->ps->pm_flags & PMF_TIME_LAND)
 	{	// hasn't been long enough since landing to jump again
-		const int runFlags = PM_GetRunFlags();
 
 		if (pmq2->cornerSkims) {
 			if (pmq2->cornerSkims == 1) {
@@ -1013,7 +1011,7 @@ void PMQ2_CheckJump(void)
 				// above 1 cornerSkims we can actually skim corners regularly
 			}
 		}
-		else if (runFlags & RFL_NODEADRAMPS) {
+		else if (pm->modParms.runFlags & RFL_NODEADRAMPS) {
 			// kinda in the same spirit tbh. this behaves like an RNG that sometimes wont let us hop and keep speed.
 			// different fps makes it behave differently as well. it feels really bad.
 			// depending on whether the even floor was clipped during the slidemove,
@@ -1347,7 +1345,6 @@ void PMQ2_SnapPosition(void)
 	float	base[3]; // this isn't 100% authentic but it should be authentic in the range of short in any case and way beyond it too for a while
 	// try all single bits first
 	static int jitterbits[8] = { 0,4,1,2,3,5,6,7 };
-	int msecRestrict = PM_GetMsecRestrict();
 
 #ifndef AUTHENTIC_Q2SNAP
 	return; // no need for snapping in jk2
@@ -1356,7 +1353,7 @@ void PMQ2_SnapPosition(void)
 	// we don't need this in jk but we keep it for authentic feel just in case.
 
 	// snap velocity to eigths
-	if (msecRestrict == -2) { // in float physics mode no snap
+	if (pm->modParms.msecRestrict == -2) { // in float physics mode no snap
 		for (i = 0; i < 3; i++)
 			pmq2->ps->velocity[i] = pmlq2.velocity[i] * 8;
 	}
@@ -1371,7 +1368,7 @@ void PMQ2_SnapPosition(void)
 			sign[i] = 1;
 		else
 			sign[i] = -1;
-		if (msecRestrict == -2) {
+		if (pm->modParms.msecRestrict == -2) {
 			pmq2->ps->origin[i] = pmlq2.origin[i] * 8; // in float physics mode no snap
 		}
 		else {
@@ -1542,7 +1539,6 @@ Can be called by either the server or the client
 */
 void PmoveQ2(pmoveq2_t* pmove)
 {
-	int msecRestrict = PM_GetMsecRestrict();
 
 	pmq2 = pmove;
 
@@ -1559,7 +1555,7 @@ void PmoveQ2(pmoveq2_t* pmove)
 
 
 #ifdef AUTHENTIC_Q2SNAP
-	if (msecRestrict == -2) {
+	if (pm->modParms.msecRestrict == -2) {
 		pmq2->ps->origin[0] = (pmq2->ps->origin[0] * 8.0f);
 		pmq2->ps->origin[1] = (pmq2->ps->origin[1] * 8.0f);
 		pmq2->ps->origin[2] = (pmq2->ps->origin[2] * 8.0f);
