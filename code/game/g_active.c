@@ -2924,6 +2924,9 @@ void ClientThink( int clientNum ) {
 
 
 static void ForceClientUpdate(gentity_t* ent) {
+	if (ent->client->sess.spectatorState == SPECTATOR_FOLLOW) {
+		return; // or we get stuck in endless loop :)
+	}
 
 	ent->client->lastCmdTime = level.time;
 
@@ -2942,6 +2945,10 @@ static void ForceClientUpdate(gentity_t* ent) {
 		while (ent->client->ps.commandTime < (level.time+ent->client->pers.segmented.playbackStartedCommandTimeOffset)) {
 			ent->client->pers.cmd.serverTime = ent->client->ps.commandTime + ent->client->sess.raceStyle.msec;
 			ClientThink_real(ent);
+			if (ent->client->ps.commandTime != ent->client->pers.cmd.serverTime) {
+				trap_SendServerCommand(-1,va("^1ForceClientUpdate: WTF. ClientThink_real returned with commandTime %d but cmd.serverTime was %d", ent->client->ps.commandTime, ent->client->pers.cmd.serverTime));
+				ent->client->ps.commandTime = ent->client->pers.cmd.serverTime;
+			}
 		}
 	}
 	else {
