@@ -924,7 +924,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 		(client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
 		client->inactivityToSpecTime = clampedIntAdd( level.time , clampedIntMult(g_inactivityToSpec.integer, 1000));
 	}
-	else {
+	else if(level.numPlayingClients > 1){ // dont bother sending to spec or marking as inactive if only 1 player is in anyway
 		if (ent->client->sess.raceMode && (ent->client->pers.raceStartCommandTime || ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe) && !g_inactivityToSpecRacers.integer) {
 			// dont spec ppl in the middle of a run, but mark them as inactive
 			if (level.time > client->inactivityToSpecTime) {
