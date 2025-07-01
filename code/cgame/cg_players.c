@@ -6724,7 +6724,7 @@ void CG_Player( centity_t *cent ) {
 		vec3_t bmins = {-15, -15, DEFAULT_MINS_2}, bmaxs = {15, 15, DEFAULT_MAXS_2}, absmin, absmax;
 		int x = 0, zd = 0, zu = 0;
 
-		if (pm && cent->currentState.clientNum == pm->ps->clientNum)
+		if (pm && cent->currentState.clientNum == cg.predictedPlayerState.clientNum)
 		{
 			VectorCopy(pm->mins, bmins);
 			VectorCopy(pm->maxs, bmaxs);

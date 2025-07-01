@@ -8652,7 +8652,7 @@ static void CG_RealAccel_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, floa
 	float	change;
 	int		i;
 
-	if ((runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
+	if ((runFlags & RFL_CLIMBTECH) && (cg.predictedPlayerState.pm_flags & PMF_STUCK_TO_WALL))
 	{//no sliding!
 		VectorCopy(in, out);
 		return;

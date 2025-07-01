@@ -5,6 +5,15 @@
 
 #include "bg_defrag_global.h"
 
+
+#define CLIENTSIDE_PREDICTION_FIXES 1
+
+#if JK2_CGAME && CLIENTSIDE_PREDICTION_FIXES
+#define NONETWORK_FORCEPOWERLEVEL(ps,fp) (((ps)->fd.forcePowersKnown & (1<<(fp))) ? FORCE_LEVEL_3 : FORCE_LEVEL_0)
+#else
+#define NONETWORK_FORCEPOWERLEVEL(ps,fp) ((ps)->fd.forcePowerLevel[(fp)])
+#endif
+
 #define	MIN_WALK_NORMAL	0.7f		// can't walk on very steep slopes
 
 #define	STEPSIZE		18

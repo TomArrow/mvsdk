@@ -1016,7 +1016,7 @@ void PM_SaberLocked( void )
 	
 				currentFrame = pm->ps->saberLockFrame;
 
-				strength = pm->ps->fd.forcePowerLevel[FP_SABERATTACK]+1;
+				strength = NONETWORK_FORCEPOWERLEVEL(pm->ps,FP_SABERATTACK)+1;
 
 				if ( (pm->ps->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_CCWCIRCLELOCK ||
 					(pm->ps->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_BF2LOCK )
@@ -1629,7 +1629,7 @@ void PM_WeaponLightsaber(void)
 	if ((pm->cmd.buttons & BUTTON_ALT_ATTACK) &&
 		pm->ps->weaponTime < 1 &&
 		pm->ps->saberCanThrow &&
-		pm->ps->fd.forcePower >= forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_SABERTHROW]][FP_SABERTHROW] &&
+		pm->ps->fd.forcePower >= forcePowerNeeded[NONETWORK_FORCEPOWERLEVEL(pm->ps,FP_SABERTHROW)][FP_SABERTHROW] &&
 		!BG_HasYsalamiri(pm->gametype, pm->ps) &&
 		BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_SABERTHROW) &&
 		!pm->modParms.raceMode // don't throw sabers in racemode, its unpredictable what they will do, and they will affect our force power
@@ -1638,7 +1638,7 @@ void PM_WeaponLightsaber(void)
 		//This will get set to false again once the saber makes it back to its owner game-side
 		if (!pm->ps->saberInFlight)
 		{
-			pm->ps->fd.forcePower -= forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_SABERTHROW]][FP_SABERTHROW];
+			pm->ps->fd.forcePower -= forcePowerNeeded[NONETWORK_FORCEPOWERLEVEL(pm->ps, FP_SABERTHROW)][FP_SABERTHROW];
 		}
 
 		pm->ps->saberInFlight = qtrue;

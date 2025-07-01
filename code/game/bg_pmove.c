@@ -16,6 +16,7 @@
 #include "../cgame/cg_local.h"
 #endif
 
+
 #define MAX_WEAPON_CHARGE_TIME 5000
 
 extern qboolean PM_GroundSlideOkay(float zNormal);
@@ -2224,7 +2225,14 @@ qboolean PM_ForcePowerUsable(forcePowers_t forcePower)
 
 	if (!pm->ps->fd.forcePowerLevel[forcePower])
 	{
+#if JK2_CGAME && CLIENTSIDE_PREDICTION_FIXES // actually, not really needed. this is only called with FP_LEVITATION anyway.
+		if (!NONETWORK_FORCEPOWERLEVEL(pm->ps,forcePower)) {
+			// ok this is likely a force powers disabled gamemode
+			return qfalse;
+		}
+#else
 		return qfalse;
+#endif
 	}
 
 	return PM_ForcePowerAvailable(forcePower);
