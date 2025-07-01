@@ -932,12 +932,20 @@ float Q_pown(float x, int n);
 int DirToByte( vec3_t dir );
 void ByteToDir( int b, vec3_t dir );
 
+#define VECTORCOPYDEBUG 0
+
 #if	1
 
 #define DotProduct(x,y)			((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define VectorSubtract(a,b,c)	((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2])
 #define VectorAdd(a,b,c)		((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2])
+#if VECTORCOPYDEBUG
+#define VALIDATEPTRCMPVector(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
+#define VectorCopy(a,b)			(VALIDATEPTRCMPVector((a),(b)));((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
+#else
 #define VectorCopy(a,b)			((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
+#endif
+#define VectorCopySafe(a,b)		((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2]) // for when we want to copy across different types and not get the struct copy optimization
 #define	VectorScale(v, s, o)	((o)[0]=(v)[0]*(s),(o)[1]=(v)[1]*(s),(o)[2]=(v)[2]*(s))
 #define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
 #define VectorLerp( f, s, e, r ) ((r)[0]=(s)[0]+(f)*((e)[0]-(s)[0]),\

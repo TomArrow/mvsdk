@@ -5048,7 +5048,7 @@ qboolean DF_ClientInSegmentedRunMode(gclient_t* client) {
 
 static vec3_t dfOldDelta;
 void DF_PreDeltaAngleChange(gclient_t* client) {
-	VectorCopy(client->ps.delta_angles, dfOldDelta);
+	VectorCopySafe(client->ps.delta_angles, dfOldDelta);
 }
 
 void DF_PostDeltaAngleChange(gclient_t* client, qboolean setResettable) {
@@ -5215,7 +5215,7 @@ void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* 
 	client->client->latched_buttons = savedPosition->client.latched_buttons;
 
 	if (diffAccum) {
-		VectorCopy(backupPS.delta_angles, oldDelta);
+		VectorCopySafe(backupPS.delta_angles, oldDelta);
 	}
 
 	SetClientViewAngle(client,storedPS->viewangles);

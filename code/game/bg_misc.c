@@ -2079,7 +2079,7 @@ void BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es) {
 	es->forcePowersActive = (int)fpa;
 
 	// do we need angles? might be a bit wasteful.
-	VectorCopy(ucmd->angles, es->apos.trBase);
+	VectorCopySafe(ucmd->angles, es->apos.trBase);
 
 	es->forceFrame = ucmd->buttons;
 }
@@ -2096,7 +2096,7 @@ void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
 	ucmd->upmove = (signed char)((((unsigned int)es->forcePowersActive) >> 8) & 0xff);
 
 	// do we need angles? might be a bit wasteful.
-	VectorCopy(es->apos.trBase, ucmd->angles);
+	VectorCopySafe(es->apos.trBase, ucmd->angles);
 
 	ucmd->buttons = es->forceFrame;
 }

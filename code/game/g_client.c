@@ -2712,7 +2712,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	saved = client->pers;
 	savedSess = client->sess;
-	VectorCopy(client->ps.delta_angles, savedDeltaAngles);
+	VectorCopySafe(client->ps.delta_angles, savedDeltaAngles);
 	savedPing = client->ps.ping;
 	savedCommandTime = client->ps.commandTime;
 //	savedAreaBits = client->areabits;
@@ -2732,7 +2732,7 @@ void ClientSpawn(gentity_t *ent) {
 	G_BufferedSendOrPrintFlush(ent, qfalse);
 	memset (client, 0, sizeof(*client)); // bk FIXME: Com_Memset?
 
-	VectorCopy(savedDeltaAngles, client->ps.delta_angles); // to make sure my segmented runs work
+	VectorCopySafe(savedDeltaAngles, client->ps.delta_angles); // to make sure my segmented runs work
 
 	//rww - Don't wipe the ghoul2 instance or the animation data
 	client->ghoul2 = ghoul2save;
