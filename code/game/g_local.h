@@ -482,6 +482,8 @@ typedef struct {
 
 	int			maxHealth;			// for handicapping
 	int			enterTime;			// level.time the client entered the game
+	int			firstEnterTime;		// level.time the client first entered the game
+	qboolean	firstEnterTimeSet;
 	playerTeamState_t teamState;	// status in teamplay games
 	int			voteCount;			// to prevent people from constantly calling votes
 	int			voteValue;			// to prevent people from constantly calling votes
@@ -544,6 +546,7 @@ typedef struct {
 
 	int			lastSpawnPoint;
 	int			chosenDefragSpawnPoint;
+	int			normalFollowerPing;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {

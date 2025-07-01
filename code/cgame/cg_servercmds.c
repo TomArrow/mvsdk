@@ -94,6 +94,7 @@ CG_ParseScores
 */
 static void CG_ParseScores( void ) {
 	int		i, powerups, readScores;
+	const char* slashPos;
 
 	cg.numScores = atoi( CG_Argv( 1 ) );
 
@@ -119,7 +120,23 @@ static void CG_ParseScores( void ) {
 		cg.scores[i].client = atoi( CG_Argv( i * 14 + 4 ) );
 		cg.scores[i].score = atoi( CG_Argv( i * 14 + 5 ) );
 		cg.scores[i].ping = atoi( CG_Argv( i * 14 + 6 ) );
+
+		if (cgs.isTommyTernal && (slashPos = strchr(CG_Argv(i * 14 + 6), '/'))) {
+			cg.scores[i].realping = atoi(slashPos + 1);
+		}
+		else {
+			cg.scores[i].realping = cg.scores[i].ping;
+		}
+
 		cg.scores[i].time = atoi( CG_Argv( i * 14 + 7 ) );
+
+		if (cgs.isTommyTernal && (slashPos = strchr(CG_Argv(i * 14 + 7),'/'))) {
+			cg.scores[i].fulltime = atoi(slashPos+1);
+		}
+		else {
+			cg.scores[i].fulltime = cg.scores[i].time;
+		}
+
 		cg.scores[i].scoreFlags = atoi( CG_Argv( i * 14 + 8 ) );
 		powerups = atoi( CG_Argv( i * 14 + 9 ) );
 		cg.scores[i].accuracy = atoi(CG_Argv(i * 14 + 10));

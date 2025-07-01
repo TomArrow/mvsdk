@@ -3228,6 +3228,7 @@ void SpectatorClientEndFrame( gentity_t *ent ) {
 	// if we are doing a chase cam or a remote view, grab the latest info
 	if ( ent->client->sess.spectatorState == SPECTATOR_FOLLOW ) {
 		int		clientNum, flags;
+		int		savedPing;
 
 		clientNum = ent->client->sess.spectatorClient;
 
@@ -3241,7 +3242,12 @@ void SpectatorClientEndFrame( gentity_t *ent ) {
 			cl = &level.clients[ clientNum ];
 			if ( cl->pers.connected == CON_CONNECTED && cl->sess.sessionTeam != TEAM_SPECTATOR ) {
 				flags = (cl->ps.eFlags & ~(EF_VOTED | EF_TEAMVOTED)) | (ent->client->ps.eFlags & (EF_VOTED | EF_TEAMVOTED));
+				savedPing = ent->client->ps.ping;
 				ent->client->ps = cl->ps;
+				ent->client->ps.ping = savedPing;
+				// let's not overwrite ps ping, let that be the real one. but still overwrite this one to replicate old behavior
+				// this is ok because ps->ping isn't networked anyway so we can just handle it differently internally
+				ent->client->pers.normalFollowerPing = cl->ps.ping;
 				ent->client->ps.pm_flags |= PMF_FOLLOW;
 				ent->client->ps.eFlags = flags;
 				return;

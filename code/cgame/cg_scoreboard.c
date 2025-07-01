@@ -66,6 +66,31 @@
 static qboolean localClient; // true if local client has been displayed
 
 
+void CG_SB_Text_Paint_Double(qboolean largeFormat, float x, float y, float scale, const vec4_t color, int value, int value2, float adjust, int limit, int style, int iMenuFont) {
+	if (value==value2) {
+		CG_Text_Paint(x,y,scale,color,va("%i",value),adjust,limit,style,iMenuFont);
+	}
+	else if (largeFormat) {
+		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.15f, scale*0.4f, color, va("%i", value), adjust, limit, style, iMenuFont);
+		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.35f, scale*0.75f, color, va("%i", value2), adjust, limit, style, iMenuFont);
+	}
+	else {
+		CG_Text_Paint(x, y, scale, color, va("%i/%i", value,value2), adjust, limit, style, iMenuFont);
+	}
+}
+void CG_SB_Text_Paint_Double_Text(qboolean largeFormat, float x, float y, float scale, const vec4_t color, const char* value, const char* value2, float adjust, int limit, int style, int iMenuFont) {
+	if (!Q_stricmp(value,value2)) {
+		CG_Text_Paint(x,y,scale,color, value,adjust,limit,style,iMenuFont);
+	}
+	else if (largeFormat) {
+		CG_Text_Paint(x, y, scale*0.5f, color, value, adjust, limit, style, iMenuFont);
+		CG_Text_Paint(x, y+(float)SB_NORMAL_HEIGHT*0.5f, scale*0.5f, color, value2, adjust, limit, style, iMenuFont);
+	}
+	else {
+		CG_Text_Paint(x, y, scale, color, va("%s/%s", value,value2), adjust, limit, style, iMenuFont);
+	}
+}
+
 							 /*
 =================
 CG_DrawScoreboard
@@ -297,18 +322,19 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 			if (ci->botSkill != 0)
 				CG_Text_Paint(scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 			else
-				CG_Text_Paint(scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, va("%i", score->ping), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_SB_Text_Paint_Double(largeFormat,scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
-			CG_Text_Paint(scoreLineX + 0.90 * scoreLineWidth, y, 1.0f * scale, colorWhite, va("%i", score->time), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			CG_SB_Text_Paint_Double(largeFormat, scoreLineX + 0.90 * scoreLineWidth, y, 1.0f * scale, colorWhite, score->time, score->fulltime, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 		}
 		else if (defragScoreboard) {
 
 			if (ci->botSkill != 0)
 				CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 			else
-				CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, va("%i", score->ping), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_SB_Text_Paint_Double(largeFormat,SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
-			CG_Text_Paint(SB_TIME_X_DEFRAG, y, 1.0f * scale, colorWhite, va("%i", score->time), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			CG_SB_Text_Paint_Double(largeFormat, SB_TIME_X_DEFRAG, y, 1.0f * scale, colorWhite, score->time, score->fulltime, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+
 			CG_Text_Paint(SB_PB_X_DEFRAG, y, 1.0f * scale, colorWhite, ci->jkmod_race ? DF_MsToString(ci->jkmod_race) : "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 		}
 		else
@@ -316,9 +342,9 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 			if (ci->botSkill != 0)
 				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 			else
-				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, va("%i", score->ping), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_SB_Text_Paint_Double(largeFormat,SB_PING_X, y, 1.0f * scale, colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
-			CG_Text_Paint(SB_TIME_X, y, 1.0f * scale, colorWhite, va("%i", score->time), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			CG_SB_Text_Paint_Double(largeFormat, SB_TIME_X, y, 1.0f * scale, colorWhite, score->time, score->fulltime, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 		}
 	}
 	else if (cgs.gametype == GT_CTF)

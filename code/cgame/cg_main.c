@@ -960,7 +960,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_oldPainSounds, "cg_oldPainSounds", "0", 0 },
 
 #ifdef G2_COLLISION_ENABLED
-	{ &cg_saberModelTraceEffect, "cg_saberModelTraceEffect", "0", 0 },
+	{ &cg_saberModelTraceEffect, "cg_saberModelTraceEffect", "0", CVAR_ARCHIVE  },
 #endif
 
 	{ &cg_fpls, "cg_fpls", "0", 0 },

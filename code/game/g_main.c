@@ -3211,6 +3211,12 @@ void G_RunFrame( int levelTime ) {
 	int start, end;
 	int			activeRunnerCount = 0;
 
+	for (i = 0; i < level.maxclients; i++) {
+		ent = g_entities + i;
+		if (!ent->inuse || !ent->client) continue;
+		ent->client->pers.normalFollowerPing = ent->client->ps.ping; // server (except on map restarts and such) calcs proper pings and saves them to the ps before running game frame. intercept it here so we know it and can send the real ping even for clients that are spectating.
+	}
+
 	G_BufferedSendOrPrintFlushIfNeeded(NULL, qtrue);
 
 	if (gDoSlowMoDuel)

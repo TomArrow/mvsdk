@@ -3792,6 +3792,11 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 		ent->client->accuracy_hits = 0;
 		ent->client->ps.fd.suicides = 0;
 		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
+
+		if (!ent->client->pers.firstEnterTimeSet) {
+			ent->client->pers.firstEnterTime = level.time;
+			ent->client->pers.firstEnterTimeSet = qtrue;
+		}
 	}
 	UpdateClientRaceVars(ent->client);
 	G_SendServerCommand(ent - g_entities, va("print \"^3Mode updated: %s\n\"",modeNames[mode].string), qtrue);

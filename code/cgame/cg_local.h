@@ -472,7 +472,9 @@ typedef struct {
 	int				client;
 	int				score;
 	int				ping;
+	int				realping;
 	int				time;
+	int				fulltime;
 	int				scoreFlags;
 	int				powerUps;
 	int				accuracy;

@@ -67,14 +67,17 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 	stringlength = strlen( string );
 
 	for (i=0 ; i < numSorted ; i++) {
-		int		ping;
+		int		ping, normalFollowerPing;
+		int		time, fulltime;
 
 		cl = &level.clients[level.sortedClients[i]];
 
 		if ( cl->pers.connected == CON_CONNECTING ) {
 			ping = -1;
+			normalFollowerPing = -1;
 		} else {
 			ping = cl->ps.ping < 999 ? cl->ps.ping : 999;
+			normalFollowerPing = cl->pers.normalFollowerPing < 999 ? cl->pers.normalFollowerPing : 999;
 		}
 
 		if( cl->accuracy_shots ) {
@@ -85,9 +88,12 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 		}
 		perfect = ( cl->ps.persistant[PERS_RANK] == 0 && cl->ps.persistant[PERS_KILLED] == 0 ) ? 1 : 0;
 
+		time = (level.time - cl->pers.enterTime) / 60000;
+		fulltime = (level.time - cl->pers.firstEnterTime) / 60000;
+
 		Com_sprintf (entry, sizeof(entry),
-			" %i %i %i %i %i %i %i %i %i %i %i %i %i %i", level.sortedClients[i],
-			cl->ps.persistant[PERS_SCORE], ping, (level.time - cl->pers.enterTime)/60000,
+			" %i %i %i%s %i%s %i %i %i %i %i %i %i %i %i %i", level.sortedClients[i],
+			cl->ps.persistant[PERS_SCORE], normalFollowerPing, normalFollowerPing == ping ? "" : miniva("/%i",ping), time, time==fulltime ? "" : miniva("/%i", fulltime),
 			scoreFlags, g_entities[level.sortedClients[i]].s.powerups, accuracy, 
 			cl->ps.persistant[PERS_IMPRESSIVE_COUNT],
 			cl->ps.persistant[PERS_EXCELLENT_COUNT],
@@ -1234,7 +1240,7 @@ helpTip_t helpTips[] = {
 	},
 	{
 		"print \"^2/selectspawn^7 - Alternatively, select one of the real map spawn points for your start, e.g. for maps where ^2/savespawn^7 doesn't work. Call with ^2last^7 to remember the last point you spawned at or ^2closest^7 to select the spawn point closest to you. You can do this even from noclip.\n\"",
-		"print \"Random tip: ^2/selectspawn^7 - As an alternative to ^2/selectspawn^7, select one of the real map spawn points for your start, e.g. for maps where ^2/savespawn^7 doesn't work. Call with ^2last^7 to remember the last point you spawned at or ^2closest^7 to select the spawn point closest to you. You can do this even from noclip.\n\"",
+		"print \"Random tip: ^2/selectspawn^7 - As an alternative to ^2/savespawn^7, select one of the real map spawn points for your start, e.g. for maps where ^2/savespawn^7 doesn't work. Call with ^2last^7 to remember the last point you spawned at or ^2closest^7 to select the spawn point closest to you. You can do this even from noclip.\n\"",
 		qfalse,
 		qtrue
 	},
