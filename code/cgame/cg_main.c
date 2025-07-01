@@ -695,6 +695,7 @@ vmCvar_t	cg_thirdPersonTargetDamp;
 
 vmCvar_t	cg_thirdPersonAlpha;
 vmCvar_t	cg_thirdPersonHorzOffset;
+vmCvar_t	cg_thirdPersonHorzOffsetClassic;
 
 vmCvar_t	cg_stereoSeparation;
 vmCvar_t	cg_lagometer;
@@ -1105,6 +1106,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_thirdPersonTargetDamp, "cg_thirdPersonTargetDamp", "0.5", CVAR_ARCHIVE },
 	
 	{ &cg_thirdPersonHorzOffset, "cg_thirdPersonHorzOffset", "0", CVAR_CHEAT },
+	{ &cg_thirdPersonHorzOffsetClassic, "cg_thirdPersonHorzOffsetClassic", "0", CVAR_CHEAT },
 	{ &cg_thirdPersonAlpha,	"cg_thirdPersonAlpha",	"1.0", CVAR_CHEAT },
 
 	{ &cg_teamChatTime, "cg_teamChatTime", "3000", CVAR_ARCHIVE  },

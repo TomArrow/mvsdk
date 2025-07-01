@@ -648,6 +648,10 @@ static void CG_OffsetThirdPersonView( void )
 		AnglesToAxis( cg.refdefViewAngles, cg.refdef.viewaxis );
 		VectorMA( location, cg_thirdPersonHorzOffset.value,
 			cg.refdef.viewaxis[1], location );
+		
+		if (cg_thirdPersonHorzOffsetClassic.integer) {
+			VectorCopy(location, cam.loc.ideal);
+		}
 	}
 
 	// ...and of course we should copy the new view location to the proper spot too.
