@@ -8007,103 +8007,106 @@ stillDoSaber:
 
 			if (saberEnt && saberEnt->ghoul2 /*&& cent->bolt4 == 2*/)
 			{
-				vec3_t bladeAngles;
+				if(saberEnt->currentValid){ // due to my prediction improvements (hah!), saberinflight will be set early, but the position will be wrong. so don't draw until we got it from the server. TODO improve someday maybe
 
-				if (!cent->bolt2)
-				{
-					cent->bolt2 = cg.time;
-				}
+					vec3_t bladeAngles;
 
-				if (cent->bolt3 != 90)
-				{
-					if (cent->bolt3 < 90)
+					if (!cent->bolt2)
 					{
-						cent->bolt3 += (cg.time - cent->bolt2)*0.5;
-
-						if (cent->bolt3 > 90)
-						{
-							cent->bolt3 = 90;
-						}
+						cent->bolt2 = cg.time;
 					}
-					else if (cent->bolt3 > 90)
-					{
-						cent->bolt3 -= (cg.time - cent->bolt2)*0.5;
 
+					if (cent->bolt3 != 90)
+					{
 						if (cent->bolt3 < 90)
 						{
-							cent->bolt3 = 90;
+							cent->bolt3 += (cg.time - cent->bolt2)*0.5;
+
+							if (cent->bolt3 > 90)
+							{
+								cent->bolt3 = 90;
+							}
+						}
+						else if (cent->bolt3 > 90)
+						{
+							cent->bolt3 -= (cg.time - cent->bolt2)*0.5;
+
+							if (cent->bolt3 < 90)
+							{
+								cent->bolt3 = 90;
+							}
 						}
 					}
-				}
 
-				cent->bolt2 = cg.time;
+					cent->bolt2 = cg.time;
 
-				saberEnt->currentState.apos.trBase[0] = cent->bolt3;
-				saberEnt->lerpAngles[0] = cent->bolt3;
+					saberEnt->currentState.apos.trBase[0] = cent->bolt3;
+					saberEnt->lerpAngles[0] = cent->bolt3;
 
-				if (!saberEnt->currentState.saberInFlight && saberEnt->currentState.bolt2 != 123)
-				{ //owner is pulling is back
-					vec3_t owndir;
+					if (!saberEnt->currentState.saberInFlight && saberEnt->currentState.bolt2 != 123)
+					{ //owner is pulling is back
+						vec3_t owndir;
 
-					VectorSubtract(saberEnt->lerpOrigin, cent->lerpOrigin, owndir);
-					VectorNormalize(owndir);
+						VectorSubtract(saberEnt->lerpOrigin, cent->lerpOrigin, owndir);
+						VectorNormalize(owndir);
 
-					vectoangles(owndir, owndir);
+						vectoangles(owndir, owndir);
 
-					owndir[0] += 90;
+						owndir[0] += 90;
 
-					VectorCopy(owndir, saberEnt->currentState.apos.trBase);
-					VectorCopy(owndir, saberEnt->lerpAngles);
-					VectorClear(saberEnt->currentState.apos.trDelta);
-				}
+						VectorCopy(owndir, saberEnt->currentState.apos.trBase);
+						VectorCopy(owndir, saberEnt->lerpAngles);
+						VectorClear(saberEnt->currentState.apos.trDelta);
+					}
 
-				//We don't actually want to rely entirely on server updates to render the position of the saber, because we actually know generally where
-				//it's going to be before the first position update even gets here, and it needs to start getting rendered the instant the saber model is
-				//removed from the player hand. So we'll just render it manually and let normal rendering for the entity be ignored.
-				if (!saberEnt->currentState.saberInFlight && saberEnt->currentState.bolt2 != 123)
-				{ //tell it that we're a saber and to render the glow around our handle because we're being pulled back
-					saberEnt->bolt3 = 999;
-				}
+					//We don't actually want to rely entirely on server updates to render the position of the saber, because we actually know generally where
+					//it's going to be before the first position update even gets here, and it needs to start getting rendered the instant the saber model is
+					//removed from the player hand. So we'll just render it manually and let normal rendering for the entity be ignored.
+					if (!saberEnt->currentState.saberInFlight && saberEnt->currentState.bolt2 != 123)
+					{ //tell it that we're a saber and to render the glow around our handle because we're being pulled back
+						saberEnt->bolt3 = 999;
+					}
 
-				saberEnt->currentState.modelGhoul2 = 1;
-				CG_ManualEntityRender(saberEnt);
-				saberEnt->bolt3 = 0;
-				saberEnt->currentState.modelGhoul2 = 127;
+					saberEnt->currentState.modelGhoul2 = 1;
+					CG_ManualEntityRender(saberEnt);
+					saberEnt->bolt3 = 0;
+					saberEnt->currentState.modelGhoul2 = 127;
 
-				VectorCopy(saberEnt->lerpAngles, bladeAngles);
-				bladeAngles[ROLL] = 0;
-				CG_AddSaberBlade(cent, saberEnt, NULL, 0, 0, saberEnt->lerpOrigin, bladeAngles, qtrue);
+					VectorCopy(saberEnt->lerpAngles, bladeAngles);
+					bladeAngles[ROLL] = 0;
+					CG_AddSaberBlade(cent, saberEnt, NULL, 0, 0, saberEnt->lerpOrigin, bladeAngles, qtrue);
 
-				//Make the player's hand glow while guiding the saber
-				{
-					vec3_t tAng;
-					float wv;
-					addspriteArgStruct_t fxSArgs;
+					//Make the player's hand glow while guiding the saber
+					{
+						vec3_t tAng;
+						float wv;
+						addspriteArgStruct_t fxSArgs;
 
-					VectorSet( tAng, cent->turAngles[PITCH], cent->turAngles[YAW], cent->turAngles[ROLL] );
+						VectorSet( tAng, cent->turAngles[PITCH], cent->turAngles[YAW], cent->turAngles[ROLL] );
 
-					trap_G2API_GetBoltMatrix(cent->ghoul2, 0, cgs.clientinfo[cent->currentState.number].bolt_rhand, &boltMatrix, tAng, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
+						trap_G2API_GetBoltMatrix(cent->ghoul2, 0, cgs.clientinfo[cent->currentState.number].bolt_rhand, &boltMatrix, tAng, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
 
-					efOrg[0] = boltMatrix.matrix[0][3];
-					efOrg[1] = boltMatrix.matrix[1][3];
-					efOrg[2] = boltMatrix.matrix[2][3];
+						efOrg[0] = boltMatrix.matrix[0][3];
+						efOrg[1] = boltMatrix.matrix[1][3];
+						efOrg[2] = boltMatrix.matrix[2][3];
 
-					wv = sin( cg.time * 0.003f ) * 0.08f + 0.1f;
+						wv = sin( cg.time * 0.003f ) * 0.08f + 0.1f;
 
-					//trap_FX_AddSprite( NULL, efOrg, NULL, NULL, 8.0f, 8.0f, wv, wv, 0.0f, 0.0f, 1.0f, cgs.media.yellowSaberGlowShader, 0x08000000 );
-					VectorCopy(efOrg, fxSArgs.origin);
-					VectorClear(fxSArgs.vel);
-					VectorClear(fxSArgs.accel);
-					fxSArgs.scale = 8.0f;
-					fxSArgs.dscale = 8.0f;
-					fxSArgs.sAlpha = wv;
-					fxSArgs.eAlpha = wv;
-					fxSArgs.rotation = 0.0f;
-					fxSArgs.bounce = 0.0f;
-					fxSArgs.life = 1.0f;
-					fxSArgs.shader = cgs.media.yellowDroppedSaberShader;
-					fxSArgs.flags = 0x08000000;
-					trap_FX_AddSprite(&fxSArgs);
+						//trap_FX_AddSprite( NULL, efOrg, NULL, NULL, 8.0f, 8.0f, wv, wv, 0.0f, 0.0f, 1.0f, cgs.media.yellowSaberGlowShader, 0x08000000 );
+						VectorCopy(efOrg, fxSArgs.origin);
+						VectorClear(fxSArgs.vel);
+						VectorClear(fxSArgs.accel);
+						fxSArgs.scale = 8.0f;
+						fxSArgs.dscale = 8.0f;
+						fxSArgs.sAlpha = wv;
+						fxSArgs.eAlpha = wv;
+						fxSArgs.rotation = 0.0f;
+						fxSArgs.bounce = 0.0f;
+						fxSArgs.life = 1.0f;
+						fxSArgs.shader = cgs.media.yellowDroppedSaberShader;
+						fxSArgs.flags = 0x08000000;
+						trap_FX_AddSprite(&fxSArgs);
+					}
 				}
 			}
 		}
