@@ -40,6 +40,7 @@
 #define	RF_FULLBRIGHT		0x80000 //RGB brightskins
 #define RF_NOLOD			0x100000 //for local player
 
+#define RF_SABERGLOWENDS	0x80000 // hack: draws the shader at top and bottom of saber, and bigger than usual. ok to reuse RF_FULLBRIGHT. other type of refent.
 
 
 // refdef flags

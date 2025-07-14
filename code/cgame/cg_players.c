@@ -4477,7 +4477,8 @@ void CG_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, saber
 	vec3_t		mid, rgb={1,1,1};
 	qhandle_t	blade = 0, glow = 0;
 	refEntity_t saber;
-	float radiusmult;
+	float		radiusmult;
+	int			i;
 
 	if ( length < 0.5f )
 	{
@@ -4559,6 +4560,20 @@ void CG_DoSaber( vec3_t origin, vec3_t dir, float length, float lengthMax, saber
 	saber.renderfx = rfx;
 
 	trap_R_AddRefEntityToScene( &saber );
+
+	// saber ends glow mod
+	if (cg_saberEndsGlow.value > 0.0f) {
+		saber.customShader = cgs.media.saberEndsGlowShader; 
+		for (i = 0; i < 3; i++)
+			saber.shaderRGBA[i] = Com_Clampi(0,255,rgb[i]*255.0f);
+		saber.shaderRGBA[3] = 0xff;
+
+		//[/RGBSabers]
+		saber.renderfx = rfx | RF_SABERGLOWENDS;
+		saber.data.line.width2 = 22.0f* cg_saberEndsGlow.value;
+
+		trap_R_AddRefEntityToScene(&saber);
+	}
 
 	// Do the hot core
 	VectorMA( origin, length, dir, saber.origin );

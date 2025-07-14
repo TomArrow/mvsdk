@@ -1141,6 +1141,8 @@ typedef struct {
 	qhandle_t	purpleSaberCoreShader;
 	qhandle_t	saberBlurShader;
 
+	qhandle_t	saberEndsGlowShader;
+
 	qhandle_t	yellowDroppedSaberShader;
 
 	qhandle_t	rivetMarkShader;
@@ -1812,6 +1814,8 @@ extern	vmCvar_t		cg_saberDynamicMarkTime;
 
 extern	vmCvar_t		cg_saberContact;
 extern	vmCvar_t		cg_saberTrail;
+
+extern	vmCvar_t		cg_saberEndsGlow; // you need to declare gfx/effects/sabers/saberendsglow and it will be drawn on the tip and bottom of saber blade 
 
 extern	vmCvar_t		cg_duelHeadAngles;
 

@@ -558,6 +558,7 @@ vmCvar_t	cg_saberDynamicMarkTime;
 
 vmCvar_t	cg_saberContact;
 vmCvar_t	cg_saberTrail;
+vmCvar_t	cg_saberEndsGlow;
 
 vmCvar_t	cg_duelHeadAngles;
 
@@ -970,6 +971,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_saberContact, "cg_saberContact", "1", 0 },
 	{ &cg_saberTrail, "cg_saberTrail", "1", 0 },
+	{ &cg_saberEndsGlow, "cg_saberEndsGlow", "0.0", CVAR_ARCHIVE },
 
 	{ &cg_duelHeadAngles, "cg_duelHeadAngles", "0", 0 },
 
@@ -1735,6 +1737,7 @@ static void CG_RegisterSounds( void ) {
 	cgs.media.purpleSaberGlowShader		= trap_R_RegisterShader( "gfx/effects/sabers/purple_glow" );
 	cgs.media.purpleSaberCoreShader		= trap_R_RegisterShader( "gfx/effects/sabers/purple_line" );
 	cgs.media.saberBlurShader			= trap_R_RegisterShader( "gfx/effects/sabers/saberBlur" );
+	cgs.media.saberEndsGlowShader		= trap_R_RegisterShader( "gfx/effects/sabers/saberendsglow" );
 
 	cgs.media.yellowDroppedSaberShader	= trap_R_RegisterShader("gfx/effects/yellow_glow");
 
