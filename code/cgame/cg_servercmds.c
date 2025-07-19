@@ -1322,7 +1322,6 @@ static void CG_ServerCommand( void ) {
 			if (cg_friendsChatsOnly.integer)
 			{
 				int i = 0;
-				const char *ch = text;
 				qboolean printMessage = qfalse;
 				char name[64];
 				int length = 0;
