@@ -90,14 +90,67 @@ void CG_ESPDrawArmorBar(float x, float y, float width, float height, float armor
 // ESP System Implementation
 void CG_InitESP(void)
 {
-	// Initialize ESP system
-	// ...
+	memset(espPlayers, 0, sizeof(espPlayers));
+	memset(espItems, 0, sizeof(espItems));
+	memset(&espConfig, 0, sizeof(espConfig));
+
+	// Initialize ESP configuration
+	espConfig.maxEntities = cg_espMaxEntities.integer;
+	espConfig.updateRate = cg_espUpdateRate.integer;
+	espConfig.maxDistance = cg_espDistance.value;
+	espConfig.colorMode = cg_espColorMode.integer;
+	espConfig.showThroughWalls = cg_espThroughWalls.integer;
+	espConfig.showNames = cg_espPlayerNames.integer;
+	espConfig.showHealth = cg_espHealthBars.integer;
+	espConfig.showArmor = cg_espHealthBars.integer; // Use same setting
+	espConfig.showForce = cg_espForceBars.integer;
+	espConfig.showWeapons = cg_espWeaponInfo.integer;
+	espConfig.showBoxes = cg_espBoxes.integer;
+	espConfig.showLines = cg_espLines.integer;
+	espConfig.alpha = cg_espAlpha.value;
+	espConfig.size = cg_espSize.value;
+	espConfig.style = cg_espStyle.integer;
+	espConfig.debug = cg_espDebug.integer;
+
+	// Parse colors
+	sscanf(cg_espPlayerColor.string, "%f %f %f %f",
+		   &espConfig.playerColor[0], &espConfig.playerColor[1],
+		   &espConfig.playerColor[2], &espConfig.playerColor[3]);
+	sscanf(cg_espEnemyColor.string, "%f %f %f %f",
+		   &espConfig.enemyColor[0], &espConfig.enemyColor[1],
+		   &espConfig.enemyColor[2], &espConfig.enemyColor[3]);
+	sscanf(cg_espItemColor.string, "%f %f %f %f",
+		   &espConfig.itemColor[0], &espConfig.itemColor[1],
+		   &espConfig.itemColor[2], &espConfig.itemColor[3]);
+	sscanf(cg_espFriendColor.string, "%f %f %f %f",
+		   &espConfig.friendColor[0], &espConfig.friendColor[1],
+		   &espConfig.friendColor[2], &espConfig.friendColor[3]);
+
+	lastESPUpdate = 0;
+	espFrameCount = 0;
+	espInitialized = qtrue;
+
+	if (espConfig.debug)
+	{
+		CG_Printf("^2ESP System initialized with %d player slots\n", MAX_CLIENTS);
+	}
 }
 
 void CG_UpdateESP(void)
 {
-	// Update ESP data
-	// ...
+	int i;
+	int currentTime = trap_Milliseconds();
+
+	if (!espInitialized || !cg_esp.integer)
+	{
+		return;
+	}
+
+	// Update rate limiting
+	if (currentTime - lastESPUpdate < (1000 / espConfig.updateRate))
+	{
+		return;
+	}
 }
 
 void CG_DrawESP(void)
