@@ -6236,9 +6236,10 @@ void CG_DoAutoBackStab(void)
 		return;
 	}
 
-	clientNum = CG_CanBackStab();
+	int canBackStabResult = CG_CanBackStab();
+	clientNum = canBackStabResult;
 
-	if (CG_CanBackStab() == -1)
+	if (canBackStabResult == -1)
 	{
 		return;
 	}
