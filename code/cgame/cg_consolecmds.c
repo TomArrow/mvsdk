@@ -10,6 +10,64 @@
 #include "../qcommon/levenshtein.h"
 extern menuDef_t *menuScoreboard;
 
+/*
+=================
+Auto-Backstab System Command Handlers
+=================
+*/
+
+static void CG_AutoBackstabDown_f(void)
+{
+	// Set auto-backstab mode to normal backstab (LS_A_BACK)
+	cg.doAutoBackstab = qtrue;
+	cg.autoBackstabMode = 1; // Normal backstab mode
+}
+
+static void CG_AutoBackstabUp_f(void)
+{
+	cg.doAutoBackstab = qfalse;
+}
+
+static void CG_AutoDualBackstabDown_f(void)
+{
+	// Set auto-backstab mode to crouched backstab (LS_A_BACK_CR)
+	cg.doAutoBackstab = qtrue;
+	cg.autoBackstabMode = 2; // Crouched backstab mode
+}
+
+static void CG_AutoDualBackstabUp_f(void)
+{
+	cg.doAutoBackstab = qfalse;
+}
+
+static void CG_AutoAdvancedBackstabDown_f(void)
+{
+	// Set auto-backstab mode to advanced air dual backstab
+	cg.doAutoBackstab = qtrue;
+	cg.autoBackstabMode = 3; // Advanced air dual backstab mode
+}
+
+static void CG_AutoAdvancedBackstabUp_f(void)
+{
+	cg.doAutoBackstab = qfalse;
+}
+
+/*
+=================
+Auto-Kick System Command Handlers
+=================
+*/
+
+static void CG_AutoKickDown_f(void)
+{
+	cg.doAutoKick = qtrue;
+}
+
+static void CG_AutoKickUp_f(void)
+{
+	cg.doAutoKick = qfalse;
+}
+
 void CG_TargetCommand_f(void)
 {
 	int targetNum;
@@ -935,7 +993,7 @@ static bitInfo_T customizeRaceSettings[] = {
 	{"Hide anti-loop restart blocked centerprints"}, // 2
 	{"Hide non-warning race start centerprints"},	 // 3
 	{"Hide CTF messages in racemode"},				 // 4
-	//{ "Auto-respawn when antiloop is triggered" },//5
+													 //{ "Auto-respawn when antiloop is triggered" },//5
 };
 static const int MAX_CUSTOMIZERACE_SETTINGS = ARRAY_LEN(customizeRaceSettings);
 
@@ -2034,7 +2092,17 @@ static consoleCommand_t commands[] = {
 	{"lowjump", CG_Lowjump_f},
 	{"+duck", CG_NorollDown_f},
 	{"-duck", CG_NorollUp_f},
-	{"weaplast", CG_LastWeapon_f}};
+	{"weaplast", CG_LastWeapon_f},
+
+	// Auto-Defense System Commands
+	{"+autobs", CG_AutoBackstabDown_f},
+	{"-autobs", CG_AutoBackstabUp_f},
+	{"+autodbs", CG_AutoDualBackstabDown_f},
+	{"-autodbs", CG_AutoDualBackstabUp_f},
+	{"+autoadbs", CG_AutoAdvancedBackstabDown_f},
+	{"-autoadbs", CG_AutoAdvancedBackstabUp_f},
+	{"+autokick", CG_AutoKickDown_f},
+	{"-autokick", CG_AutoKickUp_f}};
 static consoleCommand_t memecommands[] = {
 	{"disco", CG_DiscoLights_f},
 	{"qui", CG_QuiGonJinn_f},

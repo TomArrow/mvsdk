@@ -48,6 +48,19 @@ vmCvar_t cg_autoKickIgnoreFriends;
 vmCvar_t cg_autoKickIgnoreSpectators;
 vmCvar_t cg_autoKickSoundAlert;
 vmCvar_t cg_autoKickVisualAlert;
+
+// Auto-Aim System CVars
+vmCvar_t cg_autoAim;
+vmCvar_t cg_autoAimFOV;
+vmCvar_t cg_autoAimRange;
+vmCvar_t cg_autoAimDelay;
+vmCvar_t cg_autoAimPrediction;
+vmCvar_t cg_autoAimIgnoreFriends;
+vmCvar_t cg_autoAimIgnoreSpectators;
+vmCvar_t cg_autoAimSoundAlert;
+vmCvar_t cg_autoAimVisualAlert;
+vmCvar_t cg_autoAimWallPenetrate;
+vmCvar_t cg_autoAimDamping;
 vmCvar_t cg_autoBackstab;
 vmCvar_t cg_autoBackstabDistance;
 vmCvar_t cg_autoBackstabAngle;
@@ -75,6 +88,19 @@ vmCvar_t cg_wallhackIgnoreFriends;
 vmCvar_t cg_wallhackSoundAlert;
 vmCvar_t cg_wallhackVisualAlert;
 vmCvar_t cg_wallhackPulse;
+
+// Auto-Aim System CVars
+vmCvar_t cg_autoAim;
+vmCvar_t cg_autoAimFOV;
+vmCvar_t cg_autoAimRange;
+vmCvar_t cg_autoAimDelay;
+vmCvar_t cg_autoAimPrediction;
+vmCvar_t cg_autoAimIgnoreFriends;
+vmCvar_t cg_autoAimIgnoreSpectators;
+vmCvar_t cg_autoAimSoundAlert;
+vmCvar_t cg_autoAimVisualAlert;
+vmCvar_t cg_autoAimWallPenetrate;
+vmCvar_t cg_autoAimDamping;
 
 // Friends System CVars
 vmCvar_t cg_friendsSystem;
@@ -136,6 +162,20 @@ void CG_RegisterV24Cvars(void)
     trap_Cvar_Register(&cg_autoKickIgnoreSpectators, "cg_autoKickIgnoreSpectators", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
     trap_Cvar_Register(&cg_autoKickSoundAlert, "cg_autoKickSoundAlert", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
     trap_Cvar_Register(&cg_autoKickVisualAlert, "cg_autoKickVisualAlert", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+
+    // Auto-Aim System CVars
+    trap_Cvar_Register(&cg_autoAim, "cg_autoAim", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimFOV, "cg_autoAimFOV", "30", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimRange, "cg_autoAimRange", "1500", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimDelay, "cg_autoAimDelay", "100", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimPrediction, "cg_autoAimPrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimIgnoreFriends, "cg_autoAimIgnoreFriends", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimIgnoreSpectators, "cg_autoAimIgnoreSpectators", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimSoundAlert, "cg_autoAimSoundAlert", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimVisualAlert, "cg_autoAimVisualAlert", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimWallPenetrate, "cg_autoAimWallPenetrate", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimDamping, "cg_autoAimDamping", "0.5", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+
     trap_Cvar_Register(&cg_autoBackstab, "cg_autoBackstab", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
     trap_Cvar_Register(&cg_autoBackstabDistance, "cg_autoBackstabDistance", "200", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
     trap_Cvar_Register(&cg_autoBackstabAngle, "cg_autoBackstabAngle", "60", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
@@ -154,6 +194,19 @@ void CG_RegisterV24Cvars(void)
     trap_Cvar_Register(&cg_enemyDetectionPulseRate, "cg_enemyDetectionPulseRate", "500", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
     trap_Cvar_Register(&cg_enemyDetectionIgnoreFriends, "cg_enemyDetectionIgnoreFriends", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
     trap_Cvar_Register(&cg_enemyDetectionThroughWalls, "cg_enemyDetectionThroughWalls", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+
+    // Auto-Aim System CVars
+    trap_Cvar_Register(&cg_autoAim, "cg_autoAim", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimFOV, "cg_autoAimFOV", "30.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimRange, "cg_autoAimRange", "2000.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimDelay, "cg_autoAimDelay", "100", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimPrediction, "cg_autoAimPrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimIgnoreFriends, "cg_autoAimIgnoreFriends", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimIgnoreSpectators, "cg_autoAimIgnoreSpectators", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimSoundAlert, "cg_autoAimSoundAlert", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimVisualAlert, "cg_autoAimVisualAlert", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimWallPenetrate, "cg_autoAimWallPenetrate", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
+    trap_Cvar_Register(&cg_autoAimDamping, "cg_autoAimDamping", "0.5", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);
 
     // Wallhack System CVars
     trap_Cvar_Register(&cg_wallhack, "cg_wallhack", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL);

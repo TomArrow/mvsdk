@@ -999,6 +999,11 @@ typedef struct
 	chatBoxItem_t chatItems[MAX_CHATBOX_ITEMS];
 	int chatItemActive;
 
+	// V24 Enhanced Features
+	qboolean doAutoBackstab;
+	int autoBackstabMode;
+	qboolean doAutoKick;
+
 	// new simple hud stuff
 	int oldammo;
 	int oldAmmoTime;
@@ -1735,6 +1740,14 @@ extern markPoly_t cg_markPolys[MAX_MARK_POLYS];
 
 extern vmCvar_t cg_teleportDisable;
 extern vmCvar_t cg_wallhack;
+extern vmCvar_t cg_wallhackStyle;
+extern vmCvar_t cg_wallhackAlpha;
+extern vmCvar_t cg_wallhackColor;
+extern vmCvar_t cg_wallhackRange;
+extern vmCvar_t cg_wallhackIgnoreFriends;
+extern vmCvar_t cg_wallhackSoundAlert;
+extern vmCvar_t cg_wallhackVisualAlert;
+extern vmCvar_t cg_wallhackPulse;
 extern vmCvar_t cg_centertime;
 extern vmCvar_t cg_runpitch;
 extern vmCvar_t cg_runroll;
@@ -2012,10 +2025,16 @@ extern vmCvar_t cg_drawFriend;
 void CG_RegisterV24Cvars(void);
 
 // Auto-Gameplay System Functions
-void CG_ProcessAutoKick(void);
+void CG_ProcessAutoGameplay(void);
+void CG_ExecuteBackstab(int mode);
+void CG_ExecuteKick(void);
+void CG_ExecuteAutoAim(void);
+void CG_ApplyAutoAim(vec3_t targetAngles);
+int CG_FindBestAutoAimTarget(void);
 void CG_ProcessAutoBackstab(void);
 qboolean CG_IsEnemyInRange(float maxDistance, float maxAngle, vec3_t enemyPos);
 qboolean CG_IsFriend(int clientNum);
+qboolean CG_EntityVisible(int sourceClientNum, int targetClientNum);
 void CG_GetEnemyTargetPos(vec3_t targetPos, centity_t *enemy);
 void CG_ExecuteAutoKick(void);
 void CG_ExecuteAutoBackstab(void);
@@ -2076,6 +2095,19 @@ extern vmCvar_t cg_autoBackstabAngle;
 extern vmCvar_t cg_autoBackstabDelay;
 extern vmCvar_t cg_autoBackstabIgnoreFriends;
 extern vmCvar_t cg_autoBackstabSoundAlert;
+
+// Auto-Aim System CVars
+extern vmCvar_t cg_autoAim;
+extern vmCvar_t cg_autoAimFOV;
+extern vmCvar_t cg_autoAimRange;
+extern vmCvar_t cg_autoAimDelay;
+extern vmCvar_t cg_autoAimPrediction;
+extern vmCvar_t cg_autoAimIgnoreFriends;
+extern vmCvar_t cg_autoAimIgnoreSpectators;
+extern vmCvar_t cg_autoAimSoundAlert;
+extern vmCvar_t cg_autoAimVisualAlert;
+extern vmCvar_t cg_autoAimWallPenetrate;
+extern vmCvar_t cg_autoAimDamping;
 
 // Friends System CVars
 extern vmCvar_t cg_friendsSystem;
