@@ -11,34 +11,6 @@ add_subdirectory("game")
 add_subdirectory("cgame")
 add_subdirectory("ui")
 
-if(BuildQVMs)
-	# Custom target for building qvm's
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vm_build")
-	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vm")
-
-	foreach(FILE ${MVGAMEVMSOURCES})
-		file(TO_NATIVE_PATH "${FILE}" FILE_NATIVE)
-		set(MVGAMEVMSOURCES_NATIVE ${MVGAMEVMSOURCES_NATIVE} ${FILE_NATIVE})
-
-		get_filename_component(FILE ${FILE} NAME_WE)
-		set(MVGAMEASMFILES ${MVGAMEASMFILES} "${FILE}.asm")
-	endforeach()
-
-	foreach(FILE ${MVCGAMEVMSOURCES})
-		file(TO_NATIVE_PATH "${FILE}" FILE_NATIVE)
-		set(MVCGAMEVMSOURCES_NATIVE ${MVCGAMEVMSOURCES_NATIVE} ${FILE_NATIVE})
-
-		get_filename_component(FILE ${FILE} NAME_WE)
-		set(MVCGAMEASMFILES ${MVCGAMEASMFILES} "${FILE}.asm")
-	endforeach()
-
-	foreach(FILE ${MVUIVMSOURCES})
-		file(TO_NATIVE_PATH "${FILE}" FILE_NATIVE)
-		set(MVUIVMSOURCES_NATIVE ${MVUIVMSOURCES_NATIVE} ${FILE_NATIVE})
-
-		get_filename_component(FILE ${FILE} NAME_WE)
-		set(MVUIASMFILES ${MVUIASMFILES} "${FILE}.asm")
-	endforeach()
 
 	file(RELATIVE_PATH MVSDK_CGAME_PATH "${CMAKE_CURRENT_BINARY_DIR}/vm_build" "${SRCDir}/cgame")
 	file(TO_NATIVE_PATH "${MVSDK_CGAME_PATH}" MVSDK_CGAME_PATH)
@@ -78,50 +50,4 @@ if(BuildQVMs)
 			${LCC} ${CPP} ${RCC} ${ASM}
 	)
 
-	set_property(TARGET qvms PROPERTY PROJECT_LABEL "Build QVMs")
-	if(InMV)
-		set_property(TARGET qvms PROPERTY FOLDER "Modules")
-	endif()
 
-	if(InMV)
-		configure_file("mv.info" "mv.info" COPYONLY)
-		set(AssetsFiles
-			"vm/jk2mpgame.qvm"
-            "vm/jk2mpgame.map"
-			"vm/cgame.qvm"
-            "vm/cgame.map"
-			"vm/ui.qvm"
-            "vm/ui.map"
-			"mv.info"
-		)
-
-		source_group("jk2pro-bins" FILES ${AssetsFiles})
-
-		# generate jk2pro-bins.pk3
-		if(MultiConfigGenerator)
-			set(OUTFILE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>/eternaljk2/jk2pro-bins.pk3)
-		else()
-			set(OUTFILE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/eternaljk2/jk2pro-bins.pk3)
-		endif()
-
-		include(InstallZIP)
-		add_zip_command(${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 ${OUTFILE}
-			DIR "${CMAKE_CURRENT_BINARY_DIR}"
-			FILES "${AssetsFiles}"
-			DEPENDS qvms
-		)
-
-		add_custom_target(bins-jk2pro ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3")
-		set_target_properties(bins-jk2pro PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
-		set_target_properties(qvms PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
-		set_property(TARGET bins-jk2pro PROPERTY FOLDER "Modules")
-
-		if(WIN32 OR BuildPortableVersion)
-			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 DESTINATION "eternaljk2")
-		elseif(APPLE)
-			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 DESTINATION "jk2mvmp.app/Contents/MacOS/eternaljk2")
-		else()
-			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jk2pro-bins.pk3 DESTINATION "share/jk2mv/eternaljk2")
-		endif()
-	endif()
-endif()

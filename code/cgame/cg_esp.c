@@ -95,6 +95,27 @@ void CG_UpdateESP(void)
 	{
 		return;
 	}
+	lastESPUpdate = currentTime;
+
+	// Update players
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		centity_t *cent = &cg_entities[i];
+		if (cent->currentState.eType == ET_PLAYER)
+		{
+			CG_ESPUpdateRealTimeData(cent, &espPlayers[i]);
+		}
+	}
+
+	// Update items
+	for (i = 0; i < MAX_GENTITIES; i++)
+	{
+		centity_t *cent = &cg_entities[i];
+		if (cent->currentState.eType == ET_ITEM)
+		{
+			CG_ESPUpdateRealTimeData(cent, &espItems[i]);
+		}
+	}
 }
 
 void CG_DrawESP(void)
@@ -275,23 +296,17 @@ void CG_ESPDrawHealthBar(float x, float y, float width, float height, float heal
 
 void CG_ESPDrawForceBar(float x, float y, float width, float height, float force, float maxForce)
 {
-	// Draw force bar for ESP entity
-	// ...
+	float frac = (maxForce > 0) ? (force / maxForce) : 0.0f;
+	vec4_t barColor = {1.0f, 1.0f, 0.0f, 0.7f};
+	trap_R_SetColor(barColor);
+	trap_R_DrawStretchPic(x, y, width * frac, height, 0, 0, 1, 1, cgs.media.whiteShader);
+	trap_R_SetColor(NULL);
 }
 
 void CG_ESPDrawArmorBar(float x, float y, float width, float height, float armor, float maxArmor)
 {
 	float frac = (maxArmor > 0) ? (armor / maxArmor) : 0.0f;
 	vec4_t barColor = {0.0f, 0.5f, 1.0f, 0.7f};
-	trap_R_SetColor(barColor);
-	trap_R_DrawStretchPic(x, y, width * frac, height, 0, 0, 1, 1, cgs.media.whiteShader);
-	trap_R_SetColor(NULL);
-}
-
-void CG_ESPDrawForceBar(float x, float y, float width, float height, float force, float maxForce)
-{
-	float frac = (maxForce > 0) ? (force / maxForce) : 0.0f;
-	vec4_t barColor = {1.0f, 1.0f, 0.0f, 0.7f};
 	trap_R_SetColor(barColor);
 	trap_R_DrawStretchPic(x, y, width * frac, height, 0, 0, 1, 1, cgs.media.whiteShader);
 	trap_R_SetColor(NULL);
