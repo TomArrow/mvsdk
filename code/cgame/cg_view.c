@@ -10,6 +10,12 @@
 #include "cg_lights.h"
 #endif
 
+// USERCMD constants for trap_SetUserCmdValue
+#define USERCMD_SET_WEAPON (1U << 3U)
+#define USERCMD_SET_FORCESEL (1U << 4U)
+#define USERCMD_SET_INVENSEL (1U << 5U)
+#define USERCMD_SET_SENSITIVITYSCALE (1U << 10U)
+
 #define MASK_CAMERACLIP (MASK_SOLID | CONTENTS_PLAYERCLIP)
 #define CAMERA_SIZE 4
 

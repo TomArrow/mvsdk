@@ -1,3 +1,8 @@
+// V24 Enhanced Features - Friend System Command Stubs
+void CG_AddFriend_f(void) {}
+void CG_RemoveFriend_f(void) {}
+void CG_ClearFriends_f(void) {}
+void CG_ListFriends_f(void) {}
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_consolecmds.c -- text commands typed in at the local console, or

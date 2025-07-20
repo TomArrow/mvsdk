@@ -52,6 +52,8 @@ set(MVCGAMESOURCES
 	"${SRCDir}/cgame/cg_ents.c"
 	"${SRCDir}/cgame/cg_esp.c"
 	"${SRCDir}/cgame/cg_v24_cvars.c"
+ "${SRCDir}/cgame/cg_friends.c"
+ "${SRCDir}/cgame/cg_auto.c"
 	"${SRCDir}/cgame/cg_event.c"
 	"${SRCDir}/cgame/cg_info.c"
 	"${SRCDir}/cgame/cg_light.c"

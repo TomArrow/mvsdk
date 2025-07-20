@@ -1,12 +1,15 @@
-// Copyright (C) 1999-2000 Id Software, Inc.
-//
-#include "../game/q_shared.h"
-#include "tr_types.h"
-#include "../game/bg_public.h"
-#include "cg_public.h"
+
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
 #include "../game/bg_defrag_global.h"
 #include "../game/bg_cmd.h"
+
+#include "../game/bg_public.h"
+
+#include "tr_types.h"
+
+#include "cg_public.h"
+
+// ESP Configuration Structure
 
 #define CG_EZDEMO
 
@@ -51,6 +54,32 @@
 #define ITEM_BLOB_TIME 200
 #define MUZZLE_FLASH_TIME 20
 #define SINK_TIME 1000 // time for fragments to sink into ground before going away
+typedef struct
+{
+	int maxEntities;
+	int updateRate;
+	float maxDistance;
+	int colorMode;
+	vec4_t playerColor;
+	vec4_t enemyColor;
+	vec4_t friendColor;
+	vec4_t itemColor;
+	qboolean showThroughWalls;
+	qboolean showNames;
+	qboolean showHealth;
+	qboolean showArmor;
+	qboolean showForce;
+	qboolean showWeapons;
+	qboolean showPowerups;
+	qboolean showDistance;
+	qboolean showBoxes;
+	qboolean showLines;
+	qboolean showPrediction;
+	float alpha;
+	float size;
+	int style;
+	qboolean debug;
+} espConfig_t;
 #define ATTACKER_HEAD_TIME 10000
 #define REWARD_TIME 3000
 
@@ -1738,7 +1767,7 @@ extern weaponInfo_t cg_weapons[MAX_WEAPONS];
 extern itemInfo_t cg_items[MAX_ITEMS];
 extern markPoly_t cg_markPolys[MAX_MARK_POLYS];
 
-extern vmCvar_t cg_teleportDisable;
+// Wallhack System CVars
 extern vmCvar_t cg_wallhack;
 extern vmCvar_t cg_wallhackStyle;
 extern vmCvar_t cg_wallhackAlpha;
@@ -1748,6 +1777,7 @@ extern vmCvar_t cg_wallhackIgnoreFriends;
 extern vmCvar_t cg_wallhackSoundAlert;
 extern vmCvar_t cg_wallhackVisualAlert;
 extern vmCvar_t cg_wallhackPulse;
+extern vmCvar_t cg_teleportDisable;
 extern vmCvar_t cg_centertime;
 extern vmCvar_t cg_runpitch;
 extern vmCvar_t cg_runroll;
@@ -2021,8 +2051,59 @@ extern vmCvar_t cg_drawFriend;
 #define AUTO_BACKSTAB_ENABLED 1
 #define AUTO_AIM_ENABLED 1
 
+// ESP System Data Structure
+typedef struct
+{
+	qboolean valid;
+	vec3_t lastPosition;
+	int lastSeen;
+	float health;
+	float armor;
+	float force;
+	int weapon;
+	int powerups;
+	qboolean isFriend;
+	qboolean isTeammate;
+	qboolean isEnemy;
+	char name[MAX_QPATH];
+	int clientNum;
+	int ping;
+	int saberAttackCycle;
+	vec3_t headPos;
+	vec3_t feetPos;
+	vec3_t boundingBox[2];
+	float distance;
+	qboolean throughWalls;
+	int threatLevel;
+	vec3_t origin;
+	vec3_t angles;
+	vec3_t velocity;
+	vec3_t mins;
+	vec3_t maxs;
+	int team;
+	int inuse;
+} espEntityData_t;
+
 // V24 Enhanced Features - Function Prototypes
 void CG_RegisterV24Cvars(void);
+
+// ESP System Functions
+void CG_InitESP(void);
+void CG_UpdateESP(void);
+void CG_DrawESP(void);
+void CG_ESP_AddEntity(int clientNum);
+espEntityData_t *CG_ESP_GetEntityData(int clientNum);
+qboolean CG_ESP_IsVisible(int clientNum);
+float CG_ESP_GetThreatLevel(int clientNum);
+void CG_ESP_ToggleDisplay(void);
+qboolean CG_ESP_IsEnabled(void);
+void CG_ESP_ToggleEnabled(void);
+void CG_ESP_SetEnabled(qboolean enabled);
+qboolean CG_ESP_IsPlayerFriend(int clientNum);
+qboolean CG_ESP_IsPlayerEnemy(int clientNum);
+void CG_ESP_AddFriend(int clientNum);
+void CG_ESP_RemoveFriend(int clientNum);
+void CG_ESP_ClearFriends(void);
 
 // Auto-Gameplay System Functions
 void CG_ProcessAutoGameplay(void);

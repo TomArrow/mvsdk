@@ -1,3 +1,13 @@
+// Wallhack System CVars
+vmCvar_t cg_wallhack;
+vmCvar_t cg_wallhackStyle;
+vmCvar_t cg_wallhackAlpha;
+vmCvar_t cg_wallhackColor;
+vmCvar_t cg_wallhackRange;
+vmCvar_t cg_wallhackIgnoreFriends;
+vmCvar_t cg_wallhackSoundAlert;
+vmCvar_t cg_wallhackVisualAlert;
+vmCvar_t cg_wallhackPulse;
 /*
 ================
 V24 Enhanced Features - CVar Definitions and Registration
@@ -79,15 +89,6 @@ vmCvar_t cg_enemyDetectionPulse;
 vmCvar_t cg_enemyDetectionPulseRate;
 vmCvar_t cg_enemyDetectionIgnoreFriends;
 vmCvar_t cg_enemyDetectionThroughWalls; // Wallhack System CVars
-vmCvar_t cg_wallhack;
-vmCvar_t cg_wallhackStyle;
-vmCvar_t cg_wallhackAlpha;
-vmCvar_t cg_wallhackColor;
-vmCvar_t cg_wallhackRange;
-vmCvar_t cg_wallhackIgnoreFriends;
-vmCvar_t cg_wallhackSoundAlert;
-vmCvar_t cg_wallhackVisualAlert;
-vmCvar_t cg_wallhackPulse;
 
 // Auto-Aim System CVars
 vmCvar_t cg_autoAim;

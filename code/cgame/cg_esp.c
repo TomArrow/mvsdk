@@ -4,62 +4,6 @@
 #include "cg_local.h"
 #include "../game/q_shared.h" // Changed include path to match local q_shared.h
 
-// ESP Data Structures
-typedef struct
-{
-	qboolean valid;
-	vec3_t lastPosition;
-	int lastSeen;
-	float health;
-	float armor;
-	float force;
-	int weapon;
-	int powerups;
-	qboolean isFriend;
-	qboolean isTeammate;
-	qboolean isEnemy;
-	char name[MAX_QPATH];
-	int clientNum;
-	int ping;
-	int saberAttackCycle;
-	vec3_t headPos;
-	vec3_t feetPos;
-	vec3_t boundingBox[2];
-	float distance;
-	qboolean throughWalls;
-	int threatLevel;
-	vec3_t velocity;
-	vec3_t predictedPos;
-} espEntityData_t;
-
-typedef struct
-{
-	int maxEntities;
-	int updateRate;
-	int lastUpdate;
-	float maxDistance;
-	int colorMode;
-	vec4_t playerColor;
-	vec4_t enemyColor;
-	vec4_t friendColor;
-	vec4_t itemColor;
-	qboolean showThroughWalls;
-	qboolean showNames;
-	qboolean showHealth;
-	qboolean showArmor;
-	qboolean showForce;
-	qboolean showWeapons;
-	qboolean showPowerups;
-	qboolean showDistance;
-	qboolean showBoxes;
-	qboolean showLines;
-	qboolean showPrediction;
-	float alpha;
-	float size;
-	int style;
-	qboolean debug;
-} espConfig_t;
-
 // ESP System Variables
 static espEntityData_t espPlayers[MAX_CLIENTS];
 static espEntityData_t espItems[MAX_GENTITIES];
@@ -239,7 +183,4 @@ void CG_ESPDrawForceBar(float x, float y, float width, float height, float force
 
 void CG_ESPDrawArmorBar(float x, float y, float width, float height, float armor, float maxArmor)
 {
-	// Draw armor bar for ESP entity
-	// ...
 }
-// End of ESP System Implementation
