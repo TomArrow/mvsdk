@@ -1,5 +1,4 @@
-// V24 Enhanced Features - Auto Gameplay Stub
-void CG_ProcessAutoGameplay(void) {}
+
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_predict.c -- this file generates cg.predictedPlayerState by either

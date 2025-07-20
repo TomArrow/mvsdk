@@ -463,7 +463,7 @@ weaponInfo_t cg_weapons[MAX_WEAPONS];
 itemInfo_t cg_items[MAX_ITEMS];
 
 vmCvar_t cg_teleportDisable;
-vmCvar_t cg_wallhack;
+
 vmCvar_t cg_centertime;
 vmCvar_t cg_runpitch;
 vmCvar_t cg_runroll;

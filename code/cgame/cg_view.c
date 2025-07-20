@@ -1350,7 +1350,27 @@ static int CG_CalcViewValues(void)
 	{
 		cg.hasFallVector = qfalse;
 		VectorCopy(ps->origin, cg.refdef.vieworg);
-		VectorCopy(ps->viewangles, cg.refdefViewAngles);
+		// If no manual input (mouse movement) detected, blend in automation suggestion
+		if (cg.mouseCaptured || cg.lastManualCommandInterruptingAutoFollow > cg.time - 100)
+		{
+			// Manual input detected recently, use player's viewangles only
+			VectorCopy(ps->viewangles, cg.refdefViewAngles);
+		}
+		else
+		{
+			// No manual input, blend automation suggestion if present
+			if (cg.autoSuggestedViewAngles[0] != 0.0f || cg.autoSuggestedViewAngles[1] != 0.0f || cg.autoSuggestedViewAngles[2] != 0.0f)
+			{
+				// Blend: 80% manual, 20% automation
+				cg.refdefViewAngles[0] = ps->viewangles[0] * 0.8f + cg.autoSuggestedViewAngles[0] * 0.2f;
+				cg.refdefViewAngles[1] = ps->viewangles[1] * 0.8f + cg.autoSuggestedViewAngles[1] * 0.2f;
+				cg.refdefViewAngles[2] = ps->viewangles[2] * 0.8f + cg.autoSuggestedViewAngles[2] * 0.2f;
+			}
+			else
+			{
+				VectorCopy(ps->viewangles, cg.refdefViewAngles);
+			}
+		}
 		AnglesToAxis(cg.refdefViewAngles, cg.refdef.viewaxis);
 		return CG_CalcFov();
 	}

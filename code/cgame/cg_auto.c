@@ -428,25 +428,6 @@ CG_ProcessAutoGameplay
 Main processing function for all auto-gameplay features
 ================
 */
-void CG_ProcessAutoGameplay(void)
-{
-    if (!cg.snap || !cg_autoDefense.integer)
-    {
-        return;
-    }
-
-    // Process auto-kick
-    if (cg_autoKick.integer)
-    {
-        CG_ProcessAutoKick();
-    }
-
-    // Process auto-backstab
-    if (cg_autoBackstab.integer)
-    {
-        CG_ProcessAutoBackstab();
-    }
-}
 
 /*
 ================
@@ -1050,8 +1031,8 @@ void CG_ApplyAutoAim(vec3_t targetAngles)
     currentAngles[PITCH] += (targetAngles[PITCH] - currentAngles[PITCH]) * damping;
     currentAngles[YAW] += (targetAngles[YAW] - currentAngles[YAW]) * damping;
 
-    // Set the view angles
-    VectorCopy(currentAngles, cg.refdefViewAngles);
+    // Store the suggested view angles for automation
+    VectorCopy(currentAngles, cg.autoSuggestedViewAngles);
 }
 
 /*

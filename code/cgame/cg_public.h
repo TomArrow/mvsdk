@@ -1,63 +1,71 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
+
+#ifndef CG_PUBLIC_H
+#define CG_PUBLIC_H
+// Copyright (C) 1999-2000 Id Software, Inc.
 //
 
-
-#define	CMD_BACKUP			512//JAPRO - FPS UNLOCK ENGINE		
-//#define	CMD_BACKUP			8192//JAPRO - FPS UNLOCK ENGINE		
-#define	CMD_MASK			(CMD_BACKUP - 1)
 // allow a lot of command backups for very fast systems
 // multiple commands may be combined into a single packet, so this
 // needs to be larger than PACKET_BACKUP
 
+#define CMD_BACKUP 512 // JAPRO - FPS UNLOCK ENGINE
+// #define	CMD_BACKUP			8192//JAPRO - FPS UNLOCK ENGINE
+#define CMD_MASK (CMD_BACKUP - 1)
+// allow a lot of command backups for very fast systems
+// multiple commands may be combined into a single packet, so this
+// needs to be larger than PACKET_BACKUP
 
-#define	MAX_ENTITIES_IN_SNAPSHOT	256
+#define MAX_ENTITIES_IN_SNAPSHOT 256
 
 // snapshots are a view of the server at a given time
 
 // Snapshots are generated at regular time intervals by the server,
 // but they may not be sent if a client's rate level is exceeded, or
 // they may be dropped by the network.
-typedef struct {
-	int				snapFlags;			// SNAPFLAG_RATE_DELAYED, etc
-	int				ping;
+typedef struct
+{
+	int snapFlags; // SNAPFLAG_RATE_DELAYED, etc
+	int ping;
 
-	int				serverTime;		// server time the message is valid for (in msec)
+	int serverTime; // server time the message is valid for (in msec)
 
-	byte			areamask[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
+	byte areamask[MAX_MAP_AREA_BYTES]; // portalarea visibility bits
 
-	playerState_t	ps;						// complete information about the current player at this time
+	playerState_t ps; // complete information about the current player at this time
 
-	int				numEntities;			// all of the entities that need to be presented
-	entityState_t	entities[MAX_ENTITIES_IN_SNAPSHOT];	// at the time of this snapshot
+	int numEntities;								  // all of the entities that need to be presented
+	entityState_t entities[MAX_ENTITIES_IN_SNAPSHOT]; // at the time of this snapshot
 
-	int				numServerCommands;		// text based server commands to execute when this
-	int				serverCommandSequence;	// snapshot becomes current
+	int numServerCommands;	   // text based server commands to execute when this
+	int serverCommandSequence; // snapshot becomes current
 } snapshot_t;
 
-typedef struct {
-	int				snapFlags;			// SNAPFLAG_RATE_DELAYED, etc
-	int				ping;
+typedef struct
+{
+	int snapFlags; // SNAPFLAG_RATE_DELAYED, etc
+	int ping;
 
-	int				serverTime;		// server time the message is valid for (in msec)
+	int serverTime; // server time the message is valid for (in msec)
 
-	byte			areamask[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
+	byte areamask[MAX_MAP_AREA_BYTES]; // portalarea visibility bits
 
-	playerState_1_02_t	ps;						// complete information about the current player at this time
+	playerState_1_02_t ps; // complete information about the current player at this time
 
-	int				numEntities;			// all of the entities that need to be presented
-	entityState_t	entities[MAX_ENTITIES_IN_SNAPSHOT];	// at the time of this snapshot
+	int numEntities;								  // all of the entities that need to be presented
+	entityState_t entities[MAX_ENTITIES_IN_SNAPSHOT]; // at the time of this snapshot
 
-	int				numServerCommands;		// text based server commands to execute when this
-	int				serverCommandSequence;	// snapshot becomes current
+	int numServerCommands;	   // text based server commands to execute when this
+	int serverCommandSequence; // snapshot becomes current
 } snapshot_1_02_t;
 
-enum {
-  CGAME_EVENT_NONE,
-  CGAME_EVENT_TEAMMENU,
-  CGAME_EVENT_SCOREBOARD,
-  CGAME_EVENT_EDITHUD
+enum
+{
+	CGAME_EVENT_NONE,
+	CGAME_EVENT_TEAMMENU,
+	CGAME_EVENT_SCOREBOARD,
+	CGAME_EVENT_EDITHUD
 };
-
 
 /*
 ==================================================================
@@ -67,9 +75,10 @@ functions imported from the main executable
 ==================================================================
 */
 
-#define	CGAME_IMPORT_API_VERSION	5
+#define CGAME_IMPORT_API_VERSION 5
 
-typedef enum {
+typedef enum
+{
 	CG_PRINT = 0,
 	CG_ERROR,
 	CG_MILLISECONDS,
@@ -180,7 +189,7 @@ typedef enum {
 	CG_KEY_SETCATCHER,
 	CG_KEY_GETKEY,
 
- 	CG_PC_ADD_GLOBAL_DEFINE,
+	CG_PC_ADD_GLOBAL_DEFINE,
 	CG_PC_LOAD_SOURCE,
 	CG_PC_FREE_SOURCE,
 	CG_PC_READ_TOKEN,
@@ -226,9 +235,9 @@ typedef enum {
 	CG_ROFF_PLAY,
 	CG_ROFF_PURGE_ENT,
 
-/*
-Ghoul2 Insert Start
-*/
+	/*
+	Ghoul2 Insert Start
+	*/
 	CG_G2_LISTSURFACES,
 	CG_G2_LISTBONES,
 	CG_G2_SETMODELS,
@@ -253,9 +262,9 @@ Ghoul2 Insert Start
 	CG_G2_SETROOTSURFACE,
 	CG_G2_SETSURFACEONOFF,
 	CG_G2_SETNEWORIGIN,
-/*
-Ghoul2 Insert End
-*/
+	/*
+	Ghoul2 Insert End
+	*/
 
 	CG_SET_SHARED_BUFFER,
 
@@ -264,10 +273,10 @@ Ghoul2 Insert End
 	CG_COOL_API_GETTIMESINCESNAPRECEIVED = 1103,
 	CG_COOL_API_GLRESOLUTIONCHANGED = 1104,
 	CG_COOL_API_SETUSERANGLES = 1105,
-	//CG_COOL_API_NONEPSILONTRACE = 1106,
-	//CG_COOL_API_NONEPSILONTRACE_CAPSULE = 1107,
-	//CG_COOL_API_CUSTOMEPSILONTRACE = 1108,
-	//CG_COOL_API_CUSTOMEPSILONTRACE_CAPSULE = 1109,
+	// CG_COOL_API_NONEPSILONTRACE = 1106,
+	// CG_COOL_API_NONEPSILONTRACE_CAPSULE = 1107,
+	// CG_COOL_API_CUSTOMEPSILONTRACE = 1108,
+	// CG_COOL_API_CUSTOMEPSILONTRACE_CAPSULE = 1109,
 	CG_COOL_API_ADDMEMECOMMAND = 1110,
 
 	CG_COOL_API_DB_ESCAPESTRING = 1200,
@@ -291,18 +300,18 @@ Ghoul2 Insert End
 	CG_COOL_API_DB_GETMORERESULTS = 1217,
 
 	// COOL_APIFEATURE_JEDI_ACADEMY
-	CG_COOL_API_GET_NUM_LANGUAGES             = 2000,
-	CG_COOL_API_GET_LANGUAGE_NAME             = 2001,
-	CG_COOL_API_SET_SKIN                      = 2002,
-	CG_COOL_API_SKINLESS_MODEL                = 2003,
-	CG_COOL_API_GET_SURFACE_RENDER_STATUS     = 2004,
-	CG_COOL_API_ATTACH_G2_MODEL               = 2005,
-	CG_COOL_API_GET_FILE_VERSION              = 2006,
-	CG_COOL_API_GET_FILE_LIST                 = 2007,
+	CG_COOL_API_GET_NUM_LANGUAGES = 2000,
+	CG_COOL_API_GET_LANGUAGE_NAME = 2001,
+	CG_COOL_API_SET_SKIN = 2002,
+	CG_COOL_API_SKINLESS_MODEL = 2003,
+	CG_COOL_API_GET_SURFACE_RENDER_STATUS = 2004,
+	CG_COOL_API_ATTACH_G2_MODEL = 2005,
+	CG_COOL_API_GET_FILE_VERSION = 2006,
+	CG_COOL_API_GET_FILE_LIST = 2007,
 } cgameImport_t;
 
-
-typedef enum {
+typedef enum
+{
 	CG_PRINT_1_02 = 0,
 	CG_ERROR_1_02,
 	CG_MILLISECONDS_1_02,
@@ -411,7 +420,7 @@ typedef enum {
 	CG_KEY_SETCATCHER_1_02,
 	CG_KEY_GETKEY_1_02,
 
- 	CG_PC_ADD_GLOBAL_DEFINE_1_02,
+	CG_PC_ADD_GLOBAL_DEFINE_1_02,
 	CG_PC_LOAD_SOURCE_1_02,
 	CG_PC_FREE_SOURCE_1_02,
 	CG_PC_READ_TOKEN_1_02,
@@ -457,9 +466,9 @@ typedef enum {
 	CG_ROFF_PLAY_1_02,
 	CG_ROFF_PURGE_ENT_1_02,
 
-/*
-Ghoul2 Insert Start
-*/
+	/*
+	Ghoul2 Insert Start
+	*/
 	CG_G2_LISTSURFACES_1_02,
 	CG_G2_LISTBONES_1_02,
 	CG_G2_SETMODELS_1_02,
@@ -486,7 +495,6 @@ Ghoul2 Insert Start
 	CG_SET_SHARED_BUFFER_1_02,
 } cgameImport_1_02_t;
 
-
 /*
 ==================================================================
 
@@ -495,9 +503,10 @@ functions exported to the main executable
 ==================================================================
 */
 
-typedef enum {
+typedef enum
+{
 	CG_INIT,
-//	void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum )
+	//	void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum )
 	// called when the level loads or when the renderer is restarted
 	// all media should be registered at this time
 	// cgame will display loading status by calling SCR_Update, which
@@ -506,40 +515,40 @@ typedef enum {
 	// demos, tourney restarts, or vid_restarts
 
 	CG_SHUTDOWN,
-//	void (*CG_Shutdown)( void );
+	//	void (*CG_Shutdown)( void );
 	// oportunity to flush and close any open files
 
 	CG_CONSOLE_COMMAND,
-//	qboolean (*CG_ConsoleCommand)( void );
+	//	qboolean (*CG_ConsoleCommand)( void );
 	// a console command has been issued locally that is not recognized by the
 	// main game system.
 	// use Cmd_Argc() / Cmd_Argv() to read the command, return qfalse if the
 	// command is not known to the game
 
 	CG_DRAW_ACTIVE_FRAME,
-//	void (*CG_DrawActiveFrame)( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
+	//	void (*CG_DrawActiveFrame)( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
 	// Generates and draws a game scene and status information at the given time.
 	// If demoPlayback is set, local movement prediction will not be enabled
 
 	CG_CROSSHAIR_PLAYER,
-//	int (*CG_CrosshairPlayer)( void );
+	//	int (*CG_CrosshairPlayer)( void );
 
 	CG_LAST_ATTACKER,
-//	int (*CG_LastAttacker)( void );
+	//	int (*CG_LastAttacker)( void );
 
-	CG_KEY_EVENT, 
-//	void	(*CG_KeyEvent)( int key, qboolean down );
+	CG_KEY_EVENT,
+	//	void	(*CG_KeyEvent)( int key, qboolean down );
 
 	CG_MOUSE_EVENT,
-//	void	(*CG_MouseEvent)( int dx, int dy );
+	//	void	(*CG_MouseEvent)( int dx, int dy );
 	CG_EVENT_HANDLING,
-//	void (*CG_EventHandling)(int type);
+	//	void (*CG_EventHandling)(int type);
 
 	CG_POINT_CONTENTS,
-//	int	CG_PointContents( const vec3_t point, int passEntityNum );
+	//	int	CG_PointContents( const vec3_t point, int passEntityNum );
 
 	CG_GET_LERP_ORIGIN,
-//	void CG_LerpOrigin(int num, vec3_t result);
+	//	void CG_LerpOrigin(int num, vec3_t result);
 
 	CG_GET_LERP_ANGLES,
 	CG_GET_MODEL_SCALE,
@@ -547,26 +556,26 @@ typedef enum {
 	CG_GET_MODEL_LIST,
 
 	CG_CALC_LERP_POSITIONS,
-//	void CG_CalcEntityLerpPositions(int num);
+	//	void CG_CalcEntityLerpPositions(int num);
 
 	CG_TRACE,
-//void CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
-//					 int skipNumber, int mask );
+	// void CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
+	//					 int skipNumber, int mask );
 
-	CG_GET_ORIGIN,		// int entnum, vec3_t origin
-	CG_GET_ANGLES,		// int entnum, vec3_t angle
+	CG_GET_ORIGIN, // int entnum, vec3_t origin
+	CG_GET_ANGLES, // int entnum, vec3_t angle
 
-	CG_GET_BOLT_POS,	// int entnum, vec3_t origin, vec3_t angle
+	CG_GET_BOLT_POS, // int entnum, vec3_t origin, vec3_t angle
 
-	CG_GET_ORIGIN_TRAJECTORY,		// int entnum
-	CG_GET_ANGLE_TRAJECTORY,		// int entnum
+	CG_GET_ORIGIN_TRAJECTORY, // int entnum
+	CG_GET_ANGLE_TRAJECTORY,  // int entnum
 
-	CG_ROFF_NOTETRACK_CALLBACK,		// int entnum, char *notetrack
+	CG_ROFF_NOTETRACK_CALLBACK, // int entnum, char *notetrack
 
 	CG_IMPACT_MARK,
-//void CG_ImpactMark( qhandle_t markShader, const vec3_t origin, const vec3_t dir, 
-//				   float orientation, float red, float green, float blue, float alpha,
-//				   qboolean alphaFade, float radius, qboolean temporary )
+	// void CG_ImpactMark( qhandle_t markShader, const vec3_t origin, const vec3_t dir,
+	//				   float orientation, float red, float green, float blue, float alpha,
+	//				   qboolean alphaFade, float radius, qboolean temporary )
 
 	CG_MAP_CHANGE,
 
@@ -575,30 +584,30 @@ typedef enum {
 // CG_POINT_CONTENTS
 typedef struct
 {
-	vec3_t		mPoint;			// input
-	int			mPassEntityNum;	// input
+	vec3_t mPoint;		// input
+	int mPassEntityNum; // input
 } TCGPointContents;
 
 // CG_GET_BOLT_POS
 typedef struct
 {
-	vec3_t		mPoint;			// output
-	vec3_t		mAngle;			// output
-	int			mEntityNum;		// input
+	vec3_t mPoint;	// output
+	vec3_t mAngle;	// output
+	int mEntityNum; // input
 } TCGBoltPos;
 
 // CG_IMPACT_MARK
 typedef struct
 {
-	int		mHandle;
-	vec3_t	mPoint;
-	vec3_t	mAngle;
-	float	mRotation;
-	float	mRed;
-	float	mGreen;
-	float	mBlue;
-	float	mAlphaStart;
-	float	mSizeStart;
+	int mHandle;
+	vec3_t mPoint;
+	vec3_t mAngle;
+	float mRotation;
+	float mRed;
+	float mGreen;
+	float mBlue;
+	float mAlphaStart;
+	float mSizeStart;
 } TCGImpactMark;
 
 // CG_GET_LERP_ORIGIN
@@ -606,45 +615,51 @@ typedef struct
 // CG_GET_MODEL_SCALE
 typedef struct
 {
-	int			mEntityNum;		// input
-	vec3_t		mPoint;			// output
+	int mEntityNum; // input
+	vec3_t mPoint;	// output
 } TCGVectorData;
 
 // CG_TRACE
 typedef struct
 {
-	trace_t mResult;					// output
-	vec3_t	mStart, mMins, mMaxs, mEnd;	// input
-	int		mSkipNumber, mMask;			// input
+	trace_t mResult;				   // output
+	vec3_t mStart, mMins, mMaxs, mEnd; // input
+	int mSkipNumber, mMask;			   // input
 } TCGTrace;
 
 // CG_FX_CAMERASHAKE
 typedef struct
 {
-	vec3_t	mOrigin;					// input
-	float	mIntensity;					// input
-	int		mRadius;					// input
-	int		mTime;						// input
+	vec3_t mOrigin;	  // input
+	float mIntensity; // input
+	int mRadius;	  // input
+	int mTime;		  // input
 } TCGCameraShake;
 
 // CG_MISC_ENT
 typedef struct
 {
-	char	mModel[MAX_QPATH];			// input
-	vec3_t	mOrigin, mAngles, mScale;	// input
+	char mModel[MAX_QPATH];			 // input
+	vec3_t mOrigin, mAngles, mScale; // input
 } TCGMiscEnt;
 
 typedef struct
 {
-	refEntity_t		ent;				// output
-	void			*ghoul2;			// input
-	int				modelIndex;			// input
-	int				boltIndex;			// input
-	vec3_t			origin;				// input
-	vec3_t			angles;				// input
-	vec3_t			modelScale;			// input
+	refEntity_t ent;   // output
+	void *ghoul2;	   // input
+	int modelIndex;	   // input
+	int boltIndex;	   // input
+	vec3_t origin;	   // input
+	vec3_t angles;	   // input
+	vec3_t modelScale; // input
 } TCGPositionOnBolt;
 
-#define	MAX_CG_SHARED_BUFFER_SIZE		2048
+#define MAX_CG_SHARED_BUFFER_SIZE 2048
+
+#define MAX_CG_SHARED_BUFFER_SIZE 2048
 
 //----------------------------------------------
+
+//----------------------------------------------
+
+#endif // CG_PUBLIC_H

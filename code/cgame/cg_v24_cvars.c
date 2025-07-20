@@ -1,3 +1,6 @@
+
+#include "cg_local.h"
+
 // Wallhack System CVars
 vmCvar_t cg_wallhack;
 vmCvar_t cg_wallhackStyle;
@@ -8,6 +11,19 @@ vmCvar_t cg_wallhackIgnoreFriends;
 vmCvar_t cg_wallhackSoundAlert;
 vmCvar_t cg_wallhackVisualAlert;
 vmCvar_t cg_wallhackPulse;
+
+/*
+================
+V24 Enhanced Features - CVar Definitions and Registration
+================
+*/
+
+#include "cg_local.h"
+
+// ============================================================================
+// V24 ENHANCED FEATURES - CVAR DEFINITIONS
+// ============================================================================
+
 /*
 ================
 V24 Enhanced Features - CVar Definitions and Registration
@@ -35,6 +51,11 @@ vmCvar_t cg_espHealthBars;
 vmCvar_t cg_espForceBars;
 vmCvar_t cg_espWeaponInfo;
 vmCvar_t cg_espBoxes;
+vmCvar_t cg_espLines;
+vmCvar_t cg_espColorMode;
+vmCvar_t cg_espPlayerColor;
+
+// ...rest of file unchanged...
 vmCvar_t cg_espLines;
 vmCvar_t cg_espColorMode;
 vmCvar_t cg_espPlayerColor;

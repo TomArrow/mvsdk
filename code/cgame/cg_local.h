@@ -1,4 +1,7 @@
 
+#ifndef CG_LOCAL_H
+#define CG_LOCAL_H
+
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
 #include "../game/bg_defrag_global.h"
 #include "../game/bg_cmd.h"
@@ -855,7 +858,8 @@ typedef struct
 
 	// view rendering
 	refdef_t refdef;
-	vec3_t refdefViewAngles; // will be converted to refdef.viewaxis
+	vec3_t refdefViewAngles;		// will be converted to refdef.viewaxis
+	vec3_t autoSuggestedViewAngles; // automation suggestions, never override manual input
 
 	float constrictValue;
 	float constrict;
@@ -2082,6 +2086,10 @@ typedef struct
 	vec3_t maxs;
 	int team;
 	int inuse;
+	int maxHealth;
+	int maxArmor;
+	int maxForce;
+	char weaponName[32];
 } espEntityData_t;
 
 // V24 Enhanced Features - Function Prototypes
@@ -3073,3 +3081,5 @@ qboolean trap_MVAPI_EnableSubmodelBypass(qboolean enable); // Level: 4
 
 #include "../api/mvapi.h"
 #include "cg_multiversion.h"
+
+#endif // CG_LOCAL_H
