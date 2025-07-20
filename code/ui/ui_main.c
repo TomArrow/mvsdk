@@ -1,3 +1,7 @@
+// Global variables for cvars and game type
+vmCvar_t ui_rankChange;
+vmCvar_t ui_menuFileParseSpam;
+static int serverGameType;
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 /*
@@ -1101,7 +1105,7 @@ static void UI_UpdateWidescreen(void)
 
 menuDef_t *Menus_FindByName(const char *p);
 void Menu_ShowItemByName(menuDef_t *menu, const char *p, qboolean bShow);
-void UpdateForceUsed();
+int UpdateForceUsed();
 
 static char holdSPString[MAX_STRING_CHARS] = {0};
 
@@ -1336,7 +1340,7 @@ int Text_Height(const char *text, float scale, int iMenuFont)
 	return h;
 }
 
-static void Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont)
+static void Text_Paint(float x, float y, float scale, const vec_t *color, const char *text, float adjust, int limit, int style, int iMenuFont)
 {
 	int iStyleOR = 0;
 
@@ -1391,44 +1395,37 @@ static void Text_Paint(float x, float y, float scale, const vec4_t color, const 
 						   !limit ? -1 : limit,	  // iCharLimit (-1 = none)
 						   scale);				  // const float scale = 1.0f
 	UI_WideScreenMode(qfalse);
-	iCopyCount = MIN(iCopyCount, cursorPos);
-	iCopyCount = MIN(iCopyCount, (int)sizeof(sTemp) - 1);
-
-	// copy text into temp buffer for pixel measure...
-	//
-	Q_strncpyz(sTemp, text, iCopyCount + 1);
-
-	{
-		int iNextXpos = Text_Width(sTemp, scale, iMenuFont);
-
-		Text_Paint(x + iNextXpos, y, scale, color, va("%c", cursor), 0, limit, style | ITEM_TEXTSTYLE_BLINK, iMenuFont);
-	}
 }
+
+void Text_PaintWithCursor(float x, float y, float scale, const vec_t *color, const char *text, int cursorPos, int style, int iMenuFont)
+{
+	int iCopyCount = cursorPos;
+	char sTemp[256] = {0};
+	int cursor = 0;
+	iCopyCount = MIN(iCopyCount, (int)sizeof(sTemp) - 1);
+	Q_strncpyz(sTemp, text, iCopyCount + 1);
+	int iNextXpos = Text_Width(sTemp, scale, iMenuFont);
+	Text_Paint(x + iNextXpos, y, scale, color, va("%c", cursor), 0, -1, style | ITEM_TEXTSTYLE_BLINK, iMenuFont);
 }
 
 // maxX param is initially an X limit, but is also used as feedback. 0 = text was clipped to fit within, else maxX = next pos
 //
-static void Text_Paint_Limit(float *maxX, float x, float y, float scale, vec4_t color, const char *text, float adjust, int limit, int iMenuFont)
+static void Text_Paint_Limit(float *maxX, float x, float y, float scale, const vec_t *color, const char *text, float adjust, int limit, int iMenuFont)
 {
 	// float fMax = *maxX;
 	int iPixelLen = Text_Width(text, scale, iMenuFont);
 	if (x + iPixelLen > *maxX)
 	{
 		// whole text won't fit, so we need to print just the amount that does...
-		//  Ok, this is slow and tacky, but only called occasionally, and it works...
-		//
 		char sTemp[4096] = {0}; // lazy assumption
 		const char *psText = text;
 		char *psOut = &sTemp[0];
 		char *psOutLastGood = psOut;
 		unsigned int uiLetter;
-
-		while (*psText && (x + Text_Width(sTemp, scale, iMenuFont) <= *maxX) && psOut < &sTemp[sizeof(sTemp) - 1] // sanity
-		)
+		while (*psText && (x + Text_Width(sTemp, scale, iMenuFont) <= *maxX) && psOut < &sTemp[sizeof(sTemp) - 1])
 		{
 			int iAdvanceCount;
 			psOutLastGood = psOut;
-
 			if (jk2version == VERSION_1_02)
 			{
 				uiLetter = trap_AnyLanguage_ReadCharFromString_1_02(&psText);
@@ -1438,7 +1435,6 @@ static void Text_Paint_Limit(float *maxX, float x, float y, float scale, vec4_t 
 				uiLetter = trap_AnyLanguage_ReadCharFromString_1_04(psText, &iAdvanceCount, NULL);
 				psText += iAdvanceCount;
 			}
-
 			if (uiLetter > 255)
 			{
 				*psOut++ = uiLetter >> 8;
@@ -1450,56 +1446,12 @@ static void Text_Paint_Limit(float *maxX, float x, float y, float scale, vec4_t 
 			}
 		}
 		*psOutLastGood = '\0';
-
 		*maxX = 0; // feedback
 		Text_Paint(x, y, scale, color, sTemp, adjust, limit, ITEM_TEXTSTYLE_NORMAL, iMenuFont);
+		return;
 	}
-	else
-	{
-		// whole text fits fine, so print it all...
-		//
-		*maxX = x + iPixelLen; // feedback the next position, as the caller expects
-		Text_Paint(x, y, scale, color, text, adjust, limit, ITEM_TEXTSTYLE_NORMAL, iMenuFont);
-	}
-}
-
-void UI_ShowPostGame(qboolean newHigh)
-{
-	trap_Cvar_Set("cg_cameraOrbit", "0");
-	trap_Cvar_Set("sv_killserver", "1");
-	uiInfo.soundHighScore = newHigh;
-	_UI_SetActiveMenu(UIMENU_POSTGAME);
-}
-/*
-=================
-_UI_Refresh
-=================
-*/
-
-void UI_DrawCenteredPic(qhandle_t image, int w, int h)
-{
-	int x, y;
-	x = (uiInfo.screenWidth - w) / 2;
-	y = (uiInfo.screenHeight - h) / 2;
-	UI_DrawHandlePic(x, y, w, h, image);
-}
-
-int frameCount = 0;
-int startTime;
-
-vmCvar_t ui_rankChange;
-vmCvar_t ui_menuFileParseSpam;
-static void UI_BuildPlayerList();
-char parsedFPMessage[1024];
-extern int FPMessageTime;
-static void Text_PaintCenter(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int iMenuFont);
-
-const char *UI_GetStripEdString(const char *refSection, const char *refName)
-{
-	static char text[1024] = {0};
-
-	trap_SP_GetStringTextString(va("%s_%s", refSection, refName), text, sizeof(text));
-	return text;
+	*maxX = x + iPixelLen; // feedback the next position, as the caller expects
+	Text_Paint(x, y, scale, color, text, adjust, limit, ITEM_TEXTSTYLE_NORMAL, iMenuFont);
 }
 
 static void _UI_CheckWindowResize()
@@ -1536,8 +1488,10 @@ static void _UI_CheckWindowResize()
 }
 
 #define UI_FPS_FRAMES 4
-static char serverInfo[MAX_INFO_STRING];
-static int serverGameType;
+char serverInfo[MAX_INFO_STRING];
+int serverGameType;
+char parsedFPMessage[1024];
+int FPMessageTime;
 void _UI_Refresh(int realtime)
 {
 	static int index;
@@ -12467,7 +12421,7 @@ static const cvarTable_t cvarTable[] = {
 };
 
 // bk001129 - made static to avoid aliasing
-static int cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
+#define CVAR_TABLE_SIZE (sizeof(cvarTable) / sizeof(cvarTable[0]))
 
 int widescreenModificationCount = -1;
 int modelModificationCount = -1;
@@ -12484,7 +12438,7 @@ void UI_RegisterCvars(void)
 	int i;
 	const cvarTable_t *cv;
 
-	for (i = 0, cv = cvarTable; i < cvarTableSize; i++, cv++)
+	for (i = 0, cv = cvarTable; i < CVAR_TABLE_SIZE; i++, cv++)
 	{
 		trap_Cvar_Register(cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags);
 	}
@@ -12506,7 +12460,7 @@ void UI_UpdateCvars(void)
 	int i;
 	const cvarTable_t *cv;
 
-	for (i = 0, cv = cvarTable; i < cvarTableSize; i++, cv++)
+	for (i = 0, cv = cvarTable; i < CVAR_TABLE_SIZE; i++, cv++)
 	{
 		trap_Cvar_Update(cv->vmCvar);
 	}

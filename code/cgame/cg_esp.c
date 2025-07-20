@@ -54,6 +54,7 @@ void CG_GetESPColor(int clientNum, qboolean isFriend, qboolean isTeammate, qbool
 			float ratio = health / maxHealth;
 			if (ratio > 0.75f)
 			{
+				extern void Vector4Set(float *v, float x, float y, float z, float w);
 				Vector4Set(color, 0.0f, 1.0f, 0.0f, espConfig.alpha); // Green
 			}
 			else if (ratio > 0.5f)

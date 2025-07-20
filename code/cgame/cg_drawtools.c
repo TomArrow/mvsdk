@@ -245,28 +245,6 @@ void CG_DrawStringExt(int x, int y, const char *string, const float *setColor,
 	float sx = x * cgs.screenXFactorInv;
 	float sy = y * cgs.screenYFactorInv;
 	trap_R_Font_DrawString(sx, sy, string, setColor, FONT_MEDIUM, maxChars, 1.0f);
-}
-// hack-a-doodle-do (post-release quick fix code)...
-//
-vec4_t color;
-memcpy(color, setColor, sizeof(color));				// de-const it
-CG_Text_Paint(x, y, 1.0f,							// float scale,
-			  color,								// vec4_t color,
-			  string,								// const char *text,
-			  0.0f,									// float adjust,
-			  0,									// int limit,
-			  shadow ? ITEM_TEXTSTYLE_SHADOWED : 0, // int style,
-			  FONT_MEDIUM							// iMenuFont
-);
-}
-else
-{
-	vec4_t color;
-	const char *s;
-	int xx;
-
-	// draw the drop shadow
-	if (shadow)
 	{
 		color[0] = color[1] = color[2] = 0;
 		color[3] = setColor[3];
