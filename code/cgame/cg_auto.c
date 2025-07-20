@@ -2,6 +2,11 @@
 // This file contains the implementations for auto-kick, auto-backstab, and auto-aim functionalities
 
 #include "cg_local.h"
+#include "cg_public.h"
+
+#define USERCMD_SET_BUTTONS 1 // Define USERCMD_SET_BUTTONS for trap_SetUserCmdValue
+#define BUTTON_JUMP 32        // Define BUTTON_JUMP (commonly 32, i.e., 1 << 5)
+#define BUTTON_KICK 64        // Define BUTTON_KICK (commonly 64, i.e., 1 << 6)
 
 // Last execution timestamps
 static int lastAutoKickTime = 0;
@@ -90,7 +95,15 @@ qboolean CG_EntityVisible(int sourceClientNum, int targetClientNum)
 
     // Use eye position for source
     VectorCopy(source->lerpOrigin, start);
-    start[2] += source->currentState.viewheight;
+    // Fix: Use predictedPlayerState.viewheight for local client, otherwise use a constant
+    if (sourceClientNum == cg.snap->ps.clientNum)
+    {
+        start[2] += cg.predictedPlayerState.viewheight;
+    }
+    else
+    {
+        start[2] += 40; // Use a reasonable default for non-local entities
+    }
 
     // Use center mass for target
     VectorCopy(target->lerpOrigin, end);
@@ -468,7 +481,7 @@ void CG_AddFriend(int clientNum)
         // Notification
         if (cg_friendsSoundNotifications.integer)
         {
-            trap_S_StartLocalSound(cgs.media.friendAddedSound, CHAN_LOCAL_SOUND);
+            trap_S_StartLocalSound(cgs.media.selectSound, CHAN_LOCAL_SOUND);
         }
 
         CG_Printf("^5Friend added: ^7%s\n", cgs.clientinfo[clientNum].name);
