@@ -54,7 +54,10 @@ void CG_GetESPColor(int clientNum, qboolean isFriend, qboolean isTeammate, qbool
 			float ratio = health / maxHealth;
 			if (ratio > 0.75f)
 			{
-				extern void Vector4Set(float *v, float x, float y, float z, float w);
+#ifndef Vector4Set
+#define Vector4Set(v, x, y, z, w) ((v)[0] = (x), (v)[1] = (y), (v)[2] = (z), (v)[3] = (w))
+#endif
+				// ...existing code...
 				Vector4Set(color, 0.0f, 1.0f, 0.0f, espConfig.alpha); // Green
 			}
 			else if (ratio > 0.5f)
@@ -133,6 +136,7 @@ void CG_InitESP(void)
 	espConfig.debug = cg_espDebug.integer;
 
 	// Parse colors
+	// NOTE: sscanf is not bounds-safe. For production, consider manual parsing or safer alternatives.
 	sscanf(cg_espPlayerColor.string, "%f %f %f %f",
 		   &espConfig.playerColor[0], &espConfig.playerColor[1],
 		   &espConfig.playerColor[2], &espConfig.playerColor[3]);
@@ -341,6 +345,7 @@ qboolean CG_ESPWorldToScreen(vec3_t worldPos, float *x, float *y)
 {
 	// Convert world position to screen coordinates
 	// ...
+	return qfalse; // Default return to avoid warning
 }
 
 void CG_ESPCalculateBoundingBox(centity_t *cent, vec3_t mins, vec3_t maxs)
@@ -359,6 +364,7 @@ int CG_ESPCalculateThreatLevel(centity_t *cent)
 {
 	// Calculate threat level of ESP entity
 	// ...
+	return 0; // Default return to avoid warning
 }
 
 void CG_ESPDrawHealthBar(float x, float y, float width, float height, float health, float maxHealth)

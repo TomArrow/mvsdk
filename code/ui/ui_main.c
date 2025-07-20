@@ -1,3 +1,5 @@
+
+#include "../game/q_shared.h"
 // Global variables for cvars and game type
 vmCvar_t ui_rankChange;
 vmCvar_t ui_menuFileParseSpam;
@@ -1167,7 +1169,20 @@ static char *netnames[] = {
 // static int gamecodetoui[] = {4,2,3,0,5,1,6};
 // static int uitogamecode[] = {4,6,2,3,1,5,7};
 
-const char *UI_GetStripEdString(const char *refSection, const char *refName);
+// Implementation for missing UI_GetStripEdString
+const char *UI_GetStripEdString(const char *refSection, const char *refName)
+{
+	static char buffer[MAX_STRING_CHARS];
+	trap_SP_GetStringTextString(refSection, buffer, sizeof(buffer));
+	return buffer;
+}
+
+// Implementation for missing UI_ShowPostGame
+void UI_ShowPostGame(qboolean newHigh)
+{
+	uiInfo.newHighScore = newHigh;
+	_UI_SetActiveMenu(UIMENU_POSTGAME);
+}
 
 const char *UI_TeamName(int team)
 {

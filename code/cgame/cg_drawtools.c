@@ -242,6 +242,9 @@ Coordinates are at 640 by 480 virtual resolution
 void CG_DrawStringExt(int x, int y, const char *string, const float *setColor,
 					  qboolean forceColor, qboolean shadow, int charWidth, int charHeight, int maxChars)
 {
+	float color[4];
+	const char *s;
+	int xx;
 	float sx = x * cgs.screenXFactorInv;
 	float sy = y * cgs.screenYFactorInv;
 	trap_R_Font_DrawString(sx, sy, string, setColor, FONT_MEDIUM, maxChars, 1.0f);
@@ -297,7 +300,6 @@ void CG_DrawStringExt(int x, int y, const char *string, const float *setColor,
 		s++;
 	}
 	trap_R_SetColor(NULL);
-}
 }
 
 void CG_DrawBigString(int x, int y, const char *s, float alpha)
