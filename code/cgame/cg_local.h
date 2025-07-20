@@ -1077,6 +1077,8 @@ typedef struct
 
 	qboolean speccing;
 
+	qboolean mouseCaptured; // Added to fix build error
+
 	qboolean nextCGTraceExplicitlyDeluxe;
 	hudType_t hudType;
 	qboolean updateHud;

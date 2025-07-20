@@ -20,7 +20,82 @@ void CG_DrawESPEntity(espEntityData_t *data);
 void CG_DrawESPBox(float x, float y, float width, float height, vec4_t color, int style, float thickness);
 void CG_DrawESPText(float x, float y, const char *text, vec4_t color, float baseSize, qboolean shadow, qboolean center);
 void CG_DrawESPIcon(float x, float y, qhandle_t shader, vec4_t color, float size, qboolean pulse);
-void CG_GetESPColor(int clientNum, qboolean isFriend, qboolean isTeammate, qboolean isEnemy, vec4_t color);
+
+// Fully implemented ESP color selection
+void CG_GetESPColor(int clientNum, qboolean isFriend, qboolean isTeammate, qboolean isEnemy, vec4_t color)
+{
+	// Color mode 0: Team-based coloring
+	if (espConfig.colorMode == 0)
+	{
+		if (isFriend)
+		{
+			VectorCopy(espConfig.friendColor, color);
+		}
+		else if (isTeammate)
+		{
+			VectorCopy(espConfig.playerColor, color);
+		}
+		else if (isEnemy)
+		{
+			VectorCopy(espConfig.enemyColor, color);
+		}
+		else
+		{
+			VectorCopy(espConfig.itemColor, color);
+		}
+	}
+	// Color mode 1: Health-based coloring (for players)
+	else if (espConfig.colorMode == 1)
+	{
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+		{
+			float health = espPlayers[clientNum].health;
+			float maxHealth = espPlayers[clientNum].maxHealth > 0 ? espPlayers[clientNum].maxHealth : 100;
+			float ratio = health / maxHealth;
+			if (ratio > 0.75f)
+			{
+				Vector4Set(color, 0.0f, 1.0f, 0.0f, espConfig.alpha); // Green
+			}
+			else if (ratio > 0.5f)
+			{
+				Vector4Set(color, 1.0f, 1.0f, 0.0f, espConfig.alpha); // Yellow
+			}
+			else if (ratio > 0.25f)
+			{
+				Vector4Set(color, 1.0f, 0.5f, 0.0f, espConfig.alpha); // Orange
+			}
+			else
+			{
+				Vector4Set(color, 1.0f, 0.0f, 0.0f, espConfig.alpha); // Red
+			}
+		}
+		else
+		{
+			VectorCopy(espConfig.itemColor, color);
+		}
+	}
+	// Color mode 2: Distance-based coloring (for players)
+	else if (espConfig.colorMode == 2)
+	{
+		if (clientNum >= 0 && clientNum < MAX_CLIENTS)
+		{
+			float distance = espPlayers[clientNum].distance;
+			float ratio = distance / espConfig.maxDistance;
+			Vector4Set(color, ratio, 1.0f - ratio, 0.0f, espConfig.alpha); // Gradient from red to green
+		}
+		else
+		{
+			VectorCopy(espConfig.itemColor, color);
+		}
+	}
+	else
+	{
+		// Fallback: use player color
+		VectorCopy(espConfig.playerColor, color);
+	}
+	// Always apply global alpha
+	color[3] = espConfig.alpha;
+}
 void CG_ESPGetPlayerHeadPosition(centity_t *cent, vec3_t headPos);
 void CG_ESPUpdateRealTimeData(centity_t *cent, espEntityData_t *espData);
 qboolean CG_ESPWorldToScreen(vec3_t worldPos, float *x, float *y);
