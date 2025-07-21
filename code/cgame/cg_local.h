@@ -1169,6 +1169,8 @@ typedef struct
 	qhandle_t keyBackOnShader;
 	qhandle_t keyForwardOffShader;
 	qhandle_t keyForwardOnShader;
+	qhandle_t keyAutoKickOnShader;
+	qhandle_t keyAutoKickOffShader;
 	qhandle_t keyLeftOffShader;
 	qhandle_t keyLeftOnShader;
 	qhandle_t keyRightOffShader;

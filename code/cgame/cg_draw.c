@@ -7913,6 +7913,12 @@ static void CG_MovementKeys(centity_t *cent)
 		CG_DrawPic(w * 2 + x, h + y, w, h, cgs.media.keyRightOnShader);
 	else
 		CG_DrawPic(w * 2 + x, h + y, w, h, cgs.media.keyRightOffShader);
+
+	// AutoKick key indicator
+	if (cg.doAutoKick)
+		CG_DrawPic(w * 3 + x, y, w, h, cgs.media.keyAutoKickOnShader);
+	else
+		CG_DrawPic(w * 3 + x, y, w, h, cgs.media.keyAutoKickOffShader);
 }
 
 #define ACCEL_SAMPLES 16
@@ -8457,51 +8463,51 @@ static void CG_DrawVerticalSpeed(void)
 #if 0
 #define YAW_FRAMES 16
 static void CG_DrawYawSpeed( void ) {
-    static unsigned short previousYaws[YAW_FRAMES];
-    static unsigned short index;
-    static int    previous, lastupdate;
-    int        t, i, yaw, total;
-    unsigned short frameTime;
-    const int        xOffset = 0;
+	static unsigned short previousYaws[YAW_FRAMES];
+	static unsigned short index;
+	static int    previous, lastupdate;
+	int        t, i, yaw, total;
+	unsigned short frameTime;
+	const int        xOffset = 0;
 
-    const float diff = AngleSubtract(cg.predictedPlayerState.viewangles[YAW], cg.lastYawSpeed);
-    float yawspeed = diff / (cg.frametime * 0.001f);
-    if (yawspeed < 0)
-        yawspeed = -yawspeed;
+	const float diff = AngleSubtract(cg.predictedPlayerState.viewangles[YAW], cg.lastYawSpeed);
+	float yawspeed = diff / (cg.frametime * 0.001f);
+	if (yawspeed < 0)
+		yawspeed = -yawspeed;
 
-    t = trap_Milliseconds();
-    frameTime = t - previous;
-    previous = t;
-    if (t - lastupdate > 20)    //don't sample faster than this
-    {
-        lastupdate = t;
-        previousYaws[index % YAW_FRAMES] = yawspeed;
-        index++;
-    }
+	t = trap_Milliseconds();
+	frameTime = t - previous;
+	previous = t;
+	if (t - lastupdate > 20)    //don't sample faster than this
+	{
+		lastupdate = t;
+		previousYaws[index % YAW_FRAMES] = yawspeed;
+		index++;
+	}
 
-    total = 0;
-    for (i = 0; i < YAW_FRAMES; i++) {
-        total += previousYaws[i];
-    }
-    if (!total) {
-        total = 1;
-    }
-    yaw = total / (float)YAW_FRAMES;
+	total = 0;
+	for (i = 0; i < YAW_FRAMES; i++) {
+		total += previousYaws[i];
+	}
+	if (!total) {
+		total = 1;
+	}
+	yaw = total / (float)YAW_FRAMES;
 
-    if (yaw) {
-        char yawStr[64] = { 0 };
-        if (yawspeed > 320)
-            Com_sprintf(yawStr, sizeof(yawStr), "^1%03i", (int)(yaw + 0.5f));
-        else if (yawspeed > 265)
-            Com_sprintf(yawStr, sizeof(yawStr), "^3%03i", (int)(yaw + 0.5f));
-        else
-            Com_sprintf(yawStr, sizeof(yawStr), "%03i", (int)(yaw + 0.5f));
-        CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], yawStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-    }
+	if (yaw) {
+		char yawStr[64] = { 0 };
+		if (yawspeed > 320)
+			Com_sprintf(yawStr, sizeof(yawStr), "^1%03i", (int)(yaw + 0.5f));
+		else if (yawspeed > 265)
+			Com_sprintf(yawStr, sizeof(yawStr), "^3%03i", (int)(yaw + 0.5f));
+		else
+			Com_sprintf(yawStr, sizeof(yawStr), "%03i", (int)(yaw + 0.5f));
+		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], yawStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+	}
 
-    cg.lastYawSpeed = cg.predictedPlayerState.viewangles[YAW];
+	cg.lastYawSpeed = cg.predictedPlayerState.viewangles[YAW];
 
-    speedometerXPos += 16;
+	speedometerXPos += 16;
 }
 #endif
 
@@ -9855,8 +9861,8 @@ void CG_DrawSnapHud(void)
 		{
 			int statsMsec = stats->pastFpsUnionArray[(stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1)];
 			fps = statsMsec ? (1000 / statsMsec) : fps; // uses your maxfps setting by default
-			// take average to have it more stable when non-physicsfps? but will jitter when switching :/
-			// int msecSum = stats->pastFpsUnionArray[0] + stats->pastFpsUnionArray[1] + stats->pastFpsUnionArray[2] + stats->pastFpsUnionArray[3];
+														// take average to have it more stable when non-physicsfps? but will jitter when switching :/
+														// int msecSum = stats->pastFpsUnionArray[0] + stats->pastFpsUnionArray[1] + stats->pastFpsUnionArray[2] + stats->pastFpsUnionArray[3];
 		}
 	}
 	else if (cg.snap)

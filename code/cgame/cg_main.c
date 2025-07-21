@@ -2315,6 +2315,8 @@ static void CG_RegisterGraphics(void)
 	cgs.media.keyLeftOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/left_on");
 	cgs.media.keyRightOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/right_off");
 	cgs.media.keyRightOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/right_on");
+	cgs.media.keyAutoKickOnShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jumpon_autokick");
+	cgs.media.keyAutoKickOffShader = trap_R_RegisterShaderNoMip("gfx/hud/keys/jumpoff_autokick");
 	// JAPRO - Clientside - Movement Keys - End
 
 #ifdef JK2AWARDS
