@@ -126,6 +126,7 @@ set(MVGAMEVMSOURCES ${MVGAMESOURCES}
 )
 
 add_library(${MVGAME} SHARED ${MVGAMEFILES})
+set_target_properties(${MVGAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>")
 
 # Defines
 set(MVGAMEDefines ${MVGAMEDefines} "QAGAME")
@@ -145,12 +146,10 @@ set_target_properties(${MVGAME} PROPERTIES PROJECT_LABEL "Game Module")
 if(InMV)
 	set_property(TARGET ${MVGAME} PROPERTY FOLDER "Modules")
 	if(WIN32)
-		install(TARGETS ${MVGAME} RUNTIME DESTINATION ".")
-		install(FILES $<TARGET_PDB_FILE:${MVGAME}> DESTINATION "." OPTIONAL)
 		add_custom_command(TARGET ${MVGAME} POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy_if_different
 				"$<TARGET_FILE:${MVGAME}>"
-				"${CMAKE_SOURCE_DIR}/base/jk2mpgame_x64.dll"
+				"${CMAKE_BINARY_DIR}/out/Release/base/jk2mpgame_x64.dll"
 		)
 		# Do NOT copy jk2mvmenu_x64.dll, OpenAL32.dll, SDL2.dll to base
 	elseif(APPLE)

@@ -123,6 +123,7 @@ set(MVCGAMEVMSOURCES ${MVCGAMESOURCES}
 )
 
 add_library(${MVCGAME} SHARED ${MVCGAMEFILES})
+set_target_properties(${MVCGAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>")
 
 # Defines
 set(MVCGAMEDefines ${MVCGAMEDefines} "JK2_CGAME")
@@ -142,9 +143,11 @@ if(InMV)
 	set_property(TARGET ${MVCGAME} PROPERTY FOLDER "Modules")
 	if(BuildPortableVersion)
 		if(WIN32)
-			install(TARGETS ${MVCGAME} RUNTIME DESTINATION ".")
-		else()
-			install(TARGETS ${MVCGAME} LIBRARY DESTINATION ".")
+			add_custom_command(TARGET ${MVCGAME} POST_BUILD
+				COMMAND ${CMAKE_COMMAND} -E copy_if_different
+					"$<TARGET_FILE:${MVCGAME}>"
+					"${CMAKE_BINARY_DIR}/out/Release/base/cgame_x64.dll"
+			)
 		endif()
 	else()
 		if(WIN32)

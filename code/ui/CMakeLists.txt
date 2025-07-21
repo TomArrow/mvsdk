@@ -54,6 +54,7 @@ set(MVUIVMSOURCES ${MVUISOURCES}
 )
 
 add_library(${MVUI} SHARED ${MVUIFILES})
+set_target_properties(${MVUI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>")
 
 # Defines
 set(MVUIDefines ${MVUIDefines} "JK2_UI")
@@ -72,12 +73,10 @@ set_target_properties(${MVUI} PROPERTIES PROJECT_LABEL "UI Module")
 if(InMV)
 	set_property(TARGET ${MVUI} PROPERTY FOLDER "Modules")
 	if(WIN32)
-		install(TARGETS ${MVUI} RUNTIME DESTINATION ".")
-		install(FILES $<TARGET_PDB_FILE:${MVUI}> DESTINATION "." OPTIONAL)
 		add_custom_command(TARGET ${MVUI} POST_BUILD
 			COMMAND ${CMAKE_COMMAND} -E copy_if_different
 				"$<TARGET_FILE:${MVUI}>"
-				"${CMAKE_SOURCE_DIR}/base/ui_x64.dll"
+				"${CMAKE_BINARY_DIR}/out/Release/base/ui_x64.dll"
 		)
 		# Do NOT copy jk2mvmenu_x64.dll, OpenAL32.dll, SDL2.dll to base
 	elseif(APPLE)
