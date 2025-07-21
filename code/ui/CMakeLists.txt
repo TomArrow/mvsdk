@@ -54,7 +54,11 @@ set(MVUIVMSOURCES ${MVUISOURCES}
 )
 
 add_library(${MVUI} SHARED ${MVUIFILES})
-set_target_properties(${MVUI} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>")
+set_target_properties(${MVUI} PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+  ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+  LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+)
 
 # Defines
 set(MVUIDefines ${MVUIDefines} "JK2_UI")

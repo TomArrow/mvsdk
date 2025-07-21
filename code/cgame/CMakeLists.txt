@@ -123,7 +123,11 @@ set(MVCGAMEVMSOURCES ${MVCGAMESOURCES}
 )
 
 add_library(${MVCGAME} SHARED ${MVCGAMEFILES})
-set_target_properties(${MVCGAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>")
+set_target_properties(${MVCGAME} PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+  ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+  LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+)
 
 # Defines
 set(MVCGAMEDefines ${MVCGAMEDefines} "JK2_CGAME")
