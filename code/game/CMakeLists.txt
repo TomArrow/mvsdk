@@ -1,4 +1,4 @@
-﻿# Make sure the user is not executing this script directly
+# Make sure the user is not executing this script directly
 if(NOT InMVSDK)
 	message(FATAL_ERROR "Use the top-level cmake script!")
 endif(NOT InMVSDK)
@@ -125,11 +125,24 @@ set(MVGAMEVMSOURCES ${MVGAMESOURCES}
 	PARENT_SCOPE
 )
 
+# Explicitly set the target name to jk2mpgame_x64 for correct DLL naming
+set(MVGAME jk2mpgame_x64)
+
 add_library(${MVGAME} SHARED ${MVGAMEFILES})
+
+message(STATUS "[CMAKE] game target: ${MVGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/base/")
+
 set_target_properties(${MVGAME} PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
   ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
   LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+)
+
+# Ensure all game module DLLs are always output to base/ for all configs
+set_target_properties(${MVGAME} PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
 )
 
 # Defines

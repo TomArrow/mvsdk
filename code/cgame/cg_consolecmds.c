@@ -1,4 +1,3 @@
-
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_consolecmds.c -- text commands typed in at the local console, or
@@ -1858,7 +1857,7 @@ static void CG_Flipkick_f(void)
 	// How to make the perfect KS?
 	// Get frametime or com_maxfps ?
 	// Do however many taps super fast until they are at max jump kick height?
-	// trap_SendConsoleCommand("+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup\n");
+	// trap_SendConsoleCommand("+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup\n");
 }
 
 static void CG_DiscoLights_f(void)
@@ -2056,6 +2055,7 @@ static consoleCommand_t commands[] = {
 	{"strafeHelper", CG_StrafeHelper_f},
 	{"speedometer", cg_speedometer_f},
 	{"customizeRace", cg_customizeRace_f},
+	{"cg_esp", CG_ESP_f},
 
 	{"+zoom", CG_ZoomDown_f},
 	{"-zoom", CG_ZoomUp_f},
@@ -2135,11 +2135,11 @@ qboolean CG_ConsoleCommand(void)
 		{
 			commands[i].function();
 			misspelledCount = 0;
-			return qtrue;
+		 return qtrue;
 		}
 	}
 
-	for (i = 0; i < sizeof(memecommands) / sizeof(memecommands[0]); i++)
+	for (i =  0; i < sizeof(memecommands) / sizeof(memecommands[0]); i++)
 	{
 		if (!Q_stricmp(cmd, memecommands[i].cmd))
 		{
@@ -2378,7 +2378,7 @@ void CG_InitConsoleCommands(void)
 	trap_AddCommand("amshake");
 	trap_AddCommand("amsuper");
 	trap_AddCommand("amsuper2");
-	trap_AddCommand("amspin");
+	tr trap_AddCommand("amspin");
 	trap_AddCommand("amspin2");
 	trap_AddCommand("amspin3");
 	trap_AddCommand("amspinr");

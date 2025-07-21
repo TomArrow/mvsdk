@@ -1,4 +1,4 @@
-﻿# Make sure the user is not executing this script directly
+# Make sure the user is not executing this script directly
 if(NOT InMVSDK)
 	message(FATAL_ERROR "Use the top-level cmake script!")
 endif(NOT InMVSDK)
@@ -122,11 +122,24 @@ set(MVCGAMEVMSOURCES ${MVCGAMESOURCES}
 	PARENT_SCOPE
 )
 
+# Explicitly set the target name to cgame_x64 for correct DLL naming
+set(MVCGAME cgame_x64)
+
 add_library(${MVCGAME} SHARED ${MVCGAMEFILES})
+
+message(STATUS "[CMAKE] cgame target: ${MVCGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/base/")
+
 set_target_properties(${MVCGAME} PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
   ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
   LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+)
+
+# Ensure all cgame module DLLs are always output to base/ for all configs
+set_target_properties(${MVCGAME} PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
 )
 
 # Defines
