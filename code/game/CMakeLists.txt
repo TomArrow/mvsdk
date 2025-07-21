@@ -144,20 +144,18 @@ set_target_properties(${MVGAME} PROPERTIES INCLUDE_DIRECTORIES "${MVGAMEIncludeD
 set_target_properties(${MVGAME} PROPERTIES PROJECT_LABEL "Game Module")
 if(InMV)
 	set_property(TARGET ${MVGAME} PROPERTY FOLDER "Modules")
-	if(BuildPortableVersion)
-		if(WIN32)
-			install(TARGETS ${MVGAME} RUNTIME DESTINATION ".")
-		else()
-			install(TARGETS ${MVGAME} LIBRARY DESTINATION ".")
-		endif()
+	if(WIN32)
+		install(TARGETS ${MVGAME} RUNTIME DESTINATION ".")
+		install(FILES $<TARGET_PDB_FILE:${MVGAME}> DESTINATION "." OPTIONAL)
+		add_custom_command(TARGET ${MVGAME} POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				"$<TARGET_FILE:${MVGAME}>"
+				"${CMAKE_SOURCE_DIR}/base/jk2mpgame_x64.dll"
+		)
+		# Do NOT copy jk2mvmenu_x64.dll, OpenAL32.dll, SDL2.dll to base
+	elseif(APPLE)
+		install(TARGETS ${MVGAME} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
 	else()
-		if(WIN32)
-			install(TARGETS ${MVGAME} RUNTIME DESTINATION ".")
-			install(FILES $<TARGET_PDB_FILE:${MVGAME}> DESTINATION "." OPTIONAL)
-		elseif(APPLE)
-			install(TARGETS ${MVGAME} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
-		else()
-			install(TARGETS ${MVGAME} LIBRARY DESTINATION "lib")
-		endif()
+		install(TARGETS ${MVGAME} LIBRARY DESTINATION "lib")
 	endif()
 endif()
