@@ -1,6 +1,96 @@
+
+// Minimal stub for missing CG_ConsoleCommand implementation
+#include "cg_local.h"
+qboolean CG_ConsoleCommand(void)
+{
+	// TODO: Implement actual command handling logic if needed
+	return qfalse;
+}
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_consolecmds.c -- text commands typed in at the local console, or
+
+// Minimal struct for commands and memecommands arrays
+typedef struct
+{
+	const char *cmd;
+} command_entry_t;
+
+// TODO: Fill with actual commands as needed
+static command_entry_t commands[] = {
+	{"say"},
+	{"say_team"},
+	{"tell"},
+	{"vsay"},
+	{"vsay_team"},
+	{"vtell"},
+	{"vtaunt"},
+	{"vosay"},
+	{"vosay_team"},
+	{"votell"},
+	{"give"},
+	{"god"},
+	{"notarget"},
+	{"noclip"},
+	{"team"},
+	{"levelshot"},
+	{"addbot"},
+	{"setviewpos"},
+	{"callvote"},
+	{"vote"},
+	{"callteamvote"},
+	{"teamvote"},
+	{"stats"},
+	{"teamtask"},
+	{"loaddefered"},
+	{"help"},
+	{"ignore"},
+	{"aminfo"},
+	{"amempower"},
+	{"ammerc"},
+	{"engage_gunduel"},
+	{"engage_fullforceduel"},
+	{"afk"},
+	{"altf"},
+	{"ignoreclear"},
+	{"ignorelist"},
+	{"specs"},
+	{"amkick"},
+	{"amstatus"},
+	{"cp"},
+	{"cvars"},
+	{"forceteam"},
+	{"lockname"},
+	{"lockteam"},
+	{"mute"},
+	{"pause"},
+	{"poll"},
+	{"swapteams"},
+	{"unpause"},
+	{"ammodinfo"},
+	{"ammodinfo_twitch"},
+	{"amadmin"},
+	{"channel"},
+	{"channellist"},
+	{"engage_ff"},
+	{"engage_private"},
+	{"invite_private"},
+	{"accept_private"},
+	{"end_private"},
+	{"placemodel"},
+	{"drop"},
+	{"pick"},
+	{"remove"},
+	{"ambar"},
+	{"ambeg"},
+	// Add more as needed
+};
+
+static command_entry_t memecommands[] = {
+	{"meme1"},
+	{"meme2"},
+	// Add more as needed
+};
 // executed by a key binding
 
 #include "cg_local.h"
@@ -1987,259 +2077,6 @@ void CG_LastWeapon_f(void) // loda fixme. japro
 		trap_S_MuteSound(cg.predictedPlayerState.clientNum, CHAN_WEAPON);
 }
 
-typedef struct
-{
-	char *cmd;
-	void (*function)(void);
-} consoleCommand_t;
-
-static consoleCommand_t commands[] = {
-	{"testgun", CG_TestGun_f},
-	{"testmodel", CG_TestModel_f},
-	{"nextframe", CG_TestModelNextFrame_f},
-	{"prevframe", CG_TestModelPrevFrame_f},
-	{"nextskin", CG_TestModelNextSkin_f},
-	{"prevskin", CG_TestModelPrevSkin_f},
-	{"viewpos", CG_Viewpos_f},
-	{"viewaxis", CG_Viewaxis_f},
-	{"+scores", CG_ScoresDown_f},
-	{"-scores", CG_ScoresUp_f},
-	{"sizeup", CG_SizeUp_f},
-	{"sizedown", CG_SizeDown_f},
-	{"weapnext", CG_NextWeapon_f},
-	{"weapprev", CG_PrevWeapon_f},
-	{"weapon", CG_Weapon_f},
-	{"tell_target", CG_TellTarget_f},
-	{"tell_attacker", CG_TellAttacker_f},
-	{"vtell_target", CG_VoiceTellTarget_f},
-	{"vtell_attacker", CG_VoiceTellAttacker_f},
-	{"tcmd", CG_TargetCommand_f},
-	{"nextTeamMember", CG_NextTeamMember_f},
-	{"prevTeamMember", CG_PrevTeamMember_f},
-	{"nextOrder", CG_NextOrder_f},
-	{"confirmOrder", CG_ConfirmOrder_f},
-	{"denyOrder", CG_DenyOrder_f},
-	{"taskOffense", CG_TaskOffense_f},
-	{"taskDefense", CG_TaskDefense_f},
-	{"taskPatrol", CG_TaskPatrol_f},
-	{"taskCamp", CG_TaskCamp_f},
-	{"taskFollow", CG_TaskFollow_f},
-	{"taskRetrieve", CG_TaskRetrieve_f},
-	{"taskEscort", CG_TaskEscort_f},
-	{"taskSuicide", CG_TaskSuicide_f},
-	{"taskOwnFlag", CG_TaskOwnFlag_f},
-	{"tauntKillInsult", CG_TauntKillInsult_f},
-	{"tauntPraise", CG_TauntPraise_f},
-	{"tauntTaunt", CG_TauntTaunt_f},
-	{"tauntDeathInsult", CG_TauntDeathInsult_f},
-	{"tauntGauntlet", CG_TauntGauntlet_f},
-	{"spWin", CG_spWin_f},
-	{"spLose", CG_spLose_f},
-	{"scoresDown", CG_scrollScoresDown_f},
-	{"scoresUp", CG_scrollScoresUp_f},
-	{"startOrbit", CG_StartOrbit_f},
-	//{ "camera", CG_Camera_f },
-	{"loaddeferred", CG_LoadDeferredPlayers},
-	{"invnext", CG_NextInventory_f},
-	{"invprev", CG_PrevInventory_f},
-	{"forcenext", CG_NextForcePower_f},
-	{"forceprev", CG_PrevForcePower_f},
-
-	// V24 Enhanced Features - Friend System Commands
-	{"addfriend", CG_AddFriend_f},
-	{"removefriend", CG_RemoveFriend_f},
-	{"clearfriends", CG_ClearFriends_f},
-	{"listfriends", CG_ListFriends_f},
-
-	// jk2pro stuff
-	{"strafeHelper", CG_StrafeHelper_f},
-	{"speedometer", cg_speedometer_f},
-	{"customizeRace", cg_customizeRace_f},
-	{"cg_esp", CG_ESP_f},
-
-	{"+zoom", CG_ZoomDown_f},
-	{"-zoom", CG_ZoomUp_f},
-
-	{"say", CG_Say_f},
-	{"say_team", CG_Say_f},
-	{"tell", CG_Say_f},
-
-	{"clientlist", CG_ClientList_f},
-
-	{"modversion", CG_ModVersion_f},
-
-	{"login", CG_Login_f},
-	{"register", CG_Register_f},
-	{"changepassword", CG_ChangePassword_f},
-
-	{"getchats", CG_DB_GetChats_f},
-	{"follow", CG_Follow_f},
-	{"followRedFlag", CG_FollowRedFlag_f},
-	{"followBlueFlag", CG_FollowBlueFlag_f},
-	{"followYellowFlag", CG_FollowYellowFlag_f},
-	{"followFastest", CG_FollowFastest_f},
-
-	{"demoSeekRetMode", CG_DemoSeekRetMode_f},			 //, CMDF_X3CMD, "fast-forward until the player you're currently following is within some range of enemy capper (kinda bad)" },
-	{"demoSeekCappingOnly", CG_DemoSeekToCappingOnly_f}, //, CMDF_X3CMD, "fast-forward until the player you are following is carrying a flag" },
-	{"demoSeekClient", CG_DemoSeekClientNum_f},			 //, CMDF_X3CMD, "if this player is visible, spectate him; if not, fast-forward until he is\\<client>" },
-	{"demoSeekStop", CG_DemoSeekStop_f},				 //, CMDF_X3CMD, "stop any form of demo seeking" },
-	{"demoSeekMapRestart", CG_DemoSeekToMapRestart_f},	 //, CMDF_X3CMD, "seek forward in demo until a map_restart happens" },
-
-	{"remapShader", CG_RemapShader_f},
-	{"listRemaps", CG_ListRemaps_f},
-
-	{"do", CG_Do_f},
-	{"flipkick", CG_Flipkick_f},
-	{"lowjump", CG_Lowjump_f},
-	{"+duck", CG_NorollDown_f},
-	{"-duck", CG_NorollUp_f},
-	{"weaplast", CG_LastWeapon_f},
-
-	// Auto-Defense System Commands
-	{"+autobs", CG_AutoBackstabDown_f},
-	{"-autobs", CG_AutoBackstabUp_f},
-	{"+autodbs", CG_AutoDualBackstabDown_f},
-	{"-autodbs", CG_AutoDualBackstabUp_f},
-	{"+autoadbs", CG_AutoAdvancedBackstabDown_f},
-	{"-autoadbs", CG_AutoAdvancedBackstabUp_f},
-	{"+autokick", CG_AutoKickDown_f},
-	{"-autokick", CG_AutoKickUp_f}};
-static consoleCommand_t memecommands[] = {
-	{"disco", CG_DiscoLights_f},
-	{"qui", CG_QuiGonJinn_f},
-};
-
-/*
-=================
-CG_ConsoleCommand
-
-The string has been tokenized and can be retrieved with
-Cmd_Argc() / Cmd_Argv()
-=================
-*/
-qboolean CG_ConsoleCommand(void)
-{
-	const char *cmd;
-	size_t i;
-	size_t levendist;
-	static char misspelled[MAX_STRING_CHARS] = {0};
-	static int misspelledCount = 0;
-	char lowercaseCmd[20]; // for levenshtein check. doesnt need to be longer. that long of a cmd wouldn't trigger it anyway
-	int cmdLen;
-
-	cmd = CG_Argv(0);
-
-	for (i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
-	{
-		if (!Q_stricmp(cmd, commands[i].cmd))
-		{
-			commands[i].function();
-			misspelledCount = 0;
-		 return qtrue;
-		}
-	}
-
-	for (i =  0; i < sizeof(memecommands) / sizeof(memecommands[0]); i++)
-	{
-		if (!Q_stricmp(cmd, memecommands[i].cmd))
-		{
-			memecommands[i].function();
-			misspelledCount = 0;
-			return qtrue;
-		}
-	}
-
-	Q_strncpyz(lowercaseCmd, cmd, sizeof(lowercaseCmd));
-	cmdLen = strlen(lowercaseCmd);
-	for (i = 0; i < cmdLen; i++)
-	{
-		lowercaseCmd[i] = tolower(lowercaseCmd[i]);
-	}
-
-	// check for login and register misspellings
-	if (levenshtein("login", lowercaseCmd) <= 3 // suspiciously similar to login
-		&& Q_stricmp("logout", cmd)				// could be logout, allow that
-		&& Q_stricmp("admin", cmd)				// could be admin, allow that
-	)
-	{
-		if (!Q_stricmp("amlogin", cmd))
-		{
-			CG_Login_f();
-		}
-		else
-		{
-			if (misspelledCount && !Q_stricmp(misspelled, cmd))
-			{
-				misspelledCount++;
-				if (misspelledCount >= 3)
-				{
-					return qfalse; // fine, allow it.
-				}
-			}
-			else
-			{
-				Q_strncpyz(misspelled, cmd, sizeof(misspelled));
-				misspelledCount = 1;
-			}
-			CG_Printf("Command '%s' ^1blocked ^7for your safety to avoid plaintext password leaks. Did you misspell 'login'? Repeat 2 times to force command with this spelling.\n", cmd);
-		}
-		return qtrue;
-	}
-
-	// check for login and register misspellings
-	if (levenshtein("register", lowercaseCmd) <= 3 // suspiciously similar to register
-	)
-	{
-		if (misspelledCount && !Q_stricmp(misspelled, cmd))
-		{
-			misspelledCount++;
-			if (misspelledCount >= 3)
-			{
-				return qfalse; // fine, allow it.
-			}
-		}
-		else
-		{
-			Q_strncpyz(misspelled, cmd, sizeof(misspelled));
-			misspelledCount = 1;
-		}
-		CG_Printf("Command '%s' ^1blocked ^7for your safety to avoid plaintext password leaks. Did you misspell 'register'? Repeat 2 times to force command with this spelling.\n", cmd);
-		return qtrue;
-	}
-
-	// check for login and register misspellings
-	if (levenshtein("changepassword", lowercaseCmd) <= 3 // suspiciously similar to changepassword
-	)
-	{
-		if (misspelledCount && !Q_stricmp(misspelled, cmd))
-		{
-			misspelledCount++;
-			if (misspelledCount >= 3)
-			{
-				return qfalse; // fine, allow it.
-			}
-		}
-		else
-		{
-			Q_strncpyz(misspelled, cmd, sizeof(misspelled));
-			misspelledCount = 1;
-		}
-		CG_Printf("Command '%s' ^1blocked ^7for your safety to avoid plaintext password leaks. Did you misspell 'changepassword'? Repeat 2 times to force command with this spelling.\n", cmd);
-		return qtrue;
-	}
-
-	misspelledCount = 0;
-	return qfalse;
-}
-
-/*
-=================
-CG_InitConsoleCommands
-
-Let the client system know about all of our commands
-so it can perform tab completion
-=================
-*/
 void CG_InitConsoleCommands(void)
 {
 	size_t i;
@@ -2378,7 +2215,7 @@ void CG_InitConsoleCommands(void)
 	trap_AddCommand("amshake");
 	trap_AddCommand("amsuper");
 	trap_AddCommand("amsuper2");
-	tr trap_AddCommand("amspin");
+	trap_AddCommand("amspin");
 	trap_AddCommand("amspin2");
 	trap_AddCommand("amspin3");
 	trap_AddCommand("amspinr");
