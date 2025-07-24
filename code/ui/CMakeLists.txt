@@ -58,19 +58,13 @@ set(MVUI ui_x64)
 
 add_library(${MVUI} SHARED ${MVUIFILES})
 
-message(STATUS "[CMAKE] ui target: ${MVUI}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/base/")
+message(STATUS "[CMAKE] ui target: ${MVUI}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2/")
 
+# Ensure all module DLLs are always output to eternaljk2/ for all configs
 set_target_properties(${MVUI} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-  ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-  LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-)
-
-# Ensure all module DLLs are always output to base/ for all configs
-set_target_properties(${MVUI} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
 )
 
 # Defines
@@ -90,12 +84,7 @@ set_target_properties(${MVUI} PROPERTIES PROJECT_LABEL "UI Module")
 if(InMV)
 	set_property(TARGET ${MVUI} PROPERTY FOLDER "Modules")
 	if(WIN32)
-		add_custom_command(TARGET ${MVUI} POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different
-				"$<TARGET_FILE:${MVUI}>"
-				"${CMAKE_BINARY_DIR}/out/Release/base/ui_x64.dll"
-		)
-		# Do NOT copy jk2mvmenu_x64.dll, OpenAL32.dll, SDL2.dll to base
+		# Build directly to main directory - no copy needed
 	elseif(APPLE)
 		install(TARGETS ${MVUI} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
 	else()

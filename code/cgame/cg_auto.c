@@ -962,9 +962,8 @@ Executes an auto-aim operation by adjusting view angles toward the target
 void CG_ExecuteAutoAim(void)
 {
     int targetClient;
-    vec3_t targetPos, targetDir, currentAngles, targetAngles;
+    vec3_t targetPos, targetDir, targetAngles;
     centity_t *target;
-    float damping;
 
     // Find best target
     targetClient = CG_FindBestAutoAimTarget();
@@ -1043,16 +1042,18 @@ Main processing function for the auto-aim system
 */
 void CG_ProcessAutoAim(void)
 {
-    int i;
-
     if (!cg_autoAim.integer)
     {
+        // Clear any stale auto-aim angles when disabled
+        VectorClear(cg.autoSuggestedViewAngles);
         return;
     }
 
     // Check our own state first
     if (!cg.snap || !cg.predictedPlayerState.stats[STAT_HEALTH] > 0)
     {
+        // Clear angles when not in valid state
+        VectorClear(cg.autoSuggestedViewAngles);
         return;
     }
 

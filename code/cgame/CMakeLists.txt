@@ -127,19 +127,19 @@ set(MVCGAME cgame_x64)
 
 add_library(${MVCGAME} SHARED ${MVCGAMEFILES})
 
-message(STATUS "[CMAKE] cgame target: ${MVCGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/base/")
+message(STATUS "[CMAKE] cgame target: ${MVCGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2/")
 
 set_target_properties(${MVCGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-  ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-  LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
+  RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/eternaljk2,${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2>"
+  ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/eternaljk2,${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2>"
+  LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/eternaljk2,${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2>"
 )
 
-# Ensure all cgame module DLLs are always output to base/ for all configs
+# Ensure all cgame module DLLs are always output to eternaljk2/ for all configs
 set_target_properties(${MVCGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
 )
 
 # Defines

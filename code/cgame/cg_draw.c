@@ -4785,7 +4785,7 @@ static void CG_DrawCrosshair(vec3_t worldPoint, int chEntValid)
 
 	hShader = cgs.media.crosshairShader[cg_drawCrosshair.integer % NUM_CROSSHAIRS];
 
-	CG_DrawPic(x + cg.refdef.x - 0.5f * w, y + cg.refdef.y - 0.5f * w, w, h, hShader);
+	CG_DrawPic(x + cg.refdef.x - 0.5f * w, y + cg.refdef.y - 0.5f * h, w, h, hShader);
 
 	trap_R_SetColor(NULL);
 }

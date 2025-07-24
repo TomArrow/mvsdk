@@ -201,7 +201,6 @@ void CG_UpdateESP(void)
 void CG_DrawESP(void)
 {
 	int i;
-	float x, y;
 	vec4_t color;
 	centity_t *cent;
 

@@ -1036,6 +1036,7 @@ typedef struct
 	qboolean doAutoBackstab;
 	int autoBackstabMode;
 	qboolean doAutoKick;
+	qboolean doAutoAim;
 
 	// new simple hud stuff
 	int oldammo;
@@ -2208,6 +2209,26 @@ extern vmCvar_t cg_friendsMaxCount;
 extern vmCvar_t cg_friendsAutoSave;
 extern vmCvar_t cg_friendsVisualMarkers;
 extern vmCvar_t cg_friendsSoundNotifications;
+
+// Enemy Detection System CVars
+extern vmCvar_t cg_enemyDetection;
+extern vmCvar_t cg_enemyDetectionRange;
+extern vmCvar_t cg_enemyDetectionFOV;
+extern vmCvar_t cg_enemyDetectionStyle;
+extern vmCvar_t cg_enemyDetectionColor;
+extern vmCvar_t cg_enemyDetectionSound;
+extern vmCvar_t cg_enemyDetectionPulse;
+
+// Wallhack System CVars
+extern vmCvar_t cg_wallhack;
+extern vmCvar_t cg_wallhackStyle;
+extern vmCvar_t cg_wallhackAlpha;
+extern vmCvar_t cg_wallhackColor;
+extern vmCvar_t cg_wallhackRange;
+extern vmCvar_t cg_wallhackIgnoreFriends;
+extern vmCvar_t cg_wallhackSoundAlert;
+extern vmCvar_t cg_wallhackVisualAlert;
+extern vmCvar_t cg_wallhackPulse;
 extern vmCvar_t cg_teamChatsOnly;
 extern vmCvar_t cg_noVoiceChats;
 extern vmCvar_t cg_noVoiceText;

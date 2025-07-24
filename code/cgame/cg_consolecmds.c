@@ -1,11 +1,6 @@
-
 // Minimal stub for missing CG_ConsoleCommand implementation
+// Function implemented at end of file after all handler functions are defined
 #include "cg_local.h"
-qboolean CG_ConsoleCommand(void)
-{
-	// TODO: Implement actual command handling logic if needed
-	return qfalse;
-}
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_consolecmds.c -- text commands typed in at the local console, or
@@ -83,6 +78,34 @@ static command_entry_t commands[] = {
 	{"remove"},
 	{"ambar"},
 	{"ambeg"},
+	// V24 Enhanced Features Commands
+	{"+autobackstab"},
+	{"-autobackstab"},
+	{"+autodualbackstab"},
+	{"-autodualbackstab"},
+	{"+autoadvancedbackstab"},
+	{"-autoadvancedbackstab"},
+	{"+autokick"},
+	{"-autokick"},
+	{"+autoaim"},
+	{"-autoaim"},
+	{"esp_toggle"},
+	{"esp_players"},
+	{"esp_items"},
+	{"esp_health_bars"},
+	{"esp_force_bars"},
+	{"esp_weapon_info"},
+	{"esp_boxes"},
+	{"esp_lines"},
+	{"esp_names"},
+	{"esp_through_walls"},
+	{"esp_color_mode"},
+	{"esp_debug"},
+	{"wallhack_toggle"},
+	{"wallhack_style"},
+	{"enemy_detection"},
+	{"friends_system"},
+	{"saber_tip_trace"},
 	// Add more as needed
 };
 
@@ -156,6 +179,1027 @@ static void CG_AutoKickDown_f(void)
 static void CG_AutoKickUp_f(void)
 {
 	cg.doAutoKick = qfalse;
+}
+
+/*
+=================
+Auto-Aim System Command Handlers
+=================
+*/
+
+static void CG_AutoAimDown_f(void)
+{
+	cg.doAutoAim = qtrue;
+}
+
+static void CG_AutoAimUp_f(void)
+{
+	cg.doAutoAim = qfalse;
+}
+
+/*
+=================
+V24 ESP System Command Handlers
+=================
+*/
+
+static void CG_ESPToggle_f(void)
+{
+	if (cg_esp.integer)
+	{
+		trap_Cvar_Set("cg_esp", "0");
+		CG_Printf("^3ESP: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_esp", "1");
+		CG_Printf("^3ESP: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPPlayers_f(void)
+{
+	if (cg_espPlayers.integer)
+	{
+		trap_Cvar_Set("cg_espPlayers", "0");
+		CG_Printf("^3ESP Players: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espPlayers", "1");
+		CG_Printf("^3ESP Players: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPItems_f(void)
+{
+	if (cg_espItems.integer)
+	{
+		trap_Cvar_Set("cg_espItems", "0");
+		CG_Printf("^3ESP Items: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espItems", "1");
+		CG_Printf("^3ESP Items: ^7Enabled\n");
+	}
+}
+
+static void CG_SaberTipTrace_f(void)
+{
+	if (cg_saberModelTraceEffect.integer)
+	{
+		trap_Cvar_Set("cg_saberModelTraceEffect", "0");
+		CG_Printf("^3Saber Tip Tracing: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_saberModelTraceEffect", "1");
+		CG_Printf("^3Saber Tip Tracing: ^7Enabled\n");
+	}
+}
+
+// V24 Enhanced Features - Additional ESP Commands
+static void CG_ESPHealthBars_f(void)
+{
+	if (cg_espHealthBars.integer)
+	{
+		trap_Cvar_Set("cg_espHealthBars", "0");
+		CG_Printf("^3ESP Health Bars: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espHealthBars", "1");
+		CG_Printf("^3ESP Health Bars: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPForceBars_f(void)
+{
+	if (cg_espForceBars.integer)
+	{
+		trap_Cvar_Set("cg_espForceBars", "0");
+		CG_Printf("^3ESP Force Bars: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espForceBars", "1");
+		CG_Printf("^3ESP Force Bars: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPWeaponInfo_f(void)
+{
+	if (cg_espWeaponInfo.integer)
+	{
+		trap_Cvar_Set("cg_espWeaponInfo", "0");
+		CG_Printf("^3ESP Weapon Info: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espWeaponInfo", "1");
+		CG_Printf("^3ESP Weapon Info: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPBoxes_f(void)
+{
+	if (cg_espBoxes.integer)
+	{
+		trap_Cvar_Set("cg_espBoxes", "0");
+		CG_Printf("^3ESP Boxes: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espBoxes", "1");
+		CG_Printf("^3ESP Boxes: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPLines_f(void)
+{
+	if (cg_espLines.integer)
+	{
+		trap_Cvar_Set("cg_espLines", "0");
+		CG_Printf("^3ESP Lines: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espLines", "1");
+		CG_Printf("^3ESP Lines: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPNames_f(void)
+{
+	if (cg_espPlayerNames.integer)
+	{
+		trap_Cvar_Set("cg_espPlayerNames", "0");
+		CG_Printf("^3ESP Player Names: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espPlayerNames", "1");
+		CG_Printf("^3ESP Player Names: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPThroughWalls_f(void)
+{
+	if (cg_espThroughWalls.integer)
+	{
+		trap_Cvar_Set("cg_espThroughWalls", "0");
+		CG_Printf("^3ESP Through Walls: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espThroughWalls", "1");
+		CG_Printf("^3ESP Through Walls: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPColorMode_f(void)
+{
+	int currentMode = cg_espColorMode.integer;
+	int nextMode = (currentMode + 1) % 4; // Cycle through 0-3
+	trap_Cvar_Set("cg_espColorMode", va("%i", nextMode));
+
+	const char *modeNames[] = {"Default", "Team-based", "Health-based", "Distance-based"};
+	CG_Printf("^3ESP Color Mode: ^7%s\n", modeNames[nextMode]);
+}
+
+static void CG_ESPDebug_f(void)
+{
+	if (cg_espDebug.integer)
+	{
+		trap_Cvar_Set("cg_espDebug", "0");
+		CG_Printf("^3ESP Debug: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espDebug", "1");
+		CG_Printf("^3ESP Debug: ^7Enabled\n");
+	}
+}
+
+// V24 Enhanced Features - Wallhack Commands
+static void CG_WallhackToggle_f(void)
+{
+	if (cg_wallhack.integer)
+	{
+		trap_Cvar_Set("cg_wallhack", "0");
+		CG_Printf("^3Wallhack: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_wallhack", "1");
+		CG_Printf("^3Wallhack: ^7Enabled\n");
+	}
+}
+
+static void CG_WallhackStyle_f(void)
+{
+	int currentStyle = cg_wallhackStyle.integer;
+	int nextStyle = (currentStyle + 1) % 3; // Cycle through 0-2
+	trap_Cvar_Set("cg_wallhackStyle", va("%i", nextStyle));
+
+	const char *styleNames[] = {"Wireframe", "Solid", "Transparent"};
+	CG_Printf("^3Wallhack Style: ^7%s\n", styleNames[nextStyle]);
+}
+
+// V24 Enhanced Features - Enemy Detection Commands
+static void CG_EnemyDetectionToggle_f(void)
+{
+	if (cg_enemyDetection.integer)
+	{
+		trap_Cvar_Set("cg_enemyDetection", "0");
+		CG_Printf("^3Enemy Detection: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_enemyDetection", "1");
+		CG_Printf("^3Enemy Detection: ^7Enabled\n");
+	}
+}
+
+// V24 Enhanced Features - Friends System Commands
+static void CG_FriendsSystem_f(void)
+{
+	if (cg_friendsSystem.integer)
+	{
+		trap_Cvar_Set("cg_friendsSystem", "0");
+		CG_Printf("^3Friends System: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_friendsSystem", "1");
+		CG_Printf("^3Friends System: ^7Enabled\n");
+	}
+}
+
+// V24 Enhanced Features - Additional Auto Command Functions
+static void CG_AutoDefenseToggle_f(void)
+{
+	if (cg_autoDefense.integer)
+	{
+		trap_Cvar_Set("cg_autoDefense", "0");
+		CG_Printf("^3Auto Defense: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoDefense", "1");
+		CG_Printf("^3Auto Defense: ^7Enabled\n");
+	}
+}
+
+// Auto-Kick Configuration Functions
+static void CG_AutoKickDistance_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Kick Distance: ^7%.0f units\n", cg_autoKickDistance.value);
+		CG_Printf("Usage: autokick_distance <distance>\n");
+		return;
+	}
+	float distance = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_autoKickDistance", va("%.0f", distance));
+	CG_Printf("^3Auto-Kick Distance set to: ^7%.0f units\n", distance);
+}
+
+static void CG_AutoKickAngle_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Kick Angle: ^7%.0f degrees\n", cg_autoKickAngle.value);
+		CG_Printf("Usage: autokick_angle <angle>\n");
+		return;
+	}
+	float angle = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_autoKickAngle", va("%.0f", angle));
+	CG_Printf("^3Auto-Kick Angle set to: ^7%.0f degrees\n", angle);
+}
+
+static void CG_AutoKickDelay_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Kick Delay: ^7%d ms\n", cg_autoKickDelay.integer);
+		CG_Printf("Usage: autokick_delay <milliseconds>\n");
+		return;
+	}
+	int delay = atoi(CG_Argv(1));
+	trap_Cvar_Set("cg_autoKickDelay", va("%d", delay));
+	CG_Printf("^3Auto-Kick Delay set to: ^7%d ms\n", delay);
+}
+
+static void CG_AutoKickPrediction_f(void)
+{
+	if (cg_autoKickPrediction.integer)
+	{
+		trap_Cvar_Set("cg_autoKickPrediction", "0");
+		CG_Printf("^3Auto-Kick Prediction: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoKickPrediction", "1");
+		CG_Printf("^3Auto-Kick Prediction: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoKickIgnoreFriends_f(void)
+{
+	if (cg_autoKickIgnoreFriends.integer)
+	{
+		trap_Cvar_Set("cg_autoKickIgnoreFriends", "0");
+		CG_Printf("^3Auto-Kick Ignore Friends: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoKickIgnoreFriends", "1");
+		CG_Printf("^3Auto-Kick Ignore Friends: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoKickIgnoreSpectators_f(void)
+{
+	if (cg_autoKickIgnoreSpectators.integer)
+	{
+		trap_Cvar_Set("cg_autoKickIgnoreSpectators", "0");
+		CG_Printf("^3Auto-Kick Ignore Spectators: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoKickIgnoreSpectators", "1");
+		CG_Printf("^3Auto-Kick Ignore Spectators: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoKickSoundAlert_f(void)
+{
+	if (cg_autoKickSoundAlert.integer)
+	{
+		trap_Cvar_Set("cg_autoKickSoundAlert", "0");
+		CG_Printf("^3Auto-Kick Sound Alert: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoKickSoundAlert", "1");
+		CG_Printf("^3Auto-Kick Sound Alert: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoKickVisualAlert_f(void)
+{
+	if (cg_autoKickVisualAlert.integer)
+	{
+		trap_Cvar_Set("cg_autoKickVisualAlert", "0");
+		CG_Printf("^3Auto-Kick Visual Alert: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoKickVisualAlert", "1");
+		CG_Printf("^3Auto-Kick Visual Alert: ^7Enabled\n");
+	}
+}
+
+// Auto-Aim Configuration Functions
+static void CG_AutoAimFOV_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Aim FOV: ^7%.0f degrees\n", cg_autoAimFOV.value);
+		CG_Printf("Usage: autoaim_fov <degrees>\n");
+		return;
+	}
+	float fov = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_autoAimFOV", va("%.0f", fov));
+	CG_Printf("^3Auto-Aim FOV set to: ^7%.0f degrees\n", fov);
+}
+
+static void CG_AutoAimRange_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Aim Range: ^7%.0f units\n", cg_autoAimRange.value);
+		CG_Printf("Usage: autoaim_range <distance>\n");
+		return;
+	}
+	float range = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_autoAimRange", va("%.0f", range));
+	CG_Printf("^3Auto-Aim Range set to: ^7%.0f units\n", range);
+}
+
+static void CG_AutoAimDelay_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Aim Delay: ^7%d ms\n", cg_autoAimDelay.integer);
+		CG_Printf("Usage: autoaim_delay <milliseconds>\n");
+		return;
+	}
+	int delay = atoi(CG_Argv(1));
+	trap_Cvar_Set("cg_autoAimDelay", va("%d", delay));
+	CG_Printf("^3Auto-Aim Delay set to: ^7%d ms\n", delay);
+}
+
+static void CG_AutoAimPrediction_f(void)
+{
+	if (cg_autoAimPrediction.integer)
+	{
+		trap_Cvar_Set("cg_autoAimPrediction", "0");
+		CG_Printf("^3Auto-Aim Prediction: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoAimPrediction", "1");
+		CG_Printf("^3Auto-Aim Prediction: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoAimDamping_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Aim Damping: ^7%.2f\n", cg_autoAimDamping.value);
+		CG_Printf("Usage: autoaim_damping <0.0-1.0>\n");
+		return;
+	}
+	float damping = atof(CG_Argv(1));
+	if (damping < 0.0f)
+		damping = 0.0f;
+	if (damping > 1.0f)
+		damping = 1.0f;
+	trap_Cvar_Set("cg_autoAimDamping", va("%.2f", damping));
+	CG_Printf("^3Auto-Aim Damping set to: ^7%.2f\n", damping);
+}
+
+static void CG_AutoAimIgnoreFriends_f(void)
+{
+	if (cg_autoAimIgnoreFriends.integer)
+	{
+		trap_Cvar_Set("cg_autoAimIgnoreFriends", "0");
+		CG_Printf("^3Auto-Aim Ignore Friends: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoAimIgnoreFriends", "1");
+		CG_Printf("^3Auto-Aim Ignore Friends: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoAimIgnoreSpectators_f(void)
+{
+	if (cg_autoAimIgnoreSpectators.integer)
+	{
+		trap_Cvar_Set("cg_autoAimIgnoreSpectators", "0");
+		CG_Printf("^3Auto-Aim Ignore Spectators: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoAimIgnoreSpectators", "1");
+		CG_Printf("^3Auto-Aim Ignore Spectators: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoAimSoundAlert_f(void)
+{
+	if (cg_autoAimSoundAlert.integer)
+	{
+		trap_Cvar_Set("cg_autoAimSoundAlert", "0");
+		CG_Printf("^3Auto-Aim Sound Alert: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoAimSoundAlert", "1");
+		CG_Printf("^3Auto-Aim Sound Alert: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoAimVisualAlert_f(void)
+{
+	if (cg_autoAimVisualAlert.integer)
+	{
+		trap_Cvar_Set("cg_autoAimVisualAlert", "0");
+		CG_Printf("^3Auto-Aim Visual Alert: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoAimVisualAlert", "1");
+		CG_Printf("^3Auto-Aim Visual Alert: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoAimWallPenetrate_f(void)
+{
+	if (cg_autoAimWallPenetrate.integer)
+	{
+		trap_Cvar_Set("cg_autoAimWallPenetrate", "0");
+		CG_Printf("^3Auto-Aim Wall Penetrate: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoAimWallPenetrate", "1");
+		CG_Printf("^3Auto-Aim Wall Penetrate: ^7Enabled\n");
+	}
+}
+
+// Auto-Backstab Configuration Functions
+static void CG_AutoBackstabDistance_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Backstab Distance: ^7%.0f units\n", cg_autoBackstabDistance.value);
+		CG_Printf("Usage: autobackstab_distance <distance>\n");
+		return;
+	}
+	float distance = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_autoBackstabDistance", va("%.0f", distance));
+	CG_Printf("^3Auto-Backstab Distance set to: ^7%.0f units\n", distance);
+}
+
+static void CG_AutoBackstabAngle_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Backstab Angle: ^7%.0f degrees\n", cg_autoBackstabAngle.value);
+		CG_Printf("Usage: autobackstab_angle <angle>\n");
+		return;
+	}
+	float angle = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_autoBackstabAngle", va("%.0f", angle));
+	CG_Printf("^3Auto-Backstab Angle set to: ^7%.0f degrees\n", angle);
+}
+
+static void CG_AutoBackstabDelay_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Auto-Backstab Delay: ^7%d ms\n", cg_autoBackstabDelay.integer);
+		CG_Printf("Usage: autobackstab_delay <milliseconds>\n");
+		return;
+	}
+	int delay = atoi(CG_Argv(1));
+	trap_Cvar_Set("cg_autoBackstabDelay", va("%d", delay));
+	CG_Printf("^3Auto-Backstab Delay set to: ^7%d ms\n", delay);
+}
+
+static void CG_AutoBackstabIgnoreFriends_f(void)
+{
+	if (cg_autoBackstabIgnoreFriends.integer)
+	{
+		trap_Cvar_Set("cg_autoBackstabIgnoreFriends", "0");
+		CG_Printf("^3Auto-Backstab Ignore Friends: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoBackstabIgnoreFriends", "1");
+		CG_Printf("^3Auto-Backstab Ignore Friends: ^7Enabled\n");
+	}
+}
+
+static void CG_AutoBackstabSoundAlert_f(void)
+{
+	if (cg_autoBackstabSoundAlert.integer)
+	{
+		trap_Cvar_Set("cg_autoBackstabSoundAlert", "0");
+		CG_Printf("^3Auto-Backstab Sound Alert: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_autoBackstabSoundAlert", "1");
+		CG_Printf("^3Auto-Backstab Sound Alert: ^7Enabled\n");
+	}
+}
+
+// Additional ESP Configuration Functions
+static void CG_ESPDistance_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Distance: ^7%.0f units\n", cg_espDistance.value);
+		CG_Printf("Usage: esp_distance <distance>\n");
+		return;
+	}
+	float distance = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_espDistance", va("%.0f", distance));
+	CG_Printf("^3ESP Distance set to: ^7%.0f units\n", distance);
+}
+
+static void CG_ESPStyle_f(void)
+{
+	int currentStyle = cg_espStyle.integer;
+	int nextStyle = (currentStyle + 1) % 3; // Cycle through 0-2
+	trap_Cvar_Set("cg_espStyle", va("%i", nextStyle));
+
+	const char *styleNames[] = {"Basic", "Advanced", "Minimal"};
+	CG_Printf("^3ESP Style: ^7%s\n", styleNames[nextStyle]);
+}
+
+static void CG_ESPAlpha_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Alpha: ^7%.2f\n", cg_espAlpha.value);
+		CG_Printf("Usage: esp_alpha <0.0-1.0>\n");
+		return;
+	}
+	float alpha = atof(CG_Argv(1));
+	if (alpha < 0.0f)
+		alpha = 0.0f;
+	if (alpha > 1.0f)
+		alpha = 1.0f;
+	trap_Cvar_Set("cg_espAlpha", va("%.2f", alpha));
+	CG_Printf("^3ESP Alpha set to: ^7%.2f\n", alpha);
+}
+
+static void CG_ESPSize_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Size: ^7%.1f\n", cg_espSize.value);
+		CG_Printf("Usage: esp_size <size>\n");
+		return;
+	}
+	float size = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_espSize", va("%.1f", size));
+	CG_Printf("^3ESP Size set to: ^7%.1f\n", size);
+}
+
+static void CG_ESPPlayerNames_f(void)
+{
+	if (cg_espPlayerNames.integer)
+	{
+		trap_Cvar_Set("cg_espPlayerNames", "0");
+		CG_Printf("^3ESP Player Names: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espPlayerNames", "1");
+		CG_Printf("^3ESP Player Names: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPItemNames_f(void)
+{
+	if (cg_espItemNames.integer)
+	{
+		trap_Cvar_Set("cg_espItemNames", "0");
+		CG_Printf("^3ESP Item Names: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_espItemNames", "1");
+		CG_Printf("^3ESP Item Names: ^7Enabled\n");
+	}
+}
+
+static void CG_ESPPlayerColor_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Player Color: ^7%s\n", cg_espPlayerColor.string);
+		CG_Printf("Usage: esp_player_color <color>\n");
+		return;
+	}
+	trap_Cvar_Set("cg_espPlayerColor", CG_Argv(1));
+	CG_Printf("^3ESP Player Color set to: ^7%s\n", CG_Argv(1));
+}
+
+static void CG_ESPEnemyColor_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Enemy Color: ^7%s\n", cg_espEnemyColor.string);
+		CG_Printf("Usage: esp_enemy_color <color>\n");
+		return;
+	}
+	trap_Cvar_Set("cg_espEnemyColor", CG_Argv(1));
+	CG_Printf("^3ESP Enemy Color set to: ^7%s\n", CG_Argv(1));
+}
+
+static void CG_ESPItemColor_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Item Color: ^7%s\n", cg_espItemColor.string);
+		CG_Printf("Usage: esp_item_color <color>\n");
+		return;
+	}
+	trap_Cvar_Set("cg_espItemColor", CG_Argv(1));
+	CG_Printf("^3ESP Item Color set to: ^7%s\n", CG_Argv(1));
+}
+
+static void CG_ESPFriendColor_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Friend Color: ^7%s\n", cg_espFriendColor.string);
+		CG_Printf("Usage: esp_friend_color <color>\n");
+		return;
+	}
+	trap_Cvar_Set("cg_espFriendColor", CG_Argv(1));
+	CG_Printf("^3ESP Friend Color set to: ^7%s\n", CG_Argv(1));
+}
+
+static void CG_ESPMostWantedColor_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Most Wanted Color: ^7%s\n", cg_espMostWantedColor.string);
+		CG_Printf("Usage: esp_most_wanted_color <color>\n");
+		return;
+	}
+	trap_Cvar_Set("cg_espMostWantedColor", CG_Argv(1));
+	CG_Printf("^3ESP Most Wanted Color set to: ^7%s\n", CG_Argv(1));
+}
+
+static void CG_ESPUpdateRate_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Update Rate: ^7%d ms\n", cg_espUpdateRate.integer);
+		CG_Printf("Usage: esp_update_rate <milliseconds>\n");
+		return;
+	}
+	int rate = atoi(CG_Argv(1));
+	trap_Cvar_Set("cg_espUpdateRate", va("%d", rate));
+	CG_Printf("^3ESP Update Rate set to: ^7%d ms\n", rate);
+}
+
+static void CG_ESPMaxEntities_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3ESP Max Entities: ^7%d\n", cg_espMaxEntities.integer);
+		CG_Printf("Usage: esp_max_entities <count>\n");
+		return;
+	}
+	int max = atoi(CG_Argv(1));
+	trap_Cvar_Set("cg_espMaxEntities", va("%d", max));
+	CG_Printf("^3ESP Max Entities set to: ^7%d\n", max);
+}
+
+// Additional Wallhack Functions
+static void CG_WallhackAlpha_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Wallhack Alpha: ^7%.2f\n", cg_wallhackAlpha.value);
+		CG_Printf("Usage: wallhack_alpha <0.0-1.0>\n");
+		return;
+	}
+	float alpha = atof(CG_Argv(1));
+	if (alpha < 0.0f)
+		alpha = 0.0f;
+	if (alpha > 1.0f)
+		alpha = 1.0f;
+	trap_Cvar_Set("cg_wallhackAlpha", va("%.2f", alpha));
+	CG_Printf("^3Wallhack Alpha set to: ^7%.2f\n", alpha);
+}
+
+static void CG_WallhackColor_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Wallhack Color: ^7%s\n", cg_wallhackColor.string);
+		CG_Printf("Usage: wallhack_color <color>\n");
+		return;
+	}
+	trap_Cvar_Set("cg_wallhackColor", CG_Argv(1));
+	CG_Printf("^3Wallhack Color set to: ^7%s\n", CG_Argv(1));
+}
+
+static void CG_WallhackRange_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Wallhack Range: ^7%.0f units\n", cg_wallhackRange.value);
+		CG_Printf("Usage: wallhack_range <distance>\n");
+		return;
+	}
+	float range = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_wallhackRange", va("%.0f", range));
+	CG_Printf("^3Wallhack Range set to: ^7%.0f units\n", range);
+}
+
+static void CG_WallhackIgnoreFriends_f(void)
+{
+	if (cg_wallhackIgnoreFriends.integer)
+	{
+		trap_Cvar_Set("cg_wallhackIgnoreFriends", "0");
+		CG_Printf("^3Wallhack Ignore Friends: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_wallhackIgnoreFriends", "1");
+		CG_Printf("^3Wallhack Ignore Friends: ^7Enabled\n");
+	}
+}
+
+static void CG_WallhackSoundAlert_f(void)
+{
+	if (cg_wallhackSoundAlert.integer)
+	{
+		trap_Cvar_Set("cg_wallhackSoundAlert", "0");
+		CG_Printf("^3Wallhack Sound Alert: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_wallhackSoundAlert", "1");
+		CG_Printf("^3Wallhack Sound Alert: ^7Enabled\n");
+	}
+}
+
+static void CG_WallhackVisualAlert_f(void)
+{
+	if (cg_wallhackVisualAlert.integer)
+	{
+		trap_Cvar_Set("cg_wallhackVisualAlert", "0");
+		CG_Printf("^3Wallhack Visual Alert: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_wallhackVisualAlert", "1");
+		CG_Printf("^3Wallhack Visual Alert: ^7Enabled\n");
+	}
+}
+
+static void CG_WallhackPulse_f(void)
+{
+	if (cg_wallhackPulse.integer)
+	{
+		trap_Cvar_Set("cg_wallhackPulse", "0");
+		CG_Printf("^3Wallhack Pulse: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_wallhackPulse", "1");
+		CG_Printf("^3Wallhack Pulse: ^7Enabled\n");
+	}
+}
+
+// Additional Enemy Detection Functions
+static void CG_EnemyDetectionRange_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Enemy Detection Range: ^7%.0f units\n", cg_enemyDetectionRange.value);
+		CG_Printf("Usage: enemy_detection_range <distance>\n");
+		return;
+	}
+	float range = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_enemyDetectionRange", va("%.0f", range));
+	CG_Printf("^3Enemy Detection Range set to: ^7%.0f units\n", range);
+}
+
+static void CG_EnemyDetectionFOV_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Enemy Detection FOV: ^7%.0f degrees\n", cg_enemyDetectionFOV.value);
+		CG_Printf("Usage: enemy_detection_fov <degrees>\n");
+		return;
+	}
+	float fov = atof(CG_Argv(1));
+	trap_Cvar_Set("cg_enemyDetectionFOV", va("%.0f", fov));
+	CG_Printf("^3Enemy Detection FOV set to: ^7%.0f degrees\n", fov);
+}
+
+static void CG_EnemyDetectionStyle_f(void)
+{
+	int currentStyle = cg_enemyDetectionStyle.integer;
+	int nextStyle = (currentStyle + 1) % 3; // Cycle through 0-2
+	trap_Cvar_Set("cg_enemyDetectionStyle", va("%i", nextStyle));
+
+	const char *styleNames[] = {"Highlight", "Box", "Arrow"};
+	CG_Printf("^3Enemy Detection Style: ^7%s\n", styleNames[nextStyle]);
+}
+
+static void CG_EnemyDetectionColor_f(void)
+{
+	if (trap_Argc() != 2)
+	{
+		CG_Printf("^3Enemy Detection Color: ^7%s\n", cg_enemyDetectionColor.string);
+		CG_Printf("Usage: enemy_detection_color <color>\n");
+		return;
+	}
+	trap_Cvar_Set("cg_enemyDetectionColor", CG_Argv(1));
+	CG_Printf("^3Enemy Detection Color set to: ^7%s\n", CG_Argv(1));
+}
+
+static void CG_EnemyDetectionSound_f(void)
+{
+	if (cg_enemyDetectionSound.integer)
+	{
+		trap_Cvar_Set("cg_enemyDetectionSound", "0");
+		CG_Printf("^3Enemy Detection Sound: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_enemyDetectionSound", "1");
+		CG_Printf("^3Enemy Detection Sound: ^7Enabled\n");
+	}
+}
+
+static void CG_EnemyDetectionPulse_f(void)
+{
+	if (cg_enemyDetectionPulse.integer)
+	{
+		trap_Cvar_Set("cg_enemyDetectionPulse", "0");
+		CG_Printf("^3Enemy Detection Pulse: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_enemyDetectionPulse", "1");
+		CG_Printf("^3Enemy Detection Pulse: ^7Enabled\n");
+	}
+}
+
+// Friends System Command Functions
+static void CG_FriendAdd_f(void)
+{
+	int clientNum;
+	if (trap_Argc() != 2)
+	{
+		clientNum = CG_CrosshairPlayer();
+		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		{
+			CG_Printf("^3Usage: friend_add <player_number> or aim at a player\n");
+			return;
+		}
+	}
+	else
+	{
+		clientNum = atoi(CG_Argv(1));
+		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		{
+			CG_Printf("^1Invalid player number\n");
+			return;
+		}
+	}
+	CG_AddFriend(clientNum);
+}
+
+static void CG_FriendRemove_f(void)
+{
+	int clientNum;
+	if (trap_Argc() != 2)
+	{
+		clientNum = CG_CrosshairPlayer();
+		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		{
+			CG_Printf("^3Usage: friend_remove <player_number> or aim at a player\n");
+			return;
+		}
+	}
+	else
+	{
+		clientNum = atoi(CG_Argv(1));
+		if (clientNum < 0 || clientNum >= MAX_CLIENTS)
+		{
+			CG_Printf("^1Invalid player number\n");
+			return;
+		}
+	}
+	CG_RemoveFriend(clientNum);
+}
+
+static void CG_FriendList_f(void)
+{
+	CG_ListFriends();
+}
+
+static void CG_FriendClear_f(void)
+{
+	CG_ClearFriends();
+}
+
+static void CG_FriendsVisualMarkers_f(void)
+{
+	if (cg_friendsVisualMarkers.integer)
+	{
+		trap_Cvar_Set("cg_friendsVisualMarkers", "0");
+		CG_Printf("^3Friends Visual Markers: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_friendsVisualMarkers", "1");
+		CG_Printf("^3Friends Visual Markers: ^7Enabled\n");
+	}
+}
+
+static void CG_FriendsSoundNotifications_f(void)
+{
+	if (cg_friendsSoundNotifications.integer)
+	{
+		trap_Cvar_Set("cg_friendsSoundNotifications", "0");
+		CG_Printf("^3Friends Sound Notifications: ^7Disabled\n");
+	}
+	else
+	{
+		trap_Cvar_Set("cg_friendsSoundNotifications", "1");
+		CG_Printf("^3Friends Sound Notifications: ^7Enabled\n");
+	}
 }
 
 void CG_TargetCommand_f(void)
@@ -2305,4 +3349,661 @@ void CG_InitConsoleCommands(void)
 	trap_AddCommand("stay");
 	trap_AddCommand("say_cross");
 	trap_AddCommand("resseg");
+
+	// V24 Enhanced Features - Complete Command Registration
+	// Auto Systems - Basic Commands
+	trap_AddCommand("+autobackstab");
+	trap_AddCommand("-autobackstab");
+	trap_AddCommand("+autodualbackstab");
+	trap_AddCommand("-autodualbackstab");
+	trap_AddCommand("+autoadvancedbackstab");
+	trap_AddCommand("-autoadvancedbackstab");
+
+	// V24 Enhanced Features - Short Aliases for Backstabs
+	trap_AddCommand("+bs");
+	trap_AddCommand("-bs");
+	trap_AddCommand("+dbs");
+	trap_AddCommand("-dbs");
+	trap_AddCommand("+adbs");
+	trap_AddCommand("-adbs");
+
+	trap_AddCommand("+autokick");
+	trap_AddCommand("-autokick");
+	trap_AddCommand("+autoaim");
+	trap_AddCommand("-autoaim");
+	trap_AddCommand("auto_defense_toggle");
+
+	// Auto-Kick Configuration Commands
+	trap_AddCommand("autokick_distance");
+	trap_AddCommand("autokick_angle");
+	trap_AddCommand("autokick_delay");
+	trap_AddCommand("autokick_prediction");
+	trap_AddCommand("autokick_ignore_friends");
+	trap_AddCommand("autokick_ignore_spectators");
+	trap_AddCommand("autokick_sound_alert");
+	trap_AddCommand("autokick_visual_alert");
+
+	// Auto-Aim Configuration Commands
+	trap_AddCommand("autoaim_fov");
+	trap_AddCommand("autoaim_range");
+	trap_AddCommand("autoaim_delay");
+	trap_AddCommand("autoaim_prediction");
+	trap_AddCommand("autoaim_damping");
+	trap_AddCommand("autoaim_ignore_friends");
+	trap_AddCommand("autoaim_ignore_spectators");
+	trap_AddCommand("autoaim_sound_alert");
+	trap_AddCommand("autoaim_visual_alert");
+	trap_AddCommand("autoaim_wall_penetrate");
+
+	// Auto-Backstab Configuration Commands
+	trap_AddCommand("autobackstab_distance");
+	trap_AddCommand("autobackstab_angle");
+	trap_AddCommand("autobackstab_delay");
+	trap_AddCommand("autobackstab_ignore_friends");
+	trap_AddCommand("autobackstab_sound_alert");
+
+	// ESP Complete Commands
+	trap_AddCommand("esp_toggle");
+	trap_AddCommand("esp_players");
+	trap_AddCommand("esp_items");
+	trap_AddCommand("esp_distance");
+	trap_AddCommand("esp_through_walls");
+	trap_AddCommand("esp_style");
+	trap_AddCommand("esp_alpha");
+	trap_AddCommand("esp_size");
+	trap_AddCommand("esp_player_names");
+	trap_AddCommand("esp_item_names");
+	trap_AddCommand("esp_health_bars");
+	trap_AddCommand("esp_force_bars");
+	trap_AddCommand("esp_weapon_info");
+	trap_AddCommand("esp_boxes");
+	trap_AddCommand("esp_lines");
+	trap_AddCommand("esp_names");
+	trap_AddCommand("esp_color_mode");
+	trap_AddCommand("esp_player_color");
+	trap_AddCommand("esp_enemy_color");
+	trap_AddCommand("esp_item_color");
+	trap_AddCommand("esp_friend_color");
+	trap_AddCommand("esp_most_wanted_color");
+	trap_AddCommand("esp_update_rate");
+	trap_AddCommand("esp_max_entities");
+	trap_AddCommand("esp_debug");
+
+	// Wallhack Complete Commands
+	trap_AddCommand("wallhack_toggle");
+	trap_AddCommand("wallhack_style");
+	trap_AddCommand("wallhack_alpha");
+	trap_AddCommand("wallhack_color");
+	trap_AddCommand("wallhack_range");
+	trap_AddCommand("wallhack_ignore_friends");
+	trap_AddCommand("wallhack_sound_alert");
+	trap_AddCommand("wallhack_visual_alert");
+	trap_AddCommand("wallhack_pulse");
+
+	// Enemy Detection Complete Commands
+	trap_AddCommand("enemy_detection");
+	trap_AddCommand("enemy_detection_range");
+	trap_AddCommand("enemy_detection_fov");
+	trap_AddCommand("enemy_detection_style");
+	trap_AddCommand("enemy_detection_color");
+	trap_AddCommand("enemy_detection_sound");
+	trap_AddCommand("enemy_detection_pulse");
+
+	// Friends System Complete Commands
+	trap_AddCommand("friend_add");
+	trap_AddCommand("friend_remove");
+	trap_AddCommand("friend_list");
+	trap_AddCommand("friend_clear");
+	trap_AddCommand("friends_system");
+	trap_AddCommand("friends_visual_markers");
+	trap_AddCommand("friends_sound_notifications");
+
+	// Saber Commands
+	trap_AddCommand("saber_tip_trace");
+}
+
+// V24 Enhanced Features - Complete Console Command Handler
+qboolean CG_ConsoleCommand(void)
+{
+	const char *cmd;
+
+	cmd = CG_Argv(0);
+
+	// V24 Enhanced Features - Auto-Backstab Commands
+	if (!Q_stricmp(cmd, "+autobackstab"))
+	{
+		CG_AutoBackstabDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-autobackstab"))
+	{
+		CG_AutoBackstabUp_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "+autodualbackstab"))
+	{
+		CG_AutoDualBackstabDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-autodualbackstab"))
+	{
+		CG_AutoDualBackstabUp_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "+autoadvancedbackstab"))
+	{
+		CG_AutoAdvancedBackstabDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-autoadvancedbackstab"))
+	{
+		CG_AutoAdvancedBackstabUp_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - Short Backstab Aliases
+	if (!Q_stricmp(cmd, "+bs"))
+	{
+		CG_AutoBackstabDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-bs"))
+	{
+		CG_AutoBackstabUp_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "+dbs"))
+	{
+		CG_AutoDualBackstabDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-dbs"))
+	{
+		CG_AutoDualBackstabUp_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "+adbs"))
+	{
+		CG_AutoAdvancedBackstabDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-adbs"))
+	{
+		CG_AutoAdvancedBackstabUp_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - Auto-Kick Commands
+	if (!Q_stricmp(cmd, "+autokick"))
+	{
+		CG_AutoKickDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-autokick"))
+	{
+		CG_AutoKickUp_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - Auto-Aim Commands
+	if (!Q_stricmp(cmd, "+autoaim"))
+	{
+		CG_AutoAimDown_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "-autoaim"))
+	{
+		CG_AutoAimUp_f();
+		return qtrue;
+	}
+
+	// Auto Defense System Toggle
+	if (!Q_stricmp(cmd, "auto_defense_toggle"))
+	{
+		CG_AutoDefenseToggle_f();
+		return qtrue;
+	}
+
+	// Auto-Kick Configuration Commands
+	if (!Q_stricmp(cmd, "autokick_distance"))
+	{
+		CG_AutoKickDistance_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autokick_angle"))
+	{
+		CG_AutoKickAngle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autokick_delay"))
+	{
+		CG_AutoKickDelay_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autokick_prediction"))
+	{
+		CG_AutoKickPrediction_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autokick_ignore_friends"))
+	{
+		CG_AutoKickIgnoreFriends_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autokick_ignore_spectators"))
+	{
+		CG_AutoKickIgnoreSpectators_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autokick_sound_alert"))
+	{
+		CG_AutoKickSoundAlert_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autokick_visual_alert"))
+	{
+		CG_AutoKickVisualAlert_f();
+		return qtrue;
+	}
+
+	// Auto-Aim Configuration Commands
+	if (!Q_stricmp(cmd, "autoaim_fov"))
+	{
+		CG_AutoAimFOV_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_range"))
+	{
+		CG_AutoAimRange_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_delay"))
+	{
+		CG_AutoAimDelay_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_prediction"))
+	{
+		CG_AutoAimPrediction_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_damping"))
+	{
+		CG_AutoAimDamping_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_ignore_friends"))
+	{
+		CG_AutoAimIgnoreFriends_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_ignore_spectators"))
+	{
+		CG_AutoAimIgnoreSpectators_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_sound_alert"))
+	{
+		CG_AutoAimSoundAlert_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_visual_alert"))
+	{
+		CG_AutoAimVisualAlert_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autoaim_wall_penetrate"))
+	{
+		CG_AutoAimWallPenetrate_f();
+		return qtrue;
+	}
+
+	// Auto-Backstab Configuration Commands
+	if (!Q_stricmp(cmd, "autobackstab_distance"))
+	{
+		CG_AutoBackstabDistance_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autobackstab_angle"))
+	{
+		CG_AutoBackstabAngle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autobackstab_delay"))
+	{
+		CG_AutoBackstabDelay_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autobackstab_ignore_friends"))
+	{
+		CG_AutoBackstabIgnoreFriends_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "autobackstab_sound_alert"))
+	{
+		CG_AutoBackstabSoundAlert_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - ESP Commands
+	if (!Q_stricmp(cmd, "esp_toggle"))
+	{
+		CG_ESPToggle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_players"))
+	{
+		CG_ESPPlayers_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_items"))
+	{
+		CG_ESPItems_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_health_bars"))
+	{
+		CG_ESPHealthBars_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_force_bars"))
+	{
+		CG_ESPForceBars_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_weapon_info"))
+	{
+		CG_ESPWeaponInfo_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_boxes"))
+	{
+		CG_ESPBoxes_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_lines"))
+	{
+		CG_ESPLines_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_names"))
+	{
+		CG_ESPNames_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_through_walls"))
+	{
+		CG_ESPThroughWalls_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_color_mode"))
+	{
+		CG_ESPColorMode_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_debug"))
+	{
+		CG_ESPDebug_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_distance"))
+	{
+		CG_ESPDistance_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_style"))
+	{
+		CG_ESPStyle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_alpha"))
+	{
+		CG_ESPAlpha_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_size"))
+	{
+		CG_ESPSize_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_player_names"))
+	{
+		CG_ESPPlayerNames_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_item_names"))
+	{
+		CG_ESPItemNames_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_health_bars"))
+	{
+		CG_ESPHealthBars_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_force_bars"))
+	{
+		CG_ESPForceBars_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_player_color"))
+	{
+		CG_ESPPlayerColor_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_enemy_color"))
+	{
+		CG_ESPEnemyColor_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_item_color"))
+	{
+		CG_ESPItemColor_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_friend_color"))
+	{
+		CG_ESPFriendColor_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_most_wanted_color"))
+	{
+		CG_ESPMostWantedColor_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_update_rate"))
+	{
+		CG_ESPUpdateRate_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "esp_max_entities"))
+	{
+		CG_ESPMaxEntities_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - Wallhack Commands
+	if (!Q_stricmp(cmd, "wallhack_toggle"))
+	{
+		CG_WallhackToggle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_style"))
+	{
+		CG_WallhackStyle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_alpha"))
+	{
+		CG_WallhackAlpha_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_color"))
+	{
+		CG_WallhackColor_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_range"))
+	{
+		CG_WallhackRange_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_ignore_friends"))
+	{
+		CG_WallhackIgnoreFriends_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_sound_alert"))
+	{
+		CG_WallhackSoundAlert_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_visual_alert"))
+	{
+		CG_WallhackVisualAlert_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "wallhack_pulse"))
+	{
+		CG_WallhackPulse_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - Enemy Detection Commands
+	if (!Q_stricmp(cmd, "enemy_detection"))
+	{
+		CG_EnemyDetectionToggle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "enemy_detection_range"))
+	{
+		CG_EnemyDetectionRange_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "enemy_detection_fov"))
+	{
+		CG_EnemyDetectionFOV_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "enemy_detection_style"))
+	{
+		CG_EnemyDetectionStyle_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "enemy_detection_color"))
+	{
+		CG_EnemyDetectionColor_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "enemy_detection_sound"))
+	{
+		CG_EnemyDetectionSound_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "enemy_detection_pulse"))
+	{
+		CG_EnemyDetectionPulse_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - Friends System Commands
+	if (!Q_stricmp(cmd, "friend_add"))
+	{
+		CG_FriendAdd_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "friend_remove"))
+	{
+		CG_FriendRemove_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "friend_list"))
+	{
+		CG_FriendList_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "friend_clear"))
+	{
+		CG_FriendClear_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "friends_system"))
+	{
+		CG_FriendsSystem_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "friends_visual_markers"))
+	{
+		CG_FriendsVisualMarkers_f();
+		return qtrue;
+	}
+	if (!Q_stricmp(cmd, "friends_sound_notifications"))
+	{
+		CG_FriendsSoundNotifications_f();
+		return qtrue;
+	}
+
+	// V24 Enhanced Features - Saber Commands
+	if (!Q_stricmp(cmd, "saber_tip_trace"))
+	{
+		CG_SaberTipTrace_f();
+		return qtrue;
+	}
+
+	// Debug command for mouse/view issues
+	if (!Q_stricmp(cmd, "debug_mouse"))
+	{
+		CG_Printf("=== Mouse/View Debug Info ===\n");
+		if (cg.snap)
+		{
+			CG_Printf("Saber Lock Time: %d (current: %d) - %s\n",
+					  cg.snap->ps.saberLockTime, cg.time,
+					  (cg.snap->ps.saberLockTime > cg.time) ? "LOCKED" : "FREE");
+			CG_Printf("Using ATST: %s\n", cg.snap->ps.usingATST ? "YES" : "NO");
+			CG_Printf("Player State: PM_TYPE %d\n", cg.snap->ps.pm_type);
+		}
+		CG_Printf("Auto-Aim Enabled: %d\n", cg_autoAim.integer);
+		CG_Printf("Auto-Defense Enabled: %d\n", cg_autoDefense.integer);
+		CG_Printf("Auto Suggested Angles: %.2f %.2f %.2f\n",
+				  cg.autoSuggestedViewAngles[0], cg.autoSuggestedViewAngles[1], cg.autoSuggestedViewAngles[2]);
+		CG_Printf("Mouse Captured: %s\n", cg.mouseCaptured ? "YES" : "NO");
+		CG_Printf("Last Manual Command: %d (current: %d)\n", cg.lastManualCommandInterruptingAutoFollow, cg.time);
+		CG_Printf("Zoom Sensitivity: %.3f\n", cg.zoomSensitivity);
+		return qtrue;
+	}
+
+	// DLL diagnostic command
+	if (!Q_stricmp(cmd, "debug_dlls"))
+	{
+		char buffer[64];
+		CG_Printf("=== DLL Status Debug Info ===\n");
+		CG_Printf("CGame Module: LOADED (this command is running from cgame_x64.dll)\n");
+		CG_Printf("VM Modes:\n");
+
+		trap_Cvar_VariableStringBuffer("vm_cgame", buffer, sizeof(buffer));
+		CG_Printf("  vm_cgame: %s\n", buffer);
+
+		trap_Cvar_VariableStringBuffer("vm_game", buffer, sizeof(buffer));
+		CG_Printf("  vm_game: %s\n", buffer);
+
+		trap_Cvar_VariableStringBuffer("vm_ui", buffer, sizeof(buffer));
+		CG_Printf("  vm_ui: %s\n", buffer);
+
+		CG_Printf("Game State:\n");
+		if (cg.snap)
+		{
+			CG_Printf("  Connected to server: YES\n");
+			CG_Printf("  Client Number: %d\n", cg.clientNum);
+			CG_Printf("  Server Time: %d\n", cg.snap->serverTime);
+		}
+		else
+		{
+			CG_Printf("  Connected to server: NO\n");
+		}
+		CG_Printf("To test UI module, open a menu (ESC)\n");
+		return qtrue;
+	}
+
+	// Command not handled
+	return qfalse;
 }
