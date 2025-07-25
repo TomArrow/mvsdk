@@ -311,6 +311,8 @@ struct gentity_s {
 	qboolean	belongsToParent; // when sending customized snapshots and someone has solo mode activated, don't show him this item if it doesn't belong to himself (sniper shots etc)
 
 	int			bactaExtra; // extra heal amount for bacta (e.g. q3 bacta)
+	qboolean	goneForNonRacers;
+	int			availableTimeForNonRacers;
 };
 
 #define DAMAGEREDIRECT_HEAD		1

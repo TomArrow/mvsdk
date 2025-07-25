@@ -4405,6 +4405,12 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			}
 		}
 
+		if (es->eType == ET_ITEM) {
+			mvEnt->snapshotIgnore[followedClientNum] =
+				((followedClient->entityStates[i] || followedClient->triggerTimes[i] >= followedClient->pers.cmd.serverTime) && followedClient->sess.raceMode)
+				|| ((other->goneForNonRacers || other->availableTimeForNonRacers >= level.time) && !followedClient->sess.raceMode);
+		}
+
 		if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex) { // dont send global screenshakes to active players unless they are not in a run
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
 				mvEnt->snapshotIgnoreRealClient[clientNum] = cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime;
