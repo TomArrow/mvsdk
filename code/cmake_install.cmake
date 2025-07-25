@@ -32,6 +32,10 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
   set(CMAKE_CROSSCOMPILING "FALSE")
 endif()
 
+if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/eternaljk2" TYPE FILE FILES "C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/jk2pro-bins.pk3")
+endif()
+
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/cmake_install.cmake")

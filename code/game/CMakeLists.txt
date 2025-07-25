@@ -130,19 +130,14 @@ set(MVGAME jk2mpgame_x64)
 
 add_library(${MVGAME} SHARED ${MVGAMEFILES})
 
-message(STATUS "[CMAKE] game target: ${MVGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/base/")
+message(STATUS "[CMAKE] game target: ${MVGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/")
 
+# Fix: Game module should build to main directory, not base subdirectory
+# This matches the original TomArrow/mvsdk and TomArrow/jk2mv repositories
 set_target_properties(${MVGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-  ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-  LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/base,${CMAKE_BINARY_DIR}/out/$<CONFIG>/base>"
-)
-
-# Ensure all game module DLLs are always output to base/ for all configs
-set_target_properties(${MVGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/base"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
 )
 
 # Defines
@@ -163,12 +158,7 @@ set_target_properties(${MVGAME} PROPERTIES PROJECT_LABEL "Game Module")
 if(InMV)
 	set_property(TARGET ${MVGAME} PROPERTY FOLDER "Modules")
 	if(WIN32)
-		add_custom_command(TARGET ${MVGAME} POST_BUILD
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different
-				"$<TARGET_FILE:${MVGAME}>"
-				"${CMAKE_BINARY_DIR}/out/Release/base/jk2mpgame_x64.dll"
-		)
-		# Do NOT copy jk2mvmenu_x64.dll, OpenAL32.dll, SDL2.dll to base
+		# Module now builds directly to main directory - no copying needed
 	elseif(APPLE)
 		install(TARGETS ${MVGAME} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
 	else()

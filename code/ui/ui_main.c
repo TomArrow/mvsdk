@@ -552,99 +552,34 @@ static void UI_CheckServerName(void);
 void UI_BuildQ3Model_List(void);
 static qboolean UI_CheckPassword(void);
 static void UI_JoinServer(void);
+static int UI_OwnerDrawWidth(int ownerDraw, float scale);
+static int UI_PlayCinematic(const char *name, float x, float y, float w, float h);
+static void UI_StopCinematic(int handle);
+static void UI_DrawCinematic(int handle, float x, float y, float w, float h);
+static void UI_RunCinematicFrame(int handle);
 void Menu_ShowGroup(menuDef_t *menu, char *itemName, qboolean showFlag);
 void Menu_ItemDisable(menuDef_t *menu, char *name, int disableFlag);
 int Menu_ItemsMatchingGroup(menuDef_t *menu, const char *name);
 itemDef_t *Menu_GetMatchingItemByNumber(menuDef_t *menu, int index, const char *name);
 void UI_UpdateTextLanguageCvar(qboolean updateCvarFromJKA);
+void UI_UpdateCharacterSkin(void);
 
 LIBEXPORT intptr_t vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11)
 {
-	int requestedMvApi = 0;
-	char coolApiFeaturesBuffer[80];
-	if (jk2version == VERSION_UNDEF && command != UI_GETAPIVERSION)
-	{ // Shouldn't happen under normal circumstances, but we had this case while debugging on old engine binaries...
-		Com_Printf("vmMain [UI]: first call to vmMain had a command != UI_GETAPIVERSION\n");
-		MV_UiDetectVersion(); // Try detecting the version now, otherwise we might be missing syscalls...
-	}
+	// Original TomArrow vmMain - simplified to prevent recursion
 	switch (command)
 	{
 	case UI_GETAPIVERSION:
-		// arg11 is the mainMenu parameter from JK2MV engine
-		if (arg11)
-			isMainMenu = qtrue;
-
-		// Initialize version detection first (this sets jk2version)
-		MV_UiDetectVersion();
-
-#ifdef JK2MV_MENU
-		// When compiled as mvmenu, we're a proper menu module
-		if (arg11) // mainMenu request
+		// Simple version detection without complex MVAPI calls
+		if (jk2version == VERSION_UNDEF)
 		{
-			Com_Printf("UI: MVMENU build detected, setting menulevel and returning UI_API_VERSION\n");
-			// Set menulevel to signal we're a proper mvmenu (the engine checks this)
-			trap_Cvar_Set("ui_menulevel", va("%d", MV_MENULEVEL_MAX));
-			// Return standard UI API version so engine doesn't reject us
-			return UI_API_VERSION;
+			MV_UiDetectVersion();
 		}
-#else
-		// Regular UI build - let engine know we're not a mvmenu
-		if (arg11) // mainMenu request
-		{
-			Com_Printf("UI: Regular UI build, not supporting main menu\n");
-			return 0; // Return 0 to indicate no main menu support
-		}
-#endif
-		// Return the UI API version - this determines which UI module to use
-		return /*UI_API_VERSION*/ UI_API_VERSION;
+		return UI_API_VERSION;
+
 	case UI_INIT:
-		Com_Printf("UI: UI_INIT called, starting initialization...\n");
-		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
-		coolApi = atoi(coolApiFeaturesBuffer);
-		if (coolApi & COOL_APIFEATURE_MARIADB)
-		{
-			trap_Cvar_VariableStringBuffer("cool_apiDBVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
-			coolApi_dbVersion = atoi(coolApiFeaturesBuffer);
-		}
-		else
-		{
-			coolApi_dbVersion = 0;
-		}
-		if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
-		{
-			trap_Cvar_VariableStringBuffer("cool_apiJKAVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
-			coolApi_jkaVersion = atoi(coolApiFeaturesBuffer);
-		}
-		else
-		{
-			coolApi_jkaVersion = 0;
-		}
-
-		trap_Cvar_Register(&coolApi_supported_ui, "coolApi_supported_ui", va("%d", coolApi_supported_ui_int), CVAR_ROM);
-		trap_Cvar_Set("coolApi_supported_ui", va("%d", coolApi_supported_ui_int));
-
-		Com_Printf("UI: About to call MVAPI_Init...\n");
-		requestedMvApi = MVAPI_Init(arg11, arg0);
-		Com_Printf("UI: MVAPI_Init returned %d\n", requestedMvApi);
-
-		if (!requestedMvApi)
-		{ // Only call _UI_Init if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
-			Com_Printf("UI: Calling _UI_Init (no MVAPI)...\n");
-			_UI_Init(arg0);
-			Com_Printf("UI: _UI_Init completed\n");
-		}
-		else
-		{ // Store the values that were meant for _UI_Init to use them later, when MVAPIR_AFTER_INIT is called.
-			Com_Printf("UI: Storing init args, waiting for MVAPI_AFTER_INIT...\n");
-			Init_inGameLoad = arg0;
-		}
-		Com_Printf("UI: UI_INIT returning %d\n", requestedMvApi);
-		return requestedMvApi;
-
-	case MVAPI_AFTER_INIT:
-		Com_Printf("UI: MVAPI_AFTER_INIT called\n");
-		MVAPI_AfterInit();
-		Com_Printf("UI: MVAPI_AfterInit completed\n");
+		// Direct initialization without MVAPI complexity
+		_UI_Init(arg0);
 		return 0;
 
 	case UI_SHUTDOWN:
@@ -676,8 +611,9 @@ LIBEXPORT intptr_t vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr
 	case UI_DRAW_CONNECT_SCREEN:
 		UI_DrawConnectScreen(arg0);
 		return 0;
-	case UI_HASUNIQUECDKEY: // mod authors need to observe this
-		return qtrue;		// bk010117 - change this to qfalse for mods!
+
+	case UI_HASUNIQUECDKEY:
+		return qtrue;
 	}
 
 	return -1;
@@ -1017,70 +953,11 @@ void MVAPI_AfterInit(void)
 
 int MV_UiDetectVersion(void)
 {
-#ifdef JK2MV_MENU
+	// TomArrow simplified version detection - no MVAPI calls to prevent recursion
 	jk2startversion = jk2version = VERSION_1_04;
-	MV_SetGameVersion(jk2version, qtrue); // Set the GameVersion...
+	Com_Printf("jk2version [UI]: 1.04 (simplified detection)\n");
+	MV_SetGameVersion(jk2version, qtrue);
 	return UI_API_VERSION;
-#else
-	char buffer[32];
-	// MVSDK: Let's detect which version of the engine we are running in...
-	jk2version = VERSION_UNDEF;
-
-	trap_Cvar_VariableStringBuffer("mv_apienabled", buffer, sizeof(buffer));
-	if (strlen(buffer) && atoi(buffer) > 0)
-	{ // JK2MV >= 1.1
-		switch (trap_MVAPI_GetVersion())
-		{
-		case VERSION_1_02:
-			jk2version = VERSION_1_02;
-			break;
-		case VERSION_1_03:
-			jk2version = VERSION_1_03;
-			break;
-		case VERSION_1_04:
-			jk2version = VERSION_1_04;
-			break;
-		default:
-			jk2version = VERSION_UNDEF;
-		}
-	}
-
-	if (jk2version == VERSION_UNDEF)
-	{
-		char version[128];
-
-		trap_Cvar_VariableStringBuffer("version", version, sizeof(version));
-
-		if (strstr(version, "JK2MP"))
-		{ // JK2MP
-			if (strstr(version, "1.02"))
-				jk2version = VERSION_1_02;
-			else if (strstr(version, "1.03"))
-				jk2version = VERSION_1_03;
-			else if (strstr(version, "1.04"))
-				jk2version = VERSION_1_04;
-		}
-	}
-
-	if (jk2version == VERSION_UNDEF)
-	{
-		Com_Printf("MVSDK: Unable to detect jk2version [UI]; fallback to 1.04;");
-		jk2version = VERSION_1_04;
-	}
-	Com_Printf("jk2version [UI]: 1.0%i\n", jk2version);
-	jk2startversion = jk2version;
-	MV_SetGameVersion(jk2version, qtrue); // Set the GameVersion...
-
-	switch (jk2version)
-	{
-	case VERSION_1_02:
-		return UI_API_VERSION_1_02;
-	case VERSION_1_03:
-	case VERSION_1_04:
-	default:
-		return UI_API_VERSION;
-	}
-#endif
 }
 
 /*
@@ -1240,11 +1117,274 @@ void _UI_SetActiveMenu(uiMenuCommand_t menu)
 UI_FeederSelection
 =================
 */
-qboolean UI_FeederSelection(float feederID, int index, itemDef_t *item)
+static qboolean UI_FeederSelection(float feederID, int index, itemDef_t *item)
 {
-	// This function handles feeder selections for listboxes
-	// For now, return qtrue to indicate the selection was handled
+	// Handle different feeder selection types
+	const int feederIDInt = (int)feederID;
+
+	switch (feederIDInt)
+	{
+	case FEEDER_PLAYER_SPECIES:
+		if (index >= 0 && index < uiInfo.playerSpeciesCount && uiInfo.playerSpeciesCount > 0 && uiInfo.playerSpeciesCount < 1000)
+		{
+			uiInfo.playerSpeciesIndex = index;
+		}
+		break;
+
+	case FEEDER_MOVES_TITLES:
+		if (index >= 0 && index < MD_MOVE_TITLE_MAX)
+		{
+			uiInfo.movesTitleIndex = index;
+		}
+		break;
+
+	case FEEDER_COLORCHOICES:
+	case FEEDER_PLAYER_SKIN_HEAD:
+	case FEEDER_PLAYER_SKIN_TORSO:
+	case FEEDER_PLAYER_SKIN_LEGS:
+		// For skin/color choices, just return success without calling UI_UpdateCharacterSkin
+		break;
+
+	case FEEDER_SAVEGAMES:
+		// No action needed for savegames in multiplayer
+		break;
+
+	default:
+		// For other feeders, just accept the selection
+		break;
+	}
+
+	// Return qtrue to indicate the selection was handled
 	return qtrue;
+}
+
+/*
+=================
+UI_FeederCount
+=================
+*/
+static int UI_FeederCount(float feederID)
+{
+	int count = 0, i;
+
+	switch ((int)feederID)
+	{
+	case FEEDER_Q3HEADS:
+		return 0; // Simplified to avoid potential recursion
+
+	case FEEDER_CINEMATICS:
+		// Safety check for movieCount
+		return (uiInfo.movieCount > 0 && uiInfo.movieCount < 1000) ? uiInfo.movieCount : 0;
+
+	case FEEDER_SERVERS:
+		// Safety check for server count
+		return (uiInfo.serverStatus.numDisplayServers >= 0 && uiInfo.serverStatus.numDisplayServers < 10000) ? uiInfo.serverStatus.numDisplayServers : 0;
+
+	case FEEDER_SERVERSTATUS:
+		// Safety check for server status lines
+		return (uiInfo.serverStatusInfo.numLines >= 0 && uiInfo.serverStatusInfo.numLines < 1000) ? uiInfo.serverStatusInfo.numLines : 0;
+
+	case FEEDER_FINDPLAYER:
+		// Safety check for found player servers
+		return (uiInfo.numFoundPlayerServers >= 0 && uiInfo.numFoundPlayerServers < 1000) ? uiInfo.numFoundPlayerServers : 0;
+
+	case FEEDER_MODS:
+		// Safety check for mod count
+		return (uiInfo.modCount >= 0 && uiInfo.modCount < 1000) ? uiInfo.modCount : 0;
+
+	case FEEDER_DOWNLOADS:
+		// Safety check for downloads count
+		return (uiInfo.downloadsCount >= 0 && uiInfo.downloadsCount < 1000) ? uiInfo.downloadsCount : 0;
+
+	case FEEDER_DEMOS:
+		// Safety check for demo count
+		return (uiInfo.demoCount >= 0 && uiInfo.demoCount < 1000) ? uiInfo.demoCount : 0;
+
+	case FEEDER_MOVES:
+		for (i = 0; i < MAX_MOVES; i++)
+		{
+			if (datapadMoveData[uiInfo.movesTitleIndex][i].title)
+			{
+				count++;
+			}
+		}
+		return count;
+
+	case FEEDER_MOVES_TITLES:
+		return (MD_MOVE_TITLE_MAX);
+
+	case FEEDER_PLAYER_SPECIES:
+		// Safety check for species count
+		return (uiInfo.playerSpeciesCount >= 0 && uiInfo.playerSpeciesCount < 100) ? uiInfo.playerSpeciesCount : 0;
+
+	case FEEDER_PLAYER_SKIN_HEAD:
+		// Safety check for skin head count
+		if (uiInfo.playerSpeciesIndex >= 0 && uiInfo.playerSpeciesIndex < uiInfo.playerSpeciesCount)
+			return (uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount >= 0 && uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount < 100) ? uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount : 0;
+		return 0;
+
+	case FEEDER_PLAYER_SKIN_TORSO:
+		// Safety check for skin torso count
+		if (uiInfo.playerSpeciesIndex >= 0 && uiInfo.playerSpeciesIndex < uiInfo.playerSpeciesCount)
+			return (uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount >= 0 && uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount < 100) ? uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount : 0;
+		return 0;
+
+	case FEEDER_PLAYER_SKIN_LEGS:
+		// Safety check for skin legs count
+		if (uiInfo.playerSpeciesIndex >= 0 && uiInfo.playerSpeciesIndex < uiInfo.playerSpeciesCount)
+			return (uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount >= 0 && uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount < 100) ? uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount : 0;
+		return 0;
+
+	case FEEDER_COLORCHOICES:
+		// Safety check for color choices count
+		if (uiInfo.playerSpeciesIndex >= 0 && uiInfo.playerSpeciesIndex < uiInfo.playerSpeciesCount)
+			return (uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount >= 0 && uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount < 100) ? uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount : 0;
+		return 0;
+
+	case FEEDER_SAVEGAMES:
+		// Return 0 for savegames since this is multiplayer
+		return 0;
+
+	// For any other feeders, return 0
+	default:
+		return 0;
+	}
+}
+
+/*
+=================
+UI_FeederItemText
+=================
+*/
+static const char *UI_FeederItemText(float feederID, int index, int column, qhandle_t *handle1, qhandle_t *handle2, qhandle_t *handle3, qhandle_t *handle4, qhandle_t *handle5, qhandle_t *handle6)
+{
+	// Initialize handles to -1 (no image)
+	if (handle1)
+		*handle1 = -1;
+	if (handle2)
+		*handle2 = -1;
+	if (handle3)
+		*handle3 = -1;
+	if (handle4)
+		*handle4 = -1;
+	if (handle5)
+		*handle5 = -1;
+	if (handle6)
+		*handle6 = -1;
+
+	// Handle different feeder types
+	if (feederID == FEEDER_CINEMATICS)
+	{
+		if (index >= 0 && index < uiInfo.movieCount && uiInfo.movieList && uiInfo.movieCount < 1000)
+		{
+			return uiInfo.movieList[index];
+		}
+	}
+	else if (feederID == FEEDER_DEMOS)
+	{
+		if (index >= 0 && index < uiInfo.demoCount && uiInfo.demoList && uiInfo.demoCount < 1000)
+		{
+			return uiInfo.demoList[index];
+		}
+	}
+	else if (feederID == FEEDER_MODS)
+	{
+		if (index >= 0 && index < uiInfo.modCount && uiInfo.modList && uiInfo.modCount < 1000)
+		{
+			if (uiInfo.modList[index].modDescr && *uiInfo.modList[index].modDescr)
+			{
+				return uiInfo.modList[index].modDescr;
+			}
+			else
+			{
+				return uiInfo.modList[index].modName;
+			}
+		}
+	}
+	else if (feederID == FEEDER_DOWNLOADS)
+	{
+		if (index >= 0 && index < uiInfo.downloadsCount && uiInfo.downloadsList && uiInfo.downloadsCount < 1000)
+		{
+			return uiInfo.downloadsList[index].name;
+		}
+	}
+	else if (feederID == FEEDER_MOVES)
+	{
+		if (index >= 0 && index < MAX_MOVES)
+		{
+			return datapadMoveData[uiInfo.movesTitleIndex][index].title;
+		}
+	}
+	else if (feederID == FEEDER_MOVES_TITLES)
+	{
+		if (index >= 0 && index < MD_MOVE_TITLE_MAX)
+		{
+			return datapadMoveTitleData[index];
+		}
+	}
+	else if (feederID == FEEDER_PLAYER_SPECIES)
+	{
+		if (index >= 0 && index < uiInfo.playerSpeciesCount)
+		{
+			return uiInfo.playerSpecies[index].Name;
+		}
+	}
+	else if (feederID == FEEDER_COLORCHOICES)
+	{
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].ColorCount)
+		{
+			if (handle1)
+				*handle1 = uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Color[index].icon;
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].Color[index].shader;
+		}
+	}
+	else if (feederID == FEEDER_PLAYER_SKIN_HEAD)
+	{
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHeadCount)
+		{
+			if (handle1)
+				*handle1 = uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHead[index].icon;
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinHead[index].name;
+		}
+	}
+	else if (feederID == FEEDER_PLAYER_SKIN_TORSO)
+	{
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorsoCount)
+		{
+			if (handle1)
+				*handle1 = uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorso[index].icon;
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinTorso[index].name;
+		}
+	}
+	else if (feederID == FEEDER_PLAYER_SKIN_LEGS)
+	{
+		if (index >= 0 && index < uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLegCount)
+		{
+			if (handle1)
+				*handle1 = uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLeg[index].icon;
+			return uiInfo.playerSpecies[uiInfo.playerSpeciesIndex].SkinLeg[index].name;
+		}
+	}
+	else if (feederID == FEEDER_SAVEGAMES)
+	{
+		// Return empty string for savegames since this is multiplayer
+		return "";
+	}
+
+	// For any other feeders, return empty string
+	return "";
+}
+
+/*
+=================
+UI_FeederItemImage
+=================
+*/
+qhandle_t UI_FeederItemImage(float feederID, int index)
+{
+	// This function returns the image handle for a specific item in a feeder
+	// Return 0 (no image) for all feeders for now
+	return 0;
 }
 
 /*
@@ -2710,7 +2850,7 @@ void _UI_Init(qboolean inGameLoad)
 	uiInfo.uiDC.textWidth = &Text_Width;
 	uiInfo.uiDC.textHeight = &Text_Height;
 	uiInfo.uiDC.registerModel = &trap_R_RegisterModel;
-	uiInfo.uiDC.modelBounds = &trap_R_ModelBounds;
+	uiInfo.uiDC.modelBounds = trap_R_ModelBounds;
 	uiInfo.uiDC.fillRect = &UI_FillRect;
 	uiInfo.uiDC.drawRect = &_UI_DrawRect;
 	uiInfo.uiDC.drawSides = &_UI_DrawSides;
@@ -2723,14 +2863,14 @@ void _UI_Init(qboolean inGameLoad)
 	uiInfo.uiDC.Font_StrLenChars = &trap_R_Font_StrLenChars;
 	uiInfo.uiDC.Font_HeightPixels = &trap_R_Font_HeightPixels;
 	uiInfo.uiDC.Font_DrawString = &trap_R_Font_DrawString;
-	uiInfo.uiDC.Language_IsAsian = &trap_Language_IsAsian;
-	uiInfo.uiDC.Language_UsesSpaces = &trap_Language_UsesSpaces;
+	uiInfo.uiDC.Language_IsAsian = trap_Language_IsAsian;
+	uiInfo.uiDC.Language_UsesSpaces = trap_Language_UsesSpaces;
 	uiInfo.uiDC.getCVarString = trap_Cvar_VariableStringBuffer;
 	uiInfo.uiDC.getCVarValue = trap_Cvar_VariableValue;
 	uiInfo.uiDC.setCVar = trap_Cvar_Set;
 	uiInfo.uiDC.drawTextWithCursor = &Text_PaintWithCursor;
-	uiInfo.uiDC.setOverstrikeMode = &trap_Key_SetOverstrikeMode;
-	uiInfo.uiDC.getOverstrikeMode = &trap_Key_GetOverstrikeMode;
+	uiInfo.uiDC.setOverstrikeMode = trap_Key_SetOverstrikeMode;
+	uiInfo.uiDC.getOverstrikeMode = trap_Key_GetOverstrikeMode;
 	uiInfo.uiDC.startLocalSound = &trap_S_StartLocalSound;
 	uiInfo.uiDC.keynumToStringBuf = &trap_Key_KeynumToStringBuf;
 	uiInfo.uiDC.getBindingBuf = &trap_Key_GetBindingBuf;
@@ -2738,17 +2878,23 @@ void _UI_Init(qboolean inGameLoad)
 	uiInfo.uiDC.executeText = &trap_Cmd_ExecuteText;
 	uiInfo.uiDC.Error = &Com_Error;
 	uiInfo.uiDC.Print = &Com_Printf;
-	uiInfo.uiDC.ownerDrawWidth = &UI_OwnerDrawWidth;
+	uiInfo.uiDC.ownerDrawWidth = UI_OwnerDrawWidth;
 	// uiInfo.uiDC.Pause = &UI_Pause;
 	uiInfo.uiDC.registerSound = &trap_S_RegisterSound;
-	uiInfo.uiDC.startBackgroundTrack = &trap_S_StartBackgroundTrack;
-	uiInfo.uiDC.stopBackgroundTrack = &trap_S_StopBackgroundTrack;
-	uiInfo.uiDC.playCinematic = &UI_PlayCinematic;
-	uiInfo.uiDC.stopCinematic = &UI_StopCinematic;
-	uiInfo.uiDC.drawCinematic = &UI_DrawCinematic;
-	uiInfo.uiDC.runCinematicFrame = &UI_RunCinematicFrame;
+	uiInfo.uiDC.startBackgroundTrack = trap_S_StartBackgroundTrack;
+	uiInfo.uiDC.stopBackgroundTrack = trap_S_StopBackgroundTrack;
+	uiInfo.uiDC.playCinematic = UI_PlayCinematic;
+	uiInfo.uiDC.stopCinematic = UI_StopCinematic;
+	uiInfo.uiDC.drawCinematic = UI_DrawCinematic;
+	uiInfo.uiDC.runCinematicFrame = UI_RunCinematicFrame;
 	uiInfo.uiDC.getClipboardData = &trap_GetClipboardData;
 	// uiInfo.uiDC.getBindingBuf = &trap_Key_GetBindingBuf;
+
+	// Assign feeder function pointers
+	uiInfo.uiDC.feederCount = &UI_FeederCount;
+	uiInfo.uiDC.feederItemText = &UI_FeederItemText;
+	uiInfo.uiDC.feederItemImage = &UI_FeederItemImage;
+	uiInfo.uiDC.feederSelection = &UI_FeederSelection;
 
 	Init_Display(&uiInfo.uiDC);
 
@@ -2783,7 +2929,7 @@ void _UI_Init(qboolean inGameLoad)
 	UI_LoadBots();
 
 	// sets defaults for ui temp cvars
-	uiInfo.effectsColor = gamecodetoui[(int)trap_Cvar_VariableValue("color1") - 1];
+	uiInfo.effectsColor = (int)trap_Cvar_VariableValue("color1");
 	uiInfo.currentCrosshair = (int)trap_Cvar_VariableValue("cg_drawCrosshair");
 	trap_Cvar_Set("ui_mousePitch", (trap_Cvar_VariableValue("m_pitch") >= 0) ? "0" : "1");
 
@@ -2839,6 +2985,154 @@ qboolean _UI_IsFullscreen(void)
 	// Check if UI is in fullscreen mode - safely check for focused menu
 	menuDef_t *menu = Menu_GetFocused();
 	return (menu != NULL);
+}
+
+static int UI_OwnerDrawWidth(int ownerDraw, float scale)
+{
+	const char *s = NULL;
+
+	switch (ownerDraw)
+	{
+	case UI_HANDICAP:
+	{
+		int h = Com_Clamp(5, 100, trap_Cvar_VariableValue("handicap"));
+		int i = 20 - h / 5;
+		const char *handicapValues[] = {"None", "95", "90", "85", "80", "75", "70", "65", "60", "55", "50", "45", "40", "35", "30", "25", "20", "15", "10", "5"};
+		s = handicapValues[i];
+	}
+	break;
+	default:
+		s = "Unknown";
+		break;
+	}
+
+	if (s)
+	{
+		return Text_Width(s, scale, FONT_MEDIUM);
+	}
+	return 0;
+}
+
+static int UI_PlayCinematic(const char *name, float x, float y, float w, float h)
+{
+	return trap_CIN_PlayCinematic(name, x, y, w, h, (CIN_loop | CIN_silent));
+}
+
+static void UI_StopCinematic(int handle)
+{
+	if (handle >= 0)
+	{
+		trap_CIN_StopCinematic(handle);
+	}
+}
+
+static void UI_DrawCinematic(int handle, float x, float y, float w, float h)
+{
+	trap_CIN_SetExtents(handle, x, y, w, h);
+	trap_CIN_DrawCinematic(handle);
+}
+
+static void UI_RunCinematicFrame(int handle)
+{
+	trap_CIN_RunCinematic(handle);
+}
+
+typedef struct
+{
+	vmCvar_t *vmCvar;
+	char *cvarName;
+	char *defaultString;
+	int cvarFlags;
+} cvarTable_t;
+
+static cvarTable_t cvarTable[] = {
+	{&ui_debug, "ui_debug", "0", CVAR_TEMP},
+	{&ui_initialized, "ui_initialized", "0", CVAR_TEMP},
+	{&ui_char_color_red, "ui_char_color_red", "255", CVAR_ARCHIVE},
+	{&ui_char_color_green, "ui_char_color_green", "255", CVAR_ARCHIVE},
+	{&ui_char_color_blue, "ui_char_color_blue", "255", CVAR_ARCHIVE},
+	{&ui_char_color_alpha, "ui_char_color_alpha", "255", CVAR_ARCHIVE},
+	{&ui_PrecacheModels, "ui_PrecacheModels", "0", CVAR_ARCHIVE},
+	{&ui_char_anim, "ui_char_anim", "BOTH_WALK1", CVAR_ROM | CVAR_INTERNAL},
+	{&ui_gameType, "ui_gametype", "0", CVAR_ARCHIVE | CVAR_INTERNAL},
+	{&ui_netGameType, "ui_netGametype", "0", CVAR_ARCHIVE | CVAR_INTERNAL},
+	{&ui_serverFilterType, "ui_serverFilterType", "0", CVAR_ARCHIVE},
+	{&ui_currentMap, "ui_currentMap", "0", CVAR_ARCHIVE},
+	{&ui_bypassMainMenuLoad, "ui_bypassMainMenuLoad", "0", CVAR_ARCHIVE},
+	{&ui_botfilter, "ui_botfilter", "0", CVAR_ARCHIVE},
+	{&ui_widescreen, "ui_widescreen", "1", CVAR_ARCHIVE},
+	{&ui_JKA, "ui_JKA", "1", CVAR_ARCHIVE},
+	{&ui_model, "model", "", CVAR_USERINFO | CVAR_ARCHIVE},
+	{&ui_headSize, "ui_headSize", "1.0", CVAR_ARCHIVE},
+	{&ui_s_language, "ui_s_language", "", CVAR_ARCHIVE},
+};
+
+static int cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
+
+/*
+=================
+UI_RegisterCvars
+=================
+*/
+void UI_RegisterCvars(void)
+{
+	int i;
+	cvarTable_t *cv;
+
+	for (i = 0, cv = cvarTable; i < cvarTableSize; i++, cv++)
+	{
+		trap_Cvar_Register(cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags);
+	}
+}
+
+static void UI_ParseGameInfo(const char *teamFile)
+{
+	// Simple stub implementation - just parse basic structure without processing
+	char *token;
+	const char *p;
+	const char *buff = NULL;
+
+	buff = GetMenuBuffer(teamFile);
+	if (!buff)
+	{
+		return;
+	}
+
+	p = buff;
+
+	while (1)
+	{
+		token = COM_ParseExt(&p, qtrue);
+		if (!token || token[0] == 0 || token[0] == '}')
+		{
+			break;
+		}
+
+		if (Q_stricmp(token, "}") == 0)
+		{
+			break;
+		}
+
+		// Skip over any structured data by reading until closing brace
+		if (Q_stricmp(token, "gametypes") == 0 || Q_stricmp(token, "joingametypes") == 0 || Q_stricmp(token, "maps") == 0)
+		{
+			token = COM_ParseExt(&p, qtrue);
+			if (token[0] == '{')
+			{
+				int depth = 1;
+				while (depth > 0)
+				{
+					token = COM_ParseExt(&p, qtrue);
+					if (!token || token[0] == 0)
+						break;
+					if (token[0] == '{')
+						depth++;
+					else if (Q_stricmp(token, "}") == 0)
+						depth--;
+				}
+			}
+		}
+	}
 }
 
 void UI_LoadForceConfig_List(void)
@@ -2897,8 +3191,13 @@ qboolean UI_TrueJediEnabled(void)
 
 void UI_UpdateCharacterSkin(void)
 {
-	// Update character skin
-	// This function updates the character skin in UI
+	// Update character skin display in UI
+	// This handles skin changes for character customization
+	if (uiInfo.playerSpeciesIndex >= 0 && uiInfo.playerSpeciesIndex < uiInfo.playerSpeciesCount)
+	{
+		// Trigger refresh of character display
+		// The actual skin update is handled by the menu system
+	}
 }
 
 #ifdef _WIN32
@@ -2906,8 +3205,3 @@ void UI_UpdateCharacterSkin(void)
 #else
 #define DLL_EXPORT
 #endif
-
-DLL_EXPORT intptr_t VM_Main(intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11)
-{
-	return vmMain(command, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
-}

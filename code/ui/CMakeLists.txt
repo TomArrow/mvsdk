@@ -58,13 +58,13 @@ set(MVUI ui_x64)
 
 add_library(${MVUI} SHARED ${MVUIFILES})
 
-message(STATUS "[CMAKE] ui target: ${MVUI}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2/")
+message(STATUS "[CMAKE] ui target: ${MVUI}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/")
 
-# Ensure all module DLLs are always output to eternaljk2/ for all configs
+# Ensure all module DLLs are output to the main directory alongside the executable
 set_target_properties(${MVUI} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
 )
 
 # Defines

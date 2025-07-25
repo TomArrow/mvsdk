@@ -127,19 +127,14 @@ set(MVCGAME cgame_x64)
 
 add_library(${MVCGAME} SHARED ${MVCGAMEFILES})
 
-message(STATUS "[CMAKE] cgame target: ${MVCGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2/")
+message(STATUS "[CMAKE] cgame target: ${MVCGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/")
 
+# Fix: CGame module should build to main directory where engine expects it
+# Engine searches for DLLs in fs_basepath (main directory), not in base subdirectory
 set_target_properties(${MVCGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/eternaljk2,${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2>"
-  ARCHIVE_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/eternaljk2,${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2>"
-  LIBRARY_OUTPUT_DIRECTORY "$<IF:$<CONFIG:Release>,${CMAKE_BINARY_DIR}/out/Release/eternaljk2,${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2>"
-)
-
-# Ensure all cgame module DLLs are always output to eternaljk2/ for all configs
-set_target_properties(${MVCGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>/eternaljk2"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
 )
 
 # Defines
@@ -158,15 +153,8 @@ set_target_properties(${MVCGAME} PROPERTIES INCLUDE_DIRECTORIES "${MVCGAMEInclud
 set_target_properties(${MVCGAME} PROPERTIES PROJECT_LABEL "CGame Module")
 if(InMV)
 	set_property(TARGET ${MVCGAME} PROPERTY FOLDER "Modules")
-	if(BuildPortableVersion)
-		if(WIN32)
-			add_custom_command(TARGET ${MVCGAME} POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different
-					"$<TARGET_FILE:${MVCGAME}>"
-					"${CMAKE_BINARY_DIR}/out/Release/base/cgame_x64.dll"
-			)
-		endif()
-	else()
+	# Removed redundant copy - cgame now builds directly to main directory
+	if(NOT BuildPortableVersion)
 		if(WIN32)
 			install(TARGETS ${MVCGAME} RUNTIME DESTINATION ".")
 			install(FILES $<TARGET_PDB_FILE:${MVCGAME}> DESTINATION "." OPTIONAL)

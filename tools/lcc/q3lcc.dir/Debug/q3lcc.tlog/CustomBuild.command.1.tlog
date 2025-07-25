@@ -1,0 +1,10 @@
+^C:\USERS\DAVID\DOCUMENTS\WORKSPACE\TOM_JK2MV\SRC\MVSDK\TOOLS\LCC\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/david/Documents/Workspace/tom_jk2mv -BC:/Users/david/Documents/Workspace/tom_jk2mv --check-stamp-file C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/lcc/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
