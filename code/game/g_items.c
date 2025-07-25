@@ -1060,6 +1060,7 @@ void ItemUse_Seeker(gentity_t *ent)
 
 void ItemUse_MedPack(gentity_t *ent)
 {
+	int bactaExtra = ent->client->bactaExtra;
 	if (!ent || !ent->client)
 	{
 		return;
@@ -1072,16 +1073,16 @@ void ItemUse_MedPack(gentity_t *ent)
 		return;
 	}
 
-	if (ent->health >= ent->client->ps.stats[STAT_MAX_HEALTH])
+	if (ent->health >= ent->client->ps.stats[STAT_MAX_HEALTH] + bactaExtra)
 	{
 		return;
 	}
 
-	ent->health += MAX_MEDPACK_HEAL_AMOUNT;
+	ent->health += MAX_MEDPACK_HEAL_AMOUNT + bactaExtra;
 
-	if (ent->health > ent->client->ps.stats[STAT_MAX_HEALTH])
+	if (ent->health > ent->client->ps.stats[STAT_MAX_HEALTH] + bactaExtra)
 	{
-		ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+		ent->health = ent->client->ps.stats[STAT_MAX_HEALTH] + bactaExtra;
 	}
 }
 
@@ -1170,6 +1171,10 @@ int Pickup_Holdable( gentity_t *ent, gentity_t *other ) {
 	other->client->ps.stats[STAT_HOLDABLE_ITEM] = ent->item - bg_itemlist;
 
 	other->client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << ent->item->giTag);
+
+	if (ent->item->giTag == HI_MEDPAC) {
+		other->client->bactaExtra = ent->bactaExtra; // make the client "remember" how much this bacta actually gives. q3 bactas give more. relevant for some q3df maps. or maybe just for kairos-nosf
+	}
 
 	G_LogWeaponItem(other->s.number, ent->item->giTag);
 

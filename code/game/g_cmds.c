@@ -4775,7 +4775,7 @@ void Cmd_Stay_f(gentity_t* ent) {
 	}
 }
 
-int G_ItemUsable(playerState_t *ps, int forcedUse)
+int G_ItemUsable(playerState_t *ps, int forcedUse, gentity_t* ent)
 {
 	vec3_t fwd, fwdorg, dest, pos;
 	vec3_t yawonly;
@@ -4801,7 +4801,7 @@ int G_ItemUsable(playerState_t *ps, int forcedUse)
 	switch (forcedUse)
 	{
 	case HI_MEDPAC:
-		if (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH])
+		if (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH] + ent->client->bactaExtra)
 		{
 			return 0;
 		}

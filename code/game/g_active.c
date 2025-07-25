@@ -2518,7 +2518,7 @@ void ClientThink_real( gentity_t *ent ) {
 		break;
 	case GENCMD_USE_SEEKER:
 		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)) &&
-			G_ItemUsable(&ent->client->ps, HI_SEEKER) )
+			G_ItemUsable(&ent->client->ps, HI_SEEKER,ent) )
 		{
 			ItemUse_Seeker(ent);
 			G_AddEvent(ent, EV_USE_ITEM0+HI_SEEKER, 0);
@@ -2527,7 +2527,7 @@ void ClientThink_real( gentity_t *ent ) {
 		break;
 	case GENCMD_USE_FIELD:
 		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD)) &&
-			G_ItemUsable(&ent->client->ps, HI_SHIELD) )
+			G_ItemUsable(&ent->client->ps, HI_SHIELD, ent) )
 		{
 			ItemUse_Shield(ent);
 			G_AddEvent(ent, EV_USE_ITEM0+HI_SHIELD, 0);
@@ -2536,7 +2536,7 @@ void ClientThink_real( gentity_t *ent ) {
 		break;
 	case GENCMD_USE_BACTA:
 		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC)) &&
-			G_ItemUsable(&ent->client->ps, HI_MEDPAC) )
+			G_ItemUsable(&ent->client->ps, HI_MEDPAC, ent) )
 		{
 			ItemUse_MedPack(ent);
 			G_AddEvent(ent, EV_USE_ITEM0+HI_MEDPAC, 0);
@@ -2545,7 +2545,7 @@ void ClientThink_real( gentity_t *ent ) {
 		break;
 	case GENCMD_USE_ELECTROBINOCULARS:
 		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_BINOCULARS)) &&
-			G_ItemUsable(&ent->client->ps, HI_BINOCULARS) )
+			G_ItemUsable(&ent->client->ps, HI_BINOCULARS, ent) )
 		{
 			ItemUse_Binoculars(ent);
 			if (ent->client->ps.zoomMode == 0)
@@ -2560,7 +2560,7 @@ void ClientThink_real( gentity_t *ent ) {
 		break;
 	case GENCMD_ZOOM:
 		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_BINOCULARS)) &&
-			G_ItemUsable(&ent->client->ps, HI_BINOCULARS) )
+			G_ItemUsable(&ent->client->ps, HI_BINOCULARS, ent) )
 		{
 			ItemUse_Binoculars(ent);
 			if (ent->client->ps.zoomMode == 0)
@@ -2575,7 +2575,7 @@ void ClientThink_real( gentity_t *ent ) {
 		break;
 	case GENCMD_USE_SENTRY:
 		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN)) &&
-			G_ItemUsable(&ent->client->ps, HI_SENTRY_GUN) )
+			G_ItemUsable(&ent->client->ps, HI_SENTRY_GUN, ent) )
 		{
 			ItemUse_Sentry(ent);
 			G_AddEvent(ent, EV_USE_ITEM0+HI_SENTRY_GUN, 0);

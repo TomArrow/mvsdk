@@ -6424,6 +6424,13 @@ void Q3R_SP_rally_checkpoint(gentity_t* ent) {
 	//trap_LinkEntity(ent);
 }
 
+void SP_HoldableMedkit(gentity_t* ent) {
+
+	gitem_t* item = BG_FindItemForHoldable(HI_MEDPAC);
+	G_SpawnItem(ent, item);
+	ent->bactaExtra = 25;
+}
+
 
 void DF_InvalidateRunsByStyle(movementStyle_e style) {
 	int i;

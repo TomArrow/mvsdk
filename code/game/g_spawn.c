@@ -218,6 +218,8 @@ extern void DF_target_husk(gentity_t* ent);
 extern void DF_trigger_start(gentity_t* ent);
 extern void DF_trigger_finish(gentity_t* ent);
 extern void DF_trigger_checkpoint(gentity_t* ent);
+
+extern void SP_HoldableMedkit(gentity_t* ent);
 spawn_t	spawns[] = {
 	// info entities don't do anything at all, but provide positional
 	// information for things controlled by other processes
@@ -266,6 +268,9 @@ spawn_t	spawns[] = {
 	// q3 rally map support
 	{"rally_startfinish", qfalse, Q3R_SP_rally_startfinish},
 	{"rally_checkpoint", qfalse, Q3R_SP_rally_checkpoint},
+
+	// q3 ents
+	{"holdable_medkit", qfalse, SP_HoldableMedkit},
 
 	// targets perform no action by themselves, but must be triggered
 	// by another entity
