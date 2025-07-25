@@ -1510,7 +1510,7 @@ static void CG_Item( centity_t *cent ) {
 	*/
 
 	if (cgs.isTommyTernal) {
-		if (cg.predictedPlayerState.duelInProgress || cg.predictedPlayerState.stats[STAT_RACEMODE]/* && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA */ )
+		if (cg.predictedPlayerState.duelInProgress/*  || cg.predictedPlayerState.stats[STAT_RACEMODE]&& cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA */ )
 			return;
 	}
 	else if (cg.predictedPlayerState.duelInProgress) {
