@@ -127,16 +127,6 @@ set(MVCGAME cgame_x64)
 
 add_library(${MVCGAME} SHARED ${MVCGAMEFILES})
 
-message(STATUS "[CMAKE] cgame target: ${MVCGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/")
-
-# Fix: CGame module should build to main directory where engine expects it
-# Engine searches for DLLs in fs_basepath (main directory), not in base subdirectory
-set_target_properties(${MVCGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
-)
-
 # Defines
 set(MVCGAMEDefines ${MVCGAMEDefines} "JK2_CGAME")
 set(MVCGAMEIncludeDirs ${MVGLOBALIncludeDirs})
@@ -148,6 +138,26 @@ set_property(TARGET ${MVCGAME} APPEND PROPERTY COMPILE_DEFINITIONS
   $<$<CONFIG:Release>:${GlobalDefines} ${MVCGAMEDefines} ${ReleaseDefines}>
   $<$<CONFIG:RelWithDebInfo>:${GlobalDefines} ${MVCGAMEDefines} ${ReleaseDefines}>
 )
+
+if(MSVC)
+	if(ARCH_X86_32)
+		# Workaround for error LNK2001: unresolved external symbol _trap_PC_ReadToken
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " /INCLUDE:\"_trap_PC_ReadToken\"")
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /INCLUDE:\"_trap_PC_ReadToken\"")
+
+		# Workaround for error LNK2001: unresolved external symbol _trap_PC_SourceFileAndLine
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " /INCLUDE:\"_trap_PC_SourceFileAndLine\"")
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /INCLUDE:\"_trap_PC_SourceFileAndLine\"")
+	else()
+		# Workaround for error LNK2001: unresolved external symbol trap_PC_ReadToken
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " /INCLUDE:\"trap_PC_ReadToken\"")
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /INCLUDE:\"trap_PC_ReadToken\"")
+
+		# Workaround for error LNK2001: unresolved external symbol trap_PC_SourceFileAndLine
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " /INCLUDE:\"trap_PC_SourceFileAndLine\"")
+		set_property(TARGET ${MVCGAME} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /INCLUDE:\"trap_PC_SourceFileAndLine\"")
+	endif()
+endif()
 
 set_target_properties(${MVCGAME} PROPERTIES INCLUDE_DIRECTORIES "${MVCGAMEIncludeDirs}")
 set_target_properties(${MVCGAME} PROPERTIES PROJECT_LABEL "CGame Module")
@@ -162,6 +172,26 @@ if(InMV)
 			install(TARGETS ${MVCGAME} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
 		else()
 			install(TARGETS ${MVCGAME} LIBRARY DESTINATION "lib")
+		endif()
+	endif()
+endif()
+
+if(InMV)
+	if(BuildPortableVersion)
+		if(WIN32)
+			install(TARGETS ${MVCGAME} RUNTIME DESTINATION "base")
+			install(FILES $<TARGET_PDB_FILE:${MVCGAME}> DESTINATION "." OPTIONAL)
+		else()
+			install(TARGETS ${MVCGAME} LIBRARY DESTINATION "base")
+		endif()
+	else()
+		if(WIN32)
+			install(TARGETS ${MVCGAME} RUNTIME DESTINATION "base")
+			install(FILES $<TARGET_PDB_FILE:${MVCGAME}> DESTINATION "." OPTIONAL)
+		elseif(APPLE)
+			install(TARGETS ${MVCGAME} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS/base")
+		else()
+			# TODO
 		endif()
 	endif()
 endif()

@@ -18,147 +18,146 @@
 #include "../cgame/cg_local.h"
 #endif
 
-//rww - not putting @ in front of these because
-//we don't need them in a cgame striped lookup.
-//Let me know if this causes problems, pat.
-char *forceMasteryLevels[NUM_FORCE_MASTERY_LEVELS] = 
-{
-	"MASTERY0",	//"Uninitiated",	// FORCE_MASTERY_UNINITIATED,
-	"MASTERY1",	//"Initiate",		// FORCE_MASTERY_INITIATE,
-	"MASTERY2",	//"Padawan",		// FORCE_MASTERY_PADAWAN,
-	"MASTERY3",	//"Jedi",			// FORCE_MASTERY_JEDI,
-	"MASTERY4",	//"Jedi Adept",		// FORCE_MASTERY_JEDI_GUARDIAN,
-	"MASTERY5",	//"Jedi Guardian",	// FORCE_MASTERY_JEDI_ADEPT,
-	"MASTERY6",	//"Jedi Knight",	// FORCE_MASTERY_JEDI_KNIGHT,
-	"MASTERY7",	//"Jedi Master"		// FORCE_MASTERY_JEDI_MASTER,
+// rww - not putting @ in front of these because
+// we don't need them in a cgame striped lookup.
+// Let me know if this causes problems, pat.
+char *forceMasteryLevels[NUM_FORCE_MASTERY_LEVELS] =
+	{
+		"MASTERY0", //"Uninitiated",	// FORCE_MASTERY_UNINITIATED,
+		"MASTERY1", //"Initiate",		// FORCE_MASTERY_INITIATE,
+		"MASTERY2", //"Padawan",		// FORCE_MASTERY_PADAWAN,
+		"MASTERY3", //"Jedi",			// FORCE_MASTERY_JEDI,
+		"MASTERY4", //"Jedi Adept",		// FORCE_MASTERY_JEDI_GUARDIAN,
+		"MASTERY5", //"Jedi Guardian",	// FORCE_MASTERY_JEDI_ADEPT,
+		"MASTERY6", //"Jedi Knight",	// FORCE_MASTERY_JEDI_KNIGHT,
+		"MASTERY7", //"Jedi Master"		// FORCE_MASTERY_JEDI_MASTER,
 };
 
 int forceMasteryPoints[NUM_FORCE_MASTERY_LEVELS] =
-{
-	0,		// FORCE_MASTERY_UNINITIATED,
-	5,		// FORCE_MASTERY_INITIATE,
-	10,		// FORCE_MASTERY_PADAWAN,
-	20,		// FORCE_MASTERY_JEDI,
-	30,		// FORCE_MASTERY_JEDI_GUARDIAN,
-	50,		// FORCE_MASTERY_JEDI_ADEPT,
-	75,		// FORCE_MASTERY_JEDI_KNIGHT,
-	100		// FORCE_MASTERY_JEDI_MASTER,
+	{
+		0,	// FORCE_MASTERY_UNINITIATED,
+		5,	// FORCE_MASTERY_INITIATE,
+		10, // FORCE_MASTERY_PADAWAN,
+		20, // FORCE_MASTERY_JEDI,
+		30, // FORCE_MASTERY_JEDI_GUARDIAN,
+		50, // FORCE_MASTERY_JEDI_ADEPT,
+		75, // FORCE_MASTERY_JEDI_KNIGHT,
+		100 // FORCE_MASTERY_JEDI_MASTER,
 };
 
-int bgForcePowerCost[NUM_FORCE_POWERS][NUM_FORCE_POWER_LEVELS] = //0 == neutral
-{
-	{	0,	2,	4,	6	},	// Heal			// FP_HEAL
-	{	0,	0,	2,	6	},	// Jump			//FP_LEVITATION,//hold/duration
-	{	0,	2,	4,	6	},	// Speed		//FP_SPEED,//duration
-	{	0,	1,	3,	6	},	// Push			//FP_PUSH,//hold/duration
-	{	0,	1,	3,	6	},	// Pull			//FP_PULL,//hold/duration
-	{	0,	4,	6,	8	},	// Mind Trick	//FP_TELEPATHY,//instant
-	{	0,	1,	3,	6	},	// Grip			//FP_GRIP,//hold/duration
-	{	0,	2,	5,	8	},	// Lightning	//FP_LIGHTNING,//hold/duration
-	{	0,	4,	6,	8	},	// Dark Rage	//FP_RAGE,//duration
-	{	0,	2,	5,	8	},	// Protection	//FP_PROTECT,//duration
-	{	0,	1,	3,	6	},	// Absorb		//FP_ABSORB,//duration
-	{	0,	1,	3,	6	},	// Team Heal	//FP_TEAM_HEAL,//instant
-	{	0,	1,	3,	6	},	// Team Force	//FP_TEAM_FORCE,//instant
-	{	0,	2,	4,	6	},	// Drain		//FP_DRAIN,//hold/duration
-	{	0,	2,	5,	8	},	// Sight		//FP_SEE,//duration
-	{	0,	1,	5,	8	},	// Saber Attack	//FP_SABERATTACK,
-	{	0,	1,	5,	8	},	// Saber Defend	//FP_SABERDEFEND,
-	{	0,	4,	6,	8	}	// Saber Throw	//FP_SABERTHROW,
-	//NUM_FORCE_POWERS
+int bgForcePowerCost[NUM_FORCE_POWERS][NUM_FORCE_POWER_LEVELS] = // 0 == neutral
+	{
+		{0, 2, 4, 6}, // Heal			// FP_HEAL
+		{0, 0, 2, 6}, // Jump			//FP_LEVITATION,//hold/duration
+		{0, 2, 4, 6}, // Speed		//FP_SPEED,//duration
+		{0, 1, 3, 6}, // Push			//FP_PUSH,//hold/duration
+		{0, 1, 3, 6}, // Pull			//FP_PULL,//hold/duration
+		{0, 4, 6, 8}, // Mind Trick	//FP_TELEPATHY,//instant
+		{0, 1, 3, 6}, // Grip			//FP_GRIP,//hold/duration
+		{0, 2, 5, 8}, // Lightning	//FP_LIGHTNING,//hold/duration
+		{0, 4, 6, 8}, // Dark Rage	//FP_RAGE,//duration
+		{0, 2, 5, 8}, // Protection	//FP_PROTECT,//duration
+		{0, 1, 3, 6}, // Absorb		//FP_ABSORB,//duration
+		{0, 1, 3, 6}, // Team Heal	//FP_TEAM_HEAL,//instant
+		{0, 1, 3, 6}, // Team Force	//FP_TEAM_FORCE,//instant
+		{0, 2, 4, 6}, // Drain		//FP_DRAIN,//hold/duration
+		{0, 2, 5, 8}, // Sight		//FP_SEE,//duration
+		{0, 1, 5, 8}, // Saber Attack	//FP_SABERATTACK,
+		{0, 1, 5, 8}, // Saber Defend	//FP_SABERDEFEND,
+		{0, 4, 6, 8}  // Saber Throw	//FP_SABERTHROW,
+					  // NUM_FORCE_POWERS
 };
 
-int forcePowerSorted[NUM_FORCE_POWERS] = 
-{ //rww - always use this order when drawing force powers for any reason
-	FP_TELEPATHY,
-	FP_HEAL,
-	FP_ABSORB,
-	FP_PROTECT,
-	FP_TEAM_HEAL,
-	FP_LEVITATION,
-	FP_SPEED,
-	FP_PUSH,
-	FP_PULL,
-	FP_SEE,
-	FP_LIGHTNING,
-	FP_DRAIN,
-	FP_RAGE,
-	FP_GRIP,
-	FP_TEAM_FORCE,
-	FP_SABERATTACK,
-	FP_SABERDEFEND,
-	FP_SABERTHROW
-};
+int forcePowerSorted[NUM_FORCE_POWERS] =
+	{ // rww - always use this order when drawing force powers for any reason
+		FP_TELEPATHY,
+		FP_HEAL,
+		FP_ABSORB,
+		FP_PROTECT,
+		FP_TEAM_HEAL,
+		FP_LEVITATION,
+		FP_SPEED,
+		FP_PUSH,
+		FP_PULL,
+		FP_SEE,
+		FP_LIGHTNING,
+		FP_DRAIN,
+		FP_RAGE,
+		FP_GRIP,
+		FP_TEAM_FORCE,
+		FP_SABERATTACK,
+		FP_SABERDEFEND,
+		FP_SABERTHROW};
 
-int forcePowerDarkLight[NUM_FORCE_POWERS] = //0 == neutral
-{ //nothing should be usable at rank 0..
-	FORCE_LIGHTSIDE,//FP_HEAL,//instant
-	0,//FP_LEVITATION,//hold/duration
-	0,//FP_SPEED,//duration
-	0,//FP_PUSH,//hold/duration
-	0,//FP_PULL,//hold/duration
-	FORCE_LIGHTSIDE,//FP_TELEPATHY,//instant
-	FORCE_DARKSIDE,//FP_GRIP,//hold/duration
-	FORCE_DARKSIDE,//FP_LIGHTNING,//hold/duration
-	FORCE_DARKSIDE,//FP_RAGE,//duration
-	FORCE_LIGHTSIDE,//FP_PROTECT,//duration
-	FORCE_LIGHTSIDE,//FP_ABSORB,//duration
-	FORCE_LIGHTSIDE,//FP_TEAM_HEAL,//instant
-	FORCE_DARKSIDE,//FP_TEAM_FORCE,//instant
-	FORCE_DARKSIDE,//FP_DRAIN,//hold/duration
-	0,//FP_SEE,//duration
-	0,//FP_SABERATTACK,
-	0,//FP_SABERDEFEND,
-	0//FP_SABERTHROW,
-		//NUM_FORCE_POWERS
+int forcePowerDarkLight[NUM_FORCE_POWERS] = // 0 == neutral
+	{
+		// nothing should be usable at rank 0..
+		FORCE_LIGHTSIDE, // FP_HEAL,//instant
+		0,				 // FP_LEVITATION,//hold/duration
+		0,				 // FP_SPEED,//duration
+		0,				 // FP_PUSH,//hold/duration
+		0,				 // FP_PULL,//hold/duration
+		FORCE_LIGHTSIDE, // FP_TELEPATHY,//instant
+		FORCE_DARKSIDE,	 // FP_GRIP,//hold/duration
+		FORCE_DARKSIDE,	 // FP_LIGHTNING,//hold/duration
+		FORCE_DARKSIDE,	 // FP_RAGE,//duration
+		FORCE_LIGHTSIDE, // FP_PROTECT,//duration
+		FORCE_LIGHTSIDE, // FP_ABSORB,//duration
+		FORCE_LIGHTSIDE, // FP_TEAM_HEAL,//instant
+		FORCE_DARKSIDE,	 // FP_TEAM_FORCE,//instant
+		FORCE_DARKSIDE,	 // FP_DRAIN,//hold/duration
+		0,				 // FP_SEE,//duration
+		0,				 // FP_SABERATTACK,
+		0,				 // FP_SABERDEFEND,
+		0				 // FP_SABERTHROW,
+		  // NUM_FORCE_POWERS
 };
 
 int WeaponReadyAnim[WP_NUM_WEAPONS] =
-{
-	TORSO_DROPWEAP1,//WP_NONE,
+	{
+		TORSO_DROPWEAP1, // WP_NONE,
 
-	TORSO_WEAPONREADY3,//WP_STUN_BATON,
-	BOTH_STAND2,//WP_SABER,
-	TORSO_WEAPONREADY2,//WP_BRYAR_PISTOL,
-	TORSO_WEAPONREADY3,//WP_BLASTER,
-	TORSO_WEAPONREADY3,//TORSO_WEAPONREADY4,//WP_DISRUPTOR,
-	TORSO_WEAPONREADY3,//TORSO_WEAPONREADY5,//WP_BOWCASTER,
-	TORSO_WEAPONREADY3,//TORSO_WEAPONREADY6,//WP_REPEATER,
-	TORSO_WEAPONREADY3,//TORSO_WEAPONREADY7,//WP_DEMP2,
-	TORSO_WEAPONREADY3,//TORSO_WEAPONREADY8,//WP_FLECHETTE,
-	TORSO_WEAPONREADY3,//TORSO_WEAPONREADY9,//WP_ROCKET_LAUNCHER,
-	TORSO_WEAPONREADY10,//WP_THERMAL,
-	TORSO_WEAPONREADY10,//TORSO_WEAPONREADY11,//WP_TRIP_MINE,
-	TORSO_WEAPONREADY10,//TORSO_WEAPONREADY12,//WP_DET_PACK,
+		TORSO_WEAPONREADY3,	 // WP_STUN_BATON,
+		BOTH_STAND2,		 // WP_SABER,
+		TORSO_WEAPONREADY2,	 // WP_BRYAR_PISTOL,
+		TORSO_WEAPONREADY3,	 // WP_BLASTER,
+		TORSO_WEAPONREADY3,	 // TORSO_WEAPONREADY4,//WP_DISRUPTOR,
+		TORSO_WEAPONREADY3,	 // TORSO_WEAPONREADY5,//WP_BOWCASTER,
+		TORSO_WEAPONREADY3,	 // TORSO_WEAPONREADY6,//WP_REPEATER,
+		TORSO_WEAPONREADY3,	 // TORSO_WEAPONREADY7,//WP_DEMP2,
+		TORSO_WEAPONREADY3,	 // TORSO_WEAPONREADY8,//WP_FLECHETTE,
+		TORSO_WEAPONREADY3,	 // TORSO_WEAPONREADY9,//WP_ROCKET_LAUNCHER,
+		TORSO_WEAPONREADY10, // WP_THERMAL,
+		TORSO_WEAPONREADY10, // TORSO_WEAPONREADY11,//WP_TRIP_MINE,
+		TORSO_WEAPONREADY10, // TORSO_WEAPONREADY12,//WP_DET_PACK,
 
-	//NOT VALID (e.g. should never really be used):
-	BOTH_STAND1,//WP_EMPLACED_GUN,
-	TORSO_WEAPONREADY1//WP_TURRET,
+		// NOT VALID (e.g. should never really be used):
+		BOTH_STAND1,	   // WP_EMPLACED_GUN,
+		TORSO_WEAPONREADY1 // WP_TURRET,
 };
 
 int WeaponAttackAnim[WP_NUM_WEAPONS] =
-{
-	BOTH_ATTACK1,//WP_NONE, //(shouldn't happen)
+	{
+		BOTH_ATTACK1, // WP_NONE, //(shouldn't happen)
 
-	BOTH_ATTACK3,//WP_STUN_BATON,
-	BOTH_STAND2,//WP_SABER, //(has its own handling)
-	BOTH_ATTACK2,//WP_BRYAR_PISTOL,
-	BOTH_ATTACK3,//WP_BLASTER,
-	BOTH_ATTACK3,//BOTH_ATTACK4,//WP_DISRUPTOR,
-	BOTH_ATTACK3,//BOTH_ATTACK5,//WP_BOWCASTER,
-	BOTH_ATTACK3,//BOTH_ATTACK6,//WP_REPEATER,
-	BOTH_ATTACK3,//BOTH_ATTACK7,//WP_DEMP2,
-	BOTH_ATTACK3,//BOTH_ATTACK8,//WP_FLECHETTE,
-	BOTH_ATTACK3,//BOTH_ATTACK9,//WP_ROCKET_LAUNCHER,
-	BOTH_THERMAL_THROW,//WP_THERMAL,
-	BOTH_ATTACK3,//BOTH_ATTACK11,//WP_TRIP_MINE,
-	BOTH_ATTACK3,//BOTH_ATTACK12,//WP_DET_PACK,
+		BOTH_ATTACK3,		// WP_STUN_BATON,
+		BOTH_STAND2,		// WP_SABER, //(has its own handling)
+		BOTH_ATTACK2,		// WP_BRYAR_PISTOL,
+		BOTH_ATTACK3,		// WP_BLASTER,
+		BOTH_ATTACK3,		// BOTH_ATTACK4,//WP_DISRUPTOR,
+		BOTH_ATTACK3,		// BOTH_ATTACK5,//WP_BOWCASTER,
+		BOTH_ATTACK3,		// BOTH_ATTACK6,//WP_REPEATER,
+		BOTH_ATTACK3,		// BOTH_ATTACK7,//WP_DEMP2,
+		BOTH_ATTACK3,		// BOTH_ATTACK8,//WP_FLECHETTE,
+		BOTH_ATTACK3,		// BOTH_ATTACK9,//WP_ROCKET_LAUNCHER,
+		BOTH_THERMAL_THROW, // WP_THERMAL,
+		BOTH_ATTACK3,		// BOTH_ATTACK11,//WP_TRIP_MINE,
+		BOTH_ATTACK3,		// BOTH_ATTACK12,//WP_DET_PACK,
 
-	//NOT VALID (e.g. should never really be used):
-	BOTH_STAND1,//WP_EMPLACED_GUN,
-	BOTH_ATTACK1//WP_TURRET,
+		// NOT VALID (e.g. should never really be used):
+		BOTH_STAND1, // WP_EMPLACED_GUN,
+		BOTH_ATTACK1 // WP_TURRET,
 };
-
 
 /*
 ================
@@ -183,24 +182,24 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 	int allowedPoints = 0;
 	int usedPoints = 0;
 	int countDown = 0;
-	
+
 	int final_Side;
 	int final_Powers[NUM_FORCE_POWERS];
 
-//	for ( i = 0; i < NUM_FORCE_POWERS; i++ ) final_Powers[i] = 0;
+	//	for ( i = 0; i < NUM_FORCE_POWERS; i++ ) final_Powers[i] = 0;
 
 	if (powerLen >= 128)
-	{ //This should not happen. If it does, this is obviously a bogus string.
-		//They can have this string. Because I said so.
-		Q_strncpyz(powerBuf, "7-1-032330000000001333",sizeof(powerBuf));
+	{ // This should not happen. If it does, this is obviously a bogus string.
+		// They can have this string. Because I said so.
+		Q_strncpyz(powerBuf, "7-1-032330000000001333", sizeof(powerBuf));
 		maintainsValidity = qfalse;
 	}
 	else
 	{
-		Q_strncpyz(powerBuf, powerOut,sizeof(powerBuf)); //copy it as the original
+		Q_strncpyz(powerBuf, powerOut, sizeof(powerBuf)); // copy it as the original
 	}
 
-	//first of all, print the max rank into the string as the rank
+	// first of all, print the max rank into the string as the rank
 	Q_strncpyz(powerOut, va("%i-", maxRank), powerOutSize);
 
 	while (i < 128 && powerBuf[i] && powerBuf[i] != '-')
@@ -216,28 +215,28 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 	}
 	readBuf[c] = 0;
 	i++;
-	//at this point, readBuf contains the intended side
+	// at this point, readBuf contains the intended side
 	final_Side = atoi(readBuf);
 
 	if (final_Side != FORCE_LIGHTSIDE &&
 		final_Side != FORCE_DARKSIDE)
-	{ //Not a valid side. You will be dark. Because I said so. (this is something that should never actually happen unless you purposely feed in an invalid config)
+	{ // Not a valid side. You will be dark. Because I said so. (this is something that should never actually happen unless you purposely feed in an invalid config)
 		final_Side = FORCE_DARKSIDE;
 		maintainsValidity = qfalse;
 	}
 
 	if (teamForce)
-	{ //If we are under force-aligned teams, make sure we're on the right side.
+	{ // If we are under force-aligned teams, make sure we're on the right side.
 		if (final_Side != teamForce)
 		{
 			final_Side = teamForce;
-			//maintainsValidity = qfalse;
-			//Not doing this, for now. Let them join the team with their filtered powers.
+			// maintainsValidity = qfalse;
+			// Not doing this, for now. Let them join the team with their filtered powers.
 		}
 	}
 
-	//Now we have established a valid rank, and a valid side.
-	//Read the force powers in, and cut them down based on the various rules supplied.
+	// Now we have established a valid rank, and a valid side.
+	// Read the force powers in, and cut them down based on the various rules supplied.
 	c = 0;
 	while (i < 128 && powerBuf[i] && powerBuf[i] != '\n' && c < NUM_FORCE_POWERS)
 	{
@@ -248,25 +247,27 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 		i++;
 	}
 
-	//final_Powers now contains all the stuff from the string
-	//Set the maximum allowed points used based on the max rank level, and count the points actually used.
-	if ( maxRank < 0 || maxRank >= NUM_FORCE_MASTERY_LEVELS ) allowedPoints = (1 << 24); // Some servers set their "maxRank" to 200 to allow players to use all force powers (of one side). That is actually an invalid read - a memory bug. Let's fix that...
-	else													  allowedPoints = forceMasteryPoints[maxRank];
+	// final_Powers now contains all the stuff from the string
+	// Set the maximum allowed points used based on the max rank level, and count the points actually used.
+	if (maxRank < 0 || maxRank >= NUM_FORCE_MASTERY_LEVELS)
+		allowedPoints = (1 << 24); // Some servers set their "maxRank" to 200 to allow players to use all force powers (of one side). That is actually an invalid read - a memory bug. Let's fix that...
+	else
+		allowedPoints = forceMasteryPoints[maxRank];
 
 	i = 0;
 	while (i < NUM_FORCE_POWERS)
-	{ //if this power doesn't match the side we're on, then 0 it now.
+	{ // if this power doesn't match the side we're on, then 0 it now.
 		if (final_Powers[i] &&
 			forcePowerDarkLight[i] &&
 			forcePowerDarkLight[i] != final_Side)
 		{
 			final_Powers[i] = 0;
-			//This is only likely to happen with g_forceBasedTeams. Let it slide.
+			// This is only likely to happen with g_forceBasedTeams. Let it slide.
 		}
 
-		if ( final_Powers[i] &&
-			(fpDisabled & (1 << i)) )
-		{ //if this power is disabled on the server via said server option, then we don't get it.
+		if (final_Powers[i] &&
+			(fpDisabled & (1 << i)))
+		{ // if this power is disabled on the server via said server option, then we don't get it.
 			final_Powers[i] = 0;
 		}
 
@@ -274,7 +275,7 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 	}
 
 	if (gametype < GT_TEAM)
-	{ //don't bother with team powers then
+	{ // don't bother with team powers then
 		final_Powers[FP_TEAM_HEAL] = 0;
 		final_Powers[FP_TEAM_FORCE] = 0;
 	}
@@ -290,11 +291,11 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 		while (countDown > 0)
 		{
 			usedPoints += bgForcePowerCost[i][countDown]; //[fp index][fp level]
-			//if this is jump, or we have a free saber and it's offense or defense, take the level back down on level 1
-			if ( countDown == 1 &&
+			// if this is jump, or we have a free saber and it's offense or defense, take the level back down on level 1
+			if (countDown == 1 &&
 				((i == FP_LEVITATION) ||
 				 (i == FP_SABERATTACK && freeSaber) ||
-				 (i == FP_SABERDEFEND && freeSaber)) )
+				 (i == FP_SABERDEFEND && freeSaber)))
 			{
 				usedPoints -= bgForcePowerCost[i][countDown];
 			}
@@ -305,11 +306,11 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 	}
 
 	if (usedPoints > allowedPoints)
-	{ //Time to do the fancy stuff. (meaning, slowly cut parts off while taking a guess at what is most or least important in the config)
+	{ // Time to do the fancy stuff. (meaning, slowly cut parts off while taking a guess at what is most or least important in the config)
 		int attemptedCycles = 0;
 		int powerCycle = 2;
 		int minPow = 0;
-		
+
 		if (freeSaber)
 		{
 			minPow = 1;
@@ -324,23 +325,23 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 			while (c < NUM_FORCE_POWERS && usedPoints > allowedPoints)
 			{
 				if (final_Powers[c] && final_Powers[c] < powerCycle)
-				{ //kill in order of lowest powers, because the higher powers are probably more important
+				{ // kill in order of lowest powers, because the higher powers are probably more important
 					if (c == FP_SABERATTACK &&
 						(final_Powers[FP_SABERDEFEND] > minPow || final_Powers[FP_SABERTHROW] > 0))
-					{ //if we're on saber attack, only suck it down if we have no def or throw either
-						int whichOne = FP_SABERTHROW; //first try throw
+					{								  // if we're on saber attack, only suck it down if we have no def or throw either
+						int whichOne = FP_SABERTHROW; // first try throw
 
 						if (!final_Powers[whichOne])
 						{
-							whichOne = FP_SABERDEFEND; //if no throw, drain defense
+							whichOne = FP_SABERDEFEND; // if no throw, drain defense
 						}
 
 						while (final_Powers[whichOne] > 0 && usedPoints > allowedPoints)
 						{
-							if ( final_Powers[whichOne] > 1 ||
-								( (whichOne != FP_SABERATTACK || !freeSaber) &&
-								  (whichOne != FP_SABERDEFEND || !freeSaber) ) )
-							{ //don't take attack or defend down on level 1 still, if it's free
+							if (final_Powers[whichOne] > 1 ||
+								((whichOne != FP_SABERATTACK || !freeSaber) &&
+								 (whichOne != FP_SABERDEFEND || !freeSaber)))
+							{ // don't take attack or defend down on level 1 still, if it's free
 								usedPoints -= bgForcePowerCost[whichOne][final_Powers[whichOne]];
 								final_Powers[whichOne]--;
 							}
@@ -354,10 +355,10 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 					{
 						while (final_Powers[c] > 0 && usedPoints > allowedPoints)
 						{
-							if ( final_Powers[c] > 1 ||
+							if (final_Powers[c] > 1 ||
 								((c != FP_LEVITATION) &&
-								(c != FP_SABERATTACK || !freeSaber) &&
-								(c != FP_SABERDEFEND || !freeSaber)) )
+								 (c != FP_SABERATTACK || !freeSaber) &&
+								 (c != FP_SABERDEFEND || !freeSaber)))
 							{
 								usedPoints -= bgForcePowerCost[c][final_Powers[c]];
 								final_Powers[c]--;
@@ -377,13 +378,13 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 			attemptedCycles++;
 
 			if (attemptedCycles > NUM_FORCE_POWERS)
-			{ //I think this should be impossible. But just in case.
+			{ // I think this should be impossible. But just in case.
 				break;
 			}
 		}
 
 		if (usedPoints > allowedPoints)
-		{ //Still? Fine then.. we will kill all of your powers, except the freebies.
+		{ // Still? Fine then.. we will kill all of your powers, except the freebies.
 			i = 0;
 
 			while (i < NUM_FORCE_POWERS)
@@ -433,11 +434,11 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 		i++;
 	}
 
-	if ( jk2startversion == VERSION_1_02
+	if (jk2startversion == VERSION_1_02
 #ifdef JK2_GAME
 		&& g_mv_forcePowerDisableMode.integer
-#endif //JK2_GAME
-		)
+#endif // JK2_GAME
+	)
 	{ // The 1.02 client doesn't show the force selection menu if ANY force power is disabled. Some servers might be running on a power-set that disables all powers, except those three. Basejk clients might get a handicap then, cause they can't set their powers and might end up with weaker attack/defense than other players. Servers should only disable this on 1.02, if they know what they're doing.
 		if (fpDisabled)
 		{
@@ -450,9 +451,9 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 	else
 	{
 		if (fpDisabled)
-		{ //If we specifically have attack or def disabled, force them up to level 3. It's the way
-			//things work for the case of all powers disabled.
-			//If jump is disabled, down-cap it to level 1. Otherwise don't do a thing.
+		{ // If we specifically have attack or def disabled, force them up to level 3. It's the way
+			// things work for the case of all powers disabled.
+			// If jump is disabled, down-cap it to level 1. Otherwise don't do a thing.
 			if (fpDisabled & (1 << FP_LEVITATION))
 			{
 				final_Powers[FP_LEVITATION] = 1;
@@ -474,16 +475,16 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 		}
 	}
 
-	//We finally have all the force powers legalized and stored locally.
-	//Put them all into the string and return the result. We already have
-	//the rank there, so print the side and the powers now.
+	// We finally have all the force powers legalized and stored locally.
+	// Put them all into the string and return the result. We already have
+	// the rank there, so print the side and the powers now.
 	Q_strcat(powerOut, powerOutSize, va("%i-", final_Side));
 
 	i = strlen(powerOut);
 	c = 0;
 	while (c < NUM_FORCE_POWERS)
 	{
-		Q_strncpyz(readBuf, va("%i", final_Powers[c]),sizeof(readBuf));
+		Q_strncpyz(readBuf, va("%i", final_Powers[c]), sizeof(readBuf));
 		powerOut[i] = readBuf[0];
 		c++;
 		i++;
@@ -517,785 +518,749 @@ Gives shield energy when used.
 "chargerate" - rechage 1 point every this many milliseconds (default 3000)
 */
 
-gitem_t	bg_itemlist[] = 
+gitem_t bg_itemlist[] =
+	{
+		{
+			NULL,			   // classname
+			NULL,			   // pickup_sound
+			{NULL,			   // world_model[0]
+			 NULL,			   // world_model[1]
+			 0, 0},			   // world_model[2],[3]
+			NULL,			   // view_model
+			/* icon */ NULL,   // icon
+			/* pickup */	   // NULL,		// pickup_name
+			0,				   // quantity
+			0,				   // giType (IT_*)
+			0,				   // giTag
+			/* precache */ "", // precaches
+			/* sounds */ ""	   // sounds
+		},					   // leave index 0 alone
+
+		//
+		// Pickups
+		//
+
+		/*QUAKED item_shield_sm_instant (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Instant shield pickup, restores 25
+		*/
+		{
+			"item_shield_sm_instant",
+			"sound/player/pickupshield.wav",
+			{"models/map_objects/mp/psd_sm.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/mp/small_shield",
+			/* pickup */ //	"Shield Small",
+			25,
+			IT_ARMOR,
+			1, // special for shield - max on pickup is maxhealth*tag, thus small shield goes up to 100 shield
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_shield_lrg_instant (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Instant shield pickup, restores 100
+		*/
+		{
+			"item_shield_lrg_instant",
+			"sound/player/pickupshield.wav",
+			{"models/map_objects/mp/psd.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/mp/large_shield",
+			/* pickup */ //	"Shield Large",
+			100,
+			IT_ARMOR,
+			2, // special for shield - max on pickup is maxhealth*tag, thus large shield goes up to 200 shield
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_medpak_instant (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Instant medpack pickup, heals 25
+		*/
+		{
+			"item_medpak_instant",
+			"sound/player/pickuphealth.wav",
+			{"models/map_objects/mp/medpac.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/i_icon_medkit",
+			/* pickup */ //	"Medpack",
+			25,
+			IT_HEALTH,
+			0,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		//
+		// ITEMS
+		//
+
+		/*QUAKED item_seeker (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
+		30 seconds of seeker drone
+		*/
+		{
+			"item_seeker",
+			"sound/weapons/w_pkup.wav",
+			{"models/items/remote.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/i_icon_seeker",
+			/* pickup */ //	"Seeker Drone",
+			120,
+			IT_HOLDABLE,
+			HI_SEEKER,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_shield (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
+		Portable shield
+		*/
+		{
+			"item_shield",
+			"sound/weapons/w_pkup.wav",
+			{"models/map_objects/mp/shield.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/i_icon_shieldwall",
+			/* pickup */ //	"Forcefield",
+			120,
+			IT_HOLDABLE,
+			HI_SHIELD,
+			/* precache */ "",
+			/* sounds */ "sound/weapons/detpack/stick.wav sound/movers/doors/forcefield_on.wav sound/movers/doors/forcefield_off.wav sound/movers/doors/forcefield_lp.wav sound/effects/bumpfield.wav",
+		},
+
+		/*QUAKED item_medpac (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
+		Bacta canister pickup, heals 25 on use
+		*/
+		{
+			"item_medpac", // should be item_bacta
+			"sound/weapons/w_pkup.wav",
+			{"models/map_objects/mp/bacta.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/i_icon_bacta",
+			/* pickup */ //	"Bacta Canister",
+			25,
+			IT_HOLDABLE,
+			HI_MEDPAC,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_datapad (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
+		Do not place this.
+		*/
+		{
+			"item_datapad",
+			"sound/weapons/w_pkup.wav",
+			{"models/items/datapad.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ NULL,
+			/* pickup */ //	"Datapad",
+			1,
+			IT_HOLDABLE,
+			HI_DATAPAD,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_binoculars (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
+		These will be standard equipment on the player - DO NOT PLACE
+		*/
+		{
+			"item_binoculars",
+			"sound/weapons/w_pkup.wav",
+			{"models/items/binoculars.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/i_icon_zoom",
+			/* pickup */ //	"Binoculars",
+			60,
+			IT_HOLDABLE,
+			HI_BINOCULARS,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_sentry_gun (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
+		Sentry gun inventory pickup.
+		*/
+		{
+			"item_sentry_gun",
+			"sound/weapons/w_pkup.wav",
+			{"models/items/psgun.glm",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/i_icon_sentrygun",
+			/* pickup */ //	"Sentry Gun",
+			120,
+			IT_HOLDABLE,
+			HI_SENTRY_GUN,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_force_enlighten_light (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Adds one rank to all Force powers temporarily. Only light jedi can use.
+		*/
+		{
+			"item_force_enlighten_light",
+			"sound/player/enlightenment.wav",
+			{"models/map_objects/mp/jedi_enlightenment.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/mpi_jlight",
+			/* pickup */ //	"Light Force Enlightenment",
+			25,
+			IT_POWERUP,
+			PW_FORCE_ENLIGHTENED_LIGHT,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_force_enlighten_dark (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Adds one rank to all Force powers temporarily. Only dark jedi can use.
+		*/
+		{
+			"item_force_enlighten_dark",
+			"sound/player/enlightenment.wav",
+			{"models/map_objects/mp/dk_enlightenment.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/mpi_dklight",
+			/* pickup */ //	"Dark Force Enlightenment",
+			25,
+			IT_POWERUP,
+			PW_FORCE_ENLIGHTENED_DARK,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_force_boon (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Unlimited Force Pool for a short time.
+		*/
+		{
+			"item_force_boon",
+			"sound/player/boon.wav",
+			{"models/map_objects/mp/force_boon.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/mpi_fboon",
+			/* pickup */ //	"Force Boon",
+			25,
+			IT_POWERUP,
+			PW_FORCE_BOON,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED item_ysalimari (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		A small lizard carried on the player, which prevents the possessor from using any Force power.  However, he is unaffected by any Force power.
+		*/
+		{
+			"item_ysalimari",
+			"sound/player/ysalimari.wav",
+			{"models/map_objects/mp/ysalimari.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/mpi_ysamari",
+			/* pickup */ //	"Ysalamiri",
+			25,
+			IT_POWERUP,
+			PW_YSALAMIRI,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		//
+		// WEAPONS
+		//
+
+		/*QUAKED weapon_stun_baton (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Don't place this
+		*/
+		{
+			"weapon_stun_baton",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/stun_baton/baton_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/stun_baton/baton.md3",
+			/* icon */ "gfx/hud/w_icon_stunbaton",
+			/* pickup */ //	"Stun Baton",
+			100,
+			IT_WEAPON,
+			WP_STUN_BATON,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_saber (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Don't place this
+		*/
+		{
+			"weapon_saber",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/saber/saber_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/saber/saber_w.md3",
+			/* icon */ "gfx/hud/w_icon_lightsaber",
+			/* pickup */ //	"Lightsaber",
+			100,
+			IT_WEAPON,
+			WP_SABER,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_bryar_pistol (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Don't place this
+		*/
+		{
+			"weapon_bryar_pistol",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/briar_pistol/briar_pistol_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/briar_pistol/briar_pistol.md3",
+			/* icon */ "gfx/hud/w_icon_rifle",
+			/* pickup */ //	"Bryar Pistol",
+			100,
+			IT_WEAPON,
+			WP_BRYAR_PISTOL,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_blaster (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_blaster",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/blaster_r/blaster_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/blaster_r/blaster.md3",
+			/* icon */ "gfx/hud/w_icon_blaster",
+			/* pickup */ //	"E11 Blaster Rifle",
+			100,
+			IT_WEAPON,
+			WP_BLASTER,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_disruptor (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_disruptor",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/disruptor/disruptor_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/disruptor/disruptor.md3",
+			/* icon */ "gfx/hud/w_icon_disruptor",
+			/* pickup */ //	"Tenloss Disruptor Rifle",
+			100,
+			IT_WEAPON,
+			WP_DISRUPTOR,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_bowcaster (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_bowcaster",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/bowcaster/bowcaster_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/bowcaster/bowcaster.md3",
+			/* icon */ "gfx/hud/w_icon_bowcaster",
+			/* pickup */ //	"Wookiee Bowcaster",
+			100,
+			IT_WEAPON,
+			WP_BOWCASTER,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_repeater (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_repeater",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/heavy_repeater/heavy_repeater_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/heavy_repeater/heavy_repeater.md3",
+			/* icon */ "gfx/hud/w_icon_repeater",
+			/* pickup */ //	"Imperial Heavy Repeater",
+			100,
+			IT_WEAPON,
+			WP_REPEATER,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_demp2 (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		NOTENOTE This weapon is not yet complete.  Don't place it.
+		*/
+		{
+			"weapon_demp2",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/demp2/demp2_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/demp2/demp2.md3",
+			/* icon */ "gfx/hud/w_icon_demp2",
+			/* pickup */ //	"DEMP2",
+			100,
+			IT_WEAPON,
+			WP_DEMP2,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_flechette (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_flechette",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/golan_arms/golan_arms_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/golan_arms/golan_arms.md3",
+			/* icon */ "gfx/hud/w_icon_flechette",
+			/* pickup */ //	"Golan Arms Flechette",
+			100,
+			IT_WEAPON,
+			WP_FLECHETTE,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_rocket_launcher (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_rocket_launcher",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/merr_sonn/merr_sonn_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/merr_sonn/merr_sonn.md3",
+			/* icon */ "gfx/hud/w_icon_merrsonn",
+			/* pickup */ //	"Merr-Sonn Missile System",
+			3,
+			IT_WEAPON,
+			WP_ROCKET_LAUNCHER,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED ammo_thermal (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"ammo_thermal",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/thermal/thermal_pu.md3",
+			 "models/weapons2/thermal/thermal_w.glm", 0, 0},
+			/* view */ "models/weapons2/thermal/thermal.md3",
+			/* icon */ "gfx/hud/w_icon_thermal",
+			/* pickup */ //	"Thermal Detonators",
+			4,
+			IT_AMMO,
+			AMMO_THERMAL,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED ammo_tripmine (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"ammo_tripmine",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/laser_trap/laser_trap_pu.md3",
+			 "models/weapons2/laser_trap/laser_trap_w.glm", 0, 0},
+			/* view */ "models/weapons2/laser_trap/laser_trap.md3",
+			/* icon */ "gfx/hud/w_icon_tripmine",
+			/* pickup */ //	"Trip Mines",
+			3,
+			IT_AMMO,
+			AMMO_TRIPMINE,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED ammo_detpack (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"ammo_detpack",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/detpack/det_pack_pu.md3", "models/weapons2/detpack/det_pack_proj.glm", "models/weapons2/detpack/det_pack_w.glm", 0},
+			/* view */ "models/weapons2/detpack/det_pack.md3",
+			/* icon */ "gfx/hud/w_icon_detpack",
+			/* pickup */ //	"Det Packs",
+			3,
+			IT_AMMO,
+			AMMO_DETPACK,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_thermal (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_thermal",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/thermal/thermal_w.glm", "models/weapons2/thermal/thermal_pu.md3",
+			 0, 0},
+			/* view */ "models/weapons2/thermal/thermal.md3",
+			/* icon */ "gfx/hud/w_icon_thermal",
+			/* pickup */ //	"Thermal Detonator",
+			4,
+			IT_WEAPON,
+			WP_THERMAL,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_trip_mine (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_trip_mine",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/laser_trap/laser_trap_w.glm", "models/weapons2/laser_trap/laser_trap_pu.md3",
+			 0, 0},
+			/* view */ "models/weapons2/laser_trap/laser_trap.md3",
+			/* icon */ "gfx/hud/w_icon_tripmine",
+			/* pickup */ //	"Trip Mine",
+			3,
+			IT_WEAPON,
+			WP_TRIP_MINE,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_det_pack (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_det_pack",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/detpack/det_pack_proj.glm", "models/weapons2/detpack/det_pack_pu.md3", "models/weapons2/detpack/det_pack_w.glm", 0},
+			/* view */ "models/weapons2/detpack/det_pack.md3",
+			/* icon */ "gfx/hud/w_icon_detpack",
+			/* pickup */ //	"Det Pack",
+			3,
+			IT_WEAPON,
+			WP_DET_PACK,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED weapon_emplaced (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		 */
+		{
+			"weapon_emplaced",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/blaster_r/blaster_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/blaster_r/blaster.md3",
+			/* icon */ "gfx/hud/w_icon_blaster",
+			/* pickup */ //	"Emplaced Gun",
+			50,
+			IT_WEAPON,
+			WP_EMPLACED_GUN,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		// NOTE: This is to keep things from messing up because the turret weapon type isn't real
+		{
+			"weapon_turretwp",
+			"sound/weapons/w_pkup.wav",
+			{"models/weapons2/blaster_r/blaster_w.glm",
+			 0, 0, 0},
+			/* view */ "models/weapons2/blaster_r/blaster.md3",
+			/* icon */ "gfx/hud/w_icon_blaster",
+			/* pickup */ //	"Turret Gun",
+			50,
+			IT_WEAPON,
+			WP_TURRET,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		//
+		// AMMO ITEMS
+		//
+
+		/*QUAKED ammo_force (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Don't place this
+		*/
+		{
+			"ammo_force",
+			"sound/player/pickupenergy.wav",
+			{"models/items/energy_cell.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/w_icon_blaster",
+			/* pickup */ //	"Force??",
+			100,
+			IT_AMMO,
+			AMMO_FORCE,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED ammo_blaster (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Ammo for the Bryar and Blaster pistols.
+		*/
+		{
+			"ammo_blaster",
+			"sound/player/pickupenergy.wav",
+			{"models/items/energy_cell.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/i_icon_battery",
+			/* pickup */ //	"Blaster Pack",
+			100,
+			IT_AMMO,
+			AMMO_BLASTER,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED ammo_powercell (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Ammo for Tenloss Disruptor, Wookie Bowcaster, and the Destructive Electro Magnetic Pulse (demp2 ) guns
+		*/
+		{
+			"ammo_powercell",
+			"sound/player/pickupenergy.wav",
+			{"models/items/power_cell.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/mp/ammo_power_cell",
+			/* pickup */ //	"Power Cell",
+			100,
+			IT_AMMO,
+			AMMO_POWERCELL,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED ammo_metallic_bolts (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Ammo for Imperial Heavy Repeater and the Golan Arms Flechette
+		*/
+		{
+			"ammo_metallic_bolts",
+			"sound/player/pickupenergy.wav",
+			{"models/items/metallic_bolts.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/mp/ammo_metallic_bolts",
+			/* pickup */ //	"Metallic Bolts",
+			100,
+			IT_AMMO,
+			AMMO_METAL_BOLTS,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED ammo_rockets (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
+		Ammo for Merr-Sonn portable missile launcher
+		*/
+		{
+			"ammo_rockets",
+			"sound/player/pickupenergy.wav",
+			{"models/items/rockets.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/mp/ammo_rockets",
+			/* pickup */ //	"Rockets",
+			3,
+			IT_AMMO,
+			AMMO_ROCKETS,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		//
+		// POWERUP ITEMS
+		//
+		/*QUAKED team_CTF_redflag (1 0 0) (-16 -16 -16) (16 16 16)
+		Only in CTF games
+		*/
+		{
+			"team_CTF_redflag",
+			NULL,
+			{"models/flags/r_flag.md3",
+			 "models/flags/r_flag_ysal.md3", 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/mpi_rflag",
+			/* pickup */ //	"Red Flag",
+			0,
+			IT_TEAM,
+			PW_REDFLAG,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		/*QUAKED team_CTF_blueflag (0 0 1) (-16 -16 -16) (16 16 16)
+		Only in CTF games
+		*/
+		{
+			"team_CTF_blueflag",
+			NULL,
+			{"models/flags/b_flag.md3",
+			 "models/flags/b_flag_ysal.md3", 0, 0},
+			/* view */ NULL,
+			/* icon */ "gfx/hud/mpi_bflag",
+			/* pickup */ //	"Blue Flag",
+			0,
+			IT_TEAM,
+			PW_BLUEFLAG,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		//
+		// PERSISTANT POWERUP ITEMS
+		//
+
+		/*QUAKED team_CTF_neutralflag (0 0 1) (-16 -16 -16) (16 16 16)
+	Only in One Flag CTF games
+	*/
+		{
+			"team_CTF_neutralflag",
+			NULL,
+			{"models/flags/n_flag.md3",
+			 0, 0, 0},
+			/* view */ NULL,
+			/* icon */ "icons/iconf_neutral1",
+			/* pickup */ //	"Neutral Flag",
+			0,
+			IT_TEAM,
+			PW_NEUTRALFLAG,
+			/* precache */ "",
+			/* sounds */ ""},
+
+		{"item_redcube",
+		 "sound/player/pickupenergy.wav",
+		 {"models/powerups/orb/r_orb.md3",
+		  0, 0, 0},
+		 /* view */ NULL,
+		 /* icon */ "icons/iconh_rorb",
+		 /* pickup */ //	"Red Cube",
+		 0,
+		 IT_TEAM,
+		 0,
+		 /* precache */ "",
+		 /* sounds */ ""},
+
+		{"item_bluecube",
+		 "sound/player/pickupenergy.wav",
+		 {"models/powerups/orb/b_orb.md3",
+		  0, 0, 0},
+		 /* view */ NULL,
+		 /* icon */ "icons/iconh_borb",
+		 /* pickup */ //	"Blue Cube",
+		 0,
+		 IT_TEAM,
+		 0,
+		 /* precache */ "",
+		 /* sounds */ ""},
+
+		// end of list marker
+		{NULL}};
+
+int bg_numItems = sizeof(bg_itemlist) / sizeof(bg_itemlist[0]) - 1;
+
+float vectoyaw(const vec3_t vec)
 {
+	float yaw;
+
+	if (vec[YAW] == 0 && vec[PITCH] == 0)
 	{
-		NULL,				// classname	
-		NULL,				// pickup_sound
-		{	NULL,			// world_model[0]
-			NULL,			// world_model[1]
-			0, 0} ,			// world_model[2],[3]
-		NULL,				// view_model
-/* icon */		NULL,		// icon
-/* pickup */	//NULL,		// pickup_name
-		0,					// quantity
-		0,					// giType (IT_*)
-		0,					// giTag
-/* precache */ "",			// precaches
-/* sounds */ ""				// sounds
-	},	// leave index 0 alone
-
-	//
-	// Pickups
-	//
-
-/*QUAKED item_shield_sm_instant (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Instant shield pickup, restores 25
-*/
-	{
-		"item_shield_sm_instant", 
-		"sound/player/pickupshield.wav",
-        { "models/map_objects/mp/psd_sm.md3",
-		0, 0, 0},
-/* view */		NULL,			
-/* icon */		"gfx/mp/small_shield",
-/* pickup *///	"Shield Small",
-		25,
-		IT_ARMOR,
-		1, //special for shield - max on pickup is maxhealth*tag, thus small shield goes up to 100 shield
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_shield_lrg_instant (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Instant shield pickup, restores 100
-*/
-	{
-		"item_shield_lrg_instant", 
-		"sound/player/pickupshield.wav",
-        { "models/map_objects/mp/psd.md3",
-		0, 0, 0},
-/* view */		NULL,			
-/* icon */		"gfx/mp/large_shield",
-/* pickup *///	"Shield Large",
-		100,
-		IT_ARMOR,
-		2, //special for shield - max on pickup is maxhealth*tag, thus large shield goes up to 200 shield
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_medpak_instant (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Instant medpack pickup, heals 25
-*/
-	{
-		"item_medpak_instant",
-		"sound/player/pickuphealth.wav",
-        { "models/map_objects/mp/medpac.md3", 
-		0, 0, 0 },
-/* view */		NULL,			
-/* icon */		"gfx/hud/i_icon_medkit",
-/* pickup *///	"Medpack",
-		25,
-		IT_HEALTH,
-		0,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-
-	//
-	// ITEMS
-	//
-
-/*QUAKED item_seeker (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
-30 seconds of seeker drone
-*/
-	{
-		"item_seeker", 
-		"sound/weapons/w_pkup.wav",
-		{ "models/items/remote.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/i_icon_seeker",
-/* pickup *///	"Seeker Drone",
-		120,
-		IT_HOLDABLE,
-		HI_SEEKER,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_shield (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
-Portable shield
-*/
-	{
-		"item_shield", 
-		"sound/weapons/w_pkup.wav",
-		{ "models/map_objects/mp/shield.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/i_icon_shieldwall",
-/* pickup *///	"Forcefield",
-		120,
-		IT_HOLDABLE,
-		HI_SHIELD,
-/* precache */ "",
-/* sounds */ "sound/weapons/detpack/stick.wav sound/movers/doors/forcefield_on.wav sound/movers/doors/forcefield_off.wav sound/movers/doors/forcefield_lp.wav sound/effects/bumpfield.wav",
-	},
-
-/*QUAKED item_medpac (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
-Bacta canister pickup, heals 25 on use
-*/
-	{
-		"item_medpac",	//should be item_bacta
-		"sound/weapons/w_pkup.wav",
-		{ "models/map_objects/mp/bacta.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/i_icon_bacta",
-/* pickup *///	"Bacta Canister",
-		25,
-		IT_HOLDABLE,
-		HI_MEDPAC,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_datapad (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
-Do not place this.
-*/
-	{
-		"item_datapad", 
-		"sound/weapons/w_pkup.wav",
-		{ "models/items/datapad.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		NULL,
-/* pickup *///	"Datapad",
-		1,
-		IT_HOLDABLE,
-		HI_DATAPAD,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_binoculars (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
-These will be standard equipment on the player - DO NOT PLACE
-*/
-	{
-		"item_binoculars", 
-		"sound/weapons/w_pkup.wav",
-		{ "models/items/binoculars.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/i_icon_zoom",
-/* pickup *///	"Binoculars",
-		60,
-		IT_HOLDABLE,
-		HI_BINOCULARS,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_sentry_gun (.3 .3 1) (-8 -8 -0) (8 8 16) suspended
-Sentry gun inventory pickup.
-*/
-	{
-		"item_sentry_gun", 
-		"sound/weapons/w_pkup.wav",
-		{ "models/items/psgun.glm", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/i_icon_sentrygun",
-/* pickup *///	"Sentry Gun",
-		120,
-		IT_HOLDABLE,
-		HI_SENTRY_GUN,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_force_enlighten_light (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Adds one rank to all Force powers temporarily. Only light jedi can use.
-*/
-	{
-		"item_force_enlighten_light",
-		"sound/player/enlightenment.wav",
-		{ "models/map_objects/mp/jedi_enlightenment.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/mpi_jlight",
-/* pickup *///	"Light Force Enlightenment",
-		25,
-		IT_POWERUP,
-		PW_FORCE_ENLIGHTENED_LIGHT,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_force_enlighten_dark (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Adds one rank to all Force powers temporarily. Only dark jedi can use.
-*/
-	{
-		"item_force_enlighten_dark",
-		"sound/player/enlightenment.wav",
-		{ "models/map_objects/mp/dk_enlightenment.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/mpi_dklight",
-/* pickup *///	"Dark Force Enlightenment",
-		25,
-		IT_POWERUP,
-		PW_FORCE_ENLIGHTENED_DARK,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_force_boon (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Unlimited Force Pool for a short time.
-*/
-	{
-		"item_force_boon",
-		"sound/player/boon.wav",
-		{ "models/map_objects/mp/force_boon.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/mpi_fboon",
-/* pickup *///	"Force Boon",
-		25,
-		IT_POWERUP,
-		PW_FORCE_BOON,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED item_ysalimari (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-A small lizard carried on the player, which prevents the possessor from using any Force power.  However, he is unaffected by any Force power.
-*/
-	{
-		"item_ysalimari",
-		"sound/player/ysalimari.wav",
-		{ "models/map_objects/mp/ysalimari.md3", 
-		0, 0, 0} ,
-/* view */		NULL,			
-/* icon */		"gfx/hud/mpi_ysamari",
-/* pickup *///	"Ysalamiri",
-		25,
-		IT_POWERUP,
-		PW_YSALAMIRI,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-	//
-	// WEAPONS 
-	//
-
-/*QUAKED weapon_stun_baton (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Don't place this
-*/
-	{
-		"weapon_stun_baton", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/stun_baton/baton_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/stun_baton/baton.md3", 
-/* icon */		"gfx/hud/w_icon_stunbaton",
-/* pickup *///	"Stun Baton",
-		100,
-		IT_WEAPON,
-		WP_STUN_BATON,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_saber (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Don't place this
-*/
-	{
-		"weapon_saber", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/saber/saber_w.glm",
-		0, 0, 0},
-/* view */		"models/weapons2/saber/saber_w.md3",
-/* icon */		"gfx/hud/w_icon_lightsaber",
-/* pickup *///	"Lightsaber",
-		100,
-		IT_WEAPON,
-		WP_SABER,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_bryar_pistol (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Don't place this
-*/
-	{
-		"weapon_bryar_pistol", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/briar_pistol/briar_pistol_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/briar_pistol/briar_pistol.md3", 
-/* icon */		"gfx/hud/w_icon_rifle",
-/* pickup *///	"Bryar Pistol",
-		100,
-		IT_WEAPON,
-		WP_BRYAR_PISTOL,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_blaster (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_blaster", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/blaster_r/blaster_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/blaster_r/blaster.md3", 
-/* icon */		"gfx/hud/w_icon_blaster",
-/* pickup *///	"E11 Blaster Rifle",
-		100,
-		IT_WEAPON,
-		WP_BLASTER,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_disruptor (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_disruptor",
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/disruptor/disruptor_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/disruptor/disruptor.md3", 
-/* icon */		"gfx/hud/w_icon_disruptor",
-/* pickup *///	"Tenloss Disruptor Rifle",
-		100,
-		IT_WEAPON,
-		WP_DISRUPTOR,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_bowcaster (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_bowcaster",
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/bowcaster/bowcaster_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/bowcaster/bowcaster.md3", 
-/* icon */		"gfx/hud/w_icon_bowcaster",
-/* pickup *///	"Wookiee Bowcaster",
-		100,
-		IT_WEAPON,
-		WP_BOWCASTER,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_repeater (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_repeater", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/heavy_repeater/heavy_repeater_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/heavy_repeater/heavy_repeater.md3", 
-/* icon */		"gfx/hud/w_icon_repeater",
-/* pickup *///	"Imperial Heavy Repeater",
-		100,
-		IT_WEAPON,
-		WP_REPEATER,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_demp2 (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-NOTENOTE This weapon is not yet complete.  Don't place it.
-*/
-	{
-		"weapon_demp2", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/demp2/demp2_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/demp2/demp2.md3", 
-/* icon */		"gfx/hud/w_icon_demp2",
-/* pickup *///	"DEMP2",
-		100,
-		IT_WEAPON,
-		WP_DEMP2,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_flechette (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_flechette", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/golan_arms/golan_arms_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/golan_arms/golan_arms.md3", 
-/* icon */		"gfx/hud/w_icon_flechette",
-/* pickup *///	"Golan Arms Flechette",
-		100,
-		IT_WEAPON,
-		WP_FLECHETTE,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_rocket_launcher (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_rocket_launcher",
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/merr_sonn/merr_sonn_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/merr_sonn/merr_sonn.md3", 
-/* icon */		"gfx/hud/w_icon_merrsonn",
-/* pickup *///	"Merr-Sonn Missile System",
-		3,
-		IT_WEAPON,
-		WP_ROCKET_LAUNCHER,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED ammo_thermal (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"ammo_thermal",
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/thermal/thermal_pu.md3", 
-		"models/weapons2/thermal/thermal_w.glm", 0, 0},
-/* view */		"models/weapons2/thermal/thermal.md3", 
-/* icon */		"gfx/hud/w_icon_thermal",
-/* pickup *///	"Thermal Detonators",
-		4,
-		IT_AMMO,
-		AMMO_THERMAL,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED ammo_tripmine (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"ammo_tripmine", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/laser_trap/laser_trap_pu.md3", 
-		"models/weapons2/laser_trap/laser_trap_w.glm", 0, 0},
-/* view */		"models/weapons2/laser_trap/laser_trap.md3", 
-/* icon */		"gfx/hud/w_icon_tripmine",
-/* pickup *///	"Trip Mines",
-		3,
-		IT_AMMO,
-		AMMO_TRIPMINE,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED ammo_detpack (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"ammo_detpack", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/detpack/det_pack_pu.md3", "models/weapons2/detpack/det_pack_proj.glm", "models/weapons2/detpack/det_pack_w.glm", 0},
-/* view */		"models/weapons2/detpack/det_pack.md3", 
-/* icon */		"gfx/hud/w_icon_detpack",
-/* pickup *///	"Det Packs",
-		3,
-		IT_AMMO,
-		AMMO_DETPACK,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_thermal (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_thermal",
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/thermal/thermal_w.glm", "models/weapons2/thermal/thermal_pu.md3",
-		0, 0 },
-/* view */		"models/weapons2/thermal/thermal.md3", 
-/* icon */		"gfx/hud/w_icon_thermal",
-/* pickup *///	"Thermal Detonator",
-		4,
-		IT_WEAPON,
-		WP_THERMAL,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_trip_mine (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_trip_mine", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/laser_trap/laser_trap_w.glm", "models/weapons2/laser_trap/laser_trap_pu.md3",
-		0, 0},
-/* view */		"models/weapons2/laser_trap/laser_trap.md3", 
-/* icon */		"gfx/hud/w_icon_tripmine",
-/* pickup *///	"Trip Mine",
-		3,
-		IT_WEAPON,
-		WP_TRIP_MINE,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_det_pack (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_det_pack", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/detpack/det_pack_proj.glm", "models/weapons2/detpack/det_pack_pu.md3", "models/weapons2/detpack/det_pack_w.glm", 0},
-/* view */		"models/weapons2/detpack/det_pack.md3", 
-/* icon */		"gfx/hud/w_icon_detpack",
-/* pickup *///	"Det Pack",
-		3,
-		IT_WEAPON,
-		WP_DET_PACK,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED weapon_emplaced (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-*/
-	{
-		"weapon_emplaced", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/blaster_r/blaster_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/blaster_r/blaster.md3", 
-/* icon */		"gfx/hud/w_icon_blaster",
-/* pickup *///	"Emplaced Gun",
-		50,
-		IT_WEAPON,
-		WP_EMPLACED_GUN,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-
-//NOTE: This is to keep things from messing up because the turret weapon type isn't real
-	{
-		"weapon_turretwp", 
-		"sound/weapons/w_pkup.wav",
-        { "models/weapons2/blaster_r/blaster_w.glm", 
-		0, 0, 0},
-/* view */		"models/weapons2/blaster_r/blaster.md3", 
-/* icon */		"gfx/hud/w_icon_blaster",
-/* pickup *///	"Turret Gun",
-		50,
-		IT_WEAPON,
-		WP_TURRET,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-	//
-	// AMMO ITEMS
-	//
-
-/*QUAKED ammo_force (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Don't place this
-*/
-	{
-		"ammo_force",
-		"sound/player/pickupenergy.wav",
-        { "models/items/energy_cell.md3", 
-		0, 0, 0},
-/* view */		NULL,			
-/* icon */		"gfx/hud/w_icon_blaster",
-/* pickup *///	"Force??",
-		100,
-		IT_AMMO,
-		AMMO_FORCE,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED ammo_blaster (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Ammo for the Bryar and Blaster pistols.
-*/
-	{
-		"ammo_blaster",
-		"sound/player/pickupenergy.wav",
-        { "models/items/energy_cell.md3", 
-		0, 0, 0},
-/* view */		NULL,			
-/* icon */		"gfx/hud/i_icon_battery",
-/* pickup *///	"Blaster Pack",
-		100,
-		IT_AMMO,
-		AMMO_BLASTER,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED ammo_powercell (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Ammo for Tenloss Disruptor, Wookie Bowcaster, and the Destructive Electro Magnetic Pulse (demp2 ) guns
-*/
-	{
-		"ammo_powercell",
-		"sound/player/pickupenergy.wav",
-        { "models/items/power_cell.md3", 
-		0, 0, 0},
-/* view */		NULL,			
-/* icon */		"gfx/mp/ammo_power_cell",
-/* pickup *///	"Power Cell",
-		100,
-		IT_AMMO,
-		AMMO_POWERCELL,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED ammo_metallic_bolts (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Ammo for Imperial Heavy Repeater and the Golan Arms Flechette
-*/
-	{
-		"ammo_metallic_bolts",
-		"sound/player/pickupenergy.wav",
-        { "models/items/metallic_bolts.md3", 
-		0, 0, 0},
-/* view */		NULL,			
-/* icon */		"gfx/mp/ammo_metallic_bolts",
-/* pickup *///	"Metallic Bolts",
-		100,
-		IT_AMMO,
-		AMMO_METAL_BOLTS,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED ammo_rockets (.3 .3 1) (-16 -16 -16) (16 16 16) suspended
-Ammo for Merr-Sonn portable missile launcher
-*/
-	{
-		"ammo_rockets",
-		"sound/player/pickupenergy.wav",
-        { "models/items/rockets.md3", 
-		0, 0, 0},
-/* view */		NULL,			
-/* icon */		"gfx/mp/ammo_rockets",
-/* pickup *///	"Rockets",
-		3,
-		IT_AMMO,
-		AMMO_ROCKETS,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-
-	//
-	// POWERUP ITEMS
-	//
-/*QUAKED team_CTF_redflag (1 0 0) (-16 -16 -16) (16 16 16)
-Only in CTF games
-*/
-	{
-		"team_CTF_redflag",
-		NULL,
-        { "models/flags/r_flag.md3",
-		"models/flags/r_flag_ysal.md3", 0, 0 },
-/* view */		NULL,			
-/* icon */		"gfx/hud/mpi_rflag",
-/* pickup *///	"Red Flag",
-		0,
-		IT_TEAM,
-		PW_REDFLAG,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-/*QUAKED team_CTF_blueflag (0 0 1) (-16 -16 -16) (16 16 16)
-Only in CTF games
-*/
-	{
-		"team_CTF_blueflag",
-		NULL,
-        { "models/flags/b_flag.md3",
-		"models/flags/b_flag_ysal.md3", 0, 0 },
-/* view */		NULL,			
-/* icon */		"gfx/hud/mpi_bflag",
-/* pickup *///	"Blue Flag",
-		0,
-		IT_TEAM,
-		PW_BLUEFLAG,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-	//
-	// PERSISTANT POWERUP ITEMS
-	//
-
-	/*QUAKED team_CTF_neutralflag (0 0 1) (-16 -16 -16) (16 16 16)
-Only in One Flag CTF games
-*/
-	{
-		"team_CTF_neutralflag",
-		NULL,
-        { "models/flags/n_flag.md3",
-		0, 0, 0 },
-/* view */		NULL,			
-/* icon */		"icons/iconf_neutral1",
-/* pickup *///	"Neutral Flag",
-		0,
-		IT_TEAM,
-		PW_NEUTRALFLAG,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-	{
-		"item_redcube",
-		"sound/player/pickupenergy.wav",
-        { "models/powerups/orb/r_orb.md3",
-		0, 0, 0 },
-/* view */		NULL,			
-/* icon */		"icons/iconh_rorb",
-/* pickup *///	"Red Cube",
-		0,
-		IT_TEAM,
-		0,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-	{
-		"item_bluecube",
-		"sound/player/pickupenergy.wav",
-        { "models/powerups/orb/b_orb.md3",
-		0, 0, 0 },
-/* view */		NULL,			
-/* icon */		"icons/iconh_borb",
-/* pickup *///	"Blue Cube",
-		0,
-		IT_TEAM,
-		0,
-/* precache */ "",
-/* sounds */ ""
-	},
-
-	// end of list marker
-	{NULL}
-};
-
-int		bg_numItems = sizeof(bg_itemlist) / sizeof(bg_itemlist[0]) - 1;
-
-float vectoyaw( const vec3_t vec ) {
-	float	yaw;
-	
-	if (vec[YAW] == 0 && vec[PITCH] == 0) {
 		yaw = 0;
-	} else {
-		if (vec[PITCH]) {
-			yaw = ( atan2( vec[YAW], vec[PITCH]) * 180 / M_PI );
-		} else if (vec[YAW] > 0) {
+	}
+	else
+	{
+		if (vec[PITCH])
+		{
+			yaw = (atan2(vec[YAW], vec[PITCH]) * 180 / M_PI);
+		}
+		else if (vec[YAW] > 0)
+		{
 			yaw = 90;
-		} else {
+		}
+		else
+		{
 			yaw = 270;
 		}
-		if (yaw < 0) {
+		if (yaw < 0)
+		{
 			yaw += 360;
 		}
 	}
@@ -1326,7 +1291,7 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 		return qfalse;
 	}
 
-	if ( ps->forceRestricted || ps->trueNonJedi )
+	if (ps->forceRestricted || ps->trueNonJedi)
 	{
 		return qfalse;
 	}
@@ -1356,7 +1321,7 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 		return qfalse;
 	}
 
-	if ( power == FP_SABERTHROW && (ps->weaponstate == WEAPON_RAISING || ps->weaponstate == WEAPON_DROPPING) )
+	if (power == FP_SABERTHROW && (ps->weaponstate == WEAPON_RAISING || ps->weaponstate == WEAPON_DROPPING))
 	{ // WP_SaberPositionUpdate doesn't handle saberthrow while in the above weaponstates. Instead the saber just flies away and never returns.
 	  // Changing WP_SaberPositionUpdate to handle saberthrow in those states would make it possible to throw the saber in situations it wasn't possible before, so instead we just disable throw in those weaponstates to prevent sabers from getting lost.
 		return qfalse;
@@ -1370,40 +1335,44 @@ qboolean BG_CanUseFPNow(int gametype, playerState_t *ps, int time, forcePowers_t
 BG_FindItemForPowerup
 ==============
 */
-gitem_t	*BG_FindItemForPowerup( powerup_t pw ) {
-	int		i;
+gitem_t *BG_FindItemForPowerup(powerup_t pw)
+{
+	int i;
 
-	for ( i = 0 ; i < bg_numItems ; i++ ) {
-		if ( (bg_itemlist[i].giType == IT_POWERUP || 
-					bg_itemlist[i].giType == IT_TEAM) && 
-			bg_itemlist[i].giTag == (int)pw ) {
+	for (i = 0; i < bg_numItems; i++)
+	{
+		if ((bg_itemlist[i].giType == IT_POWERUP ||
+			 bg_itemlist[i].giType == IT_TEAM) &&
+			bg_itemlist[i].giTag == (int)pw)
+		{
 			return &bg_itemlist[i];
 		}
 	}
 
 	return NULL;
 }
-
 
 /*
 ==============
 BG_FindItemForHoldable
 ==============
 */
-gitem_t	*BG_FindItemForHoldable( holdable_t pw ) {
-	int		i;
+gitem_t *BG_FindItemForHoldable(holdable_t pw)
+{
+	int i;
 
-	for ( i = 0 ; i < bg_numItems ; i++ ) {
-		if ( bg_itemlist[i].giType == IT_HOLDABLE && bg_itemlist[i].giTag == (int)pw ) {
+	for (i = 0; i < bg_numItems; i++)
+	{
+		if (bg_itemlist[i].giType == IT_HOLDABLE && bg_itemlist[i].giTag == (int)pw)
+		{
 			return &bg_itemlist[i];
 		}
 	}
 
-	Com_Error( ERR_DROP, "HoldableItem not found" );
+	Com_Error(ERR_DROP, "HoldableItem not found");
 
 	return NULL;
 }
-
 
 /*
 ===============
@@ -1411,16 +1380,19 @@ BG_FindItemForWeapon
 
 ===============
 */
-gitem_t	*BG_FindItemForWeapon( weapon_t weapon ) {
-	gitem_t	*it;
-	
-	for ( it = bg_itemlist + 1 ; it->classname ; it++) {
-		if ( it->giType == IT_WEAPON && it->giTag == (int)weapon ) {
+gitem_t *BG_FindItemForWeapon(weapon_t weapon)
+{
+	gitem_t *it;
+
+	for (it = bg_itemlist + 1; it->classname; it++)
+	{
+		if (it->giType == IT_WEAPON && it->giTag == (int)weapon)
+		{
 			return it;
 		}
 	}
 
-	Com_Error( ERR_DROP, "Couldn't find item for weapon %i", weapon);
+	Com_Error(ERR_DROP, "Couldn't find item for weapon %i", weapon);
 	return NULL;
 }
 
@@ -1430,11 +1402,13 @@ BG_FindItem
 
 ===============
 */
-gitem_t	*BG_FindItem( const char *classname ) {
-	gitem_t	*it;
-	
-	for ( it = bg_itemlist + 1 ; it->classname ; it++ ) {
-		if ( !Q_stricmp( it->classname, classname) )
+gitem_t *BG_FindItem(const char *classname)
+{
+	gitem_t *it;
+
+	for (it = bg_itemlist + 1; it->classname; it++)
+	{
+		if (!Q_stricmp(it->classname, classname))
 			return it;
 	}
 
@@ -1449,18 +1423,15 @@ Items can be picked up without actually touching their physical bounds to make
 grabbing them easier
 ============
 */
-qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime ) {
-	vec3_t		origin;
+qboolean BG_PlayerTouchesItem(playerState_t *ps, entityState_t *item, int atTime)
+{
+	vec3_t origin;
 
-	BG_EvaluateTrajectory( &item->pos, atTime, origin );
+	BG_EvaluateTrajectory(&item->pos, atTime, origin);
 
 	// we are ignoring ducked differences here
-	if ( ps->origin[0] - origin[0] > 44
-		|| ps->origin[0] - origin[0] < -50
-		|| ps->origin[1] - origin[1] > 36
-		|| ps->origin[1] - origin[1] < -36
-		|| ps->origin[2] - origin[2] > 36
-		|| ps->origin[2] - origin[2] < -36 ) {
+	if (ps->origin[0] - origin[0] > 44 || ps->origin[0] - origin[0] < -50 || ps->origin[1] - origin[1] > 36 || ps->origin[1] - origin[1] < -36 || ps->origin[2] - origin[2] > 36 || ps->origin[2] - origin[2] < -36)
+	{
 		return qfalse;
 	}
 
@@ -1491,8 +1462,8 @@ void BG_CycleForce(playerState_t *ps, int direction)
 	int presel = i;
 	int foundnext = -1;
 
-	if ( x >= NUM_FORCE_POWERS || x == -1)
-	{ //apparently we have no valid force powers
+	if (x >= NUM_FORCE_POWERS || x == -1)
+	{ // apparently we have no valid force powers
 		return;
 	}
 
@@ -1500,68 +1471,68 @@ void BG_CycleForce(playerState_t *ps, int direction)
 	presel = x;
 
 	if (direction == 1)
-	{ //get the next power
+	{ // get the next power
 		x++;
 	}
 	else
-	{ //get the previous power
+	{ // get the previous power
 		x--;
 	}
 
 	if (x >= NUM_FORCE_POWERS)
-	{ //cycled off the end.. cycle around to the first
+	{ // cycled off the end.. cycle around to the first
 		x = 0;
 	}
 	if (x < 0)
-	{ //cycled off the beginning.. cycle around to the last
-		x = NUM_FORCE_POWERS-1;
+	{ // cycled off the beginning.. cycle around to the last
+		x = NUM_FORCE_POWERS - 1;
 	}
 
-	i = forcePowerSorted[x]; //the "sorted" value of this power
+	i = forcePowerSorted[x]; // the "sorted" value of this power
 
 	while (x != presel)
-	{ //loop around to the current force power
+	{ // loop around to the current force power
 		if (ps->fd.forcePowersKnown & (1 << i) && i != ps->fd.forcePowerSelected)
-		{ //we have the force power
+		{ // we have the force power
 			if (i != FP_LEVITATION &&
 				i != FP_SABERATTACK &&
 				i != FP_SABERDEFEND &&
 				i != FP_SABERTHROW)
-			{ //it's selectable
+			{ // it's selectable
 				foundnext = i;
 				break;
 			}
 		}
 
 		if (direction == 1)
-		{ //next
+		{ // next
 			x++;
 		}
 		else
-		{ //previous
+		{ // previous
 			x--;
 		}
-	
+
 		if (x >= NUM_FORCE_POWERS)
-		{ //loop around
+		{ // loop around
 			x = 0;
 		}
 		if (x < 0)
-		{ //loop around
-			x = NUM_FORCE_POWERS-1;
+		{ // loop around
+			x = NUM_FORCE_POWERS - 1;
 		}
 
-		i = forcePowerSorted[x]; //set to the sorted value again
+		i = forcePowerSorted[x]; // set to the sorted value again
 	}
 
 	if (foundnext != -1)
-	{ //found one, select it
+	{ // found one, select it
 		ps->fd.forcePowerSelected = foundnext;
 	}
 }
 
 int BG_GetItemIndexByTag(int tag, itemType_t type)
-{ //Get the itemlist index from the tag and type
+{ // Get the itemlist index from the tag and type
 	int i = 0;
 
 	while (i < bg_numItems)
@@ -1587,37 +1558,37 @@ void BG_CycleInven(playerState_t *ps, int direction)
 	original = i;
 
 	if (direction == 1)
-	{ //next
+	{ // next
 		i++;
 	}
 	else
-	{ //previous
+	{ // previous
 		i--;
 	}
 
 	while (i != original)
-	{ //go in a full loop until hitting something, if hit nothing then select nothing
+	{ // go in a full loop until hitting something, if hit nothing then select nothing
 		if (ps->stats[STAT_HOLDABLE_ITEMS] & (1 << i))
-		{ //we have it, select it.
+		{ // we have it, select it.
 			ps->stats[STAT_HOLDABLE_ITEM] = BG_GetItemIndexByTag(i, IT_HOLDABLE);
 			break;
 		}
 
 		if (direction == 1)
-		{ //next
+		{ // next
 			i++;
 		}
 		else
-		{ //previous
+		{ // previous
 			i--;
 		}
 
 		if (i < 0)
-		{ //wrap around to the last
+		{ // wrap around to the last
 			i = HI_NUM_HOLDABLE;
 		}
 		else if (i >= HI_NUM_HOLDABLE)
-		{ //wrap around to the first
+		{ // wrap around to the first
 			i = 0;
 		}
 	}
@@ -1631,59 +1602,63 @@ Returns false if the item should not be picked up.
 This needs to be the same for client side prediction and server use.
 ================
 */
-qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps, int playerMode) {
-	gitem_t	*item;
+qboolean BG_CanItemBeGrabbed(int gametype, const entityState_t *ent, const playerState_t *ps, int playerMode)
+{
+	gitem_t *item;
 
-	if ( ent->modelindex < 1 || ent->modelindex >= bg_numItems ) {
-		Com_Error( ERR_DROP, "BG_CanItemBeGrabbed: index out of range" );
+	if (ent->modelindex < 1 || ent->modelindex >= bg_numItems)
+	{
+		Com_Error(ERR_DROP, "BG_CanItemBeGrabbed: index out of range");
 	}
 
 	item = &bg_itemlist[ent->modelindex];
 
-	if ( ps )
+	if (ps)
 	{
-		if ( ps->trueJedi )
-		{//force powers and saber only
-			if ( item->giType != IT_TEAM //not a flag
-				&& item->giType != IT_ARMOR//not shields
-				&& (item->giType != IT_WEAPON || item->giTag != WP_SABER)//not a saber
-				&& (item->giType != IT_HOLDABLE || item->giTag != HI_SEEKER)//not a seeker
-				&& (item->giType != IT_POWERUP || item->giTag == PW_YSALAMIRI) )//not a force pick-up
+		if (ps->trueJedi)
+		{																		// force powers and saber only
+			if (item->giType != IT_TEAM											// not a flag
+				&& item->giType != IT_ARMOR										// not shields
+				&& (item->giType != IT_WEAPON || item->giTag != WP_SABER)		// not a saber
+				&& (item->giType != IT_HOLDABLE || item->giTag != HI_SEEKER)	// not a seeker
+				&& (item->giType != IT_POWERUP || item->giTag == PW_YSALAMIRI)) // not a force pick-up
 			{
 				return qfalse;
 			}
 		}
-		else if ( ps->trueNonJedi )
-		{//can't pick up force powerups
-			if ( (item->giType == IT_POWERUP && item->giTag != PW_YSALAMIRI) //if a powerup, can only can pick up ysalamiri
-				|| (item->giType == IT_HOLDABLE && item->giTag == HI_SEEKER)//if holdable, cannot pick up seeker 
-				|| (item->giType == IT_WEAPON && item->giTag == WP_SABER ) )//or if it's a saber
+		else if (ps->trueNonJedi)
+		{																	 // can't pick up force powerups
+			if ((item->giType == IT_POWERUP && item->giTag != PW_YSALAMIRI)	 // if a powerup, can only can pick up ysalamiri
+				|| (item->giType == IT_HOLDABLE && item->giTag == HI_SEEKER) // if holdable, cannot pick up seeker
+				|| (item->giType == IT_WEAPON && item->giTag == WP_SABER))	 // or if it's a saber
 			{
 				return qfalse;
 			}
 		}
-		if ( ps->isJediMaster && item && (item->giType == IT_WEAPON || item->giType == IT_AMMO))
-		{//jedi master cannot pick up weapons
+		if (ps->isJediMaster && item && (item->giType == IT_WEAPON || item->giType == IT_AMMO))
+		{ // jedi master cannot pick up weapons
 			return qfalse;
 		}
-		if ( ps->duelInProgress )
-		{ //no picking stuff up while in a duel, no matter what the type is
+		if (ps->duelInProgress)
+		{ // no picking stuff up while in a duel, no matter what the type is
 			return qfalse;
 		}
 
 		if (ps->stats[STAT_RACEMODE] && item && (item->giType != IT_POWERUP || /*(item->giTag != PW_YSALAMIRI) &&*/ (item->giTag != PW_FORCE_BOON))) // no picking up shit in racemode? disallow ysal again for now ... we handle ysal via jumplevel. if a map truly should need it ... we'll think of sth
-		{//Maybe allow spawnflags 2 to be racemode_only ?
-			if ((ps->stats[STAT_RUNFLAGS] & RFL_LAVAPROTECT) || item->giType != IT_ARMOR && item->giType != IT_HEALTH && (item->giType != IT_HOLDABLE || (item->giTag != HI_MEDPAC))) { // when we dont have "godmode" (protection from lava,slime,drowning), let us pick up health/armor/medpack
-				return qfalse; 
+		{																																			 // Maybe allow spawnflags 2 to be racemode_only ?
+			if ((ps->stats[STAT_RUNFLAGS] & RFL_LAVAPROTECT) || item->giType != IT_ARMOR && item->giType != IT_HEALTH && (item->giType != IT_HOLDABLE || (item->giTag != HI_MEDPAC)))
+			{ // when we dont have "godmode" (protection from lava,slime,drowning), let us pick up health/armor/medpack
+				return qfalse;
 			}
 		}
 	}
 	else
-	{//safety return since below code assumes a non-null ps
+	{ // safety return since below code assumes a non-null ps
 		return qfalse;
 	}
 
-	switch( item->giType ) {
+	switch (item->giType)
+	{
 	case IT_WEAPON:
 		if (ent->generic1 == ps->clientNum && ent->powerups)
 		{
@@ -1691,24 +1666,28 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 		}
 		if (!(ent->eFlags & EF_DROPPEDWEAPON) && (ps->stats[STAT_WEAPONS] & (1 << item->giTag)) &&
 			item->giTag != WP_THERMAL && item->giTag != WP_TRIP_MINE && item->giTag != WP_DET_PACK)
-		{ //weaponstay stuff.. if this isn't dropped, and you already have it, you don't get it.
+		{ // weaponstay stuff.. if this isn't dropped, and you already have it, you don't get it.
 			return qfalse;
 		}
-		if (playerMode > MODE_DEFRAG) {
-			if (playerMode != MODE_IRONMAN || item->giTag != WP_TRIP_MINE && item->giTag != WP_TURRET && item->giTag != WP_EMPLACED_GUN) {
+		if (playerMode > MODE_DEFRAG)
+		{
+			if (playerMode != MODE_IRONMAN || item->giTag != WP_TRIP_MINE && item->giTag != WP_TURRET && item->giTag != WP_EMPLACED_GUN)
+			{
 				return qfalse; // in ironman mode we can pick up mines and turrets (and emplaced gun? what even is that?). just going by the default ctf configs with weapondisable
 			}
 		}
-		return qtrue;	// weapons are always picked up
+		return qtrue; // weapons are always picked up
 
 	case IT_AMMO:
-		if ( ps->ammo[item->giTag] >= ammoData[item->giTag].max) {
-			return qfalse;		// can't hold any more
+		if (ps->ammo[item->giTag] >= ammoData[item->giTag].max)
+		{
+			return qfalse; // can't hold any more
 		}
 		return qtrue;
 
 	case IT_ARMOR:
-		if ( ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH] * item->giTag ) {
+		if (ps->stats[STAT_ARMOR] >= ps->stats[STAT_MAX_HEALTH] * item->giTag)
+		{
 			return qfalse;
 		}
 		return qtrue;
@@ -1721,14 +1700,17 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 			return qfalse;
 		}
 
-		if ( item->quantity == 5 || item->quantity == 100 ) {
-			if ( ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH] * 2 ) {
+		if (item->quantity == 5 || item->quantity == 100)
+		{
+			if (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH] * 2)
+			{
 				return qfalse;
 			}
 			return qtrue;
 		}
 
-		if ( ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH] ) {
+		if (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH])
+		{
 			return qfalse;
 		}
 		return qtrue;
@@ -1741,52 +1723,59 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 				return qfalse;
 			}
 		}
-		if (playerMode > MODE_DEFRAG) {
-			if (playerMode != MODE_IRONMAN || item->giTag != PW_REDFLAG && item->giTag != PW_BLUEFLAG && item->giTag != PW_NEUTRALFLAG) { // wait, ... flags arent even IT_POWERUP are they? lol
+		if (playerMode > MODE_DEFRAG)
+		{
+			if (playerMode != MODE_IRONMAN || item->giTag != PW_REDFLAG && item->giTag != PW_BLUEFLAG && item->giTag != PW_NEUTRALFLAG)
+			{				   // wait, ... flags arent even IT_POWERUP are they? lol
 				return qfalse; // in ironman mode we can pick up flags. but nothing else. and other modes outside of normal we cant pick up anything
 			}
 		}
-		return qtrue;	// powerups are always picked up
+		return qtrue; // powerups are always picked up
 
 	case IT_TEAM: // team items, such as flags
-		if( (gametype == GT_CTF || gametype == GT_CTY) && playerMode == MODE_NORMAL ) {
+		if ((gametype == GT_CTF || gametype == GT_CTY) && playerMode == MODE_NORMAL)
+		{
 			// ent->modelindex2 is non-zero on items if they are dropped
 			// we need to know this because we can pick up our dropped flag (and return it)
 			// but we can't pick up our flag at base
-			if (ps->persistant[PERS_TEAM] == TEAM_RED) {
+			if (ps->persistant[PERS_TEAM] == TEAM_RED)
+			{
 				if (item->giTag == PW_BLUEFLAG ||
 					(item->giTag == PW_REDFLAG && ent->modelindex2) ||
-					(item->giTag == PW_REDFLAG && ps->powerups[PW_BLUEFLAG]) )
+					(item->giTag == PW_REDFLAG && ps->powerups[PW_BLUEFLAG]))
 					return qtrue;
-			} else if (ps->persistant[PERS_TEAM] == TEAM_BLUE) {
+			}
+			else if (ps->persistant[PERS_TEAM] == TEAM_BLUE)
+			{
 				if (item->giTag == PW_REDFLAG ||
 					(item->giTag == PW_BLUEFLAG && ent->modelindex2) ||
-					(item->giTag == PW_BLUEFLAG && ps->powerups[PW_REDFLAG]) )
+					(item->giTag == PW_BLUEFLAG && ps->powerups[PW_REDFLAG]))
 					return qtrue;
 			}
 		}
-		else if (playerMode == MODE_IRONMAN && ent->modelindex2) { // allow us to "return" the flag
+		else if (playerMode == MODE_IRONMAN && ent->modelindex2)
+		{ // allow us to "return" the flag
 			return qtrue;
 		}
 
 		return qfalse;
 
 	case IT_HOLDABLE:
-		if ( ps->stats[STAT_HOLDABLE_ITEMS] & (1 << item->giTag))
+		if (ps->stats[STAT_HOLDABLE_ITEMS] & (1 << item->giTag))
 		{
 			return qfalse;
 		}
 		return qtrue;
 
-        case IT_BAD:
-            Com_Error( ERR_DROP, "BG_CanItemBeGrabbed: IT_BAD" );
-        default:
+	case IT_BAD:
+		Com_Error(ERR_DROP, "BG_CanItemBeGrabbed: IT_BAD");
+	default:
 #ifndef Q3_VM
 #ifndef NDEBUG // bk0001204
-          Com_Printf("BG_CanItemBeGrabbed: unknown enum %d\n", item->giType );
+		Com_Printf("BG_CanItemBeGrabbed: unknown enum %d\n", item->giType);
 #endif
 #endif
-         break;
+		break;
 	}
 
 	return qfalse;
@@ -1800,44 +1789,48 @@ BG_EvaluateTrajectory
 
 ================
 */
-void BG_EvaluateTrajectory( const trajectory_t *tr, int atTime, vec3_t result ) {
-	float		deltaTime;
-	float		phase;
+void BG_EvaluateTrajectory(const trajectory_t *tr, int atTime, vec3_t result)
+{
+	float deltaTime;
+	float phase;
 
-	switch( tr->trType ) {
+	switch (tr->trType)
+	{
 	case TR_STATIONARY:
 	case TR_INTERPOLATE:
-		VectorCopy( tr->trBase, result );
+		VectorCopy(tr->trBase, result);
 		break;
 	case TR_LINEAR:
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		VectorMA( tr->trBase, deltaTime, tr->trDelta, result );
+		deltaTime = (atTime - tr->trTime) * 0.001; // milliseconds to seconds
+		VectorMA(tr->trBase, deltaTime, tr->trDelta, result);
 		break;
 	case TR_SINE:
-		deltaTime = ( atTime - tr->trTime ) / (float) tr->trDuration;
-		phase = sin( deltaTime * M_PI * 2 );
-		VectorMA( tr->trBase, phase, tr->trDelta, result );
+		deltaTime = (atTime - tr->trTime) / (float)tr->trDuration;
+		phase = sin(deltaTime * M_PI * 2);
+		VectorMA(tr->trBase, phase, tr->trDelta, result);
 		break;
 	case TR_LINEAR_STOP:
-		if ( atTime > tr->trTime + tr->trDuration ) {
+		if (atTime > tr->trTime + tr->trDuration)
+		{
 			atTime = tr->trTime + tr->trDuration;
 		}
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		if ( deltaTime < 0 ) {
+		deltaTime = (atTime - tr->trTime) * 0.001; // milliseconds to seconds
+		if (deltaTime < 0)
+		{
 			deltaTime = 0;
 		}
-		VectorMA( tr->trBase, deltaTime, tr->trDelta, result );
+		VectorMA(tr->trBase, deltaTime, tr->trDelta, result);
 		break;
 	case TR_GRAVITY:
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		VectorMA( tr->trBase, deltaTime, tr->trDelta, result );
-		result[2] -= 0.5 * DEFAULT_GRAVITY * deltaTime * deltaTime;		// FIXME: local gravity...
+		deltaTime = (atTime - tr->trTime) * 0.001; // milliseconds to seconds
+		VectorMA(tr->trBase, deltaTime, tr->trDelta, result);
+		result[2] -= 0.5 * DEFAULT_GRAVITY * deltaTime * deltaTime; // FIXME: local gravity...
 		break;
 	default:
 #ifdef QAGAME
-		Com_Error( ERR_DROP, "BG_EvaluateTrajectory: [GAME SIDE] unknown trType: %i", tr->trType );
+		Com_Error(ERR_DROP, "BG_EvaluateTrajectory: [GAME SIDE] unknown trType: %i", tr->trType);
 #else
-		Com_Error( ERR_DROP, "BG_EvaluateTrajectory: [CLIENTGAME SIDE] unknown trType: %i", tr->trType );
+		Com_Error(ERR_DROP, "BG_EvaluateTrajectory: [CLIENTGAME SIDE] unknown trType: %i", tr->trType);
 #endif
 		break;
 	}
@@ -1850,38 +1843,41 @@ BG_EvaluateTrajectoryDelta
 For determining velocity at a given time
 ================
 */
-void BG_EvaluateTrajectoryDelta( const trajectory_t *tr, int atTime, vec3_t result ) {
-	float	deltaTime;
-	float	phase;
+void BG_EvaluateTrajectoryDelta(const trajectory_t *tr, int atTime, vec3_t result)
+{
+	float deltaTime;
+	float phase;
 
-	switch( tr->trType ) {
+	switch (tr->trType)
+	{
 	case TR_STATIONARY:
 	case TR_INTERPOLATE:
-		VectorClear( result );
+		VectorClear(result);
 		break;
 	case TR_LINEAR:
-		VectorCopy( tr->trDelta, result );
+		VectorCopy(tr->trDelta, result);
 		break;
 	case TR_SINE:
-		deltaTime = ( atTime - tr->trTime ) / (float) tr->trDuration;
-		phase = cos( deltaTime * M_PI * 2 );	// derivative of sin = cos
+		deltaTime = (atTime - tr->trTime) / (float)tr->trDuration;
+		phase = cos(deltaTime * M_PI * 2); // derivative of sin = cos
 		phase *= 0.5;
-		VectorScale( tr->trDelta, phase, result );
+		VectorScale(tr->trDelta, phase, result);
 		break;
 	case TR_LINEAR_STOP:
-		if ( atTime > tr->trTime + tr->trDuration ) {
-			VectorClear( result );
+		if (atTime > tr->trTime + tr->trDuration)
+		{
+			VectorClear(result);
 			return;
 		}
-		VectorCopy( tr->trDelta, result );
+		VectorCopy(tr->trDelta, result);
 		break;
 	case TR_GRAVITY:
-		deltaTime = ( atTime - tr->trTime ) * 0.001;	// milliseconds to seconds
-		VectorCopy( tr->trDelta, result );
-		result[2] -= DEFAULT_GRAVITY * deltaTime;		// FIXME: local gravity...
+		deltaTime = (atTime - tr->trTime) * 0.001; // milliseconds to seconds
+		VectorCopy(tr->trDelta, result);
+		result[2] -= DEFAULT_GRAVITY * deltaTime; // FIXME: local gravity...
 		break;
 	default:
-		Com_Error( ERR_DROP, "BG_EvaluateTrajectoryDelta: unknown trType: %i", tr->trTime );
+		Com_Error(ERR_DROP, "BG_EvaluateTrajectoryDelta: unknown trType: %i", tr->trTime);
 		break;
 	}
 }
@@ -1904,19 +1900,19 @@ char *eventnames[] = {
 
 	"EV_FALL",
 
-	"EV_JUMP_PAD",			// boing sound at origin", jump sound on player
+	"EV_JUMP_PAD", // boing sound at origin", jump sound on player
 
 	"EV_PRIVATE_DUEL",
 
 	"EV_JUMP",
 	"EV_ROLL",
-	"EV_WATER_TOUCH",	// foot touches
-	"EV_WATER_LEAVE",	// foot leaves
-	"EV_WATER_UNDER",	// head touches
-	"EV_WATER_CLEAR",	// head leaves
+	"EV_WATER_TOUCH", // foot touches
+	"EV_WATER_LEAVE", // foot leaves
+	"EV_WATER_UNDER", // head touches
+	"EV_WATER_CLEAR", // head leaves
 
-	"EV_ITEM_PICKUP",			// normal item pickups are predictable
-	"EV_GLOBAL_ITEM_PICKUP",	// powerup / team sounds are broadcast to everyone
+	"EV_ITEM_PICKUP",		 // normal item pickups are predictable
+	"EV_GLOBAL_ITEM_PICKUP", // powerup / team sounds are broadcast to everyone
 
 	"EV_NOAMMO",
 	"EV_CHANGE_WEAPON",
@@ -1939,7 +1935,7 @@ char *eventnames[] = {
 
 	"EV_SCREENSHAKE",
 
-	"EV_USE",			// +Use key
+	"EV_USE", // +Use key
 
 	"EV_USE_ITEM0",
 	"EV_USE_ITEM1",
@@ -1965,15 +1961,15 @@ char *eventnames[] = {
 	"EV_PLAYER_TELEPORT_IN",
 	"EV_PLAYER_TELEPORT_OUT",
 
-	"EV_GRENADE_BOUNCE",		// eventParm will be the soundindex
+	"EV_GRENADE_BOUNCE", // eventParm will be the soundindex
 	"EV_MISSILE_STICK",
 
 	"EV_PLAY_EFFECT",
-	"EV_PLAY_EFFECT_ID", //finally gave in and added it..
+	"EV_PLAY_EFFECT_ID", // finally gave in and added it..
 
 	"EV_MUTE_SOUND",
 	"EV_GENERAL_SOUND",
-	"EV_GLOBAL_SOUND",		// no attenuation
+	"EV_GLOBAL_SOUND", // no attenuation
 	"EV_GLOBAL_TEAM_SOUND",
 	"EV_ENTITY_SOUND",
 
@@ -1985,7 +1981,7 @@ char *eventnames[] = {
 	"EV_MISSILE_HIT",
 	"EV_MISSILE_MISS",
 	"EV_MISSILE_MISS_METAL",
-	"EV_BULLET",				// otherEntity is the shooter
+	"EV_BULLET", // otherEntity is the shooter
 
 	"EV_PAIN",
 	"EV_DEATH1",
@@ -1999,8 +1995,8 @@ char *eventnames[] = {
 
 	"EV_FORCE_DRAINED",
 
-	"EV_GIB_PLAYER",			// gib a previously living player
-	"EV_SCOREPLUM",			// score plum
+	"EV_GIB_PLAYER", // gib a previously living player
+	"EV_SCOREPLUM",	 // score plum
 
 	"EV_CTFMESSAGE",
 
@@ -2045,37 +2041,39 @@ Handles the sequence numbers
 ===============
 */
 
-void	trap_Cvar_VariableStringBuffer( const char *var_name, char *buffer, int bufsize );
+void trap_Cvar_VariableStringBuffer(const char *var_name, char *buffer, int bufsize);
 
-void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t *ps ) {
+void BG_AddPredictableEventToPlayerstate(int newEvent, int eventParm, playerState_t *ps)
+{
 
 #ifdef _DEBUG
 	{
 		char buf[256];
 		trap_Cvar_VariableStringBuffer("showevents", buf, sizeof(buf));
-		if ( atof(buf) != 0 ) {
+		if (atof(buf) != 0)
+		{
 #ifdef QAGAME
-			Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
+			Com_Printf(" game event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount /*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
 #else
-			Com_Printf("Cgame event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount/*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
+			Com_Printf("Cgame event svt %5d -> %5d: num = %20s parm %d\n", ps->pmove_framecount /*ps->commandTime*/, ps->eventSequence, eventnames[newEvent], eventParm);
 #endif
 		}
 	}
 #endif
-	ps->events[ps->eventSequence & (MAX_PS_EVENTS-1)] = newEvent;
-	ps->eventParms[ps->eventSequence & (MAX_PS_EVENTS-1)] = eventParm;
+	ps->events[ps->eventSequence & (MAX_PS_EVENTS - 1)] = newEvent;
+	ps->eventParms[ps->eventSequence & (MAX_PS_EVENTS - 1)] = eventParm;
 	ps->eventSequence++;
 }
 
-
-void BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es) {
-	byte fw=(byte)ucmd->forwardmove, rt = (byte)ucmd->rightmove, up = (byte)ucmd->upmove;
+void BG_UserCmdToUserStats(usercmd_t *ucmd, entityState_t *es)
+{
+	byte fw = (byte)ucmd->forwardmove, rt = (byte)ucmd->rightmove, up = (byte)ucmd->upmove;
 	unsigned int fpa = (fw << 24) | (rt << 16) | (up << 8); // few extra steps here because qvm behaves weird
 	unsigned int cl = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
-	//es->constantLight = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
-	es->constantLight = (int)cl;// few extra steps here because qvm behaves weird
-	
-	//es->forcePowersActive = ((byte)ucmd->forwardmove << 24) | ((byte)ucmd->rightmove << 16) | ((byte)ucmd->upmove << 8); // few extra steps here because qvm behaves weird
+	// es->constantLight = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
+	es->constantLight = (int)cl; // few extra steps here because qvm behaves weird
+
+	// es->forcePowersActive = ((byte)ucmd->forwardmove << 24) | ((byte)ucmd->rightmove << 16) | ((byte)ucmd->upmove << 8); // few extra steps here because qvm behaves weird
 	es->forcePowersActive = (int)fpa;
 
 	// do we need angles? might be a bit wasteful.
@@ -2084,7 +2082,8 @@ void BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es) {
 	es->forceFrame = ucmd->buttons;
 }
 
-void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
+void BG_StatsToUserCmd(entityState_t *es, usercmd_t *ucmd)
+{
 
 	ucmd->weapon = ((unsigned int)es->constantLight) >> 24;
 	ucmd->forcesel = (((unsigned int)es->constantLight) >> 16) & 0xff;
@@ -2101,16 +2100,15 @@ void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
 	ucmd->buttons = es->forceFrame;
 }
 
-
-
-void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es) {
+void BG_RaceStyleToUserStats(raceStyle_t *rs, entityState_t *es)
+{
 	unsigned int ushortMsec, ushortRunFlags;
 	es->bolt1 = rs->movementStyle;
 #ifdef Q3_VM
-	ushortMsec = SHORT2USHORT(rs->msec); // can be negative. is this conversion safe?
+	ushortMsec = SHORT2USHORT(rs->msec);		 // can be negative. is this conversion safe?
 	ushortRunFlags = SHORT2USHORT(rs->runFlags); // can be negative. is this conversion safe?
 #else
-	ushortMsec = (unsigned short)rs->msec; // can be negative. is this conversion safe?
+	ushortMsec = (unsigned short)rs->msec;		   // can be negative. is this conversion safe?
 	ushortRunFlags = (unsigned short)rs->runFlags; // can be negative since im forced to use signed short. is this conversion safe?
 #endif
 	es->modelindex = rs->jumpLevel; // can be negative
@@ -2118,34 +2116,40 @@ void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es) {
 	es->apos.trDuration = (ushortMsec & 65535) << 16 | (ushortRunFlags & 65535); // wanted to use torsoAnim and legsAnim but MV remaps fuck it
 }
 
-void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs) {
+void BG_StatsToRaceStyle(entityState_t *es, raceStyle_t *rs)
+{
 
 	rs->movementStyle = es->bolt1;
-	//rs->msec = USHORT2SHORT(es->torsoAnim); // can be negative. is this conversion safe?
+	// rs->msec = USHORT2SHORT(es->torsoAnim); // can be negative. is this conversion safe?
 	rs->msec = USHORT2SHORT((es->apos.trDuration >> 16) & 65535); // can be negative. is this conversion safe?
-	rs->jumpLevel = es->modelindex; // can be negative
+	rs->jumpLevel = es->modelindex;								  // can be negative
 	rs->variant = es->powerups;
-	//rs->runFlags = es->legsAnim;
+	// rs->runFlags = es->legsAnim;
 	rs->runFlags = USHORT2SHORT(es->apos.trDuration & 65535);
 }
 
-static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity, movementStyle_e style) {
-	if (!referenceMsec || referenceMsec == -2) return gravity;
-	if (style == MV_Q2) {
+static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity, movementStyle_e style)
+{
+	if (!referenceMsec || referenceMsec == -2)
+		return gravity;
+	if (style == MV_Q2)
+	{
 		// q2 has different type of snapping
 		// DONT use this rn, i think its not 100% reliable
 		// TODO fix this. doesn't seem to calculate things properly? 200fps (800 grav) jumps higher than 125 (under 800) on pornstar-budlight. dumb.
-		return 0.125f*(int)(8.0f*(float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
+		return 0.125f * (int)(8.0f * (float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
 	}
-	else {
+	else
+	{
 		return roundf((float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
 	}
 }
 
-static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float gravity, movementStyle_e style) {
-	float gravcurrent = BG_MsecToEffectiveGravity(msec, gravity,style);
-	float gravreference = BG_MsecToEffectiveGravity(referenceMsec, gravity,MV_JK2); // the reference is always the same style
-	return sqrtf(gravcurrent) / sqrtf(gravreference); // magically, after a few hours in excel, it turns out this is 100% accurate. a mathematician could have prolly figured that out in 2 minutes, but im not one. :)
+static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float gravity, movementStyle_e style)
+{
+	float gravcurrent = BG_MsecToEffectiveGravity(msec, gravity, style);
+	float gravreference = BG_MsecToEffectiveGravity(referenceMsec, gravity, MV_JK2); // the reference is always the same style
+	return sqrtf(gravcurrent) / sqrtf(gravreference);								 // magically, after a few hours in excel, it turns out this is 100% accurate. a mathematician could have prolly figured that out in 2 minutes, but im not one. :)
 }
 
 /*
@@ -2153,9 +2157,11 @@ static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float
 BG_TouchJumpPad
 ========================
 */
-void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec,movementStyle_e style) {
+void BG_TouchJumpPad(playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec, movementStyle_e style)
+{
 	// spectators don't use jump pads
-	if ( ps->pm_type != PM_NORMAL && ps->pm_type != PM_FLOAT ) {
+	if (ps->pm_type != PM_NORMAL && ps->pm_type != PM_FLOAT)
+	{
 		return;
 	}
 
@@ -2181,18 +2187,20 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompens
 	ps->jumppad_ent = jumppad->number;
 	ps->jumppad_frame = ps->pmove_framecount;
 	// give the player the velocity from the jumppad
-	if (msecCompensate) {
-		float compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f,style);
+	if (msecCompensate)
+	{
+		float compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f, style);
 		VectorScale(jumppad->origin2, compensate, ps->velocity);
 	}
-	else {
+	else
+	{
 		VectorCopy(jumppad->origin2, ps->velocity);
 	}
 }
 
 #define Q3BUG 1
 
-void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float compensate)
+void BG_TouchJumpPadTargetSpeed(entityState_t *jumppad, playerState_t *ps, float compensate)
 {
 	int spawnFlags = jumppad->forceFrame;
 	float speed = jumppad->origin2[0];
@@ -2205,10 +2213,10 @@ void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float
 	qboolean launcher = spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_LAUNCHER;
 	float launchSpeed = 0;
 
-#define CLASSIFYSISGN(flags,plus,minus) ((flags & plus) && (flags & minus)) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0))
-//#define CLASSIFYSISGN(flags,plus,minus) ((flags & (plus|minus))>plus) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0)) // faster? idk.
+#define CLASSIFYSISGN(flags, plus, minus) ((flags & plus) && (flags & minus)) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0))
+	// #define CLASSIFYSISGN(flags,plus,minus) ((flags & (plus|minus))>plus) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0)) // faster? idk.
 
-	float	sign[3]; // 0 == none. 1 == positive. -1 == negative. 2 = both
+	float sign[3]; // 0 == none. 1 == positive. -1 == negative. 2 = both
 	sign[0] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSX, Q3SPAWNFLAG_TARGET_SPEED_NEGX);
 	sign[1] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSY, Q3SPAWNFLAG_TARGET_SPEED_NEGY);
 	sign[2] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSZ, Q3SPAWNFLAG_TARGET_SPEED_NEGZ);
@@ -2226,45 +2234,51 @@ void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float
 
 	for (i = 0; i < 3; ++i)
 	{
-		if (launcher && sign[i] == 2) sign[i] = 0;
-		if (!sign[i]) pushVelocity[i] = 0;
+		if (launcher && sign[i] == 2)
+			sign[i] = 0;
+		if (!sign[i])
+			pushVelocity[i] = 0;
 	}
 
 	oldSpeed = VectorLength(pushVelocity);
 
-	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_PERCENTAGE) {
+	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_PERCENTAGE)
+	{
 		speed = oldSpeed * speed / 100.0f;
-		//if (compensate) {
+		// if (compensate) {
 		//	speed *= compensate;
-		//}
+		// }
 	}
 
 #if !Q3BUG
 	launchSpeed += speed;
-	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) launchSpeed += oldSpeed;
+	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD)
+		launchSpeed += oldSpeed;
 #endif
 
 	for (i = 0; i < 3; ++i)
 	{
-		if (((pushVelocity[i] != 0) || launcher) && (fabsf(sign[i])==1))
+		if (((pushVelocity[i] != 0) || launcher) && (fabsf(sign[i]) == 1))
 		{
 			if (launcher)
 			{
 				pushVelocity[i] = 1;
 #if Q3BUG
 				launchSpeed += speed;
-				if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) launchSpeed += oldSpeed;
+				if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD)
+					launchSpeed += oldSpeed;
 #endif
 			}
 
-			pushVelocity[i] = copysignf(pushVelocity[i],sign[i]);
+			pushVelocity[i] = copysignf(pushVelocity[i], sign[i]);
 		}
 	}
 
 	VectorCopy(pushVelocity, normalized);
 	VectorNormalize(normalized);
 
-	if (compensate) {
+	if (compensate)
+	{
 		VectorScale(normalized, compensate, normalized);
 	}
 
@@ -2274,17 +2288,20 @@ void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float
 	}
 	else
 	{
-		if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) {
+		if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD)
+		{
 			VectorMA(oldVelocity, speed, normalized, pushVelocity);
 		}
-		else {
+		else
+		{
 			VectorScale(normalized, speed, pushVelocity);
 		}
 	}
 
 	for (i = 0; i < 3; ++i)
 	{
-		if (!sign[i]) pushVelocity[i] = oldVelocity[i];
+		if (!sign[i])
+			pushVelocity[i] = oldVelocity[i];
 	}
 
 	VectorCopy(pushVelocity, ps->velocity);
@@ -2292,7 +2309,6 @@ void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float
 	ps->jumppad_ent = jumppad->number;
 	ps->jumppad_frame = ps->pmove_framecount;
 }
-
 
 #define JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY 1
 #define JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY 2
@@ -2303,7 +2319,8 @@ void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float
 #define JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS 64
 
 // TODO do a test of this against the other code to make sure its accurate.
-void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec, movementStyle_e style) {
+void BG_TouchJumpPadVelocity(playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec, movementStyle_e style)
+{
 	vec3_t tmpHorz, tmpVert;
 	int flags = jumppad->weapon;
 	float speedHorz = jumppad->angles2[0];
@@ -2311,13 +2328,14 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msec
 	float compensate = 0.0f;
 	qboolean isFirstFrame = ps->jumppad_ent != jumppad->number;
 
-
-	if (msecCompensate) {
+	if (msecCompensate)
+	{
 		compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f, style);
 	}
 
-	if (jumppad->saberInFlight) { // its a target_speed converted to a jumppad
-		BG_TouchJumpPadTargetSpeed(jumppad,ps,compensate);
+	if (jumppad->saberInFlight)
+	{ // its a target_speed converted to a jumppad
+		BG_TouchJumpPadTargetSpeed(jumppad, ps, compensate);
 		return;
 	}
 
@@ -2340,46 +2358,56 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msec
 	}
 	*/
 
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY) {
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY)
+	{
 
 		VectorCopy(ps->velocity, tmpHorz);
 		tmpHorz[2] = 0;
 		VectorNormalize(tmpHorz);
 		VectorScale(tmpHorz, speedHorz, tmpHorz);
 	}
-	else {
+	else
+	{
 
 		VectorCopy(jumppad->origin2, tmpHorz);
 		tmpHorz[2] = 0;
-		if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_XY) {
+		if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_XY)
+		{
 
 			// Is the angle between the vectors bigger than 90 degrees? Then reverse our drection to result in increased speed.
-			if (DotProduct(tmpHorz, ps->velocity) < 0) {
+			if (DotProduct(tmpHorz, ps->velocity) < 0)
+			{
 				VectorNegate(tmpHorz, tmpHorz);
 			}
 		}
 	}
 
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_Z) {
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_Z)
+	{
 
 		VectorSet(tmpVert, 0, 0, copysignf(speedVert, ps->velocity[2]));
 	}
-	else {
+	else
+	{
 
 		VectorSet(tmpVert, 0, 0, flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_Z ? copysignf(jumppad->origin2[2], ps->velocity[2]) : jumppad->origin2[2]);
 	}
 
-	if (compensate) {
+	if (compensate)
+	{
 		VectorScale(tmpHorz, compensate, tmpHorz);
 	}
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY) {
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY)
+	{
 
-		if (isFirstFrame) {
+		if (isFirstFrame)
+		{
 
 			VectorAdd(tmpHorz, ps->velocity, tmpHorz);
 			tmpHorz[2] = 0;
 
-			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && DotProduct(tmpHorz, ps->velocity) < 0) {
+			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && DotProduct(tmpHorz, ps->velocity) < 0)
+			{
 
 				VectorSet(tmpHorz, 0, 0, 0);
 			}
@@ -2388,21 +2416,26 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msec
 			ps->velocity[1] = tmpHorz[1];
 		}
 	}
-	else {
+	else
+	{
 		ps->velocity[0] = tmpHorz[0];
 		ps->velocity[1] = tmpHorz[1];
 	}
-	
-	if (compensate) {
+
+	if (compensate)
+	{
 		VectorScale(tmpVert, compensate, tmpVert);
 	}
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_Z) {
+	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_Z)
+	{
 
-		if (isFirstFrame) {
+		if (isFirstFrame)
+		{
 
 			tmpVert[2] += ps->velocity[2];
 
-			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && tmpVert[2] * ps->velocity[2] < 0) {
+			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && tmpVert[2] * ps->velocity[2] < 0)
+			{
 
 				tmpVert[2] = 0;
 			}
@@ -2410,16 +2443,16 @@ void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msec
 			ps->velocity[2] = tmpVert[2];
 		}
 	}
-	else {
+	else
+	{
 		ps->velocity[2] = tmpVert[2];
 	}
-
 
 	// remember hitting this jumppad this frame
 	ps->jumppad_ent = jumppad->number;
 	ps->jumppad_frame = ps->pmove_framecount;
 	// give the player the velocity from the jumppad
-	//VectorCopy( jumppad->origin2, ps->velocity );
+	// VectorCopy( jumppad->origin2, ps->velocity );
 }
 
 /*
@@ -2430,31 +2463,39 @@ This is done after each set of usercmd_t on the server,
 and after local prediction on the client
 ========================
 */
-void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap ) {
-	int		i;
+void BG_PlayerStateToEntityState(playerState_t *ps, entityState_t *s, qboolean snap)
+{
+	int i;
 
-	if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR ) {
+	if (ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR)
+	{
 		s->eType = ET_INVISIBLE;
-	} else if ( ps->stats[STAT_HEALTH] <= GIB_HEALTH ) {
+	}
+	else if (ps->stats[STAT_HEALTH] <= GIB_HEALTH)
+	{
 		s->eType = ET_INVISIBLE;
-	} else {
+	}
+	else
+	{
 		s->eType = ET_PLAYER;
 	}
 
 	s->number = ps->clientNum;
 
 	s->pos.trType = TR_INTERPOLATE;
-	VectorCopy( ps->origin, s->pos.trBase );
-	if ( snap ) {
-		SnapVector( s->pos.trBase );
+	VectorCopy(ps->origin, s->pos.trBase);
+	if (snap)
+	{
+		SnapVector(s->pos.trBase);
 	}
 	// set the trDelta for flag direction
-	VectorCopy( ps->velocity, s->pos.trDelta );
+	VectorCopy(ps->velocity, s->pos.trDelta);
 
 	s->apos.trType = TR_INTERPOLATE;
-	VectorCopy( ps->viewangles, s->apos.trBase );
-	if ( snap ) {
-		SnapVector( s->apos.trBase );
+	VectorCopy(ps->viewangles, s->apos.trBase);
+	if (snap)
+	{
+		SnapVector(s->apos.trBase);
 	}
 
 	s->trickedentindex = ps->fd.forceMindtrickTargetIndex;
@@ -2475,8 +2516,8 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 	s->angles2[YAW] = ps->movementDir;
 	s->legsAnim = ps->legsAnim;
 	s->torsoAnim = ps->torsoAnim;
-	s->clientNum = ps->clientNum;		// ET_PLAYER looks here instead of at number
-										// so corpses can also reference the proper config
+	s->clientNum = ps->clientNum; // ET_PLAYER looks here instead of at number
+								  // so corpses can also reference the proper config
 	s->eFlags = ps->eFlags;
 
 	s->saberInFlight = ps->saberInFlight;
@@ -2494,7 +2535,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 			s->bolt1 = 2;
 		else
 			s->bolt1 = 0;
-		//s->bolt1 = 0;
+		// s->bolt1 = 0;
 	}
 
 	if (ps->dualBlade)
@@ -2508,7 +2549,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 
 	s->otherEntityNum2 = ps->emplacedIndex;
 
-	s->shouldtarget = ps->saberHolstered; //reuse bool in entitystate for players differently
+	s->shouldtarget = ps->saberHolstered; // reuse bool in entitystate for players differently
 	s->teamowner = ps->usingATST;
 
 	if (ps->genericEnemyIndex != -1)
@@ -2516,34 +2557,42 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 		s->eFlags |= EF_SEEKERDRONE;
 	}
 
-	if ( ps->stats[STAT_HEALTH] <= 0 ) {
+	if (ps->stats[STAT_HEALTH] <= 0)
+	{
 		s->eFlags |= EF_DEAD;
-	} else {
+	}
+	else
+	{
 		s->eFlags &= ~EF_DEAD;
 	}
 
-	if ( ps->externalEvent ) {
+	if (ps->externalEvent)
+	{
 		s->event = ps->externalEvent;
 		s->eventParm = ps->externalEventParm;
-	} else if ( ps->entityEventSequence < ps->eventSequence ) {
-		int		seq;
+	}
+	else if (ps->entityEventSequence < ps->eventSequence)
+	{
+		int seq;
 
-		if ( ps->entityEventSequence < ps->eventSequence - MAX_PS_EVENTS) {
+		if (ps->entityEventSequence < ps->eventSequence - MAX_PS_EVENTS)
+		{
 			ps->entityEventSequence = ps->eventSequence - MAX_PS_EVENTS;
 		}
-		seq = ps->entityEventSequence & (MAX_PS_EVENTS-1);
-		s->event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
-		s->eventParm = ps->eventParms[ seq ];
+		seq = ps->entityEventSequence & (MAX_PS_EVENTS - 1);
+		s->event = ps->events[seq] | ((ps->entityEventSequence & 3) << 8);
+		s->eventParm = ps->eventParms[seq];
 		ps->entityEventSequence++;
 	}
-
 
 	s->weapon = ps->weapon;
 	s->groundEntityNum = ps->groundEntityNum;
 
 	s->powerups = 0;
-	for ( i = 0 ; i < MAX_POWERUPS ; i++ ) {
-		if ( ps->powerups[ i ] ) {
+	for (i = 0; i < MAX_POWERUPS; i++)
+	{
+		if (ps->powerups[i])
+		{
 			s->powerups |= 1 << i;
 		}
 	}
@@ -2551,7 +2600,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 	s->loopSound = ps->loopSound;
 	s->generic1 = ps->generic1;
 
-	//NOT INCLUDED IN ENTITYSTATETOPLAYERSTATE:
+	// NOT INCLUDED IN ENTITYSTATETOPLAYERSTATE:
 	s->modelindex2 = ps->weaponstate;
 	s->constantLight = ps->weaponChargeTime;
 
@@ -2572,35 +2621,43 @@ This is done after each set of usercmd_t on the server,
 and after local prediction on the client
 ========================
 */
-void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap ) {
-	int		i;
+void BG_PlayerStateToEntityStateExtraPolate(playerState_t *ps, entityState_t *s, int time, qboolean snap)
+{
+	int i;
 
-	if ( ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR ) {
+	if (ps->pm_type == PM_INTERMISSION || ps->pm_type == PM_SPECTATOR)
+	{
 		s->eType = ET_INVISIBLE;
-	} else if ( ps->stats[STAT_HEALTH] <= GIB_HEALTH ) {
+	}
+	else if (ps->stats[STAT_HEALTH] <= GIB_HEALTH)
+	{
 		s->eType = ET_INVISIBLE;
-	} else {
+	}
+	else
+	{
 		s->eType = ET_PLAYER;
 	}
 
 	s->number = ps->clientNum;
 
 	s->pos.trType = TR_LINEAR_STOP;
-	VectorCopy( ps->origin, s->pos.trBase );
-	if ( snap ) {
-		SnapVector( s->pos.trBase );
+	VectorCopy(ps->origin, s->pos.trBase);
+	if (snap)
+	{
+		SnapVector(s->pos.trBase);
 	}
 	// set the trDelta for flag direction and linear prediction
-	VectorCopy( ps->velocity, s->pos.trDelta );
+	VectorCopy(ps->velocity, s->pos.trDelta);
 	// set the time for linear prediction
 	s->pos.trTime = time;
 	// set maximum extra polation time
 	s->pos.trDuration = 50; // 1000 / sv_fps (default = 20)
 
 	s->apos.trType = TR_INTERPOLATE;
-	VectorCopy( ps->viewangles, s->apos.trBase );
-	if ( snap ) {
-		SnapVector( s->apos.trBase );
+	VectorCopy(ps->viewangles, s->apos.trBase);
+	if (snap)
+	{
+		SnapVector(s->apos.trBase);
 	}
 
 	s->trickedentindex = ps->fd.forceMindtrickTargetIndex;
@@ -2621,8 +2678,8 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 	s->angles2[YAW] = ps->movementDir;
 	s->legsAnim = ps->legsAnim;
 	s->torsoAnim = ps->torsoAnim;
-	s->clientNum = ps->clientNum;		// ET_PLAYER looks here instead of at number
-										// so corpses can also reference the proper config
+	s->clientNum = ps->clientNum; // ET_PLAYER looks here instead of at number
+								  // so corpses can also reference the proper config
 	s->eFlags = ps->eFlags;
 
 	s->saberInFlight = ps->saberInFlight;
@@ -2650,7 +2707,7 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 
 	s->otherEntityNum2 = ps->emplacedIndex;
 
-	s->shouldtarget = ps->saberHolstered; //reuse bool in entitystate for players differently
+	s->shouldtarget = ps->saberHolstered; // reuse bool in entitystate for players differently
 	s->teamowner = ps->usingATST;
 
 	if (ps->genericEnemyIndex != -1)
@@ -2658,32 +2715,41 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 		s->eFlags |= EF_SEEKERDRONE;
 	}
 
-	if ( ps->stats[STAT_HEALTH] <= 0 ) {
+	if (ps->stats[STAT_HEALTH] <= 0)
+	{
 		s->eFlags |= EF_DEAD;
-	} else {
+	}
+	else
+	{
 		s->eFlags &= ~EF_DEAD;
 	}
 
-	if ( ps->externalEvent ) {
+	if (ps->externalEvent)
+	{
 		s->event = ps->externalEvent;
 		s->eventParm = ps->externalEventParm;
-	} else if ( ps->entityEventSequence < ps->eventSequence ) {
-		int		seq;
+	}
+	else if (ps->entityEventSequence < ps->eventSequence)
+	{
+		int seq;
 
-		if ( ps->entityEventSequence < ps->eventSequence - MAX_PS_EVENTS) {
+		if (ps->entityEventSequence < ps->eventSequence - MAX_PS_EVENTS)
+		{
 			ps->entityEventSequence = ps->eventSequence - MAX_PS_EVENTS;
 		}
-		seq = ps->entityEventSequence & (MAX_PS_EVENTS-1);
-		s->event = ps->events[ seq ] | ( ( ps->entityEventSequence & 3 ) << 8 );
-		s->eventParm = ps->eventParms[ seq ];
+		seq = ps->entityEventSequence & (MAX_PS_EVENTS - 1);
+		s->event = ps->events[seq] | ((ps->entityEventSequence & 3) << 8);
+		s->eventParm = ps->eventParms[seq];
 		ps->entityEventSequence++;
 	}
 	s->weapon = ps->weapon;
 	s->groundEntityNum = ps->groundEntityNum;
 
 	s->powerups = 0;
-	for ( i = 0 ; i < MAX_POWERUPS ; i++ ) {
-		if ( ps->powerups[ i ] ) {
+	for (i = 0; i < MAX_POWERUPS; i++)
+	{
+		if (ps->powerups[i])
+		{
 			s->powerups |= 1 << i;
 		}
 	}
@@ -2691,7 +2757,7 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 	s->loopSound = ps->loopSound;
 	s->generic1 = ps->generic1;
 
-	//NOT INCLUDED IN ENTITYSTATETOPLAYERSTATE:
+	// NOT INCLUDED IN ENTITYSTATETOPLAYERSTATE:
 	s->modelindex2 = ps->weaponstate;
 	s->constantLight = ps->weaponChargeTime;
 
@@ -2711,47 +2777,47 @@ PLAYER ANGLES
 
 =============================================================================
 */
-#define MAX_POOL_SIZE	2048000 //1024000
+#define MAX_POOL_SIZE 2048000 // 1024000
 
-static char		bg_pool[MAX_POOL_SIZE];
-static int		bg_poolSize = 0;
-static int		bg_poolTail = MAX_POOL_SIZE;
+static char bg_pool[MAX_POOL_SIZE];
+static int bg_poolSize = 0;
+static int bg_poolTail = MAX_POOL_SIZE;
 
-void *BG_Alloc ( int size )
+void *BG_Alloc(int size)
 {
 	bg_poolSize = PAD(bg_poolSize, sizeof(void *));
 
 	if (bg_poolSize + size > bg_poolTail)
 	{
-		Com_Error( ERR_DROP, "BG_Alloc: buffer exceeded tail (%d > %d)", bg_poolSize + size, bg_poolTail);
+		Com_Error(ERR_DROP, "BG_Alloc: buffer exceeded tail (%d > %d)", bg_poolSize + size, bg_poolTail);
 		return 0;
 	}
 
 	bg_poolSize += size;
 
-	return &bg_pool[bg_poolSize-size];
+	return &bg_pool[bg_poolSize - size];
 }
 
-void *BG_AllocUnaligned ( int size )
+void *BG_AllocUnaligned(int size)
 {
 	if (bg_poolSize + size > bg_poolTail)
 	{
-		Com_Error( ERR_DROP, "BG_AllocUnaligned: buffer exceeded tail (%d > %d)", bg_poolSize + size, bg_poolTail);
+		Com_Error(ERR_DROP, "BG_AllocUnaligned: buffer exceeded tail (%d > %d)", bg_poolSize + size, bg_poolTail);
 		return 0;
 	}
 
 	bg_poolSize += size;
 
-	return &bg_pool[bg_poolSize-size];
+	return &bg_pool[bg_poolSize - size];
 }
 
-void *BG_TempAlloc( int size )
+void *BG_TempAlloc(int size)
 {
 	size = PAD(size, sizeof(void *));
 
 	if (bg_poolTail - size < bg_poolSize)
 	{
-		Com_Error( ERR_DROP, "BG_TempAlloc: buffer exceeded head (%d > %d)", bg_poolTail - size, bg_poolSize);
+		Com_Error(ERR_DROP, "BG_TempAlloc: buffer exceeded head (%d > %d)", bg_poolTail - size, bg_poolSize);
 		return 0;
 	}
 
@@ -2760,7 +2826,7 @@ void *BG_TempAlloc( int size )
 	return &bg_pool[bg_poolTail];
 }
 
-void *BG_TempAllocTry( int size )
+void *BG_TempAllocTry(int size)
 {
 	size = PAD(size, sizeof(void *));
 
@@ -2774,29 +2840,29 @@ void *BG_TempAllocTry( int size )
 	return &bg_pool[bg_poolTail];
 }
 
-void BG_TempFree( int size )
+void BG_TempFree(int size)
 {
 	size = PAD(size, sizeof(void *));
 
-	if (bg_poolTail+size > MAX_POOL_SIZE)
+	if (bg_poolTail + size > MAX_POOL_SIZE)
 	{
-		Com_Error( ERR_DROP, "BG_TempFree: tail greater than size (%d > %d)", bg_poolTail+size, MAX_POOL_SIZE );
+		Com_Error(ERR_DROP, "BG_TempFree: tail greater than size (%d > %d)", bg_poolTail + size, MAX_POOL_SIZE);
 	}
 
 	bg_poolTail += size;
 }
 
-char *BG_StringAlloc ( const char *source )
+char *BG_StringAlloc(const char *source)
 {
 	char *dest;
 	int size = strlen(source) + 1;
 
-	dest = BG_Alloc (size);
-	Q_strncpyz ( dest, source, size);
+	dest = BG_Alloc(size);
+	Q_strncpyz(dest, source, size);
 	return dest;
 }
 
-qboolean BG_OutOfMemory ( void )
+qboolean BG_OutOfMemory(void)
 {
 	return bg_poolSize >= MAX_POOL_SIZE;
 }
@@ -2807,59 +2873,76 @@ qboolean BG_OutOfMemory ( void )
 BG_SwingAngles
 ==================
 */
-static void BG_SwingAngles( float destination, float swingTolerance, float clampTolerance,
-					float speed, float *angle, qboolean *swinging, int frameTime ) {
-	float	swing;
-	float	move;
-	float	scale;
+static void BG_SwingAngles(float destination, float swingTolerance, float clampTolerance,
+						   float speed, float *angle, qboolean *swinging, int frameTime)
+{
+	float swing;
+	float move;
+	float scale;
 
-	if ( !*swinging ) {
+	if (!*swinging)
+	{
 		// see if a swing should be started
-		swing = AngleSubtract( *angle, destination );
-		if ( swing > swingTolerance || swing < -swingTolerance ) {
+		swing = AngleSubtract(*angle, destination);
+		if (swing > swingTolerance || swing < -swingTolerance)
+		{
 			*swinging = qtrue;
 		}
 	}
 
-	if ( !*swinging ) {
+	if (!*swinging)
+	{
 		return;
 	}
-	
+
 	// modify the speed depending on the delta
 	// so it doesn't seem so linear
-	swing = AngleSubtract( destination, *angle );
-	scale = fabs( swing );
-	if ( scale < swingTolerance * 0.5 ) {
+	swing = AngleSubtract(destination, *angle);
+	scale = fabs(swing);
+	if (scale < swingTolerance * 0.5)
+	{
 		scale = 0.5;
-	} else if ( scale < swingTolerance ) {
+	}
+	else if (scale < swingTolerance)
+	{
 		scale = 1.0;
-	} else {
+	}
+	else
+	{
 		scale = 2.0;
 	}
 
 	// swing towards the destination angle
-	if ( swing >= 0 ) {
+	if (swing >= 0)
+	{
 		move = frameTime * scale * speed;
-		if ( move >= swing ) {
+		if (move >= swing)
+		{
 			move = swing;
 			*swinging = qfalse;
 		}
-		*angle = AngleMod( *angle + move );
-	} else if ( swing < 0 ) {
+		*angle = AngleMod(*angle + move);
+	}
+	else if (swing < 0)
+	{
 		move = frameTime * scale * -speed;
-		if ( move <= swing ) {
+		if (move <= swing)
+		{
 			move = swing;
 			*swinging = qfalse;
 		}
-		*angle = AngleMod( *angle + move );
+		*angle = AngleMod(*angle + move);
 	}
 
 	// clamp to no more than tolerance
-	swing = AngleSubtract( destination, *angle );
-	if ( swing > clampTolerance ) {
-		*angle = AngleMod( destination - (clampTolerance - 1) );
-	} else if ( swing < -clampTolerance ) {
-		*angle = AngleMod( destination + (clampTolerance - 1) );
+	swing = AngleSubtract(destination, *angle);
+	if (swing > clampTolerance)
+	{
+		*angle = AngleMod(destination - (clampTolerance - 1));
+	}
+	else if (swing < -clampTolerance)
+	{
+		*angle = AngleMod(destination + (clampTolerance - 1));
 	}
 }
 
@@ -2905,7 +2988,7 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	// --------- yaw -------------
 
 	// allow yaw to drift a bit
-	if ( ( legsAnim & ~ANIM_TOGGLEBIT ) != WeaponReadyAnim[weapon] 
+	if ( ( legsAnim & ~ANIM_TOGGLEBIT ) != WeaponReadyAnim[weapon]
 		|| ( torsoAnim & ~ANIM_TOGGLEBIT ) != WeaponReadyAnim[weapon]  ) {
 		// if not standing still, always point all in the same direction
 		*torso_yawing = qtrue;	// always center
@@ -2927,8 +3010,8 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	torsoAngles[YAW] = headAngles[YAW] + 0.25 * movementOffsets[ dir ];
 
 	// torso
-	BG_SwingAngles( torsoAngles[YAW], 25, 90, 
-	//cg_swingSpeed.value 
+	BG_SwingAngles( torsoAngles[YAW], 25, 90,
+	//cg_swingSpeed.value
 0.3f, torso_yawAngle, torso_yawing, frameTime );
 	BG_SwingAngles( legsAngles[YAW], 40, 90,
 	//cg_swingSpeed.value
@@ -2974,17 +3057,20 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	AnglesSubtract( torsoAngles, legsAngles, torsoAngles );
 	AnglesToAxis( legsAngles, legs );
 	// we assume that model 0 is the player model.
-//g2r	trap_G2API_SetBoneAngles(ghoul2, 0, "upper_lumbar", torsoAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, modelList, 0, currentTime); 
-//g2r	trap_G2API_SetBoneAngles(ghoul2, 0, "cranium", headAngles, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, modelList,0, currentTime); 
+//g2r	trap_G2API_SetBoneAngles(ghoul2, 0, "upper_lumbar", torsoAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, modelList, 0, currentTime);
+//g2r	trap_G2API_SetBoneAngles(ghoul2, 0, "cranium", headAngles, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, modelList,0, currentTime);
 
 }
 */
 
-qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify) {
-	const char* s = password;
+qboolean BG_DB_VerifyPassword(const char *password, int clientNumNotify)
+{
+	const char *s = password;
 	int len = strlen(password);
-	if (len < PASSWORD_MIN_LEN) {
-		if (clientNumNotify > -2) {
+	if (len < PASSWORD_MIN_LEN)
+	{
+		if (clientNumNotify > -2)
+		{
 #if JK2_GAME
 			trap_SendServerCommand(clientNumNotify, va("print \"^1Chosen password is too short. Minimum %d characters.\n\"", PASSWORD_MIN_LEN));
 #elif JK2_CGAME
@@ -2993,8 +3079,10 @@ qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify) {
 		}
 		return qfalse;
 	}
-	if (len > PASSWORD_MAX_LEN) {
-		if (clientNumNotify > -2) {
+	if (len > PASSWORD_MAX_LEN)
+	{
+		if (clientNumNotify > -2)
+		{
 #if JK2_GAME
 			trap_SendServerCommand(clientNumNotify, va("print \"^1Chosen password is too long. Maximum %d characters.\n\"", PASSWORD_MAX_LEN));
 #elif JK2_CGAME
@@ -3004,39 +3092,22 @@ qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify) {
 		return qfalse;
 	}
 
-	while (*s != '\0') {
-		if (*s >= 'a' && *s <= 'z'
-			|| *s >= 'A' && *s <= 'Z'
-			|| *s >= '0' && *s <= '9'
-			|| *s == '_'
-			|| *s == '-'
-			|| *s == '.'
-			|| *s == '/' // pws allow aa bit more leeway than usernames, as they will never be used plaintext, and more possible chars means more security
-			|| *s == '[' // cant allow % because netcode wont send it properly, nor ascii codes above 127
-			|| *s == ']' // cant allow " because it would break the command
-			|| *s == '(' // cant allow ^ because it would be annoying to type colored passwords
-			|| *s == ')' // cant allow ` or ~ because console may not allow to type them
-			|| *s == '<' // someone COULD of course try it with a .cfg file but let's keep things such that they can be typed ingame
-			|| *s == '>'
-			|| *s == '='
-			|| *s == ':'
-			|| *s == ';'
-			|| *s == '+'
-			|| *s == '*'
-			|| *s == '!'
-			|| *s == '#'
-			|| *s == '$'
-			|| *s == '&'
-			|| *s == '@'
-			|| *s == ','
-			|| *s == '?'
-			|| *s == '|'
-			|| *s == '\''
-			) {
+	while (*s != '\0')
+	{
+		if (*s >= 'a' && *s <= 'z' || *s >= 'A' && *s <= 'Z' || *s >= '0' && *s <= '9' || *s == '_' || *s == '-' || *s == '.' || *s == '/' // pws allow aa bit more leeway than usernames, as they will never be used plaintext, and more possible chars means more security
+			|| *s == '['																												   // cant allow % because netcode wont send it properly, nor ascii codes above 127
+			|| *s == ']'																												   // cant allow " because it would break the command
+			|| *s == '('																												   // cant allow ^ because it would be annoying to type colored passwords
+			|| *s == ')'																												   // cant allow ` or ~ because console may not allow to type them
+			|| *s == '<'																												   // someone COULD of course try it with a .cfg file but let's keep things such that they can be typed ingame
+			|| *s == '>' || *s == '=' || *s == ':' || *s == ';' || *s == '+' || *s == '*' || *s == '!' || *s == '#' || *s == '$' || *s == '&' || *s == '@' || *s == ',' || *s == '?' || *s == '|' || *s == '\'')
+		{
 			// whitelist. ok.
 		}
-		else {
-			if (clientNumNotify > -2) {
+		else
+		{
+			if (clientNumNotify > -2)
+			{
 #if JK2_GAME
 				trap_SendServerCommand(clientNumNotify, "print \"^1Chosen password contains invalid characters. Allowed characters: A-Z a-z 0-9 _-.,/[]()<>=:;+*!#$&@'?| and no empty spaces.\n\"");
 #elif JK2_CGAME

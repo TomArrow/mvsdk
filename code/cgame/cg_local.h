@@ -2338,6 +2338,21 @@ extern vmCvar_t cg_debugBB;
 Ghoul2 Insert End
 */
 
+extern vmCvar_t cg_drawKillMessage;
+extern vmCvar_t cg_showKills;
+extern vmCvar_t cg_char_color_red;
+extern vmCvar_t cg_char_color_green;
+extern vmCvar_t cg_char_color_blue;
+extern vmCvar_t cg_drawLocalTime;
+extern vmCvar_t cg_drawLocalTimeX;
+extern vmCvar_t cg_drawLocalTimeY;
+extern vmCvar_t cg_drawLocalTimeScale;
+extern vmCvar_t cg_drawLocalTime12h;
+extern vmCvar_t cg_drawLocalTimeSeconds;
+extern vmCvar_t cg_cropLevelShot;
+extern vmCvar_t cg_teleportEvents;
+extern vmCvar_t cg_randomTaunts;
+
 //
 // cg_main.c
 //
@@ -3073,6 +3088,8 @@ void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent);
 /*
 Ghoul2 Insert End
 */
+
+void trap_GetTemporaryUserCommand(usercmd_t *ucmd);
 
 extern int mvapi;
 extern int coolApi;

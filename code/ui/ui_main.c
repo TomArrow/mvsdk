@@ -566,20 +566,80 @@ void UI_UpdateCharacterSkin(void);
 
 LIBEXPORT intptr_t vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11)
 {
-	// Original TomArrow vmMain - simplified to prevent recursion
+	int requestedMvApi = 0;
+	char coolApiFeaturesBuffer[80];
+	if (jk2version == VERSION_UNDEF && command != UI_GETAPIVERSION)
+	{ // Shouldn't happen under normal circumstances, but we had this case while debugging on old engine binaries...
+		Com_Printf("vmMain [UI]: first call to vmMain had a command != UI_GETAPIVERSION\n");
+		MV_UiDetectVersion(); // Try detecting the version now, otherwise we might be missing syscalls...
+	}
 	switch (command)
 	{
 	case UI_GETAPIVERSION:
-		// Simple version detection without complex MVAPI calls
-		if (jk2version == VERSION_UNDEF)
-		{
-			MV_UiDetectVersion();
-		}
-		return UI_API_VERSION;
+		// arg11 is the mainMenu parameter from JK2MV engine
+		if (arg11)
+			isMainMenu = qtrue;
 
+		// Initialize version detection first (this sets jk2version)
+		MV_UiDetectVersion();
+
+#ifdef JK2MV_MENU
+		// When compiled as mvmenu, we're a proper menu module
+		if (arg11) // mainMenu request
+		{
+			// Set menulevel to signal we're a proper mvmenu (the engine checks this)
+			trap_Cvar_Set("ui_menulevel", va("%d", MV_MENULEVEL_MAX));
+			// Return standard UI API version so engine doesn't reject us
+			return UI_API_VERSION;
+		}
+#else
+		// Regular UI build - let engine know we're not a mvmenu
+		if (arg11) // mainMenu request
+		{
+			return 0; // Return 0 to indicate no main menu support
+		}
+#endif
+		// Return the UI API version - this determines which UI module to use
+		return /*UI_API_VERSION*/ UI_API_VERSION;
 	case UI_INIT:
-		// Direct initialization without MVAPI complexity
-		_UI_Init(arg0);
+		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		coolApi = atoi(coolApiFeaturesBuffer);
+		if (coolApi & COOL_APIFEATURE_MARIADB)
+		{
+			trap_Cvar_VariableStringBuffer("cool_apiDBVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_dbVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else
+		{
+			coolApi_dbVersion = 0;
+		}
+		if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY)
+		{
+			trap_Cvar_VariableStringBuffer("cool_apiJKAVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+			coolApi_jkaVersion = atoi(coolApiFeaturesBuffer);
+		}
+		else
+		{
+			coolApi_jkaVersion = 0;
+		}
+
+		trap_Cvar_Register(&coolApi_supported_ui, "coolApi_supported_ui", va("%d", coolApi_supported_ui_int), CVAR_ROM);
+		trap_Cvar_Set("coolApi_supported_ui", va("%d", coolApi_supported_ui_int));
+
+		requestedMvApi = MVAPI_Init(arg11, arg0);
+
+		if (!requestedMvApi)
+		{ // Only call _UI_Init if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
+			_UI_Init(arg0);
+		}
+		else
+		{ // Store the values that were meant for _UI_Init to use them later, when MVAPIR_AFTER_INIT is called.
+			Init_inGameLoad = arg0;
+		}
+		return requestedMvApi;
+
+	case MVAPI_AFTER_INIT:
+		MVAPI_AfterInit();
 		return 0;
 
 	case UI_SHUTDOWN:
@@ -611,9 +671,8 @@ LIBEXPORT intptr_t vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr
 	case UI_DRAW_CONNECT_SCREEN:
 		UI_DrawConnectScreen(arg0);
 		return 0;
-
-	case UI_HASUNIQUECDKEY:
-		return qtrue;
+	case UI_HASUNIQUECDKEY: // mod authors need to observe this
+		return qtrue;		// bk010117 - change this to qfalse for mods!
 	}
 
 	return -1;
@@ -953,11 +1012,70 @@ void MVAPI_AfterInit(void)
 
 int MV_UiDetectVersion(void)
 {
-	// TomArrow simplified version detection - no MVAPI calls to prevent recursion
+#ifdef JK2MV_MENU
 	jk2startversion = jk2version = VERSION_1_04;
-	Com_Printf("jk2version [UI]: 1.04 (simplified detection)\n");
-	MV_SetGameVersion(jk2version, qtrue);
+	MV_SetGameVersion(jk2version, qtrue); // Set the GameVersion...
 	return UI_API_VERSION;
+#else
+	char buffer[32];
+	// MVSDK: Let's detect which version of the engine we are running in...
+	jk2version = VERSION_UNDEF;
+
+	trap_Cvar_VariableStringBuffer("mv_apienabled", buffer, sizeof(buffer));
+	if (strlen(buffer) && atoi(buffer) > 0)
+	{ // JK2MV >= 1.1
+		switch (trap_MVAPI_GetVersion())
+		{
+		case VERSION_1_02:
+			jk2version = VERSION_1_02;
+			break;
+		case VERSION_1_03:
+			jk2version = VERSION_1_03;
+			break;
+		case VERSION_1_04:
+			jk2version = VERSION_1_04;
+			break;
+		default:
+			jk2version = VERSION_UNDEF;
+		}
+	}
+
+	if (jk2version == VERSION_UNDEF)
+	{
+		char version[128];
+
+		trap_Cvar_VariableStringBuffer("version", version, sizeof(version));
+
+		if (strstr(version, "JK2MP"))
+		{ // JK2MP
+			if (strstr(version, "1.02"))
+				jk2version = VERSION_1_02;
+			else if (strstr(version, "1.03"))
+				jk2version = VERSION_1_03;
+			else if (strstr(version, "1.04"))
+				jk2version = VERSION_1_04;
+		}
+	}
+
+	if (jk2version == VERSION_UNDEF)
+	{
+		Com_Printf("MVSDK: Unable to detect jk2version [UI]; fallback to 1.04;");
+		jk2version = VERSION_1_04;
+	}
+	Com_Printf("jk2version [UI]: 1.0%i\n", jk2version);
+	jk2startversion = jk2version;
+	MV_SetGameVersion(jk2version, qtrue); // Set the GameVersion...
+
+	switch (jk2version)
+	{
+	case VERSION_1_02:
+		return UI_API_VERSION_1_02;
+	case VERSION_1_03:
+	case VERSION_1_04:
+	default:
+		return UI_API_VERSION;
+	}
+#endif
 }
 
 /*

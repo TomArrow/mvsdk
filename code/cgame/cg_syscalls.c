@@ -1121,9 +1121,25 @@ void trap_CG_RegisterSharedMemory_1_02(char *memory)
 	syscall(CG_SET_SHARED_BUFFER_1_02, memory);
 }
 
+qboolean trap_G2API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin) {
+	return syscall(CG_G2_SETSKIN, ghoul2, modelIndex, customSkin, renderSkin);
+}
+
+int trap_G2API_GetSurfaceRenderStatus(void *ghoul2, const int modelIndex, const char *surfaceName) {
+	return syscall(CG_G2_GETSURFACERENDERSTATUS, ghoul2, modelIndex, surfaceName);
+}
+
+qboolean trap_G2API_SkinlessModel(void *ghlInfo, int modelIndex) {
+	return syscall(CG_G2_SKINLESSMODEL, ghlInfo, modelIndex);
+}
+
 /*
 Ghoul2 Insert End
 */
+
+void trap_GetTemporaryUserCommand(usercmd_t *ucmd) {
+	syscall(CG_GET_TEMPORARY_USER_COMMAND, ucmd);
+}
 
 /* JK2MV Syscalls */
 qboolean trap_MVAPI_ControlFixes(int fixes)

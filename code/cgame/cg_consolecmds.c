@@ -2511,7 +2511,6 @@ static void CG_ModVersion_f(void)
 	if (cgs.isJK2Pro)
 	{
 		trap_SendClientCommand("modversion");
-		trap_Cvar_Set("cjp_client", "1.4JAPRO"); // Do this manually here i guess, just incase it does not do it when game is created due to ja+ or something
 	}
 }
 
@@ -3121,9 +3120,226 @@ void CG_LastWeapon_f(void) // loda fixme. japro
 		trap_S_MuteSound(cg.predictedPlayerState.clientNum, CHAN_WEAPON);
 }
 
-void CG_InitConsoleCommands(void)
+static void CG_PrintKillsForClient(int client)
 {
+	int i;
+	float ratio;
+	clientInfo_t *ci;
+
+	ci = &cgs.clientinfo[client];
+
+	if (cg.totalDeaths[client] != 0)
+	{
+		ratio = (float)cg.totalKills[client] / (float)cg.totalDeaths[client];
+	}
+	else
+	{
+		ratio = 0.0f;
+	}
+
+	CG_Printf(
+		"Total kills for %s\n" S_COLOR_WHITE
+		"Kills: " S_COLOR_GREEN "%d\n" S_COLOR_WHITE
+		"Deaths: " S_COLOR_RED "%d\n" S_COLOR_WHITE
+		"Ratio: " S_COLOR_YELLOW "%5.2f\n" S_COLOR_WHITE
+		"ID Kills Deaths Ratio Name\n",
+		ci->name,
+		cg.totalKills[client],
+		cg.totalDeaths[client],
+		ratio);
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		ci = &cgs.clientinfo[i];
+
+		if (ci->infoValid == qfalse)
+		{
+			continue;
+		}
+
+		if (i == client)
+		{
+			continue;
+		}
+
+		if (cg.directKills[i][client] != 0)
+		{
+			ratio = (float)cg.directKills[client][i] / (float)cg.directKills[i][client];
+		}
+		else
+		{
+			ratio = 0.0f;
+		}
+
+		CG_Printf(
+			"%2d " S_COLOR_GREEN "%5d " S_COLOR_RED "%6d " S_COLOR_YELLOW "%5.2f " S_COLOR_WHITE "%s\n",
+			i,
+			cg.directKills[client][i],
+			cg.directKills[i][client],
+			ratio,
+			ci->name);
+	}
+}
+
+static void CG_PrintKillsForAllClients(void)
+{
+	int i;
+	float ratio;
+	clientInfo_t *ci;
+
+	CG_Printf(
+		"Total kills\n"
+		"ID Kills Deaths Ratio Name\n");
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		ci = &cgs.clientinfo[i];
+
+		if (ci->infoValid == qfalse)
+		{
+			continue;
+		}
+
+		if (cg.totalDeaths[i] != 0)
+		{
+			ratio = (float)cg.totalKills[i] / (float)cg.totalDeaths[i];
+		}
+		else
+		{
+			ratio = 0.0f;
+		}
+
+		CG_Printf(
+			"%2d " S_COLOR_GREEN "%5d " S_COLOR_RED "%6d " S_COLOR_YELLOW "%5.2f " S_COLOR_WHITE "%s\n",
+			i,
+			cg.totalKills[i],
+			cg.totalDeaths[i],
+			ratio,
+			ci->name);
+	}
+}
+
+static void CG_KillTracker_f(void)
+{
+	if (trap_Argc() > 1)
+	{
+		int client = CG_ClientNumberFromString(CG_Argv(1));
+		if (client >= 0)
+		{
+			CG_PrintKillsForClient(client);
+		}
+	}
+	else
+	{
+		CG_PrintKillsForAllClients();
+	}
+}
+
+typedef struct
+{
+	char *cmd;
+	void (*function)(void);
+} consoleCommand_t;
+
+static consoleCommand_t commands[] = {
+	{"testgun", CG_TestGun_f},
+	{"testmodel", CG_TestModel_f},
+	{"nextframe", CG_TestModelNextFrame_f},
+	{"prevframe", CG_TestModelPrevFrame_f},
+	{"nextskin", CG_TestModelNextSkin_f},
+	{"prevskin", CG_TestModelPrevSkin_f},
+	{"viewpos", CG_Viewpos_f},
+	{"+scores", CG_ScoresDown_f},
+	{"-scores", CG_ScoresUp_f},
+	{"sizeup", CG_SizeUp_f},
+	{"sizedown", CG_SizeDown_f},
+	{"weapnext", CG_NextWeapon_f},
+	{"weapprev", CG_PrevWeapon_f},
+	{"weapon", CG_Weapon_f},
+	{"tell_target", CG_TellTarget_f},
+	{"tell_attacker", CG_TellAttacker_f},
+	{"vtell_target", CG_VoiceTellTarget_f},
+	{"vtell_attacker", CG_VoiceTellAttacker_f},
+	{"tcmd", CG_TargetCommand_f},
+	{"nextTeamMember", CG_NextTeamMember_f},
+	{"prevTeamMember", CG_PrevTeamMember_f},
+	{"nextOrder", CG_NextOrder_f},
+	{"confirmOrder", CG_ConfirmOrder_f},
+	{"denyOrder", CG_DenyOrder_f},
+	{"taskOffense", CG_TaskOffense_f},
+	{"taskDefense", CG_TaskDefense_f},
+	{"taskPatrol", CG_TaskPatrol_f},
+	{"taskCamp", CG_TaskCamp_f},
+	{"taskFollow", CG_TaskFollow_f},
+	{"taskRetrieve", CG_TaskRetrieve_f},
+	{"taskEscort", CG_TaskEscort_f},
+	{"taskSuicide", CG_TaskSuicide_f},
+	{"taskOwnFlag", CG_TaskOwnFlag_f},
+	{"tauntKillInsult", CG_TauntKillInsult_f},
+	{"tauntPraise", CG_TauntPraise_f},
+	{"tauntTaunt", CG_TauntTaunt_f},
+	{"tauntDeathInsult", CG_TauntDeathInsult_f},
+	{"tauntGauntlet", CG_TauntGauntlet_f},
+	{"spWin", CG_spWin_f},
+	{"spLose", CG_spLose_f},
+	{"scoresDown", CG_scrollScoresDown_f},
+	{"scoresUp", CG_scrollScoresUp_f},
+	{"startOrbit", CG_StartOrbit_f},
+	//{ "camera", CG_Camera_f },
+	{"loaddeferred", CG_LoadDeferredPlayers},
+	{"invnext", CG_NextInventory_f},
+	{"invprev", CG_PrevInventory_f},
+	{"forcenext", CG_NextForcePower_f},
+	{"forceprev", CG_PrevForcePower_f},
+
+	// jk2pro stuff
+	{"strafeHelper", CG_StrafeHelper_f},
+	{"speedometer", cg_speedometer_f},
+
+	{"+zoom", CG_ZoomDown_f},
+	{"-zoom", CG_ZoomUp_f},
+
+	{"say", CG_Say_f},
+	{"say_team", CG_Say_f},
+	{"tell", CG_Say_f},
+
+	{"clientlist", CG_ClientList_f},
+
+	{"modversion", CG_ModVersion_f},
+
+	{"follow", CG_Follow_f},
+	{"followRedFlag", CG_FollowRedFlag_f},
+	{"followBlueFlag", CG_FollowBlueFlag_f},
+	{"followYellowFlag", CG_FollowYellowFlag_f},
+	{"followFastest", CG_FollowFastest_f},
+
+	{"remapShader", CG_RemapShader_f},
+	{"listRemaps", CG_ListRemaps_f},
+
+	{"do", CG_Do_f},
+	{"flipkick", CG_Flipkick_f},
+	{"lowjump", CG_Lowjump_f},
+	{"+duck", CG_NorollDown_f},
+	{"-duck", CG_NorollUp_f},
+	{"weaplast", CG_LastWeapon_f},
+
+	{"killTracker", CG_KillTracker_f},
+};
+
+/*
+=================
+CG_ConsoleCommand
+
+The string has been tokenized and can be retrieved with
+Cmd_Argc() / Cmd_Argv()
+=================
+*/
+qboolean CG_ConsoleCommand(void)
+{
+	const char *cmd;
 	size_t i;
+
+	cmd = CG_Argv(0);
 
 	for (i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
 	{

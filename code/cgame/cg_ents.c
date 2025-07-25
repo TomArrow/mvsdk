@@ -603,31 +603,10 @@ static void CG_General(centity_t *cent)
 
 	memset(&ent, 0, sizeof(ent));
 
-	if (cent->currentState.clientNum >= 0 && cent->currentState.clientNum < MAX_CLIENTS)
-	{
-		clientInfo = &cgs.clientinfo[cent->currentState.clientNum];
-	}
-
-	if (clientInfo != NULL)
-	{
-		if (clientInfo->colorOverride[0] != 0.0f ||
-			clientInfo->colorOverride[1] != 0.0f ||
-			clientInfo->colorOverride[2] != 0.0f ||
-			clientInfo->colorOverride[3] != 0.0f)
-		{
-			ent.shaderRGBA[0] = clientInfo->colorOverride[0] * 255.0f;
-			ent.shaderRGBA[1] = clientInfo->colorOverride[1] * 255.0f;
-			ent.shaderRGBA[2] = clientInfo->colorOverride[2] * 255.0f;
-			ent.shaderRGBA[3] = clientInfo->colorOverride[3] * 255.0f;
-		}
-		else
-		{
-			ent.shaderRGBA[0] = clientInfo->modelColor[0];
-			ent.shaderRGBA[1] = clientInfo->modelColor[1];
-			ent.shaderRGBA[2] = clientInfo->modelColor[2];
-			ent.shaderRGBA[3] = clientInfo->modelColor[3];
-		}
-	}
+	ent.shaderRGBA[0] = cg_char_color_red.integer;
+	ent.shaderRGBA[1] = cg_char_color_green.integer;
+	ent.shaderRGBA[2] = cg_char_color_blue.integer;
+	ent.shaderRGBA[3] = 255;
 
 	if (cent->currentState.modelGhoul2 >= G2_MODELPART_HEAD &&
 		cent->currentState.modelGhoul2 <= G2_MODELPART_RLEG &&
@@ -1140,7 +1119,7 @@ static void CG_General(centity_t *cent)
 			int skin = 0;
 
 			trap_G2API_InitGhoul2Model(&cent->ghoul2, modelName, 0, 0, 0, 0, 0);
-			if (cent->ghoul2 && coolApi_jkaVersion && trap_CG_COOL_API_SkinlessModel(cent->ghoul2, 0))
+			if (cent->ghoul2 && trap_G2API_SkinlessModel(cent->ghoul2, 0))
 			{ // well, you'd never want a skinless model, so try to get his skin...
 				Q_strncpyz(skinName, modelName, MAX_QPATH);
 				l = strlen(skinName);
@@ -1156,7 +1135,7 @@ static void CG_General(centity_t *cent)
 
 					skin = trap_R_RegisterSkin(skinName);
 				}
-				trap_CG_COOL_API_SetSkin(cent->ghoul2, 0, skin, skin);
+				trap_G2API_SetSkin(cent->ghoul2, 0, skin, skin);
 			}
 		}
 		else if (cent->currentState.bolt1)

@@ -80,7 +80,7 @@ function(get_git_head_revision _refspecvar _hashvar)
 	set(${_hashvar} "${HEAD_HASH}" PARENT_SCOPE)
 endfunction()
 
-function(git_describe _var)
+function(git_describe _var _rev)
 	if(NOT GIT_FOUND)
 		find_package(Git QUIET)
 	endif()
@@ -92,6 +92,10 @@ function(git_describe _var)
 	if(NOT hash)
 		set(${_var} "HEAD-HASH-NOTFOUND" PARENT_SCOPE)
 		return()
+	endif()
+
+	if(NOT _rev STREQUAL "HEAD")
+		set(hash ${_rev})
 	endif()
 
 	# TODO sanitize

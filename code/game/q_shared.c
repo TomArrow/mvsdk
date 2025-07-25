@@ -502,7 +502,7 @@ char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 				*data_p = ( char * ) data;
 				return com_token;
 			}
-			if (len < MAX_TOKEN_CHARS)
+			if (len < MAX_TOKEN_CHARS - 1)
 			{
 				com_token[len] = c;
 				len++;
@@ -513,7 +513,7 @@ char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 	// parse a regular word
 	do
 	{
-		if (len < MAX_TOKEN_CHARS)
+		if (len < MAX_TOKEN_CHARS - 1)
 		{
 			com_token[len] = c;
 			len++;
@@ -524,11 +524,6 @@ char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 			com_lines++;
 	} while (c>32);
 
-	if (len == MAX_TOKEN_CHARS)
-	{
-//		Com_Printf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
-		len = 0;
-	}
 	com_token[len] = 0;
 
 	*data_p = ( char * ) data;
@@ -710,26 +705,22 @@ void SkipBracedSection (const char **program) {
 	} while( depth && *program );
 }
 
-/*
-=================
-SkipRestOfLine
-=================
-*/
-void SkipRestOfLine ( const char **data ) {
-	const char	*p;
-	int		c;
-
+void SkipRestOfLine(const char **data)
+{
+	const char *p;
 	p = *data;
-	while ( (c = *p++) != 0 ) {
-		if ( c == '\n' ) {
+	while (p != NULL && *p != '\0')
+	{
+		if (*p == '\n')
+		{
 			com_lines++;
+			p++;
 			break;
 		}
+		p++;
 	}
-
 	*data = p;
 }
-
 
 void Parse1DMatrix (const char **buf_p, int x, float *m) {
 	char	*token;

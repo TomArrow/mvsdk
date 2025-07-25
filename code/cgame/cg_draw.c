@@ -379,7 +379,7 @@ static void CG_DrawZoomMask(void)
 		// Draw target mask
 		trap_R_SetColor(colorTable[CT_WHITE]);
 		trap_R_DrawStretchPic(xOffset, yOffset, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1, 1, cgs.media.disruptorMask);
-		trap_R_SetColor(NULL);*/
+		trap_R_SetColor(NULL);
 
 		// disruptor zoom mode
 		level = (float)(50.0f - zoomFov) / 50.0f; //(float)(80.0f - zoomFov) / 80.0f;
@@ -2025,6 +2025,9 @@ void CG_DrawHUD(centity_t *cent)
 	{
 		CG_RealAccelHelper();
 	}
+
+	if (cg_snapHud.integer)
+		CG_DrawSnapHud();
 
 	if (cg_strafeHelper.integer)
 		CG_StrafeHelper(cent);
@@ -4293,6 +4296,10 @@ static void CG_DrawLagometer(void)
 	//
 	// draw the graph
 	//
+	x = cgs.screenWidth - 48;
+	y = cgs.screenHeight - 144;
+
+	trap_R_SetColor(NULL);
 	trap_R_SetColor(NULL);
 	if (cg_lagometer.integer < 3)
 		CG_DrawPic(x, y, 48, 48, cgs.media.lagometerShader);
@@ -4475,12 +4482,17 @@ void CG_CenterPrintMultiKill(const char *str, int y, int charWidth)
 	char *s;
 	int i = 0;
 
-	if (cg.lastKillTime + (cg_centertime.integer * 1000) > cg.time)
+	if (cg_drawKillMessage.integer < 1)
+	{
+		return;
+	}
+
+	if (cg_drawKillMessage.integer > 1 && (cg.lastKillTime + (cg_centertime.integer * 1000) > cg.time))
 	{
 		// we killed someone recently; append a line break and the new kill message
 		Com_sprintf(cg.centerPrint, sizeof(cg.centerPrint), "%s\n%s", cg.centerPrint, str);
 	}
-	else
+	else // cg_drawKillMessage.integer == 1
 	{
 		// normal behavior
 		Q_strncpyz(cg.centerPrint, str, sizeof(cg.centerPrint));
@@ -5547,9 +5559,6 @@ static void CG_DrawSpectator(void)
 		s = CG_GetStripEdString("INGAMETEXT", "SPEC_CHOOSEJOIN");
 		CG_Text_Paint ( 0.5f * cgs.screenWidth - CG_Text_Width ( s, 1.0f, 3 ) / 2, cgs.screenHeight-40, 1.0f, colorWhite, s, 0, 0, 0, 3 );
 	}*/
-	// JAPRO - Clientside - Remove Useless spec text
-}
-
 /*
 =================
 CG_DrawVote
@@ -6978,6 +6987,52 @@ ID_INLINE void CG_ChatBox_DrawStrings(void) // o, ID_INLINE is static Q_INLINE
 	}
 }
 
+void CG_DrawLocalTime(void)
+{
+	float x = cg_drawLocalTimeX.value;
+	float y = cg_drawLocalTimeY.value;
+	float scale = cg_drawLocalTimeScale.value;
+	qtime_t time;
+	char clock[] = "12:00:00 AM";
+	const char *am_pm = "";
+
+	if (!cg_drawLocalTime.integer)
+		return;
+
+	trap_RealTime(&time);
+
+	if (cg_drawLocalTime12h.integer)
+	{
+		if (time.tm_hour >= 12)
+		{
+			am_pm = " PM";
+		}
+		else
+		{
+			am_pm = " AM";
+		}
+		if (time.tm_hour > 12)
+		{
+			time.tm_hour -= 12;
+		}
+		if (time.tm_hour == 0)
+		{
+			time.tm_hour = 12;
+		}
+	}
+
+	if (cg_drawLocalTimeSeconds.integer)
+	{
+		Com_sprintf(clock, sizeof(clock), "%02d:%02d:%02d%s", time.tm_hour, time.tm_min, time.tm_sec, am_pm);
+	}
+	else
+	{
+		Com_sprintf(clock, sizeof(clock), "%02d:%02d%s", time.tm_hour, time.tm_min, am_pm);
+	}
+
+	CG_Text_Paint(x, y, scale, colorTable[CT_WHITE], clock, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+}
+
 static void CG_Draw2D(void)
 {
 	float inTime = cg.invenSelectTime + WEAPON_SELECT_TIME;
@@ -7121,6 +7176,7 @@ static void CG_Draw2D(void)
 				Dzikie_CG_DrawLine(cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) - 5, cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) + 5, lineWidth, hcolor, hcolor[3], 0); // 640x480, 320x240
 			}
 		}
+	if ( cg_draw2D.integer == 0 ) {
 		return;
 	}
 
@@ -7668,6 +7724,8 @@ static void CG_Draw2D(void)
 		CG_DrawUpperRight();
 		CG_DrawShowPos();
 	}
+
+	CG_DrawLocalTime();
 
 	if (!CG_DrawFollow())
 	{
@@ -8869,6 +8927,35 @@ static qboolean CG_GetStrafehelperCmdAndFrametime(usercmd_t *cmd, int *reference
 		{
 			*referenceFrameTime = 1000 / cg_strafeHelper_UnknownFPSFallback.integer;
 		}
+	int currentCmdNumber;
+	int referenceFrameTime;
+	static int referenceFrameTimeOld;
+	qboolean onGround;
+	usercmd_t cmd = { 0 };
+	usercmd_t oldcmd = { 0 };
+
+	if (moveStyle == MV_SIEGE)
+		return; //no strafe in siege
+
+
+	referenceFrameTime = cg.frametime;
+
+	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
+		currentCmdNumber = trap_GetCurrentCmdNumber();
+		trap_GetUserCmd(currentCmdNumber, &cmd);
+		if((cg_strafeHelper_RealPhysicsLines.integer || cg_com_physicsFps.integer) && currentCmdNumber > 1){
+
+			trap_GetUserCmd(currentCmdNumber-1, &oldcmd);
+			if (cmd.serverTime != oldcmd.serverTime) {
+				referenceFrameTime = cmd.serverTime - oldcmd.serverTime;
+				referenceFrameTimeOld = referenceFrameTime;
+			}
+			else {
+				referenceFrameTime = referenceFrameTimeOld;
+			}
+		}
+	}
+	else if (cg.snap) {
 		moveDir = cg.snap->ps.movementDir;
 		switch (moveDir)
 		{
@@ -8931,74 +9018,22 @@ static void CG_RealAccel_SickoAccelerate(vec3_t velocity, vec3_t velocityOut, ve
 	}
 	baseInc = frametime * wishspeed;
 
-	accel = addspeed / baseInc;
+		accel = addspeed / baseInc;
 
-	if (accel > maxAccel)
-	{
-		accel = maxAccel;
-	}
-	else if (accel < baseAccel)
-	{
-		accel = baseAccel;
-	}
+		if (accel > maxAccel)
+		{
+			accel = maxAccel;
+		}
+		else if (accel < baseAccel)
+		{
+			accel = baseAccel;
+		}
 
-	accelspeed = accel * baseInc;
-	if (accelspeed > addspeed)
-	{
-		accelspeed = addspeed;
-	}
-
-	for (i = 0; i < 3; i++)
-	{
-		velocityOut[i] += accelspeed * wishdir[i];
-	}
-}
-
-static void CG_RealAccel_QuaJKAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel, float maxAccelWishSpeed)
-{
-	// q2 style
-	int i;
-	float addspeed, accelspeed, currentspeed;
-	float accel;
-	float f, finalWishSpeed;
-	float accelAddSlow, accelAddHigh;
-	float neededSpeedSlow, neededSpeedHigh;
-
-	VectorCopy(velocity, velocityOut);
-
-	currentspeed = DotProduct(velocity, wishdir);
-
-	if (currentspeed >= wishspeed)
-		return;
-
-	accelAddSlow = baseAccel * frametime * wishspeed;
-	accelAddHigh = maxAccel * frametime * maxAccelWishSpeed;
-
-	neededSpeedSlow = wishspeed - accelAddSlow;
-	neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
-
-	f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
-
-	if (f < 0)
-		f = 0;
-	else if (f > 1)
-		f = 1;
-
-	accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
-	finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
-
-	accelspeed = accel * frametime * finalWishSpeed;
-
-	addspeed = finalWishSpeed - currentspeed;
-	if (addspeed <= 0)
-	{
-		return;
-	}
-
-	if (accelspeed > addspeed)
-	{
-		accelspeed = addspeed;
-	}
+		accelspeed = accel * baseInc;
+		if (accelspeed > addspeed)
+		{
+			accelspeed = addspeed;
+		}
 
 	for (i = 0; i < 3; i++)
 	{
@@ -9006,506 +9041,601 @@ static void CG_RealAccel_QuaJKAccelerate(vec3_t velocity, vec3_t velocityOut, ve
 	}
 }
 
-static void CG_RealAccel_DreamAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel, float maxAccelWishSpeed, float velTotal)
-{
-	// q2 style
-	int i;
-	float addspeed, accelspeed, currentspeed;
-	float accel;
-	float f, finalWishSpeed;
-	float accelAddSlow, accelAddHigh;
-	float neededSpeedSlow, neededSpeedHigh;
-	float scale;
-	float maxFront;
-	float tmp;
-	float h = 2.0;
-	float w;
-	float idealVelRatio;
-	static const float backpow = 5.0f;
-
-	VectorCopy(velocity, velocityOut);
-
-	currentspeed = DotProduct(velocity, wishdir);
-
-	if (currentspeed >= wishspeed)
-		return;
-
-	accelAddSlow = baseAccel * frametime * wishspeed;
-	accelAddHigh = maxAccel * frametime * maxAccelWishSpeed;
-
-	neededSpeedSlow = wishspeed - accelAddSlow;
-	neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
-
-	if (currentspeed < 0)
+	static void CG_RealAccel_QuaJKAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel, float maxAccelWishSpeed)
 	{
-		f = (-1.0f * currentspeed) / velTotal;
-		f = 1.0f - powf(1.0f - f, backpow);
-	}
-	else
-	{
+		// q2 style
+		int i;
+		float addspeed, accelspeed, currentspeed;
+		float accel;
+		float f, finalWishSpeed;
+		float accelAddSlow, accelAddHigh;
+		float neededSpeedSlow, neededSpeedHigh;
+
+		VectorCopy(velocity, velocityOut);
+
+		currentspeed = DotProduct(velocity, wishdir);
+
+		if (currentspeed >= wishspeed)
+			return;
+
+		accelAddSlow = baseAccel * frametime * wishspeed;
+		accelAddHigh = maxAccel * frametime * maxAccelWishSpeed;
+
+		neededSpeedSlow = wishspeed - accelAddSlow;
+		neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
+
 		f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
-	}
 
-	if (f < 0)
-		f = 0;
-	else if (f > 1)
-		f = 1;
+		if (f < 0)
+			f = 0;
+		else if (f > 1)
+			f = 1;
 
-	accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
-	finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
+		accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
+		finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
 
-	accelspeed = accel * frametime * finalWishSpeed;
+		accelspeed = accel * frametime * finalWishSpeed;
 
-	addspeed = finalWishSpeed - currentspeed;
-	if (addspeed <= 0)
-	{
-		return;
-	}
-
-	if (accelspeed > addspeed)
-	{
-		accelspeed = addspeed;
-	}
-
-	w = accelAddSlow + wishspeed;
-	idealVelRatio = (w * w) / (velTotal * velTotal);
-	idealVelRatio *= accelAddSlow / (wishspeed + accelAddSlow);
-	maxFront = idealVelRatio * velTotal;
-
-	tmp = 2 * wishdir[0] * velocityOut[0] + 2 * wishdir[1] * velocityOut[1] + 2.0f * wishdir[2] * velocityOut[2];
-	scale = (-2.0f * wishdir[0] * velocityOut[0] - 2.0f * wishdir[1] * velocityOut[1] - 2.0f * wishdir[2] * velocityOut[2] + sqrtf(tmp * tmp + 4 * h * maxFront * (wishdir[0] * wishdir[0] + wishdir[1] * wishdir[1] + wishdir[2] * wishdir[2]) * (h * maxFront + 2.0f * velTotal))) / (2.0 * h * (wishdir[0] * wishdir[0] + wishdir[1] * wishdir[1] + wishdir[2] * wishdir[2]));
-
-	if (scale < 0 || fpclassify(scale) == FP_NAN)
-	{
-		return;
-	}
-	else if (scale > accelspeed)
-	{
-		scale = accelspeed;
-	}
-	accelspeed = scale;
-
-	for (i = 0; i < 3; i++)
-	{
-		velocityOut[i] += accelspeed * wishdir[i];
-	}
-}
-
-static void CG_RealAccel_Accel(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float accel)
-{
-	// q2 style
-	int i;
-	float addspeed, accelspeed, currentspeed;
-
-	VectorCopy(velocity, velocityOut);
-
-	currentspeed = DotProduct(velocity, wishdir);
-	addspeed = wishspeed - currentspeed;
-
-	accelspeed = accel * frametime * wishspeed;
-
-	// pm->accelMiss = (addspeed - accelspeed) / accelspeed;
-	// pm->wishSpeed = wishspeed;
-
-	if (addspeed <= 0)
-	{
-		return;
-	}
-	if (accelspeed > addspeed)
-	{
-		accelspeed = addspeed;
-	}
-
-	for (i = 0; i < 3; i++)
-	{
-		velocityOut[i] += accelspeed * wishdir[i];
-	}
-}
-
-static void CG_RealAccel_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce, int runFlags)
-{
-	float backoff;
-	float change;
-	int i;
-
-	if ((runFlags & RFL_CLIMBTECH) && (cg.predictedPlayerState.pm_flags & PMF_STUCK_TO_WALL))
-	{ // no sliding!
-		VectorCopy(in, out);
-		return;
-	}
-
-	backoff = DotProduct(in, normal);
-
-	if (backoff < 0)
-	{
-		backoff *= overbounce;
-	}
-	else
-	{
-		backoff /= overbounce;
-	}
-
-	for (i = 0; i < 3; i++)
-	{
-		change = normal[i] * backoff;
-		out[i] = in[i] - change;
-	}
-}
-
-/*
-static struct {
-	qboolean	active;
-	int			countSaved;
-	float		startX;
-	float		oldEndX;
-	float		oldY;
-	float		oldHeight;
-	qhandle_t	oldShader;
-	vec4_t		color;
-} horzPicOpt;
-
-// avoid too many redundant drawcalls.
-// finish parm: ignore values, just flush.
-static int CG_DrawPicHorizontalOptimized(float x, float y, float width, float height, float consecutiveThreshold, vec4_t color, qhandle_t hShader, qboolean finish) {
-	if (!horzPicOpt.active && !finish) {
-		horzPicOpt.startX = x;
-		horzPicOpt.oldEndX = x + width;
-		horzPicOpt.oldHeight = height;
-		horzPicOpt.oldY = y;
-		horzPicOpt.oldShader = hShader;
-		VectorCopy(color, horzPicOpt.color);
-	}
-	else if (finish) {
-		if (horzPicOpt.active) {
-			trap_R_DrawStretchPic(horzPicOpt.startX, horzPicOpt.oldY, horzPicOpt.oldEndX- horzPicOpt.startX, horzPicOpt.oldHeight, 0, 0, 1, 1, horzPicOpt.oldShader);
-		}
-	}
-	else {
-		qboolean different = qfalse;
-		different = different || (!VectorCompare(color,horzPicOpt.color));
-		different = different || (hShader != horzPicOpt.oldShader);
-		different = different || (height != horzPicOpt.oldHeight);
-		different = different || (y != horzPicOpt.oldY);
-	}
-	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
-}
-
-static void CG_DrawPicHorizontalOptimizedClear() {
-	memset(&horzPicOpt,0,sizeof(horzPicOpt));
-}*/
-
-float MovementOverbounceFactor(int moveStyle, playerState_t *ps, usercmd_t *ucmd);
-static void CG_RealAccelHelper()
-{
-
-	int referenceFrameTime;
-	float frametime;
-	qboolean onGround;
-	qboolean slicking = qfalse;
-	usercmd_t cmd = {0};
-	int startAngle;
-	int frontViewAngleOffset, rightViewAngleOffset; // for complex slope calculation (2 buttons pressed)
-	float angleStep = 360.0f / 65536.0f;
-	float pixelAngleWidth = cg.refdef.fov_x / (float)cgs.glconfig.vidWidth;
-	int angleIncrement = 1;
-	int i;
-	vec3_t currentVelVec;
-	vec3_t newVelVec;
-	float currentSpeed;
-	float currentSpeed3D;
-	float iAngle = 0;
-	float angleRange = cg.refdef.fov_x; // +2.0f for a bit of buffer so the sides dont get cut off
-	float x, oldX = -1.0f;
-	float angleXStep, angleXStepHalf; // how much we have to move X pos per step
-	float vDelta;
-	float hereAccel;
-	vec4_t losingParsed;
-	vec4_t gainingParsed;
-	const vec4_t losingDefault = {1.0, 0.0, 0.0, 0.5f};
-	const vec4_t gainingDefault = {0.0, 1.0, 0.0, 0.5f};
-	const vec_t *losing = losingDefault;
-	const vec_t *gaining = gainingDefault;
-	float mid = (float)cgs.screenHeight / 2.0f;
-	qboolean snap = qtrue;
-	qboolean q2Snap = qfalse;
-	vec3_t accelOffsetDir = {0};
-	vec3_t accelOffsetAngles;
-	float accelOffsetAngle;
-	float frictionFactor;
-	float tmp;
-	int style = MV_JK2;
-	int runFlags = 0;
-	const char *t;
-	trace_t groundTrace;
-	qboolean doingSlopes = qfalse;
-	qboolean doingComplexSlopes = qfalse;
-	int overbounce;
-
-	// optimized draw calls:
-	float oldVDelta;
-	float xStart;
-	qboolean bufferedDraw = qfalse;
-	int bufferedCount;
-	int drawCalls = 0;
-
-	if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime))
-	{
-		return; // No cg.snap causes this to return.
-	}
-
-	overbounce = MovementOverbounceFactor(style, &cg.strafehelperPredictedPlayerState, &cmd);
-
-	if (cg.strafehelperVelocityIsInterpolated)
-	{
-		VectorCopy(cg.strafehelperRealVel, currentVelVec); // interpolated velocities make snapping display spazz out, understandably
-	}
-	else
-	{
-		VectorCopy(cg.strafehelperPredictedPlayerState.velocity, currentVelVec);
-	}
-
-	if (cg_strafeHelper_FPS.value < 1)
-		frametime = ((float)referenceFrameTime * 0.001f);
-	else if (cg_strafeHelper_FPS.value > 1000) // invalid
-		frametime = 1;
-	else
-		frametime = 1 / cg_strafeHelper_FPS.value;
-
-	onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); // sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
-
-	memset(&groundTrace, 0, sizeof(groundTrace));
-
-	if (cg_realAccelPreFriction.integer)
-	{
-		currentSpeed = XYSPEED(currentVelVec);
-	}
-
-	if (cgs.isTommyTernal && cg.strafehelperPredictedPlayerState.stats[STAT_RACEMODE])
-	{
-		style = cg.strafehelperPredictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-		runFlags = cg.strafehelperPredictedPlayerState.stats[STAT_RUNFLAGS];
-		if (cg.strafehelperPredictedPlayerState.stats[STAT_MSECRESTRICT] == -2)
+		addspeed = finalWishSpeed - currentspeed;
+		if (addspeed <= 0)
 		{
-			snap = qfalse;
-		}
-		else if (style == MV_Q2)
-		{
-			q2Snap = qtrue;
-			snap = qfalse;
-		}
-	}
-	else if (cg_pmove_float.integer)
-	{
-		snap = qfalse;
-	}
-
-	if (onGround)
-	{																	 // trace down to see if we are on slopes/whether we are slicking (latter is only relevant for q3 based styles since they have cpm accel then)
-		static const vec3_t playerMins = {-15, -15, DEFAULT_MINS_2 + 1}; // do +1 in case there's any issues with being in solid or whatever.
-		static const vec3_t playerMaxs = {15, 15, DEFAULT_MAXS_2};
-		vec3_t down;
-		VectorCopy(cg.strafehelperPredictedPlayerState.origin, down);
-
-		down[2] -= 2.0f; // doesnt really matter we already know we're on ground, just trying to see the normal
-
-		CG_Trace(&groundTrace, cg.strafehelperPredictedPlayerState.origin, playerMins, playerMaxs, down, cg.strafehelperPredictedPlayerState.clientNum, MASK_PLAYERSOLID);
-
-		if ((groundTrace.surfaceFlags & SURF_SLICK))
-		{
-			slicking = qtrue;
+			return;
 		}
 
-		if (cg_realAccelSlopes.integer)
+		if (accelspeed > addspeed)
 		{
-			doingSlopes = qtrue;
-			if (groundTrace.startsolid || groundTrace.fraction == 1.0f)
-			{
-				if (cg_developer.integer)
-				{ // should never happen unless freak situations?
-					Com_Printf("^3RealAccel strafehelper: Groundtrace didn't work for some reason.");
-				}
-				doingSlopes = qfalse;
-			}
-			else if (groundTrace.plane.normal[0] == 0.0f && groundTrace.plane.normal[1] == 0.0f && groundTrace.plane.normal[2] == 1.0f)
-			{
-				// its flat ground, no need for slope calc
-				doingSlopes = qfalse;
-			}
-			else
-			{
-				if (cmd.forwardmove && cmd.rightmove)
-				{
-					if (runFlags & RFL_BOT && cmd.forwardmove > 0 && (cmd.buttons & BUTTON_STRAFEBOT))
-					{
-						cmd.rightmove = 0; // bot does this too.
-					}
-					else if (cg_realAccelSlopes.integer >= 2)
-					{
-						doingComplexSlopes = qtrue; // we have more than 1 button pressed. which means we need to calculate an adjusted wishspeed too :/
-					}
-				}
-			}
+			accelspeed = addspeed;
+		}
+
+		for (i = 0; i < 3; i++)
+		{
+			velocityOut[i] += accelspeed * wishdir[i];
 		}
 	}
 
-	if (onGround && !slicking)
+	static void CG_RealAccel_DreamAccelerate(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float baseAccel, float maxAccel, float maxAccelWishSpeed, float velTotal)
 	{
-		if (MovementIsQuake3Based(style))
+		// q2 style
+		int i;
+		float addspeed, accelspeed, currentspeed;
+		float accel;
+		float f, finalWishSpeed;
+		float accelAddSlow, accelAddHigh;
+		float neededSpeedSlow, neededSpeedHigh;
+		float scale;
+		float maxFront;
+		float tmp;
+		float h = 2.0;
+		float w;
+		float idealVelRatio;
+		static const float backpow = 5.0f;
+
+		VectorCopy(velocity, velocityOut);
+
+		currentspeed = DotProduct(velocity, wishdir);
+
+		if (currentspeed >= wishspeed)
+			return;
+
+		accelAddSlow = baseAccel * frametime * wishspeed;
+		accelAddHigh = maxAccel * frametime * maxAccelWishSpeed;
+
+		neededSpeedSlow = wishspeed - accelAddSlow;
+		neededSpeedHigh = maxAccelWishSpeed - accelAddHigh;
+
+		if (currentspeed < 0)
 		{
-			frictionFactor = (1.0f - 8.0f * (frametime));
+			f = (-1.0f * currentspeed) / velTotal;
+			f = 1.0f - powf(1.0f - f, backpow);
 		}
 		else
 		{
-			frictionFactor = (1.0f - 6.0f * (frametime));
+			f = (currentspeed - neededSpeedHigh) / (neededSpeedSlow - neededSpeedHigh);
 		}
-		VectorScale(currentVelVec, frictionFactor, currentVelVec);
-	}
-	currentSpeed3D = VectorLength(currentVelVec);
 
-	if (!cg_realAccelPreFriction.integer)
-	{
-		currentSpeed = XYSPEED(currentVelVec);
-	}
+		if (f < 0)
+			f = 0;
+		else if (f > 1)
+			f = 1;
 
-	// if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed - 1))
-	if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed / 2 - 1))
-		return;
+		accel = (f * baseAccel) + ((1.0f - f) * maxAccel);
+		finalWishSpeed = (f * wishspeed) + ((1.0f - f) * maxAccelWishSpeed);
 
-	t = cg_realAccelPositiveColor.string;
-	gainingParsed[0] = atof(COM_Parse(&t));
-	gainingParsed[1] = atof(COM_Parse(&t));
-	gainingParsed[2] = atof(COM_Parse(&t));
-	gainingParsed[3] = atof(COM_Parse(&t));
+		accelspeed = accel * frametime * finalWishSpeed;
 
-	t = cg_realAccelNegativeColor.string;
-	losingParsed[0] = atof(COM_Parse(&t));
-	losingParsed[1] = atof(COM_Parse(&t));
-	losingParsed[2] = atof(COM_Parse(&t));
-	losingParsed[3] = atof(COM_Parse(&t));
-
-	if (gainingParsed[3])
-	{
-		// if not the case, maybe wrongly entered
-		gaining = gainingParsed;
-	}
-	if (losingParsed[3])
-	{
-		// if not the case, maybe wrongly entered
-		losing = losingParsed;
-	}
-
-	while (angleStep < pixelAngleWidth)
-	{
-		angleIncrement *= 2;
-		angleStep *= 2.0f;
-	}
-
-	angleXStep = ((float)cgs.screenWidth / cg.refdef.fov_x) * angleStep;
-	angleXStepHalf = angleXStep * 0.5f;
-
-	accelOffsetDir[0] = cmd.forwardmove;
-	accelOffsetDir[1] = -cmd.rightmove;
-
-	VectorNormalize(accelOffsetDir);
-
-	vectoangles(accelOffsetDir, accelOffsetAngles);
-	accelOffsetAngle = accelOffsetAngles[YAW];
-
-	startAngle = ANGLE2SHORT(AngleNormalize360(cg.strafehelperPredictedPlayerState.viewangles[YAW] + accelOffsetAngle + cg.refdef.fov_x / 2));
-	if (doingComplexSlopes)
-	{
-		static float sign90 = -1.0f; // for debugging what the correct signs are here as i got confused somewhere along the way
-		static float signAccel = -1.0f;
-		// gotta calculate frontViewAngleOffset and rightViewAngleOffset quick
-		frontViewAngleOffset = ANGLE2SHORT(AngleNormalize360(signAccel * accelOffsetAngle));
-		rightViewAngleOffset = ANGLE2SHORT(AngleNormalize360(signAccel * accelOffsetAngle + sign90 * 90.0f));
-	}
-
-	if (onGround && MovementIsQuake3Based(style))
-	{
-		hereAccel = 15.0f;
-	}
-	else if (onGround && !slicking)
-	{
-		hereAccel = 10.0f;
-	}
-	else
-	{
-		hereAccel = 1.0f;
-	}
-	for (iAngle = 0.0f, i = startAngle, x = 0; iAngle < angleRange; i = ((i - angleIncrement) & 65535), iAngle += angleStep, x += angleXStep)
-	{
-		if (!onGround && style == MV_QUAJK)
+		addspeed = finalWishSpeed - currentspeed;
+		if (addspeed <= 0)
 		{
-			if (DotProduct(currentVelVec, angleVectors[i]) < 0)
-			{
-				hereAccel = 2.5f;
-			}
-			CG_RealAccel_QuaJKAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 70.0f, 30.0f);
+			return;
 		}
-		else if (!onGround && style == MV_DREAM)
+
+		if (accelspeed > addspeed)
 		{
-			CG_RealAccel_DreamAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 100, 200, currentSpeed3D);
+			accelspeed = addspeed;
 		}
-		else if (!onGround && style == MV_SICKO)
+
+		w = accelAddSlow + wishspeed;
+		idealVelRatio = (w * w) / (velTotal * velTotal);
+		idealVelRatio *= accelAddSlow / (wishspeed + accelAddSlow);
+		maxFront = idealVelRatio * velTotal;
+
+		tmp = 2 * wishdir[0] * velocityOut[0] + 2 * wishdir[1] * velocityOut[1] + 2.0f * wishdir[2] * velocityOut[2];
+		scale = (-2.0f * wishdir[0] * velocityOut[0] - 2.0f * wishdir[1] * velocityOut[1] - 2.0f * wishdir[2] * velocityOut[2] + sqrtf(tmp * tmp + 4 * h * maxFront * (wishdir[0] * wishdir[0] + wishdir[1] * wishdir[1] + wishdir[2] * wishdir[2]) * (h * maxFront + 2.0f * velTotal))) / (2.0 * h * (wishdir[0] * wishdir[0] + wishdir[1] * wishdir[1] + wishdir[2] * wishdir[2]));
+
+		if (scale < 0 || fpclassify(scale) == FP_NAN)
 		{
-			CG_RealAccel_SickoAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 200.0f);
+			return;
+		}
+		else if (scale > accelspeed)
+		{
+			scale = accelspeed;
+		}
+		accelspeed = scale;
+
+		for (i = 0; i < 3; i++)
+		{
+			velocityOut[i] += accelspeed * wishdir[i];
+		}
+	}
+
+	static void CG_RealAccel_Accel(vec3_t velocity, vec3_t velocityOut, vec3_t wishdir, float wishspeed, float frametime, float accel)
+	{
+		// q2 style
+		int i;
+		float addspeed, accelspeed, currentspeed;
+
+		VectorCopy(velocity, velocityOut);
+
+		currentspeed = DotProduct(velocity, wishdir);
+		addspeed = wishspeed - currentspeed;
+
+		accelspeed = accel * frametime * wishspeed;
+
+		// pm->accelMiss = (addspeed - accelspeed) / accelspeed;
+		// pm->wishSpeed = wishspeed;
+
+		if (addspeed <= 0)
+		{
+			return;
+		}
+		if (accelspeed > addspeed)
+		{
+			accelspeed = addspeed;
+		}
+
+		for (i = 0; i < 3; i++)
+		{
+			velocityOut[i] += accelspeed * wishdir[i];
+		}
+	}
+
+	static void CG_RealAccel_ClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce, int runFlags)
+	{
+		float backoff;
+		float change;
+		int i;
+
+		if ((runFlags & RFL_CLIMBTECH) && (cg.predictedPlayerState.pm_flags & PMF_STUCK_TO_WALL))
+		{ // no sliding!
+			VectorCopy(in, out);
+			return;
+		}
+
+		backoff = DotProduct(in, normal);
+
+		if (backoff < 0)
+		{
+			backoff *= overbounce;
 		}
 		else
 		{
-			if (!doingSlopes)
-			{
-				CG_RealAccel_Accel(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
+			backoff /= overbounce;
+		}
+
+		for (i = 0; i < 3; i++)
+		{
+			change = normal[i] * backoff;
+			out[i] = in[i] - change;
+		}
+	}
+
+	/*
+	static struct {
+		qboolean	active;
+		int			countSaved;
+		float		startX;
+		float		oldEndX;
+		float		oldY;
+		float		oldHeight;
+		qhandle_t	oldShader;
+		vec4_t		color;
+	} horzPicOpt;
+
+	// avoid too many redundant drawcalls.
+	// finish parm: ignore values, just flush.
+	static int CG_DrawPicHorizontalOptimized(float x, float y, float width, float height, float consecutiveThreshold, vec4_t color, qhandle_t hShader, qboolean finish) {
+		if (!horzPicOpt.active && !finish) {
+			horzPicOpt.startX = x;
+			horzPicOpt.oldEndX = x + width;
+			horzPicOpt.oldHeight = height;
+			horzPicOpt.oldY = y;
+			horzPicOpt.oldShader = hShader;
+			VectorCopy(color, horzPicOpt.color);
+		}
+		else if (finish) {
+			if (horzPicOpt.active) {
+				trap_R_DrawStretchPic(horzPicOpt.startX, horzPicOpt.oldY, horzPicOpt.oldEndX- horzPicOpt.startX, horzPicOpt.oldHeight, 0, 0, 1, 1, horzPicOpt.oldShader);
 			}
-			else
+		}
+		else {
+			qboolean different = qfalse;
+			different = different || (!VectorCompare(color,horzPicOpt.color));
+			different = different || (hShader != horzPicOpt.oldShader);
+			different = different || (height != horzPicOpt.oldHeight);
+			different = different || (y != horzPicOpt.oldY);
+		}
+		trap_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
+	}
+
+	static void CG_DrawPicHorizontalOptimizedClear() {
+		memset(&horzPicOpt,0,sizeof(horzPicOpt));
+	}*/
+
+	float MovementOverbounceFactor(int moveStyle, playerState_t *ps, usercmd_t *ucmd);
+	static void CG_RealAccelHelper()
+	{
+
+		int referenceFrameTime;
+		float frametime;
+		qboolean onGround;
+		qboolean slicking = qfalse;
+		usercmd_t cmd = {0};
+		int startAngle;
+		int frontViewAngleOffset, rightViewAngleOffset; // for complex slope calculation (2 buttons pressed)
+		float angleStep = 360.0f / 65536.0f;
+		float pixelAngleWidth = cg.refdef.fov_x / (float)cgs.glconfig.vidWidth;
+		int angleIncrement = 1;
+		int i;
+		vec3_t currentVelVec;
+		vec3_t newVelVec;
+		float currentSpeed;
+		float currentSpeed3D;
+		float iAngle = 0;
+		float angleRange = cg.refdef.fov_x; // +2.0f for a bit of buffer so the sides dont get cut off
+		float x, oldX = -1.0f;
+		float angleXStep, angleXStepHalf; // how much we have to move X pos per step
+		float vDelta;
+		float hereAccel;
+		vec4_t losingParsed;
+		vec4_t gainingParsed;
+		const vec4_t losingDefault = {1.0, 0.0, 0.0, 0.5f};
+		const vec4_t gainingDefault = {0.0, 1.0, 0.0, 0.5f};
+		const vec_t *losing = losingDefault;
+		const vec_t *gaining = gainingDefault;
+		float mid = (float)cgs.screenHeight / 2.0f;
+		qboolean snap = qtrue;
+		qboolean q2Snap = qfalse;
+		vec3_t accelOffsetDir = {0};
+		vec3_t accelOffsetAngles;
+		float accelOffsetAngle;
+		float frictionFactor;
+		float tmp;
+		int style = MV_JK2;
+		int runFlags = 0;
+		const char *t;
+		trace_t groundTrace;
+		qboolean doingSlopes = qfalse;
+		qboolean doingComplexSlopes = qfalse;
+		int overbounce;
+
+		// optimized draw calls:
+		float oldVDelta;
+		float xStart;
+		qboolean bufferedDraw = qfalse;
+		int bufferedCount;
+		int drawCalls = 0;
+
+		if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime))
+		{
+			return; // No cg.snap causes this to return.
+		}
+
+		overbounce = MovementOverbounceFactor(style, &cg.strafehelperPredictedPlayerState, &cmd);
+
+		if (cg.strafehelperVelocityIsInterpolated)
+		{
+			VectorCopy(cg.strafehelperRealVel, currentVelVec); // interpolated velocities make snapping display spazz out, understandably
+		}
+		else
+		{
+			VectorCopy(cg.strafehelperPredictedPlayerState.velocity, currentVelVec);
+		}
+
+		if (cg_strafeHelper_FPS.value < 1)
+			frametime = ((float)referenceFrameTime * 0.001f);
+		else if (cg_strafeHelper_FPS.value > 1000) // invalid
+			frametime = 1;
+		else
+			frametime = 1 / cg_strafeHelper_FPS.value;
+
+		onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); // sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
+
+		memset(&groundTrace, 0, sizeof(groundTrace));
+
+		if (cg_realAccelPreFriction.integer)
+		{
+			currentSpeed = XYSPEED(currentVelVec);
+		}
+
+		if (cgs.isTommyTernal && cg.strafehelperPredictedPlayerState.stats[STAT_RACEMODE])
+		{
+			style = cg.strafehelperPredictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+			runFlags = cg.strafehelperPredictedPlayerState.stats[STAT_RUNFLAGS];
+			if (cg.strafehelperPredictedPlayerState.stats[STAT_MSECRESTRICT] == -2)
 			{
-				vec3_t adjustedWishdir;
-				// when we are standing on slopes, stuff becomes more complicated.
-				// cg_realAccelSlopes 0 deactivates this behavior as it has to do more calculations
-				if (!doingComplexSlopes)
+				snap = qfalse;
+			}
+			else if (style == MV_Q2)
+			{
+				q2Snap = qtrue;
+				snap = qfalse;
+			}
+		}
+		else if (cg_pmove_float.integer)
+		{
+			snap = qfalse;
+		}
+
+		if (onGround)
+		{																	 // trace down to see if we are on slopes/whether we are slicking (latter is only relevant for q3 based styles since they have cpm accel then)
+			static const vec3_t playerMins = {-15, -15, DEFAULT_MINS_2 + 1}; // do +1 in case there's any issues with being in solid or whatever.
+			static const vec3_t playerMaxs = {15, 15, DEFAULT_MAXS_2};
+			vec3_t down;
+			VectorCopy(cg.strafehelperPredictedPlayerState.origin, down);
+
+			down[2] -= 2.0f; // doesnt really matter we already know we're on ground, just trying to see the normal
+
+			CG_Trace(&groundTrace, cg.strafehelperPredictedPlayerState.origin, playerMins, playerMaxs, down, cg.strafehelperPredictedPlayerState.clientNum, MASK_PLAYERSOLID);
+
+			if ((groundTrace.surfaceFlags & SURF_SLICK))
+			{
+				slicking = qtrue;
+			}
+
+			if (cg_realAccelSlopes.integer)
+			{
+				doingSlopes = qtrue;
+				if (groundTrace.startsolid || groundTrace.fraction == 1.0f)
 				{
-					CG_RealAccel_ClipVelocity(angleVectors[i], groundTrace.plane.normal, adjustedWishdir, overbounce, runFlags);
-					VectorNormalize(adjustedWishdir);
-					CG_RealAccel_Accel(currentVelVec, newVelVec, adjustedWishdir, cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
+					if (cg_developer.integer)
+					{ // should never happen unless freak situations?
+						Com_Printf("^3RealAccel strafehelper: Groundtrace didn't work for some reason.");
+					}
+					doingSlopes = qfalse;
+				}
+				else if (groundTrace.plane.normal[0] == 0.0f && groundTrace.plane.normal[1] == 0.0f && groundTrace.plane.normal[2] == 1.0f)
+				{
+					// its flat ground, no need for slope calc
+					doingSlopes = qfalse;
 				}
 				else
 				{
-					// we have more than 1 button pressed so it gets complicated because wishspeed gets affected...
-					int frontAngle = (i + frontViewAngleOffset) & 65535;
-					int rightAngle = (i + rightViewAngleOffset) & 65535;
-					vec3_t front, right;
-					float multiplier;
-					float adjustedWishSpeed = cg.strafehelperPredictedPlayerState.speed;
-					int j;
-					CG_RealAccel_ClipVelocity(angleVectors[frontAngle], groundTrace.plane.normal, front, overbounce, runFlags);
-					CG_RealAccel_ClipVelocity(angleVectors[rightAngle], groundTrace.plane.normal, right, overbounce, runFlags);
-					VectorNormalize(front);
-					VectorNormalize(right);
-					for (j = 0; j < 3; j++)
+					if (cmd.forwardmove && cmd.rightmove)
 					{
-						adjustedWishdir[j] = front[j] * accelOffsetDir[0] + right[j] * -accelOffsetDir[1];
+						if (runFlags & RFL_BOT && cmd.forwardmove > 0 && (cmd.buttons & BUTTON_STRAFEBOT))
+						{
+							cmd.rightmove = 0; // bot does this too.
+						}
+						else if (cg_realAccelSlopes.integer >= 2)
+						{
+							doingComplexSlopes = qtrue; // we have more than 1 button pressed. which means we need to calculate an adjusted wishspeed too :/
+						}
 					}
-					multiplier = VectorNormalize(adjustedWishdir);
-					adjustedWishSpeed *= multiplier;
-					CG_RealAccel_Accel(currentVelVec, newVelVec, adjustedWishdir, adjustedWishSpeed, frametime, hereAccel);
 				}
 			}
 		}
-		if (snap)
-		{
-			trap_SnapVector(newVelVec);
-		}
-		else if (q2Snap)
-		{
-			newVelVec[0] = 0.125f * (float)(int)(newVelVec[0] * 8.0f);
-			newVelVec[1] = 0.125f * (float)(int)(newVelVec[1] * 8.0f);
-			newVelVec[2] = 0.125f * (float)(int)(newVelVec[2] * 8.0f);
-		}
-		vDelta = XYSPEED(newVelVec) - currentSpeed;
 
-		if (vDelta == 0)
+		if (onGround && !slicking)
 		{
-			if (bufferedDraw)
+			if (MovementIsQuake3Based(style))
+			{
+				frictionFactor = (1.0f - 8.0f * (frametime));
+			}
+			else
+			{
+				frictionFactor = (1.0f - 6.0f * (frametime));
+			}
+			VectorScale(currentVelVec, frictionFactor, currentVelVec);
+		}
+		currentSpeed3D = VectorLength(currentVelVec);
+
+		if (!cg_realAccelPreFriction.integer)
+		{
+			currentSpeed = XYSPEED(currentVelVec);
+		}
+
+		// if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed - 1))
+		if (currentSpeed < (cg.strafehelperPredictedPlayerState.speed / 2 - 1))
+			return;
+
+		t = cg_realAccelPositiveColor.string;
+		gainingParsed[0] = atof(COM_Parse(&t));
+		gainingParsed[1] = atof(COM_Parse(&t));
+		gainingParsed[2] = atof(COM_Parse(&t));
+		gainingParsed[3] = atof(COM_Parse(&t));
+
+		t = cg_realAccelNegativeColor.string;
+		losingParsed[0] = atof(COM_Parse(&t));
+		losingParsed[1] = atof(COM_Parse(&t));
+		losingParsed[2] = atof(COM_Parse(&t));
+		losingParsed[3] = atof(COM_Parse(&t));
+
+		if (gainingParsed[3])
+		{
+			// if not the case, maybe wrongly entered
+			gaining = gainingParsed;
+		}
+		if (losingParsed[3])
+		{
+			// if not the case, maybe wrongly entered
+			losing = losingParsed;
+		}
+
+		while (angleStep < pixelAngleWidth)
+		{
+			angleIncrement *= 2;
+			angleStep *= 2.0f;
+		}
+
+		angleXStep = ((float)cgs.screenWidth / cg.refdef.fov_x) * angleStep;
+		angleXStepHalf = angleXStep * 0.5f;
+
+		accelOffsetDir[0] = cmd.forwardmove;
+		accelOffsetDir[1] = -cmd.rightmove;
+
+		VectorNormalize(accelOffsetDir);
+
+		vectoangles(accelOffsetDir, accelOffsetAngles);
+		accelOffsetAngle = accelOffsetAngles[YAW];
+
+		startAngle = ANGLE2SHORT(AngleNormalize360(cg.strafehelperPredictedPlayerState.viewangles[YAW] + accelOffsetAngle + cg.refdef.fov_x / 2));
+		if (doingComplexSlopes)
+		{
+			static float sign90 = -1.0f; // for debugging what the correct signs are here as i got confused somewhere along the way
+			static float signAccel = -1.0f;
+			// gotta calculate frontViewAngleOffset and rightViewAngleOffset quick
+			frontViewAngleOffset = ANGLE2SHORT(AngleNormalize360(signAccel * accelOffsetAngle));
+			rightViewAngleOffset = ANGLE2SHORT(AngleNormalize360(signAccel * accelOffsetAngle + sign90 * 90.0f));
+		}
+
+		if (onGround && MovementIsQuake3Based(style))
+		{
+			hereAccel = 15.0f;
+		}
+		else if (onGround && !slicking)
+		{
+			hereAccel = 10.0f;
+		}
+		else
+		{
+			hereAccel = 1.0f;
+		}
+		for (iAngle = 0.0f, i = startAngle, x = 0; iAngle < angleRange; i = ((i - angleIncrement) & 65535), iAngle += angleStep, x += angleXStep)
+		{
+			if (!onGround && style == MV_QUAJK)
+			{
+				if (DotProduct(currentVelVec, angleVectors[i]) < 0)
+				{
+					hereAccel = 2.5f;
+				}
+				CG_RealAccel_QuaJKAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 70.0f, 30.0f);
+			}
+			else if (!onGround && style == MV_DREAM)
+			{
+				CG_RealAccel_DreamAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 100, 200, currentSpeed3D);
+			}
+			else if (!onGround && style == MV_SICKO)
+			{
+				CG_RealAccel_SickoAccelerate(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel, 200.0f);
+			}
+			else
+			{
+				if (!doingSlopes)
+				{
+					CG_RealAccel_Accel(currentVelVec, newVelVec, angleVectors[i], cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
+				}
+				else
+				{
+					vec3_t adjustedWishdir;
+					// when we are standing on slopes, stuff becomes more complicated.
+					// cg_realAccelSlopes 0 deactivates this behavior as it has to do more calculations
+					if (!doingComplexSlopes)
+					{
+						CG_RealAccel_ClipVelocity(angleVectors[i], groundTrace.plane.normal, adjustedWishdir, overbounce, runFlags);
+						VectorNormalize(adjustedWishdir);
+						CG_RealAccel_Accel(currentVelVec, newVelVec, adjustedWishdir, cg.strafehelperPredictedPlayerState.speed, frametime, hereAccel);
+					}
+					else
+					{
+						// we have more than 1 button pressed so it gets complicated because wishspeed gets affected...
+						int frontAngle = (i + frontViewAngleOffset) & 65535;
+						int rightAngle = (i + rightViewAngleOffset) & 65535;
+						vec3_t front, right;
+						float multiplier;
+						float adjustedWishSpeed = cg.strafehelperPredictedPlayerState.speed;
+						int j;
+						CG_RealAccel_ClipVelocity(angleVectors[frontAngle], groundTrace.plane.normal, front, overbounce, runFlags);
+						CG_RealAccel_ClipVelocity(angleVectors[rightAngle], groundTrace.plane.normal, right, overbounce, runFlags);
+						VectorNormalize(front);
+						VectorNormalize(right);
+						for (j = 0; j < 3; j++)
+						{
+							adjustedWishdir[j] = front[j] * accelOffsetDir[0] + right[j] * -accelOffsetDir[1];
+						}
+						multiplier = VectorNormalize(adjustedWishdir);
+						adjustedWishSpeed *= multiplier;
+						CG_RealAccel_Accel(currentVelVec, newVelVec, adjustedWishdir, adjustedWishSpeed, frametime, hereAccel);
+					}
+				}
+			}
+			if (snap)
+			{
+				trap_SnapVector(newVelVec);
+			}
+			else if (q2Snap)
+			{
+				newVelVec[0] = 0.125f * (float)(int)(newVelVec[0] * 8.0f);
+				newVelVec[1] = 0.125f * (float)(int)(newVelVec[1] * 8.0f);
+				newVelVec[2] = 0.125f * (float)(int)(newVelVec[2] * 8.0f);
+			}
+			vDelta = XYSPEED(newVelVec) - currentSpeed;
+
+			if (vDelta == 0)
+			{
+				if (bufferedDraw)
+				{
+					if (oldVDelta < 0)
+					{
+						trap_R_SetColor(losing);
+					}
+					else
+					{
+						trap_R_SetColor(gaining);
+					}
+					CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
+							   angleXStep * (float)bufferedCount, oldVDelta,
+							   cgs.media.whiteShader);
+					drawCalls++;
+					bufferedDraw = qfalse;
+				}
+				continue;
+			}
+			else if (vDelta < 0)
+			{
+				trap_R_SetColor(losing);
+			}
+			else
+			{
+				trap_R_SetColor(gaining);
+			}
+
+			vDelta /= hereAccel * (float)referenceFrameTime * cg.strafehelperPredictedPlayerState.speed * 0.0001f;
+			vDelta *= cg_realAccelScale.value;
+			if (style == MV_SICKO)
+			{
+				vDelta /= 200.0f;
+			}
+			else if (style == MV_QUAJK)
+			{
+				vDelta /= 2.0f;
+			}
+			if (currentSpeed > cg.strafehelperPredictedPlayerState.speed)
+			{
+				tmp = vDelta * currentSpeed / cg.strafehelperPredictedPlayerState.speed;
+				vDelta = vDelta * (1.0f - cg_realAccelDynScale.value) + tmp * cg_realAccelDynScale.value;
+			}
+
+			if (bufferedDraw && oldVDelta != vDelta)
 			{
 				if (oldVDelta < 0)
 				{
@@ -9521,34 +9651,23 @@ static void CG_RealAccelHelper()
 				drawCalls++;
 				bufferedDraw = qfalse;
 			}
-			continue;
-		}
-		else if (vDelta < 0)
-		{
-			trap_R_SetColor(losing);
-		}
-		else
-		{
-			trap_R_SetColor(gaining);
-		}
 
-		vDelta /= hereAccel * (float)referenceFrameTime * cg.strafehelperPredictedPlayerState.speed * 0.0001f;
-		vDelta *= cg_realAccelScale.value;
-		if (style == MV_SICKO)
-		{
-			vDelta /= 200.0f;
-		}
-		else if (style == MV_QUAJK)
-		{
-			vDelta /= 2.0f;
-		}
-		if (currentSpeed > cg.strafehelperPredictedPlayerState.speed)
-		{
-			tmp = vDelta * currentSpeed / cg.strafehelperPredictedPlayerState.speed;
-			vDelta = vDelta * (1.0f - cg_realAccelDynScale.value) + tmp * cg_realAccelDynScale.value;
-		}
+			if (!bufferedDraw)
+			{
+				bufferedCount = 1;
+				xStart = x;
+				bufferedDraw = qtrue;
+			}
+			else
+			{
+				bufferedCount++;
+			}
 
-		if (bufferedDraw && oldVDelta != vDelta)
+			oldVDelta = vDelta;
+
+			oldX = x;
+		}
+		if (bufferedDraw)
 		{
 			if (oldVDelta < 0)
 			{
@@ -9564,386 +9683,354 @@ static void CG_RealAccelHelper()
 			drawCalls++;
 			bufferedDraw = qfalse;
 		}
-
-		if (!bufferedDraw)
+		if (cg_developer.integer > 1)
 		{
-			bufferedCount = 1;
-			xStart = x;
-			bufferedDraw = qtrue;
+			CG_Text_Paint(cgs.screenWidth / 2, mid + 100, 0.5f, colorTable[CT_WHITE],
+						  va("ra drawcalls: %d", drawCalls), 0.0f, 0, ITEM_ALIGN_CENTER | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		}
+		trap_R_SetColor(NULL);
+	}
+	int CG_GetMovePhysics(void)
+	{
+		if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE])
+		{
+			return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+		}
+		else if (cgs.isJK2Pro)
+		{
+			return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
+		}
+
+		return MV_JK2; // this can happen when we die in racemode too!
+	}
+	static void CG_StrafeHelper(centity_t * cent)
+	{
+		vec3_t velocity;
+		// vec_t * velocity = cg.strafehelperPredictedPlayerState.velocity;
+		static vec3_t velocityAngle;
+		float currentSpeed; // cg.currentSpeed;
+		float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.strafehelperPredictedPlayerState.speed;
+		const int moveStyle = CG_GetMovePhysics();
+		int referenceFrameTime;
+		qboolean onGround;
+		usercmd_t cmd = {0};
+
+		VectorCopy(cg.strafehelperPredictedPlayerState.velocity, velocity);
+		currentSpeed = XYSPEED(velocity);
+
+		// if (moveStyle == MV_SIEGE)
+		//	return; //no strafe in siege
+
+		if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime))
+		{
+			return; // No cg.snap causes this to return.
+		}
+
+		onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); // sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
+
+		// if (moveStyle == MV_WSW) {
+		//	pmAccel = 12.0f;
+		//	pmFriction = 8.0f;
+		// }
+		// else if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) {
+		//	pmAccel = 15.0f;
+		//	pmFriction = 8.0f;
+		// }
+		// else if (moveStyle == MV_SP) {
+		//	pmAirAccel = 4.0f;
+		//	pmAccel = 12.0f;
+		// }
+		// else if (moveStyle == MV_SLICK) {
+		//	pmFriction = 0.0f;//unless walking?
+		//	pmAccel = 30.0f;
+		// }
+
+		if (currentSpeed < (baseSpeed - 1))
+			return;
+
+		/*if (cg.strafehelperPredictedPlayerState.pm_type == PM_JETPACK) {
+			pmAirAccel = 1.4f; //idk
+			if (cmd.upmove <= 0)
+				baseSpeed *= 0.8f;
+			else
+				baseSpeed *= 2.0f;
+		}
+		else if (moveStyle == MV_SWOOP && cg.strafehelperPredictedPlayerState.m_iVehicleNum) {
+			centity_t *vehCent = &cg_entities[cg.strafehelperPredictedPlayerState.m_iVehicleNum];
+			velocity = vehCent->currentState.pos.trDelta; //jerky otherwise?
+			if (cg.strafehelperPredictedPlayerState.commandTime < vehCent->m_pVehicle->m_iTurboTime) {
+				baseSpeed = vehCent->m_pVehicle->m_pVehicleInfo->turboSpeed;//1400
+			}
+			else {
+				baseSpeed = vehCent->m_pVehicle->m_pVehicleInfo->speedMax;//700
+			}
+		}
+		else*/
+		// if (moveStyle == MV_SP) {
+		/*
+		if ((DotProduct(cg.strafehelperPredictedPlayerState.velocity, wishdir)) < 0.0f)
+		{//Encourage deceleration away from the current velocity
+		wishspeed *= 1.35f;//pm_airDecelRate - adjust basespeed
+		}
+		*/
+		//	if (!(cg.strafehelperPredictedPlayerState.pm_flags & PMF_JUMP_HELD) && cmd.upmove > 0) { //Also, wishspeed *= scale.  Scale is different cuz of upmove in air.  Only works ingame not from spec
+		//		baseSpeed /= 1.41421356237f; //umm.. dunno.. divide by sqrt(2)
+		//	}
+		//}
+
+		if (cg_strafeHelper_FPS.value < 1)
+			frametime = ((float)referenceFrameTime * 0.001f);
+		else if (cg_strafeHelper_FPS.value > 1000) // invalid
+			frametime = 1;
+		else
+			frametime = 1 / cg_strafeHelper_FPS.value;
+
+		if (onGround) // On ground
+			optimalDeltaAngle = acos((double)((baseSpeed - (pmAccel * baseSpeed * frametime)) / (currentSpeed * (1 - pmFriction * (frametime))))) * (180.0f / M_PI) - 45.0f;
+		else
+			optimalDeltaAngle = acos((double)((baseSpeed - (pmAirAccel * baseSpeed * frametime)) / currentSpeed)) * (180.0f / M_PI) - 45.0f;
+
+		if (fpclassify(optimalDeltaAngle) == FP_NAN)
+		{
+			return; // something went wrong, shrug
+		}
+		if (optimalDeltaAngle < -360 || optimalDeltaAngle > 360)
+		{
+			return; // something weird happened, shrug
+		}
+
+		// if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
+		//	optimalDeltaAngle = 0; // what the fuck?
+
+		// Com_Printf("Optimal Angle is %.3f\n", optimalDeltaAngle);
+
+		velocity[2] = 0;
+		vectoangles(velocity, velocityAngle); // We have the offset from our Velocity angle that we should be aiming at, so now we need to get our velocity angle.
+
+		// if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_SWOOP || moveStyle == MV_BOTCPM || (moveStyle == MV_SLICK && !onGround)) {//QW, CPM, PJK, WSW, RJCPM have center line
+		//	if (cg_strafeHelper.integer & SHELPER_CENTER)
+		//		DrawStrafeLine(velocityAngle, 0, (qboolean)(cmd.forwardmove == 0 && cmd.rightmove != 0), 8); //Center
+		// }
+		if (qtrue /*moveStyle != MV_QW && moveStyle != MV_SWOOP*/)
+		{ // Every style but QW has WA/WD lines
+			if (cg_strafeHelper.integer & SHELPER_WA)
+				DrawStrafeLine(velocityAngle, (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove < 0), 1); // WA
+			if (cg_strafeHelper.integer & SHELPER_WD)
+				DrawStrafeLine(velocityAngle, (-optimalDeltaAngle - (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove > 0), 7); // WD
+		}
+		// if (moveStyle == MV_JK2 /*|| moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)*/) { //JKA, Q3, RJQ3, Jetpack? have A/D
+		if (cg_strafeHelper.integer & SHELPER_A)
+			DrawStrafeLine(velocityAngle, -(45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove < 0), 2); // A
+		if (cg_strafeHelper.integer & SHELPER_D)
+			DrawStrafeLine(velocityAngle, (45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove > 0), 6); // D
+
+		// A/D backwards strafe?
+		if (cg_strafeHelper.integer & SHELPER_REAR)
+		{
+			DrawStrafeLine(velocityAngle, (225.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove < 0), 9);  // A
+			DrawStrafeLine(velocityAngle, (135.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove > 0), 10); // D
+		}
+		//}
+		// if (moveStyle == MV_JK2 /* || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP*/) {
+		// W only
+		if (cg_strafeHelper.integer & SHELPER_W)
+		{
+			DrawStrafeLine(velocityAngle, (45.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0);	 // W
+			DrawStrafeLine(velocityAngle, (-45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0); // W
+		}
+		//}
+	}
+
+	// snaphud start
+	static usercmd_t CG_DirToCmd(int moveDir)
+	{
+		usercmd_t outCmd = {0};
+		switch (moveDir)
+		{
+		case KEY_W:
+			outCmd.forwardmove = 127;
+			outCmd.rightmove = 0;
+			break;
+		case KEY_WA:
+			outCmd.forwardmove = 127;
+			outCmd.rightmove = -127;
+			break;
+		case KEY_A:
+			outCmd.forwardmove = 0;
+			outCmd.rightmove = -127;
+			break;
+		case KEY_AS:
+			outCmd.forwardmove = -127;
+			outCmd.rightmove = -127;
+			break;
+		case KEY_S:
+			outCmd.forwardmove = -127;
+			outCmd.rightmove = 0;
+			break;
+		case KEY_SD:
+			outCmd.forwardmove = -127;
+			outCmd.rightmove = 127;
+			break;
+		case KEY_D:
+			outCmd.forwardmove = 0;
+			outCmd.rightmove = 127;
+			break;
+		case KEY_DW:
+			outCmd.forwardmove = 127;
+			outCmd.rightmove = 127;
+			break;
+		default:
+			break;
+		}
+		return outCmd;
+	}
+
+	void CG_FillAngleYaw(float start, float end, float viewangle, float y, float height, const float *color)
+	{
+		float fovscale, x, width;
+		float cgamefov;
+		cgamefov = cg.refdef.fov_x;
+		fovscale = tan(DEG2RAD(cgamefov / 2));
+		x = cgs.screenWidth / 2 + tan(DEG2RAD(viewangle + start)) / fovscale * cgs.screenWidth / 2;
+		width = abs(cgs.screenWidth * (tanf(DEG2RAD(viewangle + end)) - tanf(DEG2RAD(viewangle + start))) / (fovscale * 2)) + 1;
+
+		trap_R_SetColor(color);
+		trap_R_DrawStretchPic(x, y, width, height, 0, 0, 0, 0, cgs.media.whiteShader);
+		trap_R_SetColor(NULL);
+	}
+
+	static int QDECL sortzones(const void *a, const void *b)
+	{
+		return *(float *)a - *(float *)b;
+	}
+
+	void CG_UpdateSnapHudSettings(float speed, int fps)
+	{
+		float step;
+		snappinghud.fps = fps;
+		snappinghud.speed = speed;
+		speed /= snappinghud.fps;
+		snappinghud.count = 0;
+
+		for (step = floor(speed + 0.5) - 0.5; step > 0 && snappinghud.count < SNAPHUD_MAXZONES - 2; step--)
+		{
+			snappinghud.zones[snappinghud.count] = RAD2DEG(acos(step / speed));
+			snappinghud.count++;
+			snappinghud.zones[snappinghud.count] = RAD2DEG(asin(step / speed));
+			snappinghud.count++;
+		}
+
+		qsort(snappinghud.zones, snappinghud.count, sizeof(snappinghud.zones[0]), sortzones);
+		snappinghud.zones[snappinghud.count] = snappinghud.zones[0] + 90;
+	}
+
+	void CG_DrawSnapHud(void)
+	{
+		int i, y, h;
+		const char *t;
+		vec2_t va = {0};
+		vec4_t color[3] = {0};
+		float speed;
+		int fps = (cg_com_physicsFps.integer ? cg_com_physicsFps.integer : cg_com_maxfps.integer);
+		int colorid = 0;
+		qboolean pro = qfalse;
+		struct usercmd_s inCmd = {0};
+
+		if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback)
+		{ // real client
+			trap_GetUserCmd(trap_GetCurrentCmdNumber(), &inCmd);
+		}
+		else if (cg_statsEntities[cg.predictedPlayerState.clientNum])
+		{
+			entityState_t *stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+			BG_StatsToUserCmd(stats, &inCmd);
+			if (cg_strafeHelper_RealPhysicsLines.integer)
+			{
+				int statsMsec = stats->pastFpsUnionArray[(stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1)];
+				fps = statsMsec ? (1000 / statsMsec) : fps; // uses your maxfps setting by default
+															// take average to have it more stable when non-physicsfps? but will jitter when switching :/
+															// int msecSum = stats->pastFpsUnionArray[0] + stats->pastFpsUnionArray[1] + stats->pastFpsUnionArray[2] + stats->pastFpsUnionArray[3];
+			}
+		}
+		else if (cg.snap)
+		{ // spectating/demo playback
+			inCmd = CG_DirToCmd(cg.snap->ps.movementDir);
 		}
 		else
 		{
-			bufferedCount++;
+			return;
 		}
 
-		oldVDelta = vDelta;
+		snappinghud.m[0] = inCmd.forwardmove;
+		snappinghud.m[1] = inCmd.rightmove;
 
-		oldX = x;
-	}
-	if (bufferedDraw)
-	{
-		if (oldVDelta < 0)
+		if (cg.renderingThirdPerson)
 		{
-			trap_R_SetColor(losing);
+			va[YAW] = cg.strafehelperPredictedPlayerState.viewangles[YAW];
 		}
 		else
 		{
-			trap_R_SetColor(gaining);
+			va[YAW] = cg.refdefViewAngles[YAW]; // Because in first person we can have weaponkick (I think)
 		}
-		CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
-				   angleXStep * (float)bufferedCount, oldVDelta,
-				   cgs.media.whiteShader);
-		drawCalls++;
-		bufferedDraw = qfalse;
-	}
-	if (cg_developer.integer > 1)
-	{
-		CG_Text_Paint(cgs.screenWidth / 2, mid + 100, 0.5f, colorTable[CT_WHITE],
-					  va("ra drawcalls: %d", drawCalls), 0.0f, 0, ITEM_ALIGN_CENTER | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-	}
-	trap_R_SetColor(NULL);
-}
-int CG_GetMovePhysics(void)
-{
-	if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE])
-	{
-		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-	}
-	else if (cgs.isJK2Pro)
-	{
-		return cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE];
-	}
 
-	return MV_JK2; // this can happen when we die in racemode too!
-}
-static void CG_StrafeHelper(centity_t *cent)
-{
-	vec3_t velocity;
-	// vec_t * velocity = cg.strafehelperPredictedPlayerState.velocity;
-	static vec3_t velocityAngle;
-	float currentSpeed; // cg.currentSpeed;
-	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.strafehelperPredictedPlayerState.speed;
-	const int moveStyle = CG_GetMovePhysics();
-	int referenceFrameTime;
-	qboolean onGround;
-	usercmd_t cmd = {0};
+		if (!cg_draw2D.integer)
+			return;
 
-	VectorCopy(cg.strafehelperPredictedPlayerState.velocity, velocity);
-	currentSpeed = XYSPEED(velocity);
+		speed = cg_snapHudSpeed.integer ? (float)cg_snapHudSpeed.integer : cg.predictedPlayerState.speed; // 250 is base speed
+		fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : fps;										  // uses your maxfps setting by default
 
-	// if (moveStyle == MV_SIEGE)
-	//	return; //no strafe in siege
-
-	if (!CG_GetStrafehelperCmdAndFrametime(&cmd, &referenceFrameTime))
-	{
-		return; // No cg.snap causes this to return.
-	}
-
-	onGround = (qboolean)(cg.strafehelperPredictedPlayerState.groundEntityNum == ENTITYNUM_WORLD); // sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
-
-	// if (moveStyle == MV_WSW) {
-	//	pmAccel = 12.0f;
-	//	pmFriction = 8.0f;
-	// }
-	// else if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) {
-	//	pmAccel = 15.0f;
-	//	pmFriction = 8.0f;
-	// }
-	// else if (moveStyle == MV_SP) {
-	//	pmAirAccel = 4.0f;
-	//	pmAccel = 12.0f;
-	// }
-	// else if (moveStyle == MV_SLICK) {
-	//	pmFriction = 0.0f;//unless walking?
-	//	pmAccel = 30.0f;
-	// }
-
-	if (currentSpeed < (baseSpeed - 1))
-		return;
-
-	/*if (cg.strafehelperPredictedPlayerState.pm_type == PM_JETPACK) {
-		pmAirAccel = 1.4f; //idk
-		if (cmd.upmove <= 0)
-			baseSpeed *= 0.8f;
-		else
-			baseSpeed *= 2.0f;
-	}
-	else if (moveStyle == MV_SWOOP && cg.strafehelperPredictedPlayerState.m_iVehicleNum) {
-		centity_t *vehCent = &cg_entities[cg.strafehelperPredictedPlayerState.m_iVehicleNum];
-		velocity = vehCent->currentState.pos.trDelta; //jerky otherwise?
-		if (cg.strafehelperPredictedPlayerState.commandTime < vehCent->m_pVehicle->m_iTurboTime) {
-			baseSpeed = vehCent->m_pVehicle->m_pVehicleInfo->turboSpeed;//1400
+		if (speed != snappinghud.speed || fps != snappinghud.fps)
+		{ // set these if not set, update if changed
+			CG_UpdateSnapHudSettings(speed, fps);
 		}
-		else {
-			baseSpeed = vehCent->m_pVehicle->m_pVehicleInfo->speedMax;//700
-		}
-	}
-	else*/
-	// if (moveStyle == MV_SP) {
-	/*
-	if ((DotProduct(cg.strafehelperPredictedPlayerState.velocity, wishdir)) < 0.0f)
-	{//Encourage deceleration away from the current velocity
-	wishspeed *= 1.35f;//pm_airDecelRate - adjust basespeed
-	}
-	*/
-	//	if (!(cg.strafehelperPredictedPlayerState.pm_flags & PMF_JUMP_HELD) && cmd.upmove > 0) { //Also, wishspeed *= scale.  Scale is different cuz of upmove in air.  Only works ingame not from spec
-	//		baseSpeed /= 1.41421356237f; //umm.. dunno.. divide by sqrt(2)
-	//	}
-	//}
 
-	if (cg_strafeHelper_FPS.value < 1)
-		frametime = ((float)referenceFrameTime * 0.001f);
-	else if (cg_strafeHelper_FPS.value > 1000) // invalid
-		frametime = 1;
-	else
-		frametime = 1 / cg_strafeHelper_FPS.value;
+		y = cg_snapHudY.value;
+		h = cg_snapHudHeight.value;
 
-	if (onGround) // On ground
-		optimalDeltaAngle = acos((double)((baseSpeed - (pmAccel * baseSpeed * frametime)) / (currentSpeed * (1 - pmFriction * (frametime))))) * (180.0f / M_PI) - 45.0f;
-	else
-		optimalDeltaAngle = acos((double)((baseSpeed - (pmAirAccel * baseSpeed * frametime)) / currentSpeed)) * (180.0f / M_PI) - 45.0f;
-
-	if (fpclassify(optimalDeltaAngle) == FP_NAN)
-	{
-		return; // something went wrong, shrug
-	}
-	if (optimalDeltaAngle < -360 || optimalDeltaAngle > 360)
-	{
-		return; // something weird happened, shrug
-	}
-
-	// if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
-	//	optimalDeltaAngle = 0; // what the fuck?
-
-	// Com_Printf("Optimal Angle is %.3f\n", optimalDeltaAngle);
-
-	velocity[2] = 0;
-	vectoangles(velocity, velocityAngle); // We have the offset from our Velocity angle that we should be aiming at, so now we need to get our velocity angle.
-
-	// if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_SWOOP || moveStyle == MV_BOTCPM || (moveStyle == MV_SLICK && !onGround)) {//QW, CPM, PJK, WSW, RJCPM have center line
-	//	if (cg_strafeHelper.integer & SHELPER_CENTER)
-	//		DrawStrafeLine(velocityAngle, 0, (qboolean)(cmd.forwardmove == 0 && cmd.rightmove != 0), 8); //Center
-	// }
-	if (qtrue /*moveStyle != MV_QW && moveStyle != MV_SWOOP*/)
-	{ // Every style but QW has WA/WD lines
-		if (cg_strafeHelper.integer & SHELPER_WA)
-			DrawStrafeLine(velocityAngle, (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove < 0), 1); // WA
-		if (cg_strafeHelper.integer & SHELPER_WD)
-			DrawStrafeLine(velocityAngle, (-optimalDeltaAngle - (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove > 0), 7); // WD
-	}
-	// if (moveStyle == MV_JK2 /*|| moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)*/) { //JKA, Q3, RJQ3, Jetpack? have A/D
-	if (cg_strafeHelper.integer & SHELPER_A)
-		DrawStrafeLine(velocityAngle, -(45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove < 0), 2); // A
-	if (cg_strafeHelper.integer & SHELPER_D)
-		DrawStrafeLine(velocityAngle, (45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove > 0), 6); // D
-
-	// A/D backwards strafe?
-	if (cg_strafeHelper.integer & SHELPER_REAR)
-	{
-		DrawStrafeLine(velocityAngle, (225.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove < 0), 9);  // A
-		DrawStrafeLine(velocityAngle, (135.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove > 0), 10); // D
-	}
-	//}
-	// if (moveStyle == MV_JK2 /* || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP*/) {
-	// W only
-	if (cg_strafeHelper.integer & SHELPER_W)
-	{
-		DrawStrafeLine(velocityAngle, (45.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0);	 // W
-		DrawStrafeLine(velocityAngle, (-45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0); // W
-	}
-	//}
-}
-
-// snaphud start
-static usercmd_t CG_DirToCmd(int moveDir)
-{
-	usercmd_t outCmd = {0};
-	switch (moveDir)
-	{
-	case KEY_W:
-		outCmd.forwardmove = 127;
-		outCmd.rightmove = 0;
-		break;
-	case KEY_WA:
-		outCmd.forwardmove = 127;
-		outCmd.rightmove = -127;
-		break;
-	case KEY_A:
-		outCmd.forwardmove = 0;
-		outCmd.rightmove = -127;
-		break;
-	case KEY_AS:
-		outCmd.forwardmove = -127;
-		outCmd.rightmove = -127;
-		break;
-	case KEY_S:
-		outCmd.forwardmove = -127;
-		outCmd.rightmove = 0;
-		break;
-	case KEY_SD:
-		outCmd.forwardmove = -127;
-		outCmd.rightmove = 127;
-		break;
-	case KEY_D:
-		outCmd.forwardmove = 0;
-		outCmd.rightmove = 127;
-		break;
-	case KEY_DW:
-		outCmd.forwardmove = 127;
-		outCmd.rightmove = 127;
-		break;
-	default:
-		break;
-	}
-	return outCmd;
-}
-
-void CG_FillAngleYaw(float start, float end, float viewangle, float y, float height, const float *color)
-{
-	float fovscale, x, width;
-	float cgamefov;
-	cgamefov = cg.refdef.fov_x;
-	fovscale = tan(DEG2RAD(cgamefov / 2));
-	x = cgs.screenWidth / 2 + tan(DEG2RAD(viewangle + start)) / fovscale * cgs.screenWidth / 2;
-	width = abs(cgs.screenWidth * (tanf(DEG2RAD(viewangle + end)) - tanf(DEG2RAD(viewangle + start))) / (fovscale * 2)) + 1;
-
-	trap_R_SetColor(color);
-	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 0, 0, cgs.media.whiteShader);
-	trap_R_SetColor(NULL);
-}
-
-static int QDECL sortzones(const void *a, const void *b)
-{
-	return *(float *)a - *(float *)b;
-}
-
-void CG_UpdateSnapHudSettings(float speed, int fps)
-{
-	float step;
-	snappinghud.fps = fps;
-	snappinghud.speed = speed;
-	speed /= snappinghud.fps;
-	snappinghud.count = 0;
-
-	for (step = floor(speed + 0.5) - 0.5; step > 0 && snappinghud.count < SNAPHUD_MAXZONES - 2; step--)
-	{
-		snappinghud.zones[snappinghud.count] = RAD2DEG(acos(step / speed));
-		snappinghud.count++;
-		snappinghud.zones[snappinghud.count] = RAD2DEG(asin(step / speed));
-		snappinghud.count++;
-	}
-
-	qsort(snappinghud.zones, snappinghud.count, sizeof(snappinghud.zones[0]), sortzones);
-	snappinghud.zones[snappinghud.count] = snappinghud.zones[0] + 90;
-}
-
-void CG_DrawSnapHud(void)
-{
-	int i, y, h;
-	const char *t;
-	vec2_t va = {0};
-	vec4_t color[3] = {0};
-	float speed;
-	int fps = (cg_com_physicsFps.integer ? cg_com_physicsFps.integer : cg_com_maxfps.integer);
-	int colorid = 0;
-	qboolean pro = qfalse;
-	struct usercmd_s inCmd = {0};
-
-	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback)
-	{ // real client
-		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &inCmd);
-	}
-	else if (cg_statsEntities[cg.predictedPlayerState.clientNum])
-	{
-		entityState_t *stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
-		BG_StatsToUserCmd(stats, &inCmd);
-		if (cg_strafeHelper_RealPhysicsLines.integer)
+		switch (cg_snapHudAuto.integer)
 		{
-			int statsMsec = stats->pastFpsUnionArray[(stats->fireflag - 1) & (PLAYERSTATS_PAST_MSEC - 1)];
-			fps = statsMsec ? (1000 / statsMsec) : fps; // uses your maxfps setting by default
-														// take average to have it more stable when non-physicsfps? but will jitter when switching :/
-														// int msecSum = stats->pastFpsUnionArray[0] + stats->pastFpsUnionArray[1] + stats->pastFpsUnionArray[2] + stats->pastFpsUnionArray[3];
-		}
-	}
-	else if (cg.snap)
-	{ // spectating/demo playback
-		inCmd = CG_DirToCmd(cg.snap->ps.movementDir);
-	}
-	else
-	{
-		return;
-	}
-
-	snappinghud.m[0] = inCmd.forwardmove;
-	snappinghud.m[1] = inCmd.rightmove;
-
-	if (cg.renderingThirdPerson)
-	{
-		va[YAW] = cg.strafehelperPredictedPlayerState.viewangles[YAW];
-	}
-	else
-	{
-		va[YAW] = cg.refdefViewAngles[YAW]; // Because in first person we can have weaponkick (I think)
-	}
-
-	if (!cg_draw2D.integer)
-		return;
-
-	speed = cg_snapHudSpeed.integer ? (float)cg_snapHudSpeed.integer : cg.predictedPlayerState.speed; // 250 is base speed
-	fps = cg_snapHudFps.integer ? cg_snapHudFps.integer : fps;										  // uses your maxfps setting by default
-
-	if (speed != snappinghud.speed || fps != snappinghud.fps)
-	{ // set these if not set, update if changed
-		CG_UpdateSnapHudSettings(speed, fps);
-	}
-
-	y = cg_snapHudY.value;
-	h = cg_snapHudHeight.value;
-
-	switch (cg_snapHudAuto.integer)
-	{
-	case 0:
-		va[YAW] += cg_snapHudDef.value;
-		break;
-	case 1:
-		if ((snappinghud.m[0] != 0 && snappinghud.m[1] != 0))
-		{
-			va[YAW] += 45;
-		}
-		else if (snappinghud.m[0] == 0 && snappinghud.m[1] == 0)
-		{
+		case 0:
 			va[YAW] += cg_snapHudDef.value;
+			break;
+		case 1:
+			if ((snappinghud.m[0] != 0 && snappinghud.m[1] != 0))
+			{
+				va[YAW] += 45;
+			}
+			else if (snappinghud.m[0] == 0 && snappinghud.m[1] == 0)
+			{
+				va[YAW] += cg_snapHudDef.value;
+			}
+			break;
+		case 2:
+			if (snappinghud.m[0] != 0 && snappinghud.m[1] != 0)
+			{
+				va[YAW] += 45;
+			}
+			else if (snappinghud.m[0] == 0 && snappinghud.m[1] == 0)
+			{
+				va[YAW] += cg_snapHudDef.value;
+			}
+			break;
 		}
-		break;
-	case 2:
-		if (snappinghud.m[0] != 0 && snappinghud.m[1] != 0)
+
+		t = cg_snapHudRgba2.string;
+		color[1][0] = atof(COM_Parse(&t));
+		color[1][1] = atof(COM_Parse(&t));
+		color[1][2] = atof(COM_Parse(&t));
+		color[1][3] = atof(COM_Parse(&t));
+
+		t = cg_snapHudRgba1.string;
+		color[0][0] = atof(COM_Parse(&t));
+		color[0][1] = atof(COM_Parse(&t));
+		color[0][2] = atof(COM_Parse(&t));
+		color[0][3] = atof(COM_Parse(&t));
+
+		for (i = 0; i < snappinghud.count; i++)
 		{
-			va[YAW] += 45;
+			CG_FillAngleYaw(snappinghud.zones[i], snappinghud.zones[i + 1], va[YAW], y, h, color[colorid]);
+			CG_FillAngleYaw(snappinghud.zones[i] + 90, snappinghud.zones[i + 1] + 90, va[YAW], y, h, color[colorid]);
+			colorid ^= 1;
 		}
-		else if (snappinghud.m[0] == 0 && snappinghud.m[1] == 0)
-		{
-			va[YAW] += cg_snapHudDef.value;
-		}
-		break;
 	}
-
-	t = cg_snapHudRgba2.string;
-	color[1][0] = atof(COM_Parse(&t));
-	color[1][1] = atof(COM_Parse(&t));
-	color[1][2] = atof(COM_Parse(&t));
-	color[1][3] = atof(COM_Parse(&t));
-
-	t = cg_snapHudRgba1.string;
-	color[0][0] = atof(COM_Parse(&t));
-	color[0][1] = atof(COM_Parse(&t));
-	color[0][2] = atof(COM_Parse(&t));
-	color[0][3] = atof(COM_Parse(&t));
-
-	for (i = 0; i < snappinghud.count; i++)
-	{
-		CG_FillAngleYaw(snappinghud.zones[i], snappinghud.zones[i + 1], va[YAW], y, h, color[colorid]);
-		CG_FillAngleYaw(snappinghud.zones[i] + 90, snappinghud.zones[i + 1] + 90, va[YAW], y, h, color[colorid]);
-		colorid ^= 1;
-	}
-}
-// snaphud end
+	// snaphud end

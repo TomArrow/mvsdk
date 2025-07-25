@@ -12,6 +12,7 @@ set(MVUIHEADERS
 	"${SRCDir}/ui/ui_local.h"
 	"${SRCDir}/ui/ui_public.h"
 	"${SRCDir}/ui/ui_shared.h"
+	"${SRCDir}/ui/ui_skin.h"
 	"${SRCDir}/ui/ui_multiversion.h"
 	"${SRCDir}/ui/ui_multiversion_syscalls.h"
 
@@ -25,7 +26,9 @@ set(MVUISOURCES
 	"${SRCDir}/ui/ui_atoms.c"
 	"${SRCDir}/ui/ui_force.c"
 	"${SRCDir}/ui/ui_gameinfo.c"
+	"${SRCDir}/ui/ui_saber.c"
 	"${SRCDir}/ui/ui_shared.c"
+	"${SRCDir}/ui/ui_skin.c"
 	"${SRCDir}/ui/ui_multiversion.c"
 	"${SRCDir}/ui/ui_saber.c"
 
@@ -89,5 +92,25 @@ if(InMV)
 		install(TARGETS ${MVUI} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
 	else()
 		install(TARGETS ${MVUI} LIBRARY DESTINATION "lib")
+	endif()
+endif()
+
+if(InMV)
+	if(BuildPortableVersion)
+		if(WIN32)
+			install(TARGETS ${MVUI} RUNTIME DESTINATION "base")
+			install(FILES $<TARGET_PDB_FILE:${MVUI}> DESTINATION "." OPTIONAL)
+		else()
+			install(TARGETS ${MVUI} LIBRARY DESTINATION "base")
+		endif()
+	else()
+		if(WIN32)
+			install(TARGETS ${MVUI} RUNTIME DESTINATION "base")
+			install(FILES $<TARGET_PDB_FILE:${MVUI}> DESTINATION "." OPTIONAL)
+		elseif(APPLE)
+			install(TARGETS ${MVUI} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS/base")
+		else()
+			# TODO
+		endif()
 	endif()
 endif()

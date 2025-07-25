@@ -237,7 +237,7 @@ static cvarTable_t gameCvarTable[] = {
 	{&g_ttFlagsGp, "ttFlagsGp", "0", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse}, // gameplay ttflags.
 
 	// don't override the cheat state set by the system
-	{&g_cheats, "sv_cheats", "", 0, 0, qfalse},
+	{&g_cheats, "sv_cheats", "", 0, 0, qtrue},
 
 	// noset vars
 	{&g_gamename, "gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_ROM, 0, qfalse},
@@ -504,12 +504,42 @@ int Init_restart;
 
 intptr_t JK2_vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11);
 LIBEXPORT intptr_t vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11)
+{ // Wrapper for vmMain, to apply version-specifc adjustments at the beginning and the end of every VM_Call without compleltly changing the vmMain function.
+	intptr_t retValue;
+	static int activeVMCalls = 0;
+
+	if (!activeVMCalls) // If we're not using any wrapper functions it can happen that a syscall triggers a VM_Call and we would try to convert data that has been converted already. So we need to keep track of this...
+		MV_VersionMagic(qfalse);
+	activeVMCalls++;
+
+	retValue = JK2_vmMain(command, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11);
+
+	activeVMCalls--;
+	if (!activeVMCalls)
+		MV_VersionMagic(qtrue);
+
+	return retValue;
+}
+intptr_t JK2_vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11)
 {
-	// Original TomArrow vmMain - simplified to prevent recursion
+	int requestedMvApi = 0;
 	switch (command)
 	{
 	case GAME_INIT:
-		G_InitGame(arg0, arg1, arg2);
+		requestedMvApi = MVAPI_Init(arg11);
+		if (!requestedMvApi)
+		{ // Only call G_InitGame if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
+			G_InitGame(arg0, arg1, arg2);
+		}
+		else
+		{ // Store the values that were meant for G_InitGame to use them later, when MVAPIR_AFTER_INIT is called.
+			Init_levelTime = arg0;
+			Init_randomSeed = arg1;
+			Init_restart = arg2;
+		}
+		return requestedMvApi;
+	case MVAPI_AFTER_INIT:
+		MVAPI_AfterInit();
 		return 0;
 	case GAME_SHUTDOWN:
 		G_ShutdownGame(arg0);
@@ -522,6 +552,22 @@ LIBEXPORT intptr_t vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr
 	case GAME_CLIENT_USERINFO_CHANGED:
 		ClientUserinfoChanged(arg0);
 		return 0;
+	case GAME_COOL_API_PHYSICSFPSUPDATE:
+		if (coolApi & COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE)
+		{
+			return (int)ClientPhysicsFpsChanged(arg0);
+		}
+	case GAME_COOL_API_CROSS_SERVER_COMMAND_RECEIVED:
+		if (coolApi & COOL_APIFEATURE_CROSS_SERVER_COMMANDS)
+		{
+			return G_CrossServerCommand();
+		}
+	case GAME_COOL_API_KEEPZOMBIE:
+		if (coolApi & COOL_APIFEATURE_KEEPZOMBIE)
+		{
+			gentity_t *ent = g_entities + arg0;
+			return DF_KeepClientZombie(ent);
+		}
 	case GAME_CLIENT_DISCONNECT:
 		ClientDisconnect(arg0);
 		return 0;
@@ -540,7 +586,6 @@ LIBEXPORT intptr_t vmMain(intptr_t command, intptr_t arg0, intptr_t arg1, intptr
 		return BotAIStartFrame(arg0);
 	case GAME_ROFF_NOTETRACK_CALLBACK:
 		G_ROFF_NotetrackCallback(&g_entities[arg0], (const char *)arg1);
-		return 0;
 	}
 
 	return -1;

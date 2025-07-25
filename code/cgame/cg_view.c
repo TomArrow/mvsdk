@@ -260,6 +260,8 @@ static struct
 	float lastYaw;
 	int lastTime;
 	float lastTimeFrac;
+	qboolean smooth; // Use new, smooth camera damping
+	int fps;		 // FPS to emulate with smooth camera damping
 } cam;
 
 /*
@@ -398,40 +400,42 @@ static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
 	VectorCopy(pos->ideal, pos->prevIdeal);
 
 	if (cg_cameraFPS.integer >= CAMERA_MIN_FPS)
-	{
-		// FPS-independent solution thanks to semigroup property:
-		// If t1, t2 are positive time periods, dampfactor and
-		// velocity (idealDelta) don't change then:
-		// damp_(t1 + t2)(pos) = damp_t1(damp_t2(pos))
+		if (cam.smooth)
+		{
+			// FPS-independent solution thanks to semigroup property:
+			// If t1, t2 are positive time periods, dampfactor and
+			// velocity (idealDelta) don't change then:
+			// damp_(t1 + t2)(pos) = damp_t1(damp_t2(pos))
 
-		// if dtime == 1 (stable framerate equal to cg_camerafps)
-		// result is the same as in original code.
-		vec3_t shift;
-		float invdtime;
-		float timeadjfactor;
-		float codampfactor;
+			// if dtime == 1 (stable framerate equal to cg_camerafps)
+			// result is the same as in original code.
+			vec3_t shift;
+			float invdtime;
+			float timeadjfactor;
+			float codampfactor;
 
-		// dtime is relative: physics time / emulated time
-		dtime *= cg_cameraFPS.value / 1000.0f;
-		invdtime = 1.0f / dtime;
-		timeadjfactor = powf(dampfactor, dtime);
-		// shift = (idealDelta / dtime) * (dampfactor / (1 - dampfactor))
-		codampfactor = dampfactor / (1.0f - dampfactor);
-		VectorScale(idealDelta, invdtime, shift);
-		VectorScale(shift, codampfactor, shift);
-		// damp(dtime) = dampfactor^dtime * (damp(0) + shift) - shift
-		pos->damp[0] = timeadjfactor * (pos->damp[0] + shift[0]) - shift[0];
-		pos->damp[1] = timeadjfactor * (pos->damp[1] + shift[1]) - shift[1];
-		pos->damp[2] = timeadjfactor * (pos->damp[2] + shift[2]) - shift[2];
-	}
-	else
-	{
-		// Original JK2 camera damping:
-		// idealDelta_n = ideal_n+1 - ideal_n
-		// damp_n+1 = dampfactor * (damp_n - idealDelta_n)
-		VectorSubtract(pos->damp, idealDelta, pos->damp);
-		VectorScale(pos->damp, dampfactor, pos->damp);
-	}
+			// dtime is relative: physics time / emulated time
+			dtime *= cg_cameraFPS.value / 1000.0f;
+			dtime *= cam.fps / 1000.0f;
+			invdtime = 1.0f / dtime;
+			timeadjfactor = powf(dampfactor, dtime);
+			// shift = (idealDelta / dtime) * (dampfactor / (1 - dampfactor))
+			codampfactor = dampfactor / (1.0f - dampfactor);
+			VectorScale(idealDelta, invdtime, shift);
+			VectorScale(shift, codampfactor, shift);
+			// damp(dtime) = dampfactor^dtime * (damp(0) + shift) - shift
+			pos->damp[0] = timeadjfactor * (pos->damp[0] + shift[0]) - shift[0];
+			pos->damp[1] = timeadjfactor * (pos->damp[1] + shift[1]) - shift[1];
+			pos->damp[2] = timeadjfactor * (pos->damp[2] + shift[2]) - shift[2];
+		}
+		else
+		{
+			// Original JK2 camera damping:
+			// idealDelta_n = ideal_n+1 - ideal_n
+			// damp_n+1 = dampfactor * (damp_n - idealDelta_n)
+			VectorSubtract(pos->damp, idealDelta, pos->damp);
+			VectorScale(pos->damp, dampfactor, pos->damp);
+		}
 }
 
 // This is called every frame.
@@ -465,8 +469,8 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
 	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, target, cg.snap->ps.clientNum, MASK_CAMERACLIP);
-
-	if (trace.fraction < 1.0f)
+	< < < < < < < < < Temporary merge branch 1 if (trace.fraction < 1.0) == == == == =
+																						 if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
 	}
@@ -573,6 +577,21 @@ static void CG_OffsetThirdPersonView(void)
 	vec3_t focusAngles;
 	float dtime;
 
+	// Establish camera damping parameters
+	if (cg_smoothCameraFPS.integer)
+	{
+		cam.fps = cg_smoothCameraFPS.integer;
+	}
+	else if (cg_com_maxfps.integer)
+	{
+		cam.fps = MIN(cg_com_maxfps.integer, 1000);
+	}
+
+	cam.smooth = cg_smoothCamera.integer && (cam.fps >= CAMERA_MIN_FPS);
+	vec3_t target, location, diff;
+	vec3_t focusAngles;
+	float dtime;
+
 	// Set camera viewing direction.
 	VectorCopy(cg.refdefViewAngles, focusAngles);
 
@@ -618,7 +637,7 @@ static void CG_OffsetThirdPersonView(void)
 		deltayaw = Q_fabs(focusAngles[YAW] - cam.lastYaw);
 		if (deltayaw > 180.0f)
 		{ // Normalize this angle so that it is between 0 and 180.
-			deltayaw = Q_fabs(deltayaw - 360.0f);
+			deltayaw = fabs(deltayaw - 360.0f);
 		}
 		if (cg_cameraFPS.integer >= CAMERA_MIN_FPS)
 		{

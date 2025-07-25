@@ -348,6 +348,17 @@
 #define UI_CHAT_SPOT 296
 #define UI_CHAT_TACTICAL 297
 
+// Xbox-only, for complicated passcode entry screen. Sorry.
+#define UI_XBOX_PASSCODE 290
+
+#define UI_CHAT_MAIN 291
+#define UI_CHAT_ATTACK 292
+#define UI_CHAT_DEFEND 293
+#define UI_CHAT_REQUEST 294
+#define UI_CHAT_REPLY 295
+#define UI_CHAT_SPOT 296
+#define UI_CHAT_TACTICAL 297
+
 #define VOICECHAT_GETFLAG "getflag"                     // command someone to get the flag
 #define VOICECHAT_OFFENSE "offense"                     // command someone to go on offense
 #define VOICECHAT_DEFEND "defend"                       // command someone to go on defense

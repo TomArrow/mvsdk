@@ -212,6 +212,19 @@ typedef struct animation_s {
 extern qboolean			BGPAFtextLoaded;
 extern animation_t		bgGlobalAnimations[MAX_TOTALANIMATIONS];
 
+#define MAX_ANIM_FILES	64
+
+typedef struct
+{
+	char			filename[MAX_QPATH];
+	animation_t		*anims;
+//	animsounds_t	torsoAnimSnds[MAX_ANIM_SOUNDS];
+//	animsounds_t	legsAnimSnds[MAX_ANIM_SOUNDS];
+//	qboolean		soundsCached;
+} bgLoadedAnim_t;
+
+extern bgLoadedAnim_t bgAllAnims[MAX_ANIM_FILES];
+
 // flip the togglebit every time an animation
 // changes so a restart of the same anim can be detected
 #define	ANIM_TOGGLEBIT		2048		// Maximum number of animation sequences is 2048 (0-2047).  12th bit is the toggle

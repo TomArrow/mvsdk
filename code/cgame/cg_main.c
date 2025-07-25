@@ -107,6 +107,8 @@ vec4_t colorTable[CT_MAX] =
 
 };
 
+#include "holocronicons.h"
+
 int forceMyModelModificationCount = -1;
 int forceMySaberModificationCount = -1;
 int saber1ModificationCount = -1;
@@ -776,7 +778,7 @@ vmCvar_t cg_com_physicsFps;
 
 vmCvar_t cg_mv_fixbrokenmodelsclient;
 vmCvar_t cg_drawPlayerSprites;
-// vmCvar_t	cg_developer;
+vmCvar_t cg_developer;
 
 vmCvar_t cg_MVSDK;
 vmCvar_t mvsdk_cgFlags;
@@ -885,7 +887,7 @@ static cvarTable_t cvarTable[] = {
 	{&cg_drawCrosshairNamesDetails, "cg_drawCrosshairNamesDetails", "1", CVAR_ARCHIVE},
 	{&cg_drawScores, "cg_drawScores", "1", CVAR_ARCHIVE},
 	{&cg_dynamicCrosshair, "cg_dynamicCrosshair", "1", CVAR_ARCHIVE},
-	{&cg_drawRewards, "cg_drawRewards", "1", CVAR_ARCHIVE},
+	{&cg_drawRewards, "cg_drawRewards", "0", CVAR_ARCHIVE},
 	{&cg_crosshairSize, "cg_crosshairSize", "24", CVAR_ARCHIVE},
 	{&cg_crosshairHealth, "cg_crosshairHealth", "0", CVAR_ARCHIVE},
 	{&cg_crosshairX, "cg_crosshairX", "0", CVAR_ARCHIVE},
@@ -915,6 +917,8 @@ static cvarTable_t cvarTable[] = {
 	{&cg_errorDecay, "cg_errordecay", "100", 0},
 	{&cg_nopredict, "cg_nopredict", "0", 0},
 	{&cg_deluxePlayersPredict, "cg_deluxePlayersPredict", "0", CVAR_ARCHIVE},
+	{&cg_specialPredictPhysicsFps, "cg_specialPredictPhysicsFps", "3", CVAR_ARCHIVE},
+	{&cg_specialPredictPhysicsFpsAngleCmdTime, "cg_specialPredictPhysicsFpsAngleCmdTime", "0", CVAR_ARCHIVE},
 	{&cg_deluxePlayersPredictPingCompensate, "cg_deluxePlayersPredictPingCompensate", "1.0", CVAR_ARCHIVE},
 	{&cg_deluxePlayersPredictDebug, "cg_deluxePlayersPredictDebug", "0", CVAR_TEMP},
 	{&cg_deluxePlayersPredictClipZ, "cg_deluxePlayersPredictClipZ", "1", CVAR_ARCHIVE},
@@ -933,6 +937,18 @@ static cvarTable_t cvarTable[] = {
 	{&cg_snapHudRgba1, "cg_snapHudRgba1", "1 0 0 0.5", CVAR_ARCHIVE},
 	{&cg_snapHudRgba2, "cg_snapHudRgba2", "0 1 1 0.5", CVAR_ARCHIVE},
 	{&cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE},
+	// snaphud start
+	{&cg_snapHud, "cg_snapHud", "0", CVAR_ARCHIVE},
+	{&cg_snapHudRgba1, "cg_snapHudRgba1", "0.5 0.7 0.9 0.7", CVAR_ARCHIVE},
+	{&cg_snapHudRgba2, "cg_snapHudRgba2", "0.05 0.05 0.05 0.15", CVAR_ARCHIVE},
+	{&cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE},
+	{&cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE},
+	{&cg_snapHudAuto, "cg_snapHudAuto", "1", CVAR_ARCHIVE},
+	{&cg_snapHudDef, "cg_snapHudDef", "45", CVAR_ARCHIVE},
+	{&cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE},
+	{&cg_snapHudFps, "cg_snapHudFps", "0", CVAR_ARCHIVE},
+	// snaphud end
+
 	{&cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE},
 	{&cg_snapHudAuto, "cg_snapHudAuto", "1", CVAR_ARCHIVE},
 	{&cg_snapHudDef, "cg_snapHudDef", "45", CVAR_ARCHIVE},
@@ -957,7 +973,7 @@ static cvarTable_t cvarTable[] = {
 	{&cg_saberModelTraceEffect, "cg_saberModelTraceEffect", "0", CVAR_ARCHIVE},
 #endif
 
-	{&cg_fpls, "cg_fpls", "0", 0},
+	{&cg_fpls, "cg_fpls", "0", CVAR_ARCHIVE},
 
 	{&cg_saberDynamicMarks, "cg_saberDynamicMarks", "0", 0},
 	{&cg_saberDynamicMarkTime, "cg_saberDynamicMarkTime", "60000", 0},
@@ -1092,13 +1108,13 @@ static cvarTable_t cvarTable[] = {
 
 	{&cg_thirdPerson, "cg_thirdPerson", "0", CVAR_ARCHIVE},
 	{&cg_thirdPersonRange, "cg_thirdPersonRange", "80", CVAR_ARCHIVE},
-	{&cg_thirdPersonAngle, "cg_thirdPersonAngle", "0", CVAR_CHEAT},
-	{&cg_thirdPersonPitchOffset, "cg_thirdPersonPitchOffset", "0", CVAR_CHEAT},
+	{&cg_thirdPersonAngle, "cg_thirdPersonAngle", "0", CVAR_ARCHIVE},
+	{&cg_thirdPersonPitchOffset, "cg_thirdPersonPitchOffset", "0", CVAR_ARCHIVE},
 	{&cg_thirdPersonVertOffset, "cg_thirdPersonVertOffset", "16", CVAR_ARCHIVE},
 	{&cg_thirdPersonCameraDamp, "cg_thirdPersonCameraDamp", "0.3", CVAR_ARCHIVE},
 	{&cg_thirdPersonTargetDamp, "cg_thirdPersonTargetDamp", "0.5", CVAR_ARCHIVE},
 
-	{&cg_thirdPersonHorzOffset, "cg_thirdPersonHorzOffset", "0", CVAR_CHEAT},
+	{&cg_thirdPersonHorzOffset, "cg_thirdPersonHorzOffset", "0", CVAR_ARCHIVE},
 	{&cg_thirdPersonAlpha, "cg_thirdPersonAlpha", "1.0", CVAR_CHEAT},
 
 	{&cg_teamChatTime, "cg_teamChatTime", "3000", CVAR_ARCHIVE},
@@ -1107,10 +1123,10 @@ static cvarTable_t cvarTable[] = {
 	{&cg_forceMyModel, "cg_forceMyModel", "", CVAR_ARCHIVE},
 	{&cg_forceMySaber, "cg_forceMySaber", "", CVAR_ARCHIVE},
 	{&cg_predictItems, "cg_predictItems", "1", CVAR_ARCHIVE},
-	//{ &cg_optimizedPredict, "cg_optimizedPredict", "0", CVAR_ARCHIVE },
+	//{&cg_optimizedPredict, "cg_optimizedPredict", "0", CVAR_ARCHIVE},
 	{&cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE},
 	{&cg_deferPlayersDebug, "cg_deferPlayersDebug", "0", CVAR_TEMP},
-	{&cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE},
+	{&cg_drawTeamOverlay, "cg_drawTeamOverlay", "1", CVAR_ARCHIVE},
 	{&cg_teamOverlayUserinfo, "teamoverlay", "0", CVAR_ROM | CVAR_USERINFO},
 	{&cg_stats, "cg_stats", "0", 0},
 	{&cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE},
@@ -1170,8 +1186,9 @@ static cvarTable_t cvarTable[] = {
 	{&cg_ui_myteam, "ui_myteam", "0", CVAR_ROM | CVAR_INTERNAL},
 	{&cg_com_maxfps, "com_maxfps", "", 0},
 	{&cg_com_physicsFps, "com_physicsFps", "", 0},
+	{&cg_com_physicsFps, "com_physicsFps", "", 0},
 
-	//{ &cg_developer, "cg_developer", "0", CVAR_TEMP},
+	{&cg_developer, "cg_developer", "0", CVAR_TEMP},
 	{&cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE},
 	{&cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE},
 
@@ -1211,6 +1228,21 @@ static cvarTable_t cvarTable[] = {
 	{&cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE},
 	{&cg_randomTaunts, "cg_randomTaunts", "0", CVAR_ARCHIVE},
 	{&jkcvar_cg_drawClock, "cg_drawClock", "0", CVAR_ARCHIVE},
+
+	{&cg_drawKillMessage, "cg_drawKillMessage", "1", CVAR_ARCHIVE},
+	{&cg_showKills, "cg_showKills", "1", CVAR_ARCHIVE},
+	{&cg_char_color_red, "char_color_red", "255", CVAR_ARCHIVE},
+	{&cg_char_color_green, "char_color_green", "255", CVAR_ARCHIVE},
+	{&cg_char_color_blue, "char_color_blue", "255", CVAR_ARCHIVE},
+	{&cg_drawLocalTime, "cg_drawLocalTime", "0", CVAR_ARCHIVE},
+	{&cg_drawLocalTimeX, "cg_drawLocalTimeX", "400", CVAR_ARCHIVE},
+	{&cg_drawLocalTimeY, "cg_drawLocalTimeY", "460", CVAR_ARCHIVE},
+	{&cg_drawLocalTimeScale, "cg_drawLocalTimeScale", "0.7", CVAR_ARCHIVE},
+	{&cg_drawLocalTime12h, "cg_drawLocalTime12h", "0", CVAR_ARCHIVE},
+	{&cg_drawLocalTimeSeconds, "cg_drawLocalTimeSeconds", "0", CVAR_ARCHIVE},
+	{&cg_cropLevelShot, "cg_cropLevelShot", "0", CVAR_ARCHIVE},
+	{&cg_teleportEvents, "cg_teleportEvents", "1", CVAR_ARCHIVE},
+	{&cg_randomTaunts, "cg_randomTaunts", "1", CVAR_ARCHIVE},
 };
 
 static int cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
@@ -2144,6 +2176,7 @@ static void CG_RegisterGraphics(void)
 	cgs.media.viewBloodShader = trap_R_RegisterShader("viewBloodBlend");
 
 	cgs.media.deferShader = trap_R_RegisterShaderNoMip("gfx/2d/defer.tga");
+	cgs.media.unknownModelIcon = trap_R_RegisterShaderNoMip("gfx/2d/unknown_model_icon");
 
 	cgs.media.smokePuffShader = trap_R_RegisterShader("smokePuff");
 	cgs.media.bloodTrailShader = trap_R_RegisterShader("bloodTrail");
@@ -3173,7 +3206,7 @@ static qhandle_t CG_FeederItemImage(float feederID, int index)
 	return 0;
 }
 
-static qboolean CG_FeederSelection(float feederID, int index, itemDef_t *item)
+static qboolean CG_FeederSelection(float feederID, int index, itemDef_t *item, itemDef_t *item)
 {
 	if (cgs.gametype >= GT_TEAM)
 	{
