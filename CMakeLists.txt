@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 4.1.0)
 
 # For checks in subdirectories
 set(InMVSDK TRUE)
