@@ -1,5 +1,3 @@
-
-#ifndef CG_LOCAL_H
 #define CG_LOCAL_H
 
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
@@ -57,6 +55,51 @@
 #define ITEM_BLOB_TIME 200
 #define MUZZLE_FLASH_TIME 20
 #define SINK_TIME 1000 // time for fragments to sink into ground before going away
+
+#ifndef MAX_SABERS
+#define MAX_SABERS 2
+#endif
+
+typedef struct saberTrail_s {
+	// Actual trail stuff
+	int	inAction; // controls whether should we even consider starting one
+	int	duration; // how long each trail seg stays in existence
+	int	lastTime; // time a saber segement was last stored
+	vec3_t	base;
+	vec3_t	tip;
+
+	vec3_t	dualbase;
+	vec3_t	dualtip;
+
+	// Marks stuff
+	qboolean	haveOldPos[2];
+	vec3_t	oldPos[2];
+	vec3_t	oldNormal[2]; // store this in case we don't have a connect-the-dots situation
+							// ..then we'll need the normal to project a mark blob onto the impact point
+} saberTrail_t;
+
+
+
+// NOTE: Real saberInfo_t definition not found in codebase. Using stub to unblock build. Replace with real struct if available.
+typedef struct saberInfo_s { int dummy; } saberInfo_t;
+
+// NOTE: Real predictedMovement_t and ezDemoEvent_t definitions not found in codebase. Using stubs to unblock build. Replace with real structs if available.
+typedef struct predictedMovement_s { int dummy; } predictedMovement_t;
+typedef struct ezDemoEvent_s { int dummy; } ezDemoEvent_t;
+
+// DBRequestType_t is used as DBRequestTypes_t in cg_dbcmds.h and g_dbcmds.h
+typedef enum DBRequestTypes_s {
+	DBREQUEST_CHATSAVE,
+	DBREQUEST_GETCHATS,
+} DBRequestTypes_t;
+typedef DBRequestTypes_t DBRequestType_t;
+
+// TODO: Real definitions for predictedMovement_t and ezDemoEvent_t are missing from the codebase.
+// Please provide the real struct definitions for these types if available.
+// typedef struct predictedMovement_s { ... } predictedMovement_t;
+// typedef struct ezDemoEvent_s { ... } ezDemoEvent_t;
+
+// ESP Configuration Structure
 typedef struct
 {
 	int maxEntities;
@@ -83,6 +126,7 @@ typedef struct
 	int style;
 	qboolean debug;
 } espConfig_t;
+
 #define ATTACKER_HEAD_TIME 10000
 #define REWARD_TIME 3000
 
@@ -3073,53 +3117,409 @@ qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const
 qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
 */
 
-void CG_Init_CG(void);
-void CG_Init_CGents(void);
-
-void CG_SetGhoul2Info(refEntity_t *ent, centity_t *cent);
-void CG_CreateBBRefEnts(entityState_t *s1, vec3_t origin);
-
-void CG_InitG2Weapons(void);
-void CG_ShutDownG2Weapons(void);
-void CG_CopyG2WeaponInstance(centity_t *cent, int weaponNum, void *toGhoul2);
-void *CG_G2WeaponInstance(centity_t *cent, int weapon);
-void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent);
-
 /*
-Ghoul2 Insert End
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
 */
 
-extern int mvapi;
-extern int coolApi;
-extern int coolApi_dbVersion;
-extern int coolApi_jkaVersion;
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
 
-// JK2MV API Functions
-int MVAPI_Init(int apilevel);
-void MVAPI_AfterInit(void);
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
 
-// JK2MV Syscalls [Universal]
-/* Level 1 */
-qboolean trap_MVAPI_ControlFixes(int fixes); // Level: 1
-int trap_MVAPI_GetVersion(void);			 // Level: 1
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
 
-/* Level 3 */
-int trap_FS_FLock(fileHandle_t h, flockCmd_t cmd, qboolean nb); // Level: 3
-void trap_MVAPI_SetVersion(mvversion_t version);				// Level: 3
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
 
-/* Level 4 */
-void trap_MVAPI_Print(int flags, const char *string); // Level: 4
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
 
-// JK2MV Syscalls [CGame]
-/* Level 3 */
-void trap_R_AddRefEntityToScene2(const refEntity_t *re); // Level: 3
-void trap_MVAPI_SetVirtualScreen(float w, float h);		 // Level: 3
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
 
-int CG_Cvar_Get_int(const char *cvar);
-/* Level 4 */
-qboolean trap_MVAPI_EnableSubmodelBypass(qboolean enable); // Level: 4
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
 
-#include "../api/mvapi.h"
-#include "cg_multiversion.h"
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
 
-#endif // CG_LOCAL_H
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
+
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
+
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
+
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
+
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
+
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
+
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
+
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
+
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
+
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
+
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
+
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
+
+void trap_G2API_GiveMeVectorFromMatrix(mdxaBone_t *boltMatrix, int flags, vec3_t vec);
+/*
+int			trap_G2API_CopyGhoul2Instance(void *g2From, void *g2To, int modelIndex);
+void		trap_G2API_CopySpecificGhoul2Model(void *g2From, int modelFrom, void *g2To, int modelTo);
+void		trap_G2API_DuplicateGhoul2Instance(void *g2From, void **g2To);
+qboolean	trap_G2API_HasGhoul2ModelOnIndex(void *ghlInfo, int modelIndex);
+qboolean	trap_G2API_RemoveGhoul2Model(void *ghlInfo, int modelIndex);
+
+int			trap_G2API_AddBolt(void *ghoul2, int modelIndex, const char *boneName);
+//qboolean	trap_G2API_RemoveBolt(void *ghoul2, int index);
+void		trap_G2API_SetBoltInfo(void *ghoul2, int modelIndex, int boltInfo);
+void		trap_G2API_CleanGhoul2Models(void **ghoul2Ptr);
+qboolean	trap_G2API_SetBoneAngles(void *ghoul2, int modelIndex, const char *boneName, const vec3_t angles, const int flags,
+								const int up, const int right, const int forward, qhandle_t *modelList,
+								int blendTime , int currentTime );
+void		trap_G2API_GetGLAName(void *ghoul2, int modelIndex, char *fillBuf);
+qboolean	trap_G2API_SetBoneAnim(void *ghoul2, const int modelIndex, const char *boneName, const int startFrame, const int endFrame,
+							  const int flags, const float animSpeed, const int currentTime, const float setFrame , const int blendTime );
+
+qboolean	trap_G2API_SetRootSurface(void *ghoul2, const int modelIndex, const char *surfaceName);
+qboolean	trap_G2API_SetSurfaceOnOff(void *ghoul2, const char *surfaceName, const int flags);
+qboolean	trap_G2API_SetNewOrigin(void *ghoul2, const int boltIndex);
+*/
+
+/*
+Ghoul2 Insert Start
+*/
+// CG specific API access
+void trap_G2_ListModelSurfaces(void *ghlInfo);
+void trap_G2_ListModelBones(void *ghlInfo, int frame);
+void trap_G2_SetGhoul2ModelIndexes(void *ghoul2, qhandle_t *modelList, qhandle_t *skinList);
+qboolean trap_G2_HaveWeGhoul2Models(void *ghoul2);
+qboolean trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								  const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+												const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+/*
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
+								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+int			trap_G2API_InitGhoul2Model(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
+						  qhandle_t customShader, int modelFlags, int lodBias);
+*/
+

@@ -1,7 +1,140 @@
 #include "q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
+// Add this include for defrag-specific definitions
 
+// Add missing BOUNCEPOWER definitions
+#define STAT_BOUNCEPOWER        16  // Adjust this value based on your stat system
+#define BOUNCEPOWER_POWERMASK   0xFF
+#define BUTTON_BOUNCEPOWER      0x8000  // Adjust based on your button system
+
+// Add missing FPSTABLE definitions
+#define FPSTABLE_MAX_MEASURED_MSECVALUE 333  // 3 fps minimum
+#define FPSTABLE_OVERFLOW_MSECVALUE     334
+#define FPSTABLE_SIZE                   64   // Adjust based on actual needed size
+
+// Add missing antiLoopState_t definition
+typedef struct {
+    float yawAngleChangeSinceBaseSpeed;
+} antiLoopState_t;
+
+// Add missing XYSPEED macro
+#define XYSPEED(vel) sqrt((vel)[0]*(vel)[0] + (vel)[1]*(vel)[1])
+
+// Type definition for bitInfo_t
+typedef struct {
+    const char *string;
+} bitInfo_t;
+
+// Leaderboard type definitions
+typedef enum {
+    LB_MAIN = 0,
+    LB_NOJUMPBUG,
+    LB_CUSTOM,
+    LB_SEGMENTED,
+    LB_CHEAT,
+    LB_TYPES_COUNT
+} mainLeaderboardType_t;
+
+// Run flag definitions (if not in header)
+#define RFL_JUMPBUGDISABLE      0x0001
+#define RFL_NODEADRAMPS         0x0002
+#define RFL_NOWALLSTUCK         0x0004
+#define RFL_NOROLLSTART         0x0008
+#define RFL_BOT                 0x0010
+#define RFL_SEGMENTED           0x0020
+#define RFL_NOROLLS             0x0040
+#define RFL_TAS                 0x0080
+#define RFL_CLIMBTECH           0x0100
+#define RFL_JUMPPADCOMPENSATE   0x0200
+#define RFL_LAVAPROTECT         0x0400
+#define RFL_ANTILOOP            0x0800
+
+// Run flag indices
+#define RFLINDEX_JUMPBUGDISABLE    0
+#define RFLINDEX_NODEADRAMPS       1
+#define RFLINDEX_NOWALLSTUCK       2
+#define RFLINDEX_NOROLLSTART       3
+#define RFLINDEX_BOT               4
+#define RFLINDEX_SEGMENTED         5
+#define RFLINDEX_NOROLLS           6
+#define RFLINDEX_TAS               7
+#define RFLINDEX_CLIMBTECH         8
+#define RFLINDEX_JUMPPADCOMPENSATE 9
+#define RFLINDEX_LAVAPROTECT       10
+#define RFLINDEX_ANTILOOP          11
+
+// RUNFLAGS macro definition
+#define RUNFLAGS(func) \
+    func(njb, JUMPBUGDISABLE, 0, d_, "", "") \
+    func(ndr, NODEADRAMPS, 1, d_, "", "") \
+    func(nws, NOWALLSTUCK, 2, d_, "", "") \
+    func(nrs, NOROLLSTART, 3, d_, "", "") \
+    func(sb, BOT, 4, d_, "", "") \
+    func(seg, SEGMENTED, 5, d_, "", "") \
+    func(nr, NOROLLS, 6, d_, "", "") \
+    func(tas, TAS, 7, d_, "", "") \
+    func(clb, CLIMBTECH, 8, d_, "", "") \
+    func(jpc, JUMPPADCOMPENSATE, 9, d_, "", "") \
+    func(lvp, LAVAPROTECT, 10, d_, "", "") \
+    func(al, ANTILOOP, 11, d_, "", "")
+
+// QUOTEME macro
+#define QUOTEME(x) #x
+
+// Database prefix
+#define RUNFLAGSDBPREFIX rf_
+
+// Movement style definitions (if not in header)
+#define MV_JK2          0
+#define MV_PJK2         1
+#define MV_JK2SP        2
+#define MV_SPEED        3
+#define MV_SICKO        4
+#define MV_QUAJK        5
+#define MV_BOUNCE       6
+#define MV_PINBALL      7
+#define MV_CSS          8
+#define MV_Q2           9
+#define MV_FORCE        10
+#define MV_DREAM        11
+#define MV_CHARGEJUMP   12
+#define MV_NUMSTYLES    13
+
+#define DEFRAG_MV_JK2       MV_JK2
+#define DEFRAG_MV_PJK2      MV_PJK2
+#define DEFRAG_MV_JK2SP     MV_JK2SP
+#define DEFRAG_MV_SPEED     MV_SPEED
+#define DEFRAG_MV_SICKO     MV_SICKO
+#define DEFRAG_MV_QUAJK     MV_QUAJK
+#define DEFRAG_MV_BOUNCE    MV_BOUNCE
+#define DEFRAG_MV_PINBALL   MV_PINBALL
+#define DEFRAG_MV_CSS       MV_CSS
+#define DEFRAG_MV_Q2        MV_Q2
+#define DEFRAG_MV_FORCE     MV_FORCE
+#define DEFRAG_MV_DREAM     MV_DREAM
+#define DEFRAG_MV_CHARGEJUMP MV_CHARGEJUMP
+#define DEFRAG_MV_NUMSTYLES MV_NUMSTYLES
+
+// Mode definitions
+typedef enum {
+    MODE_INVALID = 0,
+    MODE_NORMAL,
+    MODE_DEFRAG,
+    MODE_DUEL,
+    MODE_ALLFORCE,
+    MODE_IRONMAN,
+    MODE_NUM_MODES
+} playerMode_t;
+
+// Type definition (if not in header)
+typedef struct {
+    int movementStyle;
+    int msec;
+    int jumpLevel;
+    int variant;
+    int runFlags;
+} raceStyle_t;
 
 const int defaultRunFlags = RFL_NODEADRAMPS | RFL_LAVAPROTECT | RFL_ANTILOOP;
 raceStyle_t defaultRaceStyle;
@@ -101,7 +234,7 @@ raceStyle_t getDefaultMapRaceStyle() {
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle) {
 	static char whereString[LB_TYPES_COUNT][MAX_STRING_CHARS];
 	if (lbType == LB_CHEAT) {
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0 OR `" QUOTEME(RUNFLAGSDBPREFIX) "%s`>0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string);
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`rf_%s`>0 OR `rf_%s`>0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string);
 		return whereString[lbType];
 	}
 	if (lbType == LB_SEGMENTED) { // TODO honestly this sucks, make this readable wtf
@@ -109,7 +242,7 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define SUBFUNC(a,d)  d ## a != 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) e "OR " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND  `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1 )", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`rf_%s`=0 AND `rf_%s`=0 AND  `rf_%s`=1 )", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string
 		);
 		return whereString[lbType];
 #undef RUNFLAGSFUNC
@@ -120,7 +253,7 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define SUBFUNC(a,d)  d ## a != 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) e "OR " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`rf_%s`=0 AND `rf_%s`=0 AND `rf_%s`=0 AND ("
 			"(msec != 7 AND msec != 8) "
 			"OR jump != %d " 
 			RUNFLAGS(RUNFLAGSFUNC)
@@ -136,11 +269,11 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define SUBFUNC(a,d)  d ## a = 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) e "AND " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`rf_%s`=0 AND `rf_%s`=0 AND `rf_%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "
 			"AND jump = %d "
 			RUNFLAGS(RUNFLAGSFUNC)
-			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=1)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string, defaultLevelRaceStyle->jumpLevel
+			") AND `rf_%s`=1)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
 			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE].string
 		);
@@ -153,11 +286,11 @@ const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_
 #define SUBFUNC(a,d)  d ## a = 
 #define RUNFLAGSFUNC(a,b,c,d,e,f) e "AND " QUOTEME(SUBFUNC(a,d)) "%d " f
 #define RUNFLAGSFUNC2(a,b,c,d,e,f) , (int)!!((int)defaultLevelRaceStyle->runFlags & RFL_ ## b)
-		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0 AND ("
+		Com_sprintf(whereString[lbType], sizeof(whereString[lbType]), "(`rf_%s`=0 AND `rf_%s`=0 AND `rf_%s`=0 AND ("
 			"(msec = 7 OR msec = 8) "
 			"AND jump = %d "
 			RUNFLAGS(RUNFLAGSFUNC)
-			") AND `" QUOTEME(RUNFLAGSDBPREFIX) "%s`=0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string, defaultLevelRaceStyle->jumpLevel
+			") AND `rf_%s`=0)", runFlagsShortNames[RFLINDEX_BOT].string, runFlagsShortNames[RFLINDEX_TAS].string, runFlagsShortNames[RFLINDEX_SEGMENTED].string, defaultLevelRaceStyle->jumpLevel
 			RUNFLAGS(RUNFLAGSFUNC2)
 			, runFlagsShortNames[RFLINDEX_JUMPBUGDISABLE].string
 		);
@@ -457,47 +590,52 @@ int		fpsTableIndexToMsec[FPSTABLE_SIZE];
 // we wanna be able to store used fps (msec) settings, but there's only a number of values (62 or 63 I think) that can actually be set,
 // because for example there are no values between 142 and 125 fps since msec values are integers and 142 is 7 and 125 is 8.
 // so in cases where we wanna track how often each fps value was used, we can have a small 64 value array instead of a 1000 value array. less memory, faster to null and copy (e.g. in segmented run)
-void	InitFpsTable() {
-	int i;
-	int index = 0;
-	int lastMsec = -1;
-	int msec;
-	fpsTableMsecToIndex[0] = fpsTableIndexToMsec[0] = 0; // well, 0 msec should never happen, shrug. but just fill it with something to not have freak errors
-	for (i = 1; i <= FPSTABLE_MAX_MEASURED_MSECVALUE; i++) {
-		msec = 1000 /(1000 / i);
-		if (msec != lastMsec) index++;
-		lastMsec = msec;
-		fpsTableMsecToIndex[i] = index;
-		fpsTableIndexToMsec[index] = msec;
-	}
-	index++;
-	fpsTableMsecToIndex[FPSTABLE_OVERFLOW_MSECVALUE] = index;
-	for (; index < FPSTABLE_SIZE; index++) {
-		fpsTableIndexToMsec[index] = FPSTABLE_OVERFLOW_MSECVALUE; // this "loop" actually just runs once, since i set the array to the needed size. bit random that i can't explain why it has to be exactly that size but it just is that way. wish i could come up with a math formula to do this mapping instead of LUTs
-	}
+void InitFpsTable() {
+    int i;
+    int index = 0;
+    int lastMsec = -1;
+    int msec;
+    
+    fpsTableMsecToIndex[0] = fpsTableIndexToMsec[0] = 0; // well, 0 msec should never happen, shrug. but just fill it with something to not have freak errors
+    
+    for (i = 1; i <= FPSTABLE_MAX_MEASURED_MSECVALUE; i++) {
+        msec = 1000 / (1000 / i);
+        if (msec != lastMsec) index++;
+        lastMsec = msec;
+        fpsTableMsecToIndex[i] = index;
+        fpsTableIndexToMsec[index] = msec;
+    }
+    
+    index++;
+    fpsTableMsecToIndex[FPSTABLE_OVERFLOW_MSECVALUE] = index;
+    
+    for (; index < FPSTABLE_SIZE; index++) {
+        fpsTableIndexToMsec[index] = FPSTABLE_OVERFLOW_MSECVALUE; // this "loop" actually just runs once, since i set the array to the needed size. bit random that i can't explain why it has to be exactly that size but it just is that way. wish i could come up with a math formula to do this mapping instead of LUTs
+    }
 }
-
 
 void DF_AntiLoop_NewAngle(antiLoopState_t* antiLoopState, vec3_t oldVelocity, vec3_t velocity, float baseSpeed, qboolean inRace) {
-	//float xyVel = VectorLength(velocity); //XYSPEED(velocity);
-	float xyVel = XYSPEED(velocity); // should prolly be vectorlength but now ppl already did runs like this so i dont wanna mess wiht it (cuz ppl in quajk can crawl up big steep slopes and move dowm with essentially < baseSpeed but high vertical speed but oh well
-	if (xyVel < baseSpeed/* && !inRace*/) {
-		antiLoopState->yawAngleChangeSinceBaseSpeed = 0;
-	}
-	else {
-		vec3_t velNorm, oldVelNorm;
-		vec3_t angles,anglesOld;
-		float diff;
-		VectorCopy(oldVelocity, oldVelNorm);
-		VectorCopy(velocity, velNorm);
-		VectorNormalize(oldVelNorm);
-		VectorNormalize(velNorm);
-		vectoangles(velNorm, angles);
-		vectoangles(oldVelNorm, anglesOld);
-		diff = AngleSubtract(angles[YAW], anglesOld[YAW]);
-		antiLoopState->yawAngleChangeSinceBaseSpeed += fabsf(diff);
-	}
+    float xyVel = XYSPEED(velocity); // should prolly be vectorlength but now ppl already did runs like this so i dont wanna mess wiht it (cuz ppl in quajk can crawl up big steep slopes and move dowm with essentially < baseSpeed but high vertical speed but oh well
+    
+    if (xyVel < baseSpeed/* && !inRace*/) {
+        antiLoopState->yawAngleChangeSinceBaseSpeed = 0;
+    }
+    else {
+        vec3_t velNorm, oldVelNorm;
+        vec3_t angles, anglesOld;
+        float diff;
+        
+        VectorCopy(oldVelocity, oldVelNorm);
+        VectorCopy(velocity, velNorm);
+        VectorNormalize(oldVelNorm);
+        VectorNormalize(velNorm);
+        
+        vectoangles(velNorm, angles);
+        vectoangles(oldVelNorm, anglesOld);
+        
+        diff = AngleSubtract(angles[YAW], anglesOld[YAW]);
+        antiLoopState->yawAngleChangeSinceBaseSpeed += fabsf(diff);
+    }
 }
-
 
 

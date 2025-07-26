@@ -34,26 +34,29 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
-    <Import Project="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\nasm.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -90,11 +93,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /w34996</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
-      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
       <ExceptionHandling>
       </ExceptionHandling>
       <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
@@ -103,31 +105,23 @@
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <SupportJustMyCode></SupportJustMyCode>
-      <TreatSpecificWarningsAsErrors>4013;4133;4047;4020</TreatSpecificWarningsAsErrors>
       <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
-      <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;DEBUG;CMAKE_INTDIR="Debug";ui_x64_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;DEBUG;CMAKE_INTDIR="Debug";ui_x64_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;DEBUG;CMAKE_INTDIR=\"Debug\";ui_x64_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;DEBUG;CMAKE_INTDIR=\"Debug\";ui_x64_EXPORTS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <MASM>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;DEBUG;CMAKE_INTDIR="Debug";ui_x64_EXPORTS;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;DEBUG;CMAKE_INTDIR="Debug";ui_x64_EXPORTS;</PreprocessorDefinitions>
       <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </MASM>
-    <NASM>
-      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv\;%(IncludePaths)</IncludePaths>
-      <AdditionalOptions>-f</AdditionalOptions>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;DEBUG;CMAKE_INTDIR="Debug";ui_x64_EXPORTS;</PreprocessorDefinitions>
-    </NASM>
     <Midl>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -139,7 +133,6 @@
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -157,10 +150,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /w34996</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
       <ExceptionHandling>
       </ExceptionHandling>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -172,32 +164,25 @@
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SupportJustMyCode></SupportJustMyCode>
-      <TreatSpecificWarningsAsErrors>4013;4133;4047;4020</TreatSpecificWarningsAsErrors>
       <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
-      <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="Release";ui_x64_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="Release";ui_x64_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR=\"Release\";ui_x64_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR=\"Release\";ui_x64_EXPORTS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <MASM>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="Release";ui_x64_EXPORTS;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="Release";ui_x64_EXPORTS;</PreprocessorDefinitions>
       <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </MASM>
-    <NASM>
-      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv\;%(IncludePaths)</IncludePaths>
-      <AdditionalOptions>-f</AdditionalOptions>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="Release";ui_x64_EXPORTS;</PreprocessorDefinitions>
-    </NASM>
     <Midl>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -209,7 +194,6 @@
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -227,10 +211,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /w34996</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
       <ExceptionHandling>
       </ExceptionHandling>
       <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
@@ -239,12 +222,10 @@
       <Optimization>MinSpace</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SupportJustMyCode></SupportJustMyCode>
-      <TreatSpecificWarningsAsErrors>4013;4133;4047;4020</TreatSpecificWarningsAsErrors>
       <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
-      <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="MinSizeRel";ui_x64_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
@@ -260,11 +241,6 @@
       <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </MASM>
-    <NASM>
-      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv\;%(IncludePaths)</IncludePaths>
-      <AdditionalOptions>-f</AdditionalOptions>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="MinSizeRel";ui_x64_EXPORTS</PreprocessorDefinitions>
-    </NASM>
     <Midl>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -276,7 +252,6 @@
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -294,11 +269,10 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /w34996</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
       <ExceptionHandling>
       </ExceptionHandling>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -310,31 +284,23 @@
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <SupportJustMyCode></SupportJustMyCode>
-      <TreatSpecificWarningsAsErrors>4013;4133;4047;4020</TreatSpecificWarningsAsErrors>
       <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
-      <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="RelWithDebInfo";ui_x64_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="RelWithDebInfo";ui_x64_EXPORTS</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\";ui_x64_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\";ui_x64_EXPORTS</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <MASM>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="RelWithDebInfo";ui_x64_EXPORTS;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="RelWithDebInfo";ui_x64_EXPORTS;</PreprocessorDefinitions>
       <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </MASM>
-    <NASM>
-      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv\;%(IncludePaths)</IncludePaths>
-      <AdditionalOptions>-f</AdditionalOptions>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;WITH_BCRYPT;WITH_MARIADB;MISSIONPACK;GAME_EXPORTS;JK2_UI;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="RelWithDebInfo";ui_x64_EXPORTS;</PreprocessorDefinitions>
-    </NASM>
     <Midl>
       <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -346,7 +312,6 @@
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <DataExecutionPrevention></DataExecutionPrevention>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -374,7 +339,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files\CMake\share\cmake-4.1\Templates\MSBuild\nasm.props.in;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/ui/CMakeLists.txt</Message>
@@ -387,7 +352,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files\CMake\share\cmake-4.1\Templates\MSBuild\nasm.props.in;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/ui/CMakeLists.txt</Message>
@@ -400,7 +365,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files\CMake\share\cmake-4.1\Templates\MSBuild\nasm.props.in;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/ui/CMakeLists.txt</Message>
@@ -413,7 +378,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files\CMake\share\cmake-4.1\Templates\MSBuild\nasm.props.in;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
     </CustomBuild>
@@ -437,7 +402,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_gameinfo.c" />
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_shared.c" />
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_multiversion.c" />
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_saber.c" />
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_misc.c" />
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.c" />
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_math.c" />
@@ -458,6 +422,5 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
-    <Import Project="C:\Program Files\CMake\share\cmake-4.1\Templates\MSBuild\nasm.targets" />
   </ImportGroup>
 </Project>

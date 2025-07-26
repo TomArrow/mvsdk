@@ -1,0 +1,6 @@
+# CMake generation dependency list for this directory.
+C:/Program Files/CMake/share/cmake-4.1/Modules/CMakeParseArguments.cmake
+C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/CMakeLists.txt
+C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/mv.info
+C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/mvsdk_setup.h.in
+C:/Users/david/Documents/Workspace/tom_jk2mv/tools/InstallZIP.cmake

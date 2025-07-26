@@ -33,12 +33,23 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for each subdirectory.
+  # Include the install script for the subdirectory.
   include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/lcc/cmake_install.cmake")
-  include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/cpp/cmake_install.cmake")
-  include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/rcc/cmake_install.cmake")
-  include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/asm/cmake_install.cmake")
+endif()
 
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/cpp/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/rcc/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/tools/asm/cmake_install.cmake")
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT

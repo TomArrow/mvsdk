@@ -22,12 +22,6 @@
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_pmove.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_pmove_css.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_pmove_q2.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_saber.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -35,9 +29,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_cmd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_active.c">
@@ -55,19 +46,7 @@
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_cmds.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_crossserver.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_combat.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_defrag.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_dbcmds.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_defrag_global.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_items.c">
@@ -142,15 +121,6 @@
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\animMappingTable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\crypt_blowfish.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\fp16.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\levenshtein.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_syscalls.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -192,34 +162,16 @@
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_pmove_css.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_pmove_q2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_saga.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_cmd.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\botlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\chars.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_defrag.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_dbcmds.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_defrag_global.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_local.h">
@@ -273,16 +225,7 @@
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\tags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ghoul2\G2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\crypt_blowfish.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\fp16.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\levenshtein.h">
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ghoul2\g2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\api\mvapi.h">
