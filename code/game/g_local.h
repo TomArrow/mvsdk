@@ -247,6 +247,32 @@ struct gentity_s {
 	int			damageRedirectTo; //this entity number
 
 	gitem_t		*item;			// for bonus items
+	int			triggerLastPlayerContact[MAX_CLIENTS]; // if we are a trigger, when's the last time the player touched us? dont use this for anything gameplay relevaant, as respos does not restore it
+	qboolean	triggerOnlyTraced; // if this is true for a trigger, we can only reach it via trace (so only trigger it while entering/leaving it)
+	qboolean	triggerClientSpecific; // only works for a specific player (parent)
+	checkpointSeed_t	checkpointSeed; // custom checkpoints get this to be able to save/load from db.
+
+	checkpointTime_t	checkpointTimes[MAX_CLIENTS];
+	checkpointTime_t	checkpointTimesSegNonReplay[MAX_CLIENTS];
+	
+	const char*	specialType; // for ez finding with G_Find
+
+	qboolean	isLogical;		// Determines if this ent is logical or not
+	int			laserPointerLastEventFlip;
+
+	int			checkpointScore; // when stats.score for defrag run must be a certain value
+
+	int			number; // q3 rally map support
+	int			laps; // q3 rally map support
+
+	int			spawnDefragPriority;
+
+	gentity_t*	nextHashed; // next with same classname hash
+	qboolean	belongsToParent; // when sending customized snapshots and someone has solo mode activated, don't show him this item if it doesn't belong to himself (sniper shots etc)
+
+	int			bactaExtra; // extra heal amount for bacta (e.g. q3 bacta)
+	qboolean	goneForNonRacers;
+	int			availableTimeForNonRacers;
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -429,6 +455,43 @@ struct gclient_s {
 	int			forcePowerSoundDebounce; //if > level.time, don't do certain sound events again (drain sound, absorb sound, etc)
 
 	qboolean	fjDidJump;
+
+	// TODO how does restoreposition affect this?
+	vec3_t		prePmovePosition;
+	vec3_t		prePmoveMins;
+	vec3_t		prePmoveMaxs;
+	vec3_t		postPmovePosition; // because we might get teleported in a trigger and then get wrong interpolation when using ps.origin in a later defrag trigger
+	vec3_t		postPmoveMins;
+	vec3_t		postPmoveMaxs;
+	qboolean	prePmovePositionSet;
+	qboolean	prePmoveEFlags;
+	int			prePmoveCommandTime;
+	vec3_t		triggerMins; //mins/maxes used for evaluating triggers, for consistency. used for race triggers.
+	vec3_t		triggerMaxs; 
+
+	int			lastMsecValue;
+
+	qboolean	lastSnapshotSentCommandTime;
+	qboolean	lastSnapshotSent;
+	qboolean	anyClientMovedSinceSnapshot;
+
+	int			forcePowerMicroRegenBuffer; // forcepower regen buffer multiplied by 1000. when we get above 1000, we divide by 1000 and add to forcepower and subtract from this
+	int			triggerTimes[MAX_GENTITIES]; // to have SLIGHTLY more deterministic behavior with trigger_multiple etc.
+	int			entityStates[MAX_GENTITIES]; // allow us to store some simplistic states about other entities, like func_usable. letting us know if the func_usable is turned on/off for this player
+	
+	int			randomLastCenterprint;
+
+	qboolean	clientIsZombified; // technically disconnected but we're necromancing and keeping him around to finish a segmented replay
+
+	vec3_t		oldPostPmovePosition;
+
+	bufferedPrint_t	bufferedPrint;
+
+	int			lastScoresMessage;
+
+	qboolean	isIronMan;
+
+	int			bactaExtra; // extra amount restored by bacta (e.g. q3 bacta)
 };
 
 
@@ -547,7 +610,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam );
 void SetTeam( gentity_t *ent, char *s );
 void Cmd_FollowCycle_f( gentity_t *ent, int dir );
 void Cmd_SaberAttackCycle_f(gentity_t *ent);
-int G_ItemUsable(playerState_t *ps, int forcedUse);
+int G_ItemUsable(playerState_t *ps, int forcedUse,gentity_t* ent);
 void Cmd_ToggleSaber_f(gentity_t *ent);
 void Cmd_EngageDuel_f(gentity_t *ent);
 

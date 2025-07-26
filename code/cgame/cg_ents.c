@@ -1469,6 +1469,23 @@ static void CG_Item( centity_t *cent ) {
 		CG_Error( "Bad item index %i on entity", es->modelindex );
 	}
 
+
+	//JAPRO - Clientside - Ignore items while dueling since we cant pick them up - Start
+	/*
+	if (cg.snap && cg.snap->ps.duelInProgress)
+	{
+			return;
+	}
+	*/
+
+	if (cgs.isTommyTernal) {
+		if (cg.predictedPlayerState.duelInProgress/*  || cg.predictedPlayerState.stats[STAT_RACEMODE]&& cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA */ )
+			return;
+	}
+	else if (cg.predictedPlayerState.duelInProgress) {
+		return;
+	}
+
 /*
 Ghoul2 Insert Start
 */

@@ -1669,6 +1669,14 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 		{ //no picking stuff up while in a duel, no matter what the type is
 			return qfalse;
 		}
+
+		if (ps->stats[STAT_RACEMODE] && item && (item->giType != IT_POWERUP || /*(item->giTag != PW_YSALAMIRI) &&*/ (item->giTag != PW_FORCE_BOON))) // no picking up shit in racemode? disallow ysal again for now ... we handle ysal via jumplevel. if a map truly should need it ... we'll think of sth
+		{//Maybe allow spawnflags 2 to be racemode_only ?
+			if (/*(ps->stats[STAT_RUNFLAGS] & RFL_LAVAPROTECT) ||*/ item->giType != IT_ARMOR && item->giType != IT_HEALTH && (item->giType != IT_HOLDABLE || (item->giTag != HI_MEDPAC))) { // when we dont have "godmode" (protection from lava,slime,drowning), let us pick up health/armor/medpack
+				// edit: just allow always and for racemode we adjust on a per player basis whether its active
+				return qfalse; 
+			}
+		}
 	}
 	else
 	{//safety return since below code assumes a non-null ps

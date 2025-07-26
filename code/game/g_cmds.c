@@ -1985,7 +1985,24 @@ void Cmd_Stats_f( gentity_t *ent ) {
 */
 }
 
-int G_ItemUsable(playerState_t *ps, int forcedUse)
+void Cmd_Stay_f(gentity_t* ent) {
+	if (!g_slowVote.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"^3Slow voting is not enabled on this server.\n\"");
+		return;
+	}
+	if (!ent->client->pers.stayOnMap) {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^3Locking in this map. Others can not vote for other maps while you are not in spec and not AFK.\n\"");
+		ent->client->pers.stayOnMap = qtrue;
+	}
+	else {
+
+		trap_SendServerCommand(ent - g_entities, "print \"^1You are no longer locking this map. People can vote for another map.\n\"");
+		ent->client->pers.stayOnMap = qfalse;
+	}
+}
+
+int G_ItemUsable(playerState_t *ps, int forcedUse, gentity_t* ent)
 {
 	vec3_t fwd, fwdorg, dest, pos;
 	vec3_t yawonly;
@@ -2011,7 +2028,7 @@ int G_ItemUsable(playerState_t *ps, int forcedUse)
 	switch (forcedUse)
 	{
 	case HI_MEDPAC:
-		if (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH])
+		if (ps->stats[STAT_HEALTH] >= ps->stats[STAT_MAX_HEALTH] + ent->client->bactaExtra)
 		{
 			return 0;
 		}

@@ -197,6 +197,12 @@ void SP_item_botroam( gentity_t *ent )
 
 void SP_emplaced_gun( gentity_t *ent );
 
+extern void DF_target_husk(gentity_t* ent);
+extern void DF_trigger_start(gentity_t* ent);
+extern void DF_trigger_finish(gentity_t* ent);
+extern void DF_trigger_checkpoint(gentity_t* ent);
+
+extern void SP_HoldableMedkit(gentity_t* ent);
 spawn_t	spawns[] = {
 	// info entities don't do anything at all, but provide positional
 	// information for things controlled by other processes
@@ -236,6 +242,9 @@ spawn_t	spawns[] = {
 	{"trigger_push", SP_trigger_push},
 	{"trigger_teleport", SP_trigger_teleport},
 	{"trigger_hurt", SP_trigger_hurt},
+
+	// q3 ents
+	{"holdable_medkit", qfalse, SP_HoldableMedkit},
 
 	// targets perform no action by themselves, but must be triggered
 	// by another entity
