@@ -5,7 +5,7 @@
 
 #include "cg_local.h"
 
-#include "../ui/ui_shared.h"
+#include "ui_shared.h"
 
 qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y);
 qboolean CG_CalcMuzzlePoint( int entityNum, vec3_t muzzle );
