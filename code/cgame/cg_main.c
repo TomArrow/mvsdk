@@ -711,7 +711,6 @@ vmCvar_t	jkcvar_cg_drawClock;
 
 
 typedef struct cvarTable_s {
-typedef struct {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
 	char		*defaultString;
@@ -1393,7 +1392,7 @@ static void CG_RegisterItemSounds( int itemNum ) {
 
 	if( item->pickup_sound ) {
 		trap_S_RegisterSound( item->pickup_sound );
-	}
+		}
 
 	// parse the space seperated precache string for other media
 	s = item->sounds;
@@ -2931,6 +2930,7 @@ void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum ) {
 	// In theory CG_ParseServerinfo is the perfect place for this, but as the first thing CG_Init does is trying to get shared memory we have to perform our check even before that...
 	if ( jk2version == VERSION_UNDEF )
 	{ // We don't know the version of the server, yet...
+	
 		// JK2MV with api?
 		if ( mvapi ) jk2version = trap_MVAPI_GetVersion();
 
