@@ -1102,10 +1102,7 @@ vmCvar_t cg_autoKick_checkAir;
 vmCvar_t cg_autoKick_checkKnockdown;
 
 // Auto-Backstab System
-vmCvar_t cg_autoBackstab;
-vmCvar_t cg_autoBackstab_debug;
-vmCvar_t cg_autoBackstab_distance;
-vmCvar_t cg_autoBackstab_usePrediction;
+
 
 // Debug Saber Box
 vmCvar_t cg_debugSaberBox;

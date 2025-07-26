@@ -65,26 +65,6 @@ static void CG_DrawShowPos(void); //jk2pro
 #define KEY_DW      7
 #define SNAPHUD_MAXZONES	128
 
-typedef struct {
-	int			speed;
-	float		zones[SNAPHUD_MAXZONES];
-	int			count;
-	vec2_t 		m;
-	int 		fps;
-// dfsnaphud and snappinghud defined below
-
-void CG_DrawSnapHud(void);
-
-
-#define KEY_W       0
-#define KEY_WA      1
-#define KEY_A       2
-#define KEY_AS      3
-#define KEY_S       4
-#define KEY_SD      5
-#define KEY_D       6
-#define KEY_DW      7
-#define SNAPHUD_MAXZONES	128
 
 typedef struct {
 	int			speed;
@@ -92,6 +72,8 @@ typedef struct {
 	int			count;
 	vec2_t 		m;
 	int 		fps;
+} snapHudData_t;
+
 // dfsnaphud and snappinghud defined above
 
 void CG_DrawSnapHud(void);

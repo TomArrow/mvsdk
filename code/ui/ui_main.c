@@ -16,8 +16,12 @@ USER INTERFACE MAIN
 #include "../qcommon/qfiles.h"
 #include "../qcommon/game_version.h"
 #include "ui_force.h"
-
+#include "ui_multiversion.h"
+#include  "ui_multiversion_syscalls.h"
+#include "ui_public.h"
 #include "mvsdk_setup.h"
+#include "mvapi.h"
+#include "ui_shared.h"
 
 /*
 ================
@@ -1210,7 +1214,7 @@ void UI_LoadMenus(const char *menuFile, qboolean reset) {
 
 	handle = trap_PC_LoadSource( menuFile );
 	if (!handle) {
-		Com_Printf( S_COLOR_YELLOW "menu file not found: %s, using default\n", menuFile );
+		Com_Printf( S_COLOR_YELLOW "menu file not found: %s, using default\n", menuFile ) ;
 		handle = trap_PC_LoadSource( "ui/jk2mpmenus.txt" );
 		if (!handle) {
 			Com_Error( ERR_DROP, "default menu file not found: ui/menus.txt, unable to continue!" );

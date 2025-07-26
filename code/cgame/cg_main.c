@@ -756,10 +756,13 @@ vmCvar_t cg_autoBackstab_usePrediction;
 vmCvar_t cg_debugSaberBox;
 vmCvar_t cg_debugSaberBox_usePrediction;
 vmCvar_t cg_friendsChatsOnly;
+
 vmCvar_t cg_autoAim;
 vmCvar_t cg_autoAim_debug;
 vmCvar_t cg_autoAim_usePrediction;
 vmCvar_t cg_autoAim_ignoreWalls;
+vmCvar_t cg_autoAimDistance;
+vmCvar_t cg_autoAimAngle;
 
 
 
