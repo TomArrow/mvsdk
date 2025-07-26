@@ -77,7 +77,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/game/bg_saber.c"
 	"${SRCDir}/game/bg_slidemove.c"
 	"${SRCDir}/game/bg_weapons.c"
-	"${SRCDir}/game/q_math.c"
+	# "${SRCDir}/game/q_math.c" (removed, replaced by q_math.cpp)
 	"${SRCDir}/game/q_shared.c"
 	
 	"${SRCDir}/ui/ui_shared.c"

@@ -78,7 +78,7 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/g_trigger.c"
 	"${SRCDir}/game/g_utils.c"
 	"${SRCDir}/game/g_weapon.c"
-	"${SRCDir}/game/q_math.c"
+	# "${SRCDir}/game/q_math.c" (removed, replaced by q_math.cpp)
 	"${SRCDir}/game/q_shared.c"
 	"${SRCDir}/game/w_force.c"
 	"${SRCDir}/game/w_saber.c"
