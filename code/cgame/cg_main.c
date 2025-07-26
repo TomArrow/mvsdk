@@ -694,29 +694,23 @@ vmCvar_t	cg_showKills;
 vmCvar_t	cg_char_color_red;
 vmCvar_t	cg_char_color_green;
 vmCvar_t	cg_char_color_blue;
+vmCvar_t	cg_char_color_alpha;
+vmCvar_t	cg_char_color_red_forced;// when using cg_forcemymodel
+vmCvar_t	cg_char_color_green_forced;// when using cg_forcemymodel
+vmCvar_t	cg_char_color_blue_forced;// when using cg_forcemymodel
+vmCvar_t	cg_char_color_alpha_forced;// when using cg_forcemymodel
+vmCvar_t	cg_saber1;
+vmCvar_t	cg_saber2;
+vmCvar_t	cg_JKA;
+vmCvar_t	cg_menuFileParseSpam;
+vmCvar_t	cg_randomTaunts;
 
-vmCvar_t	cg_wallHack;
-vmCvar_t	cg_autoKick;
-vmCvar_t	cg_autoKick_debug;
-vmCvar_t	cg_autoKick_sideKickFirst;
-vmCvar_t	cg_autoKick_distance;
-vmCvar_t	cg_autoKick_usePrediction;
-vmCvar_t	cg_autoKick_indicator;
-vmCvar_t	cg_autoKick_checkRoll;
-vmCvar_t	cg_autoKick_checkAir;
-vmCvar_t	cg_autoKick_checkKnockdown;
-vmCvar_t	cg_autoBackStab;
-vmCvar_t	cg_autoBackStab_debug;
-vmCvar_t	cg_autoBackStab_distance;
-vmCvar_t	cg_autoBackStab_usePrediction;
-vmCvar_t	cg_debugSaberBox;
-vmCvar_t	cg_debugSaberBox_usePrediction;
-vmCvar_t	cg_friendsChatsOnly;
-vmCvar_t	cg_autoAim;
-vmCvar_t	cg_autoAim_debug;
-vmCvar_t	cg_autoAim_usePrediction;
-vmCvar_t	cg_autoAim_ignoreWalls;
 
+vmCvar_t	jkcvar_cg_drawClock;
+
+
+
+typedef struct cvarTable_s {
 typedef struct {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
@@ -773,10 +767,43 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_nopredict, "cg_nopredict", "0", 0 },
 	{ &cg_noPlayerAnims, "cg_noplayeranims", "0", CVAR_CHEAT },
 	{ &cg_showmiss, "cg_showmiss", "0", 0 },
-	{ &cg_footsteps, "cg_footsteps", "1", CVAR_CHEAT },
-	{ &cg_tracerChance, "cg_tracerchance", "0.4", CVAR_CHEAT },
-	{ &cg_tracerWidth, "cg_tracerwidth", "1", CVAR_CHEAT },
-	{ &cg_tracerLength, "cg_tracerlength", "100", CVAR_CHEAT },
+	{ &cg_footsteps, "cg_footsteps", "1", CVAR_TEMP },
+	{ &cg_tracerChance, "cg_tracerchance", "0.4", CVAR_TEMP },
+	{ &cg_tracerWidth, "cg_tracerwidth", "1", CVAR_TEMP },
+	{ &cg_tracerLength, "cg_tracerlength", "100", CVAR_TEMP },
+
+	//snaphud start
+	{ &cg_snapHud, "cg_snapHud", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba1, "cg_snapHudRgba1", "1 0 0 0.5", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba2, "cg_snapHudRgba2", "0 1 1 0.5", CVAR_ARCHIVE },
+	{ &cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE },
+	{ &cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE },
+	{ &cg_snapHudAuto, "cg_snapHudAuto", "1", CVAR_ARCHIVE },
+	{ &cg_snapHudDef, "cg_snapHudDef", "45", CVAR_ARCHIVE },
+	{ &cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudFps, "cg_snapHudFps","0", CVAR_ARCHIVE },
+	//snaphud end
+
+	{ &cg_autoFollow, "cg_autoFollow", "0", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKDelay, "cg_autoFollowUnfollowAFKDelay", "300", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKReDelay, "cg_autoFollowUnfollowAFKReDelay", "10", CVAR_ARCHIVE },
+	{ &cg_autoFollowUnfollowAFKSwitchBackDelay, "cg_autoFollowUnfollowAFKSwitchBackDelay", "600", CVAR_ARCHIVE },
+	{ &cg_autoFollowManualInterruptDuration, "cg_autoFollowManualInterruptDuration", "30", CVAR_ARCHIVE },
+
+	{ &cg_scoreboardDisconnectedPlayersDrawTime, "cg_scoreboardDisconnectedPlayersDrawTime", "30", CVAR_ARCHIVE },
+	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },
+
+	//snaphud start
+	{ &cg_snapHud, "cg_snapHud", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba1, "cg_snapHudRgba1", "0.5 0.7 0.9 0.7", CVAR_ARCHIVE },
+	{ &cg_snapHudRgba2, "cg_snapHudRgba2", "0.05 0.05 0.05 0.15", CVAR_ARCHIVE },
+	{ &cg_snapHudY, "cg_snapHudY", "248", CVAR_ARCHIVE },
+	{ &cg_snapHudHeight, "cg_snapHudHeight", "8", CVAR_ARCHIVE },
+	{ &cg_snapHudAuto, "cg_snapHudAuto", "1", CVAR_ARCHIVE },
+	{ &cg_snapHudDef, "cg_snapHudDef", "45", CVAR_ARCHIVE },
+	{ &cg_snapHudSpeed, "cg_snapHudSpeed", "0", CVAR_ARCHIVE },
+	{ &cg_snapHudFps, "cg_snapHudFps","0", CVAR_ARCHIVE },
+	//snaphud end
 
 	{ &cg_swingAngles, "cg_swingAngles", "1", 0 },
 
