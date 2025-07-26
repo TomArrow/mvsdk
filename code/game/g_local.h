@@ -57,6 +57,20 @@ typedef enum //# material_e
 
 #define SP_PODIUM_MODEL		"models/mapobjects/podium/podium4.md3"
 
+// Checkpoint system types
+typedef struct {
+	int id;              // unique identifier for the checkpoint
+	int mapChecksum;     // checksum to validate map version
+	vec3_t origin;       // position of the checkpoint
+	vec3_t angles;       // orientation of the checkpoint
+} checkpointSeed_t;
+
+typedef struct {
+	int time;            // time when checkpoint was reached
+	int lapTime;         // time for this segment
+	qboolean valid;      // whether this checkpoint time is valid
+} checkpointTime_t;
+
 typedef enum 
 {
 	HL_NONE = 0,
@@ -349,6 +363,15 @@ typedef struct {
 //
 #define MAX_NETNAME			36
 #define	MAX_VOTE_COUNT		3
+
+// Buffered print system
+#define MAX_BUFFERED_PRINT_SIZE 1024
+
+typedef struct {
+	char		buffer[MAX_BUFFERED_PRINT_SIZE];  // buffer to store print messages
+	int			bufferLen;                        // current length of buffered content
+	int			lastFlushTime;                    // last time buffer was flushed
+} bufferedPrint_t;
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
