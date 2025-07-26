@@ -10,9 +10,6 @@
 
 #include "bg_weapons.h"
 #include "anims.h"
-#include "bg_defrag_global.h"
-
-
 
 #define	GAME_VERSION		"basejk-1"
 
@@ -56,25 +53,6 @@
 #define MVSDK_CGFLAG_SUBMODEL_WORKAROUND    (1)             // Set by the client in mvsdk_cgFlags to inform the server that it has a workaround for up to 255 submodels (instead of default 127)
 #define MVSDK_CGFLAG_SUBMODEL_TIME2         (1 << 1)        // Set by the client in mvsdk_cgFlags to inform the server that it is capable of reading modelindexes >= 255 from time2
 #define MVSDK_CGFLAG_SUBMODEL_BYPASS        (1 << 2)        // Set by the client in mvsdk_cgFlags to inform the server that it is capable of loading more than 256 submodels (only set when the engine supports it, too)
-
-
-#define TTFLAGSSERVERINFO_HASANTILOOPSTATS		(1<<0) 
-#define TTFLAGSSERVERINFO_HASFORCESPEEDSMASH	(1<<1) 
-#define TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE	(1<<2) 
-#define TTFLAGSSERVERINFO_HASCROSSSERVERCHAT	(1<<3) 
-
-
-#define TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX		(1<<0) 
-
-
-//jk2pro
-#define CUSTOMIZERACE_HIDEROLLSPEEDCP			(1<<0)
-#define CUSTOMIZERACE_HIDECHECKPOINTCP			(1<<1)
-#define CUSTOMIZERACE_HIDEANTILOOPRESTART		(1<<2)
-#define CUSTOMIZERACE_HIDEDEFAULTRACESTART		(1<<3)
-#define CUSTOMIZERACE_HIDECTFMESSAGESINRRACE	(1<<4)
-//#define CUSTOMIZERACE_ANTILOOPAUTORESPAWN	(1<<4)
-
 
 //
 // config strings are a general means of communicating variable length strings
@@ -196,7 +174,26 @@ movement on the server game.
 ===================================================================================
 */
 
-
+extern Q_INLINE int PM_GetMovePhysics(void);
+typedef enum //movementstyle enum
+{
+	MV_SIEGE,
+	MV_JKA,
+	MV_QW,
+	MV_CPM,
+	MV_Q3,
+	MV_PJK,
+	MV_WSW,
+	MV_RJQ3,
+	MV_RJCPM,
+	MV_SWOOP,
+	MV_JETPACK,
+	MV_SPEED,
+	MV_SP,
+	MV_SLICK,
+	MV_BOTCPM,
+	MV_NUMSTYLES
+} movementStyle_e;
 
 
 typedef struct animation_s {
@@ -212,35 +209,10 @@ typedef struct animation_s {
 extern qboolean			BGPAFtextLoaded;
 extern animation_t		bgGlobalAnimations[MAX_TOTALANIMATIONS];
 
-#define MAX_ANIM_FILES	64
-
-typedef struct
-{
-	char			filename[MAX_QPATH];
-	animation_t		*anims;
-//	animsounds_t	torsoAnimSnds[MAX_ANIM_SOUNDS];
-//	animsounds_t	legsAnimSnds[MAX_ANIM_SOUNDS];
-//	qboolean		soundsCached;
-} bgLoadedAnim_t;
-
-extern bgLoadedAnim_t bgAllAnims[MAX_ANIM_FILES];
-
 // flip the togglebit every time an animation
 // changes so a restart of the same anim can be detected
 #define	ANIM_TOGGLEBIT		2048		// Maximum number of animation sequences is 2048 (0-2047).  12th bit is the toggle
 
-#define MAX_ANIM_FILES	64
-
-typedef struct
-{
-	char			filename[MAX_QPATH];
-	animation_t		*anims;
-//	animsounds_t	torsoAnimSnds[MAX_ANIM_SOUNDS];
-//	animsounds_t	legsAnimSnds[MAX_ANIM_SOUNDS];
-//	qboolean		soundsCached;
-} bgLoadedAnim_t;
-
-extern bgLoadedAnim_t bgAllAnims[MAX_ANIM_FILES];
 
 typedef enum {
 	PM_NORMAL,		// can accelerate and turn
@@ -280,10 +252,6 @@ extern int forceMasteryPoints[NUM_FORCE_MASTERY_LEVELS];
 
 extern int bgForcePowerCost[NUM_FORCE_POWERS][NUM_FORCE_POWER_LEVELS];
 
-
-
-//#define TT_FLAG_		(1<<0) //unused
-
 // pmove->pm_flags
 #define	PMF_DUCKED			1
 #define	PMF_JUMP_HELD		2
@@ -295,49 +263,19 @@ extern int bgForcePowerCost[NUM_FORCE_POWERS][NUM_FORCE_POWER_LEVELS];
 #define	PMF_TIME_WATERJUMP	256		// pm_time is waterjump
 #define	PMF_RESPAWNED		512		// clear after attack and jump buttons come up
 #define	PMF_USE_ITEM_HELD	1024
-#define PMF_UPDATE_ANIM		2048	// UNUSED: The server updated the animation, the pmove should set the ghoul2 anim to match.
+#define PMF_UPDATE_ANIM		2048	// The server updated the animation, the pmove should set the ghoul2 anim to match.
 #define PMF_FOLLOW			4096	// spectate following another player
-#define PMF_SCOREBOARD		8192	// USED ONLY FOR SPECTATORS: spectate as a scoreboard
-#define PMF_STUCK_TO_WALL	16384	// grabbing a wall
-
-#define PMF_FJDIDJUMP		2048	// Reusing PMF_UPDATE_ANIM (because unused) for MV_CHARGEJUMP
+#define PMF_SCOREBOARD		8192	// spectate as a scoreboard
 
 #define	PMF_ALL_TIMES	(PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK)
 
 #define	MAXTOUCH	32
-
-typedef struct bgEntity_s
-{
-	entityState_t	s;
-
-	//Data type(s) must directly correspond to the head of the gentity and centity structures
-//#if defined(__GNUC__) || defined(__GCC__) || defined(MINGW32) || defined(MACOS_X)
-//} _bgEntity_t;
-//#else
-} bgEntity_t;
-//#endif
-
-typedef enum serverModType_s {
-	SVMOD_NONE_UNKNOWN,
-	SVMOD_JK2PRO,
-	SVMOD_TOMMYTERNAL
-}serverModType_t;
-
-typedef struct pmoveModMovement_s {
-	int physics;
-	int runFlags;
-	int msecRestrict;
-	qboolean raceMode;
-} pmoveModMovement_t;
-
 typedef struct {
 	// state (in / out)
 	playerState_t	*ps;
 
 	// command (in)
 	usercmd_t	cmd;
-	usercmd_t	unalteredCmd;
-	int			oldButtons;
 	int			tracemask;			// collide against these types of surfaces
 	int			debugLevel;			// if set, diagnostic output will be printed
 	qboolean	noFootsteps;		// if the game is setup for no footsteps by the server
@@ -358,8 +296,6 @@ typedef struct {
 
 	int			gametype;
 
-	int			debugMelee;
-
 	animation_t	*animations;
 
 	float		xyspeed;
@@ -369,44 +305,13 @@ typedef struct {
 	int			pmove_msec;
 	int			pmove_float;
 
-	serverModType_t	mod;
-
-	pmoveModMovement_t modParms;
-
 	// callbacks to test the world
 	// these will be different functions during game and cgame
 	void		(*trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
-	void		(*q2trace)( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask );
 	int			(*pointcontents)( const vec3_t point, int passEntityNum );
-	int			q2TraceStyle;
-	int			q2Skims;
 
-	qboolean	positionChangedOutsidePmove;
-#if JK2_CGAME
-	qboolean	haveForceSpeedSmash; // for cgame
-#endif
 	playerState_t	*bgClients[MAX_CLIENTS];
 	int			checkDuelLoss;
-	int			requiredCmdMsec;
-	qboolean	isSpecialPredict; // not a real predict, just for image smoothing
-
-	//rww - bg entitystate access method
-	bgEntity_t* baseEnt; //base address of the entity array (g_entities or cg_entities)
-	int			entSize; //size of the struct (gentity_t or centity_t) so things can be dynamic
-
-	// raw trace that ignores racemode considerations and such. allow us to dbs anyone even in racemode as a meme.
-	void		(*rawtrace)(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentMask);
-
-	rollState_t		roll;
-	antiLoopState_t antiLoop;
-	vec3_t			lastAntiLoopVelocity;
-
-	float			accelMiss;
-	float			wishSpeed;
-	qboolean		handleStrafebotSlopes;
-	int				unlockRandom;
-	qboolean		mineSwitchFix;
-	qboolean		highFpsFix;
 } pmove_t;
 
 extern	pmove_t		*pm;
@@ -441,14 +346,13 @@ typedef enum {
 	STAT_DEAD_YAW,					// look this direction when dead (FIXME: get rid of?)
 	STAT_CLIENTS_READY,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
 	STAT_MAX_HEALTH,				// health / armor limit, changable by handicap
-	STAT_BOUNCEPOWER,//STAT_DASHTIME,  // 9 bits for current bounce power (up to 500ms), 7 bits for regenerate timer (100 ms timeout to regen 10ms)
-	STAT_LASTJUMPSPEED,//STAT_LASTJUMPSPEED, 
+	STAT_DASHTIME,
+	STAT_LASTJUMPSPEED,
 	STAT_RACEMODE,
-	STAT_MSECRESTRICT,//STAT_ONLYBHOP, // 0= no restriction. otherwise msec value thats required for movement. in racemode its the msec value of racestyle. otherwise accepted physicsfps value
+	STAT_ONLYBHOP,
 	STAT_MOVEMENTSTYLE,
-	STAT_RUNFLAGS,//STAT_JUMPTIME, 
-	STAT_PLACEHOLDER4,//STAT_WJTIME // unused rn
-	STAT_CHARGEJUMPDATA = STAT_BOUNCEPOWER, // used in chargejumpmode ( reuses STAT_BOUNCEPOWER ). we just set some flags here for example
+	STAT_JUMPTIME,
+	STAT_WJTIME
 } statIndex_t;
 
 
@@ -518,7 +422,6 @@ typedef enum {
 #define EF_DROPPEDWEAPON	0x01000000		// it's a dropped weapon
 #define EF_DISINTEGRATION	0x02000000		// being disintegrated by the disruptor
 #define EF_INVULNERABLE		0x04000000		// just spawned in or whatever, so is protected
-#define EF_SEGMENTEDREPLAY	0x08000000		// is in a segmented replay
 
 
 
@@ -897,16 +800,6 @@ typedef struct gitem_s {
 	char		*sounds;		// string of all sounds this item will use
 } gitem_t;
 
-
-// These are bit indexes that can be set on uni_clientFlags to disable cheats in the UnityMod client.
-// We reuse these for compatibility and to not reinvent the wheel
-typedef enum {
-	WALLHACK_DISABLE_ITEMS = 0,
-	WALLHACK_DISABLE_PLAYERS,
-} clientFlags_t;
-
-
-
 // included in both the game dll and the client
 extern	gitem_t	bg_itemlist[];
 extern	int		bg_numItems;
@@ -919,14 +812,12 @@ gitem_t	*BG_FindItemForPowerup( powerup_t pw );
 gitem_t	*BG_FindItemForHoldable( holdable_t pw );
 #define	ITEM_INDEX(x) ((x)-bg_itemlist)
 
-qboolean	BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps, int playerMode);
+qboolean	BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps );
 
 
 
 #define SABER_BLOCK_DUR 150		// number of milliseconds a block animation should take.
 
-
-#define PLAYERSTATS_PAST_MSEC	4
 
 
 // g_dmflags->integer flags
@@ -1124,10 +1015,7 @@ typedef enum {
 	LS_REFLECT_LR,
 	LS_REFLECT_LL,
 
-	LS_MOVE_MAX_DEFAULT,// default max
-	LS_JUMPATTACK_ARIAL_LEFT= LS_MOVE_MAX_DEFAULT, // cartwheel from jka
-	LS_JUMPATTACK_ARIAL_RIGHT, // cartwheel from jka
-	LS_MOVE_MAX
+	LS_MOVE_MAX//
 } saberMoveName_t;
 
 typedef enum {
@@ -1158,15 +1046,11 @@ typedef struct
 
 extern saberMoveData_t	saberMoveData[LS_MOVE_MAX];
 
-qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled);
+qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled);
 
 //BG anim utility functions:
-qboolean BG_InSpecialJump( int anim, int runFlags);
+qboolean BG_InSpecialJump( int anim );
 qboolean BG_InSaberStandAnim( int anim );
-qboolean BG_InReboundJump(int anim);
-qboolean BG_InReboundHold(int anim);
-qboolean BG_InReboundRelease(int anim); 
-qboolean BG_InBackFlip(int anim);
 qboolean BG_DirectFlippingAnim( int anim );
 qboolean BG_SaberInAttack( int move );
 qboolean BG_SaberInSpecial( int move );
@@ -1175,7 +1059,7 @@ qboolean BG_FlippingAnim( int anim );
 qboolean BG_SpinningSaberAnim( int anim );
 qboolean BG_SaberInSpecialAttack( int anim );
 int BG_BrokenParryForAttack( int move );
-int BG_BrokenParryForParry( int move, qboolean raceMode );
+int BG_BrokenParryForParry( int move );
 int BG_KnockawayForParry( int move );
 qboolean BG_InRoll( playerState_t *ps, int anim );
 qboolean BG_InDeathAnim( int anim );
@@ -1189,21 +1073,13 @@ void	BG_EvaluateTrajectoryDelta( const trajectory_t *tr, int atTime, vec3_t resu
 
 void	BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerState_t *ps );
 
-void	BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es);
-void	BG_StatsToUserCmd(entityState_t* es, usercmd_t* ucmd);
-
-void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es);
-void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs);
-
-
-void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec, movementStyle_e style);
-void	BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec, movementStyle_e style);
+void	BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad );
 
 void	BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean snap );
 void	BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s, int time, qboolean snap );
-//void	BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, int painTime, int painDirection, int currentTime,
-//					   qboolean *torso_yawing, float *torso_yawAngle, qboolean *torso_pitching, float *torso_pitchAngle, qboolean *legs_yawing, float *legs_yawAngle,
-//					   int frameTime, vec3_t velocity, int legsAnim, int torsoAnim, qboolean dead, float movementDir, void *ghoul2, qhandle_t *modelList, int weapon); // From 1.03, probably not required. // FIXME
+void	BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, int painTime, int painDirection, int currentTime,
+					   qboolean *torso_yawing, float *torso_yawAngle, qboolean *torso_pitching, float *torso_pitchAngle, qboolean *legs_yawing, float *legs_yawAngle,
+					   int frameTime, vec3_t velocity, int legsAnim, int torsoAnim, qboolean dead, float movementDir, void *ghoul2, qhandle_t *modelList, int weapon); // From 1.03, probably not required. // FIXME
 
 qboolean	BG_PlayerTouchesItem( playerState_t *ps, entityState_t *item, int atTime );
 
@@ -1222,48 +1098,17 @@ void BG_TempFree( int size );
 char *BG_StringAlloc ( const char *source );
 qboolean BG_OutOfMemory ( void );
 
-void BG_BLADE_ActivateTrail ( bladeInfo_t *blade, float duration );
-void BG_BLADE_DeactivateTrail ( bladeInfo_t *blade, float duration );
-void BG_SI_Activate( saberInfo_t *saber );
-void BG_SI_Deactivate( saberInfo_t *saber );
-void BG_SI_BladeActivate( saberInfo_t *saber, int iBlade, qboolean bActive );
-qboolean BG_SI_Active(saberInfo_t *saber);
-void BG_SI_SetLength( saberInfo_t *saber, float length );
-void BG_SI_SetDesiredLength(saberInfo_t *saber, float len, int bladeNum);
-void BG_SI_SetLengthGradual( saberInfo_t *saber, int time );
-float BG_SI_Length(saberInfo_t *saber);
-float BG_SI_LengthMax(saberInfo_t *saber);
-void BG_SI_ActivateTrail ( saberInfo_t *saber, float duration );
-void BG_SI_DeactivateTrail ( saberInfo_t *saber, float duration );
-void WP_SetSaber( saberInfo_t *sabers, int saberNum, const char *saberName );
-
 extern int WeaponReadyAnim[WP_NUM_WEAPONS];
 extern int WeaponAttackAnim[WP_NUM_WEAPONS];
 
 extern int forcePowerDarkLight[NUM_FORCE_POWERS];
 
 #define ARENAS_PER_TIER		4
-#define MAX_ARENAS			4096 // was 1024
-#define	MAX_ARENAS_TEXT		16384 // was 8192
-
-#define INFO_HASH_SIZE		1024
-
-typedef struct infoHashed_s {
-	//short hash;
-	//short arenaNum;
-	char* name;
-	char* info;
-	struct infoHashed_s* next;
-} infoHashed_t;
-
-extern int					g_numArenas;
-extern infoHashed_t			g_arenaInfosHashed[MAX_ARENAS];
+#define MAX_ARENAS			1024
+#define	MAX_ARENAS_TEXT		8192
 
 #define MAX_BOTS			1024
 #define MAX_BOTS_TEXT		8192
-
-
-qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify);
 
 #include "../game/bg_multiversion.h"
 

@@ -72,8 +72,6 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 		return;
 	}
 
-	player->client->pers.roll.segmentDisqualified = qtrue;
-
 	// use temp events at source and destination to prevent the effect
 	// from getting dropped by a second player event
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -100,12 +98,10 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	player->client->ps.eFlags ^= EF_TELEPORT_BIT;
 
 	// set angles
-	DF_PreDeltaAngleChange(player->client);
 	SetClientViewAngle( player, angles );
-	DF_PostDeltaAngleChange(player->client, qtrue);
 
 	// kill anything at the destination
-	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR && !player->client->sess.raceMode) {
+	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		G_KillBox (player);
 	}
 
@@ -117,22 +113,6 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		trap_LinkEntity (player);
-	}
-
-	if (player->client->sess.raceMode) {
-		//player->client->ps.powerups[PW_YSALAMIRI] = 0; //Fuck
-		player->client->ps.powerups[PW_FORCE_BOON] = 0;
-		//if (player->client->sess.movementStyle == MV_RJQ3 || player->client->sess.movementStyle == MV_RJCPM || player->client->sess.movementStyle == MV_TRIBES) //Get rid of their rockets when they tele/noclip..?
-		//	DeletePlayerProjectiles(player);
-		//if (player->client->sess.movementStyle == MV_COOP_JKA && player->client->ps.duelInProgress) { //clean this up..
-		//	gentity_t* gripEnt;
-		//	WP_ForcePowerStop(player, FP_GRIP);
-		//
-		//	gripEnt = &g_entities[player->client->ps.duelIndex];
-		//	if (gripEnt && gripEnt->client) {
-		//		WP_ForcePowerStop(gripEnt, FP_GRIP);
-		//	}
-		//}
 	}
 }
 
@@ -195,7 +175,7 @@ void locateCamera( gentity_t *ent ) {
 	gentity_t	*target;
 	gentity_t	*owner;
 
-	owner = G_PickTarget( ent->target, !g_defrag.integer, NULL);
+	owner = G_PickTarget( ent->target );
 	if ( !owner ) {
 		G_Printf( "Couldn't find target for misc_partal_surface\n" );
 		G_FreeEntity( ent );
@@ -225,7 +205,7 @@ void locateCamera( gentity_t *ent ) {
 	VectorCopy( owner->s.origin, ent->s.origin2 );
 
 	// see if the portal_camera has a target
-	target = G_PickTarget( owner->target, !g_defrag.integer, NULL);
+	target = G_PickTarget( owner->target );
 	if ( target ) {
 		VectorSubtract( target->s.origin, owner->s.origin, dir );
 		VectorNormalize( dir );
@@ -322,23 +302,23 @@ void HolocronRespawn(gentity_t *self)
 
 void HolocronPopOut(gentity_t *self)
 {
-	if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
+	if (Q_irand(1, 10) < 5)
 	{
-		self->s.pos.trDelta[0] = 150 + Q_irand(1, 100, g_defrag.integer, 50);
+		self->s.pos.trDelta[0] = 150 + Q_irand(1, 100);
 	}
 	else
 	{
-		self->s.pos.trDelta[0] = -150 - Q_irand(1, 100, g_defrag.integer, 50);
+		self->s.pos.trDelta[0] = -150 - Q_irand(1, 100);
 	}
-	if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
+	if (Q_irand(1, 10) < 5)
 	{
-		self->s.pos.trDelta[1] = 150 + Q_irand(1, 100, g_defrag.integer, 50);
+		self->s.pos.trDelta[1] = 150 + Q_irand(1, 100);
 	}
 	else
 	{
-		self->s.pos.trDelta[1] = -150 - Q_irand(1, 100, g_defrag.integer, 50);
+		self->s.pos.trDelta[1] = -150 - Q_irand(1, 100);
 	}
-	self->s.pos.trDelta[2] = 150 + Q_irand(1, 100, g_defrag.integer, 50);
+	self->s.pos.trDelta[2] = 150 + Q_irand(1, 100);
 }
 
 void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
@@ -375,7 +355,7 @@ void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 		return;
 	}
 
-	if (other->client->ps.holocronCantTouch == self->s.number && other->client->ps.holocronCantTouchTime > LEVELTIME(other->client))
+	if (other->client->ps.holocronCantTouch == self->s.number && other->client->ps.holocronCantTouchTime > level.time)
 	{
 		return;
 	}
@@ -434,7 +414,7 @@ void HolocronTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 	//G_Sound(other, CHAN_AUTO, G_SoundIndex("sound/weapons/w_pkup.wav"));
 	G_AddEvent( other, EV_ITEM_PICKUP, self->s.number );
 
-	other->client->ps.holocronsCarried[self->count] = LEVELTIME(other->client);
+	other->client->ps.holocronsCarried[self->count] = level.time;
 	self->s.modelindex = 0;
 	self->enemy = other;
 
@@ -490,7 +470,7 @@ void HolocronThink(gentity_t *ent)
 		if (!ent->enemy->client->ps.holocronsCarried[ent->count])
 		{
 			ent->enemy->client->ps.holocronCantTouch = ent->s.number;
-			ent->enemy->client->ps.holocronCantTouchTime = LEVELTIME(ent->enemy->client) + 5000;
+			ent->enemy->client->ps.holocronCantTouchTime = level.time + 5000;
 
 			HolocronRespawn(ent);
 			VectorCopy(ent->enemy->client->ps.origin, ent->s.pos.trBase);
@@ -575,11 +555,11 @@ void SP_misc_holocron(gentity_t *ent)
 	VectorSet( ent->r.maxs, 8, 8, 8 );
 	VectorSet( ent->r.mins, -8, -8, -8 );
 
-	ent->s.origin[2] += 0.1f;
-	ent->r.maxs[2] -= 0.1f;
+	ent->s.origin[2] += 0.1;
+	ent->r.maxs[2] -= 0.1;
 
 	VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
-	JP_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
+	trap_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
 	if ( tr.startsolid )
 	{
 		G_Printf ("SP_misc_holocron: misc_holocron startsolid at %s\n", vtos(ent->s.origin));
@@ -588,7 +568,7 @@ void SP_misc_holocron(gentity_t *ent)
 	}
 
 	//add the 0.1 back after the trace
-	ent->r.maxs[2] += 0.1f;
+	ent->r.maxs[2] += 0.1;
 
 	// allow to ride movers
 //	ent->s.groundEntityNum = tr.entityNum;
@@ -698,7 +678,7 @@ void Use_Shooter( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 
 static void InitShooter_Finish( gentity_t *ent ) {
-	ent->enemy = G_PickTarget( ent->target, qtrue/* !g_defrag.integer*/, NULL);
+	ent->enemy = G_PickTarget( ent->target );
 	ent->think = 0;
 	ent->nextthink = 0;
 }
@@ -853,11 +833,11 @@ void SP_misc_shield_floor_unit( gentity_t *ent )
 	VectorSet( ent->r.mins, -16, -16, 0 );
 	VectorSet( ent->r.maxs, 16, 16, 40 );
 
-	ent->s.origin[2] += 0.1f;
-	ent->r.maxs[2] -= 0.1f;
+	ent->s.origin[2] += 0.1;
+	ent->r.maxs[2] -= 0.1;
 
 	VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
-	JP_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
+	trap_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
 	if ( tr.startsolid )
 	{
 		G_Printf ("SP_misc_shield_floor_unit: misc_shield_floor_unit startsolid at %s\n", vtos(ent->s.origin));
@@ -866,7 +846,7 @@ void SP_misc_shield_floor_unit( gentity_t *ent )
 	}
 
 	//add the 0.1 back after the trace
-	ent->r.maxs[2] += 0.1f;
+	ent->r.maxs[2] += 0.1;
 
 	// allow to ride movers
 	ent->s.groundEntityNum = tr.entityNum;
@@ -1254,7 +1234,7 @@ gentity_t *CreateNewDamageBox( gentity_t *ent )
 	//We do not want the client to have any real knowledge of the entity whatsoever. It will only
 	//ever be used on the server.
 	dmgBox = G_Spawn();
-	G_SetClassName(dmgBox, "dmg_box");
+	dmgBox->classname = "dmg_box";
 			
 	dmgBox->r.svFlags = SVF_USE_CURRENT_ORIGIN;
 	dmgBox->r.ownerNum = ent->s.number;
@@ -1714,8 +1694,8 @@ void ExampleAnimEntCustomDataEntry(gentity_t *self, int alignment, int weapon, c
 			return;
 		}
 
-		Q_strncpyz(find->modelPath, modelname, strlen(modelname) + 1);
-		Q_strncpyz(find->soundPath, soundpath, strlen(soundpath) + 1);
+		strcpy(find->modelPath, modelname);
+		strcpy(find->soundPath, soundpath);
 
 		find->modelPath[strlen(modelname)] = 0;
 		find->soundPath[strlen(modelname)] = 0;
@@ -1798,7 +1778,7 @@ void ExampleAnimEntCustomSound(gentity_t *self, int soundType)
 		return;
 	}
 
-	G_Sound(self, CHAN_AUTO, customSounds[Q_irand(0, numSounds-1 + gRandomUnlockAdd,qfalse, (numSounds-1)/2)]);
+	G_Sound(self, CHAN_AUTO, customSounds[Q_irand(0, numSounds-1)]);
 }
 
 int ExampleAnimEntAlignment(gentity_t *self)
@@ -1847,7 +1827,7 @@ void ExampleAnimEntAlertOthers(gentity_t *self)
 			{
 				g_entities[i].bolt_Motion = self->bolt_Motion;
 				g_entities[i].speed = level.time + 4000; //4 seconds til we forget about the enemy
-				g_entities[i].bolt_RArm = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1000, qfalse, 750);
+				g_entities[i].bolt_RArm = level.time + Q_irand(500, 1000);
 			}
 		}
 
@@ -1872,15 +1852,15 @@ void ExampleAnimEnt_Die( gentity_t *self, gentity_t *inflictor, gentity_t *attac
 
 	if (self->watertype == ANIMENT_TYPE_STORMTROOPER)
 	{
-		G_Sound(self, CHAN_AUTO, gTrooperSound_Death[Q_irand(0, TROOPER_DEATH_SOUNDS-1 + gRandomUnlockAdd, qfalse, (TROOPER_DEATH_SOUNDS - 1) / 2)]);
+		G_Sound(self, CHAN_AUTO, gTrooperSound_Death[Q_irand(0, TROOPER_DEATH_SOUNDS-1)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_RODIAN)
 	{
-		G_Sound(self, CHAN_AUTO, gRodianSound_Death[Q_irand(0, RODIAN_DEATH_SOUNDS-1 + gRandomUnlockAdd, qfalse, (RODIAN_DEATH_SOUNDS - 1) / 2)]);
+		G_Sound(self, CHAN_AUTO, gRodianSound_Death[Q_irand(0, RODIAN_DEATH_SOUNDS-1)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_JAN)
 	{
-		G_Sound(self, CHAN_AUTO, gJanSound_Death[Q_irand(0, JAN_DEATH_SOUNDS-1 + gRandomUnlockAdd,qfalse,(JAN_DEATH_SOUNDS - 1)/2)]);
+		G_Sound(self, CHAN_AUTO, gJanSound_Death[Q_irand(0, JAN_DEATH_SOUNDS-1)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_CUSTOM)
 	{
@@ -1892,21 +1872,21 @@ void ExampleAnimEnt_Die( gentity_t *self, gentity_t *inflictor, gentity_t *attac
 		vec3_t preDelta;
 		VectorCopy(self->s.pos.trDelta, preDelta);
 
-		if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
+		if (Q_irand(1, 10) < 5)
 		{
-			self->s.pos.trDelta[0] += Q_irandExpectedIf(gRandomUnlockAdd, 10, 40, g_defrag.integer, 25);
+			self->s.pos.trDelta[0] += Q_irand(10, 40);
 		}
 		else
 		{
-			self->s.pos.trDelta[0] -= Q_irandExpectedIf(gRandomUnlockAdd, 10, 40, g_defrag.integer, 25);
+			self->s.pos.trDelta[0] -= Q_irand(10, 40);
 		}
-		if (Q_irand(1, 10, g_defrag.integer, 5) < 5)
+		if (Q_irand(1, 10) < 5)
 		{
-			self->s.pos.trDelta[1] += Q_irandExpectedIf(gRandomUnlockAdd,10, 40, g_defrag.integer, 25);
+			self->s.pos.trDelta[1] += Q_irand(10, 40);
 		}
 		else
 		{
-			self->s.pos.trDelta[1] -= Q_irandExpectedIf(gRandomUnlockAdd, 10, 40, g_defrag.integer, 25);
+			self->s.pos.trDelta[1] -= Q_irand(10, 40);
 		}
 		self->s.pos.trDelta[2] += 100;
 		G_CheckForDismemberment(self, self->pos1, damage, self->s.torsoAnim);
@@ -1932,12 +1912,12 @@ void ExampleAnimEnt_Die( gentity_t *self, gentity_t *inflictor, gentity_t *attac
 
 void ExampleAnimEnt_Pain(gentity_t *self, gentity_t *attacker, int damage)
 {
-	int painAnim = (BOTH_PAIN1 + Q_irand(0, 3 + gRandomUnlockAdd, g_defrag.integer, 2));
+	int painAnim = (BOTH_PAIN1 + Q_irand(0, 3));
 	int animLen = (bgGlobalAnimations[painAnim].numFrames * abs(bgGlobalAnimations[painAnim].frameLerp))-50;
 
 	while (painAnim == self->s.torsoAnim)
 	{
-		painAnim = (BOTH_PAIN1 + Q_irand(0, 3 + gRandomUnlockAdd, g_defrag.integer, 2));
+		painAnim = (BOTH_PAIN1 + Q_irand(0, 3));
 	}
 
 	self->s.torsoAnim = painAnim;
@@ -1951,15 +1931,15 @@ void ExampleAnimEnt_Pain(gentity_t *self, gentity_t *attacker, int damage)
 
 	if (self->watertype == ANIMENT_TYPE_STORMTROOPER)
 	{
-		G_Sound(self, CHAN_AUTO, gTrooperSound_Pain[Q_irand(0, TROOPER_PAIN_SOUNDS-1 + gRandomUnlockAdd, qfalse, (TROOPER_PAIN_SOUNDS - 1) / 2)]);
+		G_Sound(self, CHAN_AUTO, gTrooperSound_Pain[Q_irand(0, TROOPER_PAIN_SOUNDS-1)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_RODIAN)
 	{
-		G_Sound(self, CHAN_AUTO, gRodianSound_Pain[Q_irand(0, RODIAN_PAIN_SOUNDS-1 + gRandomUnlockAdd, qfalse, (RODIAN_PAIN_SOUNDS - 1) / 2)]);
+		G_Sound(self, CHAN_AUTO, gRodianSound_Pain[Q_irand(0, RODIAN_PAIN_SOUNDS-1)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_JAN)
 	{
-		G_Sound(self, CHAN_AUTO, gJanSound_Pain[Q_irand(0, JAN_PAIN_SOUNDS-1 + gRandomUnlockAdd,qfalse,(JAN_PAIN_SOUNDS - 1)/2)]);
+		G_Sound(self, CHAN_AUTO, gJanSound_Pain[Q_irand(0, JAN_PAIN_SOUNDS-1)]);
 	}
 	else if (self->watertype == ANIMENT_TYPE_CUSTOM)
 	{
@@ -1973,7 +1953,7 @@ void ExampleAnimEnt_Pain(gentity_t *self, gentity_t *attacker, int damage)
 			self->bolt_Motion = attacker->s.number;
 			self->speed = level.time + 4000; //4 seconds til we forget about the enemy
 			ExampleAnimEntAlertOthers(self);
-			self->bolt_RArm = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1000, g_defrag.integer, 750);
+			self->bolt_RArm = level.time + Q_irand(500, 1000);
 		}
 	}
 }
@@ -2014,7 +1994,7 @@ int ExampleAnimEntMove(gentity_t *self, vec3_t moveTo, float stepSize)
 	stepGoal[1] = self->r.currentOrigin[1] + stepSub[1]*stepSize;
 	stepGoal[2] = self->r.currentOrigin[2] + stepSub[2]*stepSize;
 
-	JP_Trace(&tr, self->r.currentOrigin, self->r.mins, self->r.maxs, stepGoal, self->s.number, self->clipmask);
+	trap_Trace(&tr, self->r.currentOrigin, self->r.mins, self->r.maxs, stepGoal, self->s.number, self->clipmask);
 
 	if (!tr.startsolid && !tr.allsolid && tr.fraction)
 	{
@@ -2055,7 +2035,7 @@ int ExampleAnimEntMove(gentity_t *self, vec3_t moveTo, float stepSize)
 
 		if (VectorLength(vecMeasure) > 1)
 		{
-			JP_Trace(&tr, trFrom, self->r.mins, self->r.maxs, trTo, self->s.number, self->clipmask);
+			trap_Trace(&tr, trFrom, self->r.mins, self->r.maxs, trTo, self->s.number, self->clipmask);
 
 			if (!tr.startsolid && !tr.allsolid && tr.fraction == 1)
 			{ //clear trace here, probably up a step
@@ -2063,7 +2043,7 @@ int ExampleAnimEntMove(gentity_t *self, vec3_t moveTo, float stepSize)
 				VectorCopy(tr.endpos, trDown);
 				trDown[2] -= 16;
 
-				JP_Trace(&tr, trFrom, self->r.mins, self->r.maxs, trTo, self->s.number, self->clipmask);
+				trap_Trace(&tr, trFrom, self->r.mins, self->r.maxs, trTo, self->s.number, self->clipmask);
 
 				if (!tr.startsolid && !tr.allsolid)
 				{ //plop us down on the step after moving up
@@ -2129,7 +2109,7 @@ qboolean ExampleAnimEntClearLOS(gentity_t *self, vec3_t point)
 {
 	trace_t tr;
 
-	JP_Trace(&tr, self->r.currentOrigin, 0, 0, point, self->s.number, self->clipmask);
+	trap_Trace(&tr, self->r.currentOrigin, 0, 0, point, self->s.number, self->clipmask);
 
 	if (ExampleAnimEntAlignment(self) == ANIMENT_ALIGNED_GOOD)
 	{
@@ -2170,7 +2150,7 @@ void ExampleAnimEntWeaponHandling(gentity_t *self)
 		{
 			AnimEntFireWeapon(self, qtrue);
 			G_AddEvent(self, EV_FIRE_WEAPON, 1);
-			self->bolt_RArm = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 1500, 2500, g_defrag.integer, 2000);
+			self->bolt_RArm = level.time + Q_irand(1500, 2500);
 		}
 		else
 		{
@@ -2179,15 +2159,15 @@ void ExampleAnimEntWeaponHandling(gentity_t *self)
 
 			if (self->s.weapon == WP_REPEATER)
 			{
-				self->bolt_RArm = level.time + Q_irand(1, 500, g_defrag.integer, 50);
+				self->bolt_RArm = level.time + Q_irand(1, 500);
 			}
 			else if (ExampleAnimEntAlignment(self) == ANIMENT_ALIGNED_GOOD)
 			{
-				self->bolt_RArm = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 200, 400, g_defrag.integer, 300);
+				self->bolt_RArm = level.time + Q_irand(200, 400);
 			}
 			else
 			{
-				self->bolt_RArm = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 700, 1000, g_defrag.integer, 850);
+				self->bolt_RArm = level.time + Q_irand(700, 1000);
 			}
 		}
 	}
@@ -2221,7 +2201,7 @@ qboolean ExampleAnimEntWayValidCheck(gentity_t *self)
 		return qfalse;
 	}
 
-	JP_Trace(&tr, self->r.currentOrigin, 0, 0, currentWP->origin, self->s.number, self->clipmask);
+	trap_Trace(&tr, self->r.currentOrigin, 0, 0, currentWP->origin, self->s.number, self->clipmask);
 
 	if (tr.fraction == 1)
 	{ //allow one second for time you cannot see the point. If we go beyond that, kill the connection.
@@ -2417,19 +2397,19 @@ void ExampleAnimEntEnemyHandling(gentity_t *self, float enDist, qboolean enDistS
 		self->bolt_Motion = bestIndex;
 		self->speed = level.time + 4000; //4 seconds til we forget about the enemy
 		ExampleAnimEntAlertOthers(self);
-		self->bolt_RArm = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1000, g_defrag.integer, 750);
+		self->bolt_RArm = level.time + Q_irand(500, 1000);
 
 		if (self->watertype == ANIMENT_TYPE_STORMTROOPER)
 		{
-			G_Sound(self, CHAN_AUTO, gTrooperSound_Alert[Q_irand(0, TROOPER_ALERT_SOUNDS-1 + gRandomUnlockAdd, qfalse, (TROOPER_ALERT_SOUNDS - 1) / 2)]);
+			G_Sound(self, CHAN_AUTO, gTrooperSound_Alert[Q_irand(0, TROOPER_ALERT_SOUNDS-1)]);
 		}
 		else if (self->watertype == ANIMENT_TYPE_RODIAN)
 		{
-			G_Sound(self, CHAN_AUTO, gRodianSound_Alert[Q_irand(0, RODIAN_ALERT_SOUNDS-1 + gRandomUnlockAdd, qfalse, (RODIAN_ALERT_SOUNDS - 1) / 2)]);
+			G_Sound(self, CHAN_AUTO, gRodianSound_Alert[Q_irand(0, RODIAN_ALERT_SOUNDS-1)]);
 		}
 		else if (self->watertype == ANIMENT_TYPE_JAN)
 		{
-			G_Sound(self, CHAN_AUTO, gJanSound_Alert[Q_irand(0, JAN_ALERT_SOUNDS-1 + gRandomUnlockAdd, qfalse,(JAN_ALERT_SOUNDS - 1)/2)]);
+			G_Sound(self, CHAN_AUTO, gJanSound_Alert[Q_irand(0, JAN_ALERT_SOUNDS-1)]);
 		}
 		else if (self->watertype == ANIMENT_TYPE_CUSTOM)
 		{
@@ -2571,7 +2551,7 @@ void ExampleAnimEntUpdateSelf(gentity_t *self)
 						}
 					}
 
-					self->splashRadius = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 2000, 5000, g_defrag.integer, 3500);
+					self->splashRadius = level.time + Q_irand(2000, 5000);
 				}
 
 				if (hasEnemyLOS && ((enDistSet && enDist < 512) || self->watertype == ANIMENT_TYPE_RODIAN) && self->splashMethodOfDeath)
@@ -2917,7 +2897,7 @@ void G_SpawnExampleAnimEnt(vec3_t pos, int aeType, animentCustomInfo_t *aeInfo)
 
 	G_SetOrigin(animEnt, pos);
 
-	G_SetClassName(animEnt, "g2animent");
+	animEnt->classname = "g2animent";
 			
 	VectorCopy (playerMins, animEnt->r.mins);
 	VectorCopy (playerMaxs, animEnt->r.maxs);
@@ -3079,7 +3059,7 @@ void AESpawner_Think(gentity_t *ent)
 		VectorSet(playerMins, -15, -15, DEFAULT_MINS_2);
 		VectorSet(playerMaxs, 15, 15, DEFAULT_MAXS_2);
 
-		JP_Trace(&tr, ent->s.origin, playerMins, playerMaxs, ent->s.origin, ent->s.number, MASK_PLAYERSOLID);
+		trap_Trace(&tr, ent->s.origin, playerMins, playerMaxs, ent->s.origin, ent->s.number, MASK_PLAYERSOLID);
 
 		if (tr.fraction == 1)
 		{
@@ -3209,7 +3189,7 @@ void SP_misc_animent_spawner(gentity_t *ent)
 	}
 
 	ent->think = AESpawner_Think;
-	ent->nextthink = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 50, 500, g_defrag.integer, 250);
+	ent->nextthink = level.time + Q_irand(50, 500);
 	trap_LinkEntity(ent);
 }
 

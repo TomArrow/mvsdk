@@ -331,7 +331,7 @@ void G_LogWeaponOutput(void)
 
 	// Write out the level name
 	trap_GetServerinfo(info, sizeof(info));
-	Q_strncpyz(mapname, Info_ValueForKey( info, "mapname" ), sizeof(mapname));
+	strncpy(mapname, Info_ValueForKey( info, "mapname" ), sizeof(mapname)-1);
 	mapname[sizeof(mapname)-1] = '\0';
 
 	Com_sprintf(string, sizeof(string), "\n\n\nLevel:\t%s\n\n\n", mapname);
@@ -1529,38 +1529,38 @@ void CalculateAwards(gentity_t *ent, char *msg)
 	if (CalculateSharpshooter(ent, &kills))
 	{
 		awardFlags |= (1<<AWARD_SHARPSHOOTER);
-		Q_strncpyz(buf2, buf1, sizeof(buf2));
+		strcpy(buf2, buf1);
 		Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, kills);
 	}
 	if (CalculateUntouchable(ent))
 	{
 		awardFlags |= (1<<AWARD_UNTOUCHABLE);
-		Q_strncpyz(buf2, buf1, sizeof(buf2));
+		strcpy(buf2, buf1);
 		Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, 0);
 	}
 	if (CalculateLogistics(ent, &stuffUsed))
 	{
 		awardFlags |= (1<<AWARD_LOGISTICS);
-		Q_strncpyz(buf2, buf1,sizeof(buf2));
+		strcpy(buf2, buf1);
 		Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, stuffUsed);
 	}
 	if (CalculateTactician(ent, &kills))
 	{
 		awardFlags |= (1<<AWARD_TACTICIAN);
-		Q_strncpyz(buf2, buf1, sizeof(buf2));
+		strcpy(buf2, buf1);
 		Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, kills);
 	}
 	if (CalculateDemolitionist(ent, &kills))
 	{
 		awardFlags |= (1<<AWARD_DEMOLITIONIST);
-		Q_strncpyz(buf2, buf1, sizeof(buf2));
+		strcpy(buf2, buf1);
 		Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, kills);
 	}
 	streak = CalculateStreak(ent);
 	if (streak)
 	{
 		awardFlags |= (1<<AWARD_STREAK);
-		Q_strncpyz(buf2, buf1, sizeof(buf2));
+		strcpy(buf2, buf1);
 		Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, streak);
 	}
 	if (g_gametype.integer >= GT_TEAM)
@@ -1569,17 +1569,17 @@ void CalculateAwards(gentity_t *ent, char *msg)
 		if (teamAwards)
 		{
 			awardFlags |= (1<<AWARD_TEAM);
-			Q_strncpyz(buf2, buf1, sizeof(buf2));
+			strcpy(buf2, buf1);
 			Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, teamAwards);
 		}
 	}
 	if (CalculateSection31Award(ent))
 	{
 		awardFlags |= (1<<AWARD_SECTION31);
-		Q_strncpyz(buf2, buf1, sizeof(buf2));
+		strcpy(buf2, buf1);
 		Com_sprintf(buf1, AWARDS_MSG_LENGTH, "%s %d", buf2, 0);
 	}
-	Q_strncpyz(buf2, msg, sizeof(buf2));
+	strcpy(buf2, msg);
 	Com_sprintf( msg, AWARDS_MSG_LENGTH, "%s %d%s", buf2, awardFlags, buf1);
 #endif // LOGGING_WEAPONS
 }

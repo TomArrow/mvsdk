@@ -1,4 +1,3 @@
-
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_predict.c -- this file generates cg.predictedPlayerState by either
@@ -8,17 +7,12 @@
 
 #include "cg_local.h"
 
-#define ITEMPREDICTDEBUG 0
+static	pmove_t		cg_pmove;
 
-static pmove_t cg_pmove;
-
-static int cg_numSolidEntities;
-static centity_t *cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
-static int cg_numTriggerEntities;
-static centity_t *cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
-centity_t *cg_statsEntities[MAX_CLIENTS];
-
-void CG_TeleporterTouch(playerState_t *ps, usercmd_t *ucmd, entityState_t *teleporter);
+static	int			cg_numSolidEntities;
+static	centity_t	*cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
+static	int			cg_numTriggerEntities;
+static	centity_t	*cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
 
 /*
 ====================
@@ -29,58 +23,32 @@ of the entities that are actually solid, to make for more
 efficient collision detection
 ====================
 */
-void CG_BuildSolidList(void)
-{
-	int i;
-	centity_t *cent;
-	snapshot_t *snap;
-	entityState_t *ent;
-	qboolean useNextSnap = qfalse;
+void CG_BuildSolidList( void ) {
+	int			i;
+	centity_t	*cent;
+	snapshot_t	*snap;
+	entityState_t	*ent;
 
 	cg_numSolidEntities = 0;
 	cg_numTriggerEntities = 0;
 
-	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport)
-	{
+	if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
 		snap = cg.nextSnap;
-		useNextSnap = qtrue;
-	}
-	else
-	{
+	} else {
 		snap = cg.snap;
 	}
 
-	memset(cg_statsEntities, 0, sizeof(cg_statsEntities));
+	for ( i = 0 ; i < snap->numEntities ; i++ ) {
+		cent = &cg_entities[ snap->entities[ i ].number ];
+		ent = &cent->currentState;
 
-	for (i = 0; i < MAX_CLIENTS; i++)
-	{
-		VectorClear(cg_entities[i].modelScale);
-	}
-	for (i = 0; i < snap->numEntities; i++)
-	{
-		cent = &cg_entities[snap->entities[i].number];
-		ent = useNextSnap ? &cent->nextState : &cent->currentState;
-
-		if (cgs.isTommyTernal && ent->number >= MAX_CLIENTS && ent->eType == ET_INVISIBLE && ent->modelGhoul2 == 15 && ent->clientNum >= 0 && ent->clientNum < MAX_CLIENTS)
-		{ // client stats entity
-			cg_statsEntities[ent->clientNum] = cent;
-			if (cgs.clientinfo[ent->clientNum].playerMode == MODE_DEFRAG && ent->bolt1 == MV_Q2)
-			{
-				// quake 2 has smaller player boxes
-				VectorSet(cg_entities[ent->clientNum].modelScale, 0.875f, 0.875f, 0.875f);
-			}
-			continue;
-		}
-
-		if (ent->eType == ET_ITEM || ent->eType == ET_PUSH_TRIGGER || ent->eType == ET_TELEPORT_TRIGGER)
-		{
+		if ( ent->eType == ET_ITEM || ent->eType == ET_PUSH_TRIGGER || ent->eType == ET_TELEPORT_TRIGGER ) {
 			cg_triggerEntities[cg_numTriggerEntities] = cent;
 			cg_numTriggerEntities++;
 			continue;
 		}
 
-		if (cent->nextState.solid || cent->nextState.eType == ET_PLAYER && !(cent->nextState.eFlags & EF_DEAD))
-		{ // always put players in the list so we can trace them with rawtrace
+		if ( cent->nextState.solid ) {
 			cg_solidEntities[cg_numSolidEntities] = cent;
 			cg_numSolidEntities++;
 			continue;
@@ -94,127 +62,98 @@ CG_ClipMoveToEntities
 
 ====================
 */
-static void CG_ClipMoveToEntities(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-								  int skipNumber, int mask, trace_t *tr, qboolean explicitlyDeluxe, qboolean rawTrace, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags)
-{
-	int i, x, zd, zu;
-	trace_t trace;
-	entityState_t *ent;
-	clipHandle_t cmodel;
-	vec3_t bmins, bmaxs;
-	vec3_t origin, angles;
-	centity_t *cent;
-	static vec3_t playerMinsDefault = {-15, -15, DEFAULT_MINS_2};
-	static vec3_t playerMaxsDefault = {15, 15, DEFAULT_MAXS_2};
-	qboolean useNextSnap = cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport;
+static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
+							int skipNumber, int mask, trace_t *tr ) {
+	int			i, x, zd, zu;
+	trace_t		trace;
+	entityState_t	*ent;
+	clipHandle_t 	cmodel;
+	vec3_t		bmins, bmaxs;
+	vec3_t		origin, angles;
+	centity_t	*cent;
 
-	for (i = 0; i < cg_numSolidEntities; i++)
-	{
-		cent = cg_solidEntities[i];
-		ent = useNextSnap ? &cent->nextState : &cent->currentState;
+	for ( i = 0 ; i < cg_numSolidEntities ; i++ ) {
+		cent = cg_solidEntities[ i ];
+		ent = &cent->currentState;
 
-		if (!ent->solid && !rawTrace)
-			continue; // we are putting nonsolid players in this array too, because we want to rawtrace them for crosshair.
-
-		if (ent->number == skipNumber)
-		{
+		if ( ent->number == skipNumber ) {
 			continue;
 		}
 
-		// JAPRO - Clientside - Duel Passthru Prediction - Start
+		//JAPRO - Clientside - Duel Passthru Prediction - Start 
 		if (cgs.isolateDuels && ent->eType == ET_PLAYER)
 		{
 			if (cg.predictedPlayerState.duelInProgress)
-			{ // we are in a private duel
+			{ // we are in a private duel 
 				if (ent->number != cg.predictedPlayerState.duelIndex && ent->eType != ET_MOVER)
-				{ // we are not dueling them
-				  // don't clip
+				{ // we are not dueling them 
+				  // don't clip 
 					continue;
 				}
 			}
 			else if (ent->bolt1)
-			{ // we are not in a private duel, and this player is dueling don't clip
+			{ // we are not in a private duel, and this player is dueling don't clip 
 				continue;
 			}
-			else if (cgs.isJK2Pro && cg.predictedPlayerState.stats[STAT_RACEMODE])
-			{
-				if (ent->eType == ET_MOVER)
-				{ // TR_SINCE since func_bobbings are still solid, sad hack
-					if ((VectorLengthSquared(ent->pos.trDelta) || VectorLengthSquared(ent->apos.trDelta)) && ent->pos.trType != TR_SINE)
-					{			  // If its moving? //how to get classname clientside?
-						continue; // Dont predict moving et_movers as solid..since that means they are likely func_door or func_plat.. which are nonsolid to racers serverside
+			else if (cgs.isJK2Pro && cg.predictedPlayerState.stats[STAT_RACEMODE]) {
+				if (ent->eType == ET_MOVER) { //TR_SINCE since func_bobbings are still solid, sad hack 
+					if ((VectorLengthSquared(ent->pos.trDelta) || VectorLengthSquared(ent->apos.trDelta)) && ent->pos.trType != TR_SINE) {//If its moving? //how to get classname clientside? 
+						continue; //Dont predict moving et_movers as solid..since that means they are likely func_door or func_plat.. which are nonsolid to racers serverside 
 					}
 				}
-				else
-				{
+				else {
 					continue;
 				}
 			}
 		}
-		// JAPRO - Clientside - Duel Passthru Prediction - End
+		//JAPRO - Clientside - Duel Passthru Prediction - End
 
-		if (ent->number >= MAX_CLIENTS && cg.snap && ent->genericenemyindex && (ent->genericenemyindex - 1024) == cg.snap->ps.clientNum)
-		{ // rww - method of keeping objects from colliding in client-prediction (in case of ownership)
+		if (ent->number >= MAX_CLIENTS && cg.snap && ent->genericenemyindex && (ent->genericenemyindex-1024) == cg.snap->ps.clientNum)
+		{ //rww - method of keeping objects from colliding in client-prediction (in case of ownership)
 			continue;
 		}
 
-		// vVv force field lag fix
-		if (x3_forcefieldPredictionDisable.integer && ent->modelindex == HI_SHIELD && ent->eType == ET_SPECIAL)
-			continue; // forcefield lag fix
-
-		if (ent->solid == SOLID_BMODEL)
-		{
+		if ( ent->solid == SOLID_BMODEL ) {
 			// special value for bmodel
 
-			cmodel = trap_CM_InlineModel(ent->modelindex);
-			VectorCopy(cent->lerpAngles, angles);
-			BG_EvaluateTrajectory(&ent->pos, cg.physicsTime, origin);
-		}
-		else
-		{
+			cmodel = trap_CM_InlineModel( ent->modelindex );
+			VectorCopy( cent->lerpAngles, angles );
+			BG_EvaluateTrajectory( &cent->currentState.pos, cg.physicsTime, origin );
+		} else {
 			// calculate mins/maxs
-			if (ent->eType == ET_SPECIAL &&
-				ent->modelindex == HI_SHIELD &&
-				ent->time2)
+			if ( cent->currentState.eType == ET_SPECIAL &&
+				cent->currentState.modelindex == HI_SHIELD &&
+				cent->currentState.time2)
 			{
 				// special case for forcefield's non-symmetric bbox
-				int solid = ent->time2;
+				int	solid = cent->currentState.time2;
 				qboolean xaxis = (solid >> 24) & 1;
 				int height = (solid >> 16) & 255;
 				int posWidth = (solid >> 8) & 255;
 				int negWidth = solid & 255;
 
-				if (xaxis)
-				{
-					VectorSet(bmins, -negWidth, -SHIELD_HALFTHICKNESS, 0);
-					VectorSet(bmaxs, posWidth, SHIELD_HALFTHICKNESS, height);
+				if (xaxis) {
+					VectorSet( bmins, -negWidth, -SHIELD_HALFTHICKNESS, 0 );
+					VectorSet( bmaxs, posWidth, SHIELD_HALFTHICKNESS, height );
+				} else {
+					VectorSet( bmins, -SHIELD_HALFTHICKNESS, -negWidth, 0 );
+					VectorSet( bmaxs, SHIELD_HALFTHICKNESS, posWidth, height );
 				}
-				else
-				{
-					VectorSet(bmins, -SHIELD_HALFTHICKNESS, -negWidth, 0);
-					VectorSet(bmaxs, SHIELD_HALFTHICKNESS, posWidth, height);
-				}
-			}
-			else if (ent->eType == ET_PLAYER && !ent->solid && rawTrace && !(ent->eFlags & EF_DEAD))
-			{
-				// what about dead players?
-				VectorCopy(playerMinsDefault, bmins);
-				VectorCopy(playerMaxsDefault, bmaxs);
 			}
 			else
 			{
 				// encoded bbox
 				x = (ent->solid & 255);
-				zd = ((ent->solid >> 8) & 255);
-				zu = ((ent->solid >> 16) & 255) - 32;
+				zd = ((ent->solid>>8) & 255);
+				zu = ((ent->solid>>16) & 255) - 32;
 
-				if (cgs.mvsdk_svFlags & MVSDK_SVFLAG_BBOX && ent->time2 && ent->number >= MAX_CLIENTS)
+				if ( cgs.mvsdk_svFlags & MVSDK_SVFLAG_BBOX && ent->time2 && ent->number >= MAX_CLIENTS )
 				{ // If the server set the MVSDK_SVFLAG_BBOX flag it sends bbox infos through time2
 					int maxs1, mins0, mins1;
 
 					maxs1 = (ent->time2 & 255);
-					mins0 = ((ent->time2 >> 8) & 255);
-					mins1 = ((ent->time2 >> 16) & 255);
+					mins0 = ((ent->time2>>8) & 255);
+					mins1 = ((ent->time2>>16) & 255);
 
 					bmaxs[0] = x;
 					bmaxs[1] = maxs1;
@@ -230,47 +169,23 @@ static void CG_ClipMoveToEntities(const vec3_t start, const vec3_t mins, const v
 				bmaxs[2] = zu;
 			}
 
-			cmodel = trap_CM_TempBoxModel(bmins, bmaxs);
-			VectorCopy(vec3_origin, angles);
-			VectorCopy(cent->lerpOrigin, origin);
+			cmodel = trap_CM_TempBoxModel( bmins, bmaxs );
+			VectorCopy( vec3_origin, angles );
+			VectorCopy( cent->lerpOrigin, origin );
 		}
 
-		trap_CM_TransformedBoxTrace(&trace, start, end,
-									mins, maxs, cmodel, mask, origin, angles, customEpsilonTrace, customEpsilon, traceCustomFlags);
 
-		if (trace.allsolid || trace.fraction < tr->fraction)
-		{
+		trap_CM_TransformedBoxTrace ( &trace, start, end,
+			mins, maxs, cmodel,  mask, origin, angles);
+
+		if (trace.allsolid || trace.fraction < tr->fraction) {
 			trace.entityNum = ent->number;
 			*tr = trace;
-		}
-		else if (trace.startsolid)
-		{
+		} else if (trace.startsolid) {
 			tr->startsolid = qtrue;
 		}
-		if (tr->allsolid)
-		{
+		if ( tr->allsolid ) {
 			return;
-		}
-
-		// Do a second prediction with deluxe predicted origin.
-		if ((explicitlyDeluxe || cg_deluxePlayersPredictClipMove.integer) && cent->deluxePredict.lerpOriginClipMoveFilled)
-		{
-			trap_CM_TransformedBoxTrace(&trace, start, end,
-										mins, maxs, cmodel, mask, cent->deluxePredict.lerpOriginClipMove, angles, customEpsilonTrace, customEpsilon, traceCustomFlags);
-
-			if (trace.allsolid || trace.fraction < tr->fraction)
-			{
-				trace.entityNum = ent->number;
-				*tr = trace;
-			}
-			else if (trace.startsolid)
-			{
-				tr->startsolid = qtrue;
-			}
-			if (tr->allsolid)
-			{
-				return;
-			}
 		}
 	}
 }
@@ -280,66 +195,22 @@ static void CG_ClipMoveToEntities(const vec3_t start, const vec3_t mins, const v
 CG_Trace
 ================
 */
-void CG_TraceReal(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-				  int skipNumber, int mask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags)
-{
-	trace_t t;
+void	CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask ) {
+	trace_t	t;
 
-	trap_CM_BoxTrace(&t, start, end, mins, maxs, 0, mask, customEpsilonTrace, customEpsilon, traceCustomFlags);
+	trap_CM_BoxTrace ( &t, start, end, mins, maxs, 0, mask);
 	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
+
+	if (t.fraction == 0) {
+		*result = t;
+		return;		// blocked immediately by the world
+	}
+
 	// check all other solid models
-	CG_ClipMoveToEntities(start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qfalse, customEpsilonTrace, customEpsilon, traceCustomFlags);
-	cg.nextCGTraceExplicitlyDeluxe = qfalse;
+	CG_ClipMoveToEntities (start, mins, maxs, end, skipNumber, mask, &t);
 
 	*result = t;
-}
-void CG_Trace(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-			  int skipNumber, int mask)
-{
-
-	CG_TraceReal(result, start, mins, maxs, end, skipNumber, mask, qfalse, 0, 0);
-}
-void CG_TraceQ2Style(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-					 int skipNumber, int mask)
-{
-
-	CG_TraceReal(result, start, mins, maxs, end, skipNumber, mask, qtrue, 0.03125f, TRACECUSTOMFLAG_Q2STYLE);
-}
-void CG_TraceQ2StyleLite(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-						 int skipNumber, int mask)
-{
-
-	CG_TraceReal(result, start, mins, maxs, end, skipNumber, mask, qtrue, 0.03125f, 0);
-}
-/*
-================
-CG_RawTrace
-
-Allow us to trace even players with solid 0
-================
-*/
-void CG_RawTraceReal(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-					 int skipNumber, int mask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags)
-{
-	trace_t t;
-
-	trap_CM_BoxTrace(&t, start, end, mins, maxs, 0, mask, customEpsilonTrace, customEpsilon, traceCustomFlags);
-	t.entityNum = t.fraction != 1.0 ? ENTITYNUM_WORLD : ENTITYNUM_NONE;
-	// check all other solid models
-	CG_ClipMoveToEntities(start, mins, maxs, end, skipNumber, mask, &t, cg.nextCGTraceExplicitlyDeluxe, qtrue, customEpsilonTrace, customEpsilon, traceCustomFlags);
-	cg.nextCGTraceExplicitlyDeluxe = qfalse;
-
-	*result = t;
-}
-void CG_RawTrace(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-				 int skipNumber, int mask)
-{
-	CG_RawTraceReal(result, start, mins, maxs, end, skipNumber, mask, qfalse, 0, 0);
-}
-void CG_RawTraceQ2Style(trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end,
-						int skipNumber, int mask)
-{
-	CG_RawTraceReal(result, start, mins, maxs, end, skipNumber, mask, qtrue, 0.03125f, TRACECUSTOMFLAG_Q2STYLE);
 }
 
 /*
@@ -347,47 +218,39 @@ void CG_RawTraceQ2Style(trace_t *result, const vec3_t start, const vec3_t mins, 
 CG_PointContents
 ================
 */
-int CG_PointContents(const vec3_t point, int passEntityNum)
-{
-	int i;
-	entityState_t *ent;
-	centity_t *cent;
+int		CG_PointContents( const vec3_t point, int passEntityNum ) {
+	int			i;
+	entityState_t	*ent;
+	centity_t	*cent;
 	clipHandle_t cmodel;
-	int contents;
-	qboolean useNextSnap = cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport;
+	int			contents;
 
-	contents = trap_CM_PointContents(point, 0);
+	contents = trap_CM_PointContents (point, 0);
 
-	for (i = 0; i < cg_numSolidEntities; i++)
-	{
-		cent = cg_solidEntities[i];
+	for ( i = 0 ; i < cg_numSolidEntities ; i++ ) {
+		cent = cg_solidEntities[ i ];
 
-		ent = useNextSnap ? &cent->nextState : &cent->currentState;
+		ent = &cent->currentState;
 
-		if (!ent->solid)
-			continue; // we are putting nonsolid players in this array too, because we want to rawtrace them for crosshair.
-
-		if (ent->number == passEntityNum)
-		{
+		if ( ent->number == passEntityNum ) {
 			continue;
 		}
 
-		if (ent->solid != SOLID_BMODEL)
-		{ // special value for bmodel
+		if (ent->solid != SOLID_BMODEL) { // special value for bmodel
 			continue;
 		}
 
-		cmodel = trap_CM_InlineModel(ent->modelindex);
-		if (!cmodel)
-		{
+		cmodel = trap_CM_InlineModel( ent->modelindex );
+		if ( !cmodel ) {
 			continue;
 		}
 
-		contents |= trap_CM_TransformedPointContents(point, cmodel, cent->lerpOrigin, cent->lerpAngles);
+		contents |= trap_CM_TransformedPointContents( point, cmodel, ent->origin, ent->angles );
 	}
 
 	return contents;
 }
+
 
 /*
 ========================
@@ -397,12 +260,11 @@ Generates cg.predictedPlayerState by interpolating between
 cg.snap->player_state and cg.nextFrame->player_state
 ========================
 */
-static void CG_InterpolatePlayerState(qboolean grabAngles, vec3_t newestVel)
-{
-	float f;
-	int i;
-	playerState_t *out;
-	snapshot_t *prev, *next;
+static void CG_InterpolatePlayerState( qboolean grabAngles ) {
+	float			f;
+	int				i;
+	playerState_t	*out;
+	snapshot_t		*prev, *next;
 
 	out = &cg.predictedPlayerState;
 	prev = cg.snap;
@@ -411,69 +273,41 @@ static void CG_InterpolatePlayerState(qboolean grabAngles, vec3_t newestVel)
 	*out = cg.snap->ps;
 
 	// if we are still allowing local input, short circuit the view angles
-	if (grabAngles)
-	{
-		usercmd_t cmd;
-		int cmdNum;
+	if ( grabAngles ) {
+		usercmd_t	cmd;
+		int			cmdNum;
 
 		cmdNum = trap_GetCurrentCmdNumber();
-		trap_GetUserCmd(cmdNum, &cmd);
+		trap_GetUserCmd( cmdNum, &cmd );
 
-		PM_UpdateViewAngles(out, &cmd);
+		PM_UpdateViewAngles( out, &cmd );
 	}
 
 	// if the next frame is a teleport, we can't lerp to it
-	if (cg.nextFrameTeleport)
-	{
-		VectorCopy(out->velocity, newestVel);
+	if ( cg.nextFrameTeleport ) {
 		return;
 	}
 
-	if (!next || next->serverTime <= prev->serverTime)
-	{
-		VectorCopy(out->velocity, newestVel);
+	if ( !next || next->serverTime <= prev->serverTime ) {
 		return;
 	}
 
-	VectorCopy(next->ps.velocity, newestVel);
-
-	// fau - for player it would more correct to interpolate between
-	// commandTimes (but requires one more snaphost ahead)
 	f = cg.frameInterpolation;
 
 	i = next->ps.bobCycle;
-	if (i < prev->ps.bobCycle)
-	{
-		i += 256; // handle wraparound
+	if ( i < prev->ps.bobCycle ) {
+		i += 256;		// handle wraparound
 	}
-	out->bobCycle = prev->ps.bobCycle + f * (i - prev->ps.bobCycle);
+	out->bobCycle = prev->ps.bobCycle + f * ( i - prev->ps.bobCycle );
 
-	for (i = 0; i < 3; i++)
-	{
-		out->origin[i] = prev->ps.origin[i] + f * (next->ps.origin[i] - prev->ps.origin[i]);
-		if (!grabAngles)
-		{
-			out->viewangles[i] = LerpAngle(
-				prev->ps.viewangles[i], next->ps.viewangles[i], f);
+	for ( i = 0 ; i < 3 ; i++ ) {
+		out->origin[i] = prev->ps.origin[i] + f * (next->ps.origin[i] - prev->ps.origin[i] );
+		if ( !grabAngles ) {
+			out->viewangles[i] = LerpAngle( 
+				prev->ps.viewangles[i], next->ps.viewangles[i], f );
 		}
-		out->velocity[i] = prev->ps.velocity[i] +
-						   f * (next->ps.velocity[i] - prev->ps.velocity[i]);
-	}
-
-	if (cgs.isTommyTernal && next->ps.stats[STAT_RACEMODE] && next->ps.stats[STAT_MOVEMENTSTYLE] == MV_BOUNCE)
-	{
-		// just make it look nice and smooth *shrug*
-		int bouncePower = next->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK;
-		int bouncePowerPrev = prev->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_POWERMASK;
-		int bounceRegenTimer = (next->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_REGENMASK) >> 9;
-		int bounceRegenTimerPrev = (prev->ps.stats[STAT_BOUNCEPOWER] & BOUNCEPOWER_REGENMASK) >> 9;
-
-		bouncePower = bouncePowerPrev + f * (bouncePower - bouncePowerPrev);
-		bounceRegenTimer = bounceRegenTimerPrev + f * (bounceRegenTimer - bounceRegenTimerPrev);
-
-		bouncePower = MAX(0, MIN(BOUNCEPOWER_MAX, bouncePower));
-		bounceRegenTimer = MAX(0, MIN(BOUNCEPOWER_REGEN_MAX, bounceRegenTimer));
-		out->stats[STAT_BOUNCEPOWER] = (bouncePower & BOUNCEPOWER_POWERMASK) | ((bounceRegenTimer << 9) & BOUNCEPOWER_REGENMASK);
+		out->velocity[i] = prev->ps.velocity[i] + 
+			f * (next->ps.velocity[i] - prev->ps.velocity[i] );
 	}
 
 	cg.predictedTimeFrac = f * (next->ps.commandTime - prev->ps.commandTime);
@@ -484,80 +318,73 @@ static void CG_InterpolatePlayerState(qboolean grabAngles, vec3_t newestVel)
 CG_TouchItem
 ===================
 */
-static void CG_TouchItem(centity_t *cent)
-{
-	gitem_t *item;
-	entityState_t *state = (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) ? &cent->nextState : &cent->currentState;
+static void CG_TouchItem( centity_t *cent ) {
+	gitem_t		*item;
 
-	if (!cg_predictItems.integer)
-	{
+	if ( !cg_predictItems.integer ) {
 		return;
 	}
-	if (!BG_PlayerTouchesItem(&cg.predictedPlayerState, state, cg.time))
-	{
+	if ( !BG_PlayerTouchesItem( &cg.predictedPlayerState, &cent->currentState, cg.time ) ) {
 		return;
 	}
 
-	if (state->eFlags & EF_ITEMPLACEHOLDER)
+	if (cent->currentState.eFlags & EF_ITEMPLACEHOLDER)
 	{
 		return;
 	}
 
-	if (state->eFlags & EF_NODRAW)
+	if (cent->currentState.eFlags & EF_NODRAW)
 	{
 		return;
 	}
 
 	// never pick an item up twice in a prediction
-	if (cent->miscTime == cg.time)
-	{
+	if ( cent->miscTime == cg.time ) {
 		return;
 	}
 
-	if (!BG_CanItemBeGrabbed(cgs.gametype, state, &cg.predictedPlayerState, cgs.clientinfo[cg.predictedPlayerState.clientNum].playerMode))
-	{
-		return; // can't hold it
+	if ( !BG_CanItemBeGrabbed( cgs.gametype, &cent->currentState, &cg.predictedPlayerState ) ) {
+		return;		// can't hold it
 	}
 
-	item = &bg_itemlist[state->modelindex];
+	item = &bg_itemlist[ cent->currentState.modelindex ];
 
-	// Currently there is no reliable way of knowing if the client has touched a certain item before another if they are next to each other, or rather
-	// if the server has touched them in the same order. This results often in grabbing an item in the prediction and the server giving you the other
-	// item. So for now prediction of armor, health, and ammo is disabled.
-	/*
-		if (item->giType == IT_ARMOR)
-		{ //rww - this will be stomped next update, but it's set so that we don't try to pick up two shields in one prediction and have the server cancel one
-		//	cg.predictedPlayerState.stats[STAT_ARMOR] += item->quantity;
+	//Currently there is no reliable way of knowing if the client has touched a certain item before another if they are next to each other, or rather
+	//if the server has touched them in the same order. This results often in grabbing an item in the prediction and the server giving you the other
+	//item. So for now prediction of armor, health, and ammo is disabled.
+/*
+	if (item->giType == IT_ARMOR)
+	{ //rww - this will be stomped next update, but it's set so that we don't try to pick up two shields in one prediction and have the server cancel one
+	//	cg.predictedPlayerState.stats[STAT_ARMOR] += item->quantity;
 
-			//FIXME: This can't be predicted properly at the moment
-			return;
-		}
+		//FIXME: This can't be predicted properly at the moment
+		return;
+	}
 
-		if (item->giType == IT_HEALTH)
-		{ //same as above, for health
-		//	cg.predictedPlayerState.stats[STAT_HEALTH] += item->quantity;
+	if (item->giType == IT_HEALTH)
+	{ //same as above, for health
+	//	cg.predictedPlayerState.stats[STAT_HEALTH] += item->quantity;
 
-			//FIXME: This can't be predicted properly at the moment
-			return;
-		}
+		//FIXME: This can't be predicted properly at the moment
+		return;
+	}
 
-		if (item->giType == IT_AMMO)
-		{ //same as above, for ammo
-		//	cg.predictedPlayerState.ammo[item->giTag] += item->quantity;
+	if (item->giType == IT_AMMO)
+	{ //same as above, for ammo
+	//	cg.predictedPlayerState.ammo[item->giTag] += item->quantity;
 
-			//FIXME: This can't be predicted properly at the moment
-			return;
-		}
+		//FIXME: This can't be predicted properly at the moment
+		return;
+	}
 
-		if (item->giType == IT_HOLDABLE)
-		{ //same as above, for holdables
-		//	cg.predictedPlayerState.stats[STAT_HOLDABLE_ITEMS] |= (1 << item->giTag);
-		}
-	*/
-	// Special case for flags.
+	if (item->giType == IT_HOLDABLE)
+	{ //same as above, for holdables
+	//	cg.predictedPlayerState.stats[STAT_HOLDABLE_ITEMS] |= (1 << item->giTag);
+	}
+*/
+	// Special case for flags.  
 	// We don't predict touching our own flag
-	if (cgs.gametype == GT_CTF || cgs.gametype == GT_CTY)
-	{
+	if( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY ) {
 		if (cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_RED &&
 			item->giTag == PW_REDFLAG)
 			return;
@@ -588,29 +415,25 @@ static void CG_TouchItem(centity_t *cent)
 		}
 	}
 
+
 	// grab it
-	BG_AddPredictableEventToPlayerstate(EV_ITEM_PICKUP, cent->currentState.number, &cg.predictedPlayerState);
-#if ITEMPREDICTDEBUG
-	Com_Printf("^3CG Predict: Adding EV_ITEM_PICKUP at %d, cmdtime %d\n", cg.time, cg.predictedPlayerState.commandTime);
-#endif
+	BG_AddPredictableEventToPlayerstate( EV_ITEM_PICKUP, cent->currentState.number , &cg.predictedPlayerState);
 
 	// remove it from the frame so it won't be drawn
-	// cent->currentState.eFlags |= EF_NODRAW;
-	cent->predictedEFlags |= EF_NODRAW; // TA: don't change the currentstate, instead use our own variable, to not catastrophically mess up prediction leading to frame-to-frame prediction differences (in practical terms: ear rape at high fps when picking up items). Note: Sometimes a double event still happens, for example when picking up mines, my suspicion is that it's related to them bobbing up and down (in which case the desync between cg.time and level.time could be to blame), but I might be completely wrong on that, maybe that's just a visual effect that doesn't influence the actual position at all.
+	cent->currentState.eFlags |= EF_NODRAW;
 
 	// don't touch it again this prediction
 	cent->miscTime = cg.time;
 
 	// if its a weapon, give them some predicted ammo so the autoswitch will work
-	if (item->giType == IT_WEAPON)
-	{
-		cg.predictedPlayerState.stats[STAT_WEAPONS] |= 1 << item->giTag;
-		if (!cg.predictedPlayerState.ammo[item->giTag])
-		{
-			cg.predictedPlayerState.ammo[item->giTag] = 1;
+	if ( item->giType == IT_WEAPON ) {
+		cg.predictedPlayerState.stats[ STAT_WEAPONS ] |= 1 << item->giTag;
+		if ( !cg.predictedPlayerState.ammo[ item->giTag ] ) {
+			cg.predictedPlayerState.ammo[ item->giTag ] = 1;
 		}
 	}
 }
+
 
 /*
 =========================
@@ -619,133 +442,74 @@ CG_TouchTriggerPrediction
 Predict push triggers and items
 =========================
 */
-static void CG_TouchTriggerPrediction(int msec, qboolean isSpecialPredict)
-{
-	int i;
-	trace_t trace;
-	entityState_t *ent;
+static void CG_TouchTriggerPrediction( void ) {
+	int			i;
+	trace_t		trace;
+	entityState_t	*ent;
 	clipHandle_t cmodel;
-	centity_t *cent;
-	qboolean spectator;
-	qboolean useNextSnap;
+	centity_t	*cent;
+	qboolean	spectator;
 
 	// dead clients don't activate triggers
-	if (cg.predictedPlayerState.stats[STAT_HEALTH] <= 0)
-	{
+	if ( cg.predictedPlayerState.stats[STAT_HEALTH] <= 0 ) {
 		return;
 	}
 
-	spectator = (cg.predictedPlayerState.pm_type == PM_SPECTATOR);
+	spectator = ( cg.predictedPlayerState.pm_type == PM_SPECTATOR );
 
-	if (cg.predictedPlayerState.pm_type != PM_NORMAL && cg.predictedPlayerState.pm_type != PM_FLOAT && !spectator)
-	{
+	if ( cg.predictedPlayerState.pm_type != PM_NORMAL && cg.predictedPlayerState.pm_type != PM_FLOAT && !spectator ) {
 		return;
 	}
 
-	useNextSnap = cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport;
+	for ( i = 0 ; i < cg_numTriggerEntities ; i++ ) {
+		cent = cg_triggerEntities[ i ];
+		ent = &cent->currentState;
 
-	for (i = 0; i < cg_numTriggerEntities; i++)
-	{
-		cent = cg_triggerEntities[i];
-		ent = useNextSnap ? &cent->currentState : &cent->currentState;
-
-		if (ent->eType == ET_ITEM && !spectator)
-		{
-			CG_TouchItem(cent);
+		if ( ent->eType == ET_ITEM && !spectator ) {
+			CG_TouchItem( cent );
 			continue;
 		}
 
-		if (ent->solid != SOLID_BMODEL)
-		{
+		if ( ent->solid != SOLID_BMODEL ) {
 			continue;
 		}
 
-		cmodel = trap_CM_InlineModel(ent->modelindex);
-		if (!cmodel)
-		{
+		cmodel = trap_CM_InlineModel( ent->modelindex );
+		if ( !cmodel ) {
 			continue;
 		}
 
-		trap_CM_BoxTrace(&trace, cg.predictedPlayerState.origin, cg.predictedPlayerState.origin,
-						 cg_pmove.mins, cg_pmove.maxs, cmodel, -1, qfalse, 0, 0);
+		trap_CM_BoxTrace( &trace, cg.predictedPlayerState.origin, cg.predictedPlayerState.origin, 
+			cg_pmove.mins, cg_pmove.maxs, cmodel, -1 );
 
-		if (!trace.startsolid)
-		{
+		if ( !trace.startsolid ) {
 			continue;
 		}
 
-		if (ent->eType == ET_TELEPORT_TRIGGER)
-		{
-			if (cgs.isTommyTernal && ent->trickedentindex3 && (cg.predictedPlayerState.stats[STAT_RACEMODE] || ent->trickedentindex3 > 1))
-			{
-				// in racemode, only first teleporter target is used, so we can predict.
-				// alternatively, server can force the predict (if only one target is found for example)
-				CG_TeleporterTouch(&cg.predictedPlayerState, &cg_pmove.cmd, ent);
-				cg.teleporterPredicted = qtrue;
-			}
-			else
-			{
-				cg.hyperspace = qtrue;
-			}
-		}
-		else if (ent->eType == ET_PUSH_TRIGGER)
-		{
-			// BG_TouchJumpPad( &cg.predictedPlayerState, ent );
-			if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] &&
-				(ent->generic1 && !MovementStyleHasVQ3OnlyJumppads(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE]) || ent->genericenemyindex && !MovementStyleHasCPMOnlyJumppads(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE])))
-			{
-				// this is a vq3 only jumppad, dont use it in other types of movements.
-				// generic1 = notCpm
-				// genericenemyindex = notvq3
-			}
-			else
-			{
-				qboolean prevent = qfalse;
-				if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && ent->saberInFlight)
-				{
-					float wait = ent->origin2[1];
-					int nextTouchAllowed;
-					if (wait <= 0)
-						wait = 0.5f; // bit of a simplification but it will do in most cases
-					nextTouchAllowed = cent->targetSpeedLastTouched + wait * 1000;
-					// we must predict timeouts here... very messy.
-					if (cg.predictedPlayerState.commandTime > cent->targetSpeedLastTouched && nextTouchAllowed >= cg.predictedPlayerState.commandTime)
-					{
-						prevent = qtrue;
-					}
-				}
-				if (!prevent)
-				{
-					BG_TouchJumpPadVelocity(&cg.predictedPlayerState, ent, msec, cg_mapDefaultMsec.integer, (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) ? cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] : MV_JK2);
-					if (!isSpecialPredict)
-					{
-						// if we do this in the special prediction for physicsfps, we will sometimes lose the prediction due to the special predicted frame having a timing that will never actually happen
-						cent->targetSpeedLastTouched = cg.predictedPlayerState.commandTime;
-					}
-				}
-			}
+		if ( ent->eType == ET_TELEPORT_TRIGGER ) {
+			cg.hyperspace = qtrue;
+		} else if ( ent->eType == ET_PUSH_TRIGGER ) {
+			BG_TouchJumpPad( &cg.predictedPlayerState, ent );
 		}
 	}
 
 	// if we didn't touch a jump pad this pmove frame
-	if (cg.predictedPlayerState.jumppad_frame != cg.predictedPlayerState.pmove_framecount)
-	{
+	if ( cg.predictedPlayerState.jumppad_frame != cg.predictedPlayerState.pmove_framecount ) {
 		cg.predictedPlayerState.jumppad_frame = 0;
 		cg.predictedPlayerState.jumppad_ent = 0;
 	}
 }
 
-void CG_EntityStateToPlayerState(entityState_t *s, playerState_t *ps)
-{
-	int i;
+void CG_EntityStateToPlayerState( entityState_t *s, playerState_t *ps ) {
+	int		i;
 
 	ps->clientNum = s->number;
 
-	VectorCopy(s->pos.trBase, ps->origin);
+	VectorCopy( s->pos.trBase, ps->origin );
 
-	VectorCopy(s->pos.trDelta, ps->velocity);
+	VectorCopy( s->pos.trDelta, ps->velocity );
 
-	VectorCopy(s->apos.trBase, ps->viewangles);
+	VectorCopy( s->apos.trBase, ps->viewangles );
 
 	ps->fd.forceMindtrickTargetIndex = s->trickedentindex;
 	ps->fd.forceMindtrickTargetIndex2 = s->trickedentindex2;
@@ -794,7 +558,7 @@ void CG_EntityStateToPlayerState(entityState_t *s, playerState_t *ps)
 
 	ps->emplacedIndex = s->otherEntityNum2;
 
-	ps->saberHolstered = s->shouldtarget; // reuse bool in entitystate for players differently
+	ps->saberHolstered = s->shouldtarget; //reuse bool in entitystate for players differently
 	ps->usingATST = s->teamowner;
 
 	/*
@@ -803,9 +567,9 @@ void CG_EntityStateToPlayerState(entityState_t *s, playerState_t *ps)
 		s->eFlags |= EF_SEEKERDRONE;
 	}
 	*/
-	ps->genericEnemyIndex = -1; // no real option for this
+	ps->genericEnemyIndex = -1; //no real option for this
 
-	// The client has no knowledge of health levels (except for the client entity)
+	//The client has no knowledge of health levels (except for the client entity)
 	if (s->eFlags & EF_DEAD)
 	{
 		ps->stats[STAT_HEALTH] = 0;
@@ -831,13 +595,12 @@ void CG_EntityStateToPlayerState(entityState_t *s, playerState_t *ps)
 		ps->entityEventSequence++;
 	}
 	*/
-	// Eh.
+	//Eh.
 
 	ps->weapon = s->weapon;
 	ps->groundEntityNum = s->groundEntityNum;
 
-	for (i = 0; i < MAX_POWERUPS; i++)
-	{
+	for ( i = 0 ; i < MAX_POWERUPS ; i++ ) {
 		if (s->powerups & (1 << i))
 		{
 			ps->powerups[i] = 30;
@@ -852,158 +615,7 @@ void CG_EntityStateToPlayerState(entityState_t *s, playerState_t *ps)
 	ps->generic1 = s->generic1;
 }
 
-void CG_COOL_API_SetPredictedMovement(playerState_t *predictedPS)
-{
-	predictedMovement_t predictedMovement = {0}; // ={0} to shut compiler up about incomplete class type
-	if (!(coolApi & COOL_APIFEATURE_SETPREDICTEDMOVEMENT))
-	{
-		return;
-	}
-	predictedMovement.commandTime = predictedPS->commandTime;
-	predictedMovement.pm_type = predictedPS->pm_type;
-	predictedMovement.pm_flags = predictedPS->pm_flags;
-	predictedMovement.pm_time = predictedPS->pm_time;
-	VectorCopy(predictedPS->origin, predictedMovement.origin);
-	VectorCopy(predictedPS->velocity, predictedMovement.velocity);
-	predictedMovement.gravity = predictedPS->gravity;
-	predictedMovement.speed = predictedPS->speed;
-	predictedMovement.basespeed = predictedPS->basespeed;
-	VectorCopy(predictedPS->delta_angles, predictedMovement.delta_angles);
-	predictedMovement.groundEntityNum = predictedPS->groundEntityNum;
-	predictedMovement.movementDir = predictedPS->movementDir;
-	predictedMovement.eFlags = predictedPS->eFlags;
-	predictedMovement.clientNum = predictedPS->clientNum;
-	VectorCopy(predictedPS->viewangles, predictedMovement.viewangles);
-	predictedMovement.viewheight = predictedPS->viewheight;
-	predictedMovement.jumppad_ent = predictedPS->jumppad_ent;
-	predictedMovement.fd = predictedPS->fd;
-	trap_CG_COOL_API_SetPredictedMovement(&predictedMovement);
-}
-
 playerState_t cgSendPS[MAX_CLIENTS];
-
-// Assign all the entity playerstate pointers to the corresponding one
-// so that we can access playerstate stuff in bg code (and then translate
-// it back to entitystate data)
-void CG_PmoveClientPointerUpdate()
-{
-	// int i;
-
-	/*memset(&cgSendPSPool[0], 0, sizeof(cgSendPSPool));
-
-	for (i = 0; i < MAX_GENTITIES; i++)
-	{
-		cgSendPS[i] = &cgSendPSPool[i];
-
-		// These will be invalid at this point on Xbox
-		cg_entities[i].playerState = cgSendPS[i];
-	}*/
-
-	// Set up bg entity data
-	cg_pmove.baseEnt = (bgEntity_t *)cg_entities;
-	cg_pmove.entSize = sizeof(centity_t);
-
-	// cg_pmove.ghoul2 = NULL;
-}
-
-/*
-==================
-SetClientViewAngle
-
-==================
-*/
-static void CG_SetClientViewAngle(playerState_t *ps, usercmd_t *ucmd, vec3_t angle)
-{
-	int i;
-
-	// set the delta angle
-	for (i = 0; i < 3; i++)
-	{
-		int cmdAngle;
-
-		cmdAngle = ANGLE2SHORT(angle[i]);
-		ps->delta_angles[i] = cmdAngle - ucmd->angles[i];
-	}
-	VectorCopy(angle, ps->viewangles);
-}
-
-// void BG_TeleportPlayer(gentity_t* player, vec3_t origin, vec3_t angles) {
-static void CG_TeleportPlayer(playerState_t *ps, usercmd_t *ucmd, vec3_t origin, vec3_t angles)
-{
-	// gentity_t* tent;
-
-	if (ps->pm_flags & PMF_FOLLOW)
-	{ // Follow spectators don't need to teleport. And calling BG_PlayerStateToEntityState on them corrupts their s.number.
-		return;
-	}
-
-	VectorCopy(origin, ps->origin);
-	ps->origin[2] += 1;
-
-	// spit the player out
-	AngleVectors(angles, ps->velocity, NULL, NULL);
-	VectorScale(ps->velocity, 400, ps->velocity);
-	ps->pm_time = 160; // hold time
-	ps->pm_flags |= PMF_TIME_KNOCKBACK;
-
-	// toggle the teleport bit so the client knows to not lerp
-	ps->eFlags ^= EF_TELEPORT_BIT;
-
-	CG_SetClientViewAngle(ps, ucmd, angles);
-
-	if (ps->stats[STAT_RACEMODE])
-	{
-		// player->client->ps.powerups[PW_YSALAMIRI] = 0; //Fuck
-		ps->powerups[PW_FORCE_BOON] = 0;
-		// if (player->client->sess.movementStyle == MV_RJQ3 || player->client->sess.movementStyle == MV_RJCPM || player->client->sess.movementStyle == MV_TRIBES) //Get rid of their rockets when they tele/noclip..?
-		//	DeletePlayerProjectiles(player);
-		// if (player->client->sess.movementStyle == MV_COOP_JKA && player->client->ps.duelInProgress) { //clean this up..
-		//	gentity_t* gripEnt;
-		//	WP_ForcePowerStop(player, FP_GRIP);
-		//
-		//	gripEnt = &g_entities[player->client->ps.duelIndex];
-		//	if (gripEnt && gripEnt->client) {
-		//		WP_ForcePowerStop(gripEnt, FP_GRIP);
-		//	}
-		// }
-	}
-}
-
-void CG_TeleporterTouch(playerState_t *ps, usercmd_t *ucmd, entityState_t *teleporter)
-{
-	int flags = teleporter->weapon;
-	if (ps->pm_type == PM_DEAD)
-	{
-		return;
-	}
-	// Spectators only?
-	if ((flags & 1) &&
-		ps->persistant[PERS_TEAM] != TEAM_SPECTATOR)
-	{
-		return;
-	}
-
-	/*dest = G_PickTarget(self->target, !other->client->sess.raceMode);
-	if (!dest) {
-		G_Printf("Couldn't find teleporter destination\n");
-		return;
-	}*/
-	CG_TeleportPlayer(ps, ucmd, teleporter->origin2, teleporter->angles2);
-}
-
-int CG_GetSpecialPredictPhysicsFPSTargetTime()
-{
-
-	// TODO maybe make this nicer with a dedicated API. But for now it will do.
-	if (cg_cl_timeNudgeAntiLagHack.integer && cg_cl_timeNudgeSafeServerTime.integer > 0)
-	{
-		return cg_cl_timeNudgeSafeServerTime.integer; // Kinda ugly...
-	}
-	else
-	{
-		return cg.time;
-	}
-}
 
 /*
 =================
@@ -1031,146 +643,50 @@ We detect prediction errors and allow them to be decayed off over several frames
 to ease the jerk.
 =================
 */
-void CG_PredictPlayerState(void)
-{
-	static int lastSnapPsCommandTime = 0;
-	const snapshot_t *baseSnap;
-	int cmdNum, current, i, msec;
-	playerState_t oldPlayerState, preSpecialPredictPlayerState;
-	qboolean specialPredictPhysicsFpsWasApplied;
-	qboolean moved;
-	qboolean lastCmdWasWrongFps;
-	usercmd_t oldestCmd;
-	usercmd_t latestCmd;
-	usercmd_t temporaryCmd;
-	vec3_t prePmoveVelocity;
-	vec3_t oldPos;
-	qboolean haveAntiLoopStats = qfalse;
-	qboolean usingNextSnap = qfalse;
-	qboolean doingStrafeHelperExtraPredict = qfalse;
-	playerState_t *extraPredictRestorePs = NULL;
-	int extraPredictRestorePhysicsTime;
-	antiLoopState_t extraPredictRestoreAntiloop;
-	int oldButtons = 0;
-	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); // Loda - FPS UNLOCK client modcode
-	centity_t *statsEnt = NULL;
-	float forceSpeedSmash;
-	qboolean haveForceSpeedSmash = qfalse;
-	float forceJumpCharge;
-	qboolean haveForceJumpCharge = qfalse;
-	int physicsFpsTargetTime = CG_GetSpecialPredictPhysicsFPSTargetTime();
+void CG_PredictPlayerState( void ) {
+	int			cmdNum, current, i;
+	playerState_t	oldPlayerState;
+	qboolean	moved;
+	usercmd_t	oldestCmd;
+	usercmd_t	latestCmd;
+	const int REAL_CMD_BACKUP = (cl_commandsize.integer >= 4 && cl_commandsize.integer <= 512) ? (cl_commandsize.integer) : (CMD_BACKUP); //Loda - FPS UNLOCK client modcode
 
-	cg.hyperspace = qfalse;			 // will be set if touching a trigger_teleport
-	cg.teleporterPredicted = qfalse; // teleporter was predicted so ignore areamask
+	cg.hyperspace = qfalse;	// will be set if touching a trigger_teleport
 
 	// if this is the first frame we must guarantee
 	// predictedPlayerState is valid even if there is some
 	// other error condition
-	if (!cg.validPPS)
-	{
+	if ( !cg.validPPS ) {
 		cg.validPPS = qtrue;
 		cg.predictedPlayerState = cg.snap->ps;
 	}
 
-	if (cg.snap->ps.commandTime < lastSnapPsCommandTime)
-	{
-		cg_rampCountLastCmdTime = 0;
-	}
-	lastSnapPsCommandTime = cg.snap->ps.commandTime;
-
-	statsEnt = cg_statsEntities[cg.predictedPlayerState.clientNum];
-
-	if (statsEnt && cgs.ttFlags)
-	{
-		entityState_t *statsState;
-		if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport)
-		{
-			statsState = &statsEnt->nextState;
-		}
-		else
-		{
-			statsState = &statsEnt->currentState;
-		}
-
-		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASANTILOOPSTATS)
-		{
-			cg.antiLoop.yawAngleChangeSinceBaseSpeed = statsState->pos.trBase[0];
-			haveAntiLoopStats = qtrue;
-		}
-		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCESPEEDSMASH)
-		{
-			forceSpeedSmash = statsState->pos.trBase[1];
-			haveForceSpeedSmash = qtrue;
-		}
-		if (cgs.ttFlags & TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE)
-		{
-			forceJumpCharge = statsState->pos.trDelta[0];
-			haveForceJumpCharge = qtrue;
-		}
-	}
-
-	cg.strafehelperVelocityIsInterpolated = qfalse;
-
 	// demo playback just copies the moves
-	if (cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer == 2)
-	{
-		if (!haveAntiLoopStats)
-		{
-			if (cg.antiLoopLastCommandTime < cg.snap->ps.commandTime)
-			{
-				DF_AntiLoop_NewAngle(&cg.antiLoop, cg.antiLoopInferredLastVelocity, cg.snap->ps.velocity, cg.snap->ps.basespeed, cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE] && cg.snap->ps.duelTime);
-				cg.antiLoopLastCommandTime = cg.snap->ps.commandTime;
-				VectorCopy(cg.snap->ps.velocity, cg.antiLoopInferredLastVelocity);
-			}
-		}
-		CG_InterpolatePlayerState(qfalse, cg.strafehelperRealVel);
-		cg.strafehelperVelocityIsInterpolated = qtrue; // realaccel helper will spazz out with interpolated velocities
-		cg.strafehelperPredictedPlayerState = cg.predictedPlayerState;
+	if ( cg.demoPlayback || (cg.snap->ps.pm_flags & PMF_FOLLOW) || cg_nopredict.integer == 2 ) {
+		CG_InterpolatePlayerState( qfalse );
 		return;
 	}
 
 	// non-predicting local movement will grab the latest angles
-	if (cg_nopredict.integer || cg_synchronousClients.integer)
-	{
-		if (!haveAntiLoopStats)
-		{
-			if (cg.antiLoopLastCommandTime < cg.snap->ps.commandTime)
-			{
-				DF_AntiLoop_NewAngle(&cg.antiLoop, cg.antiLoopInferredLastVelocity, cg.snap->ps.velocity, cg.snap->ps.basespeed, cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE] && cg.snap->ps.duelTime);
-				cg.antiLoopLastCommandTime = cg.snap->ps.commandTime;
-				VectorCopy(cg.snap->ps.velocity, cg.antiLoopInferredLastVelocity);
-			}
-		}
-		CG_InterpolatePlayerState(qtrue, cg.strafehelperRealVel);
-		cg.strafehelperVelocityIsInterpolated = qtrue; // realaccel helper will spazz out with interpolated velocities
-		cg.strafehelperPredictedPlayerState = cg.predictedPlayerState;
+	if ( cg_nopredict.integer || cg_synchronousClients.integer ) {
+		CG_InterpolatePlayerState( qtrue );
 		return;
 	}
 
-	extraPredictRestoreAntiloop = cg.antiLoop;
-
 	// prepare for pmove
 	cg_pmove.ps = &cg.predictedPlayerState;
-	cg_pmove.mineSwitchFix = !!(cgs.ttFlagsGp & TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX);
 	cg_pmove.trace = CG_Trace;
-	cg_pmove.rawtrace = CG_RawTrace;
-	cg_pmove.q2Skims = cg_q2Skims.integer;
-	cg_pmove.q2trace = cg_q2trace.integer == 2 ? CG_TraceQ2Style : (cg_q2trace.integer ? CG_TraceQ2StyleLite : 0);
-	cg_pmove.q2TraceStyle = cg_q2trace.integer;
 	cg_pmove.pointcontents = CG_PointContents;
-	if (cg_pmove.ps->pm_type == PM_DEAD)
-	{
+	if ( cg_pmove.ps->pm_type == PM_DEAD ) {
 		cg_pmove.tracemask = MASK_PLAYERSOLID & ~CONTENTS_BODY;
 	}
-	else
-	{
+	else {
 		cg_pmove.tracemask = MASK_PLAYERSOLID;
 	}
-	if (cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
-	{
-		cg_pmove.tracemask &= ~CONTENTS_BODY; // spectators can fly through bodies
+	if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) {
+		cg_pmove.tracemask &= ~CONTENTS_BODY;	// spectators can fly through bodies
 	}
-	cg_pmove.noFootsteps = (cgs.dmflags & DF_NO_FOOTSTEPS) > 0;
+	cg_pmove.noFootsteps = ( cgs.dmflags & DF_NO_FOOTSTEPS ) > 0;
 
 	// save the state before the pmove so we can detect transitions
 	oldPlayerState = cg.predictedPlayerState;
@@ -1181,317 +697,126 @@ void CG_PredictPlayerState(void)
 	// can't accurately predict a current position, so just freeze at
 	// the last good position we had
 	cmdNum = current - REAL_CMD_BACKUP + 1;
-	trap_GetUserCmd(cmdNum, &oldestCmd);
-	if (oldestCmd.serverTime > cg.snap->ps.commandTime && oldestCmd.serverTime < cg.time)
-	{ // special check for map_restart
-		if (cg_showmiss.integer)
-		{
-			CG_Printf("exceeded PACKET_BACKUP on commands\n");
+	trap_GetUserCmd( cmdNum, &oldestCmd );
+	if ( oldestCmd.serverTime > cg.snap->ps.commandTime 
+		&& oldestCmd.serverTime < cg.time ) {	// special check for map_restart
+		if ( cg_showmiss.integer ) {
+			CG_Printf ("exceeded PACKET_BACKUP on commands\n");
 		}
 		return;
 	}
 
 	// get the latest command so we can know which commands are from previous map_restarts
-	trap_GetUserCmd(current, &latestCmd);
+	trap_GetUserCmd( current, &latestCmd );
 
 	// get the most recent information we have, even if
 	// the server time is beyond our current cg.time,
-	// because predicted player positions are going to
+	// because predicted player positions are going to 
 	// be ahead of everything else anyway
-	// if (cg_optimizedPredict.integer) { // this doesnt rly work..
-	//	// From SaberMod
-	//	if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport) {
-	//		baseSnap = cg.nextSnap;
-	//	}
-	//	else {
-	//		baseSnap = cg.snap;
-	//	}
-
-	//	// don't recalculalate if base playerState hasn't changed
-	//	if (baseSnap->serverTime != cg.predictionBaseTime) {
-	//		cg.predictedPlayerState = baseSnap->ps;
-	//		cg.physicsTime = baseSnap->serverTime;
-	//		cg.predictionBaseTime = baseSnap->serverTime;
-	//	}
-	//	else {
-	//		// restore origin unaffected by BG_AdjustPositionForMover
-	//		VectorCopy(cg.predictedPlayerOrigin, cg.predictedPlayerState.origin);
-	//	}
-	//} else
-	{
-		if (cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport)
-		{
-			cg.predictedPlayerState = cg.nextSnap->ps;
-			extraPredictRestorePs = &cg.nextSnap->ps;
-			extraPredictRestorePhysicsTime = cg.nextSnap->serverTime;
-			cg.physicsTime = cg.nextSnap->serverTime;
-			usingNextSnap = qtrue;
-		}
-		else
-		{
-			cg.predictedPlayerState = cg.snap->ps;
-			extraPredictRestorePs = &cg.snap->ps;
-			extraPredictRestorePhysicsTime = cg.snap->serverTime;
-			cg.physicsTime = cg.snap->serverTime;
-		}
+	if ( cg.nextSnap && !cg.nextFrameTeleport && !cg.thisFrameTeleport ) {
+		cg.predictedPlayerState = cg.nextSnap->ps;
+		cg.physicsTime = cg.nextSnap->serverTime;
+	} else {
+		cg.predictedPlayerState = cg.snap->ps;
+		cg.physicsTime = cg.snap->serverTime;
 	}
 
-	cg_pmove.haveForceSpeedSmash = haveForceSpeedSmash;
-	if (haveForceSpeedSmash)
-	{
-		cg.predictedPlayerState.fd.forceSpeedSmash = forceSpeedSmash; // TA: Nicer force speed prediction :)
+	//JAPRO - Clientside - Unlock Pmove bounds - Start 
+	if ( cg_pmove_msec.integer < 2 ) {
+		trap_Cvar_Set("pmove_msec", "2");
 	}
-	if (haveForceJumpCharge)
-	{
-		cg.predictedPlayerState.fd.forceJumpCharge = forceJumpCharge; // TA: Charge jump movement style prediction
-	}
-
-	if (cg_strafeHelper.integer && latestCmd.serverTime == cg.predictedPlayerState.commandTime /* && !cg_optimizedPredict.integer*/)
-	{
-		// we won't be doing a prediction.
-		// so normally we couldn't get proper strafehelper data here because for that we need to evaluate one frame (we need viewangles after, but velocity before pmove)
-		// so quickly do a prediction from an older state (if available) and then when we reach the proper time, we will
-		// switch the real deal.
-		if (usingNextSnap && cg.snap && cg.snap->ps.commandTime < cg.predictedPlayerState.commandTime && cg.snap->ps.commandTime >= oldestCmd.serverTime)
-		{
-			cg.predictedPlayerState = cg.snap->ps;
-			cg.physicsTime = cg.snap->serverTime;
-			doingStrafeHelperExtraPredict = qtrue;
-			if (cg_developer.integer > 5)
-			{
-				Com_Printf("Doing strafehelper extra predict from snap instead of nextSnap.");
-			}
-		}
-		else if (oldPlayerState.commandTime < cg.predictedPlayerState.commandTime && oldPlayerState.commandTime >= oldestCmd.serverTime)
-		{
-			cg.predictedPlayerState = oldPlayerState;
-			// cg.physicsTime = cg.snap->serverTime; // uh can i make this work? idk. but for purposes of strafehelper it hopefully wont hurt us too much if this is wrong
-			doingStrafeHelperExtraPredict = qtrue;
-			if (cg_developer.integer > 5)
-			{
-				Com_Printf("Doing strafehelper extra predict from old PS.");
-			}
-		}
-		else
-		{
-			if (cg_developer.integer > 5)
-			{
-				Com_Printf("Cannot do strafehelper extra predict. Strafehelper will be wrong.");
-			}
-		}
-	}
-
-restartpredict:
-	cg.hyperspace = qfalse;			 // will be set if touching a trigger_teleport
-	cg.teleporterPredicted = qfalse; // teleporter was predicted so ignore areamask
-
-	if (haveAntiLoopStats)
-	{
-		cg.antiLoopLastCommandTime = cg.predictedPlayerState.commandTime;
-	}
-
-	// JAPRO - Clientside - Unlock Pmove bounds - Start
-	if (cg_pmove_msec.integer < 1)
-	{
-		trap_Cvar_Set("pmove_msec", "1");
-	}
-	else if (cg_pmove_msec.integer > 66)
-	{
+	else if (cg_pmove_msec.integer > 66) {
 		trap_Cvar_Set("pmove_msec", "66");
 	}
-	// JAPRO - Clientside - Unlock Pmove bounds - End
+	//JAPRO - Clientside - Unlock Pmove bounds - End 
 
-	cg_pmove.pmove_fixed = cg_pmove_fixed.integer; // | cg_pmove_fixed.integer;
+	cg_pmove.pmove_fixed = cg_pmove_fixed.integer;// | cg_pmove_fixed.integer;
 	cg_pmove.pmove_msec = cg_pmove_msec.integer;
 	cg_pmove.pmove_float = cg_pmove_float.integer;
 
-	cg_pmove.debugLevel = cg_debugMove.integer;
-	cg_pmove.isSpecialPredict = qfalse;
-
-	cg_pmove.highFpsFix = (cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX);
-
-	cg_pmove.mod = cgs.isTommyTernal ? SVMOD_TOMMYTERNAL : (cgs.isJK2Pro ? SVMOD_JK2PRO : SVMOD_NONE_UNKNOWN);
-
-	VectorClear(oldPos);
-
 	// run cmds
 	moved = qfalse;
-	lastCmdWasWrongFps = qfalse;
-	for (cmdNum = MAX(current - REAL_CMD_BACKUP + 1, 0); cmdNum <= (current + 1); cmdNum++)
-	{
-		if (cmdNum > current)
-		{
+	for ( cmdNum = current - REAL_CMD_BACKUP + 1 ; cmdNum <= current ; cmdNum++ ) {
+		// get the command
+		trap_GetUserCmd( cmdNum, &cg_pmove.cmd );
 
-			preSpecialPredictPlayerState = *cg_pmove.ps;
-			specialPredictPhysicsFpsWasApplied = qtrue;
-
-			// Fucky experimental prediction to try and get com_physicsfps with low values to look smooth(er)
-			if (!cg_specialPredictPhysicsFps.integer || !cg_com_physicsFps.integer)
-				break; // This type of prediction is disabled.
-			if (physicsFpsTargetTime == latestCmd.serverTime)
-				break; // Nothing to further predict
-			if (lastCmdWasWrongFps)
-				break; // avoid jittering if server is blocking us from moving based on wrong fps value
-
-			if (cg_specialPredictPhysicsFps.integer)
-			{
-
-				trap_GetUserCmd(current, &cg_pmove.cmd);
-			}
-			if (cg_specialPredictPhysicsFps.integer & 1)
-			{ // Give more up to date view angles (nice on higher fps)
-				if (coolApi & COOL_APIFEATURE_GETTEMPORARYUSERCMD)
-				{
-					trap_GetUserCmd(-1, &temporaryCmd);
-					if (temporaryCmd.serverTime > cg_pmove.cmd.serverTime && temporaryCmd.serverTime <= physicsFpsTargetTime)
-					{
-						VectorCopy(temporaryCmd.angles, cg_pmove.cmd.angles);
-
-						if (!(cg_specialPredictPhysicsFps.integer & 2))
-						{ // If we aren't special predicting movement (since that's buggy-ish and leads to prediction errors), only force the view angles.
-							PM_UpdateViewAngles(cg_pmove.ps, &temporaryCmd);
-							if (cg_specialPredictPhysicsFpsAngleCmdTime.integer)
-							{
-								// Stops camera from stuttering when colliding with surrounding objects, but
-								// sadly now stutters around the player :(
-								// Dunno if this can be fixed. Maybe.
-								cg_pmove.ps->commandTime = temporaryCmd.serverTime;
-							}
-						}
-					}
-				}
-			}
-
-			cg_pmove.cmd.serverTime = physicsFpsTargetTime;
-			cg_pmove.cmd.generic_cmd = 0;
-			cg_pmove.isSpecialPredict = qtrue;
-			if (!(cg_specialPredictPhysicsFps.integer & 2))
-				break; // 2 means predict movement (buggy-ish)
-		}
-		else
-		{
-
-			// get the command
-			trap_GetUserCmd(cmdNum, &cg_pmove.cmd);
-		}
-
-		msec = cg_pmove.cmd.serverTime - cg_pmove.ps->commandTime;
-
-		if (cgs.isTommyTernal && cg_pmove.ps->stats[STAT_MSECRESTRICT] > 0 && cg_pmove.ps->stats[STAT_MSECRESTRICT] != msec)
-		{
-			lastCmdWasWrongFps = qtrue;
-		}
-		else
-		{
-			lastCmdWasWrongFps = qfalse;
-		}
-
-		if (cg_pmove.pmove_fixed)
-		{
-			PM_UpdateViewAngles(cg_pmove.ps, &cg_pmove.cmd);
+		if ( cg_pmove.pmove_fixed ) {
+			PM_UpdateViewAngles( cg_pmove.ps, &cg_pmove.cmd );
 		}
 
 		// don't do anything if the time is before the snapshot player time
-		if (cg_pmove.cmd.serverTime <= cg.predictedPlayerState.commandTime)
-		{
-			oldButtons = cg_pmove.cmd.buttons;
-			if (cg_pmove.cmd.serverTime == cg.predictedPlayerState.commandTime && cmdNum < current)
-			{
-				cg.strafehelperPredictedPlayerState = cg.predictedPlayerState;
-			}
+		if ( cg_pmove.cmd.serverTime <= cg.predictedPlayerState.commandTime ) {
 			continue;
 		}
 
 		// don't do anything if the command was from a previous map_restart
-		if (cg_pmove.cmd.serverTime > latestCmd.serverTime && !(cg_specialPredictPhysicsFps.integer && cg_com_physicsFps.integer && latestCmd.serverTime < physicsFpsTargetTime && cg_pmove.cmd.serverTime <= cg.time))
-		{
+		if ( cg_pmove.cmd.serverTime > latestCmd.serverTime ) {
 			continue;
 		}
-
-		cg_pmove.oldButtons = oldButtons;
-		oldButtons = cg_pmove.cmd.buttons;
 
 		// check for a prediction error from last frame
 		// on a lan, this will often be the exact value
 		// from the snapshot, but on a wan we will have
 		// to predict several commands to get to the point
 		// we want to compare
-		if (cg.predictedPlayerState.commandTime == oldPlayerState.commandTime)
-		{
-			vec3_t delta;
-			float len;
+		if ( cg.predictedPlayerState.commandTime == oldPlayerState.commandTime ) {
+			vec3_t	delta;
+			float	len;
 
-			if (cg.thisFrameTeleport)
-			{
+			if ( cg.thisFrameTeleport ) {
 				// a teleport will not cause an error decay
-				VectorClear(cg.predictedError);
-				if (cg_showmiss.integer)
-				{
-					CG_Printf("PredictionTeleport\n");
+				VectorClear( cg.predictedError );
+				if ( cg_showmiss.integer ) {
+					CG_Printf( "PredictionTeleport\n" );
 				}
 				cg.thisFrameTeleport = qfalse;
-			}
-			else
-			{
-				vec3_t adjusted;
-				CG_AdjustPositionForMover(cg.predictedPlayerState.origin,
-										  cg.predictedPlayerState.groundEntityNum, cg.physicsTime, cg.oldTime, adjusted);
+			} else {
+				vec3_t	adjusted;
+				CG_AdjustPositionForMover( cg.predictedPlayerState.origin, 
+					cg.predictedPlayerState.groundEntityNum, cg.physicsTime, cg.oldTime, adjusted );
 
-				if (cg_showmiss.integer)
-				{
-					if (!VectorCompare(oldPlayerState.origin, adjusted))
-					{
+				if ( cg_showmiss.integer ) {
+					if (!VectorCompare( oldPlayerState.origin, adjusted )) {
 						CG_Printf("prediction error\n");
 					}
 				}
-				VectorSubtract(oldPlayerState.origin, adjusted, delta);
-				len = VectorLength(delta);
-				if (len > 0.1)
-				{
-					if (cg_showmiss.integer)
-					{
+				VectorSubtract( oldPlayerState.origin, adjusted, delta );
+				len = VectorLength( delta );
+				if ( len > 0.1 ) {
+					if ( cg_showmiss.integer ) {
 						CG_Printf("Prediction miss: %f\n", len);
 					}
-					if (cg_errorDecay.integer)
-					{
-						int t;
-						float f;
+					if ( cg_errorDecay.integer ) {
+						int		t;
+						float	f;
 
 						t = cg.time - cg.predictedErrorTime;
-						f = (cg_errorDecay.value - t) / cg_errorDecay.value;
-						if (f < 0)
-						{
+						f = ( cg_errorDecay.value - t ) / cg_errorDecay.value;
+						if ( f < 0 ) {
 							f = 0;
 						}
-						if (f > 0 && cg_showmiss.integer)
-						{
+						if ( f > 0 && cg_showmiss.integer ) {
 							CG_Printf("Double prediction decay: %f\n", f);
 						}
-						VectorScale(cg.predictedError, f, cg.predictedError);
+						VectorScale( cg.predictedError, f, cg.predictedError );
+					} else {
+						VectorClear( cg.predictedError );
 					}
-					else
-					{
-						VectorClear(cg.predictedError);
-					}
-					VectorAdd(delta, cg.predictedError, cg.predictedError);
+					VectorAdd( delta, cg.predictedError, cg.predictedError );
 					cg.predictedErrorTime = cg.oldTime;
 				}
 			}
 		}
 
-		if (cg_pmove.pmove_fixed)
-		{
-			cg_pmove.cmd.serverTime = ((cg_pmove.cmd.serverTime + cg_pmove_msec.integer - 1) / cg_pmove_msec.integer) * cg_pmove_msec.integer;
+		if ( cg_pmove.pmove_fixed ) {
+			cg_pmove.cmd.serverTime = ((cg_pmove.cmd.serverTime + cg_pmove_msec.integer-1) / cg_pmove_msec.integer) * cg_pmove_msec.integer;
 		}
 
 		cg_pmove.animations = bgGlobalAnimations;
 
 		cg_pmove.gametype = cgs.gametype;
 
-		cg_pmove.debugMelee = cgs.debugMelee;
-		cg_pmove.unlockRandom = cg_g_unlockRandom.integer;
-
-		for (i = 0; i < MAX_CLIENTS; i++)
+		for ( i = 0 ; i < MAX_CLIENTS ; i++ )
 		{
 			memset(&cgSendPS[i], 0, sizeof(cgSendPS[i]));
 			CG_EntityStateToPlayerState(&cg_entities[i].currentState, &cgSendPS[i]);
@@ -1506,36 +831,17 @@ restartpredict:
 			{
 				vec3_t lockDir, lockAng;
 
-				VectorSubtract(blockOpp->lerpOrigin, cg.snap->ps.origin, lockDir);
-				// lockAng[YAW] = vectoyaw( defDir );
+				VectorSubtract( blockOpp->lerpOrigin, cg.snap->ps.origin, lockDir );
+				//lockAng[YAW] = vectoyaw( defDir );
 				vectoangles(lockDir, lockAng);
 
 				VectorCopy(lockAng, cg_pmove.ps->viewangles);
 			}
 		}
 
-		VectorCopy(cg_pmove.ps->velocity, prePmoveVelocity);
-		cg_pmove.roll = cg.roll;
-		cg_pmove.handleStrafebotSlopes = cg_strafebotSlopeHandling.integer;
-		cg_pmove.positionChangedOutsidePmove = !VectorCompare(cg_pmove.ps->origin, oldPos);
+		Pmove (&cg_pmove);
 
-		if (!cg_pmove.isSpecialPredict && (cg_pmove.cmd.serverTime > cg.antiLoopLastCommandTime || (cg_pmove.cmd.serverTime + 10000) < cg.antiLoopLastCommandTime))
-		{ // the +10000 condition just in case commandtime ever gets reset or similar shenanigans. idk if its a real issue.
-			cg_pmove.antiLoop = cg.antiLoop;
-		}
-		Pmove(&cg_pmove);
-		VectorCopy(cg_pmove.ps->origin, oldPos);
-		cg.roll = cg_pmove.roll;
-		cg.accelMiss = cg_pmove.accelMiss;
-		cg.wishSpeed = cg_pmove.wishSpeed;
-		if (!cg_pmove.isSpecialPredict && (cg_pmove.ps->commandTime > cg.antiLoopLastCommandTime || (cg_pmove.ps->commandTime + 10000) < cg.antiLoopLastCommandTime))
-		{ // the +10000 condition just in case commandtime ever gets reset or similar shenanigans. idk if its a real issue.
-			cg.antiLoop = cg_pmove.antiLoop;
-			DF_AntiLoop_NewAngle(&cg.antiLoop, cg_pmove.lastAntiLoopVelocity, cg_pmove.ps->velocity, cg_pmove.ps->basespeed, cgs.isTommyTernal && cg_pmove.ps->stats[STAT_RACEMODE] && cg_pmove.ps->duelTime);
-			cg.antiLoopLastCommandTime = cg_pmove.ps->commandTime;
-		}
-
-		for (i = 0; i < MAX_CLIENTS; i++)
+		for ( i = 0 ; i < MAX_CLIENTS ; i++ )
 		{
 			cg_entities[i].currentState.torsoAnim = cgSendPS[i].torsoAnim;
 			cg_entities[i].currentState.legsAnim = cgSendPS[i].legsAnim;
@@ -1546,68 +852,30 @@ restartpredict:
 		moved = qtrue;
 
 		// add push trigger movement effects
-		CG_TouchTriggerPrediction((cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_JUMPPADCOMPENSATE)) ? (cg.predictedPlayerState.stats[STAT_MSECRESTRICT] == -2 ? -2 : msec) : 0, cg_pmove.isSpecialPredict);
+		CG_TouchTriggerPrediction();
 
 		// check for predictable events that changed from previous predictions
-		// CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
-
-		if (cmdNum == (current - 1))
-		{
-			cg.strafehelperPredictedPlayerState = cg.predictedPlayerState; // strafehelper must work with previous ps to see whats rly going on
-		}
-		else if (cmdNum == current)
-		{
-			// need velociity from before but vieiwangles from after (cuz they get set from usercmd during pmove)
-			VectorCopy(cg.predictedPlayerState.viewangles, cg.strafehelperPredictedPlayerState.viewangles);
-		}
-
-		if (doingStrafeHelperExtraPredict && cg.predictedPlayerState.commandTime == extraPredictRestorePs->commandTime)
-		{
-			cg.predictedPlayerState = *extraPredictRestorePs;
-			cg.physicsTime = extraPredictRestorePhysicsTime;
-			cg.antiLoop = extraPredictRestoreAntiloop;
-			goto restartpredict;
-		}
-
-		if (cmdNum > current)
-		{
-			// We only want the new positions from the special predict, leave animations alone to avoid misprediction glitches.
-			cg_pmove.ps->legsAnim = preSpecialPredictPlayerState.legsAnim;
-			cg_pmove.ps->torsoAnim = preSpecialPredictPlayerState.torsoAnim;
-			cg_pmove.ps->legsAnimExecute = preSpecialPredictPlayerState.legsAnimExecute;
-		}
+		//CG_CheckChangedPredictableEvents(&cg.predictedPlayerState);
 	}
 
-	CG_COOL_API_SetPredictedMovement(specialPredictPhysicsFpsWasApplied ? &preSpecialPredictPlayerState : &cg.predictedPlayerState);
-
-	if (cg_showmiss.integer > 1)
-	{
-		CG_Printf("[%i : %i] ", cg_pmove.cmd.serverTime, cg.time);
+	if ( cg_showmiss.integer > 1 ) {
+		CG_Printf( "[%i : %i] ", cg_pmove.cmd.serverTime, cg.time );
 	}
 
-	if (!moved)
-	{
-		if (cg_showmiss.integer)
-		{
-			CG_Printf("not moved\n");
+	if ( !moved ) {
+		if ( cg_showmiss.integer ) {
+			CG_Printf( "not moved\n" );
 		}
 		return;
 	}
 
-	// if (cg_optimizedPredict.integer) {
-	//	// save origin before CG_AdjustPositionForMover
-	//	VectorCopy(cg.predictedPlayerState.origin, cg.predictedPlayerOrigin);
-	// }
-
 	// adjust for the movement of the groundentity
-	CG_AdjustPositionForMover(cg.predictedPlayerState.origin,
-							  cg.predictedPlayerState.groundEntityNum,
-							  cg.physicsTime, cg.time, cg.predictedPlayerState.origin);
+	CG_AdjustPositionForMover( cg.predictedPlayerState.origin, 
+		cg.predictedPlayerState.groundEntityNum, 
+		cg.physicsTime, cg.time, cg.predictedPlayerState.origin );
 
-	if (cg_showmiss.integer)
-	{
-		if (cg.predictedPlayerState.eventSequence > oldPlayerState.eventSequence + MAX_PS_EVENTS)
-		{
+	if ( cg_showmiss.integer ) {
+		if (cg.predictedPlayerState.eventSequence > oldPlayerState.eventSequence + MAX_PS_EVENTS) {
 			CG_Printf("WARNING: dropped event\n");
 		}
 	}
@@ -1615,20 +883,14 @@ restartpredict:
 	cg.predictedTimeFrac = 0.0f;
 
 	// fire events and other transition triggered things
-	CG_TransitionPlayerState(&cg.predictedPlayerState, &oldPlayerState);
+	CG_TransitionPlayerState( &cg.predictedPlayerState, &oldPlayerState );
 
-	if (cg_showmiss.integer)
-	{
-		if (cg.eventSequence > cg.predictedPlayerState.eventSequence)
-		{
+	if ( cg_showmiss.integer ) {
+		if (cg.eventSequence > cg.predictedPlayerState.eventSequence) {
 			CG_Printf("WARNING: double event\n");
 			cg.eventSequence = cg.predictedPlayerState.eventSequence;
 		}
 	}
-
-	// V24 Enhanced Features - Process auto-gameplay systems
-	if (cg_autoDefense.integer && AUTO_GAMEPLAY_ENABLED)
-	{
-		CG_ProcessAutoGameplay();
-	}
 }
+
+

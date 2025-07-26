@@ -1,23 +1,10 @@
 #include "q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
-#if JK2_CGAME
-#include "../cgame/cg_local.h"
-#endif
 
-int PM_irand_timesync(int val1, int val2,qboolean useDefault, int defaultValue)
+int PM_irand_timesync(int val1, int val2)
 {
 	int i;
-
-	if (useDefault) {
-//#ifdef DEBUG
-//		// find bad calls: PM_irand_timesync\s*\([^,]+,\s*([^,\s]+)\s*,[^,]+,\s*\1\s*\)
-//		if (defaultValue >= val2 || defaultValue < val1) {
-//			Com_Printf("PM_irand_timesync(%d,%d,%d,%d), bad call", val1, val2, useDefault, defaultValue);
-//		}
-//#endif
-		return defaultValue;
-	}
 
 	i = (val1-1) + (Q_random( &pml.seed )*(val2 - val1)) + 1;
 	if (i < val1)
@@ -32,38 +19,10 @@ int PM_irand_timesync(int val1, int val2,qboolean useDefault, int defaultValue)
 	return i;
 }
 
-int BG_GetMovePhysics(playerState_t* ps)
-{
-	if (!ps)
-		return MV_JK2;
-#if JK2_GAME
-	if (ps->stats[STAT_RACEMODE])
-		return (ps->stats[STAT_MOVEMENTSTYLE]);
-	//else if ((g_movementStyle.integer >= MV_SIEGE && g_movementStyle.integer <= MV_WSW) || g_movementStyle.integer == MV_SP)
-	//	return (g_movementStyle.integer);
-	//else if (g_movementStyle.integer < MV_SIEGE)
-	//	return 0;
-	//else if (g_movementStyle.integer >= MV_NUMSTYLES)
-	//	return MV_JK2;
-#elif JK2_CGAME
-	if (cgs.isJK2Pro) {
-		return ps->stats[STAT_MOVEMENTSTYLE];
-	}
-	if (cgs.isTommyTernal && ps->stats[STAT_RACEMODE]) {
-		if (!ps) return MV_JK2; // not sure why this is needed. from japro.
-		return ps->stats[STAT_MOVEMENTSTYLE];
-	}
-	//if (cgs.gametype == GT_SIEGE)
-	//	return MV_SIEGE;
-#endif
-	return MV_JK2; // this can happen when we die in racemode too!
-}
-
 void BG_ForcePowerDrain( playerState_t *ps, forcePowers_t forcePower, int overrideAmt )
 {
 	//take away the power
 	int	drain = overrideAmt;
-	int moveStyle = BG_GetMovePhysics(ps);
 
 	/*
 	if (ps->powerups[PW_FORCE_BOON])
@@ -82,7 +41,7 @@ void BG_ForcePowerDrain( playerState_t *ps, forcePowers_t forcePower, int overri
 		return;
 	}
 
-	if (forcePower == FP_LEVITATION && moveStyle != MV_CHARGEJUMP)
+	if (forcePower == FP_LEVITATION)
 	{ //special case
 		int jumpDrain = 0;
 
@@ -130,17 +89,6 @@ void BG_ForcePowerDrain( playerState_t *ps, forcePowers_t forcePower, int overri
 	{
 		ps->fd.forcePower = 0;
 	}
-}
-
-qboolean BG_EnoughForcePowerForMove(int cost)
-{
-	if (pm->ps->fd.forcePower < cost)
-	{
-		PM_AddEvent(EV_NOAMMO);
-		return qfalse;
-	}
-
-	return qtrue;
 }
 
 // Silly, but I'm replacing these macros so they are shorter!
@@ -301,10 +249,6 @@ saberMoveData_t	saberMoveData[LS_MOVE_MAX] = {//							NB:randomized
 	{"Reflect UL",	BOTH_P1_S1_TR,		Q_R,	Q_TL,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_BL2TR,		LS_A_TR2BL,		300	},	// LS_PARRY_UL,
 	{"Reflect LR",	BOTH_P1_S1_BR,		Q_R,	Q_BL,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_TR2BL,		LS_A_BL2TR,		300	},	// LS_PARRY_LR
 	{"Reflect LL",	BOTH_P1_S1_BL,		Q_R,	Q_BR,	AFLAG_ACTIVE,	50,		BLK_WIDE,	LS_R_TL2BR,		LS_A_BR2TL,		300	},	// LS_PARRY_LL,
-
-	// JKA cartwheels
-	{ "DualJumpAtkL_A",BOTH_ARIAL_LEFT,	Q_R,	Q_TL,	AFLAG_ACTIVE,	100,	BLK_TIGHT,	LS_READY,		LS_A_TL2BR,		200 },	// LS_JUMPATTACK_ARIAL_LEFT
-	{ "DualJumpAtkR_A",BOTH_ARIAL_RIGHT,Q_R,	Q_TR,	AFLAG_ACTIVE,	100,	BLK_TIGHT,	LS_READY,		LS_A_TR2BL,		200 },	// LS_JUMPATTACK_ARIAL_RIGHT
 };
 
 
@@ -427,7 +371,7 @@ qboolean PM_SaberKataDone(int curmove, int newmove);
 int PM_SaberAnimTransitionAnim( int curmove, int newmove )
 {
 	int retmove = newmove;
-	if (curmove == LS_READY || !pm->modParms.raceMode && pm->mineSwitchFix &&BG_SaberInIdle(curmove)) // in racemode we stay on vanilla behavior always. prolly irrelevant but eh
+	if ( curmove == LS_READY )
 	{//just standing there
 		switch ( newmove )
 		{
@@ -752,8 +696,8 @@ int PM_SaberAttackChainAngle( int move1, int move2 )
 
 qboolean PM_SaberKataDone_1_02( void )
 {
-	if ( (pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0 )) ||
-		( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 + pml.randomAdd, pm->modParms.raceMode, 4) ) )
+	if ( (pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 )) ||
+		( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 ) ) )
 	{
 		return qtrue;
 	}
@@ -766,12 +710,12 @@ qboolean PM_SaberKataDone(int curmove, int newmove)
 	{
 		if ( curmove == LS_NONE || newmove == LS_NONE )
 		{
-			if ( pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0) )
+			if ( pm->ps->fd.saberAnimLevel >= FORCE_LEVEL_3 && pm->ps->saberAttackChainCount > PM_irand_timesync( 0, 1 ) )
 			{
 				return qtrue;
 			}
 		}
-		else if ( pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 3 + pml.randomAdd, pm->modParms.raceMode, 2) )
+		else if ( pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 3 ) )
 		{
 			return qtrue;
 		}
@@ -818,12 +762,12 @@ qboolean PM_SaberKataDone(int curmove, int newmove)
 				chainTolerance = 3;
 			}
 
-			if (pm->ps->saberAttackChainCount >= chainTolerance && PM_irand_timesync(1, pm->ps->saberAttackChainCount + pml.randomAdd, pm->modParms.raceMode, pm->ps->saberAttackChainCount-1) > chainTolerance)
+			if (pm->ps->saberAttackChainCount >= chainTolerance && PM_irand_timesync(1, pm->ps->saberAttackChainCount) > chainTolerance)
 			{
 				return qtrue;
 			}
 		}
-		if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 + pml.randomAdd, pm->modParms.raceMode, 4) )
+		if ( pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 && pm->ps->saberAttackChainCount > PM_irand_timesync( 2, 5 ) )
 		{
 			return qtrue;
 		}
@@ -959,9 +903,9 @@ void PM_SaberLockBreak( playerState_t *genemy, qboolean victory )
 	}
 	else
 	{
-		if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0) : PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0)) )
+		if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 ) : PM_irand_timesync( 0, 1 )) )
 		{
-			BG_AddPredictableEventToPlayerstate(EV_JUMP, PM_irand_timesync( 0, 75 + pml.randomAdd, pm->modParms.raceMode, 74), genemy); // what is this eventparm? doesnt seem used for anything?
+			BG_AddPredictableEventToPlayerstate(EV_JUMP, PM_irand_timesync( 0, 75 ), genemy);
 		}
 	}
 }
@@ -1016,7 +960,7 @@ void PM_SaberLocked( void )
 	
 				currentFrame = pm->ps->saberLockFrame;
 
-				strength = NONETWORK_FORCEPOWERLEVEL(pm->ps,FP_SABERATTACK)+1;
+				strength = pm->ps->fd.forcePowerLevel[FP_SABERATTACK]+1;
 
 				if ( (pm->ps->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_CCWCIRCLELOCK ||
 					(pm->ps->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_BF2LOCK )
@@ -1049,7 +993,7 @@ void PM_SaberLocked( void )
 						remaining = anim->firstFrame+anim->numFrames-curFrame;
 					}
 				}
-				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1) : PM_irand_timesync( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1)) )
+				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 ) : PM_irand_timesync( 0, 2 )) )
 				{
 					PM_AddEvent( EV_JUMP );
 				}
@@ -1064,7 +1008,7 @@ void PM_SaberLocked( void )
 			if ( (genemy->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_CWCIRCLELOCK ||
 				(genemy->torsoAnim&~ANIM_TOGGLEBIT) == BOTH_BF1LOCK )
 			{
-				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1) : PM_irand_timesync( 0, 2 + pml.randomAdd, pm->modParms.raceMode, 1)) )
+				if ( !(jk2gameplay == VERSION_1_02 ? Q_irand( 0, 2 ) : PM_irand_timesync( 0, 2 )) )
 				{
 					BG_AddPredictableEventToPlayerstate(EV_PAIN, floor((float)80/100*100.0f), genemy);
 				}
@@ -1141,7 +1085,7 @@ qboolean PM_CanBackstab(void)
 	back[1] = pm->ps->origin[1] - fwd[1]*BACK_STAB_DISTANCE;
 	back[2] = pm->ps->origin[2] - fwd[2]*BACK_STAB_DISTANCE;
 
-	pm->rawtrace(&tr, pm->ps->origin, trmins, trmaxs, back, pm->ps->clientNum, MASK_PLAYERSOLID);
+	pm->trace(&tr, pm->ps->origin, trmins, trmaxs, back, pm->ps->clientNum, MASK_PLAYERSOLID);
 
 	if (tr.fraction != 1.0 && tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS)
 	{ //We don't have real entity access here so we can't do an indepth check. But if it's a client and it's behind us, I guess that's reason enough to stab backward
@@ -1196,7 +1140,7 @@ saberMoveName_t PM_SaberFlipOverAttackMove(trace_t *tr)
 	pm->ps->fd.forceJumpSound = 1;
 	pm->cmd.upmove = 0;
 
-	if ( ((jk2gameplay == VERSION_1_02 && !pm->unlockRandom) ? Q_irand( 0, 1, pm->modParms.raceMode, 0) : PM_irand_timesync( 0, 1 + pml.randomAdd, pm->modParms.raceMode, 0)) ) // if we unlock random make sure we are synced. normally just 0 always anyway so nothing changes (except for esoteric qvm random propagation which for our little experiment we'll ignore)
+	if ( (jk2gameplay == VERSION_1_02 ? Q_irand( 0, 1 ) : PM_irand_timesync( 0, 1 )) )
 	{
 		return LS_A_FLIP_STAB;
 	}
@@ -1255,9 +1199,6 @@ saberMoveName_t PM_SaberJumpAttackMove( void )
 	VectorCopy( pm->ps->viewangles, fwdAngles );
 	fwdAngles[PITCH] = fwdAngles[ROLL] = 0;
 	AngleVectors( fwdAngles, jumpFwd, NULL, NULL );
-
-	// TODO MAYBE jaPRO thingie
-
 	VectorScale( jumpFwd, 300, pm->ps->velocity );
 	pm->ps->velocity[2] = 280;
 	PM_SetForceJumpZStart(pm->ps->origin[2]);//so we don't take damage if we land at same height
@@ -1285,70 +1226,13 @@ float PM_GroundDistance(void)
 	return VectorLength(down);
 }
 
-#define SABER_ALT_ATTACK_POWER		50//75?
-#define SABER_ALT_ATTACK_POWER_LR	10//30?
-#define SABER_ALT_ATTACK_POWER_FB	25//30/50?
-
-
 saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 {
 	saberMoveName_t newmove = LS_INVALID;
 
 	if ( pm->cmd.rightmove > 0 )
 	{//moving right
-		if (//!noSpecials
-			(pm->modParms.runFlags & RFL_CLIMBTECH)
-			//&& overrideJumpRightAttackMove != LS_NONE
-			&& pm->ps->velocity[2] > 20.0f //pm->ps->groundEntityNum != ENTITYNUM_NONE//on ground
-			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
-			&& PM_GroundDistance() < 70.0f //not too high above ground
-			&& (pm->cmd.upmove > 0 || (pm->ps->pm_flags & PMF_JUMP_HELD))//focus-holding player
-			&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
-			)
-		{//cartwheel right
-			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF)) { //dunno why do this if they cant cart..?
-				BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
-			//}
-			//if (overrideJumpRightAttackMove != LS_INVALID)
-			//{//overridden with another move
-			//	return overrideJumpRightAttackMove;
-			//}
-			//else 
-			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF))
-			{
-				vec3_t right, fwdAngles;
-
-				VectorSet(fwdAngles, 0.0f, pm->ps->viewangles[YAW], 0.0f);
-
-				AngleVectors(fwdAngles, NULL, right, NULL);
-				pm->ps->velocity[0] = pm->ps->velocity[1] = 0.0f;
-				VectorMA(pm->ps->velocity, 190.0f, right, pm->ps->velocity);
-				//if (pm->ps->fd.saberAnimLevel == SS_STAFF)
-				//{
-				//	newmove = LS_BUTTERFLY_RIGHT;
-				//	pm->ps->velocity[2] = 350.0f;
-				//}
-				//else 
-				//if (allowCartwheels)
-				{
-					//PM_SetJumped( JUMP_VELOCITY, qtrue );
-					PM_AddEvent(EV_JUMP);
-					pm->ps->velocity[2] = 300.0f;
-
-					//if ( !Q_irand( 0, 1 ) )
-					//if (PM_GroundDistance() >= 25.0f)
-					if (1)
-					{
-						newmove = LS_JUMPATTACK_ARIAL_RIGHT;
-					}
-					//else
-					//{
-					//	newmove = LS_JUMPATTACK_CART_RIGHT;
-					//}
-				}
-			}
-		} 
-		else if ( pm->cmd.forwardmove > 0 )
+		if ( pm->cmd.forwardmove > 0 )
 		{//forward right = TL2BR slash
 			newmove = LS_A_TL2BR;
 		}
@@ -1363,59 +1247,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 	}
 	else if ( pm->cmd.rightmove < 0 )
 	{//moving left
-		if (//!noSpecials
-			(pm->modParms.runFlags & RFL_CLIMBTECH)
-			//&& overrideJumpLeftAttackMove != LS_NONE
-			&& pm->ps->velocity[2] > 20.0f //pm->ps->groundEntityNum != ENTITYNUM_NONE//on ground
-			&& (pm->cmd.buttons & BUTTON_ATTACK)//hitting attack
-			&& PM_GroundDistance() < 70.0f //not too high above ground
-			&& (pm->cmd.upmove > 0 || (pm->ps->pm_flags & PMF_JUMP_HELD))//focus-holding player
-			&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_LR)//have enough power
-			)
-		{//cartwheel left
-			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF)) { //dunno why do this if they cant cart..?
-				BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_LR);
-			//}
-
-			//if (overrideJumpLeftAttackMove != LS_INVALID)
-			//{//overridden with another move
-			//	return overrideJumpLeftAttackMove;
-			//}
-			//else 
-			//if (allowCartwheels || (pm->ps->fd.saberAnimLevel == SS_STAFF))
-			{
-				vec3_t right, fwdAngles;
-
-				VectorSet(fwdAngles, 0.0f, pm->ps->viewangles[YAW], 0.0f);
-				AngleVectors(fwdAngles, NULL, right, NULL);
-				pm->ps->velocity[0] = pm->ps->velocity[1] = 0.0f;
-				VectorMA(pm->ps->velocity, -190.0f, right, pm->ps->velocity);
-				//if (pm->ps->fd.saberAnimLevel == SS_STAFF)
-				//{
-				//	newmove = LS_BUTTERFLY_LEFT;
-				//	pm->ps->velocity[2] = 250.0f;
-				//}
-				//else 
-				//if (allowCartwheels)
-				{
-					//PM_SetJumped( JUMP_VELOCITY, qtrue );
-					PM_AddEvent(EV_JUMP);
-					pm->ps->velocity[2] = 350.0f;
-
-					//if ( !Q_irand( 0, 1 ) )
-					//if (PM_GroundDistance() >= 25.0f)
-					if (1)
-					{
-						newmove = LS_JUMPATTACK_ARIAL_LEFT;
-					}
-					//else
-					//{
-					//	newmove = LS_JUMPATTACK_CART_LEFT;
-					//}
-				}
-			}
-		}
-		else if ( pm->cmd.forwardmove > 0 )
+		if ( pm->cmd.forwardmove > 0 )
 		{//forward left = TR2BL slash
 			newmove = LS_A_TR2BL;
 		}
@@ -1435,7 +1267,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			if (pm->ps->fd.saberAnimLevel == FORCE_LEVEL_2 &&
 				pm->ps->velocity[2] > 100 &&
 				PM_GroundDistance() < 32 &&
-				!BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) &&
+				!BG_InSpecialJump(pm->ps->legsAnim) &&
 				(!BG_SaberInSpecialAttack(pm->ps->torsoAnim) || jk2gameplay != VERSION_1_04))
 			{ //FLIP AND DOWNWARD ATTACK
 				trace_t tr;
@@ -1443,25 +1275,6 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 				if (PM_SomeoneInFront(&tr))
 				{
 					newmove = PM_SaberFlipOverAttackMove(&tr);
-				}
-			}
-			else if (
-				(pm->modParms.runFlags & RFL_CLIMBTECH) &&
-				pm->ps->fd.saberAnimLevel == FORCE_LEVEL_3 &&
-				pm->ps->velocity[2] > 100 &&
-				PM_GroundDistance() < 32 &&
-				!BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) &&
-				!BG_SaberInSpecialAttack(pm->ps->torsoAnim) 
-				&& BG_EnoughForcePowerForMove(SABER_ALT_ATTACK_POWER_FB)
-				)
-			{ //DFA (JKA)
-				{
-					newmove = PM_SaberJumpAttackMove();
-					if (newmove != LS_A_T2B
-						&& newmove != LS_NONE)
-					{
-						BG_ForcePowerDrain(pm->ps, FP_GRIP, SABER_ALT_ATTACK_POWER_FB);
-					}
 				}
 			}
 			else if (pm->ps->fd.saberAnimLevel == FORCE_LEVEL_1 &&
@@ -1523,7 +1336,7 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 			//prediction values. Under laggy conditions this will cause the appearance of rapid swing
 			//sequence changes.
 			
-			if ( jk2gameplay == VERSION_1_02 ) newmove = PM_irand_timesync(LS_A_TL2BR, LS_A_T2B + pml.randomAdd, pm->modParms.raceMode, LS_A_TL2BR);
+			if ( jk2gameplay == VERSION_1_02 ) newmove = PM_irand_timesync(LS_A_TL2BR, LS_A_T2B);
 			else							   newmove = LS_A_T2B; //decided we don't like random attacks when idle, use an overhead instead.
 		}
 	}
@@ -1610,7 +1423,7 @@ void PM_WeaponLightsaber(void)
 
 		if (pm->ps->weaponTime < 1 && ((pm->cmd.buttons & BUTTON_ALT_ATTACK) || (pm->cmd.buttons & BUTTON_ATTACK)))
 		{
-			if (pm->ps->duelTime < pm->cmd.serverTime || pm->modParms.raceMode)// && !pm->modParms.raceMode) // is this the correct way to account for racemode?
+			if (pm->ps->duelTime < pm->cmd.serverTime)
 			{
 				pm->ps->saberHolstered = qfalse;
 				PM_AddEvent(EV_SABER_UNHOLSTER);
@@ -1629,16 +1442,15 @@ void PM_WeaponLightsaber(void)
 	if ((pm->cmd.buttons & BUTTON_ALT_ATTACK) &&
 		pm->ps->weaponTime < 1 &&
 		pm->ps->saberCanThrow &&
-		pm->ps->fd.forcePower >= forcePowerNeeded[NONETWORK_FORCEPOWERLEVEL(pm->ps,FP_SABERTHROW)][FP_SABERTHROW] &&
+		pm->ps->fd.forcePower >= forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_SABERTHROW]][FP_SABERTHROW] &&
 		!BG_HasYsalamiri(pm->gametype, pm->ps) &&
-		BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_SABERTHROW) &&
-		!pm->modParms.raceMode // don't throw sabers in racemode, its unpredictable what they will do, and they will affect our force power
+		BG_CanUseFPNow(pm->gametype, pm->ps, pm->cmd.serverTime, FP_SABERTHROW)
 		)
 	{ //might as well just check for a saber throw right here
 		//This will get set to false again once the saber makes it back to its owner game-side
 		if (!pm->ps->saberInFlight)
 		{
-			pm->ps->fd.forcePower -= forcePowerNeeded[NONETWORK_FORCEPOWERLEVEL(pm->ps, FP_SABERTHROW)][FP_SABERTHROW];
+			pm->ps->fd.forcePower -= forcePowerNeeded[pm->ps->fd.forcePowerLevel[FP_SABERTHROW]][FP_SABERTHROW];
 		}
 
 		pm->ps->saberInFlight = qtrue;
@@ -1760,7 +1572,7 @@ void PM_WeaponLightsaber(void)
 						{//player is still in same attack quad, don't repeat that attack because it looks bad, 
 							//FIXME: try to pick one that might look cool?
 							//newQuad = Q_irand( Q_BR, Q_BL );
-							newQuad = PM_irand_timesync( Q_BR, Q_BL + pml.randomAdd, pm->modParms.raceMode, Q_BR); // idk what else to do meh
+							newQuad = PM_irand_timesync( Q_BR, Q_BL );
 							//FIXME: sanity check, just in case?
 						}//else player is switching up anyway, take the new attack dir
 						bounceMove = transitionMove[saberMoveData[pm->ps->saberMove].startQuad][newQuad];
@@ -2028,30 +1840,16 @@ weapChecks:
 					}
 					else
 					{
-						if (pm->modParms.runFlags & RFL_CLIMBTECH) {
-							// flip the order so we can trigger the jka dfa
- 							saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
+						if ( PM_SaberKataDone_1_02() )
+						{//we came from a bounce and cannot chain to another attack because our kata is done
+							newmove = saberMoveData[curmove].chain_idle;
+						}
+						else
+						{
+							saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
 							if (checkMove != LS_INVALID)
 							{
 								newmove = checkMove;
-							}
-							if (PM_SaberKataDone_1_02())
-							{//we came from a bounce and cannot chain to another attack because our kata is done
-								newmove = saberMoveData[curmove].chain_idle;
-							}
-						}
-						else {
-							if (PM_SaberKataDone_1_02())
-							{//we came from a bounce and cannot chain to another attack because our kata is done
-								newmove = saberMoveData[curmove].chain_idle;
-							}
-							else
-							{
-								saberMoveName_t checkMove = PM_SaberAttackForMovement(curmove);
-								if (checkMove != LS_INVALID)
-								{
-									newmove = checkMove;
-								}
 							}
 						}
 					}
@@ -2141,10 +1939,10 @@ weapChecks:
 	}
 	pm->ps->weaponTime = addTime;
 }
-/*
+
 #ifdef JK2_CGAME
 #include "../cgame/cg_local.h" //ahahahahhahahaha@$!$!
-#endif*/
+#endif
 
 void PM_SetSaberMove(short newMove)
 {
@@ -2204,8 +2002,6 @@ void PM_SetSaberMove(short newMove)
 		|| newMove == LS_A_BACK_CR
 		|| newMove == LS_A_FLIP_STAB
 		|| newMove == LS_A_FLIP_SLASH
-		|| newMove == LS_JUMPATTACK_ARIAL_LEFT // JKA cartwheel
-		|| newMove == LS_JUMPATTACK_ARIAL_RIGHT // JKA cartwheel
 		|| jk2gameplay == VERSION_1_02 )
 	{
 		setflags |= SETANIM_FLAG_OVERRIDE;
@@ -2234,20 +2030,13 @@ void PM_SetSaberMove(short newMove)
 		parts = SETANIM_TORSO;
 	}
 
-	if (newMove == LS_JUMPATTACK_ARIAL_RIGHT || // jka cartwheel
-		newMove == LS_JUMPATTACK_ARIAL_LEFT)// jka cartwheel
-	{ //force only on legs
-		parts = SETANIM_LEGS;
-	}
-	else if ( newMove == LS_A_LUNGE
+	if ( newMove == LS_A_LUNGE 
 		|| newMove == LS_A_JUMP_T__B_ 
 		|| newMove == LS_A_BACKSTAB
 		|| newMove == LS_A_BACK
 		|| newMove == LS_A_BACK_CR
 		|| newMove == LS_A_FLIP_STAB
-		|| newMove == LS_A_FLIP_SLASH 
-		|| newMove == LS_JUMPATTACK_ARIAL_LEFT// jka cartwheel
-		|| newMove == LS_JUMPATTACK_ARIAL_RIGHT)// jka cartwheel
+		|| newMove == LS_A_FLIP_SLASH )
 	{
 		parts = SETANIM_BOTH;
 	}
@@ -2261,7 +2050,7 @@ void PM_SetSaberMove(short newMove)
 			!BG_InRoll( pm->ps, pm->ps->legsAnim ) && 
 			!PM_InKnockDown( pm->ps ) && 
 			!PM_JumpingAnim( pm->ps->legsAnim ) &&
-			!BG_InSpecialJump( pm->ps->legsAnim, pm->modParms.runFlags) &&
+			!BG_InSpecialJump( pm->ps->legsAnim ) &&
 			anim != PM_GetSaberStance() &&
 			pm->ps->groundEntityNum != ENTITYNUM_NONE &&
 			!(pm->ps->pm_flags & PMF_DUCKED))
@@ -2276,16 +2065,6 @@ void PM_SetSaberMove(short newMove)
 	PM_SetAnim(parts, anim, (jk2gameplay == VERSION_1_02 ? (setflags|SETANIM_FLAG_HOLD) : setflags), saberMoveData[newMove].blendTime);
 #endif
 
-	if (parts != SETANIM_LEGS && 
-		(pm->ps->legsAnim == BOTH_ARIAL_LEFT ||
-			pm->ps->legsAnim == BOTH_ARIAL_RIGHT)) // can this even ever be true?!
-	{
-		if (pm->ps->legsTimer > pm->ps->torsoTimer)
-		{
-			pm->ps->legsTimer = pm->ps->torsoTimer;
-		}
-	}
-
 	if ( (pm->ps->torsoAnim&~ANIM_TOGGLEBIT) == anim )
 	{//successfully changed anims
 	//special check for *starting* a saber swing
@@ -2297,13 +2076,6 @@ void PM_SetSaberMove(short newMove)
 				PM_AddEvent(EV_SABER_ATTACK);
 			}
 		}
-
-		// just testing this to see if it makes cartwheel climbs easier. eh idk.
-		//if ((runFlags & RFL_CLIMBTECH) && BG_SaberInSpecial(newMove) &&
-		//	pm->ps->weaponTime < pm->ps->torsoTimer)
-		//{ //rww 01-02-03 - I think this will solve the issue of special attacks being interruptable, hopefully without side effects
-		//	pm->ps->weaponTime = pm->ps->torsoTimer;
-		//}
 
 		pm->ps->saberMove = newMove;
 		pm->ps->saberBlocking = saberMoveData[newMove].blocking;

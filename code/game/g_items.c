@@ -157,7 +157,7 @@ void ShieldGoSolid(gentity_t *self)
 		return;
 	}
 	
-	JP_Trace (&tr, self->r.currentOrigin, self->r.mins, self->r.maxs, self->r.currentOrigin, self->s.number, CONTENTS_BODY );
+	trap_Trace (&tr, self->r.currentOrigin, self->r.mins, self->r.maxs, self->r.currentOrigin, self->s.number, CONTENTS_BODY );
 	if(tr.startsolid)
 	{	// gah, we can't activate yet
 		self->nextthink = level.time + 200;
@@ -214,7 +214,7 @@ void ShieldTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 	}
 	else
 	{//let the person who dropped the shield through
-		if ((self->parent && self->parent->s.number == other->s.number) || (other->client && other->client->sess.raceMode))
+		if (self->parent && self->parent->s.number == other->s.number)
 		{
 			ShieldGoNotSolid(self);
 		}
@@ -234,7 +234,7 @@ void CreateShield(gentity_t *ent)
 	// trace upward to find height of shield
 	VectorCopy(ent->r.currentOrigin, end);
 	end[2] += MAX_SHIELD_HEIGHT;
-	JP_Trace (&tr, ent->r.currentOrigin, NULL, NULL, end, ent->s.number, MASK_SHOT );
+	trap_Trace (&tr, ent->r.currentOrigin, NULL, NULL, end, ent->s.number, MASK_SHOT );
 	height = (int)(MAX_SHIELD_HEIGHT * tr.fraction);
 
 	// use angles to find the proper axis along which to align the shield
@@ -258,10 +258,10 @@ void CreateShield(gentity_t *ent)
 	// positive trace
 	VectorCopy(ent->r.currentOrigin, start);
 	start[2] += (height>>1);
-	JP_Trace (&tr, start, 0, 0, posTraceEnd, ent->s.number, MASK_SHOT );
+	trap_Trace (&tr, start, 0, 0, posTraceEnd, ent->s.number, MASK_SHOT );
 	posWidth = MAX_SHIELD_HALFWIDTH * tr.fraction;
 	// negative trace
-	JP_Trace (&tr, start, 0, 0, negTraceEnd, ent->s.number, MASK_SHOT );
+	trap_Trace (&tr, start, 0, 0, negTraceEnd, ent->s.number, MASK_SHOT );
 	negWidth = MAX_SHIELD_HALFWIDTH * tr.fraction;
 
 	// kef -- monkey with dimensions and place origin in center
@@ -307,7 +307,7 @@ void CreateShield(gentity_t *ent)
 	ent->touch = ShieldTouch;
 
 	// see if we're valid
-	JP_Trace (&tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, ent->r.currentOrigin, ent->s.number, CONTENTS_BODY ); 
+	trap_Trace (&tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, ent->r.currentOrigin, ent->s.number, CONTENTS_BODY ); 
 
 	if (tr.startsolid)
 	{	// Something in the way!
@@ -360,13 +360,13 @@ qboolean PlaceShield(gentity_t *playerent)
 	AngleVectors (playerent->client->ps.viewangles, fwd, NULL, NULL);
 	fwd[2] = 0;
 	VectorMA(playerent->client->ps.origin, SHIELD_PLACEDIST, fwd, dest);
-	JP_Trace (&tr, playerent->client->ps.origin, mins, maxs, dest, playerent->s.number, MASK_SHOT );
+	trap_Trace (&tr, playerent->client->ps.origin, mins, maxs, dest, playerent->s.number, MASK_SHOT );
 	if (tr.fraction > 0.9)
 	{//room in front
 		VectorCopy(tr.endpos, pos);
 		// drop to floor
 		VectorSet( dest, pos[0], pos[1], pos[2] - 4096 );
-		JP_Trace( &tr, pos, mins, maxs, dest, playerent->s.number, MASK_SOLID );
+		trap_Trace( &tr, pos, mins, maxs, dest, playerent->s.number, MASK_SOLID );
 		if ( !tr.startsolid && !tr.allsolid )
 		{
 			// got enough room so place the portable shield
@@ -390,7 +390,7 @@ qboolean PlaceShield(gentity_t *playerent)
 
 			shield->s.eType = ET_SPECIAL;
 			shield->s.modelindex =  HI_SHIELD;	// this'll be used in CG_Useable() for rendering.
-			G_SetClassName(shield, shieldItem->classname);
+			shield->classname = shieldItem->classname;
 
 			shield->r.contents = CONTENTS_TRIGGER;
 
@@ -455,7 +455,7 @@ void ItemUse_Binoculars(gentity_t *ent)
 	else if (ent->client->ps.zoomMode == 2)
 	{
 		ent->client->ps.zoomMode = 0;
-		ent->client->ps.zoomTime = LEVELTIME(ent->client);
+		ent->client->ps.zoomTime = level.time;
 	}
 }
 
@@ -571,7 +571,7 @@ static qboolean pas_find_enemies( gentity_t *self )
 			VectorCopy( target->r.currentOrigin, org );
 		}
 
-		JP_Trace( &tr, org2, NULL, NULL, org, self->s.number, MASK_SHOT );
+		trap_Trace( &tr, org2, NULL, NULL, org, self->s.number, MASK_SHOT );
 
 		if ( !tr.allsolid && !tr.startsolid && ( tr.fraction == 1.0 || tr.entityNum == target->s.number ))
 		{
@@ -627,7 +627,7 @@ void pas_adjust_enemy( gentity_t *ent )
 			VectorCopy( ent->enemy->r.currentOrigin, org );
 		}
 
-		JP_Trace( &tr, org2, NULL, NULL, org, ent->s.number, MASK_SHOT );
+		trap_Trace( &tr, org2, NULL, NULL, org, ent->s.number, MASK_SHOT );
 
 		if ( tr.allsolid || tr.startsolid || tr.fraction < 0.9f || tr.entityNum == ent->s.number )
 		{
@@ -996,7 +996,7 @@ void ItemUse_Sentry( gentity_t *ent )
 
 	sentry = G_Spawn();
 
-	G_SetClassName(sentry, "sentryGun");
+	sentry->classname = "sentryGun";
 	sentry->s.modelindex = G_ModelIndex("models/items/psgun.glm"); //replace ASAP
 
 	sentry->s.g2radius = 30.0f;
@@ -1051,11 +1051,10 @@ void ItemUse_Sentry( gentity_t *ent )
 
 void ItemUse_Seeker(gentity_t *ent)
 {
-	int nowTime = LEVELTIME(ent->client);
 	ent->client->ps.eFlags |= EF_SEEKERDRONE;
 
-	ent->client->ps.droneExistTime = nowTime + 30000;
-	ent->client->ps.droneFireTime = nowTime + 1500;
+	ent->client->ps.droneExistTime = level.time + 30000;
+	ent->client->ps.droneFireTime = level.time + 1500;
 }
 
 void ItemUse_MedPack(gentity_t *ent)
@@ -1152,7 +1151,7 @@ int Pickup_Powerup( gentity_t *ent, gentity_t *other ) {
 		}
 
 		// if not line of sight, no sound
-		JP_Trace( &tr, client->ps.origin, NULL, NULL, ent->s.pos.trBase, ENTITYNUM_NONE, CONTENTS_SOLID );
+		trap_Trace( &tr, client->ps.origin, NULL, NULL, ent->s.pos.trBase, ENTITYNUM_NONE, CONTENTS_SOLID );
 		if ( tr.fraction != 1.0 ) {
 			continue;
 		}
@@ -1414,16 +1413,8 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	}
 
 	// the same pickup rules are used for client side and server side
-	if ( !BG_CanItemBeGrabbed( g_gametype.integer, &ent->s, &other->client->ps, other->client->sess.mode ) ) {
-		if (other->client->sess.mode == MODE_IRONMAN) {
-			gitem_t * item = &bg_itemlist[ent->s.modelindex];
-			if (item->giType != IT_TEAM) { // allow ironmanners to grab flags
-				return;
-			}
-		}
-		else {
-			return;
-		}
+	if ( !BG_CanItemBeGrabbed( g_gametype.integer, &ent->s, &other->client->ps ) ) {
+		return;
 	}
 
 	G_LogPrintf( "Item: %i %s\n", other->s.number, ent->item->classname );
@@ -1545,8 +1536,8 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	}
 
 	// random can be used to vary the respawn time
-	if ( ent->random && !(other->client && other->client->sess.raceMode)) {
-		respawn += (crandom() * ent->random);
+	if ( ent->random ) {
+		respawn += crandom() * ent->random;
 		if ( respawn < 1 ) {
 			respawn = 1;
 		}
@@ -1596,7 +1587,7 @@ LaunchItem
 Spawns an item and tosses it forward
 ================
 */
-gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t velocity ) {
+gentity_t *LaunchItem( gitem_t *item, vec3_t origin, vec3_t velocity ) {
 	gentity_t	*dropped;
 
 	dropped = G_Spawn();
@@ -1609,7 +1600,7 @@ gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t 
 	}
 	dropped->s.modelindex2 = 1; // This is non-zero is it's a dropped item
 
-	G_SetClassName(dropped, item->classname);
+	dropped->classname = item->classname;
 	dropped->item = item;
 	VectorSet (dropped->r.mins, -ITEM_RADIUS, -ITEM_RADIUS, -ITEM_RADIUS);
 	VectorSet (dropped->r.maxs, ITEM_RADIUS, ITEM_RADIUS, ITEM_RADIUS);
@@ -1624,11 +1615,7 @@ gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t 
 	VectorCopy( velocity, dropped->s.pos.trDelta );
 
 	dropped->s.eFlags |= EF_BOUNCE_HALF;
-	if (oldOwner && oldOwner->client && oldOwner->client->sess.mode == MODE_IRONMAN && item->giType == IT_TEAM) { // Ironman flags are simplified
-		dropped->think = G_FreeEntity;
-		dropped->nextthink = level.time + IRONMAN_FLAGRESPAWNTIME;
-
-	} else if ((g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) && item->giType == IT_TEAM) { // Special case for CTF flags
+	if ((g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) && item->giType == IT_TEAM) { // Special case for CTF flags
 		dropped->think = Team_DroppedFlagThink;
 		dropped->nextthink = level.time + 30000;
 		Team_CheckDroppedItem( dropped );
@@ -1694,9 +1681,9 @@ gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
 
 	AngleVectors( angles, velocity, NULL, NULL );
 	VectorScale( velocity, 150, velocity );
-	velocity[2] += 200 + ((ent->client && ent->client->sess.raceMode) ? 0 : (crandom() * 50));
+	velocity[2] += 200 + crandom() * 50;
 	
-	return LaunchItem( ent, item, ent->s.pos.trBase, velocity );
+	return LaunchItem( item, ent->s.pos.trBase, velocity );
 }
 
 
@@ -1854,11 +1841,11 @@ void FinishSpawningItem( gentity_t *ent ) {
 
 		//if it is directly even with the floor it will return startsolid, so raise up by 0.1
 		//and temporarily subtract 0.1 from the z maxs so that going up doesn't push into the ceiling
-		ent->s.origin[2] += 0.1f;
-		ent->r.maxs[2] -= 0.1f;
+		ent->s.origin[2] += 0.1;
+		ent->r.maxs[2] -= 0.1;
 
 		VectorSet( dest, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] - 4096 );
-		JP_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
+		trap_Trace( &tr, ent->s.origin, ent->r.mins, ent->r.maxs, dest, ent->s.number, MASK_SOLID );
 		if ( tr.startsolid ) {
 			G_Printf ("FinishSpawningItem: %s startsolid at %s\n", ent->classname, vtos(ent->s.origin));
 			G_FreeEntity( ent );
@@ -1866,7 +1853,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 		}
 
 		//add the 0.1 back after the trace
-		ent->r.maxs[2] += 0.1f;
+		ent->r.maxs[2] += 0.1;
 
 		// allow to ride movers
 		ent->s.groundEntityNum = tr.entityNum;
@@ -2137,15 +2124,13 @@ void G_RunItem( gentity_t *ent ) {
 	// get current position
 	BG_EvaluateTrajectory( &ent->s.pos, level.time, origin );
 
-	trap_UnlinkEntity(ent);	// In the case of my engine trace mod: don't let the entity block itself
-
 	// trace a line from the previous position to the current position
 	if ( ent->clipmask ) {
 		mask = ent->clipmask;
 	} else {
 		mask = MASK_PLAYERSOLID & ~CONTENTS_BODY;//MASK_SOLID;
 	}
-	JP_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, 
+	trap_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, 
 		ent->r.ownerNum, mask );
 
 	VectorCopy( tr.endpos, ent->r.currentOrigin );

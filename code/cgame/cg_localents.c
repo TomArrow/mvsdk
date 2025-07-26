@@ -298,7 +298,7 @@ void CG_AddFragment( localEntity_t *le ) {
 	// if it is in a nodrop zone, remove it
 	// this keeps gibs from waiting at the bottom of pits of death
 	// and floating levels
-	if ( CG_PointContents( trace.endpos, 0 ) & CONTENTS_NODROP ) {
+	if ( trap_CM_PointContents( trace.endpos, 0 ) & CONTENTS_NODROP ) {
 		CG_FreeLocalEntity( le );
 		return;
 	}
@@ -352,36 +352,6 @@ void CG_AddFadeRGB( localEntity_t *le ) {
 	re->shaderRGBA[3] = le->color[3] * c;
 
 	trap_R_AddRefEntityToScene( re );
-}
-
-static void CG_AddFadeModel(localEntity_t* le)
-{
-	refEntity_t* ent = &le->refEntity;
-	float frac;
-
-	if (cg.time < le->startTime)
-	{
-		CG_FreeLocalEntity(le);
-		return;
-	}
-
-	if (!trap_G2_HaveWeGhoul2Models(ent->ghoul2)) { // changed model or sth (this is a speed trail and mp lets us switch models/skins)
-
-		CG_FreeLocalEntity(le);
-		return;
-	}
-
-	frac = 1.0f - ((float)(cg.time - le->startTime) / (float)(le->endTime - le->startTime));
-
-	ent->shaderRGBA[0] = le->color[0] * frac;
-	ent->shaderRGBA[1] = le->color[1] * frac;
-	ent->shaderRGBA[2] = le->color[2] * frac;
-	ent->shaderRGBA[3] = le->color[3] * frac;
-
-	BG_EvaluateTrajectory(&le->pos, cg.time, ent->origin);
-
-	// add the entity
-	trap_R_AddRefEntityToScene(ent);
 }
 
 static void CG_AddFadeScaleModel( localEntity_t *le )
@@ -779,8 +749,6 @@ void CG_AddOLine( localEntity_t *le )
 
 	re->reType = RT_ORIENTEDLINE;
 
-	re->saberLength = alpha != 1.0f ? -1.0 : 0.0f; // tommyternal secret override to always allow setting alpha (engine must support this)
-
 	trap_R_AddRefEntityToScene( re );
 }
 
@@ -831,10 +799,6 @@ void CG_AddLocalEntities( void ) {
 			break;
 
 		case LE_MARK:
-			break;
-
-		case LE_FADE_MODEL:
-			CG_AddFadeModel(le);
 			break;
 
 		case LE_SPRITE_EXPLOSION:

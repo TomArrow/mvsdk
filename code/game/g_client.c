@@ -1,7 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "g_local.h"
-#include "../ghoul2/G2.h"
+#include "../ghoul2/g2.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -18,10 +18,8 @@ Targets will be fired when someone spawns in on them.
 "nohumans" will prevent non-bots from using this spot.
 */
 void SP_info_player_deathmatch( gentity_t *ent ) {
-	int			i;
-	char* s;
+	int		i;
 
-	ent->specialType = "playerspawn";
 	G_SpawnInt( "nobots", "0", &i);
 	if ( i ) {
 		ent->flags |= FL_NO_BOTS;
@@ -30,25 +28,13 @@ void SP_info_player_deathmatch( gentity_t *ent ) {
 	if ( i ) {
 		ent->flags |= FL_NO_HUMANS;
 	}
-	G_SpawnString("spawntype", "", &s);
-	if (s && !Q_stricmp(s,"defrag")) {
-		ent->spawnDefragPriority = 2;
-	}
-	if (level.highestDefragSpawnPriority < ent->spawnDefragPriority) {
-		level.highestDefragSpawnPriority = ent->spawnDefragPriority;
-	}
-	if (ent->notVQ3 || ent->notCPM) {
-		G_Printf("^3Q3 style specific spawn found: %s, notvq3 %d, notcpm %d\n",ent->classname,ent->notVQ3,ent->notCPM);
-		level.hasQ3StyleSpecificSpawns = qtrue;
-	}
 }
 
 /*QUAKED info_player_start (1 0 0) (-16 -16 -24) (16 16 32)
 equivelant to info_player_deathmatch
 */
 void SP_info_player_start(gentity_t *ent) {
-	G_SetClassName(ent, "info_player_deathmatch");
-	ent->spawnDefragPriority = 1;
+	ent->classname = "info_player_deathmatch";
 	SP_info_player_deathmatch( ent );
 }
 
@@ -58,7 +44,7 @@ saga start point - imperial
 void SP_info_player_imperial(gentity_t *ent) {
 	if (g_gametype.integer != GT_SAGA)
 	{ //turn into a DM spawn if not in saga game mode
-		G_SetClassName(ent, "info_player_deathmatch");
+		ent->classname = "info_player_deathmatch";
 		SP_info_player_deathmatch( ent );
 	}
 }
@@ -69,7 +55,7 @@ saga start point - rebel
 void SP_info_player_rebel(gentity_t *ent) {
 	if (g_gametype.integer != GT_SAGA)
 	{ //turn into a DM spawn if not in saga game mode
-		G_SetClassName(ent, "info_player_deathmatch");
+		ent->classname = "info_player_deathmatch";
 		SP_info_player_deathmatch( ent );
 	}
 }
@@ -251,10 +237,10 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 	if (g_spawnInvulnerability.integer)
 	{
 		other->client->ps.eFlags |= EF_INVULNERABLE;
-		other->client->invulnerableTimer = LEVELTIME(other->client) + g_spawnInvulnerability.integer;
+		other->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
 	}
 
-	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")), qtrue, qfalse,qtrue, NULL);
+	G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s\n", other->client->pers.netname, G_GetStripEdString("SVINGAME", "BECOMEJM")) );
 
 	other->client->ps.isJediMaster = qtrue;
 	other->client->ps.saberIndex = self->s.number;
@@ -349,85 +335,32 @@ void SP_info_jedimaster_start(gentity_t *ent)
 
 =======================================================================
 */
-qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other);
+
 /*
 ================
 SpotWouldTelefrag
 
 ================
 */
-qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt) {
+qboolean SpotWouldTelefrag( gentity_t *spot ) {
 	int			i, num;
 	int			touch[MAX_GENTITIES];
 	gentity_t	*hit;
 	vec3_t		mins, maxs;
 
-	VectorAdd(origin, playerMins, mins );
-	VectorAdd(origin, playerMaxs, maxs );
+	VectorAdd( spot->s.origin, playerMins, mins );
+	VectorAdd( spot->s.origin, playerMaxs, maxs );
 	num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
 
 	for (i=0 ; i<num ; i++) {
 		hit = &g_entities[touch[i]];
 		//if ( hit->client && hit->client->ps.stats[STAT_HEALTH] > 0 ) {
 		if ( hit->client) {
-			if (spawningEnt && !ShouldNotCollide(spawningEnt,hit)) {
-				return qtrue;
-			}
+			return qtrue;
 		}
 
 	}
 
-	return qfalse;
-}
-
-#define	MIN_WALK_NORMAL	0.7f		// can't walk on very steep slopes
-#define BUBBLESPAWN_DOWNTRACE 120.0f // we can get up this much with force jump even at 1000fps (121)
-qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
-	vec3_t		original;
-	vec3_t		test,testdown;
-	trace_t		groundTrace;
-	int			height;
-	int			right;
-	int			front;
-	qboolean	errorMsgShown = qfalse;
-
-	VectorCopy(origin, original);
-	for (height = 0; height < 3; height++) {
-		test[2] = original[2]+64.0f*height;
-		testdown[2] = original[2] - BUBBLESPAWN_DOWNTRACE;
-		for (front = -1; front < 2; front++) {
-			testdown[0] = test[0] = original[0]+32.0f*front;
-			for (right = -1; right < 2; right++) {
-				testdown[1] = test[1] = original[1]+32.0f*right;
-				if (!SpotWouldTelefrag(test, spawningEnt)) { // cool, we could spawn here and not kill anyone.
-					JP_Trace(&groundTrace,test,playerMins,playerMaxs,testdown,-1, MASK_PLAYERSOLID | MASK_WATER | CONTENTS_NOSPAWN);
-					if (groundTrace.startsolid || groundTrace.allsolid || (groundTrace.contents & (MASK_WATER | CONTENTS_NOSPAWN))) {
-						continue; // welp, we can't spawn here, in a wall/water/lava/kill trigger or sth
-					}
-					if (groundTrace.fraction == 1.0f) {
-						continue; // nah therer's no ground to stand on
-					}
-					if (groundTrace.fraction == 0.0f) {
-						// this is a weird bug on at least one map i found where you dont get the proper startsolid/allsolid but you get 0 here. its really really odd.
-						//if (g_developer.integer) {
-						if (!errorMsgShown) {
-							Com_Printf("^1WiggleSpotTelefrag: Fraction is 0 but startsolid and allsolid are false. Skipping spawn.\n"); // debug buut it spams :/ screw it
-							errorMsgShown = qtrue;
-						}
-						//}
-						continue;
-					}
-					if (groundTrace.plane.normal[2] < MIN_WALK_NORMAL) {
-						continue; // we'd slide down.
-					}
-					VectorCopy(test, origin);
-					//JP_Trace(&groundTrace, test, playerMins, playerMaxs, testdown, -1, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN); // debug
-					return qtrue;
-				}
-			}
-		}
-	}
-	VectorCopy(original, origin);
 	return qfalse;
 }
 
@@ -449,7 +382,7 @@ gentity_t *SelectNearestDeathmatchSpawnPoint( vec3_t from ) {
 	nearestSpot = NULL;
 	spot = NULL;
 
-	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
+	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
 
 		VectorSubtract( spot->s.origin, from, delta );
 		dist = VectorLength( delta );
@@ -471,7 +404,7 @@ go to a random point that doesn't telefrag
 ================
 */
 #define	MAX_SPAWN_POINTS	128
-gentity_t *SelectRandomDeathmatchSpawnPoint( gentity_t* spawningEnt ) {
+gentity_t *SelectRandomDeathmatchSpawnPoint( void ) {
 	gentity_t	*spot;
 	int			count;
 	int			selection;
@@ -480,8 +413,8 @@ gentity_t *SelectRandomDeathmatchSpawnPoint( gentity_t* spawningEnt ) {
 	count = 0;
 	spot = NULL;
 
-	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
-		if ( SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
+	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
+		if ( SpotWouldTelefrag( spot ) ) {
 			continue;
 		}
 		spots[ count ] = spot;
@@ -489,79 +422,13 @@ gentity_t *SelectRandomDeathmatchSpawnPoint( gentity_t* spawningEnt ) {
 	}
 
 	if ( !count ) {	// no spots that won't telefrag
-		return G_FindByClassNameFast( NULL, "info_player_deathmatch");
+		return G_Find( NULL, FOFS(classname), "info_player_deathmatch");
 	}
 
 	selection = rand() % count;
 	return spots[ selection ];
 }
 
-
-gentity_t* SelectDefragSpawnPoint(gentity_t* spawningEnt, vec3_t avoidPoint, vec3_t origin, vec3_t angles)
-{
-	gentity_t* spot,*startSpot;
-	int			 i, j;
-
-	if (spawningEnt->client->pers.chosenDefragSpawnPoint) { // for maps where /savespawn isn't possible
-		spot = g_entities + spawningEnt->client->pers.chosenDefragSpawnPoint;
-		if (!Q_stricmp(spot->classname, "info_player_deathmatch")) {
-			if (!SpotWouldTelefrag(spot->s.origin, spawningEnt)) {
-
-				VectorCopy(spot->s.origin, origin);
-				origin[2] += 9;
-				VectorCopy(spot->s.angles, angles);
-				return spot;
-			}
-		}
-	}
-
-	startSpot = NULL;
-
-	if (spawningEnt->client->pers.lastSpawnPoint) {
-		startSpot = g_entities + spawningEnt->client->pers.lastSpawnPoint;
-	}
-
-	spot = startSpot;
-	for (i = 0; i < 2; i++) {
-		// we start out at startSpot and try to find the next in line, so that there's a clean "cycling" through them instead of randomness
-		// if there is none after, spot will be NULL and we do a second round as a "wrap around" from the start of g_entities
-		while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
-			if (SpotWouldTelefrag(spot->s.origin, spawningEnt)) {
-				continue;
-			}
-			if (spot->spawnDefragPriority < level.highestDefragSpawnPriority) {
-				continue; // some types of spawns get priority in defrag
-			}
-			//if (spot == startSpot) { // not rly needed
-			//	break;
-			//}
-			break;
-		}
-		if (spot || !spot && !startSpot) {
-			break;
-		}
-	}
-
-	if (!spot) {
-		spot = G_FindByClassNameFast(NULL, "info_player_deathmatch");
-		if (!spot)
-		{
-			G_Error("Couldn't find a defrag spawn point");
-		}
-		VectorCopy(spot->s.origin, origin);
-		if (g_bubbleSpawn.integer && !(spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
-			WiggleSpotTelefrag(origin, spawningEnt);
-		}
-		origin[2] += 9;
-		VectorCopy(spot->s.angles, angles);
-		return spot;
-	}
-
-	VectorCopy(spot->s.origin, origin);
-	origin[2] += 9;
-	VectorCopy(spot->s.angles, angles);
-	return spot;
-}
 /*
 ===========
 SelectRandomFurthestSpawnPoint
@@ -569,7 +436,7 @@ SelectRandomFurthestSpawnPoint
 Chooses a player start, deathmatch start, etc
 ============
 */
-gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
+gentity_t *SelectRandomFurthestSpawnPoint ( vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
 	gentity_t	*spot;
 	vec3_t		delta;
 	float		dist;
@@ -580,16 +447,9 @@ gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPo
 	numSpots = 0;
 	spot = NULL;
 
-	if (spawningEnt && spawningEnt->client && spawningEnt->client->sess.raceMode) {
-		return SelectDefragSpawnPoint(spawningEnt,avoidPoint,origin,angles);
-	}
-
-	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
-		if ( SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
+	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
+		if ( SpotWouldTelefrag( spot ) ) {
 			continue;
-		}
-		if (spawningEnt && spawningEnt->client && spawningEnt->client->sess.raceMode && spot->spawnDefragPriority < level.highestDefragSpawnPriority) {
-			continue; // some types of spawns get priority in defrag
 		}
 		VectorSubtract( spot->s.origin, avoidPoint, delta );
 		dist = VectorLength( delta );
@@ -616,15 +476,12 @@ gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPo
 		}
 	}
 	if (!numSpots) {
-		spot = G_FindByClassNameFast( NULL, "info_player_deathmatch");
+		spot = G_Find( NULL, FOFS(classname), "info_player_deathmatch");
 		if (!spot)
 		{
 			G_Error( "Couldn't find a spawn point" );
 		}
 		VectorCopy (spot->s.origin, origin);
-		if (g_bubbleSpawn.integer && !(spawningEnt && spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
-			WiggleSpotTelefrag(origin, spawningEnt);
-		}
 		origin[2] += 9;
 		VectorCopy (spot->s.angles, angles);
 		return spot;
@@ -647,8 +504,8 @@ SelectSpawnPoint
 Chooses a player start, deathmatch start, etc
 ============
 */
-gentity_t *SelectSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
-	return SelectRandomFurthestSpawnPoint(spawningEnt,avoidPoint, origin, angles );
+gentity_t *SelectSpawnPoint ( vec3_t avoidPoint, vec3_t origin, vec3_t angles ) {
+	return SelectRandomFurthestSpawnPoint( avoidPoint, origin, angles );
 
 	/*
 	gentity_t	*spot;
@@ -687,18 +544,18 @@ Try to find a spawn point marked 'initial', otherwise
 use normal spawn selection.
 ============
 */
-gentity_t *SelectInitialSpawnPoint(gentity_t* spawningEnt, vec3_t origin, vec3_t angles ) {
+gentity_t *SelectInitialSpawnPoint( vec3_t origin, vec3_t angles ) {
 	gentity_t	*spot;
 
 	spot = NULL;
-	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
-		if ( spot->spawnflags & 1 && (!(spawningEnt->client && spawningEnt->client->sess.raceMode) || spot->spawnDefragPriority == level.highestDefragSpawnPriority)) {
+	while ((spot = G_Find (spot, FOFS(classname), "info_player_deathmatch")) != NULL) {
+		if ( spot->spawnflags & 1 ) {
 			break;
 		}
 	}
 
-	if ( !spot || SpotWouldTelefrag( spot->s.origin, spawningEnt) ) {
-		return SelectSpawnPoint(spawningEnt,vec3_origin, origin, angles );
+	if ( !spot || SpotWouldTelefrag( spot ) ) {
+		return SelectSpawnPoint( vec3_origin, origin, angles );
 	}
 
 	VectorCopy (spot->s.origin, origin);
@@ -753,36 +610,9 @@ void InitBodyQue (void) {
 	level.bodyQueIndex = 0;
 	for (i=0; i<BODY_QUEUE_SIZE ; i++) {
 		ent = G_Spawn();
-		G_SetClassName(ent, "bodyque");
+		ent->classname = "bodyque";
 		ent->neverFree = qtrue;
 		level.bodyQue[i] = ent;
-	}
-}
-
-/*
-===============
-InitPlayerStats
-===============
-*/
-void InitPlayerStats(void) {
-	int		i;
-	gentity_t* ent;
-
-	for (i = 0; i < MAX_CLIENTS; i++) {
-		//if (g_defrag.integer) {
-			ent = G_Spawn();
-			G_SetClassName(ent, "playerstats");
-			ent->neverFree = qtrue;
-			ent->s.eType = ET_INVISIBLE;
-			ent->s.clientNum = i;
-			ent->s.modelGhoul2 = 15; // tell tommyternal cgame that this is a player stats object :)
-			ent->r.svFlags |= SVF_BROADCAST;
-			level.playerStats[i] = ent;
-			trap_LinkEntity(ent);
-		//}
-		//else {
-		//	level.playerStats[i] = 0;
-		//}
 	}
 }
 
@@ -842,11 +672,6 @@ void CopyToBodyQue( gentity_t *ent ) {
 
 	trap_UnlinkEntity (body);
 	body->s = ent->s;
-	if (g_entHUDFields.integer) {
-		body->s.generic1 = 0;
-		body->s.trickedentindex3 = 0;
-		body->s.trickedentindex4 = 0;
-	}
 
 	//avoid oddly angled corpses floating around
 	body->s.angles[PITCH] = body->s.angles[ROLL] = body->s.apos.trBase[PITCH] = body->s.apos.trBase[ROLL] = 0;
@@ -926,13 +751,6 @@ SetClientViewAngle
 */
 void SetClientViewAngle( gentity_t *ent, vec3_t angle ) {
 	int			i;
-	int			oldRoll;
-	qboolean	strafebot = ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_BOT) || ent->client->sess.rollAngleInvalidated;
-
-	if (strafebot) {
-		oldRoll = ent->client->pers.cmd.angles[ROLL];
-		ent->client->pers.cmd.angles[ROLL] = 0;
-	}
 
 	// set the delta angle
 	for (i=0 ; i<3 ; i++) {
@@ -943,10 +761,6 @@ void SetClientViewAngle( gentity_t *ent, vec3_t angle ) {
 	}
 	VectorCopy( angle, ent->s.angles );
 	VectorCopy (ent->s.angles, ent->client->ps.viewangles);
-
-	if (strafebot) {
-		ent->client->pers.cmd.angles[ROLL] = oldRoll;
-	}
 }
 
 /*
@@ -957,9 +771,7 @@ respawn
 void respawn( gentity_t *ent ) {
 	gentity_t	*tent;
 
-	if (!ent->client->sess.raceMode) {
-		CopyToBodyQue(ent);
-	}
+	CopyToBodyQue (ent);
 
 	if (gEscaping)
 	{
@@ -974,36 +786,9 @@ void respawn( gentity_t *ent ) {
 	ClientSpawn(ent);
 
 	// add a teleportation effect
-	if (!ent->client->sess.raceMode) {
-		tent = G_TempEntity(ent->client->ps.origin, EV_PLAYER_TELEPORT_IN);
-		tent->s.clientNum = ent->s.clientNum;
-	}
+	tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN );
+	tent->s.clientNum = ent->s.clientNum;
 }
-
-void ClientRespawn(gentity_t* ent) {
-
-	//MaintainBodyQueue(ent);
-
-	// i dont even know what this does :)
-	if (gEscaping)// || g_gametype == GT_POWERDUEL) 
-	{
-		ent->client->sess.sessionTeam = TEAM_SPECTATOR;
-		ent->client->sess.spectatorState = SPECTATOR_FREE;
-		ent->client->sess.spectatorClient = 0;
-
-		ent->client->pers.teamState.state = TEAM_BEGIN;
-		//AddTournamentQueue(ent->client);
-		ClientSpawn(ent);
-		//ent->client->iAmALoser = qtrue;
-		return;
-	}
-
-	trap_UnlinkEntity(ent);
-
-
-	ClientSpawn(ent);
-}
-
 
 /*
 ================
@@ -1139,10 +924,10 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 			}
 
 			// don't allow black in a name, period
-			/*if( ColorIndex(*in) == 0 ) {
+			if( ColorIndex(*in) == 0 ) {
 				in++;
 				continue;
-			}*/
+			}
 
 			// make sure room in dest for both chars
 			if( len > outSize - 2 ) {
@@ -1182,148 +967,6 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 	}
 }
 
-
-#define CLANTAG_HASHSIZE 256
-static hashEntry_t knownClanTags[] = {
-	{"freedom"},{"cos"},{"pi"},{"oc9"},{"eos"},{"fos"},{"bbb"},{"dbd"},{"174"},{"pureness"},{"believers"},
-	{"fou"},{"jof"},{"jofa"},{"gog"},{"jip"},{"gog"},{"rrr"},{"ft"},{"bdsm"},{"motf"},{"circus"},
-	{"suffix"},{"defiance"},{"el"},{"d2w"},{"coz"},{"fod"},{"ah"},{"jotr"},{"ros"},
-	{"ats"},{"lm"},{"sol"},{"wCw"},{"SL"},{"TFJ"},{"ColdThugz"},{"EC"},{"rj"},
-	{"KR"},{"93o"},{"930"},{"dA"},{"nWo"},{"ez"},{"GotA"},{"CjS"},{"BOMS"},{"ca"},
-	{"eot"},{"bulldozer"},{"WAR"},{"ToD"},{"TB"},{"SPQR"},{"SC"},{"R"},{"NA"},
-	{"DARK"},{"NATO"},{"LoD"},{"g"},{"EU"},{"MAD"},{"E621"},{"AFK"},{"Hecc"},{"hvn"},
-	{"LSS"},{"vvv"},{"il"},{"so"},{"sf"},{"rodia"},{"tnf"},{"tft"},{"gg"},{"Templar"},{"PlayboyZ"},{"PARADiGM"},
-	{"LoC"},{"Lions"},{"lil"},{"LGBTQ"},{"i"},{"dts"},{"dOR"},{"TOR"},{"e"},{"JAWA"},{"Ub"},
-};
-
-static const int clanTagCount = sizeof(knownClanTags) / sizeof(knownClanTags[0]);
-
-hashEntry_t* clanTagHashTable[CLANTAG_HASHSIZE] = { 0 };
-
-void InitClanTagHashTable() {
-	int i;
-	int hash;
-	static qboolean inited = qfalse;
-	if (!inited) {
-		for (i = 0; i < clanTagCount; i++) {
-			hash = generateHashValue(knownClanTags[i].text, CLANTAG_HASHSIZE);
-			knownClanTags[i].next = clanTagHashTable[hash];
-			clanTagHashTable[hash] = &knownClanTags[i];
-		}
-		inited = qtrue;
-	}
-}
-
-static qboolean CheckIsClanTag(const char* text) {
-	int i;
-	int hash;
-	hashEntry_t* hashEntry;
-	InitClanTagHashTable();
-	hash = generateHashValue(text, CLANTAG_HASHSIZE);
-	for (hashEntry = clanTagHashTable[hash]; hashEntry; hashEntry = hashEntry->next) {
-		if (!Q_stricmp(text,hashEntry->text)) {
-			return qtrue;
-		}
-	}
-	return qfalse;
-}
-
-void ApplyNameTag(char* name, int bufferSize, nameTagType_t type) {
-	char	tmp[MAX_NETNAME];
-	char*	s = tmp;
-	int		inlen=0;// = strlen(name);
-	int		i,j;
-	char*	shortest = NULL;
-	int		shortestLen = INT_MAX;
-	char*	clanTag = NULL;
-	qboolean	shortestIsMaybeClanTag;
-	qboolean	clanTagFound;
-	char*	tmp2;
-	int		tmpLen;
-	char	lastLetter = '\0';
-	int		pieceIndex = 0;
-	char	*s2 = name;
-	
-	//Q_strncpyz(tmp, name, sizeof(tmp)); 
-	while (*s2 && inlen<(sizeof(tmp)-1)) {
-		if (*s2 == Q_COLOR_ESCAPE && *(s2+1)) { // strip colors so we don't pull apart names
-			s2++;
-		}
-		else {
-			*s = *s2;
-			inlen++;
-			s++;
-		}
-		s2++;
-	}
-
-
-	*s = '\0';
-	s = tmp;
-
-	// NULL out any non-letter or digit char
-	while (*s) {
-		if (*s == Q_COLOR_ESCAPE) {
-			*(s++) = '\0';
-			if (*s == '\0') {
-				s--; // don't accidentally overflow if this is already the end of the string
-			}
-			else {
-				*s = '\0';
-			}
-		}
-		else if (!(*s >= 'a' && *s <= 'z' || *s >= 'A' && *s <= 'Z' || *s >= '0' && *s <= '9')) {
-			*s = '\0';
-		}
-		else if (*s >= 'A' && *s <= 'Z') {
-			*s = tolower(*s);
-		}
-		s++;
-	}
-	// find shortest bit
-	for (i = 0; i < inlen; i++) {
-		if (!lastLetter && tmp[i]) {
-			tmp2 = &tmp[i];
-			tmpLen = strlen(tmp2);
-			clanTagFound = CheckIsClanTag(tmp2);
-			if (clanTagFound && !clanTag) {
-				clanTag = tmp2;
-			}
-			else if ((tmpLen < shortestLen || shortestIsMaybeClanTag) && tmpLen > 1 && !clanTagFound) {
-				shortest = tmp2;
-				shortestLen = tmpLen;
-				shortestIsMaybeClanTag = pieceIndex == 0 && tmpLen >= 2 && tmpLen <= 3;
-				pieceIndex++;
-			}
-			i += tmpLen;
-		}
-		lastLetter = tmp[i];
-	}
-
-	if (!shortest) {
-		// can't apply nametag, no suitable bit found.
-		if (!clanTag) {
-			return;
-		}
-		else {
-			shortest = clanTag;
-		}
-	}
-
-	switch (type) {
-	default:
-		return;
-		break;
-	case NAMETAG_FREEDOM:
-		Com_sprintf(name, bufferSize,"^7^7^4freedom^4^4^7#^7^7^4%s^4^4^7'",shortest);
-		break;
-	case NAMETAG_OC9:
-		Com_sprintf(name, bufferSize, "^5oc9^7#^5%s", shortest);
-		break;
-	}
-
-}
-
 #ifdef _DEBUG
 void G_DebugWrite(const char *path, const char *text)
 {
@@ -1353,7 +996,6 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	char		/**GLAName,*/ *slash;
 	char		GLAName[MAX_QPATH];
 	vec3_t	tempVec = {0,0,0};
-	int	nowTime = LEVELTIME(client);
 
 	// First things first.  If this is a ghoul2 model, then let's make sure we demolish this first.
 	if (client->ghoul2 && trap_G2_HaveWeGhoul2Models(client->ghoul2))
@@ -1420,7 +1062,7 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 		slash = Q_strrchr( afilename, '/' );
 		if ( slash )
 		{
-			Q_strncpyz(slash, "/animation.cfg",sizeof(afilename) - (slash-afilename));
+			strcpy(slash, "/animation.cfg");
 		}	// Now afilename holds just the path to the animation.cfg
 		else 
 		{	// Didn't find any slashes, this is a raw filename right in base (whish isn't a good thing)
@@ -1444,7 +1086,7 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	// NOTE - ensure this sequence of bolt and bone accessing are always the same because the client expects them in a certain order
 	trap_G2API_SetBoneAnim(client->ghoul2, 0, "model_root", 0, 12, BONE_ANIM_OVERRIDE_LOOP, 1.0f, level.time, -1, -1);
 	trap_G2API_SetBoneAngles(client->ghoul2, 0, "upper_lumbar", tempVec, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, NULL, 0, level.time);
-	trap_G2API_SetBoneAngles(client->ghoul2, 0, "cranium", tempVec, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, NULL, 0, level.time); // not using nowTime here because using it on G2 made the server have extreme hitches and idk the cause
+	trap_G2API_SetBoneAngles(client->ghoul2, 0, "cranium", tempVec, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, NULL, 0, level.time);
 
 	if (!g2SaberInstance)
 	{
@@ -1465,165 +1107,8 @@ void SetupGameGhoul2Model(gclient_t *client, char *modelname)
 	}
 }
 
-extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
-
-static void AcceptClientPhysicsFps(gentity_t* ent, int clientSetting) {
-	gclient_t* client = ent->client;
-	client->pers.physicsFps.lastChange = level.time;
-	client->pers.physicsFps.acceptedSetting = clientSetting;
-	client->pers.physicsFps.acceptedSettingMsec = (MAX(1, MIN(1000, 1000 / MAX(1, clientSetting))));
-	if (client->sess.raceStyle.msec >= 0) { // -1 = toggle, -2 = float
-		client->sess.raceStyle.msec = client->pers.physicsFps.acceptedSettingMsec;
-		DF_RaceStateInvalidated(ent, qtrue);
-	}
-}
-
-static qboolean ValidateClientPhysicsFps(gclient_t* client, int clientSetting) {
-	// Do validation of the client com_physicsFps setting here.
-	// For example check if the value he set is sensible and allowed by the game settings.
-	// Return qfalse if invalid.
-
-	if (client->sess.raceMode) {
-		// TODO What if someone uses this to get a setting "validated" but then switches out of racemode? catch that more elegantly?
-		return clientSetting > 0 && clientSetting <=1000; // racemode allows all (just doesnt allow toggle outside toggle mode)
-	}
-
-	if (g_fixHighFPSAbuse.integer && (clientSetting >= 250 || clientSetting < 40)) {
-		return qfalse;
-	}
-
-	return qtrue;
-}
-
-/*
-===========
-HandleClientPhysicsFps
-
-Handle com_physicsFps setting of clients.
-
-If g_fpsToggleDelay is enabled, we limit fps toggling by clients by only allowing 
-a change in the client's fps setting every X seconds (set by g_fpsToggleDelay)
-============
-*/
-void SetClientPhysicsFps(gentity_t* ent, int clientSetting) {
-	gclient_t* client = ent->client;
-	
-	if (!ent->client) return;
-	client->pers.physicsFps.clientSetting = clientSetting;
-	client->pers.physicsFps.clientSettingValid = ValidateClientPhysicsFps(client,clientSetting);
-
-	if (!client->pers.physicsFps.clientSettingValid) {
-		// Tried to set an invalid setting
-		return;
-	}
-
-	if (client->pers.physicsFps.acceptedSetting == clientSetting && (!client->sess.raceMode || client->sess.raceStyle.msec < 0 || client->sess.raceStyle.msec == client->pers.physicsFps.acceptedSettingMsec)) {
-		// Don't care, nothing changed
-		return;
-	}
-
-	// quick check for situations that are always ok
-	if (client->sess.raceMode) {
-		if (client->sess.raceStyle.msec < 0) { // float or toggle mode. doesnt matter then
-			// Toggle limiting disabled, or no value accepted yet. Just accept.
-			AcceptClientPhysicsFps(ent, clientSetting);
-			return;
-		}
-	}
-	else {
-		if (!g_fpsToggleDelay.integer || !client->pers.physicsFps.acceptedSetting) {
-			// Toggle limiting disabled, or no value accepted yet. Just accept.
-			AcceptClientPhysicsFps(ent, clientSetting);
-			return;
-		}
-	}
-
-	if (!clientSetting) {
-		// Client has it disabled. Don't do anything.
-		return;
-	}
-
-	// mode specific checks.
-	if (client->sess.raceMode) {
-		if (!client->pers.raceStartCommandTime) {
-			// Change allowed.
-			// Client is not currently in a run.
-			AcceptClientPhysicsFps(ent, clientSetting);
-		}
-	}
-	else {
-		if ((client->pers.physicsFps.lastChange + g_fpsToggleDelay.integer * 1000) < level.time || client->pers.physicsFps.lastChange > level.time) {
-			// Change allowed.
-			// Either the minimum time delay has passed or level.time has been reset
-			AcceptClientPhysicsFps(ent, clientSetting);
-		}
-	}
-}
 
 
-
-void NameDedupe_SanitizeString(char* in, char* out) {
-	while (*in) {
-		if (*in == 94) {
-			in += 2;		// skip color code
-			continue;
-		}
-		if (*in < 32) {
-			in++;
-			continue;
-		}
-		*out++ = tolower(*in++);
-	}
-
-	*out = 0;
-}
-
-void G_SetModelColor(char color[9], const char *userinfo)
-{
-	byte serverColor[4];
-	char clientColor[4][4];
-
-	Q_strncpyz(clientColor[0], Info_ValueForKey(userinfo, "char_color_red"), sizeof(clientColor[0]));
-	Q_strncpyz(clientColor[1], Info_ValueForKey(userinfo, "char_color_green"), sizeof(clientColor[1]));
-	Q_strncpyz(clientColor[2], Info_ValueForKey(userinfo, "char_color_blue"), sizeof(clientColor[2]));
-	Q_strncpyz(clientColor[3], Info_ValueForKey(userinfo, "char_color_alpha"), sizeof(clientColor[3]));
-
-	if (clientColor[0][0] == '\0' || clientColor[1][0] == '\0' || clientColor[2][0] == '\0' || clientColor[3][0] == '\0')
-	{
-		serverColor[0] = 255;
-		serverColor[1] = 255;
-		serverColor[2] = 255;
-		serverColor[3] = 255;
-	}
-	else
-	{
-		serverColor[0] = atoi(clientColor[0]);
-		serverColor[1] = atoi(clientColor[1]);
-		serverColor[2] = atoi(clientColor[2]);
-		serverColor[3] = atoi(clientColor[3]);
-	}
-
-	Q_strncpyz(color, colorToHex(serverColor), 9);
-}
-
-void G_SetSaberName(char saberName[MAX_QPATH], const char *userinfo)
-{
-	const char *serverSaberName;
-	const char *clientSaberName;
-
-	clientSaberName = Info_ValueForKey(userinfo, "saber1");
-
-	if (clientSaberName[0] == '\0')
-	{
-		serverSaberName = DEFAULT_SABER1;
-	}
-	else
-	{
-		serverSaberName = clientSaberName;
-	}
-
-	Q_strncpyz(saberName, serverSaberName, MAX_QPATH);
-}
 
 /*
 ===========
@@ -1641,8 +1126,6 @@ void ClientUserinfoChanged( int clientNum ) {
 	int		teamTask, teamLeader, team, health;
 	char	*s;
 	char	model[MAX_QPATH];
-	char	modelColor[9];
-	char	saberName[MAX_QPATH];
 	//char	headModel[MAX_QPATH];
 	char	forcePowers[MAX_QPATH];
 	char	oldname[MAX_STRING_CHARS];
@@ -1665,7 +1148,7 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// check for malformed or illegal info strings
 	if ( !Info_Validate(userinfo) ) {
-		Q_strncpyz (userinfo, "\\name\\badinfo",sizeof(userinfo));
+		strcpy (userinfo, "\\name\\badinfo");
 	}
 
 	// check for local client
@@ -1682,19 +1165,10 @@ void ClientUserinfoChanged( int clientNum ) {
 		client->pers.predictItemPickup = qtrue;
 	}
 
-	// check for com_physicsFps setting
-	s = Info_ValueForKey( userinfo, "com_physicsFps" );
-	client->pers.physicsFps.clientSendsPhysicsFps = *s != '\0';
-	if ( atoi( s ) ) {
-		SetClientPhysicsFps(ent, atoi(s));
-	} else {
-		SetClientPhysicsFps(ent, 0);
-	}
-
 	// set name
 	Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
 	s = Info_ValueForKey (userinfo, "name");
-		
+	
 	// NameCrashFix
 	for ( i = 0; i < (int)strlen(s); i++ )
 	{
@@ -1721,72 +1195,10 @@ void ClientUserinfoChanged( int clientNum ) {
 	Info_SetValueForKey( userinfo, "name", ent->client->pers.netname );
 	trap_SetUserinfo( clientNum, userinfo );
 
-	if (ent->client->sess.nameTag > 0 && ent->client->sess.nameTag < NAMETAG_COUNT) {
-		ApplyNameTag(ent->client->pers.netname, sizeof(ent->client->pers.netname), ent->client->sess.nameTag);
-	}
-
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		if ( client->sess.spectatorState == SPECTATOR_SCOREBOARD ) {
 			Q_strncpyz( client->pers.netname, "scoreboard", sizeof(client->pers.netname) );
 		}
-	}
-
-	// thanks to anonymous donor
-	if (!g_allowNameDupes.integer)
-	{
-		int i;
-		char		temp[64];
-		char		temp2[64];
-		client->pers.nameNumber = 0;
-
-		for (i = strlen(client->pers.netname) - 1; i >= 0; i--)
-		{
-			if (client->pers.netname[i] == ' ')
-				client->pers.netname[i] = '\0';
-			else
-				break;
-		}
-
-		NameDedupe_SanitizeString(client->pers.netname, temp);
-		Q_strncpyz(client->pers.wantedNameColor, client->pers.netname, sizeof(client->pers.wantedNameColor));
-		Q_strncpyz(client->pers.wantedNameBlank, temp, sizeof(client->pers.wantedNameBlank));
-
-		if (strlen(client->pers.netname) < sizeof(client->pers.netname) - 11)
-		{
-			for (i = 0; i < level.maxclients; i++)
-			{
-				if (g_entities[i].client == NULL)
-					continue;
-				if (!g_entities[i].inuse) {
-					continue;
-				}
-				if (i == clientNum)
-					continue;
-				if (!Q_stricmp(g_entities[i].client->pers.wantedNameBlank, client->pers.wantedNameBlank))
-				{
-					if (g_entities[i].client->pers.nameNumber == client->pers.nameNumber)
-					{
-						client->pers.nameNumber = client->pers.nameNumber + 1;
-						i = 0;
-					}
-				}
-				NameDedupe_SanitizeString(client->pers.netname, temp);
-				NameDedupe_SanitizeString(g_entities[i].client->pers.netname, temp2);
-				if (!Q_stricmp(temp2, temp))
-				{
-					client->pers.nameNumber = client->pers.nameNumber + 1;
-					i = 0;
-				}
-				if (client->pers.nameNumber)
-				{
-					Q_strncpyz(temp, client->pers.wantedNameColor, sizeof(temp));
-					Q_strcat(temp, sizeof(temp), va("^7[^2%i^7]", client->pers.nameNumber));
-					Q_strncpyz(client->pers.netname, temp, sizeof(client->pers.netname));
-				}
-			}
-		}
-
-
 	}
 
 	if ( client->pers.connected == CON_CONNECTED ) {
@@ -1823,12 +1235,6 @@ void ClientUserinfoChanged( int clientNum ) {
 	{
 		Q_strncpyz( model, "kyle/default", sizeof(model) );
 	}
-
-	// model color
-	G_SetModelColor(modelColor, userinfo);
-
-	// saber name
-	G_SetSaberName(saberName, userinfo);
 
 	Q_strncpyz( forcePowers, Info_ValueForKey (userinfo, "forcepowers"), sizeof( forcePowers ) );
 
@@ -1881,23 +1287,23 @@ void ClientUserinfoChanged( int clientNum ) {
 	teamLeader = client->sess.teamLeader;
 
 	// colors
-	Q_strncpyz(c1, Info_ValueForKey( userinfo, "color1" ),sizeof(c1));
-	Q_strncpyz(c2, Info_ValueForKey( userinfo, "color2" ),sizeof(c2));
+	strcpy(c1, Info_ValueForKey( userinfo, "color1" ));
+	strcpy(c2, Info_ValueForKey( userinfo, "color2" ));
 
-	Q_strncpyz(redTeam, Info_ValueForKey( userinfo, "g_redteam" ),sizeof(redTeam));
-	Q_strncpyz(blueTeam, Info_ValueForKey( userinfo, "g_blueteam" ),sizeof(blueTeam));
+	strcpy(redTeam, Info_ValueForKey( userinfo, "g_redteam" ));
+	strcpy(blueTeam, Info_ValueForKey( userinfo, "g_blueteam" ));
 
 	// send over a subset of the userinfo keys so other clients can
 	// print scoreboards, display models, and play custom sounds
 	if ( ent->r.svFlags & SVF_BOT ) {
-		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i\\bot\\1\\mc\\%s\\st\\%s",
+		s = va("n\\%s\\t\\%i\\model\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\skill\\%s\\tt\\%d\\tl\\%d\\mvgp\\%i",
 			client->pers.netname, team, model,  c1, c2, 
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
-			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay, modelColor, saberName );
+			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay );
 	} else {
-		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mc\\%s\\st\\%s",
-			client->pers.netname, client->sess.login.name, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
-			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modelColor, saberName);
+		s = va("n\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i",
+			client->pers.netname, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2, 
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay);
 	}
 
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );
@@ -1906,30 +1312,6 @@ void ClientUserinfoChanged( int clientNum ) {
 	{
 		G_LogPrintf( "ClientUserinfoChanged: %i %s\n", clientNum, s );
 	}
-}
-
-// super simplified versin of clientuserinfochanged, allowing for faster toggle
-qboolean ClientPhysicsFpsChanged( int clientNum ) {
-	gentity_t *ent;
-	gclient_t* client;
-	char	*s;
-	char	userinfo[MAX_INFO_STRING];
-
-	ent = g_entities + clientNum;
-	client = ent->client;
-
-	trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
-
-	// check for com_physicsFps setting
-	s = Info_ValueForKey( userinfo, "com_physicsFps" );
-	client->pers.physicsFps.clientSendsPhysicsFps = *s != '\0';
-	if ( atoi( s ) ) {
-		SetClientPhysicsFps(ent, atoi(s));
-	} else {
-		SetClientPhysicsFps(ent, 0);
-	}
-	
-	return qtrue;
 }
 
 
@@ -1986,11 +1368,6 @@ qboolean MV_SetClientIP( int clientNum, char *value )
 	return qtrue;
 }
 
-extern void DF_ClearCheckPointTimes(gentity_t* playerent);
-
-extern int GetDefaultPlayerMode(qboolean allowDefrag);
-void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag);
-
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	char		*value;
 //	char		*areabits;
@@ -2010,9 +1387,7 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		return "Banned.";
 	}
 
-	memset( &userCmdBuffer[clientNum],0,sizeof(userCmdBuffer[clientNum]));
 	memset( &mv_clientSessions[clientNum], 0, sizeof(mv_clientSessions[clientNum]) );
-	G_ResetUserCmdStore(ent - g_entities);
 	if ( (ent->r.svFlags & SVF_BOT) || isBot || !Q_stricmp(value, "localhost") )
 	{ // Bots and localhost get 127.0.0.1
 		mvSess->clientIP[0] = 127;
@@ -2111,7 +1486,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	// read or initialize the session data
 	if ( firstTime || level.newSession ) {
 		G_InitSessionData( client, userinfo, isBot );
-		ClientSetDefaultMode(ent,!isBot);
 	}
 	G_ReadSessionData( client );
 
@@ -2120,10 +1494,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 		ent->inuse = qtrue;
 		if( !G_BotConnect( clientNum, !firstTime ) ) {
 			return "BotConnectfailed";
-		}
-		if (ent->client->sess.mode == MODE_DEFRAG) {
-			// bots cant race
-			ClientSetDefaultMode(ent, qfalse);
 		}
 	}
 
@@ -2154,15 +1524,11 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 //	if ( !client->areabits )
 //		client->areabits = G_Alloc( (trap_AAS_PointReachabilityAreaIndex( NULL ) + 7) / 8 );
 
-	DF_ClearCheckPointTimes(ent);
-
 	return NULL;
 }
 
 void G_WriteClientSessionData( gclient_t *client );
-extern void UpdateClientRaceVars(gclient_t* client);
-//void DF_SetRaceMode(gentity_t* ent, qboolean value);
-void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag);
+
 /*
 ===========
 ClientBegin
@@ -2178,10 +1544,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	gentity_t	*tent;
 	int			flags, i;
 	char		userinfo[MAX_INFO_VALUE], *modelname;
-	int			nowTime;
 
 	ent = g_entities + clientNum;
-	nowTime = LEVELTIME(ent->client); // TODO does that even make sense here? idk.
 	
 	// FlagEatingFix - We must ensure that powerups are cleared on ClientConnect and before team changes. Otherwise we might accidently trigger a flag duplication here.
 	for ( i = PW_REDFLAG; i <= PW_NEUTRALFLAG; i++ )
@@ -2196,13 +1560,10 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 			{
 				drop = Drop_Item( ent, item, 45 );
 				// decide how many seconds it has left
-				drop->count = ( ent->client->ps.powerups[ i ] - nowTime ) / 1000;
+				drop->count = ( ent->client->ps.powerups[ i ] - level.time ) / 1000;
 				if ( drop->count < 1 ) {
 					drop->count = 1;
 				}
-				//if ( drop->count > 1000 ) { // in case of any weird confusion with nowTime?
-				//	drop->count = 1000;
-				//}
 			}
 
 			ent->client->ps.powerups[i] = 0;
@@ -2268,10 +1629,6 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 
 	client->pers.connected = CON_CONNECTED;
 	client->pers.enterTime = level.time;
-	if (!client->pers.firstEnterTimeSet) {
-		client->pers.firstEnterTime = level.time;
-		client->pers.firstEnterTimeSet = qtrue;
-	}
 	client->pers.teamState.state = TEAM_BEGIN;
 
 	// save eflags around this, because changing teams will
@@ -2331,26 +1688,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 		ent->bolt_Motion = trap_G2API_AddBolt(ent->client->ghoul2, 0, "Motion");
 	}
 
-	//if (client->sess.raceMode && !g_defrag.integer) {
-	//	client->sess.raceMode = g_defrag.integer;
-	//	Cmd_ForceChanged_f(ent);
-	//} else {
-	//	client->sess.raceMode = g_defrag.integer;
-	//}
-	//DF_SetRaceMode(ent,g_defrag.integer);
-	ResetClientModeIfInvalid(ent,(qboolean)!(ent->r.svFlags& SVF_BOT));
-
-	//if (client->sess.raceMode)
-	//	client->ps.stats[STAT_RACEMODE] = 1;
-	//else
-	//	client->ps.stats[STAT_RACEMODE] = 0;
-
-	//client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
-	//client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
-	UpdateClientRaceVars(client);
-
 	// locate ent at a spawn point
-	G_GetUserCmd(client - level.clients, &ent->client->pers.cmd, GETUSERCMD_NOADVANCE); // make sure LEVELTIME() inside ClientSpawn gets a valid serverTime value
 	ClientSpawn( ent );
 
 	if ( client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -2368,8 +1706,6 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	CalculateRanks();
 
 	G_ClearClientLog(clientNum);
-
-	trap_SendServerCommand(clientNum, "print \"Welcome. Type ^2/help^7 for info about commands and how to play.\n\"");
 }
 
 static qboolean AllForceDisabled(int force)
@@ -2392,150 +1728,6 @@ static qboolean AllForceDisabled(int force)
 	return qfalse;
 }
 
-
-qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
-	int				i;
-	int				allowShortPos = 0;
-	vec3_t			delta;
-	//float normalSpawnDist; // wanted to check if normal spawn dist is closer but that might be too simplistic for complex level architectures
-	float			currentDist;
-	qboolean		good = qfalse;
-	simplePos_t*	pos;
-	trace_t			trace;
-	//vec3_t			velNorm;
-	if (!level.ironManPosCount || !level.ironManCurrentPositionSet || level.ironManClientNum == -1) {
-		return qfalse;
-	}
-
-	//VectorSubtract(level.ironManCurrentPosition, spawn_origin, delta);
-	//normalSpawnDist = VectorLengthSquared(delta);
-
-retry:
-	for (i = level.ironManPosCount - 1; i >= MAX(0, level.ironManPosCount - IRONMAN_MAX_PAST_POSITIONS_COUNT + 1); i--) {
-		pos = &level.ironManPos[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
-		if (pos->when + IRONMAN_RESPAWNPOSITION_MAXPOSITIONAGE < level.time) {
-			// position is too old
-			if (allowShortPos < 2) {
-				// let's try with allowing shorter distances
-				allowShortPos++;
-				goto retry;
-			}
-			else {
-				// fuck it
-				return qfalse;
-			}
-		}
-
-		VectorSubtract(pos->origin, level.ironManCurrentPosition, delta);
-		currentDist = VectorLengthSquared(delta);
-		
-		if (allowShortPos == 2) {
-			// we are desperate. spawn right on top of his head if needed! maybe hes camping or sth xd
-			good = qtrue;
-		}
-		else if (currentDist > IRONMAN_RESPAWNPOSITION_MINDISTANCE* IRONMAN_RESPAWNPOSITION_MINDISTANCE) {
-			good = qtrue;
-		}
-		else if (allowShortPos && currentDist > IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT* IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT) {
-			good = qtrue;
-		}
-
-		if (good) {
-			vec3_t goodOrigin;
-			float speed;
-
-			if (allowShortPos == 2) {
-				int side, front, up, dist, skipvis;
-				float traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
-				float fracRequired = 0.4;
-				good = qfalse;
-				VectorCopy(pos->origin, goodOrigin);
-				// we might spawn right on the capper's ass
-				// try to move us a bit away if we can?
-				for (skipvis = 0; skipvis < 2 && !good; skipvis++) { // in emergency, dont require visual contact to capper
-					for (dist = 0; dist < 2 && !good; dist++) { // try shorter distance if nothing fouund
-						if (dist == 1) {
-							traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
-							fracRequired = 0.8f;
-						}
-						for (up = 0; up < 2 && !good; up++) {
-							for (side = -1; side < 2 && !good; side++) {
-								for (front = -1; front < 2 && !good; front++) {
-									if (side == 0 && front == 0) {
-										continue;
-									}
-									goodOrigin[0] = pos->origin[0] + (float)front * traceDist;
-									goodOrigin[1] = pos->origin[1] + (float)side * traceDist;
-									goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
-									//if (WiggleSpotTelefrag(goodOrigin, ent)) {
-
-									if (skipvis) {
-										if (WiggleSpotTelefrag(goodOrigin, ent)) {
-											good = qtrue;
-											break;
-										}
-									}
-									else {
-										JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
-										// make sure we could actually reach the capper from that place
-										if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
-											// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
-											VectorCopy(trace.endpos, goodOrigin);
-											JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition, level.ironManClientNum, MASK_PLAYERSOLID);
-											if (trace.fraction == 1.0f) {
-												if (WiggleSpotTelefrag(goodOrigin, ent)) {
-													good = qtrue;
-													break;
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				if (!good) {
-					VectorCopy(pos->origin, goodOrigin);
-					good = WiggleSpotTelefrag(goodOrigin, ent);
-				}
-			}
-			else {
-				VectorCopy(pos->origin, goodOrigin);
-				good = WiggleSpotTelefrag(goodOrigin, ent);
-			}
-
-
-
-			if (good) {
-				// ok found a good pos
-				VectorCopy(pos->velocity, spawn_velocity);
-				VectorSubtract(level.ironManCurrentPosition,goodOrigin,delta);
-				VectorNormalize(delta);
-				vectoangles(delta, spawn_angles); // look at the iron man
-				spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
-
-				//VectorCopy(pos->velocity, velNorm);
-				//speed = VectorNormalize(velNorm);
-				//if (speed > 10) {
-				//	vectoangles(velNorm, spawn_angles);
-				//	spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
-				//}
-				//else {
-				//	VectorCopy(pos->angles,spawn_angles);
-				//}
-				VectorCopy(goodOrigin, spawn_origin);
-				return qtrue;
-			}
-
-		}
-
-	}
-	return qfalse;
-
-	
-}
-
 /*
 ===========
 ClientSpawn
@@ -2546,25 +1738,17 @@ Initializes all non-persistant parts of playerState
 ============
 */
 extern qboolean WP_HasForcePowers( const playerState_t *ps );
-extern void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void ClientSpawn(gentity_t *ent) {
 	int		index;
 	vec3_t	spawn_origin, spawn_angles;
 	gclient_t	*client;
 	int		i;
-#if SEGMENTEDDEBUG
-	static clientPersistant_t	saved;
-#else
-	static clientPersistant_t	saved;
-#endif
+	clientPersistant_t	saved;
 	clientSession_t		savedSess;
-	vec3_t				savedDeltaAngles;
 	int		persistant[MAX_PERSISTANT];
 	gentity_t	*spawnPoint;
-	qboolean	lastSpawnPointRaceValid = qfalse;
 	int		flags;
 	int		savedPing;
-	int		savedCommandTime;
 //	char	*savedAreaBits;
 	int		accuracy_hits, accuracy_shots;
 	int		eventSequence;
@@ -2573,12 +1757,6 @@ void ClientSpawn(gentity_t *ent) {
 	void		*ghoul2save;
 	int		saveSaberNum = ENTITYNUM_NONE;
 	int		wDisable = 0;
-	qboolean	inSegmentedRun = qfalse;
-	qboolean	raceSpawnPossible = qfalse;
-	qboolean	useSavedSpawn = qfalse;
-	int			nowTime = LEVELTIME(ent->client); // at the start of a client (ClientBegin) pers.cmd.serverTime is empty
-	vec3_t		spawn_velocity;
-	qboolean	spawn_velocity_set = qfalse;
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -2603,7 +1781,7 @@ void ClientSpawn(gentity_t *ent) {
 			saberent->s.loopSound = 0;
 
 			ent->client->ps.saberInFlight = qfalse;
-			ent->client->ps.saberThrowDelay = nowTime + 500;
+			ent->client->ps.saberThrowDelay = level.time + 500;
 			ent->client->ps.saberCanThrow = qfalse;
 		}
 	}
@@ -2613,58 +1791,35 @@ void ClientSpawn(gentity_t *ent) {
 		WP_InitForcePowers( ent );
 		client->ps.fd.forceDoInit = 0;
 	}
-
-	inSegmentedRun = client->sess.sessionTeam != TEAM_SPECTATOR && DF_ClientInSegmentedRunMode(client) && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY;
-
-	raceSpawnPossible = client->sess.sessionTeam != TEAM_SPECTATOR && client->sess.raceMode && client->pers.savedSpawnUsed;
-	useSavedSpawn = raceSpawnPossible && !inSegmentedRun && !memcmp(&client->sess.raceStyle, &client->pers.savedSpawnRaceStyle, sizeof(client->sess.raceStyle));
-
-	if (raceSpawnPossible && !useSavedSpawn && !inSegmentedRun) {
-		G_CenterPrint(ent - g_entities,3, "^1Warning: ^7Your spawn point is not valid for your changed race settings.",qfalse,qtrue,qfalse,NULL);
-	}
-
 	// find a spawn point
 	// do it before setting health back up, so farthest
 	// ranging doesn't count this client
 	if ( client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		spawnPoint = SelectSpectatorSpawnPoint ( 
 						spawn_origin, spawn_angles);
-		lastSpawnPointRaceValid = qfalse;
-	} else if (inSegmentedRun) {
-		spawnPoint = NULL;
-		VectorCopy(client->pers.segmented.lastPos.ps.origin, spawn_origin);
-		VectorCopy(client->pers.segmented.lastPos.ps.viewangles, spawn_angles);
-		client->pers.segmented.respos = qtrue;
-	} else if (useSavedSpawn) {
-		spawnPoint = NULL;
-		VectorCopy(client->pers.savedSpawn.ps.origin, spawn_origin);
-		VectorCopy(client->pers.savedSpawn.ps.viewangles, spawn_angles);
 	} else if (g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) {
 		// all base oriented team games use the CTF spawn points
-		spawnPoint = SelectCTFSpawnPoint ( ent,
+		spawnPoint = SelectCTFSpawnPoint ( 
 						client->sess.sessionTeam, 
 						client->pers.teamState.state, 
 						spawn_origin, spawn_angles);
-		lastSpawnPointRaceValid = qfalse;
 	}
 	else if (g_gametype.integer == GT_SAGA)
 	{
-		spawnPoint = SelectSagaSpawnPoint ( ent,
+		spawnPoint = SelectSagaSpawnPoint ( 
 						client->sess.sessionTeam, 
 						client->pers.teamState.state, 
 						spawn_origin, spawn_angles);
-		lastSpawnPointRaceValid = qfalse;
 	}
 	else {
-		int iters = 1;
 		do {
 			// the first spawn should be at a good looking spot
 			if ( !client->pers.initialSpawn && client->pers.localClient ) {
 				client->pers.initialSpawn = qtrue;
-				spawnPoint = SelectInitialSpawnPoint( ent,spawn_origin, spawn_angles );
+				spawnPoint = SelectInitialSpawnPoint( spawn_origin, spawn_angles );
 			} else {
 				// don't spawn near existing origin if possible
-				spawnPoint = SelectSpawnPoint ( ent,
+				spawnPoint = SelectSpawnPoint ( 
 					client->ps.origin, 
 					spawn_origin, spawn_angles);
 			}
@@ -2679,29 +1834,11 @@ void ClientSpawn(gentity_t *ent) {
 				continue;	// try again
 			}
 
-			lastSpawnPointRaceValid = qtrue;
-
 			break;
 
-		} while (iters-- > 0); // TA: this looks like it could potentially cause an infinite loop. limit it to 2.
-		if (!spawnPoint) {
-
-			G_Error("Couldn't find a spawn point (#3)");
-		}
+		} while ( 1 );
 	}
-
-	if (client->sess.mode == MODE_IRONMAN && !client->isIronMan) {
-		if (G_CheckForCloserIronmanSpawn(ent,spawn_origin,spawn_angles,spawn_velocity)) {
-			spawnPoint = NULL;
-			spawn_velocity_set = qtrue;
-		}
-	}
-
 	client->pers.teamState.state = TEAM_ACTIVE;
-
-	if (g_arenaAutoGen.integer && !level.hasArenaInfo) {
-		level.mustGenerateArena = qtrue;
-	}
 
 	// toggle the teleport bit so the client knows to not lerp
 	// and never clear the voted flag
@@ -2712,9 +1849,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	saved = client->pers;
 	savedSess = client->sess;
-	VectorCopySafe(client->ps.delta_angles, savedDeltaAngles);
 	savedPing = client->ps.ping;
-	savedCommandTime = client->ps.commandTime;
 //	savedAreaBits = client->areabits;
 	accuracy_hits = client->accuracy_hits;
 	accuracy_shots = client->accuracy_shots;
@@ -2729,10 +1864,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	saveSaberNum = client->ps.saberEntityNum;
 
-	G_BufferedSendOrPrintFlush(ent, qfalse);
 	memset (client, 0, sizeof(*client)); // bk FIXME: Com_Memset?
-
-	VectorCopySafe(savedDeltaAngles, client->ps.delta_angles); // to make sure my segmented runs work
 
 	//rww - Don't wipe the ghoul2 instance or the animation data
 	client->ghoul2 = ghoul2save;
@@ -2760,7 +1892,7 @@ void ClientSpawn(gentity_t *ent) {
 	client->ps.persistant[PERS_SPAWN_COUNT]++;
 	client->ps.persistant[PERS_TEAM] = client->sess.sessionTeam;
 
-	client->airOutTime = nowTime + 12000;
+	client->airOutTime = level.time + 12000;
 
 //	trap_GetUserinfo( index, userinfo, sizeof(userinfo) );
 	// set max health
@@ -2776,45 +1908,13 @@ void ClientSpawn(gentity_t *ent) {
 	ent->client = &level.clients[index];
 	ent->takedamage = qtrue;
 	ent->inuse = qtrue;
-	G_SetClassName(ent, "player");
+	ent->classname = "player";
 	ent->r.contents = CONTENTS_BODY;
 	ent->clipmask = MASK_PLAYERSOLID;
 	ent->die = player_die;
 	ent->waterlevel = 0;
 	ent->watertype = 0;
 	ent->flags = 0;
-
-	ResetClientModeIfInvalid(ent, (qboolean)!(ent->r.svFlags& SVF_BOT));
-	//if (!g_defrag.integer) {
-	//	DF_SetRaceMode(ent,qfalse);
-	//	//if (client->sess.raceMode) {
-	//	//	client->sess.raceMode = qfalse;
-	//	//	Cmd_ForceChanged_f(ent);
-	//	//}
-	//	//else {
-	//	//	client->sess.raceMode = qfalse;
-	//	//}
-	//}
-
-	//if (client->sess.raceMode)
-	//	client->ps.stats[STAT_RACEMODE] = 1;
-	//else
-	//	client->ps.stats[STAT_RACEMODE] = 0;
-
-	//client->ps.stats[STAT_MOVEMENTSTYLE] = client->sess.raceStyle.movementStyle;
-	//client->ps.stats[STAT_RUNFLAGS] = client->sess.raceStyle.runFlags;
-	UpdateClientRaceVars(client);
-
-	if (client->sess.raceMode && client->sess.raceStyle.movementStyle == MV_BOUNCE) {
-		client->ps.stats[STAT_BOUNCEPOWER] = BOUNCEPOWER_MAX;
-	}
-	else if (client->sess.raceMode && client->sess.raceStyle.movementStyle == MV_CHARGEJUMP) {
-		client->ps.stats[STAT_CHARGEJUMPDATA] = 0;
-	}
-	else {
-		client->ps.stats[STAT_BOUNCEPOWER] = 0;
-	}
-
 	
 	VectorCopy (playerMins, ent->r.mins);
 	VectorCopy (playerMaxs, ent->r.maxs);
@@ -2866,7 +1966,7 @@ void ClientSpawn(gentity_t *ent) {
 			client->ps.stats[STAT_WEAPONS] |= (1 << WP_STUN_BATON);
 		}
 
-		if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL) && (!g_defrag.integer || !(client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER))))
+		if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL))
 		{
 			client->ps.weapon = WP_BRYAR_PISTOL;
 		}
@@ -2958,12 +2058,7 @@ void ClientSpawn(gentity_t *ent) {
 				client->ps.stats[STAT_WEAPONS] &= ~(1 << WP_SABER);
 				client->ps.stats[STAT_WEAPONS] |= (1 << WP_STUN_BATON);
 				client->ps.ammo[AMMO_POWERCELL] = ammoData[AMMO_POWERCELL].max;
-				if (g_defrag.integer && (client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER))) {
-					client->ps.weapon = WP_SABER;
-				}
-				else {
-					client->ps.weapon = WP_BRYAR_PISTOL;
-				}
+				client->ps.weapon = WP_BRYAR_PISTOL;
 			}
 		}
 		else
@@ -3001,7 +2096,7 @@ void ClientSpawn(gentity_t *ent) {
 				client->ps.stats[STAT_WEAPONS] |= (1 << WP_STUN_BATON);
 			}
 
-			if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL) && (!g_defrag.integer || !(client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER))))
+			if (client->ps.stats[STAT_WEAPONS] & (1 << WP_BRYAR_PISTOL))
 			{
 				client->ps.weapon = WP_BRYAR_PISTOL;
 			}
@@ -3014,23 +2109,6 @@ void ClientSpawn(gentity_t *ent) {
 				client->ps.weapon = WP_STUN_BATON;
 			}
 		}
-	}
-
-
-	switch (client->sess.mode) {
-		case MODE_NORMAL:
-		default:
-			break;
-		case MODE_DEFRAG:
-			client->ps.stats[STAT_WEAPONS] = (1 << WP_SABER) + (1 << WP_DISRUPTOR) + (1 << WP_STUN_BATON);
-			client->ps.weapon = WP_SABER;
-			break;
-		case MODE_DUEL:
-		case MODE_ALLFORCE:
-		case MODE_IRONMAN:
-			client->ps.stats[STAT_WEAPONS] = 1 << WP_SABER;
-			client->ps.weapon = WP_SABER;
-			break;
 	}
 
 	/*
@@ -3094,12 +2172,8 @@ void ClientSpawn(gentity_t *ent) {
 	// the respawned flag will be cleared after the attack and jump keys come up
 	client->ps.pm_flags |= PMF_RESPAWNED;
 
-	G_GetUserCmd(client - level.clients, &ent->client->pers.cmd, GETUSERCMD_NOADVANCE);
-	if(!useSavedSpawn){
-		DF_PreDeltaAngleChange(ent->client);
-		SetClientViewAngle(ent, spawn_angles);
-		DF_PostDeltaAngleChange(ent->client,qtrue);
-	}
+	trap_GetUsercmd( client - level.clients, &ent->client->pers.cmd );
+	SetClientViewAngle( ent, spawn_angles );
 
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 
@@ -3117,9 +2191,8 @@ void ClientSpawn(gentity_t *ent) {
 	client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 	client->ps.pm_time = 100;
 
-	client->respawnTime = nowTime;
+	client->respawnTime = level.time;
 	client->inactivityTime = level.time + g_inactivity.integer * 1000;
-	client->inactivityToSpecTime = level.time + g_inactivityToSpec.integer * 1000;
 	client->latched_buttons = 0;
 
 	// set default animations
@@ -3130,50 +2203,24 @@ void ClientSpawn(gentity_t *ent) {
 		MoveClientToIntermission( ent );
 	} else {
 		// fire the targets of the spawn point
-		if (spawnPoint) {
-			G_UseTargets(spawnPoint, ent);
-		}
+		G_UseTargets( spawnPoint, ent );
 
+		// select the highest weapon number available, after any
+		// spawn given items have fired
 		client->ps.weapon = 1;
-		if ((client->ps.stats[STAT_WEAPONS] & (1 << WP_SABER)) && (client->sess.raceMode || g_startWeaponAlwaysSaber.integer)) { // TA: Always prefer saber
-			client->ps.weapon = WP_SABER;
-		}
-		else {
-			// select the highest weapon number available, after any
-			// spawn given items have fired
-			// TA: this is chaotic. ps.weapon is set like 3 times in this whole function or more wtf. first with logic, then hard to bryar, and then here
-			for (i = WP_NUM_WEAPONS - 1; i > 0; i--) {
-				if (client->ps.stats[STAT_WEAPONS] & (1 << i)) {
-					client->ps.weapon = i;
-					break;
-				}
+		for ( i = WP_NUM_WEAPONS - 1 ; i > 0 ; i-- ) {
+			if ( client->ps.stats[STAT_WEAPONS] & ( 1 << i ) ) {
+				client->ps.weapon = i;
+				break;
 			}
 		}
 	}
 
-	if (spawn_velocity_set) {
-		VectorCopy(spawn_velocity, client->ps.velocity);
-	}
-
-	if (spawnPoint && lastSpawnPointRaceValid) {
-		client->pers.lastSpawnPoint = spawnPoint - g_entities;
-	}
-
 	// run a client frame to drop exactly to the floor,
 	// initialize animations and other things
-	if (!inSegmentedRun) {
-		// dont do in racemode in segmented runs and with start spawn
-		client->ps.commandTime = nowTime - 100;
-		ent->client->pers.cmd.serverTime = nowTime;
-		if (spawn_velocity_set) {
-			ent->client->pers.cmd.upmove = 127; // jump to preserve the velocity if needed? might need more tweaking
-		}
-		ClientThink(ent - g_entities);
-	}
-	else {
-		client->ps.commandTime = (savedCommandTime >0) ? savedCommandTime : nowTime; // how will things work out when fps anti toggle is active?
-	}
-	
+	client->ps.commandTime = level.time - 100;
+	ent->client->pers.cmd.serverTime = level.time;
+	ClientThink( ent-g_entities );
 
 	// positively link the client, even if the command times are weird
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -3182,10 +2229,10 @@ void ClientSpawn(gentity_t *ent) {
 		trap_LinkEntity( ent );
 	}
 
-	if (g_spawnInvulnerability.integer && !ent->client->sess.raceMode)
+	if (g_spawnInvulnerability.integer)
 	{
 		ent->client->ps.eFlags |= EF_INVULNERABLE;
-		ent->client->invulnerableTimer = nowTime + g_spawnInvulnerability.integer;
+		ent->client->invulnerableTimer = level.time + g_spawnInvulnerability.integer;
 	}
 
 	// run the presend to set anything else
@@ -3193,139 +2240,13 @@ void ClientSpawn(gentity_t *ent) {
 	{ // Only do this if we're not dealing with follow spectators to prevent two bugs:
 	  // 1) follow spectators turning into free spectators at map_restart, because the client they were following has a higher client number and isn't ingame, yet
 	  // 2) follow spectators corrupting their s.number in BG_PlayerStateToEntityState, cause they get the other client's playerState in ClientEndFrame
-		if (ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
-			SpectatorClientEndFrame(ent);
-		}
-		else {
-			ClientEndFrame(ent,qtrue); // is the qtrue logical? just trying to keep things consistent with how they were while making defrag more deterministic
-		}
-	}
-
-	if (useSavedSpawn) {
-		RestorePosition(ent, &client->pers.savedSpawn, client->pers.segmented.anglesDiffAccum);
+		ClientEndFrame( ent );
 	}
 
 	// clear entity state values
 	BG_PlayerStateToEntityState( &client->ps, &ent->s, qtrue );
-
-	if (!inSegmentedRun) {
-		DF_RaceStateInvalidated(ent,qfalse);
-		ent->client->sess.raceStateInvalidated = qfalse;
-		ent->client->pers.antiLoop.yawAngleChangeSinceBaseSpeed = 0;
-		if (ent->client->pers.lastRaceTimerStartedCP > level.time-3000) {
-			G_CenterPrint(ent - g_entities, 3, "", qfalse, qtrue, qfalse, NULL); // just send an empty cp to clear the screen of the old "Timer started!"
-			ent->client->pers.lastRaceTimerStartedCP = 0;
-		}
-	}
 }
 
-extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
-
-void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
-	gentity_t* tent;
-	int			i;
-
-	// remove this player as the activator from any activated ents
-	// is this actually safe? what if some ent just expects the activator to be a valid ent?
-	// yea better just check activator->inuse...
-	G_ClearEntityActivator(ent); // this one not needed prolly cuz client has no activator, but lets be safe.
-	G_ClearActivatedEntities(ent);
-	DF_ClearCheckPointTimes(ent);
-	G_ResetUserCmdStore(ent - g_entities);
-
-	DF_RemoveCheckPoints(ent);
-
-	if (ent->client->pers.recordingDemo) {
-
-		ent->client->pers.recordingDemo = qfalse;
-		ent->client->pers.demoStoppedTime = level.time;
-		if (!ent->client->pers.keepDemoMaybe) {
-			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"%strash/trash%d\"\n", ent - g_entities, ent->client->pers.tempDemoName, level.tempDemoNamePrefix, ent - g_entities));
-		}
-		else {
-			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", ent - g_entities, ent->client->pers.tempDemoName, ent - g_entities));
-		}
-	}
-
-	i = 0;
-
-	while (i < NUM_FORCE_POWERS)
-	{
-		if (ent->client->ps.fd.forcePowersActive & (1 << i))
-		{
-			WP_ForcePowerStop(ent, i);
-		}
-		i++;
-	}
-
-	i = TRACK_CHANNEL_1;
-
-	while (i < NUM_TRACK_CHANNELS)
-	{
-		if (ent->client->ps.fd.killSoundEntIndex[i - 50] && ent->client->ps.fd.killSoundEntIndex[i - 50] < MAX_GENTITIES && ent->client->ps.fd.killSoundEntIndex[i - 50] > 0)
-		{
-			G_MuteSound(ent->client->ps.fd.killSoundEntIndex[i - 50], CHAN_VOICE);
-		}
-		i++;
-	}
-	i = 0;
-
-	// stop any following clients
-	for (i = 0; i < level.maxclients; i++) {
-		if (level.clients[i].sess.sessionTeam == TEAM_SPECTATOR
-			&& level.clients[i].sess.spectatorState == SPECTATOR_FOLLOW
-			&& level.clients[i].sess.spectatorClient == clientNum) {
-			StopFollowing(&g_entities[i]);
-		}
-	}
-
-	// send effect if they were completely connected
-	if (ent->client->pers.connected == CON_CONNECTED
-		&& ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
-		tent = G_TempEntity(ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT);
-		tent->s.clientNum = ent->s.clientNum;
-
-		// They don't get to take powerups with them!
-		// Especially important for stuff like CTF flags
-		TossClientItems(ent);
-	}
-
-	G_LogPrintf("ClientDisconnect: %i\n", clientNum);
-
-	// if we are playing in tourney mode, give a win to the other player and clear his frags for this round
-	if ((g_gametype.integer == GT_TOURNAMENT)
-		&& !level.intermissiontime
-		&& !level.warmupTime) {
-		if (level.sortedClients[1] == clientNum) {
-			level.clients[level.sortedClients[0]].ps.persistant[PERS_SCORE] = 0;
-			level.clients[level.sortedClients[0]].sess.wins++;
-			ClientUserinfoChanged(level.sortedClients[0]);
-		}
-		else if (level.sortedClients[0] == clientNum) {
-			level.clients[level.sortedClients[1]].ps.persistant[PERS_SCORE] = 0;
-			level.clients[level.sortedClients[1]].sess.wins++;
-			ClientUserinfoChanged(level.sortedClients[1]);
-		}
-	}
-
-	trap_UnlinkEntity(ent);
-	ent->s.modelindex = 0;
-	ent->inuse = qfalse;
-	G_SetClassName(ent, "disconnected");
-	ent->client->pers.connected = CON_DISCONNECTED;
-	ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
-	ent->client->sess.sessionTeam = TEAM_FREE;
-
-	trap_SetConfigstring(CS_PLAYERS + clientNum, "");
-
-	CalculateRanks();
-
-	if (ent->r.svFlags & SVF_BOT) {
-		BotAIShutdownClient(clientNum, qfalse);
-	}
-
-	G_ClearClientLog(clientNum);
-}
 
 /*
 ===========
@@ -3353,59 +2274,92 @@ void ClientDisconnect( int clientNum ) {
 		return;
 	}
 
-	G_ResetClientVote(ent->client);
+	i = 0;
 
-	if (DF_KeepClientZombie(ent)) {
-		return;
+	while (i < NUM_FORCE_POWERS)
+	{
+		if (ent->client->ps.fd.forcePowersActive & (1 << i))
+		{
+			WP_ForcePowerStop(ent, i);
+		}
+		i++;
 	}
 
-	ClientDisconnectFinish(clientNum, ent);
-}
+	i = TRACK_CHANNEL_1;
 
-void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers) {
-	int i;
-	gentity_t* other;
-	trap_SendServerCommand(targetnum, cmd);
-	if (targetnum == -1 || !alsoFollowers) {
-		return;
+	while (i < NUM_TRACK_CHANNELS)
+	{
+		if (ent->client->ps.fd.killSoundEntIndex[i-50] && ent->client->ps.fd.killSoundEntIndex[i-50] < MAX_GENTITIES && ent->client->ps.fd.killSoundEntIndex[i-50] > 0)
+		{
+			G_MuteSound(ent->client->ps.fd.killSoundEntIndex[i-50], CHAN_VOICE);
+		}
+		i++;
 	}
-	
-	for (i = 0; i < level.maxclients; i++) {
-		other = g_entities + i;
-		if (!other->client || !other->inuse || other->client->sess.spectatorState != SPECTATOR_FOLLOW || other->client->sess.spectatorClient != targetnum) continue; // can !other->client happen? no idea lazy to think about it.
-		trap_SendServerCommand(i, cmd);
+	i = 0;
+
+	// stop any following clients
+	for ( i = 0 ; i < level.maxclients ; i++ ) {
+		if ( level.clients[i].sess.sessionTeam == TEAM_SPECTATOR
+			&& level.clients[i].sess.spectatorState == SPECTATOR_FOLLOW
+			&& level.clients[i].sess.spectatorClient == clientNum ) {
+			StopFollowing( &g_entities[i] );
+		}
 	}
+
+	// send effect if they were completely connected
+	if ( ent->client->pers.connected == CON_CONNECTED 
+		&& ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+		tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT );
+		tent->s.clientNum = ent->s.clientNum;
+
+		// They don't get to take powerups with them!
+		// Especially important for stuff like CTF flags
+		TossClientItems( ent );
+	}
+
+	G_LogPrintf( "ClientDisconnect: %i\n", clientNum );
+
+	// if we are playing in tourney mode, give a win to the other player and clear his frags for this round
+	if ( (g_gametype.integer == GT_TOURNAMENT )
+		&& !level.intermissiontime
+		&& !level.warmupTime ) {
+		if ( level.sortedClients[1] == clientNum ) {
+			level.clients[ level.sortedClients[0] ].ps.persistant[PERS_SCORE] = 0;
+			level.clients[ level.sortedClients[0] ].sess.wins++;
+			ClientUserinfoChanged( level.sortedClients[0] );
+		}
+		else if ( level.sortedClients[0] == clientNum ) {
+			level.clients[ level.sortedClients[1] ].ps.persistant[PERS_SCORE] = 0;
+			level.clients[ level.sortedClients[1] ].sess.wins++;
+			ClientUserinfoChanged( level.sortedClients[1] );
+		}
+	}
+
+	trap_UnlinkEntity (ent);
+	ent->s.modelindex = 0;
+	ent->inuse = qfalse;
+	ent->classname = "disconnected";
+	ent->client->pers.connected = CON_DISCONNECTED;
+	ent->client->ps.persistant[PERS_TEAM] = TEAM_FREE;
+	ent->client->sess.sessionTeam = TEAM_FREE;
+
+	trap_SetConfigstring( CS_PLAYERS + clientNum, "");
+
+	CalculateRanks();
+
+	if ( ent->r.svFlags & SVF_BOT ) {
+		BotAIShutdownClient( clientNum, qfalse );
+	}
+
+	G_ClearClientLog(clientNum);
 }
 
 #define MAX_CLIENT_CENTERPRINT_LINELENGTH 50
 #define MAX_CLIENT_CENTERPRINT_LENGTH 1024
-void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra)
+void G_CenterPrint( int targetNum, int autoLineWraps, const char *message )
 {
-	int len = strlen(message);
-	if (printInDefrag && g_defrag.integer) {
-		if (extra) {
-			G_SendServerCommand(targetNum, va("print \"%s\n\" %s", message, extra), alsoFollowers);
-		}
-		else {
-			G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
-		}
-	}
-	else if (!autoLineWraps || len <= MAX_CLIENT_CENTERPRINT_LINELENGTH) {
-		if (alwaysPrint) {
-			if (extra) {
-				G_SendServerCommand(targetNum, va("print \"%s\n\" %s", message,extra), alsoFollowers);
-			}
-			else {
-				G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
-			}
-		}
-		if (extra) {
-			G_SendServerCommand(targetNum, va("cp \"%s\" %s", message, extra), alsoFollowers);
-		}
-		else {
-			G_SendServerCommand(targetNum, va("cp \"%s\"", message), alsoFollowers);
-		}
-	}
+	if ( !autoLineWraps )
+		trap_SendServerCommand( targetNum, va("cp \"%s\"", message) );
 	else
 	{
 		char newMessage[MAX_CLIENT_CENTERPRINT_LENGTH];
@@ -3421,18 +2375,9 @@ void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qbool
 		int reset;
 		int isMultiLang;
 
-		if (alwaysPrint) {
-			if (extra) {
-				G_SendServerCommand(targetNum, va("print \"%s\n\" %s", message,extra), alsoFollowers);
-			}
-			else {
-				G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
-			}
-		}
-
 		*newMessage = 0;
 
-		while ( *lineStart && (size_t)(lineStart-message) < len)
+		while ( *lineStart && (size_t)(lineStart-message) < strlen(message) )
 		{
 			if ( *newMessage ) Q_strcat( newMessage, sizeof(newMessage), "\n" );
 
@@ -3547,12 +2492,7 @@ void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qbool
 			lineStart = lineEnd + 1;
 			lineEnd = lineStart;
 		}
-		if (extra) {
-			G_SendServerCommand(targetNum, va("cp \"%s\" %s", newMessage, extra), alsoFollowers);
-		}
-		else {
-			G_SendServerCommand(targetNum, va("cp \"%s\"", newMessage), alsoFollowers);
-		}
+		trap_SendServerCommand( targetNum, va("cp \"%s\"", newMessage) );
 	}
 }
 

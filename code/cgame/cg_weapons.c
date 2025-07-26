@@ -3,7 +3,6 @@
 // cg_weapons.c -- events and effects dealing with weapons
 #include "cg_local.h"
 #include "fx_local.h"
-#include "../ui/ui_shared.h"
 
 extern vec4_t	bluehudtint;
 extern vec4_t	redhudtint;
@@ -864,7 +863,7 @@ WEAPON SELECTION
 
 void CG_DrawIconBackground(void)
 {
-	float			height,xAdd,x2,y2,x3,t;
+	float			height,xAdd,x2,y2,t;
 	float			prongLeftX, prongRightX;
 	float			prongWidth;
 	float			inTime = cg.invenSelectTime+WEAPON_SELECT_TIME;
@@ -873,8 +872,6 @@ void CG_DrawIconBackground(void)
 	qhandle_t		background;
 	int				drawType = cgs.media.weaponIconBackground;
 	int				prongsOn = cgs.media.weaponProngsOn;
-	float			bottomOffset = 70.0f; 
-	menuDef_t*		menuHUD = NULL;
 		
 	// don't display if dead
 	if ( cg.snap->ps.stats[STAT_HEALTH] <= 0 ) 
@@ -882,34 +879,29 @@ void CG_DrawIconBackground(void)
 		return;
 	}
 
-	if (cg.hudType == HUD_TYPE_TEXT)
+	if (cg_hudFiles.integer)
 	{ //simple hud
 		return;
 	}
 
-	if (cg.hudType == HUD_TYPE_JKA)
-	{
-		return;
-	}
+	x2 = 30;
+	y2 = cgs.screenHeight-70;
 
-	if (cg.hudType == HUD_TYPE_JK2CONSOLE)
-	{
-		bottomOffset = 110;
-	}
+	prongLeftX = x2 + 37; 
+	prongRightX = cgs.screenWidth - x2 - 37 + 1;
+	prongWidth = cgs.screenWidth - 2 * (x2 + 60);
 
 	if (inTime > wpTime)
 	{
 		drawType = cgs.media.inventoryIconBackground;
 		prongsOn = cgs.media.inventoryProngsOn;
 		cg.iconSelectTime = cg.invenSelectTime;
-		menuHUD = Menus_FindByName("inventoryselecthud");
 	}
 	else
 	{
 		drawType = cgs.media.weaponIconBackground;
 		prongsOn = cgs.media.weaponProngsOn;
 		cg.iconSelectTime = cg.weaponSelectTime;
-		menuHUD = Menus_FindByName("weaponselecthud");
 	}
 
 	if (fpTime > inTime && fpTime > wpTime)
@@ -917,46 +909,7 @@ void CG_DrawIconBackground(void)
 		drawType = cgs.media.forceIconBackground;
 		prongsOn = cgs.media.forceProngsOn;
 		cg.iconSelectTime = cg.forceSelectTime;
-		menuHUD = Menus_FindByName("forceselecthud");
 	}
-
-	x2 = 30;
-
-	if (menuHUD) {
-		x2 = menuHUD->window.rect.x;
-		bottomOffset = 480 - menuHUD->window.rect.y;
-	}
-
-	menuHUD = Menus_FindByName("lefthud");
-
-	x3 = x2;
-
-	if (menuHUD) { // e.g. console style hud has the huds more inside, so we put a higher offset
-		x2 += menuHUD->window.rect.x;
-
-		menuHUD = Menus_FindByName("righthud");
-
-		if (menuHUD) {
-			x3 += 560.0f-menuHUD->window.rect.x;
-		}
-	}
-	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
-		x2 += 50;
-		x3 += 50;
-	}
-	
-	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
-		x2 += cg_consoleHudOffsetX.value;
-		x3 += cg_consoleHudOffsetX.value;
-		bottomOffset += cg_consoleHudOffsetY.value;
-	}
-
-	y2 = cgs.screenHeight- bottomOffset;
-
-	prongLeftX = x2 + 37; 
-	prongRightX = cgs.screenWidth - x3 - 37 + 1;
-	prongWidth = cgs.screenWidth - (x2 + 60) - (x3 + 60);
-
 
 	if ((cg.iconSelectTime+WEAPON_SELECT_TIME)<cg.time)	// Time is up for the HUD to display
 	{
@@ -1099,9 +1052,6 @@ void CG_DrawWeaponSelect( void ) {
 	float			holdX,x,y,pad;
 	int				sideLeftIconCnt,sideRightIconCnt;
 	int				sideMax,holdCount,iconCnt;
-	float			bottomOffset = 70.0f;
-	menuDef_t*		menuHUD = NULL;
-	float			sideBuffer = 240.0f;
 
 	if (cg.predictedPlayerState.emplacedIndex)
 	{ //can't cycle when on a weapon
@@ -1155,25 +1105,9 @@ void CG_DrawWeaponSelect( void ) {
 	bigIconSize = 80;
 	pad = 12;
 
-	menuHUD = Menus_FindByName("lefthud");
-	if (menuHUD) {
-		sideBuffer += menuHUD->window.rect.x;
-		menuHUD = Menus_FindByName("righthud");
-		if (menuHUD) {
-			sideBuffer += 560.0f - menuHUD->window.rect.x;
-		}
-	}
-	else if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
-		sideBuffer += 100.0f;
-	}	
-	
-	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
-		sideBuffer += cg_consoleHudOffsetX.value * 2.0f;
-	}
-
 	// Max number of icons on the side
 	if (cg_widescreen.integer)
-		sideMax = (cgs.screenWidth - sideBuffer - bigIconSize) / (smallIconSize + pad) / 2;
+		sideMax = (cgs.screenWidth - 240 - bigIconSize) / (smallIconSize + pad) / 2;
 	else
 		sideMax = 3;
 
@@ -1202,21 +1136,7 @@ void CG_DrawWeaponSelect( void ) {
 	}
 
 	x = 0.5f * cgs.screenWidth;
-
-	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
-		bottomOffset = 110;
-	}
-
-	menuHUD = Menus_FindByName("weaponselecthud");
-	if (menuHUD) {
-		bottomOffset = 480 - menuHUD->window.rect.y;
-	}
-
-	if (cg.hudType == HUD_TYPE_JK2CONSOLE) {
-		bottomOffset += cg_consoleHudOffsetY.value;
-	}
-
-	y = cgs.screenHeight - bottomOffset;
+	y = cgs.screenHeight - 70;
 
 	// Background
 //	memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
@@ -1713,11 +1633,11 @@ void CG_FireWeapon( centity_t *cent, qboolean altFire ) {
 
 			if (val > 3)
 			{
-				val = 3.0f;
+				val = 3;
 			}
 			if (val < 0.2)
 			{
-				val = 0.2f;
+				val = 0.2;
 			}
 
 			val *= 2;
@@ -1730,17 +1650,17 @@ void CG_FireWeapon( centity_t *cent, qboolean altFire ) {
 		{
 			if (ent->weapon == WP_ROCKET_LAUNCHER)
 			{
-				CGCam_Shake(Q_irand(2, 3, qfalse, 2), 350);
+				CGCam_Shake(Q_irand(2, 3), 350);
 			}
 			else if (ent->weapon == WP_REPEATER)
 			{
-				CGCam_Shake(Q_irand(2, 3, qfalse, 2), 350);
+				CGCam_Shake(Q_irand(2, 3), 350);
 			}
 			else if (ent->weapon == WP_FLECHETTE)
 			{
 				if (altFire)
 				{
-					CGCam_Shake(Q_irand(2, 3,qfalse,2), 350);
+					CGCam_Shake(Q_irand(2, 3), 350);
 				}
 				else
 				{
@@ -2214,8 +2134,7 @@ Ghoul2 Insert Start
 */
 
 // create one instance of all the weapons we are going to use so we can just copy this info into each clients gun ghoul2 object in fast way
-static void *g2WeaponInstances[MAX_WEAPONS];
-
+void *g2WeaponInstances[MAX_WEAPONS];
 void CG_InitG2Weapons(void)
 {
 	int i = 0;
@@ -2256,122 +2175,33 @@ void CG_ShutDownG2Weapons(void)
 	}
 }
 
-void *CG_G2WeaponInstance(centity_t *cent, int weapon)
-{
-	clientInfo_t *ci = NULL;
-
-	if (weapon != WP_SABER)
-	{
-		return g2WeaponInstances[weapon];
-	}
-
-	if (cent->currentState.eType != ET_PLAYER)
-	{
-		return g2WeaponInstances[weapon];
-	}
-
-	ci = &cgs.clientinfo[cent->currentState.number];
-
-	if (!ci)
-	{
-		return g2WeaponInstances[weapon];
-	}
-
-	//Try to return the custom saber instance if we can.
-	if (ci->saber[0].model[0] &&
-		ci->ghoul2Weapons[0])
-	{
-		return ci->ghoul2Weapons[0];
-	}
-
-	//If no custom then just use the default.
-	return g2WeaponInstances[weapon];
-}
-
 // what ghoul2 model do we want to copy ?
-void CG_CopyG2WeaponInstance(centity_t *cent, int weaponNum, void *toGhoul2)
+void CG_CopyG2WeaponInstance(int weaponNum, void *toGhoul2)
 {
 	//rww - the -1 is because there is no "weapon" for WP_NONE
 	assert(weaponNum < MAX_WEAPONS);
-	if (CG_G2WeaponInstance(cent, weaponNum/*-1*/))
+	if (g2WeaponInstances[weaponNum/*-1*/])
 	{
-		if (weaponNum == WP_SABER)
-		{
-			clientInfo_t *ci = NULL;
-
-			ci = &cgs.clientinfo[cent->currentState.number];
-
-			if (!ci)
+		if (weaponNum == WP_EMPLACED_GUN)
+		{ //a bit of a hack to remove gun model when using an emplaced weap
+			if (trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 1))
 			{
-				trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, weaponNum/*-1*/), 0, toGhoul2, 1); 
-			}
-			else
-			{ //Try both the left hand saber and the right hand saber
-				int i = 0;
-
-				while (i < MAX_SABERS)
-				{
-					if (ci->saber[i].model[0] &&
-						ci->ghoul2Weapons[i])
-					{
-						trap_G2API_CopySpecificGhoul2Model(ci->ghoul2Weapons[i], 0, toGhoul2, i+1); 
-					}
-					else if (ci->ghoul2Weapons[i])
-					{ //if the second saber has been removed, then be sure to remove it and free the instance.
-						qboolean g2HasSecondSaber = trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 2);
-
-						if (g2HasSecondSaber)
-						{ //remove it now since we're switching away from sabers
-							trap_G2API_RemoveGhoul2Model(&(toGhoul2), 2);
-						}
-						trap_G2API_CleanGhoul2Models(&ci->ghoul2Weapons[i]);
-					}
-
-					i++;
-				}
+				trap_G2API_RemoveGhoul2Model(&(toGhoul2), 1);
 			}
 		}
 		else
 		{
-			qboolean g2HasSecondSaber = trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 2);
-
-			if (g2HasSecondSaber)
-			{ //remove it now since we're switching away from sabers
-				trap_G2API_RemoveGhoul2Model(&(toGhoul2), 2);
-			}
-
-			if (weaponNum == WP_EMPLACED_GUN)
-			{ //a bit of a hack to remove gun model when using an emplaced weap
-				if (trap_G2API_HasGhoul2ModelOnIndex(&(toGhoul2), 1))
-				{
-					trap_G2API_RemoveGhoul2Model(&(toGhoul2), 1);
-				}
-			}
-			else
-			{
-				trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, weaponNum/*-1*/), 0, toGhoul2, 1); 
-			}
+			trap_G2API_CopySpecificGhoul2Model(g2WeaponInstances[weaponNum/*-1*/], 0, toGhoul2, 1); 
 		}
 	}
 }
 
 void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent) 
 {
-	if (!ps)
-	{
-		assert(0);
-		return;
-	}
-
-	if (ps->pm_flags & PMF_FOLLOW)
-	{
-		return;
-	}
-
 	// should we change the gun model on this player?
 	if (cent->currentState.saberInFlight)
 	{
-		cent->ghoul2weapon = CG_G2WeaponInstance(cent, WP_SABER);
+		cent->ghoul2weapon = g2WeaponInstances[WP_SABER];
 	}
 
 	if (cent->currentState.eFlags & EF_DEAD)
@@ -2397,28 +2227,21 @@ void CG_CheckPlayerG2Weapons(playerState_t *ps, centity_t *cent)
 		return;
 	}
 
-	if (cgs.clientinfo[ps->clientNum].team == TEAM_SPECTATOR ||
-		ps->persistant[PERS_TEAM] == TEAM_SPECTATOR)
-	{
-		cent->ghoul2weapon = cg_entities[ps->clientNum].ghoul2weapon = NULL;
-		cent->weapon = cg_entities[ps->clientNum].weapon = 0;
-		return;
-	}
-
-	if (cent->ghoul2 && ps && cent->ghoul2weapon != CG_G2WeaponInstance(cent, ps->weapon) &&
+	if (cent->ghoul2 && ps && cent->ghoul2weapon != g2WeaponInstances[ps->weapon] &&
 		ps->clientNum == cent->currentState.number) //don't want spectator mode forcing one client's weapon instance over another's
 	{
-		CG_CopyG2WeaponInstance(cent, ps->weapon, cent->ghoul2);
-		cent->ghoul2weapon = CG_G2WeaponInstance(cent, ps->weapon);
-		if (cent->weapon == WP_SABER && cent->weapon != ps->weapon && !ps->saberHolstered)
+		CG_CopyG2WeaponInstance(ps->weapon, cent->ghoul2);
+		cent->ghoul2weapon = g2WeaponInstances[ps->weapon];
+		if (cent->weapon == WP_SABER && cg_entities[cent->currentState.number].weapon != ps->weapon && !ps->saberHolstered)
 		{ //switching away from the saber
 			trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberoffquick.wav" ));
 		}
-		else if (ps->weapon == WP_SABER && cent->weapon != ps->weapon)
+		else if (ps->weapon == WP_SABER && cg_entities[cent->currentState.number].weapon != ps->weapon)
 		{ //switching to the saber
 			trap_S_StartSound(cent->lerpOrigin, cent->currentState.number, CHAN_AUTO, trap_S_RegisterSound( "sound/weapons/saber/saberon.wav" ));
 		}
 		cent->weapon = ps->weapon;
+		cg_entities[cent->currentState.number].weapon = ps->weapon;
 	}
 }
 

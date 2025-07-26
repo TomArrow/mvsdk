@@ -349,7 +349,7 @@ int BotDoChat(bot_state_t *bs, char *section, int always)
 		return 0;
 	}
 
-	if (Q_irand(1, 10, qfalse, 5) > bs->chatFrequency && !always)
+	if (Q_irand(1, 10) > bs->chatFrequency && !always)
 	{
 		return 0;
 	}
@@ -399,7 +399,7 @@ int BotDoChat(bot_state_t *bs, char *section, int always)
 		return 0;
 	}
 
-	getthisline = Q_irand(0, (lines+1), qfalse, (lines+1)/2);
+	getthisline = Q_irand(0, (lines+1));
 
 	if (getthisline < 1)
 	{
@@ -503,7 +503,7 @@ int BotDoChat(bot_state_t *bs, char *section, int always)
 	{
 		bs->doChat = 1;
 	}
-	bs->chatTime_stored = (strlen(bs->currentChat)*45)+ Q_irandExpectedIf(gRandomUnlockAdd, 1300, 1500, qfalse, 1400);
+	bs->chatTime_stored = (strlen(bs->currentChat)*45)+Q_irand(1300, 1500);
 	bs->chatTime = level.time + bs->chatTime_stored;
 
 	B_TempFree(MAX_CHAT_BUFFER_SIZE); //chatgroup

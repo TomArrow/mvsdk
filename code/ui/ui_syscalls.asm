@@ -159,53 +159,7 @@ equ trap_R_RemapShader_1_02					 -89	; UI_R_REMAP_SHADER
 equ trap_SP_Register						-201	; UI_SP_REGISTER 
 equ trap_SP_GetStringTextString				-202	; UI_SP_GETSTRINGTEXTSTRING 
 equ trap_G2API_SetBoneAngles				-203	; UI_G2_ANGLEOVERRIDE 
-equ trap_R_ShaderNameFromIndex				-204	; UI_R_SHADERNAMEFROMINDEX 
-equ trap_SP_GetNumLanguages					-205	; UI_SP_GETNUMLANGUAGES 
-equ trap_GetLanguageName					-206	; UI_SP_GETLANGUAGENAME 
-equ trap_G2_ListModelSurfaces				-207	; UI_G2_LISTSURFACES 
-equ trap_G2_ListModelBones					-208	; UI_G2_LISTBONES 
-equ trap_G2_SetGhoul2ModelIndexes			-209	; UI_G2_SETMODELS 
-equ trap_G2_HaveWeGhoul2Models				-210	; UI_G2_HAVEWEGHOULMODELS 
-equ trap_G2API_GiveMeVectorFromMatrix		-211	; UI_G2_GIVEMEVECTORFROMMATRIX 
-equ trap_G2API_GetBoltMatrix				-212	; UI_G2_GETBOLT 
-equ trap_G2API_GetBoltMatrix_NoReconstruct	-213	; UI_G2_GETBOLT_NOREC 
-equ trap_G2API_GetBoltMatrix_NoRecNoRot		-214	; UI_G2_GETBOLT_NOREC_NOROT 
-equ trap_G2API_InitGhoul2Model				-215	; UI_G2_INITGHOUL2MODEL 
-equ trap_G2API_CollisionDetect				-216	; UI_G2_COLLISIONDETECT 
-equ trap_G2API_CollisionDetectCache			-217	; UI_G2_COLLISIONDETECTCACHE 
-equ trap_G2API_CleanGhoul2Models			-218	; UI_G2_CLEANMODELS 
-equ trap_G2API_SetBoneAnim					-219	; UI_G2_PLAYANIM 
-equ trap_G2API_GetBoneAnim					-220	; UI_G2_GETBONEANIM 
-equ trap_G2API_GetBoneFrame					-221	; UI_G2_GETBONEFRAME 
-equ trap_G2API_GetGLAName					-222	; UI_G2_GETGLANAME 
-equ trap_G2API_CopyGhoul2Instance			-223	; UI_G2_COPYGHOUL2INSTANCE 
-equ trap_G2API_CopySpecificGhoul2Model		-224	; UI_G2_COPYSPECIFICGHOUL2MODEL 
-equ trap_G2API_DuplicateGhoul2Instance		-225	; UI_G2_DUPLICATEGHOUL2INSTANCE 
-equ trap_G2API_HasGhoul2ModelOnIndex		-226	; UI_G2_HASGHOUL2MODELONINDEX 
-equ trap_G2API_RemoveGhoul2Model			-227	; UI_G2_REMOVEGHOUL2MODEL 
-equ trap_G2API_AddBolt						-228	; UI_G2_ADDBOLT 
-equ trap_G2API_SetBoltInfo					-229	; UI_G2_SETBOLTON 
-equ trap_G2API_SetRootSurface				-230	; UI_G2_SETROOTSURFACE 
-equ trap_G2API_SetSurfaceOnOff				-231	; UI_G2_SETSURFACEONOFF 
-equ trap_G2API_SetNewOrigin					-232	; UI_G2_SETNEWORIGIN 
-equ trap_G2API_GetTime						-233	; UI_G2_GETTIME 
-equ trap_G2API_SetTime						-234	; UI_G2_SETTIME 
-equ trap_G2API_SetRagDoll					-235	; UI_G2_SETRAGDOLL 
-equ trap_G2API_AnimateG2Models				-236	; UI_G2_ANIMATEG2MODELS 
-equ trap_G2API_SetBoneIKState				-237	; UI_G2_SETBONEIKSTATE 
-equ trap_G2API_IKMove						-238	; UI_G2_IKMOVE 
-equ trap_G2API_GetSurfaceName				-239	; UI_G2_GETSURFACENAME 
-equ trap_G2API_SetSkin						-240	; UI_G2_SETSKIN 
-equ trap_G2API_AttachG2Model				-241	; UI_G2_ATTACHG2MODEL 
-equ trap_Z_Malloc							-242	; UI_Z_MALLOC 
-equ trap_Z_MemSize							-243	; UI_Z_MEMSIZE 
-equ trap_Z_TagFree							-244	; UI_Z_TAGFREE 
-equ trap_Z_Free								-245	; UI_Z_FREE 
-equ trap_Z_Size								-246	; UI_Z_SIZE 
-equ trap_Z_Realloc							-247	; UI_Z_REALLOC 
-equ trap_FS_CreateFileList					-248	; UI_FS_CREATE_FILE_LIST 
-equ trap_FS_CloseFileList					-249	; UI_FS_CLOSE_FILE_LIST 
-equ trap_FS_GetNextFile						-250	; UI_FS_GET_NEXT_FILE 
+
 
 ; hardcoded functions
 equ memset									-101	; UI_MEMSET 
@@ -240,25 +194,3 @@ equ trap_CL_ContinueCurrentDownload         -301    ; UI_MVAPI_CONTINUE_DOWNLOAD
 equ trap_FS_GetDLList                       -302    ; UI_MVAPI_GETDLLIST
 equ trap_FS_RMDLPrefix                      -303    ; UI_MVAPI_RMDLPREFIX
 equ trap_UI_DeleteDLFile                    -304    ; UI_MVAPI_DELDLFILE
-
-
-equ trap_UI_COOL_API_GlResolutionChanged    -1105   ; UI_COOL_API_GLRESOLUTIONCHANGED
-
-; COOL_APIFEATURE_JEDI_ACADEMY
-equ trap_UI_COOL_API_GetNumLanguages           -2001    ; UI_COOL_API_GET_NUM_LANGUAGES
-equ trap_UI_COOL_API_GetLanguageName           -2002    ; UI_COOL_API_GET_LANGUAGE_NAME
-equ trap_UI_COOL_API_HaveWeGhoul2Models        -2003    ; UI_COOL_API_HAVE_WE_GHOUL2_MODELS
-equ trap_UI_COOL_API_GiveMeVectorFromMatrix    -2004    ; UI_COOL_API_GIVE_ME_VECTOR_FROM_MATRIX
-equ trap_UI_COOL_API_GetBoltMatrix             -2005    ; UI_COOL_API_GET_BOLT_MATRIX
-equ trap_UI_COOL_API_InitGhoul2Model           -2006    ; UI_COOL_API_INIT_GHOUL2_MODEL
-equ trap_UI_COOL_API_SetSkin                   -2007    ; UI_COOL_API_SET_SKIN
-equ trap_UI_COOL_API_SkinlessModel             -2008    ; UI_COOL_API_SKINLESS_MODEL
-equ trap_UI_COOL_API_GetSurfaceRenderStatus    -2009    ; UI_COOL_API_GET_SURFACE_RENDER_STATUS
-equ trap_UI_COOL_API_CleanGhoul2Models         -2010    ; UI_COOL_API_CLEAN_GHOUL2_MODELS
-equ trap_UI_COOL_API_SetBoneAnim               -2011    ; UI_COOL_API_SET_BONE_ANIM
-equ trap_UI_COOL_API_GetGlaName                -2012    ; UI_COOL_API_GET_GLA_NAME
-equ trap_UI_COOL_API_HasGhoul2ModelOnIndex     -2013    ; UI_COOL_API_HAS_GHOUL2_MODEL_ON_INDEX
-equ trap_UI_COOL_API_RemoveGhoul2Model         -2014    ; UI_COOL_API_REMOVE_GHOUL2_MODEL
-equ trap_UI_COOL_API_AddBolt                   -2015    ; UI_COOL_API_ADD_BOLT
-equ trap_UI_COOL_API_AttachG2Model             -2016    ; UI_COOL_API_ATTACH_G2_MODEL
-equ trap_UI_COOL_API_GetFileVersion            -2017    ; UI_COOL_API_GET_FILE_VERSION

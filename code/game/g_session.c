@@ -6,8 +6,6 @@
 #define LevelTimeDiff( timeVal )		( timeVal > level.time ? timeVal - level.time : 0 )
 #define RestoreLevelTimeDiff( timeVal )	( timeVal = timeVal ? level.time + timeVal : 0 )
 
-extern void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs);
-extern void DF_SetSubContestDefaults(gclient_t* client);
 /*
 =======================================================================
 
@@ -29,7 +27,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	s = va("%i %i %i %i %i %i %i %i %i %i", 
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -39,23 +37,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.teamLeader,
 		client->sess.setForce,
 		client->sess.saberLevel,
-		client->sess.selectedFP,
-		client->sess.mode,
-		client->sess.raceMode,
-		(int)client->sess.raceStyle.movementStyle,
-		(int)client->sess.raceStyle.runFlags,
-		(int)client->sess.raceStyle.jumpLevel,
-		(int)client->sess.raceStyle.msec,
-		(int)client->sess.mapStyleBaseline.runFlags,
-		(int)client->sess.mapStyleBaseline.jumpLevel,
-		client->sess.raceStateInvalidated,
-		(int)(level.time-client->sess.lastHereTime),
-		(int)(level.time-client->sess.oldbuttons_immediate),
-		(int)client->sess.nameTag,
-		client->sess.login.loggedIn,
-		client->sess.login.id,
-		client->sess.login.flags,
-		client->sess.login.name
+		client->sess.selectedFP
 		);
 
 	var = va( "session%i", (int)(client - level.clients) );
@@ -73,9 +55,6 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	trap_Cvar_Set( var, s );
 }
 
-
-void DF_RequestPlayerDefaultTime(gentity_t* ent);
-
 /*
 ================
 G_ReadSessionData
@@ -92,23 +71,11 @@ void G_ReadSessionData( gclient_t *client ) {
 	int spectatorState;
 	int sessionTeam;
 	int setForce;
-	int tempMode;
-	int tempRaceMode;
-	int movementStyle;
-	int runFlags;
-	int jumpLevel;
-	int msec;
-	int baseRunFlags;
-	int baseJumpLevel;
-	int raceStateInvalidated;
-	int loggedIn;
-	int lastHereTimeOffset;
-	int nameTagType;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -118,23 +85,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&teamLeader,                   // bk010221 - format
 		&setForce,
 		&client->sess.saberLevel,
-		&client->sess.selectedFP,
-		&tempMode,
-		&tempRaceMode,
-		&movementStyle,
-		&runFlags,
-		&jumpLevel,
-		&msec,
-		&baseRunFlags,
-		&baseJumpLevel,
-		&raceStateInvalidated,
-		&lastHereTimeOffset,
-		&client->sess.oldbuttons_immediate,
-		&nameTagType,
-		&loggedIn,
-		&client->sess.login.id,
-		&client->sess.login.flags,
-		client->sess.login.name
+		&client->sess.selectedFP
 		);
 
 	// bk001205 - format issues
@@ -142,33 +93,9 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.spectatorState = (spectatorState_t)spectatorState;
 	client->sess.teamLeader = (qboolean)teamLeader;
 	client->sess.setForce = (qboolean)setForce;
-	client->sess.mode = (playerMode_e)tempMode;
-	client->sess.raceMode = (qboolean)tempRaceMode;
-	client->sess.raceStyle.movementStyle = (byte)movementStyle;
-	client->sess.raceStyle.runFlags = (short)runFlags;
-	client->sess.raceStyle.jumpLevel = (signed char)jumpLevel;
-	client->sess.raceStyle.msec = (short)msec;
-	client->sess.mapStyleBaseline.runFlags = (short)baseRunFlags;
-	client->sess.mapStyleBaseline.jumpLevel = (signed char)baseJumpLevel;
-	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
-	client->sess.login.loggedIn = loggedIn;
-	client->sess.lastHereTime = level.time- lastHereTimeOffset;
-	client->sess.nameTag  = nameTagType;
-
-	//client->sess.raceStyle.msec = 7; // just default to this *shrug*// Nope, keep it so we remember floatphysics/toggle
 
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;
-
-	DF_CarryClientOverToNewRaceStyle(g_entities+(client-g_clients),&level.mapDefaultRaceStyle); 
-	
-	if (client->sess.login.loggedIn) {
-		DF_RequestPlayerDefaultTime(g_entities + (client - g_clients));
-	}
-
-	DF_SetSubContestDefaults(client); // would be nicer to keep it but lets just set defaults who cares. means a few more db requests that could be avoided, but it wont cause any issues beyond that, maybe TODO someday
-
-	client->sess.sessionInitialized = qtrue;
 }
 
 /*
@@ -206,23 +133,11 @@ G_InitSessionData
 Called on a first-time connect
 ================
 */
-extern void UpdateClientRaceVars(gclient_t* client);
 void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	clientSession_t	*sess;
 	const char		*value;
 
 	sess = &client->sess;
-	
-	//sess->raceStyle.movementStyle = MV_JK2;
-	//sess->raceStyle.jumpLevel = 1;
-	//sess->raceStyle.runFlags = defaultRunFlags;
-	sess->raceMode = g_defrag.integer; // TODO what about changing g_defrag live, should we take some care? idk
-	sess->mapStyleBaseline = level.mapDefaultRaceStyle;
-	sess->raceStyle = sess->mapStyleBaseline;
-	sess->raceStyle.msec = 7; // make old client versions work nicely? maybe? probably wont work but whatever
-	sess->lastHereTime = level.time;
-	UpdateClientRaceVars(client);
-	//client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 
 	// initial team determination
 	if ( g_gametype.integer >= GT_TEAM ) {
@@ -286,10 +201,6 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 
 	sess->spectatorState = SPECTATOR_FREE;
 	sess->spectatorOrder = 0;
-
-	DF_SetSubContestDefaults( client ); 
-	
-	client->sess.sessionInitialized = qtrue;
 
 	G_WriteClientSessionData( client );
 }

@@ -103,8 +103,7 @@ void CG_DrawInformation( void ) {
 	const char	*info;
 	const char	*sysInfo;
 	const float	x = 0.5f * cgs.screenWidth;
-	const float xOffset = 0.5f * (cgs.screenWidth - SCREEN_WIDTH);
-	float		y;
+	int			y;
 	int			value, valueNOFP;
 	qhandle_t	levelshot;
 	char		buf[1024];
@@ -114,22 +113,12 @@ void CG_DrawInformation( void ) {
 	sysInfo = CG_ConfigString( CS_SYSTEMINFO );
 
 	s = Info_ValueForKey( info, "mapname" );
-
-	levelshot = trap_R_RegisterShaderNoMip(va("levelshots/%s", s));
-	trap_R_SetColor(NULL);
-
-	if (cg_cropLevelShot.integer && levelshot && cgs.screenXFactor < 1.0) {
-		CG_DrawPic(0, 0 - (SCREEN_HEIGHT*cgs.screenXFactorInv - SCREEN_HEIGHT) / 2, cgs.screenWidth, SCREEN_HEIGHT*cgs.screenXFactorInv, levelshot);
+	levelshot = trap_R_RegisterShaderNoMip( va( "levelshots/%s", s ) );
+	if ( !levelshot ) {
+		levelshot = trap_R_RegisterShaderNoMip( "menu/art/unknownmap" );
 	}
-	else if (!levelshot) {
-		levelshot = trap_R_RegisterShaderNoMip("menu/art/unknownmap");
-		CG_FillRect(0, 0, xOffset, SCREEN_HEIGHT, colorTable[CT_BLACK]);
-		CG_FillRect(xOffset + SCREEN_WIDTH, 0, xOffset, SCREEN_HEIGHT, colorTable[CT_BLACK]);
-		CG_DrawPic(xOffset, 0, SCREEN_WIDTH, SCREEN_HEIGHT, levelshot);
-	}
-	else {
-		CG_DrawPic(0, 0, cgs.screenWidth, cgs.screenHeight, levelshot);
-	}
+	trap_R_SetColor( NULL );
+	CG_DrawPic(0, 0, cgs.screenWidth, cgs.screenHeight, levelshot);
 
 	CG_LoadBar();
 				   

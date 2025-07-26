@@ -83,11 +83,6 @@ static void CG_TransitionEntity( centity_t *cent ) {
 	// clear the next state.  if will be set by the next CG_SetNextSnap
 	cent->interpolate = qfalse;
 
-	if (cent->currentState.number >= 0 && cent->currentState.number < MAX_CLIENTS && (cg_debugSaber.integer < -1 || cg_debugSaber.integer >= MAX_CLIENTS || cg_debugSaber.integer == cent->currentState.number) && cent->currentState.saberMove != cent->previousSaberMove) {
-		CG_Printf("ent:%3i  saberMove:%3i  saberMoveName:%s \n", cent->currentState.number, cent->currentState.saberMove, saberMoveData[cent->currentState.saberMove].name);
-		cent->previousSaberMove = cent->currentState.saberMove;
-	}
-
 	// check for events
 	CG_CheckEvents( cent );
 }
@@ -114,7 +109,7 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 	if ((cg_entities[snap->ps.clientNum].ghoul2 == NULL) && trap_G2_HaveWeGhoul2Models(cgs.clientinfo[snap->ps.clientNum].ghoul2Model))
 	{
 		trap_G2API_DuplicateGhoul2Instance(cgs.clientinfo[snap->ps.clientNum].ghoul2Model, &cg_entities[snap->ps.clientNum].ghoul2);
-		CG_CopyG2WeaponInstance(&cg_entities[snap->ps.clientNum], FIRST_WEAPON, cg_entities[snap->ps.clientNum].ghoul2);
+		CG_CopyG2WeaponInstance(FIRST_WEAPON, cg_entities[snap->ps.clientNum].ghoul2);
 	}
 	BG_PlayerStateToEntityState( &snap->ps, &cg_entities[ snap->ps.clientNum ].currentState, qfalse );
 
@@ -155,19 +150,11 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 
 		CG_ResetEntity( cent );
 
-		if (state->number >= 0 && state->number < MAX_CLIENTS && (cg_debugSaber.integer < -1 || cg_debugSaber.integer >= MAX_CLIENTS || cg_debugSaber.integer == state->number) && state->saberMove != cent->previousSaberMove) {
-			CG_Printf("ent:%3i  saberMove:%3i  saberMoveName:%s \n", state->number, state->saberMove, saberMoveData[state->saberMove].name);
-			cent->previousSaberMove = state->saberMove;
-		}
-
 		// check for events
 		CG_CheckEvents( cent );
-
-		cent->predictedEFlags = 0;
 	}
 }
 
-void CG_NewSnapshotArrived(void);
 
 /*
 ===================
@@ -205,6 +192,7 @@ static void CG_TransitionSnapshot( void ) {
 	oldFrame = cg.snap;
 	cg.snap = cg.nextSnap;
 
+	CG_CheckPlayerG2Weapons(&cg.snap->ps, &cg_entities[cg.snap->ps.clientNum]);
 	BG_PlayerStateToEntityState( &cg.snap->ps, &cg_entities[ cg.snap->ps.clientNum ].currentState, qfalse );
 	cg_entities[ cg.snap->ps.clientNum ].interpolate = qfalse;
 
@@ -214,7 +202,6 @@ static void CG_TransitionSnapshot( void ) {
 
 		// remember time of snapshot this entity was last updated in
 		cent->snapShotTime = cg.snap->serverTime;
-		cent->predictedEFlags = 0;
 	}
 
 	cg.nextSnap = NULL;
@@ -228,6 +215,8 @@ static void CG_TransitionSnapshot( void ) {
 		// teleporting checks are irrespective of prediction
 		if ( ( ps->eFlags ^ ops->eFlags ) & EF_TELEPORT_BIT ) {
 			cg.thisFrameTeleport = qtrue;	// will be cleared by prediction code
+		} else if ( cg_smoothCamera.integer ) {
+			cg.thisFrameTeleport = qfalse;  // clear for interpolated player with new camera damping
 		}
 
 		// if we are not doing client side movement prediction for any
@@ -236,8 +225,6 @@ static void CG_TransitionSnapshot( void ) {
 			|| cg_nopredict.integer || cg_synchronousClients.integer ) {
 			CG_TransitionPlayerState( ps, ops );
 		}
-
-		CG_NewSnapshotArrived();
 	}
 
 }
@@ -257,6 +244,7 @@ static void CG_SetNextSnap( snapshot_t *snap ) {
 
 	cg.nextSnap = snap;
 
+	CG_CheckPlayerG2Weapons(&cg.snap->ps, &cg_entities[cg.snap->ps.clientNum]);
 	BG_PlayerStateToEntityState( &snap->ps, &cg_entities[ snap->ps.clientNum ].nextState, qfalse );
 	cg_entities[ cg.snap->ps.clientNum ].interpolate = qtrue;
 
@@ -317,10 +305,6 @@ snapshot_1_02_t	activeSnapshot_1_02; // MVSDK: Only used to receive the new snap
 static snapshot_t *CG_ReadNextSnapshot( void ) {
 	qboolean	r;
 	snapshot_t	*dest;
-	int			num;
-	int			clNum;
-	int			clientBitmask;
-	entityState_t* es;
 
 	if ( cg.latestSnapshotNum > cgs.processedSnapshotNum + 1000 ) {
 		CG_Printf( "WARNING: CG_ReadNextSnapshot: way out of range, %i > %i\n",
@@ -347,7 +331,7 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 			r = trap_GetSnapshot( cgs.processedSnapshotNum, dest );
 		}
 
-		// FIXME: why would trap_GetSnapshot return a snapshot with the same server time // ta: because /devmap on a local client will still sent snaps on every frame even if level.time doesn't change
+		// FIXME: why would trap_GetSnapshot return a snapshot with the same server time
 		if ( cg.snap && r && dest->serverTime == cg.snap->serverTime ) {
 			//continue;
 		}
@@ -390,36 +374,6 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 				}
 			}
 			CG_AddLagometerSnapshotInfo( dest );
-
-			// AFK detection related stuff
-			clientBitmask = 0;
-			for (num = 0; num < dest->numEntities; num++)
-			{
-				es = &dest->entities[num];
-				clNum = es->number;
-				if (clNum >= 0 && clNum < MAX_CLIENTS) {
-					clientBitmask |= (1 >> clNum);
-					cgs.afkInfo[clNum].lastSeen = dest->serverTime;
-					if (cgs.afkInfo[clNum].lastMovementDir != es->angles2[YAW]) {
-						cgs.afkInfo[clNum].lastMovementDirChange = dest->serverTime;
-					}
-					cgs.afkInfo[clNum].lastMovementDir = es->angles2[YAW];
-				}
-				else {
-					//break;
-				}
-			}
-			cgs.afkInfo[dest->ps.clientNum].lastSeen = dest->serverTime;
-			if (cgs.afkInfo[dest->ps.clientNum].lastMovementDir != dest->ps.movementDir) {
-				cgs.afkInfo[dest->ps.clientNum].lastMovementDirChange = dest->serverTime;
-			}
-			cgs.afkInfo[dest->ps.clientNum].lastMovementDir = dest->ps.movementDir;
-			for (num = 0; num < MAX_CLIENTS; num++) {
-				if (!(clientBitmask & (1 << num)) && dest->ps.clientNum != num) {
-					cgs.afkInfo[num].lastNotSeen = dest->serverTime;
-				}
-			}
-
 			return dest;
 		}
 
@@ -438,392 +392,6 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 	// nothing left to read
 	return NULL;
 }
-
-
-//so we dont need to check if it's predicted client every time
-qboolean CG_EntityIsValid(const int clientNum) {
-	return (qboolean)(clientNum == cg.snap->ps.clientNum || (clientNum >= 0 && cg_entities[clientNum].currentValid));
-}
-
-
-static qboolean CG_EzDemoGetEventTime(int num, int* eventtime, int* client, int* duration) {
-
-	if (ezDemoBuffer.eventCount) {
-		if (num > ezDemoBuffer.eventCount) {
-			return qfalse;
-		}
-		*eventtime = ezDemoBuffer.events[num - 1].serverTime;
-		*duration = ezDemoBuffer.events[num - 1].duration;
-		*client = ezDemoBuffer.events[num - 1].clientNum;
-	}
-	else {
-
-		char buf[32];
-		char cl[8], tm[32];
-		char* pch = NULL;
-		trap_Cvar_VariableStringBuffer(va("pd%i", num), buf, sizeof(buf));
-
-		pch = strchr(buf, '\\');
-
-		if (!pch) {
-			return qfalse; // continue;	//was "break;"
-		}
-
-		// parse target servertime
-		Q_strncpyz(tm, pch + 1, sizeof(tm));
-		*eventtime = atoi(tm);
-
-
-		//parse target client num
-		Q_strncpyz(cl, buf, strlen(buf) - strlen(pch) + 1);
-		*client = atoi(cl);
-
-		*duration = 0;
-	}
-	return qtrue;
-}
-
-// #define MAX_PREDEMO_FRAGS 100
-
-extern const char* timescaleString;
-
-ezDemoBuffer_t ezDemoBuffer;
-
-qboolean ezdemoSeeking = qfalse;
-
-#ifdef CG_EZDEMO
-static void CG_EzdemoSeek(const int pdCount) {
-	static int i = 1;	//iterates through events up till pdCount
-
-	// const int curtime = cg.snap->serverTime;
-	const int curtime = cg.time;
-	const int pretime = x3_ezdemoPreTime.integer;	//we want to skip up to the particular event X ms before it happens
-	const int protime = x3_ezdemoPostTime.integer;	// after the event happened, wait X ms before skipping forward...
-	const int pretimeSlow = x3_ezdemoPreSlowmoTime.integer;
-	const int protimeSlow = x3_ezdemoPostSlowmoTime.integer;
-	const float slowmoScale = x3_ezdemoSlowmoTimescale.value;
-	const qboolean doSlowmo = (qboolean)(slowmoScale != 1.0f);
-
-	static int 		client;
-	static int 		eventtime;
-	static int 		duration;
-	static int 		eventendtime;
-	static int 		nextclient;
-	static int 		nexteventtime;
-	static int 		nexteventduration;
-	static int 		nexteventendtime;
-	static qboolean awaitingEvent = qfalse;
-	static qboolean eventStarted = qfalse;		//so we can allow the user to alter timescale as he sees fit during the event.
-	static qboolean slowmoStarted = qfalse;
-	static qboolean nextEventExists = qfalse;
-
-	if (i > pdCount) {
-		static qboolean printedMsg = qfalse;		//ARF
-
-		if (!printedMsg) {
-			Com_Printf("No more events in the demo...\n");
-			trap_SendConsoleCommand("disconnect\n");
-			printedMsg = qtrue;
-		}
-
-		return;	//no more events to seek forward to
-	}
-
-
-	if (!awaitingEvent) {
-		//i as a static var .. nice!
-
-		for (; i <= pdCount; ++i) {
-
-			if (!CG_EzDemoGetEventTime(i, &eventtime, &client, &duration)) {
-				continue;
-			}
-
-			eventendtime = eventtime + duration;
-
-			//check if we're psat this time, in which case skip this element.
-			// if (time > eventtime + protime){
-			// if ( !(curtime <= eventtime - pretime) ) {
-			// if (curtime >= eventtime + protime) {
-#define OK_EXTRA_MS	30
-			if (curtime > eventendtime + protimeSlow - OK_EXTRA_MS) {
-				// CG_Printf("Skipping this element because servertime (%i) > %i. (it already happened)\n", curtime, eventtime-OK_EXTRA_MS);
-				continue;
-			}
-
-
-			// Com_Printf("^3took event at time %d, client %d\n", eventtime, client);
-
-			//By here, we have a valid element that has not happened yet. Break out and fastforward to it!
-			eventStarted = qfalse;
-			slowmoStarted = qfalse;
-
-			nextEventExists = CG_EzDemoGetEventTime(i+1, &nexteventtime, &nextclient, &nexteventduration);
-			if (nextEventExists) {
-				nexteventendtime = nexteventtime + nexteventduration;
-			}
-
-			break;
-		}
-		
-	}
-
-
-	if (curtime < eventtime - pretime) {
-		// if (eventtime - curtime >= pretime) {
-			//we've not yet reached this event's time. fastforward
-		const int diff = eventtime - pretime - cg.time;	//how many ms are we from this event beginning?
-		const int secs = diff / 1000;
-		int ts = 2;	//timescale value
-
-		// This is a mess, but was made so that fastforwarding doesnt take too long and is not too fast so that the event is skipped!
-		if (secs > 420) {
-			ts = 2900;
-		}
-		else if (secs > 360) {
-			ts = 1900;
-		}
-		else if (secs > 180) {
-			ts = 1600;
-		}
-		else if (secs > 160) {
-			ts = 1050;
-		}
-		else if (secs > 120) {
-			ts = 920;
-		}
-		else if (secs > 100) {
-			ts = 840;
-		}
-		else if (secs > 60) {
-			ts = 760;
-		}
-		else if (secs > 45) {
-			ts = 420;
-		}
-		else if (secs > 30) {
-			ts = 390;
-		}
-		else if (secs > 15) {
-			ts = 290;
-		}
-		else if (secs > 6) {
-			ts = 175;
-		}
-		else if (secs > 3) {
-			ts = 115;
-		}
-		else if (secs > 2) {
-			ts = 45;
-		}
-		else if (secs > 1) {
-			ts = 15;
-		}
-		else {
-			ts = 8;
-		}
-
-		//just force the timescale when skipping forward (dont allow user to set lower timescale when seeking forward to event)
-		trap_Cvar_Set(timescaleString, va("%i", ts));
-
-		// Com_Printf("Seeking forward to this event i%i, happening at time %i with client %i. (in %.2f secs)\n", i, eventtime, client, (eventtime-pretime - time) / 1000.f);
-
-		awaitingEvent = qtrue;
-		trap_Cvar_Set("s_forcevol", "0.01");
-	}
-	else if (curtime >= (eventtime - pretime) && curtime <= (eventendtime + protime)) {
-		//this event is currently happening! dont fastforward, lets see it in normal motion.
-		// Com_Printf("event is currently happening.. timescale forced to 1. setting viewpos to client %i '%s'\n", client, cgs.clientinfo[client].name);
-
-		if (CG_EntityIsValid(client)) {
-
-			if (!eventStarted) {
-				//if (cg.refclient != client) // Not useful atm since we don't have the different angle stuff
-				//	trap_SendConsoleCommand(va("follow %i\n", client));
-
-				trap_Cvar_Set(timescaleString, va("%i", 1));
-				trap_Cvar_Set("s_forcevol", "0");
-				eventStarted = qtrue;	//allow the user to modify timescale
-				slowmoStarted = qfalse;
-			}
-			
-			if(eventStarted && doSlowmo && !slowmoStarted && curtime >= eventtime - pretimeSlow && curtime <= eventendtime + protimeSlow) {
-
-				trap_Cvar_Set(timescaleString, va("%f", slowmoScale));
-				slowmoStarted = qtrue;
-			}
-			else if(slowmoStarted && curtime > eventendtime + protimeSlow) {
-				if (!(nextEventExists && curtime >= nexteventtime - pretimeSlow && curtime <= nexteventendtime + protimeSlow)) {
-					// if the next event is already coming up and we are in its slowmo range, don't speed up to avoid weirdness
-					trap_Cvar_Set(timescaleString, va("%i", 1));
-					slowmoStarted = qfalse;
-				}
-			}
-
-			awaitingEvent = qtrue;
-		}
-		else if (curtime > eventendtime) {
-			// Com_Printf("^5can no longer see who did this frag, fastforwarding!\n");
-			//if an event happened and we're not past posttime, and we can no longer see who did it, just skip to next event.
-			awaitingEvent = qfalse;
-			eventStarted = qfalse;
-			slowmoStarted = qfalse;
-			//the loop will now continue to find next event
-			//trap_Cvar_Set(timescaleString, va("%i", 11));
-		}
-		else {
-			//cant see the guy who gets the frag yet, so fastforward A LITTLE
-			trap_Cvar_Set(timescaleString, "1.8");
-			eventStarted = qfalse;
-			slowmoStarted = qfalse;
-			awaitingEvent = qtrue;
-		}
-	}
-	else if (curtime > eventendtime + protime) {
-		//the event happened already
-		awaitingEvent = qfalse;
-		eventStarted = qfalse;
-		slowmoStarted = qfalse;
-		//the loop will now continue to find next event
-	}
-
-	if (awaitingEvent && nextEventExists && curtime > eventendtime + protimeSlow && curtime >= nexteventtime - pretimeSlow) {
-		// let's not miss out on slowmotion for the next event
-		awaitingEvent = qfalse;
-		eventStarted = qfalse;
-		slowmoStarted = qfalse;
-		//the loop will now continue to find next event
-	}
-}
-#endif
-
-qboolean skippingPause = qfalse;
-static void CG_ControlDemoSeek(void) {
-	static qboolean 	fastforwarding = qfalse;
-	int 				timescaleX;// = ClampInt(x3_demoSeekTimescale.integer, 2, 200);
-	qboolean 			dofastforward = qfalse;
-	static int			lastValidCap = 0;
-
-#ifdef CG_EZDEMO
-	static int doFragSeek = -1;
-
-	if (doFragSeek == -1) {
-		if (ezDemoBuffer.eventCount) {
-			doFragSeek = ezDemoBuffer.eventCount;
-		}
-		else {
-			doFragSeek = CG_Cvar_Get_int("pdCount");	//for the love of all, only do cvar_get 1 time...
-		}
-	}
-
-	if (doFragSeek > 0) {
-		// Com_Printf("Doing DemoFragSeek...\n");
-		ezdemoSeeking = qtrue;
-		CG_EzdemoSeek(doFragSeek);
-		return;
-	}
-#endif
-
-	if (!x3_demoSkipPauses.integer && !cg.demoseek) {
-		if (fastforwarding) { // Fix: When maprestart seekmode is used exclusively, it wont stop fast forwarding otherwise
-			trap_Cvar_Set(timescaleString, "1");
-			fastforwarding = qfalse;
-
-			//if (cg_x3clmodule)
-			//	trap_Cvar_Set("s_forcevol", "0");
-		}
-		return;	//no seeking
-	}
-
-	timescaleX = MIN(MAX(x3_demoSeekTimescale.integer, 2), 200);
-
-	if (cg.demoseek & DEMOSEEK_SPECIFIC_CLIENT_ONLY) {
-		if (cg.refclient != cg.demofollowclient)
-		{	//not the clientnum we wish, speed up.
-			dofastforward = qtrue;
-		}
-	}
-
-	if ((cg.demoseek & DEMOSEEK_RETMODE) && cg.refclient < MAX_CLIENTS) {
-		//Fastforward until:
-		// 1. our flag is taken
-		// 2. the flag carrier is currentValid and within certain distance?
-		int capper;
-		int team = cg.refteam;
-		vec3_t origin;
-
-		//if (cg.demofollowvis) {
-			VectorCopy(cg_entities[cg.demofollowclient].lerpOrigin, origin);
-		//}
-		//else 
-		{
-			VectorCopy(cg.predictedPlayerState.origin, origin);
-		}
-
-
-		capper = team == TEAM_RED ? (cgs.redFlagCarrier ? cgs.redFlagCarrier-cgs.clientinfo : -1) : (cgs.redFlagCarrier ? cgs.blueFlagCarrier - cgs.clientinfo : -1);
-
-		if (!CG_OtherTeamHasFlag() ||
-			(capper >= 0 && capper < MAX_CLIENTS && cgs.clientinfo[capper].infoValid &&
-				(!CG_EntityIsValid(capper) || Distance(cg_entities[capper].lerpOrigin, origin) > 1000))
-			) {
-			//fastforward if other team doesnt have flag or their capper isnt visible for us
-			if(fastforwarding || cg.lastRefClientKill < cg.time && (cg.time- cg.lastRefClientKill) > 2000) dofastforward = qtrue; // 2 seconds cooldown where we don't fast-forward after killing someone.
-		}
-	}
-	else if (cg.demoseek & DEMOSEEK_CAPPING_ONLY) {
-		//Speeed up the demo until we have the flag
-		//if (!CG_IsACapper(cg.refclient))
-		if (cg.refclient != (cgs.redFlagCarrier - cgs.clientinfo) && cg.refclient != (cgs.blueFlagCarrier - cgs.clientinfo)) {
-
-			if (lastValidCap < cg.time && (cg.time - lastValidCap) > 2000) dofastforward = qtrue;
-		}
-		else {
-			lastValidCap = cg.time;
-		}
-	}
-
-	if ((x3_demoSkipPauses.integer && cg.pausedGame) || (cg.demoseek & DEMOSEEK_MAPRESTART && !cg.mapRestart)) {
-		dofastforward = qtrue;
-		timescaleX = 200;	//speed up very fast until its unpaused
-
-		if (x3_demoSkipPauses.integer && cg.pausedGame)
-			skippingPause = qtrue;
-	}
-	else {
-		skippingPause = qfalse;
-	}
-
-	if (dofastforward && !fastforwarding) {
-		trap_Cvar_Set(timescaleString, va("%i", timescaleX));
-		fastforwarding = qtrue;
-
-		//if (cg_x3clmodule)
-		//	trap_Cvar_Set("s_forcevol", "0.015");
-
-	}
-	else if (!dofastforward && fastforwarding) {
-		trap_Cvar_Set(timescaleString, "1");
-		fastforwarding = qfalse;
-
-		//if (cg_x3clmodule)
-		//	trap_Cvar_Set("s_forcevol", "0");
-	}
-}
-
-void CG_NewSnapshotArrived(void) {
-
-	if ((cg.snap->ps.pm_flags & PMF_FOLLOW) || cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR)
-		cg.speccing = qtrue;
-	else
-		cg.speccing = qfalse;
-
-	ezdemoSeeking = qfalse;
-	if (cg.demoPlayback)
-		CG_ControlDemoSeek();
-}
-
-
 
 
 /*
@@ -862,9 +430,6 @@ void CG_ProcessSnapshots( void ) {
 	// If we have yet to receive a snapshot, check for it.
 	// Once we have gotten the first snapshot, cg.snap will
 	// always have valid data for the rest of the game
-	if (!cg.snap) {
-		memset(cgs.afkInfo, 0, sizeof(cgs.afkInfo));
-	}
 	while ( !cg.snap ) {
 		snap = CG_ReadNextSnapshot();
 		if ( !snap ) {

@@ -2,7 +2,6 @@
 //
 
 #include "g_local.h"
-#include "g_defrag.h"
 
 qboolean	G_SpawnString( const char *key, const char *defaultString, char **out ) {
 	int		i;
@@ -101,22 +100,12 @@ field_t fields[] = {
 	{"targetShaderName", FOFS(targetShaderName), F_LSTRING},
 	{"targetShaderNewName", FOFS(targetShaderNewName), F_LSTRING},
 
-	{"courseid", FOFS(courseID), F_INT},
-	{"notvq3", FOFS(notVQ3), F_INT},
-	{"notcpm", FOFS(notCPM), F_INT},
-	{"overrideMessage", FOFS(overrideMessage), F_LSTRING},
-	{"ttFlags", FOFS(ttFlags), F_INT},
-	{"number", FOFS(number), F_INT}, // q3 rally map support
-	{"laps", FOFS(laps), F_INT}, // q3 rally map support
-	//{"objective", FOFS(objective), F_INT},
-
 	{NULL}
 };
 
 
 typedef struct {
 	char	*name;
-	qboolean	logical;
 	void	(*spawn)(gentity_t *ent);
 } spawn_t;
 
@@ -149,7 +138,6 @@ void SP_func_usable( gentity_t *ent);
 void SP_trigger_always (gentity_t *ent);
 void SP_trigger_multiple (gentity_t *ent);
 void SP_trigger_push (gentity_t *ent);
-void SP_trigger_push_velocity(gentity_t* ent);
 void SP_trigger_teleport (gentity_t *ent);
 void SP_trigger_hurt (gentity_t *ent);
 
@@ -160,18 +148,13 @@ void SP_target_speaker (gentity_t *ent);
 void SP_target_print (gentity_t *ent);
 void SP_target_laser (gentity_t *self);
 void SP_target_character (gentity_t *ent);
-void SP_target_score( gentity_t *ent ); 
-void DF_target_fragsFilter(gentity_t* ent);
-void DF_target_speed_husk(gentity_t* ent);
+void SP_target_score( gentity_t *ent );
 void SP_target_teleporter( gentity_t *ent );
 void SP_target_relay (gentity_t *ent);
 void SP_target_kill (gentity_t *ent);
 void SP_target_position (gentity_t *ent);
 void SP_target_location (gentity_t *ent);
 void SP_target_push (gentity_t *ent);
-
-void Q3R_SP_rally_checkpoint(gentity_t* ent);
-void Q3R_SP_rally_startfinish(gentity_t* ent);
 
 void SP_light (gentity_t *self);
 void SP_info_null (gentity_t *self);
@@ -214,151 +197,99 @@ void SP_item_botroam( gentity_t *ent )
 
 void SP_emplaced_gun( gentity_t *ent );
 
-extern void DF_target_husk(gentity_t* ent);
-extern void DF_trigger_start(gentity_t* ent);
-extern void DF_trigger_finish(gentity_t* ent);
-extern void DF_trigger_checkpoint(gentity_t* ent);
 spawn_t	spawns[] = {
 	// info entities don't do anything at all, but provide positional
 	// information for things controlled by other processes
-	{"info_player_start", qtrue, SP_info_player_start},
-	{"info_player_deathmatch", qtrue, SP_info_player_deathmatch},
-	{"info_player_imperial", qtrue, SP_info_player_imperial},
-	{"info_player_rebel", qtrue, SP_info_player_rebel},
-	{"info_player_intermission", qtrue, SP_info_player_intermission},
-	{"info_jedimaster_start", qfalse, SP_info_jedimaster_start}, // for some reason it needs svent
-	{"info_null", qtrue, SP_info_null},
-	{"info_notnull", qtrue, SP_info_notnull},		// use target_position instead
-	{"info_camp", qtrue, SP_info_camp},
+	{"info_player_start", SP_info_player_start},
+	{"info_player_deathmatch", SP_info_player_deathmatch},
+	{"info_player_imperial", SP_info_player_imperial},
+	{"info_player_rebel", SP_info_player_rebel},
+	{"info_player_intermission", SP_info_player_intermission},
+	{"info_jedimaster_start", SP_info_jedimaster_start},
+	{"info_null", SP_info_null},
+	{"info_notnull", SP_info_notnull},		// use target_position instead
+	{"info_camp", SP_info_camp},
 
-	{"info_saga_objective", qfalse, SP_info_saga_objective}, // can this be logical?
+	{"info_saga_objective", SP_info_saga_objective},
 
-	{"func_plat", qfalse, SP_func_plat},
-	{"func_button", qfalse, SP_func_button},
-	{"func_door", qfalse, SP_func_door},
-	{"func_static", qfalse, SP_func_static},
-	{"func_rotating", qfalse, SP_func_rotating},
-	{"func_bobbing", qfalse, SP_func_bobbing},
-	{"func_pendulum", qfalse, SP_func_pendulum},
-	{"func_train", qfalse, SP_func_train},
-	{"func_group", qtrue, SP_info_null}, // ends up null, so can be logical?
-	{"func_timer", qtrue, SP_func_timer},			// rename trigger_timer?  // doesnt really have position, so logical?
-	{"func_breakable", qfalse, SP_func_breakable},
-	{"func_glass", qfalse, SP_func_glass},
-	{"func_usable", qfalse, SP_func_usable},
+	{"func_plat", SP_func_plat},
+	{"func_button", SP_func_button},
+	{"func_door", SP_func_door},
+	{"func_static", SP_func_static},
+	{"func_rotating", SP_func_rotating},
+	{"func_bobbing", SP_func_bobbing},
+	{"func_pendulum", SP_func_pendulum},
+	{"func_train", SP_func_train},
+	{"func_group", SP_info_null},
+	{"func_timer", SP_func_timer},			// rename trigger_timer?
+	{"func_breakable", SP_func_breakable},
+	{"func_glass", SP_func_glass},
+	{"func_usable", SP_func_usable},
 
 	// Triggers are brush objects that cause an effect when contacted
 	// by a living player, usually involving firing targets.
 	// While almost everything could be done with
 	// a single trigger class and different targets, triggered effects
 	// could not be client side predicted (push and teleport).
-	{"trigger_always", qtrue, SP_trigger_always}, // this one can be logical right? it doesnt have a relevant position or anything
-	{"trigger_multiple", qfalse, SP_trigger_multiple},
-	{"trigger_push", qfalse, SP_trigger_push},
-	{"trigger_push_velocity", qfalse, SP_trigger_push_velocity},
-	{"trigger_teleport", qfalse, SP_trigger_teleport},
-	{"trigger_hurt", qfalse, SP_trigger_hurt},
-
-	{"df_trigger_start", qfalse, DF_trigger_start},
-	{"df_trigger_finish", qfalse, DF_trigger_finish},
-	{"df_trigger_checkpoint", qfalse, DF_trigger_checkpoint},
-
-	// q3 rally map support
-	{"rally_startfinish", qfalse, Q3R_SP_rally_startfinish},
-	{"rally_checkpoint", qfalse, Q3R_SP_rally_checkpoint},
+	{"trigger_always", SP_trigger_always},
+	{"trigger_multiple", SP_trigger_multiple},
+	{"trigger_push", SP_trigger_push},
+	{"trigger_teleport", SP_trigger_teleport},
+	{"trigger_hurt", SP_trigger_hurt},
 
 	// targets perform no action by themselves, but must be triggered
 	// by another entity
-	{"target_give", qtrue, SP_target_give},
-	{"target_remove_powerups", qtrue, SP_target_remove_powerups},
-	{"target_delay", qtrue, SP_target_delay},
-	{"target_speaker", qfalse, SP_target_speaker},
-	{"target_print", qtrue, SP_target_print},
-	{"target_laser", qfalse, SP_target_laser},
-	{"target_score", qtrue, SP_target_score},
-	{"target_teleporter", qtrue, SP_target_teleporter},
-	{"target_relay", qtrue, SP_target_relay},
-	{"target_kill", qtrue, SP_target_kill},
-	{"target_position", qtrue, SP_target_position},
-	{"target_location", qtrue, SP_target_location},
-	{"target_push", qtrue, SP_target_push},
-	{"target_speed", qtrue, DF_target_speed_husk},
+	{"target_give", SP_target_give},
+	{"target_remove_powerups", SP_target_remove_powerups},
+	{"target_delay", SP_target_delay},
+	{"target_speaker", SP_target_speaker},
+	{"target_print", SP_target_print},
+	{"target_laser", SP_target_laser},
+	{"target_score", SP_target_score},
+	{"target_teleporter", SP_target_teleporter},
+	{"target_relay", SP_target_relay},
+	{"target_kill", SP_target_kill},
+	{"target_position", SP_target_position},
+	{"target_location", SP_target_location},
+	{"target_push", SP_target_push},
 
-	{"target_fragsFilter", qtrue, DF_target_fragsFilter},
+	{"light", SP_light},
+	{"path_corner", SP_path_corner},
 
-	{"target_startTimer", qtrue, DF_target_husk},
-	{"target_stopTimer", qtrue, DF_target_husk},
-	{"target_checkpoint", qtrue, DF_target_husk},
+	{"misc_teleporter_dest", SP_misc_teleporter_dest},
+	{"misc_model", SP_misc_model},
+	{"misc_G2model", SP_misc_G2model},
+	{"misc_portal_surface", SP_misc_portal_surface},
+	{"misc_portal_camera", SP_misc_portal_camera},
 
-	{"Twi_timer", qfalse, DF_target_husk},
+	{"misc_shield_floor_unit", SP_misc_shield_floor_unit},
+	{"misc_model_shield_power_converter", SP_misc_model_shield_power_converter},
+	{"misc_model_ammo_power_converter", SP_misc_model_ammo_power_converter},
+	{"misc_model_health_power_converter", SP_misc_model_health_power_converter},
 
-	{"light", qtrue, SP_light}, // in jka it can't be logical cuz it does stuff. here it can.
-	{"path_corner", qtrue, SP_path_corner},
-
-	{"misc_teleporter_dest", qtrue, SP_misc_teleporter_dest},
-	{"misc_model", qtrue, SP_misc_model}, // doesnt actually do anything rn so make it logical
-	{"misc_G2model", qtrue, SP_misc_G2model}, // doesnt actually do anything rn so make it logical
-	{"misc_portal_surface", qfalse, SP_misc_portal_surface},
-	{"misc_portal_camera", qfalse, SP_misc_portal_camera},
-
-	{"misc_shield_floor_unit", qfalse, SP_misc_shield_floor_unit},
-	{"misc_model_shield_power_converter", qfalse, SP_misc_model_shield_power_converter},
-	{"misc_model_ammo_power_converter", qfalse, SP_misc_model_ammo_power_converter},
-	{"misc_model_health_power_converter", qfalse, SP_misc_model_health_power_converter},
-
-	{"fx_runner", qfalse, SP_fx_runner},
+	{"fx_runner", SP_fx_runner},
 #ifdef ANIMENT_SPAWNER
-	{"misc_animent_spawner", qfalse, SP_misc_animent_spawner}, // could be logical since its not allowed in MP anyway?
-	{"target_screenshake", qtrue, SP_target_screenshake},
-	{"target_escapetrig", qtrue, SP_target_escapetrig}, // what is this
+	{"misc_animent_spawner", SP_misc_animent_spawner},
+	{"target_screenshake", SP_target_screenshake},
+	{"target_escapetrig", SP_target_escapetrig},
 #endif
 
-	{"misc_holocron", qfalse, SP_misc_holocron},
+	{"misc_holocron", SP_misc_holocron},
 
-	{"shooter_blaster", qfalse, SP_shooter_blaster},
+	{"shooter_blaster", SP_shooter_blaster},
 
-	{"team_CTF_redplayer", qtrue, SP_team_CTF_redplayer},
-	{"team_CTF_blueplayer", qtrue, SP_team_CTF_blueplayer},
+	{"team_CTF_redplayer", SP_team_CTF_redplayer},
+	{"team_CTF_blueplayer", SP_team_CTF_blueplayer},
 
-	{"team_CTF_redspawn", qtrue, SP_team_CTF_redspawn},
-	{"team_CTF_bluespawn", qtrue, SP_team_CTF_bluespawn},
+	{"team_CTF_redspawn", SP_team_CTF_redspawn},
+	{"team_CTF_bluespawn", SP_team_CTF_bluespawn},
 
-	{"item_botroam", qtrue, SP_item_botroam},
+	{"item_botroam", SP_item_botroam},
 
-	{"emplaced_gun", qfalse, SP_emplaced_gun},
+	{"emplaced_gun", SP_emplaced_gun},
 
-	{0,qfalse, 0}
+	{0, 0}
 };
-static int spawncmp(const void* a, const void* b) {
-	return Q_stricmp((const char*)a, ((spawn_t*)b)->name);
-}
-qboolean G_IsLogicalEntity(const char* classname) {
-	int i;
-	spawn_t* s = NULL;
-
-	if (!classname) {
-		return qfalse;
-	}
-
-	//s = (spawn_t*)bsearch(classname, spawns, ARRAY_LEN(spawns), sizeof(spawn_t), spawncmp); // i cba sorting the entities by name... and its only for map spawns anyway
-	for (i = 0; i < ARRAY_LEN(spawns); i++) {
-		if (!Q_stricmp(spawns[i].name,classname)) {
-			s = spawns + i; 
-			break;
-		}
-	}
-	if (s)
-	{// found it
-		if (s->logical) {
-			return qtrue;
-		}
-		else {
-			return qfalse;
-		}
-	}
-
-	return qfalse;
-}
 
 /*
 ===============
@@ -501,59 +432,12 @@ void G_SpawnGEntityFromSpawnVars( void ) {
 	gentity_t	*ent;
 	char		*s, *value, *gametypeName;
 	static char *gametypeNames[] = {"ffa", "holocron", "jedimaster", "duel", "single", "team", "saga", "ctf", "cty"};
-	qboolean	isTwiTimer = qfalse;
 
-	//// get the next free entity
-	//ent = G_Spawn();
-
-	value = NULL;
-	for (i = 0; i < level.numSpawnVars; i++) {
-		if (!Q_stricmp(level.spawnVars[i][0], "Twi_timer"))
-		{
-			isTwiTimer = qtrue;
-			value = "Twi_timer";
-		}
-	}
-	if (!value) {
-		G_SpawnString("classname", NULL, &value);
-	}
-	if (!value) {
-		return;	// Dont even bother spawning an ent without a classname
-	}
-	if (G_IsLogicalEntity(value)) {
-		// Check if the entity wants to be nonlogical anyway
-		G_SpawnInt("nological", "0", &i);
-		if (i) {				// Despite it being a logical entity, it wants to be nonlogical
-			ent = G_Spawn();	// possibly because it wants to use icarus for example
-		}
-		else {
-			G_SpawnString("script_targetname", NULL, &value); //Always make entities with script_targetnames non logical (???)
-			if (value) {
-				ent = G_Spawn();
-			}
-			else {
-				// Get the next free logical entity
-				ent = G_SpawnLogical();
-			}
-		}
-	}
-	else {
-		// Get the next free normal entity
-		ent = G_Spawn();
-	}
-
-	G_UnlistFromHashTable(ent);
+	// get the next free entity
+	ent = G_Spawn();
 
 	for ( i = 0 ; i < level.numSpawnVars ; i++ ) {
 		G_ParseField( level.spawnVars[i][0], level.spawnVars[i][1], ent );
-	}
-
-	if (isTwiTimer) {
-		G_SetClassName(ent, "Twi_timer");
-	}
-	else {
-		// make sure the hashtable is aware of this ent with the now set classname
-		G_SetClassName(ent, ent->classname);
 	}
 
 	// check for "notsingle" flag
@@ -918,8 +802,6 @@ void SP_worldspawn( void )
 	G_SpawnString( "message", "", &text );
 	trap_SetConfigstring( CS_MESSAGE, text );				// map specific message
 
-	Q_strncpyz(level.message, text, sizeof(level.message));
-
 	trap_SetConfigstring( CS_MOTD, g_motd.string );		// message of the day
 
 	G_SpawnString( "gravity", "800", &text );
@@ -932,7 +814,7 @@ void SP_worldspawn( void )
 	trap_Cvar_Set( "g_enableBreath", text );
 
 	g_entities[ENTITYNUM_WORLD].s.number = ENTITYNUM_WORLD;
-	G_SetClassName(&g_entities[ENTITYNUM_WORLD], "worldspawn");
+	g_entities[ENTITYNUM_WORLD].classname = "worldspawn";
 
 	// see if we want a warmup time
 	trap_SetConfigstring( CS_WARMUP, "" );
@@ -971,12 +853,7 @@ void SP_worldspawn( void )
 			Com_Error(ERR_DROP, "Style %d has inconsistent lengths: R %d, G %d, B %d", 
 				i, lengthRed, lengthGreen, lengthBlue);
 		}
-	}	
-
-
-	// q3 rally map support
-	G_SpawnString("reversable", "0", &text);
-	level.q3r_trackIsReversable = atoi(text); // we can run our checkpoints in any order anyway but may as well maybe tell the player if a reverse order is possible? meh.
+	}		
 }
 
 
@@ -1000,16 +877,10 @@ void G_SpawnEntitiesFromString( void ) {
 	}
 	SP_worldspawn();
 
-	level.q3r_numCheckpoints = 0; // q3 rally map support
-
 	// parse ents
 	while( G_ParseSpawnVars() ) {
 		G_SpawnGEntityFromSpawnVars();
-	}
-
-	if (g_defrag.integer) {
-		G_ConvertDefragTriggerTypes();
-	}
+	}	
 
 	level.spawning = qfalse;			// any future calls to G_Spawn*() will be errors
 }

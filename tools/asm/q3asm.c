@@ -546,11 +546,7 @@ static void DefineSymbol( char *sym, int value ) {
 
 	// add the file prefix to local symbols to guarantee unique
 	if ( sym[0] == '$' ) {
-		int len = snprintf( expanded, sizeof(expanded), "%s_%i", sym, currentFileIndex );
-		if (len >= sizeof(expanded)) {
-			Error("DefineSymbol: Local symbol name too long");
-		}
-
+		sprintf( expanded, "%s_%i", sym, currentFileIndex );
 		sym = expanded;
 	}
 
@@ -606,10 +602,7 @@ static int LookupSymbol( char *sym ) {
 
 	// add the file prefix to local symbols to guarantee unique
 	if ( sym[0] == '$' ) {
-		int len = snprintf( expanded, sizeof(expanded), "%s_%i", sym, currentFileIndex );
-		if (len >= sizeof(expanded)) {
-			Error("LookupSymbol: Local symbol name too long");
-		}
+		sprintf( expanded, "%s_%i", sym, currentFileIndex );
 		sym = expanded;
 	}
 
@@ -736,7 +729,7 @@ ParseExpression
 */
 static int ParseExpression(void) {
 	/* Hand optimization, PhaethonH */
-	size_t		i, j;
+	int		i, j;
 	char	sym[MAX_LINE_LENGTH];
 	int		v;
 

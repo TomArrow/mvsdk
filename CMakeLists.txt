@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.0)
 
 # For checks in subdirectories
 set(InMVSDK TRUE)
@@ -17,9 +17,9 @@ if(NOT InMV)
 endif()
 
 include(GetGitRevisionDescription)
-git_describe(MVSDK_VERSION origin/master --tags --match 1.0.1)
+git_describe(MVSDK_VERSION --tags)
 if(NOT MVSDK_VERSION OR MVSDK_VERSION STREQUAL "GIT-NOTFOUND" OR MVSDK_VERSION STREQUAL "HEAD-HASH-NOTFOUND")
-	set(MVSDK_VERSION "UNKNOWN")
+	set(MVSDK_VERSION "1.4JK2PRO")
 	message(WARNING "Could not find git or git repository. Install git and make sure you actually cloned the repository (Directory named .git must exist) for correct versioning.")
 endif()
 
@@ -154,13 +154,10 @@ if (NOT InMV)
 		# 4996 = 'function' : was declared deprecated
 		# 4267 = 'var' : conversion from 'size_t' to 'type', possible loss of data
 		# 4305 = 'identifier' : truncation from 'type1' to 'type2'
-		# 4013 = function undefined (should be error) 
-		# 4133 = ':': incompatible types - from 'type1*' to 'type2*' (qvm enforces this too. it can be used as a cool type checking macro and may as well get a nicer error message)
-		# 4047 = 'function': 'type*' differs in levels of indirection from 'type**'
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4018 /wd4244 /wd4996 /wd4267 /wd4305 /we4013 /we4133 /we4047")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4018 /wd4244 /wd4996 /wd4267 /wd4305")
 
-		# Runtime Library: Multi-threaded DLL
-		set(CMAKE_C_FLAGS_RELEASE "/MD")
+		# Multithreaded
+		set(CMAKE_C_FLAGS_RELEASE "/MT")
 
 		# Platform
 		set(GlobalDefines ${GlobalDefines} "UNICODE" "_UNICODE")

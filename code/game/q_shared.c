@@ -502,7 +502,7 @@ char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 				*data_p = ( char * ) data;
 				return com_token;
 			}
-			if (len < MAX_TOKEN_CHARS - 1)
+			if (len < MAX_TOKEN_CHARS)
 			{
 				com_token[len] = c;
 				len++;
@@ -513,7 +513,7 @@ char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 	// parse a regular word
 	do
 	{
-		if (len < MAX_TOKEN_CHARS - 1)
+		if (len < MAX_TOKEN_CHARS)
 		{
 			com_token[len] = c;
 			len++;
@@ -524,6 +524,11 @@ char *COM_ParseExt( const char **data_p, qboolean allowLineBreaks )
 			com_lines++;
 	} while (c>32);
 
+	if (len == MAX_TOKEN_CHARS)
+	{
+//		Com_Printf ("Token exceeded %i chars, discarded.\n", MAX_TOKEN_CHARS);
+		len = 0;
+	}
 	com_token[len] = 0;
 
 	*data_p = ( char * ) data;
@@ -574,7 +579,7 @@ int COM_ParseInfos( char *buf, int max, char infos[][MAX_INFO_STRING] ) {
 
 			token = COM_ParseExt( &buf, qfalse );
 			if ( !token[0] ) {
-				Q_strncpyz( token, "<NULL>" );
+				strcpy( token, "<NULL>" );
 			}
 			Info_SetValueForKey( infos[count], key, token );
 		}
@@ -705,22 +710,26 @@ void SkipBracedSection (const char **program) {
 	} while( depth && *program );
 }
 
-void SkipRestOfLine(const char **data)
-{
-	const char *p;
+/*
+=================
+SkipRestOfLine
+=================
+*/
+void SkipRestOfLine ( const char **data ) {
+	const char	*p;
+	int		c;
+
 	p = *data;
-	while (p != NULL && *p != '\0')
-	{
-		if (*p == '\n')
-		{
+	while ( (c = *p++) != 0 ) {
+		if ( c == '\n' ) {
 			com_lines++;
-			p++;
 			break;
 		}
-		p++;
 	}
+
 	*data = p;
 }
+
 
 void Parse1DMatrix (const char **buf_p, int x, float *m) {
 	char	*token;
@@ -839,31 +848,6 @@ void Q_strncpyz( char *dest, const char *src, int destsize ) {
 	strncpy( dest, src, destsize-1 );
   dest[destsize-1] = 0;
 }
-
-/*
-=============
-Q_strnncpyz
-
-Safe strncpy that ensures a trailing zero (and lets us still specify amount of chars to copy)
-=============
-*/
-void Q_strnncpyz(char* dest, const char* src, int charsToCopy, int destsize) {
-
-	if (!dest) {
-		Com_Error(ERR_FATAL, "Q_strncpyz: NULL dest");
-	}
-	if (!src) {
-		Com_Error(ERR_FATAL, "Q_strncpyz: NULL src");
-	}
-	if (destsize < 1) {
-		Com_Error(ERR_FATAL, "Q_strncpyz: destsize < 1");
-	}
-	if (charsToCopy >= destsize) {
-		charsToCopy = destsize - 1;
-	}
-	strncpy(dest, src, charsToCopy);
-	dest[charsToCopy] = 0;
-}
                  
 int Q_stricmpn (const char *s1, const char *s2, int n) {
 	int		c1, c2;
@@ -963,7 +947,7 @@ void Q_strcat( char *dest, int size, const char *src ) {
 }
 
 
-int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColors) {
+int Q_PrintStrlen( const char *string, qboolean use102color ) {
 	int			len;
 	const char	*p;
 
@@ -974,7 +958,7 @@ int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColor
 	len = 0;
 	p = string;
 	while( *p ) {
-		if (Q_IsColorString(p) || (use102color && Q_IsColorString_1_02(p)) || (ntModColors && Q_IsColorStringNT(p))) {
+		if (Q_IsColorString(p) || (use102color && Q_IsColorString_1_02(p))) {
 			p += 2;
 			continue;
 		}
@@ -986,19 +970,15 @@ int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColor
 }
 
 
-char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors) {
+char *Q_CleanStr( char *string, qboolean use102color ) {
 	char*	d;
 	char*	s;
 	int		c;
 
-	if (!string || !*string) {
-		return string;
-	}
-
 	s = string;
 	d = string;
 	while ((c = *s) != 0 ) {
-		if (Q_IsColorString(s) || (use102color && Q_IsColorString_1_02(s)) || (ntModColors && Q_IsColorStringNT(s))) {
+		if (Q_IsColorString(s) || (use102color && Q_IsColorString_1_02(s))) {
 			s++;
 		}		
 		else if ( c >= 0x20 && c <= 0x7E ) {
@@ -1056,58 +1036,6 @@ size_t Q_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
 	return retval;
 }
 #endif
-
-/*
-==================
-Q_StripColor
-
-Strips coloured strings in-place using multiple passes: "fgs^^56fds" -> "fgs^6fds" -> "fgsfds"
-
-This function modifies INPUT (is mutable)
-
-(Also strips ^8 and ^9)
-==================
-*/
-void Q_StripColor(char* text)//, qboolean doHex)
-{
-	qboolean doPass = qtrue;
-	char* read;
-	char* write;
-
-	while (doPass)
-	{
-		doPass = qfalse;
-		read = write = text;
-		while (*read)
-		{
-			/*if (doHex && *read == Q_COLOR_ESCAPE && Q_IsColorStringHex(read + 1)) {
-				int skipCount = 0;
-				Q_parseColorHex(read + 1, 0, &skipCount);
-				read += 1 + skipCount;
-			}
-			else */if (Q_IsColorString(read) || Q_IsColorString_1_02(read))
-			{
-				doPass = qtrue;
-				read += 2;
-			}
-			else
-			{
-				// Avoid writing the same data over itself
-				if (write != read)
-				{
-					*write = *read;
-				}
-				write++;
-				read++;
-			}
-		}
-		if (write < read)
-		{
-			// Add trailing NUL byte if string has shortened
-			*write = '\0';
-		}
-	}
-}
 
 /*
 Q_strstrip
@@ -1229,8 +1157,6 @@ char	* QDECL va( const char *format, ... ) {
 }
 
 
-
-
 /*
 =====================================================================
 
@@ -1252,13 +1178,11 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 	char	pkey[BIG_INFO_KEY];
 	static	char value[2][BIG_INFO_VALUE];	// use two buffers so compares
 											// work without stomping on each other
-	static	char emptyValue[BIG_INFO_VALUE] = { '\0' };
 	static	int	valueindex = 0;
 	char	*o;
 	
 	if ( !s || !key ) {
-		emptyValue[0] = '\0';
-		return emptyValue;
+		return "";
 	}
 
 	if ( strlen( s ) >= BIG_INFO_STRING ) {
@@ -1273,10 +1197,8 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		o = pkey;
 		while (*s != '\\')
 		{
-			if (!*s) {
-				emptyValue[0] = '\0';
-				return emptyValue;
-			}
+			if (!*s)
+				return "";
 			*o++ = *s++;
 		}
 		*o = 0;
@@ -1298,62 +1220,7 @@ char *Info_ValueForKey( const char *s, const char *key ) {
 		s++;
 	}
 
-	emptyValue[0] = '\0';
-	return emptyValue;
-}
-
-
-/*
-===============
-Info_HasKey
-
-Searches the string for the given
-key and returns qtrue if found, or qfalse if not found
-FIXME: overflow check?
-===============
-*/
-qboolean Info_HasKey( const char *s, const char *key ) {
-	char	pkey[BIG_INFO_KEY];
-	static	int	valueindex = 0;
-	char	*o;
-	
-	if ( !s || !key ) {
-		return qfalse;
-	}
-
-	if ( strlen( s ) >= BIG_INFO_STRING ) {
-		Com_Error( ERR_DROP, "Info_HasKey: oversize infostring" );
-	}
-
-	valueindex ^= 1;
-	if (*s == '\\')
-		s++;
-	while (1)
-	{
-		o = pkey;
-		while (*s != '\\')
-		{
-			if (!*s)
-				return qfalse;
-			*o++ = *s++;
-		}
-		*o = 0;
-		s++;
-
-		while (*s != '\\' && *s)
-		{
-			*s++;
-		}
-
-		if (!Q_stricmp (key, pkey) )
-			return qtrue;
-
-		if (!*s)
-			break;
-		s++;
-	}
-
-	return qfalse;
+	return "";
 }
 
 
@@ -1538,10 +1405,8 @@ Changes or adds a key/value pair
 */
 void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 	char	newi[MAX_INFO_STRING];
-	int		newlen,oldlen;
 
-	oldlen = strlen(s);
-	if (oldlen >= MAX_INFO_STRING ) {
+	if ( strlen( s ) >= MAX_INFO_STRING ) {
 		Com_Error( ERR_DROP, "Info_SetValueForKey: oversize infostring" );
 	}
 
@@ -1575,10 +1440,8 @@ void Info_SetValueForKey( char *s, const char *key, const char *value ) {
 		return;
 	}
 
-	Q_strcat (newi, sizeof(newi), s);
-	newlen = strlen(newi);
-	Q_strncpyz (s, newi, MIN(MAX(oldlen+1, newlen+1),MAX_INFO_STRING)); // this feels dangerous. what if the user doesn't respect this. but tons of places this would need to be changed TODO
-	// DEFINITELY fix this. not doing the MIN(a,b) here results in disaster cause this function is SADLY called on shorter strings than MAX_INFO_STRING. DEFINITELY fix soon. provide size param.
+	strcat (newi, s);
+	strcpy (s, newi);
 }
 
 /*
@@ -1625,52 +1488,14 @@ void Info_SetValueForKey_Big( char *s, const char *key, const char *value ) {
 		return;
 	}
 
-	Q_strcat (s, BIG_INFO_STRING, newi);
+	strcat (s, newi);
 }
 
 
 //rww - convience function..
-int Q_irand(int value1, int value2, qboolean useDefault, int defaultValue)
+int Q_irand(int value1, int value2)
 {
 	int r;
-
-//#ifdef DEBUG
-//	// find bad calls: rand\s*\([^,]+,\s*([^,\s]+)\s*,[^,]+,\s*\1\s*\)
-//	if (defaultValue >= value2 || defaultValue < value1) {
-//		Com_Printf("Q_irand(%d,%d,%d,%d), bad call", value1, value2, useDefault, defaultValue);
-//	}
-//#endif
-	if (useDefault) {
-		return defaultValue;
-	}
-
-	r = rand()%value2;
-	r += value1;
-	
-	return r;
-}
-//rww - convience function..
-int Q_irandExpectedIf(qboolean expected, int value1, int value2, qboolean useDefault, int defaultValue)
-{
-	int r;
-
-//#ifdef DEBUG
-//	// find bad calls: rand\s*\([^,]+,\s*([^,\s]+)\s*,[^,]+,\s*\1\s*\)
-//	if (defaultValue >= value2 || defaultValue < value1) {
-//		Com_Printf("Q_irand(%d,%d,%d,%d), bad call", value1, value2, useDefault, defaultValue);
-//	}
-//#endif
-	if (useDefault) {
-		return defaultValue;
-	}
-
-	if (expected) {
-		// e.g.:
-		// 100, 500: then value2 becomes 401, so addvalue becomes 0 to 400, so 100 + up to 400 = es expected
-		// -300, 300: then value2 becomes 601, so addvalue becomes 0 to 600, so -300 + up to 600 = es expected
-		// proof that this was their intent? check WP_SabersCheckLock2 dev comment where Q_irand was used. called with 1000,3000 and comment states 1-3 seconds
-		value2 += 1 - value1;
-	}
 
 	r = rand()%value2;
 	r += value1;
@@ -1681,207 +1506,3 @@ int Q_irandExpectedIf(qboolean expected, int value1, int value2, qboolean useDef
 //====================================================================
 
 
-
-void sanitizeFilename(const char* input, char* output, qboolean allowExtension) {
-
-	char* lastDot = NULL;
-	const char* inputStart = input;
-	while (*input) {
-		if (*input == '.' && input != inputStart) { // Even tho we allow extensions (dots), we don't allow the dot at the start of the filename.
-			lastDot = output;
-		}
-		// stuff below 32 is special chars
-		if ((*input == 32) // Don't allow ! exclamation mark. Linux doesn't like that. " is also blocked
-			|| (*input >= 35 && *input < 42) // block *
-			|| (*input >= 43 && *input < 46) // block . /
-			|| (*input >= 48 && *input < 58) // block :
-			|| (*input >= 59 && *input < 60) // block <
-			|| (*input == 61) // block > ?
-			|| (*input >= 64 && *input < 92) // block backslash (\)
-			|| (*input >= 93 && *input < 96) // Don't allow `. Linux doesn't like that either, at least not in shell scripts.
-			|| (*input >= 97 && *input < 124) // block |
-			|| (*input >= 125 && *input < 127)
-			) {
-			*output++ = *input;
-		}
-		else if (*input == '|') {
-			*output++ = 'I';
-		}
-		else {
-			*output++ = '-';
-		}
-		input++;
-	}
-	*output = 0;
-
-	if (allowExtension && lastDot) {
-		*lastDot = '.';
-	}
-}
-
-
-/*
-==================
-safeatoi
-==================
-This is a slightly adapted version of strtol from newlib,
-specifically for 32 bit integers, so we can use it for cvar conversion.
-If someone enters 9999999999999999, we want that to be a positive number in the end, not wrap around and cause extremely weird behavior
-
-*/
-/*-
- * Copyright (c) 1990 The Regents of the University of California.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
- /*
-  * Convert a string to a long integer.
-  *
-  * Ignores `locale' stuff.  Assumes that the upper and lower case
-  * alphabets and digits are each contiguous.
-  */
-int safeatoi(const char* nptr, char** endptr, int base, int* error)
-{
-	const unsigned char* s = (const unsigned char*)nptr;
-	unsigned int acc;
-	int c;
-	unsigned int cutoff;
-	int neg = 0, any, cutlim;
-
-	/*
-	 * Skip white space and pick up leading +/- sign if any.
-	 * If base is 0, allow 0x for hex and 0 for octal, else
-	 * assume decimal; if base is already 16, allow 0x.
-	 */
-	do {
-		c = *s++;
-	} while (c == ' ');
-	if (c == '-') {
-		neg = 1;
-		c = *s++;
-	}
-	else if (c == '+')
-		c = *s++;
-	if ((base == 0 || base == 16) &&
-		c == '0' && (*s == 'x' || *s == 'X')) {
-		c = s[1];
-		s += 2;
-		base = 16;
-	}
-	if (base == 0)
-		base = c == '0' ? 8 : 10;
-
-	/*
-	 * Compute the cutoff value between legal numbers and illegal
-	 * numbers.  That is the largest legal value, divided by the
-	 * base.  An input number that is greater than this value, if
-	 * followed by a legal input character, is too big.  One that
-	 * is equal to this value may be valid or not; the limit
-	 * between valid and invalid numbers is then based on the last
-	 * digit.  For instance, if the range for longs is
-	 * [-2147483648..2147483647] and the input base is 10,
-	 * cutoff will be set to 214748364 and cutlim to either
-	 * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
-	 * a value > 214748364, or equal but the next digit is > 7 (or 8),
-	 * the number is too big, and we will return a range error.
-	 *
-	 * Set any if any `digits' consumed; make it negative to indicate
-	 * overflow.
-	 */
-	cutoff = neg ? -(unsigned int)INT_MIN : INT_MAX;
-	cutlim = cutoff % (unsigned int)base;
-	cutoff /= (unsigned int)base;
-	for (acc = 0, any = 0;; c = *s++) {
-		if (c >= '0' && c <= '9')
-			c -= '0';
-		else if (c >= 'A' && c <= 'Z')
-			c -= 'A' - 10;
-		else if (c >= 'a' && c <= 'z')
-			c -= 'a' - 10;
-		else
-			break;
-		if (c >= base)
-			break;
-		if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
-			any = -1;
-		else {
-			any = 1;
-			acc *= base;
-			acc += c;
-		}
-	}
-	if (any < 0) {
-		acc = neg ? INT_MIN : INT_MAX;
-		*error = ERANGE;
-	}
-	else if (neg)
-		acc = -acc;
-	if (endptr != 0)
-		*endptr = (char*)(any ? (char*)s - 1 : nptr);
-	return (acc);
-}
-
-const char* colorToHex(byte color[4]){
-	int i,a,b;
-	static const char hexChars[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-	static char hex[9] = {0};
-	char* s = hex;
-	for(i=0;i<4;i++){
-		a= color[i] % 16;
-		b= color[i] / 16;
-		*s = hexChars[b];
-		s++;
-		*s = hexChars[a];
-		s++;
-	}
-	hex[8] = '\0';
-	return hex;
-}
-
-#define HEXTOVALUE(a) ((a) >= '0' && (a)<='9') ? ((a)-'0') : (((a) >= 'A' && (a)<='F') ? (a)-'A'+10 : 15);  
-
-qboolean parseHex(const char hex[9], byte outColor[4]){
-	int i,a,b;
-	int len = strlen(hex);
-	int pairs = len/2;
-	const char* pair= NULL;
-	if(pairs != 4){
-		return qfalse;
-	}
-	for(i=0;i<pairs;i++){
-		pair = hex+i*2;
-		a = toupper(pair[0]);
-		b = toupper(pair[1]);
-		a = HEXTOVALUE(a);
-		b = HEXTOVALUE(b);
-		outColor[i] = a*16+b;
-	}
-	return qtrue;
-}

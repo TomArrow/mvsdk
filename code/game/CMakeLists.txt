@@ -1,4 +1,4 @@
-# Make sure the user is not executing this script directly
+﻿# Make sure the user is not executing this script directly
 if(NOT InMVSDK)
 	message(FATAL_ERROR "Use the top-level cmake script!")
 endif(NOT InMVSDK)
@@ -16,16 +16,10 @@ set(MVGAMEHEADERS
 	"${SRCDir}/game/be_ea.h"
 	"${SRCDir}/game/bg_local.h"
 	"${SRCDir}/game/bg_public.h"
-	"${SRCDir}/game/bg_pmove_css.h"
-	"${SRCDir}/game/bg_pmove_q2.h"
 	"${SRCDir}/game/bg_saga.h"
 	"${SRCDir}/game/bg_weapons.h"
-	"${SRCDir}/game/bg_cmd.h"
 	"${SRCDir}/game/botlib.h"
 	"${SRCDir}/game/chars.h"
-	"${SRCDir}/game/g_defrag.h"
-	"${SRCDir}/game/g_dbcmds.h"
-	"${SRCDir}/game/bg_defrag_global.h"
 	"${SRCDir}/game/g_local.h"
 	"${SRCDir}/game/g_public.h"
 	"${SRCDir}/game/g_team.h"
@@ -46,12 +40,8 @@ set(MVGAMEHEADERS
 
 	"${SRCDir}/qcommon/tags.h"
 
-	"${SRCDir}/ghoul2/G2.h"
+	"${SRCDir}/ghoul2/g2.h"
 
-	"${SRCDir}/qcommon/crypt_blowfish.h"
-	"${SRCDir}/qcommon/fp16.h"
-	"${SRCDir}/qcommon/levenshtein.h"
-	
 	"${SRCDir}/api/mvapi.h"
 )
 
@@ -63,22 +53,15 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/bg_misc.c"
 	"${SRCDir}/game/bg_panimate.c"
 	"${SRCDir}/game/bg_pmove.c" 
-	"${SRCDir}/game/bg_pmove_css.c" 
-	"${SRCDir}/game/bg_pmove_q2.c" 
 	"${SRCDir}/game/bg_saber.c"
 	"${SRCDir}/game/bg_slidemove.c"
 	"${SRCDir}/game/bg_weapons.c"
-	"${SRCDir}/game/bg_cmd.c"
 	"${SRCDir}/game/g_active.c"
 	"${SRCDir}/game/g_arenas.c"
 	"${SRCDir}/game/g_bot.c"
 	"${SRCDir}/game/g_client.c"
 	"${SRCDir}/game/g_cmds.c"
-	"${SRCDir}/game/g_crossserver.c"
 	"${SRCDir}/game/g_combat.c"
-	"${SRCDir}/game/g_defrag.c"
-	"${SRCDir}/game/g_dbcmds.c"
-	"${SRCDir}/game/bg_defrag_global.c"
 	"${SRCDir}/game/g_items.c"
 	"${SRCDir}/game/g_log.c"
 	"${SRCDir}/game/g_mem.c"
@@ -103,10 +86,6 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/g_multiversion_syscalls.c"
 	"${SRCDir}/game/bg_multiversion.c"
 	"${SRCDir}/game/animMappingTable.c"
-	
-	"${SRCDir}/qcommon/crypt_blowfish.c"
-	"${SRCDir}/qcommon/fp16.c"
-	"${SRCDir}/qcommon/levenshtein.c"
 )
 
 set(MVGAMEASM
@@ -125,20 +104,7 @@ set(MVGAMEVMSOURCES ${MVGAMESOURCES}
 	PARENT_SCOPE
 )
 
-# Explicitly set the target name to jk2mpgame_x64 for correct DLL naming
-set(MVGAME jk2mpgame_x64)
-
 add_library(${MVGAME} SHARED ${MVGAMEFILES})
-
-message(STATUS "[CMAKE] game target: ${MVGAME}, output: ${CMAKE_BINARY_DIR}/out/$<CONFIG>/")
-
-# Fix: Game module should build to main directory, not base subdirectory
-# This matches the original TomArrow/mvsdk and TomArrow/jk2mv repositories
-set_target_properties(${MVGAME} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/out/$<CONFIG>"
-)
 
 # Defines
 set(MVGAMEDefines ${MVGAMEDefines} "QAGAME")
@@ -157,11 +123,4 @@ set_target_properties(${MVGAME} PROPERTIES INCLUDE_DIRECTORIES "${MVGAMEIncludeD
 set_target_properties(${MVGAME} PROPERTIES PROJECT_LABEL "Game Module")
 if(InMV)
 	set_property(TARGET ${MVGAME} PROPERTY FOLDER "Modules")
-	if(WIN32)
-		# Module now builds directly to main directory - no copying needed
-	elseif(APPLE)
-		install(TARGETS ${MVGAME} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
-	else()
-		install(TARGETS ${MVGAME} LIBRARY DESTINATION "lib")
-	endif()
 endif()
