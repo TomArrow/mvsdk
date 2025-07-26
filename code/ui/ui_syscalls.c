@@ -1,6 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "ui_local.h"
+#include "../game/q_shared.h"
 
 // this file is only included when building a dll
 // syscalls.asm is included instead when building a qvm

@@ -123,12 +123,12 @@ static void CG_AutoKickUp_f(void)
 
 static void CG_AutoBackStabDown_f(void)
 {
-	cg.doAutoBackStab = qtrue;
+cg.doAutoBackstab = qtrue;
 }
 
 static void CG_AutoBackStabUp_f(void)
 {
-	cg.doAutoBackStab = qfalse;
+cg.doAutoBackstab = qfalse;
 }
 
 static void CG_AutoAimDown_f(void)
@@ -476,11 +476,11 @@ CG_TeamMenu_f
 /*
 static void CG_TeamMenu_f( void ) {
   if (trap_Key_GetCatcher() & KEYCATCH_CGAME) {
-    CG_EventHandling(CGAME_EVENT_NONE);
-    trap_Key_SetCatcher(0);
+	CG_EventHandling(CGAME_EVENT_NONE);
+	trap_Key_SetCatcher(0);
   } else {
-    CG_EventHandling(CGAME_EVENT_TEAMMENU);
-    //trap_Key_SetCatcher(KEYCATCH_CGAME);
+	CG_EventHandling(CGAME_EVENT_TEAMMENU);
+	//trap_Key_SetCatcher(KEYCATCH_CGAME);
   }
 }
 */
@@ -915,7 +915,7 @@ void CG_ClientList_f( void )
 				CG_Printf( "%2d " S_COLOR_YELLOW "F   " S_COLOR_WHITE "%s" S_COLOR_WHITE "%s\n", i,
 					ci->name, (ci->botSkill != 0) ? " (bot)" : "" );
 			}
- 			break;
+			break;
  
 		case TEAM_RED:
 			CG_Printf( "%2d " S_COLOR_RED "R   " S_COLOR_WHITE "%s" S_COLOR_WHITE "%s\n", i,
