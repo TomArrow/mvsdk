@@ -1060,6 +1060,7 @@ void ItemUse_Seeker(gentity_t *ent)
 
 void ItemUse_MedPack(gentity_t *ent)
 {
+	int bactaExtra = ent->client->bactaExtra;
 	if (!ent || !ent->client)
 	{
 		return;
@@ -1072,16 +1073,16 @@ void ItemUse_MedPack(gentity_t *ent)
 		return;
 	}
 
-	if (ent->health >= ent->client->ps.stats[STAT_MAX_HEALTH])
+	if (ent->health >= ent->client->ps.stats[STAT_MAX_HEALTH] + bactaExtra)
 	{
 		return;
 	}
 
-	ent->health += MAX_MEDPACK_HEAL_AMOUNT;
+	ent->health += MAX_MEDPACK_HEAL_AMOUNT + bactaExtra;
 
-	if (ent->health > ent->client->ps.stats[STAT_MAX_HEALTH])
+	if (ent->health > ent->client->ps.stats[STAT_MAX_HEALTH] + bactaExtra)
 	{
-		ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+		ent->health = ent->client->ps.stats[STAT_MAX_HEALTH] + bactaExtra;
 	}
 }
 
@@ -1170,6 +1171,10 @@ int Pickup_Holdable( gentity_t *ent, gentity_t *other ) {
 	other->client->ps.stats[STAT_HOLDABLE_ITEM] = ent->item - bg_itemlist;
 
 	other->client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << ent->item->giTag);
+
+	if (ent->item->giTag == HI_MEDPAC) {
+		other->client->bactaExtra = ent->bactaExtra; // make the client "remember" how much this bacta actually gives. q3 bactas give more. relevant for some q3df maps. or maybe just for kairos-nosf
+	}
 
 	G_LogWeaponItem(other->s.number, ent->item->giTag);
 
@@ -1370,6 +1375,22 @@ Touch_Item
 void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	int			respawn;
 	qboolean	predict;
+	int	nowTime = LEVELTIME(other->client);
+	qboolean isRacer = other->client && other->client->sess.raceMode;
+
+	// defrag handling... meh
+	// for wait == -1
+	if (!isRacer && ent->goneForNonRacers) {
+		return;
+	} else if (isRacer && other->client->entityStates[ent - g_entities]) {
+		return;
+	}
+	// for normal timeouts
+	if (!isRacer && ent->availableTimeForNonRacers >= level.time) {
+		return;
+	} else if (isRacer && other->client->triggerTimes[ent - g_entities] >= nowTime) {
+		return;
+	}
 
 	if (ent->s.eFlags & EF_ITEMPLACEHOLDER)
 	{
@@ -1531,11 +1552,21 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	G_UseTargets (ent, other);
 
 	// wait of -1 will not respawn
-	if ( ent->wait == -1 ) {
-		ent->r.svFlags |= SVF_NOCLIENT;
-		ent->s.eFlags |= EF_NODRAW;
-		ent->r.contents = 0;
-		ent->unlinkAfterEvent = qtrue;
+	if ( ent->wait == -1) {
+		if (!g_defrag.integer) {
+			ent->r.svFlags |= SVF_NOCLIENT;
+			ent->s.eFlags |= EF_NODRAW;
+			ent->r.contents = 0;
+			ent->unlinkAfterEvent = qtrue;
+		}
+		else {
+			if (isRacer) {
+				other->client->entityStates[ent-g_entities] = 1;
+			}
+			else {
+				ent->goneForNonRacers = qtrue;
+			}
+		}
 		return;
 	}
 
@@ -1560,29 +1591,41 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	// picked up items still stay around, they just don't
 	// draw anything.  This allows respawnable items
 	// to be placed on movers.
-	if (!(ent->flags & FL_DROPPED_ITEM) && (ent->item->giType==IT_WEAPON || ent->item->giType==IT_POWERUP))
-	{
-		ent->s.eFlags |= EF_ITEMPLACEHOLDER;
-		ent->s.eFlags &= ~EF_NODRAW;
-	}
-	else
-	{
-		ent->s.eFlags |= EF_NODRAW;
-		ent->r.svFlags |= SVF_NOCLIENT;
-	}
-	ent->r.contents = 0;
+	if (g_defrag.integer) {
 
-	// ZOID
-	// A negative respawn times means to never respawn this item (but don't 
-	// delete it).  This is used by items that are respawned by third party 
-	// events such as ctf flags
-	if ( respawn <= 0 ) {
-		ent->nextthink = 0;
-		ent->think = 0;
+		if (!isRacer) {
+			ent->availableTimeForNonRacers = level.time + respawn * 1000;
+		}
+		else {
+			other->client->triggerTimes[ent - g_entities] = nowTime + respawn * 1000;
+		}
 	} else {
-		ent->nextthink = level.time + respawn * 1000;
-		ent->think = RespawnItem;
+		if (!(ent->flags & FL_DROPPED_ITEM) && (ent->item->giType == IT_WEAPON || ent->item->giType == IT_POWERUP))
+		{
+			ent->s.eFlags |= EF_ITEMPLACEHOLDER;
+			ent->s.eFlags &= ~EF_NODRAW;
+		}
+		else
+		{
+			ent->s.eFlags |= EF_NODRAW;
+			ent->r.svFlags |= SVF_NOCLIENT;
+		}
+		ent->r.contents = 0;
+
+		// ZOID
+		// A negative respawn times means to never respawn this item (but don't 
+		// delete it).  This is used by items that are respawned by third party 
+		// events such as ctf flags
+		if (respawn <= 0) {
+			ent->nextthink = 0;
+			ent->think = 0;
+		}
+		else {
+			ent->nextthink = level.time + respawn * 1000;
+			ent->think = RespawnItem;
+		}
 	}
+
 	trap_LinkEntity( ent );
 }
 

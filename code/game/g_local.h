@@ -309,6 +309,10 @@ struct gentity_s {
 
 	gentity_t*	nextHashed; // next with same classname hash
 	qboolean	belongsToParent; // when sending customized snapshots and someone has solo mode activated, don't show him this item if it doesn't belong to himself (sniper shots etc)
+
+	int			bactaExtra; // extra heal amount for bacta (e.g. q3 bacta)
+	qboolean	goneForNonRacers;
+	int			availableTimeForNonRacers;
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -681,6 +685,8 @@ struct gclient_s {
 	int			lastScoresMessage;
 
 	qboolean	isIronMan;
+
+	int			bactaExtra; // extra amount restored by bacta (e.g. q3 bacta)
 };
 
 
@@ -859,7 +865,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam );
 qboolean SetTeam( gentity_t *ent, char *s );
 void Cmd_FollowCycle_f( gentity_t *ent, int dir );
 void Cmd_SaberAttackCycle_f(gentity_t *ent);
-int G_ItemUsable(playerState_t *ps, int forcedUse);
+int G_ItemUsable(playerState_t *ps, int forcedUse,gentity_t* ent);
 void Cmd_ToggleSaber_f(gentity_t *ent);
 void Cmd_EngageDuel_f(gentity_t *ent);
 void G_SayTo(gentity_t* ent, gentity_t* other, int mode, int color, const char* name, const char* message, const char* append);
