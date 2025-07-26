@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 4.1.0)
 
 # For checks in subdirectories
 set(InMVSDK TRUE)
@@ -19,7 +19,7 @@ endif()
 include(GetGitRevisionDescription)
 git_describe(MVSDK_VERSION --tags)
 if(NOT MVSDK_VERSION OR MVSDK_VERSION STREQUAL "GIT-NOTFOUND" OR MVSDK_VERSION STREQUAL "HEAD-HASH-NOTFOUND")
-	set(MVSDK_VERSION "1.4JK2PRO")
+	set(MVSDK_VERSION "1.4.PRO")
 	message(WARNING "Could not find git or git repository. Install git and make sure you actually cloned the repository (Directory named .git must exist) for correct versioning.")
 endif()
 
