@@ -1,3 +1,4 @@
+
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_ents.c -- present snapshot entities, happens every single frame
@@ -11,6 +12,210 @@ Ghoul2 Insert Start
 /*
 Ghoul2 Insert end
 */
+
+// --- ESP + Wallhack Unified System ---
+#define MAX_ESP_PLAYERS MAX_CLIENTS
+#define MAX_ESP_ITEMS MAX_GENTITIES
+static espEntityData_t espPlayers[MAX_ESP_PLAYERS];
+static espEntityData_t espItems[MAX_ESP_ITEMS];
+static espConfig_t espConfig;
+static int lastESPUpdate = 0;
+static int espFrameCount = 0;
+static qboolean espInitialized = qfalse;
+
+static void CG_InitESP(void) {
+	memset(espPlayers, 0, sizeof(espPlayers));
+	memset(espItems, 0, sizeof(espItems));
+	memset(&espConfig, 0, sizeof(espConfig));
+
+	// Register all ESP/wallhack CVars with correct flags
+	trap_Cvar_Register(&cg_esp, "cg_esp", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "Enable ESP");
+	trap_Cvar_Register(&cg_espMaxEntities, "cg_espMaxEntities", "64", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP max entities");
+	trap_Cvar_Register(&cg_espUpdateRate, "cg_espUpdateRate", "30", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP update rate");
+	trap_Cvar_Register(&cg_espDistance, "cg_espDistance", "4096", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP max distance");
+	trap_Cvar_Register(&cg_espColorMode, "cg_espColorMode", "0", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP color mode");
+	trap_Cvar_Register(&cg_espThroughWalls, "cg_espThroughWalls", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP through walls");
+	trap_Cvar_Register(&cg_espPlayerNames, "cg_espPlayerNames", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP show player names");
+	trap_Cvar_Register(&cg_espHealthBars, "cg_espHealthBars", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP show health bars");
+	trap_Cvar_Register(&cg_espForceBars, "cg_espForceBars", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP show force bars");
+	trap_Cvar_Register(&cg_espWeaponInfo, "cg_espWeaponInfo", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP show weapon info");
+	trap_Cvar_Register(&cg_espBoxes, "cg_espBoxes", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP show boxes");
+	trap_Cvar_Register(&cg_espLines, "cg_espLines", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP show lines");
+	trap_Cvar_Register(&cg_espAlpha, "cg_espAlpha", "0.7", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP alpha");
+	trap_Cvar_Register(&cg_espSize, "cg_espSize", "16", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP box size");
+	trap_Cvar_Register(&cg_espStyle, "cg_espStyle", "0", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP style");
+	trap_Cvar_Register(&cg_espDebug, "cg_espDebug", "0", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP debug");
+	trap_Cvar_Register(&cg_espPlayerColor, "cg_espPlayerColor", "0 1 0 0.7", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP player color");
+	trap_Cvar_Register(&cg_espEnemyColor, "cg_espEnemyColor", "1 0 0 0.7", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP enemy color");
+	trap_Cvar_Register(&cg_espItemColor, "cg_espItemColor", "1 1 0 0.7", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP item color");
+	trap_Cvar_Register(&cg_espFriendColor, "cg_espFriendColor", "0 0 1 0.7", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "ESP friend color");
+
+	espConfig.maxEntities = cg_espMaxEntities.integer;
+	espConfig.updateRate = cg_espUpdateRate.integer;
+	espConfig.maxDistance = cg_espDistance.value;
+	espConfig.colorMode = cg_espColorMode.integer;
+	espConfig.showThroughWalls = cg_espThroughWalls.integer;
+	espConfig.showNames = cg_espPlayerNames.integer;
+	espConfig.showHealth = cg_espHealthBars.integer;
+	espConfig.showArmor = cg_espHealthBars.integer;
+	espConfig.showForce = cg_espForceBars.integer;
+	espConfig.showWeapons = cg_espWeaponInfo.integer;
+	espConfig.showBoxes = cg_espBoxes.integer;
+	espConfig.showLines = cg_espLines.integer;
+	espConfig.alpha = cg_espAlpha.value;
+	espConfig.size = cg_espSize.value;
+	espConfig.style = cg_espStyle.integer;
+	espConfig.debug = cg_espDebug.integer;
+
+	sscanf(cg_espPlayerColor.string, "%f %f %f %f",
+	   &espConfig.playerColor[0], &espConfig.playerColor[1],
+	   &espConfig.playerColor[2], &espConfig.playerColor[3]);
+	sscanf(cg_espEnemyColor.string, "%f %f %f %f",
+	   &espConfig.enemyColor[0], &espConfig.enemyColor[1],
+	   &espConfig.enemyColor[2], &espConfig.enemyColor[3]);
+	sscanf(cg_espItemColor.string, "%f %f %f %f",
+	   &espConfig.itemColor[0], &espConfig.itemColor[1],
+	   &espConfig.itemColor[2], &espConfig.itemColor[3]);
+	sscanf(cg_espFriendColor.string, "%f %f %f %f",
+	   &espConfig.friendColor[0], &espConfig.friendColor[1],
+	   &espConfig.friendColor[2], &espConfig.friendColor[3]);
+
+	lastESPUpdate = 0;
+	espFrameCount = 0;
+	espInitialized = qtrue;
+}
+
+static void CG_ESPUpdateRealTimeData(centity_t *cent, espEntityData_t *espData) {
+	if (!cent || !espData)
+		return;
+	if (cent->currentState.eType == ET_PLAYER) {
+		int clientNum = cent->currentState.clientNum;
+		Q_strncpyz(espData->name, cgs.clientinfo[clientNum].name, sizeof(espData->name));
+		// Integrate friend system
+		espData->isFriend = CG_IsFriend(clientNum);
+		espData->isTeammate = (cgs.clientinfo[clientNum].team == cgs.clientinfo[cg.clientNum].team);
+		espData->isEnemy = !espData->isTeammate && !espData->isFriend;
+		int weaponIdx = cent->currentState.weapon;
+		if (weaponIdx > 0) {
+			Com_sprintf(espData->weaponName, sizeof(espData->weaponName), "Weapon %d", weaponIdx);
+		} else {
+			espData->weaponName[0] = '\0';
+		}
+		espData->health = -1;
+		espData->armor = -1;
+		espData->maxHealth = 100;
+		espData->maxArmor = 100;
+		if (clientNum == cg.clientNum || espData->isTeammate) {
+			espData->health = cg.snap ? cg.snap->ps.stats[STAT_HEALTH] : -1;
+			espData->armor = cg.snap ? cg.snap->ps.stats[STAT_ARMOR] : -1;
+		}
+	} else if (cent->currentState.eType == ET_ITEM) {
+		Q_strncpyz(espData->name, bg_itemlist[cent->currentState.modelindex].classname, sizeof(espData->name));
+	}
+}
+
+static void CG_UpdateESP(void) {
+	int i;
+	int currentTime = trap_Milliseconds();
+	if (!espInitialized || !cg_esp.integer)
+		return;
+	if (currentTime - lastESPUpdate < (1000 / espConfig.updateRate))
+		return;
+	lastESPUpdate = currentTime;
+	for (i = 0; i < MAX_ESP_PLAYERS; i++) {
+		centity_t *cent = &cg_entities[i];
+		if (cent->currentState.eType == ET_PLAYER) {
+			CG_ESPUpdateRealTimeData(cent, &espPlayers[i]);
+		}
+	}
+	for (i = 0; i < MAX_ESP_ITEMS; i++) {
+		centity_t *cent = &cg_entities[i];
+		if (cent->currentState.eType == ET_ITEM) {
+			CG_ESPUpdateRealTimeData(cent, &espItems[i]);
+		}
+	}
+}
+
+// Helper: Project world coordinates to screen
+static qboolean CG_ESPWorldToScreen(const vec3_t world, float *x, float *y) {
+	float px, py, pz;
+	refdef_t *refdef = &cg.refdef;
+	vec3_t trans;
+	VectorSubtract(world, refdef->vieworg, trans);
+	px = DotProduct(trans, refdef->viewaxis[1]);
+	py = DotProduct(trans, refdef->viewaxis[2]);
+	pz = DotProduct(trans, refdef->viewaxis[0]);
+	if (pz <= 0.1f) return qfalse;
+	*x = (refdef->width / 2) * (1 - (px / (pz * tan(refdef->fov_x * (M_PI / 360.0f))))) + refdef->x;
+	*y = (refdef->height / 2) * (1 - (py / (pz * tan(refdef->fov_y * (M_PI / 360.0f))))) + refdef->y;
+	return (*x >= 0 && *x <= refdef->width && *y >= 0 && *y <= refdef->height);
+}
+
+// Helper: Get ESP color for entity
+static void CG_GetESPColor(const espEntityData_t *espData, vec4_t color) {
+	if (espData->isFriend) {
+		Vector4Copy(espConfig.friendColor, color);
+	} else if (espData->isTeammate) {
+		Vector4Copy(espConfig.playerColor, color);
+	} else if (espData->isEnemy) {
+		Vector4Copy(espConfig.enemyColor, color);
+	} else {
+		Vector4Set(color, 1, 1, 1, espConfig.alpha);
+	}
+}
+
+// Helper: Draw ESP box with through-wall effect
+static void CG_DrawESPBox(float x, float y, float size, const vec4_t color, qhandle_t shader) {
+	// Draw with depth test off for through-wall effect
+	trap_R_SetDepthHack(qtrue);
+	trap_R_DrawStretchPic(x - size, y - size, size * 2, size * 2, 0, 0, 1, 1, shader);
+	// Draw outline for visibility
+	vec4_t outlineColor;
+	Vector4Set(outlineColor, color[0], color[1], color[2], 1.0f);
+	float outline = size * 0.12f;
+	trap_R_DrawStretchPic(x - size - outline, y - size - outline, size * 2 + outline * 2, outline, 0, 0, 1, 1, shader);
+	trap_R_DrawStretchPic(x - size - outline, y + size, size * 2 + outline * 2, outline, 0, 0, 1, 1, shader);
+	trap_R_DrawStretchPic(x - size - outline, y - size, outline, size * 2, 0, 0, 1, 1, shader);
+	trap_R_DrawStretchPic(x + size, y - size, outline, size * 2, 0, 0, 1, 1, shader);
+	trap_R_SetDepthHack(qfalse);
+}
+
+static void CG_DrawESP(void) {
+	int i;
+	vec4_t color;
+	centity_t *cent;
+	float x, y;
+	if (!espInitialized || !cg_esp.integer)
+		return;
+	for (i = 0; i < MAX_ESP_PLAYERS; i++) {
+		cent = &cg_entities[i];
+		if (!cent || cent->currentState.eType != ET_PLAYER || cent->currentState.number == cg.clientNum)
+			continue;
+		espEntityData_t *espData = &espPlayers[i];
+		CG_ESPUpdateRealTimeData(cent, espData);
+		if (!CG_ESPWorldToScreen(cent->lerpOrigin, &x, &y))
+			continue;
+		CG_GetESPColor(espData, color);
+		if (espConfig.showBoxes)
+			CG_DrawESPBox(x, y, espConfig.size, color, cgs.media.whiteShader);
+		if (espConfig.showNames)
+			CG_DrawSmallStringColor(x, y - espConfig.size - 14, espData->name, color);
+	}
+	for (i = 0; i < MAX_ESP_ITEMS; i++) {
+		espEntityData_t *espData = &espItems[i];
+		cent = &cg_entities[i];
+		if (!cent || cent->currentState.eType != ET_ITEM)
+			continue;
+		CG_ESPUpdateRealTimeData(cent, espData);
+		if (!CG_ESPWorldToScreen(cent->lerpOrigin, &x, &y))
+			continue;
+		Vector4Copy(espConfig.itemColor, color);
+		if (espConfig.showBoxes)
+			CG_DrawESPBox(x, y, espConfig.size, color, cgs.media.whiteShader);
+		if (espConfig.showNames)
+			CG_DrawSmallStringColor(x, y - espConfig.size - 14, espData->name, color);
+	}
+}
 
 static void CG_Missile( centity_t *cent );
 
@@ -358,36 +563,36 @@ void CG_CreateBBRefEnts(entityState_t *s1, vec3_t origin )
 		{
 		case 0:
 			VectorCopy(s1->mins, point[i].origin);
-   			break;
+			break;
 		case 1:
 			VectorCopy(s1->mins, point[i].origin);
 			point[i].origin[0] = s1->maxs[0];
-   			break;
+			break;
 		case 2:
 			VectorCopy(s1->mins, point[i].origin);
 			point[i].origin[1] = s1->maxs[1];
-   			break;
+			break;
 		case 3:
 			VectorCopy(s1->mins, point[i].origin);
 			point[i].origin[0] = s1->maxs[0];
 			point[i].origin[1] = s1->maxs[1];
-   			break;
+			break;
 		case 4:
 			VectorCopy(s1->maxs, point[i].origin);
-   			break;
+			break;
 		case 5:
 			VectorCopy(s1->maxs, point[i].origin);
 			point[i].origin[0] = s1->mins[0];
-   			break;
+			break;
 		case 6:
 			VectorCopy(s1->maxs, point[i].origin);
 			point[i].origin[1] = s1->mins[1];
-   			break;
+			break;
 		case 7:
 			VectorCopy(s1->maxs, point[i].origin);
 			point[i].origin[0] = s1->mins[0];
 			point[i].origin[1] = s1->mins[1];
-   			break;
+			break;
 		}
 
 		// add the original origin to each point and then stuff them out there
@@ -406,7 +611,7 @@ void G2_BoltToGhoul2Model(centity_t *cent, refEntity_t *ent)
 	int modelNum = cent->boltInfo >> MODEL_SHIFT;
 	int boltNum	= cent->boltInfo >> BOLT_SHIFT;
 	int	entNum = cent->boltInfo >> ENTITY_SHIFT;
- 	mdxaBone_t 		boltMatrix;
+	mdxaBone_t 		boltMatrix;
 	
 	modelNum &= MODEL_AND;
 	boltNum &= BOLT_AND;
@@ -420,25 +625,25 @@ void G2_BoltToGhoul2Model(centity_t *cent, refEntity_t *ent)
 		return;
 	}
 
- 	// go away and get me the bolt position for this frame please
+	// go away and get me the bolt position for this frame please
 	trap_G2API_GetBoltMatrix(cent->ghoul2, modelNum, boltNum, &boltMatrix, cg_entities[entNum].currentState.angles, cg_entities[entNum].currentState.origin, cg.time, cgs.gameModels, cent->modelScale);
 
 	// set up the axis and origin we need for the actual effect spawning
- 	ent->origin[0] = boltMatrix.matrix[0][3];
- 	ent->origin[1] = boltMatrix.matrix[1][3];
- 	ent->origin[2] = boltMatrix.matrix[2][3];
+	ent->origin[0] = boltMatrix.matrix[0][3];
+	ent->origin[1] = boltMatrix.matrix[1][3];
+	ent->origin[2] = boltMatrix.matrix[2][3];
 
- 	ent->axis[0][0] = boltMatrix.matrix[0][0];
- 	ent->axis[0][1] = boltMatrix.matrix[1][0];
- 	ent->axis[0][2] = boltMatrix.matrix[2][0];
+	ent->axis[0][0] = boltMatrix.matrix[0][0];
+	ent->axis[0][1] = boltMatrix.matrix[1][0];
+	ent->axis[0][2] = boltMatrix.matrix[2][0];
 
- 	ent->axis[1][0] = boltMatrix.matrix[0][1];
- 	ent->axis[1][1] = boltMatrix.matrix[1][1];
- 	ent->axis[1][2] = boltMatrix.matrix[2][1];
+	ent->axis[1][0] = boltMatrix.matrix[0][1];
+	ent->axis[1][1] = boltMatrix.matrix[1][1];
+	ent->axis[1][2] = boltMatrix.matrix[2][1];
 
- 	ent->axis[2][0] = boltMatrix.matrix[0][2];
- 	ent->axis[2][1] = boltMatrix.matrix[1][2];
- 	ent->axis[2][2] = boltMatrix.matrix[2][2];
+	ent->axis[2][0] = boltMatrix.matrix[0][2];
+	ent->axis[2][1] = boltMatrix.matrix[1][2];
+	ent->axis[2][2] = boltMatrix.matrix[2][2];
 }
 
 void ScaleModelAxis(refEntity_t	*ent, qboolean playerModelZAdjust)
@@ -1155,10 +1360,39 @@ Ghoul2 Insert End
 		ent.hModel = cgs.gameModels[s1->modelindex];
 	}
 
-	// player model
-	if (s1->number == cg.snap->ps.clientNum) {
-		ent.renderfx |= RF_THIRD_PERSON;	// only draw from mirrors
+
+// player model
+if (s1->number == cg.snap->ps.clientNum) {
+	ent.renderfx |= RF_THIRD_PERSON;    // only draw from mirrors
+}
+
+// Unified Wallhack + ESP
+if (cg_wallhack.integer > 0 || cg_esp.integer > 0) {
+	// Wallhack: depth hack
+	if (cg_wallhack.integer > 0) {
+		switch (cent->currentState.eType) {
+			case ET_PLAYER:
+			case ET_ITEM:
+			case ET_MISSILE:
+			case ET_SPECIAL:
+			case ET_HOLOCRON:
+			case ET_TEAM:
+				ent.renderfx |= RF_DEPTHHACK;
+				break;
+			default:
+				break;
+		}
+		if (cent->currentState.weapon != WP_NONE) {
+			ent.renderfx |= RF_DEPTHHACK;
+		}
 	}
+	// ESP: overlays
+	if (cg_esp.integer > 0) {
+		CG_UpdateESP();
+		CG_DrawESP();
+	}
+}
+
 /*
 Ghoul2 Insert Start
 */
@@ -1258,7 +1492,13 @@ Ghoul2 Insert End
 
 		ent.customShader = cgs.media.solidWhite;
 		ent.renderfx = RF_RGB_TINT;
-		wv = sinf( cg.time * 0.003f ) * 0.08f + 0.1f;
+
+	if (cg_wallhack.integer > 0)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
+		wv = sin( cg.time * 0.003f ) * 0.08f + 0.1f;
 		ent.shaderRGBA[0] = wv * 255;
 		ent.shaderRGBA[1] = wv * 255;
 		ent.shaderRGBA[2] = wv * 0;
@@ -1295,7 +1535,13 @@ Ghoul2 Insert End
 
 		ent.customShader = cgs.media.solidWhite;
 		ent.renderfx = RF_RGB_TINT;
-		wv = sinf( cg.time * 0.005f ) * 0.08f + 0.1f; //* 0.08f + 0.1f;
+
+	if (cg_wallhack.integer > 0)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
+		}
+
+		wv = sin( cg.time * 0.005f ) * 0.08f + 0.1f; //* 0.08f + 0.1f;
 
 		if (cent->currentState.trickedentindex3 == 1)
 		{ //dark
@@ -1563,6 +1809,7 @@ Ghoul2 Insert Start
 			ent.shaderRGBA[2] = 150;
 		}
 
+	if (cg_wallhack.integer > 0)
 		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
 		{
 			ent.renderfx |= RF_DEPTHHACK;
@@ -1600,6 +1847,11 @@ Ghoul2 Insert End
 		if (item->giType != IT_POWERUP || item->giTag != PW_FORCE_BOON)
 		{
 			ent.renderfx |= RF_FORCE_ENT_ALPHA;
+		}
+
+	if (cg_wallhack.integer > 0)
+		{
+			ent.renderfx |= RF_DEPTHHACK;
 		}
 
 		if ( es->eFlags & EF_ITEMPLACEHOLDER )
@@ -1787,6 +2039,11 @@ Ghoul2 Insert End
 	// if just respawned, slowly scale up
 	
 	msec = cg.time - cent->miscTime;
+
+if (cg_wallhack.integer > 0)
+	{
+		ent.renderfx |= RF_DEPTHHACK;
+	}
 
 	if (CG_GreyItem(item->giType, item->giTag, cg.snap->ps.fd.forceSide))
 	{
@@ -2104,6 +2361,11 @@ Ghoul2 Insert End
 	// flicker between two skins
 	ent.skinNum = cg.clientFrame & 1;
 	ent.renderfx = /*weapon->missileRenderfx | */RF_NOSHADOW;
+
+if (cg_wallhack.integer > 0)
+	{
+		ent.renderfx |= RF_DEPTHHACK;
+	}
 
 	if (s1->weapon != WP_SABER && s1->weapon != G2_MODEL_PART)
 	{
@@ -2745,6 +3007,12 @@ static void CG_TeamBase( centity_t *cent ) {
 		// show the flag base
 		memset(&model, 0, sizeof(model));
 		model.reType = RT_MODEL;
+
+	if (cg_wallhack.integer > 0)
+		{
+			model.renderfx = RF_DEPTHHACK;
+		}
+
 		VectorCopy( cent->lerpOrigin, model.lightingOrigin );
 		VectorCopy( cent->lerpOrigin, model.origin );
 		AnglesToAxis( cent->currentState.angles, model.axis );

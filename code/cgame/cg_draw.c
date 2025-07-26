@@ -83,8 +83,28 @@ typedef struct {
 	int			count;
 	vec2_t 		m;
 	int 		fps;
-} dfsnaphud;
-dfsnaphud snappinghud;
+// dfsnaphud and snappinghud defined below
+
+void CG_DrawSnapHud(void);
+
+
+#define KEY_W       0
+#define KEY_WA      1
+#define KEY_A       2
+#define KEY_AS      3
+#define KEY_S       4
+#define KEY_SD      5
+#define KEY_D       6
+#define KEY_DW      7
+#define SNAPHUD_MAXZONES	128
+
+typedef struct {
+	int			speed;
+	float		zones[SNAPHUD_MAXZONES];
+	int			count;
+	vec2_t 		m;
+	int 		fps;
+// dfsnaphud and snappinghud defined above
 
 void CG_DrawSnapHud(void);
 
@@ -6403,25 +6423,25 @@ qboolean Q_HasLeadingColorCode(char *msg) {
 
 char *Q_strtokm(char *str, const char *delim)
 {
-    static char *tok;
-    static char *next;
-    char *m;
+	static char *tok;
+	static char *next;
+	char *m;
 
-    if (delim == NULL) return NULL;
+	if (delim == NULL) return NULL;
 
-    tok = (str) ? str : next;
-    if (tok == NULL) return NULL;
+	tok = (str) ? str : next;
+	if (tok == NULL) return NULL;
 
-    m = strstr(tok, delim);
+	m = strstr(tok, delim);
 
-    if (m) {
-        next = m + strlen(delim);
-        *m = '\0';
-    } else {
-        next = NULL;
-    }
+	if (m) {
+		next = m + strlen(delim);
+		*m = '\0';
+	} else {
+		next = NULL;
+	}
 
-    return tok;
+	return tok;
 }
 
 //add chatbox string
@@ -6514,7 +6534,7 @@ void CG_ChatBox_AddString(char *chatStr, int chatSize)
 	chatLen = CG_Text_Width(chat->string, 1.0f, FONT_SMALL);//loda
 	if (chatLen > cg_chatBoxCutOffLength.value)
 	{ //we have to break it into segments...
-        int i = 0;
+		int i = 0;
 		int lastLinePt = 0;
 		char s[2];
 
@@ -6546,7 +6566,7 @@ void CG_ChatBox_AddString(char *chatStr, int chatSize)
 					i = j;
 				}
 
-                chat->lines++;
+				chat->lines++;
 				CG_ChatBox_StrInsert(chat->string, i, "\n");
 				i++;
 				chatLen = 0;
@@ -6566,7 +6586,7 @@ void CG_ChatBox_AddString(char *chatStr, int chatSize)
 //insert item into array (rearranging the array if necessary)
 void CG_ChatBox_ArrayInsert(chatBoxItem_t **array, int insPoint, int maxNum, chatBoxItem_t *item)
 {
-    if (array[insPoint])
+	if (array[insPoint])
 	{ //recursively call, to move everything up to the top
 		if (insPoint+1 >= maxNum)
 		{
@@ -7211,7 +7231,7 @@ static void CG_Draw2D( void ) {
 				Menu_PaintAll();
 				CG_DrawTimedMenus();
 			}
-      
+	  
 			//CG_DrawTemporaryStats();
 
 			CG_DrawAmmoWarning();
@@ -7275,7 +7295,7 @@ static void CG_Draw2D( void ) {
 			//Do we want to use this system again at some point?
 			CG_DrawReward();
 		}
-    
+	
 	}
 
 	if (cg.snap->ps.fallingToDeath)
@@ -7403,7 +7423,7 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 	}
 
 	// draw status bar and other floating elements
- 	CG_Draw2D();
+	CG_Draw2D();
 }
 
 static void CG_CalculateSpeed(centity_t *cent) {
@@ -8062,51 +8082,51 @@ static void CG_DrawVerticalSpeed(void) {
 #if 0
 #define YAW_FRAMES    16
 static void CG_DrawYawSpeed( void ) {
-    static unsigned short previousYaws[YAW_FRAMES];
-    static unsigned short index;
-    static int    previous, lastupdate;
-    int        t, i, yaw, total;
-    unsigned short frameTime;
-    const int        xOffset = 0;
+	static unsigned short previousYaws[YAW_FRAMES];
+	static unsigned short index;
+	static int    previous, lastupdate;
+	int        t, i, yaw, total;
+	unsigned short frameTime;
+	const int        xOffset = 0;
 
-    const float diff = AngleSubtract(cg.predictedPlayerState.viewangles[YAW], cg.lastYawSpeed);
-    float yawspeed = diff / (cg.frametime * 0.001f);
-    if (yawspeed < 0)
-        yawspeed = -yawspeed;
+	const float diff = AngleSubtract(cg.predictedPlayerState.viewangles[YAW], cg.lastYawSpeed);
+	float yawspeed = diff / (cg.frametime * 0.001f);
+	if (yawspeed < 0)
+		yawspeed = -yawspeed;
 
-    t = trap_Milliseconds();
-    frameTime = t - previous;
-    previous = t;
-    if (t - lastupdate > 20)    //don't sample faster than this
-    {
-        lastupdate = t;
-        previousYaws[index % YAW_FRAMES] = yawspeed;
-        index++;
-    }
+	t = trap_Milliseconds();
+	frameTime = t - previous;
+	previous = t;
+	if (t - lastupdate > 20)    //don't sample faster than this
+	{
+		lastupdate = t;
+		previousYaws[index % YAW_FRAMES] = yawspeed;
+		index++;
+	}
 
-    total = 0;
-    for (i = 0; i < YAW_FRAMES; i++) {
-        total += previousYaws[i];
-    }
-    if (!total) {
-        total = 1;
-    }
-    yaw = total / (float)YAW_FRAMES;
+	total = 0;
+	for (i = 0; i < YAW_FRAMES; i++) {
+		total += previousYaws[i];
+	}
+	if (!total) {
+		total = 1;
+	}
+	yaw = total / (float)YAW_FRAMES;
 
-    if (yaw) {
-        char yawStr[64] = { 0 };
-        if (yawspeed > 320)
-            Com_sprintf(yawStr, sizeof(yawStr), "^1%03i", (int)(yaw + 0.5f));
-        else if (yawspeed > 265)
-            Com_sprintf(yawStr, sizeof(yawStr), "^3%03i", (int)(yaw + 0.5f));
-        else
-            Com_sprintf(yawStr, sizeof(yawStr), "%03i", (int)(yaw + 0.5f));
-        CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], yawStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-    }
+	if (yaw) {
+		char yawStr[64] = { 0 };
+		if (yawspeed > 320)
+			Com_sprintf(yawStr, sizeof(yawStr), "^1%03i", (int)(yaw + 0.5f));
+		else if (yawspeed > 265)
+			Com_sprintf(yawStr, sizeof(yawStr), "^3%03i", (int)(yaw + 0.5f));
+		else
+			Com_sprintf(yawStr, sizeof(yawStr), "%03i", (int)(yaw + 0.5f));
+		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], yawStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+	}
 
-    cg.lastYawSpeed = cg.predictedPlayerState.viewangles[YAW];
+	cg.lastYawSpeed = cg.predictedPlayerState.viewangles[YAW];
 
-    speedometerXPos += 16;
+	speedometerXPos += 16;
 }
 #endif
 

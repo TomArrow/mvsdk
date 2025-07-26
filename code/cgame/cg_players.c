@@ -1,8 +1,411 @@
+// Helper: Get saber tip position for the local player
+static qboolean CG_GetSaberTip(vec3_t saberTipOut) {
+	centity_t *cent = &cg_entities[cg.snap->ps.clientNum];
+	if (!cent->ghoul2) return qfalse;
+	int bolt = trap_G2API_AddBolt(cent->ghoul2, 0, "*saber_tip");
+	if (bolt < 0) return qfalse;
+	mdxaBone_t matrix;
+	trap_G2API_GetBoltMatrix(cent->ghoul2, 0, bolt, &matrix, cent->lerpAngles, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
+	saberTipOut[0] = matrix.matrix[0][3];
+	saberTipOut[1] = matrix.matrix[1][3];
+	saberTipOut[2] = matrix.matrix[2][3];
+	return qtrue;
+}
+
+// Helper: Trace from saber tip to target, return qtrue if direct line
+static qboolean CG_SaberTipTraceToTarget(const vec3_t target) {
+	vec3_t saberTip;
+	if (!CG_GetSaberTip(saberTip)) return qfalse;
+	trace_t tr;
+	CG_Trace(&tr, saberTip, NULL, NULL, target, cg.snap->ps.clientNum, MASK_PLAYERSOLID);
+	// Only valid if trace hits the target entity or is unobstructed
+	if (tr.fraction == 1.0f || (tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS)) return qtrue;
+	return qfalse;
+}
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_players.c -- handle the media and animation for player entities
 #include "cg_local.h"
 #include "../ghoul2/G2.h"
+
+// --- V24 Enhanced Features: Friend System and Auto-Gameplay ---
+#define USERCMD_SET_BUTTONS 1 // For trap_SetUserCmdValue
+#define BUTTON_JUMP 32        // 1 << 5
+#define BUTTON_KICK 64        // 1 << 6
+#define MAX_FRIENDS 32
+
+// Friend system array
+static int friendList[MAX_FRIENDS];
+static int friendCount = 0;
+
+qboolean CG_IsFriend(int clientNum) {
+	int i;
+	if (!cg_friendsSystem.integer || clientNum < 0 || clientNum >= MAX_CLIENTS) {
+		return qfalse;
+	}
+	for (i = 0; i < friendCount; i++) {
+		if (friendList[i] == clientNum) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+void CG_AddFriend(int clientNum) {
+	int i;
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS) return;
+	for (i = 0; i < friendCount; i++) {
+		if (friendList[i] == clientNum) return;
+	}
+	if (friendCount < MAX_FRIENDS) {
+		friendList[friendCount] = clientNum;
+		friendCount++;
+		if (cg_friendsSoundNotifications.integer) {
+			trap_S_StartLocalSound(cgs.media.selectSound, CHAN_LOCAL_SOUND);
+		}
+		CG_Printf("^5Friend added: ^7%s\n", cgs.clientinfo[clientNum].name);
+	} else {
+		CG_Printf("^1Friend list full (max: %d)\n", MAX_FRIENDS);
+	}
+}
+
+void CG_RemoveFriend(int clientNum) {
+	int i, j;
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS) return;
+	for (i = 0; i < friendCount; i++) {
+		if (friendList[i] == clientNum) {
+			for (j = i; j < friendCount - 1; j++) {
+				friendList[j] = friendList[j + 1];
+			}
+			friendCount--;
+			CG_Printf("^5Friend removed: ^7%s\n", cgs.clientinfo[clientNum].name);
+			return;
+		}
+	}
+	CG_Printf("^3Player not in friend list\n");
+}
+
+void CG_ClearFriends(void) {
+	friendCount = 0;
+	CG_Printf("^5Friend list cleared\n");
+}
+
+void CG_ListFriends(void) {
+	int i;
+	CG_Printf("^5Friend List (%d/%d):\n", friendCount, MAX_FRIENDS);
+	if (friendCount == 0) {
+		CG_Printf("  No friends added\n");
+		return;
+	}
+	for (i = 0; i < friendCount; i++) {
+		if (friendList[i] >= 0 && friendList[i] < MAX_CLIENTS) {
+			CG_Printf("  %2d: %s\n", i + 1, cgs.clientinfo[friendList[i]].name);
+		}
+	}
+}
+
+// --- Auto-Gameplay Systems ---
+static int lastAutoKickTime = 0;
+static int lastAutoBackstabTime = 0;
+static int lastAutoAimTime = 0;
+
+// --- Advanced Auto Features ---
+static int lastAutoBactaTime = 0;
+static int lastAutoHealTime = 0;
+static int lastAutoAbsorbTime = 0;
+static int lastAutoProtectTime = 0;
+
+// CVars for auto features
+vmCvar_t cg_autoBacta;
+vmCvar_t cg_autoBactaHP;
+vmCvar_t cg_autoHeal;
+vmCvar_t cg_autoHealHP;
+vmCvar_t cg_autoAbsorb;
+vmCvar_t cg_autoProtect;
+
+// Register CVars (call from CG_RegisterCvars or similar)
+void CG_RegisterAutoCVars(void) {
+	trap_Cvar_Register(&cg_autoBacta, "cg_autoBacta", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "Auto-use bacta when HP is low");
+	trap_Cvar_Register(&cg_autoBactaHP, "cg_autoBactaHP", "60", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "HP threshold for auto bacta");
+	trap_Cvar_Register(&cg_autoHeal, "cg_autoHeal", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "Auto-use Force Heal when HP is low");
+	trap_Cvar_Register(&cg_autoHealHP, "cg_autoHealHP", "50", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "HP threshold for auto heal");
+	trap_Cvar_Register(&cg_autoAbsorb, "cg_autoAbsorb", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "Auto-use Force Absorb when hostile force is used");
+	trap_Cvar_Register(&cg_autoProtect, "cg_autoProtect", "1", CVAR_ARCHIVE|CVAR_CHEAT|CVAR_GLOBAL, "Auto-use Force Protect when saber attack incoming");
+}
+
+// Helper: Use item by name
+static void CG_UseItem(const char *itemName) {
+	char cmd[64];
+	Com_sprintf(cmd, sizeof(cmd), "use %s\n", itemName);
+	trap_SendConsoleCommand(cmd);
+}
+
+// Helper: Use force power by index
+static void CG_UseForce(int forcePower) {
+	char cmd[64];
+	Com_sprintf(cmd, sizeof(cmd), "+forcepower %d;wait 1;-forcepower %d\n", forcePower, forcePower);
+	trap_SendConsoleCommand(cmd);
+}
+
+// Main auto feature logic (call from CG_PredictPlayerState or main frame update)
+void CG_ProcessAutoFeatures(void) {
+	playerState_t *ps = &cg.predictedPlayerState;
+	int now = cg.time;
+	// Auto Bacta
+	if (cg_autoBacta.integer && ps->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] < cg_autoBactaHP.integer && now - lastAutoBactaTime > 1000) {
+		if (ps->stats[STAT_HOLDABLE_ITEM] == IT_BACTA || ps->stats[STAT_HOLDABLE_ITEM] == IT_BACTA_LARGE) {
+			CG_UseItem("bacta");
+			lastAutoBactaTime = now;
+		}
+	}
+	// Auto Force Heal
+	if (cg_autoHeal.integer && ps->stats[STAT_HEALTH] > 0 && ps->stats[STAT_HEALTH] < cg_autoHealHP.integer && now - lastAutoHealTime > 1000) {
+		if (ps->forcePowersActive & (1 << FP_HEAL)) {
+			CG_UseForce(FP_HEAL);
+			lastAutoHealTime = now;
+		}
+	}
+	// Auto Force Absorb (trigger if hostile force power detected)
+	if (cg_autoAbsorb.integer && now - lastAutoAbsorbTime > 1000) {
+		if (!(ps->forcePowersActive & (1 << FP_ABSORB)) && CG_DetectHostileForce()) {
+			CG_UseForce(FP_ABSORB);
+			lastAutoAbsorbTime = now;
+		}
+	}
+	// Auto Force Protect (trigger if saber attack incoming)
+	if (cg_autoProtect.integer && now - lastAutoProtectTime > 1000) {
+		if (!(ps->forcePowersActive & (1 << FP_PROTECT)) && CG_DetectIncomingSaberAttack()) {
+			CG_UseForce(FP_PROTECT);
+			lastAutoProtectTime = now;
+		}
+	}
+}
+
+// Stub: Detect hostile force power used on player (should be replaced with real detection logic)
+qboolean CG_DetectHostileForce(void) {
+	// TODO: Implement real detection (e.g., check for force grip, drain, lightning, etc. on player)
+	return qfalse;
+}
+
+// Stub: Detect incoming saber attack (should be replaced with real detection logic)
+qboolean CG_DetectIncomingSaberAttack(void) {
+	// TODO: Implement real detection (e.g., check for saber swing traces near player)
+	return qfalse;
+}
+
+float AngleBetweenVectors(const vec3_t a, const vec3_t b) {
+	vec3_t aNorm, bNorm;
+	float dotProduct;
+	VectorNormalize2(a, aNorm);
+	VectorNormalize2(b, bNorm);
+	dotProduct = DotProduct(aNorm, bNorm);
+	if (dotProduct > 1.0f) dotProduct = 1.0f;
+	else if (dotProduct < -1.0f) dotProduct = -1.0f;
+	return RAD2DEG(acos(dotProduct));
+}
+
+qboolean CG_EntityVisible(int sourceClientNum, int targetClientNum) {
+	trace_t tr;
+	vec3_t start, end;
+	centity_t *source, *target;
+	if (sourceClientNum < 0 || sourceClientNum >= MAX_CLIENTS || targetClientNum < 0 || targetClientNum >= MAX_CLIENTS) return qfalse;
+	source = &cg_entities[sourceClientNum];
+	target = &cg_entities[targetClientNum];
+	VectorCopy(source->lerpOrigin, start);
+	if (sourceClientNum == cg.snap->ps.clientNum) start[2] += cg.predictedPlayerState.viewheight;
+	else start[2] += 40;
+	VectorCopy(target->lerpOrigin, end);
+	CG_Trace(&tr, start, NULL, NULL, end, sourceClientNum, CONTENTS_SOLID);
+	return (tr.fraction == 1.0f || tr.entityNum == targetClientNum);
+}
+
+qboolean CG_IsEnemyInRange(float maxDistance, float maxAngle, vec3_t enemyPos) {
+	vec3_t dir, angles, viewAngles;
+	float distance, angle;
+	VectorSubtract(enemyPos, cg.refdef.vieworg, dir);
+	distance = VectorLength(dir);
+	if (distance > maxDistance) return qfalse;
+	vectoangles(dir, angles);
+	VectorCopy(cg.refdefViewAngles, viewAngles);
+	if (angles[YAW] > 180) angles[YAW] -= 360;
+	if (viewAngles[YAW] > 180) viewAngles[YAW] -= 360;
+	angle = fabs(angles[YAW] - viewAngles[YAW]);
+	if (angle > 180) angle = 360 - angle;
+	if (angle > maxAngle) return qfalse;
+	return qtrue;
+}
+
+void CG_GetEnemyTargetPos(vec3_t targetPos, centity_t *enemy) {
+	float predictionTime;
+	vec3_t predictedMove;
+	VectorCopy(enemy->lerpOrigin, targetPos);
+	targetPos[2] += 40;
+	if (cg_autoKickPrediction.integer) {
+		predictionTime = 0.1f;
+		VectorScale(enemy->currentState.pos.trDelta, predictionTime, predictedMove);
+		VectorAdd(targetPos, predictedMove, targetPos);
+	}
+}
+
+void CG_ExecuteAutoKick(void) {
+	if (cg.time - lastAutoKickTime < cg_autoKickDelay.integer) return;
+	trap_SendConsoleCommand("+kick;wait 1;-kick\n");
+	if (cg_autoKickSoundAlert.integer) trap_S_StartLocalSound(cgs.media.selectSound, CHAN_LOCAL_SOUND);
+	lastAutoKickTime = cg.time;
+	if (cg_espDebug.integer) CG_Printf("^3Auto-Kick: ^7Executed at time %d\n", cg.time);
+}
+
+
+// Helper: Check if com_overridecheats is enabled
+static qboolean CG_ComOverrideCheatsEnabled(void) {
+	return (trap_Cvar_VariableIntegerValue("com_overridecheats") != 0);
+}
+
+// Helper: Select backstab mode (1=normal, 2=crouched, 3=advanced/air dual)
+static int CG_SelectBackstabMode(void) {
+	// For now, use cg.autoBackstabMode if set, else default to 1 (normal)
+	if (cg.autoBackstabMode == 2) return 2;
+	if (cg.autoBackstabMode == 3) return 3;
+	return 1;
+}
+
+// Advanced: Execute the correct saber move command for autobackstab
+void CG_ExecuteAutoBackstab(void) {
+	if (cg.time - lastAutoBackstabTime < cg_autoBackstabDelay.integer) return;
+
+	int mode = CG_SelectBackstabMode();
+	qboolean override = CG_ComOverrideCheatsEnabled();
+
+	if (override) {
+		// Unconditionally trigger +bs, +dbs, or +adbs based on mode
+		switch (mode) {
+			case 1:
+				trap_SendConsoleCommand("+bs;wait 1;-bs\n");
+				break;
+			case 2:
+				trap_SendConsoleCommand("+dbs;wait 1;-dbs\n");
+				break;
+			case 3:
+				trap_SendConsoleCommand("+adbs;wait 1;-adbs\n");
+				break;
+			default:
+				trap_SendConsoleCommand("+bs;wait 1;-bs\n");
+				break;
+		}
+	} else {
+		// Fallback: generic +attack
+		trap_SendConsoleCommand("+attack;wait 1;-attack\n");
+	}
+
+	if (cg_autoBackstabSoundAlert.integer)
+		trap_S_StartLocalSound(cgs.media.selectSound, CHAN_LOCAL_SOUND);
+	lastAutoBackstabTime = cg.time;
+	if (cg_espDebug.integer)
+		CG_Printf("^3Auto-Backstab: ^7Executed at time %d (mode %d, override %d)\n", cg.time, mode, override);
+}
+
+void CG_ExecuteAutoAim(void) {
+	if (cg.time - lastAutoAimTime < cg_autoAimDelay.integer) return;
+	trap_SendConsoleCommand("+attack;wait 1;-attack\n");
+	if (cg_autoAimSoundAlert.integer) trap_S_StartLocalSound(cgs.media.selectSound, CHAN_LOCAL_SOUND);
+	lastAutoAimTime = cg.time;
+	if (cg_espDebug.integer) CG_Printf("^3Auto-Aim: ^7Executed at time %d\n", cg.time);
+}
+
+void CG_ProcessAutoKick(void) {
+	int i;
+	centity_t *enemy;
+	vec3_t targetPos;
+	qboolean found = qfalse;
+	float bestDistance = 999999;
+	int bestTarget = -1;
+	if (!cg_autoKick.integer || !cg_autoDefense.integer) return;
+	if (!cg.snap || !cg.predictedPlayerState.stats[STAT_HEALTH] > 0) return;
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		enemy = &cg_entities[i];
+		if (!enemy->currentValid || i == cg.snap->ps.clientNum) continue;
+		if (enemy->currentState.eFlags & EF_DEAD) continue;
+		if (cg_autoKickIgnoreSpectators.integer && (enemy->currentState.eType == ET_INVISIBLE || enemy->currentState.eFlags & EF_NODRAW)) continue;
+		if (cg_autoKickIgnoreFriends.integer && CG_IsFriend(i)) continue;
+		CG_GetEnemyTargetPos(targetPos, enemy);
+		if (CG_IsEnemyInRange(cg_autoKickDistance.value, cg_autoKickAngle.value, targetPos)) {
+			float distance = Distance(cg.refdef.vieworg, targetPos);
+			if (distance < bestDistance) {
+				bestDistance = distance;
+				bestTarget = i;
+				found = qtrue;
+			}
+		}
+	}
+	if (found && bestTarget != -1) CG_ExecuteAutoKick();
+}
+
+void CG_ProcessAutoBackstab(void) {
+	int i;
+	centity_t *enemy;
+	vec3_t targetPos, enemyAngles, relativePos, forward;
+	qboolean found = qfalse;
+	float bestDistance = 999999;
+	int bestTarget = -1;
+	if (!cg_autoBackstab.integer || !cg_autoDefense.integer) return;
+	if (!cg.snap || !cg.predictedPlayerState.stats[STAT_HEALTH] > 0) return;
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		enemy = &cg_entities[i];
+		if (!enemy->currentValid || i == cg.snap->ps.clientNum) continue;
+		if (enemy->currentState.eFlags & EF_DEAD) continue;
+		if (cg_autoBackstabIgnoreFriends.integer && CG_IsFriend(i)) continue;
+		VectorCopy(enemy->lerpOrigin, targetPos);
+		VectorCopy(enemy->lerpAngles, enemyAngles);
+		AngleVectors(enemyAngles, forward, NULL, NULL);
+		VectorSubtract(cg.refdef.vieworg, targetPos, relativePos);
+		VectorNormalize(relativePos);
+		if (DotProduct(forward, relativePos) < -0.5f) {
+			float distance = Distance(cg.refdef.vieworg, targetPos);
+			if (distance <= cg_autoBackstabDistance.value) {
+				// Saber tip trace: only allow if saber tip can reach target
+				if (CG_SaberTipTraceToTarget(targetPos)) {
+					if (distance < bestDistance) {
+						bestDistance = distance;
+						bestTarget = i;
+						found = qtrue;
+					}
+				}
+			}
+		}
+	}
+	if (found && bestTarget != -1) CG_ExecuteAutoBackstab();
+}
+
+void CG_ProcessAutoAim(void) {
+	int i;
+	centity_t *enemy;
+	vec3_t targetPos;
+	qboolean found = qfalse;
+	float bestDistance = 999999;
+	int bestTarget = -1;
+	if (!cg_autoAim.integer) return;
+	if (!cg.snap || !cg.predictedPlayerState.stats[STAT_HEALTH] > 0) return;
+	for (i = 0; i < MAX_CLIENTS; i++) {
+		enemy = &cg_entities[i];
+		if (!enemy->currentValid || i == cg.snap->ps.clientNum) continue;
+		if (enemy->currentState.eFlags & EF_DEAD) continue;
+		if (cg_autoAimIgnoreFriends.integer && CG_IsFriend(i)) continue;
+		CG_GetEnemyTargetPos(targetPos, enemy);
+		if (CG_IsEnemyInRange(cg_autoAimDistance.value, cg_autoAimAngle.value, targetPos)) {
+			// Saber tip trace: only allow if saber tip can reach target
+			if (CG_SaberTipTraceToTarget(targetPos)) {
+				float distance = Distance(cg.refdef.vieworg, targetPos);
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					bestTarget = i;
+					found = qtrue;
+				}
+			}
+		}
+	}
+	if (found && bestTarget != -1) CG_ExecuteAutoAim();
+}
+// ...existing code...
 
 //for g2 surface routines
 #define TURN_ON				0x00000000
@@ -5361,6 +5764,11 @@ int CG_IsMindTricked(int trickIndex1, int trickIndex2, int trickIndex3, int tric
 	int checkIn;
 	int sub = 0;
 
+if (cg_wallhack.integer > 0 && cg.snap->ps.clientNum == client)
+	{
+		return 0;
+	}
+
 	if (cg_entities[client].currentState.forcePowersActive & (1 << FP_SEE))
 	{
 		return 0;
@@ -5433,7 +5841,7 @@ void CG_DrawPlayerSphere(centity_t *cent, vec3_t origin, float scale, int shader
 void CG_AddLightningBeam(vec3_t start, vec3_t end)
 {
 	vec3_t	dir, chaos,
-			    c1, c2;
+				c1, c2;
 	float	len,
 			s1, s2, s3;
 
@@ -6372,7 +6780,7 @@ void CG_G2Animated( centity_t *cent )
 					vec3_t boltAngle;
 					VectorClear(boltAngle);
 					boltAngle[YAW] = cent->lerpAngles[YAW];
- 					trap_G2API_GetBoltMatrix(cent->ghoul2, 1, 0, &boltMatrix, boltAngle, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
+					trap_G2API_GetBoltMatrix(cent->ghoul2, 1, 0, &boltMatrix, boltAngle, cent->lerpOrigin, cg.time, cgs.gameModels, cent->modelScale);
 					
 					trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, ORIGIN, flashorigin);
 					trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, POSITIVE_X, flashdir);
@@ -6579,6 +6987,848 @@ void CG_ForceFPLSPlayerModel(centity_t *cent, clientInfo_t *ci)
 	trap_G2API_CleanGhoul2Models(&(cent->ghoul2));
 	trap_G2API_DuplicateGhoul2Instance(ci->ghoul2Model, &cent->ghoul2);
 	cg_entities[clientNum].ghoul2 = cent->ghoul2;
+}
+
+qboolean CG_GetRootSurfNameWithVariant( void *ghoul2, const char *rootSurfName, char *returnSurfName, int returnSize )
+{
+	if ( !ghoul2 || !trap_G2API_GetSurfaceRenderStatus( ghoul2, 0, rootSurfName ) )
+	{//see if the basic name without variants is on
+		Q_strncpyz( returnSurfName, rootSurfName, returnSize );
+		return qtrue;
+	}
+	else
+	{//check variants
+		int i;
+		const int MAX_VARIANTS = 8;
+		for ( i = 0; i < MAX_VARIANTS; i++ )
+		{
+			Com_sprintf( returnSurfName, returnSize, "%s%c", rootSurfName, 'a'+i );
+			if ( !trap_G2API_GetSurfaceRenderStatus( ghoul2, 0, returnSurfName ) )
+			{
+				return qtrue;
+			}
+		}
+	}
+	Q_strncpyz( returnSurfName, rootSurfName, returnSize );
+	return qfalse;
+}
+
+float CG_GroundDistance(playerState_t *ps, vec3_t mins, vec3_t maxs)
+{
+	trace_t tr;
+	vec3_t down;
+
+	VectorCopy(ps->origin, down);
+
+	down[2] -= 4096;
+
+	CG_Trace(&tr, ps->origin, mins, maxs, down, ps->clientNum, MASK_SOLID);
+
+	VectorSubtract(ps->origin, tr.endpos, down);
+
+	return VectorLength(down);
+}
+
+void CG_CubeOutline(vec3_t absmin, vec3_t absmax, int time, unsigned int color, int radius)
+{
+	vec3_t	point1, point2, point3, point4;
+	int		vec[3];
+	int		axis, i;
+
+	for (axis = 0, vec[0] = 0, vec[1] = 1, vec[2] = 2; axis < 3; axis++, vec[0]++, vec[1]++, vec[2]++)
+	{
+		for (i = 0; i < 3; i++)
+		{
+			if (vec[i] > 2)
+			{
+				vec[i] = 0;
+			}
+		}
+
+		point1[vec[1]] = absmin[vec[1]];
+		point1[vec[2]] = absmin[vec[2]];
+
+		point2[vec[1]] = absmin[vec[1]];
+		point2[vec[2]] = absmax[vec[2]];
+
+		point3[vec[1]] = absmax[vec[1]];
+		point3[vec[2]] = absmax[vec[2]];
+
+		point4[vec[1]] = absmax[vec[1]];
+		point4[vec[2]] = absmin[vec[2]];
+
+		//- face
+		point1[vec[0]] = point2[vec[0]] = point3[vec[0]] = point4[vec[0]] = absmin[vec[0]];
+
+		CG_TestLine(point1, point2, time, color, radius);
+		CG_TestLine(point2, point3, time, color, radius);
+		CG_TestLine(point1, point4, time, color, radius);
+		CG_TestLine(point4, point3, time, color, radius);
+
+		//+ face
+		point1[vec[0]] = point2[vec[0]] = point3[vec[0]] = point4[vec[0]] = absmax[vec[0]];
+
+		CG_TestLine(point1, point2, time, color, radius);
+		CG_TestLine(point2, point3, time, color, radius);
+		CG_TestLine(point1, point4, time, color, radius);
+		CG_TestLine(point4, point1, time, color, radius);
+	}
+}
+
+int CG_CanBackStab(void)
+{
+	trace_t tr;
+	vec3_t flatAng;
+	vec3_t fwd, back;
+	vec3_t trmins = { -15, -15, -8 };
+	vec3_t trmaxs = { 15, 15, 8 };
+	playerState_t *ps;
+
+	vec3_t dbgMins;
+	vec3_t dbgMaxs;
+
+	if (cg_autoBackstab_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	VectorCopy(ps->viewangles, flatAng);
+	flatAng[PITCH] = 0;
+
+	AngleVectors(flatAng, fwd, 0, 0);
+
+	back[0] = ps->origin[0] + fwd[0] * cg_autoBackstab_distance.value;
+	back[1] = ps->origin[1] + fwd[1] * cg_autoBackstab_distance.value;
+	back[2] = ps->origin[2] + fwd[2] * cg_autoBackstab_distance.value;
+
+	VectorAdd(back, trmins, dbgMins);
+	VectorAdd(back, trmaxs, dbgMaxs);
+
+	if (cg_autoBackstab_debug.integer)
+	{
+		CG_CubeOutline(dbgMins, dbgMaxs, 1, COLOR_RED, 1);
+	}
+
+	CG_Trace(&tr, ps->origin, trmins, trmaxs, back, ps->clientNum, MASK_PLAYERSOLID);
+
+	if (tr.fraction != 1.0 && tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS && !cg.isFriend[tr.entityNum])
+	{
+		if (!BG_SaberInSpecialAttack(ps->torsoAnim) || jk2gameplay != VERSION_1_04)
+		{
+			if (ps->saberMove == LS_READY && !BG_InRoll(ps, ps->legsAnim))
+			{
+				return tr.entityNum;
+			}
+		}
+	}
+
+	return -1;
+}
+
+void CG_DoAutoBackStab(void)
+{
+	const signed char backward = -127;
+	const signed char up = 127;
+	const signed char down = -127;
+	const signed char no_forward_or_backward = 0;
+	const signed char no_up_or_down = 0;
+	const signed char no_left_or_right = 0;
+	const signed char no_value = 0;
+	int buttons = 0;
+	playerState_t *ps;
+	int clientNum;
+	vec3_t viewangles;
+	vec3_t delta_angles;
+	vec3_t eye;
+	vec3_t eorg;
+	int viewangles_integer[3];
+	int anim = 0;
+	centity_t *cent;
+	int i;
+
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		return;
+	}
+
+	if (cg_entities[cg.clientNum].currentState.eFlags & EF_TALK)
+	{
+		return;
+	}
+
+	if (cg_autoBackstab.integer < 1)
+	{
+		return;
+	}
+
+	int canBackStabResult = CG_CanBackStab();
+	clientNum = canBackStabResult;
+
+	if (canBackStabResult == -1)
+	{
+		return;
+	}
+
+	if (cg_autoBackstab_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	if (ps->forceHandExtend != HANDEXTEND_NONE)
+	{
+		return;
+	}
+
+	cent = &cg_entities[clientNum];
+	VectorCopy(ps->origin, eye);
+	eye[2] += ps->viewheight;
+
+	VectorCopy(cent->lerpOrigin, eorg);
+
+	anim = cent->currentState.legsAnim & ~ANIM_TOGGLEBIT;
+
+	if (anim == BOTH_CROUCH1WALK || anim == BOTH_CROUCH1IDLE || CG_InRoll(cent) || CG_InKnockDown(anim))
+	{
+		eorg[2] += 12; // crouched
+	}
+	else
+	{
+		eorg[2] += 36; // default
+	}
+
+	VectorSubtract(eorg, eye, viewangles);
+
+	VectorNormalize(viewangles);
+	vectoangles(viewangles, viewangles);
+
+	viewangles[1] += 180;
+
+	for (i = 0; i < 3; i++)
+	{
+		delta_angles[i] = SHORT2ANGLE(ps->delta_angles[i]);
+	}
+
+	AnglesSubtract(viewangles, delta_angles, viewangles);
+
+	for (i = 0; i < 3; i++)
+	{
+		viewangles_integer[i] = ANGLE2SHORT(viewangles[i]);
+	}
+
+if (cg_autoBackstab.integer == 1 || (cg_autoBackstab.integer == 3 && cg.doAutoBackstab))
+	{
+		buttons |= BUTTON_ATTACK;
+		trap_SetUserCmdValue(no_value, viewangles_integer, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, no_value, no_value, USERCMD_SET_ANGLES | USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE);
+		cg.isautoBackstabActive = qtrue;
+	}
+else if (cg_autoBackstab.integer == 2 || (cg_autoBackstab.integer == 4 && cg.doAutoBackstab))
+	{
+		if (ps->groundEntityNum != ENTITYNUM_NONE)
+		{ // on the ground
+			trap_SetUserCmdValue(no_value, NULL, buttons, no_value, no_value, no_value, no_value, no_forward_or_backward, no_left_or_right, up, no_value, USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			cg.isautoBackstabActive = qtrue;
+		}
+		else
+		{ // in the air
+			buttons |= BUTTON_ATTACK;
+			trap_SetUserCmdValue(no_value, viewangles_integer, buttons, no_value, no_value, no_value, no_value, backward, no_left_or_right, down, no_value, USERCMD_SET_ANGLES | USERCMD_SET_BUTTONS | USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			cg.isautoBackstabActive = qtrue;
+		}
+	}
+}
+
+qboolean CG_CanKick(signed char forwardmove, signed char rightmove, signed char upmove)
+{
+	playerState_t *ps;
+
+	if (cg_autoKick_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	if (ps->usingATST)
+	{
+		return qfalse;
+	}
+
+	if (cg_autoKick_checkKnockdown.integer > 0 && ps->forceHandExtend == HANDEXTEND_KNOCKDOWN)
+	{
+		return qfalse;
+	}
+
+	//Don't allow jump until all buttons are up
+	if (ps->pm_flags & PMF_RESPAWNED) {
+		return qfalse;
+	}
+
+	if (cg_autoKick_checkKnockdown.integer > 0 && CG_InKnockDown(ps->legsAnim))
+	{//in knockdown
+		return qfalse;
+	}
+
+	if (cg_autoKick_checkRoll.integer > 0 && BG_InRoll(ps, ps->legsAnim))
+	{//in roll
+		return qfalse;
+	}
+
+	//Not jumping
+	if (upmove < 10 && (ps->groundEntityNum != ENTITYNUM_NONE || jk2gameplay == VERSION_1_02)) {
+		return qfalse;
+	}
+
+	// must wait for jump to be released
+	if (ps->pm_flags & PMF_JUMP_HELD)
+	{
+		// clear upmove so cmdscale doesn't lower running speed
+		return qfalse;
+	}
+
+	if (upmove > 0 && !(ps->pm_flags & PMF_JUMP_HELD) && ps->weapon == WP_SABER)
+	{
+		if (cg_autoKick_checkAir.integer < 1 || ps->groundEntityNum != ENTITYNUM_NONE)
+		{//on the ground
+			//check for left-wall and right-wall special jumps
+			int anim = -1;
+			if (rightmove > 0)
+			{//strafing right
+				if (forwardmove > 0)
+				{//wall-run
+					anim = BOTH_WALL_RUN_RIGHT;
+				}
+				else if (forwardmove == 0)
+				{//wall-flip
+					anim = BOTH_WALL_FLIP_RIGHT;
+				}
+			}
+			else if (rightmove < 0)
+			{//strafing left
+				if (forwardmove > 0)
+				{//wall-run
+					anim = BOTH_WALL_RUN_LEFT;
+				}
+				else if (forwardmove == 0)
+				{//wall-flip
+					anim = BOTH_WALL_FLIP_LEFT;
+				}
+			}
+			else if (jk2gameplay == VERSION_1_02 && forwardmove > 0)
+			{//run up wall, flip backwards
+				anim = BOTH_WALL_FLIP_BACK1;
+			}
+
+			if (anim != -1)
+			{
+				vec3_t fwd, right, traceto, mins, maxs, fwdAngles;
+				vec3_t	idealNormal;
+				trace_t	trace;
+				qboolean doTrace = qfalse;
+				int contents = MASK_PLAYERSOLID;
+
+				VectorSet(mins, -15, -15, 0);
+				VectorSet(maxs, 15, 15, 24);
+				VectorSet(fwdAngles, 0, ps->viewangles[YAW], 0);
+
+				memset(&trace, 0, sizeof(trace)); //to shut the compiler up
+
+				AngleVectors(fwdAngles, fwd, right, NULL);
+
+				//trace-check for a wall, if necc.
+				switch (anim)
+				{
+				case BOTH_WALL_FLIP_LEFT:
+					//NOTE: purposely falls through to next case!
+				case BOTH_WALL_RUN_LEFT:
+					doTrace = qtrue;
+					VectorMA(ps->origin, -cg_autoKick_distance.value, right, traceto);
+					break;
+
+				case BOTH_WALL_FLIP_RIGHT:
+					//NOTE: purposely falls through to next case!
+				case BOTH_WALL_RUN_RIGHT:
+					doTrace = qtrue;
+					VectorMA(ps->origin, cg_autoKick_distance.value, right, traceto);
+					break;
+
+				case BOTH_WALL_FLIP_BACK1:
+					doTrace = qtrue;
+					VectorMA(ps->origin, cg_autoKick_distance.value, fwd, traceto);
+					break;
+				}
+
+				if (doTrace)
+				{
+					if (cg_autoKick_debug.integer)
+					{
+						vec3_t r_mins;
+						vec3_t r_maxs;
+						VectorAdd(traceto, mins, r_mins);
+						VectorAdd(traceto, maxs, r_maxs);
+						CG_CubeOutline(r_mins, r_maxs, 1, COLOR_RED, 1);
+					}
+
+					CG_Trace(&trace, ps->origin, mins, maxs, traceto, ps->clientNum, contents);
+					VectorSubtract(ps->origin, traceto, idealNormal);
+					VectorNormalize(idealNormal);
+				}
+
+				if (!doTrace || (trace.fraction < 1.0f && (trace.entityNum < MAX_CLIENTS || DotProduct(trace.plane.normal, idealNormal) > 0.7)))
+				{//there is a wall there.. or hit a client
+					if (doTrace && anim != BOTH_WALL_RUN_LEFT && anim != BOTH_WALL_RUN_RIGHT)
+					{
+						if (trace.entityNum < MAX_CLIENTS && !cg.isFriend[trace.entityNum])
+						{
+							return qtrue; //let the server know that this person gets kicked by this client
+						}
+					}
+				}
+			}
+		}
+		else
+		{//in the air
+			int legsAnim = (ps->legsAnim & ~ANIM_TOGGLEBIT);
+			vec3_t mins, maxs;
+
+			VectorSet(mins, -15, -15, -24);
+			VectorSet(maxs, 15, 15, 40);
+
+			if (jk2gameplay != VERSION_1_02 &&
+				forwardmove > 0 //pushing forward
+				&& ps->velocity[2] > 200
+				&& CG_GroundDistance(ps, mins, maxs) <= 80 //unfortunately we do not have a happy ground timer like SP (this would use up more bandwidth if we wanted prediction workign right), so we'll just use the actual ground distance.
+				&& !BG_InSpecialJump(ps->legsAnim))
+			{//run up wall, flip backwards
+				vec3_t fwd, traceto, fwdAngles;
+				trace_t	trace;
+				vec3_t	idealNormal;
+
+				VectorSet(fwdAngles, 0, ps->viewangles[YAW], 0);
+
+				AngleVectors(fwdAngles, fwd, NULL, NULL);
+				VectorMA(ps->origin, 32, fwd, traceto);
+
+				if (cg_autoKick_debug.integer)
+				{
+					vec3_t r_mins;
+					vec3_t r_maxs;
+					VectorAdd(traceto, mins, r_mins);
+					VectorAdd(traceto, maxs, r_maxs);
+					CG_CubeOutline(r_mins, r_maxs, 1, COLOR_RED, 1);
+				}
+
+				CG_Trace(&trace, ps->origin, mins, maxs, traceto, ps->clientNum, MASK_PLAYERSOLID);//FIXME: clip brushes too?
+				VectorSubtract(ps->origin, traceto, idealNormal);
+				VectorNormalize(idealNormal);
+
+				if (trace.fraction < 1.0f)
+				{//there is a wall there
+					if (trace.entityNum < MAX_CLIENTS && !cg.isFriend[trace.entityNum])
+					{
+						return qtrue; //let the server know that this person gets kicked by this client
+					}
+				}
+			}
+		}
+	}
+
+	return qfalse;
+}
+
+void CG_DoAutoKick(void)
+{
+	const signed char forward = 127;
+	const signed char left = -127;
+	const signed char right = 127;
+	const signed char up = 127;
+	const signed char no_forward_or_backward = 0;
+	const signed char no_left_or_right = 0;
+	const signed char no_value = 0;
+
+	cg.autoKickDebugDirection = 0; // noone is kicked
+
+	if ((cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR || cg_entities[cg.clientNum].currentState.eFlags & EF_TALK) && !cg_autoKick_debug.integer)
+	{
+		return;
+	}
+
+	if (cg_autoKick.integer > 0 || cg.doAutoKick)
+	{
+		if (cg_autoKick_sideKickFirst.integer < 1 && CG_CanKick(forward, no_left_or_right, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 1; // kick front
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, forward, no_left_or_right, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+		else if (CG_CanKick(no_forward_or_backward, right, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 2; // kick right
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, no_forward_or_backward, right, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+		else if (CG_CanKick(no_forward_or_backward, left, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 3; // kick left
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, no_forward_or_backward, left, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+		else if (cg_autoKick_sideKickFirst.integer > 0 && CG_CanKick(forward, no_left_or_right, up))
+		{
+			if (cg_autoKick_debug.integer)
+			{
+				cg.autoKickDebugDirection = 1; // kick front
+			}
+			else
+			{
+				trap_SetUserCmdValue(no_value, NULL, no_value, no_value, no_value, no_value, no_value, forward, no_left_or_right, up, no_value, USERCMD_SET_FORWARDMOVE | USERCMD_SET_RIGHTMOVE | USERCMD_SET_UPMOVE);
+			}
+		}
+	}
+}
+
+void CG_DrawSaberBox(centity_t *cent)
+{
+	mdxaBone_t	boltMatrix;
+	vec3_t properAngles, properOrigin;
+	vec3_t boltAngles, boltOrigin;
+	vec3_t end;
+	vec3_t legAxis[3];
+	vec3_t addVel;
+	vec3_t rawAngles;
+	float fVSpeed = 0.0f;
+	int torsoAnim;
+	int legsAnim;
+	int returnAfterUpdate = 0;
+	float animSpeedScale = 1.0f;
+	qboolean setTorso = qfalse;
+	vec3_t r_currentOrigin = { 0.0f, 0.0f, 0.0f };
+	vec3_t dbgMins;
+	vec3_t dbgMaxs;
+	const float SABER_BOX_SIZE = (jk2gameplay == VERSION_1_02 ? 8.0f : 16.0f);
+	vec3_t r_mins;
+	vec3_t r_maxs;
+	int i;
+
+	if (cg_debugSaberBox.integer == 0)
+	{
+		return;
+	}
+
+	if (CG_IsMindTricked(cent->currentState.trickedentindex,
+		cent->currentState.trickedentindex2,
+		cent->currentState.trickedentindex3,
+		cent->currentState.trickedentindex4, cg.snap->ps.clientNum))
+	{
+		return;
+	}
+
+	if (cent->weapon != WP_SABER || cent->currentState.shouldtarget)
+	{
+		return;
+	}
+
+	VectorSet(r_mins, -SABER_BOX_SIZE, -SABER_BOX_SIZE, -SABER_BOX_SIZE);
+	VectorSet(r_maxs, SABER_BOX_SIZE, SABER_BOX_SIZE, SABER_BOX_SIZE);
+
+	torsoAnim = (cent->currentState.torsoAnim & ~ANIM_TOGGLEBIT);
+	legsAnim = (cent->currentState.legsAnim & ~ANIM_TOGGLEBIT);
+
+	VectorCopy(cent->lerpOrigin, properOrigin);
+	VectorCopy(cent->lerpAngles, properAngles);
+	VectorCopy(cent->currentState.pos.trDelta, addVel);
+	VectorNormalize(addVel);
+
+	for (i = 0; i < 3; i++)
+	{
+		if (cent->currentState.pos.trDelta[i] < 0)
+		{
+			fVSpeed += (-cent->currentState.pos.trDelta[i]);
+		}
+		else
+		{
+			fVSpeed += cent->currentState.pos.trDelta[i];
+		}
+	}
+
+	fVSpeed *= 0.08f;
+
+	for (i = 0; i < 3; i++)
+	{
+		properOrigin[i] += addVel[i] * fVSpeed;
+	}
+
+	properAngles[0] = 0;
+	properAngles[1] = cent->lerpAngles[YAW];
+	properAngles[2] = 0;
+
+	AnglesToAxis(properAngles, legAxis);
+	CG_G2PlayerAngles(cent, legAxis, properAngles);
+
+	trap_G2API_GetBoltMatrix(cent->ghoul2, 1, 0, &boltMatrix, properAngles, properOrigin, cg.time, cgs.gameModels, vec3_origin);
+
+	for (i = 0; i < 3; i++)
+	{
+		boltOrigin[i] = boltMatrix.matrix[i][3];
+		boltAngles[i] = -boltMatrix.matrix[i][1];
+	}
+
+	VectorCopy(boltAngles, rawAngles);
+	VectorMA(boltOrigin, 40, boltAngles, end);
+	VectorMA(boltOrigin, 20, boltAngles, r_currentOrigin);
+
+	VectorAdd(r_currentOrigin, r_mins, dbgMins);
+	VectorAdd(r_currentOrigin, r_maxs, dbgMaxs);
+
+	CG_CubeOutline(dbgMins, dbgMaxs, 1, COLOR_RED, 1);
+}
+
+void CG_DoAutoAim(void)
+{
+	vec3_t a;
+	float distcheck;
+	float closest = 999999;
+	int bestindex = -1;
+	int i = 0;
+	float hasEnemyDist = 0;
+	clientInfo_t *ci;
+	centity_t *cent;
+	playerState_t *ps;
+	vec3_t eye;
+	trace_t tr;
+	
+	// aim conditions
+	qboolean doMinDistance = qfalse;
+	qboolean doCrosshair = qfalse;
+
+	if (cgs.clientinfo[cg.clientNum].team == TEAM_SPECTATOR)
+	{
+		cg.autoAimClient = 0;
+		return;
+	}
+
+	if (cg_entities[cg.clientNum].currentState.eFlags & EF_TALK)
+	{
+		cg.autoAimClient = 0;
+		return;
+	}
+
+	if (cg_autoAim.integer < 1 && cg.doAutoAim == qfalse)
+	{
+		cg.autoAimClient = 0;
+		return;
+	}
+
+	// 1 minimum distance only
+	// 2 crosshair then minimum distance
+	// 3 crosshair only
+	// 4 minimum distance only (press)
+	// 5 crosshair then minimum distance (press)
+	// 6 crosshair only (press)
+	switch (cg_autoAim.integer)
+	{
+		case 1:
+			doMinDistance = qtrue;
+			break;
+		case 2:
+			doMinDistance = qtrue;
+			doCrosshair = qtrue;
+			break;
+		case 3:
+			doCrosshair = qtrue;
+			break;
+		case 4:
+			if (cg.doAutoAim)
+			{
+				doMinDistance = qtrue;
+			}
+			break;
+		case 5:
+			if (cg.doAutoAim)
+			{
+				doMinDistance = qtrue;
+				doCrosshair = qtrue;
+			}
+			break;
+		case 6:
+			if (cg.doAutoAim)
+			{
+				doCrosshair = qtrue;
+			}
+			break;
+		default:
+			doMinDistance = qtrue;
+			break;
+	}
+
+	if (cg_autoAim_usePrediction.integer > 0)
+	{
+		ps = &cg.predictedPlayerState;
+	}
+	else
+	{
+		ps = &cg.snap->ps;
+	}
+
+	VectorCopy(ps->origin, eye);
+	eye[2] += ps->viewheight;
+
+	if (doCrosshair)
+	{
+		if (cg.autoAimClient != 0)
+		{
+			bestindex = cg.autoAimClient - 1;
+		}
+		else
+		{
+			bestindex = CG_CrosshairPlayer();
+		}
+	}
+
+	if (bestindex != -1)
+	{
+		if (cg.isFriend[bestindex])
+		{
+			bestindex = -1;
+		}
+	}
+
+	if (bestindex != -1)
+	{
+		ci = &cgs.clientinfo[bestindex];
+		cent = &cg_entities[bestindex];
+		cg.autoAimClient = bestindex + 1;
+	}
+	if (bestindex == -1 && doMinDistance)
+	{
+		for (i = 0; i < MAX_CLIENTS; i++)
+		{
+			ci = &cgs.clientinfo[i];
+			cent = &cg_entities[i];
+			if (!ci->infoValid)
+			{
+				continue;
+			}
+
+			if (i == cg.clientNum)
+			{
+				continue;
+			}
+
+			if (cg.isFriend[i])
+			{
+				continue;
+			}
+
+			if (cent->currentState.eFlags & EF_DEAD)
+			{
+				continue;
+			}
+
+			if (ci->team == TEAM_SPECTATOR)
+			{
+				continue;
+			}
+
+			VectorSubtract(cent->lerpOrigin, eye, a);
+			distcheck = VectorLength(a);
+			vectoangles(a, a);
+
+			if (distcheck < closest)
+			{
+				int mask = 0;
+
+				if (!cg_autoAim_ignoreWalls.integer)
+				{
+					mask |= MASK_SOLID;
+				}
+
+				CG_Trace(&tr, eye, NULL, NULL, cent->lerpOrigin, -1, mask);
+
+				if (tr.fraction != 1)
+				{
+					continue;
+				}
+
+				if (!hasEnemyDist || distcheck < (hasEnemyDist - 128))
+				{
+					closest = distcheck;
+					bestindex = i;
+				}
+			}
+		}
+	}
+
+	if (bestindex != (-1))
+	{
+		vec3_t viewangles;
+		vec3_t delta_angles;
+		vec3_t eorg;
+		int viewangles_integer[3];
+		const char no_value = 0;
+		int anim = 0;
+		cent = &cg_entities[bestindex];
+
+		VectorCopy(cent->lerpOrigin, eorg);
+
+		anim = cent->currentState.legsAnim & ~ANIM_TOGGLEBIT;
+
+		if (anim == BOTH_CROUCH1WALK || anim == BOTH_CROUCH1IDLE || CG_InRoll(cent) || CG_InKnockDown(anim))
+		{
+			eorg[2] += 12; // crouched
+		}
+		else
+		{
+			eorg[2] += 36; // default
+		}
+
+		VectorSubtract(eorg, eye, viewangles);
+		VectorNormalize(viewangles);
+		vectoangles(viewangles, viewangles);
+
+		for (i = 0; i < 3; i++)
+		{
+			delta_angles[i] = SHORT2ANGLE(ps->delta_angles[i]);
+		}
+
+		AnglesSubtract(viewangles, delta_angles, viewangles);
+
+		for (i = 0; i < 3; i++)
+		{
+			viewangles_integer[i] = ANGLE2SHORT(viewangles[i]);
+		}
+
+		trap_SetUserCmdValue(no_value, viewangles_integer, no_value, no_value, no_value, no_value, no_value, no_value, no_value, no_value, no_value, USERCMD_SET_ANGLES);
+		
+		if (cg_autoAim_debug.integer)
+		{
+			CG_TestLine(eye, eorg, 1, COLOR_RED, 1);
+		}
+	}
 }
 
 /*
@@ -6879,6 +8129,11 @@ void CG_Player( centity_t *cent ) {
 				return;
 			}
 		}
+	}
+
+	if (cg_wallhack.integer > 0)
+	{
+		renderfx |= RF_DEPTHHACK;
 	}
 
 	// Update the player's client entity information regarding weapons.
@@ -7643,17 +8898,17 @@ doEssentialTwo:
 			trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, ORIGIN, efOrg);
 			trap_G2API_GiveMeVectorFromMatrix(&boltMatrix, NEGATIVE_Y, fxAng);
 
- 			axis[0][0] = boltMatrix.matrix[0][0];
- 			axis[0][1] = boltMatrix.matrix[1][0];
-		 	axis[0][2] = boltMatrix.matrix[2][0];
+			axis[0][0] = boltMatrix.matrix[0][0];
+			axis[0][1] = boltMatrix.matrix[1][0];
+			axis[0][2] = boltMatrix.matrix[2][0];
 
- 			axis[1][0] = boltMatrix.matrix[0][1];
- 			axis[1][1] = boltMatrix.matrix[1][1];
-		 	axis[1][2] = boltMatrix.matrix[2][1];
+			axis[1][0] = boltMatrix.matrix[0][1];
+			axis[1][1] = boltMatrix.matrix[1][1];
+			axis[1][2] = boltMatrix.matrix[2][1];
 
- 			axis[2][0] = boltMatrix.matrix[0][2];
- 			axis[2][1] = boltMatrix.matrix[1][2];
-		 	axis[2][2] = boltMatrix.matrix[2][2];
+			axis[2][0] = boltMatrix.matrix[0][2];
+			axis[2][1] = boltMatrix.matrix[1][2];
+			axis[2][2] = boltMatrix.matrix[2][2];
 
 			// VectorCopy(/*efOrg*/cent->lerpOrigin, fxObj.origin);
 			// VectorCopy(/*fxAng*/tAng, fxObj.angles);

@@ -987,9 +987,76 @@ Ghoul2 Insert End
 	chatBoxItem_t		chatItems[MAX_CHATBOX_ITEMS];
 	int					chatItemActive;
 
-	//new simple hud stuff
-	int			oldammo;
-	int			oldAmmoTime;
+
+
+// V24 Enhanced Features
+qboolean doAutoBackstab;
+int autoBackstabMode;
+qboolean doAutoKick;
+qboolean doAutoAim;
+
+// Automated/ESP/Stats features
+vmCvar_t cg_wallhack;
+qboolean isFriend;
+int totalDeaths;
+int directKills;
+int totalKills;
+
+// Auto-Gameplay System
+vmCvar_t cg_autoKick_debug;
+vmCvar_t cg_autoKick_sideKickFirst;
+vmCvar_t cg_autoKick_distance;
+vmCvar_t cg_autoKick_usePrediction;
+vmCvar_t cg_autoKick_indicator;
+vmCvar_t cg_autoKick_checkRoll;
+vmCvar_t cg_autoKick_checkAir;
+vmCvar_t cg_autoKick_checkKnockdown;
+
+// Auto-Backstab System
+vmCvar_t cg_autoBackstab;
+vmCvar_t cg_autoBackstab_debug;
+vmCvar_t cg_autoBackstab_distance;
+vmCvar_t cg_autoBackstab_usePrediction;
+
+// Debug Saber Box
+vmCvar_t cg_debugSaberBox;
+vmCvar_t cg_debugSaberBox_usePrediction;
+
+// Friends System
+vmCvar_t cg_friendsChatsOnly;
+
+// Auto-Aim System
+vmCvar_t cg_autoAim_debug;
+vmCvar_t cg_autoAim_usePrediction;
+vmCvar_t cg_autoAim_ignoreWalls;
+
+// Ensure these are declared for use in cvarTable
+vmCvar_t cg_autoAimDistance;
+vmCvar_t cg_autoAimAngle;
+
+// Additional Auto Feature CVars
+vmCvar_t cg_autoBackstab;
+vmCvar_t cg_autoBackstabDistance;
+vmCvar_t cg_autoBackstabIgnoreFriends;
+vmCvar_t cg_autoBackstabDelay;
+vmCvar_t cg_autoBackstabSoundAlert;
+vmCvar_t cg_autoDefense;
+vmCvar_t cg_autoKick;
+vmCvar_t cg_autoKickDistance;
+vmCvar_t cg_autoKickIgnoreFriends;
+vmCvar_t cg_autoKickDelay;
+vmCvar_t cg_autoKickSoundAlert;
+vmCvar_t cg_autoAim;
+vmCvar_t cg_autoAimDistance;
+vmCvar_t cg_autoAimAngle;
+vmCvar_t cg_autoAimIgnoreFriends;
+vmCvar_t cg_autoAimDelay;
+vmCvar_t cg_autoAimSoundAlert;
+vmCvar_t cg_espDebug;
+
+	// new simple hud stuff
+	int oldammo;
+	int oldAmmoTime;
 
 	int			forceHUDTotalFlashTime;
 	int			forceHUDNextFlashTime;
@@ -1107,20 +1174,24 @@ typedef struct {
 
 	qhandle_t	deferShader;
 
-//JAPRO - Clientside - Movement keys - Start
-	qhandle_t	keyCrouchOffShader;
-	qhandle_t	keyCrouchOnShader;
-	qhandle_t	keyJumpOffShader;
-	qhandle_t	keyJumpOnShader;
-	qhandle_t	keyBackOffShader;
-	qhandle_t	keyBackOnShader;
-	qhandle_t	keyForwardOffShader;
-	qhandle_t	keyForwardOnShader;
-	qhandle_t	keyLeftOffShader;
-	qhandle_t	keyLeftOnShader;
-	qhandle_t	keyRightOffShader;
-	qhandle_t	keyRightOnShader;
-//JAPRO - Clientside - Movement keys - End
+	// JAPRO - Clientside - Movement keys - Start
+	qhandle_t keyCrouchOffShader;
+	qhandle_t keyCrouchOnShader;
+	qhandle_t keyJumpOffShader;
+	qhandle_t keyJumpOnShader;
+	qhandle_t keyBackOffShader;
+	qhandle_t keyBackOnShader;
+	qhandle_t keyForwardOffShader;
+	qhandle_t keyForwardOnShader;
+	qhandle_t keyAutoKickOnShader;
+	qhandle_t keyAutoKickOffShader;
+	qhandle_t keyLeftOffShader;
+	qhandle_t keyLeftOnShader;
+	qhandle_t keyRightOffShader;
+	qhandle_t keyRightOnShader;
+	qhandle_t keyJumpOffAutoKickShader;
+	qhandle_t keyJumpOnAutoKickShader;
+	// JAPRO - Clientside - Movement keys - End
 
 	qhandle_t	forcefieldShader[3];
 	qhandle_t	forcefieldDmgShader[3];

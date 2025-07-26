@@ -223,30 +223,11 @@ static void CG_ClipMoveToEntities ( const vec3_t start, const vec3_t mins, const
 		if ( tr->allsolid ) {
 			return;
 		}
-
-		// Do a second prediction with deluxe predicted origin.
-		if ((explicitlyDeluxe || cg_deluxePlayersPredictClipMove.integer) && cent->deluxePredict.lerpOriginClipMoveFilled) {
-			trap_CM_TransformedBoxTrace(&trace, start, end,
-				mins, maxs, cmodel, mask, cent->deluxePredict.lerpOriginClipMove, angles, customEpsilonTrace, customEpsilon, traceCustomFlags);
-
-			if (trace.allsolid || trace.fraction < tr->fraction) {
-				trace.entityNum = ent->number;
-				*tr = trace;
-			}
-			else if (trace.startsolid) {
-				tr->startsolid = qtrue;
-			}
-			if (tr->allsolid) {
-				return;
-			}
-		}
 	}
 }
 
 /*
-================
 CG_Trace
-================
 */
 void	CG_TraceReal( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
 					 int skipNumber, int mask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
@@ -294,19 +275,9 @@ void	CG_RawTraceReal( trace_t *result, const vec3_t start, const vec3_t mins, co
 
 	*result = t;
 }
-void	CG_RawTrace( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
-					 int skipNumber, int mask ) {
-	CG_RawTraceReal(result,start,mins,maxs,end,skipNumber,mask,qfalse,0,0);
-}
-void	CG_RawTraceQ2Style( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
-					 int skipNumber, int mask ) {
-	CG_RawTraceReal(result,start,mins,maxs,end,skipNumber,mask, qtrue, 0.03125f, TRACECUSTOMFLAG_Q2STYLE);
-}
 
 /*
-================
 CG_PointContents
-================
 */
 int		CG_PointContents( const vec3_t point, int passEntityNum ) {
 	int			i;
@@ -346,12 +317,10 @@ int		CG_PointContents( const vec3_t point, int passEntityNum ) {
 
 
 /*
-========================
 CG_InterpolatePlayerState
 
 Generates cg.predictedPlayerState by interpolating between
 cg.snap->player_state and cg.nextFrame->player_state
-========================
 */
 static void CG_InterpolatePlayerState( qboolean grabAngles, vec3_t newestVel ) {
 	float			f;

@@ -130,6 +130,144 @@ static void CG_scrollScoresUp_f( void) {
 	}
 }
 
+static void CG_AutoKickDown_f(void)
+{
+	cg.doAutoKick = qtrue;
+}
+
+static void CG_AutoKickUp_f(void)
+{
+	cg.doAutoKick = qfalse;
+}
+
+static void CG_AutoBackStabDown_f(void)
+{
+cg.doAutoBackstab = qtrue;
+}
+
+static void CG_AutoBackStabUp_f(void)
+{
+cg.doAutoBackstab = qfalse;
+}
+
+static void CG_AutoAimDown_f(void)
+{
+	cg.doAutoAim = qtrue;
+}
+
+static void CG_AutoAimUp_f(void)
+{
+	cg.doAutoAim = qfalse;
+}
+
+static void CG_FriendAdd_f(void)
+{
+	int clientNum = -1;
+	clientInfo_t *ci;
+	const char *name;
+
+	if (trap_Argc() < 2) {
+		CG_Printf("Usage: \\friendAdd <client_id or name or all>\n");
+		return;
+	}
+
+	name = CG_Argv(1);
+
+	if (Q_stricmp(name, "all") == 0)
+	{
+		int i;
+
+		for (i = 0; i < MAX_CLIENTS; i++)
+		{
+			ci = &cgs.clientinfo[i];
+			if (!ci->infoValid)
+			{
+				continue;
+			}
+
+			cg.isFriend[i] = qtrue;
+		}
+
+		CG_Printf("Added all clients to the friends list\n");
+		return;
+	}
+
+	clientNum = CG_ClientNumberFromString(name);
+
+	if (clientNum < 0)
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	cg.isFriend[clientNum] = qtrue;
+	CG_Printf("Added client %d (%s" S_COLOR_WHITE ") to the friends list\n", clientNum, ci->name);
+}
+
+static void CG_FriendRemove_f(void)
+{
+	int clientNum = -1;
+	clientInfo_t *ci;
+	const char *name;
+
+	if (trap_Argc() < 2) {
+		CG_Printf("Usage: \\friendRemove <client_id or name or all>\n");
+		return;
+	}
+
+	name = CG_Argv(1);
+
+	if (Q_stricmp(name, "all") == 0)
+	{
+		int i;
+		
+		for (i = 0; i < MAX_CLIENTS; i++)
+		{
+			ci = &cgs.clientinfo[i];
+			if (!ci->infoValid)
+			{
+				continue;
+			}
+
+			cg.isFriend[i] = qfalse;
+		}
+
+		CG_Printf("Removed all clients from the friends list\n");
+		return;
+	}
+
+	clientNum = CG_ClientNumberFromString(name);
+
+	if (clientNum < 0)
+	{
+		return;
+	}
+
+	ci = &cgs.clientinfo[clientNum];
+	cg.isFriend[clientNum] = qfalse;
+	CG_Printf("Removed client %d (%s" S_COLOR_WHITE ") from the friends list\n", clientNum, ci->name);
+}
+
+static void CG_FriendsList_f(void)
+{
+	clientInfo_t *ci;
+	int i;
+	int count = 0;
+
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		ci = &cgs.clientinfo[i];
+		if (!ci->infoValid)
+			continue;
+
+		if (cg.isFriend[i])
+		{
+			CG_Printf("%2d %s" S_COLOR_WHITE "\n", i, ci->name);
+			count++;
+		}
+	}
+	CG_Printf("Listed %d friends\n", count);
+}
 
 static void CG_spWin_f( void) {
 	trap_Cvar_Set("cg_cameraOrbit", "2");
@@ -622,11 +760,11 @@ CG_TeamMenu_f
 /*
 static void CG_TeamMenu_f( void ) {
   if (trap_Key_GetCatcher() & KEYCATCH_CGAME) {
-    CG_EventHandling(CGAME_EVENT_NONE);
-    trap_Key_SetCatcher(0);
+	CG_EventHandling(CGAME_EVENT_NONE);
+	trap_Key_SetCatcher(0);
   } else {
-    CG_EventHandling(CGAME_EVENT_TEAMMENU);
-    //trap_Key_SetCatcher(KEYCATCH_CGAME);
+	CG_EventHandling(CGAME_EVENT_TEAMMENU);
+	//trap_Key_SetCatcher(KEYCATCH_CGAME);
   }
 }
 */
@@ -1114,7 +1252,7 @@ void CG_ClientList_f( void )
 				CG_Printf( "%2d " S_COLOR_YELLOW "F   " S_COLOR_WHITE "%s" S_COLOR_WHITE "%s\n", i,
 					ci->name, (ci->botSkill != 0) ? " (bot)" : "" );
 			}
- 			break;
+			break;
  
 		case TEAM_RED:
 			CG_Printf( "%2d " S_COLOR_RED "R   " S_COLOR_WHITE "%s" S_COLOR_WHITE "%s\n", i,
