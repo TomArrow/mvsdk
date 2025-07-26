@@ -10,9 +10,9 @@ const int allowedRollRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_LAVAP
 const int allowedRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 const int allowedMapDefaultRunFlags = RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE | RFL_LAVAPROTECT;// | RFL_ANTILOOP;// | RFL_NOROLLSTART | RFL_NOROLLS;
 #if WIN32// && DEBUG
-const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_CSS) | (1 << MV_Q2) | (1 << MV_FORCE) | (1 << MV_DREAM)| (1 << MV_CHARGEJUMP);// | (1 << MV_PINBALL);
+const int allowedMovementStyles = (1 << DEFRAG_MV_JK2) | (1 << DEFRAG_MV_SICKO) | (1 << DEFRAG_MV_QUAJK) | (1 << DEFRAG_MV_BOUNCE) | (1 << DEFRAG_MV_CSS) | (1 << DEFRAG_MV_Q2) | (1 << DEFRAG_MV_FORCE) | (1 << DEFRAG_MV_DREAM)| (1 << DEFRAG_MV_CHARGEJUMP);// | (1 << DEFRAG_MV_PINBALL);
 #else
-const int allowedMovementStyles = (1 << MV_JK2) | (1 << MV_SICKO) | (1 << MV_QUAJK) | (1 << MV_BOUNCE) | (1 << MV_Q2) | (1 << MV_FORCE) | (1 << MV_DREAM);// | (1 << MV_PINBALL);
+const int allowedMovementStyles = (1 << DEFRAG_MV_JK2) | (1 << DEFRAG_MV_SICKO) | (1 << DEFRAG_MV_QUAJK) | (1 << DEFRAG_MV_BOUNCE) | (1 << DEFRAG_MV_Q2) | (1 << DEFRAG_MV_FORCE) | (1 << DEFRAG_MV_DREAM);// | (1 << DEFRAG_MV_PINBALL);
 #endif
 bitInfo_t runFlagsNames[] = { 
 	{ "Disable jumpbug" },//0
@@ -69,7 +69,7 @@ bitInfo_t modeNames[MODE_NUM_MODES] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Ironman" },
 };
 
-bitInfo_t moveStyleNames[MV_NUMSTYLES] = { 
+bitInfo_t moveStyleNames[DEFRAG_MV_NUMSTYLES] = { 
 	{ "JK2" },//0
 	{ "PJK2" },//1
 	{ "JK2SP" },//1

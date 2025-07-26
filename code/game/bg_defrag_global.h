@@ -4,6 +4,9 @@
 
 #include "q_shared.h"
 
+#define COURSENAME_MAX_LEN 64
+#define USERNAME_MAX_LEN 32
+
 #define BOUNCEPOWER_MAX 500
 #define BOUNCEPOWER_REGEN_MAX 100
 #define BOUNCEPOWER_POWERMASK ((1<<9)-1)
@@ -41,25 +44,25 @@ typedef struct ironManPos_s { // we periodically save ironman pos so we can spaw
 	int			when;
 } simplePos_t;
 
-typedef enum //movementstyle enum
+typedef enum //defrag movementstyle enum
 {
-	//MV_SIEGE,
-	MV_JK2,
-	MV_PJK2,//MV_BOTJKA,//MV_QW, // dont make bot its own. just make bot a runflag
-	MV_JK2SP,//MV_CPM,
-	MV_SPEED,//MV_Q3,
-	MV_SICKO,//MV_CLIMB,//MV_PJK,
-	MV_QUAJK,//MV_WSW,
-	MV_BOUNCE,//MV_RJQ3,
-	MV_PINBALL,//MV_RJCPM,
-	MV_CSS,//MV_SWOOP,
-	MV_Q2,//MV_JETPACK,
-	MV_FORCE,//MV_SPEED,
-	MV_DREAM,//MV_SP,
-	MV_CHARGEJUMP,//MV_SLICK,
-	//MV_BOTCPM,
-	MV_NUMSTYLES
-} movementStyle_e;
+	//DEFRAG_MV_SIEGE,
+	DEFRAG_MV_JK2,
+	DEFRAG_MV_PJK2,//DEFRAG_MV_BOTJKA,//DEFRAG_MV_QW, // dont make bot its own. just make bot a runflag
+	DEFRAG_MV_JK2SP,//DEFRAG_MV_CPM,
+	DEFRAG_MV_SPEED,//DEFRAG_MV_Q3,
+	DEFRAG_MV_SICKO,//DEFRAG_MV_CLIMB,//DEFRAG_MV_PJK,
+	DEFRAG_MV_QUAJK,//DEFRAG_MV_WSW,
+	DEFRAG_MV_BOUNCE,//DEFRAG_MV_RJQ3,
+	DEFRAG_MV_PINBALL,//DEFRAG_MV_RJCPM,
+	DEFRAG_MV_CSS,//DEFRAG_MV_SWOOP,
+	DEFRAG_MV_Q2,//DEFRAG_MV_JETPACK,
+	DEFRAG_MV_FORCE,//DEFRAG_MV_SPEED,
+	DEFRAG_MV_DREAM,//DEFRAG_MV_SP,
+	DEFRAG_MV_CHARGEJUMP,//DEFRAG_MV_SLICK,
+	//DEFRAG_MV_BOTCPM,
+	DEFRAG_MV_NUMSTYLES
+} defragMovementStyle_e;
 
 typedef struct bitInfo_s {
 	const char* string;
@@ -133,7 +136,7 @@ extern bitInfo_t runFlagsNames[];
 extern bitInfo_t runFlagsShortNames[];
 extern bitInfo_t runFlagsVeryShortNames[];
 extern bitInfo_t modeNames[MODE_NUM_MODES];
-extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
+extern bitInfo_t moveStyleNames[DEFRAG_MV_NUMSTYLES];
 extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 
 
