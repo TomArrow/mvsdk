@@ -1120,8 +1120,8 @@ vmCvar_t cg_autoAim_usePrediction;
 vmCvar_t cg_autoAim_ignoreWalls;
 
 // Ensure these are declared for use in cvarTable
-vmCvar_t cg_autoAimDistance;
-vmCvar_t cg_autoAimAngle;
+// vmCvar_t cg_autoAimDistance; // removed duplicate
+// vmCvar_t cg_autoAimAngle;   // removed duplicate
 
 // Additional Auto Feature CVars
 vmCvar_t cg_autoBackstab;
