@@ -335,6 +335,9 @@ typedef struct {
 	qboolean	setForce;			// set to true once player is given the chance to set force powers
 	int			updateUITime;		// only update userinfo for FP/SL if < level.time
 	qboolean	teamLeader;			// true when this client is a team leader
+	int			duelTeam;
+	int			siegeDesiredTeam;
+	qboolean	raceMode;			// true when client is in race/defrag mode
 } clientSession_t;
 
 // JK2MV
@@ -779,7 +782,6 @@ void G_ExplodeMissile( gentity_t *ent );
 
 void WP_FireBlasterMissile( gentity_t *ent, vec3_t start, vec3_t dir, qboolean altFire );
 
-
 //
 // g_mover.c
 //
@@ -794,7 +796,6 @@ void Touch_DoorTrigger( gentity_t *ent, gentity_t *other, trace_t *trace );
 //
 void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace );
 
-
 //
 // g_misc.c
 //
@@ -802,7 +803,6 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles );
 void ATST_ManageDamageBoxes(gentity_t *ent);
 int G_PlayerBecomeATST(gentity_t *ent);
 void G_CreateExampleAnimEnt(gentity_t *ent);
-
 
 //
 // g_weapon.c
@@ -813,7 +813,6 @@ qboolean LogAccuracyHit( gentity_t *target, gentity_t *attacker );
 void CalcMuzzlePoint ( gentity_t *ent, vec3_t forward, vec3_t right, vec3_t up, vec3_t muzzlePoint );
 void SnapVectorTowards( vec3_t v, vec3_t to );
 qboolean CheckGauntletAttack( gentity_t *ent );
-
 
 //
 // g_client.c

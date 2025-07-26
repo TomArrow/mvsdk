@@ -1112,4 +1112,11 @@ extern int forcePowerDarkLight[NUM_FORCE_POWERS];
 
 #include "../game/bg_multiversion.h"
 
+// Buffered print structure for delayed message output
+typedef struct {
+	char		buffer[1024];		// Buffer to store print messages
+	int			bufferPos;			// Current position in buffer
+	int			lastFlushTime;		// Last time buffer was flushed
+} bufferedPrint_t;
+
 #endif //__BG_PUBLIC_H__
