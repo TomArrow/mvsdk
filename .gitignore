@@ -143,3 +143,4 @@ build/*/
 /.vs/mvsdk/CopilotIndices/17.14.878.3237/SemanticSymbols.db-shm
 /.vs/mvsdk/CopilotIndices/17.14.878.3237/SemanticSymbols.db-wal
 *.vsidx
+*.log

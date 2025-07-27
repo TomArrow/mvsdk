@@ -1744,6 +1744,8 @@ Ghoul2 Insert Start
 		}
 
 	if (cg_wallhack.integer > 0)
+=======
+		if ((cg_wallhack.integer & 2) && cgs.gametype <= GT_TEAM && !(cgs.uni_clientFlags & (1 << WALLHACK_DISABLE_ITEMS)))
 		{
 			ent.renderfx |= RF_DEPTHHACK;
 		}
