@@ -2,11 +2,12 @@
 //
 // cg_draw.c -- draw all of the graphical elements during
 // active (after loading) gameplay
-#include "cg_public.h"
+
 #include "cg_local.h"
+#include "cg_public.h"
 #include "q_shared.h"
-#include "ui_shared.h"
-#include "../qcommon/qfiles.h" // for STYLE_BLINK etc
+#include "../ui/ui_shared.h"
+#include "../qcommon/qfiles.h"	// for STYLE_BLINK etc
 
 qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y);
 qboolean CG_CalcMuzzlePoint( int entityNum, vec3_t muzzle );
@@ -64,23 +65,20 @@ static void CG_DrawShowPos(void); //jk2pro
 #define KEY_SD      5
 #define KEY_D       6
 #define KEY_DW      7
-#define SNAPHUD_MAXZONES	128
-
-
-typedef struct {
-	int			speed;
-	float		zones[SNAPHUD_MAXZONES];
-	int			count;
-	vec2_t 		m;
-	int 		fps;
-} snapHudData_t;
-
-// dfsnaphud and snappinghud defined above
+#define SNAPHUD_MAXZONES 128
 
 void CG_DrawSnapHud(void);
 
-//jk2pro end
+typedef struct
+{
+	int speed;
+	float zones[SNAPHUD_MAXZONES];
+	int count;
+	vec2_t m;
+	int fps;
+} snapHud_t;
 
+// jk2pro end
 
 // used for scoreboard
 extern displayContextDef_t cgDC;
@@ -152,7 +150,7 @@ int CG_Text_Height(const char *text, float scale, int iMenuFont)
 }
 
 #include "../qcommon/qfiles.h"	// for STYLE_BLINK etc
-int CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont)
+void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont)
 {
 	int iStyleOR = 0;
 	int iFontIndex = MenuFontToHandle(iMenuFont);
@@ -1170,6 +1168,7 @@ void CG_DrawHUD(centity_t	*cent)
 			CG_DrawVerticalSpeed();
 	}
 
+	}
 
 	if (cg_snapHud.integer)
 		CG_DrawSnapHud();
@@ -1200,13 +1199,12 @@ void CG_DrawHUD(centity_t	*cent)
 		else if (lineWidth > 5)
 			lineWidth = 5;
 
-		void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4_t color, float alpha, float ycutoff);
-		Dzikie_CG_DrawLine(cgs.screenWidth / 2 - 10, cgs.screenHeight / 2, cgs.screenWidth / 2 + 10, cgs.screenHeight / 2, lineWidth, hcolor, 1.0f, cg_strafeHelperYCutoff.value);
+		Dzikie_CG_DrawLine(cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) - 5, cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) + 5, lineWidth, hcolor, hcolor[3], 0); //640x480, 320x240
 	}
 
 	if (cg_drawScore.integer) {
-			//scoreStr = va("Score: %i", cgs.clientinfo[cg.snap->ps.clientNum].score);
-			if (cgs.gametype == GT_TOURNAMENT)
+		//scoreStr = va("Score: %i", cgs.clientinfo[cg.snap->ps.clientNum].score);
+		if (cgs.gametype == GT_TOURNAMENT)
 		{//A duel that requires more than one kill to knock the current enemy back to the queue
 		 //show current kills out of how many needed
 			scoreStr = va("Score: %i/%i", cg.snap->ps.persistant[PERS_SCORE], cgs.fraglimit);
@@ -2458,9 +2456,12 @@ static void CG_DrawInventory(int y)
 byte autoKickDebugPreviousDirection = 0;
 
 static float CG_DrawAutoKick(float y)
+{
 	const char *s;
 	float w;
 
+	switch (cg.autoKickDebugDirection)
+	{
 	case 1:
 		s = S_COLOR_RED "Active: front";
 		break;
@@ -2474,6 +2475,7 @@ static float CG_DrawAutoKick(float y)
 	default:
 		s = "Active: none";
 		break;
+	}
 
 	if (cg.autoKickDebugDirection != 0 && cg.autoKickDebugDirection != autoKickDebugPreviousDirection)
 	{

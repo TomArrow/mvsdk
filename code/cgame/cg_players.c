@@ -1,3 +1,8 @@
+#include "cg_local.h"
+#include "../ghoul2/g2.h"
+#include "../qcommon/qfiles.h"  // for STYLE_BLINK etc
+#include "cg_public.h"  // for trap_G2API_AddBolt, etc
+
 // Helper: Get saber tip position for the local player
 static qboolean CG_GetSaberTip(vec3_t saberTipOut) {
 	centity_t *cent = &cg_entities[cg.snap->ps.clientNum];
@@ -25,8 +30,6 @@ static qboolean CG_SaberTipTraceToTarget(const vec3_t target) {
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_players.c -- handle the media and animation for player entities
-#include "cg_local.h"
-#include "../ghoul2/g2.h"
 
 // --- V24 Enhanced Features: Friend System and Auto-Gameplay ---
 #define USERCMD_SET_BUTTONS 1 // For trap_SetUserCmdValue
@@ -405,8 +408,6 @@ void CG_ProcessAutoAim(void) {
 	}
 	if (found && bestTarget != -1) CG_ExecuteAutoAim();
 }
-// ...existing code...
-
 extern stringID_table_t animTable [MAX_ANIMATIONS+1];
 
 char	*cg_customSoundNames[MAX_CUSTOM_SOUNDS] = {
