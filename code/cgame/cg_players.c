@@ -27,7 +27,6 @@ static qboolean CG_SaberTipTraceToTarget(const vec3_t target) {
 	if (tr.fraction == 1.0f || (tr.entityNum >= 0 && tr.entityNum < MAX_CLIENTS)) return qtrue;
 	return qfalse;
 }
-// Copyright (C) 1999-2000 Id Software, Inc.
 //
 // cg_players.c -- handle the media and animation for player entities
 
