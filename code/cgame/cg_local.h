@@ -1076,6 +1076,7 @@ typedef struct
 	chatBoxItem_t chatItems[MAX_CHATBOX_ITEMS];
 	int chatItemActive;
 
+
 // V24 Enhanced Features
 qboolean doAutoBackstab;
 int autoBackstabMode;
