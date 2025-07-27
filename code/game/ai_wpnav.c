@@ -26,7 +26,7 @@ char *GetFlagStr( int flags )
 
 	if (!flags)
 	{
-		strcpy(flagstr, "none\0");
+		strcpy(flagstr, "none");
 		goto fend;
 	}
 
