@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\alloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\bytecode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\decl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\error.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\expr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\init.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\input.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\null.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\prof.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\simp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\string.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\symbolic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\tree.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\bind.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\dag.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\dagcheck.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\enode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\event.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\gen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\inits.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\lex.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\output.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\profio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\stmt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\sym.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\trace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\types.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\c.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\token.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\rcc\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{356BB112-51F5-3C56-A640-90D5B8034E13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5E7F80E7-8644-3A2E-8059-D984F6D34782}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

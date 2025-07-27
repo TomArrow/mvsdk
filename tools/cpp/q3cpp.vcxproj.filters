@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\cpp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\eval.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\getopt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\hideset.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\include.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\lex.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\macro.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\nlist.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\tokens.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\unix.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\cpp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\tools\cpp\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{356BB112-51F5-3C56-A640-90D5B8034E13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5E7F80E7-8644-3A2E-8059-D984F6D34782}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

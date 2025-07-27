@@ -1,0 +1,94 @@
+﻿  <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\qcommon\q_math.cpp" />
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_atoms.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_force.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_gameinfo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_shared.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_multiversion.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_misc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_math.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_shared.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_multiversion_syscalls.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_multiversion.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_syscalls.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\api\mvapi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\api\mvmenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\keycodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_force.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_local.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_public.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_multiversion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_multiversion_syscalls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_multiversion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{356BB112-51F5-3C56-A640-90D5B8034E13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5E7F80E7-8644-3A2E-8059-D984F6D34782}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

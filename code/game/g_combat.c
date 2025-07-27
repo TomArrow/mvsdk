@@ -3,7 +3,6 @@
 // g_combat.c
 
 #include "g_local.h"
-#include "g_defrag.h"
 
 //rww - pd
 void BotDamageNotification(gclient_t *bot, gentity_t *attacker);
@@ -542,9 +541,6 @@ void AddScore( gentity_t *ent, vec3_t origin, int score ) {
 	if ( !ent->client ) {
 		return;
 	}
-	if ( ent->client->sess.raceMode ) { // dont affect points by dying or such. racemode has current racetimer as score
-		return;
-	}
 	// no scoring during pre-match warmup
 	if ( level.warmupTime ) {
 		return;
@@ -604,7 +600,7 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	vel[1] = direction[1]*speed;
 	vel[2] = direction[2]*speed;
 
-	launched = LaunchItem(self, item, self->client->ps.origin, vel);
+	launched = LaunchItem(item, self->client->ps.origin, vel);
 
 	launched->s.generic1 = self->s.number;
 	launched->s.powerups = level.time + 1500;
@@ -644,10 +640,6 @@ void TossClientItems( gentity_t *self ) {
 	float		angle;
 	int			i;
 	gentity_t	*drop;
-	int		nowTime = LEVELTIME(self->client);
-
-	if (self->client->sess.raceMode)//racemode
-		return;
 
 	// drop the weapon if not a gauntlet or machinegun
 	weapon = self->s.weapon;
@@ -689,14 +681,14 @@ void TossClientItems( gentity_t *self ) {
 	if ( g_gametype.integer != GT_TEAM ) {
 		angle = 45;
 		for ( i = 1 ; i < PW_NUM_POWERUPS ; i++ ) {
-			if ( self->client->ps.powerups[ i ] > nowTime ) {
+			if ( self->client->ps.powerups[ i ] > level.time ) {
 				item = BG_FindItemForPowerup( i );
 				if ( !item ) {
 					continue;
 				}
 				drop = Drop_Item( self, item, angle );
 				// decide how many seconds it has left
-				drop->count = ( self->client->ps.powerups[ i ] - nowTime ) / 1000;
+				drop->count = ( self->client->ps.powerups[ i ] - level.time ) / 1000;
 				if ( drop->count < 1 ) {
 					drop->count = 1;
 				}
@@ -758,7 +750,7 @@ void body_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int d
 	{
 		self->health = GIB_HEALTH+1;
 
-		if (self->client && (LEVELTIME(self->client) - self->client->respawnTime) < 2000)
+		if (self->client && (level.time - self->client->respawnTime) < 2000)
 		{
 			doDisint = qfalse;
 		}
@@ -876,7 +868,7 @@ void CheckAlmostCapture( gentity_t *self, gentity_t *attacker ) {
 		ent = NULL;
 		do
 		{
-			ent = G_FindByClassNameFast(ent, classname);
+			ent = G_Find(ent, FOFS(classname), classname);
 		} while (ent && (ent->flags & FL_DROPPED_ITEM));
 		// if we found the destination flag and it's not picked up
 		if (ent && !(ent->r.svFlags & SVF_NOCLIENT) ) {
@@ -1572,15 +1564,15 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 			{
 			case HL_FOOT_RT:
 			case HL_FOOT_LT:
-				if ( mod == MOD_SABER && !Q_irand( 0, 2 + gRandomUnlockAdd, qfalse,1 ) )
+				if ( mod == MOD_SABER && !Q_irand( 0, 2 ) )
 				{
 					return BOTH_DEATH10;//chest: back flip
 				}
-				else if ( !Q_irand( 0, 2 + gRandomUnlockAdd,qfalse,1 ) )
+				else if ( !Q_irand( 0, 2 ) )
 				{
 					deathAnim = BOTH_DEATH4;//back: forward
 				}
-				else if ( !Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0 ) )
+				else if ( !Q_irand( 0, 1 ) )
 				{
 					deathAnim = BOTH_DEATH5;//same as 4
 				}
@@ -1590,11 +1582,11 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				break;
 			case HL_LEG_RT:
-				if ( !Q_irand( 0, 2 + gRandomUnlockAdd,qfalse,1 ) )
+				if ( !Q_irand( 0, 2 ) )
 				{
 					deathAnim = BOTH_DEATH4;//back: forward
 				}
-				else if ( !Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0 ) ) // doesnt this q_irand always return 0?
+				else if ( !Q_irand( 0, 1 ) )
 				{
 					deathAnim = BOTH_DEATH5;//same as 4
 				}
@@ -1604,11 +1596,11 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				break;
 			case HL_LEG_LT:
-				if ( !Q_irand( 0, 2 + gRandomUnlockAdd, qfalse, 1) )
+				if ( !Q_irand( 0, 2 ) )
 				{
 					deathAnim = BOTH_DEATH4;//back: forward
 				}
-				else if ( !Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0) )
+				else if ( !Q_irand( 0, 1 ) )
 				{
 					deathAnim = BOTH_DEATH5;//same as 4
 				}
@@ -1624,11 +1616,11 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				else
 				{
-					if ( !Q_irand( 0, 2 + gRandomUnlockAdd, qfalse, 1) )
+					if ( !Q_irand( 0, 2 ) )
 					{
 						deathAnim = BOTH_DEATH4;//back: forward
 					}
-					else if ( !Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0) )
+					else if ( !Q_irand( 0, 1 ) )
 					{
 						deathAnim = BOTH_DEATH5;//same as 4
 					}
@@ -1657,13 +1649,13 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				else 
 				{
 					//TEMP HACK: play spinny deaths less often
-					if ( Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0) )
+					if ( Q_irand( 0, 1 ) )
 					{
 						deathAnim = BOTH_DEATH8;//chest right: spin high
 					}
 					else
 					{
-						switch ( Q_irand( 0, 2 + gRandomUnlockAdd, qfalse, 1) )
+						switch ( Q_irand( 0, 2 ) )
 						{
 						default:
 						case 0:
@@ -1698,13 +1690,13 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				else
 				{
 					//TEMP HACK: play spinny deaths less often
-					if ( Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0) )
+					if ( Q_irand( 0, 1 ) )
 					{
 						deathAnim = BOTH_DEATH14;//chest left: spin high
 					}
 					else
 					{
-						switch ( Q_irand( 0, 2 + gRandomUnlockAdd, qfalse, 1) )
+						switch ( Q_irand( 0, 2 ) )
 						{
 						default:
 						case 0:
@@ -1724,7 +1716,7 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 			case HL_WAIST:
 				if ( damage <= max_health*0.25 || !VectorLengthSquared( objVelocity ) )
 				{
-					if ( !Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0) )
+					if ( !Q_irand( 0, 1 ) )
 					{
 						deathAnim = BOTH_DEATH18;//gut: fall right
 					}
@@ -1739,7 +1731,7 @@ int G_PickDeathAnim( gentity_t *self, vec3_t point, int damage, int mod, int hit
 				}
 				else if ( damage <= max_health*0.75 )
 				{
-					if ( !Q_irand( 0, 1 + gRandomUnlockAdd, qfalse, 0) )
+					if ( !Q_irand( 0, 1 ) )
 					{
 						deathAnim = BOTH_DEATH1;//chest: backward med
 					}
@@ -1797,9 +1789,6 @@ player_die
 ==================
 */
 extern stringID_table_t animTable[MAX_ANIMATIONS+1];
-extern void DF_SegmentedRunStatusInvalidated(gentity_t* ent);
-extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
-gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage);
 void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath ) {
 	gentity_t	*ent;
 	int			anim;
@@ -1808,7 +1797,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	int			i;
 	char		*killerName, *obit;
 	qboolean	wasJediMaster = qfalse;
-	int			nowTime = LEVELTIME(self->client);
 
 	if ( !self || !self->client ) return;
 
@@ -1818,13 +1806,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 	if ( level.intermissiontime ) {
 		return;
-	}
-
-	if (DF_ClientInSegmentedRunMode(self->client) && self->client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && meansOfDeath != MOD_SUICIDE) { // /kill, /team, /race always ends segmented run
-		DF_SegmentedRunStatusInvalidated(self);
-	}
-	else {
-		DF_RaceStateInvalidated(self, qfalse);
 	}
 
 	if (g_slowmoDuelEnd.integer && g_gametype.integer == GT_TOURNAMENT && attacker && attacker->inuse && attacker->client)
@@ -1856,8 +1837,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	self->client->ps.fd.forceDeactivateAll = 1;
 
 	if ((self == attacker || !attacker->client) &&
-		(meansOfDeath == MOD_CRUSH || meansOfDeath == MOD_FALLING || meansOfDeath == MOD_TRIGGER_HURT || meansOfDeath == MOD_UNKNOWN || meansOfDeath == MOD_LAVA || meansOfDeath == MOD_SLIME) && // TA: Give credit for lava/slime kills too :)
-		self->client->ps.otherKillerTime > nowTime)
+		(meansOfDeath == MOD_CRUSH || meansOfDeath == MOD_FALLING || meansOfDeath == MOD_TRIGGER_HURT || meansOfDeath == MOD_UNKNOWN) &&
+		self->client->ps.otherKillerTime > level.time)
 	{
 		attacker = &g_entities[self->client->ps.otherKiller];
 	}
@@ -1866,9 +1847,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	CheckAlmostCapture( self, attacker );
 
 	self->client->ps.pm_type = PM_DEAD;
-	if (self->client->sess.raceMode && (self->client->sess.raceStyle.runFlags & RFL_CLIMBTECH)) {
-		self->client->ps.pm_flags &= ~PMF_STUCK_TO_WALL;
-	}
 
 	if ( attacker ) {
 		killer = attacker->s.number;
@@ -1893,11 +1871,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		obit = modNames[ meansOfDeath ];
 	}
 
-	if (!self->client->sess.raceMode || (self != attacker && attacker && (attacker - g_entities) < MAX_CLIENTS || g_developer.integer)/* || meansOfDeath != MOD_SUICIDE*/) {
-		G_LogPrintf("Kill: %i %i %i: %s killed %s by %s\n",
-			killer, self->s.number, meansOfDeath, killerName,
-			self->client->pers.netname, obit);
-	}
+	G_LogPrintf("Kill: %i %i %i: %s killed %s by %s\n", 
+		killer, self->s.number, meansOfDeath, killerName, 
+		self->client->pers.netname, obit );
 
 	if ( g_austrian.integer 
 		&& g_gametype.integer == GT_TOURNAMENT 
@@ -1926,14 +1902,13 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 
 	// broadcast the death event to everyone
-	if (!self->client->sess.raceMode || (self != attacker && attacker && (attacker - g_entities)<MAX_CLIENTS)/* || meansOfDeath != MOD_SUICIDE*/) {
-		ent = G_TempEntity(self->r.currentOrigin, EV_OBITUARY);
-		ent->s.eventParm = meansOfDeath;
-		ent->s.otherEntityNum = self->s.number;
-		ent->s.otherEntityNum2 = killer;
-		ent->r.svFlags = SVF_BROADCAST;	// send to everyone
-		ent->s.isJediMaster = wasJediMaster;
-	}
+	ent = G_TempEntity( self->r.currentOrigin, EV_OBITUARY );
+	ent->s.eventParm = meansOfDeath;
+	ent->s.otherEntityNum = self->s.number;
+	ent->s.otherEntityNum2 = killer;
+	ent->r.svFlags = SVF_BROADCAST;	// send to everyone
+	ent->s.isJediMaster = wasJediMaster;
+
 	self->enemy = attacker;
 
 	self->client->ps.persistant[PERS_KILLED]++;
@@ -1967,24 +1942,12 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				}
 				else
 				{
-					if (!attacker->client->sess.raceMode)
-						AddScore(attacker, self->r.currentOrigin, -1);
+					AddScore( attacker, self->r.currentOrigin, -1 );
 				}
 			}
 			else
 			{
 				AddScore( attacker, self->r.currentOrigin, -1 );
-				if (attacker != self) { //we did a teamkill
-					if (!attacker->client->sess.raceMode) {
-						AddScore(attacker, self->r.currentOrigin, -1);
-						//if (attacker != self && attacker->client)//JAPRO STATS
-							//attacker->client->pers.stats.teamKills++;
-					}
-				}
-				else if (g_gametype.integer != GT_FFA && (g_gametype.integer != GT_CTF)){// || !g_fixCTFScores.integer)) {//we selfkilled
-					if (!attacker->client->sess.raceMode)
-						AddScore(attacker, self->r.currentOrigin, -1); //Only take away a point if its not FFA or CTF i guess, sure
-				}
 			}
 			if (g_gametype.integer == GT_JEDIMASTER)
 			{
@@ -2033,7 +1996,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				// add the sprite over the player's head
 				attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
 				attacker->client->ps.eFlags |= EF_AWARD_GAUNTLET;
-				attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
+				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
 
 				// also play humiliation on target
 				self->client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_GAUNTLETREWARD;
@@ -2041,16 +2004,16 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 			// check for two kills in a short amount of time
 			// if this is close enough to the last kill, give a reward sound
-			if ( LEVELTIME(attacker->client) - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
+			if ( level.time - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
 				// play excellent on player
 				attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 
 				// add the sprite over the player's head
 				attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
 				attacker->client->ps.eFlags |= EF_AWARD_EXCELLENT;
-				attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
+				attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
 			}
-			attacker->client->lastKillTime = LEVELTIME(attacker->client);
+			attacker->client->lastKillTime = level.time;
 
 		}
 	} else {
@@ -2091,32 +2054,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 	}
 
-	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN && self != attacker) {	// only happens in standard CTF
-		if (attacker->client) {
-			if (self->client->ps.powerups[PW_REDFLAG]) {
-				PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
-			}
-			else if (self->client->ps.powerups[PW_BLUEFLAG]) {
-				PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
-			}
-			AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
-		}
-		level.lastIronManKilled = level.time;
-	}
-	else if (self->client->sess.mode == MODE_IRONMAN && attacker && attacker->client && attacker->client->sess.mode == MODE_IRONMAN && attacker->client->isIronMan && attacker != self) {
-		// give shield bonus to iron man if he kills someone
-		if (attacker->client->ps.stats[STAT_ARMOR] < 100) {
-			attacker->client->ps.stats[STAT_ARMOR] += 20;
-			if (attacker->client->ps.stats[STAT_ARMOR] > 100) {
-				attacker->client->ps.stats[STAT_ARMOR] = 100;
-			}
-		}
-	}
-	else {
-		// Add team bonuses
-		Team_FragBonuses(self, inflictor, attacker);
-	}
-
+	// Add team bonuses
+	Team_FragBonuses(self, inflictor, attacker);
 
 	// if I committed suicide, the flag does not fall, it returns.
 	if (meansOfDeath == MOD_SUICIDE) {
@@ -2188,7 +2127,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 	// don't allow respawn until the death anim is done
 	// g_forcerespawn may force spawning at some later time
-	self->client->respawnTime = nowTime + 1700;
+	self->client->respawnTime = level.time + 1700;
 
 	// remove powerups
 	memset( self->client->ps.powerups, 0, sizeof(self->client->ps.powerups) );
@@ -2239,7 +2178,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			self->health = GIB_HEALTH+1;
 		}
 
-		self->client->respawnTime = nowTime + 1000;//((self->client->animations[anim].numFrames*40)/(50.0f / self->client->animations[anim].frameLerp))+300;
+		self->client->respawnTime = level.time + 1000;//((self->client->animations[anim].numFrames*40)/(50.0f / self->client->animations[anim].frameLerp))+300;
 
 		self->client->ps.legsAnim = 
 			( ( self->client->ps.legsAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT ) | anim;
@@ -2270,8 +2209,6 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		i = ( i + 1 ) % 3;
 	}
 
-	self->client->sess.raceStateInvalidated = qfalse; // we are respawning, reset this and allow us to do stuff again
-	self->client->sess.raceStateSoftInvalidated = qfalse; // we are respawning, reset this and allow us to run again
 	trap_LinkEntity (self);
 
 }
@@ -2318,15 +2255,13 @@ int CheckArmor (gentity_t *ent, int damage, int dflags)
 	if (!save)
 		return 0;
 
-	if(!client->sess.raceMode || !(dflags & FAKE_DAMAGE_IN_RACEMODE)){
-		if (dflags & DAMAGE_HALF_ARMOR_REDUCTION)		// Armor isn't whittled so easily by sniper shots.
-		{
-			client->ps.stats[STAT_ARMOR] -= (int)(save*ARMOR_REDUCTION_FACTOR);
-		}
-		else
-		{
-			client->ps.stats[STAT_ARMOR] -= save;
-		}
+	if (dflags & DAMAGE_HALF_ARMOR_REDUCTION)		// Armor isn't whittled so easily by sniper shots.
+	{
+		client->ps.stats[STAT_ARMOR] -= (int)(save*ARMOR_REDUCTION_FACTOR);
+	}
+	else
+	{
+		client->ps.stats[STAT_ARMOR] -= save;
 	}
 
 	return save;
@@ -2571,7 +2506,6 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 	vec3_t legAxis[3];
 	mdxaBone_t	boltMatrix;
 	float fVSpeed = 0;
-	int nowTime = LEVELTIME(self->client);
 
 	switch (limbType)
 	{
@@ -2633,7 +2567,7 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 		fVSpeed += self->client->ps.velocity[2];
 	}
 
-	fVSpeed *= 0.08f;
+	fVSpeed *= 0.08;
 
 	properOrigin[0] += addVel[0]*fVSpeed;
 	properOrigin[1] += addVel[1]*fVSpeed;
@@ -2646,7 +2580,7 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 	AnglesToAxis( properAngles, legAxis );
 	G_G2PlayerAngles( self, legAxis, properAngles );
 
-	trap_G2API_GetBoltMatrix(self->client->ghoul2, 0, useBolt, &boltMatrix, properAngles, properOrigin, level.time, NULL, vec3_origin); // not using nowTime here because using it on G2 made the server have extreme hitches and idk the cause
+	trap_G2API_GetBoltMatrix(self->client->ghoul2, 0, useBolt, &boltMatrix, properAngles, properOrigin, level.time, NULL, vec3_origin);
 
 	boltPoint[0] = boltMatrix.matrix[0][3];
 	boltPoint[1] = boltMatrix.matrix[1][3];
@@ -2654,7 +2588,7 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 
 	if ( jk2gameplay != VERSION_1_02 )
 	{
-		trap_G2API_GetBoltMatrix(self->client->ghoul2, 1, 0, &boltMatrix, properAngles, properOrigin, level.time, NULL, vec3_origin); // not using nowTime here because using it on G2 made the server have extreme hitches and idk the cause
+		trap_G2API_GetBoltMatrix(self->client->ghoul2, 1, 0, &boltMatrix, properAngles, properOrigin, level.time, NULL, vec3_origin);
 
 		if (self->client && limbType == G2_MODELPART_RHAND)
 		{ //Make some saber hit sparks over the severed wrist area
@@ -2687,12 +2621,12 @@ void G_Dismember( gentity_t *ent, vec3_t point, int limbType, float limbRollBase
 
 	VectorCopy( point, newPoint );
 	limb = G_Spawn();
-	G_SetClassName(limb, "playerlimb");
+	limb->classname = "playerlimb";
 	G_SetOrigin( limb, newPoint );
 	VectorCopy( newPoint, limb->s.pos.trBase );
 	limb->think = LimbThink;
 	limb->touch = LimbTouch;
-	limb->speed = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 4000, 8000, qfalse, 6000);
+	limb->speed = level.time + Q_irand(4000, 8000);
 	limb->nextthink = level.time + FRAMETIME;
 
 	//need size, contents, clipmask
@@ -2768,15 +2702,15 @@ void G_Dismember( gentity_t *ent, vec3_t point, int limbType, float limbRollBase
 
 	if ( jk2gameplay == VERSION_1_02 )
 	{
-		limb->s.apos.trDelta[0] = Q_irandExpectedIf(gRandomUnlockAdd, -300, 300, qfalse, 0 );
-		limb->s.apos.trDelta[2] = Q_irandExpectedIf(gRandomUnlockAdd, -300, 300, qfalse, 0 );
-		limb->s.apos.trDelta[1] = Q_irandExpectedIf(gRandomUnlockAdd, -300, 300, qfalse, 0 );
+		limb->s.apos.trDelta[0] = Q_irand( -300, 300 );
+		limb->s.apos.trDelta[2] = Q_irand( -300, 300 );
+		limb->s.apos.trDelta[1] = Q_irand( -300, 300 );
 
 		if (limbType == G2_MODELPART_WAIST)
 		{
-			limb->s.apos.trDelta[0] = Q_irandExpectedIf(gRandomUnlockAdd, -60, 60, qfalse, 0 );
-			limb->s.apos.trDelta[2] = Q_irandExpectedIf(gRandomUnlockAdd, -60, 60, qfalse, 0 );
-			limb->s.apos.trDelta[1] = Q_irandExpectedIf(gRandomUnlockAdd, -60, 60, qfalse, 0 );
+			limb->s.apos.trDelta[0] = Q_irand( -60, 60 );
+			limb->s.apos.trDelta[2] = Q_irand( -60, 60 );
+			limb->s.apos.trDelta[1] = Q_irand( -60, 60 );
 		}
 	}
 	else
@@ -2950,7 +2884,7 @@ void G_CheckForDismemberment(gentity_t *ent, vec3_t point, int damage, int death
 
 	// if (gGAvoidDismember != 2)
 	{ //this means do the dismemberment regardless of randomness and damage
-		if (Q_irand(0, 100 + gRandomUnlockAdd, qfalse, 50) > dismember)
+		if (Q_irand(0, 100) > dismember)
 		{
 			return;
 		}
@@ -3052,21 +2986,6 @@ qboolean G_ThereIsAMaster(void)
 	return qfalse;
 }
 
-void G_Kill(gentity_t* ent) {
-
-	//OSP: pause
-	//if (level.pause.state != PAUSE_NONE && ent->client && !ent->client->sess.raceMode) {
-	//	return;
-	//}
-
-	//if (ent->client && ent->client->sess.raceMode)
-	//	DeletePlayerProjectiles(ent); //Not sure how ppl could realisticly abuse this.. but might as well add it
-
-	ent->flags &= ~FL_GODMODE;
-	ent->client->ps.stats[STAT_HEALTH] = ent->health = -999;
-	player_die(ent, ent, ent, 100000, MOD_SUICIDE);
-}
-
 /*
 ============
 T_Damage
@@ -3092,7 +3011,7 @@ dflags		these flags are used to control how T_Damage works
 	DAMAGE_HALF_ARMOR_REDUCTION		Any damage that shields incur is halved
 ============
 */
-extern void G_LetGoOfWall(gentity_t* ent);
+
 void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			   vec3_t dir, vec3_t point, int damage, int dflags, int mod ) {
 	gclient_t	*client;
@@ -3104,10 +3023,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	float		famt = 0;
 	float		hamt = 0;
 	float		shieldAbsorbed = 0;
-	int			nowTime = inflictor ? LEVELTIME(inflictor->client) : level.time;
-	int			nowTimeTarg = LEVELTIME(targ->client);
 
-	if ( !targ /*|| !targ->client */) return;
+	if ( !targ ) return;
 
 	if (targ && targ->damageRedirect)
 	{
@@ -3147,37 +3064,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		damage *= 0.5;
 	}
 
-	// japro: do i need this?
-	//if ((g_gametype == GT_FFA) && !g_friendlyFire.value && (g_neutralFlag.integer && g_neutralFlag.integer < 4)) {
-	//	if (attacker && attacker->client && !attacker->client->ps.duelInProgress && !attacker->client->ps.powerups[PW_NEUTRALFLAG] && targ && targ->client && !targ->client->ps.duelInProgress && !targ->client->sess.raceMode && !targ->client->ps.powerups[PW_NEUTRALFLAG])
-	//		return;
-	//}
-
-	if (attacker && attacker->client && attacker->client->sess.raceMode && !(dflags & DAMAGE_IN_RACEMODE) && !(targ && targ->damageindefrag) && !attacker->client->ps.duelInProgress) {
-		//if (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_COOP_JKA) { //I think this is a bug
-		//	//if (mod != MOD_BLASTER || (!targ->client || !targ->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_COOP_JKA))
-		//	return;
-		//}
-		//else 
-		//if ((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJQ3) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_RJCPM) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_JETPACK) && (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] != MV_TRIBES)) //ignore self damage
-		//	return; //ignore self damage if attacker is in racemode
-		return;
-		//if (((attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJQ3) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_RJCPM) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_JETPACK) || (attacker->client->ps.stats[STAT_MOVEMENTSTYLE] == MV_TRIBES)) && targ->client && (targ != attacker)) {
-		//	return; //ignore other damage if attacker is in racemode - why is this not returning for detpacking race->outof race
-		//}
-	}
-
-	if (targ && targ->client && targ->client->sess.raceMode && attacker != targ && mod != MOD_TRIGGER_HURT /*&& mod != MOD_CRUSH*/ /* && mod != MOD_LAVA */ && !(dflags & FAKE_DAMAGE_IN_RACEMODE) && (damage != Q3_INFINITE) && !targ->client->ps.duelInProgress && !(dflags & DAMAGE_IN_RACEMODE)) //Fixme, change this to get rid of dmg from doors/eles.. but only if they get made completely nonsolid first
-		return; //ignore other damage if target is in racemode
-
 	// the intermission has allready been qualified for, so don't
 	// allow any extra scoring
-	if ( level.intermissionQueued ) { //still let racers dmg themselves in the intermission delay time
-		if (targ->client && targ->client->sess.raceMode) {
-		}
-		else {
-			return;
-		}
+	if ( level.intermissionQueued ) {
+		return;
 	}
 	if ( !inflictor ) {
 		inflictor = &g_entities[ENTITYNUM_WORLD];
@@ -3241,27 +3131,19 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 
 		if (mod == MOD_SABER && jk2gameplay != VERSION_1_02)
 		{
-			if (targ->client && targ->client->sess.raceMode) {
-				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
-			}
-			else {
-				VectorScale(dir, (g_knockback.value * (float)knockback / mass) * g_saberDmgVelocityScale.integer, kvel);
-			}
+			VectorScale (dir, (g_knockback.value * (float)knockback / mass)*g_saberDmgVelocityScale.integer, kvel);
 		}
 		else
 		{
-			if (targ->client && targ->client->sess.raceMode)
-				VectorScale(dir, 1000.0f * (float)knockback / mass, kvel);
-			else
-				VectorScale(dir, g_knockback.value * (float)knockback / mass, kvel);
+			VectorScale (dir, g_knockback.value * (float)knockback / mass, kvel);
 		}
 		VectorAdd (targ->client->ps.velocity, kvel, targ->client->ps.velocity);
 
 		if (attacker && attacker->client && attacker != targ)
 		{
 			targ->client->ps.otherKiller = attacker->s.number;
-			targ->client->ps.otherKillerTime = nowTimeTarg + 5000;
-			targ->client->ps.otherKillerDebounceTime = nowTimeTarg + 100;
+			targ->client->ps.otherKillerTime = level.time + 5000;
+			targ->client->ps.otherKillerDebounceTime = level.time + 100;
 		}
 		// set the timer so that the other client can't cancel
 		// out the movement immediately
@@ -3280,14 +3162,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		}
 	}
 
-	if (targ->client && targ->client->sess.raceMode && mod == MOD_SABER)
-	{ //add the shield effect and get out here (stops pain spam)
-		gentity_t* evEnt = G_TempEntity(targ->r.currentOrigin, EV_SHIELD_HIT);
-		evEnt->s.otherEntityNum = targ->s.number;
-		evEnt->s.eventParm = DirToByte(dir);
-		evEnt->s.time2 = 100;
-		return;
-	}
 	
 	if ( g_trueJedi.integer && client )
 	{//less explosive damage for jedi, more saber damage for non-jedi
@@ -3336,11 +3210,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			}
 		}
 
-		if (targ->client && attacker->client && targ->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN 
-			&& !attacker->client->isIronMan && !targ->client->isIronMan && attacker != targ) {
-			return; // don't let "team mates" in iron man damage each other
-		}
-
 		if (g_gametype.integer == GT_JEDIMASTER && !g_friendlyFire.integer &&
 			targ && targ->client && attacker && attacker->client &&
 			targ != attacker && !targ->client->ps.isJediMaster && !attacker->client->ps.isJediMaster &&
@@ -3354,15 +3223,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		{
 			gentity_t *targown = &g_entities[targ->s.owner];
 
-			if (targown && targown->inuse && targown->client)
+			if (targown && targown->inuse && targown->client && OnSameTeam(targown, attacker))
 			{
-				if (OnSameTeam(targown, attacker) && !g_friendlyFire.integer)
+				if (!g_friendlyFire.integer)
 				{
 					return;
-				}
-				if (targown->client && attacker->client && targown->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN
-					&& !attacker->client->isIronMan && !targown->client->isIronMan) {
-					return; // don't let "team mates" in iron man damage each other (does it make sense to do this here too? idk)
 				}
 			}
 		}
@@ -3375,7 +3240,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		if (targ && targ->client && (targ->client->ps.eFlags & EF_INVULNERABLE) &&
 			attacker && attacker->client && targ != attacker)
 		{
-			if (targ->client->invulnerableTimer <= nowTimeTarg)
+			if (targ->client->invulnerableTimer <= level.time)
 			{
 				targ->client->ps.eFlags &= ~EF_INVULNERABLE;
 			}
@@ -3505,10 +3370,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			int maxtake = take;
 
 			//G_Sound(targ, CHAN_AUTO, protectHitSound);
-			if (targ->client->forcePowerSoundDebounce < nowTimeTarg && jk2gameplay != VERSION_1_02)
+			if (targ->client->forcePowerSoundDebounce < level.time && jk2gameplay != VERSION_1_02)
 			{
 				G_PreDefSound(targ->client->ps.origin, PDSOUND_PROTECTHIT);
-				targ->client->forcePowerSoundDebounce = nowTimeTarg + 400;
+				targ->client->forcePowerSoundDebounce = level.time + 400;
 			}
 
 			if ( jk2gameplay == VERSION_1_02 )
@@ -3519,7 +3384,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			if (targ->client->ps.fd.forcePowerLevel[FP_PROTECT] == FORCE_LEVEL_1)
 			{
 				famt = 1;
-				hamt = 0.40f;
+				hamt = 0.40;
 
 				if (maxtake > 100)
 				{
@@ -3529,7 +3394,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			else if (targ->client->ps.fd.forcePowerLevel[FP_PROTECT] == FORCE_LEVEL_2)
 			{
 				famt = 0.5;
-				hamt = 0.60f;
+				hamt = 0.60;
 
 				if (maxtake > 200)
 				{
@@ -3539,7 +3404,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			else if (targ->client->ps.fd.forcePowerLevel[FP_PROTECT] == FORCE_LEVEL_3)
 			{
 				famt = 0.25;
-				hamt = 0.80f;
+				hamt = 0.80;
 
 				if (maxtake > 400)
 				{
@@ -3594,9 +3459,9 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			shieldAbsorbed = 200;
 		}
 
-		if (targ->client->ps.powerups[PW_SHIELDHIT] < (nowTimeTarg + shieldAbsorbed))
+		if (targ->client->ps.powerups[PW_SHIELDHIT] < (level.time + shieldAbsorbed))
 		{
-			targ->client->ps.powerups[PW_SHIELDHIT] = nowTimeTarg + shieldAbsorbed;
+			targ->client->ps.powerups[PW_SHIELDHIT] = level.time + shieldAbsorbed;
 		}
 		//flicker for as many ms as damage was absorbed (*20)
 		//therefore 10 damage causes 1/5 of a seond of flickering, whereas
@@ -3606,12 +3471,11 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	}
 
 	// do the damage
-	if (take && (!(targ->client && targ->client->sess.raceMode) || !(dflags & FAKE_DAMAGE_IN_RACEMODE))) {
+	if (take) {
 		if (targ->client && (targ->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) && (inflictor->client || attacker->client))
 		{
 			take /= (targ->client->ps.fd.forcePowerLevel[FP_RAGE]+1);
 		}
-
 		targ->health = targ->health - take;
 		if ( targ->client ) {
 			targ->client->ps.stats[STAT_HEALTH] = targ->health;
@@ -3661,18 +3525,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			targ->enemy = attacker;
 			targ->die (targ, inflictor, attacker, take, mod);
 			return;
-		}
-		else {
-			if (g_debugMelee.integer && targ->client && targ->client->sess.raceMode && (targ->client->sess.raceStyle.runFlags & RFL_CLIMBTECH))
-			{//getting hurt makes you let go of the wall
-				if (targ->client && (targ->client->ps.pm_flags & PMF_STUCK_TO_WALL))
-				{
-					G_LetGoOfWall(targ);
-				}
-			}
-			if (targ->pain) {
-				targ->pain(targ, attacker, take);
-			}
+		} else if ( targ->pain ) {
+			targ->pain (targ, attacker, take);
 		}
 
 		G_LogWeaponDamage(attacker->s.number, mod, take);
@@ -3700,7 +3554,7 @@ qboolean CanDamage (gentity_t *targ, vec3_t origin) {
 	VectorScale (midpoint, 0.5, midpoint);
 
 	VectorCopy (midpoint, dest);
-	JP_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
 	if (tr.fraction == 1.0 || tr.entityNum == targ->s.number)
 		return qtrue;
 
@@ -3709,28 +3563,28 @@ qboolean CanDamage (gentity_t *targ, vec3_t origin) {
 	VectorCopy (midpoint, dest);
 	dest[0] += 15.0;
 	dest[1] += 15.0;
-	JP_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
 	if (tr.fraction == 1.0)
 		return qtrue;
 
 	VectorCopy (midpoint, dest);
 	dest[0] += 15.0;
 	dest[1] -= 15.0;
-	JP_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
 	if (tr.fraction == 1.0)
 		return qtrue;
 
 	VectorCopy (midpoint, dest);
 	dest[0] -= 15.0;
 	dest[1] += 15.0;
-	JP_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
 	if (tr.fraction == 1.0)
 		return qtrue;
 
 	VectorCopy (midpoint, dest);
 	dest[0] -= 15.0;
 	dest[1] -= 15.0;
-	JP_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
+	trap_Trace ( &tr, origin, vec3_origin, vec3_origin, dest, ENTITYNUM_NONE, MASK_SOLID);
 	if (tr.fraction == 1.0)
 		return qtrue;
 

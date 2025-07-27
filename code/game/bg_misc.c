@@ -4,10 +4,9 @@
 
 #include "q_shared.h"
 #include "bg_public.h"
-#include "bg_local.h"
 
 #ifdef JK2_GAME
-#include "../game/g_local.h"
+#include "g_local.h"
 #endif
 
 #ifdef JK2_UI
@@ -172,7 +171,7 @@ fpDisabled is actually only expected (needed) from the server, because the ui di
 force power selection anyway when force powers are disabled on the server.
 ================
 */
-qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled)
+qboolean BG_LegalizedForcePowers(char *powerOut, int maxRank, qboolean freeSaber, int teamForce, int gametype, int fpDisabled)
 {
 	char powerBuf[128];
 	char readBuf[128];
@@ -192,16 +191,16 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 	if (powerLen >= 128)
 	{ //This should not happen. If it does, this is obviously a bogus string.
 		//They can have this string. Because I said so.
-		Q_strncpyz(powerBuf, "7-1-032330000000001333",sizeof(powerBuf));
+		strcpy(powerBuf, "7-1-032330000000001333");
 		maintainsValidity = qfalse;
 	}
 	else
 	{
-		Q_strncpyz(powerBuf, powerOut,sizeof(powerBuf)); //copy it as the original
+		strcpy(powerBuf, powerOut); //copy it as the original
 	}
 
 	//first of all, print the max rank into the string as the rank
-	Q_strncpyz(powerOut, va("%i-", maxRank), powerOutSize);
+	strcpy(powerOut, va("%i-", maxRank));
 
 	while (i < 128 && powerBuf[i] && powerBuf[i] != '-')
 	{
@@ -477,13 +476,13 @@ qboolean BG_LegalizedForcePowers(char *powerOut, int powerOutSize, int maxRank, 
 	//We finally have all the force powers legalized and stored locally.
 	//Put them all into the string and return the result. We already have
 	//the rank there, so print the side and the powers now.
-	Q_strcat(powerOut, powerOutSize, va("%i-", final_Side));
+	Q_strcat(powerOut, 128, va("%i-", final_Side));
 
 	i = strlen(powerOut);
 	c = 0;
 	while (c < NUM_FORCE_POWERS)
 	{
-		Q_strncpyz(readBuf, va("%i", final_Powers[c]),sizeof(readBuf));
+		strcpy(readBuf, va("%i", final_Powers[c]));
 		powerOut[i] = readBuf[0];
 		c++;
 		i++;
@@ -1631,7 +1630,7 @@ Returns false if the item should not be picked up.
 This needs to be the same for client side prediction and server use.
 ================
 */
-qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps, int playerMode) {
+qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const playerState_t *ps ) {
 	gitem_t	*item;
 
 	if ( ent->modelindex < 1 || ent->modelindex >= bg_numItems ) {
@@ -1695,11 +1694,6 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 		{ //weaponstay stuff.. if this isn't dropped, and you already have it, you don't get it.
 			return qfalse;
 		}
-		if (playerMode > MODE_DEFRAG) {
-			if (playerMode != MODE_IRONMAN || item->giTag != WP_TRIP_MINE && item->giTag != WP_TURRET && item->giTag != WP_EMPLACED_GUN) {
-				return qfalse; // in ironman mode we can pick up mines and turrets (and emplaced gun? what even is that?). just going by the default ctf configs with weapondisable
-			}
-		}
 		return qtrue;	// weapons are always picked up
 
 	case IT_AMMO:
@@ -1742,15 +1736,10 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 				return qfalse;
 			}
 		}
-		if (playerMode > MODE_DEFRAG) {
-			if (playerMode != MODE_IRONMAN || item->giTag != PW_REDFLAG && item->giTag != PW_BLUEFLAG && item->giTag != PW_NEUTRALFLAG) { // wait, ... flags arent even IT_POWERUP are they? lol
-				return qfalse; // in ironman mode we can pick up flags. but nothing else. and other modes outside of normal we cant pick up anything
-			}
-		}
 		return qtrue;	// powerups are always picked up
 
 	case IT_TEAM: // team items, such as flags
-		if( (gametype == GT_CTF || gametype == GT_CTY) && playerMode == MODE_NORMAL ) {
+		if( gametype == GT_CTF || gametype == GT_CTY ) {
 			// ent->modelindex2 is non-zero on items if they are dropped
 			// we need to know this because we can pick up our dropped flag (and return it)
 			// but we can't pick up our flag at base
@@ -1765,9 +1754,6 @@ qboolean BG_CanItemBeGrabbed( int gametype, const entityState_t *ent, const play
 					(item->giTag == PW_BLUEFLAG && ps->powerups[PW_REDFLAG]) )
 					return qtrue;
 			}
-		}
-		else if (playerMode == MODE_IRONMAN && ent->modelindex2) { // allow us to "return" the flag
-			return qtrue;
 		}
 
 		return qfalse;
@@ -2068,93 +2054,12 @@ void BG_AddPredictableEventToPlayerstate( int newEvent, int eventParm, playerSta
 	ps->eventSequence++;
 }
 
-
-void BG_UserCmdToUserStats(usercmd_t* ucmd, entityState_t* es) {
-	byte fw=(byte)ucmd->forwardmove, rt = (byte)ucmd->rightmove, up = (byte)ucmd->upmove;
-	unsigned int fpa = (fw << 24) | (rt << 16) | (up << 8); // few extra steps here because qvm behaves weird
-	unsigned int cl = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
-	//es->constantLight = (ucmd->weapon << 24) | (ucmd->forcesel << 16) | (ucmd->invensel << 8) | ucmd->generic_cmd;
-	es->constantLight = (int)cl;// few extra steps here because qvm behaves weird
-	
-	//es->forcePowersActive = ((byte)ucmd->forwardmove << 24) | ((byte)ucmd->rightmove << 16) | ((byte)ucmd->upmove << 8); // few extra steps here because qvm behaves weird
-	es->forcePowersActive = (int)fpa;
-
-	// do we need angles? might be a bit wasteful.
-	VectorCopySafe(ucmd->angles, es->apos.trBase);
-
-	es->forceFrame = ucmd->buttons;
-}
-
-void BG_StatsToUserCmd(entityState_t* es,usercmd_t* ucmd) {
-
-	ucmd->weapon = ((unsigned int)es->constantLight) >> 24;
-	ucmd->forcesel = (((unsigned int)es->constantLight) >> 16) & 0xff;
-	ucmd->invensel = (((unsigned int)es->constantLight) >> 8) & 0xff;
-	ucmd->generic_cmd = (((unsigned int)es->constantLight)) & 0xff;
-
-	ucmd->forwardmove = (signed char)(((unsigned int)es->forcePowersActive) >> 24);
-	ucmd->rightmove = (signed char)((((unsigned int)es->forcePowersActive) >> 16) & 0xff);
-	ucmd->upmove = (signed char)((((unsigned int)es->forcePowersActive) >> 8) & 0xff);
-
-	// do we need angles? might be a bit wasteful.
-	VectorCopySafe(es->apos.trBase, ucmd->angles);
-
-	ucmd->buttons = es->forceFrame;
-}
-
-
-
-void	BG_RaceStyleToUserStats(raceStyle_t* rs, entityState_t* es) {
-	unsigned int ushortMsec, ushortRunFlags;
-	es->bolt1 = rs->movementStyle;
-#ifdef Q3_VM
-	ushortMsec = SHORT2USHORT(rs->msec); // can be negative. is this conversion safe?
-	ushortRunFlags = SHORT2USHORT(rs->runFlags); // can be negative. is this conversion safe?
-#else
-	ushortMsec = (unsigned short)rs->msec; // can be negative. is this conversion safe?
-	ushortRunFlags = (unsigned short)rs->runFlags; // can be negative since im forced to use signed short. is this conversion safe?
-#endif
-	es->modelindex = rs->jumpLevel; // can be negative
-	es->powerups = rs->variant;
-	es->apos.trDuration = (ushortMsec & 65535) << 16 | (ushortRunFlags & 65535); // wanted to use torsoAnim and legsAnim but MV remaps fuck it
-}
-
-void	BG_StatsToRaceStyle(entityState_t* es, raceStyle_t* rs) {
-
-	rs->movementStyle = es->bolt1;
-	//rs->msec = USHORT2SHORT(es->torsoAnim); // can be negative. is this conversion safe?
-	rs->msec = USHORT2SHORT((es->apos.trDuration >> 16) & 65535); // can be negative. is this conversion safe?
-	rs->jumpLevel = es->modelindex; // can be negative
-	rs->variant = es->powerups;
-	//rs->runFlags = es->legsAnim;
-	rs->runFlags = USHORT2SHORT(es->apos.trDuration & 65535);
-}
-
-static float BG_MsecToEffectiveGravity(int referenceMsec, float gravity, movementStyle_e style) {
-	if (!referenceMsec || referenceMsec == -2) return gravity;
-	if (style == MV_Q2) {
-		// q2 has different type of snapping
-		// DONT use this rn, i think its not 100% reliable
-		// TODO fix this. doesn't seem to calculate things properly? 200fps (800 grav) jumps higher than 125 (under 800) on pornstar-budlight. dumb.
-		return 0.125f*(int)(8.0f*(float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
-	}
-	else {
-		return roundf((float)referenceMsec * 0.001f * gravity) * 1000.0f / (float)referenceMsec;
-	}
-}
-
-static float BG_JumpPadMsecCompensationFactor(int msec, int referenceMsec, float gravity, movementStyle_e style) {
-	float gravcurrent = BG_MsecToEffectiveGravity(msec, gravity,style);
-	float gravreference = BG_MsecToEffectiveGravity(referenceMsec, gravity,MV_JK2); // the reference is always the same style
-	return sqrtf(gravcurrent) / sqrtf(gravreference); // magically, after a few hours in excel, it turns out this is 100% accurate. a mathematician could have prolly figured that out in 2 minutes, but im not one. :)
-}
-
 /*
 ========================
 BG_TouchJumpPad
 ========================
 */
-void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompensate, int referenceMsec,movementStyle_e style) {
+void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad ) {
 	// spectators don't use jump pads
 	if ( ps->pm_type != PM_NORMAL && ps->pm_type != PM_FLOAT ) {
 		return;
@@ -2182,245 +2087,7 @@ void BG_TouchJumpPad( playerState_t *ps, entityState_t *jumppad, int msecCompens
 	ps->jumppad_ent = jumppad->number;
 	ps->jumppad_frame = ps->pmove_framecount;
 	// give the player the velocity from the jumppad
-	if (msecCompensate) {
-		float compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f,style);
-		VectorScale(jumppad->origin2, compensate, ps->velocity);
-	}
-	else {
-		VectorCopy(jumppad->origin2, ps->velocity);
-	}
-}
-
-#define Q3BUG 1
-
-void BG_TouchJumpPadTargetSpeed(entityState_t* jumppad, playerState_t* ps, float compensate)
-{
-	int spawnFlags = jumppad->forceFrame;
-	float speed = jumppad->origin2[0];
-
-	int i;
-	vec3_t pushVelocity;
-	vec3_t oldVelocity;
-	vec3_t normalized;
-	float oldSpeed;
-	qboolean launcher = spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_LAUNCHER;
-	float launchSpeed = 0;
-
-#define CLASSIFYSISGN(flags,plus,minus) ((flags & plus) && (flags & minus)) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0))
-//#define CLASSIFYSISGN(flags,plus,minus) ((flags & (plus|minus))>plus) ? 2 : ((flags & plus) ? 1 : ((flags & minus) ? -1 : 0)) // faster? idk.
-
-	float	sign[3]; // 0 == none. 1 == positive. -1 == negative. 2 = both
-	sign[0] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSX, Q3SPAWNFLAG_TARGET_SPEED_NEGX);
-	sign[1] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSY, Q3SPAWNFLAG_TARGET_SPEED_NEGY);
-	sign[2] = CLASSIFYSISGN(spawnFlags, Q3SPAWNFLAG_TARGET_SPEED_POSZ, Q3SPAWNFLAG_TARGET_SPEED_NEGZ);
-
-#undef CLASSIFYSISGN
-
-	// speed cannot be negative except when subtracting
-	if (!(spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD))
-	{
-		speed = MAX(speed, 0);
-	}
-
-	VectorCopy(ps->velocity, pushVelocity);
-	VectorCopy(ps->velocity, oldVelocity);
-
-	for (i = 0; i < 3; ++i)
-	{
-		if (launcher && sign[i] == 2) sign[i] = 0;
-		if (!sign[i]) pushVelocity[i] = 0;
-	}
-
-	oldSpeed = VectorLength(pushVelocity);
-
-	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_PERCENTAGE) {
-		speed = oldSpeed * speed / 100.0f;
-		//if (compensate) {
-		//	speed *= compensate;
-		//}
-	}
-
-#if !Q3BUG
-	launchSpeed += speed;
-	if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) launchSpeed += oldSpeed;
-#endif
-
-	for (i = 0; i < 3; ++i)
-	{
-		if (((pushVelocity[i] != 0) || launcher) && (fabsf(sign[i])==1))
-		{
-			if (launcher)
-			{
-				pushVelocity[i] = 1;
-#if Q3BUG
-				launchSpeed += speed;
-				if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) launchSpeed += oldSpeed;
-#endif
-			}
-
-			pushVelocity[i] = copysignf(pushVelocity[i],sign[i]);
-		}
-	}
-
-	VectorCopy(pushVelocity, normalized);
-	VectorNormalize(normalized);
-
-	if (compensate) {
-		VectorScale(normalized, compensate, normalized);
-	}
-
-	if (launcher)
-	{
-		VectorScale(normalized, fabs(launchSpeed), pushVelocity);
-	}
-	else
-	{
-		if (spawnFlags & Q3SPAWNFLAG_TARGET_SPEED_ADD) {
-			VectorMA(oldVelocity, speed, normalized, pushVelocity);
-		}
-		else {
-			VectorScale(normalized, speed, pushVelocity);
-		}
-	}
-
-	for (i = 0; i < 3; ++i)
-	{
-		if (!sign[i]) pushVelocity[i] = oldVelocity[i];
-	}
-
-	VectorCopy(pushVelocity, ps->velocity);
-
-	ps->jumppad_ent = jumppad->number;
-	ps->jumppad_frame = ps->pmove_framecount;
-}
-
-
-#define JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY 1
-#define JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY 2
-#define JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_Z 4
-#define JUMPPAD_VELOCITY_SPAWNFLAG_ADD_Z 8
-#define JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_XY 16
-#define JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_Z 32
-#define JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS 64
-
-// TODO do a test of this against the other code to make sure its accurate.
-void BG_TouchJumpPadVelocity(playerState_t* ps, entityState_t* jumppad, int msecCompensate, int referenceMsec, movementStyle_e style) {
-	vec3_t tmpHorz, tmpVert;
-	int flags = jumppad->weapon;
-	float speedHorz = jumppad->angles2[0];
-	float speedVert = jumppad->angles2[2];
-	float compensate = 0.0f;
-	qboolean isFirstFrame = ps->jumppad_ent != jumppad->number;
-
-
-	if (msecCompensate) {
-		compensate = BG_JumpPadMsecCompensationFactor(msecCompensate, referenceMsec, ps->gravity ? ps->gravity : 800.0f, style);
-	}
-
-	if (jumppad->saberInFlight) { // its a target_speed converted to a jumppad
-		BG_TouchJumpPadTargetSpeed(jumppad,ps,compensate);
-		return;
-	}
-
-	/*
-	vec3_t	angles;
-	float p;
-	int effectNum;
-
-	// if we didn't hit this same jumppad the previous frame
-	// then don't play the event sound again if we are in a fat trigger
-	if ( ps->jumppad_ent != jumppad->number ) {
-
-		vectoangles( jumppad->origin2, angles);
-		p = fabs( AngleNormalize180( angles[PITCH] ) );
-		if( p < 45 ) {
-			effectNum = 0;
-		} else {
-			effectNum = 1;
-		}
-	}
-	*/
-
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_XY) {
-
-		VectorCopy(ps->velocity, tmpHorz);
-		tmpHorz[2] = 0;
-		VectorNormalize(tmpHorz);
-		VectorScale(tmpHorz, speedHorz, tmpHorz);
-	}
-	else {
-
-		VectorCopy(jumppad->origin2, tmpHorz);
-		tmpHorz[2] = 0;
-		if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_XY) {
-
-			// Is the angle between the vectors bigger than 90 degrees? Then reverse our drection to result in increased speed.
-			if (DotProduct(tmpHorz, ps->velocity) < 0) {
-				VectorNegate(tmpHorz, tmpHorz);
-			}
-		}
-	}
-
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_PLAYERDIR_Z) {
-
-		VectorSet(tmpVert, 0, 0, copysignf(speedVert, ps->velocity[2]));
-	}
-	else {
-
-		VectorSet(tmpVert, 0, 0, flags & JUMPPAD_VELOCITY_SPAWNFLAG_BIDIRECTIONAL_Z ? copysignf(jumppad->origin2[2], ps->velocity[2]) : jumppad->origin2[2]);
-	}
-
-	if (compensate) {
-		VectorScale(tmpHorz, compensate, tmpHorz);
-	}
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_XY) {
-
-		if (isFirstFrame) {
-
-			VectorAdd(tmpHorz, ps->velocity, tmpHorz);
-			tmpHorz[2] = 0;
-
-			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && DotProduct(tmpHorz, ps->velocity) < 0) {
-
-				VectorSet(tmpHorz, 0, 0, 0);
-			}
-
-			ps->velocity[0] = tmpHorz[0];
-			ps->velocity[1] = tmpHorz[1];
-		}
-	}
-	else {
-		ps->velocity[0] = tmpHorz[0];
-		ps->velocity[1] = tmpHorz[1];
-	}
-	
-	if (compensate) {
-		VectorScale(tmpVert, compensate, tmpVert);
-	}
-	if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_ADD_Z) {
-
-		if (isFirstFrame) {
-
-			tmpVert[2] += ps->velocity[2];
-
-			if (flags & JUMPPAD_VELOCITY_SPAWNFLAG_CLAMP_NEGATIVE_ADDS && tmpVert[2] * ps->velocity[2] < 0) {
-
-				tmpVert[2] = 0;
-			}
-
-			ps->velocity[2] = tmpVert[2];
-		}
-	}
-	else {
-		ps->velocity[2] = tmpVert[2];
-	}
-
-
-	// remember hitting this jumppad this frame
-	ps->jumppad_ent = jumppad->number;
-	ps->jumppad_frame = ps->pmove_framecount;
-	// give the player the velocity from the jumppad
-	//VectorCopy( jumppad->origin2, ps->velocity );
+	VectorCopy( jumppad->origin2, ps->velocity );
 }
 
 /*
@@ -2491,11 +2158,7 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 	}
 	else
 	{
-		if (ps->stats[STAT_RACEMODE])
-			s->bolt1 = 2;
-		else
-			s->bolt1 = 0;
-		//s->bolt1 = 0;
+		s->bolt1 = 0;
 	}
 
 	if (ps->dualBlade)
@@ -2720,7 +2383,7 @@ static int		bg_poolTail = MAX_POOL_SIZE;
 
 void *BG_Alloc ( int size )
 {
-	bg_poolSize = PAD(bg_poolSize, sizeof(void *));
+	bg_poolSize = ((bg_poolSize + 0x00000003) & 0xfffffffc);
 
 	if (bg_poolSize + size > bg_poolTail)
 	{
@@ -2748,7 +2411,7 @@ void *BG_AllocUnaligned ( int size )
 
 void *BG_TempAlloc( int size )
 {
-	size = PAD(size, sizeof(void *));
+	size = ((size + 0x00000003) & 0xfffffffc);
 
 	if (bg_poolTail - size < bg_poolSize)
 	{
@@ -2763,7 +2426,7 @@ void *BG_TempAlloc( int size )
 
 void *BG_TempAllocTry( int size )
 {
-	size = PAD(size, sizeof(void *));
+	size = ((size + 0x00000003) & 0xfffffffc);
 
 	if (bg_poolTail - size < bg_poolSize)
 	{
@@ -2777,7 +2440,7 @@ void *BG_TempAllocTry( int size )
 
 void BG_TempFree( int size )
 {
-	size = PAD(size, sizeof(void *));
+	size = ((size + 0x00000003) & 0xfffffffc);
 
 	if (bg_poolTail+size > MAX_POOL_SIZE)
 	{
@@ -2790,10 +2453,9 @@ void BG_TempFree( int size )
 char *BG_StringAlloc ( const char *source )
 {
 	char *dest;
-	int size = strlen(source) + 1;
 
-	dest = BG_Alloc (size);
-	Q_strncpyz ( dest, source, size);
+	dest = BG_Alloc ( strlen ( source ) + 1 );
+	strcpy ( dest, source );
 	return dest;
 }
 
@@ -2869,7 +2531,6 @@ static void BG_SwingAngles( float destination, float swingTolerance, float clamp
 CG_AddPainTwitch
 =================
 */
-/* Commented this out for clarity because its never used anywhere.
 #define	PAIN_TWITCH_TIME	200
 static void BG_AddPainTwitch( int painTime, int painDirection, int currentTime,  vec3_t torsoAngles ) {
 	int		t;
@@ -2928,12 +2589,8 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	torsoAngles[YAW] = headAngles[YAW] + 0.25 * movementOffsets[ dir ];
 
 	// torso
-	BG_SwingAngles( torsoAngles[YAW], 25, 90, 
-	//cg_swingSpeed.value 
-0.3f, torso_yawAngle, torso_yawing, frameTime );
-	BG_SwingAngles( legsAngles[YAW], 40, 90,
-	//cg_swingSpeed.value
-		0.3f, legs_yawAngle, legs_yawing, frameTime );
+	BG_SwingAngles( torsoAngles[YAW], 25, 90, /*cg_swingSpeed.value*/ 0.3, torso_yawAngle, torso_yawing, frameTime );
+	BG_SwingAngles( legsAngles[YAW], 40, 90, /*cg_swingSpeed.value*/ 0.3, legs_yawAngle, legs_yawing, frameTime );
 
 	torsoAngles[YAW] = *torso_yawAngle;
 	legsAngles[YAW] = *legs_yawAngle;
@@ -2946,7 +2603,7 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 	} else {
 		dest = headAngles[PITCH] * 0.75;
 	}
-	BG_SwingAngles( dest, 15, 30, 0.1f, torso_pitchAngle, torso_pitching, frameTime );
+	BG_SwingAngles( dest, 15, 30, 0.1, torso_pitchAngle, torso_pitching, frameTime );
 	torsoAngles[PITCH] = *torso_pitchAngle;
 
 	// --------- roll -------------
@@ -2957,7 +2614,7 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 		vec3_t	axis[3];
 		float	side;
 
-		speed *= 0.05f;
+		speed *= 0.05;
 
 		AnglesToAxis( legsAngles, axis );
 		side = speed * DotProduct( velocity, axis[1] );
@@ -2978,75 +2635,4 @@ void BG_G2PlayerAngles( vec3_t startAngles, vec3_t legs[3], vec3_t legsAngles, i
 //g2r	trap_G2API_SetBoneAngles(ghoul2, 0, "upper_lumbar", torsoAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, modelList, 0, currentTime); 
 //g2r	trap_G2API_SetBoneAngles(ghoul2, 0, "cranium", headAngles, BONE_ANGLES_POSTMULT, POSITIVE_Z, NEGATIVE_Y, POSITIVE_X, modelList,0, currentTime); 
 
-}
-*/
-
-qboolean BG_DB_VerifyPassword(const char* password, int clientNumNotify) {
-	const char* s = password;
-	int len = strlen(password);
-	if (len < PASSWORD_MIN_LEN) {
-		if (clientNumNotify > -2) {
-#if JK2_GAME
-			trap_SendServerCommand(clientNumNotify, va("print \"^1Chosen password is too short. Minimum %d characters.\n\"", PASSWORD_MIN_LEN));
-#elif JK2_CGAME
-			CG_Printf("^1Chosen password is too short. Minimum %d characters.\n", PASSWORD_MIN_LEN);
-#endif
-		}
-		return qfalse;
-	}
-	if (len > PASSWORD_MAX_LEN) {
-		if (clientNumNotify > -2) {
-#if JK2_GAME
-			trap_SendServerCommand(clientNumNotify, va("print \"^1Chosen password is too long. Maximum %d characters.\n\"", PASSWORD_MAX_LEN));
-#elif JK2_CGAME
-			CG_Printf("^1Chosen password is too long. Maximum %d characters.\n", PASSWORD_MAX_LEN);
-#endif
-		}
-		return qfalse;
-	}
-
-	while (*s != '\0') {
-		if (*s >= 'a' && *s <= 'z'
-			|| *s >= 'A' && *s <= 'Z'
-			|| *s >= '0' && *s <= '9'
-			|| *s == '_'
-			|| *s == '-'
-			|| *s == '.'
-			|| *s == '/' // pws allow aa bit more leeway than usernames, as they will never be used plaintext, and more possible chars means more security
-			|| *s == '[' // cant allow % because netcode wont send it properly, nor ascii codes above 127
-			|| *s == ']' // cant allow " because it would break the command
-			|| *s == '(' // cant allow ^ because it would be annoying to type colored passwords
-			|| *s == ')' // cant allow ` or ~ because console may not allow to type them
-			|| *s == '<' // someone COULD of course try it with a .cfg file but let's keep things such that they can be typed ingame
-			|| *s == '>'
-			|| *s == '='
-			|| *s == ':'
-			|| *s == ';'
-			|| *s == '+'
-			|| *s == '*'
-			|| *s == '!'
-			|| *s == '#'
-			|| *s == '$'
-			|| *s == '&'
-			|| *s == '@'
-			|| *s == ','
-			|| *s == '?'
-			|| *s == '|'
-			|| *s == '\''
-			) {
-			// whitelist. ok.
-		}
-		else {
-			if (clientNumNotify > -2) {
-#if JK2_GAME
-				trap_SendServerCommand(clientNumNotify, "print \"^1Chosen password contains invalid characters. Allowed characters: A-Z a-z 0-9 _-.,/[]()<>=:;+*!#$&@'?| and no empty spaces.\n\"");
-#elif JK2_CGAME
-				Com_Printf("^1Chosen password contains invalid characters. Allowed characters: A-Z a-z 0-9 _-.,/[]()<>=:;+*!#$&@'?| and no empty spaces.\n");
-#endif
-			}
-			return qfalse;
-		}
-		s++;
-	}
-	return qtrue;
 }

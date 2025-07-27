@@ -8,83 +8,6 @@
 /*
 ===============================================================================
 
-ACTIVATORS
-
-===============================================================================
-*/
-
-// TODO something to unlink activator once he is no longer touching the thing?
-// TODO what if there's weird situations like entity being its own activator and idk. will it break sth?
-
-void G_ClearEntityActivator(gentity_t* ent) {
-	if (ent->activatorReal) {
-		int activatedConfirmCount = 0;
-		// remove ourselves from any existing linkage
-		if (ent->activatorReal && ent->activatorReal->activatedEntities == ent) {
-			ent->activatorReal->activatedEntities = ent->nextActivatedEntity;
-			activatedConfirmCount++;
-		}
-		else if (ent->activatorReal && ent->activatorReal->activatedEntities) {
-			gentity_t* actEnt = ent->activatorReal->activatedEntities;
-			// go through the list quick and remove ourselves.
-			while (actEnt) {
-				assert(actEnt->activator == ent->activatorReal);		// sanity checks
-				assert(actEnt->activatorReal == ent->activatorReal);	// sanity checks
-				if (actEnt->nextActivatedEntity == ent) {
-					actEnt->nextActivatedEntity = ent->nextActivatedEntity;
-					activatedConfirmCount++;
-				}
-				actEnt = actEnt->nextActivatedEntity;
-			}
-		}
-		assert(activatedConfirmCount == 1);
-		ent->activatorReal = NULL;
-	}
-	ent->nextActivatedEntity = NULL;
-}
-
-// allow all entities linked to this activator to run on servertime again, e.g.
-// - player disconnect
-// - player lagging
-// dont do this actually, its probably unsafe, because some places might rely on activator not being a NULL pointer
-void G_ClearActivatedEntities(gentity_t* activator) {
-	gentity_t* tmpActEnt; // tmp var
-	gentity_t* actEnt = activator->activatedEntities;
-	while (actEnt) {
-		tmpActEnt = actEnt->nextActivatedEntity;
-		assert(actEnt->activator == activator);		// sanity checks
-		assert(actEnt->activatorReal == activator);	// sanity checks
-		actEnt->activatorReal = NULL;
-		actEnt->nextActivatedEntity = NULL;
-		actEnt = tmpActEnt;
-	}
-	activator->activatedEntities = NULL;
-}
-
-int G_ResetActivatorTimeDelta(gentity_t* ent, gentity_t* activator) {
-	ent->activatorLevelTimeDelta = (activator && activator->client) ?( level.time - activator->client->pers.cmd.serverTime):0;
-	return level.time;//returns the correct time to use. at this point in time its just level.time. convenience feature.
-}
-
-// TODO what about order of entities? preserve it? atm last activated one will run first?
-void G_SetActivator(gentity_t* ent, gentity_t* activator) {
-	if (activator != ent->activatorReal && activator && activator->client) {
-		G_ResetActivatorTimeDelta(ent, activator); // todo: dont we have to do this anyway even if not activator->client?
-	}
-	G_ClearEntityActivator(ent);
-	ent->activatorReal = ent->activator = activator;
-
-	if (activator) {
-		// link ourselves into current activator.
-		ent->nextActivatedEntity = activator->activatedEntities;
-		activator->activatedEntities = ent;
-	}
-}
-
-
-/*
-===============================================================================
-
 PUSHMOVE
 
 ===============================================================================
@@ -123,9 +46,9 @@ gentity_t	*G_TestEntityPosition( gentity_t *ent ) {
 		{
 			vMax[2] = 1;
 		}
-		JP_Trace( &tr, ent->client->ps.origin, ent->r.mins, vMax, ent->client->ps.origin, ent->s.number, mask );
+		trap_Trace( &tr, ent->client->ps.origin, ent->r.mins, vMax, ent->client->ps.origin, ent->s.number, mask );
 	} else {
-		JP_Trace( &tr, ent->s.pos.trBase, ent->r.mins, ent->r.maxs, ent->s.pos.trBase, ent->s.number, mask );
+		trap_Trace( &tr, ent->s.pos.trBase, ent->r.mins, ent->r.maxs, ent->s.pos.trBase, ent->s.number, mask );
 	}
 	
 	if (tr.startsolid)
@@ -224,10 +147,7 @@ qboolean	G_TryPushingEntity( gentity_t *check, gentity_t *pusher, vec3_t move, v
 		VectorAdd (check->client->ps.origin, move, check->client->ps.origin);
 		VectorAdd (check->client->ps.origin, move2, check->client->ps.origin);
 		// make sure the client's view rotates when on a rotating mover
-
-		DF_PreDeltaAngleChange(check->client);
 		check->client->ps.delta_angles[YAW] += ANGLE2SHORT(amove[YAW]);
-		DF_PostDeltaAngleChange(check->client,qtrue);
 	}
 
 	// may have pushed them off an edge
@@ -344,7 +264,7 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 		check = &g_entities[ entityList[ e ] ];
 
 		// only push items and players
-		if ( /*check->s.eType != ET_ITEM &&*/ (check->s.eType != ET_PLAYER || check->client && check->client->noclip) && !check->physicsObject ) {
+		if ( /*check->s.eType != ET_ITEM &&*/ check->s.eType != ET_PLAYER && !check->physicsObject ) {
 			continue;
 		}
 
@@ -364,10 +284,6 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 			if (!G_TestEntityPosition (check)) {
 				continue;
 			}
-		}
-
-		if (check->client) {
-			check->client->pers.roll.segmentDisqualified = qtrue; // movers could influence rolls. disqualify from rollympics.
 		}
 
 		// the entity needs to be pushed
@@ -400,9 +316,7 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 			VectorCopy (p->origin, p->ent->s.pos.trBase);
 			VectorCopy (p->angles, p->ent->s.apos.trBase);
 			if ( p->ent->client ) {
-				DF_PreDeltaAngleChange(p->ent->client);
 				p->ent->client->ps.delta_angles[YAW] = p->deltayaw;
-				DF_PostDeltaAngleChange(p->ent->client, qtrue);
 				VectorCopy (p->origin, p->ent->client->ps.origin);
 			}
 			trap_LinkEntity (p->ent);
@@ -423,8 +337,6 @@ void G_MoverTeam( gentity_t *ent ) {
 	vec3_t		move, amove;
 	gentity_t	*part, *obstacle;
 	vec3_t		origin, angles;
-	int			nowTime = MOVERTIME_ENT(ent);
-	int			oldTime = MOVERTIMEOLD_ENT(ent);
 
 	obstacle = NULL;
 
@@ -434,8 +346,8 @@ void G_MoverTeam( gentity_t *ent ) {
 	pushed_p = pushed;
 	for (part = ent ; part ; part=part->teamchain) {
 		// get current position
-		BG_EvaluateTrajectory( &part->s.pos, nowTime, origin );
-		BG_EvaluateTrajectory( &part->s.apos, nowTime, angles );
+		BG_EvaluateTrajectory( &part->s.pos, level.time, origin );
+		BG_EvaluateTrajectory( &part->s.apos, level.time, angles );
 		VectorSubtract( origin, part->r.currentOrigin, move );
 		VectorSubtract( angles, part->r.currentAngles, amove );
 		if ( !G_MoverPush( part, move, amove, &obstacle ) ) {
@@ -446,10 +358,10 @@ void G_MoverTeam( gentity_t *ent ) {
 	if (part) {
 		// go back to the previous position
 		for ( part = ent ; part ; part = part->teamchain ) {
-			part->s.pos.trTime += nowTime - oldTime;
-			part->s.apos.trTime += nowTime - oldTime;
-			BG_EvaluateTrajectory( &part->s.pos, nowTime, part->r.currentOrigin );
-			BG_EvaluateTrajectory( &part->s.apos, nowTime, part->r.currentAngles );
+			part->s.pos.trTime += level.time - level.previousTime;
+			part->s.apos.trTime += level.time - level.previousTime;
+			BG_EvaluateTrajectory( &part->s.pos, level.time, part->r.currentOrigin );
+			BG_EvaluateTrajectory( &part->s.apos, level.time, part->r.currentAngles );
 			trap_LinkEntity( part );
 		}
 
@@ -464,7 +376,7 @@ void G_MoverTeam( gentity_t *ent ) {
 	for ( part = ent ; part ; part = part->teamchain ) {
 		// call the reached function if time is at or past end point
 		if ( part->s.pos.trType == TR_LINEAR_STOP ) {
-			if (nowTime >= part->s.pos.trTime + part->s.pos.trDuration ) {
+			if ( level.time >= part->s.pos.trTime + part->s.pos.trDuration ) {
 				if ( part->reached ) {
 					part->reached( part );
 				}
@@ -512,8 +424,7 @@ SetMoverState
 */
 void SetMoverState( gentity_t *ent, moverState_t moverState, int time ) {
 	vec3_t			delta;
-	float			f; 
-	int				nowTime = MOVERTIME_ENT(ent);
+	float			f;
 
 	ent->moverState = moverState;
 
@@ -542,7 +453,7 @@ void SetMoverState( gentity_t *ent, moverState_t moverState, int time ) {
 		ent->s.pos.trType = TR_LINEAR_STOP;
 		break;
 	}
-	BG_EvaluateTrajectory( &ent->s.pos, nowTime, ent->r.currentOrigin );
+	BG_EvaluateTrajectory( &ent->s.pos, level.time, ent->r.currentOrigin );	
 	trap_LinkEntity( ent );
 }
 
@@ -570,10 +481,7 @@ ReturnToPos1
 ================
 */
 void ReturnToPos1( gentity_t *ent ) {
-
-	G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
-
-	MatchTeam( ent, MOVER_2TO1, level.time); // technically we wanna use the activator (client) time if possible but since we just did the reset, it's the same as level.time
+	MatchTeam( ent, MOVER_2TO1, level.time );
 
 	// looping sound
 	ent->s.loopSound = ent->soundLoop;
@@ -591,16 +499,13 @@ Reached_BinaryMover
 ================
 */
 void Reached_BinaryMover( gentity_t *ent ) {
-	//int			nowTime = MOVERTIME_ENT(ent);  // technically we wanna use the activator (client) time if possible but since we will do a reset, it's the same as level.time
-	int				nowTime = level.time;// technically we wanna use the activator (client) time if possible but since we will do a reset, it's the same as level.time
 
 	// stop the looping sound
 	ent->s.loopSound = ent->soundLoop;
 
 	if ( ent->moverState == MOVER_1TO2 ) {
 		// reached pos2
-		nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
-		SetMoverState( ent, MOVER_POS2, nowTime);
+		SetMoverState( ent, MOVER_POS2, level.time );
 
 		// play sound
 		if ( ent->soundPos2 ) {
@@ -611,24 +516,22 @@ void Reached_BinaryMover( gentity_t *ent ) {
 
 		// return to pos1 after a delay
 		ent->think = ReturnToPos1;
-		ent->nextthink = nowTime + ent->wait;
+		ent->nextthink = level.time + ent->wait;
 
 		if (ent->delay)
 		{
 			ent->think = ReturnToPos1;
-			ent->nextthink = nowTime + ent->delay;
+			ent->nextthink = level.time + ent->delay;
 		}
 
 		// fire targets
 		if ( !ent->activator ) {
-			G_SetActivator(ent, ent);
-			//ent->activator = ent;
+			ent->activator = ent;
 		}
 		G_UseTargets( ent, ent->activator );
 	} else if ( ent->moverState == MOVER_2TO1 ) {
 		// reached pos1
-		nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
-		SetMoverState( ent, MOVER_POS1, nowTime);
+		SetMoverState( ent, MOVER_POS1, level.time );
 
 		// play sound
 		if ( ent->soundPos1 ) {
@@ -639,7 +542,7 @@ void Reached_BinaryMover( gentity_t *ent ) {
 
 		if (ent->delay)
 		{ //it won't go back up again this way until after the delay
-			ent->last_move_time = nowTime + ent->delay;
+			ent->last_move_time = level.time + ent->delay;
 		}
 
 		// close areaportals
@@ -659,8 +562,7 @@ Use_BinaryMover
 */
 void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 	int		total;
-	int		partial; 
-	int		nowTime;// = ACTIVATORTIME(ent->activatorReal);
+	int		partial;
 
 	// only the master should be used
 	if ( ent->flags & FL_TEAMSLAVE ) {
@@ -668,78 +570,12 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 		return;
 	}
 
-#if 0 // japro: MAYBE do this? not sure i like it
-	if (activator->client &&
-		activator->client->sess.raceMode &&
-		(!other || !(other->spawnflags & 4)) &&
-		!(ent->spawnflags & 256) && //Let mapmaker bypass this...
-		((ent->pos2[2] - ent->pos1[2]) > 128) &&
-		(activator->client->ps.origin[2] < (ent->r.absmax[2] + 96)) &&
-		(activator->client->ps.origin[2] > (ent->r.absmax[2] - 96))) //We are in racemode, and the door/plat/ele moves upwawrds. Ideally could also check for angle == -1 or -2 but where is that..
-	{ //Turn this ele into a jumppad.  Also only do this if the trigger was not a use button
-		float height, time, strength;
-
-		//No good way to get bottom origin of the mover..? Could be weird geometry... so just assume the top of the ele model in starting position is the "bottom" of the ele.
-		/*
-		float jumpHeight;
-
-		switch (activator->client->sess.movementStyle)
-		{
-			case 0://Siege
-			case 1://JKA
-			case 2://QW
-				jumpHeight = forceJumpHeight[activator->client->ps.fd.forcePowerLevel[FP_LEVITATION]];
-				break;
-			case 3://CPM
-			case 4://Q3
-				jumpHeight = 64;//whatever
-				break;
-			case 5://PJK
-				jumpHeight = forceJumpHeight[activator->client->ps.fd.forcePowerLevel[FP_LEVITATION]];
-				break;
-			case 6://WSW
-				jumpHeight = 72;//whatever
-				break;
-			case 7://RJQ3
-			case 8://RJCPM
-				jumpHeight = 260;//whatever
-				break;
-			default:
-				jumpHeight = 0;
-				break;
-		}
-		*/
-
-		//ent->damage = 0; //Temp
-
-		//trap->Print("assumed ele starting height: %.2f, pos1: %2f, pos2: %2f, Our Height: %.2f\n", ent->r.absmax[2], ent->pos1[2], ent->pos2[2], activator->client->ps.origin[2]); //Lets assume the ele starts there...
-
-		height = ent->pos2[2] - ent->pos1[2] + 64; //Send them up a lil higher just to be safe
-		time = sqrt(height / (.5f * g_gravity.value));
-		if (!time)
-			return; //bua ?
-		strength = (height / time) * 2.0f;
-
-		activator->client->ps.velocity[0] = activator->client->ps.velocity[1] = 0; //reset our xyspeed... meh
-		if (strength > activator->client->ps.velocity[2]) //Only apply the jumppad if it would speed them up
-			activator->client->ps.velocity[2] = strength;
-
-		//trap->Print("Height: %.2f, time: %.2fstrength: %.2f\n", height, time, strength);
-
-		return;
-	}
-#endif
-
-	//ent->activator = activator;
-	G_SetActivator(ent, activator); 
-	nowTime = MOVERTIME_ENT(ent);
+	ent->activator = activator;
 
 	if ( ent->moverState == MOVER_POS1 ) {
 		// start moving 50 msec later, becase if this was player
 		// triggered, level.time hasn't been advanced yet
-
-		nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
-		MatchTeam( ent, MOVER_1TO2, nowTime + 50 );
+		MatchTeam( ent, MOVER_1TO2, level.time + 50 );
 
 		// starting sound
 		if ( ent->sound1to2 ) {
@@ -759,21 +595,19 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 	// if all the way up, just delay before coming down
 	if ( ent->moverState == MOVER_POS2 && other && other->client ) {
 		//rww - don't delay if we're not being used by a player
-		ent->nextthink = nowTime + ent->wait;
+		ent->nextthink = level.time + ent->wait;
 		return;
 	}
 
 	// only partway down before reversing
 	if ( ent->moverState == MOVER_2TO1 ) {
-		// hmm should we update the client time here? maybe not.
-		//nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		total = ent->s.pos.trDuration;
-		partial = nowTime - ent->s.pos.trTime;
+		partial = level.time - ent->s.pos.trTime;
 		if ( partial > total ) {
 			partial = total;
 		}
 
-		MatchTeam( ent, MOVER_1TO2, nowTime - ( total - partial ) );
+		MatchTeam( ent, MOVER_1TO2, level.time - ( total - partial ) );
 
 		if ( ent->sound1to2 ) {
 			G_AddEvent( ent, EV_GENERAL_SOUND, ent->sound1to2 );
@@ -783,15 +617,13 @@ void Use_BinaryMover( gentity_t *ent, gentity_t *other, gentity_t *activator ) {
 
 	// only partway up before reversing
 	if ( ent->moverState == MOVER_1TO2 ) {
-		// hmm should we update the client time here? maybe not.
-		//nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
 		total = ent->s.pos.trDuration;
-		partial = nowTime - ent->s.pos.trTime;
+		partial = level.time - ent->s.pos.trTime;
 		if ( partial > total ) {
 			partial = total;
 		}
 
-		MatchTeam( ent, MOVER_2TO1, nowTime - ( total - partial ) );
+		MatchTeam( ent, MOVER_2TO1, level.time - ( total - partial ) );
 
 		if ( ent->sound2to1 ) {
 			G_AddEvent( ent, EV_GENERAL_SOUND, ent->sound2to1 );
@@ -817,8 +649,6 @@ void InitMover( gentity_t *ent ) {
 	vec3_t		color;
 	qboolean	lightSet, colorSet;
 	char		*sound;
-
-	level.nonDeterministicEntities++;
 
 	// Tunnel high modelindex values through time2
 	MV_ModelindexToTime2( ent );
@@ -956,24 +786,16 @@ Touch_DoorTriggerSpectator
 static void Touch_DoorTriggerSpectator( gentity_t *ent, gentity_t *other, trace_t *trace ) {
 	int i, axis;
 	vec3_t origin, dir, angles;
-	int extraForBoundingBox = 15;
-
-	if (other->client && other->client->noclip) {
-		return;
-	}
 
 	axis = ent->count;
 	VectorClear(dir);
-	if (axis == 2) {
-		extraForBoundingBox = 40; // TODO depending on above/below?
-	}
 	if (fabs(other->s.origin[axis] - ent->r.absmax[axis]) <
 		fabs(other->s.origin[axis] - ent->r.absmin[axis])) {
-		origin[axis] = ent->r.absmin[axis] - 10 - extraForBoundingBox;
+		origin[axis] = ent->r.absmin[axis] - 10;
 		dir[axis] = -1;
 	}
 	else {
-		origin[axis] = ent->r.absmax[axis] + 10 + extraForBoundingBox; // TA our bounding box is 15 wide
+		origin[axis] = ent->r.absmax[axis] + 10;
 		dir[axis] = 1;
 	}
 	for (i = 0; i < 3; i++) {
@@ -1015,7 +837,6 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 	gentity_t		*other;
 	vec3_t		mins, maxs;
 	int			i, best;
-	int			nowTime = MOVERTIME_ENT(ent);
 
 	if ( !ent ) return;
 
@@ -1049,7 +870,7 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 
 	// create a trigger with this size
 	other = G_Spawn ();
-	G_SetClassName(other, "door_trigger");
+	other->classname = "door_trigger";
 	VectorCopy (mins, other->r.mins);
 	VectorCopy (maxs, other->r.maxs);
 	other->parent = ent;
@@ -1059,13 +880,11 @@ void Think_SpawnNewDoorTrigger( gentity_t *ent ) {
 	other->count = best;
 	trap_LinkEntity (other);
 
-	nowTime = G_ResetActivatorTimeDelta(ent, ent->activatorReal); // if moving on client time, reset before every mover state change
-	MatchTeam( ent, ent->moverState, nowTime);
+	MatchTeam( ent, ent->moverState, level.time );
 }
 
 void Think_MatchTeam( gentity_t *ent ) {
-	int		nowTime = MOVERTIME_ENT(ent);
-	MatchTeam( ent, ent->moverState, nowTime);
+	MatchTeam( ent, ent->moverState, level.time );
 }
 
 
@@ -1095,8 +914,7 @@ void SP_func_door (gentity_t *ent) {
 	vec3_t	size;
 	float	lip;
 	char	*sound;
-	int		soundon = 0; 
-	int		nowTime = MOVERTIME_ENT(ent);
+	int		soundon = 0;
 
 	G_SpawnInt("sound", "1", &soundon);
 
@@ -1158,7 +976,7 @@ void SP_func_door (gentity_t *ent) {
 
 	InitMover( ent );
 
-	ent->nextthink = nowTime + FRAMETIME;
+	ent->nextthink = level.time + FRAMETIME;
 
 	if ( ! (ent->flags & FL_TEAMSLAVE ) ) {
 		int health;
@@ -1166,7 +984,6 @@ void SP_func_door (gentity_t *ent) {
 		G_SpawnInt( "health", "0", &health );
 		if ( health ) {
 			ent->takedamage = qtrue;
-			ent->damageindefrag = qtrue; // we can shoot-open doors in defrag. or use force lightning :)
 		}
 		if ( ent->targetname || health ) {
 			// non touch/shoot doors
@@ -1193,7 +1010,6 @@ Don't allow decent if a living player is on it
 ===============
 */
 void Touch_Plat( gentity_t *ent, gentity_t *other, trace_t *trace ) {
-	int			nowTime = MOVERTIME_ENT(ent);
 	if ( !other->client || other->client->ps.stats[STAT_HEALTH] <= 0 ) {
 		return;
 	}
@@ -1202,14 +1018,14 @@ void Touch_Plat( gentity_t *ent, gentity_t *other, trace_t *trace ) {
 	{ //This means I don't care if you're touching me, I already intend to go back down on a set interval.
 		return;
 	}
-	if (other && other->client && ent->delay && ent->moverState == MOVER_POS1 && ent->nextthink >= nowTime)
+	if (other && other->client && ent->delay && ent->moverState == MOVER_POS1 && ent->nextthink >= level.time)
 	{
 		return;
 	}
 
 	// delay return-to-pos1 by one second
 	if ( ent->moverState == MOVER_POS2 ) {
-		ent->nextthink = nowTime + 1000;
+		ent->nextthink = level.time + 1000;
 	}
 }
 
@@ -1221,13 +1037,12 @@ If the plat is at the bottom position, start it going up
 ===============
 */
 void Touch_PlatCenterTrigger(gentity_t *ent, gentity_t *other, trace_t *trace ) {
-	int			nowTime = MOVERTIME_ENT(ent->parent);
 	if ( !other->client ) {
 		return;
 	}
 
 	if ( ent->parent->moverState == MOVER_POS1 ) {
-		if (ent->parent->delay && ent->parent->last_move_time >= nowTime)
+		if (ent->parent->delay && ent->parent->last_move_time >= level.time)
 		{
 			return;
 		}
@@ -1253,7 +1068,7 @@ void SpawnPlatTrigger( gentity_t *ent ) {
 	// the middle trigger will be a thin trigger just
 	// above the starting position
 	trigger = G_Spawn();
-	G_SetClassName(trigger, "plat_trigger");
+	trigger->classname = "plat_trigger";
 	trigger->touch = Touch_PlatCenterTrigger;
 	trigger->r.contents = CONTENTS_TRIGGER;
 	trigger->parent = ent;
@@ -1490,8 +1305,7 @@ The wait time at a corner has completed, so start moving again
 ===============
 */
 void Think_BeginMoving( gentity_t *ent ) {
-	int			nowTime = MOVERTIME_ENT(ent);
-	ent->s.pos.trTime = nowTime;
+	ent->s.pos.trTime = level.time;
 	ent->s.pos.trType = TR_LINEAR_STOP;
 }
 
@@ -1505,7 +1319,6 @@ void Reached_Train( gentity_t *ent ) {
 	float			speed;
 	vec3_t			move;
 	float			length;
-	int			nowTime = MOVERTIME_ENT(ent);
 
 	// copy the apropriate values
 	next = ent->nextTrain;
@@ -1542,11 +1355,11 @@ void Reached_Train( gentity_t *ent ) {
 	ent->s.loopSound = next->soundLoop;
 
 	// start it going
-	SetMoverState( ent, MOVER_1TO2, nowTime);
+	SetMoverState( ent, MOVER_1TO2, level.time );
 
 	// if there is a "wait" value on the target, don't start moving yet
 	if ( next->wait ) {
-		ent->nextthink = nowTime + next->wait * 1000;
+		ent->nextthink = level.time + next->wait * 1000;
 		ent->think = Think_BeginMoving;
 		ent->s.pos.trType = TR_STATIONARY;
 	}
@@ -1636,8 +1449,7 @@ entities and damage them on contact as well.
 "light"		constantLight radius
 */
 void SP_func_train (gentity_t *self) {
-	int			nowTime = MOVERTIME_ENT(self);
-	VectorClear (self->s.angles); 
+	VectorClear (self->s.angles);
 
 	if (self->spawnflags & TRAIN_BLOCK_STOPS) {
 		self->damage = 0;
@@ -1664,7 +1476,7 @@ void SP_func_train (gentity_t *self) {
 
 	// start trains on the second frame, to make sure their targets have had
 	// a chance to spawn
-	self->nextthink = nowTime + FRAMETIME;
+	self->nextthink = level.time + FRAMETIME;
 	self->think = Think_SetupTrainTargets;
 }
 
@@ -1918,14 +1730,11 @@ void BrushThink(gentity_t *self)
 
 void BreakableBrushUse(gentity_t *self, gentity_t *other, gentity_t *activator)
 {
-	int			nowTime;// = ACTIVATORTIME(self->activatorReal);
-	//self->activator = activator;
-	G_SetActivator(self , activator);
-	nowTime = MOVERTIME_ENT(self);
+	self->activator = activator;
 	self->enemy = other;
 
 	self->think = BrushThink;
-	self->nextthink = nowTime + self->wait;
+	self->nextthink = level.time + self->wait;
 }
 
 /*QUAKED func_breakable (0 .5 .8) ? INVINCIBLE
@@ -2080,11 +1889,6 @@ void GlassDie(gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int da
 		return;
 	}
 
-	if (g_defrag.integer) {
-		self->health = 1;
-		return; // dont destroy glass in defrag. want runs to be consistent
-	}
-
 	self->bolt_Head = 1;
 
 	dif[0] = (self->r.absmax[0]+self->r.absmin[0])/2;
@@ -2130,10 +1934,8 @@ void GlassPain(gentity_t *self, gentity_t *attacker, int damage)
 	//Make "cracking" sound?
 }
 
-void GlassUse(gentity_t *self, gentity_t *other, gentity_t *activator) 
+void GlassUse(gentity_t *self, gentity_t *other, gentity_t *activator)
 {
-	// TODO Defrag allow this? Since GlassDie is blocked in defrag..
-
 	vec3_t temp1, temp2;
 
 	//no direct object to blame for the break, so fill the values with whatever
@@ -2199,8 +2001,6 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator);
 extern gentity_t	*G_TestEntityPosition( gentity_t *ent );
 void func_wait_return_solid( gentity_t *self )
 {
-	int			nowTime = MOVERTIME_ENT(self);
-
 	//once a frame, see if it's clear.
 	self->clipmask = CONTENTS_BODY;
 	if ( !(self->spawnflags&16) || G_TestEntityPosition( self ) == NULL )
@@ -2224,7 +2024,7 @@ void func_wait_return_solid( gentity_t *self )
 	{
 		self->clipmask = 0;
 		self->think = func_wait_return_solid;
-		self->nextthink = nowTime + FRAMETIME;
+		self->nextthink = level.time + FRAMETIME;
 	}
 }
 
@@ -2239,9 +2039,7 @@ void func_usable_think( gentity_t *self )
 }
 
 void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
-{
-	int			nowTime = MOVERTIME_ENT(self); // todo need any reset here?
-	//Toggle on and off
+{//Toggle on and off
 	//FIXME: Animation?
 	/*
 	if ( self->s.eFlags & EF_SHADER_ANIM )
@@ -2272,7 +2070,7 @@ void func_usable_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 		if ( self->wait )
 		{
 			self->think = func_usable_think;
-			self->nextthink = nowTime + ( self->wait * 1000 );
+			self->nextthink = level.time + ( self->wait * 1000 );
 		}
 
 		return;

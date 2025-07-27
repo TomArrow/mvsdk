@@ -117,8 +117,6 @@ static void UpdateIPBans (void)
 	trap_Cvar_Set( "g_banIPs", iplist );
 }
 
-
-
 /*
 =================
 G_FilterPacket
@@ -205,60 +203,6 @@ void G_ProcessIPBans(void)
 
 /*
 =================
-SvCmd_TestTrace_f
-=================
-*/
-void SvCmd_TestTrace_f() {
-	vec3_t		origin, origin2;
-	vec3_t		mins, maxs;
-	qboolean	precise;
-	int			contents;
-	char		buffer[MAX_TOKEN_CHARS];
-	int			i;
-	trace_t		trace;
-
-	if (trap_Argc() != 15) {
-		Com_Printf("usage: testtrace x y z x y z mins[0] mins[1] mins[2] maxs[0] maxs[1] maxs[2] contents precise(0 1)\n");
-		return;
-	}
-
-	for (i = 0; i < 3; i++) {
-		trap_Argv(i + 1, buffer, sizeof(buffer));
-		origin[i] = atof(buffer);
-	}
-	for (i = 0; i < 3; i++) {
-		trap_Argv(i + 4, buffer, sizeof(buffer));
-		origin2[i] = atof(buffer);
-	}
-	for (i = 0; i < 3; i++) {
-		trap_Argv(i + 7, buffer, sizeof(buffer));
-		mins[i] = atof(buffer);
-	}
-	for (i = 0; i < 3; i++) {
-		trap_Argv(i + 10, buffer, sizeof(buffer));
-		maxs[i] = atof(buffer);
-	}
-
-	trap_Argv(13, buffer, sizeof(buffer));
-	contents = atoi(buffer);
-
-	trap_Argv(14, buffer, sizeof(buffer));
-	precise = atoi(buffer);
-
-	memset(&trace, 0, sizeof(trace_t));
-	if (precise) {
-		JP_TracePrecise(&trace,origin,mins,maxs,origin2,-1,contents);
-	}
-	else {
-		JP_Trace(&trace, origin, mins, maxs, origin2, -1, contents);
-	}
-
-	Com_Printf("startsolid: %d, allsolid: %d, contents: %d, endpos: %f %f %f, entitynum %d, fraction %f, normal: %f %f %f\n",trace.startsolid,trace.allsolid,trace.contents,trace.endpos[0], trace.endpos[1], trace.endpos[2],trace.entityNum,trace.fraction,trace.plane.normal[0],trace.plane.normal[1],trace.plane.normal[2]);
-
-}
-
-/*
-=================
 Svcmd_AddIP_f
 =================
 */
@@ -312,110 +256,67 @@ void Svcmd_RemoveIP_f (void)
 	G_Printf ( "Didn't find %s.\n", str );
 }
 
-
-/*
-===================
-Svcmd_EntityInfo_f
-===================
-*/
-void	Svcmd_EntityInfo_f(void) {
-	int totalents;
-	int inuse;
-	int i;
-	gentity_t* e;
-
-	inuse = 0;
-	for (e = &g_entities[0], i = 0; i < level.num_entities; e++, i++) {
-		if (e->inuse) {
-			inuse++;
-		}
-	}
-	G_Printf("Normal entity slots in use: %i/%i (%i slots allocated)\n", inuse, MAX_GENTITIES, level.num_entities);
-	totalents = inuse;
-
-	inuse = 0;
-	for (e = &g_entities[MAX_GENTITIES], i = 0; i < level.num_logicalents; e++, i++) {
-		if (e->inuse) {
-			inuse++;
-		}
-	}
-	G_Printf("Logical entity slots in use: %i/%i (%i slots allocated)\n", inuse, MAX_LOGICENTITIES, level.num_logicalents);
-	totalents += inuse;
-	G_Printf("Total entity count: %i/%i\n", totalents, MAX_ENTITIESTOTAL);
-}
-
-
 /*
 ===================
 Svcmd_EntityList_f
 ===================
 */
 void	Svcmd_EntityList_f (void) {
-	int			e=0;
-	int			i;
-	int			max = level.num_entities;
-	gentity_t		*check = g_entities;
+	int			e;
+	gentity_t		*check;
 
-	for (i = 0; i < 2; i++) {
-		if (i) {
-			check = &g_entities[MAX_GENTITIES];
-			e = MAX_GENTITIES;
-			max = MAX_GENTITIES+ level.num_logicalents;
-
-			G_Printf("\nLogical:\n");
+	check = g_entities+1;
+	for (e = 0; e < level.num_entities ; e++, check++) {
+		if ( !check->inuse ) {
+			continue;
 		}
-		for (; e < max; e++, check++) {
-			if (!check->inuse) {
-				continue;
-			}
-			G_Printf("%3i:", e);
-			switch (check->s.eType) {
-			case ET_GENERAL:
-				G_Printf("ET_GENERAL          ");
-				break;
-			case ET_PLAYER:
-				G_Printf("ET_PLAYER           ");
-				break;
-			case ET_ITEM:
-				G_Printf("ET_ITEM             ");
-				break;
-			case ET_MISSILE:
-				G_Printf("ET_MISSILE          ");
-				break;
-			case ET_MOVER:
-				G_Printf("ET_MOVER            ");
-				break;
-			case ET_BEAM:
-				G_Printf("ET_BEAM             ");
-				break;
-			case ET_PORTAL:
-				G_Printf("ET_PORTAL           ");
-				break;
-			case ET_SPEAKER:
-				G_Printf("ET_SPEAKER          ");
-				break;
-			case ET_PUSH_TRIGGER:
-				G_Printf("ET_PUSH_TRIGGER     ");
-				break;
-			case ET_TELEPORT_TRIGGER:
-				G_Printf("ET_TELEPORT_TRIGGER ");
-				break;
-			case ET_INVISIBLE:
-				G_Printf("ET_INVISIBLE        ");
-				break;
-			case ET_GRAPPLE:
-				G_Printf("ET_GRAPPLE          ");
-				break;
-			default:
-				G_Printf("%3i                 ", check->s.eType);
-				break;
-			}
-
-			if (check->classname) {
-				G_Printf("%s", check->classname);
-			}
-			G_Printf("\n");
+		G_Printf("%3i:", e);
+		switch ( check->s.eType ) {
+		case ET_GENERAL:
+			G_Printf("ET_GENERAL          ");
+			break;
+		case ET_PLAYER:
+			G_Printf("ET_PLAYER           ");
+			break;
+		case ET_ITEM:
+			G_Printf("ET_ITEM             ");
+			break;
+		case ET_MISSILE:
+			G_Printf("ET_MISSILE          ");
+			break;
+		case ET_MOVER:
+			G_Printf("ET_MOVER            ");
+			break;
+		case ET_BEAM:
+			G_Printf("ET_BEAM             ");
+			break;
+		case ET_PORTAL:
+			G_Printf("ET_PORTAL           ");
+			break;
+		case ET_SPEAKER:
+			G_Printf("ET_SPEAKER          ");
+			break;
+		case ET_PUSH_TRIGGER:
+			G_Printf("ET_PUSH_TRIGGER     ");
+			break;
+		case ET_TELEPORT_TRIGGER:
+			G_Printf("ET_TELEPORT_TRIGGER ");
+			break;
+		case ET_INVISIBLE:
+			G_Printf("ET_INVISIBLE        ");
+			break;
+		case ET_GRAPPLE:
+			G_Printf("ET_GRAPPLE          ");
+			break;
+		default:
+			G_Printf("%3i                 ", check->s.eType);
+			break;
 		}
+
+		if ( check->classname ) {
+			G_Printf("%s", check->classname);
+		}
+		G_Printf("\n");
 	}
 }
 
@@ -479,150 +380,6 @@ void	Svcmd_ForceTeam_f( void ) {
 	SetTeam( &g_entities[cl - level.clients], str );
 }
 
-/*
-===================
-Svcmd_NumBehavior_f
-
-writes a debug file about number behavior things to compare qvm and libs
-===================
-*/
-void	Svcmd_NumBehavior_f( void ) {
-	gclient_t		*cl;
-	char			str[MAX_TOKEN_CHARS];
-	fileHandle_t	f;
-	int				i;
-	signed char		sb;
-	byte			b;
-	int				intn;
-	unsigned int	uintn;
-	float			fValue;
-
-	if (trap_Argc() < 2) {
-		Com_Printf("specify a filename.");
-		return;
-	}
-
-	trap_Argv(1, str, sizeof(str));
-
-	trap_FS_FOpenFile(str, &f, FS_WRITE);
-
-	if (!f) {
-		Com_Printf("unable to open file for writing: %s.",str);
-		return;
-	}
-
-#ifdef Q3_VM
-	Com_sprintf(str, sizeof(str), "\nSvcmd_NumBehavior_f (VM)\n");
-	trap_FS_Write(str, strlen(str), f);
-#else
-	Com_sprintf(str, sizeof(str), "\nSvcmd_NumBehavior_f\n");
-	trap_FS_Write(str, strlen(str), f);
-#endif
-
-	Com_sprintf(str, sizeof(str), "\nangle2short\n");
-	trap_FS_Write(str, strlen(str), f);
-
-	for (i = -100000; i < 100000; i++) {
-		fValue = SHORT2ANGLE(i);
-		Com_sprintf(str, sizeof(str), "%d angle2short %d, float angle %f, (from float) %d\n",i,i & 65535, fValue, ANGLE2SHORT(fValue));
-		trap_FS_Write(str,strlen(str),f);
-	}
-
-	Com_sprintf(str, sizeof(str), "\nsbyte2byte\n");
-	trap_FS_Write(str, strlen(str), f);
-
-
-	for (i = -128; i <= 127; i++) {
-		sb = i;
-		intn = (int)((byte)sb << 24);
-		uintn = (unsigned int)intn;
-		Com_sprintf(str, sizeof(str), "%d (%d) sbyte 2 byte %d, bytecast and << 24 %d to int, bytecast and << 24 %u to uint, bytecast and << 24 %u to int and then to uint, same and >> 24 again %u, same and back to sbyte %d, int >> 24 %d, and cast to sbyte %d\n", i,(int)sb,(int)(byte)sb, intn,(unsigned int)( (byte)sb << 24), uintn, (uintn >> 24), (int)(signed char)(uintn >> 24), intn>>24, (int)(signed char)(intn>>24));
-		trap_FS_Write(str, strlen(str), f);
-	}
-
-	Com_sprintf(str, sizeof(str), "\nsbyte2byte (using unsigned char)\n");
-	trap_FS_Write(str, strlen(str), f);
-
-
-	for (i = -128; i <= 127; i++) {
-		sb = i;
-		intn = (int)((unsigned char)sb << 24);
-		uintn = (unsigned int)intn;
-		Com_sprintf(str, sizeof(str), "%d (%d) sbyte 2 byte %d, bytecast and << 24 %d to int, bytecast and << 24 %u to uint, bytecast and << 24 %u to int and then to uint, same and >> 24 again %u, same and back to sbyte %d, int >> 24 %d, and cast to sbyte %d\n", i,(int)sb,(int)(unsigned char)sb, intn,(unsigned int)( (unsigned char)sb << 24), uintn, (uintn >> 24), (int)(signed char)(uintn >> 24), intn>>24, (int)(signed char)(intn>>24));
-		trap_FS_Write(str, strlen(str), f);
-	}
-
-	Com_sprintf(str, sizeof(str), "\nsbyte2byte (realvar)\n");
-	trap_FS_Write(str, strlen(str), f);
-
-
-	for (i = -128; i <= 127; i++) {
-		sb = i;
-		b = (byte)sb;
-		intn = (int)(b << 24);
-		uintn = (unsigned int)intn;
-		Com_sprintf(str, sizeof(str), "%d (%d) sbyte 2 byte %d, bytecast and << 24 %d to int, bytecast and << 24 %u to uint, bytecast and << 24 %u to int and then to uint, same and >> 24 again %u, same and back to sbyte %d, int >> 24 %d, and cast to sbyte %d\n", i,(int)sb,(int)b, intn,(unsigned int)( b << 24), uintn, (uintn >> 24), (int)(signed char)(uintn >> 24), intn>>24, (int)(signed char)(intn>>24));
-		trap_FS_Write(str, strlen(str), f);
-	}
-
-	Com_Printf("done.");
-
-	trap_FS_FCloseFile(f);
-}
-
-void Svcmd_ResetScores_f(void) {
-	int i;
-	//gclient_t	*cl;
-	gentity_t* ent;
-
-	//Respawn each player for forcepower updates?
-	//bg_legalizeforcepowers
-
-	for (i = 0; i < level.numConnectedClients; i++) {
-		//cl=&level.clients[level.sortedClients[i]];
-		ent = &g_entities[level.sortedClients[i]];
-
-		if (ent->inuse && ent->client) {
-			//ent->client->ps.fd.forceDoInit = 1;
-
-			//if (ent->client->sess.sessionTeam != TEAM_SPECTATOR && !ent->client->sess.raceMode) {
-				//G_Kill( ent ); //respawn them
-			//}
-
-			ent->client->ps.persistant[PERS_SCORE] = 0;
-			ent->client->ps.persistant[PERS_HITS] = 0;
-			ent->client->ps.persistant[PERS_KILLED] = 0;
-			ent->client->ps.persistant[PERS_IMPRESSIVE_COUNT] = 0;
-			ent->client->ps.persistant[PERS_EXCELLENT_COUNT] = 0;
-			ent->client->ps.persistant[PERS_DEFEND_COUNT] = 0;
-			ent->client->ps.persistant[PERS_ASSIST_COUNT] = 0;
-			ent->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] = 0;
-			ent->client->ps.persistant[PERS_CAPTURES] = 0;
-
-			//ent->client->pers.stats.damageGiven = 0;
-			//ent->client->pers.stats.damageTaken = 0;
-			//ent->client->pers.stats.teamKills = 0;
-			//ent->client->pers.stats.kills = 0;
-			//ent->client->pers.stats.teamHealGiven = 0;
-			//ent->client->pers.stats.teamEnergizeGiven = 0;
-			//ent->client->pers.stats.enemyDrainDamage = 0;
-			//ent->client->pers.stats.teamDrainDamage = 0;
-			ent->client->accuracy_shots = 0;
-			ent->client->accuracy_hits = 0;
-
-			ent->client->ps.fd.suicides = 0;
-			//Cmd_ForceChange_f(ent);
-			//WP_InitForcePowers( ent );
-		}
-	}
-
-	level.teamScores[TEAM_RED] = 0;
-	level.teamScores[TEAM_BLUE] = 0;
-	CalculateRanks();
-	trap_SendServerCommand(-1, "print \"Scores have been reset.\n\"");
-}
-
-
 char	*ConcatArgs( int start );
 
 /*
@@ -636,18 +393,8 @@ qboolean	ConsoleCommand( void ) {
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
 
-	if ( Q_stricmp (cmd, "testtrace") == 0 ) {
-		SvCmd_TestTrace_f();
-		return qtrue;
-	}
-
 	if ( Q_stricmp (cmd, "entitylist") == 0 ) {
 		Svcmd_EntityList_f();
-		return qtrue;
-	}
-
-	if ( Q_stricmp (cmd, "entityinfo") == 0 ) {
-		Svcmd_EntityInfo_f();
 		return qtrue;
 	}
 
@@ -658,11 +405,6 @@ qboolean	ConsoleCommand( void ) {
 
 	if (Q_stricmp (cmd, "game_memory") == 0) {
 		Svcmd_GameMem_f();
-		return qtrue;
-	}
-
-	if (Q_stricmp (cmd, "numbehavior") == 0) {
-		Svcmd_NumBehavior_f();
 		return qtrue;
 	}
 

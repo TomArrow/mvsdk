@@ -7,17 +7,6 @@ typedef int intptr_t;
 
 typedef unsigned int size_t;
 
-#ifndef VM_STDINT
-    #define VM_STDINT
-    typedef unsigned char uint8_t;
-    typedef unsigned short uint16_t;
-    typedef unsigned int uint32_t;
-
-    typedef signed char int8_t;
-    typedef signed short int16_t;
-    typedef signed int int32_t;
-#endif
-
 typedef char *  va_list;
 #define _INTSIZEOF(n)   ( (sizeof(n) + sizeof(int) - 1) & ~(sizeof(int) - 1) )
 #define va_start(ap,v)  ( ap = (va_list)&v + _INTSIZEOF(v) )
@@ -85,7 +74,6 @@ int sscanf( const char *buffer, const char *fmt, ... ) __attribute__ ((format (s
 void *memmove( void *dest, const void *src, size_t count );
 void *memset( void *dest, int c, size_t count );
 void *memcpy( void *dest, const void *src, size_t count );
-int memcmp (const void *m1,	const void *m2,	size_t n);
 
 // Math functions
 double ceil( double x );
@@ -98,40 +86,8 @@ double tan( double x );
 int abs( int n );
 double fabs( double x );
 double acos( double x );
-double asin( double x );
 float roundf( float x );
 float frexpf( float x, int *exp );
 float expf( float x );
 float logf( float a );
 float powf( float x, float y );
-
-float roundf(float x);
-float frexpf(float x, int *exp);
-float logf(float a);
-float powf(float x, float y);
-
-float copysignf(float x, float y);
-
-void *
-bsearch (const void *key,
-	const void *base,
-	size_t nmemb,
-	size_t size,
-	int (*compar) (const void *, const void *));
-
-#define sqrtf sqrt
-#define sinf sin
-#define cosf cos
-#define tanf tan
-#define fabsf fabs
-
-#define FP_NAN         0
-#define FP_INFINITE    1
-#define FP_ZERO        2
-#define FP_SUBNORMAL   3
-#define FP_NORMAL      4
-
-#define INT32_C(x)	(x##L)
-#define UINT32_C(x)	(x##UL)
-
-#define ERANGE          34

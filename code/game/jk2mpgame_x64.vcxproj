@@ -1,0 +1,476 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{014B17DE-3B28-33E2-8B70-5D0B8C336449}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Platform>x64</Platform>
+    <ProjectName>Game Module</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\out\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">jk2mpgame_x64.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">jk2mpgame_x64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\out\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">jk2mpgame_x64.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">jk2mpgame_x64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\out\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">jk2mpgame_x64.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">jk2mpgame_x64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\out\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">jk2mpgame_x64.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">jk2mpgame_x64</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.dll</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;DEBUG;CMAKE_INTDIR="Debug";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;DEBUG;CMAKE_INTDIR=\"Debug\";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;DEBUG;CMAKE_INTDIR="Debug";jk2mpgame_x64_EXPORTS;</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>C:/Users/david/Documents/Workspace/tom_jk2mv/out/Debug/jk2mpgame_x64.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>C:/Users/david/Documents/Workspace/tom_jk2mv/out/Debug/jk2mpgame_x64.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem></SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild></MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="Release";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;FINAL_BUILD;NDEBUG;CMAKE_INTDIR=\"Release\";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="Release";jk2mpgame_x64_EXPORTS;</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>C:/Users/david/Documents/Workspace/tom_jk2mv/out/Release/jk2mpgame_x64.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>C:/Users/david/Documents/Workspace/tom_jk2mv/out/Release/jk2mpgame_x64.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem></SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <MinimalRebuild></MinimalRebuild>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="MinSizeRel";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="MinSizeRel";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>C:/Users/david/Documents/Workspace/tom_jk2mv/out/MinSizeRel/jk2mpgame_x64.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>C:/Users/david/Documents/Workspace/tom_jk2mv/out/MinSizeRel/jk2mpgame_x64.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem></SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4244;4996;4267</DisableSpecificWarnings>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild></MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
+      <UseFullPaths>false</UseFullPaths>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="RelWithDebInfo";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;FINAL_BUILD;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\";jk2mpgame_x64_EXPORTS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <MASM>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;ARCH_X86_64;WIN64;BOTLIB;_JK2;UNICODE;_UNICODE;NTCLIENT_WORKAROUND;PORTABLE;INTERNAL_ZLIB;INTERNAL_MINIZIP;INTERNAL_JPEG;INTERNAL_PNG;MISSIONPACK;GAME_EXPORTS;QAGAME;JK2_GAME;FINAL_BUILD;NDEBUG;CMAKE_INTDIR="RelWithDebInfo";jk2mpgame_x64_EXPORTS;</PreprocessorDefinitions>
+      <IncludePaths>C:\Users\david\Documents\Workspace\tom_jk2mv;%(IncludePaths)</IncludePaths>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </MASM>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Users\david\Documents\Workspace\tom_jk2mv;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <DataExecutionPrevention></DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
+      <ImportLibrary>C:/Users/david/Documents/Workspace/tom_jk2mv/out/RelWithDebInfo/jk2mpgame_x64.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
+      <ProgramDataBaseFile>C:/Users/david/Documents/Workspace/tom_jk2mv/out/RelWithDebInfo/jk2mpgame_x64.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
+      <SubSystem></SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/david/Documents/Workspace/tom_jk2mv -BC:/Users/david/Documents/Workspace/tom_jk2mv --check-stamp-file C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/david/Documents/Workspace/tom_jk2mv -BC:/Users/david/Documents/Workspace/tom_jk2mv --check-stamp-file C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/david/Documents/Workspace/tom_jk2mv -BC:/Users/david/Documents/Workspace/tom_jk2mv --check-stamp-file C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/david/Documents/Workspace/tom_jk2mv -BC:/Users/david/Documents/Workspace/tom_jk2mv --check-stamp-file C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/game/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\ai_main.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\anims.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_aas.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_ai_char.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_ai_chat.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_ai_gen.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_ai_goal.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_ai_move.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_ai_weap.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\be_ea.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_local.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_public.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_saga.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\botlib.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\chars.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_local.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_public.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_team.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\inv.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\match.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_shared.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\surfaceflags.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\syn.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\w_saber.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_multiversion.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_multiversion_syscalls.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_multiversion.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\cgame\animtable.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\cgame\cg_local.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\cgame\cg_public.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\cgame\tr_types.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\qcommon\tags.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ghoul2\g2.h" />
+    <ClInclude Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\api\mvapi.h" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_main.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\ai_main.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\ai_util.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\ai_wpnav.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_misc.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_panimate.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_pmove.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_saber.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_slidemove.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_active.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_arenas.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_bot.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_client.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_cmds.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_combat.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_items.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_log.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_mem.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_misc.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_missile.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_mover.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_object.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_saga.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_session.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_spawn.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_svcmds.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_target.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_team.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_trigger.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_utils.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_weapon.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_shared.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\w_force.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\w_saber.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_multiversion.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_multiversion_syscalls.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_multiversion.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\animMappingTable.c" />
+    <ClCompile Include="C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\g_syscalls.c" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="C:\Users\david\Documents\Workspace\tom_jk2mv\ZERO_CHECK.vcxproj">
+      <Project>{5FB0990D-76E7-3D3F-BCE3-909ED34CC1B0}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+</Project>

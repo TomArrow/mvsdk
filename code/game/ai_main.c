@@ -537,7 +537,7 @@ void BotInputToUserCommand(bot_input_t *bi, usercmd_t *ucmd, int delta_angles[3]
 
 	if (bi->actionflags & ACTION_FORCEPOWER) ucmd->buttons |= BUTTON_FORCEPOWER;
 
-	if (useTime < level.time && Q_irand(1, 10, qfalse, 5) < 5)
+	if (useTime < level.time && Q_irand(1, 10) < 5)
 	{ //for now just hit use randomly in case there's something useable around
 		ucmd->buttons |= BUTTON_USE;
 	}
@@ -964,7 +964,7 @@ int OrgVisible(vec3_t org1, vec3_t org2, int ignore)
 {
 	trace_t tr;
 
-	JP_Trace(&tr, org1, NULL, NULL, org2, ignore, MASK_SOLID);
+	trap_Trace(&tr, org1, NULL, NULL, org2, ignore, MASK_SOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -979,11 +979,11 @@ int WPOrgVisible(gentity_t *bot, vec3_t org1, vec3_t org2, int ignore)
 	trace_t tr;
 	gentity_t *ownent;
 
-	JP_Trace(&tr, org1, NULL, NULL, org2, ignore, MASK_SOLID);
+	trap_Trace(&tr, org1, NULL, NULL, org2, ignore, MASK_SOLID);
 
 	if (tr.fraction == 1)
 	{
-		JP_Trace(&tr, org1, NULL, NULL, org2, ignore, MASK_PLAYERSOLID);
+		trap_Trace(&tr, org1, NULL, NULL, org2, ignore, MASK_PLAYERSOLID);
 
 		if (tr.fraction != 1 && tr.entityNum != ENTITYNUM_NONE && g_entities[tr.entityNum].s.eType == ET_SPECIAL)
 		{
@@ -1009,7 +1009,7 @@ int OrgVisibleBox(vec3_t org1, vec3_t mins, vec3_t maxs, vec3_t org2, int ignore
 {
 	trace_t tr;
 
-	JP_Trace(&tr, org1, mins, maxs, org2, ignore, MASK_SOLID);
+	trap_Trace(&tr, org1, mins, maxs, org2, ignore, MASK_SOLID);
 
 	if (tr.fraction == 1 && !tr.startsolid && !tr.allsolid)
 	{
@@ -1029,7 +1029,7 @@ int CheckForFunc(vec3_t org, int ignore)
 
 	under[2] -= 64;
 
-	JP_Trace(&tr, org, NULL, NULL, under, ignore, MASK_SOLID);
+	trap_Trace(&tr, org, NULL, NULL, under, ignore, MASK_SOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -1495,7 +1495,7 @@ int BotTrace_Strafe(bot_state_t *bs, vec3_t traceto)
 	to[1] = from[1] + forward[1]*32;
 	to[2] = from[2] + forward[2]*32;
 
-	JP_Trace(&tr, from, playerMins, playerMaxs, to, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, from, playerMins, playerMaxs, to, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -1512,7 +1512,7 @@ int BotTrace_Strafe(bot_state_t *bs, vec3_t traceto)
 	to[1] += right[1]*32;
 	to[2] += right[2]*32;
 
-	JP_Trace(&tr, from, playerMins, playerMaxs, to, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, from, playerMins, playerMaxs, to, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -1527,7 +1527,7 @@ int BotTrace_Strafe(bot_state_t *bs, vec3_t traceto)
 	to[1] -= right[1]*64;
 	to[2] -= right[2]*64;
 
-	JP_Trace(&tr, from, playerMins, playerMaxs, to, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, from, playerMins, playerMaxs, to, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -1560,7 +1560,7 @@ int BotTrace_Jump(bot_state_t *bs, vec3_t traceto)
 	maxs[1] = 15;
 	maxs[2] = 32;
 
-	JP_Trace(&tr, bs->origin, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, bs->origin, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -1581,7 +1581,7 @@ int BotTrace_Jump(bot_state_t *bs, vec3_t traceto)
 	maxs[1] = 15;
 	maxs[2] = 8;
 
-	JP_Trace(&tr, tracefrom_mod, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, tracefrom_mod, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -1622,7 +1622,7 @@ int BotTrace_Duck(bot_state_t *bs, vec3_t traceto)
 	maxs[1] = 15;
 	maxs[2] = 8;
 
-	JP_Trace(&tr, bs->origin, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, bs->origin, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction != 1)
 	{
@@ -1641,7 +1641,7 @@ int BotTrace_Duck(bot_state_t *bs, vec3_t traceto)
 	maxs[1] = 15;
 	maxs[2] = 32;
 
-	JP_Trace(&tr, tracefrom_mod, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, tracefrom_mod, mins, maxs, traceto_mod, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction != 1)
 	{
@@ -1662,12 +1662,6 @@ int PassStandardEnemyChecks(bot_state_t *bs, gentity_t *en)
 	{
 		return 0;
 	}
-	
-	if (en->client->sess.raceMode)
-		return 0;
-
-	if (en->client->ps.pm_type == PM_NOCLIP)
-		return 0;
 
 	if (en->health < 1)
 	{
@@ -2328,7 +2322,7 @@ gentity_t *GetNearestBadThing(bot_state_t *bs)
 
 			if (glen < bestdist*factor && trap_InPVS(bs->origin, ent->s.pos.trBase))
 			{
-				JP_Trace(&tr, bs->origin, NULL, NULL, ent->s.pos.trBase, bs->client, MASK_SOLID);
+				trap_Trace(&tr, bs->origin, NULL, NULL, ent->s.pos.trBase, bs->client, MASK_SOLID);
 
 				if (tr.fraction == 1 || tr.entityNum == ent->s.number)
 				{
@@ -2502,7 +2496,7 @@ int BotGetFlagBack(bot_state_t *bs)
 		if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 		{
 			bs->wpDestination = gWPArray[tempInt];
-			bs->wpDestSwitchTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 1000, 5000, qfalse, 2500);
+			bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000);
 		}
 	}
 
@@ -2566,7 +2560,7 @@ int BotGuardFlagCarrier(bot_state_t *bs)
 		if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 		{
 			bs->wpDestination = gWPArray[tempInt];
-			bs->wpDestSwitchTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 1000, 5000, qfalse, 2500);
+			bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000);
 		}
 	}
 
@@ -2629,7 +2623,7 @@ void GetNewFlagPoint(wpobject_t *wp, gentity_t *flagEnt, int team)
 
 	if (bestdist <= WP_KEEP_FLAG_DIST)
 	{
-		JP_Trace(&tr, wp->origin, mins, maxs, flagEnt->s.pos.trBase, flagEnt->s.number, MASK_SOLID);
+		trap_Trace(&tr, wp->origin, mins, maxs, flagEnt->s.pos.trBase, flagEnt->s.number, MASK_SOLID);
 
 		if (tr.fraction == 1)
 		{ //this point is good
@@ -2644,7 +2638,7 @@ void GetNewFlagPoint(wpobject_t *wp, gentity_t *flagEnt, int team)
 
 		if (testdist < bestdist)
 		{
-			JP_Trace(&tr, gWPArray[i]->origin, mins, maxs, flagEnt->s.pos.trBase, flagEnt->s.number, MASK_SOLID);
+			trap_Trace(&tr, gWPArray[i]->origin, mins, maxs, flagEnt->s.pos.trBase, flagEnt->s.number, MASK_SOLID);
 
 			if (tr.fraction == 1)
 			{
@@ -2906,7 +2900,7 @@ int EntityVisibleBox(vec3_t org1, vec3_t mins, vec3_t maxs, vec3_t org2, int ign
 {
 	trace_t tr;
 
-	JP_Trace(&tr, org1, mins, maxs, org2, ignore, MASK_SOLID);
+	trap_Trace(&tr, org1, mins, maxs, org2, ignore, MASK_SOLID);
 
 	if (tr.fraction == 1 && !tr.startsolid && !tr.allsolid)
 	{
@@ -3216,7 +3210,7 @@ int SagaTakesPriority(bot_state_t *bs)
 				}
 				else
 				{
-					JP_Trace(&tr, bs->origin, NULL, NULL, dif, bs->client, MASK_SOLID);
+					trap_Trace(&tr, bs->origin, NULL, NULL, dif, bs->client, MASK_SOLID);
 
 					if (tr.fraction != 1 && tr.entityNum != bs->shootGoal->s.number)
 					{
@@ -3241,7 +3235,7 @@ int SagaTakesPriority(bot_state_t *bs)
 			}
 			else
 			{
-				JP_Trace(&tr, bs->origin, NULL, NULL, dif, bs->client, MASK_SOLID);
+				trap_Trace(&tr, bs->origin, NULL, NULL, dif, bs->client, MASK_SOLID);
 
 				if (tr.fraction != 1 && tr.entityNum != bs->shootGoal->s.number)
 				{
@@ -3265,7 +3259,7 @@ int SagaTakesPriority(bot_state_t *bs)
 			}
 			else
 			{
-				JP_Trace(&tr, bs->origin, NULL, NULL, dif, bs->client, MASK_SOLID);
+				trap_Trace(&tr, bs->origin, NULL, NULL, dif, bs->client, MASK_SOLID);
 
 				if (tr.fraction != 1 && tr.entityNum != bs->shootGoal->s.number)
 				{
@@ -3430,7 +3424,7 @@ int GetBestIdleGoal(bot_state_t *bs)
 	{
 		if (bs->randomNavTime < level.time)
 		{
-			if (Q_irand(1, 10, qfalse, 5) < 5)
+			if (Q_irand(1, 10) < 5)
 			{
 				bs->randomNav = 1;
 			}
@@ -3439,7 +3433,7 @@ int GetBestIdleGoal(bot_state_t *bs)
 				bs->randomNav = 0;
 			}
 			
-			bs->randomNavTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 5000, 15000, qfalse, 10000);
+			bs->randomNavTime = level.time + Q_irand(5000, 15000);
 		}
 	}
 
@@ -3608,7 +3602,7 @@ void GetIdealDestination(bot_state_t *bs)
 
 				bs->wpCurrent = gWPArray[tempInt];
 
-				bs->escapeDirTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1000, qfalse, 750);//Q_irand(1000, 1400);
+				bs->escapeDirTime = level.time + Q_irand(500, 1000);//Q_irand(1000, 1400);
 
 				//G_Printf("Escaping from scary bad thing [%s]\n", badthing->classname);
 			}
@@ -3657,7 +3651,7 @@ void GetIdealDestination(bot_state_t *bs)
 			if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 			{
 				bs->wpDestination = gWPArray[tempInt];
-				bs->wpDestSwitchTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 5000, 10000, qfalse, 7500);
+				bs->wpDestSwitchTime = level.time + Q_irand(5000, 10000);
 			}
 		}
 	}
@@ -3680,7 +3674,7 @@ void GetIdealDestination(bot_state_t *bs)
 			if (tempInt != -1 && TotalTrailDistance(bs->wpCurrent->index, tempInt, bs) != -1)
 			{
 				bs->wpDestination = gWPArray[tempInt];
-				bs->wpDestSwitchTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 5000, 10000, qfalse, 7500);
+				bs->wpDestSwitchTime = level.time + Q_irand(5000, 10000);
 			}
 		}
 	}
@@ -3739,11 +3733,11 @@ void GetIdealDestination(bot_state_t *bs)
 
 				if (g_gametype.integer == GT_SINGLE_PLAYER)
 				{ //be more aggressive
-					bs->wpDestSwitchTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 300, 1000, qfalse, 600);
+					bs->wpDestSwitchTime = level.time + Q_irand(300, 1000);
 				}
 				else
 				{
-					bs->wpDestSwitchTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 1000, 5000, qfalse, 3000);
+					bs->wpDestSwitchTime = level.time + Q_irand(1000, 5000);
 				}
 			}
 		}
@@ -4081,7 +4075,7 @@ void CommanderBotTeamplayAI(bot_state_t *bs)
 				bst->squadLeader = &g_entities[bs->client];
 			}
 
-			if (bs->squadRegroupInterval < level.time && Q_irand(1, 10, qfalse, 5) < 5)
+			if (bs->squadRegroupInterval < level.time && Q_irand(1, 10) < 5)
 			{ //every so often tell the squad to regroup for the sake of variation
 				if (bst->teamplayState == TEAMPLAYSTATE_FOLLOWING)
 				{
@@ -4090,7 +4084,7 @@ void CommanderBotTeamplayAI(bot_state_t *bs)
 
 				bs->isSquadLeader = 0;
 				bs->squadCannotLead = level.time + 500;
-				bs->squadRegroupInterval = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 45000, 65000, qfalse, 55000);
+				bs->squadRegroupInterval = level.time + Q_irand(45000, 65000);
 			}
 		}
 
@@ -4152,7 +4146,7 @@ void MeleeCombatHandling(bot_state_t *bs)
 			bs->meleeStrafeDir = 1;
 		}
 
-		bs->meleeStrafeTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1800, qfalse, 1100);
+		bs->meleeStrafeTime = level.time + Q_irand(500, 1800);
 	}
 
 	mins[0] = -15;
@@ -4165,14 +4159,14 @@ void MeleeCombatHandling(bot_state_t *bs)
 	VectorCopy(usethisvec, downvec);
 	downvec[2] -= 4096;
 
-	JP_Trace(&tr, usethisvec, mins, maxs, downvec, -1, MASK_SOLID);
+	trap_Trace(&tr, usethisvec, mins, maxs, downvec, -1, MASK_SOLID);
 
 	en_down = (int)tr.endpos[2];
 
 	VectorCopy(bs->origin, downvec);
 	downvec[2] -= 4096;
 
-	JP_Trace(&tr, bs->origin, mins, maxs, downvec, -1, MASK_SOLID);
+	trap_Trace(&tr, bs->origin, mins, maxs, downvec, -1, MASK_SOLID);
 
 	me_down = (int)tr.endpos[2];
 
@@ -4187,7 +4181,7 @@ void MeleeCombatHandling(bot_state_t *bs)
 	VectorCopy(midorg, downvec);
 	downvec[2] -= 4096;
 
-	JP_Trace(&tr, midorg, mins, maxs, downvec, -1, MASK_SOLID);
+	trap_Trace(&tr, midorg, mins, maxs, downvec, -1, MASK_SOLID);
 
 	mid_down = (int)tr.endpos[2];
 
@@ -4236,7 +4230,7 @@ void SaberCombatHandling(bot_state_t *bs)
 			bs->meleeStrafeDir = 1;
 		}
 
-		bs->meleeStrafeTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1800, qfalse, 1100);
+		bs->meleeStrafeTime = level.time + Q_irand(500, 1800);
 	}
 
 	mins[0] = -15;
@@ -4249,7 +4243,7 @@ void SaberCombatHandling(bot_state_t *bs)
 	VectorCopy(usethisvec, downvec);
 	downvec[2] -= 4096;
 
-	JP_Trace(&tr, usethisvec, mins, maxs, downvec, -1, MASK_SOLID);
+	trap_Trace(&tr, usethisvec, mins, maxs, downvec, -1, MASK_SOLID);
 
 	en_down = (int)tr.endpos[2];
 
@@ -4263,7 +4257,7 @@ void SaberCombatHandling(bot_state_t *bs)
 		VectorCopy(bs->origin, downvec);
 		downvec[2] -= 4096;
 
-		JP_Trace(&tr, bs->origin, mins, maxs, downvec, -1, MASK_SOLID);
+		trap_Trace(&tr, bs->origin, mins, maxs, downvec, -1, MASK_SOLID);
 
 		me_down = (int)tr.endpos[2];
 
@@ -4285,7 +4279,7 @@ void SaberCombatHandling(bot_state_t *bs)
 	VectorCopy(midorg, downvec);
 	downvec[2] -= 4096;
 
-	JP_Trace(&tr, midorg, mins, maxs, downvec, -1, MASK_SOLID);
+	trap_Trace(&tr, midorg, mins, maxs, downvec, -1, MASK_SOLID);
 
 	mid_down = (int)tr.endpos[2];
 
@@ -4302,7 +4296,7 @@ void SaberCombatHandling(bot_state_t *bs)
 		if (bs->frame_Enemy_Len > 128)
 		{ //be ready to attack
 			bs->saberDefending = 0;
-			bs->saberDefendDecideTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 1000, 2000, qfalse, 1500);
+			bs->saberDefendDecideTime = level.time + Q_irand(1000, 2000);
 		}
 		else
 		{
@@ -4317,7 +4311,7 @@ void SaberCombatHandling(bot_state_t *bs)
 					bs->saberDefending = 1;
 				}
 
-				bs->saberDefendDecideTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 2000, qfalse, 1250);
+				bs->saberDefendDecideTime = level.time + Q_irand(500, 2000);
 			}
 		}
 
@@ -4333,10 +4327,10 @@ void SaberCombatHandling(bot_state_t *bs)
 
 		if (bs->frame_Enemy_Len > 90 && bs->saberBFTime > level.time && bs->saberBTime > level.time && bs->beStill < level.time && bs->saberSTime < level.time)
 		{
-			bs->beStill = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1000, qfalse, 750);
-			bs->saberSTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 1200, 1800, qfalse, 1500);
+			bs->beStill = level.time + Q_irand(500, 1000);
+			bs->saberSTime = level.time + Q_irand(1200, 1800);
 		}
-		else if (bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_SABER && bs->frame_Enemy_Len < 80 && ((Q_irand(1, 10, qfalse, 5) < 8 && bs->saberBFTime < level.time) || bs->saberBTime > level.time))
+		else if (bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_SABER && bs->frame_Enemy_Len < 80 && ((Q_irand(1, 10) < 8 && bs->saberBFTime < level.time) || bs->saberBTime > level.time))
 		{
 			vec3_t vs;
 			vec3_t groundcheck;
@@ -4350,15 +4344,15 @@ void SaberCombatHandling(bot_state_t *bs)
 
 			if (bs->saberBTime < level.time)
 			{
-				bs->saberBFTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 900, 1300, qfalse, 1100);
-				bs->saberBTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 300, 700, qfalse, 500);
+				bs->saberBFTime = level.time + Q_irand(900, 1300);
+				bs->saberBTime = level.time + Q_irand(300, 700);
 			}
 
 			VectorCopy(bs->goalPosition, groundcheck);
 
 			groundcheck[2] -= 64;
 
-			JP_Trace(&tr, bs->goalPosition, NULL, NULL, groundcheck, bs->client, MASK_SOLID);
+			trap_Trace(&tr, bs->goalPosition, NULL, NULL, groundcheck, bs->client, MASK_SOLID);
 			
 			if (tr.fraction == 1.0)
 			{ //don't back off of a ledge
@@ -4367,7 +4361,7 @@ void SaberCombatHandling(bot_state_t *bs)
 		}
 		else if (bs->currentEnemy->client && bs->currentEnemy->client->ps.weapon == WP_SABER && bs->frame_Enemy_Len >= 75)
 		{
-			bs->saberBFTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 700, 1300, qfalse, 1000);
+			bs->saberBFTime = level.time + Q_irand(700, 1300);
 			bs->saberBTime = 0;
 		}
 
@@ -4403,7 +4397,7 @@ float BotWeaponCanLead(bot_state_t *bs)
 	}
 	if (weap == WP_BLASTER)
 	{
-		return 0.35f;
+		return 0.35;
 	}
 	if (weap == WP_BOWCASTER)
 	{
@@ -4411,7 +4405,7 @@ float BotWeaponCanLead(bot_state_t *bs)
 	}
 	if (weap == WP_REPEATER)
 	{
-		return 0.45f;
+		return 0.45;
 	}
 	if (weap == WP_THERMAL)
 	{
@@ -4419,11 +4413,11 @@ float BotWeaponCanLead(bot_state_t *bs)
 	}
 	if (weap == WP_DEMP2)
 	{
-		return 0.35f;
+		return 0.35;
 	}
 	if (weap == WP_ROCKET_LAUNCHER)
 	{
-		return 0.7f;
+		return 0.7;
 	}
 	
 	return 0;
@@ -4810,7 +4804,7 @@ int CombatBotAI(bot_state_t *bs, float thinktime)
 				if (bs->cur_ps.weaponstate != WEAPON_CHARGING_ALT &&
 					bs->cur_ps.weaponstate != WEAPON_CHARGING)
 				{
-					bs->altChargeTime = Q_irandExpectedIf(gRandomUnlockAdd, 500, 1000, qfalse, 750);
+					bs->altChargeTime = Q_irand(500, 1000);
 				}
 
 				if (secFire == 1)
@@ -4872,7 +4866,7 @@ int BotFallbackNavigation(bot_state_t *bs)
 	trto[1] = bs->origin[1] + fwd[1]*16;
 	trto[2] = bs->origin[2] + fwd[2]*16;
 
-	JP_Trace(&tr, bs->origin, mins, maxs, trto, -1, MASK_SOLID);
+	trap_Trace(&tr, bs->origin, mins, maxs, trto, -1, MASK_SOLID);
 
 	if (tr.fraction == 1)
 	{
@@ -5249,22 +5243,22 @@ void StrafeTracing(bot_state_t *bs)
 		rorg[2] = bs->origin[2] + right[2]*32;
 	}
 
-	JP_Trace(&tr, bs->origin, mins, maxs, rorg, bs->client, MASK_SOLID);
+	trap_Trace(&tr, bs->origin, mins, maxs, rorg, bs->client, MASK_SOLID);
 
 	if (tr.fraction != 1)
 	{
-		bs->meleeStrafeDisable = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1500, qfalse, 1000);
+		bs->meleeStrafeDisable = level.time + Q_irand(500, 1500);
 	}
 
 	VectorCopy(rorg, drorg);
 
 	drorg[2] -= 32;
 
-	JP_Trace(&tr, rorg, NULL, NULL, drorg, bs->client, MASK_SOLID);
+	trap_Trace(&tr, rorg, NULL, NULL, drorg, bs->client, MASK_SOLID);
 
 	if (tr.fraction == 1)
 	{ //this may be a dangerous ledge, so don't strafe over it just in case
-		bs->meleeStrafeDisable = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 500, 1500, qfalse, 1000);
+		bs->meleeStrafeDisable = level.time + Q_irand(500, 1500);
 	}
 }
 
@@ -5360,7 +5354,7 @@ gentity_t *CheckForFriendInLOF(bot_state_t *bs)
 	trto[1] = trfrom[1] + fwd[1]*2048;
 	trto[2] = trfrom[2] + fwd[2]*2048;
 
-	JP_Trace(&tr, trfrom, mins, maxs, trto, bs->client, MASK_PLAYERSOLID);
+	trap_Trace(&tr, trfrom, mins, maxs, trto, bs->client, MASK_PLAYERSOLID);
 
 	if (tr.fraction != 1 && tr.entityNum < MAX_CLIENTS)
 	{
@@ -5507,7 +5501,7 @@ void CTFFlagMovement(bot_state_t *bs)
 
 				if (VectorLength(a) <= BOT_FLAG_GET_DISTANCE)
 				{
-					JP_Trace(&tr, bs->origin, mins, maxs, desiredDrop->s.pos.trBase, bs->client, MASK_SOLID);
+					trap_Trace(&tr, bs->origin, mins, maxs, desiredDrop->s.pos.trBase, bs->client, MASK_SOLID);
 
 					if (tr.fraction == 1 || tr.entityNum == desiredDrop->s.number)
 					{
@@ -5529,7 +5523,7 @@ void BotCheckDetPacks(bot_state_t *bs)
 	float enLen;
 	float myLen;
 
-	while ( (dp = G_FindByClassNameFast( dp, "detpack") ) != NULL )
+	while ( (dp = G_Find( dp, FOFS(classname), "detpack") ) != NULL )
 	{
 		if (dp && dp->parent && dp->parent->s.number == bs->client)
 		{
@@ -5629,7 +5623,7 @@ int BotSurfaceNear(bot_state_t *bs)
 	fwd[1] = bs->origin[1]+(fwd[1]*64);
 	fwd[2] = bs->origin[2]+(fwd[2]*64);
 
-	JP_Trace(&tr, bs->origin, NULL, NULL, fwd, bs->client, MASK_SOLID);
+	trap_Trace(&tr, bs->origin, NULL, NULL, fwd, bs->client, MASK_SOLID);
 
 	if (tr.fraction != 1)
 	{
@@ -6451,7 +6445,7 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 
 	if (bs->cur_ps.saberInFlight)
 	{
-		bs->saberThrowTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 4000, 10000, qfalse, 7000);
+		bs->saberThrowTime = level.time + Q_irand(4000, 10000);
 	}
 
 	if (bs->currentEnemy)
@@ -6465,7 +6459,7 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 
 			if (bs->saberPowerTime < level.time)
 			{ //Don't just use strong attacks constantly, switch around a bit
-				if (Q_irand(1, 10, qfalse, 5) <= 5)
+				if (Q_irand(1, 10) <= 5)
 				{
 					bs->saberPower = qtrue;
 				}
@@ -6474,7 +6468,7 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 					bs->saberPower = qfalse;
 				}
 
-				bs->saberPowerTime = level.time + Q_irandExpectedIf(gRandomUnlockAdd, 3000, 15000, qfalse, 9000);
+				bs->saberPowerTime = level.time + Q_irand(3000, 15000);
 			}
 
 			if (bs->currentEnemy->health > 75 && g_entities[bs->client].client->ps.fd.forcePowerLevel[FP_SABERATTACK] > 2)
@@ -6815,15 +6809,15 @@ void StandardBotAI(bot_state_t *bs, float thinktime)
 			vectoangles(a, a);
 			VectorCopy(a, bs->goalAngles);
 
-			if (Q_irand(1, 10, qfalse, 5) < 5)
+			if (Q_irand(1, 10) < 5)
 			{
-				bs->goalAngles[YAW] += Q_irand(0, 3 + gRandomUnlockAdd, qfalse, 2);
-				bs->goalAngles[PITCH] += Q_irand(0, 3 + gRandomUnlockAdd, qfalse, 2);
+				bs->goalAngles[YAW] += Q_irand(0, 3);
+				bs->goalAngles[PITCH] += Q_irand(0, 3);
 			}
 			else
 			{
-				bs->goalAngles[YAW] -= Q_irand(0, 3 + gRandomUnlockAdd, qfalse, 2);
-				bs->goalAngles[PITCH] -= Q_irand(0, 3 + gRandomUnlockAdd, qfalse, 2);
+				bs->goalAngles[YAW] -= Q_irand(0, 3);
+				bs->goalAngles[PITCH] -= Q_irand(0, 3);
 			}
 
 			if (InFieldOfVision(bs->viewangles, 30, a) &&

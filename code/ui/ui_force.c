@@ -509,7 +509,7 @@ void UI_ReadLegalForce(void)
 		}
 	}
 	//Second, legalize them.
-	if (!BG_LegalizedForcePowers(fcfString,sizeof(fcfString), uiServerForceRank, ui_freeSaber.integer, forceTeam, atoi( Info_ValueForKey( info, "g_gametype" )), 0))
+	if (!BG_LegalizedForcePowers(fcfString, uiServerForceRank, ui_freeSaber.integer, forceTeam, atoi( Info_ValueForKey( info, "g_gametype" )), 0))
 	{ //if they were illegal, we should refresh them.
 		updateForceLater = qtrue;
 	}
@@ -997,7 +997,7 @@ qboolean UI_ForcePowerRank_HandleKey(int flags, float *special, int key, int num
 {
 	qboolean raising;
 
-	if (key == A_MOUSE1 || key == A_MOUSE2 || key == A_ENTER || key == A_KP_ENTER || key == A_BACKSPACE) 
+	if (key == A_MOUSE1 || key == A_MOUSE2 || key == A_ENTER || key == A_KP_ENTER) 
 	{
 		int forcepower, rank;
 
@@ -1036,7 +1036,7 @@ qboolean UI_ForcePowerRank_HandleKey(int flags, float *special, int key, int num
 			min += 1;
 		}
 
-		if (key == A_MOUSE2 || key == A_BACKSPACE)
+		if (key == A_MOUSE2)
 		{	// Lower a point.
 			if (uiForcePowersRank[forcepower]<=min)
 			{
@@ -1224,7 +1224,7 @@ void UI_ForceConfigHandle( int oldindex, int newindex )
 		}
 	}
 
-	BG_LegalizedForcePowers(fcfBuffer,sizeof(fcfBuffer), uiServerForceRank, ui_freeSaber.integer, forceTeam, atoi( Info_ValueForKey( info, "g_gametype" )), 0);
+	BG_LegalizedForcePowers(fcfBuffer, uiServerForceRank, ui_freeSaber.integer, forceTeam, atoi( Info_ValueForKey( info, "g_gametype" )), 0);
 	//legalize the config based on the max rank
 
 	//now that we're done with the handle, it's time to parse our force data out of the string

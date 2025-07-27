@@ -659,7 +659,7 @@ void CG_GlassShatter_Old(int entnum, vec3_t org, vec3_t mins, vec3_t maxs)
 		velocity[1] = crandom()*150;
 		velocity[2] = 150 + crandom()*75;
 
-		Com_sprintf(chunkname, sizeof(chunkname), "models/chunks/glass/glchunks_%i.md3", Q_irand(1, 6, qfalse, 3));
+		Com_sprintf(chunkname, sizeof(chunkname), "models/chunks/glass/glchunks_%i.md3", Q_irand(1, 6));
 		VectorCopy(org, shardorg);
 	
 		dif[0] = (maxs[0]-mins[0])/2;
@@ -679,9 +679,9 @@ void CG_GlassShatter_Old(int entnum, vec3_t org, vec3_t mins, vec3_t maxs)
 			dif[2] = 2;
 		}
 
-		difx[0] = Q_irand(1, (dif[0]*0.9)*2, qfalse, 1);
-		difx[1] = Q_irand(1, (dif[1]*0.9)*2, qfalse, 1);
-		difx[2] = Q_irand(1, (dif[2]*0.9)*2, qfalse, 1);
+		difx[0] = Q_irand(1, (dif[0]*0.9)*2);
+		difx[1] = Q_irand(1, (dif[1]*0.9)*2);
+		difx[2] = Q_irand(1, (dif[2]*0.9)*2);
 
 		if (difx[0] > dif[0])
 		{
@@ -801,19 +801,19 @@ void CG_CreateDebris(int entnum, vec3_t org, vec3_t mins, vec3_t maxs, int debri
 
 		if (omodel == DEBRIS_SPECIALCASE_GLASS)
 		{
-			debrismodel = dbModels_Glass[Q_irand(0, NUM_DEBRIS_MODELS_GLASS-1, qfalse, 4)];
+			debrismodel = dbModels_Glass[Q_irand(0, NUM_DEBRIS_MODELS_GLASS-1)];
 		}
 		else if (omodel == DEBRIS_SPECIALCASE_WOOD)
 		{
-			debrismodel = dbModels_Wood[Q_irand(0, NUM_DEBRIS_MODELS_WOOD-1, qfalse, 4)];
+			debrismodel = dbModels_Wood[Q_irand(0, NUM_DEBRIS_MODELS_WOOD-1)];
 		}
 		else if (omodel == DEBRIS_SPECIALCASE_CHUNKS)
 		{
-			debrismodel = dbModels_Chunks[Q_irand(0, NUM_DEBRIS_MODELS_CHUNKS-1, qfalse, 4)];
+			debrismodel = dbModels_Chunks[Q_irand(0, NUM_DEBRIS_MODELS_CHUNKS-1)];
 		}
 		else if (omodel == DEBRIS_SPECIALCASE_ROCK)
 		{
-			debrismodel = dbModels_Rocks[Q_irand(0, NUM_DEBRIS_MODELS_ROCKS-1, qfalse, 4)];
+			debrismodel = dbModels_Rocks[Q_irand(0, NUM_DEBRIS_MODELS_ROCKS-1)];
 		}
 
 		VectorCopy(org, shardorg);
@@ -835,9 +835,9 @@ void CG_CreateDebris(int entnum, vec3_t org, vec3_t mins, vec3_t maxs, int debri
 			dif[2] = 2;
 		}
 
-		difx[0] = Q_irand(1, (dif[0]*0.9)*2, qfalse, 1);
-		difx[1] = Q_irand(1, (dif[1]*0.9)*2, qfalse, 1);
-		difx[2] = Q_irand(1, (dif[2]*0.9)*2, qfalse, 1);
+		difx[0] = Q_irand(1, (dif[0]*0.9)*2);
+		difx[1] = Q_irand(1, (dif[1]*0.9)*2);
+		difx[2] = Q_irand(1, (dif[2]*0.9)*2);
 
 		if (difx[0] > dif[0])
 		{

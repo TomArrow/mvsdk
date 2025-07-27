@@ -1,5 +1,3 @@
-#define SABER_RADIUS_STANDARD	3.0f
-
 #define	FORCE_POWER_MAX	100
 #define MAX_GRIP_DISTANCE 256
 #define MAX_TRICK_DISTANCE 512
@@ -22,6 +20,5 @@ extern int forcePowerNeeded_1_02[NUM_FORCE_POWER_LEVELS][NUM_FORCE_POWERS];
 extern int forcePowerNeeded_1_04[NUM_FORCE_POWER_LEVELS][NUM_FORCE_POWERS];
 extern int (*forcePowerNeeded)[NUM_FORCE_POWERS];
 extern float forceJumpHeight[NUM_FORCE_POWER_LEVELS];
-extern float forceJumpHeightMax[NUM_FORCE_POWER_LEVELS];
 extern float forceJumpStrength[NUM_FORCE_POWER_LEVELS];
 

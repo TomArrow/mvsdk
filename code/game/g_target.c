@@ -84,15 +84,9 @@ void Use_Target_Delay( gentity_t *ent, gentity_t *other, gentity_t *activator ) 
 	{ //Leave me alone, I am thinking.
 		return;
 	}
-	if (activator->client && activator->client->sess.raceMode) {
-		ent->nextthink = level.time + ( ent->wait ) * 1000;
-	}
-	else {
-		ent->nextthink = level.time + ( ent->wait + ent->random * crandom() ) * 1000;
-	}
+	ent->nextthink = level.time + ( ent->wait + ent->random * crandom() ) * 1000;
 	ent->think = Think_Target_Delay;
-	//ent->activator = activator;
-	G_SetActivator(ent, activator);
+	ent->activator = activator;
 }
 
 void SP_target_delay( gentity_t *ent ) {
@@ -116,11 +110,6 @@ void SP_target_delay( gentity_t *ent ) {
 The activator is given this many points.
 */
 void Use_Target_Score (gentity_t *ent, gentity_t *other, gentity_t *activator) {
-	if (activator->client && activator->client->sess.raceMode) {
-		activator->client->pers.stats.score += ent->count; // checkpoint score, kinda.
-		G_CenterPrint(activator -g_entities,3, va("^7Checkpoint score ^%c%s%d: %d", ent->count > 0 ? '3' : '1', ent->count > 0 ? "+" : "", ent->count, activator->client->pers.stats.score),qfalse,qtrue,qfalse,NULL);
-		return;
-	}
 	AddScore( activator, ent->r.currentOrigin, ent->count );
 }
 
@@ -132,53 +121,6 @@ void SP_target_score( gentity_t *ent ) {
 }
 
 
-// ignore this outside racemode
-void DF_target_fragsFilter_use(gentity_t* ent, gentity_t* other, gentity_t* activator) {
-
-	if (!activator || !activator->client || !activator->client->sess.raceMode) {
-		return;
-	}
-
-	// TODO global fragsfilter? i guess ppl arent supposed to be using it anyway tho, as its supposedly broken?
-	if (activator->client) {
-		gclient_t* cl = activator->client;
-		int* clientScore = cl->sess.raceMode ? &cl->pers.stats.score : &cl->ps.persistant[PERS_SCORE]; // technically not needed since we dont allow it outside defrag but maybe we change our mind someday.
-		if (*clientScore == ent->count || !(ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH) && *clientScore > ent->count) {
-			if (ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_REMOVER) {
-				*clientScore -= ent->count;
-			}
-			if (ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_RESET) {
-				*clientScore = 0;
-			}
-			G_UseTargets(ent, activator);
-		}
-		else if (!(ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT) && !(ent->spawnflags & Q3SPAWNFLAG_TARGET_FRAGSFILTER_MATCH)) {
-			G_CenterPrint(activator - g_entities, 3, va("^1Your checkpoint score is too %s: %d/%d", *clientScore > ent->count ? "high" : "low", cl->pers.stats.score, ent->count), qfalse, qtrue, qfalse, NULL);
-		}
-		
-	}
-}
-
-void DF_target_fragsFilter(gentity_t* ent) {
-	if (!g_defrag.integer) {
-		G_FreeEntity(ent);
-		return;
-	}
-	G_SpawnInt("frags", "1", &ent->count);
-	//if (!ent->targetname || !ent->targetname[0]) {
-	//	ent->s.generic1 = 1;
-	//}
-	ent->use = DF_target_fragsFilter_use;
-}
-
-// this is just a husk, we will convert it to a trigger_push_velocity.
-void DF_target_speed_husk(gentity_t* ent) {
-	if (!G_SpawnFloat("speed", "100", &ent->speed)) {
-		ent->speed = 100;
-	}
-}
-
-
 //==========================================================
 
 /*QUAKED target_print (1 0 0) (-8 -8 -8) (8 8 8) redteam blueteam private
@@ -187,7 +129,7 @@ If "private", only the activator gets the message.  If no checks, all clients ge
 */
 void Use_Target_Print (gentity_t *ent, gentity_t *other, gentity_t *activator) {
 	if ( activator->client && ( ent->spawnflags & 4 ) ) {
-		G_CenterPrint( activator-g_entities,3, ent->message,qfalse,qtrue,qfalse, NULL);
+		trap_SendServerCommand( activator-g_entities, va("cp \"%s\"", ent->message ));
 		return;
 	}
 
@@ -201,7 +143,7 @@ void Use_Target_Print (gentity_t *ent, gentity_t *other, gentity_t *activator) {
 		return;
 	}
 
-	G_CenterPrint( -1, 3,ent->message,qfalse,qfalse ,qfalse, NULL);
+	trap_SendServerCommand( -1, va("cp \"%s\"", ent->message ));
 }
 
 void SP_target_print( gentity_t *ent ) {
@@ -316,7 +258,7 @@ void target_laser_think (gentity_t *self) {
 	// fire forward and see what we hit
 	VectorMA (self->s.origin, 2048, self->movedir, end);
 
-	JP_Trace( &tr, self->s.origin, NULL, NULL, end, self->s.number, CONTENTS_SOLID|CONTENTS_BODY|CONTENTS_CORPSE);
+	trap_Trace( &tr, self->s.origin, NULL, NULL, end, self->s.number, CONTENTS_SOLID|CONTENTS_BODY|CONTENTS_CORPSE);
 
 	if ( tr.entityNum ) {
 		// hurt it if we can
@@ -333,8 +275,7 @@ void target_laser_think (gentity_t *self) {
 void target_laser_on (gentity_t *self)
 {
 	if (!self->activator)
-		G_SetActivator(self, self);
-		//self->activator = self;
+		self->activator = self;
 	target_laser_think (self);
 }
 
@@ -346,8 +287,7 @@ void target_laser_off (gentity_t *self)
 
 void target_laser_use (gentity_t *self, gentity_t *other, gentity_t *activator)
 {
-	//self->activator = activator;
-	G_SetActivator(self, activator);
+	self->activator = activator;
 	if ( self->nextthink > 0 )
 		target_laser_off (self);
 	else
@@ -388,8 +328,6 @@ void SP_target_laser (gentity_t *self)
 	// let everything else get spawned before we start firing
 	self->think = target_laser_start;
 	self->nextthink = level.time + FRAMETIME;
-
-	level.nonDeterministicEntities++;
 }
 
 
@@ -400,17 +338,11 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 
 	if (!activator->client)
 		return;
-	if (activator->client->noclip)
-		return;
-	dest = 	G_PickTarget( self->target, !activator->client->sess.raceMode, NULL);
+	dest = 	G_PickTarget( self->target );
 	if (!dest) {
 		G_Printf ("Couldn't find teleporter destination\n");
 		return;
 	}
-
-	//if (!other->client->pers.raceStartCommandTime) {
-		activator->client->sess.raceStateSoftInvalidated = qtrue;
-	//}
 
 	TeleportPlayer( activator, dest->s.origin, dest->s.angles );
 }
@@ -445,7 +377,7 @@ void target_relay_use (gentity_t *self, gentity_t *other, gentity_t *activator) 
 	if ( self->spawnflags & 4 ) {
 		gentity_t	*ent;
 
-		ent = G_PickTarget( self->target, !activator->client->sess.raceMode, NULL);
+		ent = G_PickTarget( self->target );
 		if ( ent && ent->use ) {
 			ent->use( ent, self, activator );
 		}
@@ -456,8 +388,6 @@ void target_relay_use (gentity_t *self, gentity_t *other, gentity_t *activator) 
 
 void SP_target_relay (gentity_t *self) {
 	self->use = target_relay_use;
-
-	level.nonDeterministicEntities++;
 }
 
 
@@ -466,38 +396,12 @@ void SP_target_relay (gentity_t *self) {
 /*QUAKED target_kill (.5 .5 .5) (-8 -8 -8) (8 8 8)
 Kills the activator.
 */
-void target_kill_markcallers( gentity_t *self) {
-	gentity_t* caller;
-	self->think = NULL;
-	self->nextthink = 0;
-
-	if (!self->targetname) {
-		return;
-	}
-
-	caller = NULL;
-	// find anyone who calls us
-	while (caller = G_Find(caller, FOFS(target), self->targetname)) {
-
-		if (caller->r.bmodel && (caller->r.contents & CONTENTS_TRIGGER)) { // this is a trigger that calls kill. make sure bubble spawn never spawns us inside this or on top of it
-			caller->r.contents |= CONTENTS_NOSPAWN;
-			if (coolApi & COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS) {
-				// this way our bubble spawn can tell not to spawn on top of or in this
-				trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_NOSPAWN, COOLAPI_BMODELCFLAGS_ADD);
-			}
-		}
-	}
-}
 void target_kill_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
-	G_Damage ( activator, NULL, NULL, NULL, NULL, 100000, DAMAGE_NO_PROTECTION| DAMAGE_IN_RACEMODE, MOD_TELEFRAG);
+	G_Damage ( activator, NULL, NULL, NULL, NULL, 100000, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
 }
 
 void SP_target_kill( gentity_t *self ) {
 	self->use = target_kill_use;
-	if (self->targetname) {
-		self->think = target_kill_markcallers;
-		self->nextthink = level.time + 300;
-	}
 }
 
 /*QUAKED target_position (0 0.5 0) (-4 -4 -4) (4 4 4)

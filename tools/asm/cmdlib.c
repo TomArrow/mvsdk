@@ -213,7 +213,7 @@ qdir will hold the path up to the quake directory, including the slash
 gamedir will hold qdir + the game directory (id1, id2, etc)
 
   */
-#if 0 // unused, cause compiler warnings
+
 char		qdir[1024];
 char		gamedir[1024];
 char		writedir[1024];
@@ -349,7 +349,7 @@ char *ExpandPathAndArchive (const char *path)
 	}
 	return expanded;
 }
-#endif // 0
+
 
 char *copystring(const char *s)
 {
@@ -715,7 +715,7 @@ LoadFile
 int    LoadFile( const char *filename, void **bufferptr )
 {
 	FILE	*f;
-	size_t  length;
+	int    length;
 	void    *buffer;
 
 	f = SafeOpenRead (filename);
@@ -741,8 +741,7 @@ rounds up memory allocation to 4K boundry
 int    LoadFileBlock( const char *filename, void **bufferptr )
 {
 	FILE	*f;
-	int    length;
-	size_t nBlock, nAllocSize;
+	int    length, nBlock, nAllocSize;
 	void    *buffer;
 
 	f = SafeOpenRead (filename);
@@ -781,7 +780,7 @@ int    TryLoadFile (const char *filename, void **bufferptr)
 	if (!f)
 		return -1;
 	length = Q_filelength (f);
-	buffer = malloc (length+(size_t)1);
+	buffer = malloc (length+1);
 	((char *)buffer)[length] = 0;
 	SafeRead (f, buffer, length);
 	fclose (f);
@@ -1139,4 +1138,3 @@ void QCopyFile (const char *from, const char *to)
 	SaveFile (to, buffer, length);
 	free (buffer);
 }
-

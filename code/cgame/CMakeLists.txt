@@ -7,7 +7,6 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/api/mvapi.h"
 
 	"${SRCDir}/cgame/animtable.h"
-	"${SRCDir}/cgame/cg_dbcmds.h"
 	"${SRCDir}/cgame/cg_lights.h"
 	"${SRCDir}/cgame/cg_local.h"
 	"${SRCDir}/cgame/cg_media.h"
@@ -20,31 +19,22 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/game/anims.h"
 	"${SRCDir}/game/bg_local.h"
 	"${SRCDir}/game/bg_public.h"
-	"${SRCDir}/game/bg_pmove_css.h"
-	"${SRCDir}/game/bg_pmove_q2.h"
 	"${SRCDir}/game/bg_saga.h"
 	"${SRCDir}/game/bg_weapons.h"
-	"${SRCDir}/game/bg_cmd.h"
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/surfaceflags.h"
 	"${SRCDir}/game/bg_multiversion.h"
-	"${SRCDir}/game/bg_defrag_global.h"
 
 	"${SRCDir}/ui/ui_shared.h"
 
 	"${SRCDir}/qcommon/qfiles.h"
 	"${SRCDir}/qcommon/tags.h"
-	
-	"${SRCDir}/qcommon/crypt_blowfish.h"
-	"${SRCDir}/qcommon/fp16.h"
-	"${SRCDir}/qcommon/levenshtein.h"
 
-	"${SRCDir}/ghoul2/G2.h"
+	"${SRCDir}/ghoul2/g2.h"
 )
 
 set(MVCGAMESOURCES
 	"${SRCDir}/cgame/cg_main.c" # keep this on top (qvm compiler needs VM_Main as the first compiled function)
-	"${SRCDir}/cgame/cg_dbcmds.c"
 	"${SRCDir}/cgame/cg_consolecmds.c"
 	"${SRCDir}/cgame/cg_draw.c"
 	"${SRCDir}/cgame/cg_drawtools.c"
@@ -79,25 +69,16 @@ set(MVCGAMESOURCES
 	"${SRCDir}/cgame/cg_multiversion.c"
 	"${SRCDir}/cgame/cg_multiversion_syscalls.c"
 	"${SRCDir}/game/bg_multiversion.c"
-	"${SRCDir}/game/bg_defrag_global.c"
-	"${SRCDir}/game/bg_saberLoad.c"
 	"${SRCDir}/game/animMappingTable.c"
 
 	"${SRCDir}/game/bg_misc.c"
 	"${SRCDir}/game/bg_panimate.c"
 	"${SRCDir}/game/bg_pmove.c"
-	"${SRCDir}/game/bg_pmove_css.c"
-	"${SRCDir}/game/bg_pmove_q2.c"
 	"${SRCDir}/game/bg_saber.c"
 	"${SRCDir}/game/bg_slidemove.c"
 	"${SRCDir}/game/bg_weapons.c"
-	"${SRCDir}/game/bg_cmd.c"
-	"${SRCDir}/game/q_math.c"
+	# "${SRCDir}/game/q_math.c" (removed, replaced by q_math.cpp)
 	"${SRCDir}/game/q_shared.c"
-	
-	"${SRCDir}/qcommon/crypt_blowfish.c"
-	"${SRCDir}/qcommon/fp16.c"
-	"${SRCDir}/qcommon/levenshtein.c"
 	
 	"${SRCDir}/ui/ui_shared.c"
 )
@@ -136,20 +117,4 @@ set_target_properties(${MVCGAME} PROPERTIES INCLUDE_DIRECTORIES "${MVCGAMEInclud
 set_target_properties(${MVCGAME} PROPERTIES PROJECT_LABEL "CGame Module")
 if(InMV)
 	set_property(TARGET ${MVCGAME} PROPERTY FOLDER "Modules")
-	if(BuildPortableVersion)
-		if(WIN32)
-			install(TARGETS ${MVCGAME} RUNTIME DESTINATION ".")
-		else()
-			install(TARGETS ${MVCGAME} LIBRARY DESTINATION ".")
-		endif()
-	else()
-		if(WIN32)
-			install(TARGETS ${MVCGAME} RUNTIME DESTINATION ".")
-			install(FILES $<TARGET_PDB_FILE:${MVCGAME}> DESTINATION "." OPTIONAL)
-		elseif(APPLE)
-			install(TARGETS ${MVCGAME} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
-		else()
-			install(TARGETS ${MVCGAME} LIBRARY DESTINATION "lib")
-		endif()
-	endif()
 endif()

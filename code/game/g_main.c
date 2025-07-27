@@ -2,33 +2,22 @@
 //
 
 #include "g_local.h"
-#include "g_defrag.h"
-#include "g_dbcmds.h"
 
 #include "mvsdk_setup.h"
 
 level_locals_t	level;
 
-typedef struct cvarTable_s {
+typedef struct {
 	vmCvar_t	*vmCvar;
 	char		*cvarName;
 	char		*defaultString;
 	int			cvarFlags;
 	int			modificationCount;  // for tracking changes
 	qboolean	trackChange;	    // track this variable, and announce if changed
-	qboolean	teamShader;        // track and if changed, update shader state
-	struct {
-		void		(*func)(struct cvarTable_s*);
-		void*		pparam1; // some pointer
-		const char* cparam1;
-		int			iparam1;
-	} update;
+  qboolean teamShader;        // track and if changed, update shader state
 } cvarTable_t;
 
-gentity_t		g_entities[MAX_ENTITIESTOTAL];
-gentity_t*		g_entitiesHashTable[ENTITY_HASH_SIZE];
-int				g_entitiesHashTableCount = 0;
-gentity_t*		g_logicalents = &g_entities[MAX_GENTITIES]; // Quicker access xD
+gentity_t		g_entities[MAX_GENTITIES];
 gclient_t		g_clients[MAX_CLIENTS];
 
 mvsharedEntity_t	mv_entities[MAX_GENTITIES];
@@ -37,11 +26,6 @@ mvclientSession_t	mv_clientSessions[MAX_CLIENTS];
 qboolean gDuelExit = qfalse;
 
 vmCvar_t	g_trueJedi;
-
-// defrag breaking change version number. just so that a client watching/analyzing a demo can find out.
-// version 0 (non existent cvar): up to 2025-02-04
-// version 1: 2025-02-04 antiloop upgrade to fix wallstrafe exploit
-vmCvar_t	g_dfv;
 
 vmCvar_t	g_gametype;
 vmCvar_t	g_MaxHolocronCarry;
@@ -54,22 +38,6 @@ vmCvar_t	g_privateDuel;
 vmCvar_t	g_saberLocking;
 vmCvar_t	g_saberLockFactor;
 vmCvar_t	g_saberTraceSaberFirst;
-
-vmCvar_t	g_modes;
-vmCvar_t	g_modesDefault;
-vmCvar_t	g_defrag;
-vmCvar_t	g_defragLastRunId;
-vmCvar_t	g_defragLastDemoId;
-vmCvar_t	g_defragAutoDemo;
-vmCvar_t	g_defragKillSafetyMinSecs;
-vmCvar_t	g_defragSimpleResetSpawn; // /resetspawn does all
-vmCvar_t	g_triggersRobust;
-vmCvar_t	g_bubbleSpawn;
-vmCvar_t	g_defragForceRegenFps;
-vmCvar_t	g_defragArenaAutoGen;
-
-vmCvar_t	g_arenaAutoGen;
-
 
 #ifdef G2_COLLISION_ENABLED
 vmCvar_t	g_saberGhoul2Collision;
@@ -85,7 +53,6 @@ vmCvar_t	g_saberDamageScale;
 
 vmCvar_t	g_useWhileThrowing;
 
-vmCvar_t	g_alwaysAllowTeamChat;
 vmCvar_t	g_forceRegenTime;
 vmCvar_t	g_spawnInvulnerability;
 vmCvar_t	g_forcePowerDisable;
@@ -111,11 +78,7 @@ vmCvar_t	g_cheats;
 vmCvar_t	g_knockback;
 vmCvar_t	g_quadfactor;
 vmCvar_t	g_forcerespawn;
-vmCvar_t	g_startWeaponAlwaysSaber;
-vmCvar_t	g_afkCmdMinSecs;
 vmCvar_t	g_inactivity;
-vmCvar_t	g_inactivityToSpec;
-vmCvar_t	g_inactivityToSpecRacers;
 vmCvar_t	g_debugMove;
 vmCvar_t	g_debugDamage;
 vmCvar_t	g_debugAlloc;
@@ -123,17 +86,6 @@ vmCvar_t	g_weaponRespawn;
 vmCvar_t	g_weaponTeamRespawn;
 vmCvar_t	g_adaptRespawn;
 vmCvar_t	g_motd;
-
-vmCvar_t	g_mapDefaultMsec;
-vmCvar_t	g_mapDefaultJump;
-vmCvar_t	g_mapDefaultRunFlags;
-vmCvar_t	g_q2trace;
-vmCvar_t	g_q2Skims;
-
-vmCvar_t	g_strafebotSlopeHandling;
-
-vmCvar_t	g_autoScoresInterval;
-
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
 vmCvar_t	g_doWarmup;
@@ -146,13 +98,10 @@ vmCvar_t	g_blood;
 vmCvar_t	g_podiumDist;
 vmCvar_t	g_podiumDrop;
 vmCvar_t	g_allowVote;
-vmCvar_t	g_slowVote;
-vmCvar_t	g_slowVoteAFKThreshold;
 vmCvar_t	g_teamAutoJoin;
 vmCvar_t	g_teamForceBalance;
 vmCvar_t	g_banIPs;
 vmCvar_t	g_filterBan;
-vmCvar_t	g_developer;
 vmCvar_t	g_debugForward;
 vmCvar_t	g_debugRight;
 vmCvar_t	g_debugUp;
@@ -160,10 +109,7 @@ vmCvar_t	g_smoothClients;
 vmCvar_t	g_pmove_fixed;
 vmCvar_t	g_pmove_msec;
 vmCvar_t	g_pmove_float;
-vmCvar_t	g_ttFlags;
-vmCvar_t	g_ttFlagsGp;
 vmCvar_t	g_fixHighFPSAbuse;
-vmCvar_t	g_entHUDFields;
 vmCvar_t	g_rankings;
 vmCvar_t	g_listEntity;
 vmCvar_t	g_redteam;
@@ -174,11 +120,6 @@ vmCvar_t	g_enableBreath;
 vmCvar_t	g_dismember;
 vmCvar_t	g_forceDodge;
 vmCvar_t	g_timeouttospec;
-vmCvar_t	g_sv_fps;
-
-vmCvar_t	g_fpsToggleDelay;
-
-vmCvar_t	g_allowNameDupes;
 
 vmCvar_t	g_saberDmgVelocityScale;
 vmCvar_t	g_saberDmgDelay_Idle;
@@ -187,8 +128,6 @@ vmCvar_t	g_saberDmgDelay_Wound;
 vmCvar_t	g_saberDebugPrint;
 
 vmCvar_t	g_austrian;
-
-vmCvar_t	g_debugMelee;
 
 vmCvar_t	g_gamename;
 vmCvar_t	g_gamedate;
@@ -209,32 +148,11 @@ vmCvar_t	g_botTeamAutoBalance;
 
 vmCvar_t	g_MVSDK;
 
-vmCvar_t	g_userCmdBuffer;
-vmCvar_t	g_userCmdBufferSmoothen;
-vmCvar_t	g_blockIdenticalUserSnaps;
-vmCvar_t	g_blockIdenticalUserSnapsMinFps;
-
-vmCvar_t	g_randomTipInterval;
-
-vmCvar_t	g_unlockRandom;
-vmCvar_t	g_mineSwitchFix;
-
-vmCvar_t	g_crossServerChat;
-vmCvar_t	g_crossServerDefragTimes;
-
 int gDuelist1 = -1;
 int gDuelist2 = -1;
 
-int gRandomUnlockAdd = 0;
-
-static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 // bk001129 - made static to avoid aliasing
 static cvarTable_t		gameCvarTable[] = {
-
-	//must be at the start so that its already registered when other cvars are evaluated that affect it
-	{ &g_ttFlags, "ttFlags", "15", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue }, // to communicate special tommyternal server features to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE|TTFLAGSSERVERINFO_HASCROSSSERVERCHAT))
-	{ &g_ttFlagsGp, "ttFlagsGp", "0", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse }, // gameplay ttflags. 
-
 	// don't override the cheat state set by the system
 	{ &g_cheats, "sv_cheats", "", 0, 0, qfalse },
 
@@ -245,7 +163,6 @@ static cvarTable_t		gameCvarTable[] = {
 	{ NULL, "sv_mapname", "", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  },
 
 	// latched vars
-	{ &g_dfv, "dfv", "1", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  }, // we just wanna let the client know
 	{ &g_gametype, "g_gametype", "0", CVAR_SERVERINFO | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_MaxHolocronCarry, "g_MaxHolocronCarry", "3", CVAR_SERVERINFO | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 
@@ -260,26 +177,12 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_autoMapCycle, "g_autoMapCycle", "0", CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
 	{ &g_dmflags, "dmflags", "0", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	
-	{ &g_maxForceRank, "g_maxForceRank", "500", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
+	{ &g_maxForceRank, "g_maxForceRank", "6", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_forceBasedTeams, "g_forceBasedTeams", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_privateDuel, "g_privateDuel", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberLocking, "g_saberLocking", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberLockFactor, "g_saberLockFactor", "6", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberTraceSaberFirst, "g_saberTraceSaberFirst", "1", CVAR_ARCHIVE, 0, qtrue  },
-
-	{ &g_modes, "g_modes", "1", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
-	{ &g_modesDefault, "g_modesDefault", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  }, // default value from playerModes_e enum
-	{ &g_defrag, "g_defrag", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
-	{ &g_defragAutoDemo, "g_defragAutoDemo", "1", CVAR_ARCHIVE, 0, qtrue  },
-	{ &g_defragKillSafetyMinSecs, "g_defragKillSafetyMinSecs", "240", CVAR_ARCHIVE, 0, qtrue  },
-	{ &g_defragSimpleResetSpawn, "g_defragSimpleResetSpawn", "1", CVAR_ARCHIVE, 0, qtrue  },
-	{ &g_defragLastRunId, "g_defragLastRunId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
-	{ &g_defragLastDemoId, "g_defragLastDemoId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
-	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
-	{ &g_bubbleSpawn, "g_bubbleSpawn", "1", CVAR_ARCHIVE, 0, qtrue  },
-	{ &g_defragForceRegenFps, "g_defragForceRegenFps", "100", CVAR_ARCHIVE | CVAR_CHEAT, 0, qtrue  },
-	{ &g_defragArenaAutoGen, "g_defragArenaAutoGen", "1", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena files when a course is finished running, if none exists
-	{ &g_arenaAutoGen, "g_arenaAutoGen", "0", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena file upon successful spawn in map, if none exists
 
 #ifdef G2_COLLISION_ENABLED
 	{ &g_saberGhoul2Collision, "g_saberGhoul2Collision", "0", 0, 0, qtrue  },
@@ -295,7 +198,6 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_useWhileThrowing, "g_useWhileThrowing", "1", 0, 0, qtrue  },
 
-	{ &g_alwaysAllowTeamChat, "g_alwaysAllowTeamChat", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_forceRegenTime, "g_forceRegenTime", "200", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_spawnInvulnerability, "g_spawnInvulnerability", "3000", CVAR_ARCHIVE, 0, qtrue  },
@@ -313,17 +215,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_timelimit, "timelimit", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
 	{ &g_capturelimit, "capturelimit", "8", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
 
-	{ &g_autoScoresInterval, "g_autoScoresInterval", "10", CVAR_ARCHIVE, 0, qfalse  },
-
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
-
-	{ &g_mapDefaultMsec, "g_mapDefaultMsec", "8", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
-	{ &g_mapDefaultJump, "g_mapDefaultJump", "1", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
-	{ &g_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO | CVAR_ROM, 0, qfalse},
-	{ &g_q2trace, "g_q2trace", "1", CVAR_SYSTEMINFO, 0, qtrue},
-	{ &g_q2Skims, "g_q2Skims", "0", CVAR_SYSTEMINFO, 0, qtrue},
-
-	{ &g_strafebotSlopeHandling, "g_strafebotSlopeHandling", "1", CVAR_SYSTEMINFO | CVAR_CHEAT, 0, qfalse},
 
 	{ &g_saberInterpolate, "g_saberInterpolate", "1", CVAR_ARCHIVE, 0, qtrue },
 
@@ -350,9 +242,6 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_dedicated, "dedicated", "0", 0, 0, qfalse  },
 
-	{ &g_randomTipInterval, "g_randomTipInterval", "600", CVAR_ARCHIVE, 0, qfalse  },
-
-
 	{ &g_speed, "g_speed", "250", 0, 0, qtrue  },
 	{ &g_gravity, "g_gravity", "800", 0, 0, qtrue  },
 	{ &g_knockback, "g_knockback", "1000", 0, 0, qtrue  },
@@ -361,11 +250,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_weaponTeamRespawn, "g_weaponTeamRespawn", "5", 0, 0, qtrue },
 	{ &g_adaptRespawn, "g_adaptrespawn", "1", 0, 0, qtrue  },		// Make weapons respawn faster with a lot of players.
 	{ &g_forcerespawn, "g_forcerespawn", "60", 0, 0, qtrue },		// One minute force respawn.  Give a player enough time to reallocate force.
-	{ &g_startWeaponAlwaysSaber, "g_startWeaponAlwaysSaber", "1", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_afkCmdMinSecs, "g_afkCmdMinSecs", "30", 0, 0, qfalse },
 	{ &g_inactivity, "g_inactivity", "0", 0, 0, qtrue },
-	{ &g_inactivityToSpec, "g_inactivityToSpec", "300", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_inactivityToSpecRacers, "g_inactivityToSpecRacers", "0", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_debugMove, "g_debugMove", "0", 0, 0, qfalse },
 	{ &g_debugDamage, "g_debugDamage", "0", 0, 0, qfalse },
 	{ &g_debugAlloc, "g_debugAlloc", "0", 0, 0, qfalse },
@@ -376,11 +261,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_podiumDrop, "g_podiumDrop", "70", 0, 0, qfalse },
 
 	{ &g_allowVote, "g_allowVote", "1", CVAR_ARCHIVE, 0, qfalse },
-	{ &g_slowVote, "g_slowVote", "0", CVAR_ARCHIVE, 0, qfalse },
-	{ &g_slowVoteAFKThreshold, "g_slowVoteAFKThreshold", "300", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_listEntity, "g_listEntity", "0", 0, 0, qfalse },
-
-	{ &g_developer, "developer", "0", 0, 0, qfalse },
 
 #if 0
 	{ &g_debugForward, "g_debugForward", "0", 0, 0, qfalse },
@@ -399,25 +280,13 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_pmove_msec, "pmove_msec", "8", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_pmove_float, "pmove_float", "0", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_fixHighFPSAbuse, "g_fixHighFPSAbuse", "0", CVAR_SYSTEMINFO, 0, qtrue},
-	{ &g_entHUDFields, "g_entHUDFields", "1", CVAR_SYSTEMINFO|CVAR_ARCHIVE, 0, qtrue},
-
-	{ &g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO | CVAR_ARCHIVE, 0, qtrue },
-	{ &g_mineSwitchFix, "g_mineSwitchFix", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
-
-	{ &g_crossServerChat, "g_crossServerChat", "2", CVAR_ARCHIVE, 0, qtrue}, // 1 = receive. 2 = need special say_cross cmd to allow sharing. 3 = share all
-	{ &g_crossServerDefragTimes, "g_crossServerDefragTimes", "2", CVAR_ARCHIVE, 0, qtrue}, // Share achieved defrag time prints across servers. 1 = receive. 2 = send
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 
-	{ &g_dismember, "g_dismember", "100", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_dismember, "g_dismember", "0", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_forceDodge, "g_forceDodge", "1", 0, 0, qtrue  },
 
 	{ &g_timeouttospec, "g_timeouttospec", "70", CVAR_ARCHIVE, 0, qfalse },
-	{ &g_sv_fps, "sv_fps", "100", 0, 0, qfalse },
-
-	{ &g_fpsToggleDelay, "g_fpsToggleDelay", "0", CVAR_ARCHIVE, 0, qfalse }, // e.g. set to 300 for 300 second (5 minute) delay between allowed com_physicsFps changes by the client
-
-	{ &g_allowNameDupes, "g_allowNameDupes", "0", CVAR_ARCHIVE, 0, qfalse },
 
 	{ &g_saberDmgVelocityScale, "g_saberDmgVelocityScale", "0", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberDmgDelay_Idle, "g_saberDmgDelay_Idle", "350", CVAR_ARCHIVE, 0, qtrue  },
@@ -426,7 +295,6 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_saberDebugPrint, "g_saberDebugPrint", "0", CVAR_CHEAT, 0, qfalse  },
 
 	{ &g_austrian, "g_austrian", "0", CVAR_ARCHIVE, 0, qfalse  },
-	{ &g_debugMelee, "g_debugMelee", "1", CVAR_SERVERINFO, 0, qtrue  }, // jka wallgrab related
 
 	{ &g_mv_fixgalaking, "mv_fixgalaking", "1", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_mv_fixbrokenmodels, "mv_fixbrokenmodels", "1", CVAR_ARCHIVE, 0, qfalse },
@@ -458,13 +326,7 @@ static cvarTable_t		gameCvarTable[] = {
 	// Bots reset their teams on map_restart and map change on basejk. This is often undesired, so let the host decide.
 	{ &g_botTeamAutoBalance, "g_botTeamAutoBalance", "1", CVAR_ARCHIVE, 0, qtrue },
 
-	{ &g_userCmdBuffer, "g_userCmdBuffer", "1", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_userCmdBufferSmoothen, "g_userCmdBufferSmoothen", "1", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_blockIdenticalUserSnaps, "g_blockIdenticalUserSnaps", "1", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_blockIdenticalUserSnapsMinFps, "g_blockIdenticalUserSnapsMinFps", "30", CVAR_ARCHIVE, 0, qtrue },
-
 	{ &g_MVSDK, "g_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_SERVERINFO, 0, qfalse },
-
 };
 
 // bk001129 - made static to avoid aliasing
@@ -489,35 +351,6 @@ This must be the very first function compiled into the .q3vm file
 int mvapi = 0;
 qboolean mvStructConversionDisabled = qfalse;
 
-int coolApi = 0;
-int coolApi_dbVersion = 0;
-int coolApi_jkaVersion = 0;
-int coolApi_userCmdVersion = 0;
-vmCvar_t coolApi_supported_game_userCmdStoreVersion;
-const int coolApi_supported_game_userCmdStoreVersion_int = 1;
-vmCvar_t coolApi_supported_game;
-const int coolApi_supported_game_int =
-  COOL_APIFEATURE_SETPREDICTEDMOVEMENT
-| COOL_APIFEATURE_GETTEMPORARYUSERCMD
-| COOL_APIFEATURE_EZDEMOCGAMEBUFFER
-| COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED
-| COOL_APIFEATURE_MARIADB
-| COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK
-| COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS
-| COOL_APIFEATURE_G_USERCMDSTORE
-| COOL_APIFEATURE_RESOLUTIONCHANGED
-| COOL_APIFEATURE_NONEPSILONTRACE
-| COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE
-| COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS
-| COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED
-| COOL_APIFEATURE_VMCUSTOMFLAGS
-| COOL_APIFEATURE_KEEPZOMBIE
-| COOL_APIFEATURE_CUSTOMEPSILONTRACE
-| COOL_APIFEATURE_JEDI_ACADEMY
-| COOL_APIFEATURE_CROSS_SERVER_COMMANDS
-;
-const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY;
-
 int Init_levelTime;
 int Init_randomSeed;
 int Init_restart;
@@ -541,40 +374,9 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 	return retValue;
 }
 intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
-	int requestedMvApi = 0;
-	char coolApiFeaturesBuffer[80];
+int requestedMvApi = 0;
 	switch ( command ) {
 	case GAME_INIT:
-		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
-		coolApi = atoi(coolApiFeaturesBuffer);
-		if (coolApi & COOL_APIFEATURE_G_USERCMDSTORE) {
-			trap_Cvar_VariableStringBuffer("cool_apiUserCmdStoreVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
-			coolApi_userCmdVersion = atoi(coolApiFeaturesBuffer);
-		}
-		else {
-			coolApi_userCmdVersion = 0;
-		}
-		if (coolApi & COOL_APIFEATURE_MARIADB) {
-			trap_Cvar_VariableStringBuffer("cool_apiDBVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
-			coolApi_dbVersion = atoi(coolApiFeaturesBuffer);
-		}
-		else {
-			coolApi_dbVersion = 0;
-		}
-		if (coolApi & COOL_APIFEATURE_JEDI_ACADEMY) {
-			trap_Cvar_VariableStringBuffer("cool_apiJKAVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
-			coolApi_jkaVersion = atoi(coolApiFeaturesBuffer);
-		}
-		else {
-			coolApi_jkaVersion = 0;
-		}
-
-		trap_Cvar_Register(&coolApi_supported_game, "coolApi_supported_game", va("%d", coolApi_supported_game_int), CVAR_ROM);
-		trap_Cvar_Register(&coolApi_supported_game_userCmdStoreVersion, "coolApi_supported_game_userCmdStoreVersion", va("%d", coolApi_supported_game_userCmdStoreVersion_int), CVAR_ROM);
-		trap_Cvar_Set("coolApi_supported_game", va("%d", coolApi_supported_game_int));
-		trap_Cvar_Set("coolApi_supported_game_userCmdStoreVersion", va("%d", coolApi_supported_game_userCmdStoreVersion_int));
-		trap_Cvar_Set("coolApi_supported_game_vmflags", va("%d", coolApi_supported_game_vmflags_int));
-
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call G_InitGame if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
@@ -585,9 +387,6 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 			Init_levelTime = arg0;
 			Init_randomSeed = arg1;
 			Init_restart = arg2;
-		}
-		if (mvapi >= 4 || coolApi & COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK) {
-			trap_MVAPI_EnablePlayerSnapshots(qtrue);
 		}
 		return requestedMvApi;
 	case MVAPI_AFTER_INIT:
@@ -604,19 +403,6 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 	case GAME_CLIENT_USERINFO_CHANGED:
 		ClientUserinfoChanged( arg0 );
 		return 0;
-	case GAME_COOL_API_PHYSICSFPSUPDATE:
-		if (coolApi & COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE) {
-			return (int)ClientPhysicsFpsChanged(arg0);
-		}
-	case GAME_COOL_API_CROSS_SERVER_COMMAND_RECEIVED:
-		if (coolApi & COOL_APIFEATURE_CROSS_SERVER_COMMANDS) {
-			return G_CrossServerCommand();
-		}
-	case GAME_COOL_API_KEEPZOMBIE:
-		if (coolApi & COOL_APIFEATURE_KEEPZOMBIE) {
-			gentity_t* ent = g_entities + arg0;
-			return DF_KeepClientZombie(ent);
-		}
 	case GAME_CLIENT_DISCONNECT:
 		ClientDisconnect( arg0 );
 		return 0;
@@ -635,58 +421,10 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		return BotAIStartFrame( arg0 );
 	case GAME_ROFF_NOTETRACK_CALLBACK:
 		G_ROFF_NotetrackCallback( &g_entities[arg0], (const char *)arg1 );
-	case GAME_MVAPI_PLAYERSNAPSHOT:
-		if (mvapi >= 4 || coolApi & COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK) {
-			static int lastPlayerSnapshotNum = -1;
-			int playerNum = arg0;
-			if (playerNum == -1) {
-				if (lastPlayerSnapshotNum != -1) {
-					PlayerSnapshotRestoreValues();
-				}
-			}
-			else
-			{
-				gclient_t* client = (g_entities + playerNum)->client;
-				int maxMsecDelay = MIN(200,1000/MAX(1,g_blockIdenticalUserSnapsMinFps.integer));
-				if (g_blockIdenticalUserSnaps.integer && client && (client->sess.sessionTeam != TEAM_SPECTATOR || !client->anyClientMovedSinceSnapshot) && client->lastSnapshotSentCommandTime == client->ps.commandTime && level.time > client->lastSnapshotSent && (level.time-client->lastSnapshotSent) < maxMsecDelay) {
-					// smooth demos a bit by not sending useless repeated packets, unless it would be come TOO stuttery
-					// TODO make it able to go even lower fps but then do some more advanced checks to make sure any spawned/despawned item and such is still visible? hook into G_Spawn and G_Free?
-					return qfalse;
-				}
-				PlayerSnapshotHackValues(lastPlayerSnapshotNum == -1, playerNum);
-				client->lastSnapshotSentCommandTime = client->ps.commandTime;
-				client->lastSnapshotSent = level.time;
-				client->anyClientMovedSinceSnapshot = qfalse;
-			}
-			lastPlayerSnapshotNum = playerNum;
-			return qtrue;
-		}
-		break;
 	}
-
 
 	return -1;
 }
-
-
-static void	G_BitMaskCvarUpdated(cvarTable_t* cvar) {
-	vmCvar_t* cvarBase = (vmCvar_t*)cvar->update.pparam1;
-
-	if (!cvarBase) {
-		Com_Error(ERR_FATAL, "G_BitMaskCvarUpdated: pparam1 must be a vmCvar_t* pointer");
-	}
-
-	if (cvar->vmCvar->integer) {
-		cvarBase->integer |= cvar->update.iparam1;
-	}
-	else {
-		cvarBase->integer &= ~cvar->update.iparam1;
-	}
-
-	trap_Cvar_Set(cvar->update.cparam1, va("%d", cvarBase->integer));
-	trap_Cvar_Update(cvarBase);
-}
-
 
 
 void QDECL G_Printf( const char *fmt, ... ) {
@@ -862,8 +600,6 @@ void G_RegisterCvars( void ) {
 			cv->defaultString, cv->cvarFlags );
 		if ( cv->vmCvar )
 			cv->modificationCount = cv->vmCvar->modificationCount;
-		if (cv->update.func)
-			cv->update.func(cv);
 
 		if (cv->teamShader) {
 			remapped = qtrue;
@@ -895,15 +631,6 @@ void G_RegisterCvars( void ) {
 	MV_UpdateSvFlags();
 }
 
-
-void G_CheckCvarChanges() {
-	static int lastModCountRandomUnlock = -1;
-	if (lastModCountRandomUnlock != g_unlockRandom.modificationCount) {
-		gRandomUnlockAdd = g_unlockRandom.integer ? 1 : 0;
-		lastModCountRandomUnlock = g_unlockRandom.modificationCount;
-	}
-}
-
 /*
 =================
 G_UpdateCvars
@@ -920,10 +647,6 @@ void G_UpdateCvars( void ) {
 
 			if ( cv->modificationCount != cv->vmCvar->modificationCount ) {
 				cv->modificationCount = cv->vmCvar->modificationCount;
-
-				if ( cv->update.func ) {
-					cv->update.func(cv);
-				}
 
 				if ( cv->trackChange ) {
 					trap_SendServerCommand( -1, va("print \"Server: %s changed to %s\n\"", 
@@ -995,11 +718,6 @@ void MV_UpdateSvFlags( void )
 	lastValue = intValue;
 }
 
-void G_SetupTempDemoSubfolderName();
-
-
-void InitClanTagHashTable();
-
 /*
 ============
 G_InitGame
@@ -1014,9 +732,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	G_Printf ("------- Game Initialization -------\n");
 	G_Printf ("gamename: %s\n", GAMEVERSION);
 	G_Printf ("gamedate: %s\n", __DATE__);
-
-	InitFpsTable();
-	InitClanTagHashTable();
 	
 	if ( jk2version == VERSION_UNDEF )
 	{ // We don't know the version of the server, yet...
@@ -1061,10 +776,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	G_RegisterCvars();
 
-	DF_CheckRaceCvarChanges(qtrue);
-
-	G_DB_Init();
-
 	G_ProcessIPBans();
 
 	G_InitMemory();
@@ -1073,15 +784,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	memset( &level, 0, sizeof( level ) );
 	level.time = levelTime;
 	level.startTime = levelTime;
-	level.frameTimeMsec = 0;
-
-	G_SetupTempDemoSubfolderName();
-
-	if (g_defrag.integer && g_defragAutoDemo.integer) {
-		trap_Cvar_Set("sv_autoDemo", "0"); // disable autodemo if we are doing defrag auto demo. it will interfere when ppl first connect
-	}
-
-	memset( &userCmdBuffer, 0, sizeof(userCmdBuffer));
 
 	level.snd_fry = G_SoundIndex("sound/player/fry.wav");	// FIXME standing in lava / slime
 
@@ -1111,16 +813,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	G_InitWorldSession();
 
-	if (g_defrag.integer) {
-		AddRemap("gfx/misc/blue_portashield", "gfx/2d/bracket", level.time);
-		trap_SetConfigstring(CS_SHADERSTATE, BuildShaderStateConfig());
-	}
-
-	AddRemap("gfx/mp/chat_icon", "gfx/mp/dmgshader_shields", level.time); // looks nice
-	trap_SetConfigstring(CS_SHADERSTATE, BuildShaderStateConfig());
-
 	// initialize all entities for this game
-	memset( g_entities, 0, MAX_ENTITIESTOTAL * sizeof(g_entities[0]) );
+	memset( g_entities, 0, MAX_GENTITIES * sizeof(g_entities[0]) );
 	level.gentities = g_entities;
 	
 	// We can initialise this even without the JK2MV API and use it in the VM, but we can only share it with the engine, if the API is available
@@ -1162,8 +856,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	// reserve some spots for dead player bodies
 	InitBodyQue();
 
-	InitPlayerStats();
-
 	ClearRegisteredItems();
 
 	// initialize saga mode before spawning entities so we know
@@ -1172,19 +864,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	// parse the key/value pairs and spawn gentities
 	G_SpawnEntitiesFromString();
-
-	defaultRaceStyle = getDefaultMapRaceStyle(); // it has 16 bit values so we can't just do the initializer values in a const global :/
-	//level.mapDefaultRaceStyle = defaultRaceStyle;
-	DF_SetMapDefaults(defaultRaceStyle);
-	level.mapDefaultsConfirmed = qfalse;
-	level.mapDefaultsLoadFailed = qfalse;
-	level.hasArenaInfo = qfalse;
-	level.mustGenerateArena = qfalse;
-	level.allRaceGenerationAlreadyCalled = qfalse;
-	level.arenasLoaded = qfalse;
-	if (g_defrag.integer) {
-		DF_LoadMapDefaults();
-	}
 
 	// general initialization
 	G_FindTeams();
@@ -1202,14 +881,6 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	trap_SetConfigstring ( CS_CLIENT_DUELWINNER, va("-1") );
 	gDuelist1 = -1;
 	gDuelist2 = -1;
-
-	if (g_modes.integer) {
-		// for ironman we want client to be able to display the flag even if the map doesnt have it
-		gitem_t* flag = BG_FindItem("team_CTF_blueflag");
-		RegisterItem(flag);
-		flag = BG_FindItem("team_CTF_redflag");
-		RegisterItem(flag);
-	}
 
 	SaveRegisteredItems();
 
@@ -1252,8 +923,6 @@ void G_ShutdownGame( int restart ) {
 		G_LogPrintf("------------------------------------------------------------\n" );
 		trap_FS_FCloseFile( level.logFile );
 	}
-
-	DF_HandleUnfinishedDemos();
 
 	// write all the client session data so we can get it back
 	G_WriteSessionData();
@@ -1554,8 +1223,6 @@ SortRanks
 */
 int QDECL SortRanks( const void *a, const void *b ) {
 	gclient_t	*ca, *cb;
-	int raceA, raceB;
-	int scoreA, scoreB;
 
 	ca = &level.clients[*(int *)a];
 	cb = &level.clients[*(int *)b];
@@ -1576,21 +1243,9 @@ int QDECL SortRanks( const void *a, const void *b ) {
 		return -1;
 	}
 
-	raceA = ca->pers.raceBestTime ? ca->pers.raceBestTime : INT_MAX;
-	raceB = cb->pers.raceBestTime ? cb->pers.raceBestTime : INT_MAX;
 
 	// then spectators
 	if ( ca->sess.sessionTeam == TEAM_SPECTATOR && cb->sess.sessionTeam == TEAM_SPECTATOR ) {
-		if (g_gametype.integer != GT_TOURNAMENT) { // spectator order matters in tournaments i guess. racing doesn't rly make sense in duel mode anyway
-			if (raceA
-				< raceB) {
-				return -1;
-			}
-			if (raceA
-				> raceB) {
-				return 1;
-			}
-		}
 		if ( ca->sess.spectatorOrder > cb->sess.spectatorOrder ) {
 			return -1;
 		}
@@ -1606,25 +1261,13 @@ int QDECL SortRanks( const void *a, const void *b ) {
 		return -1;
 	}
 
-	if (raceA
-		< raceB) {
-		return -1;
-	}
-	if (raceA
-		> raceB) {
-		return 1;
-	}
-
-	scoreA = ca->sess.raceMode ? 32767 : ca->ps.persistant[PERS_SCORE];
-	scoreB = cb->sess.raceMode ? 32767 : cb->ps.persistant[PERS_SCORE];
-
 	// then sort by score
-	if (scoreA
-		> scoreB) {
+	if ( ca->ps.persistant[PERS_SCORE]
+		> cb->ps.persistant[PERS_SCORE] ) {
 		return -1;
 	}
-	if (scoreA
-		< scoreB) {
+	if ( ca->ps.persistant[PERS_SCORE]
+		< cb->ps.persistant[PERS_SCORE] ) {
 		return 1;
 	}
 	return 0;
@@ -1646,7 +1289,6 @@ void CalculateRanks( void ) {
 	int		i;
 	int		rank;
 	int		score;
-	int		raceBestTime;
 	int		newScore;
 	// int		preNumSpec = 0;
 	// int		nonSpecIndex = -1;
@@ -1667,9 +1309,6 @@ void CalculateRanks( void ) {
 		if ( level.clients[i].pers.connected != CON_DISCONNECTED ) {
 			level.sortedClients[level.numConnectedClients] = i;
 			level.numConnectedClients++;
-			if (level.clients[i].pers.connected == CON_CONNECTED) {
-				level.numFullyConnectedClients++;
-			}
 
 			if ( level.clients[i].sess.sessionTeam != TEAM_SPECTATOR ) {
 				level.numNonSpectatorClients++;
@@ -1678,7 +1317,7 @@ void CalculateRanks( void ) {
 				// decide if this should be auto-followed
 				if ( level.clients[i].pers.connected == CON_CONNECTED ) {
 					level.numPlayingClients++;
-					if ( !(g_entities[i].r.svFlags & SVF_BOT) && !level.clients[i].markedAsInactive) {
+					if ( !(g_entities[i].r.svFlags & SVF_BOT) ) {
 						level.numVotingClients++;
 						if ( level.clients[i].sess.sessionTeam == TEAM_RED )
 							level.numteamVotingClients[0]++;
@@ -1731,19 +1370,12 @@ void CalculateRanks( void ) {
 			}
 		}
 	} else {	
-		int		oldRanks[MAX_CLIENTS];
 		rank = -1;
 		score = 0;
-		raceBestTime = 0;
-		if (g_developer.integer > 1) {
-			for (i = 0; i < level.numPlayingClients; i++) {
-				oldRanks[level.sortedClients[i]] = level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK];
-			}
-		}
 		for ( i = 0;  i < level.numPlayingClients; i++ ) {
 			cl = &level.clients[ level.sortedClients[i] ];
-			newScore = cl->sess.raceMode ? 32767 : cl->ps.persistant[PERS_SCORE];
-			if ( i == 0 || newScore != score || cl->pers.raceBestTime != raceBestTime ) {
+			newScore = cl->ps.persistant[PERS_SCORE];
+			if ( i == 0 || newScore != score ) {
 				rank = i;
 				// assume we aren't tied until the next client is checked
 				level.clients[ level.sortedClients[i] ].ps.persistant[PERS_RANK] = rank;
@@ -1753,24 +1385,8 @@ void CalculateRanks( void ) {
 				level.clients[ level.sortedClients[i] ].ps.persistant[PERS_RANK] = rank | RANK_TIED_FLAG;
 			}
 			score = newScore;
-			raceBestTime = cl->pers.raceBestTime;
 			if ( g_gametype.integer == GT_SINGLE_PLAYER && level.numPlayingClients == 1 ) {
 				level.clients[ level.sortedClients[i] ].ps.persistant[PERS_RANK] = rank | RANK_TIED_FLAG;
-			}
-		}
-		if (g_developer.integer > 1) {
-			for (i = 0; i < level.numPlayingClients; i++) {
-				if (oldRanks[level.sortedClients[i]] != level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK]) {
-					G_Printf("^3Rank changed for client %d (score %d, racebesttime %d) from %d (tied %d) to %d (tied %d)\n",
-						level.sortedClients[i],
-						level.clients[level.sortedClients[i]].ps.persistant[PERS_SCORE],
-						level.clients[level.sortedClients[i]].pers.raceBestTime,
-						oldRanks[level.sortedClients[i]] &~ RANK_TIED_FLAG,
-						!!(oldRanks[level.sortedClients[i]] & RANK_TIED_FLAG),
-						level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK] &~ RANK_TIED_FLAG,
-						!!(level.clients[level.sortedClients[i]].ps.persistant[PERS_RANK] & RANK_TIED_FLAG)
-						);
-				}
 			}
 		}
 	}
@@ -1870,11 +1486,6 @@ void MoveClientToIntermission( gentity_t *ent ) {
 	ent->client->ps.eFlags = 0;
 	ent->s.eFlags = 0;
 	ent->s.eType = ET_GENERAL;
-	if (g_entHUDFields.integer) {
-		ent->client->ps.generic1 = ent->s.generic1 = 0;
-		ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = 0;
-		ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = 0;
-	}
 	ent->s.modelindex = 0;
 	ent->s.loopSound = 0;
 	ent->s.event = 0;
@@ -1893,15 +1504,15 @@ void FindIntermissionPoint( void ) {
 	vec3_t		dir;
 
 	// find the intermission spot
-	ent = G_FindByClassNameFast(NULL, "info_player_intermission");
+	ent = G_Find (NULL, FOFS(classname), "info_player_intermission");
 	if ( !ent ) {	// the map creator forgot to put in an intermission point...
-		SelectSpawnPoint ( NULL, vec3_origin, level.intermission_origin, level.intermission_angle );
+		SelectSpawnPoint ( vec3_origin, level.intermission_origin, level.intermission_angle );
 	} else {
 		VectorCopy (ent->s.origin, level.intermission_origin);
 		VectorCopy (ent->s.angles, level.intermission_angle);
 		// if it has a target, look towards it
 		if ( ent->target ) {
-			target = G_PickTarget( ent->target, qtrue, NULL );
+			target = G_PickTarget( ent->target );
 			if ( target ) {
 				VectorSubtract( target->s.origin, level.intermission_origin, dir );
 				vectoangles( dir, level.intermission_angle );
@@ -2108,12 +1719,6 @@ void LogExit( const char *string ) {
 	int				i, numSorted;
 	gclient_t		*cl;
 	qboolean		won = qtrue;
-
-	if (g_defrag.integer) { // no game ending in defrag.
-		G_LogPrintf("Exit (stopped due to defrag): %s\n", string);
-		return;
-	}
-
 	G_LogPrintf( "Exit: %s\n", string );
 
 	level.intermissionQueued = level.time;
@@ -2395,8 +2000,6 @@ and the time everyone is moved to the intermission spot, so you
 can see the last frag.
 =================
 */
-extern void Svcmd_ResetScores_f(void);
-extern void ClientRespawn(gentity_t* ent);
 void CheckExitRules( void ) {
  	int			i;
 	gclient_t	*cl;
@@ -2447,33 +2050,7 @@ void CheckExitRules( void ) {
 	if ( level.intermissionQueued ) {
 		int time = (g_singlePlayer.integer) ? SP_INTERMISSION_DELAY_TIME : INTERMISSION_DELAY_TIME;
 		if ( level.time - level.intermissionQueued >= time ) {
-			qboolean racer = qfalse;
-
 			level.intermissionQueued = 0;
-
-			if (g_defrag.integer) {
-				for (i = 0; i < level.maxclients; i++) {
-					if (g_entities[i].inuse && g_entities[i].client && g_entities[i].client->sess.raceMode && (g_entities[i].client->sess.sessionTeam != TEAM_SPECTATOR)) {
-						racer = qtrue;
-						break;
-					}
-				}
-			}
-
-			// from japro. not sure if i even need this or it makes any sense
-			if (racer) { //only do this if someoen is in racemode?
-				//PrintStats(-1);//JAPRO STATS
-				for (i = 0; i < level.maxclients; i++) {
-					if (!g_entities[i].inuse || !g_entities[i].client || g_entities[i].client->sess.raceMode || (g_entities[i].client->sess.sessionTeam == TEAM_SPECTATOR))
-						continue;
-					ClientRespawn(&g_entities[i]);	// respawn if dead... respawn if alive too?
-				}
-				Svcmd_ResetScores_f();
-			}
-			else {
-				BeginIntermission();
-			}
-			// uh? should this not NOT be called then?
 			BeginIntermission();
 		}
 		return;
@@ -2488,7 +2065,7 @@ void CheckExitRules( void ) {
 		}
 	}
 
-	if ( g_timelimit.integer && !level.warmupTime && !g_defrag.integer) {
+	if ( g_timelimit.integer && !level.warmupTime ) {
 		if ( level.time - level.startTime >= g_timelimit.integer*60000 ) {
 //			trap_SendServerCommand( -1, "print \"Timelimit hit.\n\"");
 			trap_SendServerCommand( -1, va("print \"%s.\n\"",G_GetStripEdString("SVINGAME", "TIMELIMIT_HIT")));
@@ -2501,7 +2078,7 @@ void CheckExitRules( void ) {
 		return;
 	}
 
-	if ( g_gametype.integer < GT_CTF && g_fraglimit.integer && !g_defrag.integer) {
+	if ( g_gametype.integer < GT_CTF && g_fraglimit.integer ) {
 		if ( level.teamScores[TEAM_RED] >= g_fraglimit.integer ) {
 			trap_SendServerCommand( -1, va("print \"Red %s\n\"", G_GetStripEdString("SVINGAME", "HIT_THE_KILL_LIMIT")) );
 			LogExit( "Kill limit hit." );
@@ -2728,19 +2305,6 @@ void CheckTournament( void ) {
 }
 
 
-int G_CalculateVoteExecuteTime() {
-	int i;
-	gentity_t* ent = g_entities;
-	// check if anyone is racing who didn't vote yes
-	for (i = 0; i < level.maxclients; i++,ent++) {
-		if (ent->inuse && ent->client && ent->client->sess.raceMode && ent->client->pers.raceStartCommandTime && !ent->client->pers.voteValue) {
-			trap_SendServerCommand(-1,va("print \"Giving %s (and others?) 60 seconds to finish his race.\n\"",ent->client->pers.netname));
-			return 60000;
-		}
-	}
-	return 3000;
-}
-
 /*
 ==================
 CheckVote
@@ -2796,49 +2360,19 @@ void CheckVote( void ) {
 	if ( !level.voteTime ) {
 		return;
 	}
-	if (level.votingOpinionAll) {
-		if (level.time - level.voteTime >= VOTE_TIME || (level.voteYes+ level.voteNo) >= level.numFullyConnectedClients) {
-			trap_SendServerCommand(-1, va("print \"^3%s^7results: %d Yes vs %d No\n\"", level.voteDisplayString, level.voteYes, level.voteNo));
-			level.votingOpinion = qfalse;
-			level.votingOpinionAll = qfalse;
-		}
-		else {
+	if ( level.time - level.voteTime >= VOTE_TIME ) {
+		trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED")) );
+	} else {
+		if ( level.voteYes > level.numVotingClients/2 ) {
+			// execute the command, then remove the vote
+			trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED")) );
+			level.voteExecuteTime = level.time + 3000;
+		} else if ( level.voteNo >= level.numVotingClients/2 ) {
+			// same behavior as a timeout
+			trap_SendServerCommand( -1, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED")) );
+		} else {
 			// still waiting for a majority
 			return;
-		}
-	}
-	else if (level.votingOpinion) {
-		if (level.time - level.voteTime >= VOTE_TIME || (level.voteYes+ level.voteNo) >= level.numVotingClients) {
-			trap_SendServerCommand(-1, va("print \"^3%s^7results: %d Yes vs %d No\n\"", level.voteDisplayString, level.voteYes, level.voteNo));
-			level.votingOpinion = qfalse;
-			level.votingOpinionAll = qfalse;
-		}
-		else {
-			// still waiting for a majority
-			return;
-		}
-	}
-	else {
-		if (level.time - level.voteTime >= VOTE_TIME) {
-			trap_SendServerCommand(-1, va("print \"%s: %d Yes vs %d No\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
-		}
-		else {
-			if (level.voteYes > level.numVotingClients / 2 && (!g_slowVote.integer || level.voteYes == level.numVotingClients)) {
-				// execute the command, then remove the vote
-				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED"), level.voteYes, level.voteNo));
-				level.voteExecuteTime = level.time + G_CalculateVoteExecuteTime();
-			}
-			else if (level.voteNo > 0 && g_slowVote.integer) {
-				trap_SendServerCommand(-1, va("print \"%s (slow voting enabled): %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
-			}
-			else if (level.voteNo >= level.numVotingClients / 2) {
-				// same behavior as a timeout
-				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
-			}
-			else {
-				// still waiting for a majority
-				return;
-			}
 		}
 	}
 	level.voteTime = 0;
@@ -2986,182 +2520,6 @@ void CheckCvars( void ) {
 	}
 }
 
-#define AUTOGEN_ARENA_NAME "_autoGenArenas" // changed back to _ from 0. doesnt affect ordering anyway
-/*
-=============
-G_AutoGenerateArena
-=============
-*/
-void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qboolean immediatePrint, qboolean silentSkip)
-{
-	vmCvar_t		mapname;
-	int				len = 0;
-	fileHandle_t	f;
-	static char		arenaText[MAX_ARENAS_TEXT];
-	int				arenaTextLength;
-	int				arenaFileIndex = 0;
-	const char*		tmp;
-
-	if (!level.arenasLoaded) {
-		G_BufferedSendOrPrint(NULL,qtrue,immediatePrint,va("^1Can't generate arena, arenas weren't loaded (can't avoid dupes).\n", thisMapName));
-		return;
-	}
-
-
-	if (checkBspExists) {
-		int i;
-
-		if (!Q_stricmp(thisMapName, DF_GetCourseName(qfalse)) && level.hasArenaInfo) {
-			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
-		}
-
-		if (G_DoesMapHaveArena(thisMapName)) {
-			if (!silentSkip) {
-				G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
-			}
-			return;
-		}
-
-		if (G_IsMapBlacklisted(thisMapName)) {
-			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s is blacklisted.\n", thisMapName));
-			return;
-		}
-
-		tmp = va("maps/%s.bsp", thisMapName);
-		trap_FS_FOpenFile(tmp, &f, FS_READ);
-		if (!f) {
-			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^1Arena auto generation skipped, cannot find/open %s.\n",tmp));
-			return;
-		}
-		trap_FS_FCloseFile(f);
-
-	}
-
-	Q_strncpyz(arenaText,va("{\nmap \"%s\"\nlongname \"%s\"\ntype \"ffa\"\n}\n", thisMapName,level.message[0] ? level.message : thisMapName),sizeof(arenaText));
-
-	arenaTextLength = strlen(arenaText);
-	while (((len=trap_FS_FOpenFile(va("scripts/" AUTOGEN_ARENA_NAME "%d.arena",arenaFileIndex), &f, FS_READ)) + arenaTextLength + 2) > MAX_ARENAS_TEXT){
-		if (!f) {
-
-			// file doesnt exist yet. good. wait, we would prolly never get here then. oh well
-			break;
-		}
-		trap_FS_FCloseFile(f);
-		f = 0;
-		arenaFileIndex++;
-	}
-	if (f) {
-		trap_FS_FCloseFile(f); // we need to close and reopen it. the first open was in FS_READ mode to get the filesize. second open is in FS_APPEND mode. if the file doesnt yet exist thats fine, we will create it.
-		f = 0;
-	}
-
-	trap_FS_FOpenFile(va("scripts/" AUTOGEN_ARENA_NAME "%d.arena", arenaFileIndex), &f, FS_APPEND);
-
-	if (!f) {
-		G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^1Arena auto generation failed, cannot open scripts/" AUTOGEN_ARENA_NAME "%d.arena for writing.\n", arenaFileIndex));
-		return;
-	}
-	else {
-		G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^2Generating arena for %s (length %d) in scripts/" AUTOGEN_ARENA_NAME "%d.arena (length %d).\n", thisMapName, arenaTextLength, arenaFileIndex, len));
-	}
-
-	trap_FS_Write(arenaText,arenaTextLength,f);
-
-	trap_FS_FCloseFile(f);
-}
-
-int sortironmanners(const void* a, const void* b) {
-	gentity_t* player1 = &g_entities[*(int*)a];
-	gentity_t* player2 = &g_entities[*(int*)b];
-	// whoever didnt get flag for longest time is most eligible to get it
-	return player1->client->pers.lastIronmanFlagGiven - player2->client->pers.lastIronmanFlagGiven;
-}
-gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage);
-void G_CheckIronManStatus() {
-	int i;
-	gentity_t* ent = g_entities;
-	int ironManners[MAX_CLIENTS];
-	int ironmannerCount = 0;
-	int flagCount = 0;
-	vec3_t spawnpoint;
-	vec3_t spawnpointAngles;
-	vec3_t spawnpointWiggled;
-	int randomteam;
-
-	if (level.intermissiontime || level.lastIronManKilled + IRONMAN_NEXTCAPPER_TIMEOUT > level.time) { // leave us 3 seconds to breathe after ironman is killed
-		return; 
-	}
-
-	level.ironManClientNum = -1;
-
-	for (i = 0; i < level.maxclients; i++, ent++) {
-		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
-			continue;
-		}
-		if (ent->client->ps.powerups[PW_BLUEFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_NEUTRALFLAG]) {
-			flagCount++;
-			level.ironManClientNum = i;
-		}
-		ironManners[ironmannerCount++] = i;
-	}
-	if (flagCount >= 1 || ironmannerCount <= 1) {
-		// > 1 would be very weird tho!
-		return;
-	}
-	// ok nobody has flag. take care of things.
-	qsort(ironManners,ironmannerCount,sizeof(ironManners[0]),sortironmanners);
-
-	level.ironManPosCount = 0;
-	level.lastIronManPosSaved = 0;
-
-	// unlink all ironmanners so we can teleport them without their old positions having any influence on anything.
-	for (i = 0; i < ironmannerCount; i++) { 
-		ent = &g_entities[ironManners[i]];
-
-		trap_UnlinkEntity(ent);
-	}
-
-	// Spawn somewhere
-	SelectSpawnPoint(ent, vec3_origin, spawnpoint, spawnpointAngles);
-
-	for (i = ironmannerCount-1; i >= 0; i--) { // spawn the ironman last so if theres anything dimension crushing, he still survives
-		ent = &g_entities[ironManners[i]];
-
-		// reset health/revive
-		if (ent->health <= 0) {
-			respawn(ent);
-			// unlink us so we can wiggle without our own position affecting us. teleportplayer will relink us anyway
-			trap_UnlinkEntity(ent);
-		}
-		ent->client->isIronMan = qfalse;
-		ent->health = 100;
-		ent->client->ps.stats[STAT_HEALTH] = 100;
-		ent->client->ps.stats[STAT_ARMOR] = 25;
-		ent->client->isIronMan = qfalse;
-
-		VectorCopy(spawnpoint, spawnpointWiggled);
-		WiggleSpotTelefrag(spawnpointWiggled,ent);
-		spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
-		TeleportPlayer(ent, spawnpointWiggled, spawnpointAngles);
-		spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
-	}
-
-	// set data for the iron man (ent will be the ironman as we counted backwards in the looop)
-	ent->client->isIronMan = qtrue;
-	ent->client->ps.stats[STAT_ARMOR] = 100; // ironman gets full armor
-	ent->client->ps.eFlags |= EF_INVULNERABLE;
-	ent->client->invulnerableTimer = level.time + 3000; // give ironman 2 seconds of invulnerability to not get insta killed
-	ent->client->pers.lastIronmanFlagGiven = level.time;
-	randomteam = Q_irand(PW_REDFLAG, 2, qfalse, PW_REDFLAG);
-	ent->client->ps.powerups[randomteam] = INT_MAX; // lets not do neutral flag cuz its not actually visible :/
-	PrintCTFMessage(ent - g_entities, randomteam == PW_REDFLAG ? TEAM_RED : TEAM_BLUE, CTFMESSAGE_PLAYER_GOT_FLAG);
-
-	VectorCopy(ent->client->ps.origin, level.ironManCurrentPosition);
-	level.ironManCurrentPositionSet = qtrue;
-}
-
-
-
 /*
 =============
 G_RunThink
@@ -3170,14 +2528,13 @@ Runs thinking code for this frame if necessary
 =============
 */
 void G_RunThink (gentity_t *ent) {
-	float	thinktime; 
-	int			nowTime = ent->s.eType == ET_MOVER ? MOVERTIME_ENT(ent) : level.time;
+	float	thinktime;
 
 	thinktime = ent->nextthink;
 	if (thinktime <= 0) {
 		return;
 	}
-	if (thinktime > nowTime) {
+	if (thinktime > level.time) {
 		return;
 	}
 	
@@ -3194,8 +2551,6 @@ int g_TimeSinceLastFrame = 0;
 qboolean gDoSlowMoDuel = qfalse;
 int gSlowMoDuelTime = 0;
 
-void G_UserCmdBuffer_NewFrame();
-
 /*
 ================
 G_RunFrame
@@ -3209,15 +2564,6 @@ void G_RunFrame( int levelTime ) {
 	gentity_t	*ent;
 	int			msec;
 	int start, end;
-	int			activeRunnerCount = 0;
-
-	for (i = 0; i < level.maxclients; i++) {
-		ent = g_entities + i;
-		if (!ent->inuse || !ent->client) continue;
-		ent->client->pers.normalFollowerPing = ent->client->ps.ping; // server (except on map restarts and such) calcs proper pings and saves them to the ps before running game frame. intercept it here so we know it and can send the real ping even for clients that are spectating.
-	}
-
-	G_BufferedSendOrPrintFlushIfNeeded(NULL, qtrue);
 
 	if (gDoSlowMoDuel)
 	{
@@ -3250,7 +2596,7 @@ void G_RunFrame( int levelTime ) {
 				useDif = (timeDif/1000); //scale from 0.1 up to 1
 				if (useDif < 0.1)
 				{
-					useDif = 0.1f;
+					useDif = 0.1;
 				}
 				if (useDif > 1.0)
 				{
@@ -3284,24 +2630,12 @@ void G_RunFrame( int levelTime ) {
 	level.framenum++;
 	level.previousTime = level.time;
 	level.time = levelTime;
-	level.frameTimeMsec = msec = level.time - level.previousTime;
+	msec = level.time - level.previousTime;
 
 	g_TimeSinceLastFrame = (level.time - g_LastFrameTime);
 
 	// get any cvar changes
 	G_UpdateCvars();
-
-	G_CheckCvarChanges();
-
-	DF_CheckRaceCvarChanges(qfalse);
-
-	G_DB_CheckResponses();
-
-	if (g_defrag.integer && !level.mapDefaultsConfirmed && !level.mapDefaultsLoadFailed && (level.time > (level.mapDefaultsProblemLastAnnounced+1000)|| level.time < level.mapDefaultsProblemLastAnnounced)) {
-		G_CenterPrint(-1,3,"^1Loading map defaults...",qfalse,qfalse,qtrue, NULL);
-		//trap_SendServerCommand(-1,"print \"^1Loading map defaults...\n\"");
-		level.mapDefaultsProblemLastAnnounced = level.time;
-	}
 
 	//
 	// go through all allocated objects
@@ -3314,7 +2648,7 @@ void G_RunFrame( int levelTime ) {
 		}
 
 		// clear events that are too old
-		if ( LEVELTIME(ent->client) - ent->eventTime > EVENT_VALID_MSEC ) {
+		if ( level.time - ent->eventTime > EVENT_VALID_MSEC ) {
 			if ( ent->s.event ) {
 				ent->s.event = 0;	// &= EV_EVENT_BITS;
 				if ( ent->client ) {
@@ -3365,13 +2699,7 @@ void G_RunFrame( int levelTime ) {
 		}
 
 		if ( ent->s.eType == ET_MOVER ) {
-			if (g_defrag.integer && ent->activatorReal && ent->activatorReal->inuse && ent->activatorReal->client && ent->activatorReal->client->sess.raceMode) {
-				// we run this mover on client time.
-			}
-			else 
-			{
-				G_RunMover(ent);
-			}
+			G_RunMover( ent );
 			continue;
 		}
 
@@ -3379,139 +2707,27 @@ void G_RunFrame( int levelTime ) {
 		{
 			G_CheckClientTimeouts ( ent );
 			
-			if (!ent->client->sess.raceMode) {
-				if((!level.intermissiontime)&&!(ent->client->ps.pm_flags&PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
-				{
-					WP_ForcePowersUpdate(ent, &ent->client->pers.cmd );
-					WP_SaberPositionUpdate(ent, &ent->client->pers.cmd );
-				}
+			if((!level.intermissiontime)&&!(ent->client->ps.pm_flags&PMF_FOLLOW) && ent->client->sess.sessionTeam != TEAM_SPECTATOR)
+			{
+				WP_ForcePowersUpdate(ent, &ent->client->pers.cmd );
+				WP_SaberPositionUpdate(ent, &ent->client->pers.cmd);
 			}
 			G_RunClient( ent );
-
-			if (ent->client->sess.raceMode && 
-				( ent->client->pers.raceStartCommandTime // actively running
-				|| (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state > SEG_RECORDING // replaying
-				|| ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe // run finished recently. lets not lag demo
-				)
-				) {
-				activeRunnerCount++;
-			}
-
 			continue;
 		}
 
 		G_RunThink( ent );
 	}
-
-	if (!activeRunnerCount && !level.hasArenaInfo && level.mustGenerateArena) {
-		G_AutoGenerateArena(DF_GetCourseName(qfalse),qfalse,qtrue,qfalse);
-		level.mustGenerateArena = qfalse;
-		level.hasArenaInfo = qtrue;
-	}
-
-	if (!level.nextRandomTip) {
-		level.nextRandomTip = level.time + 30000;
-	}
-
-	if (level.time > level.nextRandomTip && g_randomTipInterval.integer) {
-		int tries = 0;
-		qboolean failed = qfalse;
-		helpTip_t* tip = NULL;
-		tip = &helpTips[Q_irand(0,helpTipCount,qfalse,0)];
-		while (tip->header || !tip->randomTipPrint || tip->raceOnly && !g_defrag.integer || tip->allowfunc && !tip->allowfunc(NULL)) {
-			tip = &helpTips[Q_irand(0, helpTipCount, qfalse, 0)];
-			tries++;
-			if (tries >= 10) {
-				// why am i doing this?
-				// because qvm might (?) behave very strange with q_irand and in some freak situation never give us what we want.
-				// let's be safe, shrug
-				failed = qtrue;
-				break;
-			}
-		}
-		if (!failed) {
-			trap_SendServerCommand(-1, tip->randomTipPrint);
-			level.nextRandomTip = clampedIntAdd(level.time, MAX(clampedIntMult(clampedIntMult(MAX(1, g_randomTipInterval.integer), 1000), Q_irand(100, 400, qfalse, 200)) / 200, 1000));
-		}
-	}
-
-	if (!level.numPlayingClients && (clampedIntAdd(level.lastAllRankUpdate, 60000) < level.time || level.time < level.lastAllRankUpdate || !level.lastAllRankUpdate && level.time)) {
-		//Com_Printf("^3Executing auto rank update.");
-		DF_UpdateRanksMainRequest(NULL,NULL,qfalse,5); // up to 5 maps at a time
-	}
-	else if (level.shouldUpdateMapRanks && !activeRunnerCount) {
-		DF_UpdateRanksMainRequest(NULL, DF_GetCourseName(qfalse), qfalse, 0); // up to 5 maps at a time
-		level.shouldUpdateMapRanks = qfalse;
-	}
-
-	if (g_modes.integer) {
-		G_CheckIronManStatus();
-	}
-
-	// Process logical entities
-	ent = &g_entities[MAX_GENTITIES];
-	for (i = 0; i < level.num_logicalents; i++, ent++) {
-		if (!ent->inuse) {
-			continue;
-		}
-		// Logical entities only think, nothing else
-		G_RunThink(ent);
-	}
-
 end = trap_Milliseconds();
 
 	trap_ROFF_UpdateEntities();
-
-	if (g_entHUDFields.integer) {
-		ent = &g_entities[0];
-		//for (i = 0; i < level.num_entities; i++, ent++)
-		for (i = 0; i < MAX_CLIENTS; i++, ent++)
-		{
-			if (!ent->inuse) {
-				continue;
-			}
-			else if (ent->client) {
-
-				if (ent->s.eType == ET_GENERAL || ent->client->ps.pm_type == PM_INTERMISSION) {
-					// We are in an intermission and players have been turned into ET_GENERAL. 
-					// Set all this stuff to 0 so we don't get glowing bodies
-					ent->client->ps.generic1 = ent->s.generic1 = 0;
-					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = 0;
-					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = 0;
-				}
-				else {
-					//ent->client->ps.fd.forcePowersActive &= ~(31 << 20);
-					//ent->client->ps.fd.forcePowersActive |= ((dimensionNum & 31) << 20);
-					// trickedentindex3: armor (8 bits), health (8 bits)
-					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = ((MIN(127,MAX(-128,ent->client->ps.stats[STAT_HEALTH])) & 0xff) << 8) | (MIN(127, MAX(-128, ent->client->ps.stats[STAT_ARMOR])) & 0xff);
-					// trickedentindex4: force power (7 bits), current weapon ammo (7 bits), saberdrawanimlevel (2 bits)
-					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = (ent->client->ps.fd.saberDrawAnimLevel & 3) << 14 | ((MAX(0, MIN(127, ent->client->ps.ammo[weaponData[ent->client->ps.weapon].ammoIndex])) & 127) << 7) | (MAX(0, MIN(127, ent->client->ps.fd.forcePower)) & 127);
-					// generic1: seeker, forcefield, bacta, sentry in inventory (1 bit each), mine count (4 bits)
-					ent->client->ps.generic1 = ent->s.generic1 = ((MAX(0, MIN(15, ent->client->ps.ammo[weaponData[WP_TRIP_MINE].ammoIndex])) & 15) << 4) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN))) << 3) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC))) << 2) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD))) << 1) | (!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)));
-				}
-			}
-
-			//ent->s.forcePowersActive &= ~(31 << 20);
-			//ent->s.forcePowersActive |= ((dimensionNum & 31) << 20);
-		}
-	}
 
 start = trap_Milliseconds();
 	// perform final fixups on the players
 	ent = &g_entities[0];
 	for (i=0 ; i < level.maxclients ; i++, ent++ ) {
 		if ( ent->inuse ) {
-			if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
-				ClientEndFrame(ent,qfalse);
-			}
-		}
-	}
-	ent = &g_entities[0];
-	for (i=0 ; i < level.maxclients ; i++, ent++ ) {
-		if ( ent->inuse ) {
-			if (ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
-				SpectatorClientEndFrame(ent); // put spectators in their own loop so they get the truly most updated version
-			}
+			ClientEndFrame( ent );
 		}
 	}
 end = trap_Milliseconds();
@@ -3556,8 +2772,6 @@ end = trap_Milliseconds();
 			gQueueScoreMessage = 0;
 		}
 	}
-
-	G_UserCmdBuffer_NewFrame();
 
 	g_LastFrameTime = level.time;
 

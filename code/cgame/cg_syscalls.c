@@ -125,36 +125,28 @@ int		trap_CM_TransformedPointContents( const vec3_t p, clipHandle_t model, const
 
 void	trap_CM_BoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
-						  clipHandle_t model, int brushmask
-	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
-) {
-	syscall( CG_CM_BOXTRACE, results, start, end, mins, maxs, model, brushmask, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags );
+						  clipHandle_t model, int brushmask ) {
+	syscall( CG_CM_BOXTRACE, results, start, end, mins, maxs, model, brushmask );
 }
 
 void	trap_CM_CapsuleTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
-						  clipHandle_t model, int brushmask
-	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
-) {
-	syscall( CG_CM_CAPSULETRACE, results, start, end, mins, maxs, model, brushmask, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+						  clipHandle_t model, int brushmask ) {
+	syscall( CG_CM_CAPSULETRACE, results, start, end, mins, maxs, model, brushmask );
 }
 
 void	trap_CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
 						  clipHandle_t model, int brushmask,
-						  const vec3_t origin, const vec3_t angles
-	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
-) {
-	syscall( CG_CM_TRANSFORMEDBOXTRACE, results, start, end, mins, maxs, model, brushmask, origin, angles, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+						  const vec3_t origin, const vec3_t angles ) {
+	syscall( CG_CM_TRANSFORMEDBOXTRACE, results, start, end, mins, maxs, model, brushmask, origin, angles );
 }
 
 void	trap_CM_TransformedCapsuleTrace( trace_t *results, const vec3_t start, const vec3_t end,
 						  const vec3_t mins, const vec3_t maxs,
 						  clipHandle_t model, int brushmask,
-						  const vec3_t origin, const vec3_t angles
-	, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags // coolapi extension. normally these extra values would be random/undefined anyway so we may as well only check engine side
-) {
-	syscall( CG_CM_TRANSFORMEDCAPSULETRACE, results, start, end, mins, maxs, model, brushmask, origin, angles, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+						  const vec3_t origin, const vec3_t angles ) {
+	syscall( CG_CM_TRANSFORMEDCAPSULETRACE, results, start, end, mins, maxs, model, brushmask, origin, angles );
 }
 
 int		trap_CM_MarkFragments( int numPoints, const vec3_t *points, 
@@ -251,148 +243,6 @@ int trap_R_Font_HeightPixels(const int iFontIndex, const float scale)
 void trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale)
 {
 	syscall( CG_R_FONT_DRAWSTRING, ox, oy, text, rgba, setIndex, iCharLimit, PASSFLOAT(scale));
-}
-
-void trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS)
-{
-	syscall(CG_COOL_API_SETPREDICTEDMOVEMENT, predictedPS);
-}
-
-void trap_CG_COOL_API_SetUserAngles(int pitch, int yaw, int roll, int angleSet)
-{
-	syscall(CG_COOL_API_SETUSERANGLES, pitch, yaw, roll, angleSet);
-}
-
-void trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount)
-{
-	syscall(CG_COOL_API_SET_EZDEMO_BUFFER, ezDemoBuffer, ezDemoEventSize, maxEventCount, actualEventCount);
-}
-
-int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum)
-{
-	return syscall(CG_COOL_API_GETTIMESINCESNAPRECEIVED, snapNum);
-}
-
-qboolean	trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight) {
-	return syscall(CG_COOL_API_GLRESOLUTIONCHANGED, vidWidth, vidHeight);
-}
-qboolean	trap_CG_COOL_API_AddMemeCommand(const char* cmdName) {
-	return syscall(CG_COOL_API_ADDMEMECOMMAND, cmdName);
-}
-
-//void trap_CG_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
-//	syscall(CG_COOL_API_NONEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
-//}
-//void trap_CG_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
-//	syscall(CG_COOL_API_NONEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
-//}
-//void trap_CG_COOL_API_CustomEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, float customEpsilon) {
-//	syscall(CG_COOL_API_CUSTOMEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, PASSFLOAT(customEpsilon));
-//}
-//void trap_CG_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, float customEpsilon) {
-//	syscall(CG_COOL_API_CUSTOMEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, PASSFLOAT(customEpsilon));
-//}
-
-
-
-qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size) {
-	return syscall(CG_COOL_API_DB_ESCAPESTRING, input, size);
-}
-qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request) {
-	return syscall(CG_COOL_API_DB_ADDREQUEST, reference, referenceLength, requestType, request);
-}
-qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType) {
-	return syscall(CG_COOL_API_DB_ADDREQUEST_TYPED, reference, referenceLength, requestType, request, (int)dbRequestType);
-}
-qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength) {
-	return syscall(CG_COOL_API_DB_NEXTRESPONSE, requestType, affectedRows, status, errorMessage, errorMessageSize, reference, referenceLength);
-}
-qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength) {
-	return syscall(CG_COOL_API_DB_GETREFERENCE, reference, referenceLength);
-}
-qboolean	trap_CG_COOL_API_DB_NextRow() {
-	return syscall(CG_COOL_API_DB_NEXTROW);
-}
-int			trap_CG_COOL_API_DB_GetInt(int place) {
-	return syscall(CG_COOL_API_DB_GETINT, place);
-}
-void		trap_CG_COOL_API_DB_GetFloat(int place, float* value) {
-	syscall(CG_COOL_API_DB_GETFLOAT, place);
-}
-qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize) {
-	return syscall(CG_COOL_API_DB_GETSTRING, place, out, outSize);
-}
-
-
-// dbApi v3
-
-qboolean	trap_CG_COOL_API_DB_AddPreparedStatement(byte* reference, int referenceLength, int requestType, const char* request) {
-	return syscall(CG_COOL_API_DB_ADDPREPAREDSTATEMENT, reference, referenceLength, requestType, request);
-}
-qboolean	trap_CG_COOL_API_DB_PreparedBindString(const char* string) {
-	return syscall(CG_COOL_API_DB_PREPAREDBINDSTRING, string);
-}
-qboolean	trap_CG_COOL_API_DB_PreparedBindFloat(float number) {
-	return syscall(CG_COOL_API_DB_PREPAREDBINDFLOAT, PASSFLOAT(number));
-}
-qboolean	trap_CG_COOL_API_DB_PreparedBindInt(int number) {
-	return syscall(CG_COOL_API_DB_PREPAREDBINDINT, number);
-}
-qboolean	trap_CG_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength) {
-	return syscall(CG_COOL_API_DB_PREPAREDBINDBINARY, data, dataLength);
-}
-qboolean	trap_CG_COOL_API_DB_FinishAndSendPreparedStatement() {
-	return syscall(CG_COOL_API_DB_FINISHANDSENDPREPAREDSTATEMENT);
-}
-int			trap_CG_COOL_API_DB_GetBinary(int place, byte* out, int outSize) {
-	return syscall(CG_COOL_API_DB_GETBINARY, place, out, outSize);
-}
-qboolean	trap_CG_COOL_API_DB_PreparedBindNull() {
-	return syscall(CG_COOL_API_DB_PREPAREDBINDNULL);
-}
-qboolean	trap_CG_COOL_API_DB_GetMoreResults(int* affectedRows) {
-	return syscall(CG_COOL_API_DB_GETMORERESULTS, affectedRows);
-}
-
-// COOL_APIFEATURE_JEDI_ACADEMY
-int trap_CG_COOL_API_GetNumLanguages(void)
-{
-	return syscall(CG_COOL_API_GET_NUM_LANGUAGES);
-}
-
-void trap_CG_COOL_API_GetLanguageName(int languageIndex, char *buffer, unsigned int bufferSize)
-{
-	syscall(CG_COOL_API_GET_LANGUAGE_NAME, languageIndex, buffer, bufferSize);
-}
-
-qboolean trap_CG_COOL_API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin)
-{
-	return syscall(CG_COOL_API_SET_SKIN, ghoul2, modelIndex, customSkin, renderSkin);
-}
-
-qboolean trap_CG_COOL_API_SkinlessModel(void *ghlInfo, int modelIndex)
-{
-	return syscall(CG_COOL_API_SKINLESS_MODEL, ghlInfo, modelIndex);
-}
-
-int trap_CG_COOL_API_GetSurfaceRenderStatus(void *ghoul2, int modelIndex, const char *surfaceName)
-{
-	return syscall(CG_COOL_API_GET_SURFACE_RENDER_STATUS, ghoul2, modelIndex, surfaceName);
-}
-
-qboolean trap_CG_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, void *ghoul2To, int toBoltIndex, int toModel)
-{
-	return syscall(CG_COOL_API_ATTACH_G2_MODEL, ghoul2From, modelIndexFrom, ghoul2To, toBoltIndex, toModel);
-}
-
-uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName)
-{
-	return syscall(CG_COOL_API_GET_FILE_VERSION, fileName);
-}
-
-int trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize)
-{
-	return syscall(CG_COOL_API_GET_FILE_LIST, path, extension, listbuf, bufsize);
 }
 
 /* 1.04 */
@@ -538,8 +388,23 @@ qboolean	trap_GetUserCmd( int cmdNumber, usercmd_t *ucmd ) {
 	return syscall( CG_GETUSERCMD, cmdNumber, ucmd );
 }
 
-void		trap_SetUserCmdValue( int stateValue, float sensitivityScale, int fpSel, int invenSel ) {
-	syscall( CG_SETUSERCMDVALUE, stateValue, PASSFLOAT(sensitivityScale), fpSel, invenSel );
+void
+trap_SetUserCmdValue(
+	int serverTime,
+	const int *angles,
+	int buttons,
+	byte weapon,
+	byte forcesel,
+	byte invensel,
+	byte generic_cmd,
+	signed char forwardmove,
+	signed char rightmove,
+	signed char upmove,
+	float sensitivityScale,
+	unsigned int flags
+)
+{
+	syscall(CG_SETUSERCMDVALUE, serverTime, angles, buttons, weapon, forcesel, invensel, generic_cmd, forwardmove, rightmove, upmove, PASSFLOAT(sensitivityScale), flags);
 }
 
 void trap_SetClientForceAngle(int time, vec3_t angle)
@@ -938,7 +803,6 @@ void trap_CG_RegisterSharedMemory_1_04(char *memory)
 }
 
 
-
 /* 1.02 */
 int trap_G2API_InitGhoul2Model_1_02(void **ghoul2Ptr, const char *fileName, int modelIndex, qhandle_t customSkin,
 						  qhandle_t customShader, int modelFlags, int lodBias)
@@ -1022,6 +886,18 @@ qboolean trap_G2API_SetNewOrigin_1_02(void *ghoul2, const int boltIndex)
 void trap_CG_RegisterSharedMemory_1_02(char *memory)
 {
 	syscall(CG_SET_SHARED_BUFFER_1_02, memory);
+}
+
+qboolean trap_G2API_SetSkin(void *ghoul2, int modelIndex, qhandle_t customSkin, qhandle_t renderSkin) {
+	return syscall(CG_G2_SETSKIN, ghoul2, modelIndex, customSkin, renderSkin);
+}
+
+int trap_G2API_GetSurfaceRenderStatus(void *ghoul2, const int modelIndex, const char *surfaceName) {
+	return syscall(CG_G2_GETSURFACERENDERSTATUS, ghoul2, modelIndex, surfaceName);
+}
+
+qboolean trap_G2API_SkinlessModel(void *ghlInfo, int modelIndex) {
+	return syscall(CG_G2_SKINLESSMODEL, ghlInfo, modelIndex);
 }
 
 /*

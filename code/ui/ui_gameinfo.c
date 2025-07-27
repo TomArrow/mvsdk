@@ -28,7 +28,6 @@ int UI_ParseInfos( const char *buf, int max, char *infos[] ) {
 	int		count;
 	char	key[MAX_TOKEN_CHARS];
 	char	info[MAX_INFO_STRING];
-	int		allocsize;
 
 	count = 0;
 
@@ -66,23 +65,9 @@ int UI_ParseInfos( const char *buf, int max, char *infos[] ) {
 			Info_SetValueForKey( info, key, token );
 		}
 		//NOTE: extra space for arena number
-		allocsize = strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1;
-		infos[count] = (char *) UI_Alloc(allocsize);
+		infos[count] = UI_Alloc(strlen(info) + strlen("\\num\\") + strlen(va("%d", MAX_ARENAS)) + 1);
 		if (infos[count]) {
-			Q_strncpyz(infos[count], info, allocsize);
-			if (trap_Cvar_VariableValue("com_buildScript"))
-			{
-				char *botFile = Info_ValueForKey(info, "personality");
-				if (botFile && botFile[0])
-				{
-					int fh = 0;
-					trap_FS_FOpenFile(botFile, &fh, FS_READ);
-					if (fh)
-					{
-						trap_FS_FCloseFile(fh);
-					}
-				}
-			}
+			strcpy(infos[count], info);
 			count++;
 		}
 	}
@@ -148,8 +133,8 @@ void UI_LoadArenas( void ) {
 	dirptr  = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
 		dirlen = strlen(dirptr);
-		Q_strncpyz(filename, "scripts/",sizeof(filename));
-		Q_strcat(filename,sizeof(filename), dirptr);
+		strcpy(filename, "scripts/");
+		strcat(filename, dirptr);
 		UI_LoadArenasFromFile(filename);
 	}
 	trap_Print( va( "%i arenas parsed\n", ui_numArenas ) );
@@ -173,9 +158,6 @@ void UI_LoadArenas( void ) {
 			if( strstr( type, "ffa" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_FFA);
 			}
-			if( strstr( type, "team" ) ) {
-				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_TEAM);
-			}
 			if( strstr( type, "holocron" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_HOLOCRON);
 			}
@@ -185,13 +167,7 @@ void UI_LoadArenas( void ) {
 			if( strstr( type, "duel" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_TOURNAMENT);
 			}
-			if( strstr( type, "powerduel" ) ) {
-				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_TOURNAMENT);
-			}
 			if( strstr( type, "saga" ) ) {
-				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_SAGA);
-			}
-			if( strstr( type, "siege" ) ) {
 				uiInfo.mapList[uiInfo.mapCount].typeBits |= (1 << GT_SAGA);
 			}
 			if( strstr( type, "ctf" ) ) {
@@ -291,8 +267,8 @@ void UI_LoadBots( void ) {
 	dirptr  = dirlist;
 	for (i = 0; i < numdirs; i++, dirptr += dirlen+1) {
 		dirlen = strlen(dirptr);
-		Q_strncpyz(filename, "scripts/",sizeof(filename));
-		Q_strcat(filename,sizeof(filename), dirptr);
+		strcpy(filename, "scripts/");
+		strcat(filename, dirptr);
 		UI_LoadBotsFromFile(filename);
 	}
 	trap_Print( va( "%i bots parsed\n", ui_numBots ) );

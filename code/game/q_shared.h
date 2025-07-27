@@ -8,14 +8,6 @@
 
 #define MAX_TEAMNAME 32
 
-
-#define MAX_COURSE_COUNT 200
-#define COURSENAME_MAX_LEN 100
-#define USERNAME_MIN_LEN 3
-#define USERNAME_MAX_LEN 10
-#define PASSWORD_MIN_LEN 6
-#define PASSWORD_MAX_LEN 50 // bcrypt has a limit which seems to be 72 but some sources say its only 50 and im too lazy to read the bcrypt code to decide whos right. 50 is enough anyway.
-
 //================= COMPILER-SPECIFIC DEFINES ===========================
 
 #if defined __LCC__
@@ -101,7 +93,6 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdint.h>
-#include <errno.h>
 
 #endif
 
@@ -273,7 +264,6 @@ typedef int		clipHandle_t;
 #define	BIG_INFO_KEY		  8192
 #define	BIG_INFO_VALUE		8192
 
-#define NET_ADDRSTRMAXLEN	48 // maximum length of an IPv6 address string including trailing '\0'
 
 #define	MAX_QPATH			64		// max length of a quake game pathname
 #ifdef PATH_MAX
@@ -282,8 +272,8 @@ typedef int		clipHandle_t;
 #define	MAX_OSPATH			256		// max length of a filesystem pathname
 #endif
 
-#define	MAX_NAME_LENGTH		48		// max length of a client name (was 32)
-#define MAX_NETNAME			64		// was 36
+#define	MAX_NAME_LENGTH		32		// max length of a client name
+#define MAX_NETNAME			36
 
 #define	MAX_SAY_TEXT	150
 
@@ -298,9 +288,6 @@ typedef enum {
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define CTRL(a)		((a)-'a'+1)
-#define PAD(base, alignment)	(((base)+(alignment)-1) & ~((alignment)-1))
-#define PADLEN(base, alignment)	(PAD((base), (alignment)) - (base))
-#define PADP(base, alignment)	((void *) PAD((intptr_t) (base), (alignment)))
 
 #define ARRAY_LEN(x) (sizeof (x) / sizeof( *(x) ))
 
@@ -319,6 +306,77 @@ typedef enum {
 #if !defined MAX_LIGHT_STYLES
 #define MAX_LIGHT_STYLES		64
 #endif
+
+
+typedef enum {
+	BLK_NO,
+	BLK_TIGHT,		// Block only attacks and shots around the saber itself, a bbox of around 12x12x12
+	BLK_WIDE		// Block all attacks in an area around the player in a rough arc of 180 degrees
+} saberBlockType_t;
+
+typedef enum {
+	BLOCKED_NONE,
+	BLOCKED_BOUNCE_MOVE,
+	BLOCKED_PARRY_BROKEN,
+	BLOCKED_ATK_BOUNCE,
+	BLOCKED_UPPER_RIGHT,
+	BLOCKED_UPPER_LEFT,
+	BLOCKED_LOWER_RIGHT,
+	BLOCKED_LOWER_LEFT,
+	BLOCKED_TOP,
+	BLOCKED_UPPER_RIGHT_PROJ,
+	BLOCKED_UPPER_LEFT_PROJ,
+	BLOCKED_LOWER_RIGHT_PROJ,
+	BLOCKED_LOWER_LEFT_PROJ,
+	BLOCKED_TOP_PROJ
+} saberBlockedType_t;
+
+
+
+typedef enum
+{
+	SABER_RED,
+	SABER_ORANGE,
+	SABER_YELLOW,
+	SABER_GREEN,
+	SABER_BLUE,
+	SABER_PURPLE,
+	NUM_SABER_COLORS
+
+} saber_colors_t;
+
+typedef enum
+{
+	FP_FIRST = 0,//marker
+	FP_HEAL = 0,//instant
+	FP_LEVITATION,//hold/duration
+	FP_SPEED,//duration
+	FP_PUSH,//hold/duration
+	FP_PULL,//hold/duration
+	FP_TELEPATHY,//instant
+	FP_GRIP,//hold/duration
+	FP_LIGHTNING,//hold/duration
+	FP_RAGE,//duration
+	FP_PROTECT,
+	FP_ABSORB,
+	FP_TEAM_HEAL,
+	FP_TEAM_FORCE,
+	FP_DRAIN,
+	FP_SEE,
+	FP_SABERATTACK,
+	FP_SABERDEFEND,
+	FP_SABERTHROW,
+	NUM_FORCE_POWERS
+} forcePowers_t;
+
+typedef enum
+{
+	FORCE_LEVEL_0,
+	FORCE_LEVEL_1,
+	FORCE_LEVEL_2,
+	FORCE_LEVEL_3,
+	NUM_FORCE_POWER_LEVELS
+} forceLevels_t;
 
 #define ATST_HEADSIZE		90
 #define ATST_MINS0			-40
@@ -431,12 +489,6 @@ typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
 typedef vec_t vec5_t[5];
 
-typedef int veci_t;
-typedef veci_t veci2_t[2];
-typedef veci_t veci3_t[3];
-typedef veci_t veci4_t[4];
-typedef veci_t veci5_t[5];
-
 typedef	int	fixed4_t;
 typedef	int	fixed8_t;
 typedef	int	fixed16_t;
@@ -444,307 +496,6 @@ typedef	int	fixed16_t;
 #ifndef M_PI
 #define M_PI		3.14159265358979323846f	// matches value in gcc v2 math.h
 #endif
-
-typedef enum {
-	BLK_NO,
-	BLK_TIGHT,		// Block only attacks and shots around the saber itself, a bbox of around 12x12x12
-	BLK_WIDE		// Block all attacks in an area around the player in a rough arc of 180 degrees
-} saberBlockType_t;
-
-typedef enum {
-	BLOCKED_NONE,
-	BLOCKED_BOUNCE_MOVE,
-	BLOCKED_PARRY_BROKEN,
-	BLOCKED_ATK_BOUNCE,
-	BLOCKED_UPPER_RIGHT,
-	BLOCKED_UPPER_LEFT,
-	BLOCKED_LOWER_RIGHT,
-	BLOCKED_LOWER_LEFT,
-	BLOCKED_TOP,
-	BLOCKED_UPPER_RIGHT_PROJ,
-	BLOCKED_UPPER_LEFT_PROJ,
-	BLOCKED_LOWER_RIGHT_PROJ,
-	BLOCKED_LOWER_LEFT_PROJ,
-	BLOCKED_TOP_PROJ
-} saberBlockedType_t;
-
-typedef enum
-{
-	SABER_RED,
-	SABER_ORANGE,
-	SABER_YELLOW,
-	SABER_GREEN,
-	SABER_BLUE,
-	SABER_PURPLE,
-	NUM_SABER_COLORS
-} saber_colors_t;
-
-typedef enum
-{
-	FP_FIRST = 0,//marker
-	FP_HEAL = 0,//instant
-	FP_LEVITATION,//hold/duration
-	FP_SPEED,//duration
-	FP_PUSH,//hold/duration
-	FP_PULL,//hold/duration
-	FP_TELEPATHY,//instant
-	FP_GRIP,//hold/duration
-	FP_LIGHTNING,//hold/duration
-	FP_RAGE,//duration
-	FP_PROTECT,
-	FP_ABSORB,
-	FP_TEAM_HEAL,
-	FP_TEAM_FORCE,
-	FP_DRAIN,
-	FP_SEE,
-	FP_SABERATTACK,
-	FP_SABERDEFEND,
-	FP_SABERTHROW,
-	NUM_FORCE_POWERS
-} forcePowers_t;
-
-typedef enum
-{
-	SABER_NONE = 0,
-	SABER_SINGLE,
-	SABER_STAFF,
-	SABER_DAGGER,
-	SABER_BROAD,
-	SABER_PRONG,
-	SABER_ARC,
-	SABER_SAI,
-	SABER_CLAW,
-	SABER_LANCE,
-	SABER_STAR,
-	SABER_TRIDENT,
-	SABER_SITH_SWORD,
-	NUM_SABERS
-} saberType_t;
-
-typedef struct 
-{
-	// Actual trail stuff
-	int		inAction;	// controls whether should we even consider starting one
-	int		duration;	// how long each trail seg stays in existence
-	int		lastTime;	// time a saber segement was last stored
-	vec3_t	base;
-	vec3_t	tip;
-
-	vec3_t	dualbase;
-	vec3_t	dualtip;
-
-	// Marks stuff
-	qboolean	haveOldPos[2];
-	vec3_t		oldPos[2];		
-	vec3_t		oldNormal[2];	// store this in case we don't have a connect-the-dots situation
-							//	..then we'll need the normal to project a mark blob onto the impact point
-} saberTrail_t;
-
-typedef struct
-{
-	qboolean	active;
-	saber_colors_t	color;
-	float		radius;
-	float		length;
-	float		lengthMax;
-	float		lengthOld;
-	float		desiredLength;
-	vec3_t		muzzlePoint;
-	vec3_t		muzzlePointOld;
-	vec3_t		muzzleDir;
-	vec3_t		muzzleDirOld;
-	saberTrail_t	trail;
-	int			hitWallDebounceTime;
-	int			storageTime;
-	int			extendDebounce;
-} bladeInfo_t;
-#define MAX_BLADES 8
-
-typedef enum
-{
-	SS_NONE = 0,
-	SS_FAST,
-	SS_MEDIUM,
-	SS_STRONG,
-	SS_DESANN,
-	SS_TAVION,
-	SS_DUAL,
-	SS_STAFF,
-	SS_NUM_SABER_STYLES
-} saber_styles_t;
-
-//SABER FLAGS
-//Old bools converted to a flag now
-#define SFL_NOT_LOCKABLE			(1<<0)//can't get into a saberlock
-#define SFL_NOT_THROWABLE			(1<<1)//can't be thrown - FIXME: maybe make this a max level of force saber throw that can be used with this saber?
-#define SFL_NOT_DISARMABLE			(1<<2)//can't be dropped
-#define SFL_NOT_ACTIVE_BLOCKING		(1<<3)//don't to try to block incoming shots with this saber
-#define SFL_TWO_HANDED				(1<<4)//uses both hands
-#define SFL_SINGLE_BLADE_THROWABLE	(1<<5)//can throw this saber if only the first blade is on
-#define SFL_RETURN_DAMAGE			(1<<6)//when returning from a saber throw, it keeps spinning and doing damage
-//NEW FLAGS
-#define SFL_ON_IN_WATER				(1<<7)//if set, weapon stays active even in water
-#define SFL_BOUNCE_ON_WALLS			(1<<8)//if set, the saber will bounce back when it hits solid architecture (good for real-sword type mods)
-#define SFL_BOLT_TO_WRIST			(1<<9)//if set, saber model is bolted to wrist, not in hand... useful for things like claws & shields, etc.
-//#define SFL_STICK_ON_IMPACT		(1<<?)//if set, the saber will stick in the wall when thrown and hits solid architecture (good for sabers that are meant to be thrown).
-//#define SFL_NO_ATTACK				(1<<?)//if set, you cannot attack with the saber (for sabers/weapons that are meant to be thrown only, not used as melee weapons).
-//Move Restrictions
-#define SFL_NO_PULL_ATTACK			(1<<10)//if set, cannot do pull+attack move (move not available in MP anyway)
-#define SFL_NO_BACK_ATTACK			(1<<11)//if set, cannot do back-stab moves
-#define SFL_NO_STABDOWN				(1<<12)//if set, cannot do stabdown move (when enemy is on ground)
-#define SFL_NO_WALL_RUNS			(1<<13)//if set, cannot side-run or forward-run on walls
-#define SFL_NO_WALL_FLIPS			(1<<14)//if set, cannot do backflip off wall or side-flips off walls
-#define SFL_NO_WALL_GRAB			(1<<15)//if set, cannot grab wall & jump off
-#define SFL_NO_ROLLS				(1<<16)//if set, cannot roll
-#define SFL_NO_FLIPS				(1<<17)//if set, cannot do flips
-#define SFL_NO_CARTWHEELS			(1<<18)//if set, cannot do cartwheels
-#define SFL_NO_KICKS				(1<<19)//if set, cannot do kicks (can't do kicks anyway if using a throwable saber/sword)
-#define SFL_NO_MIRROR_ATTACKS		(1<<20)//if set, cannot do the simultaneous attack left/right moves (only available in Dual Lightsaber Combat Style)
-#define SFL_NO_ROLL_STAB			(1<<21)//if set, cannot do roll-stab move at end of roll
-//SABER FLAGS2
-//Primary Blade Style
-#define SFL2_NO_WALL_MARKS			(1<<0)//if set, stops the saber from drawing marks on the world (good for real-sword type mods)
-#define SFL2_NO_DLIGHT				(1<<1)//if set, stops the saber from drawing a dynamic light (good for real-sword type mods)
-#define SFL2_NO_BLADE				(1<<2)//if set, stops the saber from drawing a blade (good for real-sword type mods)
-#define SFL2_NO_CLASH_FLARE			(1<<3)//if set, the saber will not do the big, white clash flare with other sabers
-#define SFL2_NO_DISMEMBERMENT		(1<<4)//if set, the saber never does dismemberment (good for pointed/blunt melee weapons)
-#define SFL2_NO_IDLE_EFFECT			(1<<5)//if set, the saber will not do damage or any effects when it is idle (not in an attack anim).  (good for real-sword type mods)
-#define SFL2_ALWAYS_BLOCK			(1<<6)//if set, the blades will always be blocking (good for things like shields that should always block)
-#define SFL2_NO_MANUAL_DEACTIVATE	(1<<7)//if set, the blades cannot manually be toggled on and off
-#define SFL2_TRANSITION_DAMAGE		(1<<8)//if set, the blade does damage in start, transition and return anims (like strong style does)
-//Secondary Blade Style
-#define SFL2_NO_WALL_MARKS2			(1<<9)//if set, stops the saber from drawing marks on the world (good for real-sword type mods)
-#define SFL2_NO_DLIGHT2				(1<<10)//if set, stops the saber from drawing a dynamic light (good for real-sword type mods)
-#define SFL2_NO_BLADE2				(1<<11)//if set, stops the saber from drawing a blade (good for real-sword type mods)
-#define SFL2_NO_CLASH_FLARE2		(1<<12)//if set, the saber will not do the big, white clash flare with other sabers
-#define SFL2_NO_DISMEMBERMENT2		(1<<13)//if set, the saber never does dismemberment (good for pointed/blunt melee weapons)
-#define SFL2_NO_IDLE_EFFECT2		(1<<14)//if set, the saber will not do damage or any effects when it is idle (not in an attack anim).  (good for real-sword type mods)
-#define SFL2_ALWAYS_BLOCK2			(1<<15)//if set, the blades will always be blocking (good for things like shields that should always block)
-#define SFL2_NO_MANUAL_DEACTIVATE2	(1<<16)//if set, the blades cannot manually be toggled on and off
-#define SFL2_TRANSITION_DAMAGE2		(1<<17)//if set, the blade does damage in start, transition and return anims (like strong style does)
-
-typedef struct
-{
-	char		name[64];						//entry in sabers.cfg, if any
-	char		fullName[64];				//the "Proper Name" of the saber, shown in UI
-	saberType_t	type;						//none, single or staff
-	char		model[MAX_QPATH];						//hilt model
-	qhandle_t	skin;						//registered skin id
-	int			soundOn;					//game soundindex for turning on sound
-	int			soundLoop;					//game soundindex for hum/loop sound
-	int			soundOff;					//game soundindex for turning off sound
-	int			numBlades;
-	bladeInfo_t	blade[MAX_BLADES];			//blade info - like length, trail, origin, dir, etc.
-	int			stylesLearned;				//styles you get when you get this saber, if any
-	int			stylesForbidden;			//styles you cannot use with this saber, if any
-	int			maxChain;					//how many moves can be chained in a row with this weapon (-1 is infinite, 0 is use default behavior)
-	int			forceRestrictions;			//force powers that cannot be used while this saber is on (bitfield) - FIXME: maybe make this a limit on the max level, per force power, that can be used with this type?
-	int			lockBonus;					//in saberlocks, this type of saber pushes harder or weaker
-	int			parryBonus;					//added to strength of parry with this saber
-	int			breakParryBonus;			//added to strength when hit a parry
-	int			breakParryBonus2;			//for bladeStyle2 (see bladeStyle2Start below)
-	int			disarmBonus;				//added to disarm chance when win saberlock or have a good parry (knockaway)
-	int			disarmBonus2;				//for bladeStyle2 (see bladeStyle2Start below)
-	saber_styles_t	singleBladeStyle;		//makes it so that you use a different style if you only have the first blade active
-//	char		*brokenSaber1;				//if saber is actually hit by another saber, it can be cut in half/broken and will be replaced with this saber in your right hand
-//	char		*brokenSaber2;				//if saber is actually hit by another saber, it can be cut in half/broken and will be replaced with this saber in your left hand
-//===NEW========================================================================================
-	//these values are global to the saber, like all of the ones above
-	int			saberFlags;					//from SFL_ list above
-	int			saberFlags2;				//from SFL2_ list above
-
-	//done in cgame (client-side code)
-	qhandle_t	spinSound;					//none - if set, plays this sound as it spins when thrown
-	qhandle_t	swingSound[3];				//none - if set, plays one of these 3 sounds when swung during an attack - NOTE: must provide all 3!!!
-
-	//done in game (server-side code)
-	float		moveSpeedScale;				//1.0 - you move faster/slower when using this saber
-	float		animSpeedScale;				//1.0 - plays normal attack animations faster/slower
-
-	//done in both cgame and game (BG code)
-	int	kataMove;				//LS_INVALID - if set, player will execute this move when they press both attack buttons at the same time 
-	int	lungeAtkMove;			//LS_INVALID - if set, player will execute this move when they crouch+fwd+attack 
-	int	jumpAtkUpMove;			//LS_INVALID - if set, player will execute this move when they jump+attack 
-	int	jumpAtkFwdMove;			//LS_INVALID - if set, player will execute this move when they jump+fwd+attack 
-	int	jumpAtkBackMove;		//LS_INVALID - if set, player will execute this move when they jump+back+attack
-	int	jumpAtkRightMove;		//LS_INVALID - if set, player will execute this move when they jump+rightattack
-	int	jumpAtkLeftMove;		//LS_INVALID - if set, player will execute this move when they jump+left+attack
-	int	readyAnim;				//-1 - anim to use when standing idle
-	int	drawAnim;				//-1 - anim to use when drawing weapon
-	int	putawayAnim;			//-1 - anim to use when putting weapon away
-	int	tauntAnim;				//-1 - anim to use when hit "taunt"
-	int	bowAnim;				//-1 - anim to use when hit "bow"
-	int	meditateAnim;			//-1 - anim to use when hit "meditate"
-	int	flourishAnim;			//-1 - anim to use when hit "flourish"
-	int	gloatAnim;				//-1 - anim to use when hit "gloat"
-
-	//***NOTE: you can only have a maximum of 2 "styles" of blades, so this next value, "bladeStyle2Start" is the number of the first blade to use these value on... all blades before this use the normal values above, all blades at and after this number use the secondary values below***
-	int			bladeStyle2Start;			//0 - if set, blades from this number and higher use the following values (otherwise, they use the normal values already set)
-
-	//***The following can be different for the extra blades - not setting them individually defaults them to the value for the whole saber (and first blade)***
-	
-	//===PRIMARY BLADES=====================
-	//done in cgame (client-side code)
-	int			trailStyle;					//0 - default (0) is normal, 1 is a motion blur and 2 is no trail at all (good for real-sword type mods)
-	int			g2MarksShader;				//none - if set, the game will use this shader for marks on enemies instead of the default "gfx/damage/saberglowmark"
-	int			g2WeaponMarkShader;			//none - if set, the game will ry to project this shader onto the weapon when it damages a person (good for a blood splatter on the weapon)
-	//int		bladeShader;				//none - if set, overrides the shader used for the saber blade?
-	//int		trailShader;				//none - if set, overrides the shader used for the saber trail?
-	qhandle_t	hitSound[3];				//none - if set, plays one of these 3 sounds when saber hits a person - NOTE: must provide all 3!!!
-	qhandle_t	blockSound[3];				//none - if set, plays one of these 3 sounds when saber/sword hits another saber/sword - NOTE: must provide all 3!!!
-	qhandle_t	bounceSound[3];				//none - if set, plays one of these 3 sounds when saber/sword hits a wall and bounces off (must set bounceOnWall to 1 to use these sounds) - NOTE: must provide all 3!!!
-	int			blockEffect;				//none - if set, plays this effect when the saber/sword hits another saber/sword (instead of "saber/saber_block.efx")
-	int			hitPersonEffect;			//none - if set, plays this effect when the saber/sword hits a person (instead of "saber/blood_sparks_mp.efx")
-	int			hitOtherEffect;				//none - if set, plays this effect when the saber/sword hits something else damagable (instead of "saber/saber_cut.efx")
-	int			bladeEffect;				//none - if set, plays this effect at the blade tag
-
-	//done in game (server-side code)
-	float		knockbackScale;				//0 - if non-zero, uses damage done to calculate an appropriate amount of knockback
-	float		damageScale;				//1 - scale up or down the damage done by the saber
-	float		splashRadius;				//0 - radius of splashDamage
-	int			splashDamage;				//0 - amount of splashDamage, 100% at a distance of 0, 0% at a distance = splashRadius
-	float		splashKnockback;			//0 - amount of splashKnockback, 100% at a distance of 0, 0% at a distance = splashRadius
-	
-	//===SECONDARY BLADES===================
-	//done in cgame (client-side code)
-	int			trailStyle2;				//0 - default (0) is normal, 1 is a motion blur and 2 is no trail at all (good for real-sword type mods)
-	int			g2MarksShader2;				//none - if set, the game will use this shader for marks on enemies instead of the default "gfx/damage/saberglowmark"
-	int			g2WeaponMarkShader2;		//none - if set, the game will ry to project this shader onto the weapon when it damages a person (good for a blood splatter on the weapon)
-	//int		bladeShader2;				//none - if set, overrides the shader used for the saber blade?
-	//int		trailShader2;				//none - if set, overrides the shader used for the saber trail?
-	qhandle_t	hit2Sound[3];				//none - if set, plays one of these 3 sounds when saber hits a person - NOTE: must provide all 3!!!
-	qhandle_t	block2Sound[3];				//none - if set, plays one of these 3 sounds when saber/sword hits another saber/sword - NOTE: must provide all 3!!!
-	qhandle_t	bounce2Sound[3];			//none - if set, plays one of these 3 sounds when saber/sword hits a wall and bounces off (must set bounceOnWall to 1 to use these sounds) - NOTE: must provide all 3!!!
-	int			blockEffect2;				//none - if set, plays this effect when the saber/sword hits another saber/sword (instead of "saber/saber_block.efx")
-	int			hitPersonEffect2;			//none - if set, plays this effect when the saber/sword hits a person (instead of "saber/blood_sparks_mp.efx")
-	int			hitOtherEffect2;			//none - if set, plays this effect when the saber/sword hits something else damagable (instead of "saber/saber_cut.efx")
-	int			bladeEffect2;				//none - if set, plays this effect at the blade tag
-
-	//done in game (server-side code)
-	float		knockbackScale2;			//0 - if non-zero, uses damage done to calculate an appropriate amount of knockback
-	float		damageScale2;				//1 - scale up or down the damage done by the saber
-	float		splashRadius2;				//0 - radius of splashDamage
-	int			splashDamage2;				//0 - amount of splashDamage, 100% at a distance of 0, 0% at a distance = splashRadius
-	float		splashKnockback2;			//0 - amount of splashKnockback, 100% at a distance of 0, 0% at a distance = splashRadius
-//=========================================================================================================================================
-
-} saberInfo_t;
-
-#define MAX_SABERS 2
-#define DEFAULT_SABER1 "kyle"
-#define DEFAULT_SABER2 "none"
-
-typedef enum
-{
-	FORCE_LEVEL_0,
-	FORCE_LEVEL_1,
-	FORCE_LEVEL_2,
-	FORCE_LEVEL_3,
-	NUM_FORCE_POWER_LEVELS
-} forceLevels_t;
-
-#define	FORCE_LEVEL_4 (FORCE_LEVEL_3+1)
-#define	FORCE_LEVEL_5 (FORCE_LEVEL_4+1)
 
 #define NUMVERTEXNORMALS	162
 extern	vec3_t	bytedirs[NUMVERTEXNORMALS];
@@ -872,10 +623,6 @@ extern	vec4_t		colorDkBlue;
 #define Q_IsColorString(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= '7' && *((p)+1) >= '0' )
 #define Q_IsColorString_1_02(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE ) // 1.02 ColorStrings
 
-// stealsies from jomme/nt mod :) thanks
-#define Q_IsColorStringNT(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE && *((p)+1) <= 0x7F && *((p)+1) >= '0' ) // changed from >= 0x00 to '0' compared to NT
-#define Q_IsColorCharNT(p)		( (p) <= 0x7F && (p) >= '0' ) // changed from >= 0x00 to '0' compared to NT
-#define ColorIndexNT(c)			( (c) & 127 )
 
 #define COLOR_BLACK		'0'
 #define COLOR_RED		'1'
@@ -896,8 +643,7 @@ extern	vec4_t		colorDkBlue;
 #define S_COLOR_MAGENTA	"^6"
 #define S_COLOR_WHITE	"^7"
 
-extern vec4_t	g_color_table[8]; 
-extern vec4_t	g_color_table_nt[128];
+extern vec4_t	g_color_table[8];
 
 #define	MAKERGB( v, r, g, b ) v[0]=r;v[1]=g;v[2]=b
 #define	MAKERGBA( v, r, g, b, a ) v[0]=r;v[1]=g;v[2]=b;v[3]=a
@@ -917,9 +663,6 @@ extern	vec3_t	axisDefault[3];
 float Q_fabs( float f );
 float Q_rsqrt( float f );		// reciprocal square root
 
-float intfloat(intptr_t x);
-intptr_t floatint(float x);
-
 #define SQRTFAST( x ) ( (x) * Q_rsqrt( x ) )
 
 signed char ClampChar( int i );
@@ -932,29 +675,14 @@ float Q_pown(float x, int n);
 int DirToByte( vec3_t dir );
 void ByteToDir( int b, vec3_t dir );
 
-#define VECTORCOPYDEBUG 0
-
 #if	1
 
 #define DotProduct(x,y)			((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define VectorSubtract(a,b,c)	((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2])
 #define VectorAdd(a,b,c)		((c)[0]=(a)[0]+(b)[0],(c)[1]=(a)[1]+(b)[1],(c)[2]=(a)[2]+(b)[2])
-#if VECTORCOPYDEBUG
-#define VALIDATEPTRCMPVector(j, p) ((void*) (1 ? (p) : (j))) // C/QVM compiler enforces this for us. little sanity check.
-#define VectorCopy(a,b)			(VALIDATEPTRCMPVector((a),(b)));((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
-#else
 #define VectorCopy(a,b)			((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2])
-#endif
-#define VectorCopySafe(a,b)		((b)[0]=(a)[0],(b)[1]=(a)[1],(b)[2]=(a)[2]) // for when we want to copy across different types and not get the struct copy optimization
 #define	VectorScale(v, s, o)	((o)[0]=(v)[0]*(s),(o)[1]=(v)[1]*(s),(o)[2]=(v)[2]*(s))
 #define	VectorMA(v, s, b, o)	((o)[0]=(v)[0]+(b)[0]*(s),(o)[1]=(v)[1]+(b)[1]*(s),(o)[2]=(v)[2]+(b)[2]*(s))
-#define VectorLerp( f, s, e, r ) ((r)[0]=(s)[0]+(f)*((e)[0]-(s)[0]),\
-  (r)[1]=(s)[1]+(f)*((e)[1]-(s)[1]),\
-  (r)[2]=(s)[2]+(f)*((e)[2]-(s)[2])) 
-
-
-#define VectorMin(a,b,c)		((c)[0]=MIN((a)[0],(b)[0]),(c)[1]=MIN((a)[1],(b)[1]),(c)[2]=MIN((a)[2],(b)[2]))
-#define VectorMax(a,b,c)		((c)[0]=MAX((a)[0],(b)[0]),(c)[1]=MAX((a)[1],(b)[1]),(c)[2]=MAX((a)[2],(b)[2]))
 
 #else
 
@@ -1010,7 +738,7 @@ ID_INLINE int VectorCompare( const vec3_t v1, const vec3_t v2 ) {
 }
 
 ID_INLINE vec_t VectorLength( const vec3_t v ) {
-	return (vec_t)sqrtf (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+	return (vec_t)sqrt (v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
 ID_INLINE vec_t VectorLengthSquared( const vec3_t v ) {
@@ -1082,13 +810,14 @@ void VectorRotate( vec3_t in, vec3_t matrix[3], vec3_t out );
 int Q_log2(int val);
 
 float Q_acos(float c);
+float ET_asin(float c);
 
 int		Q_rand( int *seed );
 float	Q_random( int *seed );
 float	Q_crandom( int *seed );
 
 #define random()	((rand () & 0x7fff) / ((float)0x7fff))
-#define crandom()	(2.0f * (random() - 0.5f))
+#define crandom()	(2.0 * (random() - 0.5))
 
 void vectoangles( const vec3_t value1, vec3_t angles);
 void AnglesToAxis( const vec3_t angles, vec3_t axis[3] );
@@ -1199,14 +928,6 @@ typedef enum {
 	FS_SEEK_SET
 } fsOrigin_t;
 
-typedef enum {
-	FILE_VERSION_UNKNOWN = 0,
-	FILE_VERSION_1_02 = (1 << 0),
-	FILE_VERSION_1_03 = (1 << 1),
-	FILE_VERSION_1_04 = (1 << 2),
-	FILE_VERSION_JKA = (1 << 3),
-} fs_file_version_t;
-
 //=============================================
 
 int Q_isprint( int c );
@@ -1224,13 +945,12 @@ char	*Q_strrchr( const char* string, int c );
 
 // buffer size safe library replacements
 void	Q_strncpyz( char *dest, const char *src, int destsize );
-void	Q_strnncpyz(char* dest, const char* src, int charsToCopy, int destsize);
 void	Q_strcat( char *dest, int size, const char *src );
 
 // strlen that discounts Quake color sequences
-int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColors);
+int Q_PrintStrlen( const char *string, qboolean use102color );
 // removes color sequences from string
-char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors );
+char *Q_CleanStr( char *string, qboolean use102color );
 char *Q_CleanAsciiStr( char *string );
 
 const char *Q_strchrs( const char *string, const char *search );
@@ -1238,8 +958,6 @@ void Q_strstrip( char *string, const char *strip, const char *repl );
 
 const char *Q_strchrs( const char *string, const char *search );
 void Q_strstrip( char *string, const char *strip, const char *repl );
-
-void Q_StripColor(char* text);
 
 //=============================================
 
@@ -1282,7 +1000,6 @@ char	* QDECL va(const char *format, ...) __attribute__ ((format (printf, 1, 2)))
 // key / value info strings
 //
 char *Info_ValueForKey( const char *s, const char *key );
-qboolean Info_HasKey( const char *s, const char *key );
 void Info_RemoveKey( char *s, const char *key );
 void Info_RemoveKey_big( char *s, const char *key );
 void Info_SetValueForKey( char *s, const char *key, const char *value );
@@ -1495,9 +1212,6 @@ typedef enum {
 #define	ANGLE2SHORT(x)	((int)((x)*65536/360) & 65535)
 #define	SHORT2ANGLE(x)	((x)*(360.0/65536))
 
-#define SHORT2USHORT(a) ((a)<0 ? ((a)+65535 +1) : (a)) // since q3vm dooesnt like ushort :/
-#define USHORT2SHORT(a) ((a)>32767? ((a)-65535 -1) : (a)) // controlled unsigned->signed conversion
-
 #define	SNAPFLAG_RATE_DELAYED	1
 #define	SNAPFLAG_NOT_ACTIVE		2	// snapshot used during connection and for zombies
 #define SNAPFLAG_SERVERCOUNT	4	// toggled every map_restart so transitions can be detected
@@ -1510,10 +1224,6 @@ typedef enum {
 
 #define	GENTITYNUM_BITS		10		// don't need to send any more
 #define	MAX_GENTITIES		(1<<GENTITYNUM_BITS)
-
-//Logical entities
-#define	MAX_LOGICENTITIES	3072
-#define	MAX_ENTITIESTOTAL	(MAX_GENTITIES+MAX_LOGICENTITIES)
 
 // entitynums are communicated with GENTITY_BITS, so any reserved
 // values thatare going to be communcated over the net need to
@@ -2088,12 +1798,6 @@ typedef struct playerState_1_02_s {
 
 #define BUTTON_FORCE_DRAIN		2048
 
-#define BUTTON_LASERPOINTER		4096
-
-#define BUTTON_BOUNCEPOWER		8192
-
-#define BUTTON_STRAFEBOT		16384
-
 // Here's an interesting bit.  The bots in TA used buttons to do additional gestures.
 // I ripped them out because I didn't want too many buttons given the fact that I was already adding some for JK2.
 // We can always add some back in if we want though.
@@ -2145,7 +1849,6 @@ typedef struct usercmd_s {
 	byte			generic_cmd;
 	signed char	forwardmove, rightmove, upmove;
 } usercmd_t;
-
 
 //===================================================================
 
@@ -2254,12 +1957,6 @@ typedef struct {
 	vec3_t	trDelta;			// velocity, etc
 } trajectory_t;
 
-#ifdef Q3_VM
-#define ANONSTRUCT anon
-#else
-#define ANONSTRUCT
-#endif
-
 // entityState_t is the information conveyed from the server
 // in an update message about entities that the client will
 // need to render in some way
@@ -2289,23 +1986,11 @@ typedef struct entityState_s {
 	int		bolt1;
 	int		bolt2;
 
-	union {
-		struct {
-			//rww - this is necessary for determining player visibility during a jedi mindtrick
-			int		trickedentindex; //0-15
-			int		trickedentindex2; //16-32
-			int		trickedentindex3; //33-48
-			int		trickedentindex4; //49-64
-		} ANONSTRUCT;
-		int	pastFpsUnionArray[4]; // fucking evil xd
-	} ANONSTRUCT;
-#ifdef Q3_VM
-#define trickedentindex anon.anon.trickedentindex
-#define trickedentindex2 anon.anon.trickedentindex2
-#define trickedentindex3 anon.anon.trickedentindex3
-#define trickedentindex4 anon.anon.trickedentindex4
-#define pastFpsUnionArray anon.pastFpsUnionArray
-#endif
+	//rww - this is necessary for determining player visibility during a jedi mindtrick
+	int		trickedentindex; //0-15
+	int		trickedentindex2; //16-32
+	int		trickedentindex3; //33-48
+	int		trickedentindex4; //49-64
 
 	float	speed;
 
@@ -2429,16 +2114,14 @@ typedef enum _flag_status {
 #define SAY_ALL		0
 #define SAY_TEAM	1
 #define SAY_TELL	2
-#define SAY_CROSSSERVER	3
 
 #define CDKEY_LEN 16
 #define CDCHKSUM_LEN 2
 
 void Rand_Init(int seed);
-float flrand(float min, float max, qboolean useDefault, float defaultValue);
-int irand(int min, int max, qboolean useDefault, int defaultValue);
-int Q_irand(int value1, int value2, qboolean useDefault, int defaultValue);
-int Q_irandExpectedIf(qboolean expected,int value1, int value2, qboolean useDefault, int defaultValue); // the behavior the devs actually intended if expected is qtrue
+float flrand(float min, float max);
+int irand(int min, int max);
+int Q_irand(int value1, int value2);
 
 /*
 Ghoul2 Insert Start
@@ -2519,106 +2202,9 @@ enum {
 	FONT_NONE,
 	FONT_SMALL=1,
 	FONT_MEDIUM,
-	FONT_LARGE,
-	FONT_SMALL2
+	FONT_LARGE
 };
 
-typedef struct ezDemoEvent_s {
-	int serverTime;
-	byte clientNum;
-	byte clientNum2;
-	int duration;
-} ezDemoEvent_t;
 
-typedef struct ezDemoBuffer_s {
-	ezDemoEvent_t events[20000];
-	int eventCount;
-} ezDemoBuffer_t;
-
-extern ezDemoBuffer_t ezDemoBuffer;
-
-#define TRACECUSTOMFLAG_Q2STYLE (1<<0)
-
-#define COOL_APIFEATURE_SETPREDICTEDMOVEMENT (1<<0)
-#define COOL_APIFEATURE_GETTEMPORARYUSERCMD (1<<1)
-
-#define COOL_APIFEATURE_EZDEMOCGAMEBUFFER (1<<3)
-#define COOL_APIFEATURE_GETTIMESINCESNAPRECEIVED (1<<4)
-#define COOL_APIFEATURE_MARIADB (1<<5)
-#define COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK (1<<6)
-#define COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS (1<<7)
-#define COOL_APIFEATURE_G_USERCMDSTORE (1<<8)
-#define COOL_APIFEATURE_RESOLUTIONCHANGED (1<<9)
-#define COOL_APIFEATURE_NONEPSILONTRACE (1<<10)
-#define COOL_APIFEATURE_GAME_VMCALL_PHYSICSFPSUPDATE (1<<11)
-#define COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS (1<<12)
-#define COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED (1<<13)
-#define COOL_APIFEATURE_SETUSERANGLES (1<<14)
-#define COOL_APIFEATURE_VMCUSTOMFLAGS (1<<15)
-#define COOL_APIFEATURE_KEEPZOMBIE (1<<16)
-#define COOL_APIFEATURE_CUSTOMEPSILONTRACE (1<<17)
-#define COOL_APIFEATURE_ADDMEMECOMMAND (1<<18)
-#define COOL_APIFEATURE_JEDI_ACADEMY (1<<19)
-#define COOL_APIFEATURE_CROSS_SERVER_COMMANDS (1<<20)
-
-
-#define COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY (1<<0)
-
-typedef enum coolApiSetBModelCFlagsMode_s {
-	COOLAPI_BMODELCFLAGS_SET,
-	COOLAPI_BMODELCFLAGS_ADD,
-	COOLAPI_BMODELCFLAGS_REMOVE,
-} coolApiSetBModelCFlagsMode_t;
-
-// This is a simplified playerState_t of sorts to communicate predicted playerstate stuff to the engine 
-typedef struct predictedMovement_s {
-	int			commandTime;	// cmd->serverTime of last executed command
-	int			pm_type;
-	int			pm_flags;		// ducked, jump_held, etc
-	int			pm_time;
-
-	vec3_t		origin;
-	vec3_t		velocity;
-
-	int			gravity;
-	int			speed;
-	int			basespeed; //used in prediction to know base server g_speed value when modifying speed between updates
-	int			delta_angles[3];	// add to command angles to get view direction
-									// changed by spawns, rotating objects, and teleporters
-
-	
-	int			groundEntityNum;// ENTITYNUM_NONE = in air
-
-	int			movementDir;	// a number 0 to 7 that represents the reletive angle
-								// of movement to the view angle (axial and diagonals)
-								// when at rest, the value will remain unchanged
-								// used to twist the legs during strafing
-
-	int			eFlags;			// copied to entityState_t->eFlags
-
-
-	int			clientNum;		// ranges from 0 to MAX_CLIENTS-1
-
-	vec3_t		viewangles;		// for fixed views
-	int			viewheight;
-
-	int			jumppad_ent;	// jumppad entity hit this frame
-
-	forcedata_t	fd;
-} predictedMovement_t;
-
-typedef enum {
-	DBREQUESTTYPE_REQUEST,
-	DBREQUESTTYPE_BCRYPT, // this doesn't actuaally send any DB request, it just allows us to bcrypt a string on a separate thread
-} DBRequestType_t;
-
-void sanitizeFilename(const char* input, char* output, qboolean allowExtension);
-
-int safeatoi(const char* nptr, char** endptr, int base, int* error);
-const char* colorToHex(byte color[4]);
-qboolean parseHex(const char hex[9], byte outColor[4]);
-
-int clampedIntMult(int a, int b);
-int clampedIntAdd(int a, int b);
 
 #endif	// __Q_SHARED_H

@@ -1,0 +1,48 @@
+^C:\USERS\DAVID\DOCUMENTS\WORKSPACE\TOM_JK2MV\CMAKEFILES\A1F6E29644A7D16C8B0FA1AAA574C591\JK2PRO-BINS.PK3.RULE
+setlocal
+cd C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy C:/Users/david/Documents/Workspace/tom_jk2mv/out/Release/base/jk2mpgame.qvm C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy C:/Users/david/Documents/Workspace/tom_jk2mv/out/Release/base/jk2mpgame.map C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy C:/Users/david/Documents/Workspace/tom_jk2mv/out/Release/base/cgame.qvm C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy C:/Users/david/Documents/Workspace/tom_jk2mv/out/Release/base/cgame.map C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/ui.qvm C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/ui.map C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/vm/
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E copy C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/../mv.info C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E tar cf C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/jk2pro-bins.pk3 --format=zip vm/jk2mpgame.qvm vm/jk2mpgame.map vm/cgame.qvm vm/cgame.map vm/ui.qvm vm/ui.map mv.info
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\DAVID\DOCUMENTS\WORKSPACE\TOM_JK2MV\CMAKEFILES\53ED9BE081B6A7A42894A82F502952E2\JK2PRO-BINS.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\DAVID\DOCUMENTS\WORKSPACE\TOM_JK2MV\SRC\MVSDK\CODE\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/david/Documents/Workspace/tom_jk2mv -BC:/Users/david/Documents/Workspace/tom_jk2mv --check-stamp-file C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/code/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

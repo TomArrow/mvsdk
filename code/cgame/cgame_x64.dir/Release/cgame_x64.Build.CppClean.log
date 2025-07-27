@@ -1,0 +1,74 @@
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\ui_shared.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_consolecmds.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_main.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_servercmds.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_draw.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_newdraw.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_scoreboard.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_weapons.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_event.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_drawtools.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_players.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_light.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_flechette.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_multiversion.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fp16.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_dbcmds.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_disruptor.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_multiversion.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\crypt_blowfish.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_localents.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_info.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_saberload.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_marks.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_snapshot.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_predict.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_v24_cvars.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_force.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_panimate.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_ents.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_weaponinit.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_saga.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_effects.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_defrag_global.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\levenshtein.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_blaster.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_weapons.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_esp.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_rocketlauncher.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_cmd.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_bryarpistol.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_saber.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_playerstate.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_pmove.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_pmove_css.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_turret.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_slidemove.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\q_math.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_syscalls.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_bowcaster.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_multiversion_syscalls.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_view.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_friends.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_heavyrepeater.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\q_shared.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\animmappingtable.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cg_auto.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_misc.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\fx_demp2.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\bg_pmove_q2.obj
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cmakefiles\generate.stamp
+c:\users\david\documents\workspace\tom_jk2mv\out\release\cgame_x64.dll
+c:\users\david\documents\workspace\tom_jk2mv\out\release\cgame_x64.lib
+c:\users\david\documents\workspace\tom_jk2mv\out\release\cgame_x64.exp
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\cl.10128.write.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\cl.command.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\cl.items.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\cl.read.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\custombuild.command.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\custombuild.read.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\custombuild.write.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\link.command.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\link.read.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\link.secondary.1.tlog
+c:\users\david\documents\workspace\tom_jk2mv\src\mvsdk\code\cgame\cgame_x64.dir\release\cgame module.tlog\link.write.1.tlog

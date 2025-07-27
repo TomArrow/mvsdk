@@ -95,7 +95,7 @@ void UpdateTournamentInfo( void ) {
 		if( msglen + buflen + 1 >= (int)sizeof(msg) ) {
 			break;
 		}
-		Q_strcat( msg,sizeof(msg), buf );
+		strcat( msg, buf );
 	}
 	Q_strcat( msg, sizeof(msg), "\n" );
 	trap_SendConsoleCommand( EXEC_APPEND, msg );
@@ -114,7 +114,7 @@ static gentity_t *SpawnModelOnVictoryPad( gentity_t *pad, vec3_t offset, gentity
 		return NULL;
 	}
 
-	G_SetClassName(body, ent->client->pers.netname);
+	body->classname = ent->client->pers.netname;
 	body->client = ent->client;
 	body->s = ent->s;
 	body->s.eType = ET_PLAYER;		// could be ET_INVISIBLE
@@ -265,7 +265,7 @@ static gentity_t *SpawnPodium( void ) {
 		return NULL;
 	}
 
-	G_SetClassName(podium, "podium");
+	podium->classname = "podium";
 	podium->s.eType = ET_GENERAL;
 	podium->s.number = podium - g_entities;
 	podium->clipmask = CONTENTS_SOLID;

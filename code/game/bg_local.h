@@ -2,18 +2,6 @@
 //
 // bg_local.h -- local definitions for the bg (both games) files
 
-
-#include "bg_defrag_global.h"
-
-
-#define CLIENTSIDE_PREDICTION_FIXES 1
-
-#if JK2_CGAME && CLIENTSIDE_PREDICTION_FIXES
-#define NONETWORK_FORCEPOWERLEVEL(ps,fp) (((ps)->fd.forcePowersKnown & (1<<(fp))) ? FORCE_LEVEL_3 : FORCE_LEVEL_0)
-#else
-#define NONETWORK_FORCEPOWERLEVEL(ps,fp) ((ps)->fd.forcePowerLevel[(fp)])
-#endif
-
 #define	MIN_WALK_NORMAL	0.7f		// can't walk on very steep slopes
 
 #define	STEPSIZE		18
@@ -44,14 +32,6 @@ typedef struct
 	int			previous_waterlevel;
 
 	int			seed;
-
-	int			randomAdd;
-
-	qboolean	clippedPre;
-	qboolean	clipped;
-	qboolean	clippedWalkable;
-	qboolean	groundBounces;
-	qboolean	bounceJumped;
 } pml_t;
 
 extern	pml_t		pml;
@@ -126,4 +106,3 @@ void PM_WeaponLightsaber(void);
 void PM_SetSaberMove(short newMove);
 
 void PM_SetForceJumpZStart(float value);
-void PM_SetGroundEntityNum(int num);

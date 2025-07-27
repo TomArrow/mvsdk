@@ -39,19 +39,6 @@
 #define SB_PING_X			(SB_SCORELINE_X + .70 * SB_SCORELINE_WIDTH)
 #define SB_TIME_X			(SB_SCORELINE_X + .85 * SB_SCORELINE_WIDTH)
 
-
-#define SB_SCORELINE_X_DEFRAG		(SCOREBOARD_X+30)
-#define SB_SCORELINE_WIDTH_DEFRAG	(cgs.screenWidth - SB_SCORELINE_X_DEFRAG * 2)
-
-#define SB_NAME_X_DEFRAG		(SB_SCORELINE_X_DEFRAG)
-#define SB_USERNAME_X_DEFRAG	(SB_SCORELINE_X_DEFRAG + .35 * SB_SCORELINE_WIDTH_DEFRAG)
-#define SB_PB_X_DEFRAG			(SB_SCORELINE_X_DEFRAG + .52 * SB_SCORELINE_WIDTH_DEFRAG)
-#define SB_SCORE_X_DEFRAG		(SB_SCORELINE_X_DEFRAG + .75 * SB_SCORELINE_WIDTH_DEFRAG)
-#define SB_PING_X_DEFRAG		(SB_SCORELINE_X_DEFRAG + .85 * SB_SCORELINE_WIDTH_DEFRAG)
-#define SB_TIME_X_DEFRAG		(SB_SCORELINE_X_DEFRAG + .925 * SB_SCORELINE_WIDTH_DEFRAG)
-
-
-
 // The new and improved score board
 //
 // In cases where the number of clients is high, the score board heads are interleaved
@@ -66,31 +53,6 @@
 static qboolean localClient; // true if local client has been displayed
 
 
-void CG_SB_Text_Paint_Double(qboolean largeFormat, float x, float y, float scale, const vec4_t color, int value, int value2, float adjust, int limit, int style, int iMenuFont) {
-	if (value==value2) {
-		CG_Text_Paint(x,y,scale,color,va("%i",value),adjust,limit,style,iMenuFont);
-	}
-	else if (largeFormat) {
-		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.15f, scale*0.4f, color, va("%i", value), adjust, limit, style, iMenuFont);
-		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.35f, scale*0.75f, color, va("%i", value2), adjust, limit, style, iMenuFont);
-	}
-	else {
-		CG_Text_Paint(x, y, scale, color, va("%i/%i", value,value2), adjust, limit, style, iMenuFont);
-	}
-}
-void CG_SB_Text_Paint_Double_Text(qboolean largeFormat, float x, float y, float scale, const vec4_t color, const char* value, const char* value2, float adjust, int limit, int style, int iMenuFont) {
-	if (!Q_stricmp(value,value2)) {
-		CG_Text_Paint(x,y,scale,color, value,adjust,limit,style,iMenuFont);
-	}
-	else if (largeFormat) {
-		CG_Text_Paint(x, y, scale*0.5f, color, value, adjust, limit, style, iMenuFont);
-		CG_Text_Paint(x, y+(float)SB_NORMAL_HEIGHT*0.5f, scale*0.5f, color, value2, adjust, limit, style, iMenuFont);
-	}
-	else {
-		CG_Text_Paint(x, y, scale, color, va("%s/%s", value,value2), adjust, limit, style, iMenuFont);
-	}
-}
-
 							 /*
 =================
 CG_DrawScoreboard
@@ -102,17 +64,6 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	clientInfo_t	*ci;
 	float		iconx;
 	float		scale;
-	qboolean	playerDisconnected = qfalse;
-	qboolean	defragScoreboard = cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE];
-
-	int scoreLineX = SB_SCORELINE_X;
-	int scoreLineWidth = SB_SCORELINE_WIDTH;
-
-	if (defragScoreboard) {
-		scoreLineX = SB_SCORELINE_X_DEFRAG;
-		scoreLineWidth = SB_SCORELINE_WIDTH_DEFRAG;
-	}
-
 
 	if ( largeFormat )
 	{
@@ -129,12 +80,6 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	}
 	
 	ci = &cgs.clientinfo[score->client];
-
-	// If this client disconnected recently and we wanna draw his stuff anyway, we must get his info from lastValidClientInfo
-	if (cg_scoreboardDisconnectedPlayersDrawTime.integer && cgs.disconnectTime[score->client] && cgs.disconnectTime[score->client] < cg.time && (cg.time - cgs.disconnectTime[score->client]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
-		ci = &cgs.lastValidClientinfo[score->client];
-		playerDisconnected = qtrue;
-	}
 
 	iconx = SB_BOTICON_X + (SB_RATING_WIDTH / 2);
 
@@ -171,19 +116,6 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		//rww - in duel, we now show wins/losses in place of "frags". This is because duel now defaults to 1 kill per round.
 	}
 
-	// show disconnected clients with a black background
-	if ( playerDisconnected )
-	{
-		float	hcolor[4];
-
-		hcolor[0] = 0.0f;
-		hcolor[1] = 0.0f;
-		hcolor[2] = 0.0f;
-
-		hcolor[3] = fade * 0.7;
-		CG_FillRect( scoreLineX - 5, y + 2, scoreLineWidth + 10, largeFormat?SB_NORMAL_HEIGHT:SB_INTER_HEIGHT, hcolor );
-	}
-	
 	// highlight your position
 	if ( score->client == cg.snap->ps.clientNum ) 
 	{
@@ -217,81 +149,26 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		}
 
 		hcolor[3] = fade * 0.7;
-		CG_FillRect( scoreLineX - 5, y + 2, scoreLineWidth + 10, largeFormat?SB_NORMAL_HEIGHT:SB_INTER_HEIGHT, hcolor );
+		CG_FillRect( SB_SCORELINE_X - 5, y + 2, SB_SCORELINE_WIDTH + 10, largeFormat?SB_NORMAL_HEIGHT:SB_INTER_HEIGHT, hcolor );
 	}
 
-	{
-		float picX, picY, picWidth, picHeight;
-		float textX, textY, textScale;
-		qboolean drawIcon;
-
-		picX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) - 5;
-		picY = y + 2;
-		picWidth = 15;
-		picHeight = 15;
-
-		textX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) + 12;
-		textY = y;
-		textScale = 0.9f * scale;
-
-		drawIcon = qtrue;
-
-		if (largeFormat)
-		{
-			picWidth = 25;
-			picHeight = 25;
-
-			textX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) + 24;
+	if (!cg_drawScoreboardIcons.integer) {
+		CG_Text_Paint(SB_NAME_X, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+	}
+	else {
+		if (largeFormat) {
+			CG_DrawPic(SB_NAME_X-5, y+2, 25, 25, ci->modelIcon);
+			CG_Text_Paint(SB_NAME_X+24, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
 		}
-
-		if (!cg_drawScoreboardIcons.integer)
-		{
-			textX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X);
-			drawIcon = qfalse;
+		else {
+			CG_DrawPic(SB_NAME_X-5, y+2, 15, 15, ci->modelIcon);
+			CG_Text_Paint(SB_NAME_X+12, y, 0.9f * scale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
 		}
-
-		if (!ci->modelIcon)
-		{
-			drawIcon = qfalse;
-		}
-
-		if (ci->useModelColor)
-		{
-			vec4_t modelColor;
-
-			if (ci->colorOverride[0] != 0.0f ||
-				ci->colorOverride[1] != 0.0f ||
-				ci->colorOverride[2] != 0.0f ||
-				ci->colorOverride[3] != 0.0f)
-			{
-				modelColor[0] = ci->colorOverride[0];
-				modelColor[1] = ci->colorOverride[1];
-				modelColor[2] = ci->colorOverride[2];
-				modelColor[3] = ci->colorOverride[3];
-			}
-			else
-			{
-				modelColor[0] = ((float) ci->modelColor[0]) / 255.0f;
-				modelColor[1] = ((float) ci->modelColor[1]) / 255.0f;
-				modelColor[2] = ((float) ci->modelColor[2]) / 255.0f;
-				modelColor[3] = ((float) ci->modelColor[3]) / 255.0f;
-			}
-
-			trap_R_SetColor(modelColor);
-		}
-
-		if (drawIcon)
-		{
-			CG_DrawPic(picX, picY, picWidth, picHeight, ci->modelIcon);
-		}
-
-		trap_R_SetColor(NULL);
-		CG_Text_Paint(textX, textY, textScale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
 	}
 
 	if (score->ping != -1)
 	{
-		if ( ci->team != TEAM_SPECTATOR || cgs.gametype == GT_TOURNAMENT  || playerDisconnected )
+		if ( ci->team != TEAM_SPECTATOR || cgs.gametype == GT_TOURNAMENT )
 		{
 			if (cgs.gametype == GT_TOURNAMENT)
 			{
@@ -299,69 +176,44 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 			}
 			else if (cgs.gametype == GT_CTF)
 			{
-				CG_Text_Paint(scoreLineX + 0.47f * scoreLineWidth, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-				CG_Text_Paint(scoreLineX + 0.59f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorYellow : colorWhite, va("%i", score->captures), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-				CG_Text_Paint(scoreLineX + 0.66f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorCyan : colorWhite, va("%i", score->impressiveCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //i think this is ret frags? but idk
-				CG_Text_Paint(scoreLineX + 0.72f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorMagenta : colorWhite, va("%i", score->defendCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);//loda
-			}
-			else if (defragScoreboard) {
-				CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 0.9f * scale, colorWhite, ci->username, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
-				CG_Text_Paint(SB_SCORE_X_DEFRAG, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORELINE_X + 0.47f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORELINE_X + 0.59f * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorYellow : colorWhite, va("%i", score->captures), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorCyan : colorWhite, va("%i", score->impressiveCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //i think this is ret frags? but idk
+				CG_Text_Paint(SB_SCORELINE_X + 0.72f * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorMagenta : colorWhite, va("%i", score->defendCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);//loda
 			}
 			else
 			{
 				CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i", score->score),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 			}
 		}
-		else if (ci->team == TEAM_SPECTATOR && defragScoreboard) {
-			CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 0.9f * scale, colorWhite, ci->username, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
-		}
 		
 		if (cgs.gametype == GT_CTF)
 		{
 			if (ci->botSkill != 0)
-				CG_Text_Paint(scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORELINE_X + 0.80 * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 			else
-				CG_SB_Text_Paint_Double(largeFormat,scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORELINE_X + 0.80 * SB_SCORELINE_WIDTH, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, va("%i", score->ping), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
-			CG_SB_Text_Paint_Double(largeFormat, scoreLineX + 0.90 * scoreLineWidth, y, 1.0f * scale, colorWhite, score->time, score->fulltime, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		}
-		else if (defragScoreboard) {
-
-			if (ci->botSkill != 0)
-				CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-			else
-				CG_SB_Text_Paint_Double(largeFormat,SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-
-			CG_SB_Text_Paint_Double(largeFormat, SB_TIME_X_DEFRAG, y, 1.0f * scale, colorWhite, score->time, score->fulltime, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-
-			CG_Text_Paint(SB_PB_X_DEFRAG, y, 1.0f * scale, colorWhite, ci->jkmod_race ? DF_MsToString(ci->jkmod_race) : "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			CG_Text_Paint(SB_SCORELINE_X + 0.90 * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, va("%i", score->time), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 		}
 		else
 		{
 			if (ci->botSkill != 0)
 				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 			else
-				CG_SB_Text_Paint_Double(largeFormat,SB_PING_X, y, 1.0f * scale, colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, va("%i", score->ping), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
-			CG_SB_Text_Paint_Double(largeFormat, SB_TIME_X, y, 1.0f * scale, colorWhite, score->time, score->fulltime, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			CG_Text_Paint(SB_TIME_X, y, 1.0f * scale, colorWhite, va("%i", score->time), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 		}
 	}
 	else if (cgs.gametype == GT_CTF)
 	{
-		CG_Text_Paint(scoreLineX + 0.47f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //score
-		CG_Text_Paint(scoreLineX + 0.59f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //caps
-		CG_Text_Paint(scoreLineX + 0.66f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //assists
-		CG_Text_Paint(scoreLineX + 0.73f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //defends
-		CG_Text_Paint(scoreLineX + 0.80f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //ping
-		CG_Text_Paint(scoreLineX + 0.90f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //time
-	}
-	else if (defragScoreboard) {
-		CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_SCORE_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_TIME_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_PB_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+		CG_Text_Paint(SB_SCORELINE_X + 0.47f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //score
+		CG_Text_Paint(SB_SCORELINE_X + 0.59f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //caps
+		CG_Text_Paint(SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //assists
+		CG_Text_Paint(SB_SCORELINE_X + 0.73f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //defends
+		CG_Text_Paint(SB_SCORELINE_X + 0.80f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //ping
+		CG_Text_Paint(SB_SCORELINE_X + 0.90f * SB_SCORELINE_WIDTH, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //time
 	}
 	else
 	{
@@ -373,7 +225,7 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	// add the "ready" marker for intermission exiting
 	if ( cg.snap->ps.stats[ STAT_CLIENTS_READY ] & ( 1 << score->client ) ) 
 	{
-		CG_Text_Paint ((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) - 64, y + 2, 0.7f * scale, colorWhite, CG_GetStripEdString("INGAMETEXT", "READY"),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint (SB_NAME_X - 64, y + 2, 0.7f * scale, colorWhite, CG_GetStripEdString("INGAMETEXT", "READY"),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
 	}
 }
 
@@ -388,7 +240,6 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 	score_t	*score;
 	float	color[4];
 	int		count;
-	int		playersCountedBitmask = 0;
 	clientInfo_t	*ci;
 
 	color[0] = color[1] = color[2] = 1.0;
@@ -398,11 +249,6 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 	for ( i = 0 ; i < cg.numScores && count < maxClients ; i++ ) {
 		score = &cg.scores[i];
 		ci = &cgs.clientinfo[ score->client ];
-
-		// If this client disconnected recently, still draw his score if cg_scoreboardDisconnectedPlayersDrawTime is not 0.
-		if (cg_scoreboardDisconnectedPlayersDrawTime.integer && cgs.disconnectTime[score->client] && cgs.disconnectTime[score->client] < cg.time && (cg.time - cgs.disconnectTime[score->client]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
-			ci = &cgs.lastValidClientinfo[score->client];
-		}
 
 		if ( team != ci->team ) {
 			continue;
@@ -414,30 +260,6 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 		}
 
 		count++;
-		playersCountedBitmask |= (1 << score->client);
-	}
-
-	// If desired, go through remaining players who may have disconnected before we 
-	// even got the last scoreboard data and add them to the count
-	if (cg_scoreboardDisconnectedPlayersDrawTime.integer) {
-		for (i = 0; i < MAX_CLIENTS; i++) {
-			if (!(playersCountedBitmask & (1 << i)) && cgs.disconnectTime[i] && cgs.disconnectTime[i] < cg.time && (cg.time - cgs.disconnectTime[i]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
-				ci = &cgs.lastValidClientinfo[i];
-				score = &cgs.lastValidScoreboardEntry[i];
-				if (team != ci->team)
-				{
-					continue;
-				}
-
-				if (!countOnly)
-				{
-					score->client = i;
-					CG_DrawClientScore(y + lineHeight * count, score, color, fade, lineHeight == SB_NORMAL_HEIGHT);
-				}
-
-				count++;
-			}
-		}
 	}
 
 	return count;
@@ -447,7 +269,6 @@ int CG_GetTeamCount(team_t team, int maxClients)
 {
 	int i = 0;
 	int count = 0;
-	int playersCountedBitmask = 0;
 	clientInfo_t	*ci;
 	score_t	*score;
 
@@ -456,33 +277,12 @@ int CG_GetTeamCount(team_t team, int maxClients)
 		score = &cg.scores[i];
 		ci = &cgs.clientinfo[ score->client ];
 
-		// If this client disconnected recently, still draw his score if cg_scoreboardDisconnectedPlayersDrawTime is not 0.
-		if (cg_scoreboardDisconnectedPlayersDrawTime.integer && cgs.disconnectTime[score->client] && cgs.disconnectTime[score->client] < cg.time && (cg.time - cgs.disconnectTime[score->client]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
-			ci = &cgs.lastValidClientinfo[score->client];
-		}
-
 		if ( team != ci->team )
 		{
 			continue;
 		}
 
 		count++;
-		playersCountedBitmask |= (1 << score->client);
-	}
-
-	// If desired, go through remaining players who may have disconnected before we 
-	// even got the last scoreboard data and add them to the count
-	if (cg_scoreboardDisconnectedPlayersDrawTime.integer) {
-		for (i = 0; i < MAX_CLIENTS; i++) {
-			if (!(playersCountedBitmask & (1<<i)) && cgs.disconnectTime[i] && cgs.disconnectTime[i] < cg.time && (cg.time - cgs.disconnectTime[i]) < (cg_scoreboardDisconnectedPlayersDrawTime.integer * 1000)) {
-				ci = &cgs.lastValidClientinfo[i];
-				if (team != ci->team)
-				{
-					continue;
-				}
-				count++;
-			}
-		}
 	}
 
 	return count;
@@ -504,9 +304,6 @@ qboolean CG_DrawOldScoreboard( void ) {
 	int maxClients, realMaxClients;
 	int lineHeight;
 	int topBorderSize, bottomBorderSize;
-	int scoreLineX = SB_SCORELINE_X;
-	int scoreLineWidth = SB_SCORELINE_WIDTH;
-	qboolean defragScoreboard = cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE];
 
 	// don't draw amuthing if the menu or console is up
 	if ( cg_paused.integer ) {
@@ -517,11 +314,6 @@ qboolean CG_DrawOldScoreboard( void ) {
 	// don't draw scoreboard during death while warmup up
 	if ( cg.warmup && !cg.showScores ) {
 		return qfalse;
-	}
-
-	if (defragScoreboard) {
-		scoreLineX = SB_SCORELINE_X_DEFRAG;
-		scoreLineWidth = SB_SCORELINE_WIDTH_DEFRAG;
 	}
 
 	if ( cg.showScores || cg.predictedPlayerState.pm_type == PM_DEAD ||
@@ -640,14 +432,14 @@ qboolean CG_DrawOldScoreboard( void ) {
 	// scoreboard
 	y = SB_HEADER;
 
-	CG_DrawPic ( scoreLineX - 40, y - 5, scoreLineWidth + 80, 40, trap_R_RegisterShaderNoMip ( "gfx/menus/menu_buttonback.tga" ) );
+	CG_DrawPic ( SB_SCORELINE_X - 40, y - 5, SB_SCORELINE_WIDTH + 80, 40, trap_R_RegisterShaderNoMip ( "gfx/menus/menu_buttonback.tga" ) );
 
 	// "NAME", "SCORE", "PING", "TIME" weren't localised, GODDAMMIT!!!!!!!!     
 	//
 	// Unfortunately, since it's so sodding late now and post release I can't enable the localisation code (REM'd) since some of 
 	//	the localised strings don't fit - since no-one's ever seen them to notice this.  Smegging brilliant. Thanks people.
 	//
-	CG_Text_Paint (defragScoreboard ? SB_NAME_X_DEFRAG: SB_NAME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "NAME")*/"Name",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+	CG_Text_Paint ( SB_NAME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "NAME")*/"Name",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
 	if (cgs.gametype == GT_TOURNAMENT)
 	{
 		char sWL[100];
@@ -657,22 +449,14 @@ qboolean CG_DrawOldScoreboard( void ) {
 	}
 	else if (cgs.gametype == GT_CTF)
 	{
-		CG_Text_Paint ( scoreLineX + 0.47f * scoreLineWidth, y, 1.0f, colorWhite, "Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.59f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorYellow : colorWhite, "C", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		//CG_Text_Paint ( scoreLineX + 0.66f * scoreLineWidth, y, 1.0f, colorWhite, "A", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
-		//CG_Text_Paint ( scoreLineX + 0.73f * scoreLineWidth, y, 1.0f, colorWhite, "D", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.66f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorCyan : colorWhite, "R", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
-		CG_Text_Paint ( scoreLineX + 0.72f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorMagenta : colorWhite, "BC", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.80 * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorGreen : colorWhite, "Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.90 * scoreLineWidth, y, 1.0f, colorWhite, "Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-	}
-	else if(defragScoreboard)
-	{
-		CG_Text_Paint (SB_USERNAME_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "SCORE")*/"User", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint (SB_PB_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"PB", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
-		CG_Text_Paint (SB_SCORE_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint (SB_PING_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint (SB_TIME_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.47f * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.59f * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorYellow : colorWhite, "C", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		//CG_Text_Paint ( SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "A", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
+		//CG_Text_Paint ( SB_SCORELINE_X + 0.73f * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "D", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.66f * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorCyan : colorWhite, "R", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
+		CG_Text_Paint ( SB_SCORELINE_X + 0.72f * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorMagenta : colorWhite, "BC", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.80 * SB_SCORELINE_WIDTH, y, 1.0f, cg_colorScoreboard.integer ? colorGreen : colorWhite, "Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORELINE_X + 0.90 * SB_SCORELINE_WIDTH, y, 1.0f, colorWhite, "Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
 	}
 	else
 	{
@@ -746,21 +530,21 @@ qboolean CG_DrawOldScoreboard( void ) {
 		team3MaxCl = (maxClients-team1MaxCl-team2MaxCl); //team3 can display however many is left over after team1 & team2's display
 
 		n1 = CG_TeamScoreboard(y, TEAM_RED, fade, team1MaxCl, lineHeight, qtrue);
-		CG_DrawTeamBackground(scoreLineX - 5, y - topBorderSize, scoreLineWidth + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED);
+		CG_DrawTeamBackground(SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED);
 		CG_TeamScoreboard(y, TEAM_RED, fade, team1MaxCl, lineHeight, qfalse);
 		y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
 
 		//maxClients -= n1;
 
 		n2 = CG_TeamScoreboard(y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qtrue);
-		CG_DrawTeamBackground(scoreLineX - 5, y - topBorderSize, scoreLineWidth + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE);
+		CG_DrawTeamBackground(SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE);
 		CG_TeamScoreboard(y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qfalse);
 		y += (n2 * lineHeight) + BIGCHAR_HEIGHT;
 
 		//maxClients -= n2;
 
 		n3 = CG_TeamScoreboard(y, TEAM_FREE, fade, team3MaxCl, lineHeight, qtrue);
-		CG_DrawTeamBackground(scoreLineX - 5, y - topBorderSize, scoreLineWidth + 10, n3 * lineHeight + bottomBorderSize, 0.33f, TEAM_FREE);
+		CG_DrawTeamBackground(SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n3 * lineHeight + bottomBorderSize, 0.33f, TEAM_FREE);
 		CG_TeamScoreboard(y, TEAM_FREE, fade, team3MaxCl, lineHeight, qfalse);
 		y += (n3 * lineHeight) + BIGCHAR_HEIGHT;
 
@@ -797,14 +581,14 @@ qboolean CG_DrawOldScoreboard( void ) {
 			team2MaxCl = (maxClients-team1MaxCl); //team2 can display however many is left over after team1's display
 
 			n1 = CG_TeamScoreboard( y, TEAM_RED, fade, team1MaxCl, lineHeight, qtrue );
-			CG_DrawTeamBackground( scoreLineX - 5, y - topBorderSize, scoreLineWidth + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED );
+			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED );
 			CG_TeamScoreboard( y, TEAM_RED, fade, team1MaxCl, lineHeight, qfalse );
 			y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
 
 			//maxClients -= n1;
 
 			n2 = CG_TeamScoreboard( y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qtrue );
-			CG_DrawTeamBackground( scoreLineX - 5, y - topBorderSize, scoreLineWidth + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE );
+			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE );
 			CG_TeamScoreboard( y, TEAM_BLUE, fade, team2MaxCl, lineHeight, qfalse );
 			y += (n2 * lineHeight) + BIGCHAR_HEIGHT;
 
@@ -830,14 +614,14 @@ qboolean CG_DrawOldScoreboard( void ) {
 			team2MaxCl = (maxClients-team1MaxCl); //team2 can display however many is left over after team1's display
 
 			n1 = CG_TeamScoreboard( y, TEAM_BLUE, fade, team1MaxCl, lineHeight, qtrue );
-			CG_DrawTeamBackground( scoreLineX - 5, y - topBorderSize, scoreLineWidth + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE );
+			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n1 * lineHeight + bottomBorderSize, 0.33f, TEAM_BLUE );
 			CG_TeamScoreboard( y, TEAM_BLUE, fade, team1MaxCl, lineHeight, qfalse );
 			y += (n1 * lineHeight) + BIGCHAR_HEIGHT;
 
 			//maxClients -= n1;
 
 			n2 = CG_TeamScoreboard( y, TEAM_RED, fade, team2MaxCl, lineHeight, qtrue );
-			CG_DrawTeamBackground( scoreLineX - 5, y - topBorderSize, scoreLineWidth + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED );
+			CG_DrawTeamBackground( SB_SCORELINE_X - 5, y - topBorderSize, SB_SCORELINE_WIDTH + 10, n2 * lineHeight + bottomBorderSize, 0.33f, TEAM_RED );
 			CG_TeamScoreboard( y, TEAM_RED, fade, team2MaxCl, lineHeight, qfalse );
 			y += (n2 * lineHeight) + BIGCHAR_HEIGHT;
 

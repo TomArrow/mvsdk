@@ -14,7 +14,7 @@ set(MVUIHEADERS
 	"${SRCDir}/ui/ui_shared.h"
 	"${SRCDir}/ui/ui_multiversion.h"
 	"${SRCDir}/ui/ui_multiversion_syscalls.h"
-
+	
 	"${SRCDir}/game/bg_weapons.h"
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/bg_multiversion.h"
@@ -27,11 +27,10 @@ set(MVUISOURCES
 	"${SRCDir}/ui/ui_gameinfo.c"
 	"${SRCDir}/ui/ui_shared.c"
 	"${SRCDir}/ui/ui_multiversion.c"
-	"${SRCDir}/ui/ui_saber.c"
 
 	"${SRCDir}/game/bg_misc.c"
 	"${SRCDir}/game/bg_weapons.c"
-	"${SRCDir}/game/q_math.c"
+	# "${SRCDir}/game/q_math.c" (removed, replaced by q_math.cpp)
 	"${SRCDir}/game/q_shared.c"
 	"${SRCDir}/ui/ui_multiversion_syscalls.c"
 	"${SRCDir}/game/bg_multiversion.c"
@@ -71,20 +70,4 @@ set_target_properties(${MVUI} PROPERTIES INCLUDE_DIRECTORIES "${MVUIIncludeDirs}
 set_target_properties(${MVUI} PROPERTIES PROJECT_LABEL "UI Module")
 if(InMV)
 	set_property(TARGET ${MVUI} PROPERTY FOLDER "Modules")
-	if(BuildPortableVersion)
-		if(WIN32)
-			install(TARGETS ${MVUI} RUNTIME DESTINATION ".")
-		else()
-			install(TARGETS ${MVUI} LIBRARY DESTINATION ".")
-		endif()
-	else()
-		if(WIN32)
-			install(TARGETS ${MVUI} RUNTIME DESTINATION ".")
-			install(FILES $<TARGET_PDB_FILE:${MVUI}> DESTINATION "." OPTIONAL)
-		elseif(APPLE)
-			install(TARGETS ${MVUI} LIBRARY DESTINATION "${MVMP}.app/Contents/MacOS")
-		else()
-			install(TARGETS ${MVUI} LIBRARY DESTINATION "lib")
-		endif()
-	endif()
 endif()

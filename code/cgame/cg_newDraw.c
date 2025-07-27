@@ -22,10 +22,10 @@ void CG_InitTeamChat(void) {
 
 void CG_SetPrintString(int type, const char *p) {
   if (type == SYSTEM_PRINT) {
-    Q_strncpyz(systemChat, p,sizeof(systemChat));
+    strcpy(systemChat, p);
   } else {
-    Q_strncpyz(teamChat2, teamChat1,sizeof(teamChat2));
-    Q_strncpyz(teamChat1, p,sizeof(teamChat1));
+    strcpy(teamChat2, teamChat1);
+    strcpy(teamChat1, p);
   }
 }
 
@@ -274,9 +274,7 @@ clientInfo_t *CG_GetFlagCarrier(team_t flag) {
 		if (!ci || !ci->infoValid)
 			continue;
 
-		if ((ci->powerups & (1 << flagBit) || cg_entities[w].currentValid && cg_entities[w].currentState.powerups & (1 << flagBit))
-			&& ci->team != flag && ci->team != TEAM_SPECTATOR
-			)
+		if (ci->powerups & (1 << flagBit))
 			return ci;
 	}
 

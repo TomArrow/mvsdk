@@ -6,19 +6,13 @@
 #include "anims.h"
 #include "../cgame/animtable.h"
 
-#ifdef JK2_GAME
-#include "g_local.h"
-#elif JK2_CGAME
-#include "../cgame/cg_local.h"
-#endif
-
 /*
 ==============================================================================
 BEGIN: Animation utility functions (sequence checking)
 ==============================================================================
 */
 //Called regardless of pm validity:
-qboolean BG_InSpecialJump( int anim, int runFlags )
+qboolean BG_InSpecialJump( int anim )
 {
 	switch ( (anim&~ANIM_TOGGLEBIT) )
 	{
@@ -35,26 +29,6 @@ qboolean BG_InSpecialJump( int anim, int runFlags )
 	case BOTH_BUTTERFLY_LEFT:
 	case BOTH_BUTTERFLY_RIGHT:
 		return qtrue;
-	case BOTH_ARIAL_LEFT: // jka cartwheel
-	case BOTH_ARIAL_RIGHT: // jka cartwheel
-		if (runFlags & RFL_CLIMBTECH) {
-			return qtrue;
-		}
-	}
-	if ((runFlags & RFL_CLIMBTECH))
-	{
-		if ( BG_InReboundJump( anim ) )
-		{
-			return qtrue;
-		}
-		if ( BG_InReboundHold( anim ) )
-		{
-			return qtrue;
-		}
-		if ( BG_InReboundRelease( anim ) )
-		{
-			return qtrue;
-		}
 	}
 	return qfalse;
 }
@@ -70,62 +44,6 @@ qboolean BG_InSaberStandAnim( int anim )
 	default:
 		return qfalse;
 	}
-}
-
-// JKA wallgrab
-qboolean BG_InReboundJump(int anim)
-{
-	switch (anim & ~ANIM_TOGGLEBIT) // TA: just fix this? (anim_togglebit)
-	{
-	case BOTH_FORCEWALLREBOUND_FORWARD:
-	case BOTH_FORCEWALLREBOUND_LEFT:
-	case BOTH_FORCEWALLREBOUND_BACK:
-	case BOTH_FORCEWALLREBOUND_RIGHT:
-		return qtrue;
-		break;
-	}
-	return qfalse;
-}
-// JKA wallgrab
-qboolean BG_InReboundHold(int anim)
-{
-	switch (anim & ~ANIM_TOGGLEBIT) // TA: just fix this? (anim_togglebit)
-	{
-	case BOTH_FORCEWALLHOLD_FORWARD:
-	case BOTH_FORCEWALLHOLD_LEFT:
-	case BOTH_FORCEWALLHOLD_BACK:
-	case BOTH_FORCEWALLHOLD_RIGHT:
-		return qtrue;
-		break;
-	}
-	return qfalse;
-}
-// JKA wallgrab
-qboolean BG_InReboundRelease(int anim)
-{
-	switch (anim & ~ANIM_TOGGLEBIT) // TA: just fix this? (anim_togglebit)
-	{
-	case BOTH_FORCEWALLRELEASE_FORWARD:
-	case BOTH_FORCEWALLRELEASE_LEFT:
-	case BOTH_FORCEWALLRELEASE_BACK:
-	case BOTH_FORCEWALLRELEASE_RIGHT:
-		return qtrue;
-		break;
-	}
-	return qfalse;
-}
-
-qboolean BG_InBackFlip(int anim)
-{
-	switch (anim)
-	{
-	case BOTH_FLIP_BACK1:
-	case BOTH_FLIP_BACK2:
-	case BOTH_FLIP_BACK3:
-		return qtrue;
-		break;
-	}
-	return qfalse;
 }
 
 qboolean BG_DirectFlippingAnim( int anim )
@@ -158,8 +76,6 @@ qboolean BG_SaberInAttack( int move )
 	case LS_A_JUMP_T__B_:
 	case LS_A_FLIP_STAB:
 	case LS_A_FLIP_SLASH:
-	case LS_JUMPATTACK_ARIAL_LEFT: // jka cartwheel
-	case LS_JUMPATTACK_ARIAL_RIGHT: // jka cartwheel
 		return qtrue;
 		break;
 	}
@@ -177,8 +93,6 @@ qboolean BG_SaberInSpecial( int move )
 	case LS_A_JUMP_T__B_:
 	case LS_A_FLIP_STAB:
 	case LS_A_FLIP_SLASH:
-	case LS_JUMPATTACK_ARIAL_LEFT: // jka cartwheel
-	case LS_JUMPATTACK_ARIAL_RIGHT: // jka cartwheel
 		return qtrue;
 	}
 	return qfalse;
@@ -357,7 +271,7 @@ int BG_BrokenParryForAttack( int move )
 	return LS_NONE;
 }
 
-int BG_BrokenParryForParry( int move, qboolean raceMode )
+int BG_BrokenParryForParry( int move )
 {
 	//FIXME: need actual anims for this
 	//FIXME: need to know which side of the saber was hit!  For now, we presume the saber gets knocked away from the center
@@ -365,7 +279,7 @@ int BG_BrokenParryForParry( int move, qboolean raceMode )
 	{
 	case LS_PARRY_UP:
 		//Hmm... since we don't know what dir the hit came from, randomly pick knock down or knock back
-		if ( Q_irand( 0, 1 + pml.randomAdd, raceMode, 0 ) )
+		if ( Q_irand( 0, 1 ) )
 		{
 			return LS_H1_B_;
 		}
@@ -625,22 +539,6 @@ qboolean PM_InKnockDown( playerState_t *ps )
 	return qfalse;
 }
 
-//Called only where pm is valid (not all require pm, but some do):
-/*qboolean PM_InCartwheel(int anim)
-{
-	switch (anim)
-	{
-	case BOTH_ARIAL_LEFT:
-	case BOTH_ARIAL_RIGHT:
-	case BOTH_ARIAL_F1:
-	case BOTH_CARTWHEEL_LEFT:
-	case BOTH_CARTWHEEL_RIGHT:
-		return qtrue;
-		break;
-	}
-	return qfalse;
-}*/
-
 qboolean PM_PainAnim( int anim )
 {
 	switch ( (anim&~ANIM_TOGGLEBIT) )
@@ -860,80 +758,6 @@ void SpewDebugStuffToFile()
 }
 #endif
 
-const int animOverrideNums[] = {
-	BOTH_FORCEWALLREBOUND_BACK,
-	BOTH_FORCEWALLREBOUND_FORWARD,
-	BOTH_FORCEWALLREBOUND_LEFT,
-	BOTH_FORCEWALLREBOUND_RIGHT,
-
-	BOTH_FORCEWALLHOLD_BACK,
-	BOTH_FORCEWALLHOLD_FORWARD,
-	BOTH_FORCEWALLHOLD_LEFT,
-	BOTH_FORCEWALLHOLD_RIGHT,
-
-	BOTH_FORCEWALLRELEASE_BACK,
-	BOTH_FORCEWALLRELEASE_FORWARD,
-	BOTH_FORCEWALLRELEASE_LEFT,
-	BOTH_FORCEWALLRELEASE_RIGHT,
-};
-
-const int animOverrideCount = sizeof(animOverrideNums) / sizeof(animOverrideNums[0]);
-
-void BG_AnimationOverrides() {
-	int i, animNum;
-	float fps;
-
-	for(i=0;i< animOverrideCount;i++)
-	{
-		animNum = animOverrideNums[i];
-		// Dirty JKA wallgrab hack
-		// TODO Only do this if:
-		// cgame: tommyternal server && g_defrag
-		// game: g_defrag
-		// TODO Wallrun too somehow
-		switch (animNum) {
-			case BOTH_FORCEWALLREBOUND_BACK:
-			case BOTH_FORCEWALLREBOUND_FORWARD:
-			case BOTH_FORCEWALLREBOUND_LEFT:
-			case BOTH_FORCEWALLREBOUND_RIGHT: // use slowed down BOTH_UNCROUCH1 anim instead (ditch last frame to make the total length correct with the 1/4 fps)
-				bgGlobalAnimations[animNum].firstFrame = 3384;
-				bgGlobalAnimations[animNum].numFrames = 3;
-				bgGlobalAnimations[animNum].loopFrames = -1;
-				fps = -5;
-				break;
-			case BOTH_FORCEWALLHOLD_BACK:
-			case BOTH_FORCEWALLHOLD_FORWARD:
-			case BOTH_FORCEWALLHOLD_LEFT:
-			case BOTH_FORCEWALLHOLD_RIGHT: // use first frame of BOTH_CROUCH1IDLE
-				bgGlobalAnimations[animNum].firstFrame = 3388;
-				bgGlobalAnimations[animNum].numFrames = 1;
-				bgGlobalAnimations[animNum].loopFrames = -1;
-				fps = 20;
-				break;
-			case BOTH_FORCEWALLRELEASE_BACK:
-			case BOTH_FORCEWALLRELEASE_FORWARD:
-			case BOTH_FORCEWALLRELEASE_LEFT:
-			case BOTH_FORCEWALLRELEASE_RIGHT: // use slowed down BOTH_UNCROUCH1 anim instead (ditch last frame to make the total length correct with the 1/2 fps)
-				bgGlobalAnimations[animNum].firstFrame = 3384;
-				bgGlobalAnimations[animNum].numFrames = 3;
-				bgGlobalAnimations[animNum].loopFrames = -1;
-				fps = -10;
-				break;
-		}
-
-		if (fps < 0)
-		{//backwards
-			bgGlobalAnimations[animNum].frameLerp = floor(1000.0f / fps);
-		}
-		else
-		{
-			bgGlobalAnimations[animNum].frameLerp = ceil(1000.0f / fps);
-		}
-
-		bgGlobalAnimations[animNum].initialLerp = ceil(1000.0f / fabs(fps));
-	}
-}
-
 qboolean BG_ParseAnimationFile(const char *filename) 
 {
 	char		*text_p;
@@ -999,13 +823,7 @@ qboolean BG_ParseAnimationFile(const char *filename)
 		{
 //#ifndef FINAL_BUILD
 #ifdef _DEBUG
-#if JK2_GAME
-		if(g_developer.integer){
-#elif JK2_CGAME
-		if (cg_developer.integer) {
-#endif
 			Com_Printf(S_COLOR_RED"WARNING: Unknown token %s in %s\n", token, filename);
-		}
 #endif
 			continue;
 		}
@@ -1041,48 +859,6 @@ qboolean BG_ParseAnimationFile(const char *filename)
 		{
 			fps = 1;//Don't allow divide by zero error
 		}
-
-// TODO... cant do it as simply as this because it only gets loaded once?
-//		if (
-//#ifdef JK2_GAME
-//			g_defrag.integer
-//#elif JK2_CGAME
-//			
-//#endif
-//			) 
-		{
-			switch (animNum) {
-			case BOTH_FORCEWALLREBOUND_BACK:
-			case BOTH_FORCEWALLREBOUND_FORWARD:
-			case BOTH_FORCEWALLREBOUND_LEFT:
-			case BOTH_FORCEWALLREBOUND_RIGHT: // use slowed down BOTH_UNCROUCH1 anim instead (ditch last frame to make the total length correct with the 1/4 fps)
-				bgGlobalAnimations[animNum].firstFrame = 3384;
-				bgGlobalAnimations[animNum].numFrames = 3;
-				bgGlobalAnimations[animNum].loopFrames = -1;
-				fps = -5;
-				break;
-			case BOTH_FORCEWALLHOLD_BACK:
-			case BOTH_FORCEWALLHOLD_FORWARD:
-			case BOTH_FORCEWALLHOLD_LEFT:
-			case BOTH_FORCEWALLHOLD_RIGHT: // use first frame of BOTH_CROUCH1IDLE
-				bgGlobalAnimations[animNum].firstFrame = 3388;
-				bgGlobalAnimations[animNum].numFrames = 1;
-				bgGlobalAnimations[animNum].loopFrames = -1;
-				fps = 20;
-				break;
-			case BOTH_FORCEWALLRELEASE_BACK:
-			case BOTH_FORCEWALLRELEASE_FORWARD:
-			case BOTH_FORCEWALLRELEASE_LEFT:
-			case BOTH_FORCEWALLRELEASE_RIGHT: // use slowed down BOTH_UNCROUCH1 anim instead (ditch last frame to make the total length correct with the 1/2 fps)
-				bgGlobalAnimations[animNum].firstFrame = 3384;
-				bgGlobalAnimations[animNum].numFrames = 3;
-				bgGlobalAnimations[animNum].loopFrames = -1;
-				fps = -10;
-				break;
-			}
-		}
-		
-
 		if ( fps < 0 )
 		{//backwards
 			bgGlobalAnimations[animNum].frameLerp = floor(1000.0f / fps);
@@ -1095,25 +871,17 @@ qboolean BG_ParseAnimationFile(const char *filename)
 		bgGlobalAnimations[animNum].initialLerp = ceil(1000.0f / fabs(fps));
 	}
 
-	//BG_AnimationOverrides(); // just to be safe but we should already be using only available anims (ones in animation.cfg). others cant be used because the array will never loop over them and thus we get assertion error on debug build
-
 #ifdef _DEBUG
-#if JK2_GAME
-	if (g_developer.integer) {
-#elif JK2_CGAME
-	if (cg_developer.integer) {
-#endif
 	//Check the array, and print the ones that have nothing in them.
-	for (i = 0; i < MAX_ANIMATIONS; i++)
-	{
+	for(i = 0; i < MAX_ANIMATIONS; i++)
+	{	
 		if (animTable[i].name != NULL)		// This animation reference exists.
 		{
-			if (bgGlobalAnimations[i].firstFrame <= 0 && bgGlobalAnimations[i].numFrames <= 0)
+			if (bgGlobalAnimations[i].firstFrame <= 0 && bgGlobalAnimations[i].numFrames <=0)
 			{	// This is an empty animation reference.
 				Com_Printf("***ANIMTABLE reference #%d (%s) is empty!\n", i, animTable[i].name);
 			}
 		}
-	}
 	}
 #endif // _DEBUG
 
@@ -1172,9 +940,9 @@ void PM_ContinueLegsAnim( int anim ) {
 }
 
 void PM_ForceLegsAnim( int anim) {
-	if (BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags) &&
+	if (BG_InSpecialJump(pm->ps->legsAnim) &&
 		pm->ps->legsTimer > 0 &&
-		!BG_InSpecialJump(anim, pm->modParms.runFlags))
+		!BG_InSpecialJump(anim))
 	{
 		return;
 	}
@@ -1425,12 +1193,10 @@ setAnimDone:
 // Imported from single-player, this function is mainly intended to make porting from SP easier.
 void PM_SetAnim(int setAnimParts,int anim,int setAnimFlags, int blendTime)
 {	
-#if JK2_GAME // server might use stuff we don't have in cgame, that's ok.
 	assert(	bgGlobalAnimations[anim].firstFrame != 0 || 
 			bgGlobalAnimations[anim].numFrames != 0);
-#endif
 
-	if (BG_InSpecialJump(anim, pm->modParms.runFlags))
+	if (BG_InSpecialJump(anim))
 	{
 		setAnimFlags |= SETANIM_FLAG_RESTART;
 	}

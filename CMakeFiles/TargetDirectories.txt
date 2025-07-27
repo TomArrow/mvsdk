@@ -1,0 +1,2 @@
+C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/CMakeFiles/ALL_BUILD.dir
+C:/Users/david/Documents/Workspace/tom_jk2mv/src/mvsdk/CMakeFiles/ZERO_CHECK.dir

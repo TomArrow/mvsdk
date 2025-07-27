@@ -4,7 +4,7 @@
 
 #include "cg_local.h"
 #include "fx_local.h"
-#include "../ghoul2/G2.h"
+#include "../ghoul2/g2.h"
 #include "../ui/ui_shared.h"
 
 // for the voice chats
@@ -38,7 +38,7 @@ const char	*CG_PlaceString( int rank ) {
 	trap_SP_GetStringTextString("INGAMETEXT_NUMBER_RD",sRD, sizeof(sRD) );
 	trap_SP_GetStringTextString("INGAMETEXT_NUMBER_TH",sTH, sizeof(sTH) );
 	trap_SP_GetStringTextString("INGAMETEXT_TIED_FOR" ,sTiedFor,sizeof(sTiedFor) );
-	Q_strcat(sTiedFor,sizeof(sTiedFor)," ");	// save worrying about translators adding spaces or not
+	strcat(sTiedFor," ");	// save worrying about translators adding spaces or not
 
 	if ( rank & RANK_TIED_FLAG ) {
 		rank &= ~RANK_TIED_FLAG;
@@ -210,6 +210,8 @@ static void CG_Obituary( entityState_t *ent ) {
 		}
 		message = (char *)CG_GetStripEdString("INGAMETEXT", message);
 
+		cg.totalDeaths[target]++;
+
 		CG_Printf( "%s %s\n", targetName, message);
 		return;
 	}
@@ -288,10 +290,6 @@ clientkilled:
 			CG_CenterPrintMultiKill( s, cgs.screenHeight * 0.30, BIGCHAR_WIDTH );
 		} 
 		// print the text message as well
-	}
-
-	if (attacker == cg.refclient) {
-		cg.lastRefClientKill = cg.time;
 	}
 
 	// check for double client messages
@@ -398,14 +396,29 @@ clientkilled:
 		if (message) {
 			message = (char *)CG_GetStripEdString("INGAMETEXT", message);
 
-			CG_Printf( "%s %s %s\n", 
-				targetName, message, attackerName);
+			cg.directKills[attacker][target]++;
+			cg.totalKills[attacker]++;
+			cg.totalDeaths[target]++;
+
+			if (cg_showKills.integer)
+			{
+				CG_Printf("%s (%d) %s %s (%d)\n",
+					targetName, cg.directKills[target][attacker], message, attackerName, cg.directKills[attacker][target]);
+			}
+			else
+			{
+				CG_Printf( "%s %s %s\n", 
+					targetName, message, attackerName);
+			}
+
 			return;
 		}
 	}
 
 	// we don't know what it was
 	CG_Printf( "%s %s\n", targetName, (char *)CG_GetStripEdString("INGAMETEXT", "DIED_GENERIC") );
+
+	cg.totalDeaths[target]++;
 }
 
 //==========================================================================
@@ -636,65 +649,19 @@ void CG_PainEvent( centity_t *cent, int health ) {
 
 void CG_ReattachLimb(centity_t *source)
 {
-	char *limbName;
-	char *stubCapName;
 	clientInfo_t *ci = NULL;
 
-	if (source->currentState.number >= 0 && source->currentState.number < MAX_CLIENTS)
-	{
-		ci = &cgs.clientinfo[source->currentState.number];
-	}
-
-	if (ci && coolApi_jkaVersion)
+	ci = &cgs.clientinfo[source->currentState.number];
+	if ( ci )
 	{//re-apply the skin
-		if (ci->torsoSkin > 0)
+		if ( ci->torsoSkin > 0 )
 		{
-			trap_CG_COOL_API_SetSkin(source->ghoul2,0,ci->torsoSkin,ci->torsoSkin);
+			trap_G2API_SetSkin(source->ghoul2,0,ci->torsoSkin,ci->torsoSkin);
 		}
-	}
-	else
-	{
-		switch (source->torsoBolt)
-		{
-		case G2_MODELPART_HEAD:
-			limbName = "head";
-			stubCapName = "torso_cap_head_off";
-			break;
-		case G2_MODELPART_WAIST:
-			limbName = "torso";
-			stubCapName = "hips_cap_torso_off";
-			break;
-		case G2_MODELPART_LARM:
-			limbName = "l_arm";
-			stubCapName = "torso_cap_l_arm_off";
-			break;
-		case G2_MODELPART_RARM:
-			limbName = "r_arm";
-			stubCapName = "torso_cap_r_arm_off";
-			break;
-		case G2_MODELPART_RHAND:
-			limbName = "r_hand";
-			stubCapName = "r_arm_cap_r_hand_off";
-			break;
-		case G2_MODELPART_LLEG:
-			limbName = "l_leg";
-			stubCapName = "hips_cap_l_leg_off";
-			break;
-		case G2_MODELPART_RLEG:
-			limbName = "r_leg";
-			stubCapName = "hips_cap_r_leg_off";
-			break;
-		default:
-			source->torsoBolt = 0;
-			source->ghoul2weapon = NULL;
-			return;
-		}
-
-		trap_G2API_SetSurfaceOnOff(source->ghoul2, limbName, 0);
-		trap_G2API_SetSurfaceOnOff(source->ghoul2, stubCapName, 0x00000100);
 	}
 
 	source->torsoBolt = 0;
+
 	source->ghoul2weapon = NULL;
 }
 
@@ -740,7 +707,7 @@ static void CG_BodyQueueCopy(centity_t *cent, int clientNum, int knownWeapon)
 	}
 	else if (trap_G2API_HasGhoul2ModelOnIndex(&(cent->ghoul2), 1))
 	{
-		trap_G2API_CopySpecificGhoul2Model(CG_G2WeaponInstance(cent, knownWeapon), 0, cent->ghoul2, 1);
+		trap_G2API_CopySpecificGhoul2Model(g2WeaponInstances[knownWeapon], 0, cent->ghoul2, 1);
 	}
 
 	anim = &bgGlobalAnimations[ cent->currentState.torsoAnim ];
@@ -928,9 +895,7 @@ void CG_GetCTFMessageEvent(entityState_t *es)
 		}
 	}
 
-	if (!(cg_customizeRace.integer & CUSTOMIZERACE_HIDECTFMESSAGESINRRACE) || !cgs.isTommyTernal || !cg.snap->ps.stats[STAT_RACEMODE]) {
-		CG_PrintCTFMessage(ci, teamName, es->eventParm);
-	}
+	CG_PrintCTFMessage(ci, teamName, es->eventParm);
 }
 
 void DoFall(centity_t *cent, entityState_t *es, int clientNum)
@@ -1016,39 +981,6 @@ int CG_InClientBitflags(entityState_t *ent, int client)
 	return 0;
 }
 
-static void CG_DoTauntSound(int entityNumber)
-{
-	const char *s;
-	int i = Q_irand(0, 6, qfalse, 0);
-	switch (i)
-	{
-	case 0:
-		s = "*taunt.wav";
-		break;
-	case 1:
-		s = "*taunt1.wav";
-		break;
-	case 2:
-		s = "*taunt2.wav";
-		break;
-	case 3:
-		s = "*taunt3.wav";
-		break;
-	case 4:
-		s = "*taunt4.wav";
-		break;
-	case 5:
-	default:
-		s = "*taunt5.wav";
-		break;
-	}
-	if (!cg_randomTaunts.integer)
-	{
-		s = "*taunt.wav";
-	}
-	trap_S_StartSound(NULL, entityNumber, CHAN_VOICE, CG_CustomSound(entityNumber, s));
-}
-
 /*
 ==============
 CG_EntityEvent
@@ -1058,7 +990,7 @@ also called by CG_CheckPlayerstateEvents
 ==============
 */
 #define	DEBUGNAME(x) if(cg_debugEvents.integer){CG_Printf(x"\n");}
-void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboolean changedPredictable) {
+void CG_EntityEvent( centity_t *cent, vec3_t position ) {
 	entityState_t	*es;
 	int				event;
 	vec3_t			dir;
@@ -1073,13 +1005,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 	event = es->event & ~EV_EVENT_BITS;
 
 	if ( cg_debugEvents.integer ) {
-		if (psEventSequence == -1) {
-			CG_Printf("ent:%3i  event:%3i ", es->number, event);
-		}
-		else {
-			CG_Printf("ent:%3i  event:%3i evSeq:%d changepred:%d ", es->number, event, psEventSequence, changedPredictable);
-			//CG_Printf("ent:%3i  event:%3i evSeq:%d ", es->number, event, psEventSequence, changedPredictable);
-		}
+		CG_Printf( "ent:%3i  event:%3i ", es->number, event );
 	}
 
 	if ( !event ) {
@@ -1227,7 +1153,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 
 		if (es->eventParm)
 		{ //starting the duel
-			if (es->eventParm == 2 && !(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]))
+			if (es->eventParm == 2)
 			{
 				CG_CenterPrint( CG_GetStripEdString("SVINGAME", "BEGIN_DUEL"), 120, GIANTCHAR_WIDTH*2 );				
 				trap_S_StartLocalSound( cgs.media.countFightSound, CHAN_ANNOUNCER );
@@ -1292,7 +1218,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 
 	case EV_TAUNT:
 		DEBUGNAME("EV_TAUNT");
-		CG_DoTauntSound(es->number);
+		trap_S_StartSound (NULL, es->number, CHAN_VOICE, CG_CustomSound( es->number, "*taunt.wav" ) );
 		break;
 	case EV_TAUNT_YES:
 		DEBUGNAME("EV_TAUNT_YES");
@@ -1552,7 +1478,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 
 	case EV_SABER_ATTACK:
 		DEBUGNAME("EV_SABER_ATTACK");
-		trap_S_StartSound(es->pos.trBase, es->number, CHAN_WEAPON, trap_S_RegisterSound(va("sound/weapons/saber/saberhup%i.wav", Q_irand(1, 8,qfalse,4))));
+		trap_S_StartSound(es->pos.trBase, es->number, CHAN_WEAPON, trap_S_RegisterSound(va("sound/weapons/saber/saberhup%i.wav", Q_irand(1, 8))));
 		break;
 
 	case EV_SABER_HIT:
@@ -1562,9 +1488,9 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 			qhandle_t hitSound;
 
 			if (cg_newSaberHitSounds.integer == 1)
-				hitSoundNum = Q_irand(1, 3,qfalse,2);
+				hitSoundNum = Q_irand(1, 3);
 			else if (cg_newSaberHitSounds.integer > 1) 
-				hitSoundNum = Q_irand(0, 3,qfalse,2);
+				hitSoundNum = Q_irand(0, 3);
 
 			hitSound = hitSoundNum ? trap_S_RegisterSound(va("sound/weapons/saber/saberhit%i.wav", hitSoundNum)) : trap_S_RegisterSound("sound/weapons/saber/saberhit.wav");
 			if (cgs.isCaMod && cg.snap->ps.duelInProgress && es->otherEntityNum != cg.snap->ps.clientNum && es->otherEntityNum != cg.snap->ps.duelIndex)
@@ -1629,7 +1555,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 			{
 				fxDir[1] = 1;
 			}
-			trap_S_StartSound(es->origin, es->number, CHAN_AUTO, trap_S_RegisterSound(va( "sound/weapons/saber/saberblock%d.wav", Q_irand(1, 9,qfalse,5) )));
+			trap_S_StartSound(es->origin, es->number, CHAN_AUTO, trap_S_RegisterSound(va( "sound/weapons/saber/saberblock%d.wav", Q_irand(1, 9) )));
 			trap_FX_PlayEffectID( trap_FX_RegisterEffect("saber/saber_block.efx"), es->origin, fxDir );
 
 			g_saberFlashTime = cg.time-50;
@@ -1680,7 +1606,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 			if (cg.snap->ps.clientNum == es->number)
 			{
 				trap_S_StartLocalSound(cgs.media.happyMusic, CHAN_LOCAL);
-				CGCam_SetMusicMult(0.3f, 5000);
+				CGCam_SetMusicMult(0.3, 5000);
 			}
 		}
 		break;
@@ -1937,7 +1863,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 	//
 	case EV_PLAYER_TELEPORT_IN:
 		DEBUGNAME("EV_PLAYER_TELEPORT_IN");
-		if (!cg_teleportDisable.integer) {
+		{
 			trace_t tr;
 			vec3_t playerMins = {-15, -15, DEFAULT_MINS_2+8};
 			vec3_t playerMaxs = {15, 15, DEFAULT_MAXS_2};
@@ -1964,7 +1890,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 
 	case EV_PLAYER_TELEPORT_OUT:
 		DEBUGNAME("EV_PLAYER_TELEPORT_OUT");
-		if (!cg_teleportDisable.integer) {
+		{
 			trace_t tr;
 			vec3_t playerMins = {-15, -15, DEFAULT_MINS_2+8};
 			vec3_t playerMaxs = {15, 15, DEFAULT_MAXS_2};
@@ -2405,7 +2331,7 @@ void CG_EntityEvent( centity_t *cent, vec3_t position, int psEventSequence, qboo
 		if (es->eventParm && es->number == cg.snap->ps.clientNum)
 		{
 			trap_S_StartLocalSound(cgs.media.dramaticFailure, CHAN_LOCAL);
-			CGCam_SetMusicMult(0.3f, 5000);
+			CGCam_SetMusicMult(0.3, 5000);
 		}
 		break;
 
@@ -2559,6 +2485,6 @@ void CG_CheckEvents( centity_t *cent ) {
 	BG_EvaluateTrajectory( &cent->currentState.pos, cg.snap->serverTime, cent->lerpOrigin );
 	CG_SetEntitySoundPosition( cent );
 
-	CG_EntityEvent( cent, cent->lerpOrigin, -1, qfalse );
+	CG_EntityEvent( cent, cent->lerpOrigin );
 }
 

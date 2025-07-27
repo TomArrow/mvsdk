@@ -14,507 +14,6 @@ output: origin, velocity, impacts, stairup boolean
 
 */
 
-extern float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd);
-vec3_t flatNormal = {0,0,1};
-
-qboolean PM_GroundSlideOkay(float zNormal)
-{
-	int legsAnim = pm->ps->legsAnim & ~ANIM_TOGGLEBIT;
-	// nvm, already guarded in all calls
-	//if (!(pml.mod.runFlags & RFL_CLIMBTECH)) return qtrue;
-
-	if (zNormal > 0)
-	{
-		if (pm->ps->velocity[2] > 0)
-		{
-			if (legsAnim == BOTH_WALL_RUN_RIGHT
-				|| legsAnim == BOTH_WALL_RUN_LEFT
-				|| legsAnim == BOTH_WALL_RUN_RIGHT_STOP
-				|| legsAnim == BOTH_WALL_RUN_LEFT_STOP
-				|| legsAnim == BOTH_FORCEWALLRUNFLIP_START
-				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_START
-				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_ATTACK
-				//|| pm->ps->legsAnim == BOTH_FORCELONGLEAP_LAND
-				|| BG_InReboundJump(legsAnim))
-			{
-				return qfalse;
-			}
-		}
-	}
-	return qtrue;
-}
-
-
-
-/*
-==================
-PM_LimitedClipVelocity
-
-Slide off of the impacting surface
-
-Limit maximum velocity while keeping original direction components
-==================
-*/
-void PM_LimitedClipVelocity(vec3_t in, vec3_t normal, vec3_t out, float overbounce, float maxSpeed) {
-	float	backoff;
-	float	change;
-	int		i;
-	vec3_t	normalComponent;
-	vec3_t	nonNormalComponent;
-	float	maxLenOut;
-	float	lenOut;
-	float	lenNonNormal;
-
-	if ((pm->modParms.runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
-	{//no sliding!
-		VectorCopy(in, out);
-		return;
-	}
-
-	backoff = DotProduct(in, normal);
-
-	VectorScale(normal, backoff, nonNormalComponent); // just reusing the var to not waste memory
-	VectorSubtract(in, nonNormalComponent, nonNormalComponent); // nonNormalComponent is what MUST be preserved even if we limit max velocity.
-	VectorSubtract(in, nonNormalComponent, normalComponent); // non
-	lenNonNormal = VectorLength(nonNormalComponent);
-
-	if (backoff < 0) {
-		backoff *= overbounce;
-	}
-	else {
-		backoff /= overbounce;
-	}
-
-	for (i = 0; i < 3; i++) {
-		change = normal[i] * backoff;
-		out[i] = normalComponent[i] - change;
-	}
-
-	// length(out*f+nonNormalComponent) < 100000
-	// out and nonnormal are perpendicular to each other so
-	// sqrt(lenOut*lenOut + lenNonNormal*lenNonNormal) = 100000
-	// lenOut*lenOut = 100000^2 - lenNonNormal*lenNonNormal 
-	// lenOut = sqrt(100000^2 - lenNonNormal*lenNonNormal)
-	maxLenOut = sqrtf(maxSpeed* maxSpeed - lenNonNormal* lenNonNormal);
-	if ((lenOut = VectorLength(out)) > maxLenOut) {
-		VectorScale(out,maxLenOut/lenOut, out);
-	}
-	VectorAdd(out, nonNormalComponent, out);
-}
-
-/*
-==================
-PM_LimitedClipVelocity
-
-Slide off of the impacting surface
-
-Limit maximum velocity on the normal axis while keeping original direction components
-==================
-*/
-void PM_LimitedClipVelocity2(vec3_t in, vec3_t normal, vec3_t out, float overbounce, float maxSpeedNormal) {
-	float	backoff;
-	float	change;
-	int		i;
-	vec3_t	normalComponent;
-	vec3_t	nonNormalComponent;
-	//float	maxLenOut;
-	float	lenOut;
-	float	lenNonNormal;
-
-	if ((pm->modParms.runFlags & RFL_CLIMBTECH) && (pm->ps->pm_flags & PMF_STUCK_TO_WALL))
-	{//no sliding!
-		VectorCopy(in, out);
-		return;
-	}
-
-	backoff = DotProduct(in, normal);
-
-	VectorScale(normal, backoff, nonNormalComponent); // just reusing the var to not waste memory
-	VectorSubtract(in, nonNormalComponent, nonNormalComponent); // nonNormalComponent is what MUST be preserved even if we limit max velocity.
-	VectorSubtract(in, nonNormalComponent, normalComponent); // non
-
-	if (backoff < 0) {
-		backoff *= overbounce;
-	}
-	else {
-		backoff /= overbounce;
-	}
-
-	for (i = 0; i < 3; i++) {
-		change = normal[i] * backoff;
-		out[i] = normalComponent[i] - change;
-	}
-
-	if ((lenOut = VectorLength(out)) > maxSpeedNormal) {
-		VectorScale(out, maxSpeedNormal /lenOut, out);
-	}
-	VectorAdd(out, nonNormalComponent, out);
-}
-
-
-/*
-==================
-PM_StepSlideMove
-
-Each intersection will try to step over the obstruction instead of
-sliding along it.
-
-Returns a new origin, velocity, and contact entity
-Does not modify any world state?
-==================
-*/
-#define	MIN_STEP_NORMAL	0.7		// can't step up onto very steep slopes
-#define	MAX_CLIP_PLANES	5
-void PM_Q2StepSlideMove_(void)
-{
-	int			bumpcount, numbumps;
-	vec3_t		dir;
-	float		d;
-	int			numplanes;
-	vec3_t		normal,planes[MAX_CLIP_PLANES];
-	vec3_t		primal_velocity;
-	int			i, j;
-	trace_t	trace;
-	vec3_t		end;
-	float		time_left;
-	float		tmp;
-	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps,&pm->cmd);
-
-	if (overbounce == OVERCLIP) {
-		overbounce = 1.01f; // if we arent overriding aanything, we use the q2 standard instead (1.01 instead of 1.001)
-	}
-
-	numbumps = 4;
-
-	VectorCopy(pm->ps->velocity, primal_velocity);
-	numplanes = 0;
-
-	time_left = pml.frametime;
-
-	for (bumpcount = 0; bumpcount < numbumps; bumpcount++)
-	{
-		for (i = 0; i < 3; i++)
-			end[i] = pm->ps->origin[i] + time_left * pm->ps->velocity[i];
-
-		pm->trace(&trace,pm->ps->origin, pm->mins, pm->maxs, end, pm->ps->clientNum, pm->tracemask);
-
-		if (trace.allsolid)
-		{	// entity is trapped in another solid
-			pm->ps->velocity[2] = 0;	// don't build up falling damage
-			return;
-		}
-
-		if (trace.fraction > 0)
-		{	// actually covered some distance
-			VectorCopy(trace.endpos, pm->ps->origin);
-			numplanes = 0;
-		}
-
-		if (trace.fraction == 1)
-			break;		// moved the entire distance
-
-	   // save entity for contact
-		if (pm->numtouch < MAXTOUCH && trace.entityNum != ENTITYNUM_WORLD)
-		{
-			pm->touchents[pm->numtouch] = trace.entityNum;
-			pm->numtouch++;
-		}
-
-		time_left -= time_left * trace.fraction;
-
-		// slide along this plane
-		if (numplanes >= MAX_CLIP_PLANES)
-		{	// this shouldn't really happen
-			VectorCopy(vec3_origin, pm->ps->velocity);
-			break;
-		}
-
-		VectorCopy(trace.plane.normal,normal);
-
-		if ((pm->modParms.runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
-		{//wall-running
-			//never push up off a sloped wall
-			normal[2] = 0;
-			VectorNormalize(normal);
-		}
-
-		//
-		// if this is the same plane we hit before, nudge velocity
-		// out along it, which fixes some epsilon issues with
-		// non-axial planes
-		// 
-		// TA: Copied this over from the normal jk function and it makes the movement smoother while keeping it overall nice. Nice!
-		//
-		if (!(pm->modParms.runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
-		{//no sliding if stuck to wall!
-			for (i = 0; i < numplanes; i++) {
-				if (DotProduct(normal, planes[i]) > 0.99f) {
-					VectorAdd(normal, pm->ps->velocity, pm->ps->velocity);
-					break;
-				}
-			}
-			if (i < numplanes) {
-				continue;
-			}
-		}
-
-		VectorCopy(normal, planes[numplanes]);
-		numplanes++;
-
-#if 0
-		float		rub;
-
-		//
-		// modify velocity so it parallels all of the clip planes
-		//
-		if (numplanes == 1)
-		{	// go along this plane
-			VectorCopy(pm->ps->velocity, dir);
-			VectorNormalize(dir);
-			rub = 1.0 + 0.5 * DotProduct(dir, planes[0]);
-
-			// slide along the plane
-			PM_ClipVelocity(pm->ps->velocity, planes[0], pm->ps->velocity, 1.01);
-			// rub some extra speed off on xy axis
-			// not on Z, or you can scrub down walls
-			pm->ps->velocity[0] *= rub;
-			pm->ps->velocity[1] *= rub;
-			pm->ps->velocity[2] *= rub;
-		}
-		else if (numplanes == 2)
-		{	// go along the crease
-			VectorCopy(pm->ps->velocity, dir);
-			VectorNormalize(dir);
-			rub = 1.0 + 0.5 * DotProduct(dir, planes[0]);
-
-			// slide along the plane
-			CrossProduct(planes[0], planes[1], dir);
-			d = DotProduct(dir, pm->ps->velocity);
-			VectorScale(dir, d, pm->ps->velocity);
-
-			// rub some extra speed off
-			VectorScale(pm->ps->velocity, rub, pm->ps->velocity);
-		}
-		else
-		{
-			//			Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
-			VectorCopy(vec3_origin, pm->ps->velocity);
-			break;
-		}
-
-#else
-		//
-		// modify original_velocity so it parallels all of the clip planes
-		//
-		for (i = 0; i < numplanes; i++)
-		{
-			if (pm->modParms.physics == MV_PINBALL) {
-				//PM_LimitedClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,100000.0f);
-				overbounce -= planes[i][2]*0.6f* (MIN(1600.0f,fabsf(pm->ps->velocity[2]))/1600.0f); // dont let ground and ceiling bounce as as insanely much unless we have no proper speed to begin wtih.
-				PM_LimitedClipVelocity2(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce,10000.0f);
-			}
-			else {
-				PM_ClipVelocity(pm->ps->velocity, planes[i], pm->ps->velocity, overbounce);
-			}
-			//if (moveStyle == MV_PINBALL && (tmp=VectorLength(pm->ps->velocity)) > 100000.0f) { // this is bad, it loses non-bounce-direction almost immediately.
-			//	// limit it or we eventually get stuck in walls with velocity reaching billions
-			//	VectorScale(pm->ps->velocity, 100000.0f/ tmp, pm->ps->velocity);
-			//}
-			if (planes[i][2] >= MIN_WALK_NORMAL) {
-				pml.clipped = qtrue; // uh am i putting this the right place? idk
-			}
-			for (j = 0; j < numplanes; j++)
-				if (j != i)
-				{
-					if (DotProduct(pm->ps->velocity, planes[j]) < 0)
-						break;	// not ok
-				}
-			if (j == numplanes)
-				break;
-		}
-
-		if (i != numplanes)
-		{	// go along this plane
-		}
-		else
-		{	// go along the crease
-			if (numplanes != 2)
-			{
-				//				Con_Printf ("clip velocity, numplanes == %i\n",numplanes);
-				VectorCopy(vec3_origin, pm->ps->velocity);
-				break;
-			}
-			CrossProduct(planes[0], planes[1], dir);
-			d = DotProduct(dir, pm->ps->velocity);
-			VectorScale(dir, d, pm->ps->velocity);
-		}
-#endif
-		//
-		// if velocity is against the original velocity, stop dead
-		// to avoid tiny occilations in sloping corners
-		//
-		if (DotProduct(pm->ps->velocity, primal_velocity) <= 0 && pm->modParms.physics != MV_PINBALL)
-		{
-			VectorCopy(vec3_origin, pm->ps->velocity);
-			break;
-		}
-	}
-
-	if (pm->ps->pm_time)
-	{
-		VectorCopy(primal_velocity, pm->ps->velocity);
-	}
-}
-
-/*
-==================
-PM_StepSlideMove
-
-==================
-*/
-void PM_Q2StepSlideMove(qboolean gravity)
-{
-	vec3_t		start_o, start_v;
-	vec3_t		down_o, down_v;
-	trace_t		trace;
-	float		down_dist, up_dist;
-	//	vec3_t		delta;
-	vec3_t		up, down;
-
-	if (gravity) {
-		//if (pm->ps->gravity > 0)
-		//	pml.velocity[2] = 0;
-		//else
-			pm->ps->velocity[2] -= pm->ps->gravity * pml.frametime;
-	}
-
-	VectorCopy(pm->ps->origin, start_o);
-	VectorCopy(pm->ps->velocity, start_v);
-
-	PM_Q2StepSlideMove_();
-
-	VectorCopy(pm->ps->origin, down_o);
-	VectorCopy(pm->ps->velocity, down_v);
-
-	VectorCopy(start_o, up);
-	up[2] += STEPSIZE;
-
-	pm->trace(&trace,up, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
-	if (trace.allsolid)
-		return;		// can't step up
-
-	// try sliding above
-	VectorCopy(up, pm->ps->origin);
-	VectorCopy(start_v, pm->ps->velocity);
-
-	PM_Q2StepSlideMove_();
-
-	// push down the final amount
-	VectorCopy(pm->ps->origin, down);
-	down[2] -= STEPSIZE;
-	pm->trace(&trace,pm->ps->origin, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
-	if (!trace.allsolid)
-	{
-		VectorCopy(trace.endpos, pm->ps->origin);
-	}
-
-#if 0
-	VectorSubtract(pm->ps->origin, up, delta);
-	up_dist = DotProduct(delta, start_v);
-
-	VectorSubtract(down_o, start_o, delta);
-	down_dist = DotProduct(delta, start_v);
-#else
-	VectorCopy(pm->ps->origin, up);
-
-	// decide which one went farther
-	down_dist = (down_o[0] - start_o[0]) * (down_o[0] - start_o[0])
-		+ (down_o[1] - start_o[1]) * (down_o[1] - start_o[1]);
-	up_dist = (up[0] - start_o[0]) * (up[0] - start_o[0])
-		+ (up[1] - start_o[1]) * (up[1] - start_o[1]);
-#endif
-
-	if (down_dist > up_dist || trace.plane.normal[2] < MIN_STEP_NORMAL)
-	{
-		VectorCopy(down_o, pm->ps->origin);
-		VectorCopy(down_v, pm->ps->velocity);
-		return;
-	}
-	//!! Special case
-	// if we were walking along a plane, then we need to copy the Z over
-	pm->ps->velocity[2] = down_v[2];
-}
-
-
-extern void PM_JumpForDir(void);
-void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
-
-	int JUMP_VELOCITY_NEW = JUMP_VELOCITY;
-	if (pm->modParms.physics != MV_BOUNCE || pm->cmd.upmove <= 0 || (pm->ps->pm_flags & PMF_JUMP_HELD) || normal[2] < MIN_WALK_NORMAL) {
-		return;
-	}
-
-	if (pm->ps->usingATST)
-	{
-		return;
-	}
-
-	if (pm->ps->forceHandExtend == HANDEXTEND_KNOCKDOWN)
-	{
-		return;
-	}
-
-	//Don't allow jump until all buttons are up
-	if (pm->ps->pm_flags & PMF_RESPAWNED) {
-		return;
-	}
-
-	if (PM_InKnockDown(pm->ps) || BG_InRoll(pm->ps, pm->ps->legsAnim))
-	{//in knockdown
-		return;
-	}
-	if (MovementIsQuake3Based(pm->modParms.physics)) {
-		JUMP_VELOCITY_NEW = 270;
-	}
-	
-	//if (pm->ps->groundEntityNum != ENTITYNUM_NONE || pm->ps->origin[2] < pm->ps->fd.forceJumpZStart) // do this always ? calling this function already implies there was a ground bounce anyway
-	//{
-		pm->ps->fd.forcePowersActive &= ~(1 << FP_LEVITATION);
-	//}
-
-  	velocity[2] += JUMP_VELOCITY_NEW;
-	if (velocity[2] < JUMP_VELOCITY_NEW)
-		velocity[2] = JUMP_VELOCITY_NEW;
-	//if (MovementIsQuake3Based(moveStyle)) {
-	//	// TODO flood protect jumps? idk
-	//	pm->ps->velocity[2] += JUMP_VELOCITY_NEW;
-	//	if (pm->ps->velocity[2] < 270)
-	//		pm->ps->velocity[2] = 270;
-	//	pm->ps->stats[STAT_LASTJUMPSPEED] = pm->ps->velocity[2];
-	//}
-	//else {
-	//	pm->ps->velocity[2] = JUMP_VELOCITY_NEW;
-	//}
-	PM_SetForceJumpZStart(pm->ps->origin[2]);//so we don't take damage if we land at same height
-	pml.groundPlane = qfalse;
-	pml.walking = qfalse;
-	pml.bounceJumped = qtrue;
-	pm->ps->pm_flags |= PMF_JUMP_HELD;
-	PM_SetGroundEntityNum(ENTITYNUM_NONE);
-	PM_AddEvent(EV_JUMP);
-	
-	// make sure skims work
-	pm->ps->pm_flags |= PMF_TIME_LAND;
-	pm->ps->pm_time = 250;
-
-	//Set the animations
-	if (pm->ps->gravity > 0 && !BG_InSpecialJump(pm->ps->legsAnim, pm->modParms.runFlags))
-	{
-		PM_JumpForDir();
-	}
-}
-
-
 /*
 ==================
 PM_SlideMove
@@ -528,7 +27,7 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	vec3_t		dir;
 	float		d;
 	int			numplanes;
-	vec3_t		normal, planes[MAX_CLIP_PLANES];
+	vec3_t		planes[MAX_CLIP_PLANES];
 	vec3_t		primal_velocity;
 	vec3_t		clipVelocity;
 	int			i, j, k;
@@ -538,14 +37,11 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	float		into;
 	vec3_t		endVelocity;
 	vec3_t		endClipVelocity;
-	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 	
 	VectorClear( endVelocity );
 	VectorClear( endClipVelocity );
 
 	numbumps = 4;
-
-	pml.groundBounces = qfalse;
 
 	VectorCopy (pm->ps->velocity, primal_velocity);
 
@@ -555,16 +51,9 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 		pm->ps->velocity[2] = ( pm->ps->velocity[2] + endVelocity[2] ) * 0.5;
 		primal_velocity[2] = endVelocity[2];
 		if ( pml.groundPlane ) {
-			if(!(pm->modParms.runFlags & RFL_CLIMBTECH) || PM_GroundSlideOkay(pml.groundTrace.plane.normal[2])){
-				// slide along the ground plane
-				PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
-					pm->ps->velocity, overbounce);
-				pml.groundBounces = qtrue;
-
-				if (pml.groundTrace.plane.normal[2] >= MIN_WALK_NORMAL) {
-					pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
-				}
-			}
+			// slide along the ground plane
+			PM_ClipVelocity (pm->ps->velocity, pml.groundTrace.plane.normal, 
+				pm->ps->velocity, OVERCLIP );
 		}
 	}
 
@@ -574,20 +63,13 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	if ( pml.groundPlane ) {
 		numplanes = 1;
 		VectorCopy( pml.groundTrace.plane.normal, planes[0] );
-		if ((pm->modParms.runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(planes[0][2]))
-		{
-			planes[0][2] = 0;
-			VectorNormalize(planes[0]);
-		}
 	} else {
 		numplanes = 0;
 	}
 
-	if (pm->modParms.physics != MV_BOUNCE && pm->modParms.physics != MV_PINBALL) {
-		// never turn against original velocity
-		VectorNormalize2(pm->ps->velocity, planes[numplanes]);
-		numplanes++;
-	}
+	// never turn against original velocity
+	VectorNormalize2( pm->ps->velocity, planes[numplanes] );
+	numplanes++;
 
 	for ( bumpcount=0 ; bumpcount < numbumps ; bumpcount++ ) {
 
@@ -623,33 +105,21 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 			return qtrue;
 		}
 
-		VectorCopy(trace.plane.normal, normal);
-
-		if ((pm->modParms.runFlags & RFL_CLIMBTECH) && !PM_GroundSlideOkay(normal[2]))
-		{//wall-running
-			//never push up off a sloped wall
-			normal[2] = 0;
-			VectorNormalize(normal);
-		}
-
 		//
 		// if this is the same plane we hit before, nudge velocity
 		// out along it, which fixes some epsilon issues with
 		// non-axial planes
 		//
-		if (!(pm->modParms.runFlags & RFL_CLIMBTECH) || !(pm->ps->pm_flags & PMF_STUCK_TO_WALL))
-		{//no sliding if stuck to wall!
-			for (i = 0; i < numplanes; i++) {
-				if (DotProduct(normal, planes[i]) > 0.99f) {
-					VectorAdd(normal, pm->ps->velocity, pm->ps->velocity);
-					break;
-				}
-			}
-			if (i < numplanes) {
-				continue;
+		for ( i = 0 ; i < numplanes ; i++ ) {
+			if ( DotProduct( trace.plane.normal, planes[i] ) > 0.99 ) {
+				VectorAdd( trace.plane.normal, pm->ps->velocity, pm->ps->velocity );
+				break;
 			}
 		}
-		VectorCopy (normal, planes[numplanes]);
+		if ( i < numplanes ) {
+			continue;
+		}
+		VectorCopy (trace.plane.normal, planes[numplanes]);
 		numplanes++;
 
 		//
@@ -669,34 +139,23 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 			}
 
 			// slide along the plane
-			PM_ClipVelocity (pm->ps->velocity, planes[i], clipVelocity, overbounce);
+			PM_ClipVelocity (pm->ps->velocity, planes[i], clipVelocity, OVERCLIP );
 
 			// slide along the plane
-			PM_ClipVelocity (endVelocity, planes[i], endClipVelocity, overbounce);
-			pml.groundBounces = pml.groundBounces || planes[i][2] >= MIN_WALK_NORMAL;
-
-			if (planes[i][2] >= MIN_WALK_NORMAL) {
-				pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
-			}
+			PM_ClipVelocity (endVelocity, planes[i], endClipVelocity, OVERCLIP );
 
 			// see if there is a second plane that the new move enters
 			for ( j = 0 ; j < numplanes ; j++ ) {
 				if ( j == i ) {
 					continue;
 				}
-				if ( DotProduct( clipVelocity, planes[j] ) >= 0.1f ) {
+				if ( DotProduct( clipVelocity, planes[j] ) >= 0.1 ) {
 					continue;		// move doesn't interact with the plane
 				}
 
 				// try clipping the move to the plane
-				PM_ClipVelocity( clipVelocity, planes[j], clipVelocity, overbounce);
-				PM_ClipVelocity( endClipVelocity, planes[j], endClipVelocity, overbounce);
-				pml.groundBounces = pml.groundBounces || planes[j][2] >= MIN_WALK_NORMAL; 
-				if (planes[j][2] >= MIN_WALK_NORMAL) {
-					pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
-				}
-
-				// TODO MAYBE jaPRO player collision physics fix?
+				PM_ClipVelocity( clipVelocity, planes[j], clipVelocity, OVERCLIP );
+				PM_ClipVelocity( endClipVelocity, planes[j], endClipVelocity, OVERCLIP );
 
 				// see if it goes back into the first clip plane
 				if ( DotProduct( clipVelocity, planes[i] ) >= 0 ) {
@@ -719,12 +178,12 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 					if ( k == i || k == j ) {
 						continue;
 					}
-					if ( DotProduct( clipVelocity, planes[k] ) >= 0.1f ) {
+					if ( DotProduct( clipVelocity, planes[k] ) >= 0.1 ) {
 						continue;		// move doesn't interact with the plane
 					}
 
 					// stop dead at a tripple plane interaction
-					VectorClear( pm->ps->velocity ); // TODO can we make this nicer? is this why we can get stuck in sloped walls stuff?
+					VectorClear( pm->ps->velocity );
 					return qtrue;
 				}
 			}
@@ -748,83 +207,6 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	return ( bumpcount != 0 );
 }
 
-// A dumbed down version of PM_SlideMove
-// We only check if we freely get where we need to get and then do a check for ground under us.
-// The apparent cause of the bug in a nutshell:
-// We can freely (no clip/objects/floor in the way) travel/fall to the place where we will logically be in pml.frameTime time.
-// This means no ramp boost through PM_ClipVelocity happens.
-// Let's say we are falling straight down at effective velocity[2] == -1000 and 142 fps (pml.frametime == 0.007 which is 7msec).
-// That puts us traveling down at about 7 units per frame. 
-// If the ground is less than 7 units away from us, we will catch it in the initial PM_StepSlideMove and it will be clipped (ramp boost).
-// If the ground is 8 units away from us, we will catch it the same way in the next frame.
-// HOWEVER, if the ground is more than 7 and less than 7.25 units away from us, we will first fall the 7 units, and then the following ground check (which checks 0.25 units under new position)
-// will determine that we are standing on ground without giving ramp boost. Which is also the place where Loda's old ramp boost fix is applied in case the ramp boost didn't happen which he checked via
-// pml.clipped
-qboolean PM_PredictDeadRamp(qboolean gravity) {
-	trace_t	trace;
-	vec3_t		end;
-	vec3_t		testVelocity;
-	vec3_t		point;
-	vec3_t		newPos;
-	int			i, j, k;
-
-	if (pm->ps->groundEntityNum != ENTITYNUM_NONE) {
-		return qfalse;
-	}
-
-	VectorCopy(pm->ps->velocity, testVelocity);
-	if (gravity) {
-		testVelocity[2] -= pm->ps->gravity * pml.frametime;
-		testVelocity[2] = (pm->ps->velocity[2] + testVelocity[2]) * 0.5;
-	}
-
-	// calculate position we are trying to move to
-	VectorMA(pm->ps->origin, pml.frametime, testVelocity, end);
-
-	// see if we can make it there
-	pm->trace(&trace, pm->ps->origin, pm->mins, pm->maxs, end, pm->ps->clientNum, pm->tracemask);
-
-
-	if (trace.fraction == 1) {
-		VectorCopy(trace.endpos, newPos);
-
-		point[0] = newPos[0];
-		point[1] = newPos[1];
-		point[2] = newPos[2] - 0.25;
-
-		pm->trace(&trace, newPos, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
-
-		// do something corrective if the trace starts in a solid...
-		if (trace.allsolid) {
-			// jitter around
-			for (i = -1; i <= 1; i++) {
-				for (j = -1; j <= 1; j++) {
-					for (k = -1; k <= 1; k++) {
-						VectorCopy(newPos, point);
-						point[0] += (float)i;
-						point[1] += (float)j;
-						point[2] += (float)k;
-						pm->trace(&trace, point, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
-						if (!trace.allsolid) {
-							point[0] = newPos[0];
-							point[1] = newPos[1];
-							point[2] = newPos[2] - 0.25;
-
-							pm->trace(&trace, newPos, pm->mins, pm->maxs, point, pm->ps->clientNum, pm->tracemask);
-							i = j = k = 2; // Stupid way to end the loop lol.
-						}
-					}
-				}
-			}
-		}
-
-		if (trace.fraction != 1.0 && (trace.plane.normal[0] != 0.0f || trace.plane.normal[1] != 0.0f || trace.plane.normal[2] != 1.0f)) {
-			return qtrue;
-		}
-	}
-	return qfalse;
-}
-
 /*
 ==================
 PM_StepSlideMove
@@ -844,34 +226,6 @@ void PM_StepSlideMove( qboolean gravity ) {
 	float		pre_z;
 	int			usingspeed;
 	int			i;
-	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
-	int			NEW_STEPSIZE = STEPSIZE;
-
-	if (MovementStyleHasQuake2Ramps(pm->modParms.physics)) {
-		PM_Q2StepSlideMove(gravity);
-		return;
-		if (pm->ps->velocity[2] > 0 && pm->cmd.upmove > 0) { // do we really need this?
-			int jumpHeight = pm->ps->origin[2] - pm->ps->fd.forceJumpZStart;
-
-			if (jumpHeight > 48)
-				jumpHeight = 48;
-			else if (jumpHeight < 22)
-				jumpHeight = 22;
-
-			NEW_STEPSIZE = 48 - jumpHeight + 22;
-
-			//trap->SendServerCommand(-1, va("print \"new stepsize: %i, expected max end height: %i\n\"", NEW_STEPSIZE, NEW_STEPSIZE + (int)(pm->ps->origin[2] - pm->ps->fd.forceJumpZStart)));
-
-			//This means that we can always clip things up to 48 units tall, if we are moving up when we hit it and from a bhop..
-			//It means we can sometimes clip things up to 70 units tall, if we hit it in right part of jump
-			//Should it be higher..? some of the things in q3 are 56 units tall..
-
-			//NEW_STEPSIZE = 46;
-			//Make stepsize equal to.. our current 48 - our current jumpheight ?
-		}
-		else
-			NEW_STEPSIZE = 22;
-	}
 
 	i = 0;
 
@@ -879,17 +233,6 @@ void PM_StepSlideMove( qboolean gravity ) {
 
 	VectorCopy (pm->ps->origin, start_o);
 	VectorCopy (pm->ps->velocity, start_v);
-
-	if (pm->debugLevel) {
-		if (PM_PredictDeadRamp(gravity)) {
-			Com_Printf("%i:predicting dead ramp\n", c_pmove);
-		}
-	}
-	
-	if (BG_InReboundHold(pm->ps->legsAnim))
-	{
-		gravity = qfalse;
-	}
 
 	if ( PM_SlideMove( gravity ) == 0 ) {
 		return;		// we got exactly where we wanted to go first try	
@@ -901,12 +244,12 @@ void PM_StepSlideMove( qboolean gravity ) {
 	}
 
 	VectorCopy(start_o, down);
-	down[2] -= NEW_STEPSIZE;
+	down[2] -= STEPSIZE;
 	pm->trace (&trace, start_o, pm->mins, pm->maxs, down, pm->ps->clientNum, pm->tracemask);
 	VectorSet(up, 0, 0, 1);
 	// never step up when you still have up velocity
 	if ( pm->ps->velocity[2] > 0 && (trace.fraction == 1.0 ||
-										DotProduct(trace.plane.normal, up) < 0.7f)) {
+										DotProduct(trace.plane.normal, up) < 0.7)) {
 
 		if (!usingspeed)
 		{
@@ -918,7 +261,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 	// VectorCopy (pm->ps->velocity, down_v);
 
 	VectorCopy (start_o, up);
-	up[2] += NEW_STEPSIZE;
+	up[2] += STEPSIZE;
 
 	// test the player position if they were a stepheight higher
 	pm->trace (&trace, start_o, pm->mins, pm->maxs, up, pm->ps->clientNum, pm->tracemask);
@@ -932,8 +275,6 @@ void PM_StepSlideMove( qboolean gravity ) {
 		}
 	}
 
-	pml.clippedPre = qtrue;
-
 	stepSize = trace.endpos[2] - start_o[2];
 	// try slidemove from this position
 	VectorCopy (trace.endpos, pm->ps->origin);
@@ -944,12 +285,6 @@ void PM_StepSlideMove( qboolean gravity ) {
 	pre_z = prevel[2];
 
 	PM_SlideMove( gravity );
-
-	if (pml.clippedWalkable) { 
-		// only mark as clipped if it was a walkable surface, thats the only thing that matters for dead ramps
-		// otherwise we might slide down a steep slope and still get a dead ramp because its "clipped" from the slope.
-		pml.clipped = qtrue;
-	}
 
 	VectorSubtract(pm->ps->velocity, prevel, prevel);
 	if (prevel[0] < 0)
@@ -1016,7 +351,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 			return;
 		}
 
-		pm->ps->fd.forceSpeedSmash -= 0.1f;
+		pm->ps->fd.forceSpeedSmash -= 0.1;
 		//we hit a wall so decrease speed
 
 		if (pm->ps->fd.forceSpeedSmash < 1)
@@ -1033,11 +368,7 @@ void PM_StepSlideMove( qboolean gravity ) {
 		VectorCopy (trace.endpos, pm->ps->origin);
 	}
 	if ( trace.fraction < 1.0 ) {
-		PM_ClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, overbounce);
-		pml.groundBounces = pml.groundBounces || trace.plane.normal[2] >= MIN_WALK_NORMAL;
-		if (trace.plane.normal[2] >= MIN_WALK_NORMAL) {
-			pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
-		}
+		PM_ClipVelocity( pm->ps->velocity, trace.plane.normal, pm->ps->velocity, OVERCLIP );
 	}
 
 #if 0

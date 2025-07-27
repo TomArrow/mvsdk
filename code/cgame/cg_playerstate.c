@@ -212,7 +212,7 @@ void CG_CheckPlayerstateEvents( playerState_t *ps, playerState_t *ops ) {
 		cent = &cg_entities[ ps->clientNum ];
 		cent->currentState.event = ps->externalEvent;
 		cent->currentState.eventParm = ps->externalEventParm;
-		CG_EntityEvent( cent, cent->lerpOrigin, -1, qfalse );
+		CG_EntityEvent( cent, cent->lerpOrigin );
 	}
 
 	cent = &cg.predictedPlayerEntity; // cg_entities[ ps->clientNum ];
@@ -227,7 +227,7 @@ void CG_CheckPlayerstateEvents( playerState_t *ps, playerState_t *ops ) {
 			event = ps->events[ i & (MAX_PS_EVENTS-1) ];
 			cent->currentState.event = event;
 			cent->currentState.eventParm = ps->eventParms[ i & (MAX_PS_EVENTS-1) ];
-			CG_EntityEvent( cent, cent->lerpOrigin, i, (qboolean)((i > ops->eventSequence - MAX_PS_EVENTS && ps->events[i & (MAX_PS_EVENTS - 1)] != ops->events[i & (MAX_PS_EVENTS - 1)])) );
+			CG_EntityEvent( cent, cent->lerpOrigin );
 
 			cg.predictableEvents[ i & (MAX_PREDICTED_EVENTS-1) ] = event;
 
@@ -260,7 +260,7 @@ void CG_CheckChangedPredictableEvents( playerState_t *ps ) {
 				event = ps->events[ i & (MAX_PS_EVENTS-1) ];
 				cent->currentState.event = event;
 				cent->currentState.eventParm = ps->eventParms[ i & (MAX_PS_EVENTS-1) ];
-				CG_EntityEvent( cent, cent->lerpOrigin, i, qtrue );
+				CG_EntityEvent( cent, cent->lerpOrigin );
 
 				cg.predictableEvents[ i & (MAX_PREDICTED_EVENTS-1) ] = event;
 
@@ -312,28 +312,11 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 #ifdef JK2AWARDS
 	sfxHandle_t sfx;
 #endif
-	clientInfo_t* ci = &cgs.clientinfo[ps->clientNum];
-	qboolean racing = cgs.isTommyTernal && ps->stats[STAT_RACEMODE];
-
-	if (cg_debugRank.integer && (ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM] || cg.intermissionStarted || ps->persistant[PERS_TEAM] == TEAM_SPECTATOR) && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK]) {
-		CG_Printf("rank change: %3i (tied %d) to %3i (tied %d, reward -, cgAnnouncerTime<cg.time %d), teamchange %d\n",
-			ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
-			(int)!!(ops->persistant[PERS_RANK] & RANK_TIED_FLAG),
-			ps->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
-			(int)!!(ps->persistant[PERS_RANK] & RANK_TIED_FLAG),
-			(qboolean)(cgAnnouncerTime < cg.time),
-			ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM]);
-	}
-
-	if (ps->persistant[PERS_TEAM] == TEAM_SPECTATOR) {
-		return;
-	}
 
 	// don't play the sounds if the player just changed teams
 	if ( ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM] ) {
 		return;
 	}
-
 
 	// hit changes
 	if ( ps->persistant[PERS_HITS] > ops->persistant[PERS_HITS] ) {
@@ -426,42 +409,22 @@ void CG_CheckLocalSounds( playerState_t *ps, playerState_t *ops ) {
 #else
 	reward = qfalse;
 #endif
-
-
-	if (cg_debugRank.integer && ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK]) {
-		CG_Printf("rank change: %3i (tied %d) to %3i (tied %d, reward %d, cgAnnouncerTime<cg.time %d), teamchange %d\n",
-			ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
-			(int)!!(ops->persistant[PERS_RANK] & RANK_TIED_FLAG),
-			ps->persistant[PERS_RANK] & ~RANK_TIED_FLAG,
-			(int)!!(ps->persistant[PERS_RANK] & RANK_TIED_FLAG),
-			reward,
-			(qboolean)(cgAnnouncerTime < cg.time),
-			ps->persistant[PERS_TEAM] != ops->persistant[PERS_TEAM]);
-	}
-
 	// lead changes
-	if ((!reward || !cg_drawRewards.integer) && cgAnnouncerTime < cg.time && cg_leadSounds.integer && (!racing || cg_leadSoundsRace.integer)) {
+	if (!reward && cgAnnouncerTime < cg.time) {
 		//
 		if ( !cg.warmup ) {
 			// never play lead changes during warmup
 			if ( ps->persistant[PERS_RANK] != ops->persistant[PERS_RANK] ) {
-
 				if ( cgs.gametype < GT_TEAM) {
 					if (  ps->persistant[PERS_RANK] == 0 ) {
-						if (!racing || ci->jkmod_race) {
-							CG_AddBufferedSound(cgs.media.takenLeadSound);
-							cgAnnouncerTime = cg.time + 3000;
-						}
+						CG_AddBufferedSound(cgs.media.takenLeadSound);
+						cgAnnouncerTime = cg.time + 3000;
 					} else if ( ps->persistant[PERS_RANK] == RANK_TIED_FLAG ) {
-						if (racing && ci->jkmod_race) {
-							CG_AddBufferedSound(cgs.media.tiedLeadSound);
-							cgAnnouncerTime = cg.time + 3000;
-						}
 						//CG_AddBufferedSound(cgs.media.tiedLeadSound);
 					} else if ( ( ops->persistant[PERS_RANK] & ~RANK_TIED_FLAG ) == 0 ) {
 						//rww - only bother saying this if you have more than 1 kill already.
 						//joining the server and hearing "the force is not with you" is silly.
-						if (ps->persistant[PERS_SCORE] > 0 || racing && ci->jkmod_race)
+						if (ps->persistant[PERS_SCORE] > 0)
 						{
 							CG_AddBufferedSound(cgs.media.lostLeadSound);
 							cgAnnouncerTime = cg.time + 3000;
@@ -522,29 +485,6 @@ CG_TransitionPlayerState
 ===============
 */
 void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
-	centity_t* cent;
-
-	if (ps->pm_type == PM_INTERMISSION && ops->pm_type != PM_INTERMISSION) {
-		//we changed into intermission mode.
-
-
-		if (x3_screenshotAfterEachRound.integer && (!cg.demoPlayback || x3_screenshotAfterEachRound.integer > 1)  /*&& !cg.minimized &&
-			CG_GetPlayingClients(TEAM_PLAYING) >= 8*/) {
-
-			// dont take the screenshot with console open
-			if (trap_Key_GetCatcher() & KEYCATCH_CONSOLE)
-				trap_SendConsoleCommand("toggleconsole instant;"); // The "instant" is for my eternal fork. But it won't interfere otherwise. You'll likely end up with a visible console tho.
-
-			trap_SendConsoleCommand("wait 4; screenshot");
-
-			// if we have the client exe, this screenshot will be saved in a folder called games inside screenshots
-			//if (x3 client detected)
-			//	trap_SendConsoleCommand(" _fw");
-
-			trap_SendConsoleCommand("\n");
-		}
-	}
-
 	// check for changing follow mode
 	if ( ps->clientNum != ops->clientNum ) {
 		cg.thisFrameTeleport = qtrue;
@@ -569,7 +509,8 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 		cg.mapRestart = qfalse;
 	}
 
-	if ( cg.snap->ps.pm_type != PM_INTERMISSION  ) {
+	if ( cg.snap->ps.pm_type != PM_INTERMISSION 
+		&& ps->persistant[PERS_TEAM] != TEAM_SPECTATOR ) {
 		CG_CheckLocalSounds( ps, ops );
 	}
 
@@ -580,12 +521,6 @@ void CG_TransitionPlayerState( playerState_t *ps, playerState_t *ops ) {
 
 	// check for going low on ammo
 	CG_CheckAmmo();
-
-	cent = &cg_entities[ps->clientNum];
-	if ((cg_debugSaber.integer < -1 || cg_debugSaber.integer >= MAX_CLIENTS || cg_debugSaber.integer == ps->clientNum) && ps->saberMove != cent->previousSaberMove) {
-		CG_Printf("ent:%3i  saberMove:%3i  saberMoveName:%s \n", ps->clientNum, ps->saberMove, saberMoveData[ps->saberMove].name);
-		cent->previousSaberMove = ps->saberMove;
-	}
 
 	// run events
 	CG_CheckPlayerstateEvents( ps, ops );

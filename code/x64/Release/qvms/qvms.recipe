@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <ProjectOutputs>
+    <ProjectOutput>
+      <FullPath>C:\Users\david\Documents\Workspace\tom_jk2mv\x64\Release\ZERO_CHECK</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\Users\david\Documents\Workspace\tom_jk2mv\tools\Release\q3asm.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\Users\david\Documents\Workspace\tom_jk2mv\tools\Release\q3cpp.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\Users\david\Documents\Workspace\tom_jk2mv\tools\Release\q3lcc.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\Users\david\Documents\Workspace\tom_jk2mv\tools\Release\q3rcc.exe</FullPath>
+    </ProjectOutput>
+    <ProjectOutput>
+      <FullPath>C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\x64\Release\qvms</FullPath>
+    </ProjectOutput>
+  </ProjectOutputs>
+  <ContentFiles />
+  <SatelliteDlls />
+  <NonRecipeFileRefs />
+</Project>

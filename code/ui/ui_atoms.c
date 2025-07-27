@@ -170,7 +170,7 @@ void UI_ClearScores() {
 }
 
 
-q3Head_t *UI_GetHeadByIndex(int index);
+extern q3Head_t *UI_GetHeadByIndex( int index );
 static void	UI_Cache_f() {
 	int i;
 	Display_CacheAll();
@@ -315,28 +315,11 @@ qboolean UI_ConsoleCommand( int realTime ) {
 		return qtrue;
 	}
 
-	if ( Q_stricmp (cmd, "ui_opensiegemenu" ) == 0 ) 
-	{
-		if ( trap_Cvar_VariableValue ( "g_gametype" ) == GT_SAGA )
-		{
-			Menus_CloseAll();
-			if (Menus_ActivateByName(UI_Argv(1)))
-			{
-				trap_Key_SetCatcher( KEYCATCH_UI );
-			}
-		}
-		return qtrue;
-	}
-
 	if ( Q_stricmp (cmd, "ui_openmenu" ) == 0 ) 
 	{
-		//if ( trap_Cvar_VariableValue ( "developer" ) )
+		if ( trap_Cvar_VariableValue ( "developer" ) )
 		{
-			Menus_CloseAll();
-			if (Menus_ActivateByName(UI_Argv(1)))
-			{
-				trap_Key_SetCatcher( KEYCATCH_UI );
-			}
+			Menus_OpenByName ( UI_Argv(1) );
 			return qtrue;
 		}
 	}

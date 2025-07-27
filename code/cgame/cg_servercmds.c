@@ -9,7 +9,6 @@
 #if !defined(CL_LIGHT_H_INC)
 	#include "cg_lights.h"
 #endif
-#include "cg_dbcmds.h"
 
 typedef struct {
 	const char *order;
@@ -40,52 +39,6 @@ static int CG_ValidOrder(const char *p) {
 	return -1;
 }
 
-static int pauseGameStartedTime = 0;	//for keeping track of duration of pauses.
-
-static void CG_PauseGameStarted(void) {
-	cg.pausedGame = qtrue;
-	pauseGameStartedTime = cg.time;
-}
-
-static void CG_PauseGameEnded(void) {
-	int dur = cg.time - pauseGameStartedTime;
-	//int i, k;
-
-	if (!cg.pausedGame) return; // Demo might start inside a pause.
-	cg.pausedGame = qfalse;
-
-	if (!pauseGameStartedTime)
-		return;	//???
-
-#ifdef DEVELOPER
-	CG_Printf("^5Pause ended after %s\n", CG_MsToString(dur, 1));
-#endif
-
-	//Subtract pause time from flag hold time.
-	if (cgs.redFlagTime) {
-		cgs.redFlagTime += dur;
-
-		if (cgs.redFlagTime > cg.time)
-			cgs.redFlagTime = cg.time;
-	}
-	if (cgs.blueFlagTime) {
-		cgs.blueFlagTime += dur;
-
-		if (cgs.blueFlagTime > cg.time)
-			cgs.blueFlagTime = cg.time;
-	}
-
-
-	/*for (i = 0; i < TEAM_NUM_TEAMS; ++i) {
-		for (k = 0; k < 2; ++k) {
-			if (cg.flagtaken[i][k].active)
-				cg.flagtaken[i][k].takenTime += dur;
-		}
-	}*/
-
-	pauseGameStartedTime = 0;
-}
-
 /*
 =================
 CG_ParseScores
@@ -94,7 +47,6 @@ CG_ParseScores
 */
 static void CG_ParseScores( void ) {
 	int		i, powerups, readScores;
-	const char* slashPos;
 
 	cg.numScores = atoi( CG_Argv( 1 ) );
 
@@ -120,23 +72,7 @@ static void CG_ParseScores( void ) {
 		cg.scores[i].client = atoi( CG_Argv( i * 14 + 4 ) );
 		cg.scores[i].score = atoi( CG_Argv( i * 14 + 5 ) );
 		cg.scores[i].ping = atoi( CG_Argv( i * 14 + 6 ) );
-
-		if (cgs.isTommyTernal && (slashPos = strchr(CG_Argv(i * 14 + 6), '/'))) {
-			cg.scores[i].realping = atoi(slashPos + 1);
-		}
-		else {
-			cg.scores[i].realping = cg.scores[i].ping;
-		}
-
 		cg.scores[i].time = atoi( CG_Argv( i * 14 + 7 ) );
-
-		if (cgs.isTommyTernal && (slashPos = strchr(CG_Argv(i * 14 + 7),'/'))) {
-			cg.scores[i].fulltime = atoi(slashPos+1);
-		}
-		else {
-			cg.scores[i].fulltime = cg.scores[i].time;
-		}
-
 		cg.scores[i].scoreFlags = atoi( CG_Argv( i * 14 + 8 ) );
 		powerups = atoi( CG_Argv( i * 14 + 9 ) );
 		cg.scores[i].accuracy = atoi(CG_Argv(i * 14 + 10));
@@ -155,11 +91,8 @@ static void CG_ParseScores( void ) {
 		cgs.clientinfo[ cg.scores[i].client ].powerups = powerups;
 
 		cg.scores[i].team = cgs.clientinfo[cg.scores[i].client].team;
-
-		cgs.lastValidScoreboardEntry[cg.scores[i].client] = cg.scores[i];
 	}
 	CG_SetScoreSelection(NULL);
-	cg.lastScoresReceived = cg.time;
 }
 
 /*
@@ -199,53 +132,10 @@ and whenever the server updates any serverinfo flagged cvars
 static void CG_ParseServerinfo( const char *info ) {
 	char	*mapname;
 	char	*v = NULL;
-	char serverCheatDisableCvar[16]; // uni_clientFlags
-	char nwhCompareSmall[4]; // nwh
-	char nwhCompareBig[4]; // NWH
-	char manhuntCompare[8]; // Manhunt
-
-	serverCheatDisableCvar[0] = 'u';
-	serverCheatDisableCvar[1] = 'n';
-	serverCheatDisableCvar[2] = 'i';
-	serverCheatDisableCvar[3] = '_';
-	serverCheatDisableCvar[4] = 'c';
-	serverCheatDisableCvar[5] = 'l';
-	serverCheatDisableCvar[6] = 'i';
-	serverCheatDisableCvar[7] = 'e';
-	serverCheatDisableCvar[8] = 'n';
-	serverCheatDisableCvar[9] = 't';
-	serverCheatDisableCvar[10] = 'F';
-	serverCheatDisableCvar[11] = 'l';
-	serverCheatDisableCvar[12] = 'a';
-	serverCheatDisableCvar[13] = 'g';
-	serverCheatDisableCvar[14] = 's';
-	serverCheatDisableCvar[15] = '\0';
-
-	nwhCompareSmall[0] = 'n';
-	nwhCompareSmall[1] = 'w';
-	nwhCompareSmall[2] = 'h';
-	nwhCompareSmall[3] = '\0';
-
-	nwhCompareBig[0] = 'N';
-	nwhCompareBig[1] = 'W';
-	nwhCompareBig[2] = 'H';
-	nwhCompareBig[3] = '\0';
-
-	manhuntCompare[0] = 'M';
-	manhuntCompare[1] = 'a';
-	manhuntCompare[2] = 'n';
-	manhuntCompare[3] = 'h';
-	manhuntCompare[4] = 'u';
-	manhuntCompare[5] = 'n';
-	manhuntCompare[6] = 't';
-	manhuntCompare[7] = '\0';
 
 	v = Info_ValueForKey( info, "g_gametype" );
 	cgs.gametype = atoi( v );
 	trap_Cvar_Set( "g_gametype", v );
-
-	// jka wallgrab related
-	cgs.debugMelee = atoi(Info_ValueForKey(info, "g_debugMelee")); //trap->Cvar_GetHiddenVarValue("g_iknowkungfu");
 
 	cgs.needpass = atoi( Info_ValueForKey( info, "needpass" ) );
 	cgs.jediVmerc = atoi( Info_ValueForKey( info, "g_jediVmerc" ) );
@@ -259,11 +149,6 @@ static void CG_ParseServerinfo( const char *info ) {
 	cgs.timelimit = atoi( Info_ValueForKey( info, "timelimit" ) );
 	cgs.maxclients = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
 
-	cgs.uni_clientFlags = atoi(Info_ValueForKey(info, serverCheatDisableCvar));
-
-	cgs.isNWH = qfalse;
-	cgs.isManhunt = qfalse;
-	cgs.isTommyTernal = qfalse;
 	cgs.isJK2Pro = qfalse;
 	cgs.isCTFMod = qfalse;
 	cgs.CTF3ModeActive = qfalse;
@@ -273,30 +158,14 @@ static void CG_ParseServerinfo( const char *info ) {
 	v = Info_ValueForKey(info, "gamename");
 	if (v)
 	{
-		Q_CleanStr(v, qtrue, cgs.isTommyTernal);
-		if (strstr(v, nwhCompareBig) || strstr(v, nwhCompareSmall)) {
-			cgs.isNWH = qtrue;
-		}
-		if (!Q_stricmpn(v, "tommyternal", 11)) {
-			cgs.isTommyTernal = qtrue;
-			cgs.ttFlags = atoi(Info_ValueForKey(info, "ttFlags"));
-			cgs.ttFlagsGp = atoi(Info_ValueForKey(info, "ttFlagsGp"));
-			v = Info_ValueForKey(info, "jcinfo");
-			cgs.jcinfo = atoi(v);//[JAPRO - Clientside - All - Add gamename variable to get jcinfo from japro servers]
-			v = Info_ValueForKey(info, "g_fixHighFPSAbuse");
-			if (atoi(v) && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
-				cgs.jcinfo |= JK2PRO_CINFO_HIGHFPSFIX;
-			}
-			//trap_Cvar_Set("cjp_client", "1.4JAPRO");
-		}
-		else 
-		if (!Q_stricmpn(v, "jk2pro", 5)) { // shouldnt this be ,6?
+		Q_CleanStr(v, qtrue);
+		if (!Q_stricmpn(v, "jk2pro", 5)) {
 			cgs.isJK2Pro = qtrue;
 			cgs.isolateDuels = qtrue;
 			v = Info_ValueForKey(info, "jcinfo");
 			cgs.jcinfo = atoi(v);//[JAPRO - Clientside - All - Add gamename variable to get jcinfo from japro servers]
 			v = Info_ValueForKey(info, "g_fixHighFPSAbuse");
-			if (atoi(v) && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
+			if (v && !(cgs.jcinfo & JK2PRO_CINFO_HIGHFPSFIX)) {
 				cgs.jcinfo |= JK2PRO_CINFO_HIGHFPSFIX;
 			}
 			trap_Cvar_Set("cjp_client", "1.4JAPRO");
@@ -305,7 +174,7 @@ static void CG_ParseServerinfo( const char *info ) {
 			cgs.isCTFMod = qtrue;
 			cgs.CTF3ModeActive = (qboolean)(atoi(Info_ValueForKey(info, "g_allowFreeTeam")));
 			v = Info_ValueForKey(info, "g_block333");
-			if (v) cgs.jcinfo = atoi(v); // ?!?! wut
+			if (v) cgs.jcinfo = atoi(v);
 			if (cgs.jcinfo && cgs.jcinfo != 3) {
 				cgs.jcinfo = JK2PRO_CINFO_HIGHFPSFIX;
 			}
@@ -321,32 +190,6 @@ static void CG_ParseServerinfo( const char *info ) {
 			cgs.isolateDuels = qtrue;
 			cgs.isCaMod = qfalse;
 		}
-	}
-
-	v = Info_ValueForKey(info, "version");
-	if (v)
-	{
-		Q_CleanStr(v, qtrue, cgs.isTommyTernal);
-		if (strstr(v, nwhCompareSmall) || strstr(v, nwhCompareBig)) {
-			cgs.isNWH = qtrue;
-		}
-	}
-
-	v = Info_ValueForKey(info, "sv_hostname");
-	if (v)
-	{
-		Q_CleanStr(v, qtrue, cgs.isTommyTernal);
-		if (strstr(v, manhuntCompare)) { // Stupid, ugly and gay.
-			cgs.isManhunt = qtrue;
-		}
-	}
-
-	if (cgs.isManhunt || cgs.isNWH) {
-		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_PLAYERS);
-		cgs.uni_clientFlags |= (1<<WALLHACK_DISABLE_ITEMS);
-	}
-	if (cg.demoPlayback) {
-		cgs.uni_clientFlags = 0;
 	}
 
 	mapname = Info_ValueForKey( info, "mapname" );
@@ -375,25 +218,6 @@ static void CG_ParseServerinfo( const char *info ) {
 
 
 /*
-================
-CG_ParseSysteminfo
-
-This is called explicitly when the gamestate is first received,
-and whenever the server updates any systeminfo flagged cvars
-
-TA: This is an addition by me. If a server isn't sending a particular systeminfo cvar that we 
-rely on, reset it to the default value, otherwise it stays on whatever the previously connected server
-had set it to, which can lead to prediction errors etc.
-================
-*/
-static void CG_ParseSysteminfo( const char *info ) {
-
-	CG_ClearUnsetSystemInfoCvars(info);
-
-}
-
-
-/*
 =====================
 CG_ShaderStateChanged
 =====================
@@ -407,12 +231,12 @@ static void CG_ShaderStateChanged( const char *o ) {
 	while (o && *o) {
 		n = strstr(o, "=");
 		if (n && *n) {
-			Q_strnncpyz(originalShader, o, n-o,sizeof(originalShader));
+			strncpy(originalShader, o, n-o);
 			originalShader[n-o] = 0;
 			n++;
 			t = strstr(n, ":");
 			if (t && *t) {
-				Q_strnncpyz(newShader, n, t-n,sizeof(newShader));
+				strncpy(newShader, n, t-n);
 				newShader[t-n] = 0;
 			} else {
 				break;
@@ -420,7 +244,7 @@ static void CG_ShaderStateChanged( const char *o ) {
 			t++;
 			o = strstr(t, "@");
 			if (o) {
-				Q_strnncpyz(timeOffset, t, o-t,sizeof(timeOffset));
+				strncpy(timeOffset, t, o-t);
 				timeOffset[o-t] = 0;
 				o++;
 				if (cg_remaps.integer && Q_stricmpn(originalShader, "console", 7)) //JAPRO - Clientside - Allow noremaps
@@ -498,9 +322,6 @@ void CG_UpdateConfigString( int num, qboolean init )
 			break;
 		case CS_SERVERINFO:
 			CG_ParseServerinfo( str );
-			break;
-		case CS_SYSTEMINFO:
-			CG_ParseSysteminfo( str );
 			break;
 		case CS_WARMUP:
 			cg.warmupCount = -1;
@@ -592,33 +413,16 @@ void CG_UpdateConfigString( int num, qboolean init )
 			break;
 		case CS_INTERMISSION:
 			cg.intermissionStarted = atoi( str );
-			if (cg.intermissionStarted && !cg.demoPlayback) { // Game just ended. Intermission will come soon. Request scoreboard data NOW before players disconnect/ragequit.
-				trap_SendClientCommand("score");
-				cg.scoresRequestTime = cg.time;
-			}
 			break;
 		case CS_FLAGSTATUS:
 			if( cgs.gametype == GT_CTF || cgs.gametype == GT_CTY ) {
 				// format is rb where its red/blue, 0 is at base, 1 is taken, 2 is dropped
-				int redFlagOld = cgs.redflag;
-				int blueFlagOld = cgs.blueflag;
-				int yellowFlagOld = cgs.yellowflag;
-				cgs.anyFlagLastChange = cg.time;
 				cgs.redflag = str[0] - '0';
 				cgs.blueflag = str[1] - '0';
 				if (cgs.isCTFMod && cgs.CTF3ModeActive)
 					cgs.yellowflag = str[2] - '0';
 				else
 					cgs.yellowflag = 0;
-				if (redFlagOld != cgs.redflag) {
-					cgs.redflagLastChange = cg.time;
-				}
-				if (blueFlagOld != cgs.blueflag) {
-					cgs.blueflagLastChange = cg.time;
-				}
-				if (yellowFlagOld != cgs.yellowflag) {
-					cgs.yellowflagLastChange = cg.time;
-				}
 			}
 			break;
 		case CS_SHADERSTATE:
@@ -694,7 +498,7 @@ static void CG_AddToTeamChat( const char *str ) {
 			ls = NULL;
 		}
 
-		if ( (cgs.isTommyTernal && Q_IsColorStringNT(str)) || (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(str) : Q_IsColorString(str)) ) {
+		if ( (jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(str) : Q_IsColorString(str)) ) {
 			*p++ = *str++;
 			lastcolor = *str;
 			*p++ = *str++;
@@ -794,11 +598,6 @@ require a reload of all the media
 ===============
 */
 static void CG_MapRestart( void ) {
-	if (cg.demoseek & DEMOSEEK_MAPRESTART) {
-		Com_Printf("Map restart happened - no longer seeking until map restart. \n");
-		cg.demoseek &= ~DEMOSEEK_MAPRESTART;
-	}
-
 	if ( cg_showmiss.integer ) {
 		CG_Printf( "CG_MapRestart\n" );
 	}
@@ -1317,7 +1116,7 @@ static void CG_RemoveChatEscapeChar( char *text ) {
 
 #define MAX_STRIPED_SV_STRING 1024
 
-void CG_CheckSVStripEdRef(char *buf, int bufSize, const char *str)
+void CG_CheckSVStripEdRef(char *buf, const char *str)
 { //I don't really like doing this. But it utilizes the system that was already in place.
 	int i = 0;
 	int b = 0;
@@ -1328,12 +1127,12 @@ void CG_CheckSVStripEdRef(char *buf, int bufSize, const char *str)
 	{
 		if (str)
 		{
-			Q_strncpyz(buf, str, bufSize);
+			strcpy(buf, str);
 		}
 		return;
 	}
 
-	Q_strncpyz(buf, str, bufSize);
+	strcpy(buf, str);
 
 	strLen = strlen(str);
 
@@ -1386,29 +1185,6 @@ void CG_CheckSVStripEdRef(char *buf, int bufSize, const char *str)
 	buf[b] = 0;
 }
 
-qboolean CG_StringStartsWith(const char* str, const char* check) {
-
-	if (!str || !check)
-		return qfalse;
-
-	while (*str) {
-		if (*check == 0)
-			//reached end of check, so yes
-			return qtrue;
-
-		if (*str != *check)
-			return qfalse;
-
-		++str;
-		++check;
-	}
-
-	if (*check == 0)
-		return qtrue;	// strings are equal
-
-	return qfalse;
-}
-
 /*
 =================
 CG_ServerCommand
@@ -1417,7 +1193,7 @@ The string has been tokenized and can be retrieved with
 Cmd_Argc() / Cmd_Argv()
 =================
 */
-extern void CG_ChatBox_AddString(char *chatStr, int chatSize);
+extern void CG_ChatBox_AddString(char *chatStr);
 static void CG_ServerCommand( void ) {
 	const char	*cmd;
 	char		text[MAX_STRING_CHARS] = { 0 };
@@ -1522,21 +1298,8 @@ static void CG_ServerCommand( void ) {
 
 	if ( !strcmp( cmd, "cp" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
-		char type[MAX_STRING_CHARS];
-		const char* subtype;
- 		CG_CheckSVStripEdRef(strEd,sizeof(strEd), CG_Argv(1));
-		trap_Argv(2,type,sizeof(type));
-		subtype = CG_Argv(3);
-		if ((cg_customizeRace.integer & CUSTOMIZERACE_HIDECHECKPOINTCP) && !Q_stricmp("cptimer", type)
-			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEROLLSPEEDCP) && !Q_stricmp("rollspeed", type)
-			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEANTILOOPRESTART) && !Q_stricmp("antiloop", type) && !Q_stricmp("restart", subtype)
-			|| (cg_customizeRace.integer & CUSTOMIZERACE_HIDEDEFAULTRACESTART) && !Q_stricmp("racestarted", type) && !Q_stricmp("normal", subtype)
-			) {
-			// this type is deactivated
-		}
-		else {
-			CG_CenterPrint(strEd, cgs.screenHeight * 0.30, BIGCHAR_WIDTH);
-		}
+		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
+		CG_CenterPrint( strEd, cgs.screenHeight * 0.30, BIGCHAR_WIDTH );
 		return;
 	}
 
@@ -1547,48 +1310,55 @@ static void CG_ServerCommand( void ) {
 
 	if ( !strcmp( cmd, "print" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
-		CG_CheckSVStripEdRef(strEd, sizeof(strEd), CG_Argv(1));
-
-		if (CG_StringStartsWith(strEd, "Server: nt_PauseGame changed to ")) {
-
-			const int val = strEd[strlen("Server: nt_PauseGame changed to") + 1] - '0';
-
-			if (val > 0)
-				CG_PauseGameStarted();
-			else
-				CG_PauseGameEnded();
-
-		}
-		else if (CG_StringStartsWith(strEd, "Server: g_speed changed to ")) {
-
-			const int val = strEd[strlen("Server: g_speed changed to") + 1] - '0';
-
-			if (val == 0)
-				CG_PauseGameStarted();
-			else if (val == 250)
-				CG_PauseGameEnded();
-
-		}
-		else if (CG_StringStartsWith(strEd, "Game was paused.")) {
-
-			CG_PauseGameStarted();
-		}
-		
-		else if (CG_StringStartsWith(strEd, "Pause ended after")) {
-
-			CG_PauseGameEnded();
-		}
-
+		CG_CheckSVStripEdRef(strEd, CG_Argv(1));
 		CG_Printf( "%s", strEd );
 		return;
 	}
 
 	if ( !strcmp( cmd, "chat" ) ) {
-		CG_DB_InsertChat(CG_Argv(1));
 		if ( !cg_teamChatsOnly.integer ) {
-			if (cg_chatSounds.integer)
-				trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
 			Q_strncpyz(text, CG_Argv(1), sizeof(text));
+
+			if (cg_friendsChatsOnly.integer)
+			{
+				int i = 0;
+				qboolean printMessage = qfalse;
+				char name[64];
+				int length = 0;
+
+				for (i = 0; i < MAX_CLIENTS; i++)
+				{
+					if (cg.isFriend[i] || i == cg.clientNum)
+					{
+						Com_sprintf(name, sizeof(name), "%s%c%c\x19: ", cgs.clientinfo[i].name, Q_COLOR_ESCAPE, COLOR_WHITE);
+						length = strlen(name);
+
+						if (Q_stricmpn(text, name, length) == 0)
+						{
+							printMessage = qtrue;
+							break;
+						}
+
+						Com_sprintf(name, sizeof(name), "\x19[%s%c%c\x19]", cgs.clientinfo[i].name, Q_COLOR_ESCAPE, COLOR_WHITE);
+						length = strlen(name);
+
+						if (Q_stricmpn(text, name, length) == 0)
+						{
+							printMessage = qtrue;
+							break;
+						}
+					}
+				}
+
+				if (printMessage == qfalse)
+				{
+					return;
+				}
+			}
+
+			if (cg_chatSounds.integer)
+				trap_S_StartLocalSound(cgs.media.talkSound, CHAN_LOCAL_SOUND);
+
 			CG_RemoveChatEscapeChar( text );
 
 			// replace "*/." with real percent symbol, and replace two single quotes with double quote
@@ -1612,7 +1382,7 @@ static void CG_ServerCommand( void ) {
 
 			if (cg_chatBox.integer) {
 				CG_Printf("[skipnotify]%s\n", text); 
-				CG_ChatBox_AddString(text,sizeof(text));
+				CG_ChatBox_AddString(text);
 			}
 			else {
 				CG_Printf( "%s\n", text );
@@ -1624,10 +1394,40 @@ static void CG_ServerCommand( void ) {
 	}
 
 	if ( !strcmp( cmd, "tchat" ) ) {
-		CG_DB_InsertChat(CG_Argv(1));
-		if (cg_chatSounds.integer)
-			trap_S_StartLocalSound( cg_chatSounds.integer == 2 ? cgs.media.teamChatSound : cgs.media.talkSound, CHAN_LOCAL_SOUND );
 		Q_strncpyz( text, CG_Argv(1), sizeof(text) );
+
+		if (cg_friendsChatsOnly.integer)
+		{
+			int i = 0;
+			const char *ch = text;
+			qboolean printMessage = qfalse;
+			char name[64];
+			int length = 0;
+
+			for (i = 0; i < MAX_CLIENTS; i++)
+			{
+				if (cg.isFriend[i] || i == cg.clientNum)
+				{
+					Com_sprintf(name, sizeof(name), "\x19(%s%c%c\x19)", cgs.clientinfo[i].name, Q_COLOR_ESCAPE, COLOR_WHITE);
+					length = strlen(name);
+
+					if (Q_stricmpn(text, name, length) == 0)
+					{
+						printMessage = qtrue;
+						break;
+					}
+				}
+			}
+
+			if (printMessage == qfalse)
+			{
+				return;
+			}
+		}
+
+		if (cg_chatSounds.integer)
+			trap_S_StartLocalSound(cg_chatSounds.integer == 2 ? cgs.media.teamChatSound : cgs.media.talkSound, CHAN_LOCAL_SOUND);
+
 		CG_RemoveChatEscapeChar( text );
 
 		// replace "*/." with real percent symbol, and replace two single quotes with double quote
@@ -1652,7 +1452,7 @@ static void CG_ServerCommand( void ) {
 		CG_AddToTeamChat( text );
 		if (cg_chatBox.integer) {
 			CG_Printf("[skipnotify]%s\n", text);
-			CG_ChatBox_AddString(text,sizeof(text));
+			CG_ChatBox_AddString(text);
 		}
 		else {
 			CG_Printf( "%s\n", text );

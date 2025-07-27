@@ -12,15 +12,6 @@ void InitTrigger( gentity_t *self ) {
 	self->r.contents = CONTENTS_TRIGGER;		// replaces the -1 from trap_SetBrushModel
 	self->r.svFlags = SVF_NOCLIENT;
 
-	if (coolApi & COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS) {
-		// It can happen (ported maps from other games or other reasons) that the brushes of a trigger don't end up with 
-		// CONTENTS_TRIGGER, which means we cannot trace them.
-		// This isn't a problem with classic trigger evaluation, because only the entity's own contents is evaluated (not the contents of all its brushes)
-		// but with g_triggersRobust we need to fix this up.
-		trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_TRIGGER, COOLAPI_BMODELCFLAGS_ADD);
-		trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_SOLID, COOLAPI_BMODELCFLAGS_REMOVE); // CONTENTS_SOLID would also mess with our trigger tracing
-	}
-
 	// Tunnel high modelindex values through time2
 	MV_ModelindexToTime2( self );
 }
@@ -39,8 +30,6 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 	gentity_t *rofftarget = NULL, *testent = NULL;
 	gentity_t *te;
 	int i = MAX_CLIENTS;
-	int nowTime = LEVELTIME(activator->client);
-	qboolean isRacer = activator->client && activator->client->sess.raceMode;
 
 	if (ent->teamnodmg &&
 		activator && activator->client &&
@@ -63,20 +52,9 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 		}
 	}
 
-	//ent->activator = activator;
-	G_SetActivator(ent, activator);
-	if (g_defrag.integer && ent->wait < 0 && activator->client->entityStates[ent - g_entities]) { // once per respawn in defrag.
-		return;
-	}
-	else if (isRacer) {
-		if (activator->client->triggerTimes[ent - g_entities] >= nowTime) {
-			return; // i hope this somewhat replicates the behavior accurately while keeping things deterministic?
-		}
-	}
-	else {
-		if ( ent->nextthink ) {
-			return;		// can't retrigger until the wait is over
-		}
+	ent->activator = activator;
+	if ( ent->nextthink ) {
+		return;		// can't retrigger until the wait is over
 	}
 
 	if ( activator && activator->client ) {
@@ -137,26 +115,14 @@ void multi_trigger( gentity_t *ent, gentity_t *activator ) {
 	}
 
 	if ( ent->wait > 0 ) {
-		if (isRacer) {
-			activator->client->triggerTimes[ent-g_entities] = nowTime + (ent->wait /* + ent->random * crandom() */ ) * 1000; // no random stuff in racemode
-		}
-		else {
-			ent->think = multi_wait;
-			ent->nextthink = level.time + (ent->wait + ent->random * crandom()) * 1000;
-		}
-	} else { // why?!
+		ent->think = multi_wait;
+		ent->nextthink = level.time + ( ent->wait + ent->random * crandom() ) * 1000;
+	} else {
 		// we can't just remove (self) here, because this is a touch function
 		// called while looping through area links...
-		if (g_defrag.integer) {
-			if (activator->client) {
-				activator->client->entityStates[ent - g_entities] = 1;
-			}
-		}
-		else {
-			ent->touch = 0;
-			ent->nextthink = level.time + FRAMETIME;
-			ent->think = G_FreeEntity;
-		}
+		ent->touch = 0;
+		ent->nextthink = level.time + FRAMETIME;
+		ent->think = G_FreeEntity;
 	}
 }
 
@@ -243,93 +209,13 @@ trigger_push
 ==============================================================================
 */
 
-void trigger_push_touch(gentity_t *self, gentity_t *other, trace_t *trace ) {
+void trigger_push_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	if ( !other->client ) {
 		return;
 	}
 
-	if (other->client->sess.raceMode &&
-		(self->notCPM && !MovementStyleHasVQ3OnlyJumppads(other->client->sess.raceStyle.movementStyle)
-			|| self->notVQ3 && !MovementStyleHasCPMOnlyJumppads(other->client->sess.raceStyle.movementStyle))
-		) {
-		return;
-	}
-
-	other->client->pers.roll.segmentDisqualified = qtrue;
-
-	BG_TouchJumpPad( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? (other->client->sess.raceStyle.msec == -2 ? -2 : other->client->lastMsecValue) : 0, level.mapDefaultRaceStyle.msec, other->client->sess.raceMode ? other->client->sess.raceStyle.movementStyle : MV_JK2);
-}
-// the wait time has passed, so set back up for another activation
-void trigger_push_velocity_touch_wait(gentity_t* ent) {
-	ent->nextthink = 0;
-}
-
-void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
-
-	qboolean isRacer;
-	int nowTime = LEVELTIME(other->client);
-
-	if ( !other->client ) {
-		return;
-	}
-
-	isRacer = other->client && other->client->sess.raceMode;
-
-	if (other->client->sess.raceMode && 
-		(self->notCPM && !MovementStyleHasVQ3OnlyJumppads(other->client->sess.raceStyle.movementStyle)
-			|| self->notVQ3 && !MovementStyleHasCPMOnlyJumppads(other->client->sess.raceStyle.movementStyle)			)
-		) {
-		return;
-	}
-
-	other->client->pers.roll.segmentDisqualified = qtrue;
-
-	if (self->s.saberInFlight) { // its a target_speed converted to a jumppad, so we must consider what would have been "wait" of the trigger_multiple
-		// evaluate wait.
-		if (g_defrag.integer && self->wait < 0 && other->client->entityStates[self - g_entities]) { // once per respawn in defrag.
-			return;
-		}
-		else if (isRacer) {
-			if (other->client->triggerTimes[self - g_entities] >= nowTime) {
-				return; // i hope this somewhat replicates the behavior accurately while keeping things deterministic?
-			}
-		}
-		else {
-			if (self->nextthink) {
-				return;		// can't retrigger until the wait is over
-			}
-		}
-	}
-
-	BG_TouchJumpPadVelocity( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? (other->client->sess.raceStyle.msec == -2 ? -2 : other->client->lastMsecValue) : 0, level.mapDefaultRaceStyle.msec,other->client->sess.raceMode ? other->client->sess.raceStyle.movementStyle : MV_JK2);
-
-	if (self->s.saberInFlight) { // its a target_speed converted to a jumppad, so we must consider what would have been "wait" of the trigger_multiple
-		if (self->wait > 0) {
-			if (isRacer) {
-				other->client->triggerTimes[self - g_entities] = nowTime + (self->wait /* + ent->random * crandom() */) * 1000; // no random stuff in racemode
-			}
-			else {
-				self->think = multi_wait;
-				self->nextthink = level.time + (self->wait + self->random * crandom()) * 1000;
-			}
-		}
-		else { // why?!
-		 // we can't just remove (self) here, because this is a touch function
-		 // called while looping through area links...
-			if (g_defrag.integer) {
-				if (other->client) {
-					other->client->entityStates[self - g_entities] = 1;
-				}
-			}
-			else {
-				self->touch = 0;
-				self->nextthink = level.time + FRAMETIME;
-				self->think = G_FreeEntity;
-			}
-		}
-	}
-
+	BG_TouchJumpPad( &other->client->ps, &self->s );
 }
 
 
@@ -349,7 +235,7 @@ void AimAtTarget( gentity_t *self ) {
 	VectorAdd( self->r.absmin, self->r.absmax, origin );
 	VectorScale ( origin, 0.5, origin );
 
-	ent = G_PickTarget( self->target, !g_defrag.integer, NULL);
+	ent = G_PickTarget( self->target );
 	if ( !ent ) {
 		G_FreeEntity( self );
 		return;
@@ -389,33 +275,9 @@ void SP_trigger_push( gentity_t *self ) {
 	G_SoundIndex("sound/weapons/force/jump.wav");
 
 	self->s.eType = ET_PUSH_TRIGGER;
-	self->s.generic1 = self->notCPM;
-	self->s.genericenemyindex = self->notVQ3;
 	self->touch = trigger_push_touch;
 	self->think = AimAtTarget;
 	self->nextthink = level.time + FRAMETIME;
-	trap_LinkEntity (self);
-}
-
-void SP_trigger_push_velocity( gentity_t *self ) {
-	InitTrigger (self);
-
-	// unlike other triggers, we need to send this one to the client
-	self->r.svFlags &= ~SVF_NOCLIENT;
-
-	// make sure the client precaches this sound
-	G_SoundIndex("sound/weapons/force/jump.wav");
-
-	self->s.eType = ET_PUSH_TRIGGER;
-	self->touch = trigger_push_velocity_touch;
-	self->think = AimAtTarget;
-	self->nextthink = level.time + FRAMETIME;
-	self->s.weapon = self->spawnflags;
-	self->s.angles2[0] = self->speed;
-	self->s.angles2[1] = self->speed;
-	self->s.angles2[2] = self->count;
-	self->s.generic1 = self->notCPM;
-	self->s.genericenemyindex = self->notVQ3;
 	trap_LinkEntity (self);
 }
 
@@ -432,8 +294,8 @@ void Use_target_push( gentity_t *self, gentity_t *other, gentity_t *activator ) 
 	VectorCopy (self->s.origin2, activator->client->ps.velocity);
 
 	// play fly sound every 1.5 seconds
-	if ( activator->fly_sound_debounce_time < LEVELTIME(activator->client) ) {
-		activator->fly_sound_debounce_time = LEVELTIME(activator->client) + 1500;
+	if ( activator->fly_sound_debounce_time < level.time ) {
+		activator->fly_sound_debounce_time = level.time + 1500;
 		if (self->noise_index)
 		{
 			G_Sound( activator, CHAN_AUTO, self->noise_index );
@@ -475,37 +337,13 @@ trigger_teleport
 ==============================================================================
 */
 
-void trigger_teleporter_setupdefaulttarget(gentity_t* self) {
-	gentity_t* dest;
-	int numChoices = 0;
-	dest = G_PickTarget(self->target, qfalse, &numChoices);
-	if (!dest) {
-		self->s.trickedentindex3 = 0; // we won't ever be able to do this, therefore don't tell clients to predict.
-		// really may as well free the entity?
-		G_FreeEntity(self);
-		G_Printf("Couldn't set up teleporter destination. Removing teleporter.\n");
-		return;
-	}
-
-	// for racers, just pick the first one.
-	VectorCopy(dest->s.origin,self->s.origin2); // could use pos.trBase/apos.trBase too since better network-wise? idk.
-	VectorCopy(dest->s.angles,self->s.angles2);
-
-	if (numChoices == 1) {
-		self->s.trickedentindex3 = 2; // there's only one possible target, we can ALWAYS predict this. :)
-	}
-}
-
 void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace ) {
 	gentity_t	*dest;
 
 	if ( !other->client ) {
 		return;
 	}
-	if ( other->client->ps.pm_type == PM_DEAD) {
-		return;
-	}
-	if (other->client->noclip) {
+	if ( other->client->ps.pm_type == PM_DEAD ) {
 		return;
 	}
 	// Spectators only?
@@ -514,15 +352,12 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 		return;
 	}
 
-	dest = 	G_PickTarget( self->target, !other->client->sess.raceMode, NULL);
+
+	dest = 	G_PickTarget( self->target );
 	if (!dest) {
 		G_Printf ("Couldn't find teleporter destination\n");
 		return;
 	}
-
-	//if (!other->client->pers.raceStartCommandTime) {
-		other->client->sess.raceStateSoftInvalidated = qtrue;
-	//}
 
 	TeleportPlayer( other, dest->s.origin, dest->s.angles );
 }
@@ -553,12 +388,6 @@ void SP_trigger_teleport( gentity_t *self ) {
 	self->s.eType = ET_TELEPORT_TRIGGER;
 	self->touch = trigger_teleporter_touch;
 
-	// for cgame prediction:
-	self->think = trigger_teleporter_setupdefaulttarget;
-	self->nextthink = level.time + FRAMETIME;
-	self->s.weapon = self->spawnflags;
-	self->s.trickedentindex3 = 1; // tell cgame that this one can be predicted
-
 	trap_LinkEntity (self);
 }
 
@@ -587,13 +416,11 @@ If dmg is set to -1 this brush will use the fade-kill method
 void hurt_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 	if (activator && activator->inuse && activator->client)
 	{
-		//self->activator = activator;
-		G_SetActivator(self, activator);
+		self->activator = activator;
 	}
 	else
 	{
-		//self->activator = NULL;
-		G_SetActivator(self, NULL);
+		self->activator = NULL;
 	}
 
 	if ( self->r.linked ) {
@@ -604,16 +431,13 @@ void hurt_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
 }
 
 void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
-	int			dflags;
-	int			nowTime = LEVELTIME(other->client);
-	qboolean	raceMode = other->client && other->client->sess.raceMode;
-	int*		timeStamp = raceMode ? &other->client->triggerTimes[self-g_entities] : &self->timestamp;
+	int		dflags;
 
 	if ( !other->takedamage ) {
 		return;
 	}
 
-	if (*timeStamp > nowTime) {
+	if ( self->timestamp > level.time ) {
 		return;
 	}
 
@@ -630,9 +454,9 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 	}
 
 	if ( self->spawnflags & 16 ) {
-		*timeStamp = nowTime + 1000;
+		self->timestamp = level.time + 1000;
 	} else {
-		*timeStamp = nowTime + FRAMETIME;
+		self->timestamp = level.time + FRAMETIME;
 	}
 
 	// play sound
@@ -647,14 +471,14 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 
 	if (self->damage == -1 && other && other->client)
 	{
-		if (other->client->ps.otherKillerTime > nowTime)
+		if (other->client->ps.otherKillerTime > level.time)
 		{ //we're as good as dead, so if someone pushed us into this then remember them
-			other->client->ps.otherKillerTime = nowTime + 20000;
-			other->client->ps.otherKillerDebounceTime = nowTime + 10000;
+			other->client->ps.otherKillerTime = level.time + 20000;
+			other->client->ps.otherKillerDebounceTime = level.time + 10000;
 		}
-		other->client->ps.fallingToDeath = nowTime;
+		other->client->ps.fallingToDeath = level.time;
 
-		*timeStamp = 0; //do not ignore others
+		self->timestamp = 0; //do not ignore others
 		G_EntitySound(other, CHAN_VOICE, G_SoundIndex("*falling1.wav"));
 	}
 	else	
@@ -664,7 +488,7 @@ void hurt_touch( gentity_t *self, gentity_t *other, trace_t *trace ) {
 		if (dmg == -1)
 		{ //so fall-to-blackness triggers destroy evertyhing
 			dmg = 99999;
-			*timeStamp = 0;
+			self->timestamp = 0;
 		}
 		if (self->activator && self->activator->inuse && self->activator->client)
 		{
@@ -689,12 +513,7 @@ void SP_trigger_hurt( gentity_t *self ) {
 		self->damage = 5;
 	}
 
-	self->r.contents = CONTENTS_TRIGGER | CONTENTS_NOSPAWN;
-
-	if (coolApi & COOL_APIFEATURE_G_SETBRUSHMODELCONTENTFLAGS) {
-		// this way our bubble spawn can tell not to spawn on top of or in this
-		trap_G_COOL_API_SetBrushModelContentFlags(self, CONTENTS_NOSPAWN, COOLAPI_BMODELCFLAGS_ADD);
-	}
+	self->r.contents = CONTENTS_TRIGGER;
 
 	if ( self->spawnflags & 2 ) {
 		self->use = hurt_use;
@@ -734,17 +553,11 @@ so, the basic time between firing is a random time between
 void func_timer_think( gentity_t *self ) {
 	G_UseTargets (self, self->activator);
 	// set time before next firing
-	if (g_defrag.integer) {
-		self->nextthink = level.time + 1000 * ( self->wait );
-	}
-	else {
-		self->nextthink = level.time + 1000 * ( self->wait + crandom() * self->random );
-	}
+	self->nextthink = level.time + 1000 * ( self->wait + crandom() * self->random );
 }
 
 void func_timer_use( gentity_t *self, gentity_t *other, gentity_t *activator ) {
-	//self->activator = activator;
-	G_SetActivator(self, activator);
+	self->activator = activator;
 
 	// if on, turn it off
 	if ( self->nextthink ) {
@@ -770,14 +583,10 @@ void SP_func_timer( gentity_t *self ) {
 
 	if ( self->spawnflags & 1 ) {
 		self->nextthink = level.time + FRAMETIME;
-
-		G_SetActivator(self, self);
-		//self->activator = self;
+		self->activator = self;
 	}
 
 	self->r.svFlags = SVF_NOCLIENT;
-
-	level.nonDeterministicEntities++;
 }
 
 

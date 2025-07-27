@@ -21,14 +21,14 @@ void AddRemap(const char *oldShader, const char *newShader, float timeOffset) {
 	for (i = 0; i < remapCount; i++) {
 		if (Q_stricmp(oldShader, remappedShaders[i].oldShader) == 0) {
 			// found it, just update this one
-			Q_strncpyz(remappedShaders[i].newShader,newShader,sizeof(remappedShaders[i].newShader));
+			strcpy(remappedShaders[i].newShader,newShader);
 			remappedShaders[i].timeOffset = timeOffset;
 			return;
 		}
 	}
 	if (remapCount < MAX_SHADER_REMAPS) {
-		Q_strncpyz(remappedShaders[remapCount].newShader,newShader,sizeof(remappedShaders[remapCount].newShader));
-		Q_strncpyz(remappedShaders[remapCount].oldShader,oldShader,sizeof(remappedShaders[remapCount].oldShader));
+		strcpy(remappedShaders[remapCount].newShader,newShader);
+		strcpy(remappedShaders[remapCount].oldShader,oldShader);
 		remappedShaders[remapCount].timeOffset = timeOffset;
 		remapCount++;
 	}
@@ -132,52 +132,10 @@ void G_TeamCommand( team_t team, char *cmd ) {
 	for ( i = 0 ; i < level.maxclients ; i++ ) {
 		if ( level.clients[i].pers.connected == CON_CONNECTED ) {
 			if ( level.clients[i].sess.sessionTeam == team ) {
-				G_SendServerCommand( i, va("%s", cmd ),qtrue);
+				trap_SendServerCommand( i, va("%s", cmd ));
 			}
 		}
 	}
-}
-
-int G_GetClassNameHash(const char* match) {
-	return generateHashValue(match, ENTITY_HASH_SIZE);
-}
-
-// uses hashtable
-gentity_t* G_FindByClassName(gentity_t* from, const char* match) {
-	int				n;
-	int				hash = generateHashValue(match, ENTITY_HASH_SIZE);
-	gentity_t*		hashEnt;
-
-	for (hashEnt = g_entitiesHashTable[hash]; hashEnt; hashEnt = hashEnt->nextHashed) {
-		if (hashEnt > from && Q_stricmp(hashEnt->classname, match) == 0) {
-			return hashEnt;
-		}
-	}
-
-	return NULL;
-}
-
-// uses hashtable
-// call this one if you are continuing a search with the same classname (hash doesnt need to be recalculated)
-gentity_t* G_FindByClassNameFast(gentity_t* from, const char* match) {
-	int				n;
-	gentity_t*		hashEnt;
-
-	if (!from) {
-		int	hash = generateHashValue(match, ENTITY_HASH_SIZE);
-		hashEnt = g_entitiesHashTable[hash];
-	}
-	else {
-		hashEnt = from->nextHashed;
-	}
-
-	for (; hashEnt; hashEnt = hashEnt->nextHashed) {
-		if (Q_stricmp(hashEnt->classname, match) == 0) {
-			return hashEnt;
-		}
-	}
-
-	return NULL;
 }
 
 
@@ -196,16 +154,11 @@ NULL will be returned if the end of the list is reached.
 gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match)
 {
 	char	*s;
-	int idx;
 
 	if (!from)
 		from = g_entities;
 	else
 		from++;
-
-	idx = from - g_entities;
-	if (idx >= MAX_GENTITIES)
-		goto dological;
 
 	for ( ; from < &g_entities[level.num_entities] ; from++)
 	{
@@ -215,18 +168,6 @@ gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match)
 		if (!s)
 			continue;
 		if (!Q_stricmp (s, match))
-			return from;
-	}
-	from = &g_logicalents[0]; // 1st logical entity
-dological:
-	for (; from < &g_logicalents[level.num_logicalents]; from++)
-	{
-		if (!from->inuse)
-			continue;
-		s = *(char**)((byte*)from + fieldofs);
-		if (!s)
-			continue;
-		if (!Q_stricmp(s, match))
 			return from;
 	}
 
@@ -312,7 +253,7 @@ Selects a random entity from among the targets
 */
 #define MAXCHOICES	32
 
-gentity_t *G_PickTarget (char *targetname, qboolean allowRandom, int* numChoices)
+gentity_t *G_PickTarget (char *targetname)
 {
 	gentity_t	*ent = NULL;
 	int		num_choices = 0;
@@ -334,18 +275,11 @@ gentity_t *G_PickTarget (char *targetname, qboolean allowRandom, int* numChoices
 			break;
 	}
 
-	if (numChoices) { // inform the caller how many there were
-		*numChoices = num_choices;
-	}
-
 	if (!num_choices)
 	{
 		G_Printf("G_PickTarget: target %s not found\n", targetname);
 		return NULL;
 	}
-	if (!allowRandom) {
-		return choice[0];
-	} 
 
 	return choice[rand() % num_choices];
 }
@@ -473,102 +407,11 @@ void G_SetMovedir( vec3_t angles, vec3_t movedir ) {
 
 void G_InitGentity( gentity_t *e ) {
 	e->inuse = qtrue;
-	G_SetClassName(e, "noclass");
-	e->s.number = e - g_entities; 
-	if (e->s.number < 1023) {
-		e->isLogical = qfalse;
-	}
-	else {
-		e->isLogical = qtrue;
-	}
+	e->classname = "noclass";
+	e->s.number = e - g_entities;
 	e->r.ownerNum = ENTITYNUM_NONE;
 	e->s.modelGhoul2 = 0; //assume not
 }
-
-
-/*
-================
-return a hash value for the filename
-================
-*/
-int generateHashValue(const char* fname, const int size) {
-	int		i;
-	int		hash;
-	char	letter;
-
-	hash = 0;
-	i = 0;
-	while (fname[i] != '\0') {
-		letter = tolower(fname[i]);
-		if (letter == '.') break;				// don't include extension
-		if (letter == '\\') letter = '/';		// damn path names
-		hash += (int)(letter) * (i + 119);
-		i++;
-	}
-	hash = (hash ^ (hash >> 10) ^ (hash >> 20));
-	hash &= (size - 1);
-	return hash;
-}
-
-void G_UnlistFromHashTable(gentity_t* ent) {
-	if (ent->classname) {
-		int hash = generateHashValue(ent->classname, ENTITY_HASH_SIZE);
-		gentity_t* hashEnt, *lastHashEnt=NULL;
-		int found = 0;
-
-		for (hashEnt = g_entitiesHashTable[hash]; hashEnt; hashEnt = hashEnt->nextHashed) {
-			if (hashEnt == ent) {
-				found++;
-				if (!lastHashEnt) {
-					g_entitiesHashTable[hash] = ent->nextHashed;
-					g_entitiesHashTableCount--;
-				}
-				else {
-					lastHashEnt->nextHashed = ent->nextHashed;
-					g_entitiesHashTableCount--;
-				}
-			}
-			lastHashEnt = hashEnt;
-		}
-		ent->nextHashed = NULL;
-		if (found > 1) {
-			Com_Printf("^3entity %d (%s) was found %d times in hashtable with hash %d!!",ent-g_entities,ent->classname,found, hash);
-		}
-	}
-}
-void G_SetClassName(gentity_t* ent, char* classname) {
-	int hash = generateHashValue(classname, ENTITY_HASH_SIZE);
-	gentity_t* hashEnt;
-
-	if (ent->classname) {
-		G_UnlistFromHashTable(ent);
-	}
-	
-	// can put it in directly
-	if (!g_entitiesHashTable[hash] || g_entitiesHashTable[hash] > ent) {
-		ent->nextHashed = g_entitiesHashTable[hash];
-		g_entitiesHashTable[hash] = ent;
-		g_entitiesHashTableCount++;
-	}
-	else {
-		// put it in at the right place
-		for (hashEnt = g_entitiesHashTable[hash]; hashEnt; hashEnt = hashEnt->nextHashed) {
-			if (!hashEnt->nextHashed || hashEnt->nextHashed > ent) {
-				ent->nextHashed = hashEnt->nextHashed;
-				hashEnt->nextHashed = ent;
-				g_entitiesHashTableCount++;
-				break;
-			}
-		}
-	}
-
-	if (g_entitiesHashTableCount < 0 || g_entitiesHashTableCount > MAX_ENTITIESTOTAL) {
-		Com_Printf("^3g_entitiesHashTableCount is %d, something went terribly wrong.", g_entitiesHashTableCount);
-	}
-
-	ent->classname = classname;
-}
-
 
 /*
 =================
@@ -585,18 +428,17 @@ instead of being removed and recreated, which can cause interpolated
 angles and bad trails.
 =================
 */
-gentity_t *G_SpawnReal(gentity_t* after) {
+gentity_t *G_Spawn( void ) {
 	int			i, force;
 	gentity_t	*e;
-	int			startNum = after ? MAX(MAX_CLIENTS, MIN(after - g_entities + 1,ENTITYNUM_MAX_NORMAL-1)) : MAX_CLIENTS;
 
 	e = NULL;	// shut up warning
 	i = 0;		// shut up warning
 	for ( force = 0 ; force < 2 ; force++ ) {
 		// if we go through all entities and can't find one to free,
 		// override the normal minimum times before use
-		e = &g_entities[startNum];
-		for ( i = startNum; i<level.num_entities ; i++, e++) {
+		e = &g_entities[MAX_CLIENTS];
+		for ( i = MAX_CLIENTS ; i<level.num_entities ; i++, e++) {
 			if ( e->inuse ) {
 				continue;
 			}
@@ -621,7 +463,7 @@ gentity_t *G_SpawnReal(gentity_t* after) {
 		if ( g_mv_fixturretcrash.integer )
 		{ // TurretCrashFix - One last try!
 			G_Printf("G_Spawn: no free entities, trying to make room by deleting temp entities and missiles\n");
-			for ( i = startNum; i < MAX_GENTITIES; i++ )
+			for ( i = MAX_CLIENTS; i < MAX_GENTITIES; i++ )
 			{
 				e = &g_entities[i];
 
@@ -672,64 +514,6 @@ gentity_t *G_SpawnReal(gentity_t* after) {
 	}
 
 	G_InitGentity( e );
-	return e;
-}
-
-
-gentity_t* G_Spawn() {
-	return G_SpawnReal(NULL);
-}
-// yuck. needed for weirdo trigger conversion.
-gentity_t* G_SpawnAfter(gentity_t* ent) {
-	return G_SpawnReal(ent);
-}
-
-// G_SpawnLogical: Creates a logical entity (ent nums 1024 to 4097)
-gentity_t* G_SpawnLogical(void) {
-	int			i, force;
-	gentity_t* e;
-
-	e = NULL;	// shut up warning
-	i = 0;		// shut up warning
-	for (force = 0; force < 2; force++) {
-		// if we go through all entities and can't find one to free,
-		// override the normal minimum times before use
-		e = &g_entities[MAX_GENTITIES];
-		for (i = MAX_GENTITIES; i < (MAX_GENTITIES + level.num_logicalents); i++, e++) {
-			if (e->inuse) {
-				continue;
-			}
-
-			// the first couple seconds of server time can involve a lot of
-			// freeing and allocating, so relax the replacement policy
-			if (!force && e->freetime > level.startTime + 2000 && level.time - e->freetime < 1000)
-			{
-				continue;
-			}
-
-			// reuse this slot
-			G_InitGentity(e);
-			return e;
-		}
-		if (i != MAX_ENTITIESTOTAL) {
-			break;
-		}
-	}
-	if (i == MAX_ENTITIESTOTAL/*- 1 */ ) { // ta: surely the -1 is an error?
-		/*
-		for (i = 0; i < MAX_GENTITIES; i++) {
-		trap->Print("%4i: %s\n", i, g_entities[i].classname);
-		}
-		*/
-		//G_SpewEntList();
-		//trap_Error(ERR_DROP, "G_SpawnLogical: no free entities");
-		G_Error("G_SpawnLogical: no free entities");
-	}
-
-	// open up a new slot
-	level.num_logicalents++;
-
-	G_InitGentity(e);
 	return e;
 }
 
@@ -816,18 +600,11 @@ void G_FreeEntity( gentity_t *ed ) {
 		return;
 	}
 
-	if (!ed->isLogical) {
-		trap_UnlinkEntity(ed);		// unlink from world
-	}
+	trap_UnlinkEntity (ed);		// unlink from world
 
 	if ( ed->neverFree ) {
 		return;
 	}
-
-	// clear any activation links
-	// what happens if an entity is its own activator or some weird combinations like that?
-	G_ClearEntityActivator(ed);
-	G_ClearActivatedEntities(ed); // dont do this, prolly unsafe
 
 	//rww - this may seem a bit hackish, but unfortunately we have no access
 	//to anything ghoul2-related on the server and thus must send a message
@@ -872,42 +649,13 @@ void G_FreeEntity( gentity_t *ed ) {
 		}
 	}
 
-	if (!ed->isLogical) {
-		memset(mv_entities + (ed - g_entities), 0, sizeof(mv_entities[0]));
-	}
-	G_UnlistFromHashTable(ed);
+	memset (mv_entities + (ed - g_entities), 0, sizeof(mv_entities[0]));
 	memset (ed, 0, sizeof(*ed));
-	G_SetClassName(ed, "freed");
+	ed->classname = "freed";
 	ed->freetime = level.time;
 	ed->inuse = qfalse;
-
-	/* do we need this? no idea.
-	//Logical Entities - (JKG)
-	// Ok, lets see if we can lower level.num_entities.
-	// If this entity was the last allocated slot, run back through g_entities and get the last used slots.
-	entnum = ed - g_entities;
-	if (!ed->isLogical) {
-		if (entnum == level.num_entities - 1) {
-			// Last slot, roll back
-			for (i = entnum; i >= MAX_CLIENTS; i--) {
-				if (g_entities[i].inuse)
-					break;
-			}
-			level.num_entities = i + 1;
-		}
-	}
-	else {
-		if (entnum == MAX_GENTITIES + level.num_logicalents - 1) {
-			// Last slot, roll back
-			for (i = entnum; i >= MAX_GENTITIES; i--) {
-				if (g_entities[i].inuse)
-					break;
-			}
-			level.num_logicalents = i + 1 - MAX_GENTITIES;
-		}
-
-	}
-	*/
+	
+	memset( &(mv_entities[ed-g_entities]), 0, sizeof(mv_entities[0]) );
 }
 
 /*
@@ -926,7 +674,7 @@ gentity_t *G_TempEntity( vec3_t origin, int event ) {
 	e = G_Spawn();
 	e->s.eType = ET_EVENTS + event;
 
-	G_SetClassName(e, "tempEntity");
+	e->classname = "tempEntity";
 	e->eventTime = level.time;
 	e->freeAfterEvent = qtrue;
 
@@ -978,7 +726,7 @@ gentity_t *G_SoundTempEntity( vec3_t origin, int event, int channel ) {
 	e->s.eType = ET_EVENTS + event;
 	e->inuse = qtrue;
 
-	G_SetClassName(e, "tempEntity");
+	e->classname = "tempEntity";
 	e->eventTime = level.time;
 	e->freeAfterEvent = qtrue;
 
@@ -1010,7 +758,6 @@ Kills all entities that would touch the proposed new positioning
 of ent.  Ent should be unlinked before calling this!
 =================
 */
-qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other);
 void G_KillBox (gentity_t *ent) {
 	int			i, num;
 	int			touch[MAX_GENTITIES];
@@ -1025,14 +772,6 @@ void G_KillBox (gentity_t *ent) {
 		hit = &g_entities[touch[i]];
 		if ( !hit->client ) {
 			continue;
-		}
-
-		if (hit->client->sess.raceMode) {
-			continue;
-		}
-
-		if (ent && ShouldNotCollide(ent, hit)) {
-			continue; // they wont touch each other anyway, no need to kill
 		}
 
 		// nail it
@@ -1082,14 +821,14 @@ void G_AddEvent( gentity_t *ent, int event, int eventParm ) {
 		bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
 		ent->client->ps.externalEvent = event | bits;
 		ent->client->ps.externalEventParm = eventParm;
-		ent->client->ps.externalEventTime = LEVELTIME(ent->client);
+		ent->client->ps.externalEventTime = level.time;
 	} else {
 		bits = ent->s.event & EV_EVENT_BITS;
 		bits = ( bits + EV_EVENT_BIT1 ) & EV_EVENT_BITS;
 		ent->s.event = event | bits;
 		ent->s.eventParm = eventParm;
 	}
-	ent->eventTime = LEVELTIME(ent->client);
+	ent->eventTime = level.time;
 }
 
 /*
@@ -1274,7 +1013,7 @@ void TryUse( gentity_t *ent )
 	VectorMA( src, USE_DISTANCE, vf, dest );
 
 	//Trace ahead to find a valid target
-	JP_Trace( &trace, src, vec3_origin, vec3_origin, dest, ent->s.number, MASK_OPAQUE|CONTENTS_SOLID|CONTENTS_BODY|CONTENTS_ITEM|CONTENTS_CORPSE );
+	trap_Trace( &trace, src, vec3_origin, vec3_origin, dest, ent->s.number, MASK_OPAQUE|CONTENTS_SOLID|CONTENTS_BODY|CONTENTS_ITEM|CONTENTS_CORPSE );
 	
 	if ( trace.fraction == 1.0f || trace.entityNum < 1 )
 	{
@@ -1366,7 +1105,7 @@ qboolean G_ClearTrace( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int i
 {
 	static	trace_t	tr;
 
-	JP_Trace( &tr, start, mins, maxs, end, ignore, clipmask );
+	trap_Trace( &tr, start, mins, maxs, end, ignore, clipmask );
 
 	if ( tr.allsolid || tr.startsolid || tr.fraction < 1.0 )
 	{

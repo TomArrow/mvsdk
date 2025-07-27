@@ -164,11 +164,11 @@ void G_BounceMissile( gentity_t *ent, trace_t *trace ) {
 
 	if (ent->s.weapon == WP_THERMAL)
 	{ //slight hack for hit sound
-		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/thermal/bounce%i.wav", Q_irand(1, 2, qfalse, 1))));
+		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/thermal/bounce%i.wav", Q_irand(1, 2))));
 	}
 	else if (ent->s.weapon == WP_SABER)
 	{
-		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/saber/bounce%i.wav", Q_irand(1, 3,qfalse,2))));
+		G_Sound(ent, CHAN_BODY, G_SoundIndex(va("sound/weapons/saber/bounce%i.wav", Q_irand(1, 3))));
 	}
 	else if (ent->s.weapon == G2_MODEL_PART)
 	{
@@ -283,22 +283,13 @@ gentity_t *CreateMissile( vec3_t org, vec3_t dir, float vel, int life,
 	missile->parent = owner;
 	missile->r.ownerNum = owner->s.number;
 
-	//japro - do this so clients can know who the missile belongs to.. so they can hide it if its from another dimension
-	//missile->s.owner = owner->s.number; // do i really need this?
-	//
-
 	if (altFire)
 	{
 		missile->s.eFlags |= EF_ALT_FIRING;
 	}
 
 	missile->s.pos.trType = TR_LINEAR;
-	if (owner->client && owner->client->sess.raceMode) {
-		missile->s.pos.trTime = level.time - MISSILE_PRESTEP_TIME;//this be why rocketjump fucks up at high speed
-	}
-	else {
-		missile->s.pos.trTime = level.time;// - MISSILE_PRESTEP_TIME;	// NOTENOTE This is a Quake 3 addition over JK2
-	}
+	missile->s.pos.trTime = level.time;// - MISSILE_PRESTEP_TIME;	// NOTENOTE This is a Quake 3 addition over JK2
 	missile->target_ent = NULL;
 
 	SnapVector(org);
@@ -382,7 +373,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		ent->s.weapon != WP_DEMP2 &&
 		ent->methodOfDeath != MOD_REPEATER_ALT &&
 		ent->methodOfDeath != MOD_FLECHETTE_ALT_SPLASH &&
-		other->client->ps.saberBlockTime < LEVELTIME(other->client) &&
+		other->client->ps.saberBlockTime < level.time &&
 		WP_SaberCanBlock(other, ent->r.currentOrigin, 0, 0, qtrue, 0))
 	{ //only block one projectile per 200ms (to prevent giant swarms of projectiles being blocked)
 		vec3_t fwd;
@@ -421,7 +412,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		{
 			G_ReflectMissile(other, ent, fwd);
 		}
-		other->client->ps.saberBlockTime = LEVELTIME(other->client) + (350 - (otherDefLevel*100)); //200;
+		other->client->ps.saberBlockTime = level.time + (350 - (otherDefLevel*100)); //200;
 
 		if (otherDefLevel == FORCE_LEVEL_3)
 		{
@@ -446,7 +437,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 			ent->s.weapon != WP_DEMP2 &&
 			ent->methodOfDeath != MOD_REPEATER_ALT &&
 			ent->methodOfDeath != MOD_FLECHETTE_ALT_SPLASH /*&&
-			otherOwner->client->ps.saberBlockTime < LEVELTIME(otherOwner->client)*/)
+			otherOwner->client->ps.saberBlockTime < level.time*/)
 		{ //for now still deflect even if saberBlockTime >= level.time because it hit the actual saber
 			vec3_t fwd;
 			gentity_t *te;
@@ -487,7 +478,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 			{
 				G_ReflectMissile(otherOwner, ent, fwd);
 			}
-			otherOwner->client->ps.saberBlockTime = LEVELTIME(otherOwner->client) + (350 - (otherDefLevel*100));//200;
+			otherOwner->client->ps.saberBlockTime = level.time + (350 - (otherDefLevel*100));//200;
 
 			if (otherDefLevel == FORCE_LEVEL_3)
 			{
@@ -611,11 +602,11 @@ void G_RunMissile( gentity_t *ent ) {
 		passent = ent->r.ownerNum;
 	}
 	// trace a line from the previous position to the current position
-	JP_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, passent, ent->clipmask );
+	trap_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, origin, passent, ent->clipmask );
 
 	if ( tr.startsolid || tr.allsolid ) {
 		// make sure the tr.entityNum is set to the entity we're stuck in
-		JP_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, ent->r.currentOrigin, passent, ent->clipmask );
+		trap_Trace( &tr, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, ent->r.currentOrigin, passent, ent->clipmask );
 		tr.fraction = 0;
 	}
 	else {
@@ -638,7 +629,7 @@ void G_RunMissile( gentity_t *ent ) {
 
 		VectorCopy(ent->r.currentOrigin, lowerOrg);
 		lowerOrg[2] -= 1;
-		JP_Trace( &trG, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, lowerOrg, passent, ent->clipmask );
+		trap_Trace( &trG, ent->r.currentOrigin, ent->r.mins, ent->r.maxs, lowerOrg, passent, ent->clipmask );
 
 		VectorCopy(trG.endpos, groundSpot);
 

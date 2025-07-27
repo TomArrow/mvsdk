@@ -1,0 +1,14 @@
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_main.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_main.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_atoms.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_atoms.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_force.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_force.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_gameinfo.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_gameinfo.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_shared.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_shared.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_multiversion.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_multiversion.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_saber.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_saber.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_misc.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\bg_misc.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_weapons.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\bg_weapons.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_math.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\q_math.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\q_shared.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\q_shared.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_multiversion_syscalls.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_multiversion_syscalls.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\game\bg_multiversion.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\bg_multiversion.obj
+C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_syscalls.c;C:\Users\david\Documents\Workspace\tom_jk2mv\src\mvsdk\code\ui\ui_x64.dir\Debug\ui_syscalls.obj

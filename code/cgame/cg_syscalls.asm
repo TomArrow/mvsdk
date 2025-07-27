@@ -178,6 +178,9 @@ equ trap_G2API_SetSurfaceOnOff_1_02				-299	; CG_G2_SETSURFACEONOFF
 equ trap_G2API_SetNewOrigin_1_02				-300	; CG_G2_SETNEWORIGIN 
 equ trap_CG_RegisterSharedMemory_1_02			-301	; CG_SET_SHARED_BUFFER 
 
+equ trap_G2API_SetSkin							-304	; CG_G2_SETSKIN 
+equ trap_G2API_GetSurfaceRenderStatus			-305	; CG_G2_GETSURFACERENDERSTATUS 
+equ trap_G2API_SkinlessModel					-306	; CG_G2_SKINLESSMODEL 
 
 ; hardcoded functions
 equ memset										-101	; CGAME_MEMSET 
@@ -205,48 +208,4 @@ equ trap_MVAPI_Print							-714	;MVAPI_PRINT
 ; JK2MV Syscalls [CGame]
 equ trap_R_AddRefEntityToScene2					-707	;CG_MVAPI_R_ADDREFENTITYTOSCENE2
 equ trap_MVAPI_SetVirtualScreen					-708	;CG_MVAPI_SETVIRTUALSCREEN
-
 equ trap_MVAPI_EnableSubmodelBypass				-713	;CG_MVAPI_ENABLE_SUBMODELBYPASS
-
-; COOL API Calls
-equ trap_CG_COOL_API_SetPredictedMovement		-1101	;CG_COOL_API_SETPREDICTEDMOVEMENT
-equ trap_CG_COOL_API_SetEzDemoBuffer			-1103	;CG_COOL_API_SET_EZDEMO_BUFFER
-equ trap_CG_COOL_API_GetTimeSinceSnapReceived	-1104	;CG_COOL_API_GETTIMESINCESNAPRECEIVED
-equ trap_CG_COOL_API_GlResolutionChanged		-1105	;CG_COOL_API_GLRESOLUTIONCHANGED
-equ trap_CG_COOL_API_SetUserAngles				-1106	;CG_COOL_API_SETUSERANGLES
-equ trap_CG_COOL_API_NonEpsilonTrace			-1107	;CG_COOL_API_NONEPSILONTRACE 
-equ trap_CG_COOL_API_NonEpsilonTraceCapsule		-1108	;CG_COOL_API_NONEPSILONTRACE_CAPSULE 
-equ trap_CG_COOL_API_CustomEpsilonTrace			-1109	;CG_COOL_API_CUSTOMEPSILONTRACE 
-equ trap_CG_COOL_API_CustomEpsilonTraceCapsule	-1110	;CG_COOL_API_CUSTOMEPSILONTRACE_CAPSULE 
-equ trap_CG_COOL_API_AddMemeCommand				-1111	;CG_COOL_API_ADDMEMECOMMAND 
-
-; COOL API DB Calls
-equ trap_CG_COOL_API_DB_EscapeString			-1201	;CG_COOL_API_DB_ESCAPESTRING
-equ trap_CG_COOL_API_DB_AddRequest				-1202	;CG_COOL_API_DB_ADDREQUEST
-equ trap_CG_COOL_API_DB_NextResponse			-1203	;CG_COOL_API_DB_NEXTRESPONSE
-equ trap_CG_COOL_API_DB_GetReference			-1204	;CG_COOL_API_DB_GETREFERENCE
-equ trap_CG_COOL_API_DB_NextRow					-1205	;CG_COOL_API_DB_NEXTROW
-equ trap_CG_COOL_API_DB_GetInt					-1206	;CG_COOL_API_DB_GETINT
-equ trap_CG_COOL_API_DB_GetFloat				-1207	;CG_COOL_API_DB_GETFLOAT
-equ trap_CG_COOL_API_DB_GetString				-1208	;CG_COOL_API_DB_GETSTRING
-equ trap_CG_COOL_API_DB_AddRequestTyped			-1209	;CG_COOL_API_DB_ADDREQUEST_TYPED
-
-equ trap_CG_COOL_API_DB_AddPreparedStatement			-1210	;CG_COOL_API_DB_ADDPREPAREDSTATEMENT
-equ trap_CG_COOL_API_DB_PreparedBindString				-1211	;CG_COOL_API_DB_PREPAREDBINDSTRING
-equ trap_CG_COOL_API_DB_PreparedBindFloat				-1212	;CG_COOL_API_DB_PREPAREDBINDFLOAT
-equ trap_CG_COOL_API_DB_PreparedBindInt					-1213	;CG_COOL_API_DB_PREPAREDBINDINT
-equ trap_CG_COOL_API_DB_PreparedBindBinary				-1214	;CG_COOL_API_DB_PREPAREDBINDBINARY
-equ trap_CG_COOL_API_DB_FinishAndSendPreparedStatement	-1215	;CG_COOL_API_DB_FINISHANDSENDPREPAREDSTATEMENT
-equ trap_CG_COOL_API_DB_GetBinary						-1216	;CG_COOL_API_DB_GETBINARY
-equ trap_CG_COOL_API_DB_PreparedBindNull				-1217	;CG_COOL_API_DB_PREPAREDBINDNULL
-equ trap_CG_COOL_API_DB_GetMoreResults					-1218	;CG_COOL_API_DB_GETMORERESULTS
-
-; COOL_APIFEATURE_JEDI_ACADEMY
-equ trap_CG_COOL_API_GetNumLanguages           -2001    ; CG_COOL_API_GET_NUM_LANGUAGES
-equ trap_CG_COOL_API_GetLanguageName           -2002    ; CG_COOL_API_GET_LANGUAGE_NAME
-equ trap_CG_COOL_API_SetSkin                   -2003    ; CG_COOL_API_SET_SKIN
-equ trap_CG_COOL_API_SkinlessModel             -2004    ; CG_COOL_API_SKINLESS_MODEL
-equ trap_CG_COOL_API_GetSurfaceRenderStatus    -2005    ; CG_COOL_API_GET_SURFACE_RENDER_STATUS
-equ trap_CG_COOL_API_AttachG2Model             -2006    ; CG_COOL_API_ATTACH_G2_MODEL
-equ trap_CG_COOL_API_GetFileVersion            -2007    ; CG_COOL_API_GET_FILE_VERSION
-equ trap_CG_COOL_API_GetFileList               -2008    ; CG_COOL_API_GET_FILE_LIST

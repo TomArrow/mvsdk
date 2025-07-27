@@ -6,7 +6,6 @@
 // compiled for the virtual machine
 
 #include "q_shared.h"
-#include "../api/mvapi.h"
 
 /*-
  * Copyright (c) 1992, 1993
@@ -862,7 +861,7 @@ double _atof( const char **stringPtr ) {
 
 	// read digits
 	value = 0;
-	//if ( string[0] != '.' ) { // TA: remove condition or else .xxx numbers without anything before the dot will break everything as string isnt advanced from the dot.
+	if ( string[0] != '.' ) {
 		do {
 			c = *string++;
 			if ( c < '0' || c > '9' ) {
@@ -871,7 +870,7 @@ double _atof( const char **stringPtr ) {
 			c -= '0';
 			value = value * 10 + c;
 		} while ( 1 );
-	//}
+	}
 
 	// check for decimal point
 	if ( c == '.' ) {
@@ -1027,7 +1026,7 @@ float frexpf( float x, int *exp )
     *binary32 = (*binary32 & ~( 0xffU << 23)) | (0x7eU << 23);
     return x;
 }
-/*
+
 static const float expftable[192] = {
 	1.401298464e-45f, 5.605193857e-45f, 1.401298464e-44f, 3.783505854e-44f,
 	1.008934894e-43f, 2.746544990e-43f, 7.468920815e-43f, 2.030481475e-42f,
@@ -1116,14 +1115,14 @@ float expf( float x )
 
 	// 11 was found experimentally, gives 1 ULP error in [0, 1] range
 
-	
-	//sum = 1.0f;
-	//float power = 1.0f;
-	//for (i = 1; i < 12; i++) {
-	//	power *= fracX / i;
-	//	sum += power;
-	//}
-	
+	/*
+	sum = 1.0f;
+	float power = 1.0f;
+	for (i = 1; i < 12; i++) {
+		power *= fracX / i;
+		sum += power;
+	}
+	*/
 
 	// optimization: Horner's scheme for computing Taylor series
 
@@ -1138,8 +1137,55 @@ float expf( float x )
 
     return result;
 }
-*/
 
+float logf( float a )
+{
+	// using floats for intermediate results decreases accuracy by few
+	// ULP due to accumulation of round-off errors. acceptable
+	float	sum;
+	float	z;
+	float	fraca;
+	int		log2a;
+	int		i;
+
+	assert(a > 0.0f);
+
+	fraca = frexpf(a, &log2a);
+
+	// fraca is in [0.5, 1) range. Decent for Taylor series but we can
+	// make it [sqrt(0.5), sqrt(2))
+
+	if (fraca < (float) M_SQRT1_2) {
+		fraca *= 2.0f;
+		log2a--;
+	}
+
+	// a = fraca * 2^log2a
+	// ln(a) = ln(fraca) + log2a * ln(2)
+
+	// Taylor series around 1
+	z = fraca - 1.0f;
+	sum = 0.0f;
+
+	// 16 iterations gives 1 ULP precision in our range. if log2a != 0
+	// it can be lower, but disregard this
+
+	/*
+	double power = - 1.0;
+
+	for (i = 1; i < 17; i++) {
+		power *= - z;
+		sum += power / i;
+	}
+	*/
+
+	// optimization: Horner's scheme for computing Taylor series
+
+	for (i = 16; i > 0; i--)
+		sum = z * ((1.0f / i) - sum);
+
+	return sum + log2a * (float) M_LN2;
+}
 
 float powf( float x, float y )
 {
@@ -1217,93 +1263,31 @@ static void AddInt( char **buf_p, char * const buf_end, int val, int width, int 
 	*buf_p = buf;
 }
 
-static void AddUInt( char **buf_p, char * const buf_end, unsigned int val, int width, int flags ) {
-	char	text[32];
-	int		digits;
-	unsigned int		div;
-	char	*buf;
-
-	digits = 0;
-
-	do {
-		div = val / 10;
-		text[digits++] = '0' + (val - div * 10);
-		val = div;
-	} while ( val );
-
-
-	buf = *buf_p;
-
-	if( !( flags & LADJUST ) ) {
-		while ( digits < width ) {
-			if ( buf < buf_end ) {
-				*buf = ( flags & ZEROPAD ) ? '0' : ' ';
-			}
-			buf++;
-			width--;
-		}
-	}
-
-	while ( digits-- ) {
-		if ( buf < buf_end ) {
-			*buf = text[digits];
-		}
-		buf++;
-		width--;
-	}
-
-	if( flags & LADJUST ) {
-		while ( width-- ) {
-			if ( buf < buf_end ) {
-				*buf = ( flags & ZEROPAD ) ? '0' : ' ';
-			}
-			buf++;
-		}
-	}
-
-	*buf_p = buf;
-}
-
 static void AddFloat( char **buf_p, char * const buf_end, float fval, int width, int prec, int flags ) {
 	char	text[32];
 	int		digits;
 	float	signedVal;
 	char	*buf;
 	int		val;
-	qboolean	isNaN = (qboolean)(fpclassify(fval) == FP_NAN);
-	qboolean	isInfinite = (qboolean)(fpclassify(fval) == FP_INFINITE);
 
+	// get the sign
+	signedVal = fval;
+	if ( fval < 0 ) {
+		fval = -fval;
+	}
+
+	// write the float number
 	digits = 0;
-	if(isNaN){
-		text[digits++] = 'n';
-		text[digits++] = 'a';
-		text[digits++] = 'n';
-	} else if(isInfinite){
-		if ( fval < 0 ) {
-			text[digits++] = '-';
-		}
-		text[digits++] = 'i';
-		text[digits++] = 'n';
-		text[digits++] = 'f';
-	} else {
-		// get the sign
-		signedVal = fval;
-		if ( fval < 0 ) {
-			fval = -fval;
-		}
+	val = (int)fval;
+	do {
+		text[digits++] = '0' + val % 10;
+		val /= 10;
+	} while ( val );
 
-		// write the float number
-		val = (int)fval;
-		do {
-			text[digits++] = '0' + val % 10;
-			val /= 10;
-		} while ( val );
-
-		if ( signedVal < 0 ) {
-			text[digits++] = '-';
-		} else if ( flags & SIGN ) {
-			text[digits++] = '+';
-		}
+	if ( signedVal < 0 ) {
+		text[digits++] = '-';
+	} else if ( flags & SIGN ) {
+		text[digits++] = '+';
 	}
 
 	buf = *buf_p;
@@ -1323,30 +1307,28 @@ static void AddFloat( char **buf_p, char * const buf_end, float fval, int width,
 		buf++;
 	}
 
-	if(!isNaN){
-		if (prec < 0)
-			prec = 6;
-		// write the fraction
-		digits = 0;
-		while (digits < prec) {
-			fval -= (int) fval;
-			fval *= 10.0;
-			val = (int) fval;
-			text[digits++] = '0' + val % 10;
-		}
+	if (prec < 0)
+		prec = 6;
+	// write the fraction
+	digits = 0;
+	while (digits < prec) {
+		fval -= (int) fval;
+		fval *= 10.0;
+		val = (int) fval;
+		text[digits++] = '0' + val % 10;
+	}
 
-		if (digits > 0) {
+	if (digits > 0) {
+		if (buf < buf_end) {
+			*buf = '.';
+		}
+		buf++;
+
+		for (prec = 0; prec < digits; prec++) {
 			if (buf < buf_end) {
-				*buf = '.';
+				*buf = text[prec];
 			}
 			buf++;
-
-			for (prec = 0; prec < digits; prec++) {
-				if (buf < buf_end) {
-					*buf = text[prec];
-				}
-				buf++;
-			}
 		}
 	}
 
@@ -1489,9 +1471,6 @@ reswitch:
 		case 'i':
 			AddInt( &buf_p, buf_end, va_arg(ap, int), width, flags );
 			break;
-		case 'u':
-			AddUInt( &buf_p, buf_end, va_arg(ap, unsigned int), width, flags );
-			break;
 		case 'f':
 			AddFloat( &buf_p, buf_end, va_arg(ap, double), width, prec, flags );
 			break;
@@ -1527,34 +1506,6 @@ done:
 }
 
 
-static void sscanf_stringparse( const char **stringPtr,char *out ) {
-	const char	*string;
-	float sign;
-	float value;
-	int		c = '0'; // bk001211 - uninitialized use possible
-
-	string = *stringPtr;
-
-	// skip whitespace
-	while ( *string <= ' ' ) {
-		if ( !*string ) {
-			*stringPtr = string;
-			*out = '\0';
-			return;
-		}
-		string++;
-	}
-
-	while(*string != ' ' && *string != '\0'){
-		*out = *string;
-		out++;
-		string++;
-	}
-	*out = '\0';
-}
-
-
-
 /* this is really crappy */
 int sscanf( const char *buffer, const char *fmt, ... ) {
 	int		cmd;
@@ -1579,9 +1530,6 @@ int sscanf( const char *buffer, const char *fmt, ... ) {
 		case 'u':
 			**arg = _atoi( &buffer );
 			break;
-		case 's':
-			sscanf_stringparse( &buffer,(char*)*arg ); // lol
-			break;
 		case 'f':
 			*(float *)*arg = _atof( &buffer );
 			break;
@@ -1592,357 +1540,4 @@ int sscanf( const char *buffer, const char *fmt, ... ) {
 	return count;
 }
 
-float roundf( float x ) {
-	if (x >= 0.0f)
-		x += 0.5f;
-	else
-		x -= 0.5f;
-
-	return (int) x;
-}
-
-float expf( float x )
-{
-    qboolean	invert = qfalse;
-    float		fracX;
-    float		result;
-	float		sum;
-	int			i;
-
-    if (x < 0.0f) {
-		invert = qtrue;
-		x = -x;
-    }
-
-    if (x > 1.0f) {
-		int intX = x; // truncf(x)
-		result = Q_pown(M_E, intX); // expf(intX)
-		fracX = x - intX;
-    } else {
-		result = 1.0f;
-		fracX = x;
-    }
-
-	// 11 was found experimentally, gives 1 ULP error in [0, 1] range
-
-	/*
-	sum = 1.0f;
-	float power = 1.0f;
-	for (i = 1; i < 12; i++) {
-		power *= fracX / i;
-		sum += power;
-	}
-	*/
-
-	// optimization: Horner's scheme for computing Taylor series
-
-	sum = 0.0f;
-
-	for (i = 11; i > 0; i--)
-		sum = 1.0f + fracX * sum / i;
-
-    // results has 1 ULP accuracy too
-    result *= sum;
-
-	// doesn't work for x < -88 because expf(-x) = inf. w/e
-    if (invert)
-		result = 1.0f / result;
-
-    return result;
-}
-
-float logf( float a )
-{
-	// using floats for intermediate results decreases accuracy by few
-	// ULP due to accumulation of round-off errors. acceptable
-	float	sum;
-	float	z;
-	float	fraca;
-	int		log2a;
-	int		i;
-
-	assert(a > 0.0f);
-
-	fraca = frexpf(a, &log2a);
-
-	// fraca is in [0.5, 1) range. Decent for Taylor series but we can
-	// make it [sqrt(0.5), sqrt(2))
-
-	if (fraca < (float) M_SQRT1_2) {
-		fraca *= 2.0f;
-		log2a--;
-	}
-
-	// a = fraca * 2^log2a
-	// ln(a) = ln(fraca) + log2a * ln(2)
-
-	// Taylor series around 1
-	z = fraca - 1.0f;
-	sum = 0.0f;
-
-	// 16 iterations gives 1 ULP precision in our range. if log2a != 0
-	// it can be lower, but disregard this
-
-	/*
-	double power = - 1.0;
-	for (i = 1; i < 17; i++) {
-		power *= - z;
-		sum += power / i;
-	}
-	*/
-
-	// optimization: Horner's scheme for computing Taylor series
-
-	for (i = 16; i > 0; i--)
-		sum = z * ((1.0f / i) - sum);
-
-	return sum + log2a * (float) M_LN2;
-}
-
-
-float copysignf(float number, float sign)
-{
-	uint32_t blah = ((*(uint32_t*)&number) & 0x7fffffff) | ((*(uint32_t*)&sign) & 0x80000000);
-	return *(float*)&blah;
-}
-
-/* from newlib:
-FUNCTION
-	<<memcmp>>---compare two memory areas
-
-INDEX
-	memcmp
-
-SYNOPSIS
-	#include <string.h>
-	int memcmp(const void *<[s1]>, const void *<[s2]>, size_t <[n]>);
-
-DESCRIPTION
-	This function compares not more than <[n]> characters of the
-	object pointed to by <[s1]> with the object pointed to by <[s2]>.
-
-
-RETURNS
-	The function returns an integer greater than, equal to or
-	less than zero 	according to whether the object pointed to by
-	<[s1]> is greater than, equal to or less than the object
-	pointed to by <[s2]>.
-
-PORTABILITY
-<<memcmp>> is ANSI C.
-
-<<memcmp>> requires no supporting OS subroutines.
-
-QUICKREF
-	memcmp ansi pure
-*/
-
-//#include <string.h>
-
-
-/* Nonzero if either X or Y is not aligned on a "long" boundary.  */
-#define UNALIGNED(X, Y) \
-  (((long)X & (sizeof (long) - 1)) | ((long)Y & (sizeof (long) - 1)))
-
-/* How many bytes are copied each iteration of the word copy loop.  */
-#define LBLOCKSIZE (sizeof (long))
-
-/* Threshhold for punting to the byte copier.  */
-#define TOO_SMALL(LEN)  ((LEN) < LBLOCKSIZE)
-
-int
-memcmp (const void *m1,
-	const void *m2,
-	size_t n)
-{
-#if defined(PREFER_SIZE_OVER_SPEED) || defined(__OPTIMIZE_SIZE__)
-  unsigned char *s1 = (unsigned char *) m1;
-  unsigned char *s2 = (unsigned char *) m2;
-
-  while (n--)
-    {
-      if (*s1 != *s2)
-	{
-	  return *s1 - *s2;
-	}
-      s1++;
-      s2++;
-    }
-  return 0;
-#else  
-  unsigned char *s1 = (unsigned char *) m1;
-  unsigned char *s2 = (unsigned char *) m2;
-  unsigned long *a1;
-  unsigned long *a2;
-
-  /* If the size is too small, or either pointer is unaligned,
-     then we punt to the byte compare loop.  Hopefully this will
-     not turn up in inner loops.  */
-  if (!TOO_SMALL(n) && !UNALIGNED(s1,s2))
-    {
-      /* Otherwise, load and compare the blocks of memory one 
-         word at a time.  */
-      a1 = (unsigned long*) s1;
-      a2 = (unsigned long*) s2;
-      while (n >= LBLOCKSIZE)
-        {
-          if (*a1 != *a2) 
-   	    break;
-          a1++;
-          a2++;
-          n -= LBLOCKSIZE;
-        }
-
-      /* check m mod LBLOCKSIZE remaining characters */
-
-      s1 = (unsigned char*)a1;
-      s2 = (unsigned char*)a2;
-    }
-
-  while (n--)
-    {
-      if (*s1 != *s2)
-	return *s1 - *s2;
-      s1++;
-      s2++;
-    }
-
-  return 0;
-#endif /* not PREFER_SIZE_OVER_SPEED */
-}
-
-
-// newlib: bsearch
-
-/*
- * bsearch.c
- * Original Author:	G. Haley
- * Rewritten by:	G. Noer
- *
- * Searches an array of nmemb members, the initial member of which is pointed
- * to by base, for a member that matches the object pointed to by key. The
- * contents of the array shall be in ascending order according to a comparison
- * function pointed to by compar. The function shall return an integer less
- * than, equal to or greater than zero if the first argument is considered to be
- * respectively less than, equal to or greater than the second. Returns a
- * pointer to the matching member of the array, or a null pointer if no match
- * is found.
- */
-
-/*
-FUNCTION
-<<bsearch>>---binary search
-
-INDEX
-	bsearch
-
-SYNOPSIS
-	#include <stdlib.h>
-	void *bsearch(const void *<[key]>, const void *<[base]>,
-		size_t <[nmemb]>, size_t <[size]>,
-		int (*<[compar]>)(const void *, const void *));
-
-DESCRIPTION
-<<bsearch>> searches an array beginning at <[base]> for any element
-that matches <[key]>, using binary search.  <[nmemb]> is the element
-count of the array; <[size]> is the size of each element.
-
-The array must be sorted in ascending order with respect to the
-comparison function <[compar]> (which you supply as the last argument of
-<<bsearch>>).
-
-You must define the comparison function <<(*<[compar]>)>> to have two
-arguments; its result must be negative if the first argument is
-less than the second, zero if the two arguments match, and
-positive if the first argument is greater than the second (where
-``less than'' and ``greater than'' refer to whatever arbitrary
-ordering is appropriate).
-
-RETURNS
-Returns a pointer to an element of <[array]> that matches <[key]>.  If
-more than one matching element is available, the result may point to
-any of them.
-
-PORTABILITY
-<<bsearch>> is ANSI.
-
-No supporting OS subroutines are required.
-*/
-
-void *
-bsearch (const void *key,
-	const void *base,
-	size_t nmemb,
-	size_t size,
-	int (*compar) (const void *, const void *))
-{
-  void *current;
-  size_t lower = 0;
-  size_t upper = nmemb;
-  size_t index;
-  int result;
-
-  if (nmemb == 0 || size == 0)
-    return NULL;
-
-  while (lower < upper)
-    {
-      index = (lower + upper) / 2;
-      current = (void *) (((char *) base) + (index * size));
-
-      result = compar (key, current);
-
-      if (result < 0)
-        upper = index;
-      else if (result > 0)
-        lower = index + 1;
-      else
-	return current;
-    }
-
-  return NULL;
-}
-
-
 #endif
-
-
-// adapted from newlib
-
-typedef union
-{
-  float value;
-  unsigned int word;
-} ieee_float_shape_type;
-
-/* Get a 32 bit int from a float.  */
-
-#define GET_FLOAT_WORD(i,d)					\
-do {								\
-  ieee_float_shape_type gf_u;					\
-  gf_u.value = (d);						\
-  (i) = gf_u.word;						\
-} while (0)
-
-
-
-int
-fpclassify (float x)
-{
-  unsigned int w;
-
-  GET_FLOAT_WORD(w,x);
-  
-  if (w == 0x00000000 || w == 0x80000000)
-    return FP_ZERO;
-  else if ((w >= 0x00800000 && w <= 0x7f7fffff) ||
-           (w >= 0x80800000 && w <= 0xff7fffff))
-    return FP_NORMAL;
-  else if ((w >= 0x00000001 && w <= 0x007fffff) ||
-           (w >= 0x80000001 && w <= 0x807fffff))
-    return FP_SUBNORMAL;
-  else if (w == 0x7f800000 || w == 0xff800000)
-    return FP_INFINITE;
-  else
-    return FP_NAN;
-}

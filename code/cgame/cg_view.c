@@ -3,8 +3,6 @@
 // cg_view.c -- setup all the parameters (position, angle, etc)
 // for a 3D rendering
 #include "cg_local.h"
-#include "cg_dbcmds.h"
-#include "../qcommon/fp16.h"
 
 #if !defined(CL_LIGHT_H_INC)
 	#include "cg_lights.h"
@@ -233,6 +231,8 @@ static struct {
 	float		lastYaw;
 	int			lastTime;
 	float		lastTimeFrac;
+	qboolean	smooth;			// Use new, smooth camera damping
+	int			fps;			// FPS to emulate with smooth camera damping
 } cam;
 
 /*
@@ -276,17 +276,17 @@ static void CG_CalcIdealThirdPersonViewTarget(void)
 	}
 
 	// Add in the new viewheight
-	//if ( cg.snap ) cam.focus[2] += cg.snap->ps.viewheight; //36 = standing, 12 = crouching. 
-	if (cg.snap) cam.focus[2] += cg.predictedPlayerState.viewheight; //Proper prediction
+	cam.focus[2] += cg.predictedPlayerState.viewheight; //Proper prediction
 
 	// Add in a vertical offset from the viewpoint, which puts the actual target above the head, regardless of angle.
 //	VectorMA(cam.focus, thirdPersonVertOffset, cameraup, cam.target.ideal);
-	
+
 	// Add in a vertical offset from the viewpoint, which puts the actual target above the head, regardless of angle.
 	VectorCopy( cam.focus, cam.target.ideal );
 	cam.target.ideal[2] += cg_thirdPersonVertOffset.value;
 	//VectorMA(cam.focus, cg_thirdPersonVertOffset.value, cameraup, cam.target.ideal);
 }
+
 
 
 /*
@@ -373,7 +373,7 @@ static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
 	// freeze when player is lagging
 	VectorCopy(pos->ideal, pos->prevIdeal);
 
-	if ( cg_cameraFPS.integer >= CAMERA_MIN_FPS )
+	if ( cam.smooth )
 	{
 		// FPS-independent solution thanks to semigroup property:
 		// If t1, t2 are positive time periods, dampfactor and
@@ -388,7 +388,7 @@ static void CG_DampPosition(dampPos_t *pos, float dampfactor, float dtime)
 		float	codampfactor;
 
 		// dtime is relative: physics time / emulated time
-		dtime *= cg_cameraFPS.value / 1000.0f;
+		dtime *= cam.fps / 1000.0f;
 		invdtime = 1.0f / dtime;
 		timeadjfactor = powf(dampfactor, dtime);
 		// shift = (idealDelta / dtime) * (dampfactor / (1 - dampfactor))
@@ -421,14 +421,14 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 	// Automatically get the ideal target, to avoid jittering.
 	CG_CalcIdealThirdPersonViewTarget();
 
-	if (cg_thirdPersonTargetDamp.value >= 1.0||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
+	if (cg_thirdPersonTargetDamp.value >= 1.0f||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
 	{	// No damping.
 		VectorClear(cam.target.damp);
-		cam.lastTime = 0;
 	}
 	else if (cg_thirdPersonTargetDamp.value > 0.0f)
-	{	
+	{
 		dampfactor = 1.0f - cg_thirdPersonTargetDamp.value;	// We must exponent the amount LEFT rather than the amount bled off
+
 		CG_DampPosition(&cam.target, dampfactor, dtime);
 	}
 	else
@@ -441,7 +441,6 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
 	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, target, cg.snap->ps.clientNum, MASK_CAMERACLIP);
-
 	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
@@ -469,9 +468,7 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 	{
 		// Note that the camera pitch has already been capped off to 89.
 		// The higher the pitch, the larger the factor, so as you look up, it damps a lot less.
-
-		pitch /= 115.0f; // jk2mv has 89.0 here but im keeping it since ppl liked how eternal feels?
-
+		pitch /= 89.0f;
 		dampfactor = (1.0f - cg_thirdPersonCameraDamp.value) * pitch * pitch;
 
 		dampfactor += cg_thirdPersonCameraDamp.value;
@@ -483,10 +480,9 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 		}
 	}
 
-	if (dampfactor>=1.0f||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
+	if (dampfactor >= 1.0f||cg_strafeHelper.integer & (1<<0)||cg_strafeHelper.integer & (1<<1)||cg_strafeHelper.integer & (1<<2)||cg_strafeHelper.integer & (1<<3)||cg_strafeHelper.integer & (1<<13))
 	{	// No damping.
 		VectorClear(cam.loc.damp);
-		cam.lastTime = 0;
 	}
 	else if (dampfactor > 0.0f)
 	{
@@ -522,7 +518,7 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 				{
 					vec3_t	diff;
 					VectorSubtract( cent->lerpOrigin, gent->currentOrigin, diff );
-					VectorAdd( cameraCurLoc, diff, cameraCurLoc );
+					VectorAdd( location, diff, location );
 				}
 			}
 		}
@@ -542,14 +538,20 @@ CG_OffsetThirdPersonView
 
 ===============
 */
-extern vmCvar_t cg_thirdPersonHorzOffset;
-
 static void CG_OffsetThirdPersonView( void )
 {
 	vec3_t	target, location, diff;
 	vec3_t	focusAngles;
 	float	dtime;
 
+	// Establish camera damping parameters
+	if (cg_smoothCameraFPS.integer) {
+		cam.fps = cg_smoothCameraFPS.integer;
+	} else if (cg_com_maxfps.integer) {
+		cam.fps = MIN(cg_com_maxfps.integer, 1000);
+	}
+
+	cam.smooth = cg_smoothCamera.integer && (cam.fps >= CAMERA_MIN_FPS);
 
 	// Set camera viewing direction.
 	VectorCopy( cg.refdefViewAngles, focusAngles );
@@ -593,12 +595,12 @@ static void CG_OffsetThirdPersonView( void )
 		float	deltayaw;
 		float	pitch;
 
-		deltayaw = Q_fabs(focusAngles[YAW] - cam.lastYaw);
+		deltayaw = fabs(focusAngles[YAW] - cam.lastYaw);
 		if (deltayaw > 180.0f)
 		{ // Normalize this angle so that it is between 0 and 180.
-			deltayaw = Q_fabs(deltayaw - 360.0f);
+			deltayaw = fabs(deltayaw - 360.0f);
 		}
-		if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
+		if (cam.smooth) {
 			if ( dtime > 0.0f ) {
 				stiffFactor = deltayaw / dtime;
 			} else {
@@ -928,7 +930,7 @@ qboolean CG_CalcFOVFromX( float fov_x )
 	float	fov_y;
 	qboolean	inwater;
 
-	x = cg.refdef.width / tanf( fov_x / 360 * M_PI );
+	x = cg.refdef.width / tan( fov_x / 360 * M_PI );
 	fov_y = atan2( cg.refdef.height, x );
 	fov_y = fov_y * 360 / M_PI;
 
@@ -1294,12 +1296,9 @@ static int CG_CalcViewValues( void ) {
 		return CG_CalcFov();
 	}
 
-	cg.refclient = ps->clientNum;
-	cg.refteam = ps->persistant[PERS_TEAM];
-
 	cg.bobcycle = ( ps->bobCycle & 128 ) >> 7;
 	cg.bobfracsin = fabs( sin( ( ps->bobCycle & 127 ) / 127.0 * M_PI ) );
-	cg.xyspeed = sqrtf( ps->velocity[0] * ps->velocity[0] +
+	cg.xyspeed = sqrt( ps->velocity[0] * ps->velocity[0] +
 		ps->velocity[1] * ps->velocity[1] );
 
 	if (cg.xyspeed > 270)
@@ -1387,7 +1386,7 @@ void CG_AddBufferedSound( sfxHandle_t sfx ) {
 	cg.soundBuffer[cg.soundBufferIn] = sfx;
 	cg.soundBufferIn = (cg.soundBufferIn + 1) % MAX_SOUNDBUFFER;
 	if (cg.soundBufferIn == cg.soundBufferOut) {
-		cg.soundBufferOut = (cg.soundBufferOut + 1) % MAX_SOUNDBUFFER;
+		cg.soundBufferOut++;
 	}
 }
 
@@ -1497,7 +1496,7 @@ void CG_SE_UpdateMusic(void)
 		{
 			char musMultStr[512];
 
-			cgScreenEffects.music_volume_multiplier += 0.1f;
+			cgScreenEffects.music_volume_multiplier += 0.1;
 			if (cgScreenEffects.music_volume_multiplier > 1.0)
 			{
 				cgScreenEffects.music_volume_multiplier = 1.0;
@@ -1617,243 +1616,6 @@ ID_INLINE void CG_DoAsync(void) {
 	}
 }
 
-static void CG_AutoFollowCheckManualInputs() {
-	static int oldCmdnum = 0;
-	int cmdnum = trap_GetCurrentCmdNumber();
-	usercmd_t ucmd;
-
-	if (oldCmdnum < (cmdnum - 32)) {
-		oldCmdnum = cmdnum - 32;
-	}
-
-	while (oldCmdnum < cmdnum) {
-		trap_GetUserCmd(oldCmdnum + 1, &ucmd);
-		if ((ucmd.buttons & BUTTON_ATTACK) || (ucmd.buttons & BUTTON_ALT_ATTACK) || ucmd.upmove > 0) {
-			// i pressed attack or space. let me just spec or do whatever i want to for a while.
-			cg.lastManualCommandInterruptingAutoFollow = ucmd.serverTime;
-		}
-		oldCmdnum++;
-	}
-
-	oldCmdnum = cmdnum;
-}
-
-static void CG_AutoFollow() {
-	int i;
-	vec3_t deltaVector;
-	qboolean timePassedSinceFlagStateChange;
-	qboolean currentClientAfk;
-	qboolean thisClientAfk;
-
-	if (cg.demoPlayback || cgs.clientinfo[cg.clientNum].team != TEAM_SPECTATOR || !cg.snap) return;
-
-	CG_AutoFollowCheckManualInputs();
-
-	if (cg_autoFollowManualInterruptDuration.integer && cg.lastManualCommandInterruptingAutoFollow > cg.time-(cg_autoFollowManualInterruptDuration.integer*1000) && cg.lastManualCommandInterruptingAutoFollow -1000 < cg.time) {
-		return;
-	}
-
-	currentClientAfk = ((cgs.afkInfo[cg.snap->ps.clientNum].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer*1000) < cg.time) && ((cgs.afkInfo[cg.snap->ps.clientNum].lastNotSeen + cg_autoFollowUnfollowAFKReDelay.integer * 1000) < cg.time);
-
-	timePassedSinceFlagStateChange = (cg.time - cgs.anyFlagLastChange) > 2000;
-
-	if (cg.time > cg.lastAutoFollowSent && (cg.time - cg.lastAutoFollowSent) < 2000) return; // Limit the auto follow commands to once every 2 seconds
-
-	// In case we get stuck trying to follow someone who can't be followed... have a backup plan.
-	// Detect if we haven't followed anyone for 10 seconds.
-	if (cg.predictedPlayerState.persistant[PERS_TEAM] != TEAM_SPECTATOR || cg.lastTimeFollowing > cg.time) {
-		cg.lastTimeFollowing = cg.time;
-	}
-	if (cg.lastTimeFollowing + 10000 < cg.time && cg.lastAutoFollowSent > cg.lastTimeFollowing) {
-		// Seems we are failing to follow anybody. Press attack.
-		trap_SendConsoleCommand("+attack;wait 5;-attack");
-		cg.lastAutoFollowSent = cg.time;
-		return;
-	}
-
-	if (cg_autoFollow.integer > 1 && (cgs.gametype == GT_CTF || cgs.gametype == GT_CTY) && (cgs.redFlagCarrier || cgs.blueFlagCarrier || !timePassedSinceFlagStateChange)) {
-		int followStateChangeTimeout = 10000;
-		int followNum = -1;
-
-		// If someone has a very long flag hold, stay near him longer
-		if (cg.autoFollowState == AUTOFOLLOW_BLUE && (cg.time - cgs.blueFlagTime) > 120000
-			|| cg.autoFollowState == AUTOFOLLOW_RED && (cg.time - cgs.redFlagTime) > 120000
-			) {
-			followStateChangeTimeout = 15000;
-		} else if (cg.autoFollowState == AUTOFOLLOW_BLUE && (cg.time - cgs.blueFlagTime) > 180000
-			|| cg.autoFollowState == AUTOFOLLOW_RED && (cg.time - cgs.redFlagTime) > 180000
-			) {
-			followStateChangeTimeout = 20000;
-		}
-
-		if (cg.autoFollowState == AUTOFOLLOW_BLUE && cgs.blueflag == FLAG_ATBASE && cgs.redflag != FLAG_ATBASE
-			|| cg.autoFollowState == AUTOFOLLOW_RED && cgs.blueflag != FLAG_ATBASE && cgs.redflag == FLAG_ATBASE
-			) {
-			followStateChangeTimeout = 2000; // If the flag is at base, follow the other flag instead, or wait less time to follow the other flag
-		}
-		if (cg.time < cg.lastAutoFollowStateChange || (cg.time - cg.lastAutoFollowStateChange) > followStateChangeTimeout) {
-			if (timePassedSinceFlagStateChange) {
-				// Don't change auto follow state immediately after the flag changes its state, don't wanna hectically flip around while
-				// lots of stuff is going on.
-				cg.autoFollowState = cg.autoFollowState == AUTOFOLLOW_BLUE ? AUTOFOLLOW_RED : AUTOFOLLOW_BLUE;
-				cg.lastAutoFollowStateChange = cg.time;
-			}
-		}
-
-		if (!timePassedSinceFlagStateChange) return;
-
-		if (cg.autoFollowState == AUTOFOLLOW_RED && cgs.redFlagCarrier) {
-			int clientNum = (cgs.redFlagCarrier - cgs.clientinfo);
-			followNum = clientNum;
-			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
-				int highestRetCount = -9999999;
-				int highestRetCountClient = -1;
-				int currentRetCount = cg.predictedPlayerState.clientNum != cg.clientNum ? cg.predictedPlayerState.persistant[PERS_IMPRESSIVE_COUNT] : INT_MIN;
-
-				//if (!timePassedSinceFlagStateChange) return;
-
-				// Currently visible. Check for nearby rets
-				for (i = 0; i < MAX_CLIENTS; i++) {
-					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team == TEAM_RED && (cg_entities[i].currentValid || cg.predictedPlayerState.clientNum == i)) {
-						VectorSubtract(cg_entities[i].lerpOrigin, cg_entities[clientNum].lerpOrigin, deltaVector);
-						if (VectorLength(deltaVector) < 2000) {
-							if (cgs.lastValidScoreboardEntry[i].impressiveCount > highestRetCount) {
-								highestRetCount = cgs.lastValidScoreboardEntry[i].impressiveCount;
-								highestRetCountClient = i;
-							}
-						}
-					}
-				}
-
-				if (highestRetCountClient != -1 && (highestRetCount > currentRetCount || followNum == clientNum)) {
-					followNum = highestRetCountClient;
-				}
-			}
-		} else if (cg.autoFollowState == AUTOFOLLOW_BLUE && cgs.blueFlagCarrier) {
-			int clientNum = (cgs.blueFlagCarrier - cgs.clientinfo);
-			followNum = clientNum;
-			if (cg_entities[clientNum].currentValid || cg.predictedPlayerState.clientNum == clientNum) {
-				int highestRetCount = -9999999;
-				int highestRetCountClient = -1;
-				int currentRetCount = cg.predictedPlayerState.clientNum != cg.clientNum ? cg.predictedPlayerState.persistant[PERS_IMPRESSIVE_COUNT] : INT_MIN;
-
-				//if (!timePassedSinceFlagStateChange) return;
-
-				// Currently visible. Check for nearby rets
-				for (i = 0; i < MAX_CLIENTS; i++) {
-					if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR && cgs.clientinfo[i].team == TEAM_BLUE && (cg_entities[i].currentValid || cg.predictedPlayerState.clientNum == i)) {
-						VectorSubtract(cg_entities[i].lerpOrigin, cg_entities[clientNum].lerpOrigin, deltaVector);
-						if (VectorLength(deltaVector) < 2000) {
-							if (cgs.lastValidScoreboardEntry[i].impressiveCount > highestRetCount) {
-								highestRetCount = cgs.lastValidScoreboardEntry[i].impressiveCount;
-								highestRetCountClient = i;
-							}
-						}
-					}
-				}
-
-				if (highestRetCountClient != -1 && (highestRetCount > currentRetCount || followNum == clientNum)) {
-					followNum = highestRetCountClient;
-				}
-			}
-		}
-		
-		if (followNum != -1 && cg.predictedPlayerState.clientNum != followNum) {
-			trap_SendClientCommand(va("follow %d", followNum));
-			cg.lastAutoFollowSent = cg.time;
-		}
-	}
-	else if(cg_autoFollow.integer > 1 || cg.predictedPlayerState.persistant[PERS_TEAM] == TEAM_SPECTATOR || (currentClientAfk && cg_autoFollowUnfollowAFKDelay.integer)) {
-		// FFA or cg_autoFollow 1. Just follow someone.
-		int highestScore = -9999999;
-		int highestScoreClient = -1;
-		int currentScore = cg.predictedPlayerState.clientNum != cg.clientNum ? cg.predictedPlayerState.persistant[PERS_SCORE] : INT_MIN;
-		for (i = 0; i < MAX_CLIENTS; i++) {
-
-			if (cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team != TEAM_SPECTATOR) {
-
-				if (cg_autoFollowUnfollowAFKDelay.integer) {
-					if (currentClientAfk && i == cg.snap->ps.clientNum) continue;
-					thisClientAfk = ((cgs.afkInfo[i].lastMovementDirChange + cg_autoFollowUnfollowAFKDelay.integer * 1000) < cg.time)
-						&& (
-							(cgs.afkInfo[i].lastSeen < cgs.afkInfo[i].lastNotSeen
-							&& (cgs.afkInfo[i].lastSeen + cg_autoFollowUnfollowAFKSwitchBackDelay.integer * 1000) > cg.time) 
-						|| 
-							(cgs.afkInfo[i].lastSeen > cgs.afkInfo[i].lastNotSeen && 
-							((cgs.afkInfo[i].lastSeen - cgs.afkInfo[i].lastNotSeen) > (cg_autoFollowUnfollowAFKReDelay.integer * 1000)))
-						);
-					if (thisClientAfk) continue;
-				}
-
-				if (cgs.lastValidScoreboardEntry[i].score > highestScore) {
-					highestScore = cgs.lastValidScoreboardEntry[i].score;
-					highestScoreClient = i;
-				}
-			}
-		}
-		if (highestScoreClient != -1 && cg.predictedPlayerState.clientNum != highestScoreClient && highestScore > currentScore) {
-			trap_SendClientCommand(va("follow %d", highestScoreClient));
-			cg.lastAutoFollowSent = cg.time;
-		}
-	}
-}
-
-extern void CG_UpdateWidescreen(void);
-static void CG_CheckWindowResize() {
-	vmglconfig_t glconfig;
-
-	if (coolApi & COOL_APIFEATURE_RESOLUTIONCHANGED) {
-		if (trap_CG_COOL_API_GlResolutionChanged(cgs.glconfig.vidWidth, cgs.glconfig.vidHeight)) {
-
-			trap_GetGlconfig(&cgs.glconfig);
-			cgs.screenXScale = cgs.glconfig.vidWidth / (float)SCREEN_WIDTH;
-			cgs.screenYScale = cgs.glconfig.vidHeight / (float)SCREEN_HEIGHT;
-
-			CG_UpdateWidescreen();
-		}
-	}
-
-
-}
-
-// from openmohaa.
-void CG_AddLightShow()
-{
-	int i;
-	float fSlopeY, fSlopeZ;
-	float x, y, z;
-	vec3_t vOrg;
-	float r, g, b;
-	float fMax;
-
-	fSlopeY = tan(cg.refdef.fov_x * 0.5);
-	fSlopeZ = tan(cg.refdef.fov_y * 0.5);
-
-	for (i = 0; i < cg_acidtrip.integer; i++) {
-		x = powf(random(), 1.0 / 3.0) * 2048.0;
-		y = crandom() * x * fSlopeY;
-		z = crandom() * x * fSlopeZ;
-
-		VectorCopy(cg.refdef.vieworg, vOrg);
-		VectorMA(vOrg, x, cg.refdef.viewaxis[0], vOrg);
-		VectorMA(vOrg, y, cg.refdef.viewaxis[1], vOrg);
-		VectorMA(vOrg, z, cg.refdef.viewaxis[2], vOrg);
-
-		r = random();
-		g = random();
-		b = random();
-
-		fMax = MAX(r, MAX(g, b));
-		r /= fMax;
-		g /= fMax;
-		b /= fMax;
-
-		//cgi.R_AddLightToScene(vOrg, (rand() & 0x1FF) + 0x80, r, g, b, 0);
-		trap_R_AddLightToScene(vOrg, (rand() & 0x1FF) + 0x80, r, g, b);
-	}
-}
-
-void CG_CheckQuiGon();
 /*
 =================
 CG_DrawActiveFrame
@@ -1867,8 +1629,6 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
 
-	CG_CheckWindowResize();
-
 	if (cg.snap && cg_ui_myteam.integer != cg.snap->ps.persistant[PERS_TEAM]) {
 		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW || cg.snap->ps.pm_type == PM_SPECTATOR))
 			trap_Cvar_Set( "ui_myteam", va("%i", cg.snap->ps.persistant[PERS_TEAM]) );
@@ -1880,9 +1640,6 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 
 	// update cvars
 	CG_UpdateCvars();
-	CG_CheckQuiGon();
-
-	CG_DB_CheckResponses();
 
 	// if we are only updating the screen as a loading
 	// pacifier, don't even try to read snapshots
@@ -1905,11 +1662,6 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	// set up cg.snap and possibly cg.nextSnap
 	CG_ProcessSnapshots();
 
-	if (cg.snap && cgs.lastPsClientNum != cg.snap->ps.clientNum && (cg_forceMyModel.string[0] != '\0' || cg_forceMySaber.string[0] != '\0')) {
-		cgs.lastPsClientNum = cg.snap->ps.clientNum;
-		CG_ForceModelChange(); // if forcemysaber/forcemymodel is active, we need to update when playerstate clientnum changes (e.g. when in spectator mode)
-	}
-
 	trap_ROFF_UpdateEntities();
 
 	// if we haven't received any snapshots yet, all
@@ -1919,91 +1671,19 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		return;
 	}
 
-	//japro restrictions in racemode
-	// TODO actually implement cgs.restricts and stuff
-	if (cgs.isTommyTernal) {
-		if (cg.snap && cg.snap->ps.stats[STAT_RACEMODE] && !(cg.predictedPlayerState.pm_flags & PMF_FOLLOW) && (cg.predictedPlayerState.persistant[PERS_TEAM] != TEAM_SPECTATOR)) {
-			if (cgs.restricts & RESTRICT_YAW) {
-				char yawBuf[64];
-				char yawString[16] = { 0 };
-
-				yawString[0] = 'c';
-				yawString[1] = 'l';
-				yawString[2] = '_';
-				yawString[3] = 'y';
-				yawString[4] = 'a';
-				yawString[5] = 'w';
-				yawString[6] = 's';
-				yawString[7] = 'p';
-				yawString[8] = 'e';
-				yawString[9] = 'e';
-				yawString[10] = 'd';
-				yawString[11] = '\0';
-
-				trap_Cvar_VariableStringBuffer(yawString, yawBuf, sizeof(yawBuf));
-
-				if (atoi(yawBuf) != 0)
-					trap_Cvar_Set(yawString, "0");
-			}
-			//if (cgs.restricts & RESTRICT_ANGLE && cg.xyspeed && cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] != MV_BOTJKA) {
-			if (cgs.restricts & RESTRICT_ANGLE && cg.xyspeed && !(cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_BOT)) {
-				char angleBuf[64];
-				char angleString[32] = { 0 };
-
-				angleString[0] = 'c';
-				angleString[1] = 'g';
-				angleString[2] = '_';
-				angleString[3] = 't';
-				angleString[4] = 'h';
-				angleString[5] = 'i';
-				angleString[6] = 'r';
-				angleString[7] = 'd';
-				angleString[8] = 'p';
-				angleString[9] = 'e';
-				angleString[10] = 'r';
-				angleString[11] = 's';
-				angleString[12] = 'o';
-				angleString[13] = 'n';
-				angleString[14] = 'a';
-				angleString[15] = 'n';
-				angleString[16] = 'g';
-				angleString[17] = 'l';
-				angleString[18] = 'e';
-				angleString[19] = '\0';
-
-				trap_Cvar_VariableStringBuffer(angleString, angleBuf, sizeof(angleBuf));
-
-				if (atoi(angleBuf) != 0)
-					trap_Cvar_Set(angleString, "0");
-			}
-		}
-	}
-	//end
-
 	// let the client system know what our weapon and zoom settings are
 	if (cg.snap && cg.snap->ps.saberLockTime > cg.time)
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, 0.01f, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue(0, NULL, 0, cg.weaponSelect, cg.forceSelect, cg.itemSelect, 0, 0, 0, 0, 0.01f, USERCMD_SET_WEAPON | USERCMD_SET_FORCESEL | USERCMD_SET_INVENSEL | USERCMD_SET_SENSITIVITYSCALE);
 	}
 	else if (cg.snap && cg.snap->ps.usingATST)
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, 0.2f, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue(0, NULL, 0, cg.weaponSelect, cg.forceSelect, cg.itemSelect, 0, 0, 0, 0, 0.2f, USERCMD_SET_WEAPON | USERCMD_SET_FORCESEL | USERCMD_SET_INVENSEL | USERCMD_SET_SENSITIVITYSCALE);
 	}
 	else
 	{
-		trap_SetUserCmdValue( cg.weaponSelect, cg.zoomSensitivity, cg.forceSelect, cg.itemSelect );
+		trap_SetUserCmdValue(0, NULL, 0, cg.weaponSelect, cg.forceSelect, cg.itemSelect, 0, 0, 0, 0, cg.zoomSensitivity, USERCMD_SET_WEAPON | USERCMD_SET_FORCESEL | USERCMD_SET_INVENSEL | USERCMD_SET_SENSITIVITYSCALE);
 	}
-
-	if(coolApi & COOL_APIFEATURE_SETUSERANGLES) {
-		if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_BOT)) {
-			short convertedValue = fp16_ieee_from_fp32_value(cg_strafebotFactor.value-1.0f);
-			trap_CG_COOL_API_SetUserAngles(0, 0, convertedValue, 4); // we tunnel the strafebot offset value through roll. roll is fkin useless anyway. :)
-		}
-		else {
-			trap_CG_COOL_API_SetUserAngles(0, 0, 0, 0);
-		}
-	}
-
 
 	// this counter will be bumped for every valid scene we generate
 	cg.clientFrame++;
@@ -2013,9 +1693,6 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 
 	// decide on third person view
 	cg.renderingThirdPerson = (cg_thirdPerson.integer || cg.snap->ps.stats[STAT_HEALTH] <= 0) && cg.snap->ps.pm_type != PM_SPECTATOR;
-
-	// update speedometer
-	CG_AddSpeed();
 
 	if (cg.snap->ps.stats[STAT_HEALTH] > 0 && (cg.predictedPlayerState.weapon == WP_SABER || cg.predictedPlayerState.usingATST ||
 		cg.predictedPlayerState.forceHandExtend == HANDEXTEND_KNOCKDOWN || cg.predictedPlayerState.fallingToDeath))
@@ -2117,24 +1794,8 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 		}
 	}
 
-	// from openmohaa
-	if (cg_acidtrip.integer) {
-		// lol disco
-		CG_AddLightShow();
-	}
-
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );
-
-	// Fetch scoreboard regularly even if we are not viewing it.
-	if (cg_autoScoreboardFetchInterval.integer && !cg.demoPlayback && (cg.lastScoresReceived > cg.time || (cg.time - cg.lastScoresReceived) > (cg_autoScoreboardFetchInterval.integer * 1000)) && cg.scoresRequestTime + 2000 < cg.time) { //don't clear the scoreboard when watching a demo
-		cg.scoresRequestTime = cg.time;
-		trap_SendClientCommand("score");
-	}
-
-	if (cg_autoFollow.integer) {
-		CG_AutoFollow();
-	}
 
 	//jk2pro
 	CG_DoAsync();
