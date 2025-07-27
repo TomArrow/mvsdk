@@ -2121,7 +2121,7 @@ int SavePathData(const char *filename)
 
 		Com_sprintf(storeString, 4096, "%s} %f\n", storeString, flLen);
 
-		strcat(fileString, storeString);
+		strncat(fileString, storeString, sizeof(fileString) - strlen(fileString) - 1);
 
 		i++;
 	}
