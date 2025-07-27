@@ -1,6 +1,8 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 
+#ifndef CG_PUBLIC_H
+#define CG_PUBLIC_H
 
 #define	CMD_BACKUP			512//JAPRO - FPS UNLOCK ENGINE		
 #define	CMD_MASK			(CMD_BACKUP - 1)
@@ -620,4 +622,6 @@ typedef struct
 #define USERCMD_SET_FORWARDMOVE       (1U << 7U)
 #define USERCMD_SET_RIGHTMOVE         (1U << 8U)
 #define USERCMD_SET_UPMOVE            (1U << 9U)
+
+#endif // CG_PUBLIC_H
 #define USERCMD_SET_SENSITIVITYSCALE  (1U << 10U)

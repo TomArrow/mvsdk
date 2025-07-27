@@ -27,7 +27,6 @@ message(STATUS "${MVSDK} Version: ${MVSDK_VERSION}")
 
 # Languages
 enable_language(C)
-set(CMAKE_C_STANDARD 99)
 
 if(CMAKE_CONFIGURATION_TYPES)
 	set(MultiConfigGenerator TRUE)
@@ -116,7 +115,8 @@ set(RCC "q3rcc")
 set(ASM "q3asm")
 
 # Directories
-set(QVMDir "${CMAKE_BINARY_DIR}/build/vm")
+set(SRCDir "${CMAKE_CURRENT_SOURCE_DIR}/code")
+set(QVMDir "${CMAKE_BINARY_DIR}/out/vm")
 
 if(MultiConfigGenerator)
 	# Visual Studio, Xcode etc. support selecting build type in the IDE and automatically append
@@ -208,8 +208,5 @@ endif()
 if(BuildQVMs)
 	add_subdirectory("tools")
 endif()
-
-# Directories
-set(SRCDir "${CMAKE_CURRENT_SOURCE_DIR}/code")
 
 add_subdirectory(${SRCDir})
