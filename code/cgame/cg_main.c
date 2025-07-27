@@ -757,6 +757,7 @@ vmCvar_t cg_debugSaberBox;
 vmCvar_t cg_debugSaberBox_usePrediction;
 vmCvar_t cg_friendsChatsOnly;
 
+
 vmCvar_t cg_autoAim;
 vmCvar_t cg_autoAim_debug;
 vmCvar_t cg_autoAim_usePrediction;
@@ -933,10 +934,6 @@ static cvarTable_t cvarTable[] = {
 	{&cg_swingAngles, "cg_swingAngles", "1", 0},
 
 	{&cg_oldPainSounds, "cg_oldPainSounds", "0", 0},
-
-#ifdef G2_COLLISION_ENABLED
-	{&cg_oldPainSounds, "cg_oldPainSounds", "0", 0},
-
 #ifdef G2_COLLISION_ENABLED
 	{ &cg_saberModelTraceEffect, "cg_saberModelTraceEffect", "0", CVAR_ARCHIVE  },
 	{&cg_saberModelTraceEffect, "cg_saberModelTraceEffect", "0", 0},
@@ -964,7 +961,6 @@ static cvarTable_t cvarTable[] = {
 
 	{&cg_animBlend, "cg_animBlend", "1", 0},
 
-=======
 	{ &cg_dismember, "cg_dismember", "2", CVAR_ARCHIVE },
 	{&cg_dismember, "cg_dismember", "0", CVAR_ARCHIVE},
 
@@ -1224,6 +1220,54 @@ static cvarTable_t cvarTable[] = {
 
 	{&cg_MVSDK, "cg_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_USERINFO},
 
+	//	{ &cg_pmove_fixed, "cg_pmove_fixed", "0", CVAR_USERINFO | CVAR_ARCHIVE }
+	/*
+	Ghoul2 Insert Start
+	*/
+	{&cg_debugBB, "debugBB", "0", 0},
+	/*
+	Ghoul2 Insert End
+	*/
+	{&cg_redTeamName, "g_redteam", DEFAULT_REDTEAM_NAME, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_USERINFO},
+	{&cg_blueTeamName, "g_blueteam", DEFAULT_BLUETEAM_NAME, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_USERINFO},
+	{&cg_currentSelectedPlayer, "cg_currentSelectedPlayer", "0", CVAR_ARCHIVE},
+	{&cg_currentSelectedPlayerName, "cg_currentSelectedPlayerName", "", CVAR_ARCHIVE},
+	{&cg_singlePlayer, "ui_singlePlayerActive", "0", CVAR_USERINFO},
+	{&cg_enableDust, "g_enableDust", "0", 0},
+	{&cg_enableBreath, "g_enableBreath", "0", 0},
+	{&cg_singlePlayerActive, "ui_singlePlayerActive", "0", CVAR_USERINFO},
+	{&cg_recordSPDemo, "ui_recordSPDemo", "0", CVAR_ARCHIVE},
+	{&cg_recordSPDemoName, "ui_recordSPDemoName", "", CVAR_ARCHIVE},
+
+	{&cg_cameraOrbit, "cg_cameraOrbit", "0", CVAR_CHEAT},
+	{&cg_cameraOrbitDelay, "cg_cameraOrbitDelay", "50", CVAR_ARCHIVE},
+	{&cg_timescaleFadeEnd, "cg_timescaleFadeEnd", "1", 0},
+	{&cg_timescaleFadeSpeed, "cg_timescaleFadeSpeed", "0", 0},
+	{&cg_timescale, "timescale", "1", 0},
+	{&cg_scorePlum, "cg_scorePlums", "1", CVAR_USERINFO | CVAR_ARCHIVE},
+	{&cg_hudFiles, "cg_hudFiles", "0", CVAR_USERINFO | CVAR_ARCHIVE},
+	{&cg_smoothClients, "cg_smoothClients", "0", CVAR_USERINFO | CVAR_ARCHIVE},
+	{&cg_cameraMode, "com_cameraMode", "0", CVAR_CHEAT},
+
+	{&cg_pmove_fixed, "pmove_fixed", "0", CVAR_SERVERINFO},
+	{&cg_pmove_msec, "pmove_msec", "8", CVAR_SERVERINFO},
+	{&cg_pmove_float, "pmove_float", "0", CVAR_SERVERINFO},
+	{&cg_noTaunt, "cg_noTaunt", "0", CVAR_ARCHIVE},
+	{&cg_noProjectileTrail, "cg_noProjectileTrail", "0", CVAR_ARCHIVE},
+	{&cg_smallFont, "ui_smallFont", "0.25", CVAR_ARCHIVE},
+	{&cg_bigFont, "ui_bigFont", "0.4", CVAR_ARCHIVE},
+	{&cg_trueLightning, "cg_trueLightning", "0.0", CVAR_ARCHIVE},
+
+	{&cg_ui_myteam, "ui_myteam", "0", CVAR_ROM | CVAR_INTERNAL},
+	{&cg_com_maxfps, "com_maxfps", "", 0},
+
+	{&cg_developer, "cg_developer", "0", CVAR_TEMP},
+	{&cg_mv_fixbrokenmodelsclient, "mv_fixbrokenmodelsclient", "2", CVAR_ARCHIVE},
+	{&cg_drawPlayerSprites, "cg_drawPlayerSprites", "3", CVAR_ARCHIVE},
+	{&cg_smoothCamera, "cg_smoothCamera", "1", CVAR_ARCHIVE},
+	{&cg_smoothCameraFPS, "cg_smoothCameraFPS", "0", CVAR_ARCHIVE},
+
+	{&cg_MVSDK, "cg_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_USERINFO},
 	//	{ &cg_pmove_fixed, "cg_pmove_fixed", "0", CVAR_USERINFO | CVAR_ARCHIVE }
 	/*
 	Ghoul2 Insert Start
@@ -1878,7 +1922,7 @@ static void CG_RegisterSounds( void ) {
 		trap_S_RegisterSound(va("sound/weapons/saber/bounce%i.wav", i));
 	}
 
-	for (i = 0; i < 5; i++) {//JAPRO - Clientside - Use all saber hum sounds
+	for ( i = 0; i < 5; i++) {//JAPRO - Clientside - Use all saber hum sounds
 		cgs.media.saberHumSounds[i] = trap_S_RegisterSound(va("sound/weapons/saber/saberhum%i.wav", i + 1));
 		if (!cgs.media.saberHumSounds[i])
 			Com_Printf("failed to register sound \"sound/weapons/saber/saberhum%i.wav\"\n", i + 1);
@@ -2337,7 +2381,7 @@ static void CG_RegisterGraphics( void ) {
 		cgs.media.teamRedShader = trap_R_RegisterShader( "sprites/team_red" );
 	}
 
-	cgs.media.armorModel = 0;//trap_R_RegisterModel( "models/powerups/armor/armor_yel.md3" );
+	cgs.media.armorModel	= 0;//trap_R_RegisterModel( "models/powerups/armor/armor_yel.md3" );
 	cgs.media.armorIcon  = 0;//trap_R_RegisterShaderNoMip( "icons/iconr_yellow" );
 
 	cgs.media.heartShader			= trap_R_RegisterShaderNoMip( "ui/assets/statusbar/selectedhealth.tga" );
@@ -2498,6 +2542,89 @@ Ghoul2 Insert End
 	}
 */
 }
+
+
+// --- V24 Enhanced Features: Friend System Console Commands ---
+void CG_AddFriend_f(void) {
+	int clientNum;
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	if (trap_Argc() < 2) {
+		CG_Printf("^3Usage: /addfriend <client number>\n");
+		return;
+	}
+	clientNum = atoi(CG_Argv(1));
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS) {
+		CG_Printf("^1Invalid client number. Use numbers 0-%d.\n", MAX_CLIENTS - 1);
+		return;
+	}
+	if (!cgs.clientinfo[clientNum].infoValid) {
+		CG_Printf("^1Client %d is not active.\n", clientNum);
+		return;
+	}
+	CG_AddFriend(clientNum);
+}
+
+void CG_RemoveFriend_f(void) {
+	int clientNum;
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	if (trap_Argc() < 2) {
+		CG_Printf("^3Usage: /removefriend <client number>\n");
+		return;
+	}
+	clientNum = atoi(CG_Argv(1));
+	CG_RemoveFriend(clientNum);
+}
+
+void CG_ClearFriends_f(void) {
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	CG_ClearFriends();
+}
+
+void CG_ListFriends_f(void) {
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	CG_ListFriends();
+}
+	cgs.media.defendShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/defend.tga");
+	cgs.media.teamLeaderShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/team_leader.tga");
+	cgs.media.retrieveShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/retrieve.tga");
+	cgs.media.escortShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/escort.tga");
+	cgs.media.cursor = trap_R_RegisterShaderNoMip( "menu/art/3_cursor2" );
+	cgs.media.sizeCursor = trap_R_RegisterShaderNoMip( "ui/assets/sizecursor.tga" );
+	cgs.media.selectCursor = trap_R_RegisterShaderNoMip( "ui/assets/selectcursor.tga" );
+	cgs.media.flagShaders[0] = trap_R_RegisterShaderNoMip("ui/assets/statusbar/flag_in_base.tga");
+	cgs.media.flagShaders[1] = trap_R_RegisterShaderNoMip("ui/assets/statusbar/flag_capture.tga");
+	cgs.media.flagShaders[2] = trap_R_RegisterShaderNoMip("ui/assets/statusbar/flag_missing.tga");
+
+	cgs.media.halfShieldModel	= trap_R_RegisterModel ( "models/weaphits/testboom.md3" );
+	cgs.media.halfShieldShader	= trap_R_RegisterShader( "halfShieldShell" );
+
+
+	CG_ClearParticles ();
+/*
+	for (i=1; i<MAX_PARTICLES_AREAS; i++)
+	{
+		{
+			int rval;
+
+			rval = CG_NewParticleArea ( CS_PARTICLES + i);
+			if (!rval)
+				break;
+		}
+	}
+*/
+
 
 
 // --- V24 Enhanced Features: Friend System Console Commands ---

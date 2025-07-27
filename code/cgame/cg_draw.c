@@ -22,6 +22,7 @@ static void CG_DrawAccelMeter(void); //jk2pro
 static void CG_JumpHeight(centity_t *cent); //jk2pro
 //static void CG_RaceTimer(centity_t *cent); //jk2pro
 static void CG_DrawSpeedGraph(void); //jk2pro
+static void CG_DrawSpeedGraph(void); //jk2pro
 static void CG_JumpDistance(void); //jk2pro
 static void CG_DrawVerticalSpeed(void); //jk2pro
 static void CG_DrawYawSpeed(void); //jk2pro
@@ -70,26 +71,6 @@ static void CG_DrawShowPos(void); //jk2pro
 #define SNAPHUD_MAXZONES 128
 #define SNAPHUD_MAXZONES	128
 
-typedef struct {
-	int			speed;
-	float		zones[SNAPHUD_MAXZONES];
-	int			count;
-	vec2_t 		m;
-	int 		fps;
-// dfsnaphud and snappinghud defined below
-
-void CG_DrawSnapHud(void);
-
-
-#define KEY_W       0
-#define KEY_WA      1
-#define KEY_A       2
-#define KEY_AS      3
-#define KEY_S       4
-#define KEY_SD      5
-#define KEY_D       6
-#define KEY_DW      7
-#define SNAPHUD_MAXZONES	128
 
 typedef struct {
 	int			speed;
@@ -97,6 +78,8 @@ typedef struct {
 	int			count;
 	vec2_t 		m;
 	int 		fps;
+} snapHudData_t;
+
 // dfsnaphud and snappinghud defined above
 
 void CG_DrawSnapHud(void);
@@ -252,11 +235,11 @@ static void CG_DrawZoomMask( void )
 
 		// draw blue tinted distortion mask, trying to make it as small as is necessary to fill in the viewable area
 		trap_R_SetColor( colorTable[CT_WHITE] );
-		CG_DrawPic( 34, 48, 570, 362, cgs.media.binocularStatic );
+		trap_R_DrawStretchPic( 34, 48, 570, 362, 0, 0, 1, 1, cgs.media.binocularStatic );
 	
 		// Black out the area behind the numbers
 		trap_R_SetColor( colorTable[CT_BLACK]);
-		CG_DrawPic( 212, 367, 200, 40, cgs.media.whiteShader );
+		trap_R_DrawStretchPic( 212, 367, 200, 40, 0, 0, 1, 1, cgs.media.whiteShader );
 
 		// Numbers should be kind of greenish
 		color1[0] = 0.2f;
@@ -292,6 +275,7 @@ static void CG_DrawZoomMask( void )
 		CG_DrawPic( 212, 367, 200, 28, cgs.media.binocularOverlay );
 
 		color1[0] = sin( cg.time * 0.01f ) * 0.5f + 0.5f;
+		color1[0] = sin( cg.time * 0.01f ) * 0.5f + 0.5f;
 		color1[0] = color1[0] * color1[0];
 		color1[1] = color1[0];
 		color1[2] = color1[0];
@@ -299,7 +283,7 @@ static void CG_DrawZoomMask( void )
 
 		trap_R_SetColor( color1 );
 
-		CG_DrawPic( 82, 94, 16, 16, cgs.media.binocularCircle );
+		trap_R_DrawStretchPic( 82, 94, 16, 16, 0, 0, 1, 1, cgs.media.binocularCircle );
 
 		// Flickery color
 		color1[0] = 0.7f + crandom() * 0.1f;
@@ -347,6 +331,7 @@ static void CG_DrawZoomMask( void )
 		trap_R_SetColor(colorTable[CT_WHITE]);
 		trap_R_DrawStretchPic(xOffset, yOffset, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1, 1, cgs.media.disruptorMask);
 		trap_R_SetColor(NULL);
+		trap_R_SetColor(NULL);
 
 		// disruptor zoom mode
 		level = (float)(50.0f - zoomFov) / 50.0f;//(float)(80.0f - zoomFov) / 80.0f;
@@ -364,6 +349,7 @@ static void CG_DrawZoomMask( void )
 		// Using a magic number to convert the zoom level to a rotation amount that correlates more or less with the zoom artwork. 
 		level *= 103.0f;
 
+
 		// apparently 99.0f is the full zoom level
 		if ( level >= 99 )
 		{
@@ -371,6 +357,7 @@ static void CG_DrawZoomMask( void )
 			color1[0] = 1.0f; 
 			color1[1] = 1.0f;
 			color1[2] = 1.0f;
+			color1[3] = 0.7f + sin( cg.time * 0.01f ) * 0.3f;
 			color1[3] = 0.7f + sin( cg.time * 0.01f ) * 0.3f;
 
 			trap_R_SetColor( color1 );
@@ -523,12 +510,12 @@ void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t head
 
 	ci = &cgs.clientinfo[ clientNum ];
 
-	CG_DrawPic( x, y, w, h, ci->modelIcon );
+	trap_R_DrawStretchPic( x, y, w, h, 0, 0, 1, 1, ci->modelIcon );
 
 	// if they are deferred, draw a cross out
 	if ( ci->deferred ) 
 	{
-		CG_DrawPic( x, y, w, h, cgs.media.deferShader );
+		trap_R_DrawStretchPic( x, y, w, h, 0, 0, 1, 1, cgs.media.deferShader );
 	}
 }
 
@@ -557,9 +544,12 @@ void CG_DrawFlagModel( float x, float y, float w, float h, int team, qboolean fo
 
 		origin[2] = -0.5 * ( mins[2] + maxs[2] );
 		origin[1] = 0.5 * ( mins[1] + maxs[1] );
+		origin[2] = -0.5 * ( mins[2] + maxs[2] );
+		origin[1] = 0.5 * ( mins[1] + maxs[1] );
 
 		// calculate distance so the flag nearly fills the box
 		// assume heads are taller than wide
+		len = 0.5 * ( maxs[2] - mins[2] );		
 		len = 0.5 * ( maxs[2] - mins[2] );		
 		origin[0] = len / 0.268;	// len / tan( fov/2 )
 
@@ -602,7 +592,7 @@ void CG_DrawHUDLeftFrame1(float x, float y)
 {
 	// Inner gray wire frame
 	trap_R_SetColor( hudTintColor );
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDInnerLeft );			
+	trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDInnerLeft );			
 }
 
 /*
@@ -614,7 +604,7 @@ void CG_DrawHUDLeftFrame2(float x, float y)
 {
 	// Inner gray wire frame
 	trap_R_SetColor( hudTintColor );
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDLeftFrame );		// Metal frame
+	trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDLeftFrame );		// Metal frame
 }
 
 /*
@@ -644,7 +634,7 @@ void CG_DrawHealth(float x, float y)
 	calcColor[1] *= healthPercent;
 	calcColor[2] *= healthPercent;
 	trap_R_SetColor( calcColor);					
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDHealth );
+	trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDHealth );
 
 	armorPercent = (float)(ps->stats[STAT_ARMOR] - (ps->stats[STAT_MAX_HEALTH] / 2)) / (ps->stats[STAT_MAX_HEALTH] / 2);
 
@@ -685,7 +675,7 @@ void CG_DrawHealth(float x, float y)
 		else
 			trap_R_SetColor(colorTable[CT_HUD_RED]);
 
-		CG_DrawPic( x, y, 80, 80, cgs.media.HUDHealthTic );
+		trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDHealthTic );
 	}
 
 	trap_R_SetColor( colorTable[CT_HUD_RED] );	
@@ -727,7 +717,7 @@ void CG_DrawArmor(float x, float y)
 	calcColor[1] *= armorPercent;
 	calcColor[2] *= armorPercent;
 	trap_R_SetColor( calcColor);					
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDArmor1 );			
+	trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDArmor1 );			
 
 	// Inner Armor circular
 	if (armorPercent>0)
@@ -743,7 +733,7 @@ void CG_DrawArmor(float x, float y)
 	calcColor[1] *= armorPercent;
 	calcColor[2] *= armorPercent;
 	trap_R_SetColor( calcColor);					
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDArmor2 );			//	Inner Armor circular
+	trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDArmor2 );			//	Inner Armor circular
 
 	if (ps->stats[STAT_ARMOR])	// Is there armor? Draw the HUD Armor TIC
 	{
@@ -776,7 +766,7 @@ void CG_DrawArmor(float x, float y)
 	if (cg.HUDArmorFlag)
 	{
 		trap_R_SetColor( colorTable[CT_HUD_GREEN] );					
-		CG_DrawPic( x, y, 80, 80, cgs.media.HUDArmorTic );		
+		trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDArmorTic );		
 	}
 
 	trap_R_SetColor( colorTable[CT_HUD_GREEN] );	
@@ -794,7 +784,7 @@ void CG_DrawHUDRightFrame1(float x, float y)
 {
 	trap_R_SetColor( hudTintColor );
 	// Inner gray wire frame
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDInnerRight );
+	trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDInnerRight );
 }
 
 /*
@@ -805,7 +795,7 @@ CG_DrawHUDRightFrame2
 void CG_DrawHUDRightFrame2(float x, float y)
 {
 	trap_R_SetColor( hudTintColor );
-	CG_DrawPic( x, y, 80, 80, cgs.media.HUDRightFrame );		// Metal frame
+	trap_R_DrawStretchPic( x, y, 80, 80, 0, 0, 1, 1, cgs.media.HUDRightFrame );		// Metal frame
 }
 
 /*
@@ -813,6 +803,7 @@ void CG_DrawHUDRightFrame2(float x, float y)
 CG_DrawAmmo
 ================
 */
+static void CG_DrawAmmo(centity_t *cent, float x, float y)
 static void CG_DrawAmmo(centity_t *cent, float x, float y)
 {
 	playerState_t	*ps;
@@ -833,13 +824,20 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 		trap_R_SetColor( colorTable[CT_WHITE] );
 		// don't need to draw ammo, but we will draw the current saber style in this window
 		switch ( cg.predictedPlayerState.fd.saberDrawAnimLevel )
+		switch ( cg.predictedPlayerState.fd.saberDrawAnimLevel )
 		{
+		case 1://FORCE_LEVEL_1:
+			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle1 );
 		case 1://FORCE_LEVEL_1:
 			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle1 );
 			break;
 		case 2://FORCE_LEVEL_2:
 			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle2 );
+		case 2://FORCE_LEVEL_2:
+			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle2 );
 			break;
+		case 3://FORCE_LEVEL_3:
+			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle3 );
 		case 3://FORCE_LEVEL_3:
 			CG_DrawPic( x, y, 80, 40, cgs.media.HUDSaberStyle3 );
 			break;
@@ -901,9 +899,434 @@ static void CG_DrawAmmo(centity_t *cent, float x, float y)
 
 	trap_R_SetColor( colorTable[numColor_i] );	
 	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
 
 
 //cg.snap->ps.ammo[weaponData[cg.snap->ps.weapon].ammoIndex]
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
 
 	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
 	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
@@ -1082,45 +1505,70 @@ static void CG_DrawSimpleAmmo(const centity_t *cent)
 	{
 		calcColor = CT_LTGREY;
 	}
-	else
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
 	{
-		if (currValue > 0)
+
+		if (value <= 0)	// partial tic
 		{
-			if (cg.oldAmmoTime > cg.time)
-			{
-				calcColor = CT_YELLOW;
-			}
-			else
-			{
-				calcColor = CT_HUD_ORANGE;
-			}
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
 		}
 		else
 		{
-			calcColor = CT_RED;
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
 		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	}
 
-	Com_sprintf(num, sizeof(num), "%i", currValue);
-
-	UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
 }
-
-static void CG_DrawSimpleForcePower(const centity_t *cent)
-{
-	uint32_t	calcColor;
-	char		num[16] = { 0 };
-	qboolean	flash = qfalse;
-	vec4_t		colorForce = { 1,    1,     1,     1 };
-
-	if (!cg.snap->ps.fd.forcePowersKnown)
-	{
-		return;
-	}
-
-	// Make the hud flash by setting forceHUDTotalFlashTime above cg.time
-	if (cg.forceHUDTotalFlashTime > cg.time)
-	{
 		flash = qtrue;
 		if (cg.forceHUDNextFlashTime < cg.time)
 		{
@@ -1163,14 +1611,32 @@ static void CG_DrawSimpleForcePower(const centity_t *cent)
 
 /*
 ================
-CG_DrawHUD
+CG_DrawForcePower
 ================
 */
-static float speedometerXPos = 0.0f;
-static float chatBoxYPos = 0.0f;
-void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4_t color, float alpha, float ycutoff);
-void CG_DrawHUD(centity_t	*cent)
+void CG_DrawForcePower(float x, float y)
 {
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
 	menuDef_t	*menuHUD = NULL;
 	const char *scoreStr = NULL;
 	int	scoreBias;
@@ -1270,6 +1736,34 @@ void CG_DrawHUD(centity_t	*cent)
 			scoreStr = va("Score: %i%s", cg.snap->ps.persistant[PERS_SCORE], scoreBiasStr);
 		}
 		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
 		{	// Don't draw a bias.
 			scoreStr = va("Score: %i", cg.snap->ps.persistant[PERS_SCORE]);
 		}
@@ -1321,6 +1815,67 @@ void CG_DrawHUD(centity_t	*cent)
 		return;
 	}
 
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
 	if (cgs.gametype >= GT_TEAM)
 	{	// tint the hud items based on team
 		switch (cg.snap->ps.persistant[PERS_TEAM])
@@ -1362,34 +1917,182 @@ void CG_DrawHUD(centity_t	*cent)
 		CG_DrawHUDLeftFrame2(0,cgs.screenHeight-80);
 	}
 
-	/*//scoreStr = va("Score: %i", cgs.clientinfo[cg.snap->ps.clientNum].score);
-	if ( cgs.gametype == GT_TOURNAMENT )
-	{//A duel that requires more than one kill to knock the current enemy back to the queue
-		//show current kills out of how many needed
-		scoreStr = va("Score: %i/%i", cg.snap->ps.persistant[PERS_SCORE], cgs.fraglimit);
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
 	}
-	else if (0 && cgs.gametype < GT_TEAM )
-	{	// This is a teamless mode, draw the score bias.
-		scoreBias = cg.snap->ps.persistant[PERS_SCORE] - cgs.scores1;
-		if (scoreBias == 0)
-		{	// We are the leader!
-			if (cgs.scores2 <= 0)
-			{	// Nobody to be ahead of yet.
-				Q_strncpyz(scoreBiasStr, "", sizeof(scoreBiasStr));
-			}
-			else
-			{
-				scoreBias = cg.snap->ps.persistant[PERS_SCORE] - cgs.scores2;
-				if (scoreBias == 0)
-				{
-					Com_sprintf(scoreBiasStr, sizeof(scoreBiasStr), " (Tie)");
-				}
-				else
-				{
-					Com_sprintf(scoreBiasStr, sizeof(scoreBiasStr), " (+%d)", scoreBias);
-				}
-			}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 		else // if (scoreBias < 0)
 		{	// We are behind!
 			Com_sprintf(scoreBiasStr, sizeof(scoreBiasStr), " (%d)", scoreBias);
@@ -1432,6 +2135,20 @@ qboolean ForcePower_Valid(int i)
 		return qfalse;
 	}
 
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	if (cg.snap->ps.fd.forcePowersKnown & (1 << i))
 	{
 		return qtrue;
@@ -1460,17 +2177,115 @@ void CG_DrawForceSelect( void )
 		return;
 	}
 
-	if ((cg.forceSelectTime+WEAPON_SELECT_TIME)<cg.time)	// Time is up for the HUD to display
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
 	{
-		cg.forceSelect = cg.snap->ps.fd.forcePowerSelected;
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 		return;
 	}
 
-	if (!cg.snap->ps.fd.forcePowersKnown)
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
 	{
-		return;
+		cg.oldAmmoTime = cg.time + 200;
 	}
 
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
 	// count the number of powers owned
 	count = 0;
 
@@ -1530,63 +2345,99 @@ void CG_DrawForceSelect( void )
 	holdX = x - ((bigIconSize/2) + pad + smallIconSize);
 	for (iconCnt=1;iconCnt<(sideLeftIconCnt+1);i--)
 	{
-		if (i < 0)
+
+		if (value <= 0)	// partial tic
 		{
-			i = MAX_SHOWPOWERS-1;
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
 		}
 
-		if (!ForcePower_Valid(forcePowerSorted[i]))	// Does he have this power?
-		{
-			continue;
-		}
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
 
-		++iconCnt;					// Good icon
-
-		if (cgs.media.forcePowerIcons[forcePowerSorted[i]])
-		{
-			CG_DrawPic( holdX, y, smallIconSize, smallIconSize, cgs.media.forcePowerIcons[forcePowerSorted[i]] ); 
-			holdX -= (smallIconSize+pad);
-		}
+		value -= inc;
 	}
+}
 
-	if (ForcePower_Valid(cg.forceSelect))
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
-		// Current Center Icon
-		if (cgs.media.forcePowerIcons[cg.forceSelect])
-		{
-			CG_DrawPic( x-(bigIconSize/2), (y-((bigIconSize-smallIconSize)/2)), bigIconSize, bigIconSize, cgs.media.forcePowerIcons[cg.forceSelect] ); //only cache the icon for display
-		}
+		return;
 	}
 
-	i = BG_ProperForceIndex(cg.forceSelect) + 1;
-	if (i>=MAX_SHOWPOWERS)
+	if (cent->currentState.weapon != WP_SABER)
 	{
-		i = 0;
+		return;
 	}
 
-	// Work forwards from current icon
-	holdX = x + (bigIconSize/2) + pad;
-	for (iconCnt=1;iconCnt<(sideRightIconCnt+1);i++)
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
 	{
-		if (i>=MAX_SHOWPOWERS)
-		{
-			i = 0;
-		}
-
-		if (!ForcePower_Valid(forcePowerSorted[i]))	// Does he have this power?
-		{
-			continue;
-		}
-
-		++iconCnt;					// Good icon
-
-		if (cgs.media.forcePowerIcons[forcePowerSorted[i]])
-		{
-			CG_DrawPic( holdX, y, smallIconSize, smallIconSize, cgs.media.forcePowerIcons[forcePowerSorted[i]] ); //only cache the icon for display
-			holdX += (smallIconSize+pad);
-		}
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	}
 
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	if ( showPowersName[cg.forceSelect] ) 
 	{
 		UI_DrawProportionalString(0.5f * cgs.screenWidth, y + 30, CG_GetStripEdString("INGAME", showPowersName[cg.forceSelect]), UI_CENTER | UI_SMALLFONT, colorTable[CT_ICON_BLUE]);
@@ -1615,23 +2466,113 @@ void CG_DrawInvenSelect( void )
 		return;
 	}
 
-	if ((cg.invenSelectTime+WEAPON_SELECT_TIME)<cg.time)	// Time is up for the HUD to display
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
 	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 		return;
 	}
 
-	if (!cg.snap->ps.stats[STAT_HOLDABLE_ITEM] || !cg.snap->ps.stats[STAT_HOLDABLE_ITEMS])
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
 	{
-		return;
+		cg.oldAmmoTime = cg.time + 200;
 	}
 
-	if (cg.itemSelect == -1)
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
 	{
-		cg.itemSelect = bg_itemlist[cg.snap->ps.stats[STAT_HOLDABLE_ITEM]].giTag;
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	}
 
-//const int bits = cg.snap->ps.stats[ STAT_ITEMS ];
+}
 
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
 	// count the number of items owned
 	count = 0;
 	for ( i = 0 ; i < HI_NUM_HOLDABLE ; i++ ) 
@@ -1693,128 +2634,195 @@ void CG_DrawInvenSelect( void )
 	// height = smallIconSize * cg.iconHUDPercent;
 	// addX = (float) smallIconSize * .75;
 
-	for (iconCnt=0;iconCnt<sideLeftIconCnt;i--)
+	for (i=MAX_TICS-1;i>=0;i--)
 	{
-		if (i<0)
+
+		if (value <= 0)	// partial tic
 		{
-			i = HI_NUM_HOLDABLE-1;
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
 		}
 
-		if ( !(cg.snap->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << i)) || i == cg.itemSelect )
-		{
-			continue;
-		}
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
 
-		++iconCnt;					// Good icon
-
-		if (cgs.media.invenIcons[i])
-		{
-			trap_R_SetColor(NULL);
-			CG_DrawPic( holdX, y+10, smallIconSize, smallIconSize, cgs.media.invenIcons[i] );
-
-			trap_R_SetColor(colorTable[CT_ICON_BLUE]);
-			/*CG_DrawNumField (holdX + addX, y + smallIconSize, 2, cg.snap->ps.inventory[i], 6, 12, 
-				NUM_FONT_SMALL,qfalse);
-				*/
-
-			holdX -= (smallIconSize+pad);
-		}
-	}
-
-	// Current Center Icon
-	// height = bigIconSize * cg.iconHUDPercent;
-	if (cgs.media.invenIcons[cg.itemSelect])
-	{
-		int itemNdex;
-		trap_R_SetColor(NULL);
-		CG_DrawPic( x-(bigIconSize/2), (y-((bigIconSize-smallIconSize)/2))+10, bigIconSize, bigIconSize, cgs.media.invenIcons[cg.itemSelect] );
-		// addX = (float) bigIconSize * .75;
-		trap_R_SetColor(colorTable[CT_ICON_BLUE]);
-		/*CG_DrawNumField ((x-(bigIconSize/2)) + addX, y, 2, cg.snap->ps.inventory[cg.inventorySelect], 6, 12, 
-			NUM_FONT_SMALL,qfalse);*/
-
-		itemNdex = BG_GetItemIndexByTag(cg.itemSelect, IT_HOLDABLE);
-		if (bg_itemlist[itemNdex].classname)
-		{
-			vec4_t	textColor = { .312f, .75f, .621f, 1.0f };
-			char	text[1024];
-			
-			if ( trap_SP_GetStringTextString( va("INGAME_%s",bg_itemlist[itemNdex].classname), text, sizeof( text )))
-			{
-				UI_DrawProportionalString(0.5f * cgs.screenWidth, y+45, text, UI_CENTER | UI_SMALLFONT, textColor);
-			}
-			else
-			{
-				UI_DrawProportionalString(0.5f * cgs.screenWidth, y+45, bg_itemlist[itemNdex].classname, UI_CENTER | UI_SMALLFONT, textColor);
-			}
-		}
-	}
-
-	i = cg.itemSelect + 1;
-	if (i> HI_NUM_HOLDABLE-1)
-	{
-		i = 0;
-	}
-
-	// Right side ICONS
-	// Work forwards from current icon
-	holdX = x + (bigIconSize/2) + pad;
-	// height = smallIconSize * cg.iconHUDPercent;
-	// addX = (float) smallIconSize * .75;
-	for (iconCnt=0;iconCnt<sideRightIconCnt;i++)
-	{
-		if (i> HI_NUM_HOLDABLE-1)
-		{
-			i = 0;
-		}
-
-		if ( !(cg.snap->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << i)) || i == cg.itemSelect )
-		{
-			continue;
-		}
-
-		++iconCnt;					// Good icon
-
-		if (cgs.media.invenIcons[i])
-		{
-			trap_R_SetColor(NULL);
-			CG_DrawPic( holdX, y+10, smallIconSize, smallIconSize, cgs.media.invenIcons[i] );
-
-			trap_R_SetColor(colorTable[CT_ICON_BLUE]);
-			/*CG_DrawNumField (holdX + addX, y + smallIconSize, 2, cg.snap->ps.inventory[i], 6, 12, 
-				NUM_FONT_SMALL,qfalse);*/
-
-			holdX += (smallIconSize+pad);
-		}
+		value -= inc;
 	}
 }
 
-/*
-================
-CG_DrawStats
-
-================
-*/
-static void CG_DrawStats( void ) 
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
 {
-	centity_t		*cent;
-/*	playerState_t	*ps;
-	vec3_t			angles;
-//	vec3_t		origin;
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
 
-	if ( cg_drawStatus.integer == 0 ) {
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
 		return;
 	}
-*/
-	cent = &cg_entities[cg.snap->ps.clientNum];
-/*	ps = &cg.snap->ps;
 
-	VectorClear( angles );
-
-	// Do start
-	if (!cg.interfaceStartupDone)
+	if (cent->currentState.weapon != WP_SABER)
 	{
-		CG_InterfaceStartup();
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	}
 
 	cgi_UI_MenuPaintAll();*/
@@ -1920,9 +2928,207 @@ static float CG_DrawMiniScoreboard ( float y )
 
 /*
 ================
-CG_DrawEnemyInfo
+CG_DrawForcePower
 ================
 */
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 static float CG_DrawEnemyInfo ( float y ) 
 {
 	float		size;
@@ -2062,14 +3268,197 @@ static float CG_DrawEnemyInfo ( float y )
 		CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( text, 0.7f, FONT_MEDIUM ), y, 0.7f, colorWhite, text, 0, 0, 0, FONT_MEDIUM );
 	}
 
-	return y + BIGCHAR_HEIGHT + 2;
 }
 
 /*
-==================
-CG_DrawSnapshot
-==================
+================
+CG_DrawForcePower
+================
 */
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
 static float CG_DrawSnapshot( float y ) {
 	char		*s;
 	int			w;
@@ -2133,6 +3522,19 @@ static float CG_DrawFPS( float y ) {
 		}
 		else
 		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
 		w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
 		CG_DrawBigString(cgs.screenWidth - 5 - w, y + 2, s, 1.0f);
 		}
@@ -2143,10 +3545,59 @@ static float CG_DrawFPS( float y ) {
 }
 
 /*
-=================
-CG_DrawTimer
-=================
+================
+CG_DrawForcePower
+================
 */
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
 static float CG_DrawTimer( float y ) {
 	char		*s;
 	float		w;
@@ -2214,240 +3665,207 @@ static float CG_DrawTeamOverlay( float y, qboolean right, qboolean upper ) {
 		return y;
 	}
 
-	if ( cg.snap->ps.persistant[PERS_TEAM] != TEAM_RED && cg.snap->ps.persistant[PERS_TEAM] != TEAM_BLUE && !(cg.snap->ps.persistant[PERS_TEAM] == TEAM_FREE && cgs.isCTFMod && cgs.CTF3ModeActive) ) {
-		return y; // Not on any team
-	}
-	plyrs = 0;
-
-	// max player name width
-	pwidth = 0;
-	count = numSortedTeamPlayers;
-	for (i = 0; i < count; i++) {
-		ci = cgs.clientinfo + sortedTeamPlayers[i];
-		if ( ci->infoValid && ci->team == team ) {
-			plyrs++;
-			len = CG_DrawStrlen(ci->name);
-			if (len > pwidth)
-				pwidth = len;
-		}
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
 	}
 
-	if (!plyrs)
-		return y;
-
-	if (pwidth > TEAM_OVERLAY_MAXNAME_WIDTH)
-		pwidth = TEAM_OVERLAY_MAXNAME_WIDTH;
-
-	// max location name width
-	lwidth = 0;
-	for (i = 1; i < MAX_LOCATIONS; i++) {
-		p = CG_ConfigString(CS_LOCATIONS + i);
-		if (p && *p) {
-			len = CG_DrawStrlen(p);
-			if (len > lwidth)
-				lwidth = len;
-		}
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	}
 
-	if (lwidth > TEAM_OVERLAY_MAXLOCATION_WIDTH)
-		lwidth = TEAM_OVERLAY_MAXLOCATION_WIDTH;
-
-	w = (pwidth + lwidth + 4 + 7) * TINYCHAR_WIDTH;
-
-	if ( right )
-		x = cgs.screenWidth - w;
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
 	else
-		x = 0;
-
-	h = plyrs * TINYCHAR_HEIGHT;
-
-	if ( upper ) {
-		ret_y = y + h;
-	} else {
-		y -= h;
-		ret_y = y;
-	}
-
-	switch (team) {
-		case TEAM_RED:
-			hcolor[0] = 1.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 0.0f;
-			break;
-		case TEAM_BLUE:
-			hcolor[0] = 0.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 1.0f;
-			break;
-		case TEAM_FREE:
-			if (cgs.isCTFMod && cgs.CTF3ModeActive) {
-				hcolor[0] = 0.8f;
-				hcolor[1] = 0.8f;
-				hcolor[2] = 0.0f;
-				break;
-			}
-		default:
-			hcolor[0] = 0.8f;
-			hcolor[1] = 0.8f;
-			hcolor[2] = 0.8f;
-			break;
-	}
-	hcolor[3] = 0.33f;
-	trap_R_SetColor( hcolor );
-	CG_DrawPic( x, y, w, h, cgs.media.teamStatusBar );
-	trap_R_SetColor( NULL );
-
-	for (i = 0; i < count; i++) {
-		ci = cgs.clientinfo + sortedTeamPlayers[i];
-		if ( ci->infoValid && ci->team == team ) {
-			hcolor[0] = hcolor[1] = hcolor[2] = hcolor[3] = 1.0;
-
-			xx = x + TINYCHAR_WIDTH;
-
-			CG_DrawStringExt( xx, y,
-				ci->name, hcolor, qfalse, qfalse,
-				TINYCHAR_WIDTH, TINYCHAR_HEIGHT, TEAM_OVERLAY_MAXNAME_WIDTH);
-
-			if (lwidth) {
-				p = CG_ConfigString(CS_LOCATIONS + ci->location);
-				if (!p || !*p)
-					p = "unknown";
-				len = CG_DrawStrlen(p);
-				if (len > lwidth)
-					len = lwidth;
-
-//				xx = x + TINYCHAR_WIDTH * 2 + TINYCHAR_WIDTH * pwidth + 
-//					((lwidth/2 - len/2) * TINYCHAR_WIDTH);
-				xx = x + TINYCHAR_WIDTH * 2 + TINYCHAR_WIDTH * pwidth;
-				CG_DrawStringExt( xx, y,
-					p, hcolor, qfalse, qfalse, TINYCHAR_WIDTH, TINYCHAR_HEIGHT,
-					TEAM_OVERLAY_MAXLOCATION_WIDTH);
-			}
-
-			CG_GetColorForHealth( ci->health, ci->armor, hcolor );
-
-			Com_sprintf (st, sizeof(st), "%3i %3i", ci->health,	ci->armor);
-
-			xx = x + TINYCHAR_WIDTH * 3 + 
-				TINYCHAR_WIDTH * pwidth + TINYCHAR_WIDTH * lwidth;
-
-			CG_DrawStringExt( xx, y,
-				st, hcolor, qfalse, qfalse,
-				TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 0 );
-
-			// draw weapon icon
-			xx += TINYCHAR_WIDTH * 3;
-
-			if ( cg_weapons[ci->curWeapon].weaponIcon ) {
-				CG_DrawPic( xx, y, TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 
-					cg_weapons[ci->curWeapon].weaponIcon );
-			} else {
-				CG_DrawPic( xx, y, TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 
-					cgs.media.deferShader );
-			}
-
-			// Draw powerup icons
-			if (right) {
-				xx = x;
-			} else {
-				xx = x + w - TINYCHAR_WIDTH;
-			}
-			for (j = 0; j < PW_NUM_POWERUPS; j++) {
-				if (ci->powerups & (1 << j)) {
-
-					item = BG_FindItemForPowerup( j );
-
-					if (item) {
-						CG_DrawPic( xx, y, TINYCHAR_WIDTH, TINYCHAR_HEIGHT, 
-						trap_R_RegisterShader( item->icon ) );
-						if (right) {
-							xx -= TINYCHAR_WIDTH;
-						} else {
-							xx += TINYCHAR_WIDTH;
-						}
-					}
-				}
-			}
-
-			y += TINYCHAR_HEIGHT;
-		}
-	}
-
-	return ret_y;
-//#endif
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 }
 
-static int CG_DrawPowerupIcons(int y)
+static void CG_DrawSimpleAmmo(const centity_t *cent)
 {
-	int j;
-	int ico_size = 64;
-	float xAlign = cgs.screenWidth - ico_size * 1.1f;
-	//int y = ico_size/2;
-	gitem_t	*item;
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
 
-	if (!cg.snap)
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
-		return y;
+		return;
 	}
 
-	if (cg.snap->ps.pm_type == PM_SPECTATOR) {
-		return y;
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
 	}
 
-	y += 16;
-
-	for (j = 0; j < PW_NUM_POWERUPS; j++)
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
 	{
-		if (cg.snap->ps.powerups[j] > cg.time)
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
 		{
-			int secondsleft = (cg.snap->ps.powerups[j] - cg.time)/1000;
-
-			item = BG_FindItemForPowerup( j );
-
-			if (item)
-			{
-				qhandle_t icoShader = 0;
-				if (cgs.gametype == GT_CTY)
-				{
-					switch (j)
-					{
-						case PW_REDFLAG:
-							icoShader = cgs.media.flagShaderYsal[TEAM_RED];
-							break;
-						case PW_BLUEFLAG:
-							icoShader = cgs.media.flagShaderYsal[TEAM_BLUE];
-							break;
-						case PW_NEUTRALFLAG:
-							icoShader = cgs.media.flagShader[TEAM_FREE];
-							break;
-						default:
-							icoShader = trap_R_RegisterShaderNoMip(item->icon);
-							break;
-					}
-				}
-				else
-				{
-					icoShader = trap_R_RegisterShaderNoMip( item->icon );
-				}
-
-				CG_DrawPic( xAlign, y, ico_size, ico_size, icoShader );
-	
-				y += ico_size;
-
-				if (j != PW_REDFLAG && j != PW_BLUEFLAG && j != PW_NEUTRALFLAG && secondsleft < 999)
-				{
-					UI_DrawProportionalString(xAlign + (ico_size / 2), y - 8, va("%i", secondsleft), UI_CENTER | UI_BIGFONT | UI_DROPSHADOW, colorTable[CT_WHITE]);
-				}
-
-				y += (ico_size/3);
-			}
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	}
-	return y;
+
 }
 
-static void CG_DrawInventory(int y)
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
 {
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
 	int i;
 	int ico_size = 32;
 	float xAlign = cgs.screenWidth - ico_size * 1.1f;
@@ -2591,10 +4009,76 @@ static void CG_DrawReward( void ) {
 	char	buf[32];
 	float	iconSize = ICON_SIZE, time = 0.0f;
 
-	if ( !cg_drawRewards.integer ) {
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
 		return;
 	}
 
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 	color = CG_FadeColor( cg.rewardTime, REWARD_TIME );
 	if ( !color ) {
 		if (cg.rewardStack > 0) {
@@ -2714,6 +4198,199 @@ void CG_AddLagometerSnapshotInfo( snapshot_t *snap ) {
 		return;
 	}
 
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
 	// add this snapshot's info
 	if (cg.demoPlayback) { //fixes lagometer in demos
 		snap->ping = (snap->serverTime - snap->ps.commandTime);
@@ -2801,6 +4478,96 @@ static void CG_DrawLagometer( void ) {
 		return;
 	}
 
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	//
 	// draw the graph
 	//
@@ -3011,104 +4778,211 @@ void CG_CenterPrintMultiKill(const char *str, int y, int charWidth) {
 		s++;
 	}
 
-	cg.lastKillTime = cg.time;
 }
 
-
 /*
-===================
-CG_DrawCenterString
-===================
+================
+CG_DrawForcePower
+================
 */
-static void CG_DrawCenterString( void ) {
-	char	*start;
-	int		l;	
-	float	x, y, w, h;
-	float	*color;
-	const float scale = cg_centerSize.value; //0.5
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
 
-	if ( !cg.centerPrintTime ) {
-		return;
-	}
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
 
-	color = CG_FadeColor( cg.centerPrintTime, 1000 * cg_centertime.value );
-	if ( !color ) {
-		return;
-	}
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
 
-	trap_R_SetColor( color );
-
-	start = cg.centerPrint;
-
-	y = cg.centerPrintY - cg.centerPrintLines * BIGCHAR_HEIGHT / 2;
-
-	while ( 1 ) {
-		char linebuffer[1024];
-
-		for ( l = 0; l < 50; l++ ) {
-			if ( !start[l] || start[l] == '\n' ) {
-				break;
-			}
-			linebuffer[l] = start[l];
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
-		linebuffer[l] = 0;
-
-		w = CG_Text_Width(linebuffer, scale, FONT_MEDIUM);
-		h = CG_Text_Height(linebuffer, scale, FONT_MEDIUM);
-		x = 0.5f * (cgs.screenWidth - w);
-		CG_Text_Paint(x, y + h, scale, color, linebuffer, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
-		y += h + 6;
-
-		while ( *start && ( *start != '\n' ) ) {
-			start++;
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
 		}
-		if ( !*start ) {
-			break;
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
 		}
-		start++;
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
 	}
-
-	trap_R_SetColor( NULL );
 }
 
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
 
-
-/*
-================================================================================
-
-CROSSHAIR
-
-================================================================================
-*/
-
-
-/*
-=================
-CG_DrawCrosshair
-=================
-*/
-static void CG_DrawCrosshair( vec3_t worldPoint, int chEntValid ) {
-	float		w, h;
-	qhandle_t	hShader;
-	vec4_t		hcolor;
-	float		f;
-	float		x, y;
-
-	if (cg_strafeHelper.integer & SHELPER_CROSSHAIR)
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
 		return;
 	}
 
-	if ( !cg_drawCrosshair.integer ) 
+	if (cent->currentState.weapon != WP_SABER)
 	{
 		return;
 	}
 
-	if (cg.snap->ps.fallingToDeath)
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
 		return;
 	}
 
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	if ( cg.predictedPlayerState.zoomMode != 0 )
 	{//not while scoped
 		return;
@@ -3377,26 +5251,61 @@ void CG_SaberClashFlare( void )
 		CG_DrawPic( x - ( v * 300 ), y - ( v * 300 ),
 			v * 600, v * 600, cgs.media.saberClashFlare );
 	}
+
 }
 
-//--------------------------------------------------------------
-static void CG_DrawHolocronIcons(void)
-//--------------------------------------------------------------
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
 {
-	int icon_size = 40;
-	int i = 0;
-	int startx = 10;
-	int starty = 10;//SCREEN_HEIGHT - icon_size*3;
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
 
-	int endx = icon_size;
-	int endy = icon_size;
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
 
-	if (cg.snap->ps.zoomMode)
-	{ //don't display over zoom mask
-		return;
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
 	}
+}
 
-	if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR)
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
 		return;
 	}
@@ -3451,89 +5360,155 @@ static void CG_DrawActivePowers(void)
 		return;
 	}
 
-	if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR)
+	if (cent->currentState.weapon != WP_SABER)
 	{
 		return;
 	}
 
-	while (i < NUM_FORCE_POWERS)
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
 	{
-		if ((cg.snap->ps.fd.forcePowersActive & (1 << forcePowerSorted[i])) &&
-			CG_IsDurationPower(forcePowerSorted[i]))
-		{
-			CG_DrawPic( startx, starty, endx, endy, cgs.media.forcePowerIcons[forcePowerSorted[i]]);
-			startx += (icon_size+2); //+2 for spacing
-			if ((startx+icon_size) >= cgs.screenWidth-80)
-			{
-				startx = icon_size*2+16;
-				starty += (icon_size+2);
-			}
-		}
-
-		i++;
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	}
 
-	//additionally, draw an icon force force rage recovery
-	if (cg.snap->ps.fd.forceRageRecoveryTime > cg.time)
-	{
-		CG_DrawPic( startx, starty, endx, endy, cgs.media.rageRecShader);
-	}
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 }
 
-//--------------------------------------------------------------
-static void CG_DrawRocketLocking( int lockEntNum, int lockTime )
-//--------------------------------------------------------------
+static void CG_DrawSimpleAmmo(const centity_t *cent)
 {
-	float	cx, cy;
-	vec3_t	org;
-	static	int oldDif = 0;
-	centity_t *cent = &cg_entities[lockEntNum];
-	vec4_t color={0.0f,0.0f,0.0f,0.0f};
-	int dif = ( cg.time - cg.snap->ps.rocketLockTime ) / ( 1200.0f / /*8.0f*/16.0f );
-	int i;
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
 
-	if (!cg.snap->ps.rocketLockTime)
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
 		return;
 	}
 
-	if (cgs.clientinfo[cg.snap->ps.clientNum].team == TEAM_SPECTATOR)
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
 	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 		return;
 	}
 
-	//We can't check to see in pmove if players are on the same team, so we resort
-	//to just not drawing the lock if a teammate is the locked on ent
-	if (cg.snap->ps.rocketLockIndex >= 0 &&
-		cg.snap->ps.rocketLockIndex < MAX_CLIENTS)
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
 	{
-		if (cgs.clientinfo[cg.snap->ps.rocketLockIndex].team == cgs.clientinfo[cg.snap->ps.clientNum].team)
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
 		{
-			if (cgs.gametype >= GT_TEAM)
-			{
-				return;
-			}
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			ammoTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	}
 
-	if (cg.snap->ps.rocketLockTime != -1)
-	{
-		lastvalidlockdif = dif;
-	}
-	else
-	{
-		dif = lastvalidlockdif;
-	}
-
-	if ( !cent )
-	{
-		return;
-	}
-
-	VectorCopy( cent->lerpOrigin, org );
-
-	if ( CG_WorldCoordToScreenCoord( org, &cx, &cy ))
-	{
 		// we care about distance from enemy to eye, so this is good enough
 		float sz = Distance( cent->lerpOrigin, cg.refdef.vieworg ) / 1024.0f; 
 		
@@ -3602,10 +5577,47 @@ static void CG_DrawRocketLocking( int lockEntNum, int lockTime )
 }
 
 /*
-=================
-CG_ScanForCrosshairEntity
-=================
+================
+CG_DrawForcePower
+================
 */
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
 static void CG_ScanForCrosshairEntity( void ) {
 	trace_t		trace;
 	vec3_t		start, end;
@@ -3675,6 +5687,73 @@ static void CG_ScanForCrosshairEntity( void ) {
 		VectorCopy( cg.refdef.vieworg, start );
 		VectorMA( start, 131072, cg.refdef.viewaxis[0], end );
 	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
 
 	CG_Trace( &trace, start, vec3_origin, vec3_origin, end, 
 		cg.snap->ps.clientNum, CONTENTS_SOLID|CONTENTS_BODY );
@@ -3720,6 +5799,14 @@ static void CG_ScanForCrosshairEntity( void ) {
 		return;
 	}
 
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 	// if the player is in fog, don't show it
 	content = trap_CM_PointContents( trace.endpos, 0 );
 	if ( content & CONTENTS_FOG ) {
@@ -3732,6 +5819,58 @@ static void CG_ScanForCrosshairEntity( void ) {
 		return;
 	}
 
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
 	// update the fade timer
 	cg.crosshairClientNum = trace.entityNum;
 	cg.crosshairClientTime = cg.time;
@@ -3778,10 +5917,94 @@ static void CG_DrawCrosshairNames( void ) {
 
 	/*if (cgs.gametype >= GT_TEAM)
 	{
-		if (cgs.clientinfo[cg.crosshairClientNum].team == TEAM_RED)
+
+		if (value <= 0)	// partial tic
 		{
-			baseColor = CT_RED;
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
 		else
 		{
 			baseColor = CT_BLUE;
@@ -3916,159 +6139,363 @@ static void CG_DrawVote(void) {
 		return;
 	}
 
-	// play a talk beep whenever it is modified
-	if ( cgs.voteModified ) {
-		cgs.voteModified = qfalse;
-//		trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	}
 
-	sec = ( VOTE_TIME - ( cg.time - cgs.voteTime ) ) / 1000;
-	if ( sec < 0 ) {
-		sec = 0;
-	}
-
-	trap_SP_GetStringTextString("MENUS0_YES", sYes, sizeof(sYes) );
-	trap_SP_GetStringTextString("MENUS0_NO",  sNo,  sizeof(sNo) );
-
-	s = va("VOTE(%i):%s" S_COLOR_WHITE " %s:%i %s:%i", sec, cgs.voteString, sYes, cgs.voteYes, sNo, cgs.voteNo);
-	CG_DrawSmallString( 4, 58, s, 1.0F );
-	s = CG_GetStripEdString("INGAMETEXT", "OR_PRESS_ESC_THEN_CLICK_VOTE");	//	s = "or press ESC then click Vote";
-	CG_DrawSmallString( 4, 58 + SMALLCHAR_HEIGHT + 2, s, 1.0F );
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 }
 
-/*
-=================
-CG_DrawTeamVote
-=================
-*/
-static void CG_DrawTeamVote(void) {
-	char	*s;
-	int		sec, cs_offset;
-	team_t	team = cgs.clientinfo[cg.snap->ps.clientNum].team;
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
 
-	if ( team == TEAM_RED )
-		cs_offset = 0;
-	else if ( team == TEAM_BLUE )
-		cs_offset = 1;
-	else
-		return;
-
-	if ( !cgs.teamVoteTime[cs_offset] ) {
-		return;
-	}
-
-	// play a talk beep whenever it is modified
-	if ( cgs.teamVoteModified[cs_offset] ) {
-		cgs.teamVoteModified[cs_offset] = qfalse;
-//		trap_S_StartLocalSound( cgs.media.talkSound, CHAN_LOCAL_SOUND );
-	}
-
-	sec = ( VOTE_TIME - ( cg.time - cgs.teamVoteTime[cs_offset] ) ) / 1000;
-	if ( sec < 0 ) {
-		sec = 0;
-	}
-	if (strstr(cgs.teamVoteString[cs_offset], "leader"))
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
-		int i = 0;
+		return;
+	}
 
-		while (cgs.teamVoteString[cs_offset][i] && cgs.teamVoteString[cs_offset][i] != ' ')
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
 		{
-			i++;
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
-
-		if (cgs.teamVoteString[cs_offset][i] == ' ')
+		else if (value < inc)	// partial tic
 		{
-			int voteIndex = 0;
-			char voteIndexStr[256];
-
-			i++;
-
-			while (cgs.teamVoteString[cs_offset][i])
-			{
-				voteIndexStr[voteIndex] = cgs.teamVoteString[cs_offset][i];
-				voteIndex++;
-				i++;
-			}
-			voteIndexStr[voteIndex] = 0;
-
-			voteIndex = atoi(voteIndexStr);
-
-			s = va("TEAMVOTE(%i):(Make %s" S_COLOR_WHITE " the new team leader) yes:%i no:%i", sec, cgs.clientinfo[voteIndex].name,
-									cgs.teamVoteYes[cs_offset], cgs.teamVoteNo[cs_offset] );
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
 		}
 		else
 		{
-			s = va("TEAMVOTE(%i):%s" S_COLOR_WHITE " yes:%i no:%i", sec, cgs.teamVoteString[cs_offset],
-									cgs.teamVoteYes[cs_offset], cgs.teamVoteNo[cs_offset] );
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
 		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	}
-	else
-	{
-		s = va("TEAMVOTE(%i):%s" S_COLOR_WHITE " yes:%i no:%i", sec, cgs.teamVoteString[cs_offset],
-								cgs.teamVoteYes[cs_offset], cgs.teamVoteNo[cs_offset] );
-	}
-	CG_DrawSmallString( 4, 90, s, 1.0F );
+
 }
 
-static qboolean CG_DrawScoreboard() {
-	return CG_DrawOldScoreboard();
-#if 0
-	static qboolean firstTime = qtrue;
-	float fade, *fadeColor;
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
 
-	if (menuScoreboard) {
-		menuScoreboard->window.flags &= ~WINDOW_FORCED;
-	}
-	if (cg_paused.integer) {
-		cg.deferredPlayerLoading = 0;
-		firstTime = qtrue;
-		return qfalse;
-	}
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
 
-	// should never happen in Team Arena
-	if (cgs.gametype == GT_SINGLE_PLAYER && cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
-		cg.deferredPlayerLoading = 0;
-		firstTime = qtrue;
-		return qfalse;
-	}
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
 
-	// don't draw scoreboard during death while warmup up
-	if ( cg.warmup && !cg.showScores ) {
-		return qfalse;
-	}
-
-	if ( cg.showScores || cg.predictedPlayerState.pm_type == PM_DEAD || cg.predictedPlayerState.pm_type == PM_INTERMISSION ) {
-		fade = 1.0;
-		fadeColor = colorWhite;
-	} else {
-		fadeColor = CG_FadeColor( cg.scoreFadeTime, FADE_TIME );
-		if ( !fadeColor ) {
-			// next time scoreboard comes up, don't print killer
-			cg.deferredPlayerLoading = 0;
-			cg.killerName[0] = 0;
-			firstTime = qtrue;
-			return qfalse;
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
-		fade = *fadeColor;
-	}																					  
-
-
-	if (menuScoreboard == NULL) {
-		if ( cgs.gametype >= GT_TEAM ) {
-			menuScoreboard = Menus_FindByName("teamscore_menu");
-		} else {
-			menuScoreboard = Menus_FindByName("score_menu");
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
 		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
 	}
 
-	if (menuScoreboard) {
-		if (firstTime) {
-			CG_SetScoreSelection(menuScoreboard);
-			firstTime = qfalse;
-		}
-		Menu_Paint(menuScoreboard, qtrue);
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
 	}
 
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
 	// load any models that have been deferred
 	if ( ++cg.deferredPlayerLoading > 10 ) {
 		CG_LoadDeferredPlayers();
@@ -4188,568 +6615,301 @@ static void CG_DrawAmmoWarning( void ) {
 CG_DrawWarmup
 =================
 */
-static void CG_DrawWarmup( void ) {
-	float		w;
-	int			sec;
+void CG_DrawForcePower(float x, float y)
+{
 	int			i;
-	float scale;
-	clientInfo_t	*ci1, *ci2;
-	// int			cw;
-	const char	*s;
+	vec4_t		calcColor;
+	float		value,inc,percent;
 
-	sec = cg.warmup;
-	if ( !sec ) {
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
 		return;
 	}
 
-	if ( sec < 0 ) {
-//		s = "Waiting for players";		
-		s = CG_GetStripEdString("INGAMETEXT", "WAITING_FOR_PLAYERS");
-		w = CG_DrawStrlen( s ) * BIGCHAR_WIDTH;
-		CG_DrawBigString(0.5f * (cgs.screenWidth - w), 24, s, 1.0F);
-		cg.warmupCount = 0;
+	if (cent->currentState.weapon != WP_SABER)
+	{
 		return;
 	}
 
-	if (cgs.gametype == GT_TOURNAMENT) {
-		// find the two active players
-		ci1 = NULL;
-		ci2 = NULL;
-		for ( i = 0 ; i < cgs.maxclients ; i++ ) {
-			if ( cgs.clientinfo[i].infoValid && cgs.clientinfo[i].team == TEAM_FREE ) {
-				if ( !ci1 ) {
-					ci1 = &cgs.clientinfo[i];
-				} else {
-					ci2 = &cgs.clientinfo[i];
-				}
-			}
-		}
-
-		if ( ci1 && ci2 ) {
-			s = va( "%s" S_COLOR_WHITE " vs %s", ci1->name, ci2->name );
-			w = CG_Text_Width(s, 0.6f, FONT_MEDIUM);
-			CG_Text_Paint(0.5f * (cgs.screenWidth - w), 60, 0.6f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
-		}
-	} else {
-		if ( cgs.gametype == GT_FFA ) {
-			s = "Free For All";
-		} else if ( cgs.gametype == GT_HOLOCRON ) {
-			s = "Holocron FFA";
-		} else if ( cgs.gametype == GT_JEDIMASTER ) {
-			s = "Jedi Master";
-		} else if ( cgs.gametype == GT_TEAM ) {
-			s = "Team FFA";
-		} else if ( cgs.gametype == GT_SAGA ) {
-			s = "N/A";
-		} else if ( cgs.gametype == GT_CTF ) {
-			s = "Capture the Flag";
-		} else if ( cgs.gametype == GT_CTY ) {
-			s = "Capture the Ysalamiri";
-		} else {
-			s = "";
-		}
-		w = CG_Text_Width(s, 1.5f, FONT_MEDIUM);
-		CG_Text_Paint(0.5f * (cgs.screenWidth - w), 90, 1.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE,FONT_MEDIUM);
-	}
-
-	sec = ( sec - cg.time ) / 1000;
-	if ( sec < 0 ) {
-		cg.warmup = 0;
-		sec = 0;
-	}
-//	s = va( "Starts in: %i", sec + 1 );
-	s = va( "%s: %i",CG_GetStripEdString("INGAMETEXT", "STARTS_IN"), sec + 1 );
-	if ( sec != cg.warmupCount ) {
-		cg.warmupCount = sec;
-		switch ( sec ) {
-		case 0:
-			trap_S_StartLocalSound( cgs.media.count1Sound, CHAN_ANNOUNCER );
-			break;
-		case 1:
-			trap_S_StartLocalSound( cgs.media.count2Sound, CHAN_ANNOUNCER );
-			break;
-		case 2:
-			trap_S_StartLocalSound( cgs.media.count3Sound, CHAN_ANNOUNCER );
-			break;
-		default:
-			break;
-		}
-	}
-	scale = 0.45f;
-	switch ( cg.warmupCount ) {
-	case 0:
-		// cw = 28;
-		scale = 1.25f;
-		break;
-	case 1:
-		// cw = 24;
-		scale = 1.15f;
-		break;
-	case 2:
-		// cw = 20;
-		scale = 1.05f;
-		break;
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
 	default:
-		// cw = 16;
-		scale = 0.9f;
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
 		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	}
 
-	w = CG_Text_Width(s, scale, FONT_MEDIUM);
-	CG_Text_Paint(0.5f * (cgs.screenWidth - w), 125, scale, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 }
 
-//==================================================================================
-/* 
-=================
-CG_DrawTimedMenus
-=================
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
 */
-void CG_DrawTimedMenus() {
-	if (cg.voiceTime) {
-		int t = cg.time - cg.voiceTime;
-		if ( t > 2500 ) {
-			Menus_CloseByName("voiceMenu");
-			trap_Cvar_Set("cl_conXOffset", "0");
-			cg.voiceTime = 0;
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
 	}
 }
 
-void CG_DrawEnhancedFlagStatus(void)
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
 {
-	qhandle_t redFlagShader = 0, blueFlagShader = 0, yellowFlagShader = 0;
-	int team = 0;
-	int secs, mins;
-	char flagStatus[256] = { 0 }, flagStatusHP[16] = { 0 };
-	char redFlagTimeStr[8] = { 0 }, blueFlagTimeStr[8] = { 0 }, yellowFlagTimeStr[8] = { 0 };
-	vec_t *redFlagTimeColor = colorTable[CT_WHITE], *blueFlagTimeColor = colorTable[CT_WHITE], *yellowFlagTimeColor = colorTable[CT_WHITE];
-	vec4_t hcolor = { 0 };
-	float startDrawPos = 365.0f;
-	float ico_size = 32.0f;
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
 
-	if (!cg.snap) {
-		return;
-	}
-
-	trap_R_SetColor(NULL);
-
-	if (cgs.gametype != GT_CTF && cgs.gametype != GT_CTY)
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
 		return;
 	}
 
-	if (cgs.redflag == FLAG_TAKEN)
-	{
-		if (!cgs.redFlagTime)
-			cgs.redFlagTime = cg.time;
-
-		secs = (cg.time - cgs.redFlagTime) / 1000;
-		mins = secs / 60;
-		secs %= 60;
-
-		Com_sprintf(redFlagTimeStr, sizeof(redFlagTimeStr), "%i:%02i", mins, secs);
-
-		if (!cgs.redFlagCarrier)
-			cgs.redFlagCarrier = CG_GetFlagCarrier(TEAM_RED);
-
-		if (cgs.redFlagCarrier && cgs.redFlagCarrier->infoValid) {
-			switch (cgs.redFlagCarrier->team) {
-				case TEAM_RED:
-					redFlagTimeColor = colorTable[CT_RED];
-					break;
-				case TEAM_BLUE:
-					redFlagTimeColor = colorTable[CT_BLUE];
-					break;
-				case TEAM_FREE:
-					redFlagTimeColor = colorTable[CT_YELLOW];
-					break;
-				default:
-					redFlagTimeColor = colorTable[CT_WHITE];
-					break;
-			}
-		}
-	}
-	else if (cgs.redFlagCarrier || cgs.redFlagTime) {
-		cgs.redFlagCarrier = NULL;
-		cgs.redFlagTime = 0;
-	}
-
-	if (cgs.blueflag == FLAG_TAKEN)
-	{
-		if (!cgs.blueFlagTime)
-			cgs.blueFlagTime = cg.time;
-
-		secs = (cg.time - cgs.blueFlagTime) / 1000;
-		mins = secs / 60;
-		secs %= 60;
-
-		Com_sprintf(blueFlagTimeStr, sizeof(blueFlagTimeStr), "%i:%02i", mins, secs);
-
-		if (!cgs.blueFlagCarrier)
-			cgs.blueFlagCarrier = CG_GetFlagCarrier(TEAM_BLUE);
-
-		if (cgs.blueFlagCarrier && cgs.blueFlagCarrier->infoValid) {
-			switch (cgs.blueFlagCarrier->team) {
-				case TEAM_RED:
-					blueFlagTimeColor = colorTable[CT_RED];
-					break;
-				case TEAM_BLUE:
-					blueFlagTimeColor = colorTable[CT_BLUE];
-					break;
-				case TEAM_FREE:
-					blueFlagTimeColor = colorTable[CT_YELLOW];
-					break;
-				default:
-					blueFlagTimeColor = colorTable[CT_WHITE];
-					break;
-			}
-		}
-	}
-	else if (cgs.blueFlagCarrier || cgs.blueFlagTime) {
-		cgs.blueFlagCarrier = NULL;
-		cgs.blueFlagTime = 0;
-	}
-
-	if (cgs.isCTFMod && cgs.CTF3ModeActive)
-	{
-		if (cgs.yellowflag == FLAG_TAKEN)
-		{
-			if (!cgs.yellowFlagTime)
-				cgs.yellowFlagTime = cg.time;
-
-			secs = (cg.time - cgs.yellowFlagTime) / 1000;
-			mins = secs / 60;
-			secs %= 60;
-
-			Com_sprintf(yellowFlagTimeStr, sizeof(yellowFlagTimeStr), "%i:%02i", mins, secs);
-
-			if (!cgs.yellowFlagCarrier)
-				cgs.yellowFlagCarrier = CG_GetFlagCarrier(TEAM_FREE);
-
-			if (cgs.yellowFlagCarrier && cgs.yellowFlagCarrier->infoValid) {
-				switch (cgs.yellowFlagCarrier->team) {
-					case TEAM_RED:
-						yellowFlagTimeColor = colorTable[CT_RED];
-						break;
-					case TEAM_BLUE:
-						yellowFlagTimeColor = colorTable[CT_BLUE];
-						break;
-					case TEAM_FREE:
-						yellowFlagTimeColor = colorTable[CT_YELLOW];
-						break;
-					default:
-						yellowFlagTimeColor = colorTable[CT_WHITE];
-						break;
-				}
-			}
-		}
-		else if (cgs.yellowFlagCarrier || cgs.yellowFlagTime) {
-			cgs.yellowFlagCarrier = NULL;
-			cgs.yellowFlagTime = 0;
-		}
-	}
-
-	hcolor[0] = hcolor[1] = hcolor[2] = hcolor[3] = 1.0f;
-	if (!cgs.isCTFMod || !cgs.CTF3ModeActive) //just show white color in normal CTF
-		redFlagTimeColor = blueFlagTimeColor = yellowFlagTimeColor = colorWhite;
-
-	team = cg.snap->ps.persistant[PERS_TEAM];
-	if (team == TEAM_RED)
-	{
-		if (cgs.gametype == GT_CTY) {
-			redFlagShader = cgs.media.flagShaderTaken[TEAM_RED];
-			blueFlagShader = cgs.media.flagShaderYsal[TEAM_BLUE];
-		}
-		else {
-			redFlagShader = cgs.media.flagShaderTaken[TEAM_RED];
-			blueFlagShader = cgs.media.flagShader[TEAM_BLUE];
-			yellowFlagShader = cgs.media.flagShader[TEAM_FREE];
-		}
-
-		if (cgs.isCTFMod && cgs.CTF3ModeActive) {
-			if (cgs.yellowflag != FLAG_ATBASE)
-			{
-				if (cgs.yellowflag == FLAG_TAKEN)
-				{
-					if (cgs.yellowFlagCarrier && cgs.yellowFlagCarrier->infoValid) {
-						Com_sprintf(flagStatus, sizeof(flagStatus), "%s  ", cgs.yellowFlagCarrier->name);
-
-						if (cgs.yellowFlagCarrier->team == team) {
-							CG_GetColorForHealth(cgs.yellowFlagCarrier->health, cgs.yellowFlagCarrier->armor, hcolor);
-
-							if (cgs.yellowFlagCarrier->armor)
-								Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i/%i)", cgs.yellowFlagCarrier->health, cgs.yellowFlagCarrier->armor);
-							else
-								Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.yellowFlagCarrier->health);
-
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-							CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						}
-						else {
-							yellowFlagShader = cgs.media.flagShaderTaken[TEAM_FREE];
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						}
-					}
-					if (cg_enhancedFlagStatus.integer > 1 && yellowFlagTimeStr[0] != '\0')
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-				}
-				CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, yellowFlagShader);
-				startDrawPos -= ico_size + 2.0f;
-			}
-		}
-
-		if (cgs.blueflag != FLAG_ATBASE)
-		{
-			if (cgs.blueflag == FLAG_TAKEN)
-			{
-				if (cgs.blueFlagCarrier && cgs.blueFlagCarrier->infoValid) {
-					Com_sprintf(flagStatus, sizeof(flagStatus), "%s  ", cgs.blueFlagCarrier->name);
-
-					if (cgs.blueFlagCarrier->team == team) {
-						CG_GetColorForHealth(cgs.blueFlagCarrier->health, cgs.blueFlagCarrier->armor, hcolor);
-
-						if (cgs.blueFlagCarrier->armor)
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i/%i)", cgs.blueFlagCarrier->health, cgs.blueFlagCarrier->armor);
-						else
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.blueFlagCarrier->health);
-
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-					else {
-						blueFlagShader = cgs.media.flagShaderTaken[TEAM_BLUE];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-				}
-				if (cg_enhancedFlagStatus.integer > 1 && blueFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-			}
-			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, blueFlagShader);
-			startDrawPos -= ico_size + 2.0f;
-		}
-
-		if (cgs.redflag != FLAG_ATBASE)
-		{
-			if (cgs.redflag == FLAG_TAKEN)
-			{
-				if (cgs.redFlagCarrier && cgs.redFlagCarrier->infoValid) {
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-				}
-				if (cg_enhancedFlagStatus.integer > 1 && redFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-			}
-			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, redFlagShader);
-			startDrawPos -= ico_size + 2.0f;
-		}
-	}
-	else if (cgs.isCTFMod && cgs.CTF3ModeActive && team == TEAM_FREE)
-	{
-		if (cgs.gametype == GT_CTY) {
-			redFlagShader = cgs.media.flagShaderYsal[TEAM_RED];
-			blueFlagShader = cgs.media.flagShaderTaken[TEAM_BLUE];
-		}
-		else {
-			redFlagShader = cgs.media.flagShader[TEAM_RED];
-			blueFlagShader = cgs.media.flagShader[TEAM_BLUE];
-			yellowFlagShader = cgs.media.flagShaderTaken[TEAM_FREE];
-		}
-
-		if (cgs.blueflag != FLAG_ATBASE)
-		{
-			if (cgs.blueflag == FLAG_TAKEN)
-			{
-				if (cgs.blueFlagCarrier && cgs.blueFlagCarrier->infoValid) {
-					Com_sprintf(flagStatus, sizeof(flagStatus), "%s  ", cgs.blueFlagCarrier->name);
-
-					if (cgs.blueFlagCarrier->team == team) {
-						CG_GetColorForHealth(cgs.blueFlagCarrier->health, cgs.blueFlagCarrier->armor, hcolor);
-
-						if (cgs.blueFlagCarrier->armor)
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i/%i)", cgs.blueFlagCarrier->health, cgs.blueFlagCarrier->armor);
-						else
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.blueFlagCarrier->health);
-
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-					else {
-						blueFlagShader = cgs.media.flagShaderTaken[TEAM_BLUE];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-				}
-				if (cg_enhancedFlagStatus.integer > 1 && blueFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-			}
-			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, blueFlagShader);
-			startDrawPos -= ico_size + 2.0f;
-		}
-
-		if (cgs.redflag != FLAG_ATBASE)
-		{
-			if (cgs.redflag == FLAG_TAKEN)
-			{
-				if (cgs.redFlagCarrier && cgs.redFlagCarrier->infoValid) {
-					Com_sprintf(flagStatus, sizeof(flagStatus), "%s  ", cgs.redFlagCarrier->name);
-
-					if (cgs.redFlagCarrier->team == team) {
-						redFlagShader = cgs.media.flagShader[TEAM_RED];
-
-						CG_GetColorForHealth(cgs.redFlagCarrier->health, cgs.redFlagCarrier->armor, hcolor);
-
-						if (cgs.redFlagCarrier->armor)
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i/%i)", cgs.redFlagCarrier->health, cgs.redFlagCarrier->armor);
-						else
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.redFlagCarrier->health);
-
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-					else {
-						redFlagShader = cgs.media.flagShaderTaken[TEAM_RED];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos+9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-				}
-				if (cg_enhancedFlagStatus.integer > 1 && redFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-			}
-			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, redFlagShader);
-			startDrawPos -= ico_size + 2.0f;
-		}
-
-		if (cgs.yellowflag != FLAG_ATBASE)
-		{
-			if (cgs.yellowflag == FLAG_TAKEN)
-			{
-				if (cgs.yellowFlagCarrier && cgs.yellowFlagCarrier->infoValid) {
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-				}
-				if (cg_enhancedFlagStatus.integer > 1 && yellowFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-			}
-			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, yellowFlagShader);
-			startDrawPos -= ico_size + 2.0f;
-		}
-	}
-	else //if (team == TEAM_BLUE)
-	{
-		if (cgs.gametype == GT_CTY) {
-			redFlagShader = cgs.media.flagShaderYsal[TEAM_RED];
-			blueFlagShader = cgs.media.flagShaderTaken[TEAM_BLUE];
-		}
-		else {
-			redFlagShader = cgs.media.flagShader[TEAM_RED];
-			blueFlagShader = cgs.media.flagShaderTaken[TEAM_BLUE];
-			yellowFlagShader = cgs.media.flagShader[TEAM_FREE];
-		}
-
-		if (cgs.isCTFMod && cgs.CTF3ModeActive) {
-			if (cgs.yellowflag != FLAG_ATBASE)
-			{
-				if (cgs.yellowflag == FLAG_TAKEN)
-				{
-					if (cgs.yellowFlagCarrier && cgs.yellowFlagCarrier->infoValid) {
-						Com_sprintf(flagStatus, sizeof(flagStatus), "%s  ", cgs.yellowFlagCarrier->name);
-
-						if (cgs.yellowFlagCarrier->team == team) {
-							CG_GetColorForHealth(cgs.yellowFlagCarrier->health, cgs.yellowFlagCarrier->armor, hcolor);
-
-							if (cgs.yellowFlagCarrier->armor)
-								Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i/%i)", cgs.yellowFlagCarrier->health, cgs.yellowFlagCarrier->armor);
-							else
-								Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.yellowFlagCarrier->health);
-
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-							CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						}
-						else {
-							yellowFlagShader = cgs.media.flagShaderTaken[TEAM_FREE];
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						}
-					}
-					if (cg_enhancedFlagStatus.integer > 1 && yellowFlagTimeStr[0] != '\0')
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-				}
-				CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, yellowFlagShader);
-				startDrawPos -= ico_size + 2.0f;
-			}
-		}
-
-		if (cgs.redflag != FLAG_ATBASE)
-		{
-			if (cgs.redflag == FLAG_TAKEN)
-			{
-				if (cgs.redFlagCarrier && cgs.redFlagCarrier->infoValid) {
-					Com_sprintf(flagStatus, sizeof(flagStatus), "%s  ", cgs.redFlagCarrier->name);
-
-					if (cgs.redFlagCarrier->team == team) {
-						redFlagShader = cgs.media.flagShader[TEAM_RED];
-
-						CG_GetColorForHealth(cgs.redFlagCarrier->health, cgs.redFlagCarrier->armor, hcolor);
-
-						if (cgs.redFlagCarrier->armor)
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i/%i)", cgs.redFlagCarrier->health, cgs.redFlagCarrier->armor);
-						else
-							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.redFlagCarrier->health);
-
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-					else {
-						redFlagShader = cgs.media.flagShaderTaken[TEAM_RED];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos+9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-					}
-				}
-				if (cg_enhancedFlagStatus.integer > 1.0f && redFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-			}
-			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, redFlagShader);
-			startDrawPos -= ico_size + 2.0f;
-		}
-
-		if (cgs.blueflag != FLAG_ATBASE)
-		{
-			if (cgs.blueflag == FLAG_TAKEN)
-			{
-				if (cgs.blueFlagCarrier && cgs.blueFlagCarrier->infoValid) {
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-				}
-				if (cg_enhancedFlagStatus.integer > 1 && blueFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
-			}
-			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, blueFlagShader);
-			startDrawPos -= ico_size + 2.0f;
-		}
-	}
-
-	startDrawPos += ico_size*2.0f;
-	//if (startDrawPos <= chatBoxYPos) {
-	if (chatBoxYPos >= 360) {
-		//chatBoxYPos = startDrawPos - (ico_size*2.0f)*2.0f;
-		chatBoxYPos -= 35.0f;
-		if (cgs.CTF3ModeActive)
-			chatBoxYPos -= 35.0f;
-	}
-}
-
-void CG_DrawFlagStatus(void)
-{
-	int myFlagTakenShader = 0;
-	int theirFlagShader = 0;
-	int team = 0;
-	int startDrawPos = 2;
-	int ico_size = 32;
-
-	if (!cg.snap)
+	if (cent->currentState.weapon != WP_SABER)
 	{
 		return;
 	}
 
-	if (cgs.gametype != GT_CTF && cgs.gametype != GT_CTY)
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
 	{
-		return;
-	}
-
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	trap_R_SetColor(NULL);
 
 	team = cg.snap->ps.persistant[PERS_TEAM];
@@ -4787,6 +6947,22 @@ void CG_DrawFlagStatus(void)
 		startDrawPos += ico_size+2;
 	}
 
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
 	if (CG_OtherTeamHasFlag())
 	{
 		CG_DrawPic( startDrawPos, cgs.screenHeight-115, ico_size, ico_size, myFlagTakenShader );
@@ -4838,6 +7014,96 @@ void CG_ChatBox_StrInsert(char *buffer, int place, char *str)
 		i--;
 	}
 
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
 	i++;
 	while (k < insLen)
 	{
@@ -4935,6 +7201,28 @@ void CG_ChatBox_AddString(char *chatStr)
 			trap_S_StartLocalSound(cgs.media.privateChatSound, CHAN_LOCAL_SOUND);
 	}
 
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
 	if (regular || teamchat || personal) {
 		token = Q_strtokm(chatStr, search);
 		if (token) {
@@ -4951,31 +7239,85 @@ void CG_ChatBox_AddString(char *chatStr)
 		else if (cg_cleanChatbox.integer > 1) {
 			Q_RemoveLeadingColorCode(msg);
 		}
-
-		//basically checking for colored binds and things like that
-		if (regular) {
-			if (!Q_HasLeadingColorCode(msg))
-				Q_strcat(name, sizeof(name), "^7: ^0^0^2");
-			else
-				Q_strcat(name, sizeof(name), "^7: ^0^0");
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
 		}
-		else if (teamchat) {
-			if (!Q_HasLeadingColorCode(msg))
-				Q_strcat(name, sizeof(name), "^7): ^0^0^5");
-			else
-				Q_strcat(name, sizeof(name), "^7): ^0^0"); 
-		}
-		else if (personal) {
-			if (!Q_HasLeadingColorCode(msg))
-				Q_strcat(name, sizeof(name), "^7]: ^0^0^6");
-			else
-				Q_strcat(name, sizeof(name), "^7]: ^0^0"); 
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
 		}
 
-		Q_strcat(name, sizeof(name), msg);
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
 
+		value -= inc;
 		strcpy(chatStr, name);
 	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 
 	strcpy(chat->string, chatStr);
 	chat->time = cg.time + cg_chatBox.integer;
@@ -5050,58 +7392,619 @@ void CG_ChatBox_ArrayInsert(chatBoxItem_t **array, int insPoint, int maxNum, cha
 	array[insPoint] = item;
 }
 
-//go through all the chat strings and draw them if they are not yet expired
-//static QINLINE void CG_ChatBox_DrawStrings(void)
-ID_INLINE void CG_ChatBox_DrawStrings(void) //o, ID_INLINE is static Q_INLINE
+static void CG_DrawSimpleAmmo(const centity_t *cent)
 {
-	chatBoxItem_t *drawThese[MAX_CHATBOX_ITEMS];
-	int numToDraw = 0;
-	int linesToDraw = 0;
-	int i = 0;
-	float x = cg_chatBoxX.value;
-	float y = cg.scoreBoardShowing ? 475.0f : chatBoxYPos;
-	float fontScale = 0.65f * cg_chatBoxFontSize.value;//JAPRO - Clientside - Chatbox Font Size Scaler
-	qboolean drawAnyway = qfalse;
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
 
-	if (!cg_chatBox.integer)
-		return;
-
-	if (cg_chatBoxShowHistory.integer)
-		drawAnyway = (qboolean)(trap_Key_GetCatcher() & KEYCATCH_CONSOLE);
-
-	memset(drawThese, 0, sizeof(drawThese));
-
-	while (i < MAX_CHATBOX_ITEMS)
+	if (!cent->currentState.weapon) // We don't have a weapon right now
 	{
-		if (cg.chatItems[i].time >= cg.time || drawAnyway)
-		{
-			int check = numToDraw;
-			int insertionPoint = numToDraw;
-
-			while (check >= 0)
-			{
-				if (drawThese[check] &&
-					cg.chatItems[i].time < drawThese[check]->time)
-				{ //insert here
-					insertionPoint = check;
-				}
-				check--;
-			}
-			CG_ChatBox_ArrayInsert(drawThese, insertionPoint, MAX_CHATBOX_ITEMS, &cg.chatItems[i]);
-			numToDraw++;
-			linesToDraw += cg.chatItems[i].lines;
-		}
-		i++;
-	}
-
-	if (!numToDraw)
-	{ //nothing, then, just get out of here now.
 		return;
 	}
 
-	//move initial point up so we draw bottom-up (visually)
-	y -= (CHATBOX_FONT_HEIGHT*fontScale)*linesToDraw;
+	ps = &cg.snap->ps;
 
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
+	}
+
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
+
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	//we have the items we want to draw, just quickly loop through them now
 	i = 0;
 	while (i < numToDraw)
@@ -5543,27 +8446,171 @@ static void CG_Draw2D( void ) {
 		}
 	}
 
-	if (cg.snap->ps.rocketLockIndex != MAX_CLIENTS && (cg.time - cg.snap->ps.rocketLockTime) > 0)
-	{
-		CG_DrawRocketLocking( cg.snap->ps.rocketLockIndex, cg.snap->ps.rocketLockTime );
-	}
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+}
 
-	if (cg.snap->ps.holocronBits)
-	{
-		CG_DrawHolocronIcons();
-	}
-	if (cg.snap->ps.fd.forcePowersActive || cg.snap->ps.fd.forceRageRecoveryTime > cg.time)
-	{
-		CG_DrawActivePowers();
-	}
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
 
-	// Draw this before the text so that any text won't get clipped off
-	CG_DrawZoomMask();
-
-/*
-	if (cg.cameraMode) {
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
 		return;
 	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
 */
 	if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR ) {
 		CG_DrawSpectator();
@@ -5721,37 +8768,49 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 		return;
 	}
 
-	// optionally draw the tournement scoreboard instead
-	if ( cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR &&
-		( cg.snap->ps.pm_flags & PMF_SCOREBOARD ) ) {
-		CG_DrawTourneyScoreboard();
+	if (cent->currentState.weapon != WP_SABER)
+	{
 		return;
 	}
 
-	switch ( stereoView ) {
-	case STEREO_CENTER:
-		separation = 0;
-		break;
-	case STEREO_LEFT:
-		separation = -cg_stereoSeparation.value / 2;
-		break;
-	case STEREO_RIGHT:
-		separation = cg_stereoSeparation.value / 2;
-		break;
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
 	default:
-		separation = 0;
-		CG_Error( "CG_DrawActive: Undefined stereoView" );
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
+		break;*/
 	}
 
-
-	// clear around the rendered view if sized down
-	CG_TileClear();
-
-	// offset vieworg appropriately if we're doing stereo separation
-	VectorCopy( cg.refdef.vieworg, baseOrg );
-	if ( separation != 0 ) {
-		VectorMA( cg.refdef.vieworg, -separation, cg.refdef.viewaxis[1], cg.refdef.vieworg );
-	}
+	if (cg_hudColors.integer)
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[calcColor]);
+	else
+		UI_DrawProportionalString(cgs.screenWidth - (weapX + 16 + 32), (SCREEN_HEIGHT - 80) + 40, num, UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
 
 	// draw 3D view
 	trap_R_RenderScene( &cg.refdef );
@@ -5765,6 +8824,204 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 	CG_Draw2D();
 }
 
+static void CG_DrawSimpleAmmo(const centity_t *cent)
+{
+	playerState_t	*ps;
+	uint32_t	calcColor;
+	int			currValue = 0;
+	char		num[16] = { 0 };
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	ps = &cg.snap->ps;
+
+	currValue = ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	// No ammo
+	if (currValue < 0 || (weaponData[cent->currentState.weapon].energyPerShot == 0 && weaponData[cent->currentState.weapon].altEnergyPerShot == 0))
+	{
+		UI_DrawProportionalString(cgs.screenWidth - (16 + 32), (SCREEN_HEIGHT - 80) + 40, "--", UI_SMALLFONT | UI_DROPSHADOW, colorTable[CT_HUD_ORANGE]);
+		return;
+	}
+
+	//
+	// ammo
+	//
+	if (cg.oldammo < currValue)
+	{
+		cg.oldAmmoTime = cg.time + 200;
+	}
+
+	cg.oldammo = currValue;
+
+	// Determine the color of the numeric field
+
+	// Firing or reloading?
+	if ((cg.predictedPlayerState.weaponstate == WEAPON_FIRING
+		&& cg.predictedPlayerState.weaponTime > 100))
+	{
+		calcColor = CT_LTGREY;
+	}
+	// Overcharged?
+//	else if ( cent->gent->s.powerups & ( 1 << PW_WEAPON_OVERCHARGE ) )
+//	{
+//		numColor_i = CT_WHITE;
+//	}
+//	else 
+//	{
+//		if ( value > 0 ) 
+//		{
+//			if (cg.oldAmmoTime > cg.time)
+//			{
+//				numColor_i = CT_YELLOW;
+//			}
+//			else
+//			{
+//				numColor_i = CT_HUD_ORANGE;
+//			}
+//		} 
+//		else 
+//		{
+//			numColor_i = CT_RED;
+//		}
+//	}
+
+	calcColor = CT_HUD_ORANGE;
+
+	trap_R_SetColor( colorTable[calcColor] );	
+	CG_DrawNumField (x + 30, y + 26, 3, value, 6, 12, NUM_FONT_SMALL,qfalse);
+
+
+	inc = (float) ammoData[weaponData[cent->currentState.weapon].ammoIndex].max / MAX_TICS;
+	value =ps->ammo[weaponData[cent->currentState.weapon].ammoIndex];
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + ammoTicPos[i].x, 
+			y + ammoTicPos[i].y, 
+			ammoTicPos[i].width, 
+			forceTicPos[i].height, 
+			ammoTicPos[i].tic );
+
+		value -= inc;
+	}
+
+}
+
+/*
+================
+CG_DrawForcePower
+================
+*/
+void CG_DrawForcePower(float x, float y)
+{
+	int			i;
+	vec4_t		calcColor;
+	float		value,inc,percent;
+
+	inc = (float)  100 / MAX_TICS;
+	value = cg.snap->ps.fd.forcePower;
+
+	for (i=MAX_TICS-1;i>=0;i--)
+	{
+
+		if (value <= 0)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_BLACK], sizeof(vec4_t));
+		}
+		else if (value < inc)	// partial tic
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+			percent = value / inc;
+			calcColor[0] *= percent;
+			calcColor[1] *= percent;
+			calcColor[2] *= percent;
+		}
+		else
+		{
+			memcpy(calcColor, colorTable[CT_WHITE], sizeof(vec4_t));
+		}
+
+		trap_R_SetColor( calcColor);
+		CG_DrawPic( x + forceTicPos[i].x, 
+			y + forceTicPos[i].y, 
+			forceTicPos[i].width, 
+			forceTicPos[i].height, 
+			forceTicPos[i].tic );
+
+		value -= inc;
+	}
+}
+
+static void CG_DrawSimpleSaberStyle(const centity_t *cent)
+{
+	uint32_t	calcColor;
+	char		num[7] = { 0 };
+	int			weapX = 24;
+
+	if (!cent->currentState.weapon) // We don't have a weapon right now
+	{
+		return;
+	}
+
+	if (cent->currentState.weapon != WP_SABER)
+	{
+		return;
+	}
+
+	switch (cg.predictedPlayerState.fd.saberDrawAnimLevel)
+	{
+	default:
+	case FORCE_LEVEL_1: //SS_FAST:
+		Com_sprintf(num, sizeof(num), "FAST");
+		calcColor = CT_ICON_BLUE;
+		weapX -= 8;
+		break;
+	case FORCE_LEVEL_2: //SS_MEDIUM:
+		Com_sprintf(num, sizeof(num), "MEDIUM");
+		calcColor = CT_YELLOW;
+		break;
+	case FORCE_LEVEL_3: //SS_STRONG:
+		Com_sprintf(num, sizeof(num), "STRONG");
+		calcColor = CT_HUD_RED;
+		break;
+	case 4: //SS_DESANN:
+		Com_sprintf(num, sizeof(num), "DESANN");
+		calcColor = CT_HUD_RED;
+		break;
+	case 5: //SS_TAVION:
+		Com_sprintf(num, sizeof(num), "TAVION");
+		calcColor = CT_ICON_BLUE;
+		break;
+	/*case SS_DUAL:
+		Com_sprintf(num, sizeof(num), "AKIMBO");
+		calcColor = CT_HUD_ORANGE;
+		break;
+	case SS_STAFF:
+		Com_sprintf(num, sizeof(num), "STAFF");
+		calcColor = CT_HUD_ORANGE;
 static void CG_CalculateSpeed(centity_t *cent) {
 	const vec_t * const velocity = (cent->currentState.clientNum == cg.clientNum ? cg.predictedPlayerState.velocity : cent->currentState.pos.trDelta);
 	//cg.currentSpeed = sqrtf(velocity[0] * velocity[0] + velocity[1] * velocity[1]); // is this right?
@@ -6042,6 +9299,7 @@ static void CG_DrawShowPos(void)
 		return;
 
 	vel = (float)sqrt(cg.currentSpeed * cg.currentSpeed + ps->velocity[2] * ps->velocity[2]);
+	vel = (float)sqrt(cg.currentSpeed * cg.currentSpeed + ps->velocity[2] * ps->velocity[2]);
 
 	Com_sprintf(showPosString, sizeof(showPosString), "pos:   %.2f   %.2f   %.2f\nang:   %.2f   %.2f\nvel:     %.2f",
 		(float)ps->origin[0], (float)ps->origin[1], (float)ps->origin[2], (float)ps->viewangles[PITCH], (float)ps->viewangles[YAW], vel);
@@ -6059,6 +9317,7 @@ static void CG_StrafeHelperSound(float difference) {
 void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4_t color, float alpha, float ycutoff)
 {
 	float stepx, stepy, length = (float)sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
+	float stepx, stepy, length = (float)sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
 	int i;
 
 	if (length < 1)
@@ -6075,6 +9334,7 @@ void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4
 
 	for (i = 0; i <= (length / size); i++) {
 		if (x1 < 640 && y1 < 480 && y1 < ycutoff)
+		if (x1 < 640 && y1 < 480 && y1 < ycutoff)
 			CG_DrawPic(x1, y1, size, size, cgs.media.whiteShader);
 		x1 += stepx;
 		y1 += stepy;
@@ -6085,6 +9345,7 @@ void Dzikie_CG_DrawLine(float x1, float y1, float x2, float y2, float size, vec4
 static void CG_DrawAccelMeter(void)
 {
 	const float optimalAccel = cg.predictedPlayerState.speed * ((float)cg.frametime / 1000.0f);
+	const float potentialSpeed = (float)sqrt(cg.previousSpeed * cg.previousSpeed - optimalAccel * optimalAccel + 2 * (250 * optimalAccel));
 	const float potentialSpeed = (float)sqrt(cg.previousSpeed * cg.previousSpeed - optimalAccel * optimalAccel + 2 * (250 * optimalAccel));
 	float actualAccel, total, percentAccel, x;
 	const float accel = cg.currentSpeed - cg.previousSpeed;
@@ -6189,6 +9450,7 @@ static void CG_JumpDistance(void)
 			vec3_t distance;
 
 			VectorSubtract(cg.predictedPlayerState.origin, cg.lastGroundPosition, distance);
+			cg.lastJumpDistance = (float)sqrt(distance[0] * distance[0] + distance[1] * distance[1]); // is this right?
 			cg.lastJumpDistance = (float)sqrt(distance[0] * distance[0] + distance[1] * distance[1]); // is this right?
 			cg.lastJumpDistanceTime = cg.time;
 		}
@@ -6349,7 +9611,10 @@ void Dzikie_CG_DrawSpeed(int moveDir) {
 	//	w = CG_Text_Width_Ext( str, 0.25f, 0, &cgs.media.limboFont1 );
 	//	CG_Text_Paint_Ext( (float)(SCREEN_WIDTH/2), (float)(SCREEN_HEIGHT/2), 0.25f, 0.25f, colorWhite, str, 0, 0, ITEM_TEXTSTYLE_SHADOWED, &cgs.media.limboFont1 );
 	Dzikie_CG_DrawLine(midx, midy, midx + length*sin(diff), midy - length*cos(diff), 1, colorRed, 0.75f, 0);
+	Dzikie_CG_DrawLine(midx, midy, midx + length*sin(diff), midy - length*cos(diff), 1, colorRed, 0.75f, 0);
 	Dzikie_CG_DrawLine(midx, midy, midx + cmd.rightmove, midy - cmd.forwardmove, 1, colorCyan, 0.75f, 0);
+	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sin(diff + optiangle), midy - length / 2 * cos(diff + optiangle), 1, colorRed, 0.75f, 0);
+	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sin(diff - optiangle), midy - length / 2 * cos(diff - optiangle), 1, colorRed, 0.75f, 0);
 	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sin(diff + optiangle), midy - length / 2 * cos(diff + optiangle), 1, colorRed, 0.75f, 0);
 	Dzikie_CG_DrawLine(midx, midy, midx + length / 2 * sin(diff - optiangle), midy - length / 2 * cos(diff - optiangle), 1, colorRed, 0.75f, 0);
 
@@ -6414,6 +9679,7 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 	line[2] = start[2];
 
 	if (!CG_WorldCoordToScreenCoord(line, &x, &y))
+	if (!CG_WorldCoordToScreenCoord(line, &x, &y))
 		return;
 
 	if (cg_strafeHelper.integer & SHELPER_NEWBARS) {
@@ -6422,6 +9688,7 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 	}
 	if (cg_strafeHelper.integer & SHELPER_OLDBARS && active && moveDir != 0) { //Not sure how to deal with multiple lines for W only so just fuck it for now..
 																			   //Proper way is to tell which line we are closest to aiming at and display the shit for that...
+		CG_FillRect(cgs.screenWidth / 2, SCREEN_HEIGHT / 2, (-4.444 * AngleSubtract(cg.predictedPlayerState.viewangles[YAW], angs[YAW])), 12, colorTable[CT_RED]);
 		CG_FillRect(cgs.screenWidth / 2, SCREEN_HEIGHT / 2, (-4.444 * AngleSubtract(cg.predictedPlayerState.viewangles[YAW], angs[YAW])), 12, colorTable[CT_RED]);
 	}
 	if (cg_strafeHelper.integer & SHELPER_OLDSTYLE) {
@@ -6460,9 +9727,17 @@ static void DrawStrafeLine(vec3_t velocity, float diff, qboolean active, int mov
 	}
 	if (cg_strafeHelper.integer & SHELPER_SOUND && active && moveDir != 8) { //Dont do this shit for the center line since its not really a strafe
 		CG_StrafeHelperSound(100 * AngleSubtract(cg.predictedPlayerState.viewangles[YAW], angs[YAW]));
+		CG_StrafeHelperSound(100 * AngleSubtract(cg.predictedPlayerState.viewangles[YAW], angs[YAW]));
 	}
 }
 
+static void CG_StrafeHelper(centity_t *cent)
+{
+	vec_t * velocity = cg.predictedPlayerState.velocity;
+	static vec3_t velocityAngle;
+	const float currentSpeed = cg.currentSpeed;
+	float pmAccel = 10.0f, pmAirAccel = 1.0f, pmFriction = 6.0f, frametime, optimalDeltaAngle, baseSpeed = cg.predictedPlayerState.speed;
+	const int moveStyle = PM_GetMovePhysics();
 static void CG_StrafeHelper(centity_t *cent)
 {
 	vec_t * velocity = cg.predictedPlayerState.velocity;
@@ -6479,30 +9754,47 @@ static void CG_StrafeHelper(centity_t *cent)
 
 	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
 		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
+	qboolean onGround;
+	usercmd_t cmd = { 0 };
+
+	if (moveStyle == MV_SIEGE)
+		return; //no strafe in siege
+
+	if (cg.clientNum == cg.predictedPlayerState.clientNum && !cg.demoPlayback) {
+		trap_GetUserCmd(trap_GetCurrentCmdNumber(), &cmd);
 	}
 	else if (cg.snap) {
 		moveDir = cg.snap->ps.movementDir;
 		switch (moveDir) {
 		case 0: // W
 			cmd.forwardmove = 1; break;
+			cmd.forwardmove = 1; break;
 		case 1: // WA
+			cmd.forwardmove = 1; cmd.rightmove = -1; break;
 			cmd.forwardmove = 1; cmd.rightmove = -1; break;
 		case 2: // A
 			cmd.rightmove = -1;	break;
+			cmd.rightmove = -1;	break;
 		case 3: // AS
+			cmd.rightmove = -1;	cmd.forwardmove = -1; break;
 			cmd.rightmove = -1;	cmd.forwardmove = -1; break;
 		case 4: // S
 			cmd.forwardmove = -1; break;
+			cmd.forwardmove = -1; break;
 		case 5: // SD
+			cmd.forwardmove = -1; cmd.rightmove = 1; break;
 			cmd.forwardmove = -1; cmd.rightmove = 1; break;
 		case 6: // D
 			cmd.rightmove = 1; break;
+			cmd.rightmove = 1; break;
 		case 7: // DW
+			cmd.rightmove = 1; cmd.forwardmove = 1;	break;
 			cmd.rightmove = 1; cmd.forwardmove = 1;	break;
 		default:
 			break;
 		}
 		if (cg.snap->ps.pm_flags & PMF_JUMP_HELD)
+			cmd.upmove = 1;
 			cmd.upmove = 1;
 	}
 	else {
@@ -6510,7 +9802,24 @@ static void CG_StrafeHelper(centity_t *cent)
 	}
 
 	onGround = (qboolean)(cg.snap->ps.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
+	onGround = (qboolean)(cg.snap->ps.groundEntityNum == ENTITYNUM_WORLD); //sadly predictedPlayerState makes it jerky so need to use cg.snap groundentityNum, and check for cg.snap earlier
 
+	if (moveStyle == MV_WSW) {
+		pmAccel = 12.0f;
+		pmFriction = 8.0f;
+	}
+	else if (moveStyle == MV_CPM || moveStyle == MV_RJCPM || moveStyle == MV_BOTCPM) {
+		pmAccel = 15.0f;
+		pmFriction = 8.0f;
+	}
+	else if (moveStyle == MV_SP) {
+		pmAirAccel = 4.0f;
+		pmAccel = 12.0f;
+	}
+	else if (moveStyle == MV_SLICK) {
+		pmFriction = 0.0f;//unless walking?
+		pmAccel = 30.0f;
+	}
 	if (moveStyle == MV_WSW) {
 		pmAccel = 12.0f;
 		pmFriction = 8.0f;
@@ -6532,6 +9841,7 @@ static void CG_StrafeHelper(centity_t *cent)
 		return;
 
 	/*if (cg.predictedPlayerState.pm_type == PM_JETPACK) {
+	/*if (cg.predictedPlayerState.pm_type == PM_JETPACK) {
 		pmAirAccel = 1.4f; //idk
 		if (cmd.upmove <= 0)
 			baseSpeed *= 0.8f;
@@ -6540,7 +9850,10 @@ static void CG_StrafeHelper(centity_t *cent)
 	}
 	else if (moveStyle == MV_SWOOP && cg.predictedPlayerState.m_iVehicleNum) {
 		centity_t *vehCent = &cg_entities[cg.predictedPlayerState.m_iVehicleNum];
+	else if (moveStyle == MV_SWOOP && cg.predictedPlayerState.m_iVehicleNum) {
+		centity_t *vehCent = &cg_entities[cg.predictedPlayerState.m_iVehicleNum];
 		velocity = vehCent->currentState.pos.trDelta; //jerky otherwise?
+		if (cg.predictedPlayerState.commandTime < vehCent->m_pVehicle->m_iTurboTime) {
 		if (cg.predictedPlayerState.commandTime < vehCent->m_pVehicle->m_iTurboTime) {
 			baseSpeed = vehCent->m_pVehicle->m_pVehicleInfo->turboSpeed;//1400
 		}
@@ -6549,7 +9862,9 @@ static void CG_StrafeHelper(centity_t *cent)
 		}
 	}
 	else*/ if (moveStyle == MV_SP) {
+	else*/ if (moveStyle == MV_SP) {
 		/*
+		if ((DotProduct(cg.predictedPlayerState.velocity, wishdir)) < 0.0f)
 		if ((DotProduct(cg.predictedPlayerState.velocity, wishdir)) < 0.0f)
 		{//Encourage deceleration away from the current velocity
 		wishspeed *= 1.35f;//pm_airDecelRate - adjust basespeed
@@ -6559,8 +9874,13 @@ static void CG_StrafeHelper(centity_t *cent)
 			baseSpeed /= 1.41421356237f; //umm.. dunno.. divide by sqrt(2)
 		}
 	}
+		if (!(cg.predictedPlayerState.pm_flags & PMF_JUMP_HELD) && cmd.upmove > 0) { //Also, wishspeed *= scale.  Scale is different cuz of upmove in air.  Only works ingame not from spec
+			baseSpeed /= 1.41421356237f; //umm.. dunno.. divide by sqrt(2)
+		}
+	}
 
 	if (cg_strafeHelper_FPS.value < 1)
+		frametime = ((float)cg.frametime * 0.001f);
 		frametime = ((float)cg.frametime * 0.001f);
 	else if (cg_strafeHelper_FPS.value > 1000) // invalid
 		frametime = 1;
@@ -6571,6 +9891,8 @@ static void CG_StrafeHelper(centity_t *cent)
 	else
 		optimalDeltaAngle = acos((double)((baseSpeed - (pmAirAccel*baseSpeed * frametime)) / currentSpeed)) * (180.0f / M_PI) - 45.0f;
 
+	if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
+		optimalDeltaAngle = 0;
 	if (optimalDeltaAngle < 0 || optimalDeltaAngle > 360)
 		optimalDeltaAngle = 0;
 
@@ -6584,11 +9906,17 @@ static void CG_StrafeHelper(centity_t *cent)
 			DrawStrafeLine(velocityAngle, 0, (qboolean)(cmd.forwardmove == 0 && cmd.rightmove != 0), 8); //Center
 	}
 	if (moveStyle != MV_QW && moveStyle != MV_SWOOP) { //Every style but QW has WA/WD lines
+	if (moveStyle == MV_QW || moveStyle == MV_CPM || moveStyle == MV_PJK || moveStyle == MV_WSW || moveStyle == MV_RJCPM || moveStyle == MV_SWOOP || moveStyle == MV_BOTCPM || (moveStyle == MV_SLICK && !onGround)) {//QW, CPM, PJK, WSW, RJCPM have center line
+		if (cg_strafeHelper.integer & SHELPER_CENTER)
+			DrawStrafeLine(velocityAngle, 0, (qboolean)(cmd.forwardmove == 0 && cmd.rightmove != 0), 8); //Center
+	}
+	if (moveStyle != MV_QW && moveStyle != MV_SWOOP) { //Every style but QW has WA/WD lines
 		if (cg_strafeHelper.integer & SHELPER_WA)
 			DrawStrafeLine(velocityAngle, (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove < 0), 1); //WA
 		if (cg_strafeHelper.integer & SHELPER_WD)
 			DrawStrafeLine(velocityAngle, (-optimalDeltaAngle - (cg_strafeHelperOffset.value * 0.01f)), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove > 0), 7); //WD
 	}
+	if (moveStyle == MV_JKA || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)) { //JKA, Q3, RJQ3, Jetpack? have A/D
 	if (moveStyle == MV_JKA || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP || (moveStyle == MV_SLICK && onGround)) { //JKA, Q3, RJQ3, Jetpack? have A/D
 		if (cg_strafeHelper.integer & SHELPER_A)
 			DrawStrafeLine(velocityAngle, -(45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove == 0 && cmd.rightmove < 0), 2); //A
@@ -6602,10 +9930,12 @@ static void CG_StrafeHelper(centity_t *cent)
 		}
 	}
 	if (moveStyle == MV_JKA || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP) {
+	}
+	if (moveStyle == MV_JKA || moveStyle == MV_Q3 || moveStyle == MV_RJQ3 || moveStyle == MV_SWOOP || moveStyle == MV_JETPACK || moveStyle == MV_SPEED || moveStyle == MV_SP) {
 		//W only
 		if (cg_strafeHelper.integer & SHELPER_W) {
 			DrawStrafeLine(velocityAngle, (45.0f + (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0); //W
 			DrawStrafeLine(velocityAngle, (-45.0f - (optimalDeltaAngle + (cg_strafeHelperOffset.value * 0.01f))), (qboolean)(cmd.forwardmove > 0 && cmd.rightmove == 0), 0); //W
 		}
 	}
-}
+	}					
