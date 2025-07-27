@@ -7,6 +7,7 @@
 
 #include "../ui/ui_shared.h"
 #include "../qcommon/fp16.h"
+#include "ui_shared.h"
 
 qboolean CG_WorldCoordToScreenCoord(vec3_t worldCoord, float *x, float *y);
 qboolean CG_WorldCoordToScreenCoordCustomAngles(vec3_t worldCoord, float* x, float* y, vec3_t viewangles);
