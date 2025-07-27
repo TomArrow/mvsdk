@@ -13,11 +13,7 @@
 #define FPSTABLE_OVERFLOW_MSECVALUE     334
 #define FPSTABLE_SIZE                   64   // Adjust based on actual needed size
 
-// Add missing antiLoopState_t definition
-typedef struct {
-    float yawAngleChangeSinceBaseSpeed;
-} antiLoopState_t;
-
+// Remove antiLoopState_t definition and use float directly
 // Add missing XYSPEED macro
 #define XYSPEED(vel) sqrt((vel)[0]*(vel)[0] + (vel)[1]*(vel)[1])
 
