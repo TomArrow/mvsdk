@@ -2208,6 +2208,7 @@ enum {
 
 
 #endif	// __Q_SHARED_H
+//
 #ifndef __Q_SHARED_H
 #define __Q_SHARED_H
 
