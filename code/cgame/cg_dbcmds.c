@@ -85,7 +85,7 @@ void CG_DB_GetChats_f(void) {
 qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
 qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
 qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
-qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, ::byte* reference, int referenceLength);
 qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
 qboolean	trap_CG_COOL_API_DB_NextRow();
 int			trap_CG_COOL_API_DB_GetInt(int place);
@@ -98,7 +98,7 @@ qboolean	trap_CG_COOL_API_DB_PreparedBindFloat(float number);
 qboolean	trap_CG_COOL_API_DB_PreparedBindInt(int number);
 qboolean	trap_CG_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
 qboolean	trap_CG_COOL_API_DB_FinishAndSendPreparedStatement();
-int			trap_CG_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
+int			trap_CG_COOL_API_DB_GetBinary(int place, ::byte* out, int outSize);
 qboolean	trap_CG_COOL_API_DB_PreparedBindNull();
 qboolean	trap_CG_COOL_API_DB_GetMoreResults(int* affectedRows);
 
@@ -114,7 +114,7 @@ qboolean	CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, in
 	if (coolApi_dbVersion < 2) return qfalse;
 	return trap_CG_COOL_API_DB_AddRequestTyped(reference, referenceLength, requestType, request, (int)dbRequestType);
 }
-qboolean	CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength) {
+qboolean	CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, ::byte* reference, int referenceLength) {
 	if (!coolApi_dbVersion) return qfalse;
 	return trap_CG_COOL_API_DB_NextResponse(requestType, affectedRows, status, errorMessage, errorMessageSize, reference, referenceLength);
 }
@@ -168,7 +168,7 @@ qboolean	CG_COOL_API_DB_FinishAndSendPreparedStatement() {
 	if (coolApi_dbVersion < 3) return qfalse;
 	return trap_CG_COOL_API_DB_FinishAndSendPreparedStatement();
 }
-int			CG_COOL_API_DB_GetBinary(int place, byte* out, int outSize) {
+int			CG_COOL_API_DB_GetBinary(int place, ::byte* out, int outSize) {
 	if (coolApi_dbVersion < 3) return 0;
 	return trap_CG_COOL_API_DB_GetBinary(place, out, outSize);
 }

@@ -3903,7 +3903,7 @@ static void CG_DrawSimpleSaberStyle(const centity_t *cent)
 	}
 }
 
-byte autoKickDebugPreviousDirection = 0;
+::byte autoKickDebugPreviousDirection = 0;
 
 static float CG_DrawAutoKick(float y)
 {

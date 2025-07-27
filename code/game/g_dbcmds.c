@@ -211,7 +211,7 @@ static void G_RegisterContinue(loginRegisterStruct_t* loginData) {
 	}
 
 	if (coolApi_dbVersion >= 3) {
-		G_COOL_API_DB_AddPreparedStatement((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER,
+		G_COOL_API_DB_AddPreparedStatement((::byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER,
 			"INSERT INTO users (username,password,created) VALUES (?,?,NOW())");
 		G_COOL_API_DB_PreparedBindString(loginData->username);
 		G_COOL_API_DB_PreparedBindString(loginData->password);
@@ -230,7 +230,7 @@ static void G_RegisterContinue(loginRegisterStruct_t* loginData) {
 		request = va("INSERT INTO users (username,password,created) VALUES ('%s','%s',NOW())", cleanUsername, cleanPassword);
 
 		// check if user already exists
-		G_COOL_API_DB_AddRequest((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER, request);
+		G_COOL_API_DB_AddRequest((::byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_REGISTER, request);
 	}
 
 }
@@ -248,7 +248,7 @@ static void G_ChangePasswordContinue(loginRegisterStruct_t* loginData) {
 		return;
 	}
 
-	if (!G_COOL_API_DB_AddPreparedStatement((byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_CHANGEPASSWORD,
+	if (!G_COOL_API_DB_AddPreparedStatement((::byte*)loginData, sizeof(loginRegisterStruct_t), DBREQUEST_CHANGEPASSWORD,
 		"UPDATE users SET password=? WHERE id=?")) {
 		trap_SendServerCommand(loginData->clientnum, "print \"^1Password change failed for unspecified reason.\n\"");
 		return;
@@ -263,7 +263,7 @@ static void G_RegisterResult(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData; 
 	gentity_t* ent = NULL;
 
-	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	G_COOL_API_DB_GetReference((::byte*)&loginData, sizeof(loginData));
 	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
 		Com_Printf("^1Register from client %d failed, user no longer valid.\n", loginData.clientnum);
 		return;
@@ -289,7 +289,7 @@ static void G_ChangePasswordResult(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData; 
 	gentity_t* ent = NULL;
 
-	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	G_COOL_API_DB_GetReference((::byte*)&loginData, sizeof(loginData));
 	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
 		Com_Printf("^1Change password from client %d failed, user no longer valid.\n", loginData.clientnum);
 		return;
@@ -314,7 +314,7 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	static char tmpUsername[sizeof(loginData.username)];
 	gentity_t* ent = NULL;
 
-	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	G_COOL_API_DB_GetReference((::byte*)&loginData, sizeof(loginData));
 
 	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
 		Com_Printf("^1Login from client %d failed, user no longer valid.\n", loginData.clientnum);
@@ -354,12 +354,12 @@ static void G_LoginFetchDataResult(int status, const char* errorMessage) {
 	loginData.followUpType = DBREQUEST_LOGIN;
 
 	if (loginData.needDoubleBcrypt) {
-		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+		G_COOL_API_DB_AddRequestTyped((::byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
 			va("2|%s|%s|%s", BCRYPT_SETTINGS, loginData.dbPassword, loginData.password)
 			, DBREQUESTTYPE_BCRYPT);
 	}
 	else {
-		G_COOL_API_DB_AddRequestTyped((byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
+		G_COOL_API_DB_AddRequestTyped((::byte*)&loginData, sizeof(loginData), DBREQUEST_BCRYPTPW,
 			va("1|%s|%s",loginData.dbPassword, loginData.password)
 			, DBREQUESTTYPE_BCRYPT);
 	}
@@ -398,7 +398,7 @@ static void G_InsertRunResult(int status, const char* errorMessage, int affected
 	gentity_t* ent = NULL;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
+	G_COOL_API_DB_GetReference((::byte*)&runData, sizeof(runData));
 
 	if (!(ent = DB_VerifyClient(runData.clientnum, runData.ip))) {
 		Com_Printf("^1Client %d run inserted, user no longer valid.\n", runData.clientnum);
@@ -501,7 +501,7 @@ static void G_InsertSubcontestResult(int status, const char* errorMessage, int a
 	int rank = 0;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&runData, sizeof(runData));
+	G_COOL_API_DB_GetReference((::byte*)&runData, sizeof(runData));
 
 	if (!(ent = DB_VerifyClient(runData.clientnum, runData.ip))) {
 		Com_Printf("^1Client %d subcontest inserted, user no longer valid.\n", runData.clientnum);
@@ -573,7 +573,7 @@ static void G_InsertMapDefaultsResult(int status, const char* errorMessage, int 
 	gentity_t* ent = NULL;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Map defaults by client %d inserted, user no longer valid.\n", data.clientnum);
@@ -600,7 +600,7 @@ static void G_LoadMapDefaultsResult(int status, const char* errorMessage, int af
 	const char* currentCoursename;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (status == 1146) {
 		// table doesn't exist. create it.
@@ -656,7 +656,7 @@ static void G_SaveCheckpointsResult(int status, const char* errorMessage, int af
 	//evaluatedRunInfo_t eRunInfo;
 	int deleted=0, inserted=0;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d checkpoints saved, user no longer valid.\n", data.clientnum);
@@ -696,7 +696,7 @@ static void G_LoadCheckpointsResult(int status, const char* errorMessage, int af
 	vec3_t trEndpos;
 	float yaw;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d checkpoints loaded, user no longer valid.\n", data.clientnum);
@@ -748,7 +748,7 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 	raceStyle_t mapDefaultRaceStyle;
 	qboolean afterRun = qfalse; // TODO send to spectators if following guy who just got PB/WR?
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d top map search results returned, user no longer valid.\n", data.clientnum);
@@ -891,7 +891,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 	static topLeaderBoardEntry_t entries[11][LB_TYPES_COUNT];
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((::byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d top results returned, user no longer valid.\n", lbRequestData.clientnum);
@@ -1082,7 +1082,7 @@ static void G_RankUpdateResult(int status, const char* errorMessage, int affecte
 	rankUpdateRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((::byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (lbRequestData.clientnum == -1) {
 		//Com_Printf("^1Clientless rank update results returned.\n");
@@ -1125,7 +1125,7 @@ static void G_RankUpdateMapLatestSetResult(int status, const char* errorMessage,
 	rankUpdateRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((::byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (lbRequestData.clientnum == -1) {
 		//Com_Printf("^1Clientless rank update results returned.\n");
@@ -1159,7 +1159,7 @@ static void G_LatestRunsResult(int status, const char* errorMessage, int affecte
 	char userName[USERNAME_MAX_LEN + 1];
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((::byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d latest results returned, user no longer valid.\n", lbRequestData.clientnum);
@@ -1308,7 +1308,7 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 	char time[30];
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((::byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (lbRequestData.clientnum == -1) {
 		if (g_developer.integer) {
@@ -1384,7 +1384,7 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		return; // nothing was updated or we just updated a single map, therefore we don't know the correct time to set.
 	}
 
-	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&lbRequestData,sizeof(lbRequestData), DBREQUEST_RANKUPDATEMAPLATESTSET,
+	if (!G_COOL_API_DB_AddPreparedStatement((::byte*)&lbRequestData,sizeof(lbRequestData), DBREQUEST_RANKUPDATEMAPLATESTSET,
 		"REPLACE INTO meta (`key`,valueWhen) VALUES ('rankUpdateLatest',?)")) {
 
 		G_SendOrPrint(ent, "Failed to send rank update latest time meta set request.\n");
@@ -1402,7 +1402,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 	char userName[USERNAME_MAX_LEN + 1];
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d shortest/longest map results returned, user no longer valid.\n", data.clientnum);
@@ -1652,7 +1652,7 @@ static void G_RankResult(int status, const char* errorMessage, int affectedRows)
 	char userName[USERNAME_MAX_LEN + 1];
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d rank results returned, user no longer valid.\n", data.clientnum);
@@ -1713,7 +1713,7 @@ static void G_RateMapResult(int status, const char* errorMessage, int affectedRo
 	int resultIndex = 0;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d set map rating results returned, user no longer valid.\n", data.clientnum);
@@ -1741,7 +1741,7 @@ static void G_RateMapShowMineResult(int status, const char* errorMessage, int af
 	int resultIndex = 0;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d get map rating results returned, user no longer valid.\n", data.clientnum);
@@ -1776,7 +1776,7 @@ static void G_MapListUnplayedResult(int status, const char* errorMessage, int af
 	int resultIndex = 0;
 	//evaluatedRunInfo_t eRunInfo;
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d unplayed maplist returned, user no longer valid.\n", data.clientnum);
@@ -1852,7 +1852,7 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 	//int rank = 1;
 	int index = 0;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((::byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d subcontest results returned, user no longer valid.\n", lbRequestData.clientnum);
@@ -1918,7 +1918,7 @@ static void G_TimeResult(int status, const char* errorMessage, int affectedRows)
 	timeRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
 
-	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+	G_COOL_API_DB_GetReference((::byte*)&lbRequestData, sizeof(lbRequestData));
 
 	if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d time returned, user no longer valid.\n", lbRequestData.clientnum);
@@ -2035,7 +2035,7 @@ static void G_ForceLoginContinue(int status, const char* errorMessage, int affec
 	loginRegisterStruct_t data;
 	char usernameDb[USERNAME_MAX_LEN + 1];
 
-	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+	G_COOL_API_DB_GetReference((::byte*)&data, sizeof(data));
 
 	if (!(adminEnt = DB_VerifyClient(data.clientnumAdmin, data.ipAdmin))) {
 		Com_Printf("^1Client %d force login as %s returned, admin no longer valid.\n", data.clientnum, data.username);
@@ -2105,7 +2105,7 @@ static void G_ForceLoginContinue(int status, const char* errorMessage, int affec
 
 static void G_CreateTableResult(int status, const char* errorMessage) {
 	static referenceSimpleString_t tableName;
-	G_COOL_API_DB_GetReference((byte*)&tableName, sizeof(tableName));
+	G_COOL_API_DB_GetReference((::byte*)&tableName, sizeof(tableName));
 	if (status) {
 		Com_Printf("creating table %s failed with status %d and error message %s.\n", tableName.s, status, errorMessage);
 		return;
@@ -2115,7 +2115,7 @@ static void G_CreateTableResult(int status, const char* errorMessage) {
 }
 static void G_UpdateColumnsResult(int status, const char* errorMessage) {
 	static referenceSimpleString_t tableName;
-	G_COOL_API_DB_GetReference((byte*)&tableName, sizeof(tableName));
+	G_COOL_API_DB_GetReference((::byte*)&tableName, sizeof(tableName));
 	if (status) {
 		Com_Printf("updating columns for table %s failed with status %d and error message %s.\n", tableName.s, status, errorMessage);
 		return;
@@ -2128,7 +2128,7 @@ static void G_PWBCryptReturned(int status, const char* errorMessage) {
 	static loginRegisterStruct_t loginData;
 	gentity_t* ent;
 
-	G_COOL_API_DB_GetReference((byte*)&loginData, sizeof(loginData));
+	G_COOL_API_DB_GetReference((::byte*)&loginData, sizeof(loginData));
 
 	if (!(ent = DB_VerifyClient(loginData.clientnum, loginData.ip))) {
 		Com_Printf("^1bcrypt succeeded, but user no longer valid (#2).\n");
@@ -2336,7 +2336,7 @@ void G_DB_SaveUserCheckpoints(gentity_t* playerent) {
 	data.clientnum = playerent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 
-	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_SAVECHECKPOINTS,request)) {
+	if (!G_COOL_API_DB_AddPreparedStatement((::byte*)&data,sizeof(data),DBREQUEST_SAVECHECKPOINTS,request)) {
 		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to save checkpoints.\n\"",qtrue);
 		return;
 	}
@@ -2376,7 +2376,7 @@ void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 	data.clientnum = playerent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 
-	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data), DBREQUEST_LOADCHECKPOINTS, "SELECT x,y,z,yaw FROM checkpoints WHERE course=? AND userid=? ORDER BY number ASC")) {
+	if (!G_COOL_API_DB_AddPreparedStatement((::byte*)&data,sizeof(data), DBREQUEST_LOADCHECKPOINTS, "SELECT x,y,z,yaw FROM checkpoints WHERE course=? AND userid=? ORDER BY number ASC")) {
 		G_SendServerCommand(playerent - g_entities, "print \"DB connection not available to load checkpoints.\n\"",qtrue);
 		return;
 	}
@@ -2393,20 +2393,20 @@ static void G_CreateUserTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(%d) UNIQUE NOT NULL, password VARCHAR(64)  NOT NULL, lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED NOT NULL DEFAULT 0)",USERNAME_MAX_LEN);
 	Q_strncpyz(tableName.s, "users", sizeof(tableName.s));
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 
 static void G_CreateCheckpointsTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS checkpoints(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, number TINYINT(2) SIGNED NOT NULL, x DOUBLE NOT NULL, y DOUBLE NOT NULL, z DOUBLE NOT NULL, yaw DOUBLE NOT NULL, UNIQUE KEY checkpoint_unique (userid,course,number), INDEX i_user_map (userid,course), INDEX i_number(number))";
 	Q_strncpyz(tableName.s, "checkpoints", sizeof(tableName.s));
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 static void G_CreateSubContestsTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS subcontests(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, type SMALLINT NOT NULL, value DOUBLE NOT NULL, recordwhen DATETIME NOT NULL, msec SMALLINT NOT NULL, extraValue1 DOUBLE,extraValue2 DOUBLE,extraValue3 INTEGER,extraValue4 INTEGER, UNIQUE KEY user_type (userid,type),INDEX i_value(value))";
 	Q_strncpyz(tableName.s, "subcontests", sizeof(tableName.s));
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 static void G_CreateMapRaceDefaultsTable() {
 	referenceSimpleString_t tableName;
@@ -2419,7 +2419,7 @@ static void G_CreateMapRaceDefaultsTable() {
 			runFlags INT NOT NULL,\
 			PRIMARY KEY(course,subcourse))";
 	Q_strncpyz(tableName.s, "mapdefaults", sizeof(tableName.s));
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 static void G_CreateMapRatingsTable() {
 	referenceSimpleString_t tableName;
@@ -2430,7 +2430,7 @@ static void G_CreateMapRatingsTable() {
 			rating DOUBLE NOT NULL, \
 			PRIMARY KEY(course,userid,style))";
 	Q_strncpyz(tableName.s, "mapratings", sizeof(tableName.s));
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
 }
 static void G_CreateMetaTable() {
 	referenceSimpleString_t tableName;
@@ -2442,7 +2442,7 @@ static void G_CreateMetaTable() {
 			valueString VARCHAR(255) NULL, \
 			PRIMARY KEY(`key`))";
 	Q_strncpyz(tableName.s, "meta", sizeof(tableName.s));
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
 }
 static void G_CreateRunsTable() {
 	referenceSimpleString_t tableName;
@@ -2545,8 +2545,8 @@ static void G_CreateRunsTable() {
 	// - lostMsecCount
 	// - lostCmdsCount
 	Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
-	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_UPDATECOLUMNS, columnsUpdateRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_UPDATECOLUMNS, columnsUpdateRequest);
 }
 
 static void G_DB_CreateTables() {
@@ -2651,7 +2651,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		
 
 
-	if(!G_COOL_API_DB_AddPreparedStatement((byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
+	if(!G_COOL_API_DB_AddPreparedStatement((::byte*)&runData, sizeof(insertUpdateRunStruct_t), DBREQUEST_INSERTORUPDATERUN,
 		insertOrUpdateRequest)) {
 		trap_SendServerCommand(-1, va("print \"Database connection not available. Run cannot be saved.\n\" dfrunsavefailed %s", DF_RacePrintAppendage(runInfo)));
 		return qfalse;
@@ -2786,7 +2786,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 	//Q_strncpyz(tableName.s, "runs", sizeof(tableName.s));
-	//G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+	//G_COOL_API_DB_AddRequest((::byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 	return qtrue;
 }
 
@@ -2805,7 +2805,7 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
 qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
 qboolean	trap_G_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
-qboolean	trap_G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+qboolean	trap_G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, ::byte* reference, int referenceLength);
 qboolean	trap_G_COOL_API_DB_GetReference(byte* reference, int referenceLength);
 qboolean	trap_G_COOL_API_DB_NextRow();
 int			trap_G_COOL_API_DB_GetInt(int place);
@@ -2818,7 +2818,7 @@ qboolean	trap_G_COOL_API_DB_PreparedBindFloat(float number);
 qboolean	trap_G_COOL_API_DB_PreparedBindInt(int number);
 qboolean	trap_G_COOL_API_DB_PreparedBindBinary(byte* data, int dataLength);
 qboolean	trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
-int			trap_G_COOL_API_DB_GetBinary(int place, byte* out, int outSize);
+int			trap_G_COOL_API_DB_GetBinary(int place, ::byte* out, int outSize);
 qboolean	trap_G_COOL_API_DB_PreparedBindNull();
 qboolean	trap_G_COOL_API_DB_GetMoreResults(int* affectedRows);
 
@@ -2834,7 +2834,7 @@ qboolean	G_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int
 	if (coolApi_dbVersion < 2) return qfalse;
 	return trap_G_COOL_API_DB_AddRequestTyped( reference, referenceLength, requestType, request, (int)dbRequestType);
 }
-qboolean	G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength) {
+qboolean	G_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, ::byte* reference, int referenceLength) {
 	if (!coolApi_dbVersion) return qfalse;
 	return trap_G_COOL_API_DB_NextResponse( requestType, affectedRows, status, errorMessage, errorMessageSize, reference, referenceLength);
 }
@@ -2888,7 +2888,7 @@ qboolean	G_COOL_API_DB_FinishAndSendPreparedStatement() {
 	if (coolApi_dbVersion < 3) return qfalse;
 	return trap_G_COOL_API_DB_FinishAndSendPreparedStatement();
 }
-int			G_COOL_API_DB_GetBinary(int place, byte* out, int outSize) {
+int			G_COOL_API_DB_GetBinary(int place, ::byte* out, int outSize) {
 	if (coolApi_dbVersion < 3) return 0;
 	return trap_G_COOL_API_DB_GetBinary( place, out, outSize);
 }

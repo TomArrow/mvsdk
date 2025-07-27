@@ -1227,7 +1227,7 @@ static void CG_ServerCommand( void ) {
 			Com_sprintf( string,sizeof(string)," %s \"%s\"", string, (const char *) CG_Argv(i));
 		}
 
-		trap_SP_Print(holdInt, (byte *)string);
+		trap_SP_Print(holdInt, (::byte *)string);
 		return;
 	}
 
