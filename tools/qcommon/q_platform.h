@@ -354,9 +354,9 @@ float FloatSwap (const float *f);
 #define LittleShort(x) ShortSwap(x)
 #define LittleLong(x) LongSwap(x)
 #define LittleFloat(x) FloatSwap(&x)
-#define BigShort
-#define BigLong
-#define BigFloat
+#define BigShort(x) (x)
+#define BigLong(x) (x)
+#define BigFloat(x) (x)
 
 #elif defined( Q3_LITTLE_ENDIAN )
 
