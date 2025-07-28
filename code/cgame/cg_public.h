@@ -33,7 +33,7 @@ typedef struct {
 
 	int				numServerCommands;		// text based server commands to execute when this
 	int				serverCommandSequence;	// snapshot becomes current
-} snapshot_t;
+} cg_snapshot_t;
 
 typedef struct {
 	int				snapFlags;			// SNAPFLAG_RATE_DELAYED, etc

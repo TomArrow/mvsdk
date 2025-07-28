@@ -830,8 +830,8 @@ typedef struct
 	int latestSnapshotNum;	// the number of snapshots the client system has received
 	int latestSnapshotTime; // the time from latestSnapshotNum, so we don't need to read the snapshot yet
 
-	snapshot_t *snap;	  // cg.snap->serverTime <= cg.time
-	snapshot_t *nextSnap; // cg.nextSnap->serverTime > cg.time, or NULL
+	cg_snapshot_t *snap;	  // cg.snap->serverTime <= cg.time
+	cg_snapshot_t *nextSnap; // cg.nextSnap->serverTime > cg.time, or NULL
 						  //	snapshot_t	activeSnapshots[2];
 
 	float frameInterpolation; // (float)( cg.time - cg.frame->serverTime ) / (cg.nextFrame->serverTime - cg.frame->serverTime)
@@ -1064,7 +1064,7 @@ typedef struct
 	*/
 	int testModel;
 	// had to be moved so we wouldn't wipe these out with the memset - these have STL in them and shouldn't be cleared that way
-	snapshot_t activeSnapshots[2];
+	cg_snapshot_t activeSnapshots[2];
 	/*
 	Ghoul2 Insert End
 	*/
@@ -2528,7 +2528,7 @@ extern char teamChat1[256];
 extern char teamChat2[256];
 
 void CG_AddLagometerFrameInfo(void);
-void CG_AddLagometerSnapshotInfo(snapshot_t *snap);
+void CG_AddLagometerSnapshotInfo(cg_snapshot_t *snap);
 void CG_AddSpeed(void);
 void CG_CenterPrint(const char *str, int y, int charWidth);
 void CG_CenterPrintMultiKill(const char *str, int y, int charWidth);
@@ -2957,7 +2957,7 @@ void trap_GetCurrentSnapshotNumber(int *snapshotNumber, int *serverTime);
 
 // a snapshot get can fail if the snapshot (or the entties it holds) is so
 // old that it has fallen out of the client system queue
-qboolean trap_GetSnapshot(int snapshotNumber, snapshot_t *snapshot);
+qboolean trap_GetSnapshot(int snapshotNumber, cg_snapshot_t *snapshot);
 
 // retrieve a text command from the server stream
 // the current snapshot will hold the number of the most recent command

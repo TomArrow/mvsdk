@@ -99,7 +99,7 @@ CG_TransitionSnapshot instead.
 FIXME: Also called by map_restart?
 ==================
 */
-void CG_SetInitialSnapshot( snapshot_t *snap ) {
+void CG_SetInitialSnapshot( cg_snapshot_t *snap ) {
 	int				i;
 	centity_t		*cent;
 	entityState_t	*state;
@@ -165,7 +165,7 @@ The transition point from snap to nextSnap has passed
 */
 static void CG_TransitionSnapshot( void ) {
 	centity_t			*cent;
-	snapshot_t			*oldFrame;
+	cg_snapshot_t			*oldFrame;
 	int					i;
 
 	if ( !cg.snap ) {
@@ -237,7 +237,7 @@ CG_SetNextSnap
 A new snapshot has just been read in from the client system.
 ===================
 */
-static void CG_SetNextSnap( snapshot_t *snap ) {
+static void CG_SetNextSnap( cg_snapshot_t *snap ) {
 	int					num;
 	entityState_t		*es;
 	centity_t			*cent;
@@ -302,9 +302,9 @@ valid snapshot.
 ========================
 */
 snapshot_1_02_t	activeSnapshot_1_02; // MVSDK: Only used to receive the new snapshot. We're copying the content over as soon as we have the new snapshot... // Global variable for the qvm compiler...
-static snapshot_t *CG_ReadNextSnapshot( void ) {
+static cg_snapshot_t *CG_ReadNextSnapshot( void ) {
 	qboolean	r;
-	snapshot_t	*dest;
+	cg_snapshot_t	*dest;
 
 	if ( cg.latestSnapshotNum > cgs.processedSnapshotNum + 1000 ) {
 		CG_Printf( "WARNING: CG_ReadNextSnapshot: way out of range, %i > %i\n",
@@ -324,7 +324,7 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 
 		if ( jk2version == VERSION_1_02 )
 		{ // MVSDK: Multiversion magic!
-			r = trap_GetSnapshot( cgs.processedSnapshotNum, (snapshot_t*)&activeSnapshot_1_02 );
+			r = trap_GetSnapshot( cgs.processedSnapshotNum, (cg_snapshot_t*)&activeSnapshot_1_02 );
 		}
 		else
 		{
@@ -340,11 +340,11 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 		if ( r ) {
 			if ( jk2version == VERSION_1_02 )
 			{ // MVSDK: Multiversion Magic
-				static const size_t section1 = (size_t)((char *)&((snapshot_t*)NULL)->ps);
+				static const size_t section1 = (size_t)((char *)&((cg_snapshot_t*)NULL)->ps);
 				static const size_t section2 = (size_t)((char *)&((playerState_t*)NULL)->forceRestricted);
 				static const size_t section3 = (size_t)((char *)&((playerState_t*)NULL)->saberIndex - (char *)&((playerState_t*)NULL)->forceRestricted);
-				static const size_t section4 = (size_t)((char *)(&((snapshot_t*)NULL)->ps) + sizeof(playerState_t) - (char *)&((snapshot_t*)NULL)->ps.saberIndex);
-				static const size_t section5 = (size_t)((char *)(&(((snapshot_t*)NULL)[1])) - (char *)&((snapshot_t*)NULL)->numEntities);
+				static const size_t section4 = (size_t)((char *)(&((cg_snapshot_t*)NULL)->ps) + sizeof(playerState_t) - (char *)&((cg_snapshot_t*)NULL)->ps.saberIndex);
+				static const size_t section5 = (size_t)((char *)(&(((cg_snapshot_t*)NULL)[1])) - (char *)&((cg_snapshot_t*)NULL)->numEntities);
 
 				/* Convert the snapshot (mainly because of the playerState) */
 				memcpy( dest, &(activeSnapshot_1_02), section1 ); // Copy everything till ps
@@ -414,7 +414,7 @@ of an interpolating one)
 ============
 */
 void CG_ProcessSnapshots( void ) {
-	snapshot_t		*snap;
+	cg_snapshot_t		*snap;
 	int				n;
 
 	// see what the latest snapshot the client system has is
