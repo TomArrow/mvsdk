@@ -1316,90 +1316,6 @@ static cvarTable_t cvarTable[] = {
 	{&cg_smoothCameraFPS, "cg_smoothCameraFPS", "0", CVAR_ARCHIVE},
 
 	{&cg_MVSDK, "cg_MVSDK", MVSDK_VERSION, CVAR_ROM | CVAR_USERINFO},
-
-	{&cg_drawKillMessage, "cg_drawKillMessage", "1", CVAR_ARCHIVE},
-	{&cg_showKills, "cg_showKills", "0", CVAR_ARCHIVE},
-	{&cg_char_color_red, "char_color_red", "255", CVAR_ARCHIVE},
-	{&cg_char_color_green, "char_color_green", "255", CVAR_ARCHIVE},
-	{&cg_char_color_blue, "char_color_blue", "255", CVAR_ARCHIVE},
-
-	{&cg_autoKick, "cg_autoKick", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_debug, "cg_autoKick_debug", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_sideKickFirst, "cg_autoKick_sideKickFirst", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_distance, "cg_autoKick_distance", "16.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_usePrediction, "cg_autoKick_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_indicator, "cg_autoKick_indicator", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_checkRoll, "cg_autoKick_checkRoll", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_checkAir, "cg_autoKick_checkAir", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoKick_checkKnockdown, "cg_autoKick_checkKnockdown", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoBackstab, "cg_autoBackstab", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoBackstab_debug, "cg_autoBackstab_debug", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoBackstab_distance, "cg_autoBackstab_distance", "128.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoBackstab_usePrediction, "cg_autoBackstab_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_debugSaberBox, "cg_debugSaberBox", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_debugSaberBox_usePrediction, "cg_debugSaberBox_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_friendsChatsOnly, "cg_friendsChatsOnly", "0", CVAR_ARCHIVE | CVAR_GLOBAL},
-	{&cg_autoAim, "cg_autoAim", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoAim_debug, "cg_autoAim_debug", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoAim_usePrediction, "cg_autoAim_usePrediction", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_autoAim_ignoreWalls, "cg_autoAim_ignoreWalls", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	// V24 Enhanced Features - Wallhack CVars
-	{&cg_wallhack, "cg_wallhack", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackStyle, "cg_wallhackStyle", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackAlpha, "cg_wallhackAlpha", "1.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackColor, "cg_wallhackColor", "1 1 1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackRange, "cg_wallhackRange", "2048", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackIgnoreFriends, "cg_wallhackIgnoreFriends", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackSoundAlert, "cg_wallhackSoundAlert", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackVisualAlert, "cg_wallhackVisualAlert", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_wallhackPulse, "cg_wallhackPulse", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-
-	// V24 Enhanced Features - ESP System CVars
-	{&cg_esp, "cg_esp", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espPlayers, "cg_espPlayers", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espItems, "cg_espItems", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espDistance, "cg_espDistance", "2048", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espThroughWalls, "cg_espThroughWalls", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espStyle, "cg_espStyle", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espAlpha, "cg_espAlpha", "1.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espSize, "cg_espSize", "1.0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espPlayerNames, "cg_espPlayerNames", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espItemNames, "cg_espItemNames", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espHealthBars, "cg_espHealthBars", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espForceBars, "cg_espForceBars", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espWeaponInfo, "cg_espWeaponInfo", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espBoxes, "cg_espBoxes", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espLines, "cg_espLines", "1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espColorMode, "cg_espColorMode", "0", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-	{&cg_espPlayerColor, "cg_espPlayerColor", "1 1 1", CVAR_ARCHIVE | CVAR_CHEAT | CVAR_GLOBAL},
-};
-
-static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
-
-
-void CG_ClearUnsetSystemInfoCvars(const char* systemInfo) {
-	cvarTable_t* cv = systemInfoCvars;
-
-	while (cv) {
-		if (!Info_HasKey(systemInfo, cv->cvarName)) {
-			if (cg_developer.integer) {
-				Com_Printf("^3Cvar '%s' has the CVAR_SYSTEMINFO flag but server did not send it. Resetting value from '%s' to '%s'\n", cv->cvarName, cv->vmCvar->string, cv->defaultString);
-			}
-			trap_Cvar_Set(cv->cvarName, cv->defaultString);
-			trap_Cvar_Update(cv->vmCvar);
-		}
-		cv = cv->nextSystemInfoCvar;
-	}
-}
-	//	{ &cg_pmove_fixed, "cg_pmove_fixed", "0", CVAR_USERINFO | CVAR_ARCHIVE }
-	/*
-	Ghoul2 Insert Start
-	*/
-	{&cg_debugBB, "debugBB", "0", 0},
-	/*
-	Ghoul2 Insert End
-	*/
-
 	{&cg_drawKillMessage, "cg_drawKillMessage", "1", CVAR_ARCHIVE},
 	{&cg_showKills, "cg_showKills", "0", CVAR_ARCHIVE},
 	{&cg_char_color_red, "char_color_red", "255", CVAR_ARCHIVE},
@@ -1743,14 +1659,13 @@ Q_NORETURN void QDECL Com_Error( errorParm_t level, const char *error, ... ) {
 	CG_Error( "%s", text);
 }
 
-void QDECL Com_Printf( const char *msg, ... ) {
+void QDECL Com_Printf(const char *msg, ...) {
 	va_list		argptr;
 	char		text[1024];
 
 	va_start (argptr, msg);
 	Q_vsnprintf (text, sizeof(text), msg, argptr);
 	va_end (argptr);
-
 	CG_Printf ("%s", text);
 }
 
@@ -2510,6 +2425,90 @@ Ghoul2 Insert End
 
 	// new stuff
 	cgs.media.patrolShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/patrol.tga");
+	cgs.media.assaultShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/assault.tga");
+	cgs.media.campShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/camp.tga");
+	cgs.media.followShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/follow.tga");
+	cgs.media.defendShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/defend.tga");
+	cgs.media.teamLeaderShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/team_leader.tga");
+	cgs.media.retrieveShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/retrieve.tga");
+	cgs.media.escortShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/escort.tga");
+	cgs.media.cursor = trap_R_RegisterShaderNoMip( "menu/art/3_cursor2" );
+	cgs.media.sizeCursor = trap_R_RegisterShaderNoMip( "ui/assets/sizecursor.tga" );
+	cgs.media.selectCursor = trap_R_RegisterShaderNoMip( "ui/assets/selectcursor.tga" );
+	cgs.media.flagShaders[0] = trap_R_RegisterShaderNoMip("ui/assets/statusbar/flag_in_base.tga");
+	cgs.media.flagShaders[1] = trap_R_RegisterShaderNoMip("ui/assets/statusbar/flag_capture.tga");
+	cgs.media.flagShaders[2] = trap_R_RegisterShaderNoMip("ui/assets/statusbar/flag_missing.tga");
+
+	cgs.media.halfShieldModel	= trap_R_RegisterModel ( "models/weaphits/testboom.md3" );
+	cgs.media.halfShieldShader	= trap_R_RegisterShader( "halfShieldShell" );
+
+
+	CG_ClearParticles ();
+/*
+	for (i=1; i<MAX_PARTICLES_AREAS; i++)
+	{
+		{
+			int rval;
+
+			rval = CG_NewParticleArea ( CS_PARTICLES + i);
+			if (!rval)
+				break;
+		}
+	}
+*/
+
+// --- V24 Enhanced Features: Friend System Console Commands ---
+void CG_AddFriend_f(void) {
+	int clientNum;
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	if (trap_Argc() < 2) {
+		CG_Printf("^3Usage: /addfriend <client number>\n");
+		return;
+	}
+	clientNum = atoi(CG_Argv(1));
+	if (clientNum < 0 || clientNum >= MAX_CLIENTS) {
+		CG_Printf("^1Invalid client number. Use numbers 0-%d.\n", MAX_CLIENTS - 1);
+		return;
+	}
+	if (!cgs.clientinfo[clientNum].infoValid) {
+		CG_Printf("^1Client %d is not active.\n", clientNum);
+		return;
+	}
+	CG_AddFriend(clientNum);
+}
+
+void CG_RemoveFriend_f(void) {
+	int clientNum;
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	if (trap_Argc() < 2) {
+		CG_Printf("^3Usage: /removefriend <client number>\n");
+		return;
+	}
+	clientNum = atoi(CG_Argv(1));
+	CG_RemoveFriend(clientNum);
+}
+
+void CG_ClearFriends_f(void) {
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	CG_ClearFriends();
+}
+
+void CG_ListFriends_f(void) {
+	if (!cg_friendsSystem.integer) {
+		CG_Printf("^3Friend system is disabled. Enable with /cg_friendsSystem 1\n");
+		return;
+	}
+	CG_ListFriends();
+}
 	cgs.media.assaultShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/assault.tga");
 	cgs.media.campShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/camp.tga");
 	cgs.media.followShader = trap_R_RegisterShaderNoMip("ui/assets/statusbar/follow.tga");
