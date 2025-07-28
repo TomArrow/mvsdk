@@ -1,5 +1,5 @@
+
 // Copyright (C) 1999-2000 Id Software, Inc.
-//
 #ifndef __TR_TYPES_H
 #define __TR_TYPES_H
 
@@ -319,3 +319,5 @@ typedef struct {
 
 
 #endif	// __TR_TYPES_H
+
+typedef vmglconfig_t glconfig_t;
