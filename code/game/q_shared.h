@@ -2156,17 +2156,6 @@ typedef enum {
 } memtag_t;
 
 
-typedef struct 
-{
-	int		isValid;	
-	void	*ghoul2;
-	int		modelNum;
-	int		boltNum;
-	vec3_t	angles;
-	vec3_t	origin;
-	vec3_t	scale;
-	int		entNum;
-} sharedBoltInterface_t;
 
 /*
 ========================================================================

@@ -1434,3 +1434,25 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 #include "../api/mvapi.h"
 #include "g_multiversion.h"
 
+// --- JK2MV: MISSING SYMBOLS PATCH ---
+#ifndef COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED
+#define COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED 0x1000 // Placeholder value, update as needed
+#endif
+
+#ifndef SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD
+#define SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD 0x2000000 // Placeholder value, update as needed
+#endif
+
+// Placeholder for sv_ucmdSendback, update as needed
+#ifndef sv_ucmdSendback
+extern int sv_ucmdSendback;
+#endif
+
+
+
+// Placeholder for sv_minSnapsSpec, update as needed
+#ifndef sv_minSnapsSpec
+extern int sv_minSnapsSpec;
+#endif
+// --- END PATCH ---
+

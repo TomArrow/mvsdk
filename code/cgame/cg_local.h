@@ -2859,15 +2859,15 @@ int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum);
 qboolean trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
 void trap_CG_COOL_API_SetUserAngles(int pitch, int yaw, int roll, int angleSet);
 
-// qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
-// qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
-// qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
-// qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
-// qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
-// qboolean	trap_CG_COOL_API_DB_NextRow();
-// int			trap_CG_COOL_API_DB_GetInt(int place);
-// void		trap_CG_COOL_API_DB_GetFloat(int place, float* value);
-// qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize);
+ qboolean trap_CG_COOL_API_DB_EscapeString(char* input, int size);
+ qboolean trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+ qboolean trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
+ qboolean trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+ qboolean trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+ qboolean trap_CG_COOL_API_DB_NextRow();
+int trap_CG_COOL_API_DB_GetInt(int place);
+void trap_CG_COOL_API_DB_GetFloat(int place, float* value);
+qboolean trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize);
 
 qboolean CG_COOL_API_DB_EscapeString(char *input, int size);
 qboolean CG_COOL_API_DB_AddRequest(byte *reference, int referenceLength, int requestType, const char *request);
@@ -2899,11 +2899,11 @@ qboolean trap_CG_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, vo
 uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName);
 int trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
 
-/*
+
 qboolean	trap_Language_IsAsian(void);
 qboolean	trap_Language_UsesSpaces(void);
 unsigned	trap_AnyLanguage_ReadCharFromString( const char *psText, int *piAdvanceCount, qboolean *pbIsTrailingPunctuation );
-*/
+
 
 // a scene is built up by calls to R_ClearScene and the various R_Add functions.
 // Nothing is drawn until R_RenderScene is called.
