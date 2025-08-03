@@ -4,6 +4,7 @@
 // active (after loading) gameplay
 
 #include "cg_local.h"
+#include "../game/q_shared.h"
 #include "cg_public.h"
 #include "q_shared.h"
 #include "../ui/ui_shared.h"

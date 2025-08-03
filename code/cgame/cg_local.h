@@ -8,6 +8,7 @@
 
 #include "tr_types.h"
 #include "../game/q_shared.h"
+#include "../game/q_shared.h"
 
 #include "cg_public.h"
 
