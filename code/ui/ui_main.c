@@ -11,8 +11,10 @@ USER INTERFACE MAIN
 // use this to get a demo build without an explicit demo build, i.e. to get the demo ui files to build
 //#define PRE_RELEASE_TADEMO
 
+#define LIBEXPORT
+
 #include "ui_local.h"
-#include "../game/q_shared.h"
+#include "../../../qcommon/q_shared.h"
 #include "../qcommon/qfiles.h"
 #include "../qcommon/game_version.h"
 #include "ui_force.h"
@@ -44,7 +46,7 @@ void _UI_KeyEvent( int key, qboolean down );
 void _UI_MouseEvent( int dx, int dy );
 void _UI_Refresh( int realtime );
 qboolean _UI_IsFullscreen( void );
-LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
+intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
   int requestedMvApi = 0;
   if ( jk2version == VERSION_UNDEF && command != UI_GETAPIVERSION )
   { // Shouldn't happen under normal circumstances, but we had this case while debugging on old engine binaries...

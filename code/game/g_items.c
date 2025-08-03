@@ -1,6 +1,7 @@
 // Copyright (C) 1999-2000 Id Software, Inc.
 //
 #include "g_local.h"
+#include "g_defrag.h"
 
 /*
 
@@ -1374,7 +1375,8 @@ Touch_Item
 void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	int			respawn;
 	qboolean	predict;
-	int	nowTime = LEVELTIME(other->client);
+	// TODO: LEVELTIME defrag feature not fully implemented
+	int	nowTime = level.time; // LEVELTIME(other->client);
 	qboolean isRacer = other->client && other->client->sess.raceMode;
 
 	// defrag handling... meh
@@ -1544,14 +1546,15 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 
 	// wait of -1 will not respawn
 	if ( ent->wait == -1) {
-		if (!g_defrag.integer) {
+		// TODO: g_defrag feature not fully implemented
+		// if (!g_defrag.integer) {
 			ent->r.svFlags |= SVF_NOCLIENT;
 			ent->s.eFlags |= EF_NODRAW;
 			ent->r.contents = 0;
 			ent->unlinkAfterEvent = qtrue;
-		}
-		else {
-			if (isRacer) {
+		// }
+		// else {
+		//	if (isRacer) {
 				other->client->entityStates[ent-g_entities] = 1;
 			}
 			else {
@@ -1582,15 +1585,15 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	// picked up items still stay around, they just don't
 	// draw anything.  This allows respawnable items
 	// to be placed on movers.
-	if (g_defrag.integer) {
-
-		if (!isRacer) {
-			ent->availableTimeForNonRacers = level.time + respawn * 1000;
-		}
-		else {
-			other->client->triggerTimes[ent - g_entities] = nowTime + respawn * 1000;
-		}
-	} else {
+	// TODO: g_defrag feature not fully implemented  
+	// if (g_defrag.integer) {
+		// if (!isRacer) {
+		//	ent->availableTimeForNonRacers = level.time + respawn * 1000;
+		// } else {
+		//	other->client->triggerTimes[ent - g_entities] = nowTime + respawn * 1000;
+		// }
+	// } else {
+		if (1) { // default behavior
 		if (!(ent->flags & FL_DROPPED_ITEM) && (ent->item->giType == IT_WEAPON || ent->item->giType == IT_POWERUP))
 		{
 			ent->s.eFlags |= EF_ITEMPLACEHOLDER;
