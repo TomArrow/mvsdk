@@ -499,7 +499,6 @@ unsigned int trap_AnyLanguage_ReadCharFromString( const char *psText, int *piAdv
 extern qboolean		(*trap_Language_IsAsian)					(void);
 extern qboolean		(*trap_Language_UsesSpaces)					(void);
 extern unsigned int	(*trap_AnyLanguage_ReadCharFromString)		(const char *psText, int *piAdvanceCount, qboolean *pbIsTrailingPunctuation);
-
 qboolean	trap_SP_RegisterServer( const char *package );
 qboolean	trap_SP_Register(char *file );
 int trap_SP_GetStringTextString(const char *text, char *buffer, int bufferLength);
@@ -866,11 +865,11 @@ typedef struct {
 	float shadowFadeClamp;
 	qboolean fontRegistered;
 
-    qhandle_t needPass;
-    qhandle_t noForce;
-    qhandle_t forceRestrict;
-    qhandle_t saberOnly;
-    qhandle_t trueJedi;
+	qhandle_t needPass;
+	qhandle_t noForce;
+	qhandle_t forceRestrict;
+	qhandle_t saberOnly;
+	qhandle_t trueJedi;
 
 	sfxHandle_t moveRollSound;
 	sfxHandle_t moveJumpSound;

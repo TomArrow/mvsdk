@@ -24,6 +24,7 @@ USER INTERFACE MAIN
 #include "mvsdk_setup.h"
 #include "../api/mvapi.h"
 #include "ui_shared.h"
+#include "ui_local.h"
 
 /*
 ================
@@ -12604,7 +12605,7 @@ static qboolean UI_Chat_Main_HandleKey(int key)
 
 	if (item)
 	{
-	    Item_RunScript(item, item->action);
+		Item_RunScript(item, item->action);
 	}
 
 	return (qtrue);
@@ -12642,7 +12643,7 @@ static qboolean UI_Chat_Attack_HandleKey(int key)
 
 	if (item)
 	{
-	    Item_RunScript(item, item->action);
+		Item_RunScript(item, item->action);
 	}
 
 	return (qtrue);
@@ -12684,7 +12685,7 @@ static qboolean UI_Chat_Defend_HandleKey(int key)
 
 	if (item)
 	{
-	    Item_RunScript(item, item->action);
+		Item_RunScript(item, item->action);
 	}
 
 	return (qtrue);
@@ -12734,7 +12735,7 @@ static qboolean UI_Chat_Request_HandleKey(int key)
 
 	if (item)
 	{
-	    Item_RunScript(item, item->action);
+		Item_RunScript(item, item->action);
 	}
 
 	return (qtrue);
@@ -12780,7 +12781,7 @@ static qboolean UI_Chat_Reply_HandleKey(int key)
 
 	if (item)
 	{
-	    Item_RunScript(item, item->action);
+		Item_RunScript(item, item->action);
 	}
 
 	return (qtrue);
@@ -12822,7 +12823,7 @@ static qboolean UI_Chat_Spot_HandleKey(int key)
 
 	if (item)
 	{
-	    Item_RunScript(item, item->action);
+		Item_RunScript(item, item->action);
 	}
 
 	return (qtrue);
@@ -12872,7 +12873,7 @@ static qboolean UI_Chat_Tactical_HandleKey(int key)
 
 	if (item)
 	{
-	    Item_RunScript(item, item->action);
+		Item_RunScript(item, item->action);
 	}
 
 	return (qtrue);
@@ -15376,7 +15377,7 @@ static void UI_RunMenuScript(const char **args)
 
 			if (uiInfo.gameTypes[ui_netGameType.integer].gtEnum == GT_SAGA)
 			{
-                //hmm, I guess I'll set bot_minplayers to 0 here too. -rww
+				//hmm, I guess I'll set bot_minplayers to 0 here too. -rww
 				trap_Cvar_Set("bot_minplayers", "0");
 
 				for (i=1;i<9;i++)
@@ -16247,7 +16248,7 @@ static qboolean UI_CheckPassword( void )
 	// a packet *if* we do indeed get a 0 ping just make it 1 so then a 0 ping is guaranteed to be bad
 	/*
 	// also check ping!
-    ping = atoi(Info_ValueForKey(info, "ping"));
+	ping = atoi(Info_ValueForKey(info, "ping"));
 	// NOTE : PING -- it's very questionable as to whether a ping of < 0 or <= 0 indicates a bad server
 	// what I do know, is that getting "ping" from the ServerInfo on a bad server returns 0.
 	// So I'm left with no choice but to not allow you to enter a server with a ping of 0
@@ -17560,7 +17561,7 @@ static qhandle_t UI_FeederItemImage(float feederID, int index) {
 			}
 			return head->icon;
 		}
-    }
+	}
 	else if (feederID == FEEDER_SIEGE_TEAM1) 
 	{
 		return 0;
