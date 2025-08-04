@@ -173,16 +173,23 @@ qboolean CG_FileExists(const char *fileName)
 
 qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team, float *colors )
 {
-	if (!Q_stricmpn(modelName, "jedi_",5))
-	{ //argh, it's a custom player skin!
-		if (team == TEAM_RED && colors)
+	qboolean isMultiPartedSkin = qfalse;
+
+	if (Q_stricmpn(modelName, "jedi_", 5) == 0 || strchr(skinName, '|') != NULL)
+	{
+		isMultiPartedSkin = qtrue;
+	}
+
+	if (colors != NULL)
+	{
+		if (team == TEAM_RED)
 		{
 			colors[0] = 1.0f;
 			colors[1] = 0.0f;
 			colors[2] = 0.0f;
 			colors[3] = 1.0f;
 		}
-		else if (team == TEAM_BLUE && colors)
+		else if (team == TEAM_BLUE)
 		{
 			colors[0] = 0.0f;
 			colors[1] = 0.0f;
@@ -197,11 +204,14 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 		{//not "red"
 			if ( Q_stricmp( "blue", skinName ) == 0
 				|| Q_stricmp( "default", skinName ) == 0
-				|| strchr(skinName, '|')//a multi-skin playerModel
 				|| !CG_IsValidCharacterModel(modelName, skinName) )
 			{
 				Q_strncpyz(skinName, "red", MAX_QPATH);
 				return qfalse;
+			}
+			else if (isMultiPartedSkin)
+			{
+				return qtrue;
 			}
 			else
 			{//need to set it to red
@@ -230,8 +240,8 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 				if ( !CG_FileExists( va( "models/players/%s/model_%s.skin", modelName, skinName ) ) )
 				{
 					Q_strncpyz(skinName, "red", MAX_QPATH);
+					return qfalse;
 				}
-				return qfalse;
 			}
 		}
 
@@ -242,11 +252,14 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 		{
 			if ( Q_stricmp( "red", skinName ) == 0
 				|| Q_stricmp( "default", skinName ) == 0
-				|| strchr(skinName, '|')//a multi-skin playerModel
 				|| !CG_IsValidCharacterModel(modelName, skinName) )
 			{
 				Q_strncpyz(skinName, "blue", MAX_QPATH);
 				return qfalse;
+			}
+			else if (isMultiPartedSkin)
+			{
+				return qtrue;
 			}
 			else
 			{//need to set it to blue
@@ -275,8 +288,8 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 				if ( !CG_FileExists( va( "models/players/%s/model_%s.skin", modelName, skinName ) ) )
 				{
 					Q_strncpyz(skinName, "blue", MAX_QPATH);
+					return qfalse;
 				}
-				return qfalse;
 			}
 		}
 	}
@@ -397,16 +410,20 @@ static qboolean CG_RegisterClientModelname( clientInfo_t *ci, const char *modelN
 	const char *iconStart;
 
 retryModel:
+
+	Q_strncpyz(ci->modelName, modelName, sizeof(ci->modelName));
+	Q_strncpyz(ci->skinName, skinName, sizeof(ci->skinName));
+	Q_strncpyz(ci->teamName, teamName, sizeof(ci->teamName));
+
 	if (ci->ATST && clientNum == -1)
 	{
-		Q_strncpyz(ci->teamName, teamName, sizeof(ci->teamName));
 		return qtrue;
 	}
 
 	if (badModel)
 	{
-		modelName = "kyle";
-		skinName = "default";
+		Q_strncpyz(ci->modelName, DEFAULT_MODEL, sizeof(ci->modelName));
+		Q_strncpyz(ci->skinName, "default", sizeof(ci->skinName));
 		// MVSDK: Suppress warning message for other client models
 		if (cg_developer.integer || clientNum == -1 || clientNum == cg.clientNum) {
 			Com_Printf("WARNING: Attempted to load an unsupported multiplayer model! (bad or missing bone, or missing animation sequence)\n");
@@ -415,16 +432,16 @@ retryModel:
 		retriedAlready = qtrue;
 	}
 
-	if ( (cg_mv_fixbrokenmodelsclient.integer == 1 || (cg_mv_fixbrokenmodelsclient.integer && jk2startversion > VERSION_1_02)) && !CG_IsValidCharacterModel(modelName, skinName))
+	if ( (cg_mv_fixbrokenmodelsclient.integer == 1 || (cg_mv_fixbrokenmodelsclient.integer && jk2startversion > VERSION_1_02)) && !CG_IsValidCharacterModel(ci->modelName, ci->skinName))
 	{
-		modelName = "kyle";
-		skinName = "default";
+		Q_strncpyz(ci->modelName, DEFAULT_MODEL, sizeof(ci->modelName));
+		Q_strncpyz(ci->skinName, "default", sizeof(ci->skinName));
 	} 
-	else if (!Q_stricmp(modelName, "secret_quigon"))
+	else if (!Q_stricmp(ci->modelName, "secret_quigon"))
 	{
 		if (!secretQuiGonAllowed) {
-			modelName = "kyle";
-			skinName = "default";
+			Q_strncpyz(ci->modelName, DEFAULT_MODEL, sizeof(ci->modelName));
+			Q_strncpyz(ci->skinName, "default", sizeof(ci->skinName));
 		}
 	}
 
@@ -437,20 +454,19 @@ retryModel:
 	if ( cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
 	{
 		CG_ValidateSkinForTeam( ci->modelName, ci->skinName, ci->team, ci->colorOverride );
-		skinName = ci->skinName;
 	}
 	else
 	{
 		ci->colorOverride[0] = ci->colorOverride[1] = ci->colorOverride[2] = ci->colorOverride[3] = 0.0f;
 	}
 
-	if (strchr(skinName, '|'))
+	if (strchr(ci->skinName, '|'))
 	{//three part skin
-		useSkinName = va("models/players/%s/|%s", modelName, skinName);
+		useSkinName = va("models/players/%s/|%s", ci->modelName, ci->skinName);
 	}
 	else
 	{
-		useSkinName = va("models/players/%s/model_%s.skin", modelName, skinName);
+		useSkinName = va("models/players/%s/model_%s.skin", ci->modelName, ci->skinName);
 	}
 
 	if (clientNum != -1 && cg_entities[clientNum].currentState.teamowner && !cg_entities[clientNum].isATST)
@@ -469,22 +485,28 @@ retryModel:
 		}
 		else
 		{ //fallback to the default skin
-			if (!Q_stricmpn(modelName, "jedi_", 5))
+			if (!Q_stricmpn(ci->modelName, "jedi_", 5))
 			{
-				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_default.skin", modelName));
+				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_default.skin", ci->modelName));
 			}
 			else
 			{
-				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", modelName, skinName));
+				ci->torsoSkin = trap_R_RegisterSkin(va("models/players/%s/model_%s.skin", ci->modelName, ci->skinName));
 			}
 		}
 		ci->ATST = qfalse;
-		Com_sprintf( afilename, sizeof( afilename ), "models/players/%s/model.glm", modelName );
+		Com_sprintf( afilename, sizeof( afilename ), "models/players/%s/model.glm", ci->modelName );
 		handle = trap_G2API_InitGhoul2Model(&ci->ghoul2Model, afilename, 0, ci->torsoSkin, 0, 0, 0);
 	}
-	if (handle<0)
+	if (handle < 0)
 	{
-		return qfalse;
+		if (retriedAlready)
+		{
+			return qfalse;
+		}
+
+		badModel = qtrue;
+		goto retryModel;
 	}
 
 	// The model is now loaded.
@@ -565,7 +587,7 @@ retryModel:
 		}
 	}
 
-	if ( CG_ParseSurfsFile( modelName, skinName, surfOff, surfOn ) )
+	if ( CG_ParseSurfsFile( ci->modelName, ci->skinName, surfOff, surfOn ) )
 	{//turn on/off any surfs
 		const char	*token;
 		const char	*p;
@@ -653,7 +675,7 @@ retryModel:
 			goto retryModel;
 		}
 
-		if (!Q_stricmp(modelName, "boba_fett"))
+		if (!Q_stricmp(ci->modelName, "boba_fett"))
 		{ //special case, turn off the jetpack surfs
 			trap_G2API_SetSurfaceOnOff(ci->ghoul2Model, "torso_rjet", TURN_OFF);
 			trap_G2API_SetSurfaceOnOff(ci->ghoul2Model, "torso_cjet", TURN_OFF);
@@ -718,19 +740,17 @@ retryModel:
 		cg_entities[clientNum].ghoul2weapon = NULL;
 	}
 
-	Q_strncpyz (ci->teamName, teamName, sizeof(ci->teamName));
-
 	// Model icon for drawing the portrait on screen
-	if (skinName[0] == '|')
+	if (ci->skinName[0] == '|')
 	{
-		iconStart = &skinName[1];
+		iconStart = &ci->skinName[1];
 	}
 	else
 	{
-		iconStart = &skinName[0];
+		iconStart = &ci->skinName[0];
 	}
 
-	Com_sprintf(iconName, sizeof(iconName), "models/players/%s/icon_%s", modelName, iconStart);
+	Com_sprintf(iconName, sizeof(iconName), "models/players/%s/icon_%s", ci->modelName, iconStart);
 
 	if (strchr(iconName, '|') != NULL)
 	{
@@ -742,7 +762,7 @@ retryModel:
 
 	if (ci->modelIcon == 0)
 	{
-		Com_sprintf(iconName, sizeof(iconName), "models/players/%s/icon_siege", modelName);
+		Com_sprintf(iconName, sizeof(iconName), "models/players/%s/icon_siege", ci->modelName);
 		ci->modelIcon = trap_R_RegisterShaderNoMip(iconName);
 	}
 	return qtrue;
