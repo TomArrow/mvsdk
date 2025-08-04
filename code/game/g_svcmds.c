@@ -60,8 +60,8 @@ static qboolean StringToFilter (char *s, ipFilter_t *f)
 	int			i, j;
 	unsigned	compare = 0;
 	unsigned	mask = 0;
-	byte		*c = (byte *)&compare;
-	byte		*m = (byte *)&mask;
+	byte		*c = (::byte *)&compare;
+	byte		*m = (::byte *)&mask;
 
 	for (i=0 ; i<4 ; i++)
 	{
@@ -99,7 +99,7 @@ UpdateIPBans
 */
 static void UpdateIPBans (void)
 {
-	byte	*b;
+	::byte	*b;
 	int		i;
 	char	iplist[MAX_INFO_STRING];
 
@@ -109,7 +109,7 @@ static void UpdateIPBans (void)
 		if (ipFilters[i].compare == 0xffffffff)
 			continue;
 
-		b = (byte *)&ipFilters[i].compare;
+		b = (::byte *)&ipFilters[i].compare;
 		Com_sprintf( iplist + strlen(iplist), sizeof(iplist) - strlen(iplist), 
 			"%i.%i.%i.%i ", b[0], b[1], b[2], b[3]);
 	}
@@ -126,7 +126,7 @@ qboolean G_FilterPacket (char *from)
 {
 	int			i;
 	unsigned	mask = 0;
-	byte		*m = (byte *)&mask;
+	byte		*m = (::byte *)&mask;
 	char		*p;
 
 	i = 0;

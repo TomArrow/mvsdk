@@ -56,7 +56,7 @@ add_library(${MVUI} SHARED ${MVUIFILES})
 
 # Defines
 set(MVUIDefines ${MVUIDefines} "JK2_UI")
-set(MVUIIncludeDirs ${MVGLOBALIncludeDirs})
+set(MVUIIncludeDirs ${MVGLOBALIncludeDirs} "${SRCDir}/api")
 
 set_target_properties(${MVUI} PROPERTIES PREFIX "") # remove "lib" prefix for .so/.dylib files
 

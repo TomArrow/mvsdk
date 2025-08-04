@@ -1856,7 +1856,7 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	//if (type == TOPREQUEST_SPECIFICLB) {
-	//	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
+	//	if (G_COOL_API_DB_AddPreparedStatement((::byte*)&data, sizeof(data), DBREQUEST_TOP,
 	//		va(
 	//			"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
 	//			"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
@@ -1880,7 +1880,7 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 	//}
 	//else 
 	{
-		if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TOP,
+		if (G_COOL_API_DB_AddPreparedStatement((::byte*)&data, sizeof(data), DBREQUEST_TOP,
 			va(
 				"(SELECT 0 AS type," TOPCOLUMNS QUERY2 " )" // limit 11 cuz want unofficial too, even tho we show it separately.
 				"UNION ALL (SELECT 1 AS type," TOPCOLUMNS QUERY2 " )"
@@ -1940,7 +1940,7 @@ void DF_UpdateRanks(gentity_t* ent, const char* coursename, const char* subcours
 	for (style = 0; style < MV_NUMSTYLES; style++) {
 		data.style = style;
 		data.flush = (style == MV_NUMSTYLES - 1) && flush;
-		if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATE,
+		if (G_COOL_API_DB_AddPreparedStatement((::byte*)&data, sizeof(data), DBREQUEST_RANKUPDATE,
 			va(
 				"UPDATE runs INNER JOIN "
 				"("
@@ -1998,18 +1998,18 @@ void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseName
 		level.lastAllRankUpdate = level.time;
 		data.all = qtrue;
 		if (forceAll) {
-			if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY)) {
+			if (!G_COOL_API_DB_AddRequest((::byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY)) {
 				G_SendOrPrint(requesterOrNull, "^1Error sending rank update map request query.\n");
 			}
 		}
 		else {
-			if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY_DATELIMITED)) {
+			if (!G_COOL_API_DB_AddRequest((::byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY_DATELIMITED)) {
 				G_SendOrPrint(requesterOrNull, "^1Error sending date-limited rank update map request query.\n");
 			}
 		}
 	}
 	else {
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERYSEARCH)) {
+		if (!G_COOL_API_DB_AddPreparedStatement((::byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERYSEARCH)) {
 			G_SendOrPrint(requesterOrNull, "^1Error sending course-specific rank update map request query.\n");
 			return;
 		}
@@ -2066,7 +2066,7 @@ void DF_TimeRequest(gentity_t* ent, const char* coursename, const char* subcours
 	// TODO what if, for freak reason, someone has two identical times in two different styles? how do i select the earlier one? or should i even care?  earliest=runwhen AND besttime=duration_ms doesnt work cuz not both are neccessarily true
 
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
-	if (G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_TIME,
+	if (G_COOL_API_DB_AddPreparedStatement((::byte*)&data, sizeof(data), DBREQUEST_TIME,
 		va(
 			"SELECT " TOPCOLUMNS QUERY2 
 			, lbWhere))) {
@@ -4554,7 +4554,7 @@ void DF_LoadMapDefaults() {
 	memset(&data, 0, sizeof(data));
 	Q_strncpyz(data.course, DF_GetCourseName(qfalse), sizeof(data.course));
 
-	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_LOADMAPRACEDEFAULTS,
+	if (!G_COOL_API_DB_AddPreparedStatement((::byte*)&data, sizeof(data), DBREQUEST_LOADMAPRACEDEFAULTS,
 		"SELECT msec,jump,variant,runFlags FROM mapdefaults WHERE course=? AND subcourse=?"
 	)) {
 		trap_SendServerCommand(-1, "print \"^1Map defaults could not be loaded. Leaderboard may not display correctly.\n\"");
@@ -4638,7 +4638,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Run flags", sizeof(data.what));
 
-			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((::byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"runFlags=?"
@@ -4676,7 +4676,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Jump level", sizeof(data.what));
 
-			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((::byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"jump=?"
@@ -4714,7 +4714,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Variant", sizeof(data.what));
 
-			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((::byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"variant=?"
@@ -4759,7 +4759,7 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 
 			Q_strncpyz(data.what, "Msec", sizeof(data.what));
 
-			G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
+			G_COOL_API_DB_AddPreparedStatement((::byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATEMAPRACEDEFAULTS,
 				"INSERT INTO mapdefaults (course,subcourse,msec,jump,variant,runFlags) VALUES (?,?,?,?,?,?)"
 				"ON DUPLICATE KEY UPDATE "
 				"msec=?"
@@ -5400,8 +5400,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 				int i;
 				cl->pers.segmented.debugTime[timeIndex] = cl->pers.segmented.msecProgress;
 				for (i = 0; i < segDebugFieldsCount; i++) {
-					void* ptrSrc = ((byte*)cl)+ segDebugFields[i].offset;
-					void* ptrDst = ((byte*)&cl->pers.segmented.debugVars[timeIndex])+ segDebugFields[i].offsetDebugVars;
+					void* ptrSrc = ((::byte*)cl)+ segDebugFields[i].offset;
+					void* ptrDst = ((::byte*)&cl->pers.segmented.debugVars[timeIndex])+ segDebugFields[i].offsetDebugVars;
 					memcpy(ptrDst,ptrSrc, segDebugFields[i].typeSize);
 				}
 				//VectorCopy(cl->ps.origin,cl->pers.segmented.debugOrigin[timeIndex]);
@@ -5496,8 +5496,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			int i;
 			cl->pers.segmented.debugTime[timeIndex] = cl->pers.segmented.msecProgress;
 			for (i = 0; i < segDebugFieldsCount; i++) {
-				void* ptrSrc = ((byte*)cl) + segDebugFields[i].offset;
-				void* ptrDst = ((byte*)&cl->pers.segmented.debugVars[timeIndex]) + segDebugFields[i].offsetDebugVars;
+				void* ptrSrc = ((::byte*)cl) + segDebugFields[i].offset;
+				void* ptrDst = ((::byte*)&cl->pers.segmented.debugVars[timeIndex]) + segDebugFields[i].offsetDebugVars;
 				memcpy(ptrDst, ptrSrc, segDebugFields[i].typeSize);
 			}
 			//VectorCopy(cl->ps.origin,cl->pers.segmented.debugOrigin[timeIndex]);
@@ -5990,7 +5990,7 @@ void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int 
 	data.contest = contest;
 	data.page = page;
 
-	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_SUBCONTESTLEADERBOARD, query)) {
+	if (!G_COOL_API_DB_AddPreparedStatement((::byte*)&data, sizeof(data), DBREQUEST_SUBCONTESTLEADERBOARD, query)) {
 		return;
 	}
 
@@ -6021,7 +6021,7 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 		data.userid = ent->client->sess.login.loggedIn ? ent->client->sess.login.id : -1;
 		data.contest = subcontest;
 
-		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATESUBCONTEST,query)) {
+		if (!G_COOL_API_DB_AddPreparedStatement((::byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATESUBCONTEST,query)) {
 			return;
 		}
 

@@ -1986,6 +1986,10 @@ void Cmd_Stats_f( gentity_t *ent ) {
 }
 
 void Cmd_Stay_f(gentity_t* ent) {
+	// TODO: g_slowVote and stayOnMap feature not fully implemented
+	trap_SendServerCommand(ent - g_entities, "print \"^3Stay command not available.\n\"");
+	return;
+	/*
 	if (!g_slowVote.integer) {
 		trap_SendServerCommand(ent - g_entities, "print \"^3Slow voting is not enabled on this server.\n\"");
 		return;
@@ -2000,6 +2004,7 @@ void Cmd_Stay_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"^1You are no longer locking this map. People can vote for another map.\n\"");
 		ent->client->pers.stayOnMap = qfalse;
 	}
+	*/
 }
 
 int G_ItemUsable(playerState_t *ps, int forcedUse, gentity_t* ent)

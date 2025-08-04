@@ -20,11 +20,12 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 ===========================================================================
 */
 
-#ifndef __Q_PLATFORM_H
-#define __Q_PLATFORM_H
+#define __Q_PLATFORM_H	
 
 // this is for determining if we have an asm version of a C function
+#ifndef idx64
 #define idx64 0
+#endif
 
 #ifdef Q3_VM
 
@@ -78,9 +79,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 //================================================================= WIN64/32 ===
 
 #if defined(_WIN64) || defined(__WIN64__)
-
-#undef idx64
-#define idx64 1
 
 #undef QDECL
 #define QDECL __cdecl
@@ -195,16 +193,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define idx64 1
 #define ARCH_STRING "x86_64"
 #define Q3_LITTLE_ENDIAN
-#elif defined(__aarch64__) or defined(ARCH_ARM64)
+#endif
+#if defined(__aarch64__) || defined(ARCH_ARM64)
 #define ARCH_STRING "arm64"
 #define Q3_LITTLE_ENDIAN
-#endif
-
-#if defined __x86_64__
-#undef idx64
-#define idx64 1
-#endif
-
+#endif	
 #if __FLOAT_WORD_ORDER == __BIG_ENDIAN
 #define Q3_BIG_ENDIAN
 #else
@@ -214,8 +207,6 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define DLL_EXT ".so"
 
 #endif
-
-//=================================================================== BSD ===
 
 #if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 
@@ -354,29 +345,29 @@ float FloatSwap (const float *f);
 #define LittleShort(x) ShortSwap(x)
 #define LittleLong(x) LongSwap(x)
 #define LittleFloat(x) FloatSwap(&x)
-#define BigShort
-#define BigLong
-#define BigFloat
+#define BigShort(x) (x)
+#define BigLong(x) (x)
+#define BigFloat(x) (x)
 
 #elif defined( Q3_LITTLE_ENDIAN )
 
 #define CopyLittleShort(dest, src) Com_Memcpy(dest, src, 2)
 #define CopyLittleLong(dest, src) Com_Memcpy(dest, src, 4)
-#define LittleShort
-#define LittleLong
-#define LittleFloat
+#define LittleShort(x) (x)
+#define LittleLong(x) (x)
+#define LittleFloat(x) (x)
 #define BigShort(x) ShortSwap(x)
 #define BigLong(x) LongSwap(x)
 #define BigFloat(x) FloatSwap(&x)
 
 #elif defined( Q3_VM )
 
-#define LittleShort
-#define LittleLong
-#define LittleFloat
-#define BigShort
-#define BigLong
-#define BigFloat
+#define LittleShort(x) (x)
+#define LittleLong(x) (x)
+#define LittleFloat(x) (x)
+#define BigShort(x) (x)
+#define BigLong(x) (x)
+#define BigFloat(x) (x)
 
 #else
 #error "Endianness not defined"
@@ -391,5 +382,5 @@ float FloatSwap (const float *f);
 #endif
 
 #endif
-
-#endif
+// Q_PLATFORM_H
+// Q_PLATFORM_H

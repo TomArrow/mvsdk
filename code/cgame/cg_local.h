@@ -7,6 +7,8 @@
 #include "../game/bg_public.h"
 
 #include "tr_types.h"
+#include "../game/q_shared.h"
+#include "../game/q_shared.h"
 
 #include "cg_public.h"
 
@@ -830,8 +832,8 @@ typedef struct
 	int latestSnapshotNum;	// the number of snapshots the client system has received
 	int latestSnapshotTime; // the time from latestSnapshotNum, so we don't need to read the snapshot yet
 
-	snapshot_t *snap;	  // cg.snap->serverTime <= cg.time
-	snapshot_t *nextSnap; // cg.nextSnap->serverTime > cg.time, or NULL
+	cg_snapshot_t *snap;	  // cg.snap->serverTime <= cg.time
+	cg_snapshot_t *nextSnap; // cg.nextSnap->serverTime > cg.time, or NULL
 						  //	snapshot_t	activeSnapshots[2];
 
 	float frameInterpolation; // (float)( cg.time - cg.frame->serverTime ) / (cg.nextFrame->serverTime - cg.frame->serverTime)
@@ -1064,7 +1066,7 @@ typedef struct
 	*/
 	int testModel;
 	// had to be moved so we wouldn't wipe these out with the memset - these have STL in them and shouldn't be cleared that way
-	snapshot_t activeSnapshots[2];
+	cg_snapshot_t activeSnapshots[2];
 	/*
 	Ghoul2 Insert End
 	*/
@@ -1117,97 +1119,6 @@ vmCvar_t cg_friendsChatsOnly;
 vmCvar_t cg_autoAim_debug;
 vmCvar_t cg_autoAim_usePrediction;
 vmCvar_t cg_autoAim_ignoreWalls;
-
-// Ensure these are declared for use in cvarTable
-vmCvar_t cg_autoAimDistance;
-vmCvar_t cg_autoAimAngle;
-
-// Additional Auto Feature CVars
-vmCvar_t cg_autoBackstab;
-vmCvar_t cg_autoBackstabDistance;
-vmCvar_t cg_autoBackstabIgnoreFriends;
-vmCvar_t cg_autoBackstabDelay;
-vmCvar_t cg_autoBackstabSoundAlert;
-vmCvar_t cg_autoDefense;
-vmCvar_t cg_autoKick;
-vmCvar_t cg_autoKickDistance;
-vmCvar_t cg_autoKickIgnoreFriends;
-vmCvar_t cg_autoKickDelay;
-vmCvar_t cg_autoKickSoundAlert;
-vmCvar_t cg_autoAim;
-vmCvar_t cg_autoAimDistance;
-vmCvar_t cg_autoAimAngle;
-vmCvar_t cg_autoAimIgnoreFriends;
-vmCvar_t cg_autoAimDelay;
-vmCvar_t cg_autoAimSoundAlert;
-vmCvar_t cg_espDebug;
-
-	// new simple hud stuff
-	int oldammo;
-	int oldAmmoTime;
-
-
-// V24 Enhanced Features
-qboolean doAutoBackstab;
-int autoBackstabMode;
-qboolean doAutoKick;
-qboolean doAutoAim;
-
-// Automated/ESP/Stats features
-vmCvar_t cg_wallhack;
-qboolean isFriend;
-int totalDeaths;
-int directKills;
-int totalKills;
-
-// Auto-Gameplay System
-vmCvar_t cg_autoKick_debug;
-vmCvar_t cg_autoKick_sideKickFirst;
-vmCvar_t cg_autoKick_distance;
-vmCvar_t cg_autoKick_usePrediction;
-vmCvar_t cg_autoKick_indicator;
-vmCvar_t cg_autoKick_checkRoll;
-vmCvar_t cg_autoKick_checkAir;
-vmCvar_t cg_autoKick_checkKnockdown;
-
-// Auto-Backstab System
-
-
-// Debug Saber Box
-vmCvar_t cg_debugSaberBox;
-vmCvar_t cg_debugSaberBox_usePrediction;
-
-// Friends System
-vmCvar_t cg_friendsChatsOnly;
-
-// Auto-Aim System
-vmCvar_t cg_autoAim_debug;
-vmCvar_t cg_autoAim_usePrediction;
-vmCvar_t cg_autoAim_ignoreWalls;
-
-// Ensure these are declared for use in cvarTable
-// vmCvar_t cg_autoAimDistance; // removed duplicate
-// vmCvar_t cg_autoAimAngle;   // removed duplicate
-
-// Additional Auto Feature CVars
-vmCvar_t cg_autoBackstab;
-vmCvar_t cg_autoBackstabDistance;
-vmCvar_t cg_autoBackstabIgnoreFriends;
-vmCvar_t cg_autoBackstabDelay;
-vmCvar_t cg_autoBackstabSoundAlert;
-vmCvar_t cg_autoDefense;
-vmCvar_t cg_autoKick;
-vmCvar_t cg_autoKickDistance;
-vmCvar_t cg_autoKickIgnoreFriends;
-vmCvar_t cg_autoKickDelay;
-vmCvar_t cg_autoKickSoundAlert;
-vmCvar_t cg_autoAim;
-vmCvar_t cg_autoAimDistance;
-vmCvar_t cg_autoAimAngle;
-vmCvar_t cg_autoAimIgnoreFriends;
-vmCvar_t cg_autoAimDelay;
-vmCvar_t cg_autoAimSoundAlert;
-vmCvar_t cg_espDebug;
 
 	// new simple hud stuff
 	int oldammo;
@@ -2619,7 +2530,7 @@ extern char teamChat1[256];
 extern char teamChat2[256];
 
 void CG_AddLagometerFrameInfo(void);
-void CG_AddLagometerSnapshotInfo(snapshot_t *snap);
+void CG_AddLagometerSnapshotInfo(cg_snapshot_t *snap);
 void CG_AddSpeed(void);
 void CG_CenterPrint(const char *str, int y, int charWidth);
 void CG_CenterPrintMultiKill(const char *str, int y, int charWidth);
@@ -2950,15 +2861,15 @@ int trap_CG_COOL_API_GetTimeSinceSnapReceived(int snapNum);
 qboolean trap_CG_COOL_API_GlResolutionChanged(int vidWidth, int vidHeight);
 void trap_CG_COOL_API_SetUserAngles(int pitch, int yaw, int roll, int angleSet);
 
-// qboolean	trap_CG_COOL_API_DB_EscapeString(char* input, int size);
-// qboolean	trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
-// qboolean	trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
-// qboolean	trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
-// qboolean	trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
-// qboolean	trap_CG_COOL_API_DB_NextRow();
-// int			trap_CG_COOL_API_DB_GetInt(int place);
-// void		trap_CG_COOL_API_DB_GetFloat(int place, float* value);
-// qboolean	trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize);
+ qboolean trap_CG_COOL_API_DB_EscapeString(char* input, int size);
+ qboolean trap_CG_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
+ qboolean trap_CG_COOL_API_DB_AddRequestTyped(byte* reference, int referenceLength, int requestType, const char* request, DBRequestType_t dbRequestType);
+ qboolean trap_CG_COOL_API_DB_NextResponse(int* requestType, int* affectedRows, int* status, char* errorMessage, int errorMessageSize, byte* reference, int referenceLength);
+ qboolean trap_CG_COOL_API_DB_GetReference(byte* reference, int referenceLength);
+ qboolean trap_CG_COOL_API_DB_NextRow();
+int trap_CG_COOL_API_DB_GetInt(int place);
+void trap_CG_COOL_API_DB_GetFloat(int place, float* value);
+qboolean trap_CG_COOL_API_DB_GetString(int place, char* out, int outSize);
 
 qboolean CG_COOL_API_DB_EscapeString(char *input, int size);
 qboolean CG_COOL_API_DB_AddRequest(byte *reference, int referenceLength, int requestType, const char *request);
@@ -2990,11 +2901,11 @@ qboolean trap_CG_COOL_API_AttachG2Model(void *ghoul2From, int modelIndexFrom, vo
 uint32_t trap_CG_COOL_API_GetFileVersion(const char *fileName);
 int trap_CG_COOL_API_GetFileList(const char *path, const char *extension, char *listbuf, int bufsize);
 
-/*
+
 qboolean	trap_Language_IsAsian(void);
 qboolean	trap_Language_UsesSpaces(void);
 unsigned	trap_AnyLanguage_ReadCharFromString( const char *psText, int *piAdvanceCount, qboolean *pbIsTrailingPunctuation );
-*/
+
 
 // a scene is built up by calls to R_ClearScene and the various R_Add functions.
 // Nothing is drawn until R_RenderScene is called.
@@ -3048,7 +2959,7 @@ void trap_GetCurrentSnapshotNumber(int *snapshotNumber, int *serverTime);
 
 // a snapshot get can fail if the snapshot (or the entties it holds) is so
 // old that it has fallen out of the client system queue
-qboolean trap_GetSnapshot(int snapshotNumber, snapshot_t *snapshot);
+qboolean trap_GetSnapshot(int snapshotNumber, cg_snapshot_t *snapshot);
 
 // retrieve a text command from the server stream
 // the current snapshot will hold the number of the most recent command
