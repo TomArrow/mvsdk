@@ -189,7 +189,6 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 			colors[2] = 1.0f;
 			colors[3] = 1.0f;
 		}
-		return qtrue;
 	}
 
 	if (team == TEAM_RED)
