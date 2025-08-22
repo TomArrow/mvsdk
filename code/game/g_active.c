@@ -2292,6 +2292,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.noFootsteps = ( g_dmflags.integer & DF_NO_FOOTSTEPS ) > 0;
 	pm.unlockRandom = g_unlockRandom.integer;
 	pm.mineSwitchFix = g_mineSwitchFix.integer;
+	pm.kickoffFix = g_kickoffFix.integer;
 
 	pm.pmove_fixed = g_pmove_fixed.integer | client->pers.pmoveFixed;
 	pm.pmove_msec = g_pmove_msec.integer;

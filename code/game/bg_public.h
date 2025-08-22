@@ -65,6 +65,7 @@
 
 
 #define TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX		(1<<0) 
+#define TTFLAGS_GAMEPLAY_SERVERINFO_KICKOFFFIX			(1<<1) 
 
 
 //jk2pro
@@ -367,6 +368,8 @@ typedef struct {
 	int			(*pointcontents)( const vec3_t point, int passEntityNum );
 	int			q2TraceStyle;
 	int			q2Skims;
+
+	qboolean	kickoffFix;
 
 	qboolean	positionChangedOutsidePmove;
 #if JK2_CGAME

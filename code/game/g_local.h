@@ -1567,6 +1567,7 @@ extern	vmCvar_t	g_randomTipInterval;
 
 extern	vmCvar_t	g_unlockRandom;
 extern	vmCvar_t	g_mineSwitchFix;
+extern	vmCvar_t	g_kickoffFix;
 
 extern	vmCvar_t	g_crossServerChat;
 extern	vmCvar_t	g_crossServerDefragTimes;

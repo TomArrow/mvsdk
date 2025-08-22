@@ -219,6 +219,8 @@ vmCvar_t	g_randomTipInterval;
 vmCvar_t	g_unlockRandom;
 vmCvar_t	g_mineSwitchFix;
 
+vmCvar_t	g_kickoffFix;
+
 vmCvar_t	g_crossServerChat;
 vmCvar_t	g_crossServerDefragTimes;
 
@@ -403,6 +405,7 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO | CVAR_ARCHIVE, 0, qtrue },
 	{ &g_mineSwitchFix, "g_mineSwitchFix", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
+	{ &g_kickoffFix, "g_kickoffFix", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
 
 	{ &g_crossServerChat, "g_crossServerChat", "2", CVAR_ARCHIVE, 0, qtrue}, // 1 = receive. 2 = need special say_cross cmd to allow sharing. 3 = share all
 	{ &g_crossServerDefragTimes, "g_crossServerDefragTimes", "2", CVAR_ARCHIVE, 0, qtrue}, // Share achieved defrag time prints across servers. 1 = receive. 2 = send

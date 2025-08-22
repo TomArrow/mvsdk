@@ -3671,6 +3671,7 @@ static void PM_GroundTrace( void ) {
 	vec3_t		point;
 	trace_t		trace;
 	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
+	float		kickoffSpeed = (MovementStyleHasQuake2Ramps(pm->modParms.physics) && pm->kickoffFix) ? 100 : 10; // this is off by default. i should have done this from the start and it would have been the correct fix but now its kinda too late :/ would subtly influence times here and there, during a test on a 53 second map it made a run 0.3s slower or so. sad.
 
 	point[0] = pm->ps->origin[0];
 	point[1] = pm->ps->origin[1];
@@ -3712,7 +3713,7 @@ static void PM_GroundTrace( void ) {
 	}
 
 	// check if getting thrown off the ground
-	if ( pm->ps->velocity[2] > 0 && DotProduct( pm->ps->velocity, trace.plane.normal ) > 10 ) {
+	if ( pm->ps->velocity[2] > 0 && DotProduct( pm->ps->velocity, trace.plane.normal ) > kickoffSpeed) {
 		if ( pm->debugLevel ) {
 			Com_Printf("%i:kickoff\n", c_pmove);
 		}
