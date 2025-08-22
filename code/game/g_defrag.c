@@ -1267,7 +1267,7 @@ qboolean ValidRaceSettings(gentity_t* player)
 		return qfalse;
 	if (!g_smoothClients.integer)// why?
 		return qfalse;
-	if (g_kickoffFix.integer)
+	if (g_kickoffFix.integer != 1)
 		return qfalse;
 	//if (sv_fps.integer != 20 && sv_fps.integer != 30 && sv_fps.integer != 40)//Dosnt really make a difference.. but eh.... loda fixme
 	if (g_sv_fps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. well... but demos wouldnt be proper without it, so leave it.

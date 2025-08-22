@@ -3671,7 +3671,20 @@ static void PM_GroundTrace( void ) {
 	vec3_t		point;
 	trace_t		trace;
 	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
-	float		kickoffSpeed = (MovementStyleHasQuake2Ramps(pm->modParms.physics) && pm->kickoffFix) ? 100 : 10; // this is off by default. i should have done this from the start and it would have been the correct fix but now its kinda too late :/ would subtly influence times here and there, during a test on a 53 second map it made a run 0.3s slower or so. sad.
+	float		kickoffSpeed = 10; 
+
+	if ((pm->ps->pm_flags & PMF_JUMP_HELD) && pm->kickoffFix) {
+		if (MovementStyleHasQuake2Ramps(pm->modParms.physics)) {
+			kickoffSpeed = 100.0f;// this is off by default. i should have done this from the start and it would have been the correct fix but now its kinda too late :/ would subtly influence times here and there, during a test on a 53 second map it made a run 0.3s slower or so. sad. so instead i only apply it if jump is held (because a horrendous jumpbug is the actually bad consequence of this)
+		}
+		else if (pm->modParms.physics == MV_BOUNCE) {
+			kickoffSpeed = 10000.0f* (overbounce-1.0f); // kinda icky tho :/
+		}
+		else if (pm->modParms.physics == MV_PINBALL) {
+			kickoffSpeed = 11000.0f; // kinda icky tho :/ also we aren't always applying full, so hmm
+		}
+	}
+	
 
 	point[0] = pm->ps->origin[0];
 	point[1] = pm->ps->origin[1];
