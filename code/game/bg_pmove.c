@@ -3673,7 +3673,7 @@ static void PM_GroundTrace( void ) {
 	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
 	float		kickoffSpeed = 10; 
 
-	if ((pm->ps->pm_flags & PMF_JUMP_HELD) && pm->kickoffFix) {
+	if (pm->ps->pm_flags & PMF_JUMP_HELD && pm->ps->fd.forceJumpZStart > (pm->ps->origin[2]+10.0f) && pm->kickoffFix) {
 		if (MovementStyleHasQuake2Ramps(pm->modParms.physics)) {
 			kickoffSpeed = 100.0f;// this is off by default. i should have done this from the start and it would have been the correct fix but now its kinda too late :/ would subtly influence times here and there, during a test on a 53 second map it made a run 0.3s slower or so. sad. so instead i only apply it if jump is held (because a horrendous jumpbug is the actually bad consequence of this)
 		}
