@@ -8214,6 +8214,52 @@ stillDoSaber:
 	if (mvapi >= 3 && !cg_playerLOD.integer && cg.snap->ps.clientNum == cent->currentState.number)
 		legs.renderfx |= RF_NOLOD; //JAPRO - Clientside - Force high detail on local player
 
+	if (cg_forceShell.value != 0.0f && cent->currentState.number == cg.snap->ps.clientNum)
+	{ //adjust the glow by how far away you are from your dueling partner
+		centity_t* duelEnt;
+		unsigned char savRGBA[3];
+
+		VectorCopy(legs.shaderRGBA, savRGBA);
+
+		vec3_t vecSub;
+		float subLen = 0;
+
+		subLen = cg_forceShell.value;
+
+		if (subLen < 1)
+		{
+			subLen = 1;
+		}
+
+		if (subLen > 1020)
+		{
+			subLen = 1020;
+		}
+
+		legs.shaderRGBA[0] = MAX(255 - subLen / 4, 1);
+		legs.shaderRGBA[1] = MAX(255 - subLen / 4, 1);
+		legs.shaderRGBA[2] = MAX(255 - subLen / 4, 1);
+
+		legs.renderfx &= ~RF_RGB_TINT;
+		legs.renderfx &= ~RF_FORCE_ENT_ALPHA;
+		legs.customShader = cgs.media.forceShell;
+
+		trap_R_AddRefEntityToScene(&legs);	//draw the shell
+
+		legs.customShader = 0;	//reset to player model
+
+		legs.shaderRGBA[0] = MAX(savRGBA[0] - subLen / 8, 1);
+		legs.shaderRGBA[1] = MAX(savRGBA[1] - subLen / 8, 1);
+		legs.shaderRGBA[2] = MAX(savRGBA[2] - subLen / 8, 1);
+
+		if (subLen <= 1024)
+		{
+			if (mvapi >= 3)
+				legs.renderfx |= RF_FULLBRIGHT;
+			else
+				legs.renderfx |= RF_RGB_TINT;
+		}
+	}
 
 	if (cg.snap->ps.duelInProgress /*&& cent->currentState.number != cg.snap->ps.clientNum*/)
 	{ //I guess go ahead and glow your own client too in a duel

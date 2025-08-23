@@ -1910,6 +1910,7 @@ extern	vmCvar_t		cg_brightskins;
 extern	vmCvar_t		cg_drawHitBox;
 extern	vmCvar_t		cg_playerLOD;
 extern	vmCvar_t		cg_privateDuelShell;
+extern	vmCvar_t		cg_forceShell;
 extern	vmCvar_t		cg_teamRespawnShield;
 extern	vmCvar_t		cg_saberTeamColors;
 

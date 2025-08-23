@@ -657,6 +657,7 @@ vmCvar_t	cg_brightskins;
 vmCvar_t	cg_drawHitBox;
 vmCvar_t	cg_playerLOD;
 vmCvar_t	cg_privateDuelShell;
+vmCvar_t	cg_forceShell;
 vmCvar_t	cg_teamRespawnShield;
 vmCvar_t	cg_saberTeamColors;
 
@@ -1069,6 +1070,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_TEMP },
 	{ &cg_playerLOD, "cg_playerLOD", "0", CVAR_ARCHIVE },
 	{ &cg_privateDuelShell,	"cg_privateDuelShell", "1", CVAR_ARCHIVE },
+	{ &cg_forceShell,	"cg_forceShell", "0", CVAR_TEMP },
 	{ &cg_teamRespawnShield, "cg_teamRespawnShield", "1", CVAR_ARCHIVE },
 	{ &cg_saberTeamColors, "cg_saberTeamColors", "1", 0 },
 
