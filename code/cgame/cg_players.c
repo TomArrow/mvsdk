@@ -8218,11 +8218,11 @@ stillDoSaber:
 	{ //adjust the glow by how far away you are from your dueling partner
 		centity_t* duelEnt;
 		unsigned char savRGBA[3];
+		vec3_t vecSub;
+		float subLen = 0;
 
 		VectorCopy(legs.shaderRGBA, savRGBA);
 
-		vec3_t vecSub;
-		float subLen = 0;
 
 		subLen = cg_forceShell.value;
 
