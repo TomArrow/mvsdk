@@ -1039,11 +1039,13 @@ int trap_MVAPI_GetVersion( void )
 	return syscall( MVAPI_GET_VERSION );
 }
 
+// DONT USE IF MME DETECTED, CONFLICTS WITH trap_CG_MME_S_UpdateScale
 int trap_FS_FLock( fileHandle_t h, flockCmd_t cmd, qboolean nb )
 {
 	return syscall( MVAPI_FS_FLOCK, h, cmd, nb );
 }
 
+// DONT USE IF MME DETECTED, CONFLICTS WITH trap_CG_MME_FX_Reset
 void trap_MVAPI_SetVersion( mvversion_t version )
 {
 	syscall( MVAPI_SET_VERSION, version );
@@ -1068,3 +1070,41 @@ void trap_MVAPI_Print( int flags, const char *string )
 {
 	syscall( MVAPI_PRINT, string );
 }
+
+
+
+// basic jk2mv-jomme support
+
+void trap_CG_MME_FX_Reset(void) {
+	syscall(CG_MME_FX_RESET);
+}
+void trap_CG_MME_Capture(const char* baseName, float fps, float focus, float radius) {
+	syscall(CG_MME_CAPTURE, baseName, PASSFLOAT(fps), PASSFLOAT(focus), PASSFLOAT(radius));
+}
+int trap_CG_MME_SeekTime(int seekTime) {
+	return syscall(CG_MME_SEEKTIME, seekTime);
+}
+void trap_CG_MME_Music(const char* musicName, float time, float length) {
+	syscall(CG_MME_MUSIC, musicName, PASSFLOAT(time), PASSFLOAT(length));
+}
+void trap_CG_MME_TimeFraction(float timeFraction) {
+	syscall(CG_MME_TIMEFRACTION, PASSFLOAT(timeFraction));
+}
+void trap_CG_MME_R_RatioFix(float ratio) {
+	syscall(CG_MME_R_RATIOFIX, PASSFLOAT(ratio));
+}
+void trap_CG_MME_NTDetected(qboolean detected) {
+	syscall(CG_MME_NT_DETECTED, detected);
+}
+void trap_CG_MME_RandomSeed(int time, float timeFraction) {
+	syscall(CG_MME_RANDOMSEED, time, PASSFLOAT(timeFraction));
+}
+void trap_CG_MME_S_UpdateScale(float scale) {
+	syscall(CG_MME_S_UPDATE_SCALE, PASSFLOAT(scale));
+}
+void trap_CG_MME_HighPrecision(qboolean enabled) {
+	syscall(CG_MME_HIGH_PRECISION, enabled);
+}
+
+
+

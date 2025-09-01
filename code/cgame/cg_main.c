@@ -142,6 +142,8 @@ This must be the very first function compiled into the .q3vm file
 */
 qboolean menuInJK2MV = qfalse;
 int mvapi = 0;
+qboolean mmeEngine = qfalse;
+int mmeEnginePlaybackType = 0;
 int coolApi = 0;
 int coolApi_dbVersion = 0;
 int coolApi_jkaVersion = 0;
@@ -169,9 +171,11 @@ int Init_clientNum;
 LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7, intptr_t arg8, intptr_t arg9, intptr_t arg10, intptr_t arg11  ) {
 	int requestedMvApi = 0;
 	char coolApiFeaturesBuffer[80];
+	char mme_demoFilenameBuffer[80];
 
 	switch ( command ) {
 	case CG_INIT:
+		trap_Cvar_VariableStringBuffer("mme_demoFileName", mme_demoFilenameBuffer, sizeof(mme_demoFilenameBuffer));
 		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
 		coolApi = atoi(coolApiFeaturesBuffer);
 		if (coolApi & COOL_APIFEATURE_MARIADB) {
@@ -190,6 +194,10 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 		}
 		trap_Cvar_Register(&coolApi_supported_cgame,"coolApi_supported_cgame",va("%d", coolApi_supported_cgame_int),CVAR_ROM);
 		trap_Cvar_Set("coolApi_supported_cgame", va("%d", coolApi_supported_cgame_int));
+		if (mme_demoFilenameBuffer[0]) {
+			mmeEngine = qtrue;
+			//trap_CG_MME_HighPrecision(qfalse);
+		}
 		requestedMvApi = MVAPI_Init(arg11);
 		if ( !requestedMvApi )
 		{ // Only call CG_Init if we haven't got access to the MVAPI. If we can use the MVAPI we delay the Init until the "MVAPI_AFTER_INIT" command is sent. That allows us use the MVAPI in the actual init.
@@ -327,8 +335,14 @@ int MVAPI_Init(int apilevel)
 		CG_Printf("CGame: You need at least JK2MV " MV_MIN_VERSION " to enable all API features.\n");
 	}
 
+	if ( apilevel > 2 && mmeEngine )
+	{
+		CG_Printf("CGame: MVAPI level %i not supported with MME engine (using level 2 instead).\n", apilevel);
+	}
+
 	mvapi = apilevel;
 	if ( mvapi > MV_APILEVEL ) mvapi = MV_APILEVEL;
+	if ( mvapi > 2 && mmeEngine ) mvapi = 2; // mme overwrites various mvapi 3 syscalls :/ fallback.
 
 	if (cg_developer.integer) CG_Printf("CGame: Using MVAPI level %i (%i supported).\n", mvapi, apilevel);
 	return mvapi;
@@ -844,6 +858,12 @@ vmCvar_t	cg_randomTaunts;
 vmCvar_t	jkcvar_cg_drawClock;
 
 
+// basic jk2mv-jomme support
+vmCvar_t	mov_captureName;
+vmCvar_t	mov_captureFPS;
+vmCvar_t	mme_demoFileName;
+
+
 
 typedef struct cvarTable_s {
 	vmCvar_t	*vmCvar;
@@ -1221,6 +1241,9 @@ Ghoul2 Insert End
 	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 	{ &cg_randomTaunts, "cg_randomTaunts", "0", CVAR_ARCHIVE },
 	{ &jkcvar_cg_drawClock, "cg_drawClock", "0", CVAR_ARCHIVE },
+	{ &mme_demoFileName,"mme_demoFileName",	"",	0 },
+	{ &mov_captureName,		"mov_captureName",		"",		CVAR_ARCHIVE },
+	{ &mov_captureFPS,		"mov_captureFPS",		"25",	CVAR_ARCHIVE },
 };
 
 static int  cvarTableSize = sizeof( cvarTable ) / sizeof( cvarTable[0] );
@@ -2437,12 +2460,16 @@ CG_RegisterClients
 static void CG_RegisterClients( void ) {
 	int		i;
 
+	ANNOYINGDEBUG("loading client\n");
 	CG_LoadingClient(cg.clientNum);
+	ANNOYINGDEBUG("updateconfigstring\n");
 	CG_UpdateConfigString( CS_PLAYERS + cg.clientNum, qtrue );
 
 	for (i=0 ; i<MAX_CLIENTS ; i++) {
 		if (i != cg.clientNum) {
+			ANNOYINGDEBUG("loading client (loop)\n");
 			CG_LoadingClient( i );
+			ANNOYINGDEBUG("updateconfigstring (loop)\n");
 			CG_UpdateConfigString( CS_PLAYERS + i, qtrue );
 		}
 	}
@@ -3020,7 +3047,7 @@ static qboolean CG_FeederSelection(float feederID, int index, itemDef_t *item) {
 	return qtrue;
 }
 
-static float CG_Cvar_Get(const char *cvar) {
+float CG_Cvar_Get(const char *cvar) {
 	char buff[MAX_CVAR_VALUE_STRING];
 	memset(buff, 0, sizeof(buff));
 	trap_Cvar_VariableStringBuffer(cvar, buff, sizeof(buff));
@@ -3697,6 +3724,12 @@ Ghoul2 Insert End
 
 
 	CG_RegisterCvars();
+
+	if (mme_demoFileName.string[0]) {
+		// mme engine detected (cringe!!!!!)
+		mmeEngine = qtrue;
+		trap_CG_MME_HighPrecision(qfalse);
+	}
 
 	CG_InitConsoleCommands();
 

@@ -86,7 +86,12 @@ void CG_LoadingClient( int clientNum ) {
 	}
 	*/
 
-	CG_LoadingString( personality );
+	if (!personality[0]) {
+		CG_LoadingString(" ");
+	}
+	else {
+		CG_LoadingString(personality);
+	}
 }
 
 

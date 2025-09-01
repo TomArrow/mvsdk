@@ -2895,10 +2895,16 @@ void CG_AddPacketEntities( void ) {
 	CG_CalcEntityLerpPositions( &cg_entities[ cg.snap->ps.clientNum ] );
 
 	// add each entity sent over by the server
+	//if (ANNOYINGDEBUGCONDITION) {
+	//	Com_Printf("CG_AddPacketEntities: cg.snap->numEntities %d\n", cg.snap->numEntities);
+	//}
 	for ( num = 0 ; num < cg.snap->numEntities ; num++ ) {
 		// Don't re-add ents that have been predicted.
 		if (cg.snap->entities[ num ].number != cg.snap->ps.clientNum)
 		{
+			//if (ANNOYINGDEBUGCONDITION) {
+			//	Com_Printf("CG_AddPacketEntities: num %d number %d eType %d\n", num, cg.snap->entities[num].number, cg.snap->entities[num].eType);
+			//}
 			cent = &cg_entities[ cg.snap->entities[ num ].number ];
 			CG_AddCEntity( cent );
 		}

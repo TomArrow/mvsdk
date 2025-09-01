@@ -13,6 +13,7 @@
 #define MASK_CAMERACLIP (MASK_SOLID|CONTENTS_PLAYERCLIP)
 #define CAMERA_SIZE	4
 
+mmeDemoMain_t demo; // jomme-jk2mv compatibility stuff
 
 /*
 =============================================================================
@@ -1861,13 +1862,129 @@ CG_DrawActiveFrame
 Generates and draws a game scene and status information at the given time.
 =================
 */
-void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback ) {
+void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayback ) {
 	int		inwater;
+	static	int playbackStarted = qfalse; // mme compat
+	qboolean	mmeCaptureFrame = qfalse; // mme compat
+	float		mmeCaptureFPS = 0; // mme compat
+	qboolean	mmeHadSkip = qtrue;// mme compat
 
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
+	if (mmeEngine) { // mme compatibility
+		mmeEnginePlaybackType = demoPlayback;
+		if (mmeEnginePlaybackType == 2) {
+			static qboolean cmdsInited = qfalse;
+			int deltaTime = serverTime - demo.serverTime;
+			int tmpDelta;
+
+			if (!cmdsInited) {
+				CG_InitMMECompatCommands();
+			}
+
+			demo.serverTime = serverTime;
+			if (deltaTime > 50)
+				deltaTime = 50;
+
+			if (!playbackStarted) {
+				deltaTime = 0;
+			}
+			
+			mmeCaptureFrame = (qboolean)(demo.capture.active && !demo.play.paused);
+			if (mmeCaptureFrame) {
+				//since loop feature is unused we don't need blurIndex
+				int blurTotal = CG_Cvar_Get("mme_blurFrames");
+				int blurIndex = 0;
+				mmeCaptureFPS = mov_captureFPS.value;
+				if (blurTotal > 0) {
+					mmeCaptureFPS *= blurTotal;
+					//blurFraction = blurIndex / (float)blurTotal;
+				}
+				else {
+					//blurFraction = 0;
+				}
+			}
+
+			if (demo.play.time < 0) {
+				demo.play.time = demo.play.fraction = 0;
+			}
+
+			demo.play.oldTime = demo.play.time;
+
+			demo.play.speed = 1.0f; // we can make that variable at some point but we're just going for a minimal mme compatibility for now.
+
+			if (mmeCaptureFrame) {
+				float frameDelay = 1000.0f / mmeCaptureFPS;
+				demo.play.fraction += frameDelay * demo.play.speed;
+				demo.play.time += (int)demo.play.fraction;
+				demo.play.fraction -= (int)demo.play.fraction;
+			}
+			else if (!demo.play.paused) {
+				float delta = demo.play.fraction + deltaTime * demo.play.speed;
+				demo.play.time += (int)delta;
+				demo.play.fraction = delta - (int)delta;
+			}
+
+			cg.time = trap_CG_MME_SeekTime(demo.play.time);
+
+			tmpDelta = cg.time - cg.oldTime;
+			if (tmpDelta < 0) {
+				int i;
+				cg.frametime = 0;
+				mmeHadSkip = qtrue;
+				cg.oldTime = cg.time;
+				//cg.oldTimeFraction = cg.timeFraction;
+				CG_InitLocalEntities();
+				CG_InitMarkPolys();
+				CG_ClearParticles();
+				//CG_Clear2DTintsTimes();
+				trap_CG_MME_FX_Reset();
+
+				//cg.eventRadius = cg.eventOldRadius = 0;
+				//cg.eventTime = cg.eventOldTime = 0;
+				//cg.eventCoeff = cg.eventOldCoeff = 0;
+
+				cg.centerPrintTime = 0;
+				cg.damageTime = 0;
+				cg.powerupTime = 0;
+				cg.rewardTime = 0;
+				cg.scoreFadeTime = 0;
+				cg.lastKillTime = 0;
+				cg.attackerTime = 0;
+				cg.soundTime = 0;
+				cg.itemPickupTime = 0;
+				cg.itemPickupBlendTime = 0;
+				cg.weaponSelectTime = 0;
+				cg.headEndTime = 0;
+				cg.headStartTime = 0;
+				cg.v_dmg_time = 0;
+				//cg.fallingToDeath = 0;
+				//cg.weapFrame = 0;
+				//cg.weapFrameTime = 0;
+				cgScreenEffects.shake_duration = 0;
+				trap_S_ClearLoopingSounds(qtrue);
+
+				for (i = 0; i < MAX_CHATBOX_ITEMS; i++)
+					cg.chatItems[i].time = 0;
+				//for (i = 0; i < MAX_CLIENTS && mov_dismember.integer; i++)
+				//	CG_ReattachLimb(&cg_entities[i]);
+				CG_LoadDeferredPlayers();
+			}
+			else if (tmpDelta > 100) {
+				mmeHadSkip = qtrue;
+				CG_LoadDeferredPlayers();
+			}
+			else {
+				mmeHadSkip = qfalse;
+			}
+		}
+	}
 
 	CG_CheckWindowResize();
+
+	if (mmeEngine) {
+		trap_CG_MME_HighPrecision(qfalse);
+	}
 
 	if (cg.snap && cg_ui_myteam.integer != cg.snap->ps.persistant[PERS_TEAM]) {
 		if (!(cg.snap->ps.pm_flags & PMF_FOLLOW || cg.snap->ps.pm_type == PM_SPECTATOR))
@@ -1903,7 +2020,14 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	trap_R_ClearScene();
 
 	// set up cg.snap and possibly cg.nextSnap
-	CG_ProcessSnapshots();
+	//if (qfalse && mmeEnginePlaybackType == 2 && playbackStarted) {
+	//	CG_MME_demoProcessSnapShots(mmeHadSkip); // snaapshot procoessing more finetuned to jomme.
+	// meh this runs unstable for me, let's ignore this for now and keep it simple
+	//}
+	//else 
+	{
+		CG_ProcessSnapshots(mmeHadSkip);
+	}
 
 	if (cg.snap && cgs.lastPsClientNum != cg.snap->ps.clientNum && (cg_forceMyModel.string[0] != '\0' || cg_forceMySaber.string[0] != '\0')) {
 		cgs.lastPsClientNum = cg.snap->ps.clientNum;
@@ -1917,6 +2041,12 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	if ( !cg.snap || ( cg.snap->snapFlags & SNAPFLAG_NOT_ACTIVE ) ) {
 		CG_DrawInformation();
 		return;
+	}
+
+	if (!playbackStarted) {
+
+		playbackStarted = qtrue;
+		demo.play.time = demo.play.fraction = 0;
 	}
 
 	//japro restrictions in racemode
@@ -2142,5 +2272,12 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demo
 	if ( cg_stats.integer ) {
 		CG_Printf( "cg.clientFrame:%i\n", cg.clientFrame );
 	}
+
+	if (mmeCaptureFrame) {
+		char fileName[MAX_OSPATH];
+		Com_sprintf(fileName, sizeof(fileName), "capture/%s/%s", mme_demoFileName.string, mov_captureName.string);
+		trap_CG_MME_Capture(fileName, mmeCaptureFPS, 0.0f, 0.0f);
+	}
+
 }
 

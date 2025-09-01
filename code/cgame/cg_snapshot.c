@@ -341,7 +341,7 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 		// try to read the snapshot from the client system
 		cgs.processedSnapshotNum++;
 
-		if ( jk2version == VERSION_1_02 )
+		if ( jk2version == VERSION_1_02 && mmeEnginePlaybackType != 2)
 		{ // MVSDK: Multiversion magic!
 			r = trap_GetSnapshot( cgs.processedSnapshotNum, (snapshot_t*)&activeSnapshot_1_02 );
 		}
@@ -357,7 +357,7 @@ static snapshot_t *CG_ReadNextSnapshot( void ) {
 
 		// if it succeeded, return
 		if ( r ) {
-			if ( jk2version == VERSION_1_02 )
+			if ( jk2version == VERSION_1_02 && mmeEnginePlaybackType != 2)
 			{ // MVSDK: Multiversion Magic
 				static const size_t section1 = (size_t)((char *)&((snapshot_t*)NULL)->ps);
 				static const size_t section2 = (size_t)((char *)&((playerState_t*)NULL)->forceRestricted);
@@ -827,6 +827,78 @@ void CG_NewSnapshotArrived(void) {
 }
 
 
+void CG_MME_demoProcessSnapShots(qboolean hadSkip) {
+	int i;
+	snapshot_t		*snap;
+
+	// see what the latest snapshot the client system has is
+	trap_GetCurrentSnapshotNumber( &cg.latestSnapshotNum, &cg.latestSnapshotTime );
+	if (hadSkip || !cg.snap) {
+		cgs.processedSnapshotNum = cg.latestSnapshotNum - 2;
+		if (cg.nextSnap)
+			cgs.serverCommandSequence = cg.nextSnap->serverCommandSequence;
+		else if (cg.snap)
+			cgs.serverCommandSequence = cg.snap->serverCommandSequence;
+		cg.snap = 0;
+		cg.nextSnap = 0;
+
+		for (i=-1;i<MAX_GENTITIES;i++) {
+			centity_t *cent = i < 0 ? &cg_entities[cg.predictedPlayerState.clientNum] : &cg_entities[i];
+			cent->trailTime = cg.time;
+			cent->snapShotTime = cg.time;
+			cent->currentValid = qfalse;
+			cent->interpolate = qfalse;
+			cent->muzzleFlashTime = cg.time - MUZZLE_FLASH_TIME - 1;
+			cent->previousEvent = 0;
+			if (cent->currentState.eType == ET_PLAYER) {
+				memset( &cent->pe, 0, sizeof( cent->pe ) );
+				cent->pe.legs.yawAngle = cent->lerpAngles[YAW];
+				cent->pe.torso.yawAngle = cent->lerpAngles[YAW];
+				cent->pe.torso.pitchAngle = cent->lerpAngles[PITCH];
+			}
+		}
+	}
+
+	/* Check if we have some transition between snapsnots */
+	if (!cg.snap) {
+		snap = CG_ReadNextSnapshot();
+		if (!snap)
+			return;
+		cg.snap = snap;
+		if ((cg_entities[snap->ps.clientNum].ghoul2 == NULL)
+			&& trap_G2_HaveWeGhoul2Models(cgs.clientinfo[snap->ps.clientNum].ghoul2Model)) {
+			trap_G2API_DuplicateGhoul2Instance(cgs.clientinfo[snap->ps.clientNum].ghoul2Model, &cg_entities[snap->ps.clientNum].ghoul2);
+			CG_CopyG2WeaponInstance(&cg_entities[snap->ps.clientNum], FIRST_WEAPON, cg_entities[snap->ps.clientNum].ghoul2);
+		}
+		BG_PlayerStateToEntityState( &snap->ps, &cg_entities[ snap->ps.clientNum ].currentState, qfalse );
+		CG_BuildSolidList();
+		CG_ExecuteNewServerCommands( snap->serverCommandSequence );
+		for ( i = 0 ; i < cg.snap->numEntities ; i++ ) {
+			entityState_t *state = &cg.snap->entities[ i ];
+			centity_t *cent = &cg_entities[ state->number ];
+			memcpy(&cent->currentState, state, sizeof(entityState_t));
+			cent->interpolate = qfalse;
+			cent->currentValid = qtrue;
+			if (cent->currentState.eType > ET_EVENTS)
+				cent->previousEvent = 1;
+			else 
+				cent->previousEvent = cent->currentState.event;
+		}
+	}
+	do {
+		if (!cg.nextSnap) {
+			snap = CG_ReadNextSnapshot();
+			if (!snap)
+				break;
+			CG_SetNextSnap( snap );
+		}
+		if ( cg.time >= cg.snap->serverTime && cg.time < cg.nextSnap->serverTime )
+			break;
+		//Todo our own transition checking if we wanna hear certain sounds
+		CG_TransitionSnapshot();
+	} while (1);
+}
+
 
 
 /*
@@ -848,18 +920,30 @@ of an interpolating one)
 
 ============
 */
-void CG_ProcessSnapshots( void ) {
+void CG_ProcessSnapshots(qboolean mmeHadSkip) {
 	snapshot_t		*snap;
 	int				n;
+
 
 	// see what the latest snapshot the client system has is
 	trap_GetCurrentSnapshotNumber( &n, &cg.latestSnapshotTime );
 	if ( n != cg.latestSnapshotNum ) {
-		if ( n < cg.latestSnapshotNum ) {
+		if ( n < cg.latestSnapshotNum && mmeEnginePlaybackType != 2 ) {
 			// this should never happen
 			CG_Error( "CG_ProcessSnapshots: n < cg.latestSnapshotNum" );
 		}
 		cg.latestSnapshotNum = n;
+	}
+
+
+	if (mmeHadSkip) {
+		cgs.processedSnapshotNum = cg.latestSnapshotNum - 2;
+		if (cg.nextSnap)
+			cgs.serverCommandSequence = cg.nextSnap->serverCommandSequence;
+		else if (cg.snap)
+			cgs.serverCommandSequence = cg.snap->serverCommandSequence;
+		cg.snap = 0;
+		cg.nextSnap = 0;
 	}
 
 	// If we have yet to receive a snapshot, check for it.

@@ -8,6 +8,9 @@
 #include "../game/bg_defrag_global.h"
 #include "../game/bg_cmd.h"
 
+#define ANNOYINGDEBUGCONDITION cg_developer.integer > 5
+#define ANNOYINGDEBUG(text) if(cg_developer.integer > 5) { Com_Printf(text); }
+
 #define CG_EZDEMO
 
 #define TRYSKIP_SPECTATORS		1
@@ -1030,6 +1033,7 @@ Ghoul2 Insert End
 	qboolean			nextCGTraceExplicitlyDeluxe;
 	hudType_t			hudType;
 	qboolean			updateHud;
+
 } cg_t;
 
 #define MAX_TICS	14
@@ -2092,6 +2096,14 @@ extern	vmCvar_t		cg_drawPlayerSprites;
 extern	vmCvar_t		cg_developer;
 extern	vmCvar_t		cg_smoothCamera;
 extern	vmCvar_t		cg_smoothCameraFPS;
+
+
+// basic jk2mv-jomme support
+extern	vmCvar_t		mov_captureName;
+extern	vmCvar_t		mov_captureFPS;
+extern	vmCvar_t		mme_demoFileName;
+
+
 /*
 Ghoul2 Insert Start
 */
@@ -2132,6 +2144,7 @@ void CG_NextInventory_f(void);
 void CG_PrevInventory_f(void);
 void CG_NextForcePower_f(void);
 void CG_PrevForcePower_f(void);
+float CG_Cvar_Get(const char* cvar);
 void MV_LoadSettings( const char *info );
 void MV_UpdateCgFlags( void );
 void CG_WideScreenMode(qboolean on);
@@ -2151,7 +2164,7 @@ void CG_ZoomDown_f( void );
 void CG_ZoomUp_f( void );
 void CG_AddBufferedSound( sfxHandle_t sfx);
 
-void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, qboolean demoPlayback );
+void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayback );
 
 //
 // cg_drawtools.c
@@ -2371,7 +2384,7 @@ void CG_InitGlass( void );
 //
 // cg_snapshot.c
 //
-void CG_ProcessSnapshots( void );
+void CG_ProcessSnapshots( qboolean mmeHadSkip );
 
 //
 // cg_info.c
@@ -2392,6 +2405,7 @@ void CG_DrawOldTourneyScoreboard( void );
 //
 qboolean CG_ConsoleCommand( void );
 void CG_InitConsoleCommands( void );
+void CG_InitMMECompatCommands(void);
 
 //
 // cg_servercmds.c
@@ -2855,9 +2869,38 @@ Ghoul2 Insert End
 */
 
 extern int mvapi;
+extern qboolean mmeEngine;
+extern int mmeEnginePlaybackType;
 extern int coolApi;
 extern int coolApi_dbVersion;
 extern int coolApi_jkaVersion;
+
+// jomme compatibility things
+// VERY simplified stuff to work with mme engine.
+typedef struct demoMain_s {
+	int				serverTime;
+	float			serverDeltaTime;
+	struct {
+		float		speed;
+		int			time;
+	} line;
+	struct {
+		int			time;
+		int			oldTime;
+		int			lastTime;
+		float		fraction;
+		float		speed;
+		qboolean	paused;
+	} play;
+
+	struct {
+		qboolean active;
+	} capture;
+} mmeDemoMain_t;
+extern mmeDemoMain_t demo;
+
+void CG_MME_demoProcessSnapShots(qboolean hadSkip);
+
 
 // JK2MV API Functions
 int MVAPI_Init( int apilevel );
@@ -2884,6 +2927,20 @@ void trap_MVAPI_SetVirtualScreen( float w, float h );                // Level: 3
 int CG_Cvar_Get_int(const char* cvar);
 /* Level 4 */
 qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );         // Level: 4
+
+
+// basic jk2mv-jomme support
+void trap_CG_MME_FX_Reset(void);
+void trap_CG_MME_Capture(const char* baseName, float fps, float focus, float radius);
+int trap_CG_MME_SeekTime(int seekTime);
+void trap_CG_MME_Music(const char* musicName, float time, float length);
+void trap_CG_MME_TimeFraction(float timeFraction);
+void trap_CG_MME_R_RatioFix(float ratio);
+void trap_CG_MME_NTDetected(qboolean detected);
+void trap_CG_MME_RandomSeed(int time, float timeFraction);
+void trap_CG_MME_S_UpdateScale(float scale);
+void trap_CG_MME_HighPrecision(qboolean enabled);
+
 
 #include "../api/mvapi.h"
 #include "cg_multiversion.h"

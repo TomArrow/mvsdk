@@ -1575,6 +1575,110 @@ static void CG_Flipkick_f(void)
 	//trap_SendConsoleCommand("+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup;wait 2;+moveup;wait 2;-moveup\n");
 }
 
+void demoCaptureCommand_f(void) {
+	const char* cmd = CG_Argv(1);
+	if (!Q_stricmp(cmd, "stop")) {
+		if (demo.capture.active)
+			Com_Printf("Capturing stopped\n");
+		else
+			Com_Printf("Not capturing at the moment\n");
+		demo.capture.active = qfalse;
+	}
+	else if (!Q_stricmp(cmd, "jpg") || !Q_stricmp(cmd, "tga") || !Q_stricmp(cmd, "png") || !Q_stricmp(cmd, "avi") || !Q_stricmp(cmd, "pipe")) {
+		demo.capture.active = qtrue;
+
+		trap_Cvar_Set("mme_screenShotFormat", cmd);
+		cmd = CG_Argv(2);
+		trap_Cvar_Set("mov_captureFPS", cmd);
+		trap_Cvar_Update(&mov_captureFPS);
+		if (!mov_captureFPS.value) {
+			trap_Cvar_Set("mov_captureFPS", "25");
+		}
+		trap_Cvar_Update(&mov_captureFPS);
+		cmd = CG_Argv(3);
+		if (!cmd[0]) {
+			cmd = "default";
+		}
+		trap_Cvar_Set("mov_captureName", cmd);
+		trap_Cvar_Update(&mov_captureName);
+		Com_Printf("Capturing at %0.2ffps to %s\n", mov_captureFPS.value, cmd);
+	}
+	else {
+		Com_Printf("capture usage:\n");
+		Com_Printf("capture jpg/tga/png/avi/pipe fps filename, start capturing to a specific file\n");
+		Com_Printf("capture stop, stop capturing\n");
+		return;
+	}
+}
+
+static void demoSeekTwoCommand_f(void) {
+	const char* cmd = CG_Argv(1);
+	if (isdigit(cmd[0])) {
+		//teh's parser for time MM:SS.MSEC, thanks *bow*
+		int i;
+		char* sec, * min;;
+		min = (char*)cmd;
+		for (i = 0; min[i] != ':' && min[i] != 0; i++);
+		if (cmd[i] == 0)
+			sec = 0;
+		else
+		{
+			min[i] = 0;
+			sec = min + i + 1;
+		}
+		demo.play.time = (atoi(min) * 60000 + (sec ? atof(sec) : 0) * 1000);
+		demo.play.fraction = 0;
+	}
+}
+
+static void demoSeekCommand_f(void) {
+	const char* cmd = CG_Argv(1);
+	if (cmd[0] == '+') {
+		if (isdigit(cmd[1])) {
+			demo.play.time += atof(cmd + 1) * 1000;
+			demo.play.fraction = 0;
+		}
+	}
+	else if (cmd[0] == '-') {
+		if (isdigit(cmd[1])) {
+			demo.play.time -= atof(cmd + 1) * 1000;
+			demo.play.fraction = 0;
+		}
+	}
+	else if (isdigit(cmd[0])) {
+		demo.play.time = atof(cmd) * 1000;
+		demo.play.fraction = 0;
+	}
+}
+
+static void CG_MMECommaand_f(void) {
+
+	const char* cmd = CG_Argv(0);
+	if (!Q_stricmp(cmd, "capture")) {
+		demoCaptureCommand_f();
+	}
+	else if (!Q_stricmp(cmd, "speed")) {
+		cmd = CG_Argv(1);
+		if (cmd[0]) {
+			demo.play.speed = atof(cmd);
+		}
+		Com_Printf("Play speed %f\n", demo.play.speed);
+	}
+	else if (!Q_stricmp(cmd, "pause")) {
+		demo.play.paused = (qboolean)!demo.play.paused;
+	}
+	else if (!Q_stricmp(cmd, "demoSeek")) {
+		demo.play.paused = (qboolean)!demo.play.paused;
+	}
+	else if (!Q_stricmp(cmd, "seek")) {
+		demoSeekCommand_f();
+	}
+	else if (!Q_stricmp(cmd, "demoSeek")) {
+		demoSeekTwoCommand_f();
+	}
+}
+
+
 static void CG_DiscoLights_f(void)
 {
 	if (cg_acidtrip.integer) {
@@ -1796,6 +1900,12 @@ static consoleCommand_t	memecommands[] = {
 	{ "disco", CG_DiscoLights_f },
 	{ "qui", CG_QuiGonJinn_f },
 };
+static consoleCommand_t	mmecommands[] = { // simplistic jk2mv-jomme compatibility
+	{ "pause", CG_MMECommaand_f },
+	{ "capture", CG_MMECommaand_f },
+	{ "seek", CG_MMECommaand_f },
+	{ "demoSeek", CG_MMECommaand_f },
+};
 
 
 /*
@@ -1830,6 +1940,16 @@ qboolean CG_ConsoleCommand( void ) {
 			memecommands[i].function();
 			misspelledCount = 0;
 			return qtrue;
+		}
+	}
+
+	if (mmeEngine && mmeEnginePlaybackType == 2) {
+		for (i = 0; i < sizeof(mmecommands) / sizeof(mmecommands[0]); i++) {
+			if (!Q_stricmp(cmd, mmecommands[i].cmd)) {
+				mmecommands[i].function();
+				misspelledCount = 0;
+				return qtrue;
+			}
 		}
 	}
 
@@ -1901,6 +2021,12 @@ qboolean CG_ConsoleCommand( void ) {
 	return qfalse;
 }
 
+void CG_InitMMECompatCommands(void) {
+	size_t		i;
+	for (i = 0; i < sizeof(mmecommands) / sizeof(mmecommands[0]); i++) {
+		trap_AddCommand(mmecommands[i].cmd);
+	}
+}
 
 /*
 =================

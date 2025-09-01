@@ -46,7 +46,7 @@ CG_FreeMarkPoly
 */
 void CG_FreeMarkPoly( markPoly_t *le ) {
 	if ( !le->prevMark ) {
-		CG_Error( "CG_FreeLocalEntity: not active" );
+		CG_Error( "CG_FreeMarkPoly: not active" );
 	}
 	assert(le->nextMark);
 
@@ -75,6 +75,7 @@ markPoly_t	*CG_AllocMark( void ) {
 		// remove the oldest active entity
 		time = cg_activeMarkPolys.prevMark->time;
 		while (cg_activeMarkPolys.prevMark && time == cg_activeMarkPolys.prevMark->time) {
+			ANNOYINGDEBUG("CG_AllocMark: CG_FreeMarkPoly\n");
 			CG_FreeMarkPoly( cg_activeMarkPolys.prevMark );
 		}
 	}
@@ -188,6 +189,7 @@ void CG_ImpactMark( qhandle_t markShader, const vec3_t origin, const vec3_t dir,
 		}
 
 		// otherwise save it persistantly
+		ANNOYINGDEBUG("CG_ImpactMark: CG_AllocMark\n");
 		mark = CG_AllocMark();
 		mark->time = cg.time;
 		mark->alphaFade = alphaFade;
@@ -229,6 +231,9 @@ void CG_AddMarks( void ) {
 
 		// see if it is time to completely remove it
 		if ( cg.time > mp->time + MARK_TOTAL_TIME ) {
+			if (ANNOYINGDEBUGCONDITION) {
+				Com_Printf("CG_AddMarks: CG_FreeMarkPoly cg.time %d mp->time %d\n", cg.time, mp->time);
+			}
 			CG_FreeMarkPoly( mp );
 			continue;
 		}

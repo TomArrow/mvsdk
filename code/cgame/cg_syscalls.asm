@@ -208,6 +208,20 @@ equ trap_MVAPI_SetVirtualScreen					-708	;CG_MVAPI_SETVIRTUALSCREEN
 
 equ trap_MVAPI_EnableSubmodelBypass				-713	;CG_MVAPI_ENABLE_SUBMODELBYPASS
 
+
+; basic jk2mv-jomme support
+equ trap_CG_MME_S_UpdateScale					-709	; CG_MME_S_UPDATE_SCALE 
+equ trap_CG_MME_FX_Reset						-710	; CG_MME_FX_RESET 
+equ trap_CG_MME_R_RatioFix						-711	; CG_MME_R_RATIOFIX 
+equ trap_CG_MME_RandomSeed						-712	; CG_MME_RANDOMSEED 
+equ trap_CG_MME_NTDetected						-713	; CG_MME_RANDOMSEED 
+equ trap_CG_MME_HighPrecision					-714	; CG_MME_HIGH_PRECISION 
+equ trap_CG_MME_Capture							-901	; CG_MME_CAPTURE 
+equ trap_CG_MME_SeekTime						-902	; CG_MME_SEEKTIME 
+equ trap_CG_MME_Music							-903	; CG_MME_MUSIC 
+equ trap_CG_MME_TimeFraction					-904	; CG_MME_TIMEFRACTION 
+
+
 ; COOL API Calls
 equ trap_CG_COOL_API_SetPredictedMovement		-1101	;CG_COOL_API_SETPREDICTEDMOVEMENT
 equ trap_CG_COOL_API_SetEzDemoBuffer			-1103	;CG_COOL_API_SET_EZDEMO_BUFFER
@@ -250,3 +264,8 @@ equ trap_CG_COOL_API_GetSurfaceRenderStatus    -2005    ; CG_COOL_API_GET_SURFAC
 equ trap_CG_COOL_API_AttachG2Model             -2006    ; CG_COOL_API_ATTACH_G2_MODEL
 equ trap_CG_COOL_API_GetFileVersion            -2007    ; CG_COOL_API_GET_FILE_VERSION
 equ trap_CG_COOL_API_GetFileList               -2008    ; CG_COOL_API_GET_FILE_LIST
+
+
+
+
+

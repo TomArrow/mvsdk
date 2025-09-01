@@ -4767,6 +4767,7 @@ void CG_CreateSaberMarks( vec3_t start, vec3_t end, vec3_t normal )
 		else
 		{
 			// save it persistantly, do burn first
+			ANNOYINGDEBUG("CG_CreateSaberMarks: CG_AllocMark 1\n");
 			mark = CG_AllocMark();
 			mark->time = cg.time;
 			mark->alphaFade = qtrue;
@@ -4777,6 +4778,7 @@ void CG_CreateSaberMarks( vec3_t start, vec3_t end, vec3_t normal )
 
 			// And now do a glow pass
 			// by moving the start time back, we can hack it to fade out way before the burn does
+			ANNOYINGDEBUG("CG_CreateSaberMarks: CG_AllocMark 2\n");
 			mark = CG_AllocMark();
 			mark->time = cg.time - 8500;
 			mark->alphaFade = qfalse;
@@ -6623,6 +6625,10 @@ void CG_Player( centity_t *cent ) {
 		entNumOrClient0 = 0;
 	}
 
+	//if (ANNOYINGDEBUGCONDITION) {
+	//	Com_Printf("CG_Player number %d\n",cent-cg_entities);
+	//}
+
 	// the client number is stored in clientNum.  It can't be derived
 	// from the entity number, because a single client may have
 	// multiple corpses on the level using the same clientinfo
@@ -6635,6 +6641,9 @@ void CG_Player( centity_t *cent ) {
 	// it is possible to see corpses from disconnected players that may
 	// not have valid clientinfo
 	if ( !ci->infoValid || !cg.snap ) {
+		//if (ANNOYINGDEBUGCONDITION) {
+		//	Com_Printf("!ci->infoValid || !cg.snap\n", cent - cg_entities);
+		//}
 		return;
 	}
 
