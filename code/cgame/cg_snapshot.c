@@ -936,7 +936,7 @@ void CG_ProcessSnapshots(qboolean mmeHadSkip) {
 	}
 
 
-	if (mmeHadSkip) {
+	if (mmeEngine && mmeEnginePlaybackType == 2 && mmeHadSkip) {
 		cgs.processedSnapshotNum = cg.latestSnapshotNum - 2;
 		if (cg.nextSnap)
 			cgs.serverCommandSequence = cg.nextSnap->serverCommandSequence;

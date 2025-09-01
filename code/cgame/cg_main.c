@@ -195,6 +195,7 @@ LIBEXPORT intptr_t vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intpt
 		trap_Cvar_Register(&coolApi_supported_cgame,"coolApi_supported_cgame",va("%d", coolApi_supported_cgame_int),CVAR_ROM);
 		trap_Cvar_Set("coolApi_supported_cgame", va("%d", coolApi_supported_cgame_int));
 		if (mme_demoFilenameBuffer[0]) {
+			Com_Printf("vmMain: MME engine detected\n");
 			mmeEngine = qtrue;
 			//trap_CG_MME_HighPrecision(qfalse);
 		}
@@ -3733,6 +3734,7 @@ Ghoul2 Insert End
 	if (mme_demoFileName.string[0]) {
 		// mme engine detected (cringe!!!!!)
 		mmeEngine = qtrue;
+		Com_Printf("CG_Init: MME engine detected\n");
 		trap_CG_MME_HighPrecision(qfalse);
 	}
 

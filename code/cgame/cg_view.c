@@ -1867,7 +1867,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	static	int playbackStarted = qfalse; // mme compat
 	qboolean	mmeCaptureFrame = qfalse; // mme compat
 	float		mmeCaptureFPS = 0; // mme compat
-	qboolean	mmeHadSkip = qtrue;// mme compat
+	qboolean	mmeHadSkip = qfalse;// mme compat
 
 	cg.time = serverTime;
 	cg.demoPlayback = demoPlayback;
