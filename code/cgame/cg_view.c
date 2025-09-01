@@ -1880,6 +1880,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 
 			if (!cmdsInited) {
 				CG_InitMMECompatCommands();
+				if (*mme_autoSeekPreRecord.string && !(*mme_autoSeekPreRecord.string == '0' && strlen(mme_autoSeekPreRecord.string) == 1)) {
+					demoSeekPreRecord(mme_autoSeekPreRecord.string);
+				}
 			}
 
 			demo.serverTime = serverTime;

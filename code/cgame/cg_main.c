@@ -862,6 +862,7 @@ vmCvar_t	jkcvar_cg_drawClock;
 vmCvar_t	mov_captureName;
 vmCvar_t	mov_captureFPS;
 vmCvar_t	mme_demoFileName;
+vmCvar_t	mme_autoSeekPreRecord;
 
 
 
@@ -1241,6 +1242,7 @@ Ghoul2 Insert End
 	{ &cg_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 	{ &cg_randomTaunts, "cg_randomTaunts", "0", CVAR_ARCHIVE },
 	{ &jkcvar_cg_drawClock, "cg_drawClock", "0", CVAR_ARCHIVE },
+	{ &mme_autoSeekPreRecord,"mme_autoSeekPreRecord",	"0",	CVAR_ARCHIVE },
 	{ &mme_demoFileName,"mme_demoFileName",	"",	0 },
 	{ &mov_captureName,		"mov_captureName",		"",		CVAR_ARCHIVE },
 	{ &mov_captureFPS,		"mov_captureFPS",		"25",	CVAR_ARCHIVE },
@@ -3476,6 +3478,9 @@ void JKMod_CG_RegisterMedia(void) {
 
 void WP_SaberLoadParms( void );
 
+
+void demoSeekPreRecord(const char* preRecordTimeString);
+
 /*
 =================
 CG_Init
@@ -3812,6 +3817,7 @@ Ghoul2 Insert End
 				CG_SendConsoleCommand("exec %s.cfg\n", mapname_noExt);
 		}
 	}
+
 }
 
 /*

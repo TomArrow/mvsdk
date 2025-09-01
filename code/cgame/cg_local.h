@@ -2102,6 +2102,7 @@ extern	vmCvar_t		cg_smoothCameraFPS;
 extern	vmCvar_t		mov_captureName;
 extern	vmCvar_t		mov_captureFPS;
 extern	vmCvar_t		mme_demoFileName;
+extern	vmCvar_t		mme_autoSeekPreRecord;
 
 
 /*
@@ -2406,6 +2407,7 @@ void CG_DrawOldTourneyScoreboard( void );
 qboolean CG_ConsoleCommand( void );
 void CG_InitConsoleCommands( void );
 void CG_InitMMECompatCommands(void);
+void demoSeekPreRecord(const char* preRecordTimeString);
 
 //
 // cg_servercmds.c
