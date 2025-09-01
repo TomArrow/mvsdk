@@ -184,14 +184,14 @@ int CG_Text_Width(const char *text, float scale, int iMenuFont)
 {
 	int iFontIndex = MenuFontToHandle(iMenuFont);
 
-	return trap_R_Font_StrLenPixels(text, iFontIndex, scale);
+	return CG_R_Font_StrLenPixels(text, iFontIndex, scale);
 }
 
 int CG_Text_Height(const char *text, float scale, int iMenuFont) 
 {
 	int iFontIndex = MenuFontToHandle(iMenuFont);
 
-	return trap_R_Font_HeightPixels(iFontIndex, scale);
+	return CG_R_Font_HeightPixels(iFontIndex, scale);
 }
 
 #include "../qcommon/qfiles.h"	// for STYLE_BLINK etc
@@ -211,7 +211,7 @@ void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char
 	case  ITEM_TEXTSTYLE_SHADOWEDMORE:		iStyleOR = (int)STYLE_DROPSHADOW;break;	// JK2 drop shadow ( need a color for this )
 	}
 	trap_R_SetColor(color);
-	trap_R_Font_DrawString(	x,		// int ox
+	CG_R_Font_DrawString(	x,		// int ox
 							y,		// int oy
 							text,	// const char *text
 							color,	// paletteRGBA_c c
@@ -354,16 +354,16 @@ static void CG_DrawZoomMask( void )
 
 		// Fill the left and right
 		trap_R_SetColor(colorTable[CT_BLACK]);
-		trap_R_DrawStretchPic(0, 0, xOffset, SCREEN_HEIGHT, 0, 0, 0, 0, cgs.media.whiteShader);
-		trap_R_DrawStretchPic(xOffset + SCREEN_WIDTH, 0, xOffset, SCREEN_HEIGHT, 0, 0, 0, 0, cgs.media.whiteShader);
+		CG_R_DrawStretchPic(0, 0, xOffset, SCREEN_HEIGHT, 0, 0, 0, 0, cgs.media.whiteShader);
+		CG_R_DrawStretchPic(xOffset + SCREEN_WIDTH, 0, xOffset, SCREEN_HEIGHT, 0, 0, 0, 0, cgs.media.whiteShader);
 
 		// Fill the top and bottom
-		trap_R_DrawStretchPic(0, 0, SCREEN_WIDTH, yOffset, 0, 0, 0, 0, cgs.media.whiteShader);
-		trap_R_DrawStretchPic(0, yOffset + SCREEN_HEIGHT, SCREEN_WIDTH, yOffset, 0, 0, 0, 0, cgs.media.whiteShader);
+		CG_R_DrawStretchPic(0, 0, SCREEN_WIDTH, yOffset, 0, 0, 0, 0, cgs.media.whiteShader);
+		CG_R_DrawStretchPic(0, yOffset + SCREEN_HEIGHT, SCREEN_WIDTH, yOffset, 0, 0, 0, 0, cgs.media.whiteShader);
 
 		// Draw target mask
 		trap_R_SetColor(colorTable[CT_WHITE]);
-		trap_R_DrawStretchPic(xOffset, yOffset, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1, 1, cgs.media.disruptorMask);
+		CG_R_DrawStretchPic(xOffset, yOffset, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1, 1, cgs.media.disruptorMask);
 		trap_R_SetColor(NULL);*/
 
 		// disruptor zoom mode
@@ -485,7 +485,7 @@ static void CG_DrawZoomMask( void )
 				max = 1.0f;
 			}
 
-			trap_R_DrawStretchPic(xOffset + 257, yOffset + 435, 134 * max, 34, 0, 0, max, 1, cgs.media.disruptorChargeShader);
+			CG_R_DrawStretchPic(xOffset + 257, yOffset + 435, 134 * max, 34, 0, 0, max, 1, cgs.media.disruptorChargeShader);
 		}
 //		trap_R_SetColor( colorTable[CT_WHITE] );
 //		CG_DrawPic( 0, 0, 640, 480, cgs.media.disruptorMask );
@@ -4173,7 +4173,7 @@ static void CG_DrawLagometer( void ) {
 			if ( v > range ) {
 				v = range;
 			}
-			trap_R_DrawStretchPic ( ax + aw - a, mid - v, 1, v, 0, 0, 0, 0, cgs.media.whiteShader );
+			CG_R_DrawStretchPic( ax + aw - a, mid - v, 1, v, 0, 0, 0, 0, cgs.media.whiteShader );
 		} else if ( v < 0 ) {
 			if ( color != 2 ) {
 				color = 2;
@@ -4183,7 +4183,7 @@ static void CG_DrawLagometer( void ) {
 			if ( v > range ) {
 				v = range;
 			}
-			trap_R_DrawStretchPic( ax + aw - a, mid, 1, v, 0, 0, 0, 0, cgs.media.whiteShader );
+			CG_R_DrawStretchPic( ax + aw - a, mid, 1, v, 0, 0, 0, 0, cgs.media.whiteShader );
 		}
 	}
 
@@ -4210,13 +4210,13 @@ static void CG_DrawLagometer( void ) {
 			if ( v > range ) {
 				v = range;
 			}
-			trap_R_DrawStretchPic( ax + aw - a, ay + ah - v, 1, v, 0, 0, 0, 0, cgs.media.whiteShader );
+			CG_R_DrawStretchPic( ax + aw - a, ay + ah - v, 1, v, 0, 0, 0, 0, cgs.media.whiteShader );
 		} else if ( v < 0 ) {
 			if ( color != 4 ) {
 				color = 4;		// RED for dropped snapshots
 				trap_R_SetColor( g_color_table[ColorIndex(COLOR_RED)] );
 			}
-			trap_R_DrawStretchPic( ax + aw - a, ay + ah - range, 1, range, 0, 0, 0, 0, cgs.media.whiteShader );
+			CG_R_DrawStretchPic( ax + aw - a, ay + ah - range, 1, range, 0, 0, 0, 0, cgs.media.whiteShader );
 		}
 	}
 
@@ -8698,7 +8698,7 @@ static int CG_DrawPicHorizontalOptimized(float x, float y, float width, float he
 	}
 	else if (finish) {
 		if (horzPicOpt.active) {
-			trap_R_DrawStretchPic(horzPicOpt.startX, horzPicOpt.oldY, horzPicOpt.oldEndX- horzPicOpt.startX, horzPicOpt.oldHeight, 0, 0, 1, 1, horzPicOpt.oldShader);
+			CG_R_DrawStretchPic(horzPicOpt.startX, horzPicOpt.oldY, horzPicOpt.oldEndX- horzPicOpt.startX, horzPicOpt.oldHeight, 0, 0, 1, 1, horzPicOpt.oldShader);
 		}
 	}
 	else {
@@ -8708,7 +8708,7 @@ static int CG_DrawPicHorizontalOptimized(float x, float y, float width, float he
 		different = different || (height != horzPicOpt.oldHeight);
 		different = different || (y != horzPicOpt.oldY);
 	}
-	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
+	CG_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
 }
 
 static void CG_DrawPicHorizontalOptimizedClear() {
@@ -9261,7 +9261,7 @@ void CG_FillAngleYaw(float start, float end, float viewangle, float y, float hei
 	width = abs(cgs.screenWidth*(tanf(DEG2RAD(viewangle + end)) - tanf(DEG2RAD(viewangle + start))) / (fovscale * 2)) + 1;
 
 	trap_R_SetColor(color);
-	trap_R_DrawStretchPic(x, y, width, height, 0, 0, 0, 0, cgs.media.whiteShader);
+	CG_R_DrawStretchPic(x, y, width, height, 0, 0, 0, 0, cgs.media.whiteShader);
 	trap_R_SetColor(NULL);
 }
 

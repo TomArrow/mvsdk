@@ -441,7 +441,7 @@ static void CG_Text_Paint_Limit(float *maxX, float x, float y, float scale, vec4
 		char *psOutLastGood = psOut;
 		unsigned int uiLetter;
 
-		while (*psText && (x + trap_R_Font_StrLenPixels(sTemp, iFontIndex, scale)<=*maxX) 
+		while (*psText && (x + CG_R_Font_StrLenPixels(sTemp, iFontIndex, scale)<=*maxX)
 			   && psOut < &sTemp[sizeof(sTemp)-1]	// sanity
 				)
 		{

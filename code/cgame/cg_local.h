@@ -1584,6 +1584,11 @@ typedef struct {
 	float			screenYFactor;
 	float			screenYFactorInv;
 
+	float			mmeWidthRatioCoef; // mme compatibility 
+	qboolean		mmeRatioHack; // mme compatibility 
+	float			mmeRatioHackXAdj;// mme compatibility 
+	float			mmeRatioHackYAdj;// mme compatibility 
+
 	int				serverCommandSequence;	// reliable command stream counter
 	int				processedSnapshotNum;// the number of snapshots cgame has requested
 
@@ -2541,9 +2546,12 @@ qhandle_t	trap_R_RegisterShader( const char *name );			// returns all white if n
 qhandle_t	trap_R_RegisterShaderNoMip( const char *name );			// returns all white if not found
 qhandle_t	trap_R_RegisterFont( const char *name );
 int			trap_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
+int			CG_R_Font_StrLenPixels(const char *text, const int iFontIndex, const float scale);
 int			trap_R_Font_StrLenChars(const char *text);
 int			trap_R_Font_HeightPixels(const int iFontIndex, const float scale);
+int			CG_R_Font_HeightPixels(const int iFontIndex, const float scale);
 void		trap_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);
+void		CG_R_Font_DrawString(int ox, int oy, const char *text, const float *rgba, const int setIndex, int iCharLimit, const float scale);
 
 void		trap_CG_COOL_API_SetPredictedMovement(predictedMovement_t* predictedPS);
 void		trap_CG_COOL_API_SetEzDemoBuffer(ezDemoEvent_t* ezDemoBuffer, int ezDemoEventSize, int maxEventCount, int* actualEventCount);
@@ -2612,6 +2620,8 @@ void		trap_R_AddLightToScene( const vec3_t org, float intensity, float r, float 
 int			trap_R_LightForPoint( vec3_t point, vec3_t ambientLight, vec3_t directedLight, vec3_t lightDir );
 void		trap_R_RenderScene( const refdef_t *fd );
 void		trap_R_SetColor( const float *rgba );	// NULL = 1,1,1,1
+void		CG_R_DrawStretchPic( float x, float y, float w, float h, 
+			float s1, float t1, float s2, float t2, qhandle_t hShader ); // wrapper to do ratio adjustments for weird engines
 void		trap_R_DrawStretchPic( float x, float y, float w, float h, 
 			float s1, float t1, float s2, float t2, qhandle_t hShader );
 void		trap_R_ModelBounds( clipHandle_t model, vec3_t mins, vec3_t maxs );

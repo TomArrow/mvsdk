@@ -1343,6 +1343,38 @@ void CG_ForceModelChange( void ) {
 	}
 }
 
+void	CG_R_DrawStretchPic(float x, float y, float w, float h,
+	float s1, float t1, float s2, float t2, qhandle_t hShader) {
+	if (cgs.mmeRatioHack) {
+		x *= cgs.mmeRatioHackXAdj;
+		w *= cgs.mmeRatioHackXAdj;
+		y *= cgs.mmeRatioHackYAdj;
+		h *= cgs.mmeRatioHackYAdj;
+	}
+	trap_R_DrawStretchPic(x, y, w, h, s1, t1, s2, t2, hShader);
+}
+void	CG_R_Font_DrawString(int ox, int oy, const char* text, const float* rgba, const int setIndex, int iCharLimit, const float scale)  {
+	if (cgs.mmeRatioHack) {
+		ox *= cgs.mmeRatioHackXAdj;
+		oy *= cgs.mmeRatioHackYAdj;
+	}
+	trap_R_Font_DrawString(ox, oy, text, rgba, setIndex, iCharLimit, scale);
+}
+int	CG_R_Font_StrLenPixels(const char* text, const int iFontIndex, const float scale) {
+	int result = trap_R_Font_StrLenPixels(text, iFontIndex, scale);
+	if (cgs.mmeRatioHack) {
+		result /= cgs.mmeRatioHackXAdj;
+	}
+	return result;
+}
+int	CG_R_Font_HeightPixels(const int iFontIndex, const float scale) {
+	int result = trap_R_Font_HeightPixels(iFontIndex, scale);
+	if (cgs.mmeRatioHack) {
+		result /= cgs.mmeRatioHackYAdj;
+	}
+	return result;
+}
+
 /*
 ===================
 CG_WideScreenMode
@@ -1358,6 +1390,18 @@ void CG_WideScreenMode(qboolean on) {
 			trap_MVAPI_SetVirtualScreen((float)SCREEN_WIDTH, (float)SCREEN_HEIGHT);
 		}
 	}
+	else if (mmeEngine) { // or do always? idk
+		cgs.mmeRatioHack = on;
+	}
+	/*else if (mmeEngine) {
+		// (float)(SCREEN_WIDTH * cgs.glconfig.vidHeight) / (float)(SCREEN_HEIGHT * cgs.glconfig.vidWidth)
+		if (on) {
+			trap_CG_MME_R_RatioFix(cgs.mmeWidthRatioCoef);
+		}
+		else {
+			trap_CG_MME_R_RatioFix(1.0f);
+		}
+	}*/
 }
 
 
@@ -1367,7 +1411,7 @@ CG_UpdateWidescreen
 ===================
 */
 void CG_UpdateWidescreen(void) {
-	if (cg_widescreen.integer && mvapi >= 3) {
+	if (cg_widescreen.integer && (mvapi >= 3 || mmeEngine)) {
 		if ( cgs.glconfig.vidWidth >= cgs.glconfig.vidHeight ) {
 			cgs.screenWidth = (float)SCREEN_HEIGHT * cgs.glconfig.vidWidth / cgs.glconfig.vidHeight;
 			cgs.screenHeight = (float)SCREEN_HEIGHT;
@@ -1375,7 +1419,8 @@ void CG_UpdateWidescreen(void) {
 			cgs.screenWidth = (float)SCREEN_WIDTH;
 			cgs.screenHeight = (float)SCREEN_WIDTH * cgs.glconfig.vidHeight / cgs.glconfig.vidWidth;
 		}
-	} else {
+	} 
+	else {
 		cgs.screenWidth = (float)SCREEN_WIDTH;
 		cgs.screenHeight = (float)SCREEN_HEIGHT;
 	}
@@ -1386,11 +1431,25 @@ void CG_UpdateWidescreen(void) {
 	cgs.screenYFactor = (float)SCREEN_HEIGHT / cgs.screenHeight;
 	cgs.screenYFactorInv = cgs.screenHeight / (float)SCREEN_HEIGHT;
 
+	if (cg_widescreen.integer && mmeEngine) {
+		cgs.mmeWidthRatioCoef = (float)(SCREEN_WIDTH * cgs.glconfig.vidHeight) / (float)(SCREEN_HEIGHT * cgs.glconfig.vidWidth);
+		cgs.mmeRatioHackXAdj = (float)SCREEN_WIDTH / cgs.screenWidth;
+		cgs.mmeRatioHackYAdj = (float)SCREEN_HEIGHT / cgs.screenHeight;
+		cgs.mmeRatioHack = qtrue;
+	}
+	else {
+		cgs.mmeWidthRatioCoef = 1.0f;
+		cgs.mmeRatioHack = qfalse;
+	}
+
 	cgDC.screenWidth = cgs.screenWidth;
 	cgDC.screenHeight = cgs.screenHeight;
 
 	if (mvapi >= 3 && cg_widescreen.integer != 2)
 		trap_MVAPI_SetVirtualScreen(cgs.screenWidth, cgs.screenHeight);
+	else if (mmeEngine) {
+		trap_CG_MME_R_RatioFix(cg_widescreen.integer != 2 ? cgs.mmeWidthRatioCoef : 1.0F);
+	}
 }
 
 /*
@@ -3232,7 +3291,7 @@ void CG_LoadHudMenu()
 	cgDC.registerShaderNoMip = &trap_R_RegisterShaderNoMip;
 	cgDC.setColor = &trap_R_SetColor;
 	cgDC.drawHandlePic = &CG_DrawPic;
-	cgDC.drawStretchPic = &trap_R_DrawStretchPic;
+	cgDC.drawStretchPic = &CG_R_DrawStretchPic;
 	cgDC.drawText = &CG_Text_Paint;
 	cgDC.textWidth = &CG_Text_Width;
 	cgDC.textHeight = &CG_Text_Height;
@@ -3246,10 +3305,10 @@ void CG_LoadHudMenu()
 	cgDC.addRefEntityToScene = &trap_R_AddRefEntityToScene;
 	cgDC.renderScene = &trap_R_RenderScene;
 	cgDC.RegisterFont = &trap_R_RegisterFont;
-	cgDC.Font_StrLenPixels = &trap_R_Font_StrLenPixels;
+	cgDC.Font_StrLenPixels = &CG_R_Font_StrLenPixels;
 	cgDC.Font_StrLenChars = &trap_R_Font_StrLenChars;
-	cgDC.Font_HeightPixels = &trap_R_Font_HeightPixels;
-	cgDC.Font_DrawString = &trap_R_Font_DrawString;
+	cgDC.Font_HeightPixels = &CG_R_Font_HeightPixels;
+	cgDC.Font_DrawString = &CG_R_Font_DrawString;
 	cgDC.Language_IsAsian = trap_Language_IsAsian;
 	cgDC.Language_UsesSpaces = trap_Language_UsesSpaces;
 	//cgDC.AnyLanguage_ReadCharFromString = trap_AnyLanguage_ReadCharFromString;
