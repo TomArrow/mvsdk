@@ -120,6 +120,7 @@ typedef struct {
 	void	(*spawn)(gentity_t *ent);
 } spawn_t;
 
+void SP_info_player_race (gentity_t *ent);
 void SP_info_player_start (gentity_t *ent);
 void SP_info_player_deathmatch (gentity_t *ent);
 void SP_info_player_imperial (gentity_t *ent);
@@ -223,6 +224,7 @@ extern void SP_HoldableMedkit(gentity_t* ent);
 spawn_t	spawns[] = {
 	// info entities don't do anything at all, but provide positional
 	// information for things controlled by other processes
+	{"info_player_race", qtrue, SP_info_player_race}, // q3 support
 	{"info_player_start", qtrue, SP_info_player_start},
 	{"info_player_deathmatch", qtrue, SP_info_player_deathmatch},
 	{"info_player_imperial", qtrue, SP_info_player_imperial},

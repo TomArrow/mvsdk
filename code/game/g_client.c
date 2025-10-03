@@ -31,7 +31,7 @@ void SP_info_player_deathmatch( gentity_t *ent ) {
 		ent->flags |= FL_NO_HUMANS;
 	}
 	G_SpawnString("spawntype", "", &s);
-	if (s && !Q_stricmp(s,"defrag")) {
+	if (s && !Q_stricmp(s,"defrag") && ent->spawnDefragPriority < 2) {
 		ent->spawnDefragPriority = 2;
 	}
 	if (level.highestDefragSpawnPriority < ent->spawnDefragPriority) {
@@ -49,6 +49,12 @@ equivelant to info_player_deathmatch
 void SP_info_player_start(gentity_t *ent) {
 	G_SetClassName(ent, "info_player_deathmatch");
 	ent->spawnDefragPriority = 1;
+	SP_info_player_deathmatch( ent );
+}
+
+void SP_info_player_race(gentity_t *ent) {
+	G_SetClassName(ent, "info_player_deathmatch");
+	ent->spawnDefragPriority = 2;
 	SP_info_player_deathmatch( ent );
 }
 
