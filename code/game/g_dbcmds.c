@@ -1121,6 +1121,77 @@ static void G_RankUpdateResult(int status, const char* errorMessage, int affecte
 	}
 
 }
+static void G_DemoCheckAllRunsResult(int status, const char* errorMessage, int affectedRows) {
+	demoCheckScriptRequest_t lbRequestData;
+	gentity_t* ent = NULL;
+	fileHandle_t	f;
+	int fileIndex = 0;
+	int len;
+
+	G_COOL_API_DB_GetReference((byte*)&lbRequestData, sizeof(lbRequestData));
+
+	if (lbRequestData.clientnum == -1) {
+		Com_Printf("^1Clientless demo check script results returned.\n");
+	}
+	else if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
+		Com_Printf("^1Client %d demo check script results returned, user no longer valid.\n", lbRequestData.clientnum);
+	}
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateRunsTable();
+		G_BufferedSendOrPrint(ent, qfalse, qfalse,"^1Demo check script generation failed due to table not existing. Attempting to create. Please try again shortly.\n");
+		return;
+	}
+	else if (status) {
+		G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^1Demo check script generation failed with status %d and error message %s.\n", status, errorMessage));
+		return;
+	}
+
+
+	while ((len = trap_FS_FOpenFile(va("generatedScripts/%s.bashscript", lbRequestData.outScriptName), &f, FS_READ)) > 0) {
+		if (!f) {
+
+			// file doesnt exist yet. good. wait, we would prolly never get here then. oh well
+			break;
+		}
+		trap_FS_FCloseFile(f);
+		f = 0;
+		fileIndex++;
+	}
+	if (f) {
+		trap_FS_FCloseFile(f); // we need to close and reopen it. the first open was in FS_READ mode to get the filesize. second open is in FS_APPEND mode. if the file doesnt yet exist thats fine, we will create it.
+		f = 0;
+	}
+	trap_FS_FOpenFile(va("generatedScripts/%s.bashscript", lbRequestData.outScriptName), &f, FS_WRITE);
+
+
+	while (G_COOL_API_DB_NextRow()) {
+		finishedRunInfo_t fakeRunInfo;
+		const char* demoName;
+		memset(&fakeRunInfo, 0, sizeof(fakeRunInfo));
+		fakeRunInfo.userId = G_COOL_API_DB_GetInt(0);
+		fakeRunInfo.raceStyle.movementStyle = G_COOL_API_DB_GetInt(4);
+		fakeRunInfo.raceStyle.variant = G_COOL_API_DB_GetInt(5);
+		fakeRunInfo.raceStyle.msec = G_COOL_API_DB_GetInt(6);
+		fakeRunInfo.raceStyle.jumpLevel = G_COOL_API_DB_GetInt(7);
+		fakeRunInfo.raceStyle.runFlags = G_COOL_API_DB_GetInt(8);
+		G_COOL_API_DB_GetString(1, fakeRunInfo.username, sizeof(fakeRunInfo.username));
+		G_COOL_API_DB_GetString(2, fakeRunInfo.coursename, sizeof(fakeRunInfo.coursename));
+		G_COOL_API_DB_GetString(3, fakeRunInfo.subcoursename, sizeof(fakeRunInfo.subcoursename));
+
+		demoName = G_GenerateRunDemoName(&fakeRunInfo);
+
+
+		trap_FS_Write(demoName, strlen(demoName), f);
+		trap_FS_Write("\n", 1, f);
+
+	}
+
+
+	trap_FS_FCloseFile(f);
+}
 static void G_RankUpdateMapLatestSetResult(int status, const char* errorMessage, int affectedRows) {
 	rankUpdateRequestStruct_t lbRequestData;
 	gentity_t* ent = NULL;
@@ -2223,6 +2294,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_RANKUPDATE:
 					G_RankUpdateResult(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_DEMOCHECK_GETALLRUNS:
+					G_DemoCheckAllRunsResult(status, errorMessage, affectedRows);
 					break;
 				case DBREQUEST_RANKUPDATEMAPLATESTSET:
 					G_RankUpdateMapLatestSetResult(status, errorMessage, affectedRows);

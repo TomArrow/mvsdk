@@ -1538,6 +1538,9 @@ void Cmd_Help_f(gentity_t* ent) {
 		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_UPDATERANKS) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/updateRanks^7 - Update temporary ranks of this map in the DB\n\"");
 		}
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_DEMOMANAGE) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/demoManage^7 - Call with ^2checkscript^7 to make a script testing the existence of all run demos and generating a copy script from a backup location for missing demos\n\"");
+		}
 	}
 }
 
@@ -2565,6 +2568,52 @@ void Cmd_UpdateRanks_f( gentity_t *ent )
 		}
 	}
 	DF_UpdateRanksMainRequest(ent, all ? NULL : DF_GetCourseName(qfalse), forceAll, 0);
+
+}
+void Cmd_DemoManage_f( gentity_t *ent )
+{
+	char arg[100];
+	qboolean checkScript = qfalse;
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_DEMOMANAGE)) {
+		trap_SendServerCommand(ent-g_entities,"print \"You don't have permissions to execute this command.\n\"");
+		return;
+	}
+
+	if (trap_Argc() > 1) {
+		trap_Argv(1,arg,sizeof(arg));
+		if (!Q_stricmp(arg,"checkScript")) {
+			checkScript = qtrue;
+		}
+	}
+
+	if (checkScript) {
+
+		demoCheckScriptRequest_t data;
+		data.clientnum = ent - g_entities;
+		memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+		if (trap_Argc() > 2) {
+			trap_Argv(2, arg, sizeof(arg));
+			if (arg[0]) {
+				Com_sprintf(data.outScriptName, sizeof(data.outScriptName), "%s", arg);
+			}
+			else {
+				Q_strncpyz(data.outScriptName, "checkDemos", sizeof(data.outScriptName));
+			}
+		}
+		else {
+			Q_strncpyz(data.outScriptName, "checkDemos", sizeof(data.outScriptName));
+		}
+		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_DEMOCHECK_GETALLRUNS,
+			"SELECT runs.userid, users.username,runs.course, runs.subcourse, runs.`style`, runs.variant,runs.msec,runs.jump,runs.runFlags  FROM runs LEFT JOIN users ON (runs.userid =users.id) "
+		)) {
+			trap_SendServerCommand(ent - g_entities, "print \"^1Cannot request runs for democheck script generation.\n\"");
+			return;
+		}
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+		return;
+	}
+
 
 }
 
@@ -5678,6 +5727,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "demoManage"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcelogin"))
 		{
 			giveError = qtrue;
@@ -5862,6 +5915,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_BlacklistMap_f(ent);
 	else if (Q_stricmp (cmd, "updateRanks") == 0)
 		Cmd_UpdateRanks_f(ent);
+	else if (Q_stricmp (cmd, "demoManage") == 0)
+		Cmd_DemoManage_f(ent);
 	else if (Q_stricmp (cmd, "forcelogin") == 0)
 		Cmd_ForceLogin_f(ent);
 	else if (!Q_stricmp(cmd, "freedom"))// || !Q_stricmp(cmd, "oc9"))

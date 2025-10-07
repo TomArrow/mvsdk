@@ -35,6 +35,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_RATEMAP,
 	DBREQUEST_RATEMAPSHOWMINE,
 	DBREQUEST_RANK,
+	DBREQUEST_DEMOCHECK_GETALLRUNS,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -153,6 +154,11 @@ typedef struct maplistUnplayedRequestStruct_s {
 	int			ip[4];
 	int			clientnum;
 }maplistUnplayedRequestStruct_t;
+typedef struct demoCheckScriptRequest_s {
+	int			ip[4];
+	int			clientnum;
+	char		outScriptName[100];
+}demoCheckScriptRequest_t;
 
 typedef struct insertUpdateRunStruct_s {
 	int					ip[4];
