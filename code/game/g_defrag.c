@@ -2465,6 +2465,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 		s++;
 	}
 
+	runInfo->checksumBsp = g_cm_checksumBsp.integer; // needs engine support but it's not essential anyway, so if it's just 0 in the end, not a big loss.
+	runInfo->checksumPak = g_cm_checksumPak.integer;
+
 	if (endtrigger->message) {
 		Q_strncpyz(runInfo->subcoursename, endtrigger->message, sizeof(runInfo->subcoursename));
 	}

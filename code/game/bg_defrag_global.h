@@ -311,6 +311,8 @@ typedef struct finishedRunInfo_s {
 	mainLeaderboardType_t lbType;
 	char		tempDemoName[MAX_QPATH];
 	char		fpsString[255+1];
+	int			checksumBsp;
+	int			checksumPak;
 } finishedRunInfo_t;
 
 //typedef struct evaluatedRunInfo_s {

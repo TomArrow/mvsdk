@@ -2567,6 +2567,8 @@ static void G_CreateRunsTable() {
 			hidden TINYINT(1) NOT NULL DEFAULT 0, \
 			tmpRank INT, \
 			tmpLB INT, \
+			checksumBsp INT, \
+			checksumPak INT, \
 			UNIQUE KEY user_runtype (userid,course,subcourse,style,msec,jump,variant,runFlags"
 			//QUOTEME(RUNFLAGS(RUNFLAGSFUNC2))
 			"), \
@@ -2688,10 +2690,10 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		va("SET @now=NOW();"
 			"INSERT INTO runs (userid,course,subcourse,duration_ms,duration_ms_segmented_total,topspeed,startTriggerSpeed,rollSpeed,rollTakeoffClientSpeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
-			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount,server,semiBreakingChangeVersion) "
+			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount,server,semiBreakingChangeVersion,checksumBsp,checksumPak) "
 			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
-			"@now,@now,?,?,?,?,?,?,?,?,?," GETCONNECTIONIP "," QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG) ") "
+			"@now,@now,?,?,?,?,?,?,?,?,?," GETCONNECTIONIP "," QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG) ",?,?) "
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms_segmented_total = IF(?<duration_ms,?,duration_ms_segmented_total),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
@@ -2710,6 +2712,8 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"resposCount = IF(?<duration_ms,?,resposCount),"
 			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount),"
+			"checksumBsp = IF(?<duration_ms,?,checksumBsp),"
+			"checksumPak = IF(?<duration_ms,?,checksumPak),"
 			"server = IF(?<duration_ms," GETCONNECTIONIP ",server),"
 			"semiBreakingChangeVersion = IF(?<duration_ms," QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG) ",semiBreakingChangeVersion),"
 			"duration_ms = IF(?<duration_ms,?,duration_ms);" // duration_ms has to be set last or else all other columns arent updated
@@ -2762,6 +2766,8 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->checksumBsp);
+	G_COOL_API_DB_PreparedBindInt(runInfo->checksumPak);
 
 	// UPDATE PART
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
@@ -2813,6 +2819,12 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
+
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->checksumBsp);
+
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->checksumPak);
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // server (value is hardcoded)
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds); // semiBreakingChangeVersion (value is hardcoded)
