@@ -1577,6 +1577,10 @@ void Cmd_Team_f( gentity_t *ent ) {
 		return;
 	}
 
+	if (!DefragDoubleTapSafety(ent, DOUBLETAP_TEAM, "team")) {
+		return;
+	}
+
 	if (gEscaping)
 	{
 		return;
@@ -2112,6 +2116,10 @@ void Cmd_Amtele_f(gentity_t* ent)
 	if (trap_Argc() > 6)
 	{
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /amTele or /amTele <client> or /amTele <client> <client> or /amTele <X> <Y> <Z> <YAW> or /amTele <player> <X> <Y> <Z> <YAW>.\n\"");
+		return;
+	}
+
+	if (!DefragDoubleTapSafety(ent, DOUBLETAP_AMTELE, "amtele")) {
 		return;
 	}
 
@@ -4770,6 +4778,11 @@ void Cmd_SetViewpos_f( gentity_t *ent ) {
 	}
 	if ( trap_Argc() != 5 ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"usage: setviewpos x y z yaw\n\""));
+		return;
+	}
+
+
+	if (!DefragDoubleTapSafety(ent, DOUBLETAP_SETVIEWPOS, "setviewpos")) {
 		return;
 	}
 
