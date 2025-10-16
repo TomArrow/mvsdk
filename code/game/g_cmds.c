@@ -1628,6 +1628,10 @@ static void Cmd_Launch_f(gentity_t* ent)
 		return;
 	}
 
+	if (!DefragDoubleTapSafety(ent, DOUBLETAP_LAUNCH, "launch")) {
+		return;
+	}
+
 	DF_RaceStateInvalidated(ent, qtrue);
 
 	if (trap_Argc() == 2) {
