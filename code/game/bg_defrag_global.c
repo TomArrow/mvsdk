@@ -22,7 +22,7 @@ bitInfo_t runFlagsNames[] = {
 	{ "Strafebot" },//4
 	{ "Segmented run" },//5
 	{ "No rolls" },//6
-	{ "TAS mode" },//7
+	{ "TAS mode (!use if you want to script etc!)" },//7
 	{ "Climb tech" },//8
 	{ "Jumppad FPS compensation" },//9
 	{ "Lava protection" },//10

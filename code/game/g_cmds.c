@@ -1435,11 +1435,23 @@ void Cmd_Help_f(gentity_t* ent) {
 			trap_SendServerCommand(ent - g_entities, "print \"\n^3Please note that due to this feature being a bit experimental, there is a small chance of the replay failing and your run not being added to the leaderboards. This is exaggerated on maps with elevators/doors and complicated trigger logic.\n\"");
 
 			return;
+		} else if (!Q_stricmpn(arg1, "tas", 3)) {
+
+			trap_SendServerCommand(ent - g_entities, "print \"^2TAS (tool assisted speedrun) help\n\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^7In TAS mode, you're allowed to do things like use scripts in order to create faster runs. This is not allowed in strafebot mode. If you want to use scripts, be sure to enable TAS mode.\n\"");
+
+			trap_SendServerCommand(ent - g_entities, "print \"\n^7Relevant commands:\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2/run 7^7 - Enables/disables TAS mode\n\"");
+
+			trap_SendServerCommand(ent - g_entities, "print \"\n^3Additional features may be added in the future.\n\"");
+
+			return;
 		}
 	}
 
 	trap_SendServerCommand(ent - g_entities, "print \"^2HELP\n\"");
-	trap_SendServerCommand(ent-g_entities,"print \"^7Call ^2/help seg^7 to get help specific to segmented runs.\n\n\"");
+	trap_SendServerCommand(ent-g_entities,"print \"^7Call ^2/help seg^7 to get help specific to segmented runs.\n\"");
+	trap_SendServerCommand(ent-g_entities,"print \"^7Call ^2/help tas^7 to get help specific to scripting runs/TAS mode (^1DO NOT SCRIPT ANYWHERE EXCEPT TAS MODE!^7).\n\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^7Available commands:\n\n\"");
 
 	if (g_defrag.integer) {
