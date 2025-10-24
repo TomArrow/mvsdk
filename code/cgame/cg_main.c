@@ -591,6 +591,7 @@ vmCvar_t	cjp_client;
 vmCvar_t	cg_raceTimer;
 vmCvar_t	cg_raceTimerSize;
 vmCvar_t	cg_raceTimerNoSpeeds;
+vmCvar_t	cg_raceTimerSegmentedInfo;
 vmCvar_t	cg_raceTimerX;
 vmCvar_t	cg_raceTimerY;
 vmCvar_t	cg_speedometer;
@@ -1011,6 +1012,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_raceTimer, "cg_raceTimer", "3", 0 },
 	{ &cg_raceTimerSize, "cg_raceTimerSize", "0.75", 0 },
 	{ &cg_raceTimerNoSpeeds, "cg_raceTimerNoSpeeds", "0", CVAR_ARCHIVE },
+	{ &cg_raceTimerSegmentedInfo, "cg_raceTimerSegmentedInfo", "1", CVAR_ARCHIVE },
 	{ &cg_raceTimerX, "cg_raceTimerX", "5", 0 },
 	{ &cg_raceTimerY, "cg_raceTimerY", "280", 0 },
 	{ &cg_customizeRace, "cg_customizeRace", "0", CVAR_ARCHIVE | CVAR_USERINFO }, // hide various things and stuff

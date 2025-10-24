@@ -1889,32 +1889,35 @@ void DF_RaceTimer(void)
 
 			}
 
-			if (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_SEGMENTED && ((cg.predictedPlayerState.eFlags & EF_SEGMENTEDREPLAY)|| cg_statsEntities[cg.predictedPlayerState.clientNum] && cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState.frame || (cg.predictedPlayerState.pm_flags & PMF_FOLLOW) && cg.clientNum == cg.predictedPlayerState.clientNum)) {
+			if(cg_raceTimerSegmentedInfo.integer){
 
-				if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
-					entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
-					int lastSegmentedReset = stats->apos.trTime;
-					int resposCount = stats->pos.trTime;
-					if (stats->frame > 0) {
-						Q_strcat(timerStr, sizeof(timerStr), va("\n^2SEGMENTED REPLAY (%d SPs)", stats->frame));
+				if (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_SEGMENTED && ((cg.predictedPlayerState.eFlags & EF_SEGMENTEDREPLAY)|| cg_statsEntities[cg.predictedPlayerState.clientNum] && cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState.frame || (cg.predictedPlayerState.pm_flags & PMF_FOLLOW) && cg.clientNum == cg.predictedPlayerState.clientNum)) {
+
+					if (cg_statsEntities[cg.predictedPlayerState.clientNum]) {
+						entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
+						int lastSegmentedReset = stats->apos.trTime;
+						int resposCount = stats->pos.trTime;
+						if (stats->frame > 0) {
+							Q_strcat(timerStr, sizeof(timerStr), va("\n^2SEGMENTED REPLAY (%d SPs)", stats->frame));
+						}
+						else {
+							Q_strcat(timerStr, sizeof(timerStr), "\n^2SEGMENTED REPLAY");
+						}
+						if (lastSegmentedReset != 0 && cg.predictedPlayerState.commandTime > lastSegmentedReset /*&& (cg.predictedPlayerState.commandTime - lastSegmentedReset) < 1000*/) {
+							const int time2 = (cg.predictedPlayerState.commandTime - lastSegmentedReset);
+							const int minutes2 = (time2 / 1000) / 60;
+							const int seconds2 = (time2 / 1000) % 60;
+							const int milliseconds2 = (time2 % 1000);
+
+							Q_strcat(timerStr, sizeof(timerStr), va("\n^3Last SP: ^%c-%i:%02i.%03i", time2 < 1000 ? '1' : '3', minutes2, seconds2, milliseconds2));
+							if (resposCount) {
+								Q_strcat(timerStr, sizeof(timerStr), va(" (%d RPs)",resposCount));
+							}
+						}
 					}
 					else {
 						Q_strcat(timerStr, sizeof(timerStr), "\n^2SEGMENTED REPLAY");
 					}
-					if (lastSegmentedReset != 0 && cg.predictedPlayerState.commandTime > lastSegmentedReset /*&& (cg.predictedPlayerState.commandTime - lastSegmentedReset) < 1000*/) {
-						const int time2 = (cg.predictedPlayerState.commandTime - lastSegmentedReset);
-						const int minutes2 = (time2 / 1000) / 60;
-						const int seconds2 = (time2 / 1000) % 60;
-						const int milliseconds2 = (time2 % 1000);
-
-						Q_strcat(timerStr, sizeof(timerStr), va("\n^3Last SP: ^%c-%i:%02i.%03i", time2 < 1000 ? '1' : '3', minutes2, seconds2, milliseconds2));
-						if (resposCount) {
-							Q_strcat(timerStr, sizeof(timerStr), va(" (%d RPs)",resposCount));
-						}
-					}
-				}
-				else {
-					Q_strcat(timerStr, sizeof(timerStr), "\n^2SEGMENTED REPLAY");
 				}
 			}
 
