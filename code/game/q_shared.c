@@ -1089,7 +1089,7 @@ void Q_StripColor(char* text)//, qboolean doHex)
 		read = write = text;
 		while (*read)
 		{
-			/*if (doHex && *read == Q_COLOR_ESCAPE && Q_IsColorStringHex(read + 1)) {
+			/*if (doHex && *read == Q_COLOR_ESCAPE && Q_IsColorStringHex(read)) {
 				int skipCount = 0;
 				Q_parseColorHex(read + 1, 0, &skipCount);
 				read += 1 + skipCount;
