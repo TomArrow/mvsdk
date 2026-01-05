@@ -27,7 +27,7 @@ Q_NORETURN void	trap_Error( const char *fmt ) {
 	q_unreachable();
 }
 
-int		trap_Milliseconds( void ) {
+int		trap_Milliseconds( void ) { // what is this acctually used for? seems confusing
 	return syscall( G_MILLISECONDS ); 
 }
 
