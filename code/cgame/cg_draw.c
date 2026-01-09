@@ -65,6 +65,8 @@ static void CG_DrawAccelMiss(); //tommyternal :)
 #define SPEEDOMETER_NOSPEED			(1<<10)
 #define SPEEDOMETER_ACCELMISS		(1<<11)
 #define SPEEDOMETER_ZPOS			(1<<12)
+#define SPEEDOMETER_NOCOLOR			(1<<13)
+#define SPEEDOMETER_NOUNIT			(1<<14)
 
 
 #define KEY_W       0
@@ -7581,7 +7583,7 @@ static void CG_Speedometer(void)
 
 	lastSpeed = currentSpeed;
 
-	if (currentSpeed > 250)
+	if (currentSpeed > 250 && !(cg_speedometer.integer & SPEEDOMETER_NOCOLOR))
 	{
 		colorSpeed[1] = 1 / ((currentSpeed / 250)*(currentSpeed / 250));
 		colorSpeed[2] = 1 / ((currentSpeed / 250)*(currentSpeed / 250));
@@ -7606,23 +7608,30 @@ static void CG_Speedometer(void)
 	}
 	avgAccel = total / (float)ACCEL_SAMPLES - 0.0625f;//fucking why does it offset by this number
 
-	if (avgAccel > 0.0f)
-	{
-		accelStr = S_COLOR_GREEN "\xb5:";
-		accelStr2 = S_COLOR_GREEN "k:";
-		accelStr3 = S_COLOR_GREEN "m:  ";
+	if (cg_speedometer.integer & SPEEDOMETER_NOUNIT) {
+		accelStr = "";
+		accelStr2 = "";
+		accelStr3 = "";
 	}
-	else if (avgAccel < 0.0f)
-	{
-		accelStr = S_COLOR_RED "\xb5:";
-		accelStr2 = S_COLOR_RED "k:";
-		accelStr3 = S_COLOR_RED "m:  ";
-	}
-	else
-	{
-		accelStr = S_COLOR_WHITE "\xb5:";
-		accelStr2 = S_COLOR_WHITE "k:";
-		accelStr3 = S_COLOR_WHITE "m:";
+	else {
+		if (avgAccel > 0.0f && !(cg_speedometer.integer & SPEEDOMETER_NOCOLOR))
+		{
+			accelStr = S_COLOR_GREEN "\xb5:";
+			accelStr2 = S_COLOR_GREEN "k:";
+			accelStr3 = S_COLOR_GREEN "m:  ";
+		}
+		else if (avgAccel < 0.0f && !(cg_speedometer.integer & SPEEDOMETER_NOCOLOR))
+		{
+			accelStr = S_COLOR_RED "\xb5:";
+			accelStr2 = S_COLOR_RED "k:";
+			accelStr3 = S_COLOR_RED "m:  ";
+		}
+		else
+		{
+			accelStr = S_COLOR_WHITE "\xb5:";
+			accelStr2 = S_COLOR_WHITE "k:";
+			accelStr3 = S_COLOR_WHITE "m:";
+		}
 	}
 
 	if (!(cg_speedometer.integer & SPEEDOMETER_NOSPEED)) {

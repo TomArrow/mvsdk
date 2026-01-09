@@ -767,6 +767,8 @@ static bitInfo_T speedometerSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Disable speed display" },//10
 	{ "Accel miss" },//11
 	{ "Z position display" },//12
+	{ "No speed-based color" },//13
+	{ "No unit display" },//14
 };
 static const int MAX_SPEEDOMETER_SETTINGS = ARRAY_LEN(speedometerSettings);
 
