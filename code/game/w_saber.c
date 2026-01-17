@@ -1868,6 +1868,7 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 			return qfalse;
 		}
 
+		// TODO rework this with the better logic?
 		if (self->client && otherOwner->client && (self->s.bolt1 != otherOwner->s.bolt1))//JAPRO fix clients being able to block sabers in other dimensions (duel/racemode)?
 			return qfalse;
 		if (self->client && self->client->ps.stats[STAT_RACEMODE])//Racemode ppl shouldnt even be able to block other racemode ppls sabers
