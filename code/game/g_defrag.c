@@ -1272,6 +1272,10 @@ qboolean ValidRaceSettings(gentity_t* player)
 	//if (sv_fps.integer != 20 && sv_fps.integer != 30 && sv_fps.integer != 40)//Dosnt really make a difference.. but eh.... loda fixme
 	if (g_sv_fps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. well... but demos wouldnt be proper without it, so leave it.
 		return qfalse;
+	if (g_sv_gameFps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. 
+		return qfalse;
+	if (g_sv_gameFpsAllowIrregular.integer)// Does this even matter for tommyternal? everything runs on clienttime anyway. 
+		return qfalse;
 	//if (sv_pluginKey.integer) {
 	//	if (!cl->pers.validPlugin && cl->pers.userName[0]) { //Meh.. only do this if they are logged in to keep the print colors working right i guess..
 	//		trap->SendServerCommand(player - g_entities, "cp \"^3Warning: a newer client plugin version\nis required!\n\n\n\n\n\n\n\n\n\n\""); //Since times wont be saved if they arnt logged in anyway

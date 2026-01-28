@@ -175,6 +175,8 @@ vmCvar_t	g_dismember;
 vmCvar_t	g_forceDodge;
 vmCvar_t	g_timeouttospec;
 vmCvar_t	g_sv_fps;
+vmCvar_t	g_sv_gameFps;
+vmCvar_t	g_sv_gameFpsAllowIrregular;
 vmCvar_t	g_cm_checksumBsp;
 vmCvar_t	g_cm_checksumPak;
 
@@ -419,6 +421,8 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_timeouttospec, "g_timeouttospec", "70", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_sv_fps, "sv_fps", "100", 0, 0, qfalse },
+	{ &g_sv_gameFps, "sv_gameFps", "100", 0, 0, qfalse },
+	{ &g_sv_gameFpsAllowIrregular, "sv_gameFpsAllowIrregular", "0", 0, 0, qfalse },
 	{ &g_cm_checksumBsp, "cm_checksumBsp", "0", 0, 0, qfalse },
 	{ &g_cm_checksumPak, "cm_checksumPak", "0", 0, 0, qfalse },
 

@@ -1536,6 +1536,8 @@ extern	vmCvar_t	g_dismember;
 extern	vmCvar_t	g_forceDodge;
 extern	vmCvar_t	g_timeouttospec;
 extern	vmCvar_t	g_sv_fps;
+extern	vmCvar_t	g_sv_gameFps;
+extern	vmCvar_t	g_sv_gameFpsAllowIrregular;
 extern	vmCvar_t	g_cm_checksumBsp;
 extern	vmCvar_t	g_cm_checksumPak;
 
