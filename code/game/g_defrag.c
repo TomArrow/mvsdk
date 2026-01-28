@@ -1272,7 +1272,7 @@ qboolean ValidRaceSettings(gentity_t* player)
 	//if (sv_fps.integer != 20 && sv_fps.integer != 30 && sv_fps.integer != 40)//Dosnt really make a difference.. but eh.... loda fixme
 	if (g_sv_fps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. well... but demos wouldnt be proper without it, so leave it.
 		return qfalse;
-	if (g_sv_gameFps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. 
+	if (g_sv_gameFps.integer && g_sv_gameFps.integer != 100)// Does this even matter for tommyternal? everything runs on clienttime anyway. 
 		return qfalse;
 	if (g_sv_gameFpsAllowIrregular.integer)// Does this even matter for tommyternal? everything runs on clienttime anyway. 
 		return qfalse;
