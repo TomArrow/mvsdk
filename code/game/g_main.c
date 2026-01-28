@@ -484,6 +484,7 @@ static int gameCvarTableSize = sizeof( gameCvarTable ) / sizeof( gameCvarTable[0
 
 void G_InitGame					( int levelTime, int randomSeed, int restart );
 void G_RunFrame					( int levelTime );
+void G_RunFrameSpectators		( int levelTime );
 void G_ShutdownGame				( int restart );
 void CheckExitRules				( void );
 void G_ROFF_NotetrackCallback	( gentity_t *cent, const char *notetrack);
@@ -526,6 +527,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_CUSTOMEPSILONTRACE
 | COOL_APIFEATURE_JEDI_ACADEMY
 | COOL_APIFEATURE_CROSS_SERVER_COMMANDS
+| COOL_APIFEATURE_G_UPDATESPECTATORS
 ;
 const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY;
 
@@ -638,7 +640,12 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		ClientCommand( arg0 );
 		return 0;
 	case GAME_RUN_FRAME:
-		G_RunFrame( arg0 );
+		if ((coolApi & COOL_APIFEATURE_G_UPDATESPECTATORS) && arg1 == 1) {
+			G_RunFrameSpectators(arg0);
+		}
+		else {
+			G_RunFrame(arg0);
+		}
 		return 0;
 	case GAME_CONSOLE_COMMAND:
 		return ConsoleCommand();
@@ -3207,6 +3214,69 @@ int gSlowMoDuelTime = 0;
 
 void G_UserCmdBuffer_NewFrame();
 
+/*
+================
+G_RunFrameSpectators
+
+Lighter version of G_RunFrame that only updates stuff so spectators get up-to-date info when using sv_gamefps
+================
+*/
+void G_RunFrameSpectators(int levelTime) {
+	int			i;
+	gentity_t* ent;
+
+	for (i = 0; i < level.maxclients; i++) {
+		ent = g_entities + i;
+		if (!ent->inuse || !ent->client) continue;
+		ent->client->pers.normalFollowerPing = ent->client->ps.ping; // server (except on map restarts and such) calcs proper pings and saves them to the ps before running game frame. intercept it here so we know it and can send the real ping even for clients that are spectating.
+	}
+
+	if (g_entHUDFields.integer) {
+		ent = &g_entities[0];
+		//for (i = 0; i < level.num_entities; i++, ent++)
+		for (i = 0; i < MAX_CLIENTS; i++, ent++)
+		{
+			if (!ent->inuse) {
+				continue;
+			}
+			else if (ent->client) {
+
+				if (ent->s.eType == ET_GENERAL || ent->client->ps.pm_type == PM_INTERMISSION) {
+					// We are in an intermission and players have been turned into ET_GENERAL. 
+					// Set all this stuff to 0 so we don't get glowing bodies
+					ent->client->ps.generic1 = ent->s.generic1 = 0;
+					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = 0;
+					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = 0;
+				}
+				else {
+					//ent->client->ps.fd.forcePowersActive &= ~(31 << 20);
+					//ent->client->ps.fd.forcePowersActive |= ((dimensionNum & 31) << 20);
+					// trickedentindex3: armor (8 bits), health (8 bits)
+					ent->client->ps.fd.forceMindtrickTargetIndex3 = ent->s.trickedentindex3 = ((MIN(127, MAX(-128, ent->client->ps.stats[STAT_HEALTH])) & 0xff) << 8) | (MIN(127, MAX(-128, ent->client->ps.stats[STAT_ARMOR])) & 0xff);
+					// trickedentindex4: force power (7 bits), current weapon ammo (7 bits), saberdrawanimlevel (2 bits)
+					ent->client->ps.fd.forceMindtrickTargetIndex4 = ent->s.trickedentindex4 = (ent->client->ps.fd.saberDrawAnimLevel & 3) << 14 | ((MAX(0, MIN(127, ent->client->ps.ammo[weaponData[ent->client->ps.weapon].ammoIndex])) & 127) << 7) | (MAX(0, MIN(127, ent->client->ps.fd.forcePower)) & 127);
+					// generic1: seeker, forcefield, bacta, sentry in inventory (1 bit each), mine count (4 bits)
+					ent->client->ps.generic1 = ent->s.generic1 = ((MAX(0, MIN(15, ent->client->ps.ammo[weaponData[WP_TRIP_MINE].ammoIndex])) & 15) << 4) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN))) << 3) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC))) << 2) | ((!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD))) << 1) | (!!(ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)));
+				}
+			}
+
+			//ent->s.forcePowersActive &= ~(31 << 20);
+			//ent->s.forcePowersActive |= ((dimensionNum & 31) << 20);
+		}
+	}
+
+	ent = &g_entities[0];
+	for (i = 0; i < level.maxclients; i++, ent++) {
+		if (ent->inuse) {
+			if (ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+				SpectatorClientEndFrame(ent); // put spectators in their own loop so they get the truly most updated version
+			}
+		}
+	}
+
+	// do i do this here? idk
+	//G_UserCmdBuffer_NewFrame();
+}
 /*
 ================
 G_RunFrame
