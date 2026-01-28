@@ -1220,14 +1220,14 @@ FIXME: make this buffer size safe someday
 ============
 */
 #define MAX_VA_STRING 32000
-#define MAX_VA_BUFFERS 2
+#define MAX_VA_BUFFERS 4 // make it 4.. save us annoying trouble from passing va into centerprint and then multiple va in there
 char	* QDECL va( const char *format, ... ) {
 	va_list		argptr;
 	static char		string[MAX_VA_BUFFERS][MAX_VA_STRING];	// in case va is called by nested functions
 	static int		index = 0;
 	char	*buf;
 
-	buf = string[index & 1];
+	buf = string[index & 3];
 	index++;
 
 	va_start (argptr, format);
