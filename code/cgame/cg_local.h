@@ -1721,6 +1721,8 @@ Ghoul2 Insert End
 	int				lastPsClientNum;
 
 	jkmod_media_t	jkmodMedia; // for features from TriForce's JediKnightPlus mod
+
+	qboolean		stayScoreboard;
 } cgs_t;
 
 //==============================================================================
@@ -2034,6 +2036,9 @@ extern	vmCvar_t		cg_enableBreath;
 extern	vmCvar_t		cg_singlePlayerActive;
 extern  vmCvar_t		cg_recordSPDemo;
 extern  vmCvar_t		cg_recordSPDemoName;
+
+extern	vmCvar_t		cg_fixTeamScoreboard;
+extern	vmCvar_t		cg_duelModeSpec;
 
 extern	vmCvar_t		cg_ui_myteam;
 extern	vmCvar_t		cg_com_maxfps;

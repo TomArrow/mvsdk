@@ -817,6 +817,8 @@ static void CG_MapRestart( void ) {
 
 	cgs.voteTime = 0;
 
+	cgs.stayScoreboard = qfalse;
+
 	cg.mapRestart = qtrue;
 
 	CG_StartMusic(qtrue);
@@ -1547,8 +1549,14 @@ static void CG_ServerCommand( void ) {
 
 	if ( !strcmp( cmd, "print" ) ) {
 		char strEd[MAX_STRIPED_SV_STRING];
-		CG_CheckSVStripEdRef(strEd, sizeof(strEd), CG_Argv(1));
 
+		if (cgs.gametype == GT_TOURNAMENT && cg_duelModeSpec.integer && strstr(CG_Argv(1),"@@@HIT_THE_KILL_LIMIT")) {
+			trap_SendClientCommand("team scoreboard");
+			cgs.stayScoreboard = qtrue;
+		}
+
+		CG_CheckSVStripEdRef(strEd, sizeof(strEd), CG_Argv(1));
+		
 		if (CG_StringStartsWith(strEd, "Server: nt_PauseGame changed to ")) {
 
 			const int val = strEd[strlen("Server: nt_PauseGame changed to") + 1] - '0';

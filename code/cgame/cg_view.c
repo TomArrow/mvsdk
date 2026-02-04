@@ -2265,7 +2265,11 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 		trap_SendClientCommand("score");
 	}
 
-	if (cg_autoFollow.integer) {
+	if ((!cgs.stayScoreboard || cgs.gametype != GT_TOURNAMENT) && cg_duelModeSpec.integer >= 2 && cg.snap && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR && (cg.snap->ps.pm_flags & PMF_SCOREBOARD)) {
+		trap_SendClientCommand("team s"); // go back to normal spectator team
+	}
+
+	if ((!cgs.stayScoreboard || cgs.gametype != GT_TOURNAMENT) && cg_autoFollow.integer) {
 		CG_AutoFollow();
 	}
 

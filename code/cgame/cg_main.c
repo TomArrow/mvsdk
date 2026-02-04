@@ -793,6 +793,9 @@ vmCvar_t	cg_singlePlayerActive;
 vmCvar_t	cg_recordSPDemo;
 vmCvar_t	cg_recordSPDemoName;
 
+vmCvar_t	cg_fixTeamScoreboard;
+vmCvar_t	cg_duelModeSpec;
+
 vmCvar_t	cg_ui_myteam;
 vmCvar_t	cg_com_maxfps;
 vmCvar_t	cg_com_physicsFps;
@@ -1200,6 +1203,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_smallFont, "ui_smallFont", "0.25", CVAR_ARCHIVE},
 	{ &cg_bigFont, "ui_bigFont", "0.4", CVAR_ARCHIVE},
 	{ &cg_trueLightning, "cg_trueLightning", "0.0", CVAR_ARCHIVE},
+	{ &cg_fixTeamScoreboard, "cg_fixTeamScoreboard", "1", CVAR_ARCHIVE},
+	{ &cg_duelModeSpec, "cg_duelModeSpec", "0", CVAR_TEMP},
 
 	{ &cg_ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
 	{ &cg_com_maxfps, "com_maxfps", "", 0},
