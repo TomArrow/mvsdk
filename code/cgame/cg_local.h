@@ -1723,6 +1723,11 @@ Ghoul2 Insert End
 	jkmod_media_t	jkmodMedia; // for features from TriForce's JediKnightPlus mod
 
 	qboolean		stayScoreboard;
+
+	int				cubeMapScreenshotsLeft;
+	qboolean		cubeMapScreenshotsRequested;
+	int				cubeMapScreenshotsOldNotifyTime;
+	char			cubeMapScreenshotName[MAX_QPATH];
 } cgs_t;
 
 //==============================================================================

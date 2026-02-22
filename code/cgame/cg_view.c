@@ -2259,6 +2259,14 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );
 
+	if (cgs.cubeMapScreenshotsLeft && !cgs.cubeMapScreenshotsRequested) {
+		static const char* cubeSides[6] = {"ft","lf","bk","rt","up","dn"};
+		if (trap_Key_GetCatcher() & KEYCATCH_CONSOLE)
+			trap_SendConsoleCommand("toggleconsole instant;"); // The "instant" is for my eternal fork. But it won't interfere otherwise. You'll likely end up with a visible console tho.
+		trap_SendConsoleCommand(va("screenshot_tga %s_%s; wait 2; screenshotCubeMapAdvance",cgs.cubeMapScreenshotName,cubeSides[6-cgs.cubeMapScreenshotsLeft]));
+		cgs.cubeMapScreenshotsRequested = qtrue;
+	}
+
 	// Fetch scoreboard regularly even if we are not viewing it.
 	if (cg_autoScoreboardFetchInterval.integer && !cg.demoPlayback && (cg.lastScoresReceived > cg.time || (cg.time - cg.lastScoresReceived) > (cg_autoScoreboardFetchInterval.integer * 1000)) && cg.scoresRequestTime + 2000 < cg.time) { //don't clear the scoreboard when watching a demo
 		cg.scoresRequestTime = cg.time;

@@ -6663,7 +6663,7 @@ static void CG_Draw2D( void ) {
 		CG_CheckOrderPending();
 	}
 	// if we are taking a levelshot for the menu, don't draw anything
-	if ( cg.levelShot ) {
+	if ( cg.levelShot || cgs.cubeMapScreenshotsLeft) {
 		return;
 	}
 
@@ -7397,6 +7397,38 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 		// normally, if we predict a teleport, we will get hall of mirrors because the target area is likely in a different area and wont be drawn.
 		// so just do a dirty override here. its disgusting and might cause a temporary framerate drop (?) but oh well.
 		memset(&cg.refdef.areamask, 0, sizeof(cg.refdef.areamask));
+	}
+
+	if (cgs.cubeMapScreenshotsLeft) {
+		vec3_t newAngs;
+		cg.refdef.fov_x = 90;
+		cg.refdef.fov_y = 90;
+		switch (cgs.cubeMapScreenshotsLeft) {
+			default:
+			case 6: // front
+				VectorSet(newAngs,0,0,0);
+				break;
+			case 5: // left
+				VectorSet(newAngs, 0, 270, 0); // left and right contradictorily are not what you think
+				break;
+			case 4: // back
+				VectorSet(newAngs,0,180,0);
+				break;
+			case 3: // right
+				VectorSet(newAngs, 0, 90, 0); // left and right contradictorily are not what you think
+				break;
+			case 2: // up
+				VectorSet(newAngs,-90,90,0);
+				break;
+			case 1: // down
+				VectorSet(newAngs,90,90,0);
+				break;
+		}
+		// ok so... front (0 degrees yaw) actually looks towards the right skybox when we have an actual skybox.
+		// and "right" is actually left from the players perspective. yea makes a lot of sense huh?
+		// but we wanna basically make sure that if we were to take a screenshot of a skybox, it would still align if reused as a skybox
+		newAngs[YAW] -= 90;
+		AnglesToAxis(newAngs,cg.refdef.viewaxis);
 	}
 
 	// draw 3D view

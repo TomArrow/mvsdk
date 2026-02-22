@@ -1487,6 +1487,44 @@ static void CG_FollowFastest_f(void) {
 	}
 }
 
+static void CG_ScreenshotCubemap_f(void) {
+	char oldShader[MAX_QPATH], newShader[MAX_QPATH];
+
+	if (trap_Argc() != 2) {
+		CG_Printf("Usage: /screenshotCubeMap <name>\n");
+		return;
+	}
+	if (cgs.cubeMapScreenshotsLeft) {
+		CG_Printf("Can't take new cubemap screenshot. Still in progress.\n");
+		return;
+	}
+
+	trap_Argv( 1, cgs.cubeMapScreenshotName, sizeof(cgs.cubeMapScreenshotName) );
+
+	if (!cgs.cubeMapScreenshotName[0]) {
+		CG_Printf("Can't take cubemap screenshot. Invalid filename.\n");
+		return;
+	}
+
+	if (trap_Key_GetCatcher() & KEYCATCH_CONSOLE)
+		trap_SendConsoleCommand("toggleconsole instant;"); // The "instant" is for my eternal fork. But it won't interfere otherwise. You'll likely end up with a visible console tho.
+
+	cgs.cubeMapScreenshotsOldNotifyTime = CG_Cvar_Get_int("con_notifytime");
+	cgs.cubeMapScreenshotsLeft = 6;
+	trap_Cvar_Set("con_notifytime", "0");	// hide console.
+}
+
+static void CG_ScreenshotCubemapAdvance_f(void) {
+	if (cgs.cubeMapScreenshotsLeft) {
+		cgs.cubeMapScreenshotsRequested = qfalse;
+		cgs.cubeMapScreenshotsLeft--;
+		if (cgs.cubeMapScreenshotsLeft <= 0) { // why would it ever be < 0? idk. when random memory corruption?
+			cgs.cubeMapScreenshotsLeft = 0;
+			trap_Cvar_Set("con_notifytime", va("%d", cgs.cubeMapScreenshotsOldNotifyTime));	// restore console.
+		}
+	}
+}
+
 static void CG_RemapShader_f(void) {
 	char oldShader[MAX_QPATH], newShader[MAX_QPATH];
 
@@ -2082,6 +2120,8 @@ static consoleCommand_t	commands[] = {
 	{ "demoSeekMapRestart", CG_DemoSeekToMapRestart_f},//, CMDF_X3CMD, "seek forward in demo until a map_restart happens" },
 
 
+	{ "screenshotCubeMap", CG_ScreenshotCubemap_f },
+	{ "screenshotCubeMapAdvance", CG_ScreenshotCubemapAdvance_f }, // don't use by hand, internal
 	{ "remapShader", CG_RemapShader_f },
 	{ "listRemaps", CG_ListRemaps_f },
 
@@ -2457,4 +2497,5 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("stay");
 	trap_AddCommand("say_cross");
 	trap_AddCommand("resseg");
+	trap_AddCommand("screenshotCubeMap");
 }
