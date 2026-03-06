@@ -2563,6 +2563,12 @@ void BG_PlayerStateToEntityState( playerState_t *ps, entityState_t *s, qboolean 
 	s->time2 = ps->holocronBits;
 
 	s->fireflag = ps->fd.saberAnimLevel;
+
+#if 0
+	// bitmask float
+	i = MIN(MAX(0,ps->stats[14]),1023) & 0x3ff;
+	s->angles2[PITCH] = *(float*)&i;
+#endif
 }
 
 /*
@@ -2703,6 +2709,12 @@ void BG_PlayerStateToEntityStateExtraPolate( playerState_t *ps, entityState_t *s
 	s->time2 = ps->holocronBits;
 
 	s->fireflag = ps->fd.saberAnimLevel;
+
+#if 0
+	// bitmask float
+	i = MIN(MAX(0, ps->stats[14]), 1023) & 0x3ff;
+	s->angles2[PITCH] = *(float*)&i;
+#endif
 }
 
 /*
