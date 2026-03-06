@@ -2052,7 +2052,7 @@ int ForceShootDrain( gentity_t *self )
 				continue;
 			if ( !traceEnt->client->ps.fd.forcePower )
 				continue;
-			if (OnSameTeam(self, traceEnt))
+			if (OnSameTeam(self, traceEnt) && !g_friendlyForce.integer)
 				continue;
 			//this is all to see if we need to start a saber attack, if it's in flight, this doesn't matter
 			// find the distance from the edge of the bounding box
@@ -3002,7 +3002,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 			continue;
 		if (ent == self)
 			continue;
-		if (ent->client && OnSameTeam(ent, self))
+		if (ent->client && OnSameTeam(ent, self) && !g_friendlyForce.integer)
 		{
 			continue;
 		}
@@ -3237,7 +3237,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 						}
 
 						// TODO what about racemode? dont have to care i guess
-						if (!OnSameTeam(self, push_list[x]) && Q_irand(1, 10, self->client && self->client->sess.raceMode, 5) <= randfact && canPullWeapon)
+						if ((!OnSameTeam(self, push_list[x]) || g_friendlyForce.integer) && Q_irand(1, 10, self->client && self->client->sess.raceMode, 5) <= randfact && canPullWeapon)
 						{
 							vec3_t uorg, vecnorm;
 

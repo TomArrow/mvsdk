@@ -1473,6 +1473,7 @@ extern	vmCvar_t	g_timelimit;
 extern	vmCvar_t	g_capturelimit;
 extern	vmCvar_t	g_saberInterpolate;
 extern	vmCvar_t	g_friendlyFire;
+extern	vmCvar_t	g_friendlyForce;
 extern	vmCvar_t	g_friendlySaber;
 extern	vmCvar_t	g_password;
 extern	vmCvar_t	g_needpass;

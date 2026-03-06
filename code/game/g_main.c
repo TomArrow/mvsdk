@@ -99,6 +99,7 @@ vmCvar_t	g_timelimit;
 vmCvar_t	g_capturelimit;
 vmCvar_t	g_saberInterpolate;
 vmCvar_t	g_friendlyFire;
+vmCvar_t	g_friendlyForce;
 vmCvar_t	g_friendlySaber;
 vmCvar_t	g_password;
 vmCvar_t	g_needpass;
@@ -334,6 +335,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_saberInterpolate, "g_saberInterpolate", "1", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_friendlyFire, "g_friendlyFire", "0", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_friendlyForce, "g_friendlyForce", "0", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_friendlySaber, "g_friendlySaber", "0", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_teamAutoJoin, "g_teamAutoJoin", "0", CVAR_ARCHIVE  },
