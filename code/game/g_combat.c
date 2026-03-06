@@ -1947,6 +1947,14 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		attacker->client->lastkilled_client = self->s.number;
 
 		if ( attacker == self || OnSameTeam (self, attacker ) ) {
+			if (attacker == self) {
+				if (meansOfDeath == MOD_SUICIDE) {
+					attacker->client->pers.tffaStats.suicides++;
+				}
+			}
+			else {
+				attacker->client->pers.tffaStats.teamkills++;
+			}
 			if (g_gametype.integer == GT_TOURNAMENT)
 			{ //in duel, if you kill yourself, the person you are dueling against gets a kill for it
 				int otherClNum = -1;
@@ -1997,6 +2005,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				}
 			}
 		} else {
+			attacker->client->pers.tffaStats.kills++;
 			if (g_gametype.integer == GT_JEDIMASTER)
 			{
 				if (attacker->client->ps.isJediMaster ||
@@ -2282,7 +2291,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 CheckArmor
 ================
 */
-int CheckArmor (gentity_t *ent, int damage, int dflags)
+int CheckArmor(gentity_t* ent, int damage, int dflags, int* realArmorLoss)
 {
 	gclient_t	*client;
 	int			save;
@@ -2321,10 +2330,12 @@ int CheckArmor (gentity_t *ent, int damage, int dflags)
 	if(!client->sess.raceMode || !(dflags & FAKE_DAMAGE_IN_RACEMODE)){
 		if (dflags & DAMAGE_HALF_ARMOR_REDUCTION)		// Armor isn't whittled so easily by sniper shots.
 		{
+			*realArmorLoss += (int)(save * ARMOR_REDUCTION_FACTOR);
 			client->ps.stats[STAT_ARMOR] -= (int)(save*ARMOR_REDUCTION_FACTOR);
 		}
 		else
 		{
+			*realArmorLoss += save;
 			client->ps.stats[STAT_ARMOR] -= save;
 		}
 	}
@@ -3104,6 +3115,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	float		famt = 0;
 	float		hamt = 0;
 	float		shieldAbsorbed = 0;
+	int			rawdamage = damage;
+	int			armorloss = 0;
 	int			nowTime = inflictor ? LEVELTIME(inflictor->client) : level.time;
 	int			nowTimeTarg = LEVELTIME(targ->client);
 
@@ -3431,7 +3444,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	take = damage;
 
 	// save some from armor
-	asave = CheckArmor (targ, take, dflags);
+	asave = CheckArmor (targ, take, dflags, &armorloss);
 
 	if (asave)
 	{
@@ -3607,15 +3620,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 
 	// do the damage
 	if (take && (!(targ->client && targ->client->sess.raceMode) || !(dflags & FAKE_DAMAGE_IN_RACEMODE))) {
+		int oldHealth = targ->health;
 		if (targ->client && (targ->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) && (inflictor->client || attacker->client))
 		{
 			take /= (targ->client->ps.fd.forcePowerLevel[FP_RAGE]+1);
 		}
 
 		targ->health = targ->health - take;
-		if ( targ->client ) {
-			targ->client->ps.stats[STAT_HEALTH] = targ->health;
-		}
 
 		if (targ->client && (targ->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) && (inflictor->client || attacker->client))
 		{
@@ -3626,6 +3637,47 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			if (targ->client->ps.stats[STAT_HEALTH] <= 0)
 			{
 				targ->client->ps.stats[STAT_HEALTH] = 1;
+			}
+		}
+
+		// track damage dealt and taken, consistent with how kill attribution would work.
+		if (targ->client && mod != MOD_TELEFRAG && (mod != MOD_CRUSH || rawdamage < 200)) { // try to exclude the ridiculously high crush damages so they don't destroy the stats. mod_falling with fallingtodeath also directly calls player_die
+			int totalloss = armorloss + oldHealth - targ->health;
+			gentity_t* realAttacker = attacker;
+			targ->client->ps.stats[STAT_HEALTH] = targ->health;
+			if (inflictor && inflictor->activator && !inflictor->client && !realAttacker->client &&
+				inflictor->activator->client && inflictor->activator->inuse &&
+				inflictor->s.weapon == WP_TURRET)
+			{
+				realAttacker = inflictor->activator;
+			}
+			if ((targ == realAttacker || !realAttacker->client) &&
+				(mod == MOD_CRUSH || mod == MOD_FALLING || mod == MOD_TRIGGER_HURT || mod == MOD_UNKNOWN || mod == MOD_LAVA || mod == MOD_SLIME) && // TA: Give credit for lava/slime kills too :)
+				targ->client->ps.otherKillerTime > nowTime)
+			{
+				realAttacker = &g_entities[targ->client->ps.otherKiller];
+			}
+			if (targ == attacker) { // luckily MOD_SUICIDE doesn't factor into this. it calls kill directly
+				targ->client->pers.tffaStats.dmg.norm.damageReceived += rawdamage;
+				targ->client->pers.tffaStats.dmgReal.norm.damageReceived += totalloss;
+			}
+			else if (realAttacker->client) {
+				if (OnSameTeam(realAttacker, targ)) {
+					targ->client->pers.tffaStats.dmg.team.damageReceived += rawdamage;
+					targ->client->pers.tffaStats.dmgReal.team.damageReceived += totalloss;
+					realAttacker->client->pers.tffaStats.dmg.team.damageDealt += rawdamage;
+					realAttacker->client->pers.tffaStats.dmgReal.team.damageDealt += totalloss;
+				}
+				else {
+					targ->client->pers.tffaStats.dmg.norm.damageReceived += rawdamage;
+					targ->client->pers.tffaStats.dmgReal.norm.damageReceived += totalloss;
+					realAttacker->client->pers.tffaStats.dmg.norm.damageDealt += rawdamage;
+					realAttacker->client->pers.tffaStats.dmgReal.norm.damageDealt += totalloss;
+				}
+			}
+			else {
+				targ->client->pers.tffaStats.dmg.norm.damageReceived += rawdamage;
+				targ->client->pers.tffaStats.dmgReal.norm.damageReceived += totalloss;
 			}
 		}
 	

@@ -472,6 +472,14 @@ typedef enum doubleTapType_s {
 #define MAX_CUSTOM_CHECKPOINT_COUNT 10
 #define MAX_TOTAL_CHECKPOINT_COUNT 200
 
+typedef struct playerDamageSubTracker_s {
+	int		damageDealt;
+	int		damageReceived;
+} playerDamageSubTracker_t;
+typedef struct playerDamageTracker_s {
+	playerDamageSubTracker_t	norm;
+	playerDamageSubTracker_t	team;
+} playerDamageTracker_t;
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
@@ -556,6 +564,15 @@ typedef struct {
 	int			lastSpawnPoint;
 	int			chosenDefragSpawnPoint;
 	int			normalFollowerPing;
+	
+	struct {
+		int						kills;
+		int						deaths;
+		int						suicides;
+		int						teamkills;
+		playerDamageTracker_t	dmg;		// how much potential damage happened (quality of attack)
+		playerDamageTracker_t	dmgReal;	// how much real damage transpired (after accounting for absorb, shield, rage etc)
+	} tffaStats;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
