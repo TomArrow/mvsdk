@@ -994,6 +994,46 @@ int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColor
 	return len;
 }
 
+// Copy a string with colors into a target buffer, such that the final string has a fixed print length
+int Q_PrintStrCopy( const char *string, char* buffer, int bufferSize, int printLen, qboolean use102color, qboolean ntModColors) {
+	const char	*p;
+	char		*o;
+
+	if( !string ) {
+		return 0;
+	}
+
+	p = string;
+	o = buffer;
+	while( *p && bufferSize > 1 && printLen > 0 ) { // bufferSize must be > 1 cuz we also need to add the 0 terminator
+		if (Q_IsColorString(p) || (use102color && Q_IsColorString_1_02(p)) || (ntModColors && Q_IsColorStringNT(p))) {
+			if (bufferSize < 4) { 
+				// why smaller than 4? we need space for the color code and another letter. else no point in copying the color code.
+				// similarly, technically printlen doesnt matter here but why add color strings when we can no longer print any letters after
+				// if there's 2 consecutive color codes we still end up wasting space anyway but oh well.
+				break;
+			}
+			*(o++) = *(p++);
+			*(o++) = *(p++);
+			bufferSize -= 2;
+			continue;
+		}
+		*(o++) = *(p++);
+		bufferSize--;
+		printLen--;
+	}
+
+	while (bufferSize > 1 && printLen > 0) {
+		*(o++) = ' ';
+		bufferSize--;
+		printLen--;
+	}
+	*o = '\0';
+	buffer[bufferSize - 1] = '\0'; // safety in case i messed anything up.
+
+	return printLen;
+}
+
 
 char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors) {
 	char*	d;

@@ -134,6 +134,7 @@ vmCvar_t	g_q2Skims;
 vmCvar_t	g_strafebotSlopeHandling;
 
 vmCvar_t	g_autoScoresInterval;
+vmCvar_t	g_printTFFAStats;
 
 vmCvar_t	g_scorePenaltySuicide;
 vmCvar_t	g_scorePenaltySuicideDuel;
@@ -328,6 +329,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_capturelimit, "capturelimit", "8", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
 
 	{ &g_autoScoresInterval, "g_autoScoresInterval", "10", CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_printTFFAStats, "g_printTFFAStats", "0", CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_scorePenaltySuicide, "g_scorePenaltySuicide", "1", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_scorePenaltySuicideDuel, "g_scorePenaltySuicideDuel", "1", CVAR_ARCHIVE, 0, qfalse  },
@@ -1860,6 +1862,19 @@ MAP CHANGING
 
 /*
 ========================
+SendTFFAEndGameStats
+
+Stats screen at the end of a game for team ffa
+========================
+*/
+void SendTFFAEndGameStats() {
+	if (g_printTFFAStats.integer) {
+		TFFAEndGameStatsMessage(-1, qtrue);
+	}
+}
+
+/*
+========================
 SendScoreboardMessageToAllClients
 
 Do this at BeginIntermission time and whenever ranks are recalculated
@@ -1993,6 +2008,8 @@ void BeginIntermission( void ) {
 		}
 		MoveClientToIntermission( client );
 	}
+
+	SendTFFAEndGameStats();
 
 	// send the current scoring to all clients
 	SendScoreboardMessageToAllClients();

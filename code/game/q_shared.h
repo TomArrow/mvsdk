@@ -1229,6 +1229,8 @@ void	Q_strcat( char *dest, int size, const char *src );
 
 // strlen that discounts Quake color sequences
 int Q_PrintStrlen( const char *string, qboolean use102color, qboolean ntModColors);
+// Copy a string with colors into a target buffer, such that the final string has a fixed print length. returns how many chars we weren't able to fill (buffer too small)
+int Q_PrintStrCopy(const char* string, char* buffer, int bufferSize, int printLen, qboolean use102color, qboolean ntModColors);
 // removes color sequences from string
 char *Q_CleanStr( char *string, qboolean use102color, qboolean ntModColors );
 char *Q_CleanAsciiStr( char *string );

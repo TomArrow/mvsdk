@@ -39,6 +39,86 @@ static qboolean DefragDoubleTapSafety(gentity_t* ent, doubleTapType_t type, cons
 }
 
 /*
+========================
+SendTFFAEndGameStats
+
+Stats screen at the end of a game for team ffa
+========================
+*/
+void TFFAEndGameStatsMessage(int recipient, qboolean final) {
+	// scoreboard design mostly taken from Alereon's 2v2 mod, code is my own (TA)
+	int team;
+	int i, numSorted;
+	const char* teamname;
+	gclient_t* cl;
+	char playerName[MAX_NETNAME * 2];
+	qboolean v102colors = (qboolean)(jk2gameplay == VERSION_1_02 || jk2gameplay == VERSION_1_03);
+	tffaStats_t*	plStats;
+	tffaStats_t		teamStats;
+	int				teamScoreSum;
+	if (g_gametype.integer != 5 || recipient < -1 || recipient >= level.maxclients) {
+		return;
+	}
+	numSorted = level.numConnectedClients;
+
+	trap_SendServerCommand(recipient, va("print \""
+		"%s TFFA game stats\n"
+		"\" tffaStats_%s", final ? "^6Final" : "^3Preliminary", final ? "final" : "prelim")
+	);
+	for (team = TEAM_RED; team <= TEAM_BLUE; team++) {
+		memset(&teamStats, 0, sizeof(teamStats));
+		teamScoreSum = 0;
+		teamname = (team == TEAM_RED) ? "RED" : "BLUE";
+		trap_SendServerCommand(recipient, "print \""
+			"^6TEAM Player                    Kills Deaths Suicides Team Kills    Dmg Given    Dmg Received   NET Dmg  Team Dmg Score\n"
+			"^7----------------------------------------------------------------------------------------------------------------------\n"
+			"\""
+		);
+		for (i = 0; i < numSorted; i++) {
+			cl = &level.clients[level.sortedClients[i]];
+			if (cl->sess.sessionTeam != team) {
+				continue;
+			}
+			// is jk2gameplay correct here?
+			Q_PrintStrCopy(cl->pers.netname, playerName, sizeof(playerName), 23, v102colors, v102colors); // maybe ntcolors shouldn't ever be on by default? meh. gotta decide which client we wanna be more compatible with? let's just allow it if 102 colors are allowed. would be allowed anyway then i guess. also, 23 is the limit here cuz it's actually gonna be printed with up to 24 letters. we wanna keep one empty space so we can cleanly clear the color after.
+			plStats = &cl->pers.tffaStats;
+			trap_SendServerCommand(recipient, va("print \""
+				"^7%-4s %-23s ^7 %6d %6d %8d %10d %12d %15d %9d %9d %5d\n"
+				"\" tffaStats_playerv2 %d %d %d %d %d %d %d %d %d %d %d %d %d %d", teamname, playerName, plStats->kills, plStats->deaths, plStats->suicides, plStats->teamkills, plStats->dmgReal.norm.damageDealt, plStats->dmgReal.norm.damageReceived, plStats->dmgReal.norm.damageDealt - plStats->dmgReal.norm.damageReceived, plStats->dmgReal.team.damageDealt, cl->ps.persistant[PERS_SCORE],
+				// post-printtext data, clientnum plus all stats duplicated (for easy parsing)
+				cl - g_clients, plStats->kills, plStats->deaths, plStats->suicides, plStats->teamkills, plStats->dmgReal.norm.damageDealt, plStats->dmgReal.norm.damageReceived, plStats->dmgReal.team.damageDealt, plStats->dmgReal.team.damageReceived,plStats->dmg.norm.damageDealt, plStats->dmg.norm.damageReceived, plStats->dmg.team.damageDealt, plStats->dmg.team.damageReceived, cl->ps.persistant[PERS_SCORE]
+			));
+			// plStats->dmg.norm.damageDealt, plStats->dmg.norm.damageReceived, plStats->dmg.team.damageDealt, plStats->dmg.team.damageReceived
+			teamStats.kills += plStats->kills;
+			teamStats.deaths += plStats->deaths;
+			teamStats.suicides += plStats->suicides;
+			teamStats.teamkills += plStats->teamkills;
+			teamStats.dmgReal.norm.damageDealt += plStats->dmgReal.norm.damageDealt;
+			teamStats.dmgReal.norm.damageReceived += plStats->dmgReal.norm.damageReceived;
+			teamStats.dmgReal.team.damageDealt += plStats->dmgReal.team.damageDealt;
+			// these are just for the post-print info: team damage taken and also the raw damage values for all things. we can parse it if we want, but it's not printed
+			teamStats.dmgReal.team.damageReceived += plStats->dmgReal.team.damageReceived;
+			teamStats.dmg.norm.damageDealt += plStats->dmg.norm.damageDealt;
+			teamStats.dmg.norm.damageReceived += plStats->dmg.norm.damageReceived;
+			teamStats.dmg.team.damageDealt += plStats->dmg.team.damageDealt;
+			teamStats.dmg.team.damageReceived += plStats->dmg.team.damageReceived;
+			teamScoreSum += cl->ps.persistant[PERS_SCORE];
+
+		}
+		trap_SendServerCommand(recipient, va("print \""
+			"^7----------------------------------------------------------------------------------------------------------------------\n"
+			"^7%-4s Totals                   %6d %6d %8d %10d %12d %15d %9d %9d %5d\n\n\n"
+			"\" tffaStats_teamv2 %d %d %d %d %d %d %d %d %d %d %d %d %d %d", teamname, teamStats.kills, teamStats.deaths, teamStats.suicides, teamStats.teamkills, teamStats.dmgReal.norm.damageDealt, teamStats.dmgReal.norm.damageReceived, teamStats.dmgReal.norm.damageDealt - teamStats.dmgReal.norm.damageReceived, teamStats.dmgReal.team.damageDealt, teamScoreSum,
+			// post-printtext data, team id plus all stats duplicated (for easy parsing)
+				team, teamStats.kills, teamStats.deaths, teamStats.suicides, teamStats.teamkills, teamStats.dmgReal.norm.damageDealt, teamStats.dmgReal.norm.damageReceived, teamStats.dmgReal.team.damageDealt, teamStats.dmgReal.team.damageReceived, teamStats.dmg.norm.damageDealt, teamStats.dmg.norm.damageReceived, teamStats.dmg.team.damageDealt, teamStats.dmg.team.damageReceived, teamScoreSum
+			));
+
+	}
+
+	trap_SendServerCommand(recipient, "print \"\" tffaStats_end");
+}
+
+/*
 ==================
 DeathmatchScoreboardMessage
 
@@ -124,6 +204,17 @@ Request current scoreboard information
 */
 void Cmd_Score_f( gentity_t *ent ) {
 	DeathmatchScoreboardMessage( ent );
+}
+
+/*
+==================
+Cmd_TFFAStats_f
+
+Request current TFFA stats information
+==================
+*/
+void Cmd_TFFAStats_f( gentity_t *ent ) {
+	TFFAEndGameStatsMessage( ent - g_entities, qfalse );
 }
 
 
@@ -5796,6 +5887,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "tffaStats"))
+		{
+			giveError = qtrue;
+		}
 
 		if (giveError)
 		{
@@ -5964,6 +6059,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Stats_f( ent );
 	else if (Q_stricmp (cmd, "stay") == 0)
 		Cmd_Stay_f( ent );
+	else if (Q_stricmp (cmd, "tffaStats") == 0)
+		Cmd_TFFAStats_f( ent );
 	/*
 	else if (Q_stricmp(cmd, "#mm") == 0 && CheatsOk( ent ))
 	{

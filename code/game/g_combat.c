@@ -1991,10 +1991,10 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 					if (g_gametype.integer == GT_TEAM && g_tffaAnyDeathIsEnemyScore.integer) {
 						switch (attacker->client->ps.persistant[PERS_TEAM]) {
 						case TEAM_BLUE:
-							AddTeamScore(self->r.currentOrigin, TEAM_RED, 1);
+							level.teamScores[TEAM_RED] += 1;
 							break;
 						case TEAM_RED:
-							AddTeamScore(self->r.currentOrigin, TEAM_BLUE, 1);
+							level.teamScores[TEAM_BLUE] += 1;
 							break;
 						}
 					}

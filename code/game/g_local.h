@@ -483,6 +483,14 @@ typedef struct playerDamageTracker_s {
 	playerDamageSubTracker_t	norm;
 	playerDamageSubTracker_t	team;
 } playerDamageTracker_t;
+typedef struct tffaStats_s {
+	int						kills;
+	int						deaths;
+	int						suicides;
+	int						teamkills;
+	playerDamageTracker_t	dmg;		// how much potential damage happened (quality of attack)
+	playerDamageTracker_t	dmgReal;	// how much real damage transpired (after accounting for absorb, shield, rage etc)
+} tffaStats_t;
 
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
@@ -568,14 +576,7 @@ typedef struct {
 	int			chosenDefragSpawnPoint;
 	int			normalFollowerPing;
 	
-	struct {
-		int						kills;
-		int						deaths;
-		int						suicides;
-		int						teamkills;
-		playerDamageTracker_t	dmg;		// how much potential damage happened (quality of attack)
-		playerDamageTracker_t	dmgReal;	// how much real damage transpired (after accounting for absorb, shield, rage etc)
-	} tffaStats;
+	tffaStats_t	tffaStats;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -1224,6 +1225,7 @@ void BlowDetpacks(gentity_t *ent);
 void MoveClientToIntermission (gentity_t *client);
 void G_SetStats (gentity_t *ent);
 void DeathmatchScoreboardMessage (gentity_t *client);
+void TFFAEndGameStatsMessage(int recipient, qboolean final);
 
 //
 // g_cmds.c
@@ -1524,6 +1526,7 @@ extern	vmCvar_t	g_q2Skims;
 extern	vmCvar_t	g_strafebotSlopeHandling;
 
 extern	vmCvar_t	g_autoScoresInterval;
+extern	vmCvar_t	g_printTFFAStats;
 
 extern	vmCvar_t	g_scorePenaltySuicide;
 extern	vmCvar_t	g_scorePenaltySuicideDuel;
