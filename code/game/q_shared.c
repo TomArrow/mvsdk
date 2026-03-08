@@ -1736,7 +1736,7 @@ void Q_shuffle(int* array, size_t n)
 		size_t i;
 		for (i = 0; i < n - 1; i++)
 		{
-			size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
+			size_t j = (i + rand() / (RAND_MAX / (n - i) + 1)) % n; // the %n is just a safety measure in case some compiler/environment decides that RAND_MAX should not actually be the max that rand() can produce. otherwise i guess it should stay within the bounds, altho im too lazy to understand the logic rn, im just trusting the original dev
 			int t = array[j];
 			array[j] = array[i];
 			array[i] = t;
