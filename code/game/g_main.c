@@ -193,6 +193,8 @@ vmCvar_t	g_saberDebugPrint;
 
 vmCvar_t	g_austrian;
 
+vmCvar_t	g_pushItems; // thanks to: TriForce's JediKnightPlus jk_itemForcePhysics and the original DS-Online g_dsPushItems (https://github.com/TriForceX/JediKnightPlus)
+
 vmCvar_t	g_debugMelee;
 
 vmCvar_t	g_gamename;
@@ -439,6 +441,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_saberDebugPrint, "g_saberDebugPrint", "0", CVAR_CHEAT, 0, qfalse  },
 
 	{ &g_austrian, "g_austrian", "0", CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_pushItems, "g_pushItems", "0", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_debugMelee, "g_debugMelee", "1", CVAR_SERVERINFO, 0, qtrue  }, // jka wallgrab related
 
 	{ &g_mv_fixgalaking, "mv_fixgalaking", "1", CVAR_ARCHIVE, 0, qfalse },

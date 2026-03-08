@@ -314,6 +314,9 @@ struct gentity_s {
 	int			bactaExtra; // extra heal amount for bacta (e.g. q3 bacta)
 	qboolean	goneForNonRacers;
 	int			availableTimeForNonRacers;
+
+	// g_pushItems (thanks to Tr!Force and DeathSpike)
+	vec3_t		origOrigin;
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -1570,6 +1573,8 @@ extern	vmCvar_t	g_saberDmgDelay_Wound;
 extern	vmCvar_t	g_saberDebugPrint;
 
 extern	vmCvar_t	g_austrian;
+
+extern	vmCvar_t	g_pushItems; // thanks to: TriForce's JediKnightPlus jk_itemForcePhysics and the original DS-Online g_dsPushItems (https://github.com/TriForceX/JediKnightPlus)
 
 extern	vmCvar_t	g_debugMelee;
 

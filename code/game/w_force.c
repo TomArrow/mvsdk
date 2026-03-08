@@ -3403,6 +3403,44 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				Touch_Button( push_list[x], self, NULL );
 				continue;
 			}
+			// Tr!Force: [Items] Allow force physics on items
+			else if (push_list[x]->s.eType == ET_ITEM && g_pushItems.integer)
+			{
+				// Check if is pull or push.
+				float throwscale = pull ? -650.0f : 650.0f;
+
+				// Item filter
+				switch (push_list[x]->item->giType)
+				{
+					case IT_AMMO:
+					case IT_ARMOR:
+					case IT_HEALTH:
+					case IT_HOLDABLE:
+						break;
+					default:
+						continue;
+				}
+
+				// Set respawntime
+				push_list[x]->nextthink = level.time + 30000;
+				push_list[x]->think = RespawnItem;
+
+				// Adds gravity
+				push_list[x]->s.pos.trType = TR_GRAVITY;
+				push_list[x]->s.apos.trType = TR_GRAVITY;
+
+				VectorScale(forward, throwscale, push_list[x]->s.pos.trDelta);
+				VectorScale(forward, throwscale, push_list[x]->s.apos.trDelta);
+
+				push_list[x]->s.pos.trTime = level.time;
+				push_list[x]->s.apos.trTime = level.time;
+
+				VectorCopy(push_list[x]->r.currentOrigin, push_list[x]->s.pos.trBase);
+				VectorCopy(push_list[x]->r.currentOrigin, push_list[x]->s.apos.trBase);
+
+				// Bounce
+				push_list[x]->s.eFlags |= EF_BOUNCE_HALF;
+			}
 		}
 	}
 

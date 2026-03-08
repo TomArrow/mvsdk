@@ -1339,6 +1339,15 @@ void RespawnItem( gentity_t *ent ) {
 			;
 	}
 
+	// Tr!Force: [Items] Reset original item position
+	if (g_pushItems.integer <= 1)
+	{
+		VectorCopy(ent->origOrigin, ent->s.origin);
+		VectorCopy(ent->origOrigin, ent->s.pos.trBase);
+		VectorCopy(ent->origOrigin, ent->s.apos.trBase);
+		VectorCopy(ent->origOrigin, ent->r.currentOrigin);
+	}
+
 	ent->r.contents = CONTENTS_TRIGGER;
 	//ent->s.eFlags &= ~EF_NODRAW;
 	ent->s.eFlags &= ~(EF_NODRAW | EF_ITEMPLACEHOLDER);
@@ -1937,6 +1946,10 @@ void FinishSpawningItem( gentity_t *ent ) {
 		return;
 	}
 	*/
+
+	// Tr!Force: [Items] Reset original item position
+	// Deathspike items
+	VectorCopy(tr.endpos, ent->origOrigin);
 
 	trap_LinkEntity (ent);
 }
