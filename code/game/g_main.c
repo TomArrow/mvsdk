@@ -135,6 +135,11 @@ vmCvar_t	g_strafebotSlopeHandling;
 
 vmCvar_t	g_autoScoresInterval;
 
+vmCvar_t	g_scorePenaltySuicide;
+vmCvar_t	g_scorePenaltySuicideDuel;
+vmCvar_t	g_scorePenaltyTeamKill;
+vmCvar_t	g_tffaAnyDeathIsEnemyScore;
+
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
 vmCvar_t	g_doWarmup;
@@ -323,6 +328,11 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_capturelimit, "capturelimit", "8", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_NORESTART, 0, qtrue },
 
 	{ &g_autoScoresInterval, "g_autoScoresInterval", "10", CVAR_ARCHIVE, 0, qfalse  },
+
+	{ &g_scorePenaltySuicide, "g_scorePenaltySuicide", "1", CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_scorePenaltySuicideDuel, "g_scorePenaltySuicideDuel", "1", CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_scorePenaltyTeamKill, "g_scorePenaltyTeamKill", "1", CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_tffaAnyDeathIsEnemyScore, "g_tffaAnyDeathIsEnemyScore", "0", CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 

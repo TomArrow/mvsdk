@@ -1976,22 +1976,28 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				else
 				{
 					if (!attacker->client->sess.raceMode)
-						AddScore(attacker, self->r.currentOrigin, -1);
+						AddScore(attacker, self->r.currentOrigin, -g_scorePenaltySuicideDuel.integer);
 				}
 			}
 			else
 			{
-				AddScore( attacker, self->r.currentOrigin, -1 );
-				if (attacker != self) { //we did a teamkill
-					if (!attacker->client->sess.raceMode) {
-						AddScore(attacker, self->r.currentOrigin, -1);
-						//if (attacker != self && attacker->client)//JAPRO STATS
-							//attacker->client->pers.stats.teamKills++;
+				if (!attacker->client->sess.raceMode) {
+					if (attacker != self) {
+						AddScore(attacker, self->r.currentOrigin, -g_scorePenaltyTeamKill.integer);
 					}
-				}
-				else if (g_gametype.integer != GT_FFA && (g_gametype.integer != GT_CTF)){// || !g_fixCTFScores.integer)) {//we selfkilled
-					if (!attacker->client->sess.raceMode)
-						AddScore(attacker, self->r.currentOrigin, -1); //Only take away a point if its not FFA or CTF i guess, sure
+					else {
+						AddScore(attacker, self->r.currentOrigin, -g_scorePenaltySuicide.integer);
+					}
+					if (g_gametype.integer == GT_TEAM && g_tffaAnyDeathIsEnemyScore.integer) {
+						switch (attacker->client->ps.persistant[PERS_TEAM]) {
+						case TEAM_BLUE:
+							AddTeamScore(self->r.currentOrigin, TEAM_RED, 1);
+							break;
+						case TEAM_RED:
+							AddTeamScore(self->r.currentOrigin, TEAM_BLUE, 1);
+							break;
+						}
+					}
 				}
 			}
 			if (g_gametype.integer == GT_JEDIMASTER)
@@ -2031,7 +2037,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			}
 			else
 			{
-				AddScore( attacker, self->r.currentOrigin, 1 );
+				if (!attacker->client->sess.raceMode)
+					AddScore( attacker, self->r.currentOrigin, 1 );
 			}
 
 			if( meansOfDeath == MOD_STUN_BATON ) {
@@ -2091,12 +2098,23 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			}
 			else
 			{
-				AddScore( self, self->r.currentOrigin, -1 );
+				AddScore( self, self->r.currentOrigin, -g_scorePenaltySuicideDuel.integer );
 			}
 		}
 		else
 		{
-			AddScore( self, self->r.currentOrigin, -1 );
+			AddScore( self, self->r.currentOrigin, -g_scorePenaltySuicide.integer ); // am i using g_scorePenaltySuicide right here?
+		}
+
+		if (g_gametype.integer == GT_TEAM && g_tffaAnyDeathIsEnemyScore.integer) {
+			switch (self->client->ps.persistant[PERS_TEAM]) {
+			case TEAM_BLUE:
+				AddTeamScore(self->r.currentOrigin, TEAM_RED, 1);
+				break;
+			case TEAM_RED:
+				AddTeamScore(self->r.currentOrigin, TEAM_BLUE, 1);
+				break;
+			}
 		}
 	}
 
