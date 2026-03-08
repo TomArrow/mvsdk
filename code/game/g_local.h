@@ -1539,6 +1539,7 @@ extern	vmCvar_t	g_warmup;
 extern	vmCvar_t	g_doWarmup;
 extern	vmCvar_t	g_blood;
 extern	vmCvar_t	g_allowVote;
+extern	vmCvar_t	g_allowVoteShuffle;
 extern	vmCvar_t	g_slowVote;
 extern	vmCvar_t	g_slowVoteAFKThreshold;
 extern	vmCvar_t	g_teamAutoJoin;

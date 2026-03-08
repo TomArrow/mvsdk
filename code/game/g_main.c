@@ -153,6 +153,7 @@ vmCvar_t	g_blood;
 vmCvar_t	g_podiumDist;
 vmCvar_t	g_podiumDrop;
 vmCvar_t	g_allowVote;
+vmCvar_t	g_allowVoteShuffle;
 vmCvar_t	g_slowVote;
 vmCvar_t	g_slowVoteAFKThreshold;
 vmCvar_t	g_teamAutoJoin;
@@ -398,6 +399,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_podiumDrop, "g_podiumDrop", "70", 0, 0, qfalse },
 
 	{ &g_allowVote, "g_allowVote", "1", CVAR_ARCHIVE, 0, qfalse },
+	{ &g_allowVoteShuffle, "g_allowVoteShuffle", "0", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_slowVote, "g_slowVote", "0", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_slowVoteAFKThreshold, "g_slowVoteAFKThreshold", "300", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_listEntity, "g_listEntity", "0", 0, 0, qfalse },
@@ -2014,6 +2016,63 @@ void BeginIntermission( void ) {
 	// send the current scoring to all clients
 	SendScoreboardMessageToAllClients();
 
+}
+
+/*
+==================
+Parity
+
+Calculates parity of 1s in binary representation of i
+==================
+*/
+static qboolean Parity(int i)
+{
+	qboolean parity = qtrue;
+
+	while (i) {
+		parity = (qboolean)!parity;
+		i &= i - 1;
+	}
+
+	return parity;
+}
+
+/*
+==================
+Shuffle
+
+Shuffle players according to score
+==================
+*/
+static void Shuffle(void)
+{
+	gentity_t* ent;
+	int			clientNum;
+	team_t		newTeam;
+	int			i;
+
+	for (i = 0; i < level.numNonSpectatorClients; i++) {
+		clientNum = level.sortedClients[i];
+		ent = g_entities + clientNum;
+		newTeam = Parity(i) ? TEAM_RED : TEAM_BLUE;
+
+		ent->client->sess.sessionTeam = newTeam;
+		ent->client->sess.teamLeader = qfalse;
+	}
+
+	CheckTeamLeader(TEAM_RED);
+	CheckTeamLeader(TEAM_BLUE);
+
+	for (i = 0; i < level.numNonSpectatorClients; i++) {
+		clientNum = level.sortedClients[i];
+		ent = g_entities + clientNum;
+
+		respawn(ent);
+		ClientUserinfoChanged(clientNum);
+		//ClientUpdateConfigString(clientNum);
+	}
+
+	CalculateRanks();
 }
 
 qboolean DuelLimitHit(void)

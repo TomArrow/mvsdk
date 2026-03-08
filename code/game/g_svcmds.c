@@ -456,6 +456,211 @@ gclient_t	*ClientForString( const char *s ) {
 	return NULL;
 }
 
+// credit goes to Bucky: https://github.com/Bucky21659/vVv-serverside/
+static void Svcmd_ScrambleTeams_f(void)
+{
+	gclient_t* client = NULL;
+	gentity_t* gent = NULL;
+	//int			counts[TEAM_NUM_TEAMS] = {0};
+	int			players[MAX_CLIENTS] = { 0 };
+	int			i = 0, c = 0, m = 2;
+	char* team = NULL;
+
+	if (g_gametype.integer < GT_TEAM) {
+		G_Printf("This command can only be used in team games.");
+		return;
+	}
+
+	/*counts[TEAM_RED] = TeamCount(-1, TEAM_RED);
+	counts[TEAM_BLUE] = TeamCount(-1, TEAM_BLUE);
+	counts[TEAM_FREE] = counts[TEAM_RED] + counts[TEAM_BLUE];
+	Com_Printf("old count %i red %i blue %i\n", counts[TEAM_RED], counts[TEAM_BLUE]);*/
+
+	for (i = 0, client = level.clients; i < MAX_CLIENTS; i++, client++)
+	{ //build an array of active client numbers
+		if (!client || client->pers.connected == CON_DISCONNECTED || client->sess.sessionTeam == TEAM_SPECTATOR) {
+			players[i] = -1;
+			continue;
+		}
+
+		if (client->sess.sessionTeam == TEAM_RED || client->sess.sessionTeam == TEAM_BLUE) {
+			players[i] = i;
+		}
+		/*else if (level.CTF3ModeActive && client->sess.sessionTeam == TEAM_FREE) {
+			players[i] = i;
+		}*/
+		else {
+			players[i] = -1;
+		}
+	}
+
+	/*for (i = 0;i < MAX_CLIENTS;i++) {
+		Com_Printf("players[%i] %i\n", i, players[i]);
+	}*/
+
+	Q_shuffle(players, sizeof(players) / sizeof(int));
+
+	/*for (i = 0;i < MAX_CLIENTS;i++) {
+		Com_Printf("players[%i] %i\n", i, players[i]);
+	}*/
+
+	//c = 0;
+	/*if (level.CTF3ModeActive)
+		m = 3;*/
+	for (i = 0; i < MAX_CLIENTS; i++)
+	{
+		team = NULL;
+
+		if (players[i] < 0 || players[i] >= MAX_CLIENTS)
+			continue;
+
+		gent = &g_entities[players[i]];
+		if (!gent || !gent->inuse || !gent->client)
+			continue;
+
+		client = gent->client;
+		if (!client || client->pers.connected == CON_DISCONNECTED || client->sess.sessionTeam == TEAM_SPECTATOR)
+			continue;
+
+		switch (i % m) {
+		default: //case 0: //??
+			team = "red";
+			break;
+		case 1:
+			team = "blue";
+			break;
+		case 2: //should only happen in 3 team ctf?
+			team = "yellow";
+			//if (!level.CTF3ModeActive)
+				Com_Printf("this should only be happening in 3 team ctf %i %i %i %s....\n", i, m, (i % m), team);
+			break;
+		}
+
+		if (gent->r.svFlags & SVF_BOT)
+			SetTeam(gent, team);
+			//SetTeam_Bot(gent, team); // there was probably a reason for this but im lazy rn
+		else
+			SetTeam(gent, team);
+		/*c++;
+		if (gent->r.svFlags & SVF_BOT)
+			SetTeam_Bot(gent, (c % 2) ? "red" : "blue");
+		else
+			SetTeam(gent, (c % 2) ? "red" : "blue");*/
+	}
+
+#if 1 //causes issues if this command is run too many times...
+	trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0\n");
+	level.restarted = qtrue;
+#endif
+	trap_SendServerCommand(-1, "print \"Teams were scrambled.\n\"");
+}
+
+
+/*
+===================
+Svcmd_Shuffle_f
+
+Shuffle teams. Simillar to a card shuffle (riffle). Randomly selected
+half of players from team RED go to team BLUE and vice-versa. This
+method guarantees that there is a noticeable team change, minimizes
+chance of getting previous teams in consecutive calls and balances
+team counts.
+
+All credit for this goes to fau and his mod https://github.com/aufau/SaberMod
+Why do I have both this and Bucky's ScrambleTeams in here? Idk I thought it's hilarious
+===================
+*/
+static void	Svcmd_Shuffle_f(void)
+{
+	qboolean	change[MAX_CLIENTS] = { qfalse };
+	int			count[TEAM_NUM_TEAMS] = { 0 };
+	team_t		first, second, team;
+	int			i;
+
+	if (g_gametype.integer < GT_TEAM) {
+		return;
+	}
+
+	for (i = 0; i < level.maxclients; i++) {
+		if (level.clients[i].pers.connected != CON_DISCONNECTED) {
+			count[level.clients[i].sess.sessionTeam]++;
+		}
+	}
+
+	if (count[TEAM_RED] > count[TEAM_BLUE]) {
+		first = TEAM_RED;
+	}
+	else if (count[TEAM_RED] < count[TEAM_BLUE]) {
+		first = TEAM_BLUE;
+	}
+	else {
+		first = (rand() & 1) ? TEAM_RED : TEAM_BLUE;
+	}
+
+	second = first == TEAM_RED ? TEAM_BLUE : TEAM_RED;
+
+	team = first;
+	while (1) {
+		int		changed = 0;
+		int		left = count[team];
+		int		changeNum = count[team] / 2;
+
+		for (i = 0; i < level.maxclients; i++) {
+			gclient_t* client = &level.clients[i];
+
+			if (changed >= changeNum) {
+				break;
+			}
+
+			if (client->pers.connected != CON_DISCONNECTED &&
+				client->sess.sessionTeam == team)
+			{
+				left--;
+
+				if (change[i]) {
+					continue;
+				}
+
+				if (changed + left < changeNum ||
+					irand(1, count[team], qfalse, 1) <= changeNum)
+				{
+					changed++;
+					change[i] = qtrue;
+					client->sess.sessionTeam = team == TEAM_RED ? TEAM_BLUE : TEAM_RED;
+					client->sess.teamLeader = qfalse;
+				}
+			}
+		}
+
+		if (team == second) {
+			break;
+		}
+		team = second;
+	}
+
+	CheckTeamLeader(TEAM_RED);
+	CheckTeamLeader(TEAM_BLUE);
+
+	for (i = 0; i < level.maxclients; i++) {
+		gclient_t* client = &level.clients[i];
+
+		if (client->pers.connected != CON_DISCONNECTED) {
+			if (change[i]) {
+				ClientUserinfoChanged(i);
+				//ClientUpdateConfigString(i);
+
+				if (client->pers.connected == CON_CONNECTED) {
+					ClientBegin(i, qfalse);
+				}
+			}
+		}
+	}
+
+	CalculateRanks();
+
+	trap_SendServerCommand(-1, "cp \"Shuffled teams.\"");
+}
+
 /*
 ===================
 Svcmd_ForceTeam_f
@@ -683,6 +888,18 @@ qboolean	ConsoleCommand( void ) {
 */
 	if (Q_stricmp (cmd, "addip") == 0) {
 		Svcmd_AddIP_f();
+		return qtrue;
+	}
+
+	// bucky version
+	if (Q_stricmp(cmd, "scrambleteams") == 0) {
+		Svcmd_ScrambleTeams_f();
+		return qtrue;
+	}
+
+	// fau version
+	if (Q_stricmp(cmd, "shuffle") == 0) {
+		Svcmd_Shuffle_f();
 		return qtrue;
 	}
 

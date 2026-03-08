@@ -4264,6 +4264,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	char	arg2[MAX_STRING_TOKENS];
 	//int		clientPermissions;
 	qboolean	canVoteBesideMap = qfalse;
+	qboolean	canVoteTeamShuffle = qfalse;
 	qboolean	votingOpinion = qfalse;
 	qboolean	votingOpinionAll = qfalse;
 
@@ -4292,6 +4293,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	}
 
 	canVoteBesideMap = g_allowVote.integer > 1 || ent->client->sess.login.loggedIn && (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_VOTEBESIDESMAP);
+	canVoteTeamShuffle = g_allowVoteShuffle.integer > 0 || canVoteBesideMap;
 	//clientPermissions = ent->client->sess.login.loggedIn ? ent->client->sess.login.flags : 0;
 
 	// make sure it is a valid command to vote on
@@ -4315,9 +4317,10 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	} else if ( !Q_stricmp( arg1, "g_doWarmup" ) ) {
 	} else if ( !Q_stricmp( arg1, "timelimit" ) ) {
 	} else if ( !Q_stricmp( arg1, "fraglimit" ) ) {
+	} else if ( !Q_stricmp( arg1, "shuffle" ) || !Q_stricmp( arg1, "scrambleteams" ) ) {
 	} else {
 		trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
-		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap, opinion <anything>, opinionAll <anything>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>.\n\"" );
+		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap, opinion <anything>, opinionAll <anything>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>, shuffle.\n\"" );
 		return;
 	}
 
@@ -4424,6 +4427,26 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", arg1, arg2 );
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 		}
+	}
+	else if (canVoteTeamShuffle && ( !Q_stricmp( arg1, "shuffle" ) || !Q_stricmp( arg1, "scrambleteams" )) )
+	{
+		// special case for map changes, we want to reset the nextmap setting
+		// this allows a player to change maps, but not upset the map rotation
+		char	s[MAX_STRING_CHARS];
+		
+
+		if (DF_GetSegmentedRunnerCount()) {
+			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a team shuffle while segmented runs are being replayed.\n\"" );
+			return;
+		}
+
+		//if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
+		//	trap_SendServerCommand(ent - g_entities, va("print \"Cannot shuffle teams, slow voting is active and %d other active players with to stay.\n\"", tmp));
+		//	return;
+		//}
+
+		Com_sprintf(level.voteString, sizeof(level.voteString), "%s", arg1);
+		Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "%s", level.voteString);
 	}
 	else if ( !Q_stricmp( arg1, "mapnum" ) ) 
 	{
