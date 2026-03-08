@@ -6782,6 +6782,10 @@ static void CG_Draw2D( void ) {
 				Dzikie_CG_DrawLine(cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) - 5, cgs.screenWidth / 2, (SCREEN_HEIGHT / 2) + 5, lineWidth, hcolor, hcolor[3], 0); //640x480, 320x240
 			}
 		}
+
+		if (cg_drawMovementKeysAlways.integer && cg_movementKeys.integer && cg.snap) {
+			CG_MovementKeys(&cg_entities[cg.snap->ps.clientNum]);
+		}
 		return;
 	}
 

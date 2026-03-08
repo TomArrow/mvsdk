@@ -890,7 +890,7 @@ ClientInactivitySpecTimerReset
 Call manually to reset the timer for sending a player to spec. E.g. on /kill
 =================
 */
-qboolean ClientInactivitySpecTimerReset(gentity_t* ent) {
+void ClientInactivitySpecTimerReset(gentity_t* ent) {
 	gclient_t* client = ent->client;
 	if (g_inactivityToSpec.integer <= 0) {
 		// give everyone some time, so if the operator sets g_inactivityToSpec during

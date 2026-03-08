@@ -1781,6 +1781,7 @@ extern	vmCvar_t		cg_antiLoopIndicatorY;
 extern	vmCvar_t		cg_draw2D;
 extern	vmCvar_t		cg_drawCenterAlways;
 extern	vmCvar_t		cg_drawStrafeHelperSpeedometerAlways;
+extern	vmCvar_t		cg_drawMovementKeysAlways;
 extern	vmCvar_t		cg_animSpeed;
 extern	vmCvar_t		cg_debugAnim;
 extern	vmCvar_t		cg_debugPosition;
