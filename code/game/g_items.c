@@ -1949,7 +1949,7 @@ void FinishSpawningItem( gentity_t *ent ) {
 
 	// Tr!Force: [Items] Reset original item position
 	// Deathspike items
-	VectorCopy(tr.endpos, ent->origOrigin);
+	VectorCopy(ent->r.currentOrigin, ent->origOrigin);
 
 	trap_LinkEntity (ent);
 }
