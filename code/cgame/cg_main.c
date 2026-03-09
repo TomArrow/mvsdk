@@ -598,6 +598,7 @@ vmCvar_t	cg_raceTimerY;
 vmCvar_t	cg_speedometer;
 vmCvar_t	cg_speedometerX;
 vmCvar_t	cg_speedometerY;
+vmCvar_t	cg_speedometerSpeedAlign;
 vmCvar_t	cg_speedometerSize;
 vmCvar_t	cg_showpos;
 vmCvar_t	cg_forcemeter;
@@ -1026,6 +1027,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_speedometer, "cg_speedometer", "0", CVAR_ARCHIVE },
 	{ &cg_speedometerX, "cg_speedometerX", "98", CVAR_ARCHIVE },
 	{ &cg_speedometerY, "cg_speedometerY", "460", CVAR_ARCHIVE },
+	{ &cg_speedometerSpeedAlign, "cg_speedometerSpeedAlign", "0.0", CVAR_ARCHIVE },
 	{ &cg_speedometerSize, "cg_speedometerSize", "0.75", CVAR_ARCHIVE },
 	{ &cg_showpos, "cg_showpos", "0", 0 },
 	{ &cg_forcemeter, "cg_forcemeter", "0", CVAR_ARCHIVE },

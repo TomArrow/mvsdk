@@ -1854,6 +1854,7 @@ extern	vmCvar_t		cg_raceTimerY;
 extern	vmCvar_t		cg_speedometer;
 extern	vmCvar_t		cg_speedometerX;
 extern	vmCvar_t		cg_speedometerY;
+extern	vmCvar_t		cg_speedometerSpeedAlign;
 extern	vmCvar_t		cg_speedometerSize;
 extern	vmCvar_t		cg_showpos;
 extern	vmCvar_t		cg_forcemeter;

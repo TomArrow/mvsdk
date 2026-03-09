@@ -7674,23 +7674,36 @@ static void CG_Speedometer(void)
 
 		if (!(cg_speedometer.integer & SPEEDOMETER_KPH) && !(cg_speedometer.integer & SPEEDOMETER_MPH))
 		{
+			float xOffset = 0;
+			if (cg_speedometerSpeedAlign.value != 0.0f) {
+				xOffset = - cg_speedometerSpeedAlign.value * CG_Text_Width(va("%.0f", currentSpeed), cg_speedometerSize.value, FONT_NONE);
+			}
+			//CG_Text_Width();
 			Com_sprintf(speedStr, sizeof(speedStr), "   %.0f", currentSpeed); //floorf(currentSpeed + 0.5f));
-			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 		}
 		else if (cg_speedometer.integer & SPEEDOMETER_KPH)
 		{
+			float xOffset = 0;
 			tmp = currentSpeed * 0.05f;
+			if (cg_speedometerSpeedAlign.value != 0.0f) {
+				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE);
+			}
 			Com_sprintf(speedStr2, sizeof(speedStr2), "   %.1f", tmp);
-			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 		}
 		else if (cg_speedometer.integer & SPEEDOMETER_MPH)
 		{
+			float xOffset = 0;
 			tmp = currentSpeed * 0.03106855f;
+			if (cg_speedometerSpeedAlign.value != 0.0f) {
+				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE);
+			}
 			Com_sprintf(speedStr3, sizeof(speedStr3), "    %.1f", tmp);
-			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-			CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
 		}
 
 		speedometerXPos += 52;
