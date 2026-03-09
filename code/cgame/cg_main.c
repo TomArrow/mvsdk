@@ -607,6 +607,8 @@ vmCvar_t	cg_forceMeterJumpCharge;
 vmCvar_t	cg_forceFieldOpacity;
 vmCvar_t	cg_forceFieldOpacityRace;
 
+vmCvar_t	cg_absorbDrawAlways;
+
 vmCvar_t	cg_customizeRace;
 
 vmCvar_t	cg_strafeHelperCutoff;
@@ -1032,6 +1034,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_forceMeterJumpCharge, "cg_forceMeterJumpCharge", "1", CVAR_ARCHIVE },
 	{ &cg_forceFieldOpacity, "cg_forceFieldOpacity", "1.0", CVAR_ARCHIVE },
 	{ &cg_forceFieldOpacityRace, "cg_forceFieldOpacityRace", "0.5", CVAR_ARCHIVE },
+	{ &cg_absorbDrawAlways, "cg_absorbDrawAlways", "1", CVAR_ARCHIVE },
 
 
 	{ &cg_strafeHelperCutoff, "cg_strafeHelperCutoff", "240", CVAR_ARCHIVE },

@@ -1937,6 +1937,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	self->enemy = attacker;
 
 	self->client->ps.persistant[PERS_KILLED]++;
+	self->client->pers.tffaStats.deaths++;
 
 	if (self == attacker)
 	{
@@ -1992,9 +1993,11 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 						switch (attacker->client->ps.persistant[PERS_TEAM]) {
 						case TEAM_BLUE:
 							level.teamScores[TEAM_RED] += 1;
+							CalculateRanks();
 							break;
 						case TEAM_RED:
 							level.teamScores[TEAM_BLUE] += 1;
+							CalculateRanks();
 							break;
 						}
 					}

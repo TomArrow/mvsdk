@@ -1864,6 +1864,8 @@ extern	vmCvar_t		cg_forceMeterJumpCharge;
 extern	vmCvar_t		cg_forceFieldOpacity;
 extern	vmCvar_t		cg_forceFieldOpacityRace;
 
+extern	vmCvar_t		cg_absorbDrawAlways;
+
 extern	vmCvar_t		cg_customizeRace;
 
 extern	vmCvar_t		cg_strafeHelperCutoff;

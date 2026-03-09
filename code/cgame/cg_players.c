@@ -8572,7 +8572,8 @@ doEssentialThree:
 	}
 	//if (cent->currentState.forcePowersActive & (1 << FP_ABSORB))
 	//Showing only when the power has been active (absorbed something) recently now, instead of always.
-	if ( (cgs.clientinfo[entNumOrClient0].jk2gameplay == VERSION_1_02 && cent->currentState.forcePowersActive & (1 << FP_ABSORB)) || (cgs.clientinfo[entNumOrClient0].jk2gameplay != VERSION_1_02 && cg_entities[cent->currentState.number].teamPowerEffectTime > cg.time && cg_entities[cent->currentState.number].teamPowerType == TFP_ABSORB) )
+	// TA: Nobody actually plays like this in 1.04. Everyone just has a custom client that allows always seeing absorb like in 1.02.
+	if ( ((cgs.clientinfo[entNumOrClient0].jk2gameplay == VERSION_1_02 || cg_absorbDrawAlways.integer) && cent->currentState.forcePowersActive & (1 << FP_ABSORB)) || (cgs.clientinfo[entNumOrClient0].jk2gameplay != VERSION_1_02 && cg_entities[cent->currentState.number].teamPowerEffectTime > cg.time && cg_entities[cent->currentState.number].teamPowerType == TFP_ABSORB) )
 	{ //aborb is represented by blue..
 		legs.shaderRGBA[0] = 0;
 		legs.shaderRGBA[1] = 0;
