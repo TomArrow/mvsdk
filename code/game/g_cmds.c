@@ -2848,6 +2848,10 @@ void ClientCommand( int clientNum ) {
 //			trap_SendServerCommand( clientNum, va("print \"You can only add bots as the server.\n\"" ) );
 			trap_SendServerCommand( clientNum, va("print \"%s.\n\"", G_GetStripEdString("SVINGAME", "ONLY_ADD_BOTS_AS_SERVER")));
 		}
+		else if (G_TvT_ClientCommand(ent, cmd))
+		{
+			return;
+		}
 		else
 		{
 			trap_SendServerCommand( clientNum, va("print \"unknown cmd %s\n\"", cmd ) );

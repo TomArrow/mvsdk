@@ -1,0 +1,23 @@
+#ifndef G_2V2MOD_CMDS_H
+#define G_2V2MOD_CMDS_H
+
+typedef enum {
+	CMD_CONTEXT_CLIENT = (1 << 0),
+	CMD_CONTEXT_SERVER = (1 << 1),
+	CMD_CONTEXT_ALL    = (CMD_CONTEXT_CLIENT | CMD_CONTEXT_SERVER)
+} cmdContext_t;
+
+typedef struct {
+	const char      *name;
+	const char      *description;
+	const char      *usage;
+	qboolean        (*execute)(gentity_t *ent);
+	cmdContext_t     context;
+	unsigned int    minArgs;
+	unsigned int    maxArgs;
+} tvt_cmd_t;
+
+qboolean G_TvT_ClientCommand(gentity_t *ent, const char *cmd);
+qboolean G_TvT_ConsoleCommand(const char *cmd);
+
+#endif
