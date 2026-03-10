@@ -43,7 +43,7 @@ typedef struct {
     int    free_blocks;
     size_t free_bytes;
     size_t free_largest;
-} TvT_MemStats_t;
+} tvt_MemStats_t;
 
 // Memory allocator functions
 void *TvT_Mem_Alloc(size_t size);
@@ -52,7 +52,7 @@ void *TvT_Mem_Realloc(void *ptr, size_t new_size);
 void  TvT_Mem_Free(void *ptr);
 void  TvT_Mem_Init(void);
 void  TvT_Mem_Reset(void);
-void  TvT_Mem_GetStats(TvT_MemStats_t *stats);
+void  TvT_Mem_GetStats(tvt_MemStats_t *stats);
 
 #ifdef Q3_VM
 #undef malloc

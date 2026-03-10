@@ -625,6 +625,8 @@ void G_RegisterCvars( void ) {
 	level.warmupModificationCount = g_warmup.modificationCount;
 
 	MV_UpdateSvFlags();
+
+	G_TvT_RegisterCvars();
 }
 
 /*
@@ -663,6 +665,8 @@ void G_UpdateCvars( void ) {
 	if (remapped) {
 		G_RemapTeamShaders();
 	}
+
+	G_TvT_UpdateCvars();
 }
 
 /*

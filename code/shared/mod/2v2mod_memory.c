@@ -28,7 +28,7 @@ void TvT_Mem_Reset(void) {
     TvT_Mem_Init();
 }
 
-void TvT_Mem_GetStats(TvT_MemStats_t *stats) {
+void TvT_Mem_GetStats(tvt_MemStats_t *stats) {
     block_t *block;
     char    *pool_end;
     size_t   block_size;

@@ -1,7 +1,7 @@
 #include "../g_local.h"
 
 static qboolean TvT_Cmd_MemStats(gentity_t *ent) {
-	TvT_MemStats_t s;
+	tvt_MemStats_t s;
 	int cn = TVT_ENT_TO_CN(ent);
 
 	TvT_Mem_GetStats(&s);
@@ -25,13 +25,13 @@ static qboolean TvT_Cmd_MemStats(gentity_t *ent) {
 	return qtrue;
 }
 
-static tvt_cmd_t tvt_commands[] = {
+static tvt_Cmd_t tvt_commands[] = {
 	{ "mem_stats", "Show memory pool statistics", "mem_stats",    TvT_Cmd_MemStats, CMD_CONTEXT_SERVER,   0,   0 },
 	{ NULL,        NULL,                          NULL,           NULL,             0,                  0,   0 }
 };
 
 static qboolean G_TvT_Cmd_Execute(gentity_t *ent, const char *cmd, cmdContext_t context) {
-	tvt_cmd_t *c;
+	tvt_Cmd_t *c;
 	unsigned int argc;
 
 	for (c = tvt_commands; c->name; c++) {

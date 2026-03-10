@@ -1348,6 +1348,7 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 #include "../api/mvapi.h"
 #include "g_multiversion.h"
 
+#include "mod/g_2v2mod_cvars.h"
 #include "mod/g_2v2mod_utils.h"
 #include "mod/g_2v2mod_cmds.h"
 

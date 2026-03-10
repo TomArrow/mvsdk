@@ -15,7 +15,7 @@ typedef struct {
 	cmdContext_t     context;
 	unsigned int    minArgs;
 	unsigned int    maxArgs;
-} tvt_cmd_t;
+} tvt_Cmd_t;
 
 qboolean G_TvT_ClientCommand(gentity_t *ent, const char *cmd);
 qboolean G_TvT_ConsoleCommand(const char *cmd);
