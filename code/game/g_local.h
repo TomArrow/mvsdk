@@ -5,6 +5,7 @@
 #include "q_shared.h"
 #include "bg_public.h"
 #include "g_public.h"
+#include "2v2mod_memory.h"
 
 //==================================================================
 

@@ -382,6 +382,33 @@ void	Svcmd_ForceTeam_f( void ) {
 
 char	*ConcatArgs( int start );
 
+static void Svcmd_MemStats_f(void) {
+	TvT_MemStats_t s;
+	int pool_mb, used_kb, free_mb, free_kb;
+
+	TvT_Mem_GetStats(&s);
+
+	pool_mb  = (int)(s.pool_size / (1024 * 1024));
+	used_kb  = (int)(s.used_bytes / 1024);
+	free_mb  = (int)(s.free_bytes / (1024 * 1024));
+	free_kb  = (int)(s.free_bytes / 1024);
+
+	G_Printf("--- Memory Pool Stats ---\n");
+	G_Printf("Pool size:    %d bytes (%d MB)\n", (int)s.pool_size, pool_mb);
+	G_Printf("Used:         %d blocks, %d bytes (%d KB)\n",
+		s.used_blocks, (int)s.used_bytes, used_kb);
+	G_Printf("  Largest:    %d bytes\n", (int)s.used_largest);
+	G_Printf("  Overhead:   %d bytes (%d per block)\n",
+		(int)s.used_overhead, (int)BLOCK_OVERHEAD);
+	G_Printf("Free:         %d blocks, %d bytes (%d MB)\n",
+		s.free_blocks, (int)s.free_bytes, free_mb);
+	G_Printf("  Largest:    %d bytes\n", (int)s.free_largest);
+
+	if (s.free_blocks > 1) {
+		G_Printf("Fragmentation: %d free segments\n", s.free_blocks);
+	}
+}
+
 /*
 =================
 ConsoleCommand
@@ -392,6 +419,11 @@ qboolean	ConsoleCommand( void ) {
 	char	cmd[MAX_TOKEN_CHARS];
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
+
+	if ( Q_stricmp (cmd, "mem_stats") == 0 ) {
+		Svcmd_MemStats_f();
+		return qtrue;
+	}
 
 	if ( Q_stricmp (cmd, "entitylist") == 0 ) {
 		Svcmd_EntityList_f();
