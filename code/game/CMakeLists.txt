@@ -88,6 +88,12 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/animMappingTable.c"
 )
 
+file(GLOB MODHEADERS "${SRCDir}/game/mod/*.h")
+file(GLOB MODSOURCES "${SRCDir}/game/mod/*.c")
+
+set(MVGAMESOURCES ${MVGAMESOURCES} ${MODSOURCES} ${MVSHAREDMODSOURCES})
+set(MVGAMEHEADERS ${MVGAMEHEADERS} ${MODHEADERS} ${MVSHAREDMODHEADERS})
+
 set(MVGAMEASM
 	"${SRCDir}/game/g_syscalls.asm"
 	PARENT_SCOPE
@@ -109,7 +115,7 @@ add_library(${MVGAME} SHARED ${MVGAMEFILES})
 # Defines
 set(MVGAMEDefines ${MVGAMEDefines} "QAGAME")
 set(MVGAMEDefines ${MVGAMEDefines} "JK2_GAME")
-set(MVGAMEIncludeDirs ${MVGLOBALIncludeDirs})
+set(MVGAMEIncludeDirs ${MVGLOBALIncludeDirs} "${SRCDir}/game/mod" "${SRCDir}/shared/mod")
 
 set_target_properties(${MVGAME} PROPERTIES PREFIX "") # remove "lib" prefix for .so/.dylib files
 

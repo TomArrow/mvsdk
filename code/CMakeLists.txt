@@ -7,6 +7,7 @@ endif(NOT InMVSDK)
 set(MVGLOBALIncludeDirs ${MVGLOBALIncludeDirs} ${CMAKE_BINARY_DIR})
 configure_file("mvsdk_setup.h.in" "${CMAKE_BINARY_DIR}/mvsdk_setup.h" @ONLY)
 
+add_subdirectory("shared")
 add_subdirectory("game")
 add_subdirectory("cgame")
 add_subdirectory("ui")
@@ -49,12 +50,15 @@ if(BuildQVMs)
 	file(RELATIVE_PATH MVSDK_UI_PATH "${CMAKE_CURRENT_BINARY_DIR}/vm_build" "${SRCDir}/ui")
 	file(TO_NATIVE_PATH "${MVSDK_UI_PATH}" MVSDK_UI_PATH)
 	
+	file(RELATIVE_PATH MVSDK_SHARED_PATH "${CMAKE_CURRENT_BINARY_DIR}/vm_build" "${SRCDir}/shared")
+	file(TO_NATIVE_PATH "${MVSDK_SHARED_PATH}" MVSDK_SHARED_PATH)
+
 	file(RELATIVE_PATH MVSDK_BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/vm_build" "${CMAKE_BINARY_DIR}")
 	file(TO_NATIVE_PATH "${MVSDK_BIN_PATH}" MVSDK_BIN_PATH)
-	
+
 	add_custom_target(qvms
 		COMMAND $<TARGET_FILE:${LCC}>
-			"-DQ3_VM" "-DJK2_GAME" "-DMISSIONPACK" "-S" "-Wf-target=bytecode" "-Wf-g" "-I${MVSDK_GAME_PATH}" "-I${MVSDK_UI_PATH}" "-I${MVSDK_BIN_PATH}" ${MVGAMEVMSOURCES_NATIVE}
+			"-DQ3_VM" "-DJK2_GAME" "-DMISSIONPACK" "-S" "-Wf-target=bytecode" "-Wf-g" "-I${MVSDK_GAME_PATH}" "-I${MVSDK_GAME_PATH}/mod" "-I${MVSDK_SHARED_PATH}/mod" "-I${MVSDK_UI_PATH}" "-I${MVSDK_BIN_PATH}" ${MVGAMEVMSOURCES_NATIVE}
 
 		COMMAND $<TARGET_FILE:${ASM}>
 			"-vq3" "-m" "-v" "-o" "${CMAKE_CURRENT_BINARY_DIR}/vm/jk2mpgame.qvm" ${MVGAMEASMFILES} ${MVGAMEASM}
