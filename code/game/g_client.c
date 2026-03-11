@@ -924,7 +924,7 @@ static void ClientCleanName( const char *in, char *out, int outSize ) {
 			}
 
 			// don't allow black in a name, period
-			if( ColorIndex(*in) == 0 ) {
+			if( !tvt_allowBlackNames.integer && (*in) == 0 ) {
 				in++;
 				continue;
 			}
