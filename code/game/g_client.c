@@ -1190,7 +1190,8 @@ void ClientUserinfoChanged( int clientNum ) {
 		ptr = strstr( s, "@@@" );
 	}
 	
-	ClientCleanName( s, ent->client->pers.netname, sizeof(ent->client->pers.netname) );
+	ClientCleanName( s, ent->client->pers.netname, MAX_NETNAME_DISPLAY );
+	G_TvT_MakeNameUnique( clientNum, ent->client->pers.netname );
 	Info_RemoveKey( userinfo, "name" );
 	Info_SetValueForKey( userinfo, "name", ent->client->pers.netname );
 	trap_SetUserinfo( clientNum, userinfo );
