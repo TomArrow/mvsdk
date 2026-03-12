@@ -67,6 +67,42 @@ void G_TvT_Printf(int clientNum, const char *fmt, ...) {
 	}
 }
 
+static void G_TvT_ResetItem(gentity_t *ent) {
+	G_SetOrigin(ent, ent->pos1);
+	RespawnItem(ent);
+}
+
+static void G_TvT_TouchItem(gentity_t *ent, gentity_t *other, trace_t *trace) {
+	Touch_Item(ent, other, trace);
+
+	// Use a wrapper for respawn item to make sure it spawns at its original position
+	if (ent->think == RespawnItem) {
+		ent->think = G_TvT_ResetItem;
+	}
+}
+
+void G_TvT_ForcePushItem(gentity_t *item, qboolean pull, vec3_t forward) {
+	float speed = pull ? -650.0f : 650.0f;
+
+	if (!(item->flags & FL_DROPPED_ITEM)) {
+		if (item->touch == Touch_Item) {
+			// pos1 is unused for items, so we can store the original spawn position in this field
+			VectorCopy(item->r.currentOrigin, item->pos1);
+			item->touch = G_TvT_TouchItem;
+		}
+
+		item->nextthink = level.time + 30000;
+		item->think = G_TvT_ResetItem;
+	}
+
+	item->s.pos.trType = TR_GRAVITY;
+	item->s.pos.trTime = level.time;
+	VectorCopy(item->r.currentOrigin, item->s.pos.trBase);
+	VectorScale(forward, speed, item->s.pos.trDelta);
+
+	item->s.groundEntityNum = ENTITYNUM_NONE;
+}
+
 void G_TvT_FisherYatesShuffle(int *array, int n) {
 	// From https://stackoverflow.com/questions/42321370/fisher-yates-shuffling-algorithm-in-c/42322025#42322025
 	int i, j, tmp;

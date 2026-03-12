@@ -11,4 +11,7 @@ void G_TvT_Printf(int clientNum, const char *fmt, ...) __attribute__ ((format (p
 void G_TvT_MakeNameUnique(int clientNum, char *name);
 void G_TvT_FisherYatesShuffle(int *array, int n);
 
+// Force push/pull items
+void G_TvT_ForcePushItem(gentity_t *item, qboolean pull, vec3_t forward);
+
 #endif

@@ -3235,6 +3235,13 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				Touch_Button( push_list[x], self, NULL );
 				continue;
 			}
+			else if ( tvt_forcePushItems.integer
+				&& push_list[x]->s.eType == ET_ITEM
+				&& push_list[x]->item
+				&& push_list[x]->item->giType != IT_WEAPON )
+			{
+				G_TvT_ForcePushItem( push_list[x], pull, forward );
+			}
 		}
 	}
 
