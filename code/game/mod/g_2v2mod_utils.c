@@ -66,3 +66,16 @@ void G_TvT_Printf(int clientNum, const char *fmt, ...) {
 		trap_SendServerCommand(clientNum, va("print \"%s\"", buf));
 	}
 }
+
+void G_TvT_FisherYatesShuffle(int *array, int n) {
+	// From https://stackoverflow.com/questions/42321370/fisher-yates-shuffling-algorithm-in-c/42322025#42322025
+	int i, j, tmp;
+
+	for (i = n - 1; i > 0; i--) {
+		j = rand() % (i + 1);
+		tmp = array[j];
+		array[j] = array[i];
+		array[i] = tmp;
+	}
+}
+

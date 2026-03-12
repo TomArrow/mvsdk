@@ -9,5 +9,6 @@
 // Generic print function
 void G_TvT_Printf(int clientNum, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 void G_TvT_MakeNameUnique(int clientNum, char *name);
+void G_TvT_FisherYatesShuffle(int *array, int n);
 
 #endif
