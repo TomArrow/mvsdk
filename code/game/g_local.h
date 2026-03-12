@@ -1537,6 +1537,9 @@ extern	vmCvar_t	g_scorePenaltySuicideDuel;
 extern	vmCvar_t	g_scorePenaltyTeamKill;
 extern	vmCvar_t	g_tffaAnyDeathIsEnemyScore;
 
+extern	vmCvar_t	g_intermissionReadyDuration;
+extern	vmCvar_t	g_intermissionReadyCheck;
+
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;
 extern	vmCvar_t	g_warmup;

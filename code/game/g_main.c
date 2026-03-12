@@ -125,6 +125,8 @@ vmCvar_t	g_weaponRespawn;
 vmCvar_t	g_weaponTeamRespawn;
 vmCvar_t	g_adaptRespawn;
 vmCvar_t	g_motd;
+vmCvar_t	g_intermissionReadyDuration;
+vmCvar_t	g_intermissionReadyCheck;
 
 vmCvar_t	g_mapDefaultMsec;
 vmCvar_t	g_mapDefaultJump;
@@ -270,6 +272,8 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_maxclients, "sv_maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH | CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_maxGameClients, "g_maxGameClients", "0", CVAR_SERVERINFO | CVAR_LATCH | CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_intermissionReadyDuration, "g_intermissionReadyDuration", "10000", CVAR_LATCH | CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_intermissionReadyCheck, "g_intermissionReadyCheck", "1", CVAR_LATCH | CVAR_ARCHIVE, 0, qfalse  },
 
 	// change anytime vars
 	{ &g_ff_objectives, "g_ff_objectives", "0", /*CVAR_SERVERINFO |*/  CVAR_NORESTART, 0, qtrue },
@@ -2447,12 +2451,12 @@ void CheckIntermissionExit( void ) {
 	}
 
 	// never exit in less than five seconds
-	if ( level.time < level.intermissiontime + 5000 ) {
+	if ( level.time < level.intermissiontime + MIN(g_intermissionReadyDuration.integer,5000) ) {
 		return;
 	}
 
 	// if nobody wants to go, clear timer
-	if ( !ready ) {
+	if ( !ready && g_intermissionReadyCheck.integer) {
 		level.readyToExit = qfalse;
 		return;
 	}
@@ -2471,7 +2475,7 @@ void CheckIntermissionExit( void ) {
 
 	// if we have waited ten seconds since at least one player
 	// wanted to exit, go ahead
-	if ( level.time < level.exitTime + 10000 ) {
+	if ( level.time < level.exitTime + g_intermissionReadyDuration.integer ) {
 		return;
 	}
 
