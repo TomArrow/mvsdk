@@ -1202,6 +1202,7 @@ qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt);
 gentity_t* SelectNearestDeathmatchSpawnPoint(vec3_t from);
 
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra);
+void G_CenterPrintOrPrint(int targetNum, int autoLineWraps, const char* message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra, qboolean onlyPrint, qboolean noop);
 void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers);
 
 extern gentity_t *gJMSaberEnt;
@@ -1528,6 +1529,8 @@ extern	vmCvar_t	g_strafebotSlopeHandling;
 
 extern	vmCvar_t	g_autoScoresInterval;
 extern	vmCvar_t	g_printTFFAStats;
+
+extern	vmCvar_t	g_printJoins;
 
 extern	vmCvar_t	g_scorePenaltySuicide;
 extern	vmCvar_t	g_scorePenaltySuicideDuel;

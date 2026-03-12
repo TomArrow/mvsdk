@@ -3383,6 +3383,24 @@ void G_SendServerCommand(int targetnum, const char* cmd, qboolean alsoFollowers)
 	}
 }
 
+void G_CenterPrintOrPrint(int targetNum, int autoLineWraps, const char* message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra, qboolean onlyPrint, qboolean noop) {
+	if (noop) {
+		return;
+	}
+	else if (onlyPrint) {
+		if (extra) {
+			G_SendServerCommand(targetNum, va("print \"%s\n\" %s", message, extra), alsoFollowers);
+		}
+		else {
+			G_SendServerCommand(targetNum, va("print \"%s\n\"", message), alsoFollowers);
+		}
+		return;
+	}
+	else {
+		G_CenterPrint(targetNum, autoLineWraps, message, printInDefrag, alsoFollowers, alwaysPrint, extra);
+	}
+}
+
 #define MAX_CLIENT_CENTERPRINT_LINELENGTH 50
 #define MAX_CLIENT_CENTERPRINT_LENGTH 1024
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra)

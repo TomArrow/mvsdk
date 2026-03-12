@@ -137,6 +137,8 @@ vmCvar_t	g_strafebotSlopeHandling;
 vmCvar_t	g_autoScoresInterval;
 vmCvar_t	g_printTFFAStats;
 
+vmCvar_t	g_printJoins;
+
 vmCvar_t	g_scorePenaltySuicide;
 vmCvar_t	g_scorePenaltySuicideDuel;
 vmCvar_t	g_scorePenaltyTeamKill;
@@ -333,6 +335,7 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_autoScoresInterval, "g_autoScoresInterval", "10", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_printTFFAStats, "g_printTFFAStats", "0", CVAR_ARCHIVE, 0, qfalse  },
+	{ &g_printJoins, "g_printJoins", "2", CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_scorePenaltySuicide, "g_scorePenaltySuicide", "1", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_scorePenaltySuicideDuel, "g_scorePenaltySuicideDuel", "1", CVAR_ARCHIVE, 0, qfalse  },

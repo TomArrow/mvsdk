@@ -834,14 +834,14 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 	client->ps.fd.forceDoInit = 1; //every time we change teams make sure our force powers are set right
 
 	if ( client->sess.sessionTeam == TEAM_RED ) {
-		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEREDTEAM")), qtrue, qfalse,qtrue, NULL);
+		G_CenterPrintOrPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
+			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEREDTEAM")), qtrue, qfalse,qtrue, NULL, g_printJoins.integer == 1, g_printJoins.integer == 0);
 	} else if ( client->sess.sessionTeam == TEAM_BLUE ) {
-		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBLUETEAM")), qtrue, qfalse,qtrue, NULL);
+		G_CenterPrintOrPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
+		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBLUETEAM")), qtrue, qfalse,qtrue, NULL, g_printJoins.integer == 1, g_printJoins.integer == 0);
 	} else if ( client->sess.sessionTeam == TEAM_SPECTATOR && oldTeam != TEAM_SPECTATOR ) {
-		G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHESPECTATORS")), qtrue, qfalse,qtrue, NULL);
+		G_CenterPrintOrPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
+		client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHESPECTATORS")), qtrue, qfalse,qtrue, NULL, g_printJoins.integer == 1, g_printJoins.integer == 0);
 	} else if ( client->sess.sessionTeam == TEAM_FREE ) {
 		if (g_gametype.integer == GT_TOURNAMENT)
 		{
@@ -855,16 +855,16 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 			}
 			else
 			{
-				G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-				client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")));
+				G_CenterPrintOrPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
+				client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")), g_printJoins.integer == 1, g_printJoins.integer == 0);
 			}
 			*/
 			//NOTE: Just doing a vs. once it counts two players up
 		}
 		else
 		{
-			G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
-			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")), qtrue, qfalse,qtrue, NULL);
+			G_CenterPrintOrPrint( -1, 3, va("%s" S_COLOR_WHITE " %s",
+			client->pers.netname, G_GetStripEdString("SVINGAME", "JOINEDTHEBATTLE")), qtrue, qfalse,qtrue, NULL, g_printJoins.integer == 1, g_printJoins.integer == 0);
 		}
 	}
 
