@@ -3411,6 +3411,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 			{
 				// Check if is pull or push.
 				float throwscale = pull ? -650.0f : 650.0f;
+				int nextRespawnGoal;
 
 				// Item filter
 				switch (push_list[x]->item->giType)
@@ -3425,7 +3426,8 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				}
 
 				// Set respawntime
-				if (push_list[x]->think != RespawnItem || push_list[x]->nextthink > level.time + JKMod_ItemRespawnTime(push_list[x]) * 1000) {
+				nextRespawnGoal = level.time + JKMod_ItemRespawnTime(push_list[x]) * 1000;
+				if (push_list[x]->think != RespawnItem || push_list[x]->nextthink <= 0 || push_list[x]->nextthink > nextRespawnGoal) {
 					// if a respawn is already scheduled and about to happen earlier than ours would, do nothing.
 					push_list[x]->think = RespawnItem;
 					push_list[x]->nextthink = level.time + JKMod_ItemRespawnTime(push_list[x]) * 1000;
