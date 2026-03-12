@@ -406,7 +406,7 @@ void WP_InitForcePowers( gentity_t *ent )
 
 			if (!(ent->r.svFlags & SVF_BOT) && g_gametype.integer != GT_TOURNAMENT)
 			{
-				if (g_gametype.integer < GT_TEAM || !g_teamAutoJoin.integer)
+				if ((g_gametype.integer < GT_TEAM || !g_teamAutoJoin.integer) && g_forceBadSpec.integer)
 				{
 					team_t	team = ent->client->sess.sessionTeam;
 
@@ -427,7 +427,8 @@ void WP_InitForcePowers( gentity_t *ent )
 #else
 			//Event isn't very reliable, I made it a string. This way I can send it to just one
 			//client also, as opposed to making a broadcast event.
-			trap_SendServerCommand(ent->s.number, va("nfr %i %i %i", maxRank, 1, ent->client->sess.sessionTeam));
+			//trap_SendServerCommand(ent->s.number, va("nfr %i %i %i", maxRank, 1, ent->client->sess.sessionTeam)); // why was it ent->s.number? in some places that caused issues cuz it was still 0 and client 0 would get popups. tho thats prolly a more deep logic issue to even get there.
+			trap_SendServerCommand(ent-g_entities, va("nfr %i %i %i", maxRank, 1, ent->client->sess.sessionTeam));
 			//Arg1 is new max rank, arg2 is non-0 if force menu should be shown, arg3 is the current team
 #endif
 		}
@@ -445,7 +446,8 @@ void WP_InitForcePowers( gentity_t *ent )
 		te->s.bolt1 = 1;
 		te->s.bolt2 = ent->client->sess.sessionTeam;
 #else
-		trap_SendServerCommand(ent->s.number, va("nfr %i %i %i", maxRank, 0, ent->client->sess.sessionTeam));
+		//trap_SendServerCommand(ent->s.number, va("nfr %i %i %i", maxRank, 0, ent->client->sess.sessionTeam));
+		trap_SendServerCommand(ent-g_entities, va("nfr %i %i %i", maxRank, 0, ent->client->sess.sessionTeam)); // in case ent->s.number isnt inited yet. tho thats prolly a more deep logic issue to even get there.
 #endif
 	}
 
