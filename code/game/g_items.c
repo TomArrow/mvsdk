@@ -1406,6 +1406,7 @@ qboolean JKMod_CheckNoDrop(gentity_t* ent)
 		if (!touch->inuse) continue;
 		if (touch == ent) continue;
 		if (touch->s.eType == ET_MOVER) continue;
+		if (touch->r.contents & (CONTENTS_NODROP | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) continue;
 		if (touch->classname)
 		{
 			if (!Q_stricmp(touch->classname, "trigger_hurt")) return qtrue;
@@ -1414,7 +1415,7 @@ qboolean JKMod_CheckNoDrop(gentity_t* ent)
 		}
 	}
 
-	if (trap_PointContents(ent->r.currentOrigin, -1) & CONTENTS_NODROP) return qtrue;
+	if (trap_PointContents(ent->r.currentOrigin, -1) & (CONTENTS_NODROP | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) return qtrue;
 	return qfalse;
 }
 
