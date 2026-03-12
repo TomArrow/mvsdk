@@ -384,7 +384,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_quadfactor, "g_quadfactor", "3", 0, 0, qtrue  },
 	{ &g_weaponRespawn, "g_weaponrespawn", "5", 0, 0, qtrue  },
 	{ &g_weaponTeamRespawn, "g_weaponTeamRespawn", "5", 0, 0, qtrue },
-	{ &g_adaptRespawn, "g_adaptrespawn", "1", 0, 0, qtrue  },		// Make weapons respawn faster with a lot of players.
+	{ &g_adaptRespawn, "g_adaptrespawn", "1", CVAR_ARCHIVE, 0, qtrue  },		// Make weapons respawn faster with a lot of players.
 	{ &g_forcerespawn, "g_forcerespawn", "60", 0, 0, qtrue },		// One minute force respawn.  Give a player enough time to reallocate force.
 	{ &g_startWeaponAlwaysSaber, "g_startWeaponAlwaysSaber", "1", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_afkCmdMinSecs, "g_afkCmdMinSecs", "30", 0, 0, qfalse },

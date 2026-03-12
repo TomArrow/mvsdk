@@ -31,6 +31,74 @@ extern gentity_t *droppedBlueFlag;
 #define MAX_MEDPACK_HEAL_AMOUNT		100
 #define MAX_SENTRY_DISTANCE			256
 
+/*
+=====================================================================
+Respawn time calculation for item throwing
+from Tr!force's JediKnightPlus mod
+=====================================================================
+*/
+int JKMod_ItemRespawnTime(gentity_t* ent)
+{
+	float respawnTime;
+
+	// Respawn time based on giType
+	if (ent->item->giType == IT_ARMOR)
+	{
+		respawnTime = RESPAWN_ARMOR;
+	}
+	else if (ent->item->giType == IT_HOLDABLE)
+	{
+		respawnTime = RESPAWN_HOLDABLE;
+	}
+	else if (ent->item->giType == IT_HEALTH)
+	{
+		respawnTime = RESPAWN_HEALTH;
+	}
+	else if (ent->item->giType == IT_AMMO)
+	{
+		respawnTime = RESPAWN_AMMO;
+	}
+
+	// Adaption disabled so no wait time/random set
+	if (!g_adaptRespawn.integer && !ent->wait && !ent->random)
+	{
+		return((int)respawnTime);
+	}
+	else
+	{
+		// Scale respawn time based on the current playing clients
+		if (level.numPlayingClients > 4)
+		{
+			if (level.numPlayingClients > 32)
+			{
+				respawnTime *= 0.25;
+			}
+			else if (level.numPlayingClients > 12)
+			{
+				respawnTime *= 20.0 / (float)(level.numPlayingClients + 8);
+			}
+			else
+			{
+				respawnTime *= 8.0 / (float)(level.numPlayingClients + 4);
+			}
+		}
+
+		// Check wait
+		if (ent->wait)
+			respawnTime = ent->wait;
+
+		// Check random
+		if (ent->random)
+			respawnTime += crandom() * ent->random;
+
+		// Don't allow below 1
+		if (respawnTime < 1.0)
+			respawnTime = 1.0;
+
+		return ((int)respawnTime);
+	}
+}
+
 // For more than four players, adjust the respawn times, up to 1/4.
 int adjustRespawnTime(float preRespawnTime, int itemType, int itemTag)
 {

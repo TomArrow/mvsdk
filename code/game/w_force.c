@@ -2744,6 +2744,7 @@ void G_LetGoOfWall(gentity_t* ent)
 	}
 }
 
+extern int JKMod_ItemRespawnTime(gentity_t* ent);
 extern void Touch_Button(gentity_t *ent, gentity_t *other, trace_t *trace );
 void ForceThrow( gentity_t *self, qboolean pull )
 {
@@ -3406,7 +3407,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				continue;
 			}
 			// Tr!Force: [Items] Allow force physics on items
-			else if (push_list[x]->s.eType == ET_ITEM && g_pushItems.integer)
+			else if (push_list[x]->s.eType == ET_ITEM && g_pushItems.integer &&/* !(push_list[x]->s.eFlags & EF_ITEMPLACEHOLDER) && */!(push_list[x]->s.eFlags & EF_NODRAW)) // dont push around invisible items, what's the point. but let us push around placeholders, that could be funny
 			{
 				// Check if is pull or push.
 				float throwscale = pull ? -650.0f : 650.0f;
@@ -3424,8 +3425,11 @@ void ForceThrow( gentity_t *self, qboolean pull )
 				}
 
 				// Set respawntime
-				push_list[x]->nextthink = level.time + 30000;
-				push_list[x]->think = RespawnItem;
+				if (push_list[x]->think != RespawnItem || push_list[x]->nextthink > level.time + JKMod_ItemRespawnTime(push_list[x]) * 1000) {
+					// if a respawn is already scheduled and about to happen earlier than ours would, do nothing.
+					push_list[x]->think = RespawnItem;
+					push_list[x]->nextthink = level.time + JKMod_ItemRespawnTime(push_list[x]) * 1000;
+				}
 
 				// Adds gravity
 				push_list[x]->s.pos.trType = TR_GRAVITY;
