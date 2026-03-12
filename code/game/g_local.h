@@ -1536,6 +1536,7 @@ extern	vmCvar_t	g_scorePenaltySuicide;
 extern	vmCvar_t	g_scorePenaltySuicideDuel;
 extern	vmCvar_t	g_scorePenaltyTeamKill;
 extern	vmCvar_t	g_tffaAnyDeathIsEnemyScore;
+extern	vmCvar_t	g_stackFirstSpawn;
 
 extern	vmCvar_t	g_intermissionReadyDuration;
 extern	vmCvar_t	g_intermissionReadyCheck;

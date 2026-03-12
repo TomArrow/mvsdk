@@ -3093,6 +3093,12 @@ void ClientSpawn(gentity_t *ent) {
 
 	// Start with a small amount of armor as well.
 	client->ps.stats[STAT_ARMOR] = client->ps.stats[STAT_MAX_HEALTH] * 0.25;
+	if (client->ps.persistant[PERS_SPAWN_COUNT] == 1 && g_stackFirstSpawn.integer) {
+		// first spawn. if g_stackFirstSpawn is 1, give us 200 armor and a medpack
+		client->ps.stats[STAT_ARMOR] = client->ps.stats[STAT_MAX_HEALTH] * 2;
+		client->ps.stats[STAT_HOLDABLE_ITEMS] |= (1 << HI_MEDPAC);
+		client->ps.stats[STAT_HOLDABLE_ITEM] = BG_GetItemIndexByTag(HI_MEDPAC, IT_HOLDABLE);
+	}
 
 	G_SetOrigin( ent, spawn_origin );
 	VectorCopy( spawn_origin, client->ps.origin );
