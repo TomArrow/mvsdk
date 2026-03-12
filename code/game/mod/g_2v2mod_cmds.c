@@ -35,7 +35,7 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
 
 	if (g_gametype.integer < GT_TEAM) {
 		G_TvT_Printf(TVT_ENT_TO_CN(ent), "This command is only allowed in team based gametypes.\n");
-		return;
+		return qtrue;
 	}
 
 	for (i = 0; i < level.maxclients; i++) {
