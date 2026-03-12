@@ -1382,6 +1382,44 @@ int Pickup_Armor( gentity_t *ent, gentity_t *other )
 //======================================================================
 
 /*
+=====================================================================
+Check item landed in an inaccessible or dangerous area
+=====================================================================
+From Tr!force's JediKnightPlus mod
+*/
+qboolean JKMod_CheckNoDrop(gentity_t* ent)
+{
+	vec3_t      mins = { 8, -8, -8 }, maxs = { 8, -8, -8 };
+	int         entityList[MAX_GENTITIES];
+	int         numEntities, i;
+	gentity_t* touch;
+
+	VectorAdd(ent->r.currentOrigin, mins, mins);
+	VectorAdd(ent->r.currentOrigin, maxs, maxs);
+
+	numEntities = trap_EntitiesInBox(mins, maxs, entityList, MAX_GENTITIES);
+
+	for (i = 0; i < numEntities; i++)
+	{
+		touch = &g_entities[entityList[i]];
+
+		if (!touch->inuse) continue;
+		if (touch == ent) continue;
+		if (touch->s.eType == ET_MOVER) continue;
+		if (touch->classname)
+		{
+			if (!Q_stricmp(touch->classname, "trigger_hurt")) return qtrue;
+			if (!Q_stricmp(touch->classname, "trigger_push")) return qtrue;
+			if (!Q_stricmp(touch->classname, "func_void")) return qtrue;
+		}
+	}
+
+	if (trap_PointContents(ent->r.currentOrigin, -1) & CONTENTS_NODROP) return qtrue;
+	return qfalse;
+}
+
+
+/*
 ===============
 RespawnItem
 ===============
@@ -1408,7 +1446,7 @@ void RespawnItem( gentity_t *ent ) {
 	}
 
 	// Tr!Force: [Items] Reset original item position
-	if (g_pushItems.integer <= 1)
+	if (g_pushItems.integer <= 1 || JKMod_CheckNoDrop(ent))
 	{
 		VectorCopy(ent->origOrigin, ent->s.origin);
 		VectorCopy(ent->origOrigin, ent->s.pos.trBase);
