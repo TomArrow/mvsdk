@@ -206,6 +206,7 @@ G_InitSessionData
 Called on a first-time connect
 ================
 */
+extern void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag);
 extern void UpdateClientRaceVars(gclient_t* client);
 void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	clientSession_t	*sess;
@@ -213,10 +214,12 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 
 	sess = &client->sess;
 	
+	ClientSetDefaultMode(&g_entities[client-g_clients], !isBot);
+
 	//sess->raceStyle.movementStyle = MV_JK2;
 	//sess->raceStyle.jumpLevel = 1;
 	//sess->raceStyle.runFlags = defaultRunFlags;
-	sess->raceMode = g_defrag.integer; // TODO what about changing g_defrag live, should we take some care? idk
+	//sess->raceMode = g_defrag.integer; // TODO what about changing g_defrag live, should we take some care? idk
 	sess->mapStyleBaseline = level.mapDefaultRaceStyle;
 	sess->raceStyle = sess->mapStyleBaseline;
 	sess->raceStyle.msec = 7; // make old client versions work nicely? maybe? probably wont work but whatever

@@ -2117,7 +2117,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 	// read or initialize the session data
 	if ( firstTime || level.newSession ) {
 		G_InitSessionData( client, userinfo, isBot );
-		ClientSetDefaultMode(ent,!isBot);
 	}
 	G_ReadSessionData( client );
 
