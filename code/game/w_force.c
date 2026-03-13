@@ -1958,7 +1958,7 @@ int ForceShootDrain( gentity_t *self )
 				continue;
 			if ( !traceEnt->client->ps.fd.forcePower )
 				continue;
-			if (OnSameTeam(self, traceEnt))
+			if (OnSameTeam(self, traceEnt) && !tvt_teamForceRules.integer)
 				continue;
 			//this is all to see if we need to start a saber attack, if it's in flight, this doesn't matter
 			// find the distance from the edge of the bounding box
@@ -2853,7 +2853,7 @@ void ForceThrow( gentity_t *self, qboolean pull )
 			continue;
 		if (ent == self)
 			continue;
-		if (ent->client && OnSameTeam(ent, self))
+		if (ent->client && OnSameTeam(ent, self) && !tvt_teamForceRules.integer)
 		{
 			continue;
 		}
