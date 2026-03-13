@@ -1447,6 +1447,7 @@ extern	vmCvar_t	g_dmflags;
 extern	vmCvar_t	g_maxForceRank;
 extern	vmCvar_t	g_forceBasedTeams;
 extern	vmCvar_t	g_forceBadSpec;
+extern	vmCvar_t	g_connectSpecAlways;
 extern	vmCvar_t	g_privateDuel;
 extern	vmCvar_t	g_saberLocking;
 extern	vmCvar_t	g_saberLockFactor;

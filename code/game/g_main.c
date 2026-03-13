@@ -51,6 +51,7 @@ vmCvar_t	g_dmflags;
 vmCvar_t	g_maxForceRank;
 vmCvar_t	g_forceBasedTeams;
 vmCvar_t	g_forceBadSpec; // force ppl to spec if their force settings are bad. default in vanilla, but default 0 here.
+vmCvar_t	g_connectSpecAlways; // always connect as spec. if we dont force ppl spec for bad forces, we need this in non >= GT_TEAM gamemodes to stay in spec when connecting. cleaner anyway.
 vmCvar_t	g_privateDuel;
 vmCvar_t	g_saberLocking;
 vmCvar_t	g_saberLockFactor;
@@ -289,6 +290,7 @@ static cvarTable_t		gameCvarTable[] = {
 	
 	{ &g_maxForceRank, "g_maxForceRank", "500", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_forceBasedTeams, "g_forceBasedTeams", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
+	{ &g_connectSpecAlways, "g_connectSpecAlways", "1", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_forceBadSpec, "g_forceBadSpec", "0", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_privateDuel, "g_privateDuel", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberLocking, "g_saberLocking", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },

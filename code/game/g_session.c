@@ -269,7 +269,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 			case GT_JEDIMASTER:
 			case GT_SINGLE_PLAYER:
 				if ( g_maxGameClients.integer > 0 && 
-					level.numNonSpectatorClients >= g_maxGameClients.integer ) {
+					level.numNonSpectatorClients >= g_maxGameClients.integer || g_connectSpecAlways.integer) {
 					sess->sessionTeam = TEAM_SPECTATOR;
 				} else {
 					sess->sessionTeam = TEAM_FREE;
