@@ -17,7 +17,8 @@ typedef struct {
 	TVT_CVAR(tvt_allowBlackNames, "1", "Allow players to use the colour black in their names", 0, qtrue) \
 	TVT_CVAR(tvt_uniqueNames, "1", "Append a numeric suffix to non unique player names", 0, qtrue) \
 	TVT_CVAR(tvt_forcePushItems, "1", "Allow force push and pull to move spawned items", 0, qtrue) \
-	TVT_CVAR(tvt_teamForceRules, "0", "Allow force push, pull and drain to affect teammates", 0, qtrue)
+	TVT_CVAR(tvt_teamForceRules, "1", "Allow force push, pull and drain to affect teammates", 0, qtrue) \
+	TVT_CVAR(tvt_teamSuicideScoring, "1", "Teamkill or suicide awards +1 score to the opposing team instead of -1 score to self", 0, qtrue)
 
 #define TVT_CVAR(name, defaultValue, description, flags, trackChange) extern vmCvar_t name;
 TVT_CVAR_LIST

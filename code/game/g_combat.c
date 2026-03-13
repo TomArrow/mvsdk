@@ -1947,7 +1947,15 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			}
 			else
 			{
-				AddScore( attacker, self->r.currentOrigin, -1 );
+				if (tvt_teamSuicideScoring.integer && g_gametype.integer == GT_TEAM)
+				{
+					level.teamScores[OtherTeam(attacker->client->sess.sessionTeam)]++;
+					CalculateRanks();
+				}
+				else
+				{
+					AddScore( attacker, self->r.currentOrigin, -1 );
+				}
 			}
 			if (g_gametype.integer == GT_JEDIMASTER)
 			{
