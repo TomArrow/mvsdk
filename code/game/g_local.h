@@ -6,6 +6,7 @@
 #include "bg_public.h"
 #include "g_public.h"
 #include "2v2mod_memory.h"
+#include "mod/g_2v2mod_main.h"
 
 //==================================================================
 
@@ -526,6 +527,9 @@ typedef struct {
 	// MVSDK
 	qboolean	bboxEncoding;
 	qboolean	modelindexTime2;
+
+	// 2v2mod
+	tvt_ModState_t	tvt;
 } level_locals_t;
 
 

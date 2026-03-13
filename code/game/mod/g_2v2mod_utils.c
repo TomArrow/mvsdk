@@ -103,6 +103,15 @@ void G_TvT_ForcePushItem(gentity_t *item, qboolean pull, vec3_t forward) {
 	item->s.groundEntityNum = ENTITYNUM_NONE;
 }
 
+void G_TvT_SetLoadout(gclient_t *client, qboolean firstSpawn) {
+	tvt_ModState_t *tvt = &level.tvt;
+	int spawnType = firstSpawn ? TVT_FIRST_SPAWN : TVT_SPAWN;
+
+	// Set the first spawn & respawn, shield & holdable value for players
+	client->ps.stats[STAT_ARMOR] = client->ps.stats[STAT_MAX_HEALTH] * tvt->spawnArmor[spawnType] / 100;
+	client->ps.stats[STAT_HOLDABLE_ITEMS] |= tvt->spawnItems[spawnType];
+}
+
 void G_TvT_FisherYatesShuffle(int *array, int n) {
 	// From https://stackoverflow.com/questions/42321370/fisher-yates-shuffling-algorithm-in-c/42322025#42322025
 	int i, j, tmp;
@@ -113,5 +122,16 @@ void G_TvT_FisherYatesShuffle(int *array, int n) {
 		array[j] = array[i];
 		array[i] = tmp;
 	}
+}
+
+qboolean G_TvT_IsNumericString(const char *s) {
+	if (!s || !*s) return qfalse;
+	if (*s == '-') s++;
+	if (!*s) return qfalse;
+	while (*s) {
+		if (*s < '0' || *s > '9') return qfalse;
+		s++;
+	}
+	return qtrue;
 }
 

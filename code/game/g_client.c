@@ -1707,6 +1707,11 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	CalculateRanks();
 
 	G_ClearClientLog(clientNum);
+
+	// This is now called twice for first spawns
+	// Technically we are overriding the respawn armor / items value with the respawn ones here
+	// That's okay because thats what we want anyway, perhaps track first spawns per player to optimize this in the future?
+	G_TvT_SetLoadout(client, qtrue);
 }
 
 static qboolean AllForceDisabled(int force)
@@ -2165,7 +2170,7 @@ void ClientSpawn(gentity_t *ent) {
 	ent->health = client->ps.stats[STAT_HEALTH] = client->ps.stats[STAT_MAX_HEALTH] * 1.25;
 
 	// Start with a small amount of armor as well.
-	client->ps.stats[STAT_ARMOR] = client->ps.stats[STAT_MAX_HEALTH] * 0.25;
+	G_TvT_SetLoadout(client, qfalse);
 
 	G_SetOrigin( ent, spawn_origin );
 	VectorCopy( spawn_origin, client->ps.origin );

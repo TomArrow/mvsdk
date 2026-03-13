@@ -14,4 +14,11 @@ void G_TvT_FisherYatesShuffle(int *array, int n);
 // Force push/pull items
 void G_TvT_ForcePushItem(gentity_t *item, qboolean pull, vec3_t forward);
 
+// Spawn loadout
+void G_TvT_SetLoadout(gclient_t *client, qboolean firstSpawn);
+
+// Utilities
+void G_TvT_FisherYatesShuffle(int *array, int n);
+qboolean G_TvT_IsNumericString(const char *s) ;
+
 #endif
