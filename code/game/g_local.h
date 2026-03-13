@@ -1297,6 +1297,7 @@ void SpectatorClientEndFrame(gentity_t* ent);
 void G_RunClient			( gentity_t *ent );
 qboolean G_GetUserCmd			(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance); 
 void G_ResetUserCmdStore(int clientNum);
+void G_SetSpecAllEntsBroadcasts(int broadcastClients[2]);
 
 //
 // g_team.c
@@ -1464,6 +1465,9 @@ extern	vmCvar_t	g_triggersRobust;
 extern	vmCvar_t	g_bubbleSpawn;
 extern	vmCvar_t	g_defragForceRegenFps;
 extern	vmCvar_t	g_defragArenaAutoGen;
+extern	vmCvar_t	g_specAllEnts;
+extern	vmCvar_t	g_sv_specAllEnts;
+extern	vmCvar_t	g_snapPlayerPosAngles;
 
 extern	vmCvar_t	g_arenaAutoGen;
 

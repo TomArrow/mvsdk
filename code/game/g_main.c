@@ -68,6 +68,9 @@ vmCvar_t	g_triggersRobust;
 vmCvar_t	g_bubbleSpawn;
 vmCvar_t	g_defragForceRegenFps;
 vmCvar_t	g_defragArenaAutoGen;
+vmCvar_t	g_specAllEnts;
+vmCvar_t	g_sv_specAllEnts;
+vmCvar_t	g_snapPlayerPosAngles;
 
 vmCvar_t	g_arenaAutoGen;
 
@@ -305,6 +308,9 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_defragForceRegenFps, "g_defragForceRegenFps", "100", CVAR_ARCHIVE | CVAR_CHEAT, 0, qtrue  },
 	{ &g_defragArenaAutoGen, "g_defragArenaAutoGen", "1", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena files when a course is finished running, if none exists
 	{ &g_arenaAutoGen, "g_arenaAutoGen", "0", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena file upon successful spawn in map, if none exists
+	{ &g_specAllEnts, "g_specAllEnts", "1", CVAR_ARCHIVE | CVAR_SERVERINFO, 0, qfalse  }, // mod-side cheaper version of sv_specallents. will only work for free floating spectators
+	{ &g_sv_specAllEnts, "sv_specAllEnts", "", 0, 0, qfalse  }, // inform us of sv_specAllEnts if exists.
+	{ &g_snapPlayerPosAngles, "g_snapPlayerPosAngles", "0", CVAR_ARCHIVE, 0, qfalse  }, // serverside pos/angle snapping
 
 #ifdef G2_COLLISION_ENABLED
 	{ &g_saberGhoul2Collision, "g_saberGhoul2Collision", "0", 0, 0, qtrue  },
@@ -3393,6 +3399,7 @@ void G_RunFrame( int levelTime ) {
 	int			msec;
 	int start, end;
 	int			activeRunnerCount = 0;
+	int			specAllEntsBroadcastClients[2] = { 0,0 };
 
 	for (i = 0; i < level.maxclients; i++) {
 		ent = g_entities + i;
@@ -3486,14 +3493,27 @@ void G_RunFrame( int levelTime ) {
 		level.mapDefaultsProblemLastAnnounced = level.time;
 	}
 
+	G_SetSpecAllEntsBroadcasts(specAllEntsBroadcastClients);
+
 	//
 	// go through all allocated objects
 	//
 	start = trap_Milliseconds();
 	ent = &g_entities[0];
 	for (i=0 ; i<level.num_entities ; i++, ent++) {
+		if ( !ent->client ) {
+			// clients have their own handling
+			memset(ent->r.broadcastClients, 0, sizeof(ent->r.broadcastClients));
+		}
 		if ( !ent->inuse ) {
 			continue;
+		}
+
+		if (!ent->client) {
+			// clients have their own handling
+			ent->r.broadcastClients[0] |= specAllEntsBroadcastClients[0];
+			ent->r.broadcastClients[1] |= specAllEntsBroadcastClients[1];
+			ent->r.broadcastClients[ent->s.number / 32] &= ~(1 << (ent->s.number % 32)); // don't broadcast to self
 		}
 
 		// clear events that are too old

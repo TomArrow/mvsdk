@@ -3189,7 +3189,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	// positively link the client, even if the command times are weird
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		BG_PlayerStateToEntityState( &client->ps, &ent->s, qtrue );
+		BG_PlayerStateToEntityState( &client->ps, &ent->s, g_snapPlayerPosAngles.integer);
 		VectorCopy( ent->client->ps.origin, ent->r.currentOrigin );
 		trap_LinkEntity( ent );
 	}
@@ -3218,7 +3218,7 @@ void ClientSpawn(gentity_t *ent) {
 	}
 
 	// clear entity state values
-	BG_PlayerStateToEntityState( &client->ps, &ent->s, qtrue );
+	BG_PlayerStateToEntityState( &client->ps, &ent->s, g_snapPlayerPosAngles.integer);
 
 	if (!inSegmentedRun) {
 		DF_RaceStateInvalidated(ent,qfalse);

@@ -1273,7 +1273,7 @@ void SendPendingPredictableEvents( playerState_t *ps ) {
 		// create temporary entity for event
 		t = G_TempEntity( ps->origin, event );
 		number = t->s.number;
-		BG_PlayerStateToEntityState( ps, &t->s, qtrue );
+		BG_PlayerStateToEntityState( ps, &t->s, g_snapPlayerPosAngles.integer);
 		t->s.number = number;
 		t->s.eType = ET_EVENTS + event;
 		t->s.eFlags |= EF_PLAYER_EVENT;
@@ -1302,6 +1302,44 @@ A client is broadcast when another client is using force sight or is
 
 #define MAX_SIGHT_DISTANCE		1500
 #define MAX_SIGHT_FOV			100
+
+
+// careful, does not exclude self. need to do that manually
+void G_SetSpecAllEntsBroadcasts( int broadcastClients[2] )
+{
+	int i;
+
+	//broadcastClients[0] = broadcastClients[1] = 0;
+
+	if (!g_specAllEnts.integer || g_sv_specAllEnts.integer && g_sv_specAllEnts.string[0]) {
+		// if g_specAllEnts is off, or sv_specAllEnts is on, we don't need this
+		return;
+	}
+
+	// Any clients with force sight on should see this client
+	for ( i = 0; i < level.numConnectedClients; i ++ )
+	{
+		gentity_t *ent = &g_entities[level.sortedClients[i]];
+		float	  dist;
+		vec3_t	  angles;
+
+		if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) { // don't create a wallhack for non-spectators
+			continue;
+		}
+
+		// Turn on the broadcast bit for the master and since there is only one
+		// master we are done
+		broadcastClients[ent->s.number/32] |= (1 << (ent->s.number%32));
+	}
+}
+
+static void G_UpdateSpecAllEntsBroadcasts ( gentity_t *self )
+{
+	int i;
+
+	G_SetSpecAllEntsBroadcasts(self->r.broadcastClients);
+	self->r.broadcastClients[self->s.number / 32] &= ~(1 << (self->s.number % 32));
+}
 
 static void G_UpdateForceSightBroadcasts ( gentity_t *self )
 {
@@ -1338,14 +1376,15 @@ static void G_UpdateForceSightBroadcasts ( gentity_t *self )
 		// If not within the field of view then forget it
 		if ( !InFieldOfVision ( ent->client->ps.viewangles, MAX_SIGHT_FOV, angles ) )
 		{
-			break;
+			//break;
+			continue;
 		}
 
 		// Turn on the broadcast bit for the master and since there is only one
 		// master we are done
 		self->r.broadcastClients[ent->s.number/32] |= (1 << (ent->s.number%32));
 	
-		break;
+		//break; //TA: WTF why break?
 	}
 }
 
@@ -1479,6 +1518,11 @@ void G_UpdateClientBroadcasts ( gentity_t *self )
 
 	// Anyone with force sight on should see this client
 	G_UpdateForceSightBroadcasts ( self );
+
+	// If spec all ents is active, let anyone who is a spectator view this client always
+	// Not as good as sv_specAllEnts, we can't make this work for follow spectators
+	// but decent in case engine access is not available.
+	G_UpdateSpecAllEntsBroadcasts( self );
 }
 
 qboolean DF_PrePmoveValid(gentity_t* ent);
@@ -2595,10 +2639,10 @@ void ClientThink_real( gentity_t *ent ) {
 		ent->eventTime = nowTime;
 	}
 	if (g_smoothClients.integer) {
-		BG_PlayerStateToEntityStateExtraPolate( &ent->client->ps, &ent->s, ent->client->ps.commandTime, qtrue );
+		BG_PlayerStateToEntityStateExtraPolate( &ent->client->ps, &ent->s, ent->client->ps.commandTime, g_snapPlayerPosAngles.integer);
 	}
 	else {
-		BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, qtrue );
+		BG_PlayerStateToEntityState( &ent->client->ps, &ent->s, g_snapPlayerPosAngles.integer);
 	}
 	SendPendingPredictableEvents( &ent->client->ps );
 
@@ -3324,10 +3368,10 @@ void ClientEndFrameServerFrame(gentity_t* ent) {
 
 	// set the latest infor
 	if (g_smoothClients.integer) {
-		BG_PlayerStateToEntityStateExtraPolate(&ent->client->ps, &ent->s, ent->client->ps.commandTime, qtrue);
+		BG_PlayerStateToEntityStateExtraPolate(&ent->client->ps, &ent->s, ent->client->ps.commandTime, g_snapPlayerPosAngles.integer);
 	}
 	else {
-		BG_PlayerStateToEntityState(&ent->client->ps, &ent->s, qtrue);
+		BG_PlayerStateToEntityState(&ent->client->ps, &ent->s, g_snapPlayerPosAngles.integer);
 	}
 	SendPendingPredictableEvents(&ent->client->ps);
 
