@@ -7,14 +7,15 @@ typedef enum {
     CMD_CONTEXT_ALL = (CMD_CONTEXT_CLIENT | CMD_CONTEXT_SERVER)
 } cmdContext_t;
 
-typedef struct {
+typedef struct tvt_Cmd_s {
     const char *name;
     const char *description;
     const char *usage;
     qboolean (*execute)(gentity_t *ent);
-    cmdContext_t context;
-    unsigned int minArgs;
-    unsigned int maxArgs;
+    const struct tvt_Cmd_s *subCommands;
+    cmdContext_t            context;
+    unsigned int            minArgs;
+    unsigned int            maxArgs;
 } tvt_Cmd_t;
 
 qboolean G_TvT_ClientCommand(gentity_t *ent, const char *cmd);
