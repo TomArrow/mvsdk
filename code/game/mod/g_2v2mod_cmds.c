@@ -87,9 +87,78 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
 	return qtrue;
 }
 
+static qboolean G_TvT_FilterSubstring(table_t *t, tableRow_t *row, void *ctx) {
+	const char *search = (const char *)ctx;
+	int col = TvT_Table_FindCol(t, "Cvar");
+	const char *text;
+	int searchLen;
+	int i;
+
+	if (col < 0) {
+		return qfalse;
+	}
+	text = row->cells[col].text;
+	if (!text) {
+		return qfalse;
+	}
+
+	searchLen = strlen(search);
+
+	for (i = 0; text[i]; i++) {
+		if (!Q_stricmpn(&text[i], search, searchLen)) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
+	int cn = TVT_ENT_TO_CN(ent);
+	tvt_Cvar_t *cvars;
+	int count;
+	int i;
+	table_t *t;
+	char search[MAX_TOKEN_CHARS];
+
+	cvars = G_TvT_GetCvarTable(&count);
+
+	t = TvT_Table_Create();
+	TvT_Table_AddCol(t, "Name", ALIGN_LEFT);
+	TvT_Table_AddCol(t, "Description", ALIGN_LEFT);
+	TvT_Table_AddCol(t, "Default", ALIGN_LEFT);
+	TvT_Table_AddCol(t, "Current", ALIGN_LEFT);
+
+	TvT_Table_SetBorderColor(t, S_COLOR_MAGENTA);
+
+	for (i = 0; i < count; i++) {
+		tableRow_t *row = TvT_Table_AddRow(t);
+
+		TvT_Table_SetCell(t, row, 0, cvars[i].cvarName);
+		TvT_Table_SetCell(t, row, 1, cvars[i].description);
+		TvT_Table_SetCell(t, row, 2, cvars[i].defaultString);
+		TvT_Table_SetCell(t, row, 3, cvars[i].vmCvar->string);
+
+		if (strcmp(cvars[i].vmCvar->string, cvars[i].defaultString)) {
+			TvT_Table_SetCellColor(row, 3, S_COLOR_GREEN);
+		}
+	}
+
+	if (trap_Argc() > 1) {
+		trap_Argv(1, search, sizeof(search));
+		TvT_Table_Filter(t, G_TvT_FilterSubstring, search);
+	}
+
+	TvT_Table_Sort(t, "Name", qtrue);
+	G_TvT_TablePrint(t, cn);
+	TvT_Table_Destroy(t);
+
+	return qtrue;
+}
+
 static tvt_Cmd_t tvt_commands[] = {
-	{ "mem_stats", "Show memory pool statistics", "mem_stats",    G_TvT_Cmd_MemStats, CMD_CONTEXT_SERVER,   0,   0 },
-	{ "shuffle",   "Shuffle players between teams", "shuffle",    G_TvT_Cmd_Shuffle,  CMD_CONTEXT_SERVER,   0,   0 },
+	{ "mem_stats",  "Show memory pool statistics",  "mem_stats",   G_TvT_Cmd_MemStats,  CMD_CONTEXT_SERVER,   0,   0 },
+	{ "mod_cvars",  "Show mod cvar settings",      "mod_cvars [filter]",   G_TvT_Cmd_ModCvars,  CMD_CONTEXT_ALL,      0,   1 },
+	{ "shuffle",    "Shuffle players between teams", "shuffle",   G_TvT_Cmd_Shuffle,   CMD_CONTEXT_SERVER,   0,   0 },
 	{ NULL,        NULL,                          NULL,           NULL,             0,                  0,   0 }
 };
 

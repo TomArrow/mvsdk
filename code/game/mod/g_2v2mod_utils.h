@@ -8,8 +8,10 @@
 
 // Generic print function
 void G_TvT_Printf(int clientNum, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+
+void G_TvT_DebugPrintf(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+
 void G_TvT_MakeNameUnique(int clientNum, char *name);
-void G_TvT_FisherYatesShuffle(int *array, int n);
 
 // Force push/pull items
 void G_TvT_ForcePushItem(gentity_t *item, qboolean pull, vec3_t forward);
@@ -17,8 +19,14 @@ void G_TvT_ForcePushItem(gentity_t *item, qboolean pull, vec3_t forward);
 // Spawn loadout
 void G_TvT_SetLoadout(gclient_t *client, qboolean firstSpawn);
 
+// Buffered print to send big strings to clients in chunks.
+void G_TvT_LongPrint(int clientNum, const char *text);
+void G_TvT_LongPrint_Frame(void);
+
+void G_TvT_TablePrint(table_t *t, int clientNum);
+
 // Utilities
 void G_TvT_FisherYatesShuffle(int *array, int n);
-qboolean G_TvT_IsNumericString(const char *s) ;
+qboolean G_TvT_IsNumericString(const char *s);
 
 #endif

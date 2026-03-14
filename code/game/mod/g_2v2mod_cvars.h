@@ -32,5 +32,6 @@ TVT_CVAR_LIST
 
 void G_TvT_RegisterCvars(void);
 void G_TvT_UpdateCvars(void);
+tvt_Cvar_t *G_TvT_GetCvarTable(int *count);
 
 #endif

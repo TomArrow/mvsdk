@@ -55,6 +55,11 @@ void G_TvT_UpdateCvars(void) {
 	}
 }
 
+tvt_Cvar_t *G_TvT_GetCvarTable(int *count) {
+	*count = tvtCvarTableSize;
+	return tvtCvarTable;
+}
+
 qboolean G_TvT_UpdateSpawnArmor(void) {
 	tvt_ModState_t *tvt = &level.tvt;
 	char buf[MAX_CVAR_VALUE_STRING];

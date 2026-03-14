@@ -2758,6 +2758,9 @@ end = trap_Milliseconds();
 		trap_Cvar_Set("g_listEntity", "0");
 	}
 
+	// Drain buffered long prints.
+	G_TvT_LongPrint_Frame();
+
 	//At the end of the frame, send out the ghoul2 kill queue, if there is one
 	G_SendG2KillQueue();
 

@@ -6,6 +6,7 @@
 #include "bg_public.h"
 #include "g_public.h"
 #include "2v2mod_memory.h"
+#include "2v2mod_utils.h"
 #include "mod/g_2v2mod_main.h"
 
 //==================================================================
