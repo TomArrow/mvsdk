@@ -1,0 +1,9 @@
+# Exclude specific directories, leaving mod/ directories alone
+code/game/*.c
+code/game/*.h
+code/cgame/*.c
+code/cgame/*.h
+code/ui/*.c
+code/ui/*.h
+tools/
+build/

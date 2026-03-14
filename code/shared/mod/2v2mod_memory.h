@@ -17,7 +17,7 @@
 
 #define BLOCK_HEADER_SIZE sizeof(block_t)
 #define BLOCK_FOOTER_SIZE sizeof(size_t)
-#define BLOCK_OVERHEAD    (BLOCK_HEADER_SIZE + BLOCK_FOOTER_SIZE)
+#define BLOCK_OVERHEAD (BLOCK_HEADER_SIZE + BLOCK_FOOTER_SIZE)
 
 typedef struct block {
     size_t        size_and_flags;
@@ -26,13 +26,13 @@ typedef struct block {
 } block_t;
 
 // Boundary tag (footer) access — footer is the last sizeof(size_t) bytes of a block
-#define GET_FOOTER_PTR(block)     ((size_t *)((char *)(block) + GET_SIZE(block) - BLOCK_FOOTER_SIZE))
-#define SET_FOOTER(block)         (*GET_FOOTER_PTR(block) = (block)->size_and_flags)
+#define GET_FOOTER_PTR(block) ((size_t *)((char *)(block) + GET_SIZE(block) - BLOCK_FOOTER_SIZE))
+#define SET_FOOTER(block) (*GET_FOOTER_PTR(block) = (block)->size_and_flags)
 
 // Physical neighbour access via boundary tags
-#define GET_NEXT_PHYS(block)      ((block_t *)((char *)(block) + GET_SIZE(block)))
+#define GET_NEXT_PHYS(block) ((block_t *)((char *)(block) + GET_SIZE(block)))
 #define GET_PREV_FOOTER_VAL(block) (*((size_t *)((char *)(block) - BLOCK_FOOTER_SIZE)))
-#define GET_PREV_PHYS(block)      ((block_t *)((char *)(block) - (GET_PREV_FOOTER_VAL(block) & SIZE_MASK)))
+#define GET_PREV_PHYS(block) ((block_t *)((char *)(block) - (GET_PREV_FOOTER_VAL(block) & SIZE_MASK)))
 
 typedef struct {
     size_t pool_size;

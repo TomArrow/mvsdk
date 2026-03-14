@@ -1,0 +1,34 @@
+IndentWidth: 4
+UseTab: Never
+
+PointerAlignment: Right
+
+SpaceBeforeParens: ControlStatements
+
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: true
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: true
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: false
+
+AlignConsecutiveDeclarations: true
+KeepEmptyLinesAtTheStartOfBlocks: true
+IndentCaseLabels: true
+SortIncludes: Never
+ColumnLimit: 0
+
+AllowShortBlocksOnASingleLine: Never
+AlignEscapedNewlines: LeftWithLastLine

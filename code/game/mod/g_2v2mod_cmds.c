@@ -1,202 +1,205 @@
 #include "../g_local.h"
 
 static qboolean G_TvT_Cmd_MemStats(gentity_t *ent) {
-	tvt_MemStats_t s;
-	int cn = TVT_ENT_TO_CN(ent);
+    tvt_MemStats_t s;
+    int            cn = TVT_ENT_TO_CN(ent);
 
-	TvT_Mem_GetStats(&s);
+    TvT_Mem_GetStats(&s);
 
-	G_TvT_Printf(cn, "--- Memory Pool Stats ---\n");
-	G_TvT_Printf(cn, "Pool size:    %d bytes (%d MB)\n",
-		(int)s.pool_size, (int)(s.pool_size / (1024 * 1024)));
-	G_TvT_Printf(cn, "Used:         %d blocks, %d bytes (%d KB)\n",
-		s.used_blocks, (int)s.used_bytes, (int)(s.used_bytes / 1024));
-	G_TvT_Printf(cn, "  Largest:    %d bytes\n", (int)s.used_largest);
-	G_TvT_Printf(cn, "  Overhead:   %d bytes (%d per block)\n",
-		(int)s.used_overhead, (int)BLOCK_OVERHEAD);
-	G_TvT_Printf(cn, "Free:         %d blocks, %d bytes (%d MB)\n",
-		s.free_blocks, (int)s.free_bytes, (int)(s.free_bytes / (1024 * 1024)));
-	G_TvT_Printf(cn, "  Largest:    %d bytes\n", (int)s.free_largest);
+    G_TvT_Printf(cn, "--- Memory Pool Stats ---\n");
+    G_TvT_Printf(cn, "Pool size:    %d bytes (%d MB)\n",
+                 (int)s.pool_size, (int)(s.pool_size / (1024 * 1024)));
+    G_TvT_Printf(cn, "Used:         %d blocks, %d bytes (%d KB)\n",
+                 s.used_blocks, (int)s.used_bytes, (int)(s.used_bytes / 1024));
+    G_TvT_Printf(cn, "  Largest:    %d bytes\n", (int)s.used_largest);
+    G_TvT_Printf(cn, "  Overhead:   %d bytes (%d per block)\n",
+                 (int)s.used_overhead, (int)BLOCK_OVERHEAD);
+    G_TvT_Printf(cn, "Free:         %d blocks, %d bytes (%d MB)\n",
+                 s.free_blocks, (int)s.free_bytes, (int)(s.free_bytes / (1024 * 1024)));
+    G_TvT_Printf(cn, "  Largest:    %d bytes\n", (int)s.free_largest);
 
-	if (s.free_blocks > 1) {
-		G_TvT_Printf(cn, "Fragmentation: %d free segments\n", s.free_blocks);
-	}
+    if (s.free_blocks > 1) {
+        G_TvT_Printf(cn, "Fragmentation: %d free segments\n", s.free_blocks);
+    }
 
-	return qtrue;
+    return qtrue;
 }
 
 static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
-	static int teamSelection = 0;
-	int players[MAX_CLIENTS];
-	unsigned int oldRed = 0, oldBlue = 0;
-	unsigned int newRed, newBlue;
-	int count = 0;
-	int i, sel;
+    static int   teamSelection = 0;
+    int          players[MAX_CLIENTS];
+    unsigned int oldRed = 0, oldBlue = 0;
+    unsigned int newRed, newBlue;
+    int          count = 0;
+    int          i, sel;
 
-	if (g_gametype.integer < GT_TEAM) {
-		G_TvT_Printf(TVT_ENT_TO_CN(ent), "This command is only allowed in team based gametypes.\n");
-		return qtrue;
-	}
+    if (g_gametype.integer < GT_TEAM) {
+        G_TvT_Printf(TVT_ENT_TO_CN(ent), "This command is only allowed in team based gametypes.\n");
+        return qtrue;
+    }
 
-	for (i = 0; i < level.maxclients; i++) {
-		gclient_t *cl = &level.clients[i];
+    for (i = 0; i < level.maxclients; i++) {
+        gclient_t *cl = &level.clients[i];
 
-		if (cl->pers.connected != CON_CONNECTED) {
-			continue;
-		}
-		if (cl->sess.sessionTeam == TEAM_RED) {
-			oldRed |= (1u << i);
-		} else if (cl->sess.sessionTeam == TEAM_BLUE) {
-			oldBlue |= (1u << i);
-		} else {
-			continue;
-		}
-		players[count++] = i;
-	}
+        if (cl->pers.connected != CON_CONNECTED) {
+            continue;
+        }
+        if (cl->sess.sessionTeam == TEAM_RED) {
+            oldRed |= (1u << i);
+        }
+        else if (cl->sess.sessionTeam == TEAM_BLUE) {
+            oldBlue |= (1u << i);
+        }
+        else {
+            continue;
+        }
+        players[count++] = i;
+    }
 
-	if (count < 3) {
-		G_TvT_Printf(TVT_ENT_TO_CN(ent), "Not enough players to shuffle.\n");
-		return qtrue;
-	}
+    if (count < 3) {
+        G_TvT_Printf(TVT_ENT_TO_CN(ent), "Not enough players to shuffle.\n");
+        return qtrue;
+    }
 
-	do {
-		G_TvT_FisherYatesShuffle(players, count);
+    do {
+        G_TvT_FisherYatesShuffle(players, count);
 
-		newRed = newBlue = 0;
-		sel = teamSelection;
-		for (i = 0; i < count; i++) {
-			if (sel & 1) {
-				newBlue |= (1u << players[i]);
-			} else {
-				newRed |= (1u << players[i]);
-			}
-			sel ^= 1;
-		}
-	} while (newRed == oldRed || newRed == oldBlue);
+        newRed = newBlue = 0;
+        sel = teamSelection;
+        for (i = 0; i < count; i++) {
+            if (sel & 1) {
+                newBlue |= (1u << players[i]);
+            }
+            else {
+                newRed |= (1u << players[i]);
+            }
+            sel ^= 1;
+        }
+    } while (newRed == oldRed || newRed == oldBlue);
 
-	for (i = 0; i < count; i++) {
-		SetTeam(&g_entities[players[i]], (newRed & (1u << players[i])) ? "red" : "blue");
-	}
+    for (i = 0; i < count; i++) {
+        SetTeam(&g_entities[players[i]], (newRed & (1u << players[i])) ? "red" : "blue");
+    }
 
-	teamSelection ^= 1;
+    teamSelection ^= 1;
 
-	CheckTeamLeader(TEAM_RED);
-	CheckTeamLeader(TEAM_BLUE);
+    CheckTeamLeader(TEAM_RED);
+    CheckTeamLeader(TEAM_BLUE);
 
-	trap_SendServerCommand(-1, "cp \"Teams have been shuffled.\n\"");
-	return qtrue;
+    trap_SendServerCommand(-1, "cp \"Teams have been shuffled.\n\"");
+    return qtrue;
 }
 
 static qboolean G_TvT_FilterSubstring(table_t *t, tableRow_t *row, void *ctx) {
-	const char *search = (const char *)ctx;
-	int col = TvT_Table_FindCol(t, "Cvar");
-	const char *text;
-	int searchLen;
-	int i;
+    const char *search = (const char *)ctx;
+    int         col = TvT_Table_FindCol(t, "Cvar");
+    const char *text;
+    int         searchLen;
+    int         i;
 
-	if (col < 0) {
-		return qfalse;
-	}
-	text = row->cells[col].text;
-	if (!text) {
-		return qfalse;
-	}
+    if (col < 0) {
+        return qfalse;
+    }
+    text = row->cells[col].text;
+    if (!text) {
+        return qfalse;
+    }
 
-	searchLen = strlen(search);
+    searchLen = strlen(search);
 
-	for (i = 0; text[i]; i++) {
-		if (!Q_stricmpn(&text[i], search, searchLen)) {
-			return qtrue;
-		}
-	}
-	return qfalse;
+    for (i = 0; text[i]; i++) {
+        if (!Q_stricmpn(&text[i], search, searchLen)) {
+            return qtrue;
+        }
+    }
+    return qfalse;
 }
 
 static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
-	int cn = TVT_ENT_TO_CN(ent);
-	tvt_Cvar_t *cvars;
-	int count;
-	int i;
-	table_t *t;
-	char search[MAX_TOKEN_CHARS];
+    int         cn = TVT_ENT_TO_CN(ent);
+    tvt_Cvar_t *cvars;
+    int         count;
+    int         i;
+    table_t    *t;
+    char        search[MAX_TOKEN_CHARS];
 
-	cvars = G_TvT_GetCvarTable(&count);
+    cvars = G_TvT_GetCvarTable(&count);
 
-	t = TvT_Table_Create();
-	TvT_Table_AddCol(t, "Name", ALIGN_LEFT);
-	TvT_Table_AddCol(t, "Description", ALIGN_LEFT);
-	TvT_Table_AddCol(t, "Default", ALIGN_LEFT);
-	TvT_Table_AddCol(t, "Current", ALIGN_LEFT);
+    t = TvT_Table_Create();
+    TvT_Table_AddCol(t, "Name", ALIGN_LEFT);
+    TvT_Table_AddCol(t, "Description", ALIGN_LEFT);
+    TvT_Table_AddCol(t, "Default", ALIGN_LEFT);
+    TvT_Table_AddCol(t, "Current", ALIGN_LEFT);
 
-	TvT_Table_SetBorderColor(t, S_COLOR_MAGENTA);
+    TvT_Table_SetBorderColor(t, S_COLOR_MAGENTA);
 
-	for (i = 0; i < count; i++) {
-		tableRow_t *row = TvT_Table_AddRow(t);
+    for (i = 0; i < count; i++) {
+        tableRow_t *row = TvT_Table_AddRow(t);
 
-		TvT_Table_SetCell(t, row, 0, cvars[i].cvarName);
-		TvT_Table_SetCell(t, row, 1, cvars[i].description);
-		TvT_Table_SetCell(t, row, 2, cvars[i].defaultString);
-		TvT_Table_SetCell(t, row, 3, cvars[i].vmCvar->string);
+        TvT_Table_SetCell(t, row, 0, cvars[i].cvarName);
+        TvT_Table_SetCell(t, row, 1, cvars[i].description);
+        TvT_Table_SetCell(t, row, 2, cvars[i].defaultString);
+        TvT_Table_SetCell(t, row, 3, cvars[i].vmCvar->string);
 
-		if (strcmp(cvars[i].vmCvar->string, cvars[i].defaultString)) {
-			TvT_Table_SetCellColor(row, 3, S_COLOR_GREEN);
-		}
-	}
+        if (strcmp(cvars[i].vmCvar->string, cvars[i].defaultString)) {
+            TvT_Table_SetCellColor(row, 3, S_COLOR_GREEN);
+        }
+    }
 
-	if (trap_Argc() > 1) {
-		trap_Argv(1, search, sizeof(search));
-		TvT_Table_Filter(t, G_TvT_FilterSubstring, search);
-	}
+    if (trap_Argc() > 1) {
+        trap_Argv(1, search, sizeof(search));
+        TvT_Table_Filter(t, G_TvT_FilterSubstring, search);
+    }
 
-	TvT_Table_Sort(t, "Name", qtrue);
-	G_TvT_TablePrint(t, cn);
-	TvT_Table_Destroy(t);
+    TvT_Table_Sort(t, "Name", qtrue);
+    G_TvT_TablePrint(t, cn);
+    TvT_Table_Destroy(t);
 
-	return qtrue;
+    return qtrue;
 }
 
 static tvt_Cmd_t tvt_commands[] = {
-	{ "mem_stats",  "Show memory pool statistics",  "mem_stats",   G_TvT_Cmd_MemStats,  CMD_CONTEXT_SERVER,   0,   0 },
-	{ "mod_cvars",  "Show mod cvar settings",      "mod_cvars [filter]",   G_TvT_Cmd_ModCvars,  CMD_CONTEXT_ALL,      0,   1 },
-	{ "shuffle",    "Shuffle players between teams", "shuffle",   G_TvT_Cmd_Shuffle,   CMD_CONTEXT_SERVER,   0,   0 },
-	{ NULL,        NULL,                          NULL,           NULL,             0,                  0,   0 }
-};
+    {"mem_stats", "Show memory pool statistics", "mem_stats", G_TvT_Cmd_MemStats, CMD_CONTEXT_SERVER, 0, 0},
+    {"mod_cvars", "Show mod cvar settings", "mod_cvars [filter]", G_TvT_Cmd_ModCvars, CMD_CONTEXT_ALL, 0, 1},
+    {"shuffle", "Shuffle players between teams", "shuffle", G_TvT_Cmd_Shuffle, CMD_CONTEXT_SERVER, 0, 0},
+    {NULL, NULL, NULL, NULL, 0, 0, 0}};
 
 static qboolean G_TvT_Cmd_Execute(gentity_t *ent, const char *cmd, cmdContext_t context) {
-	tvt_Cmd_t *c;
-	unsigned int argc;
+    tvt_Cmd_t   *c;
+    unsigned int argc;
 
-	for (c = tvt_commands; c->name; c++) {
-		if (Q_stricmp(cmd, c->name)) {
-			continue;
-		}
+    for (c = tvt_commands; c->name; c++) {
+        if (Q_stricmp(cmd, c->name)) {
+            continue;
+        }
 
-		if (!(c->context & context)) {
-			if (context == CMD_CONTEXT_CLIENT) {
-				G_TvT_Printf(TVT_ENT_TO_CN(ent), "Command '%s' can only be used by the server.\n", cmd);
-			} else {
-				G_TvT_Printf(TVT_ENT_TO_CN(ent), "Command '%s' can only be used by clients.\n", cmd);
-			}
-			return qtrue;
-		}
+        if (!(c->context & context)) {
+            if (context == CMD_CONTEXT_CLIENT) {
+                G_TvT_Printf(TVT_ENT_TO_CN(ent), "Command '%s' can only be used by the server.\n", cmd);
+            }
+            else {
+                G_TvT_Printf(TVT_ENT_TO_CN(ent), "Command '%s' can only be used by clients.\n", cmd);
+            }
+            return qtrue;
+        }
 
-		argc = (unsigned int)(trap_Argc() - 1);
+        argc = (unsigned int)(trap_Argc() - 1);
 
-		if (argc < c->minArgs || (c->maxArgs > 0 && argc > c->maxArgs)) {
-			G_TvT_Printf(TVT_ENT_TO_CN(ent), "Usage: %s\n", c->usage);
-			return qtrue;
-		}
+        if (argc < c->minArgs || (c->maxArgs > 0 && argc > c->maxArgs)) {
+            G_TvT_Printf(TVT_ENT_TO_CN(ent), "Usage: %s\n", c->usage);
+            return qtrue;
+        }
 
-		return c->execute(ent);
-	}
+        return c->execute(ent);
+    }
 
-	return qfalse;
+    return qfalse;
 }
 
 qboolean G_TvT_ClientCommand(gentity_t *ent, const char *cmd) {
-	return G_TvT_Cmd_Execute(ent, cmd, CMD_CONTEXT_CLIENT);
+    return G_TvT_Cmd_Execute(ent, cmd, CMD_CONTEXT_CLIENT);
 }
 
 qboolean G_TvT_ConsoleCommand(const char *cmd) {
-	return G_TvT_Cmd_Execute(NULL, cmd, CMD_CONTEXT_SERVER);
+    return G_TvT_Cmd_Execute(NULL, cmd, CMD_CONTEXT_SERVER);
 }
