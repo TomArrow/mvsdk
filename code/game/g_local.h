@@ -433,6 +433,9 @@ struct gclient_s {
 	int			forcePowerSoundDebounce; //if > level.time, don't do certain sound events again (drain sound, absorb sound, etc)
 
 	qboolean	fjDidJump;
+
+	// 2v2mod
+	tvt_ClientState_t	tvt;
 };
 
 
@@ -1357,4 +1360,5 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 #include "mod/g_2v2mod_cvars.h"
 #include "mod/g_2v2mod_utils.h"
 #include "mod/g_2v2mod_cmds.h"
+#include "mod/g_2v2mod_stats.h"
 

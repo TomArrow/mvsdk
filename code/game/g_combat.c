@@ -1912,6 +1912,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	self->enemy = attacker;
 
 	self->client->ps.persistant[PERS_KILLED]++;
+	G_TvT_Stats_TrackKill(self, attacker);
 
 	if (self == attacker)
 	{
@@ -3493,6 +3494,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		{
 			if (targ->health <= 0)
 			{
+				take += targ->health - 1; // Reduce take by the overkill amount so rage keeps them at 1 hp.
 				targ->health = 1;
 			}
 			if (targ->client->ps.stats[STAT_HEALTH] <= 0)
@@ -3500,7 +3502,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 				targ->client->ps.stats[STAT_HEALTH] = 1;
 			}
 		}
-	
+
 		if ( targ->health <= 0 ) {
 			if ( client )
 			{
@@ -3530,6 +3532,8 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 				VectorCopy( dir, targ->pos2 );
 			}
 
+			G_TvT_Stats_TrackDamage(targ, attacker, take + asave + targ->health);
+
 			targ->enemy = attacker;
 			targ->die (targ, inflictor, attacker, take, mod);
 			return;
@@ -3539,6 +3543,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 
 		G_LogWeaponDamage(attacker->s.number, mod, take);
 	}
+	G_TvT_Stats_TrackDamage(targ, attacker, take + asave);
 
 }
 

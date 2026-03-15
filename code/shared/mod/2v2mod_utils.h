@@ -15,6 +15,7 @@ typedef struct {
 
 typedef struct {
     tableCell_t *cells;
+    qboolean     sepBefore;
 } tableRow_t;
 
 typedef struct {
@@ -22,6 +23,7 @@ typedef struct {
     tableAlign_t align;
     int          hdrVisLen;
     int          maxRawLen;
+    int          minWidth;
     qboolean     hidden;
 } tableCol_t;
 
@@ -37,7 +39,7 @@ struct table_s {
     int           rowCap;
     qboolean      drawBorder;
     qboolean      drawHeaderSep;
-    const char   *borderColor;
+    const char   *accentColor;
     tableFilter_t filterFn;
     void         *filterCtx;
 };
@@ -48,11 +50,13 @@ void        TvT_Table_AddCol(table_t *t, const char *header, tableAlign_t align)
 tableRow_t *TvT_Table_AddRow(table_t *t);
 void        TvT_Table_SetCell(table_t *t, tableRow_t *row, int col, const char *text);
 void        TvT_Table_SetCellColor(tableRow_t *row, int col, const char *color);
+void        TvT_Table_SetRowSep(tableRow_t *row, qboolean enabled);
 void        TvT_Table_SetBorder(table_t *t, qboolean enabled);
 void        TvT_Table_SetHeaderSep(table_t *t, qboolean enabled);
-void        TvT_Table_SetBorderColor(table_t *t, const char *color);
+void        TvT_Table_SetAccentColor(table_t *t, const char *color);
 int         TvT_Table_FindCol(table_t *t, const char *colName);
 void        TvT_Table_HideCol(table_t *t, const char *colName, qboolean hidden);
 void        TvT_Table_Sort(table_t *t, const char *colName, qboolean ascending);
 void        TvT_Table_Filter(table_t *t, tableFilter_t keep, void *ctx);
+void        TvT_Table_SyncWidths(table_t *a, table_t *b);
 char       *TvT_Table_ToString(table_t *t);

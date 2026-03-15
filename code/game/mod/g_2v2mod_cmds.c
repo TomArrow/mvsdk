@@ -11,7 +11,6 @@ static qboolean G_TvT_Cmd_MemStats(gentity_t *ent) {
     t = TvT_Table_Create();
     TvT_Table_AddCol(t, "Metric", ALIGN_LEFT);
     TvT_Table_AddCol(t, "Value", ALIGN_RIGHT);
-    TvT_Table_SetBorderColor(t, S_COLOR_MAGENTA);
 
     row = TvT_Table_AddRow(t);
     TvT_Table_SetCell(t, row, 0, "Pool size");
@@ -115,11 +114,6 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
     return qtrue;
 }
 
-typedef struct {
-    const char *colName;
-    const char *search;
-} tvt_FilterCtx_t;
-
 static qboolean G_TvT_FilterSubstring(table_t *t, tableRow_t *row, void *ctx) {
     tvt_FilterCtx_t *filter = (tvt_FilterCtx_t *)ctx;
     int              col = TvT_Table_FindCol(t, filter->colName);
@@ -161,8 +155,6 @@ static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
     TvT_Table_AddCol(t, "Default", ALIGN_LEFT);
     TvT_Table_AddCol(t, "Current", ALIGN_LEFT);
 
-    TvT_Table_SetBorderColor(t, S_COLOR_MAGENTA);
-
     for (i = 0; i < count; i++) {
         tableRow_t *row = TvT_Table_AddRow(t);
 
@@ -202,6 +194,7 @@ static tvt_Cmd_t tvt_commands[] = {
     {"info", "Show mod information", "info <cvars|cmds>", NULL, tvt_info_subcmds, CMD_CONTEXT_ALL, 0, 0},
     {"mem_stats", "Show memory pool statistics", "mem_stats", G_TvT_Cmd_MemStats, NULL, CMD_CONTEXT_SERVER, 0, 0},
     {"shuffle", "Shuffle players between teams", "shuffle", G_TvT_Cmd_Shuffle, NULL, CMD_CONTEXT_SERVER, 0, 0},
+    {"pstats", "Show player statistics", "pstats", G_TvT_Cmd_Stats, NULL, CMD_CONTEXT_ALL, 0, 0},
     {NULL, NULL, NULL, NULL, NULL, 0, 0, 0}};
 
 static void G_TvT_Cmd_ListSubCommands(int clientNum, const char *parentName,
@@ -216,7 +209,6 @@ static void G_TvT_Cmd_ListSubCommands(int clientNum, const char *parentName,
     TvT_Table_AddCol(t, "Sub-command", ALIGN_LEFT);
     TvT_Table_AddCol(t, "Description", ALIGN_LEFT);
     TvT_Table_AddCol(t, "Usage", ALIGN_LEFT);
-    TvT_Table_SetBorderColor(t, S_COLOR_MAGENTA);
 
     for (s = subs; s->name; s++) {
         if (s->context & context) {
@@ -230,11 +222,6 @@ static void G_TvT_Cmd_ListSubCommands(int clientNum, const char *parentName,
     G_TvT_TablePrint(t, clientNum);
     TvT_Table_Destroy(t);
 }
-
-typedef struct {
-    cmdContext_t     context;
-    tvt_FilterCtx_t *search;
-} tvt_CmdFilterCtx_t;
 
 static qboolean G_TvT_FilterCmdTable(table_t *t, tableRow_t *row, void *ctx) {
     tvt_CmdFilterCtx_t *filter = (tvt_CmdFilterCtx_t *)ctx;
@@ -272,7 +259,6 @@ static table_t *G_TvT_GetCmdTable(void) {
     TvT_Table_AddCol(cmdTable, "Usage", ALIGN_LEFT);
     TvT_Table_AddCol(cmdTable, "Context", ALIGN_LEFT);
     TvT_Table_HideCol(cmdTable, "Context", qtrue);
-    TvT_Table_SetBorderColor(cmdTable, S_COLOR_MAGENTA);
 
     ctxCol = TvT_Table_FindCol(cmdTable, "Context");
 

@@ -13,6 +13,21 @@ typedef struct {
     char  lastColor;
 } tvt_printJob_t;
 
+typedef struct {
+    int kills;
+    int deaths;
+    int suicides;
+    int teamKills;
+    int dmgGiven;
+    int dmgReceived;
+    int teamDmg;
+} tvt_ClientStats_t;
+
+// Client mod struct
+typedef struct {
+    tvt_ClientStats_t stats;
+} tvt_ClientState_t;
+
 // Global mod struct
 typedef struct {
     int            spawnArmor[2];

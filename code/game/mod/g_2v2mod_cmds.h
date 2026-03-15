@@ -18,6 +18,16 @@ typedef struct tvt_Cmd_s {
     unsigned int            maxArgs;
 } tvt_Cmd_t;
 
+typedef struct {
+    const char *colName;
+    const char *search;
+} tvt_FilterCtx_t;
+
+typedef struct {
+    cmdContext_t     context;
+    tvt_FilterCtx_t *search;
+} tvt_CmdFilterCtx_t;
+
 qboolean G_TvT_ClientCommand(gentity_t *ent, const char *cmd);
 qboolean G_TvT_ConsoleCommand(const char *cmd);
 

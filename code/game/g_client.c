@@ -1763,6 +1763,7 @@ void ClientSpawn(gentity_t *ent) {
 	void		*ghoul2save;
 	int		saveSaberNum = ENTITYNUM_NONE;
 	int		wDisable = 0;
+	tvt_ClientState_t	savedTvt;
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -1870,7 +1871,11 @@ void ClientSpawn(gentity_t *ent) {
 
 	saveSaberNum = client->ps.saberEntityNum;
 
+	savedTvt = client->tvt;
+
 	memset (client, 0, sizeof(*client)); // bk FIXME: Com_Memset?
+
+	client->tvt = savedTvt;
 
 	//rww - Don't wipe the ghoul2 instance or the animation data
 	client->ghoul2 = ghoul2save;

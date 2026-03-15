@@ -70,10 +70,8 @@ static char *TvT_Table_PadCell(char *pos, const char *text, const char *color, i
     memcpy(pos, text, textLen);
     pos += textLen;
 
-    if (color) {
-        *pos++ = '^';
-        *pos++ = '7';
-    }
+    *pos++ = '^';
+    *pos++ = '7';
 
     if (padRight > 0) {
         memset(pos, ' ', padRight);
@@ -94,7 +92,7 @@ table_t *TvT_Table_Create(void) {
 
     t->drawBorder = qtrue;
     t->drawHeaderSep = qtrue;
-    t->borderColor = S_COLOR_MAGENTA;
+    t->accentColor = S_COLOR_MAGENTA;
 
     return t;
 }
@@ -124,17 +122,20 @@ void TvT_Table_Destroy(table_t *t) {
 
 void TvT_Table_AddCol(table_t *t, const char *header, tableAlign_t align) {
     if (t->numCols == t->colCap) {
+        int oldCap = t->colCap;
         t->colCap = t->colCap ? t->colCap * 2 : 8;
         t->cols = realloc(t->cols, sizeof(tableCol_t) * t->colCap);
         if (!t->cols) {
             Com_Error(ERR_FATAL, "TvT_Table_AddCol: out of memory");
         }
+        memset(&t->cols[oldCap], 0, sizeof(tableCol_t) * (t->colCap - oldCap));
     }
 
     t->cols[t->numCols].header = TvT_Table_Strdup(header);
     t->cols[t->numCols].align = align;
     t->cols[t->numCols].hdrVisLen = Q_PrintStrlen(header, (qboolean)(jk2startversion == VERSION_1_02));
     t->cols[t->numCols].maxRawLen = strlen(header);
+    t->cols[t->numCols].minWidth = 0;
     t->cols[t->numCols].hidden = qfalse;
 
     t->numCols++;
@@ -144,13 +145,14 @@ tableRow_t *TvT_Table_AddRow(table_t *t) {
     int row = t->numRows;
 
     if (t->numRows == t->rowCap) {
+        int oldCap = t->rowCap;
         t->rowCap = t->rowCap ? t->rowCap * 2 : 8;
         t->rows = realloc(t->rows, sizeof(tableRow_t) * t->rowCap);
         if (!t->rows) {
             Com_Error(ERR_FATAL, "TvT_Table_AddRow: out of memory");
         }
+        memset(&t->rows[oldCap], 0, sizeof(tableRow_t) * (t->rowCap - oldCap));
     }
-
     t->rows[row].cells = malloc(sizeof(tableCell_t) * t->numCols);
     if (!t->rows[row].cells) {
         Com_Error(ERR_FATAL, "TvT_Table_AddRow: out of memory");
@@ -178,6 +180,10 @@ void TvT_Table_SetCellColor(tableRow_t *row, int col, const char *color) {
     row->cells[col].color = color;
 }
 
+void TvT_Table_SetRowSep(tableRow_t *row, qboolean enabled) {
+    row->sepBefore = enabled;
+}
+
 void TvT_Table_SetBorder(table_t *t, qboolean enabled) {
     t->drawBorder = enabled;
 }
@@ -186,8 +192,8 @@ void TvT_Table_SetHeaderSep(table_t *t, qboolean enabled) {
     t->drawHeaderSep = enabled;
 }
 
-void TvT_Table_SetBorderColor(table_t *t, const char *color) {
-    t->borderColor = color;
+void TvT_Table_SetAccentColor(table_t *t, const char *color) {
+    t->accentColor = color;
 }
 
 // Find column index by name, returns -1 if not found.
@@ -252,32 +258,47 @@ void TvT_Table_Filter(table_t *t, tableFilter_t keep, void *ctx) {
 static char *TvT_Table_WriteSepLine(char *pos, table_t *t, int *colWidths, char junction) {
     int i;
 
-    pos = TvT_Table_WriteColor(pos, t->borderColor);
-    *pos++ = junction;
+    if (t->drawBorder) {
+        pos = TvT_Table_WriteColor(pos, t->accentColor);
+        *pos++ = junction;
+    }
+    else {
+        pos = TvT_Table_WriteColor(pos, t->accentColor);
+    }
 
     for (i = 0; i < t->numCols; i++) {
         if (t->cols[i].hidden) {
             continue;
         }
-        memset(pos, '-', colWidths[i] + 2);
-        pos += colWidths[i] + 2;
-        *pos++ = junction;
+        if (t->drawBorder) {
+            memset(pos, '-', colWidths[i] + 2);
+            pos += colWidths[i] + 2;
+            *pos++ = junction;
+        }
+        else {
+            memset(pos, '-', colWidths[i] + 2);
+            pos += colWidths[i] + 2;
+        }
     }
 
-    pos = TvT_Table_WriteColor(pos, t->borderColor ? "^7" : NULL);
+    if (t->accentColor) {
+        pos = TvT_Table_WriteColor(pos, "^7");
+    }
     *pos++ = '\n';
     return pos;
 }
 
-// Write a single padded cell: ' content |'.
+// Write a single padded cell: ' content |' (bordered) or ' content ' (borderless).
 static char *TvT_Table_WriteCell(char *pos, table_t *t, int *colWidths,
                                  const char *text, const char *color, int visLen, int col) {
     *pos++ = ' ';
     pos = TvT_Table_PadCell(pos, text, color, visLen, colWidths[col], t->cols[col].align);
     *pos++ = ' ';
-    pos = TvT_Table_WriteColor(pos, t->borderColor);
-    *pos++ = '|';
-    pos = TvT_Table_WriteColor(pos, t->borderColor ? "^7" : NULL);
+    if (t->drawBorder) {
+        pos = TvT_Table_WriteColor(pos, t->accentColor);
+        *pos++ = '|';
+        pos = TvT_Table_WriteColor(pos, t->accentColor ? "^7" : NULL);
+    }
     return pos;
 }
 
@@ -289,9 +310,9 @@ static qboolean TvT_Table_IsRowVisible(table_t *t, int row) {
 }
 
 // Calculate output buffer size.
-static int TvT_Table_CalcBufSize(table_t *t, int *colWidths, int visibleRows) {
+static int TvT_Table_CalcBufSize(table_t *t, int *colWidths, int visibleRows, int numSepRows) {
     int i;
-    int borderColorLen = t->borderColor ? strlen(t->borderColor) : 0;
+    int accentColorLen = t->accentColor ? strlen(t->accentColor) : 0;
     int rowWidth = 2;
     int bufSize;
 
@@ -302,15 +323,55 @@ static int TvT_Table_CalcBufSize(table_t *t, int *colWidths, int visibleRows) {
         rowWidth += colWidths[i] + t->cols[i].maxRawLen + 7;
     }
 
-    bufSize = rowWidth * (visibleRows + 4);
+    // Assume that we always have tables with borders, so we always allocate enough memory.
+    bufSize = rowWidth * (visibleRows + 4 + numSepRows);
 
-    if (borderColorLen) {
-        int numBorderLines = (t->drawBorder ? 2 : 0) + (t->drawHeaderSep ? 1 : 0);
-        bufSize += numBorderLines * (borderColorLen + 2);
-        bufSize += (1 + visibleRows) * (t->numCols + 1) * (borderColorLen + 2);
+    if (accentColorLen) {
+        int numBorderLines = (t->drawBorder ? 2 : 0) + (t->drawHeaderSep ? 1 : 0) + numSepRows;
+        bufSize += numBorderLines * (accentColorLen + 2);
+        bufSize += (1 + visibleRows) * (t->numCols + 1) * (accentColorLen + 2);
     }
 
     return bufSize + 1;
+}
+
+// Compute effective column width (max of header, minWidth, and all visible cell widths).
+static int TvT_Table_ColWidth(table_t *t, int col) {
+    int i;
+    int w;
+
+    w = t->cols[col].hdrVisLen;
+    if (t->cols[col].minWidth > w) {
+        w = t->cols[col].minWidth;
+    }
+    for (i = 0; i < t->numRows; i++) {
+        if (TvT_Table_IsRowVisible(t, i) && t->rows[i].cells[col].visLen > w) {
+            w = t->rows[i].cells[col].visLen;
+        }
+    }
+    return w;
+}
+
+// Sync column widths between two tables so they render with matching alignment.
+// Both tables must have the same number of columns.
+void TvT_Table_SyncWidths(table_t *a, table_t *b) {
+    int i, wa, wb, maxW;
+    int numCols;
+
+    if (!a || !b) {
+        return;
+    }
+    assert(a->numCols == b->numCols);
+
+    numCols = a->numCols < b->numCols ? a->numCols : b->numCols;
+
+    for (i = 0; i < numCols; i++) {
+        wa = TvT_Table_ColWidth(a, i);
+        wb = TvT_Table_ColWidth(b, i);
+        maxW = wa > wb ? wa : wb;
+        a->cols[i].minWidth = maxW;
+        b->cols[i].minWidth = maxW;
+    }
 }
 
 // Render table to a string, caller must free the returned buffer.
@@ -318,6 +379,7 @@ char *TvT_Table_ToString(table_t *t) {
     int  *colWidths;
     int   i, j;
     int   visibleRows;
+    int   numSepRows;
     char *buf;
     char *pos;
 
@@ -331,11 +393,20 @@ char *TvT_Table_ToString(table_t *t) {
         Com_Error(ERR_FATAL, "TvT_Table_ToString: out of memory");
     }
     for (i = 0; i < t->numCols; i++) {
-        colWidths[i] = t->cols[i].hidden ? 0 : t->cols[i].hdrVisLen;
+        if (t->cols[i].hidden) {
+            colWidths[i] = 0;
+        }
+        else {
+            colWidths[i] = t->cols[i].hdrVisLen;
+            if (t->cols[i].minWidth > colWidths[i]) {
+                colWidths[i] = t->cols[i].minWidth;
+            }
+        }
     }
 
     // Scan visible rows for tight colWidths and count them for buffer sizing.
     visibleRows = 0;
+    numSepRows = 0;
     for (i = 0; i < t->numRows; i++) {
         if (TvT_Table_IsRowVisible(t, i)) {
             for (j = 0; j < t->numCols; j++) {
@@ -343,11 +414,14 @@ char *TvT_Table_ToString(table_t *t) {
                     colWidths[j] = t->rows[i].cells[j].visLen;
                 }
             }
+            if (t->rows[i].sepBefore) {
+                numSepRows++;
+            }
             visibleRows++;
         }
     }
 
-    buf = malloc(TvT_Table_CalcBufSize(t, colWidths, visibleRows));
+    buf = malloc(TvT_Table_CalcBufSize(t, colWidths, visibleRows, numSepRows));
     if (!buf) {
         Com_Error(ERR_FATAL, "TvT_Table_ToString: out of memory");
     }
@@ -358,9 +432,11 @@ char *TvT_Table_ToString(table_t *t) {
     }
 
     // Write header row.
-    pos = TvT_Table_WriteColor(pos, t->borderColor);
-    *pos++ = '|';
-    pos = TvT_Table_WriteColor(pos, t->borderColor ? "^7" : NULL);
+    if (t->drawBorder) {
+        pos = TvT_Table_WriteColor(pos, t->accentColor);
+        *pos++ = '|';
+        pos = TvT_Table_WriteColor(pos, t->accentColor ? "^7" : NULL);
+    }
     for (j = 0; j < t->numCols; j++) {
         if (t->cols[j].hidden) {
             continue;
@@ -379,9 +455,14 @@ char *TvT_Table_ToString(table_t *t) {
         if (!TvT_Table_IsRowVisible(t, i)) {
             continue;
         }
-        pos = TvT_Table_WriteColor(pos, t->borderColor);
-        *pos++ = '|';
-        pos = TvT_Table_WriteColor(pos, t->borderColor ? "^7" : NULL);
+        if (t->rows[i].sepBefore) {
+            pos = TvT_Table_WriteSepLine(pos, t, colWidths, '|');
+        }
+        if (t->drawBorder) {
+            pos = TvT_Table_WriteColor(pos, t->accentColor);
+            *pos++ = '|';
+            pos = TvT_Table_WriteColor(pos, t->accentColor ? "^7" : NULL);
+        }
         for (j = 0; j < t->numCols; j++) {
             if (t->cols[j].hidden) {
                 continue;

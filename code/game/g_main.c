@@ -1575,6 +1575,7 @@ void BeginIntermission( void ) {
 	// send the current scoring to all clients
 	SendScoreboardMessageToAllClients();
 
+	G_TvT_Stats_EndGame();
 }
 
 qboolean DuelLimitHit(void)
