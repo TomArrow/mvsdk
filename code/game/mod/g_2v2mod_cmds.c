@@ -55,6 +55,7 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
     unsigned int oldRed = 0, oldBlue = 0;
     unsigned int newRed, newBlue;
     int          count = 0;
+    int          redCount, blueCount, maxSize;
     int          i, sel;
 
     if (g_gametype.integer < GT_TEAM) {
@@ -70,14 +71,15 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
         }
         if (cl->sess.sessionTeam == TEAM_RED) {
             oldRed |= (1u << i);
+            players[count++] = i;
         }
         else if (cl->sess.sessionTeam == TEAM_BLUE) {
             oldBlue |= (1u << i);
+            players[count++] = i;
         }
-        else {
-            continue;
+        else if (cl->sess.sessionTeam == TEAM_SPECTATOR && cl->tvt.queued) {
+            players[count++] = i;
         }
-        players[count++] = i;
     }
 
     if (count < 3) {
@@ -85,24 +87,41 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
         return qtrue;
     }
 
+    maxSize = tvt_teamSize.integer;
+
     do {
         G_TvT_FisherYatesShuffle(players, count);
 
         newRed = newBlue = 0;
+        redCount = blueCount = 0;
         sel = teamSelection;
         for (i = 0; i < count; i++) {
             if (sel & 1) {
-                newBlue |= (1u << players[i]);
+                if (!maxSize || blueCount < maxSize) {
+                    newBlue |= (1u << players[i]);
+                    blueCount++;
+                }
             }
             else {
-                newRed |= (1u << players[i]);
+                if (!maxSize || redCount < maxSize) {
+                    newRed |= (1u << players[i]);
+                    redCount++;
+                }
             }
             sel ^= 1;
         }
     } while (newRed == oldRed || newRed == oldBlue);
 
     for (i = 0; i < count; i++) {
-        SetTeam(&g_entities[players[i]], (newRed & (1u << players[i])) ? "red" : "blue");
+        if (newRed & (1u << players[i])) {
+            SetTeam(&g_entities[players[i]], "red");
+        }
+        else if (newBlue & (1u << players[i])) {
+            SetTeam(&g_entities[players[i]], "blue");
+        }
+        else if (level.clients[players[i]].sess.sessionTeam != TEAM_SPECTATOR) {
+            SetTeam(&g_entities[players[i]], "spectator");
+        }
     }
 
     teamSelection ^= 1;
@@ -158,6 +177,49 @@ static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
     return qtrue;
 }
 
+static qboolean G_TvT_Cmd_Queue(gentity_t *ent) {
+    int        cn = TVT_ENT_TO_CN(ent);
+    gclient_t *cl = ent->client;
+
+    if (cl->sess.sessionTeam != TEAM_SPECTATOR) {
+        G_TvT_Printf(cn, "You must be a spectator to use this command.\n");
+        return qtrue;
+    }
+
+    cl->tvt.queued = !cl->tvt.queued;
+    G_TvT_Printf(cn, "Queue status: %s\n", cl->tvt.queued ? "joined" : "left");
+    return qtrue;
+}
+
+static qboolean G_TvT_Cmd_Players(gentity_t *ent) {
+    int         cn = TVT_ENT_TO_CN(ent);
+    table_t    *t;
+    tableRow_t *row;
+    int         i;
+
+    t = TvT_Table_Create();
+    TvT_Table_AddCol(t, "ID", ALIGN_RIGHT);
+    TvT_Table_AddCol(t, "Name", ALIGN_LEFT);
+    TvT_Table_AddCol(t, "Queue", ALIGN_LEFT);
+
+    for (i = 0; i < level.maxclients; i++) {
+        gclient_t *cl = &level.clients[i];
+
+        if (cl->pers.connected != CON_CONNECTED) {
+            continue;
+        }
+
+        row = TvT_Table_AddRow(t);
+        TvT_Table_SetCell(t, row, 0, va("%d", i));
+        TvT_Table_SetCell(t, row, 1, cl->pers.netname);
+        TvT_Table_SetCell(t, row, 3, cl->tvt.queued ? "^2X" : "");
+    }
+
+    G_TvT_TablePrint(t, cn);
+    TvT_Table_Destroy(t);
+    return qtrue;
+}
+
 static qboolean G_TvT_Cmd_ListCommands(gentity_t *ent);
 
 static const tvt_Cmd_t tvt_info_subcmds[] = {
@@ -170,6 +232,8 @@ static tvt_Cmd_t tvt_commands[] = {
     {"mem_stats", "Show memory pool statistics", "mem_stats", G_TvT_Cmd_MemStats, NULL, CMD_CONTEXT_SERVER, 0, 0},
     {"shuffle", "Shuffle players between teams", "shuffle", G_TvT_Cmd_Shuffle, NULL, CMD_CONTEXT_SERVER, 0, 0},
     {"pstats", "Show player statistics", "pstats", G_TvT_Cmd_Stats, NULL, CMD_CONTEXT_ALL, 0, 0},
+    {"queue", "Toggle queue status", "queue", G_TvT_Cmd_Queue, NULL, CMD_CONTEXT_CLIENT, 0, 0},
+    {"players", "Show player list and queue status", "players", G_TvT_Cmd_Players, NULL, CMD_CONTEXT_ALL, 0, 0},
     {NULL, NULL, NULL, NULL, NULL, 0, 0, 0}};
 
 static void G_TvT_Cmd_ListSubCommands(int clientNum, const char *parentName,

@@ -26,6 +26,7 @@ typedef struct {
 // Client mod struct
 typedef struct {
     tvt_ClientStats_t stats;
+    qboolean          queued;
 } tvt_ClientState_t;
 
 // Global mod struct

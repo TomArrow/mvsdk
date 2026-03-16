@@ -781,6 +781,10 @@ void SetTeam( gentity_t *ent, char *s ) {
 	client->sess.spectatorState = specState;
 	client->sess.spectatorClient = specClient;
 
+	if ( g_gametype.integer >= GT_TEAM ) {
+		client->tvt.queued = (team == TEAM_RED || team == TEAM_BLUE);
+	}
+
 	client->sess.teamLeader = qfalse;
 	if ( team == TEAM_RED || team == TEAM_BLUE ) {
 		teamLeader = TeamLeader( team );
