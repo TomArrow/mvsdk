@@ -44,6 +44,11 @@ struct table_s {
     void         *filterCtx;
 };
 
+typedef struct {
+    const char *colName;
+    const char *search;
+} tvt_FilterCtx_t;
+
 table_t    *TvT_Table_Create(void);
 void        TvT_Table_Destroy(table_t *t);
 void        TvT_Table_AddCol(table_t *t, const char *header, tableAlign_t align);
@@ -58,5 +63,6 @@ int         TvT_Table_FindCol(table_t *t, const char *colName);
 void        TvT_Table_HideCol(table_t *t, const char *colName, qboolean hidden);
 void        TvT_Table_Sort(table_t *t, const char *colName, qboolean ascending);
 void        TvT_Table_Filter(table_t *t, tableFilter_t keep, void *ctx);
+qboolean    TvT_Table_FilterSubstring(table_t *t, tableRow_t *row, void *ctx);
 void        TvT_Table_SyncWidths(table_t *a, table_t *b);
 char       *TvT_Table_ToString(table_t *t);

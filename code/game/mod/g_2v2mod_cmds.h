@@ -19,11 +19,6 @@ typedef struct tvt_Cmd_s {
 } tvt_Cmd_t;
 
 typedef struct {
-    const char *colName;
-    const char *search;
-} tvt_FilterCtx_t;
-
-typedef struct {
     cmdContext_t     context;
     tvt_FilterCtx_t *search;
 } tvt_CmdFilterCtx_t;

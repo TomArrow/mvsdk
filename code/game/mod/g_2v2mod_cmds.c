@@ -114,31 +114,6 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
     return qtrue;
 }
 
-static qboolean G_TvT_FilterSubstring(table_t *t, tableRow_t *row, void *ctx) {
-    tvt_FilterCtx_t *filter = (tvt_FilterCtx_t *)ctx;
-    int              col = TvT_Table_FindCol(t, filter->colName);
-    const char      *text;
-    int              searchLen;
-    int              i;
-
-    if (col < 0) {
-        return qfalse;
-    }
-    text = row->cells[col].text;
-    if (!text) {
-        return qfalse;
-    }
-
-    searchLen = strlen(filter->search);
-
-    for (i = 0; text[i]; i++) {
-        if (!Q_stricmpn(&text[i], filter->search, searchLen)) {
-            return qtrue;
-        }
-    }
-    return qfalse;
-}
-
 static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
     int         cn = TVT_ENT_TO_CN(ent);
     tvt_Cvar_t *cvars;
@@ -173,7 +148,7 @@ static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
         trap_Argv(2, search, sizeof(search));
         filter.colName = "Name";
         filter.search = search;
-        TvT_Table_Filter(t, G_TvT_FilterSubstring, &filter);
+        TvT_Table_Filter(t, TvT_Table_FilterSubstring, &filter);
     }
 
     TvT_Table_Sort(t, "Name", qtrue);
@@ -236,7 +211,7 @@ static qboolean G_TvT_FilterCmdTable(table_t *t, tableRow_t *row, void *ctx) {
     }
 
     if (filter->search) {
-        return G_TvT_FilterSubstring(t, row, filter->search);
+        return TvT_Table_FilterSubstring(t, row, filter->search);
     }
 
     return qtrue;

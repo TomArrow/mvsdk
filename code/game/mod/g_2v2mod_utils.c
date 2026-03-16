@@ -83,32 +83,15 @@ void G_TvT_Printf(int clientNum, const char *fmt, ...) {
     }
 }
 
-// SV_SendServerCommand silently truncates messages over 1022 bytes (MAX_STRING_CHARS - 2).
-// SV_AddServerCommand drops the client at 128 unacknowledged reliable commands.
-// CL_GetServerCommand drops the client when unprocessed commands overflow the
-//   128-entry ring buffer (new commands overwrite entries cgame hasn't read yet).
-//   cgame only drains commands at snapshot transitions, not every render frame,
-//   making this the tighter constraint. The server cannot observe this gap.
-// print command format: print "content\n" — 7 prefix + 2 suffix = 9 overhead.
+// The engine drops clients at 128 unacknowledged reliable commands.
+// cgame only drains commands at snapshot transitions, not every frame,
+// so this is the tighter limit.
 //
-// sv_dynamicSnapshots: when reliable commands consume too much of the snapshot
-// message (16KB), entity states are omitted from that snapshot entirely.
-// The client processes the commands but sees no world update for that server frame.
+// With sv_dynamicSnapshots, if reliable commands fill too much of the
+// 16KB snapshot message, entity states are omitted for that frame.
 //
-// Small prints flush immediately; large ones queue and drain per frame,
-// only sending when the client has acked (lastCmdTime check).
-#define TVT_SV_CMD_MAX 1022
-#define TVT_PRINT_OVERHEAD 9
-#define TVT_PRINT_BUF_SIZE (TVT_SV_CMD_MAX - TVT_PRINT_OVERHEAD)
-#define TVT_CONSOLE_BUF_SIZE 4095 // Engine Com_Printf MAXPRINTMSG (4096) minus null terminator
-#define TVT_PRINT_PER_FRAME 4
-// Max chunks to flush immediately (no interleaving).
-// With sv_dynamicSnapshots the engine handles partial reliable command delivery
-// across snapshots, so we can safely burst more. Without it, classic engines
-// send broken snapshots if the netchan message exceeds 16k (~16 full commands).
-#define TVT_PRINT_FLUSH_CLASSIC 6  // ~6KB, safe for classic engines
-#define TVT_PRINT_FLUSH_DYNAMIC 12 // 2x classic, sv_dynamicSnapshots handles the rest, i hope
-
+// Small prints flush immediately. Large ones queue and drain per frame,
+// only sending when the client has acked.
 static char G_TvT_FindLastColor(const char *text, int len) {
     qboolean is102 = (qboolean)(jk2startversion == VERSION_1_02);
     int      i;

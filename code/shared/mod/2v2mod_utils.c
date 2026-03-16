@@ -255,6 +255,31 @@ void TvT_Table_Filter(table_t *t, tableFilter_t keep, void *ctx) {
     t->filterCtx = ctx;
 }
 
+qboolean TvT_Table_FilterSubstring(table_t *t, tableRow_t *row, void *ctx) {
+    tvt_FilterCtx_t *filter = (tvt_FilterCtx_t *)ctx;
+    int              col = TvT_Table_FindCol(t, filter->colName);
+    const char      *text;
+    int              searchLen;
+    int              i;
+
+    if (col < 0) {
+        return qfalse;
+    }
+    text = row->cells[col].text;
+    if (!text) {
+        return qfalse;
+    }
+
+    searchLen = strlen(filter->search);
+
+    for (i = 0; text[i]; i++) {
+        if (!Q_stricmpn(&text[i], filter->search, searchLen)) {
+            return qtrue;
+        }
+    }
+    return qfalse;
+}
+
 static char *TvT_Table_WriteSepLine(char *pos, table_t *t, int *colWidths, char junction) {
     int i;
 
