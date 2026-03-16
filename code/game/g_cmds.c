@@ -689,6 +689,18 @@ void SetTeam( gentity_t *ent, char *s ) {
 			// It's ok, the team we are switching to has less or same number of players
 		}
 
+		// Switching between red/blue is always allowed since it doesn't increase
+		// the total player count (also avoids blocking the shuffle command).
+		// TODO: Adjust check when some kind of queue is implemented.
+		if ( tvt_teamSize.integer && client->sess.sessionTeam == TEAM_SPECTATOR ) {
+			int count = TeamCount( ent->client->ps.clientNum, team );
+
+			if ( count >= tvt_teamSize.integer ) {
+				G_TvT_Printf( ent->client->ps.clientNum, "Team is full (%d/%d players).\n", count, tvt_teamSize.integer);
+				return;
+			}
+		}
+
 		//For now, don't do this. The legalize function will set powers properly now.
 		/*
 		if (g_forceBasedTeams.integer)
