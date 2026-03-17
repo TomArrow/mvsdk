@@ -53,6 +53,13 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		);
 	var = va( "sessionmv%i", (int)(client-level.clients) );
 	trap_Cvar_Set( var, s );
+
+	s = va("%i %i",
+		client->tvt.queued,
+		client->tvt.queueTime
+		);
+	var = va( "sessiontvt%i", (int)(client - level.clients) );
+	trap_Cvar_Set( var, s );
 }
 
 /*
@@ -96,6 +103,13 @@ void G_ReadSessionData( gclient_t *client ) {
 
 	client->ps.fd.saberAnimLevel = client->sess.saberLevel;
 	client->ps.fd.forcePowerSelected = client->sess.selectedFP;
+
+	var = va( "sessiontvt%i", (int)(client - level.clients) );
+	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
+	sscanf( s, "%i %i",
+		&client->tvt.queued,
+		&client->tvt.queueTime
+		);
 }
 
 /*
@@ -218,13 +232,16 @@ void G_InitWorldSession( void ) {
 
 	trap_Cvar_VariableStringBuffer( "session", s, sizeof(s) );
 	gt = atoi( s );
-	
+
 	// if the gametype changed since the last session, don't use any
 	// client sessions
 	if ( g_gametype.integer != gt ) {
 		level.newSession = qtrue;
 		G_Printf( "Gametype changed, clearing session data.\n" );
 	}
+
+	trap_Cvar_VariableStringBuffer( "sessiontvt", s, sizeof(s) );
+	level.tvt.match.playedLastRound = atoi( s );
 }
 
 /*
@@ -243,4 +260,6 @@ void G_WriteSessionData( void ) {
 			G_WriteClientSessionData( &level.clients[i] );
 		}
 	}
+
+	trap_Cvar_Set( "sessiontvt", va("%i", level.tvt.match.playedLastRound) );
 }

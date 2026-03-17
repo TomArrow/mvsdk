@@ -49,82 +49,164 @@ static qboolean G_TvT_Cmd_MemStats(gentity_t *ent) {
     return qtrue;
 }
 
-static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
-    static int   teamSelection = 0;
-    int          players[MAX_CLIENTS];
-    unsigned int oldRed = 0, oldBlue = 0;
-    unsigned int newRed, newBlue;
+static qboolean G_TvT_IsEligible(gclient_t *cl) {
+    if (cl->pers.connected != CON_CONNECTED) {
+        return qfalse;
+    }
+    if (cl->sess.sessionTeam == TEAM_RED || cl->sess.sessionTeam == TEAM_BLUE) {
+        return qtrue;
+    }
+    return (cl->sess.sessionTeam == TEAM_SPECTATOR && cl->tvt.queued);
+}
+
+static int G_TvT_CompareQueueTime(const void *a, const void *b) {
+    int ta = level.clients[*(const int *)a].tvt.queueTime;
+    int tb = level.clients[*(const int *)b].tvt.queueTime;
+
+    return ta - tb;
+}
+
+static int G_TvT_CollectPlayers(int *players, unsigned int *outOldRed, unsigned int *outOldBlue,
+                                int *outPriority) {
     int          count = 0;
-    int          redCount, blueCount, maxSize;
-    int          i, sel;
+    int          back = MAX_CLIENTS;
+    unsigned int curRed = 0, curBlue = 0;
+    int          totalSlots;
+    int          i;
+
+    for (i = 0; i < level.maxclients; i++) {
+        if (!G_TvT_IsEligible(&level.clients[i])) {
+            continue;
+        }
+        if (level.clients[i].sess.sessionTeam == TEAM_RED) {
+            curRed |= (1u << i);
+        }
+        else if (level.clients[i].sess.sessionTeam == TEAM_BLUE) {
+            curBlue |= (1u << i);
+        }
+        if (level.tvt.match.playedLastRound & (1u << i)) {
+            players[--back] = i;
+        }
+        else {
+            players[count++] = i;
+        }
+    }
+
+    *outOldRed = curRed;
+    *outOldBlue = curBlue;
+
+    // Multiply teamsize by 2 since the cvar is the max size per TEAM.
+    totalSlots = tvt_teamSize.integer ? tvt_teamSize.integer * 2 : MAX_CLIENTS;
+
+    // If everyone fits, shuffle all together. Otherwise, players who sat
+    // out last round stay at the front so they get slots first.
+    if (count + (MAX_CLIENTS - back) <= totalSlots) {
+        memmove(players + count, players + back, (MAX_CLIENTS - back) * sizeof(int));
+        count += (MAX_CLIENTS - back);
+        G_TvT_FisherYatesShuffle(players, count);
+        *outPriority = count;
+    }
+    else {
+        qsort(players, count, sizeof(int), G_TvT_CompareQueueTime);
+        G_TvT_FisherYatesShuffle(players + back, MAX_CLIENTS - back);
+        *outPriority = count;
+        memmove(players + count, players + back, (MAX_CLIENTS - back) * sizeof(int));
+        count += (MAX_CLIENTS - back);
+    }
+
+    return count;
+}
+
+static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
+    static int   firstTeam = 0;
+    int          players[MAX_CLIENTS];
+    unsigned int newRed, newBlue;
+    unsigned int oldRed, oldBlue;
+    int          teamSize, half, priority;
+    int          count, i, cn;
 
     if (g_gametype.integer < GT_TEAM) {
         G_TvT_Printf(TVT_ENT_TO_CN(ent), "This command is only allowed in team based gametypes.\n");
         return qtrue;
     }
 
-    for (i = 0; i < level.maxclients; i++) {
-        gclient_t *cl = &level.clients[i];
-
-        if (cl->pers.connected != CON_CONNECTED) {
-            continue;
-        }
-        if (cl->sess.sessionTeam == TEAM_RED) {
-            oldRed |= (1u << i);
-            players[count++] = i;
-        }
-        else if (cl->sess.sessionTeam == TEAM_BLUE) {
-            oldBlue |= (1u << i);
-            players[count++] = i;
-        }
-        else if (cl->sess.sessionTeam == TEAM_SPECTATOR && cl->tvt.queued) {
-            players[count++] = i;
-        }
-    }
+    count = G_TvT_CollectPlayers(players, &oldRed, &oldBlue, &priority);
 
     if (count < 3) {
         G_TvT_Printf(TVT_ENT_TO_CN(ent), "Not enough players to shuffle.\n");
         return qtrue;
     }
 
-    maxSize = tvt_teamSize.integer;
+    teamSize = tvt_teamSize.integer ? tvt_teamSize.integer : MAX_CLIENTS;
+    half = count / 2;
+    if (half > teamSize) {
+        half = teamSize;
+    }
 
-    do {
-        G_TvT_FisherYatesShuffle(players, count);
-
-        newRed = newBlue = 0;
-        redCount = blueCount = 0;
-        sel = teamSelection;
-        for (i = 0; i < count; i++) {
-            if (sel & 1) {
-                if (!maxSize || blueCount < maxSize) {
-                    newBlue |= (1u << players[i]);
-                    blueCount++;
-                }
-            }
-            else {
-                if (!maxSize || redCount < maxSize) {
-                    newRed |= (1u << players[i]);
-                    redCount++;
-                }
-            }
-            sel ^= 1;
-        }
-    } while (newRed == oldRed || newRed == oldBlue);
-
+    newRed = newBlue = 0;
     for (i = 0; i < count; i++) {
-        if (newRed & (1u << players[i])) {
-            SetTeam(&g_entities[players[i]], "red");
+        if (i < half) {
+            newRed |= (1u << players[i]);
         }
-        else if (newBlue & (1u << players[i])) {
-            SetTeam(&g_entities[players[i]], "blue");
-        }
-        else if (level.clients[players[i]].sess.sessionTeam != TEAM_SPECTATOR) {
-            SetTeam(&g_entities[players[i]], "spectator");
+        else if (i < half * 2) {
+            newBlue |= (1u << players[i]);
         }
     }
 
-    teamSelection ^= 1;
+    // Alternate which team gets the larger half on odd counts.
+    if (firstTeam & 1) {
+        unsigned int tmp = newRed;
+        newRed = newBlue;
+        newBlue = tmp;
+    }
+
+    // If we landed on the same (or swapped) teams, re-shuffle once.
+    // Shuffle each priority group independently to preserve queue priority.
+    if (newRed == oldRed || newRed == oldBlue) {
+        G_TvT_FisherYatesShuffle(players, priority);
+        G_TvT_FisherYatesShuffle(players + priority, count - priority);
+
+        newRed = newBlue = 0;
+        for (i = 0; i < count; i++) {
+            if (i < half) {
+                newRed |= (1u << players[i]);
+            }
+            else if (i < half * 2) {
+                newBlue |= (1u << players[i]);
+            }
+        }
+
+        if (firstTeam & 1) {
+            unsigned int tmp = newRed;
+            newRed = newBlue;
+            newBlue = tmp;
+        }
+    }
+
+    for (i = 0; i < count; i++) {
+        cn = players[i];
+
+        if (newRed & (1u << cn)) {
+            SetTeam(&g_entities[cn], "red", qtrue);
+        }
+        else if (newBlue & (1u << cn)) {
+            SetTeam(&g_entities[cn], "blue", qtrue);
+        }
+        else {
+            if (level.clients[cn].sess.sessionTeam != TEAM_SPECTATOR) {
+                SetTeam(&g_entities[cn], "spectator", qtrue);
+            }
+            level.clients[cn].tvt.queued = qtrue;
+            if (!level.clients[cn].tvt.queueTime) {
+                level.clients[cn].tvt.queueTime = level.time;
+            }
+        }
+    }
+
+    // TODO: Move saving of players that have played last round somewhere else
+    // once some kind of ready up system has been implemented.
+    level.tvt.match.playedLastRound = newRed | newBlue;
+    firstTeam ^= 1;
 
     CheckTeamLeader(TEAM_RED);
     CheckTeamLeader(TEAM_BLUE);
@@ -181,13 +263,23 @@ static qboolean G_TvT_Cmd_Queue(gentity_t *ent) {
     int        cn = TVT_ENT_TO_CN(ent);
     gclient_t *cl = ent->client;
 
+    if (!cl)
+        return qtrue;
+
+    if (g_gametype.integer < GT_TEAM) {
+        G_TvT_Printf(cn, "Queue command only works in team based gametypes.\n");
+        return qtrue;
+    }
+
     if (cl->sess.sessionTeam != TEAM_SPECTATOR) {
         G_TvT_Printf(cn, "You must be a spectator to use this command.\n");
         return qtrue;
     }
 
     cl->tvt.queued = !cl->tvt.queued;
-    G_TvT_Printf(cn, "Queue status: %s\n", cl->tvt.queued ? "joined" : "left");
+    cl->tvt.queueTime = cl->tvt.queued ? level.time : 0;
+    G_TvT_Printf(cn, "Queue status: %s\n", cl->tvt.queued ? "^2joined" : "^1left");
+
     return qtrue;
 }
 
@@ -212,7 +304,11 @@ static qboolean G_TvT_Cmd_Players(gentity_t *ent) {
         row = TvT_Table_AddRow(t);
         TvT_Table_SetCell(t, row, 0, va("%d", i));
         TvT_Table_SetCell(t, row, 1, cl->pers.netname);
-        TvT_Table_SetCell(t, row, 3, cl->tvt.queued ? "^2X" : "");
+        TvT_Table_SetCell(t, row, 2, cl->tvt.queued ? "^2X" : "");
+    }
+
+    if (g_gametype.integer < GT_TEAM) {
+        TvT_Table_HideCol(t, "Queue", qtrue);
     }
 
     G_TvT_TablePrint(t, cn);

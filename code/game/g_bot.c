@@ -549,6 +549,9 @@ void G_CheckMinimumPlayers( void ) {
 		if (minplayers >= g_maxclients.integer / 2) {
 			minplayers = (g_maxclients.integer / 2) -1;
 		}
+		if (tvt_teamSize.integer && minplayers > tvt_teamSize.integer) {
+			minplayers = tvt_teamSize.integer;
+		}
 
 		humanplayers = G_CountHumanPlayers( TEAM_RED );
 		botplayers = G_CountBotPlayers(	TEAM_RED );
@@ -830,6 +833,16 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 			team = "red";
 		}
 	}
+
+	// Enforce team size limit, silently move to spectator if team is full.
+	if ( tvt_teamSize.integer && team ) {
+		if ( Q_stricmp( team, "red" ) == 0 && TeamCount( -1, TEAM_RED ) >= tvt_teamSize.integer ) {
+			team = "spectator";
+		} else if ( Q_stricmp( team, "blue" ) == 0 && TeamCount( -1, TEAM_BLUE ) >= tvt_teamSize.integer ) {
+			team = "spectator";
+		}
+	}
+
 //	Info_SetValueForKey( userinfo, "characterfile", Info_ValueForKey( botinfo, "aifile" ) );
 	Info_SetValueForKey( userinfo, "skill", va( "%5.2f", skill ) );
 	Info_SetValueForKey( userinfo, "team", team );

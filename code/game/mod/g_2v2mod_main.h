@@ -27,14 +27,20 @@ typedef struct {
 typedef struct {
     tvt_ClientStats_t stats;
     qboolean          queued;
+    int               queueTime;
 } tvt_ClientState_t;
+
+typedef struct {
+    int playedLastRound;
+} tvt_MatchState_t;
 
 // Global mod struct
 typedef struct {
-    int            spawnArmor[2];
-    int            spawnItems[2];
-    tvt_printJob_t printJobs[TVT_PRINT_MAX_JOBS];
-    int            numPrintJobs;
+    int              spawnArmor[2];
+    int              spawnItems[2];
+    tvt_printJob_t   printJobs[TVT_PRINT_MAX_JOBS];
+    int              numPrintJobs;
+    tvt_MatchState_t match;
 } tvt_ModState_t;
 
 void G_TvT_Init(void);

@@ -591,7 +591,7 @@ void BroadcastTeamChange( gclient_t *client, int oldTeam )
 SetTeam
 =================
 */
-void SetTeam( gentity_t *ent, char *s ) {
+void SetTeam( gentity_t *ent, char *s, qboolean bypassTeamLimit ) {
 	team_t				team, oldTeam;
 	gclient_t			*client;
 	int					clientNum;
@@ -693,10 +693,8 @@ void SetTeam( gentity_t *ent, char *s ) {
 			// It's ok, the team we are switching to has less or same number of players
 		}
 
-		// Switching between red/blue is always allowed since it doesn't increase
-		// the total player count (also avoids blocking the shuffle command).
-		// TODO: Adjust check when some kind of queue is implemented.
-		if ( tvt_teamSize.integer && client->sess.sessionTeam == TEAM_SPECTATOR ) {
+		// Switching between red/blue is always allowed since it doesn't increase the total player count.
+		if ( tvt_teamSize.integer && !bypassTeamLimit && client->sess.sessionTeam == TEAM_SPECTATOR ) {
 			int count = TeamCount( ent->client->ps.clientNum, team );
 
 			if ( count >= tvt_teamSize.integer ) {
@@ -781,9 +779,6 @@ void SetTeam( gentity_t *ent, char *s ) {
 	client->sess.spectatorState = specState;
 	client->sess.spectatorClient = specClient;
 
-	if ( g_gametype.integer >= GT_TEAM ) {
-		client->tvt.queued = (team == TEAM_RED || team == TEAM_BLUE);
-	}
 
 	client->sess.teamLeader = qfalse;
 	if ( team == TEAM_RED || team == TEAM_BLUE ) {
@@ -875,7 +870,17 @@ void Cmd_Team_f( gentity_t *ent ) {
 
 	trap_Argv( 1, s, sizeof( s ) );
 
-	SetTeam( ent, s );
+	SetTeam( ent, s, qfalse );
+
+	if ( g_gametype.integer >= GT_TEAM ) {
+		if ( ent->client->sess.sessionTeam == TEAM_RED || ent->client->sess.sessionTeam == TEAM_BLUE ) {
+			ent->client->tvt.queued = qtrue;
+			ent->client->tvt.queueTime = level.time;
+		} else if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
+			ent->client->tvt.queued = qfalse;
+			ent->client->tvt.queueTime = 0;
+		}
+	}
 
 	ent->client->switchTeamTime = level.time + 5000;
 }
@@ -971,7 +976,7 @@ void Cmd_Follow_f( gentity_t *ent ) {
 
 	// first set them to spectator
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		SetTeam( ent, "spectator" );
+		SetTeam( ent, "spectator", qfalse );
 	}
 
 	ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -1001,7 +1006,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir ) {
 	}
 	// first set them to spectator
 	if ( ent->client->sess.spectatorState == SPECTATOR_NOT ) {
-		SetTeam( ent, "spectator" );
+		SetTeam( ent, "spectator", qfalse );
 	}
 
 	if ( dir != 1 && dir != -1 ) {

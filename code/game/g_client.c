@@ -2033,7 +2033,7 @@ void ClientSpawn(gentity_t *ent) {
 					{//using force but not on right team, switch him over
 						const char *teamName = TeamName( forceTeam );
 						//client->sess.sessionTeam = forceTeam;
-						SetTeam( ent, (char *)teamName );
+						SetTeam( ent, (char *)teamName, qfalse );
 						return;
 					}
 				}
@@ -2357,6 +2357,8 @@ void ClientDisconnect( int clientNum ) {
 	trap_SetConfigstring( CS_PLAYERS + clientNum, "");
 
 	CalculateRanks();
+
+	level.tvt.match.playedLastRound &= ~(1u << clientNum);
 
 	if ( ent->r.svFlags & SVF_BOT ) {
 		BotAIShutdownClient( clientNum, qfalse );
