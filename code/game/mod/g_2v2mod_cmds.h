@@ -12,10 +12,12 @@ typedef struct tvt_Cmd_s {
     const char *description;
     const char *usage;
     qboolean (*execute)(gentity_t *ent);
+    qboolean (*validate)(gentity_t *ent);
     const struct tvt_Cmd_s *subCommands;
     cmdContext_t            context;
     unsigned int            minArgs;
     unsigned int            maxArgs;
+    qboolean                votable;
 } tvt_Cmd_t;
 
 typedef struct {
@@ -23,7 +25,8 @@ typedef struct {
     tvt_FilterCtx_t *search;
 } tvt_CmdFilterCtx_t;
 
-qboolean G_TvT_ClientCommand(gentity_t *ent, const char *cmd);
-qboolean G_TvT_ConsoleCommand(const char *cmd);
+qboolean   G_TvT_ClientCommand(gentity_t *ent, const char *cmd);
+qboolean   G_TvT_ConsoleCommand(const char *cmd);
+tvt_Cmd_t *G_TvT_GetCmdTable(void);
 
 #endif

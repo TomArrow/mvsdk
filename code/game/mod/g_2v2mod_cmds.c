@@ -125,17 +125,7 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
     int          teamSize, half, priority;
     int          count, i, cn;
 
-    if (g_gametype.integer < GT_TEAM) {
-        G_TvT_Printf(TVT_ENT_TO_CN(ent), "This command is only allowed in team based gametypes.\n");
-        return qtrue;
-    }
-
     count = G_TvT_CollectPlayers(players, &oldRed, &oldBlue, &priority);
-
-    if (count < 3) {
-        G_TvT_Printf(TVT_ENT_TO_CN(ent), "Not enough players to shuffle.\n");
-        return qtrue;
-    }
 
     teamSize = tvt_teamSize.integer ? tvt_teamSize.integer : MAX_CLIENTS;
     half = count / 2;
@@ -217,13 +207,9 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
 
 static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
     int         cn = TVT_ENT_TO_CN(ent);
-    tvt_Cvar_t *cvars;
-    int         count;
-    int         i;
+    tvt_Cvar_t *cv;
     table_t    *t;
     char        search[MAX_TOKEN_CHARS];
-
-    cvars = G_TvT_GetCvarTable(&count);
 
     t = TvT_Table_Create();
     TvT_Table_AddCol(t, "Name", ALIGN_LEFT);
@@ -231,15 +217,15 @@ static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
     TvT_Table_AddCol(t, "Default", ALIGN_LEFT);
     TvT_Table_AddCol(t, "Current", ALIGN_LEFT);
 
-    for (i = 0; i < count; i++) {
+    for (cv = G_TvT_GetCvarTable(); cv->cvarName; cv++) {
         tableRow_t *row = TvT_Table_AddRow(t);
 
-        TvT_Table_SetCell(t, row, 0, cvars[i].cvarName);
-        TvT_Table_SetCell(t, row, 1, cvars[i].description);
-        TvT_Table_SetCell(t, row, 2, cvars[i].defaultString);
-        TvT_Table_SetCell(t, row, 3, cvars[i].vmCvar->string);
+        TvT_Table_SetCell(t, row, 0, cv->cvarName);
+        TvT_Table_SetCell(t, row, 1, cv->description);
+        TvT_Table_SetCell(t, row, 2, cv->defaultString);
+        TvT_Table_SetCell(t, row, 3, cv->vmCvar->string);
 
-        if (strcmp(cvars[i].vmCvar->string, cvars[i].defaultString)) {
+        if (strcmp(cv->vmCvar->string, cv->defaultString)) {
             TvT_Table_SetCellColor(row, 3, S_COLOR_GREEN);
         }
     }
@@ -318,19 +304,44 @@ static qboolean G_TvT_Cmd_Players(gentity_t *ent) {
 
 static qboolean G_TvT_Cmd_ListCommands(gentity_t *ent);
 
+static qboolean G_TvT_ValidateShuffle(gentity_t *ent) {
+    int cn = TVT_ENT_TO_CN(ent);
+    int count, i;
+
+    if (g_gametype.integer < GT_TEAM) {
+        G_TvT_Printf(cn, "This command is only allowed in team based gametypes.\n");
+        return qfalse;
+    }
+
+    count = 0;
+    for (i = 0; i < level.maxclients; i++) {
+        if (G_TvT_IsEligible(&level.clients[i])) {
+            count++;
+        }
+    }
+
+    if (count < 3) {
+        G_TvT_Printf(cn, "Not enough players to shuffle.\n");
+        return qfalse;
+    }
+
+    return qtrue;
+}
+
 static const tvt_Cmd_t tvt_info_subcmds[] = {
-    {"cvars", "Show mod cvar settings", "info cvars [filter]", G_TvT_Cmd_ModCvars, NULL, CMD_CONTEXT_ALL, 0, 1},
-    {"cmds", "List available commands", "info cmds [filter]", G_TvT_Cmd_ListCommands, NULL, CMD_CONTEXT_ALL, 0, 1},
-    {NULL, NULL, NULL, NULL, NULL, 0, 0, 0}};
+    {"cvars", "Show mod cvar settings",          "info cvars [filter]", G_TvT_Cmd_ModCvars,    NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
+    {"cmds",  "List available commands",          "info cmds [filter]",  G_TvT_Cmd_ListCommands, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
+    {"votes", "Show voteable items",              "info votes [filter]", G_TvT_Cmd_VoteList,    NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
+    {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse}};
 
 static tvt_Cmd_t tvt_commands[] = {
-    {"info", "Show mod information", "info <cvars|cmds>", NULL, tvt_info_subcmds, CMD_CONTEXT_ALL, 0, 0},
-    {"mem_stats", "Show memory pool statistics", "mem_stats", G_TvT_Cmd_MemStats, NULL, CMD_CONTEXT_SERVER, 0, 0},
-    {"shuffle", "Shuffle players between teams", "shuffle", G_TvT_Cmd_Shuffle, NULL, CMD_CONTEXT_SERVER, 0, 0},
-    {"pstats", "Show player statistics", "pstats", G_TvT_Cmd_Stats, NULL, CMD_CONTEXT_ALL, 0, 0},
-    {"queue", "Toggle queue status", "queue", G_TvT_Cmd_Queue, NULL, CMD_CONTEXT_CLIENT, 0, 0},
-    {"players", "Show player list and queue status", "players", G_TvT_Cmd_Players, NULL, CMD_CONTEXT_ALL, 0, 0},
-    {NULL, NULL, NULL, NULL, NULL, 0, 0, 0}};
+    {"info",      "Show mod information",               "info <cvars|cmds|votes>", NULL,                NULL,                   tvt_info_subcmds, CMD_CONTEXT_ALL,    0, 0, qfalse},
+    {"mem_stats", "Show memory pool statistics",        "mem_stats",               G_TvT_Cmd_MemStats,  NULL,                   NULL,             CMD_CONTEXT_SERVER, 0, 0, qfalse},
+    {"shuffle",   "Shuffle players between teams",      "shuffle",                 G_TvT_Cmd_Shuffle,   G_TvT_ValidateShuffle,  NULL,             CMD_CONTEXT_SERVER, 0, 0, qtrue},
+    {"pstats",    "Show player statistics",             "pstats",                  G_TvT_Cmd_Stats,     NULL,                   NULL,             CMD_CONTEXT_ALL,    0, 0, qfalse},
+    {"queue",     "Toggle queue status",                "queue",                   G_TvT_Cmd_Queue,     NULL,                   NULL,             CMD_CONTEXT_CLIENT, 0, 0, qfalse},
+    {"players",   "Show player list and queue status",  "players",                 G_TvT_Cmd_Players,   NULL,                   NULL,             CMD_CONTEXT_ALL,    0, 0, qfalse},
+    {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse}};
 
 static void G_TvT_Cmd_ListSubCommands(int clientNum, const char *parentName,
                                       const tvt_Cmd_t *subs, cmdContext_t context) {
@@ -377,7 +388,7 @@ static qboolean G_TvT_FilterCmdTable(table_t *t, tableRow_t *row, void *ctx) {
     return qtrue;
 }
 
-static table_t *G_TvT_GetCmdTable(void) {
+static table_t *G_TvT_BuildCmdDisplayTable(void) {
     static table_t  *cmdTable = NULL;
     const tvt_Cmd_t *c;
     const tvt_Cmd_t *s;
@@ -422,7 +433,7 @@ static table_t *G_TvT_GetCmdTable(void) {
 
 static qboolean G_TvT_Cmd_ListCommands(gentity_t *ent) {
     int                cn = TVT_ENT_TO_CN(ent);
-    table_t           *t = G_TvT_GetCmdTable();
+    table_t           *t = G_TvT_BuildCmdDisplayTable();
     tvt_CmdFilterCtx_t cmdFilter;
     tvt_FilterCtx_t    searchFilter;
     char               search[MAX_TOKEN_CHARS];
@@ -524,4 +535,8 @@ qboolean G_TvT_ClientCommand(gentity_t *ent, const char *cmd) {
 
 qboolean G_TvT_ConsoleCommand(const char *cmd) {
     return G_TvT_Cmd_Execute(NULL, cmd, CMD_CONTEXT_SERVER);
+}
+
+tvt_Cmd_t *G_TvT_GetCmdTable(void) {
+    return tvt_commands;
 }

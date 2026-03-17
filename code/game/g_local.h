@@ -1360,5 +1360,6 @@ qboolean trap_MVAPI_EnableSubmodelBypass( qboolean enable );                    
 #include "mod/g_2v2mod_cvars.h"
 #include "mod/g_2v2mod_utils.h"
 #include "mod/g_2v2mod_cmds.h"
+#include "mod/g_2v2mod_vote.h"
 #include "mod/g_2v2mod_stats.h"
 

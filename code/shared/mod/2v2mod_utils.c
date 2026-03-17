@@ -509,3 +509,50 @@ char *TvT_Table_ToString(table_t *t) {
 
     return buf;
 }
+
+// A modified version of the string tokenizer used in JK2MV, which they in turn, grabbed from OpenJK.
+static int   tvt_argc;
+static char *tvt_argv[MAX_STRING_TOKENS];
+static char  tvt_tokenized[MAX_STRING_CHARS + MAX_STRING_TOKENS];
+
+void TvT_TokenizeString(const char *text) {
+    char *textOut;
+    char *textEnd;
+
+    tvt_argc = 0;
+
+    if (!text) {
+        return;
+    }
+
+    textOut = tvt_tokenized;
+    textEnd = tvt_tokenized + sizeof(tvt_tokenized) - 1;
+
+    while (tvt_argc < MAX_STRING_TOKENS) {
+        while (*text && *(const unsigned char *)text <= ' ') {
+            text++;
+        }
+        if (!*text) {
+            return;
+        }
+
+        tvt_argv[tvt_argc] = textOut;
+        tvt_argc++;
+
+        while (*(const unsigned char *)text > ' ' && textOut < textEnd) {
+            *textOut++ = *text++;
+        }
+        *textOut++ = 0;
+    }
+}
+
+int TvT_Argc(void) {
+    return tvt_argc;
+}
+
+const char *TvT_Argv(int index) {
+    if (index < 0 || index >= tvt_argc) {
+        return "";
+    }
+    return tvt_argv[index];
+}

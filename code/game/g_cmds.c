@@ -1567,6 +1567,7 @@ Cmd_CallVote_f
 */
 void Cmd_CallVote_f( gentity_t *ent ) {
 	int		i;
+	int		modVoteResult = 0;
 	char	arg1[MAX_STRING_TOKENS];
 	char	arg2[MAX_STRING_TOKENS];
 
@@ -1606,6 +1607,10 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	} else if ( !Q_stricmp( arg1, "g_doWarmup" ) ) {
 	} else if ( !Q_stricmp( arg1, "timelimit" ) ) {
 	} else if ( !Q_stricmp( arg1, "fraglimit" ) ) {
+	} else if ( (modVoteResult = G_TvT_CallVote(ent, arg1, ConcatArgs(2))) != 0 ) {
+		if (modVoteResult < 0) {
+			return;
+		}
 	} else {
 		trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
 		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>.\n\"" );
@@ -1616,6 +1621,11 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	if ( level.voteExecuteTime ) {
 		level.voteExecuteTime = 0;
 		trap_SendConsoleCommand( EXEC_APPEND, va("%s\n", level.voteString ) );
+	}
+
+	// Mod votes have the vote string already set,
+	if ( modVoteResult > 0 ) {
+		goto start_vote;
 	}
 
 	// special case for g_gametype, check for bad values
@@ -1718,6 +1728,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 	}
 
+start_vote:
 	trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLCALLEDVOTE") ) );
 
 	// start the voting, the caller autoamtically votes yes

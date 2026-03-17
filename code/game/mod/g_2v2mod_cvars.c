@@ -1,22 +1,40 @@
 #include "../g_local.h"
 
-#define TVT_CVAR(name, defaultValue, description, flags, trackChange, update) vmCvar_t name;
+#define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable) vmCvar_t name;
 TVT_CVAR_LIST
 #undef TVT_CVAR
 
-#define TVT_CVAR(name, defaultValue, description, flags, trackChange, update) \
-    {&name, #name, defaultValue, description, flags, 0, trackChange, update},
+#define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable) \
+    {&name, #name, defaultValue, description, flags, 0, trackChange, validate, update, votable},
 static tvt_Cvar_t tvtCvarTable[] = {
-    TVT_CVAR_LIST};
+    TVT_CVAR_LIST{NULL, NULL, NULL, NULL, 0, 0, qfalse, NULL, NULL, qfalse}};
 #undef TVT_CVAR
 
-static int tvtCvarTableSize = ARRAY_LEN(tvtCvarTable);
+qboolean G_TvT_ValidateBool(const char *value) {
+    return (!strcmp(value, "0") || !strcmp(value, "1"));
+}
+
+qboolean G_TvT_ValidateIntPair(const char *value) {
+    int i;
+
+    TvT_TokenizeString(value);
+
+    if (TvT_Argc() != 2) {
+        return qfalse;
+    }
+    for (i = 0; i < TvT_Argc(); i++) {
+        if (!G_TvT_IsNumericString(TvT_Argv(i))) {
+            return qfalse;
+        }
+    }
+    return qtrue;
+}
+
 
 void G_TvT_RegisterCvars(void) {
-    int         i;
     tvt_Cvar_t *cv;
 
-    for (i = 0, cv = tvtCvarTable; i < tvtCvarTableSize; i++, cv++) {
+    for (cv = tvtCvarTable; cv->cvarName; cv++) {
         trap_Cvar_Register(cv->vmCvar, cv->cvarName, cv->defaultString, cv->cvarFlags);
         if (cv->vmCvar) {
             cv->modificationCount = cv->vmCvar->modificationCount;
@@ -28,18 +46,24 @@ void G_TvT_RegisterCvars(void) {
 }
 
 void G_TvT_UpdateCvars(void) {
-    int         i;
     tvt_Cvar_t *cv;
 
-    for (i = 0, cv = tvtCvarTable; i < tvtCvarTableSize; i++, cv++) {
+    for (cv = tvtCvarTable; cv->cvarName; cv++) {
         if (cv->vmCvar) {
             trap_Cvar_Update(cv->vmCvar);
 
             if (cv->modificationCount != cv->vmCvar->modificationCount) {
                 cv->modificationCount = cv->vmCvar->modificationCount;
 
+                if (cv->validate && !cv->validate(cv->vmCvar->string)) {
+                    G_Printf("%s: invalid value '%s', reverting\n", cv->cvarName, cv->vmCvar->string);
+                    trap_Cvar_Set(cv->cvarName, cv->defaultString);
+                    trap_Cvar_Update(cv->vmCvar);
+                    cv->modificationCount = cv->vmCvar->modificationCount;
+                    continue;
+                }
+
                 if (cv->onChanged && !cv->onChanged()) {
-                    // Callback / validation failed, so lets update our cvar reference and reset the modification count to prevent rechecking this cvar until it changes again.
                     trap_Cvar_Update(cv->vmCvar);
                     cv->modificationCount = cv->vmCvar->modificationCount;
                     continue;
@@ -54,31 +78,18 @@ void G_TvT_UpdateCvars(void) {
     }
 }
 
-tvt_Cvar_t *G_TvT_GetCvarTable(int *count) {
-    *count = tvtCvarTableSize;
+tvt_Cvar_t *G_TvT_GetCvarTable(void) {
     return tvtCvarTable;
 }
 
 qboolean G_TvT_UpdateSpawnArmor(void) {
     tvt_ModState_t *tvt = &level.tvt;
-    char            buf[MAX_CVAR_VALUE_STRING];
-    char           *p;
     int             armor[2];
 
-    Q_strncpyz(buf, tvt_spawnArmor.string, sizeof(buf));
-    p = strchr(buf, ' ');
-    if (p)
-        *p = '\0';
+    TvT_TokenizeString(tvt_spawnArmor.string);
 
-    // Crappy validation but it'll do for now.
-    if (!G_TvT_IsNumericString(buf) || (p && !G_TvT_IsNumericString(p + 1))) {
-        G_Printf("tvt_spawnArmor: expected numeric value\n");
-        trap_Cvar_Set("tvt_spawnArmor", va("%d %d", tvt->spawnArmor[TVT_SPAWN], tvt->spawnArmor[TVT_FIRST_SPAWN]));
-        return qfalse;
-    }
-
-    armor[TVT_SPAWN] = Com_Clampi(0, 999, atoi(buf));
-    armor[TVT_FIRST_SPAWN] = p ? Com_Clampi(0, 999, atoi(p + 1)) : armor[TVT_SPAWN];
+    armor[TVT_SPAWN] = Com_Clampi(0, 999, atoi(TvT_Argv(0)));
+    armor[TVT_FIRST_SPAWN] = Com_Clampi(0, 999, atoi(TvT_Argv(1)));
 
     tvt->spawnArmor[TVT_SPAWN] = armor[TVT_SPAWN];
     tvt->spawnArmor[TVT_FIRST_SPAWN] = armor[TVT_FIRST_SPAWN];
@@ -87,26 +98,14 @@ qboolean G_TvT_UpdateSpawnArmor(void) {
 
 qboolean G_TvT_UpdateSpawnItems(void) {
     tvt_ModState_t *tvt = &level.tvt;
-    char            buf[MAX_CVAR_VALUE_STRING];
-    char           *p;
     int             items[2];
     int             validItemMask = 0;
     int             i;
 
-    Q_strncpyz(buf, tvt_spawnItems.string, sizeof(buf));
-    p = strchr(buf, ' ');
-    if (p)
-        *p = '\0';
+    TvT_TokenizeString(tvt_spawnItems.string);
 
-    // Crappy validation but it'll do for now.
-    if (!G_TvT_IsNumericString(buf) || (p && !G_TvT_IsNumericString(p + 1))) {
-        G_Printf("tvt_spawnItems: expected numeric value\n");
-        trap_Cvar_Set("tvt_spawnItems", va("%d %d", tvt->spawnItems[TVT_SPAWN], tvt->spawnItems[TVT_FIRST_SPAWN]));
-        return qfalse;
-    }
-
-    items[TVT_SPAWN] = atoi(buf);
-    items[TVT_FIRST_SPAWN] = p ? atoi(p + 1) : items[TVT_SPAWN];
+    items[TVT_SPAWN] = atoi(TvT_Argv(0));
+    items[TVT_FIRST_SPAWN] = atoi(TvT_Argv(1));
 
     for (i = HI_SEEKER; i < HI_NUM_HOLDABLE; i++) {
         validItemMask |= (1 << i);

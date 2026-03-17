@@ -66,3 +66,7 @@ void        TvT_Table_Filter(table_t *t, tableFilter_t keep, void *ctx);
 qboolean    TvT_Table_FilterSubstring(table_t *t, tableRow_t *row, void *ctx);
 void        TvT_Table_SyncWidths(table_t *a, table_t *b);
 char       *TvT_Table_ToString(table_t *t);
+
+void        TvT_TokenizeString(const char *text);
+int         TvT_Argc(void);
+const char *TvT_Argv(int index);
