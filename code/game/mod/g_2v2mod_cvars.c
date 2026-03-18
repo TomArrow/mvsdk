@@ -139,3 +139,14 @@ qboolean G_TvT_UpdateSpawnItems(void) {
     tvt->spawnItems[TVT_FIRST_SPAWN] = items[TVT_FIRST_SPAWN];
     return qtrue;
 }
+
+qboolean G_TvT_UpdateMatchMode(void) {
+    if (!tvt_matchMode.integer) {
+        level.tvt.match.matchInProgress = qfalse;
+        level.tvt.match.restartPending = qfalse;
+        level.tvt.match.readyMask = 0;
+        G_TvT_SyncReadyMask();
+        trap_SetConfigstring(CS_WARMUP, "");
+    }
+    return qtrue;
+}

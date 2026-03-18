@@ -22,6 +22,7 @@ qboolean G_TvT_ValidateIntPair(const char *value);
 qboolean G_TvT_UpdateColor(void);
 qboolean G_TvT_UpdateSpawnArmor(void);
 qboolean G_TvT_UpdateSpawnItems(void);
+qboolean G_TvT_UpdateMatchMode(void);
 
 #define TVT_CVAR_LIST                                                                                                                                                                              \
     TVT_CVAR(tvt_allowBlackNames, "1", "Allow players to use the colour black in their names", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, NULL, qtrue)                                               \
@@ -34,7 +35,7 @@ qboolean G_TvT_UpdateSpawnItems(void);
     TVT_CVAR(tvt_teamSize, "0", "Max players per team, 0 = no limit", CVAR_ARCHIVE, qtrue, NULL, NULL, qtrue)                                                                                      \
     TVT_CVAR(tvt_allowSuicide, "1", "Allow players to use the kill command in team based gametypes.", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, NULL, qtrue)                                        \
     TVT_CVAR(tvt_color, "6", "Primary accent color for mod output (0-7)", CVAR_ARCHIVE, qtrue, G_TvT_ValidateColor, G_TvT_UpdateColor, qfalse)                                                       \
-    TVT_CVAR(tvt_matchMode, "0", "Require all team players to /ready after a shuffle before the match restarts", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, NULL, qtrue)
+    TVT_CVAR(tvt_matchMode, "0", "Require all team players to /ready after a shuffle before the match restarts", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, G_TvT_UpdateMatchMode, qtrue)
 
 #define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable) extern vmCvar_t name;
 TVT_CVAR_LIST
