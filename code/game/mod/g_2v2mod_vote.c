@@ -47,10 +47,16 @@ void G_TvT_Vote_Init(void) {
 }
 
 static tvt_VoteItem_t *G_TvT_FindVoteItem(const char *name) {
-    int i;
+    int         i;
+    const char *alias;
 
     for (i = 0; i < tvt_voteItemCount; i++) {
         if (!Q_stricmp(name, tvt_voteItems[i].name)) {
+            return &tvt_voteItems[i];
+        }
+        alias = tvt_voteItems[i].cmd ? tvt_voteItems[i].cmd->voteAlias : tvt_voteItems[i].cvar ? tvt_voteItems[i].cvar->voteAlias
+                                                                                               : NULL;
+        if (alias && !Q_stricmp(name, alias)) {
             return &tvt_voteItems[i];
         }
     }
@@ -107,14 +113,18 @@ qboolean G_TvT_Cmd_VoteList(gentity_t *ent) {
     tableRow_t *row;
     int         i;
     char        search[MAX_TOKEN_CHARS];
+    const char *alias;
 
     t = TvT_Table_Create();
     TvT_Table_AddCol(t, "Vote", ALIGN_LEFT);
+    TvT_Table_AddCol(t, "Alias", ALIGN_LEFT);
 
     for (i = 0; i < tvt_voteItemCount; i++) {
         tvt_VoteItem_t *item = &tvt_voteItems[i];
 
         row = TvT_Table_AddRow(t);
+        alias = item->cmd ? item->cmd->voteAlias : item->cvar ? item->cvar->voteAlias
+                                                              : NULL;
 
         if (item->cmd) {
             TvT_Table_SetCell(t, row, 0, item->name);
@@ -122,6 +132,7 @@ qboolean G_TvT_Cmd_VoteList(gentity_t *ent) {
         else if (item->cvar) {
             TvT_Table_SetCell(t, row, 0, va("%s <value>", item->name));
         }
+        TvT_Table_SetCell(t, row, 1, alias ? alias : "");
     }
 
     if (trap_Argc() > 2) {

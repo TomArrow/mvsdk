@@ -446,22 +446,22 @@ static qboolean G_TvT_Cmd_Credits(gentity_t *ent) {
 }
 
 static const tvt_Cmd_t tvt_info_subcmds[] = {
-    {"credits", "Show mod credits", "info credits", G_TvT_Cmd_Credits, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse},
-    {"cvars", "Show mod cvar settings", "info cvars [filter]", G_TvT_Cmd_ModCvars, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
-    {"cmds", "List available commands", "info cmds [filter]", G_TvT_Cmd_ListCommands, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
-    {"votes", "Show voteable items", "info votes [filter]", G_TvT_Cmd_VoteList, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
-    {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse}};
+    {"credits", "Show mod credits", "info credits", G_TvT_Cmd_Credits, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse, NULL},
+    {"cvars", "Show mod cvar settings", "info cvars [filter]", G_TvT_Cmd_ModCvars, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse, NULL},
+    {"cmds", "List available commands", "info cmds [filter]", G_TvT_Cmd_ListCommands, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse, NULL},
+    {"votes", "Show voteable items", "info votes [filter]", G_TvT_Cmd_VoteList, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse, NULL},
+    {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse, NULL}};
 
 static tvt_Cmd_t tvt_commands[] = {
-    {"abort", "Abort the current match", "abort", G_TvT_Cmd_Abort, G_TvT_ValidateAbort, NULL, CMD_CONTEXT_SERVER, 0, 0, qtrue},
-    {"info", "Show mod information", "info <cvars|cmds|votes>", NULL, NULL, tvt_info_subcmds, CMD_CONTEXT_ALL, 0, 0, qfalse},
-    {"mem_stats", "Show memory pool statistics", "mem_stats", G_TvT_Cmd_MemStats, NULL, NULL, CMD_CONTEXT_SERVER, 0, 0, qfalse},
-    {"shuffle", "Shuffle players between teams", "shuffle", G_TvT_Cmd_Shuffle, G_TvT_ValidateShuffle, NULL, CMD_CONTEXT_SERVER, 0, 0, qtrue},
-    {"pstats", "Show player statistics", "pstats", G_TvT_Cmd_Stats, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse},
-    {"queue", "Toggle queue status", "queue", G_TvT_Cmd_Queue, NULL, NULL, CMD_CONTEXT_CLIENT, 0, 0, qfalse},
-    {"ready", "Toggle ready status", "ready", G_TvT_Cmd_Ready, NULL, NULL, CMD_CONTEXT_CLIENT, 0, 0, qfalse},
-    {"players", "Show player list and queue status", "players", G_TvT_Cmd_Players, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse},
-    {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse}};
+    {"abort", "Abort the current match", "abort", G_TvT_Cmd_Abort, G_TvT_ValidateAbort, NULL, CMD_CONTEXT_SERVER, 0, 0, qtrue, NULL},
+    {"info", "Show mod information", "info <cvars|cmds|votes>", NULL, NULL, tvt_info_subcmds, CMD_CONTEXT_ALL, 0, 0, qfalse, NULL},
+    {"mem_stats", "Show memory pool statistics", "mem_stats", G_TvT_Cmd_MemStats, NULL, NULL, CMD_CONTEXT_SERVER, 0, 0, qfalse, NULL},
+    {"shuffle", "Shuffle players between teams", "shuffle", G_TvT_Cmd_Shuffle, G_TvT_ValidateShuffle, NULL, CMD_CONTEXT_SERVER, 0, 0, qtrue, NULL},
+    {"pstats", "Show player statistics", "pstats", G_TvT_Cmd_Stats, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse, NULL},
+    {"queue", "Toggle queue status", "queue", G_TvT_Cmd_Queue, NULL, NULL, CMD_CONTEXT_CLIENT, 0, 0, qfalse, NULL},
+    {"ready", "Toggle ready status", "ready", G_TvT_Cmd_Ready, NULL, NULL, CMD_CONTEXT_CLIENT, 0, 0, qfalse, NULL},
+    {"players", "Show player list and queue status", "players", G_TvT_Cmd_Players, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse, NULL},
+    {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse, NULL}};
 
 static void G_TvT_Cmd_ListSubCommands(int clientNum, const char *parentName,
                                       const tvt_Cmd_t *subs, cmdContext_t context) {

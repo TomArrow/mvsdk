@@ -18,6 +18,7 @@ typedef struct tvt_Cmd_s {
     unsigned int            minArgs;
     unsigned int            maxArgs;
     qboolean                votable;
+    const char             *voteAlias;
 } tvt_Cmd_t;
 
 typedef struct {

@@ -1,13 +1,13 @@
 #include "../g_local.h"
 
-#define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable) vmCvar_t name;
+#define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable, voteAlias) vmCvar_t name;
 TVT_CVAR_LIST
 #undef TVT_CVAR
 
-#define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable) \
-    {&name, #name, defaultValue, description, flags, 0, trackChange, validate, update, votable},
+#define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable, voteAlias) \
+    {&name, #name, defaultValue, description, flags, 0, trackChange, validate, update, votable, voteAlias},
 static tvt_Cvar_t tvtCvarTable[] = {
-    TVT_CVAR_LIST{NULL, NULL, NULL, NULL, 0, 0, qfalse, NULL, NULL, qfalse}};
+    TVT_CVAR_LIST{NULL, NULL, NULL, NULL, 0, 0, qfalse, NULL, NULL, qfalse, NULL}};
 #undef TVT_CVAR
 
 qboolean G_TvT_ValidateBool(const char *value) {
