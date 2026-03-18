@@ -18,7 +18,7 @@ qboolean G_TvT_CheckReadyUp(void) {
         return qfalse;
     }
 
-    if (level.tvt.match.matchInProgress) {
+    if (level.tvt.match.matchInProgress || level.intermissiontime) {
         return qfalse;
     }
 
@@ -59,13 +59,10 @@ qboolean G_TvT_CheckReadyUp(void) {
         else if (level.time >= level.tvt.match.restartTime + 5000) {
             level.tvt.match.readyMask = 0;
             level.tvt.match.restartPending = qfalse;
+            level.tvt.match.matchInProgress = qtrue;
             G_TvT_SyncReadyMask();
             trap_SetConfigstring(CS_WARMUP, "");
-            // Set session flag here rather than in G_WriteSessionData because
-            // the session functions can't distinguish a ready-up restart from
-            // a manual map_restart.
-            // TODO: Kind of a dirty hack, adjust this perhaps in the future
-            trap_Cvar_Set("sessiontvt", va("%i %i", level.tvt.match.playedLastRound, 1));
+            trap_Cvar_Set("g_restarted", "1");
             trap_SendConsoleCommand(EXEC_APPEND, "map_restart 0\n");
             level.restarted = qtrue;
         }

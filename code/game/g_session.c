@@ -245,11 +245,7 @@ void G_InitWorldSession( void ) {
 	trap_Cvar_VariableStringBuffer( "sessiontvt", s, sizeof(s) );
 	sscanf( s, "%i %i", &level.tvt.match.playedLastRound, &matchStart );
 
-	// matchStart is set by the ready-up system before map_restart.
-	// Clear it so manual restarts don't inherit it.
-	// TODO: Kind of a dirty hack, adjust this perhaps in the future
-	level.tvt.match.matchInProgress = matchStart;
-	trap_Cvar_Set( "sessiontvt", va("%i", level.tvt.match.playedLastRound) );
+	level.tvt.match.matchInProgress = (qboolean)matchStart;
 }
 
 /*
@@ -269,5 +265,5 @@ void G_WriteSessionData( void ) {
 		}
 	}
 
-	trap_Cvar_Set( "sessiontvt", va("%i", level.tvt.match.playedLastRound) );
+	trap_Cvar_Set( "sessiontvt", va("%i %i", level.tvt.match.playedLastRound, level.tvt.match.matchInProgress) );
 }
