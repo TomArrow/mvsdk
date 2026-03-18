@@ -12,7 +12,7 @@
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
-#define	GAMEVERSION	"basemv"
+#define	GAMEVERSION	"^6/^7 2V2MOD ^6/"
 
 #define BODY_QUEUE_SIZE		8
 

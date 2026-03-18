@@ -724,11 +724,14 @@ G_InitGame
 */
 void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	int					i;
+	char gameName[MAX_CVAR_VALUE_STRING];
 
 	B_InitAlloc(); //make sure everything is clean
 
+	trap_Cvar_VariableStringBuffer("gamename", gameName, sizeof(gameName));
+
 	G_Printf ("------- Game Initialization -------\n");
-	G_Printf ("gamename: %s\n", GAMEVERSION);
+	G_Printf ("gamename: %s\n", gameName);
 	G_Printf ("gamedate: %s\n", __DATE__);
 	
 	if ( jk2version == VERSION_UNDEF )

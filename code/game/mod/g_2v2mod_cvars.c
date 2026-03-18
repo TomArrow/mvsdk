@@ -81,6 +81,22 @@ tvt_Cvar_t *G_TvT_GetCvarTable(void) {
     return tvtCvarTable;
 }
 
+qboolean G_TvT_ValidateColor(const char *value) {
+    if (strlen(value) != 1) {
+        return qfalse;
+    }
+    if (jk2version == VERSION_1_02) {
+        return (value[0] != Q_COLOR_ESCAPE);
+    }
+    return (value[0] >= '0' && value[0] <= '7');
+}
+
+qboolean G_TvT_UpdateColor(void) {
+    level.tvt.colorChar = tvt_color.string[0];
+    trap_Cvar_Set("gamename", va("^%c/^7 2V2MOD ^%c/", level.tvt.colorChar, level.tvt.colorChar));
+    return qtrue;
+}
+
 qboolean G_TvT_UpdateSpawnArmor(void) {
     tvt_ModState_t *tvt = &level.tvt;
     int             armor[2];

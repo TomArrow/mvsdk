@@ -45,6 +45,7 @@ typedef struct {
     tvt_printJob_t   printJobs[TVT_PRINT_MAX_JOBS];
     int              numPrintJobs;
     tvt_MatchState_t match;
+    char             colorChar;
 } tvt_ModState_t;
 
 void     G_TvT_Init(void);

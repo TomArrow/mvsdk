@@ -92,7 +92,7 @@ table_t *TvT_Table_Create(void) {
 
     t->drawBorder = qtrue;
     t->drawHeaderSep = qtrue;
-    t->accentColor = S_COLOR_MAGENTA;
+    t->accentColor = NULL;
 
     return t;
 }

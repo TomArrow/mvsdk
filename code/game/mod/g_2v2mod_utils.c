@@ -291,6 +291,9 @@ void G_TvT_LongPrint_Frame(void) {
 void G_TvT_TablePrint(table_t *t, int clientNum) {
     char *output;
 
+    if (!t->accentColor) {
+        TvT_Table_SetAccentColor(t, level.tvt.colorChar ? va("^%c", level.tvt.colorChar) : S_COLOR_MAGENTA);
+    }
     output = TvT_Table_ToString(t);
     if (!output) {
         return;

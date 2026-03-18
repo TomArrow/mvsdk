@@ -230,8 +230,14 @@ static qboolean G_TvT_Cmd_ModCvars(gentity_t *ent) {
 
         TvT_Table_SetCell(t, row, 0, cv->cvarName);
         TvT_Table_SetCell(t, row, 1, cv->description);
-        TvT_Table_SetCell(t, row, 2, cv->defaultString);
-        TvT_Table_SetCell(t, row, 3, cv->vmCvar->string);
+        if (!Q_stricmp(cv->cvarName, "tvt_color")) {
+            TvT_Table_SetCell(t, row, 2, va("^%sCOLOR", cv->defaultString));
+            TvT_Table_SetCell(t, row, 3, va("^%sCOLOR", cv->vmCvar->string));
+        }
+        else {
+            TvT_Table_SetCell(t, row, 2, cv->defaultString);
+            TvT_Table_SetCell(t, row, 3, cv->vmCvar->string);
+        }
 
         if (strcmp(cv->vmCvar->string, cv->defaultString)) {
             TvT_Table_SetCellColor(row, 3, S_COLOR_GREEN);
@@ -424,7 +430,16 @@ static qboolean G_TvT_ValidateShuffle(gentity_t *ent) {
     return qtrue;
 }
 
+static qboolean G_TvT_Cmd_Credits(gentity_t *ent) {
+    int cn = TVT_ENT_TO_CN(ent);
+
+    G_TvT_Printf(cn, "^%c/^7 2V2MOD ^%c/\n", level.tvt.colorChar, level.tvt.colorChar);
+    G_TvT_Printf(cn, "Author: ^6/^7god^6/ ^7(Alereon)\n");
+    return qtrue;
+}
+
 static const tvt_Cmd_t tvt_info_subcmds[] = {
+    {"credits", "Show mod credits", "info credits", G_TvT_Cmd_Credits, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse},
     {"cvars", "Show mod cvar settings", "info cvars [filter]", G_TvT_Cmd_ModCvars, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
     {"cmds", "List available commands", "info cmds [filter]", G_TvT_Cmd_ListCommands, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
     {"votes", "Show voteable items", "info votes [filter]", G_TvT_Cmd_VoteList, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
