@@ -1,3 +1,6 @@
+#ifndef TVT_MEMORY_H
+#define TVT_MEMORY_H
+
 #include "../../game/q_shared.h"
 
 #define MEMPOOL_SIZE (1024 * 1024 * 32)
@@ -66,3 +69,5 @@ void  TvT_Mem_GetStats(tvt_MemStats_t *stats);
 #undef free
 #define free TvT_Mem_Free
 #endif // Q3_VM
+
+#endif // TVT_MEMORY_H

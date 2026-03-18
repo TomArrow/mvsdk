@@ -7,6 +7,7 @@
 #include "g_public.h"
 #include "2v2mod_memory.h"
 #include "2v2mod_utils.h"
+#include "2v2mod_json.h"
 #include "mod/g_2v2mod_main.h"
 
 //==================================================================

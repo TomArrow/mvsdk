@@ -1,3 +1,6 @@
+#ifndef TVT_UTILS_H
+#define TVT_UTILS_H
+
 #include "../../game/q_shared.h"
 
 typedef enum {
@@ -73,3 +76,7 @@ extern char tvt_defaultAccentColor[3];
 void        TvT_TokenizeString(const char *text);
 int         TvT_Argc(void);
 const char *TvT_Argv(int index);
+
+int TvT_RemoveWhitespace(char *str);
+
+#endif // TVT_UTILS_H

@@ -559,3 +559,35 @@ const char *TvT_Argv(int index) {
     }
     return tvt_argv[index];
 }
+
+int TvT_RemoveWhitespace(char *str) {
+    char    *src = str, *dst = str;
+    qboolean in_quotes = qfalse;
+    int      new_length = 0;
+
+    while (*src) {
+        if (*src == '\"') {
+            // Count consecutive backslashes preceding this quote.
+            // An even count means the backslashes escape each other,
+            // so the quote is real. An odd count means the quote is escaped.
+            int backslashes = 0;
+            const char *p = dst - 1;
+            while (p >= str && *p == '\\') {
+                backslashes++;
+                p--;
+            }
+            if (backslashes % 2 == 0) {
+                in_quotes = !in_quotes;
+            }
+        }
+        if (!in_quotes &&
+            (*src == ' ' || *src == '\t' || *src == '\n' || *src == '\r')) {
+            src++;
+            continue;
+        }
+        *dst++ = *src++;
+        new_length++;
+    }
+    *dst = '\0';
+    return new_length;
+}
