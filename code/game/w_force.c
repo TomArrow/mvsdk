@@ -234,7 +234,7 @@ void WP_InitForcePowers( gentity_t *ent )
 	if (!strlen(forcePowers))
 	{ // Empty forcePowers
 		Q_strncpyz( forcePowers, "7-1-032330000000001333", sizeof(forcePowers) );
-		G_LogPrintf( "WP_InitForcePowers: client %i (%s) has no force powers.\n", ent->client->ps.clientNum, ent->client->pers.netname );
+		G_LogPrintf( "WP_InitForcePowers: client %i (%s^7) has no force powers.\n", ent->client->ps.clientNum, ent->client->pers.netname );
 			
 		Info_RemoveKey(userinfo, "forcepowers");
 		Info_SetValueForKey(userinfo, "forcepowers", forcePowers);
@@ -279,7 +279,7 @@ void WP_InitForcePowers( gentity_t *ent )
 
 		if ( !validForcePowers )
 		{
-			G_LogPrintf( "WP_InitForcePowers: client %i (%s) has invalid force powers (%s).\n", ent->client->ps.clientNum, ent->client->pers.netname, forcePowers );
+			G_LogPrintf( "WP_InitForcePowers: client %i (%s^7) has invalid force powers (%s).\n", ent->client->ps.clientNum, ent->client->pers.netname, forcePowers );
 			Q_strncpyz( forcePowers, "7-1-032330000000001333", sizeof(forcePowers) );
 			
 			Info_RemoveKey(userinfo, "forcepowers");

@@ -1204,7 +1204,7 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	if ( client->pers.connected == CON_CONNECTED ) {
 		if ( strcmp( oldname, client->pers.netname ) ) {
-			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s %s\n\"", oldname, G_GetStripEdString("SVINGAME", "PLRENAME"),
+			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "\n\"", oldname, G_GetStripEdString("SVINGAME", "PLRENAME"),
 				client->pers.netname) );
 		}
 	}

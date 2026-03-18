@@ -278,7 +278,7 @@ static qboolean G_TvT_Cmd_Queue(gentity_t *ent) {
 
     cl->tvt.queued = !cl->tvt.queued;
     cl->tvt.queueTime = cl->tvt.queued ? level.time : 0;
-    G_TvT_Printf(cn, "Queue status: %s\n", cl->tvt.queued ? "^2joined" : "^1left");
+    G_TvT_Printf(cn, "Queue status: %s^7\n", cl->tvt.queued ? "^2joined" : "^1left");
 
     return qtrue;
 }

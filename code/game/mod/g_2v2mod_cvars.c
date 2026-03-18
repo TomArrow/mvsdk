@@ -55,7 +55,7 @@ void G_TvT_UpdateCvars(void) {
                 cv->modificationCount = cv->vmCvar->modificationCount;
 
                 if (cv->validate && !cv->validate(cv->vmCvar->string)) {
-                    G_Printf("%s: invalid value '%s', reverting\n", cv->cvarName, cv->vmCvar->string);
+                    G_Printf("%s: invalid value '%s^7', reverting\n", cv->cvarName, cv->vmCvar->string);
                     trap_Cvar_Set(cv->cvarName, cv->defaultString);
                     trap_Cvar_Update(cv->vmCvar);
                     cv->modificationCount = cv->vmCvar->modificationCount;
@@ -70,7 +70,7 @@ void G_TvT_UpdateCvars(void) {
 
                 if (cv->trackChange) {
                     trap_SendServerCommand(-1,
-                                           va("print \"Server: %s changed to %s\n\"", cv->cvarName, cv->vmCvar->string));
+                                           va("print \"Server: %s changed to %s^7\n\"", cv->cvarName, cv->vmCvar->string));
                 }
             }
         }
