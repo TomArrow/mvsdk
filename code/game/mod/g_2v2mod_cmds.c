@@ -70,6 +70,7 @@ static int G_TvT_CollectPlayers(int *players, unsigned int *outOldRed, unsigned 
                                 int *outPriority) {
     int          count = 0;
     int          back = MAX_CLIENTS;
+    int          satOut = 0;
     unsigned int curRed = 0, curBlue = 0;
     int          totalSlots;
     int          i;
@@ -95,23 +96,25 @@ static int G_TvT_CollectPlayers(int *players, unsigned int *outOldRed, unsigned 
     *outOldRed = curRed;
     *outOldBlue = curBlue;
 
-    // Multiply teamsize by 2 since the cvar is the max size per TEAM.
+    satOut = MAX_CLIENTS - back;
     totalSlots = tvt_teamSize.integer ? tvt_teamSize.integer * 2 : MAX_CLIENTS;
 
-    // If everyone fits, shuffle all together. Otherwise, players who sat
-    // out last round stay at the front so they get slots first.
-    if (count + (MAX_CLIENTS - back) <= totalSlots) {
-        memmove(players + count, players + back, (MAX_CLIENTS - back) * sizeof(int));
-        count += (MAX_CLIENTS - back);
+    // Merge both groups into a single contiguous array.
+    memmove(players + count, players + back, satOut * sizeof(int));
+
+    if (!tvt_specPrio.integer || count + satOut <= totalSlots) {
+        // No priority: shuffle everyone together.
+        count += satOut;
         G_TvT_FisherYatesShuffle(players, count);
         *outPriority = count;
     }
     else {
+        // Spectator priority: shuffle team slots from sat-out players,
+        // then last-round players fill remaining slots / overflow to spec.
         qsort(players, count, sizeof(int), G_TvT_CompareQueueTime);
-        G_TvT_FisherYatesShuffle(players + back, MAX_CLIENTS - back);
+        G_TvT_FisherYatesShuffle(players + count, satOut);
         *outPriority = count;
-        memmove(players + count, players + back, (MAX_CLIENTS - back) * sizeof(int));
-        count += (MAX_CLIENTS - back);
+        count += satOut;
     }
 
     return count;
@@ -151,10 +154,14 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
     }
 
     // If we landed on the same (or swapped) teams, re-shuffle once.
-    // Shuffle each priority group independently to preserve queue priority.
     if (newRed == oldRed || newRed == oldBlue) {
-        G_TvT_FisherYatesShuffle(players, priority);
-        G_TvT_FisherYatesShuffle(players + priority, count - priority);
+        if (!tvt_specPrio.integer) {
+            G_TvT_FisherYatesShuffle(players, count);
+        }
+        else {
+            G_TvT_FisherYatesShuffle(players, priority);
+            G_TvT_FisherYatesShuffle(players + priority, count - priority);
+        }
 
         newRed = newBlue = 0;
         for (i = 0; i < count; i++) {
