@@ -229,6 +229,7 @@ G_InitWorldSession
 void G_InitWorldSession( void ) {
 	char	s[MAX_STRING_CHARS];
 	int			gt;
+	int			matchStart;
 
 	trap_Cvar_VariableStringBuffer( "session", s, sizeof(s) );
 	gt = atoi( s );
@@ -240,8 +241,15 @@ void G_InitWorldSession( void ) {
 		G_Printf( "Gametype changed, clearing session data.\n" );
 	}
 
+	matchStart = 0;
 	trap_Cvar_VariableStringBuffer( "sessiontvt", s, sizeof(s) );
-	level.tvt.match.playedLastRound = atoi( s );
+	sscanf( s, "%i %i", &level.tvt.match.playedLastRound, &matchStart );
+
+	// matchStart is set by the ready-up system before map_restart.
+	// Clear it so manual restarts don't inherit it.
+	// TODO: Kind of a dirty hack, adjust this perhaps in the future
+	level.tvt.match.matchInProgress = matchStart;
+	trap_Cvar_Set( "sessiontvt", va("%i", level.tvt.match.playedLastRound) );
 }
 
 /*

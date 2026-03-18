@@ -1,7 +1,7 @@
 #include "../g_local.h"
 
 static tvt_VoteItem_t *tvt_voteItems;
-static int             tvt_voteItemCount= 0;
+static int             tvt_voteItemCount = 0;
 static int             tvt_voteItemCap;
 
 static void G_TvT_AddVoteItem(const char *name, const tvt_Cmd_t *cmd, const tvt_Cvar_t *cvar) {
@@ -81,16 +81,16 @@ int G_TvT_CallVote(gentity_t *ent, const char *arg1, const char *args) {
 
     if (item->cvar) {
         if (!args[0]) {
-             G_TvT_Printf(cn, va("Usage: callvote %s <value>\n%s\nCurrent: %s (default: %s)\n",
-                                          item->name, item->cvar->description, item->cvar->vmCvar->string, item->cvar->defaultString));
+            G_TvT_Printf(cn, va("Usage: callvote %s <value>\n%s\nCurrent: %s (default: %s)\n",
+                                item->name, item->cvar->description, item->cvar->vmCvar->string, item->cvar->defaultString));
             return -1;
         }
         if (strlen(args) >= MAX_CVAR_VALUE_STRING) {
-           G_TvT_Printf(cn, "The specified value is too long.\n");
+            G_TvT_Printf(cn, "The specified value is too long.\n");
             return -1;
         }
         if (item->cvar->validate && !item->cvar->validate(args)) {
-             G_TvT_Printf(cn, va("Invalid value for %s.\n", item->name));
+            G_TvT_Printf(cn, va("Invalid value for %s.\n", item->name));
             return -1;
         }
         Com_sprintf(level.voteString, sizeof(level.voteString), "%s \"%s\"", item->name, args);

@@ -30,7 +30,6 @@ qboolean G_TvT_ValidateIntPair(const char *value) {
     return qtrue;
 }
 
-
 void G_TvT_RegisterCvars(void) {
     tvt_Cvar_t *cv;
 

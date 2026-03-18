@@ -2163,6 +2163,10 @@ void CheckTournament( void ) {
 		return;
 	}
 
+	if ( G_TvT_CheckReadyUp() ) {
+		return;
+	}
+
 	if ( g_gametype.integer == GT_TOURNAMENT ) {
 
 		// pull in a spectator if needed

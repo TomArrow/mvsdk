@@ -372,6 +372,8 @@ static void G_TvT_Stats_EndGameTeam(void) {
 }
 
 void G_TvT_Stats_EndGame(void) {
+    level.tvt.match.matchInProgress = qfalse;
+
     if (g_gametype.integer >= GT_TEAM) {
         G_TvT_Stats_EndGameTeam();
     }

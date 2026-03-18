@@ -545,6 +545,9 @@ void AddScore( gentity_t *ent, vec3_t origin, int score ) {
 	if ( level.warmupTime ) {
 		return;
 	}
+	if ( tvt_matchMode.integer && !level.tvt.match.matchInProgress ) {
+		return;
+	}
 	// show score plum
 	//ScorePlum(ent, origin, score);
 	//
@@ -1948,7 +1951,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			}
 			else
 			{
-				if (tvt_teamSuicideScoring.integer && g_gametype.integer == GT_TEAM)
+				if (tvt_teamSuicideScoring.integer && g_gametype.integer == GT_TEAM
+				&& (!tvt_matchMode.integer || level.tvt.match.matchInProgress))
 				{
 					level.teamScores[OtherTeam(attacker->client->sess.sessionTeam)]++;
 					CalculateRanks();

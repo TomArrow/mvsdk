@@ -31,7 +31,11 @@ typedef struct {
 } tvt_ClientState_t;
 
 typedef struct {
-    int playedLastRound;
+    int      playedLastRound;
+    qboolean matchInProgress;
+    qboolean restartPending;
+    int      restartTime;
+    int      readyMask;
 } tvt_MatchState_t;
 
 // Global mod struct
@@ -43,6 +47,8 @@ typedef struct {
     tvt_MatchState_t match;
 } tvt_ModState_t;
 
-void G_TvT_Init(void);
+void     G_TvT_Init(void);
+qboolean G_TvT_CheckReadyUp(void);
+void     G_TvT_SyncReadyMask(void);
 
 #endif

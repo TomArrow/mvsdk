@@ -193,15 +193,23 @@ static qboolean G_TvT_Cmd_Shuffle(gentity_t *ent) {
         }
     }
 
-    // TODO: Move saving of players that have played last round somewhere else
-    // once some kind of ready up system has been implemented.
     level.tvt.match.playedLastRound = newRed | newBlue;
     firstTeam ^= 1;
 
     CheckTeamLeader(TEAM_RED);
     CheckTeamLeader(TEAM_BLUE);
 
-    trap_SendServerCommand(-1, "cp \"Teams have been shuffled.\n\"");
+    if (tvt_matchMode.integer) {
+        level.tvt.match.matchInProgress = qfalse;
+        level.tvt.match.restartPending = qfalse;
+        level.tvt.match.readyMask = 0;
+        G_TvT_SyncReadyMask();
+        trap_SetConfigstring(CS_WARMUP, va("%i", -1));
+        trap_SendServerCommand(-1, "cp \"Teams shuffled. Type ^2/ready^7 to start.\n\"");
+    }
+    else {
+        trap_SendServerCommand(-1, "cp \"Teams have been shuffled.\n\"");
+    }
     return qtrue;
 }
 
@@ -302,6 +310,94 @@ static qboolean G_TvT_Cmd_Players(gentity_t *ent) {
     return qtrue;
 }
 
+static qboolean G_TvT_Cmd_Ready(gentity_t *ent) {
+    int        cn = TVT_ENT_TO_CN(ent);
+    gclient_t *cl = ent->client;
+    int        i, ready, total;
+    gclient_t *other;
+
+    if (!cl) {
+        return qtrue;
+    }
+
+    if (!tvt_matchMode.integer) {
+        G_TvT_Printf(cn, "Match mode is not enabled.\n");
+        return qtrue;
+    }
+
+    if (level.tvt.match.matchInProgress) {
+        G_TvT_Printf(cn, "A match is already in progress.\n");
+        return qtrue;
+    }
+
+    if (cl->sess.sessionTeam != TEAM_RED && cl->sess.sessionTeam != TEAM_BLUE) {
+        G_TvT_Printf(cn, "You must be on a team to ready up.\n");
+        return qtrue;
+    }
+
+    if (cn < 16) {
+        level.tvt.match.readyMask ^= (1 << cn);
+    }
+
+    for (i = 0; i < g_maxclients.integer; i++) {
+        other = level.clients + i;
+        if (other->pers.connected == CON_CONNECTED) {
+            other->ps.stats[STAT_CLIENTS_READY] = level.tvt.match.readyMask;
+        }
+    }
+
+    ready = 0;
+    total = 0;
+    for (i = 0; i < g_maxclients.integer; i++) {
+        other = level.clients + i;
+        if (other->pers.connected != CON_CONNECTED) {
+            continue;
+        }
+        if (g_entities[i].r.svFlags & SVF_BOT) {
+            continue;
+        }
+        if (other->sess.sessionTeam != TEAM_RED && other->sess.sessionTeam != TEAM_BLUE) {
+            continue;
+        }
+        total++;
+        if (i < 16 && (level.tvt.match.readyMask & (1 << i))) {
+            ready++;
+        }
+    }
+
+    trap_SendServerCommand(-1, va("print \"%s ^7is %s ^7(%d/%d ready)\n\"",
+                                  cl->pers.netname,
+                                  (cn < 16 && (level.tvt.match.readyMask & (1 << cn))) ? "^2ready" : "^1not ready",
+                                  ready, total));
+    return qtrue;
+}
+
+static qboolean G_TvT_Cmd_Abort(gentity_t *ent) {
+    level.tvt.match.matchInProgress = qfalse;
+    level.tvt.match.restartPending = qfalse;
+    level.tvt.match.readyMask = 0;
+    G_TvT_SyncReadyMask();
+    trap_SetConfigstring(CS_WARMUP, va("%i", -1));
+    trap_SendServerCommand(-1, "cp \"Match aborted. Type ^2/ready^7 to start.\n\"");
+    return qtrue;
+}
+
+static qboolean G_TvT_ValidateAbort(gentity_t *ent) {
+    int cn = TVT_ENT_TO_CN(ent);
+
+    if (!tvt_matchMode.integer) {
+        G_TvT_Printf(cn, "Match mode is not enabled.\n");
+        return qfalse;
+    }
+
+    if (!level.tvt.match.matchInProgress) {
+        G_TvT_Printf(cn, "No match is in progress.\n");
+        return qfalse;
+    }
+
+    return qtrue;
+}
+
 static qboolean G_TvT_Cmd_ListCommands(gentity_t *ent);
 
 static qboolean G_TvT_ValidateShuffle(gentity_t *ent) {
@@ -329,18 +425,20 @@ static qboolean G_TvT_ValidateShuffle(gentity_t *ent) {
 }
 
 static const tvt_Cmd_t tvt_info_subcmds[] = {
-    {"cvars", "Show mod cvar settings",          "info cvars [filter]", G_TvT_Cmd_ModCvars,    NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
-    {"cmds",  "List available commands",          "info cmds [filter]",  G_TvT_Cmd_ListCommands, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
-    {"votes", "Show voteable items",              "info votes [filter]", G_TvT_Cmd_VoteList,    NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
+    {"cvars", "Show mod cvar settings", "info cvars [filter]", G_TvT_Cmd_ModCvars, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
+    {"cmds", "List available commands", "info cmds [filter]", G_TvT_Cmd_ListCommands, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
+    {"votes", "Show voteable items", "info votes [filter]", G_TvT_Cmd_VoteList, NULL, NULL, CMD_CONTEXT_ALL, 0, 1, qfalse},
     {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse}};
 
 static tvt_Cmd_t tvt_commands[] = {
-    {"info",      "Show mod information",               "info <cvars|cmds|votes>", NULL,                NULL,                   tvt_info_subcmds, CMD_CONTEXT_ALL,    0, 0, qfalse},
-    {"mem_stats", "Show memory pool statistics",        "mem_stats",               G_TvT_Cmd_MemStats,  NULL,                   NULL,             CMD_CONTEXT_SERVER, 0, 0, qfalse},
-    {"shuffle",   "Shuffle players between teams",      "shuffle",                 G_TvT_Cmd_Shuffle,   G_TvT_ValidateShuffle,  NULL,             CMD_CONTEXT_SERVER, 0, 0, qtrue},
-    {"pstats",    "Show player statistics",             "pstats",                  G_TvT_Cmd_Stats,     NULL,                   NULL,             CMD_CONTEXT_ALL,    0, 0, qfalse},
-    {"queue",     "Toggle queue status",                "queue",                   G_TvT_Cmd_Queue,     NULL,                   NULL,             CMD_CONTEXT_CLIENT, 0, 0, qfalse},
-    {"players",   "Show player list and queue status",  "players",                 G_TvT_Cmd_Players,   NULL,                   NULL,             CMD_CONTEXT_ALL,    0, 0, qfalse},
+    {"abort", "Abort the current match", "abort", G_TvT_Cmd_Abort, G_TvT_ValidateAbort, NULL, CMD_CONTEXT_SERVER, 0, 0, qtrue},
+    {"info", "Show mod information", "info <cvars|cmds|votes>", NULL, NULL, tvt_info_subcmds, CMD_CONTEXT_ALL, 0, 0, qfalse},
+    {"mem_stats", "Show memory pool statistics", "mem_stats", G_TvT_Cmd_MemStats, NULL, NULL, CMD_CONTEXT_SERVER, 0, 0, qfalse},
+    {"shuffle", "Shuffle players between teams", "shuffle", G_TvT_Cmd_Shuffle, G_TvT_ValidateShuffle, NULL, CMD_CONTEXT_SERVER, 0, 0, qtrue},
+    {"pstats", "Show player statistics", "pstats", G_TvT_Cmd_Stats, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse},
+    {"queue", "Toggle queue status", "queue", G_TvT_Cmd_Queue, NULL, NULL, CMD_CONTEXT_CLIENT, 0, 0, qfalse},
+    {"ready", "Toggle ready status", "ready", G_TvT_Cmd_Ready, NULL, NULL, CMD_CONTEXT_CLIENT, 0, 0, qfalse},
+    {"players", "Show player list and queue status", "players", G_TvT_Cmd_Players, NULL, NULL, CMD_CONTEXT_ALL, 0, 0, qfalse},
     {NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, qfalse}};
 
 static void G_TvT_Cmd_ListSubCommands(int clientNum, const char *parentName,

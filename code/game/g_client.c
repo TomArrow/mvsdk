@@ -1664,6 +1664,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 
 	memset( &client->ps, 0, sizeof( client->ps ) );
 	client->ps.eFlags = flags;
+	client->ps.stats[STAT_CLIENTS_READY] = level.tvt.match.readyMask;
 
 	client->ps.hasDetPackPlanted = qfalse;
 
