@@ -3515,7 +3515,6 @@ void G_RunFrame( int levelTime ) {
 			// clients have their own handling
 			ent->r.broadcastClients[0] |= specAllEntsBroadcastClients[0];
 			ent->r.broadcastClients[1] |= specAllEntsBroadcastClients[1];
-			ent->r.broadcastClients[ent->s.number / 32] &= ~(1 << (ent->s.number % 32)); // don't broadcast to self
 		}
 
 		// clear events that are too old
