@@ -38,18 +38,26 @@ typedef struct {
     int      readyMask;
 } tvt_MatchState_t;
 
+typedef struct tvt_CachedTable_s {
+    table_t                  **table;
+    struct tvt_CachedTable_s  *next;
+} tvt_CachedTable_t;
+
 // Global mod struct
 typedef struct {
-    int              spawnArmor[2];
-    int              spawnItems[2];
-    tvt_printJob_t   printJobs[TVT_PRINT_MAX_JOBS];
-    int              numPrintJobs;
-    tvt_MatchState_t match;
-    char             colorChar;
+    int                spawnArmor[2];
+    int                spawnItems[2];
+    tvt_printJob_t     printJobs[TVT_PRINT_MAX_JOBS];
+    int                numPrintJobs;
+    tvt_MatchState_t   match;
+    char               colorChar;
+    tvt_CachedTable_t *cachedTables;
 } tvt_ModState_t;
 
 void     G_TvT_Init(void);
 qboolean G_TvT_CheckReadyUp(void);
 void     G_TvT_SyncReadyMask(void);
+void     G_TvT_RegisterCachedTable(table_t **tablePtr);
+void     G_TvT_UpdateCachedTables(void);
 
 #endif

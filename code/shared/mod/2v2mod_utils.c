@@ -2,6 +2,8 @@
 #include "2v2mod_memory.h"
 #include "../../game/bg_multiversion.h"
 
+char tvt_defaultAccentColor[3] = {0};
+
 static char *TvT_Table_Strdup(const char *s) {
     int   len;
     char *out;
@@ -92,7 +94,7 @@ table_t *TvT_Table_Create(void) {
 
     t->drawBorder = qtrue;
     t->drawHeaderSep = qtrue;
-    t->accentColor = NULL;
+    t->accentColor = tvt_defaultAccentColor[0] ? tvt_defaultAccentColor : S_COLOR_MAGENTA;
 
     return t;
 }
@@ -194,6 +196,7 @@ void TvT_Table_SetHeaderSep(table_t *t, qboolean enabled) {
 
 void TvT_Table_SetAccentColor(table_t *t, const char *color) {
     t->accentColor = color;
+    t->accentColorExplicit = qtrue;
 }
 
 // Find column index by name, returns -1 if not found.

@@ -541,6 +541,7 @@ static table_t *G_TvT_BuildCmdDisplayTable(void) {
     }
 
     TvT_Table_Sort(cmdTable, "Command", qtrue);
+    G_TvT_RegisterCachedTable(&cmdTable);
     return cmdTable;
 }
 

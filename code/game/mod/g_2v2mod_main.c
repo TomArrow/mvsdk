@@ -85,6 +85,28 @@ qboolean G_TvT_CheckReadyUp(void) {
     return qtrue;
 }
 
+void G_TvT_RegisterCachedTable(table_t **tablePtr) {
+    tvt_CachedTable_t *node;
+
+    node = malloc(sizeof(tvt_CachedTable_t));
+    if (!node) {
+        Com_Error(ERR_FATAL, "G_TvT_RegisterCachedTable: out of memory");
+    }
+    node->table = tablePtr;
+    node->next = level.tvt.cachedTables;
+    level.tvt.cachedTables = node;
+}
+
+void G_TvT_UpdateCachedTables(void) {
+    tvt_CachedTable_t *node;
+
+    for (node = level.tvt.cachedTables; node; node = node->next) {
+        if (*node->table && !(*node->table)->accentColorExplicit) {
+            (*node->table)->accentColor = tvt_defaultAccentColor;
+        }
+    }
+}
+
 void G_TvT_Init(void) {
     G_TvT_RegisterCvars();
     G_TvT_Vote_Init();

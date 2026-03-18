@@ -93,7 +93,11 @@ qboolean G_TvT_ValidateColor(const char *value) {
 
 qboolean G_TvT_UpdateColor(void) {
     level.tvt.colorChar = tvt_color.string[0];
+    tvt_defaultAccentColor[0] = '^';
+    tvt_defaultAccentColor[1] = level.tvt.colorChar;
+    tvt_defaultAccentColor[2] = '\0';
     trap_Cvar_Set("gamename", va("^%c/^7 2V2MOD ^%c/", level.tvt.colorChar, level.tvt.colorChar));
+    G_TvT_UpdateCachedTables();
     return qtrue;
 }
 
