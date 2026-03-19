@@ -644,6 +644,10 @@ static qboolean G_TvT_Cmd_Execute(gentity_t *ent, const char *cmd, cmdContext_t 
             return qtrue;
         }
 
+        if (c->validate && !c->validate(ent)) {
+            return qtrue;
+        }
+
         return c->execute(ent);
     }
 
