@@ -265,6 +265,10 @@ qboolean TvT_JSON_AddItemToObject(JSON_t *object, const char *key, JSON_t *item)
         return qfalse;
     }
 
+    if (item->key) {
+        free(item->key);
+    }
+
     item->keyLen = strlen(key);
     item->key = malloc(item->keyLen + 1);
     if (!item->key) {
@@ -341,6 +345,10 @@ static qboolean TvT_JSON_ParseNumber(JSON_t *value) {
 
     if (*currentPos == '-') {
         currentPos++;
+        if (currentPos >= state.dataEnd) {
+            TvT_JSON_SetError(JSON_ERROR_INVALID_NUMBER, "valid number", "no digits after sign");
+            return qfalse;
+        }
     }
 
     if (*currentPos < '0' || *currentPos > '9') {
@@ -356,7 +364,7 @@ static qboolean TvT_JSON_ParseNumber(JSON_t *value) {
         }
     }
 
-    while (*currentPos && currentPos < state.dataEnd) {
+    while (currentPos < state.dataEnd && *currentPos) {
         if (*currentPos == '.') {
             if (isFloat) {
                 TvT_JSON_SetError(JSON_ERROR_INVALID_NUMBER, "valid number", "multiple decimal points");
@@ -416,9 +424,9 @@ static qboolean TvT_JSON_ParseString(JSON_t *value) {
     }
     currentPos = state.pos;
 
-    while (*currentPos && *currentPos != '\"' && currentPos < state.dataEnd) {
+    while (currentPos < state.dataEnd && *currentPos != '\"') {
         if (*currentPos == '\\') {
-            if (!*(currentPos + 1) || (currentPos + 1) >= state.dataEnd) {
+            if ((currentPos + 1) >= state.dataEnd) {
                 TvT_JSON_SetError(JSON_ERROR_UNEXPECTED_EOF, "escape character", "end of file");
                 return qfalse;
             }
@@ -426,6 +434,11 @@ static qboolean TvT_JSON_ParseString(JSON_t *value) {
             currentPos += 2;
             len++;
             continue;
+        }
+
+        if (*currentPos < ' ') {
+            TvT_JSON_SetError(JSON_ERROR_INVALID_STRING, "valid string character", "unescaped control character");
+            return qfalse;
         }
 
         len++;
@@ -446,7 +459,7 @@ static qboolean TvT_JSON_ParseString(JSON_t *value) {
 
     currentPos = state.pos;
     i = 0;
-    while (*currentPos && *currentPos != '\"' && currentPos < state.dataEnd) {
+    while (currentPos < state.dataEnd && *currentPos != '\"') {
         if (*currentPos == '\\') {
             switch (*(currentPos + 1)) {
                 case 'n':
@@ -783,7 +796,9 @@ static int TvT_JSON_EscapedLength(const char *str, int len) {
                 result += 2;
                 break;
             default:
-                result++;
+                if ((unsigned char)str[i] >= 0x20) {
+                    result++;
+                }
                 break;
         }
     }
@@ -793,7 +808,7 @@ static int TvT_JSON_EscapedLength(const char *str, int len) {
 
 static char *TvT_JSON_EscapeString(const char *str, int len, int *newLen) {
     int   i;
-    char *escaped = malloc(len * 2 + 1);
+    char *escaped = malloc(TvT_JSON_EscapedLength(str, len) + 1);
     char *p;
 
     if (!escaped) {
@@ -841,8 +856,10 @@ static char *TvT_JSON_EscapeString(const char *str, int len, int *newLen) {
                 *newLen += 2;
                 break;
             default:
-                *p++ = str[i];
-                (*newLen)++;
+                if ((unsigned char)str[i] >= 0x20) {
+                    *p++ = str[i];
+                    (*newLen)++;
+                }
                 break;
         }
     }
