@@ -291,6 +291,7 @@ qboolean G_TvT_Cmd_Stats(gentity_t *ent) {
     group.players = players;
     group.table = t;
     group.count = numPlayers;
+    group.team = TEAM_FREE;
     G_TvT_Stats_Highlight(&group, 1, 1);
 
     G_TvT_TablePrint(t, TVT_ENT_TO_CN(ent));
@@ -298,6 +299,8 @@ qboolean G_TvT_Cmd_Stats(gentity_t *ent) {
 
     return qtrue;
 }
+
+static void G_TvT_Stats_LogToFile(tvt_statsGroup_t *groups, int numGroups);
 
 static void G_TvT_Stats_EndGameFFA(void) {
     tvt_EndGamePlayer_t players[MAX_CLIENTS];
@@ -317,6 +320,7 @@ static void G_TvT_Stats_EndGameFFA(void) {
     group.players = players;
     group.table = t;
     group.count = numPlayers;
+    group.team = TEAM_FREE;
     G_TvT_Stats_Highlight(&group, 1, 1);
 
     combined = G_TvT_Stats_WrapOutput(TvT_Table_ToString(t), NULL);
@@ -326,6 +330,8 @@ static void G_TvT_Stats_EndGameFFA(void) {
         G_TvT_Stats_Print(combined);
         free(combined);
     }
+
+    G_TvT_Stats_LogToFile(&group, 1);
 }
 
 static void G_TvT_Stats_EndGameTeam(void) {
@@ -343,6 +349,7 @@ static void G_TvT_Stats_EndGameTeam(void) {
             groups[numGroups].table = G_TvT_Stats_BuildTable(TeamName(teams[t]), TeamColorString(teams[t]),
                                                              teamPlayers[t], count);
             groups[numGroups].count = count;
+            groups[numGroups].team = teams[t];
             numGroups++;
         }
     }
@@ -369,6 +376,159 @@ static void G_TvT_Stats_EndGameTeam(void) {
         G_TvT_Stats_Print(combined);
         free(combined);
     }
+
+    G_TvT_Stats_LogToFile(groups, numGroups);
+}
+
+static const char *g_tvt_gametypeNames[] = {"ffa", "holocron", "jedimaster", "duel", "single", "team", "saga", "ctf", "cty"};
+
+static JSON_t *G_TvT_Stats_PlayerToJSON(tvt_EndGamePlayer_t *player) {
+    gclient_t *cl = &level.clients[player->clientNum];
+    JSON_t    *p  = TvT_JSON_CreateObject();
+    char       cleanName[MAX_NETNAME];
+
+    Q_strncpyz(cleanName, cl->pers.netname, sizeof(cleanName));
+    Q_CleanStr(cleanName, (qboolean)(jk2startversion == VERSION_1_02));
+
+    TvT_JSON_AddItemToObject(p, "name", TvT_JSON_CreateString(cleanName));
+    TvT_JSON_AddItemToObject(p, "score", TvT_JSON_CreateNumber(player->vals[STAT_SCORE]));
+    TvT_JSON_AddItemToObject(p, "kills", TvT_JSON_CreateNumber(player->vals[STAT_KILLS]));
+    TvT_JSON_AddItemToObject(p, "deaths", TvT_JSON_CreateNumber(player->vals[STAT_DEATHS]));
+    TvT_JSON_AddItemToObject(p, "suicides", TvT_JSON_CreateNumber(player->vals[STAT_SUICIDES]));
+    TvT_JSON_AddItemToObject(p, "dmgGiven", TvT_JSON_CreateNumber(player->vals[STAT_DMG_GIVEN]));
+    TvT_JSON_AddItemToObject(p, "dmgReceived", TvT_JSON_CreateNumber(player->vals[STAT_DMG_RECV]));
+
+    if (g_gametype.integer >= GT_TEAM) {
+        TvT_JSON_AddItemToObject(p, "teamKills", TvT_JSON_CreateNumber(player->vals[STAT_TEAMKILLS]));
+        TvT_JSON_AddItemToObject(p, "teamDmg", TvT_JSON_CreateNumber(player->vals[STAT_TEAM_DMG]));
+    }
+
+    return p;
+}
+
+static JSON_t *G_TvT_Stats_BuildMatchJSON(tvt_statsGroup_t *groups, int numGroups, qtime_t *time) {
+    JSON_t     *match = TvT_JSON_CreateObject();
+    char        timestamp[64];
+    char        mapname[MAX_QPATH];
+    const char *gtName;
+
+    Com_sprintf(timestamp, sizeof(timestamp), "%02d-%02d-%04d %02d:%02d:%02d",
+                time->tm_mday, time->tm_mon + 1, time->tm_year + 1900,
+                time->tm_hour, time->tm_min, time->tm_sec);
+
+    trap_Cvar_VariableStringBuffer("mapname", mapname, sizeof(mapname));
+
+    gtName = (g_gametype.integer >= 0 && g_gametype.integer < GT_MAX_GAME_TYPE)
+                 ? g_tvt_gametypeNames[g_gametype.integer]
+                 : "unknown";
+
+    TvT_JSON_AddItemToObject(match, "timestamp", TvT_JSON_CreateString(timestamp));
+    TvT_JSON_AddItemToObject(match, "map", TvT_JSON_CreateString(mapname));
+    TvT_JSON_AddItemToObject(match, "gametype", TvT_JSON_CreateString(gtName));
+    TvT_JSON_AddItemToObject(match, "matchMode", TvT_JSON_CreateBool((qboolean)tvt_matchMode.integer));
+
+    if (g_gametype.integer >= GT_TEAM) {
+        JSON_t *teamsObj = TvT_JSON_CreateObject();
+        int     g;
+
+        for (g = 0; g < numGroups; g++) {
+            JSON_t *teamObj    = TvT_JSON_CreateObject();
+            JSON_t *playersArr = TvT_JSON_CreateArray();
+            char    teamKey[12];
+            int     i;
+
+            Q_strncpyz(teamKey, TeamName(groups[g].team), sizeof(teamKey));
+            Q_strlwr(teamKey);
+
+            TvT_JSON_AddItemToObject(teamObj, "score", TvT_JSON_CreateNumber(level.teamScores[groups[g].team]));
+
+            for (i = 0; i < groups[g].count; i++) {
+                TvT_JSON_AddItemToArray(playersArr, G_TvT_Stats_PlayerToJSON(&groups[g].players[i]));
+            }
+
+            TvT_JSON_AddItemToObject(teamObj, "players", playersArr);
+            TvT_JSON_AddItemToObject(teamsObj, teamKey, teamObj);
+        }
+
+        TvT_JSON_AddItemToObject(match, "teams", teamsObj);
+    }
+    else {
+        JSON_t *playersArr = TvT_JSON_CreateArray();
+        int     i;
+
+        for (i = 0; i < groups[0].count; i++) {
+            TvT_JSON_AddItemToArray(playersArr, G_TvT_Stats_PlayerToJSON(&groups[0].players[i]));
+        }
+
+        TvT_JSON_AddItemToObject(match, "players", playersArr);
+    }
+
+    return match;
+}
+
+static void G_TvT_Stats_LogToFile(tvt_statsGroup_t *groups, int numGroups) {
+    JSON_t       *root    = NULL;
+    JSON_t       *matches;
+    JSON_t       *match;
+    char         *serialized;
+    fileHandle_t  f;
+    qtime_t       time;
+    char          filepath[MAX_QPATH];
+    int           fileLen;
+
+    trap_RealTime(&time);
+
+    Com_sprintf(filepath, sizeof(filepath), "%s/%02d-%02d-%04d.json",
+                tvt_matchMode.integer ? "match_logs" : "casual_logs",
+                time.tm_mday, time.tm_mon + 1, time.tm_year + 1900);
+
+    fileLen = trap_FS_FOpenFile(filepath, &f, FS_READ);
+    if (fileLen > 0) {
+        char *buf = malloc(fileLen + 1);
+        if (buf) {
+            trap_FS_Read(buf, fileLen, f);
+            buf[fileLen] = '\0';
+            trap_FS_FCloseFile(f);
+
+            root = TvT_JSON_Deserialize(buf, fileLen, NULL);
+            free(buf);
+        }
+        else {
+            trap_FS_FCloseFile(f);
+        }
+    }
+    else if (f) {
+        trap_FS_FCloseFile(f);
+    }
+
+    if (!root || root->type != TYPE_OBJECT) {
+        TvT_JSON_FreeValue(root);
+        root = TvT_JSON_CreateObject();
+    }
+
+    matches = TvT_JSON_GetObjectItem(root, "matches");
+    if (!matches) {
+        matches = TvT_JSON_CreateArray();
+        TvT_JSON_AddItemToObject(root, "matches", matches);
+    }
+
+    match = G_TvT_Stats_BuildMatchJSON(groups, numGroups, &time);
+    TvT_JSON_AddItemToArray(matches, match);
+
+    serialized = TvT_JSON_Serialize(root, qtrue, NULL);
+    TvT_JSON_FreeValue(root);
+
+    if (!serialized) {
+        return;
+    }
+
+    fileLen = trap_FS_FOpenFile(filepath, &f, FS_WRITE);
+    if (f) {
+        trap_FS_Write(serialized, strlen(serialized), f);
+        trap_FS_FCloseFile(f);
+    }
+
+    free(serialized);
 }
 
 void G_TvT_Stats_EndGame(void) {

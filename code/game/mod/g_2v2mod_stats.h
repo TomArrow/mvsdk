@@ -35,6 +35,7 @@ typedef struct {
     tvt_EndGamePlayer_t *players;
     table_t             *table;
     int                  count;
+    team_t               team;
 } tvt_statsGroup_t;
 
 typedef struct {
