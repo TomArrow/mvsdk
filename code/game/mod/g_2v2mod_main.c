@@ -3,6 +3,10 @@
 void G_TvT_SyncReadyMask(void) {
     int i;
 
+    if (!level.clients) {
+        return;
+    }
+
     for (i = 0; i < g_maxclients.integer; i++) {
         if (level.clients[i].pers.connected == CON_CONNECTED) {
             level.clients[i].ps.stats[STAT_CLIENTS_READY] = level.tvt.match.readyMask;
