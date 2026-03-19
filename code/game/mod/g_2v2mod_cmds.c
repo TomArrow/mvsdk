@@ -440,8 +440,7 @@ static qboolean G_TvT_ValidateShuffle(gentity_t *ent) {
 static qboolean G_TvT_Cmd_Credits(gentity_t *ent) {
     int cn = TVT_ENT_TO_CN(ent);
 
-    G_TvT_Printf(cn, "^%c/^7 2V2MOD ^%c/\n", level.tvt.colorChar, level.tvt.colorChar);
-    G_TvT_Printf(cn, "Author: ^6/^7god^6/ ^7(Alereon)\n");
+    G_TvT_Printf(cn, "^%c/^7 2V2MOD ^%c/\nAuthor: ^6/^7god^6/ ^7(Alereon)\nBuilt: " __DATE__ " " __TIME__ "\n", level.tvt.colorChar, level.tvt.colorChar);
     return qtrue;
 }
 
