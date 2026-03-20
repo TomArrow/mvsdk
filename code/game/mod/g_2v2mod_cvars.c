@@ -140,6 +140,24 @@ qboolean G_TvT_UpdateSpawnItems(void) {
     return qtrue;
 }
 
+qboolean G_TvT_ValidatePhysicsFps(const char *value) {
+    int fps = atoi(value);
+
+    return (fps == 0 || (fps >= 1 && fps <= 333));
+}
+
+qboolean G_TvT_UpdatePhysicsFps(void) {
+    int fps = tvt_physicsFps.integer;
+
+    if (fps == 0) {
+        level.tvt.physicsMsec = 0;
+    }
+    else {
+        level.tvt.physicsMsec = 1000 / fps;
+    }
+    return qtrue;
+}
+
 qboolean G_TvT_UpdateMatchMode(void) {
     if (!tvt_matchMode.integer) {
         level.tvt.match.matchInProgress = qfalse;
