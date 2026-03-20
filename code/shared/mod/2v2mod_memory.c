@@ -374,7 +374,16 @@ void *TvT_Mem_Realloc(void *ptr, size_t new_size) {
     new_total_size = ALIGN_SIZE(new_size + BLOCK_OVERHEAD);
 
     if (new_total_size <= GET_SIZE(old_block)) {
+        block_t *remainder;
+        char    *pool_end;
+
         split_block(old_block, new_total_size);
+
+        pool_end = memPool + MEMPOOL_SIZE;
+        remainder = GET_NEXT_PHYS(old_block);
+        if ((char *)remainder < pool_end && IS_BLOCK_FREE(remainder)) {
+            coalesce_blocks(remainder);
+        }
         return ptr;
     }
 
