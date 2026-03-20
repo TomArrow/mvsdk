@@ -773,6 +773,12 @@ void SetTeam( gentity_t *ent, char *s, qboolean bypassTeamLimit ) {
 					otherClient->sess.spectatorOrder++;
 			}
 		}
+
+		if ( tvt_matchMode.integer && oldTeam != TEAM_SPECTATOR &&
+			 (level.tvt.match.readyMask & (1 << clientNum)) ) {
+			level.tvt.match.readyMask &= ~(1 << clientNum);
+			G_TvT_SyncReadyMask();
+		}
 	}
 
 	client->sess.sessionTeam = team;
