@@ -316,6 +316,11 @@ static void G_TvT_TouchItem(gentity_t *ent, gentity_t *other, trace_t *trace) {
 void G_TvT_ForcePushItem(gentity_t *item, qboolean pull, vec3_t forward) {
     float speed = pull ? -650.0f : 650.0f;
 
+    // Skip items that have already been picked up and are waiting to respawn.
+    if (!item->r.contents) {
+        return;
+    }
+
     if (!(item->flags & FL_DROPPED_ITEM)) {
         if (item->touch == Touch_Item) {
             // pos1 is unused for items, so we can store the original spawn position in this field
