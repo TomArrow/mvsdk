@@ -28,6 +28,7 @@ typedef struct {
     tvt_ClientStats_t stats;
     qboolean          queued;
     int               queueTime;
+    qboolean          isHeadlessClient;	// is a headless client or demobot
 } tvt_ClientState_t;
 
 typedef struct {

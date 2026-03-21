@@ -1168,9 +1168,9 @@ void ClientUserinfoChanged( int clientNum ) {
 	// check if it's a demo bot
 	s = Info_ValueForKey( userinfo, "engine" );
 	if ( !Q_stricmpn( s, "jkclient", 8 )) {
-		client->pers.isHeadlessClient = qtrue;
+		client->tvt.isHeadlessClient = qtrue;
 	} else {
-		client->pers.isHeadlessClient = qfalse;
+		client->tvt.isHeadlessClient = qfalse;
 	}
 
 	// set name

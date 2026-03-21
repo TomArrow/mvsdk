@@ -386,14 +386,12 @@ void G_TvT_SetSpecAllEntsBroadcasts(int broadcastClients[2])
 	for (i = 0; i < level.numConnectedClients; i++)
 	{
 		gentity_t* ent = &g_entities[level.sortedClients[i]];
-		float	  dist;
-		vec3_t	  angles;
 
 		if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) { // don't create a wallhack for non-spectators
 			continue;
 		}
 
-		if (!ent->client->pers.isHeadlessClient) { // only send all ents to headless clients, to avoid potentially reaching max snap entities for normal clients
+		if (!ent->client->tvt.isHeadlessClient) { // only send all ents to headless clients, to avoid potentially reaching max snap entities for normal clients
 			continue;
 		}
 
