@@ -393,6 +393,10 @@ void G_TvT_SetSpecAllEntsBroadcasts(int broadcastClients[2])
 			continue;
 		}
 
+		if (!ent->client->pers.isHeadlessClient) { // only send all ents to headless clients, to avoid potentially reaching max snap entities for normal clients
+			continue;
+		}
+
 		// Turn on the broadcast bit for the master and since there is only one
 		// master we are done
 		broadcastClients[ent->s.number / 32] |= (1 << (ent->s.number % 32));

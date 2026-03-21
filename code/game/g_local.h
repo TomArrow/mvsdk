@@ -334,6 +334,7 @@ typedef struct {
 	qboolean	localClient;		// true if "ip" info key is "localhost"
 	qboolean	initialSpawn;		// the first spawn should be at a cool location
 	qboolean	predictItemPickup;	// based on cg_predictItems userinfo
+	qboolean	isHeadlessClient;	// is a headless client or demobot
 	qboolean	pmoveFixed;			//
 	char		netname[MAX_NETNAME];
 	int			maxHealth;			// for handicapping
