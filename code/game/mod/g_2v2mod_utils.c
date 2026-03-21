@@ -401,4 +401,12 @@ void G_TvT_SetSpecAllEntsBroadcasts(int broadcastClients[2])
 	}
 }
 
+void G_TvT_UpdateSpecAllEntsBroadcasts(gentity_t* self)
+{
+	int i;
+
+	G_TvT_SetSpecAllEntsBroadcasts(self->r.broadcastClients);
+	self->r.broadcastClients[self->s.number / 32] &= ~(1 << (self->s.number % 32));
+}
+
 

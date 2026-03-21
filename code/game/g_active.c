@@ -881,14 +881,6 @@ A client is broadcast when another client is using force sight or is
 #define MAX_SIGHT_DISTANCE		1500
 #define MAX_SIGHT_FOV			100
 
-static void G_UpdateSpecAllEntsBroadcasts(gentity_t* self)
-{
-	int i;
-
-	G_TvT_SetSpecAllEntsBroadcasts(self->r.broadcastClients);
-	self->r.broadcastClients[self->s.number / 32] &= ~(1 << (self->s.number % 32));
-}
-
 static void G_UpdateForceSightBroadcasts ( gentity_t *self )
 {
 	int i;
@@ -999,7 +991,9 @@ void G_UpdateClientBroadcasts ( gentity_t *self )
 	// If tvt_specAllEnts is active, let anyone who is a spectator view this client always
 	// Not as good as sv_specAllEnts, we can't make this work for follow spectators
 	// but decent in case engine access is not available.
-	G_UpdateSpecAllEntsBroadcasts(self);
+	if (tvt_specAllEnts.integer) {
+		G_TvT_UpdateSpecAllEntsBroadcasts(self);
+	}
 }
 
 /*
