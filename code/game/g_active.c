@@ -1040,6 +1040,17 @@ void ClientThink_real( gentity_t *ent ) {
 	// following others may result in bad times, but we still want
 	// to check for follow toggles
 	if ( msec < 1 && client->sess.spectatorState != SPECTATOR_FOLLOW ) {
+		// Fixed accumulator: save one shot inputs from skipped commands.
+		if ( level.tvt.physicsMsec ) {
+			client->tvt.pendingButtons |= ucmd->buttons;
+			if ( ucmd->generic_cmd ) {
+				client->tvt.pendingGenericCmd = ucmd->generic_cmd;
+			}
+			// Clear the jump gate so the next physics frame can kick.
+			if ( ucmd->upmove < 10 ) {
+				client->ps.pm_flags &= ~PMF_JUMP_HELD;
+			}
+		}
 		return;
 	}
 	if ( msec > 200 ) {
@@ -1053,7 +1064,17 @@ void ClientThink_real( gentity_t *ent ) {
 		trap_Cvar_Set("pmove_msec", "33");
 	}
 
-	if ( g_pmove_fixed.integer || client->pers.pmoveFixed ) {
+	// Fixed accumulator: round serverTime and apply saved inputs.
+	if ( level.tvt.physicsMsec ) {
+		ucmd->serverTime = ((ucmd->serverTime + level.tvt.physicsMsec-1) / level.tvt.physicsMsec) * level.tvt.physicsMsec;
+		ucmd->buttons |= client->tvt.pendingButtons;
+		if ( client->tvt.pendingGenericCmd ) {
+			ucmd->generic_cmd = client->tvt.pendingGenericCmd;
+		}
+		client->tvt.pendingButtons = 0;
+		client->tvt.pendingGenericCmd = 0;
+	}
+	else if ( g_pmove_fixed.integer || client->pers.pmoveFixed ) {
 		ucmd->serverTime = ((ucmd->serverTime + g_pmove_msec.integer-1) / g_pmove_msec.integer) * g_pmove_msec.integer;
 		//if (ucmd->serverTime - client->ps.commandTime <= 0)
 		//	return;
@@ -1320,8 +1341,14 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.debugLevel = g_debugMove.integer;
 	pm.noFootsteps = ( g_dmflags.integer & DF_NO_FOOTSTEPS ) > 0;
 
-	pm.pmove_fixed = g_pmove_fixed.integer | client->pers.pmoveFixed;
-	pm.pmove_msec = g_pmove_msec.integer;
+	if ( level.tvt.physicsMsec ) {
+		pm.pmove_fixed = 1;
+		pm.pmove_msec = level.tvt.physicsMsec;
+	}
+	else {
+		pm.pmove_fixed = g_pmove_fixed.integer | client->pers.pmoveFixed;
+		pm.pmove_msec = g_pmove_msec.integer;
+	}
 
 	pm.animations = bgGlobalAnimations;//NULL;
 

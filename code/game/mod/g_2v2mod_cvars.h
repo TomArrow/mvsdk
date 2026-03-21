@@ -20,10 +20,12 @@ typedef struct {
 qboolean G_TvT_ValidateBool(const char *value);
 qboolean G_TvT_ValidateColor(const char *value);
 qboolean G_TvT_ValidateIntPair(const char *value);
+qboolean G_TvT_ValidatePhysicsFps(const char *value);
 qboolean G_TvT_UpdateColor(void);
 qboolean G_TvT_UpdateSpawnArmor(void);
 qboolean G_TvT_UpdateSpawnItems(void);
 qboolean G_TvT_UpdateMatchMode(void);
+qboolean G_TvT_UpdatePhysicsFps(void);
 
 #define TVT_CVAR_LIST                                                                                                                                                                                        \
     TVT_CVAR(tvt_allowBlackNames, "1", "Allow players to use the colour black in their names", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, NULL, qtrue, "allowBlackNames")                                    \
@@ -38,7 +40,8 @@ qboolean G_TvT_UpdateMatchMode(void);
     TVT_CVAR(tvt_allowSuicide, "1", "Allow players to use the kill command in team based gametypes.", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, NULL, qtrue, "allowSuicide")                                  \
     TVT_CVAR(tvt_color, "6", "Primary accent color for mod output (0-7)", CVAR_ARCHIVE, qtrue, G_TvT_ValidateColor, G_TvT_UpdateColor, qfalse, NULL)                                                        \
     TVT_CVAR(tvt_matchMode, "0", "Require all team players to /ready after a shuffle before the match restarts", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, G_TvT_UpdateMatchMode, qtrue, "matchMode")                \
-    TVT_CVAR(tvt_specPrio, "0", "Queued spectators get priority over last-round players when shuffling teams", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, NULL, qtrue, "specPrio")
+    TVT_CVAR(tvt_specPrio, "0", "Queued spectators get priority over last-round players when shuffling teams", CVAR_ARCHIVE, qtrue, G_TvT_ValidateBool, NULL, qtrue, "specPrio")                              \
+    TVT_CVAR(tvt_physicsFps, "0", "Force fixed physics FPS for all players (0 = off, 1-333 = fixed)", CVAR_ARCHIVE, qtrue, G_TvT_ValidatePhysicsFps, G_TvT_UpdatePhysicsFps, qtrue, "physicsFps") \
 
 #define TVT_CVAR(name, defaultValue, description, flags, trackChange, validate, update, votable, voteAlias) extern vmCvar_t name;
 TVT_CVAR_LIST

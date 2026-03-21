@@ -29,6 +29,8 @@ typedef struct {
     qboolean          queued;
     int               queueTime;
     qboolean          isHeadlessClient;	// is a headless client or demobot
+    int               pendingButtons;
+    byte              pendingGenericCmd;
 } tvt_ClientState_t;
 
 typedef struct {
@@ -46,6 +48,7 @@ typedef struct tvt_CachedTable_s {
 
 // Global mod struct
 typedef struct {
+    int                physicsMsec;
     int                spawnArmor[2];
     int                spawnItems[2];
     tvt_printJob_t     printJobs[TVT_PRINT_MAX_JOBS];
