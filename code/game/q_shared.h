@@ -2523,7 +2523,8 @@ enum {
 	FONT_SMALL=1,
 	FONT_MEDIUM,
 	FONT_LARGE,
-	FONT_SMALL2
+	FONT_SMALL2,
+	FONT_TYPES_COUNT
 };
 
 typedef struct ezDemoEvent_s {

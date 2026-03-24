@@ -595,10 +595,12 @@ vmCvar_t	cg_raceTimerNoSpeeds;
 vmCvar_t	cg_raceTimerSegmentedInfo;
 vmCvar_t	cg_raceTimerX;
 vmCvar_t	cg_raceTimerY;
+vmCvar_t	cg_raceTimerMonospace;
 vmCvar_t	cg_speedometer;
 vmCvar_t	cg_speedometerX;
 vmCvar_t	cg_speedometerY;
 vmCvar_t	cg_speedometerSpeedAlign;
+vmCvar_t	cg_speedometerMonospace;
 vmCvar_t	cg_speedometerSize;
 vmCvar_t	cg_showpos;
 vmCvar_t	cg_forcemeter;
@@ -1020,6 +1022,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_raceTimer, "cg_raceTimer", "3", 0 },
 	{ &cg_raceTimerSize, "cg_raceTimerSize", "0.75", 0 },
 	{ &cg_raceTimerNoSpeeds, "cg_raceTimerNoSpeeds", "0", CVAR_ARCHIVE },
+	{ &cg_raceTimerMonospace, "cg_raceTimerMonospace", "0", CVAR_ARCHIVE },
 	{ &cg_raceTimerSegmentedInfo, "cg_raceTimerSegmentedInfo", "1", CVAR_ARCHIVE },
 	{ &cg_raceTimerX, "cg_raceTimerX", "5", 0 },
 	{ &cg_raceTimerY, "cg_raceTimerY", "280", 0 },
@@ -1028,6 +1031,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_speedometerX, "cg_speedometerX", "98", CVAR_ARCHIVE },
 	{ &cg_speedometerY, "cg_speedometerY", "460", CVAR_ARCHIVE },
 	{ &cg_speedometerSpeedAlign, "cg_speedometerSpeedAlign", "0.0", CVAR_ARCHIVE },
+	{ &cg_speedometerMonospace, "cg_speedometerMonospace", "0.0", CVAR_ARCHIVE },
 	{ &cg_speedometerSize, "cg_speedometerSize", "0.75", CVAR_ARCHIVE },
 	{ &cg_showpos, "cg_showpos", "0", 0 },
 	{ &cg_forcemeter, "cg_forcemeter", "0", CVAR_ARCHIVE },
@@ -3131,24 +3135,24 @@ float CG_Cvar_Get(const char *cvar) {
 }
 
 void CG_Text_PaintWithCursor(float x, float y, float scale, const vec4_t color, const char *text, unsigned cursorPos, char cursor, unsigned limit, int style, int iMenuFont) {
-	CG_Text_Paint(x, y, scale, color, text, 0, limit, style, iMenuFont);
+	CG_Text_Paint(x, y, scale, color, text, 0, limit, style, iMenuFont, NULL);
 }
 
 static int CG_OwnerDrawWidth(int ownerDraw, float scale) {
 	switch (ownerDraw) {
 	  case CG_GAME_TYPE:
-			return CG_Text_Width(CG_GameTypeString(), scale, FONT_MEDIUM);
+			return CG_Text_Width(CG_GameTypeString(), scale, FONT_MEDIUM, NULL);
 	  case CG_GAME_STATUS:
-			return CG_Text_Width(CG_GetGameStatusText(), scale, FONT_MEDIUM);
+			return CG_Text_Width(CG_GetGameStatusText(), scale, FONT_MEDIUM, NULL);
 			break;
 	  case CG_KILLER:
-			return CG_Text_Width(CG_GetKillerText(), scale, FONT_MEDIUM);
+			return CG_Text_Width(CG_GetKillerText(), scale, FONT_MEDIUM, NULL);
 			break;
 	  case CG_RED_NAME:
-			return CG_Text_Width(cg_redTeamName.string, scale, FONT_MEDIUM);
+			return CG_Text_Width(cg_redTeamName.string, scale, FONT_MEDIUM, NULL);
 			break;
 	  case CG_BLUE_NAME:
-			return CG_Text_Width(cg_blueTeamName.string, scale, FONT_MEDIUM);
+			return CG_Text_Width(cg_blueTeamName.string, scale, FONT_MEDIUM, NULL);
 			break;
 
 
@@ -3306,8 +3310,8 @@ void CG_LoadHudMenu()
 	cgDC.setColor = &trap_R_SetColor;
 	cgDC.drawHandlePic = &CG_DrawPic;
 	cgDC.drawStretchPic = &CG_R_DrawStretchPic;
-	cgDC.drawText = &CG_Text_Paint;
-	cgDC.textWidth = &CG_Text_Width;
+	cgDC.drawText = &CG_Text_Paint_UI;
+	cgDC.textWidth = &CG_Text_Width_UI;
 	cgDC.textHeight = &CG_Text_Height;
 	cgDC.registerModel = &trap_R_RegisterModel;
 	cgDC.modelBounds = &trap_R_ModelBounds;

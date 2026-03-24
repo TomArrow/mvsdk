@@ -471,14 +471,14 @@ static void CG_Text_Paint_Limit(float *maxX, float x, float y, float scale, vec4
 		*psOutLastGood = '\0';
 
 		*maxX = 0;	// feedback
-		CG_Text_Paint(x, y, scale, color, sTemp, adjust, limit, ITEM_TEXTSTYLE_NORMAL, iMenuFont);
+		CG_Text_Paint(x, y, scale, color, sTemp, adjust, limit, ITEM_TEXTSTYLE_NORMAL, iMenuFont, NULL);
 	}
 	else
 	{
 		// whole text fits fine, so print it all...
 		//
 		*maxX = x + iPixelLen;	// feedback the next position, as the caller expects		
-		CG_Text_Paint(x, y, scale, color, text, adjust, limit, ITEM_TEXTSTYLE_NORMAL, iMenuFont);
+		CG_Text_Paint(x, y, scale, color, text, adjust, limit, ITEM_TEXTSTYLE_NORMAL, iMenuFont, NULL);
 	}
 }
 
@@ -503,7 +503,7 @@ void CG_DrawNewTeamInfo(rectDef_t *rect, float text_x, float text_y, float scale
 	for (i = 0; i < count; i++) {
 		ci = cgs.clientinfo + sortedTeamPlayers[i];
 		if ( ci->infoValid && ci->team == (team_t)cg.snap->ps.persistant[PERS_TEAM]) {
-			len = CG_Text_Width( ci->name, scale, 0);
+			len = CG_Text_Width( ci->name, scale, 0, NULL);
 			if (len > pwidth)
 				pwidth = len;
 		}
@@ -514,7 +514,7 @@ void CG_DrawNewTeamInfo(rectDef_t *rect, float text_x, float text_y, float scale
 	for (i = 1; i < MAX_LOCATIONS; i++) {
 		p = CG_ConfigString(CS_LOCATIONS + i);
 		if (p && *p) {
-			len = CG_Text_Width(p, scale, 0);
+			len = CG_Text_Width(p, scale, 0, NULL);
 			if (len > lwidth)
 				lwidth = len;
 		}
@@ -625,7 +625,7 @@ void CG_DrawTeamSpectators(rectDef_t *rect, float scale, vec4_t color, qhandle_t
 			cg.spectatorTime = cg.time + 10;
 			if (cg.spectatorPaintX <= rect->x + 2) {
 				if (cg.spectatorOffset < cg.spectatorLen) {
-					cg.spectatorPaintX += CG_Text_Width(&cg.spectatorList[cg.spectatorOffset], scale, 1) - 1;
+					cg.spectatorPaintX += CG_Text_Width(&cg.spectatorList[cg.spectatorOffset], scale, 1, NULL) - 1;
 					cg.spectatorOffset++;
 				} else {
 					cg.spectatorOffset = 0;
@@ -721,8 +721,8 @@ void CG_DrawMedal(int ownerDraw, rectDef_t *rect, float scale, vec4_t color, qha
 
 	if (text) {
 		color[3] = 1.0;
-		value = CG_Text_Width(text, scale, 0);
-		CG_Text_Paint(rect->x + (rect->w - value) / 2, rect->y + rect->h + 10 , scale, color, text, 0, 0, 0, FONT_MEDIUM); 
+		value = CG_Text_Width(text, scale, 0, NULL);
+		CG_Text_Paint(rect->x + (rect->w - value) / 2, rect->y + rect->h + 10, scale, color, text, 0, 0, 0, FONT_MEDIUM, NULL); 
 	}
 	trap_R_SetColor(NULL);
 

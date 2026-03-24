@@ -1851,10 +1851,12 @@ extern	vmCvar_t		cg_raceTimerNoSpeeds;
 extern	vmCvar_t		cg_raceTimerSegmentedInfo;
 extern	vmCvar_t		cg_raceTimerX;
 extern	vmCvar_t		cg_raceTimerY;
+extern	vmCvar_t		cg_raceTimerMonospace;
 extern	vmCvar_t		cg_speedometer;
 extern	vmCvar_t		cg_speedometerX;
 extern	vmCvar_t		cg_speedometerY;
 extern	vmCvar_t		cg_speedometerSpeedAlign;
+extern	vmCvar_t		cg_speedometerMonospace;
 extern	vmCvar_t		cg_speedometerSize;
 extern	vmCvar_t		cg_showpos;
 extern	vmCvar_t		cg_forcemeter;
@@ -2228,6 +2230,14 @@ extern  char systemChat[256];
 extern  char teamChat1[256];
 extern  char teamChat2[256];
 
+#define MONOSPACE_ACTIVE (1<<0)
+#define MONOSPACE_ONLYNUMBERS (1<<1)
+typedef struct paintOptions_s {
+	int			monospace;
+	float		monospaceWidth;
+	float		monospaceAlign;
+} paintOptions_t;
+
 void CG_AddLagometerFrameInfo( void );
 void CG_AddLagometerSnapshotInfo( snapshot_t *snap );
 void CG_AddSpeed(void);
@@ -2238,9 +2248,13 @@ void CG_DrawActive( stereoFrame_t stereoView );
 void CG_DrawFlagModel( float x, float y, float w, float h, int team, qboolean force2D );
 void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team );
 void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle,int font);
-void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont);
-int CG_Text_Width(const char *text, float scale, int iMenuFont);
+void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont, paintOptions_t* paintOptions);
+void CG_Text_Paint_UI(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont);
+int CG_Text_Width(const char *text, float scale, int iMenuFont, paintOptions_t* paintOptions);
+int CG_Text_Width_UI(const char *text, float scale, int iMenuFont);
 int CG_Text_Height(const char *text, float scale, int iMenuFont);
+void CG_Text_InitLetterWidths(int iMenuFont);
+float CG_Text_GetMaxLetterWidth(const char* letters, int iMenuFont);
 void CG_SelectPrevPlayer(void);
 void CG_SelectNextPlayer(void);
 float CG_GetValue(int ownerDraw);

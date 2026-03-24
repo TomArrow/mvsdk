@@ -168,6 +168,9 @@ char *showPowersName[] =
 	NULL
 };
 
+// helps with monospace
+float fontLetterWidths[FONT_TYPES_COUNT][256] = { {0} };
+qboolean fontLetterWidthsInited[FONT_TYPES_COUNT] = { qfalse };
 
 int MenuFontToHandle(int iMenuFont)
 {
@@ -182,11 +185,87 @@ int MenuFontToHandle(int iMenuFont)
 	return cgDC.Assets.qhMediumFont;
 }
 
-int CG_Text_Width(const char *text, float scale, int iMenuFont) 
+void CG_Text_InitLetterWidths(int iMenuFont) {
+	int i;
+	char thechars[2] = " ";
+	int iFontIndex;
+	if (iMenuFont < 0 || iMenuFont >= FONT_TYPES_COUNT) {
+		Com_Error(ERR_FATAL, "CG_Text_InitLetterSizes: Invalid font");
+	}
+	if (fontLetterWidthsInited[iMenuFont]) {
+		return;
+	}
+	iFontIndex = MenuFontToHandle(iMenuFont);
+	for (i = 0; i < 256; i++) {
+		thechars[0] = i;
+		fontLetterWidths[iMenuFont][i] = CG_R_Font_StrLenPixels(thechars, iFontIndex, 100.0f) * 0.01f;
+	}
+	fontLetterWidthsInited[iMenuFont] = qtrue;
+}
+
+float CG_Text_GetMaxLetterWidth(const char* letters, int iMenuFont) {
+	int i,len;
+	float maxWidth = 0.0f;
+	CG_Text_InitLetterWidths(iMenuFont);
+	len = strlen(letters);
+	for (i = 0; i < len; i++) {
+		maxWidth = MAX(maxWidth, fontLetterWidths[iMenuFont][(byte)letters[i]]);
+	}
+	return maxWidth;
+}
+
+float CG_Text_Width_Monospace(const char* text, float scale, int iMenuFont, paintOptions_t* paintOptions)
+{
+	vec4_t		color;
+	const char* s;
+	float		width = 0.0f;
+	float		widthLine = 0.0f;
+
+	CG_Text_InitLetterWidths(iMenuFont);
+
+	// draw the colored text
+	s = text;
+	while (*s) {
+		if ((cgs.isTommyTernal && Q_IsColorStringNT(s))) {
+			s += 2;
+			continue;
+		}
+		else if ((jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s))) {
+			s += 2;
+			continue;
+		}
+		if (*s == '\n' || *s == '\r') {
+			widthLine = 0;
+		}
+		else {
+			if (!(paintOptions->monospace & MONOSPACE_ONLYNUMBERS) || *s >= '0' && *s <= '9') {
+				widthLine += paintOptions->monospaceWidth;
+			}
+			else {
+				widthLine += fontLetterWidths[iMenuFont][(byte)*s] * scale;
+			}
+		}
+		width = MAX(width, widthLine);
+		s++;
+	}
+
+	return width;
+}
+
+int CG_Text_Width(const char *text, float scale, int iMenuFont, paintOptions_t* paintOptions) 
 {
 	int iFontIndex = MenuFontToHandle(iMenuFont);
 
+	if (paintOptions && (paintOptions->monospace & MONOSPACE_ACTIVE)) {
+		return CG_Text_Width_Monospace(text,scale,iMenuFont,paintOptions);
+	}
+
 	return CG_R_Font_StrLenPixels(text, iFontIndex, scale);
+}
+
+int CG_Text_Width_UI(const char *text, float scale, int iMenuFont) 
+{
+	return CG_Text_Width(text, scale, iMenuFont, NULL);
 }
 
 int CG_Text_Height(const char *text, float scale, int iMenuFont) 
@@ -197,10 +276,74 @@ int CG_Text_Height(const char *text, float scale, int iMenuFont)
 }
 
 #include "../qcommon/qfiles.h"	// for STYLE_BLINK etc
-void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont)
+
+void CG_Text_Paint_Monospace(float x, float y, float scale, const vec4_t setColor, const char *text, float adjust, int limit, int style, int iMenuFont, paintOptions_t* paintOptions)
+{
+	vec4_t		color;
+	const char* s;
+	int			xx;
+	char		thechar[2];
+	float		realwidth;
+	float		drawwidth;
+	float		xoffset;
+	paintOptions_t optionsMod = *paintOptions;
+
+	CG_Text_InitLetterWidths(iMenuFont);
+
+	Vector4Copy(setColor, color);
+	thechar[1] = '\0';
+
+	optionsMod.monospace = qfalse;
+
+	// draw the colored text
+	s = text;
+	xx = x;
+	while (*s) {
+		if ((cgs.isTommyTernal && Q_IsColorStringNT(s))) {
+			memcpy(color, g_color_table_nt[ColorIndexNT(*(s + 1))], sizeof(color));
+			color[3] = setColor[3];
+			s += 2;
+			continue;
+		}
+		else if ((jk2startversion == VERSION_1_02 ? Q_IsColorString_1_02(s) : Q_IsColorString(s))) {
+			memcpy(color, g_color_table[ColorIndex(*(s + 1))], sizeof(color));
+			color[3] = setColor[3];
+			s += 2;
+			continue;
+		}
+		thechar[0] = *s;
+		realwidth = fontLetterWidths[iMenuFont][(byte)*s] * scale;
+
+		if (!(paintOptions->monospace & MONOSPACE_ONLYNUMBERS) || *s >= '0' && *s <= '9') {
+			drawwidth = paintOptions->monospaceWidth;
+		}
+		else {
+			drawwidth = realwidth;
+		}
+
+		xoffset = (drawwidth != realwidth) ? (drawwidth * paintOptions->monospaceAlign - realwidth * paintOptions->monospaceAlign) : 0;
+
+		if (*s == '\n' || *s == '\r') {
+			y += CG_Text_Height("A",scale,iMenuFont); // uhm idk xd
+			x = xx;
+		}
+		else {
+			CG_Text_Paint(x + xoffset, y, scale, color, thechar, adjust, limit, style, iMenuFont, &optionsMod);
+			x += drawwidth;
+		}
+		s++;
+	}
+}
+
+void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont, paintOptions_t* paintOptions)
 {
 	int iStyleOR = 0;
-	int iFontIndex = MenuFontToHandle(iMenuFont);
+	int iFontIndex;
+	if (paintOptions && (paintOptions->monospace & MONOSPACE_ACTIVE)) {
+		CG_Text_Paint_Monospace(x,y,scale,color,text,adjust,limit,style,iMenuFont,paintOptions);
+		return;
+	}
+	iFontIndex = MenuFontToHandle(iMenuFont);
 	
 	switch (style)
 	{
@@ -222,6 +365,10 @@ void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char
 							scale	// const float scale = 1.0f
 							);
 	trap_R_SetColor(NULL);
+}
+
+void CG_Text_Paint_UI(float x, float y, float scale, const vec4_t color, const char* text, float adjust, int limit, int style, int iMenuFont) {
+	CG_Text_Paint(x,y,scale,color,text,adjust,limit,style,iMenuFont,NULL);
 }
 
 /*
@@ -1837,12 +1984,26 @@ static void CG_DrawSimpleForcePower(const centity_t *cent)
 
 void DF_RaceTimer(void)
 {
+	paintOptions_t paintOptions = { 0 };
+
 	if (!(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) || !cg.predictedPlayerState.duelTime) {
 		cg.startSpeed = 0;
 		cg.displacement = 0;
 		cg.maxSpeed = 0;
 		cg.displacementSamples = 0;
 		return;
+	}
+
+	if (cg_raceTimerMonospace.value != 0.0f) {
+		static float monoSpaceNumberMax = 0.0f;
+		static qboolean monoSpaceInited = qfalse;
+		if (!monoSpaceInited) {
+			monoSpaceNumberMax = CG_Text_GetMaxLetterWidth("0123456789", FONT_NONE);
+			monoSpaceInited = qtrue;
+		}
+		paintOptions.monospace = MONOSPACE_ACTIVE | MONOSPACE_ONLYNUMBERS;
+		paintOptions.monospaceWidth = monoSpaceNumberMax * cg_raceTimerSize.value;
+		paintOptions.monospaceAlign = cg_raceTimerMonospace.value - 1.0f;
 	}
 
 	{
@@ -1925,7 +2086,7 @@ void DF_RaceTimer(void)
 
 			//CG_Text_Paint((float)cg_raceTimerX.integer * cgs.widthRatioCoef, (float)cg_raceTimerY.integer, cg_raceTimerSize.value, colorTable[CT_WHITE],
 			CG_Text_Paint((float)cg_raceTimerX.integer, (float)cg_raceTimerY.integer, cg_raceTimerSize.value, colorTable[CT_WHITE],
-				timerStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+				timerStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
 		}
 		//if (cg_raceStart.integer)
 		//{
@@ -2881,7 +3042,7 @@ static float CG_DrawMiniScoreboard ( float y )
 			Q_strcat(temp, sizeof(temp), cgs.scores3 == SCORE_NOT_PRESENT ? "-" : va("%i", cgs.scores3));
 		}
 
-		CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width( temp, 0.7f, FONT_MEDIUM ), y, 0.7f, colorWhite, temp, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM );
+		CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width( temp, 0.7f, FONT_MEDIUM, NULL ), y, 0.7f, colorWhite, temp, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM, NULL );
 		y += 15;
 	}
 	else
@@ -2955,7 +3116,7 @@ static float CG_DrawEnemyInfo ( float y )
 			y += 15;
 			*/
 
-			CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( title, 0.7f, FONT_MEDIUM ), y, 0.7f, colorWhite, title, 0, 0, 0, FONT_MEDIUM );
+			CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( title, 0.7f, FONT_MEDIUM, NULL ), y, 0.7f, colorWhite, title, 0, 0, 0, FONT_MEDIUM, NULL );
 
 			return y + BIGCHAR_HEIGHT + 2;
 		}
@@ -3064,17 +3225,17 @@ static float CG_DrawEnemyInfo ( float y )
 
 	y += size;
 
-	CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( ci->name, 0.7f, FONT_MEDIUM ), y, 0.7f, colorWhite, ci->name, 0, 0, 0, FONT_MEDIUM );
+	CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( ci->name, 0.7f, FONT_MEDIUM, NULL ), y, 0.7f, colorWhite, ci->name, 0, 0, 0, FONT_MEDIUM, NULL );
 
 	y += 15;
-	CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( title, 0.7f, FONT_MEDIUM ), y, 0.7f, colorWhite, title, 0, 0, 0, FONT_MEDIUM );
+	CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( title, 0.7f, FONT_MEDIUM, NULL ), y, 0.7f, colorWhite, title, 0, 0, 0, FONT_MEDIUM, NULL );
 
 	if ( cgs.gametype == GT_TOURNAMENT && cgs.clientinfo[cg.snap->ps.clientNum].team != TEAM_SPECTATOR)
 	{//also print their score
 		char text[1024];
 		y += 15;
 		Com_sprintf(text, sizeof(text), "%i/%i", cgs.clientinfo[clientNum].score, cgs.fraglimit );
-		CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( text, 0.7f, FONT_MEDIUM ), y, 0.7f, colorWhite, text, 0, 0, 0, FONT_MEDIUM );
+		CG_Text_Paint( cgs.screenWidth - 10 - CG_Text_Width ( text, 0.7f, FONT_MEDIUM, NULL ), y, 0.7f, colorWhite, text, 0, 0, 0, FONT_MEDIUM, NULL );
 	}
 
 	return y + BIGCHAR_HEIGHT + 2;
@@ -3117,8 +3278,8 @@ static void CG_DrawStrafeBotFactor() {
 	s = va("sf: %.4f", strafeFactor);
 	//w = CG_DrawStrlen(s) * BIGCHAR_WIDTH;
 	//CG_DrawBigString(cgs.screenWidth/2 - w/2, cgs.screenHeight/2+20, s, 1.0f);
-	w = CG_Text_Width(s, 0.75f, FONT_NONE);
-	CG_Text_Paint(cgs.screenWidth / 2 - w / 2, cgs.screenHeight / 2 + 40, 0.75f, colorWhite, s, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+	w = CG_Text_Width(s, 0.75f, FONT_NONE, NULL);
+	CG_Text_Paint(cgs.screenWidth / 2 - w / 2, cgs.screenHeight / 2 + 40, 0.75f, colorWhite, s, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, NULL);
 }
 
 
@@ -3400,8 +3561,8 @@ static float CG_DrawFPS( float y, float oldY, qboolean physical ) {
 		//JAPRO - Clientside - Add cg_drawfps 2 - Start
 		if (jk2version != VERSION_1_02 && trap_Language_IsAsian())
 		{
-			w = CG_Text_Width(s, 1.0f, FONT_MEDIUM);
-			CG_Text_Paint(cgs.screenWidth - 5 - w, y + 2, 1.0f, colorTable[CT_WHITE], s, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM); //this is what the other cgame drawstring functions call for asian languages
+			w = CG_Text_Width(s, 1.0f, FONT_MEDIUM, NULL);
+			CG_Text_Paint(cgs.screenWidth - 5 - w, y + 2, 1.0f, colorTable[CT_WHITE], s, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL); //this is what the other cgame drawstring functions call for asian languages
 		}
 		else if (cg_drawFPS.integer == 2 && !physical || cg_drawFPSPhysical.integer == 2 && physical)
 		{
@@ -3449,8 +3610,8 @@ static float CG_DrawTimer( float y ) {
 
 	if (jk2version != VERSION_1_02 && trap_Language_IsAsian())
 	{
-		w = CG_Text_Width(s, 1.0f, FONT_MEDIUM);
-		CG_Text_Paint(cgs.screenWidth - 5 - w, y + 2, 1.0f, colorTable[CT_WHITE], s, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+		w = CG_Text_Width(s, 1.0f, FONT_MEDIUM, NULL);
+		CG_Text_Paint(cgs.screenWidth - 5 - w, y + 2, 1.0f, colorTable[CT_WHITE], s, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 	}
 	else if (cg_drawTimer.integer == 2)
 	{
@@ -4080,12 +4241,12 @@ void JKMod_CG_DrawClock(void)
 
 	CG_DrawPic(x, y, 64, 32, cgs.jkmodMedia.clockBg);
 
-	CG_Text_Paint(x + 8, y + 4, 0.85f, colorTable[CT_HUD_GREEN], va("%02i", systemTimeHour), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
-	CG_Text_Paint(x + 29, y + 4, 0.85f, colorTable[CT_HUD_GREEN], va("%02i", systemTime.tm_min), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
-	CG_Text_Paint(x + 47, y + (jkcvar_cg_drawClock.integer == 2 ? 8.5f : 13.5f), 0.4f, colorTable[CT_HUD_GREEN], va("%02i", systemTime.tm_sec), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
+	CG_Text_Paint(x + 8, y + 4, 0.85f, colorTable[CT_HUD_GREEN], va("%02i", systemTimeHour), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL, NULL);
+	CG_Text_Paint(x + 29, y + 4, 0.85f, colorTable[CT_HUD_GREEN], va("%02i", systemTime.tm_min), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL, NULL);
+	CG_Text_Paint(x + 47, y + (jkcvar_cg_drawClock.integer == 2 ? 8.5f : 13.5f), 0.4f, colorTable[CT_HUD_GREEN], va("%02i", systemTime.tm_sec), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL, NULL);
 
-	if (jkcvar_cg_drawClock.integer == 2) CG_Text_Paint(x + 47, y + 13.5f, 0.4f, colorTable[CT_HUD_GREEN], va("%s", systemTimeType), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
-	if ((cg.time >> 9) & 1) CG_Text_Paint(x + 24, y + 6, 0.7f, colorTable[CT_HUD_GREEN], ":", 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL);
+	if (jkcvar_cg_drawClock.integer == 2) CG_Text_Paint(x + 47, y + 13.5f, 0.4f, colorTable[CT_HUD_GREEN], va("%s", systemTimeType), 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL, NULL);
+	if ((cg.time >> 9) & 1) CG_Text_Paint(x + 24, y + 6, 0.7f, colorTable[CT_HUD_GREEN], ":", 0, 0, UI_SMALLFONT | UI_DROPSHADOW, FONT_SMALL, NULL);
 }
 /*
 * From JediKnightPlus mod by TriForce
@@ -4243,7 +4404,7 @@ static void CG_DrawLagometer( void ) {
 			return;
 
 		//CG_Text_Paint(400, 400, 1.0, colorWhite, va("%i", cg.snap->ping), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_LARGE);
-		CG_Text_Paint(ax + 3.0f, ay - 1.0f, 0.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_SMALL);
+		CG_Text_Paint(ax + 3.0f, ay - 1.0f, 0.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_SMALL, NULL);
 
 		for (i = 0; i < LAG_SAMPLES; i++) {
 			total += lagometer.frameSamples[i];
@@ -4252,8 +4413,8 @@ static void CG_DrawLagometer( void ) {
 
 		//CG_Text_Paint(400, 300, 1.0, colorBlue, va("%04.1f", avgInterp), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_LARGE);
 		s = va("%04.1f", avgInterp);
-		strW = CG_Text_Width(s, 0.5f, FONT_SMALL);
-		CG_Text_Paint(ax + aw - strW, ay - 1.0f, 0.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_SMALL);
+		strW = CG_Text_Width(s, 0.5f, FONT_SMALL, NULL);
+		CG_Text_Paint(ax + aw - strW, ay - 1.0f, 0.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_SMALL, NULL);
 	}
 
 	CG_DrawDisconnect(x,y);
@@ -4389,10 +4550,10 @@ static void CG_DrawCenterString( void ) {
 		}
 		linebuffer[l] = 0;
 
-		w = CG_Text_Width(linebuffer, scale, FONT_MEDIUM);
+		w = CG_Text_Width(linebuffer, scale, FONT_MEDIUM, NULL);
 		h = CG_Text_Height(linebuffer, scale, FONT_MEDIUM);
 		x = 0.5f * (cgs.screenWidth - w);
-		CG_Text_Paint(x, y + h, scale, color, linebuffer, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
+		CG_Text_Paint(x, y + h, scale, color, linebuffer, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM, NULL);
 		y += h + 6;
 
 		while ( *start && ( *start != '\n' ) ) {
@@ -5307,7 +5468,7 @@ static void CG_DrawSpectator(void)
 		int size = 64;
 
 		Com_sprintf(text, sizeof(text), "%s" S_COLOR_WHITE " %s %s", cgs.clientinfo[cgs.duelist1].name, CG_GetStripEdString("INGAMETEXT", "SPECHUD_VERSUS"), cgs.clientinfo[cgs.duelist2].name);
-		CG_Text_Paint ( 0.5f * cgs.screenWidth - CG_Text_Width ( text, 1.0f, 3 ) / 2, cgs.screenHeight-60, 1.0f, colorWhite, text, 0, 0, 0, 3 );
+		CG_Text_Paint ( 0.5f * cgs.screenWidth - CG_Text_Width ( text, 1.0f, 3, NULL ) / 2, cgs.screenHeight-60, 1.0f, colorWhite, text, 0, 0, 0, 3, NULL );
 
 
 		trap_R_SetColor( colorTable[CT_WHITE] );
@@ -5320,10 +5481,10 @@ static void CG_DrawSpectator(void)
 			CG_DrawPic( cgs.screenWidth-size-10, cgs.screenHeight-(size*1.5), size, size, cgs.clientinfo[cgs.duelist2].modelIcon );
 		}
 		Com_sprintf(text, sizeof(text), "%i/%i", cgs.clientinfo[cgs.duelist1].score, cgs.fraglimit );
-		CG_Text_Paint( 42 - CG_Text_Width( text, 1.0f, 2 ) / 2, cgs.screenHeight-(size*1.5) + 64, 1.0f, colorWhite, text, 0, 0, 0, 2 );
+		CG_Text_Paint( 42 - CG_Text_Width( text, 1.0f, 2, NULL ) / 2, cgs.screenHeight-(size*1.5) + 64, 1.0f, colorWhite, text, 0, 0, 0, 2, NULL );
 
 		Com_sprintf(text, sizeof(text), "%i/%i", cgs.clientinfo[cgs.duelist2].score, cgs.fraglimit );
-		CG_Text_Paint( cgs.screenWidth-size+22 - CG_Text_Width( text, 1.0f, 2 ) / 2, cgs.screenHeight-(size*1.5) + 64, 1.0f, colorWhite, text, 0, 0, 0, 2 );
+		CG_Text_Paint( cgs.screenWidth-size+22 - CG_Text_Width( text, 1.0f, 2, NULL ) / 2, cgs.screenHeight-(size*1.5) + 64, 1.0f, colorWhite, text, 0, 0, 0, 2, NULL );
 	}
 	/* //JAPRO - Clientside - Remove Useless spec text
 	else
@@ -5574,7 +5735,7 @@ static qboolean CG_DrawFollow( void )
 	if (drawName) {
 		s = cgs.clientinfo[cg.snap->ps.clientNum].name;
 		x = 4.0f;
-		CG_Text_Paint(x, y, 0.85f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(x, y, 0.85f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 		y += 17;
 	}
 
@@ -5606,7 +5767,7 @@ static qboolean CG_DrawFollow( void )
 		//char styleString[256] = { 0 };
 		//IntegerToRaceName(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE], styleString, sizeof(styleString));
 		//CG_Text_Paint(4, y, 0.7f, colorWhite, styleString, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
-		CG_Text_Paint(4, y, 0.7f, colorWhite, movementStyle == -1 ? "Unknown style": moveStyleNames[movementStyle].string, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(4, y, 0.7f, colorWhite, movementStyle == -1 ? "Unknown style": moveStyleNames[movementStyle].string, 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 		y += 14;
 	//}
 
@@ -5615,37 +5776,37 @@ static qboolean CG_DrawFollow( void )
 	}
 
 	if (leaderboardType != -1) {
-		CG_Text_Paint(4, y, 0.7f, leaderboardType == LB_MAIN ? colorWhite : g_color_table_nt['O'], leaderboardNames[leaderboardType].string, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(4, y, 0.7f, leaderboardType == LB_MAIN ? colorWhite : g_color_table_nt['O'], leaderboardNames[leaderboardType].string, 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 		y += 14;
 	}
 
 	if (raceStyle.msec > 0) {
-		CG_Text_Paint(4, y, 0.5f, colorWhite, va("%d fps", 1000/raceStyle.msec), 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(4, y, 0.5f, colorWhite, va("%d fps", 1000/raceStyle.msec), 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 		y += 10;
 	}else if (raceStyle.msec == -1) {
-		CG_Text_Paint(4, y, 0.5f, colorYellow, "fps toggle", 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(4, y, 0.5f, colorYellow, "fps toggle", 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 		y += 10;
 	}else if (raceStyle.msec == -2) {
-		CG_Text_Paint(4, y, 0.5f, colorWhite, "float physics", 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(4, y, 0.5f, colorWhite, "float physics", 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 		y += 10;
 	}
 	else {
-		CG_Text_Paint(4, y, 0.5f, colorRed, "unknown fps", 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+		CG_Text_Paint(4, y, 0.5f, colorRed, "unknown fps", 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 		y += 10;
 	}
 
 	if (leaderboardType != LB_MAIN && leaderboardType != LB_NOJUMPBUG) {
 		if (raceStyle.jumpLevel != cg_mapDefaultJump.integer) {
-			CG_Text_Paint(4, y, 0.5f, colorYellow, va("j%d",raceStyle.jumpLevel), 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+			CG_Text_Paint(4, y, 0.5f, colorYellow, va("j%d",raceStyle.jumpLevel), 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 			y += 10;
 		}
 		runFlagsString = RunFlagsToString(raceStyle.runFlags, cg_mapDefaultRunFlags.integer, 1, NULL, NULL);
 		if (strlen(runFlagsString)) {
-			CG_Text_Paint(4, y, 0.5f, colorYellow, runFlagsString, 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+			CG_Text_Paint(4, y, 0.5f, colorYellow, runFlagsString, 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 			y += 10;
 		}
 		if (raceStyle.variant) {
-			CG_Text_Paint(4, y, 0.5f, colorWhite, va("variant %d", raceStyle.variant), 0, 0, 0, FONT_MEDIUM);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
+			CG_Text_Paint(4, y, 0.5f, colorWhite, va("variant %d", raceStyle.variant), 0, 0, 0, FONT_MEDIUM, NULL);//JAPRO - Clientside - Move spectated clients name to top left corner of screen
 			y += 10;
 		}
 	}
@@ -5761,8 +5922,8 @@ static void CG_DrawWarmup( void ) {
 
 		if ( ci1 && ci2 ) {
 			s = va( "%s" S_COLOR_WHITE " vs %s", ci1->name, ci2->name );
-			w = CG_Text_Width(s, 0.6f, FONT_MEDIUM);
-			CG_Text_Paint(0.5f * (cgs.screenWidth - w), 60, 0.6f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
+			w = CG_Text_Width(s, 0.6f, FONT_MEDIUM, NULL);
+			CG_Text_Paint(0.5f * (cgs.screenWidth - w), 60, 0.6f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM, NULL);
 		}
 	} else {
 		if ( cgs.gametype == GT_FFA ) {
@@ -5782,8 +5943,8 @@ static void CG_DrawWarmup( void ) {
 		} else {
 			s = "";
 		}
-		w = CG_Text_Width(s, 1.5f, FONT_MEDIUM);
-		CG_Text_Paint(0.5f * (cgs.screenWidth - w), 90, 1.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE,FONT_MEDIUM);
+		w = CG_Text_Width(s, 1.5f, FONT_MEDIUM, NULL);
+		CG_Text_Paint(0.5f * (cgs.screenWidth - w), 90, 1.5f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE,FONT_MEDIUM, NULL);
 	}
 
 	sec = ( sec - cg.time ) / 1000;
@@ -5829,8 +5990,8 @@ static void CG_DrawWarmup( void ) {
 		break;
 	}
 
-	w = CG_Text_Width(s, scale, FONT_MEDIUM);
-	CG_Text_Paint(0.5f * (cgs.screenWidth - w), 125, scale, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM);
+	w = CG_Text_Width(s, scale, FONT_MEDIUM, NULL);
+	CG_Text_Paint(0.5f * (cgs.screenWidth - w), 125, scale, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_MEDIUM, NULL);
 }
 
 //==================================================================================
@@ -6017,16 +6178,16 @@ void CG_DrawEnhancedFlagStatus(void)
 							else
 								Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.yellowFlagCarrier->health);
 
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-							CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
+							CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM, NULL), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 						}
 						else {
 							yellowFlagShader = cgs.media.flagShaderTaken[TEAM_FREE];
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 						}
 					}
 					if (cg_enhancedFlagStatus.integer > 1 && yellowFlagTimeStr[0] != '\0')
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 				}
 				CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, yellowFlagShader);
 				startDrawPos -= ico_size + 2.0f;
@@ -6048,16 +6209,16 @@ void CG_DrawEnhancedFlagStatus(void)
 						else
 							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.blueFlagCarrier->health);
 
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
+						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM, NULL), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 					else {
 						blueFlagShader = cgs.media.flagShaderTaken[TEAM_BLUE];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 				}
 				if (cg_enhancedFlagStatus.integer > 1 && blueFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 			}
 			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, blueFlagShader);
 			startDrawPos -= ico_size + 2.0f;
@@ -6068,10 +6229,10 @@ void CG_DrawEnhancedFlagStatus(void)
 			if (cgs.redflag == FLAG_TAKEN)
 			{
 				if (cgs.redFlagCarrier && cgs.redFlagCarrier->infoValid) {
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 				}
 				if (cg_enhancedFlagStatus.integer > 1 && redFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 			}
 			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, redFlagShader);
 			startDrawPos -= ico_size + 2.0f;
@@ -6104,16 +6265,16 @@ void CG_DrawEnhancedFlagStatus(void)
 						else
 							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.blueFlagCarrier->health);
 
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
+						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM, NULL), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 					else {
 						blueFlagShader = cgs.media.flagShaderTaken[TEAM_BLUE];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 				}
 				if (cg_enhancedFlagStatus.integer > 1 && blueFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 			}
 			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, blueFlagShader);
 			startDrawPos -= ico_size + 2.0f;
@@ -6136,16 +6297,16 @@ void CG_DrawEnhancedFlagStatus(void)
 						else
 							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.redFlagCarrier->health);
 
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
+						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM, NULL), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 					else {
 						redFlagShader = cgs.media.flagShaderTaken[TEAM_RED];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos+9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos+9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 				}
 				if (cg_enhancedFlagStatus.integer > 1 && redFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 			}
 			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, redFlagShader);
 			startDrawPos -= ico_size + 2.0f;
@@ -6156,10 +6317,10 @@ void CG_DrawEnhancedFlagStatus(void)
 			if (cgs.yellowflag == FLAG_TAKEN)
 			{
 				if (cgs.yellowFlagCarrier && cgs.yellowFlagCarrier->infoValid) {
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 				}
 				if (cg_enhancedFlagStatus.integer > 1 && yellowFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 			}
 			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, yellowFlagShader);
 			startDrawPos -= ico_size + 2.0f;
@@ -6193,16 +6354,16 @@ void CG_DrawEnhancedFlagStatus(void)
 							else
 								Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.yellowFlagCarrier->health);
 
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-							CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
+							CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM, NULL), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 						}
 						else {
 							yellowFlagShader = cgs.media.flagShaderTaken[TEAM_FREE];
-							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+							CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.yellowFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 						}
 					}
 					if (cg_enhancedFlagStatus.integer > 1 && yellowFlagTimeStr[0] != '\0')
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, yellowFlagTimeColor, yellowFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 				}
 				CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, yellowFlagShader);
 				startDrawPos -= ico_size + 2.0f;
@@ -6226,16 +6387,16 @@ void CG_DrawEnhancedFlagStatus(void)
 						else
 							Com_sprintf(flagStatusHP, sizeof(flagStatusHP), "(%i)", cgs.redFlagCarrier->health);
 
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
-						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, flagStatus, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
+						CG_Text_Paint(2.0f + ico_size + 4.0f + CG_Text_Width(flagStatus, 0.65f, FONT_MEDIUM, NULL), startDrawPos + 9.0f, 0.65f, hcolor, flagStatusHP, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 					else {
 						redFlagShader = cgs.media.flagShaderTaken[TEAM_RED];
-						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos+9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+						CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos+9.0f, 0.65f, colorWhite, cgs.redFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 					}
 				}
 				if (cg_enhancedFlagStatus.integer > 1.0f && redFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, redFlagTimeColor, redFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 			}
 			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, redFlagShader);
 			startDrawPos -= ico_size + 2.0f;
@@ -6246,10 +6407,10 @@ void CG_DrawEnhancedFlagStatus(void)
 			if (cgs.blueflag == FLAG_TAKEN)
 			{
 				if (cgs.blueFlagCarrier && cgs.blueFlagCarrier->infoValid) {
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos + 9.0f, 0.65f, colorWhite, cgs.blueFlagCarrier->name, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_MEDIUM, NULL);
 				}
 				if (cg_enhancedFlagStatus.integer > 1 && blueFlagTimeStr[0] != '\0')
-					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL);
+					CG_Text_Paint(2.0f + ico_size + 4.0f, startDrawPos - 3.0f, 0.65f, blueFlagTimeColor, blueFlagTimeStr, 0.0f, 0, ITEM_TEXTSTYLE_SHADOWED, FONT_SMALL, NULL);
 			}
 			CG_DrawPic(2.0f, startDrawPos, ico_size, ico_size, blueFlagShader);
 			startDrawPos -= ico_size + 2.0f;
@@ -6516,7 +6677,7 @@ void CG_ChatBox_AddString(char *chatStr, int chatSize)
 
 	chat->lines = 1;
 
-	chatLen = CG_Text_Width(chat->string, 1.0f, FONT_SMALL);//loda
+	chatLen = CG_Text_Width(chat->string, 1.0f, FONT_SMALL, NULL);//loda
 	if (chatLen > cg_chatBoxCutOffLength.value)
 	{ //we have to break it into segments...
         int i = 0;
@@ -6533,7 +6694,7 @@ void CG_ChatBox_AddString(char *chatStr, int chatSize)
 			}
 			s[0] = chat->string[i];
 			s[1] = 0;
-			chatLen += CG_Text_Width(s, 0.65f, FONT_SMALL);//loda
+			chatLen += CG_Text_Width(s, 0.65f, FONT_SMALL, NULL);//loda
 
 			if (chatLen >= cg_chatBoxCutOffLength.value)
 			{
@@ -6641,9 +6802,9 @@ ID_INLINE void CG_ChatBox_DrawStrings(void) //o, ID_INLINE is static Q_INLINE
 	while (i < numToDraw)
 	{
 		if (!cg_newFont.integer)
-			CG_Text_Paint(x, y, fontScale, colorWhite, drawThese[i]->string, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			CG_Text_Paint(x, y, fontScale, colorWhite, drawThese[i]->string, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 		else
-			CG_Text_Paint(x, y, fontScale, colorWhite, drawThese[i]->string, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+			CG_Text_Paint(x, y, fontScale, colorWhite, drawThese[i]->string, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL);
 
 		y += ((CHATBOX_FONT_HEIGHT*fontScale)*drawThese[i]->lines);
 		i++;
@@ -7605,6 +7766,19 @@ static void CG_Speedometer(void)
 	static unsigned int index;
 	static int	previous, lastupdate;
 	float tmp;
+	paintOptions_t paintOptions = {0};
+
+	if (cg_speedometerMonospace.value != 0.0f) {
+		static float monoSpaceNumberMax = 0.0f;
+		static qboolean monoSpaceInited = qfalse;
+		if (!monoSpaceInited) {
+			monoSpaceNumberMax = CG_Text_GetMaxLetterWidth("0123456789", FONT_NONE);
+			monoSpaceInited = qtrue;
+		}
+		paintOptions.monospace = MONOSPACE_ACTIVE | MONOSPACE_ONLYNUMBERS;
+		paintOptions.monospaceWidth = monoSpaceNumberMax* cg_speedometerSize.value;
+		paintOptions.monospaceAlign = cg_speedometerMonospace.value - 1.0f;
+	}
 
 	if (cg_speedometer.integer & SPEEDOMETER_SPEEDGRAPH) {
 		rectDef_t speedgraphRect;
@@ -7676,34 +7850,34 @@ static void CG_Speedometer(void)
 		{
 			float xOffset = 0;
 			if (cg_speedometerSpeedAlign.value != 0.0f) {
-				xOffset = - cg_speedometerSpeedAlign.value * CG_Text_Width(va("%.0f", currentSpeed), cg_speedometerSize.value, FONT_NONE);
+				xOffset = - cg_speedometerSpeedAlign.value * CG_Text_Width(va("%.0f", currentSpeed), cg_speedometerSize.value, FONT_NONE, &paintOptions);
 			}
 			//CG_Text_Width();
 			Com_sprintf(speedStr, sizeof(speedStr), "   %.0f", currentSpeed); //floorf(currentSpeed + 0.5f));
-			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
 		}
 		else if (cg_speedometer.integer & SPEEDOMETER_KPH)
 		{
 			float xOffset = 0;
 			tmp = currentSpeed * 0.05f;
 			if (cg_speedometerSpeedAlign.value != 0.0f) {
-				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE);
+				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE, &paintOptions);
 			}
 			Com_sprintf(speedStr2, sizeof(speedStr2), "   %.1f", tmp);
-			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
 		}
 		else if (cg_speedometer.integer & SPEEDOMETER_MPH)
 		{
 			float xOffset = 0;
 			tmp = currentSpeed * 0.03106855f;
 			if (cg_speedometerSpeedAlign.value != 0.0f) {
-				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE);
+				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE, &paintOptions);
 			}
 			Com_sprintf(speedStr3, sizeof(speedStr3), "    %.1f", tmp);
-			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
-			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
+			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorSpeed, speedStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
 		}
 
 		speedometerXPos += 52;
@@ -7730,7 +7904,7 @@ static void CG_Speedometer(void)
 		if ((cg.lastGroundTime > cg.time - 1500)) {
 			if (cg.lastGroundSpeed) {
 				Com_sprintf(speedStr4, sizeof(speedStr4), "%.0f", cg.lastGroundSpeed);
-				CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorGroundSpeed, speedStr4, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+				CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorGroundSpeed, speedStr4, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
 			}
 		}
 
@@ -7759,7 +7933,7 @@ static void CG_DrawShowPos(void)
 		(float)ps->origin[0], (float)ps->origin[1], (float)ps->origin[2], (float)ps->viewangles[PITCH], (float)ps->viewangles[YAW], vel);
 
 	CG_Text_Paint(cgs.screenWidth - 340, 0, 0.6f, colorWhite,
-		showPosString, 0, 0, ITEM_TEXTSTYLE_OUTLINESHADOWED, FONT_SMALL);
+		showPosString, 0, 0, ITEM_TEXTSTYLE_OUTLINESHADOWED, FONT_SMALL, NULL);
 }
 
 static void CG_StrafeHelperSound(float difference) {
@@ -8035,7 +8209,7 @@ static void CG_ZPos(centity_t *cent)
 	char zPosString[32] = { 0 };
 
 	Com_sprintf(zPosString, sizeof(zPosString), "%.1fZ", origin[2]);
-	CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], zPosString, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+	CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], zPosString, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, NULL);
 
 	speedometerXPos += 42;
 }
@@ -8055,7 +8229,7 @@ static void CG_JumpHeight(centity_t *cent)
 
 	if ((cg.lastJumpHeightTime > cg.time - 1500) && (cg.lastJumpHeight > 0.0f)) {
 		Com_sprintf(jumpHeightStr, sizeof(jumpHeightStr), "%.1f", cg.lastJumpHeight);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], jumpHeightStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], jumpHeightStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, NULL);
 	}
 
 	speedometerXPos += 42;
@@ -8068,7 +8242,7 @@ static void CG_DrawAccelMiss()
 	char accelMissString[32] = { 0 };
 
 	Com_sprintf(accelMissString, sizeof(accelMissString), "%.3f%% (ws %0.1f)", 100.0f*cg.accelMiss,cg.wishSpeed);
-	CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], accelMissString, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+	CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], accelMissString, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, NULL);
 
 	speedometerXPos += 42;
 }
@@ -8099,7 +8273,7 @@ static void CG_JumpDistance(void)
 
 	if ((cg.lastJumpDistanceTime > cg.time - 1500) && (cg.lastJumpDistance > 0.0f)) {
 		Com_sprintf(jumpDistanceStr, sizeof(jumpDistanceStr), "%.1f", cg.lastJumpDistance);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], jumpDistanceStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorTable[CT_WHITE], jumpDistanceStr, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, NULL);
 	}
 
 	speedometerXPos += 62;
@@ -8114,7 +8288,7 @@ static void CG_DrawVerticalSpeed(void) {
 
 	if (vertspeed) {
 		Com_sprintf(speedStr5, sizeof(speedStr5), "%.0f", vertspeed);
-		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, speedStr5, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+		CG_Text_Paint(speedometerXPos, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, speedStr5, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, NULL);
 	}
 
 	speedometerXPos += 42;
@@ -9123,7 +9297,7 @@ static void CG_RealAccelHelper() {
 	}
 	if (cg_developer.integer > 1) {
 		CG_Text_Paint(cgs.screenWidth/2, mid+100, 0.5f, colorTable[CT_WHITE],
-			va("ra drawcalls: %d",drawCalls), 0.0f, 0, ITEM_ALIGN_CENTER | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE);
+			va("ra drawcalls: %d",drawCalls), 0.0f, 0, ITEM_ALIGN_CENTER | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, NULL);
 	}
 	trap_R_SetColor(NULL);
 }

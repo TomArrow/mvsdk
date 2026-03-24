@@ -68,26 +68,26 @@ static qboolean localClient; // true if local client has been displayed
 
 void CG_SB_Text_Paint_Double(qboolean largeFormat, float x, float y, float scale, const vec4_t color, int value, int value2, float adjust, int limit, int style, int iMenuFont) {
 	if (value==value2) {
-		CG_Text_Paint(x,y,scale,color,va("%i",value),adjust,limit,style,iMenuFont);
+		CG_Text_Paint(x,y,scale,color,va("%i",value),adjust,limit,style,iMenuFont, NULL);
 	}
 	else if (largeFormat) {
-		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.15f, scale*0.4f, color, va("%i", value), adjust, limit, style, iMenuFont);
-		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.35f, scale*0.75f, color, va("%i", value2), adjust, limit, style, iMenuFont);
+		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.15f, scale*0.4f, color, va("%i", value), adjust, limit, style, iMenuFont, NULL);
+		CG_Text_Paint(x, y + (float)SB_NORMAL_HEIGHT * 0.35f, scale*0.75f, color, va("%i", value2), adjust, limit, style, iMenuFont, NULL);
 	}
 	else {
-		CG_Text_Paint(x, y, scale, color, va("%i/%i", value,value2), adjust, limit, style, iMenuFont);
+		CG_Text_Paint(x, y, scale, color, va("%i/%i", value,value2), adjust, limit, style, iMenuFont, NULL);
 	}
 }
 void CG_SB_Text_Paint_Double_Text(qboolean largeFormat, float x, float y, float scale, const vec4_t color, const char* value, const char* value2, float adjust, int limit, int style, int iMenuFont) {
 	if (!Q_stricmp(value,value2)) {
-		CG_Text_Paint(x,y,scale,color, value,adjust,limit,style,iMenuFont);
+		CG_Text_Paint(x,y,scale,color, value,adjust,limit,style,iMenuFont, NULL);
 	}
 	else if (largeFormat) {
-		CG_Text_Paint(x, y, scale*0.5f, color, value, adjust, limit, style, iMenuFont);
-		CG_Text_Paint(x, y+(float)SB_NORMAL_HEIGHT*0.5f, scale*0.5f, color, value2, adjust, limit, style, iMenuFont);
+		CG_Text_Paint(x, y, scale*0.5f, color, value, adjust, limit, style, iMenuFont, NULL);
+		CG_Text_Paint(x, y+(float)SB_NORMAL_HEIGHT*0.5f, scale*0.5f, color, value2, adjust, limit, style, iMenuFont, NULL);
 	}
 	else {
-		CG_Text_Paint(x, y, scale, color, va("%s/%s", value,value2), adjust, limit, style, iMenuFont);
+		CG_Text_Paint(x, y, scale, color, va("%s/%s", value,value2), adjust, limit, style, iMenuFont, NULL);
 	}
 }
 
@@ -286,7 +286,7 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		}
 
 		trap_R_SetColor(NULL);
-		CG_Text_Paint(textX, textY, textScale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+		CG_Text_Paint(textX, textY, textScale, colorWhite, ci->name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL);
 	}
 
 	if (score->ping != -1)
@@ -295,32 +295,32 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		{
 			if (cgs.gametype == GT_TOURNAMENT)
 			{
-				CG_Text_Paint (SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i/%i", ci->wins, ci->losses),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL );
+				CG_Text_Paint (SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i/%i", ci->wins, ci->losses),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL );
 			}
 			else if (cgs.gametype == GT_CTF)
 			{
-				CG_Text_Paint(scoreLineX + 0.47f * scoreLineWidth, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-				CG_Text_Paint(scoreLineX + 0.59f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorYellow : colorWhite, va("%i", score->captures), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-				CG_Text_Paint(scoreLineX + 0.66f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorCyan : colorWhite, va("%i", score->impressiveCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //i think this is ret frags? but idk
-				CG_Text_Paint(scoreLineX + 0.72f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorMagenta : colorWhite, va("%i", score->defendCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);//loda
+				CG_Text_Paint(scoreLineX + 0.47f * scoreLineWidth, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+				CG_Text_Paint(scoreLineX + 0.59f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorYellow : colorWhite, va("%i", score->captures), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+				CG_Text_Paint(scoreLineX + 0.66f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorCyan : colorWhite, va("%i", score->impressiveCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL); //i think this is ret frags? but idk
+				CG_Text_Paint(scoreLineX + 0.72f * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorMagenta : colorWhite, va("%i", score->defendCount), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);//loda
 			}
 			else if (defragScoreboard) {
-				CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 0.9f * scale, colorWhite, ci->username, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
-				CG_Text_Paint(SB_SCORE_X_DEFRAG, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 0.9f * scale, colorWhite, ci->username, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL);
+				CG_Text_Paint(SB_SCORE_X_DEFRAG, y, 1.0f * scale, colorWhite, va("%i", score->score), 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 			}
 			else
 			{
-				CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i", score->score),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, va("%i", score->score),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 			}
 		}
 		else if (ci->team == TEAM_SPECTATOR && defragScoreboard) {
-			CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 0.9f * scale, colorWhite, ci->username, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
+			CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 0.9f * scale, colorWhite, ci->username, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL);
 		}
 		
 		if (cgs.gametype == GT_CTF)
 		{
 			if (ci->botSkill != 0)
-				CG_Text_Paint(scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 			else
 				CG_SB_Text_Paint_Double(largeFormat,scoreLineX + 0.80 * scoreLineWidth, y, 1.0f * scale, cg_colorScoreboard.integer ? colorGreen : colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
@@ -329,18 +329,18 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		else if (defragScoreboard) {
 
 			if (ci->botSkill != 0)
-				CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 			else
 				CG_SB_Text_Paint_Double(largeFormat,SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
 			CG_SB_Text_Paint_Double(largeFormat, SB_TIME_X_DEFRAG, y, 1.0f * scale, colorWhite, score->time, score->fulltime, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
-			CG_Text_Paint(SB_PB_X_DEFRAG, y, 1.0f * scale, colorWhite, ci->jkmod_race ? DF_MsToString(ci->jkmod_race) : "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+			CG_Text_Paint(SB_PB_X_DEFRAG, y, 1.0f * scale, colorWhite, ci->jkmod_race ? DF_MsToString(ci->jkmod_race) : "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 		}
 		else
 		{
 			if (ci->botSkill != 0)
-				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+				CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "BOT", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 			else
 				CG_SB_Text_Paint_Double(largeFormat,SB_PING_X, y, 1.0f * scale, colorWhite, score->ping, score->realping, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
 
@@ -349,31 +349,31 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	}
 	else if (cgs.gametype == GT_CTF)
 	{
-		CG_Text_Paint(scoreLineX + 0.47f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //score
-		CG_Text_Paint(scoreLineX + 0.59f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //caps
-		CG_Text_Paint(scoreLineX + 0.66f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //assists
-		CG_Text_Paint(scoreLineX + 0.73f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //defends
-		CG_Text_Paint(scoreLineX + 0.80f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //ping
-		CG_Text_Paint(scoreLineX + 0.90f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL); //time
+		CG_Text_Paint(scoreLineX + 0.47f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL); //score
+		CG_Text_Paint(scoreLineX + 0.59f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL); //caps
+		CG_Text_Paint(scoreLineX + 0.66f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL); //assists
+		CG_Text_Paint(scoreLineX + 0.73f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL); //defends
+		CG_Text_Paint(scoreLineX + 0.80f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL); //ping
+		CG_Text_Paint(scoreLineX + 0.90f * scoreLineWidth, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL); //time
 	}
 	else if (defragScoreboard) {
-		CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_SCORE_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_TIME_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_PB_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+		CG_Text_Paint(SB_USERNAME_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+		CG_Text_Paint(SB_SCORE_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+		CG_Text_Paint(SB_PING_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+		CG_Text_Paint(SB_TIME_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+		CG_Text_Paint(SB_PB_X_DEFRAG, y, 1.0f * scale, colorWhite, "-", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 	}
 	else
 	{
-		CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
-		CG_Text_Paint(SB_TIME_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL);
+		CG_Text_Paint(SB_SCORE_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+		CG_Text_Paint(SB_PING_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
+		CG_Text_Paint(SB_TIME_X, y, 1.0f * scale, colorWhite, "-",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_SMALL, NULL);
 	}
 
 	// add the "ready" marker for intermission exiting
 	if ( cg.snap->ps.stats[ STAT_CLIENTS_READY ] & ( 1 << score->client ) ) 
 	{
-		CG_Text_Paint ((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) - 64, y + 2, 0.7f * scale, colorWhite, CG_GetStripEdString("INGAMETEXT", "READY"),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ((defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) - 64, y + 2, 0.7f * scale, colorWhite, CG_GetStripEdString("INGAMETEXT", "READY"),0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 }
 
@@ -551,9 +551,9 @@ qboolean CG_DrawOldScoreboard( void ) {
 		y = 40;
 		CG_DrawBigString( x, y, s, fade );
 		*/
-		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM, NULL ) );
 		y = 40;
-		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 	else if (cgs.gametype == GT_TOURNAMENT && cgs.duelist1 != -1 && cgs.duelist2 != -1 &&
 		cg.predictedPlayerState.pm_type == PM_INTERMISSION)
@@ -564,9 +564,9 @@ qboolean CG_DrawOldScoreboard( void ) {
 		y = 40;
 		CG_DrawBigString( x, y, s, fade );
 		*/
-		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM, NULL ) );
 		y = 40;
-		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 	else if ( cg.killerName[0] ) {
 		s = va("%s %s", CG_GetStripEdString("INGAMETEXT", "KILLEDBY"), cg.killerName );
@@ -575,9 +575,9 @@ qboolean CG_DrawOldScoreboard( void ) {
 		y = 40;
 		CG_DrawBigString( x, y, s, fade );
 		*/
-		x = 0.5f * (cgs.screenWidth - CG_Text_Width(s, 1.0f, FONT_MEDIUM));
+		x = 0.5f * (cgs.screenWidth - CG_Text_Width(s, 1.0f, FONT_MEDIUM, NULL));
 		y = 40;
-		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 
 	// current rank
@@ -618,10 +618,10 @@ qboolean CG_DrawOldScoreboard( void ) {
 			s = va( "Red: %i Blue: %i Yellow: %i", cgs.scores1, cgs.scores2, cgs.scores3 );
 		}
 
-		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM, NULL ) );
 		y = 60;
 		
-		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	} else {
 		if ( cg.teamScores[0] == cg.teamScores[1] ) {
 			s = va("Teams are tied at %i", cg.teamScores[0] );
@@ -631,10 +631,10 @@ qboolean CG_DrawOldScoreboard( void ) {
 			s = va("Blue leads %i to %i",cg.teamScores[1], cg.teamScores[0] );
 		}
 
-		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM ) );
+		x = 0.5f * ( cgs.screenWidth - CG_Text_Width ( s, 1.0f, FONT_MEDIUM, NULL ) );
 		y = 60;
 		
-		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( x, y, 1.0f, colorWhite, s, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 
 	// scoreboard
@@ -647,38 +647,38 @@ qboolean CG_DrawOldScoreboard( void ) {
 	// Unfortunately, since it's so sodding late now and post release I can't enable the localisation code (REM'd) since some of 
 	//	the localised strings don't fit - since no-one's ever seen them to notice this.  Smegging brilliant. Thanks people.
 	//
-	CG_Text_Paint (defragScoreboard ? SB_NAME_X_DEFRAG: SB_NAME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "NAME")*/"Name",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+	CG_Text_Paint (defragScoreboard ? SB_NAME_X_DEFRAG: SB_NAME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "NAME")*/"Name",0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	if (cgs.gametype == GT_TOURNAMENT)
 	{
 		char sWL[100];
 		trap_SP_GetStringTextString("INGAMETEXT_W_L", sWL,	sizeof(sWL));
 
-		CG_Text_Paint ( SB_SCORE_X, y, 1.0f, colorWhite, sWL, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORE_X, y, 1.0f, colorWhite, sWL, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 	else if (cgs.gametype == GT_CTF)
 	{
-		CG_Text_Paint ( scoreLineX + 0.47f * scoreLineWidth, y, 1.0f, colorWhite, "Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.59f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorYellow : colorWhite, "C", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( scoreLineX + 0.47f * scoreLineWidth, y, 1.0f, colorWhite, "Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint ( scoreLineX + 0.59f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorYellow : colorWhite, "C", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 		//CG_Text_Paint ( scoreLineX + 0.66f * scoreLineWidth, y, 1.0f, colorWhite, "A", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
 		//CG_Text_Paint ( scoreLineX + 0.73f * scoreLineWidth, y, 1.0f, colorWhite, "D", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.66f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorCyan : colorWhite, "R", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );//loda
-		CG_Text_Paint ( scoreLineX + 0.72f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorMagenta : colorWhite, "BC", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.80 * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorGreen : colorWhite, "Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( scoreLineX + 0.90 * scoreLineWidth, y, 1.0f, colorWhite, "Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( scoreLineX + 0.66f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorCyan : colorWhite, "R", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );//loda
+		CG_Text_Paint ( scoreLineX + 0.72f * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorMagenta : colorWhite, "BC", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint ( scoreLineX + 0.80 * scoreLineWidth, y, 1.0f, cg_colorScoreboard.integer ? colorGreen : colorWhite, "Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint ( scoreLineX + 0.90 * scoreLineWidth, y, 1.0f, colorWhite, "Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 	else if(defragScoreboard)
 	{
-		CG_Text_Paint (SB_USERNAME_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "SCORE")*/"User", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint (SB_PB_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"PB", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM);
-		CG_Text_Paint (SB_SCORE_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint (SB_PING_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint (SB_TIME_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint (SB_USERNAME_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "SCORE")*/"User", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint (SB_PB_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"PB", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL);
+		CG_Text_Paint (SB_SCORE_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint (SB_PING_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint (SB_TIME_X_DEFRAG, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 	else
 	{
-		CG_Text_Paint ( SB_SCORE_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "SCORE")*/"Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( SB_PING_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
-		CG_Text_Paint ( SB_TIME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM );
+		CG_Text_Paint ( SB_SCORE_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "SCORE")*/"Score", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint ( SB_PING_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS0", "PING")*/"Ping", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
+		CG_Text_Paint ( SB_TIME_X, y, 1.0f, colorWhite, /*CG_GetStripEdString("MENUS3", "TIME")*/"Time", 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL );
 	}
 
 	y = SB_TOP;

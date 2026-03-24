@@ -223,7 +223,7 @@ void CG_DrawStringExt( int x, int y, const char *string, const float *setColor,
 						0,			// int limit, 
 						shadow ? ITEM_TEXTSTYLE_SHADOWED : 0,	// int style, 
 						FONT_MEDIUM		// iMenuFont
-						) ;
+						, NULL) ;
 	}
 	else
 	{
@@ -626,13 +626,13 @@ void UI_DrawProportionalString( int x, int y, const char* str, int style, vec4_t
 
 		case UI_CENTER:
 		{
-			x -= CG_Text_Width(str, 1.0, iMenuFont) / 2;
+			x -= CG_Text_Width(str, 1.0, iMenuFont, NULL) / 2;
 		}
 		break;
 
 		case UI_RIGHT:
 		{
-			x -= CG_Text_Width(str, 1.0, iMenuFont);
+			x -= CG_Text_Width(str, 1.0, iMenuFont, NULL);
 		}
 		break;
 	}
@@ -647,7 +647,7 @@ void UI_DrawProportionalString( int x, int y, const char* str, int style, vec4_t
 		iStyle = ITEM_TEXTSTYLE_BLINK;
 	}
 
-	CG_Text_Paint(x, y, 1.0, color, str, 0, 0, iStyle, iMenuFont);
+	CG_Text_Paint(x, y, 1.0, color, str, 0, 0, iStyle, iMenuFont, NULL);
 }
 
 void UI_DrawScaledProportionalString( int x, int y, const char* str, int style, vec4_t color, float scale) 
@@ -668,13 +668,13 @@ void UI_DrawScaledProportionalString( int x, int y, const char* str, int style, 
 
 		case UI_CENTER:
 		{
-			x -= CG_Text_Width(str, scale, FONT_MEDIUM) / 2;
+			x -= CG_Text_Width(str, scale, FONT_MEDIUM, NULL) / 2;
 		}
 		break;
 
 		case UI_RIGHT:
 		{
-			x -= CG_Text_Width(str, scale, FONT_MEDIUM);
+			x -= CG_Text_Width(str, scale, FONT_MEDIUM, NULL);
 		}
 		break;
 	}
@@ -689,7 +689,7 @@ void UI_DrawScaledProportionalString( int x, int y, const char* str, int style, 
 		iStyle = ITEM_TEXTSTYLE_BLINK;
 	}
 
-	CG_Text_Paint(x, y, scale, color, str, 0, 0, iStyle, FONT_MEDIUM);
+	CG_Text_Paint(x, y, scale, color, str, 0, 0, iStyle, FONT_MEDIUM, NULL);
 }
 
 
