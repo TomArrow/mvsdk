@@ -20,6 +20,7 @@ static void CG_StrafeHelper(centity_t *cent); //jk2pro
 static void CG_DrawAccelMeter(void); //jk2pro
 static void CG_DrawForceMeter(void);  //tommyternal :)
 static void CG_DrawForceJumpCharge(void);  //tommyternal :)
+static void CG_DrawCustomHUDStrings(void); //tommyternal :)
 static void CG_DrawBouncePowerMeter(void); //tommyternal :)
 static void CG_AntiLoopIndicator(void); // tommyternal
 static void CG_JumpHeight(centity_t *cent); //jk2pro
@@ -2128,6 +2129,7 @@ void CG_DrawHUD(centity_t	*cent)
 		CG_AntiLoopIndicator();
 	}
 
+	CG_DrawCustomHUDStrings();
 	CG_DrawBouncePowerMeter();
 	CG_DrawForceMeter();
 	CG_DrawForceJumpCharge();
@@ -6871,6 +6873,7 @@ static void CG_Draw2D( void ) {
 
 			centity_t* cent = &cg_entities[cg.snap->ps.clientNum];
 
+			CG_DrawCustomHUDStrings();
 			CG_DrawBouncePowerMeter(); 
 			CG_DrawForceMeter();
 			CG_DrawForceJumpCharge();
@@ -8112,6 +8115,38 @@ static void CG_DrawForceJumpCharge(void) // TODO draw the proper predicted value
 	}
 }
 
+static void CG_DrawCustomHUDStrings() {
+	int i;
+	paintOptions_t paintOptions = { 0 };
+	customHUDString_t* hudString = NULL;
+	float xOffset = 0;
+	for (i = 0; i < CUSTOM_HUD_STRINGS_COUNT; i++) {
+		if (!customHUDStrings[i].active) {
+			continue;
+		}
+		hudString = &customHUDStrings[i];
+		if (hudString->monospace != 0.0f) {
+			static float letterMaxWidth = 0.0f;
+			static qboolean letterMaxWidthInited = qfalse;
+			if (!letterMaxWidthInited) {
+				letterMaxWidth = CG_Text_GetMaxLetterWidth(" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~", FONT_NONE);
+				letterMaxWidthInited = qtrue;
+			}
+			paintOptions.monospace = MONOSPACE_ACTIVE;
+			paintOptions.monospaceAlign = hudString->monospace - 1.0f;
+			paintOptions.monospaceWidth = letterMaxWidth  * hudString->size;
+		}
+		else {
+			paintOptions.monospace = 0;
+		}
+		xOffset = 0;
+		if (hudString->align != 0.0f) {
+			xOffset = -hudString->align * CG_Text_Width(hudString->text, hudString->size, FONT_NONE, &paintOptions);
+		}
+		CG_Text_Paint(hudString->x+ xOffset,hudString->y,hudString->size,colorWhite,hudString->text,0.0f,0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED,FONT_NONE,&paintOptions);
+
+	}
+}
 
 static void CG_DrawBouncePowerMeter(void)
 {

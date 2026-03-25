@@ -118,6 +118,8 @@ int crosshairColorModificationCount = -1;//japro
 int strafeHelperActiveColorModificationCount = -1;//japro
 int hudModificationCount = -1;
 
+customHUDString_t customHUDStrings[CUSTOM_HUD_STRINGS_COUNT] = { {-1},{-1},{-1},{-1},{-1},{-1},{-1},{-1},{-1},{-1} };
+
 void CG_Init( int serverMessageNum, int serverCommandSequence, int clientNum );
 void CG_Shutdown( void );
 
@@ -589,6 +591,9 @@ vmCvar_t	cg_dismember;
 //jk2pro Client Cvars - start
 vmCvar_t	cjp_client;
 
+vmCvar_t	cg_customHUDStringExample;
+vmCvar_t	cg_customHUDString[CUSTOM_HUD_STRINGS_COUNT];
+
 vmCvar_t	cg_raceTimer;
 vmCvar_t	cg_raceTimerSize;
 vmCvar_t	cg_raceTimerNoSpeeds;
@@ -1019,6 +1024,17 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	//jk2pro Client Cvars start
 	{ &cjp_client, "cjp_client", "1.4JAPRO", CVAR_USERINFO|CVAR_ROM },
+	{ &cg_customHUDStringExample, "cg_customHUDStringExample", "x y size align monospace text blahblahblah", CVAR_ROM },
+	{ &cg_customHUDString[0], "cg_customHUDString0", "", CVAR_TEMP },
+	{ &cg_customHUDString[1], "cg_customHUDString1", "", CVAR_TEMP },
+	{ &cg_customHUDString[2], "cg_customHUDString2", "", CVAR_TEMP },
+	{ &cg_customHUDString[3], "cg_customHUDString3", "", CVAR_TEMP },
+	{ &cg_customHUDString[4], "cg_customHUDString4", "", CVAR_TEMP },
+	{ &cg_customHUDString[5], "cg_customHUDString5", "", CVAR_TEMP },
+	{ &cg_customHUDString[6], "cg_customHUDString6", "", CVAR_TEMP },
+	{ &cg_customHUDString[7], "cg_customHUDString7", "", CVAR_TEMP },
+	{ &cg_customHUDString[8], "cg_customHUDString8", "", CVAR_TEMP },
+	{ &cg_customHUDString[9], "cg_customHUDString9", "", CVAR_TEMP },
 	{ &cg_raceTimer, "cg_raceTimer", "3", 0 },
 	{ &cg_raceTimerSize, "cg_raceTimerSize", "0.75", 0 },
 	{ &cg_raceTimerNoSpeeds, "cg_raceTimerNoSpeeds", "0", CVAR_ARCHIVE },
@@ -1285,6 +1301,27 @@ void CG_ClearUnsetSystemInfoCvars(const char* systemInfo) {
 	}
 }
 
+void CG_UpdateCustomHUDStrings() {
+	int i;
+	for (i = 0; i < CUSTOM_HUD_STRINGS_COUNT; i++) {
+		if (customHUDStrings[i].modificationCount != cg_customHUDString[i].modificationCount) {
+			customHUDStrings[i].modificationCount = cg_customHUDString[i].modificationCount;
+			BG_Cmd_TokenizeString(cg_customHUDString[i].string);
+			if (BG_Cmd_Argc() < 6) {
+				customHUDStrings[i].active = qfalse;
+				continue;
+			}
+			customHUDStrings[i].x = atof(BG_Cmd_Argv(0));
+			customHUDStrings[i].y = atof(BG_Cmd_Argv(1));
+			customHUDStrings[i].size = atof(BG_Cmd_Argv(2));
+			customHUDStrings[i].align = atof(BG_Cmd_Argv(3));
+			customHUDStrings[i].monospace = atof(BG_Cmd_Argv(4));
+			Q_strncpyz(customHUDStrings[i].text,BG_Cmd_ArgsFrom(5),sizeof(customHUDStrings[i].text));
+			customHUDStrings[i].active = qtrue;
+		}
+	}
+}
+
 /*
 =================
 CG_RegisterCvars
@@ -1305,6 +1342,8 @@ void CG_RegisterCvars( void ) {
 			systemInfoCvars = cv;
 		}
 	}
+
+	CG_UpdateCustomHUDStrings();
 
 	// see if we are also running the server on this machine
 	trap_Cvar_VariableStringBuffer( "sv_running", var, sizeof( var ) );
@@ -1541,6 +1580,8 @@ void CG_UpdateCvars( void ) {
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Update( cv->vmCvar );
 	}
+
+	CG_UpdateCustomHUDStrings();
 
 	// check for modications here
 

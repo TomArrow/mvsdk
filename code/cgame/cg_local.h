@@ -1845,6 +1845,11 @@ extern	vmCvar_t		cg_animBlend;
 extern	vmCvar_t		cg_dismember;
 
 //jk2pro Client Cvars - start
+
+#define CUSTOM_HUD_STRINGS_COUNT 10
+#define CUSTOM_HUD_STRINGS_MAXLEN 1024
+extern	vmCvar_t		cg_customHUDString[CUSTOM_HUD_STRINGS_COUNT];
+
 extern	vmCvar_t		cg_raceTimer;
 extern	vmCvar_t		cg_raceTimerSize;
 extern	vmCvar_t		cg_raceTimerNoSpeeds;
@@ -2223,6 +2228,13 @@ void CG_DrawTopBottom(float x, float y, float w, float h, float size);
 //
 // cg_draw.c, cg_newDraw.c
 //
+typedef struct customHUDString_s {
+	int			modificationCount;
+	qboolean	active;
+	float		x, y, size, align, monospace;
+	char		text[CUSTOM_HUD_STRINGS_MAXLEN];
+} customHUDString_t;
+extern	customHUDString_t customHUDStrings[CUSTOM_HUD_STRINGS_COUNT];
 extern	int sortedTeamPlayers[TEAM_MAXOVERLAY];
 extern	int	numSortedTeamPlayers;
 extern	int drawTeamOverlayModificationCount;
