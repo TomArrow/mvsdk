@@ -755,11 +755,13 @@ typedef struct {
 	qboolean	thisFrameTeleport;
 	qboolean	nextFrameTeleport;
 
-	int			frametime;		// cg.time - cg.oldTime
+	float		frametime;		// cg.time - cg.oldTime
 
 	int			time;			// this is the time value that the client
 								// is rendering at.
 	int			oldTime;		// time at last frame, used for missile trails and prediction checking
+
+	float		timeFraction, oldTimeFraction;
 
 	int			physicsTime;	// either cg.snap->time or cg.nextSnap->time
 

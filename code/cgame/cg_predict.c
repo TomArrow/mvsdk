@@ -379,11 +379,13 @@ static void CG_InterpolatePlayerState( qboolean grabAngles, vec3_t newestVel ) {
 	// if the next frame is a teleport, we can't lerp to it
 	if ( cg.nextFrameTeleport ) {
 		VectorCopy(out->velocity, newestVel);
+		//Com_Printf("nextFrameTeleport latest %d\n", cg.latestSnapshotTime);
 		return;
 	}
 
 	if ( !next || next->serverTime <= prev->serverTime ) {
 		VectorCopy(out->velocity, newestVel);
+		//Com_Printf("nonext latest %d\n", cg.latestSnapshotTime);
 		return;
 	}
 
@@ -408,6 +410,8 @@ static void CG_InterpolatePlayerState( qboolean grabAngles, vec3_t newestVel ) {
 		out->velocity[i] = prev->ps.velocity[i] + 
 			f * (next->ps.velocity[i] - prev->ps.velocity[i] );
 	}
+
+	//Com_Printf("ps interp %f: %f %f %f latest %d\n",f, out->origin[0], out->origin[1], out->origin[2], cg.latestSnapshotTime);
 
 	if (cgs.isTommyTernal && next->ps.stats[STAT_RACEMODE] && next->ps.stats[STAT_MOVEMENTSTYLE] == MV_BOUNCE ) {
 		// just make it look nice and smooth *shrug*

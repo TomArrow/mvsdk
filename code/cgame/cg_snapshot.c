@@ -1018,7 +1018,7 @@ void CG_ProcessSnapshots(qboolean mmeHadSkip) {
 		if ( delta == 0 ) {
 			cg.frameInterpolation = 0;
 		} else {
-			cg.frameInterpolation = (float)( cg.time - cg.snap->serverTime ) / delta;
+			cg.frameInterpolation = (float)( (cg.time - cg.snap->serverTime) + cg.timeFraction) / delta;
 		}
 	} else {
 		cg.frameInterpolation = 0;	// actually, it should never be used, because 

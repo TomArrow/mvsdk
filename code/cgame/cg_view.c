@@ -1870,6 +1870,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	qboolean	mmeHadSkip = qfalse;// mme compat
 
 	cg.time = serverTime;
+	cg.timeFraction = 0;
 	cg.demoPlayback = demoPlayback;
 	if (mmeEngine) { // mme compatibility
 		mmeEnginePlaybackType = demoPlayback;
@@ -1929,13 +1930,20 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 			}
 
 			cg.time = trap_CG_MME_SeekTime(demo.play.time);
+			if (cg.snap && cg.snap->serverTime == cg.time && !cg.nextSnap || cg.nextSnap && cg.nextSnap->serverTime == cg.time) {
+				trap_CG_MME_SeekTime(demo.play.time+1); // transitioning. we dont wanna have 1 ms of stuck frames. yea kinda cringe, is there a better way?
+			}
+			cg.timeFraction = demo.play.fraction; // if we have demo.play.speed != 1.0, we're gonna need that lineAt function i think? or not? idk
 
-			tmpDelta = cg.time - cg.oldTime;
+			//Com_Printf("%d %f\n",cg.time,cg.timeFraction);
+
+			tmpDelta = (cg.time - cg.oldTime) + (cg.timeFraction - cg.oldTimeFraction);
 			if (tmpDelta < 0) {
 				int i;
 				cg.frametime = 0;
 				mmeHadSkip = qtrue;
 				cg.oldTime = cg.time;
+				cg.oldTimeFraction = cg.timeFraction;
 				//cg.oldTimeFraction = cg.timeFraction;
 				CG_InitLocalEntities();
 				CG_InitMarkPolys();
@@ -2227,11 +2235,12 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 
 	// make sure the lagometerSample and frame timing isn't done twice when in stereo
 	if ( stereoView != STEREO_RIGHT ) {
-		cg.frametime = cg.time - cg.oldTime;
+		cg.frametime = (cg.time - cg.oldTime) + (cg.timeFraction - cg.oldTimeFraction);
 		if ( cg.frametime < 0 ) {
 			cg.frametime = 0;
 		}
 		cg.oldTime = cg.time;
+		cg.oldTimeFraction = cg.timeFraction;
 		CG_AddLagometerFrameInfo();
 	}
 	if (cg_timescale.value != cg_timescaleFadeEnd.value) {
