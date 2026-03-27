@@ -106,6 +106,7 @@ extern int gEscapeTime;
 #define TT_ACCOUNTFLAG_A_UPDATERANKS					(1<<5) 
 #define TT_ACCOUNTFLAG_A_BLACKLISTMAPS					(1<<6) 
 #define TT_ACCOUNTFLAG_A_DEMOMANAGE						(1<<7) 
+#define TT_ACCOUNTFLAG_A_CHANGEMAP						(1<<8) 
 
 typedef enum getUserCmdType_s
 {

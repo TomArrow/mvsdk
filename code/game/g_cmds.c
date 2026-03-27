@@ -1644,6 +1644,9 @@ void Cmd_Help_f(gentity_t* ent) {
 		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_DEMOMANAGE) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/demoManage^7 - Call with ^2checkscript^7 to make a script testing the existence of all run demos and generating a copy script from a backup location for missing demos\n\"");
 		}
+		if (ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_CHANGEMAP) {
+			trap_SendServerCommand(ent - g_entities, "print \"^2/amMap^7 - Force change map, call with gametype number and mapname\n\"");
+		}
 	}
 }
 
@@ -2731,6 +2734,88 @@ void Cmd_DemoManage_f( gentity_t *ent )
 
 
 }
+
+//[JAPRO - Serverside - All - Ampsay Function - Start]
+/*
+=================
+Cmd_Ammap_f
+=================
+*/
+void Cmd_AmMap_f(gentity_t* ent)
+{
+	char    gametype[2];
+	int		gtype;
+	char    mapname[256];
+
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_CHANGEMAP)) {
+		trap_SendServerCommand(ent - g_entities, "print \"You don't have permissions to execute this command.\n\"");
+		return;
+	}
+
+
+	if (trap_Argc() != 3)
+	{
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /amMap <gametype #> <map>.\n\"");
+		return;
+	}
+
+	trap_Argv(1, gametype, sizeof(gametype));
+	trap_Argv(2, mapname, sizeof(mapname));
+
+	if (strchr(mapname, ';') || strchr(mapname, '\r') || strchr(mapname, '\n'))
+	{
+		trap_SendServerCommand(ent - g_entities, "print \"Invalid map string.\n\"");
+		return;
+	}
+
+	if (gametype[0] < '0' && gametype[0] > '8')
+	{
+		trap_SendServerCommand(ent - g_entities, "print \"Invalid gametype.\n\"");
+		return;
+	}
+
+	gtype = atoi(gametype);
+
+	{
+		static char				unsortedMaps[32768];
+		char* possibleMapName;
+		int					numMaps;
+		//const unsigned int  MAX_MAPS = 4096;
+		qboolean found = qfalse;
+
+		numMaps = trap_FS_GetFileList("maps", ".bsp", unsortedMaps, sizeof(unsortedMaps));
+		if (numMaps) {
+			int len, i;
+			//if (numMaps > MAX_MAPS)
+			//	numMaps = MAX_MAPS;
+			possibleMapName = unsortedMaps;
+			for (i = 0; i < numMaps; i++) {
+				len = strlen(possibleMapName);
+				if (!Q_stricmp(possibleMapName + len - 4, ".bsp"))
+					possibleMapName[len - 4] = '\0';
+				if (!Q_stricmp(mapname, possibleMapName)) {
+					found = qtrue;
+				}
+				possibleMapName += len + 1;
+			}
+		}
+		if (!found)
+			return;
+	}
+
+	//if (ent->client->sess.juniorAdmin)//Logged in as junior admin
+	trap_SendServerCommand(-1, va("print \"^3Map change triggered by ^7%s\n\"", ent->client->pers.netname));
+	G_LogPrintf("Map change triggered by ^7%s\n", ent->client->pers.netname);
+
+	trap_SendConsoleCommand(EXEC_APPEND, va("g_gametype %i\n", gtype));
+	trap_SendConsoleCommand(EXEC_APPEND, va("map %s\n", mapname));
+
+}
+//[JAPRO - Serverside - All - Ammap Function - End]
+
+
+
 
 void Cmd_MapRatings_f(gentity_t* ent) {
 	char arg[10];
@@ -5874,6 +5959,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "amMap"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "forcelogin"))
 		{
 			giveError = qtrue;
@@ -6064,6 +6153,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_UpdateRanks_f(ent);
 	else if (Q_stricmp (cmd, "demoManage") == 0)
 		Cmd_DemoManage_f(ent);
+	else if (Q_stricmp (cmd, "amMap") == 0)
+		Cmd_AmMap_f(ent);
 	else if (Q_stricmp (cmd, "forcelogin") == 0)
 		Cmd_ForceLogin_f(ent);
 	else if (!Q_stricmp(cmd, "freedom"))// || !Q_stricmp(cmd, "oc9"))
