@@ -2010,6 +2010,10 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	CG_UpdateCvars();
 	CG_CheckQuiGon();
 
+	if (!mmeEngine && cg.demoPlayback) {
+		cg.timeFraction = cg_cl_aviTimeFraction.value;
+	}
+
 	CG_DB_CheckResponses();
 
 	// if we are only updating the screen as a loading

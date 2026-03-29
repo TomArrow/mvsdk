@@ -2002,6 +2002,7 @@ extern	vmCvar_t		cg_g_unlockRandom;
 
 extern	vmCvar_t		cg_cl_timeNudgeAntiLagHack;
 extern	vmCvar_t		cg_cl_timeNudgeSafeServerTime;
+extern	vmCvar_t		cg_cl_aviTimeFraction;
 
 extern	vmCvar_t		cg_strafebotSlopeHandling;
 
