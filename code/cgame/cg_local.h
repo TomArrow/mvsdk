@@ -2003,6 +2003,7 @@ extern	vmCvar_t		cg_g_unlockRandom;
 extern	vmCvar_t		cg_cl_timeNudgeAntiLagHack;
 extern	vmCvar_t		cg_cl_timeNudgeSafeServerTime;
 extern	vmCvar_t		cg_cl_aviTimeFraction;
+extern	vmCvar_t		cg_cl_mirror;
 
 extern	vmCvar_t		cg_strafebotSlopeHandling;
 
@@ -2202,6 +2203,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 //
 void CG_FillRect( float x, float y, float width, float height, const float *color );
 void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader );
+void CG_DrawMirrorAwarePic( float x, float y, float width, float height, qhandle_t hShader );
 void CG_DrawRotatePic( float x, float y, float width, float height,float angle, qhandle_t hShader );
 void CG_DrawRotatePic2( float x, float y, float width, float height,float angle, qhandle_t hShader );
 

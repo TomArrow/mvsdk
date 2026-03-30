@@ -744,6 +744,7 @@ vmCvar_t	cg_g_unlockRandom;
 vmCvar_t	cg_cl_timeNudgeAntiLagHack; // special physicsfps predict needs to know
 vmCvar_t	cg_cl_timeNudgeSafeServerTime; // special physicsfps predict needs this if we are using cl_timeNudgeAntiLagHack 
 vmCvar_t	cg_cl_aviTimeFraction;
+vmCvar_t	cg_cl_mirror;
 
 vmCvar_t	cg_strafebotSlopeHandling;
 
@@ -1036,13 +1037,13 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_customHUDString[7], "cg_customHUDString7", "", CVAR_TEMP },
 	{ &cg_customHUDString[8], "cg_customHUDString8", "", CVAR_TEMP },
 	{ &cg_customHUDString[9], "cg_customHUDString9", "", CVAR_TEMP },
-	{ &cg_raceTimer, "cg_raceTimer", "3", 0 },
-	{ &cg_raceTimerSize, "cg_raceTimerSize", "0.75", 0 },
+	{ &cg_raceTimer, "cg_raceTimer", "3", CVAR_ARCHIVE },
+	{ &cg_raceTimerSize, "cg_raceTimerSize", "0.75", CVAR_ARCHIVE },
 	{ &cg_raceTimerNoSpeeds, "cg_raceTimerNoSpeeds", "0", CVAR_ARCHIVE },
 	{ &cg_raceTimerMonospace, "cg_raceTimerMonospace", "0", CVAR_ARCHIVE },
 	{ &cg_raceTimerSegmentedInfo, "cg_raceTimerSegmentedInfo", "1", CVAR_ARCHIVE },
-	{ &cg_raceTimerX, "cg_raceTimerX", "5", 0 },
-	{ &cg_raceTimerY, "cg_raceTimerY", "280", 0 },
+	{ &cg_raceTimerX, "cg_raceTimerX", "5", CVAR_ARCHIVE },
+	{ &cg_raceTimerY, "cg_raceTimerY", "280", CVAR_ARCHIVE },
 	{ &cg_customizeRace, "cg_customizeRace", "0", CVAR_ARCHIVE | CVAR_USERINFO }, // hide various things and stuff
 	{ &cg_speedometer, "cg_speedometer", "0", CVAR_ARCHIVE },
 	{ &cg_speedometerX, "cg_speedometerX", "98", CVAR_ARCHIVE },
@@ -1197,6 +1198,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_synchronousClients, "g_synchronousClients", "0", 0 },	// communicated by systeminfo
 	{ &cg_cl_timeNudgeAntiLagHack, "cl_timeNudgeAntiLagHack", "0", 0 },
 	{ &cg_cl_aviTimeFraction, "cl_aviTimeFraction", "0", 0 },
+	{ &cg_cl_mirror, "cl_mirror", "0", 0 },
 
 	{ &cg_debugMove, "cg_debugMove", "0", CVAR_TEMP },
 

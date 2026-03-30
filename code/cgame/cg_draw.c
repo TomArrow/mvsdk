@@ -4817,6 +4817,10 @@ qboolean CG_WorldCoordToScreenCoordCustomAngles(vec3_t worldCoord, float *x, flo
 	*x = xcenter + xzi * transformed[0];
 	*y = ycenter - yzi * transformed[1];
 
+	if (cg_cl_mirror.integer) {
+		*x = cgs.screenWidth - *x;
+	}
+
 	return qtrue;
 }
 
@@ -9262,7 +9266,7 @@ static void CG_RealAccelHelper() {
 				else {
 					trap_R_SetColor(gaining);
 				}
-				CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
+				CG_DrawMirrorAwarePic(xStart - angleXStepHalf, mid - oldVDelta,
 					angleXStep*(float)bufferedCount, oldVDelta,
 					cgs.media.whiteShader);
 				drawCalls++;
@@ -9297,7 +9301,7 @@ static void CG_RealAccelHelper() {
 			else {
 				trap_R_SetColor(gaining);
 			}
-			CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
+			CG_DrawMirrorAwarePic(xStart - angleXStepHalf, mid - oldVDelta,
 				angleXStep * (float)bufferedCount, oldVDelta,
 				cgs.media.whiteShader);
 			drawCalls++;
@@ -9324,7 +9328,7 @@ static void CG_RealAccelHelper() {
 		else {
 			trap_R_SetColor(gaining);
 		}
-		CG_DrawPic(xStart - angleXStepHalf, mid - oldVDelta,
+		CG_DrawMirrorAwarePic(xStart - angleXStepHalf, mid - oldVDelta,
 			angleXStep * (float)bufferedCount, oldVDelta,
 			cgs.media.whiteShader);
 		drawCalls++;

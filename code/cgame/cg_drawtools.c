@@ -131,6 +131,24 @@ A width of 0 will draw with the original image width
 void CG_DrawPic( float x, float y, float width, float height, qhandle_t hShader ) {
 	CG_R_DrawStretchPic( x, y, width, height, 0, 0, 1, 1, hShader );
 }
+/*
+================
+CG_DrawMirrorAwarePic
+
+Coordinates are 640*480 virtual values
+A width of 0 will draw with the original image width
+
+Will mirror display if cl_mirror is 1
+=================
+*/
+void CG_DrawMirrorAwarePic( float x, float y, float width, float height, qhandle_t hShader ) {
+	if (cg_cl_mirror.integer) {
+		CG_R_DrawStretchPic(640.0- x-width, y, width, height, 0, 0, 1, 1, hShader);
+	}
+	else {
+		CG_R_DrawStretchPic(x, y, width, height, 0, 0, 1, 1, hShader);
+	}
+}
 
 /*
 ================
