@@ -867,6 +867,7 @@ typedef struct {
 	int			lastIronManPosSaved;
 	
 	int			highestDefragSpawnPriority;
+	int			deathMatchSpawnCount;
 
 	char		tempDemoNamePrefix[20];
 } level_locals_t;
@@ -1465,6 +1466,7 @@ extern	vmCvar_t	g_defragKillSafetyMinSecs;
 extern	vmCvar_t	g_defragSimpleResetSpawn;
 extern	vmCvar_t	g_triggersRobust;
 extern	vmCvar_t	g_bubbleSpawn;
+extern	vmCvar_t	g_reuseCTFSpawns;
 extern	vmCvar_t	g_defragForceRegenFps;
 extern	vmCvar_t	g_defragArenaAutoGen;
 extern	vmCvar_t	g_specAllEnts;

@@ -219,6 +219,7 @@ extern void DF_target_husk(gentity_t* ent);
 extern void DF_trigger_start(gentity_t* ent);
 extern void DF_trigger_finish(gentity_t* ent);
 extern void DF_trigger_checkpoint(gentity_t* ent);
+extern void G_TurnCTFSpawnsIntoDeathMatchSpawns();
 
 extern void SP_HoldableMedkit(gentity_t* ent);
 spawn_t	spawns[] = {
@@ -998,6 +999,7 @@ void G_SpawnEntitiesFromString( void ) {
 	// allow calls to G_Spawn*()
 	level.spawning = qtrue;
 	level.numSpawnVars = 0;
+	level.deathMatchSpawnCount = 0;
 
 	// the worldspawn is not an actual entity, but it still
 	// has a "spawn" function to perform any global setup
@@ -1012,6 +1014,17 @@ void G_SpawnEntitiesFromString( void ) {
 	// parse ents
 	while( G_ParseSpawnVars() ) {
 		G_SpawnGEntityFromSpawnVars();
+	}
+
+	if (g_reuseCTFSpawns.integer && level.deathMatchSpawnCount == 0) { // seems like we don't have any ffa/defrag spawns
+		Com_Printf("^1WARNING: Map has no ffa spawn points. Trying to fix...");
+		G_TurnCTFSpawnsIntoDeathMatchSpawns();
+		if (level.deathMatchSpawnCount > 0) {
+			Com_Printf("^2Success. Have %d ffa spawnpoints now.\n", level.deathMatchSpawnCount);
+		}
+		else {
+			Com_Printf("^1Failed.\n");
+		}
 	}
 
 	if (g_defrag.integer) {

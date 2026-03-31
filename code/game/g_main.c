@@ -67,6 +67,7 @@ vmCvar_t	g_defragKillSafetyMinSecs;
 vmCvar_t	g_defragSimpleResetSpawn; // /resetspawn does all
 vmCvar_t	g_triggersRobust;
 vmCvar_t	g_bubbleSpawn;
+vmCvar_t	g_reuseCTFSpawns;
 vmCvar_t	g_defragForceRegenFps;
 vmCvar_t	g_defragArenaAutoGen;
 vmCvar_t	g_specAllEnts;
@@ -307,6 +308,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_defragLastDemoId, "g_defragLastDemoId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_bubbleSpawn, "g_bubbleSpawn", "1", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_reuseCTFSpawns, "g_reuseCTFSpawns", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragForceRegenFps, "g_defragForceRegenFps", "100", CVAR_ARCHIVE | CVAR_CHEAT, 0, qtrue  },
 	{ &g_defragArenaAutoGen, "g_defragArenaAutoGen", "1", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena files when a course is finished running, if none exists
 	{ &g_arenaAutoGen, "g_arenaAutoGen", "0", CVAR_ARCHIVE, 0, qfalse  }, // auto generate .arena file upon successful spawn in map, if none exists

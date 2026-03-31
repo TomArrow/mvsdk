@@ -1015,7 +1015,7 @@ gentity_t *SelectCTFSpawnPoint (gentity_t* spawningEnt, team_t team, int teamsta
 	if (g_bubbleSpawn.integer && !(spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
 		WiggleSpotTelefrag(origin,spawningEnt);
 	}
-	origin[2] += 9;
+	origin[2] += 9; // oh. this is prolly why telefrags do happen..
 	VectorCopy (spot->s.angles, angles);
 
 	return spot;
@@ -1157,12 +1157,19 @@ void CheckTeamStatus(void) {
 	}
 }
 
+void SP_info_player_deathmatch(gentity_t* ent);
+
 /*-----------------------------------------------------------------*/
 
 /*QUAKED team_CTF_redplayer (1 0 0) (-16 -16 -16) (16 16 32)
 Only in CTF games.  Red players spawn here at game start.
 */
 void SP_team_CTF_redplayer( gentity_t *ent ) {
+	if (g_gametype.integer != GT_CTF && g_gametype.integer != GT_CTY && g_reuseCTFSpawns.integer > 1)
+	{ //turn into a DM spawn if not in saga game mode
+		G_SetClassName(ent, "info_player_deathmatch");
+		SP_info_player_deathmatch(ent);
+	}
 }
 
 
@@ -1170,6 +1177,11 @@ void SP_team_CTF_redplayer( gentity_t *ent ) {
 Only in CTF games.  Blue players spawn here at game start.
 */
 void SP_team_CTF_blueplayer( gentity_t *ent ) {
+	if (g_gametype.integer != GT_CTF && g_gametype.integer != GT_CTY && g_reuseCTFSpawns.integer > 1)
+	{ //turn into a DM spawn if not in saga game mode
+		G_SetClassName(ent, "info_player_deathmatch");
+		SP_info_player_deathmatch(ent);
+	}
 }
 
 
@@ -1178,6 +1190,11 @@ potential spawning position for red team in CTF games.
 Targets will be fired when someone spawns in on them.
 */
 void SP_team_CTF_redspawn(gentity_t *ent) {
+	if (g_gametype.integer != GT_CTF && g_gametype.integer != GT_CTY && g_reuseCTFSpawns.integer > 1)
+	{ //turn into a DM spawn if not in saga game mode
+		G_SetClassName(ent, "info_player_deathmatch");
+		SP_info_player_deathmatch(ent);
+	}
 }
 
 /*QUAKED team_CTF_bluespawn (0 0 1) (-16 -16 -24) (16 16 32)
@@ -1185,6 +1202,65 @@ potential spawning position for blue team in CTF games.
 Targets will be fired when someone spawns in on them.
 */
 void SP_team_CTF_bluespawn(gentity_t *ent) {
+	if (g_gametype.integer != GT_CTF && g_gametype.integer != GT_CTY && g_reuseCTFSpawns.integer > 1)
+	{ //turn into a DM spawn if not in saga game mode
+		G_SetClassName(ent, "info_player_deathmatch");
+		SP_info_player_deathmatch(ent);
+	}
 }
 
+
+void G_TurnCTFSpawnsIntoDeathMatchSpawns() {
+	static const char* ctfSpawns[] = {
+		"team_CTF_redplayer",
+		"team_CTF_blueplayer",
+		"team_CTF_redspawn",
+		"team_CTF_bluespawn",
+	};
+	static const int ctfSpawnTypeCount = sizeof(ctfSpawns) / sizeof(ctfSpawns[0]);
+	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
+	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+	qboolean isCtf = (qboolean)(g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY);
+	gentity_t* spot,*newSpot;
+	int i;
+	trace_t trace;
+	vec3_t adjustedOrigin;
+
+	for (i = 0; i < ctfSpawnTypeCount; i++) {
+		spot = NULL;
+
+		while ((spot = G_FindByClassNameFast(spot, ctfSpawns[i])) != NULL) {
+			if (!isCtf) {
+				// we're not in ctf, just turn it into a normal spawn.
+				G_SetClassName(spot, "info_player_deathmatch");
+				spot->specialType = "playerspawn";
+				spot->spawnDefragPriority = 0;
+				if (level.highestDefragSpawnPriority < spot->spawnDefragPriority) {
+					level.highestDefragSpawnPriority = spot->spawnDefragPriority;
+				}
+				level.deathMatchSpawnCount++;
+				spot = NULL;
+			}
+			else {
+				newSpot = G_SpawnLogical();
+				G_SetClassName(newSpot, "info_player_deathmatch");
+				VectorCopy(spot->s.origin, newSpot->s.origin);
+				newSpot->specialType = "playerspawn";
+				newSpot->spawnDefragPriority = 0;
+				if (level.highestDefragSpawnPriority < newSpot->spawnDefragPriority) {
+					level.highestDefragSpawnPriority = newSpot->spawnDefragPriority;
+				}
+				level.deathMatchSpawnCount++;
+				VectorCopy(newSpot->s.origin, adjustedOrigin);
+				adjustedOrigin[2] += 9;
+				JP_Trace(&trace, adjustedOrigin, playerMins, playerMaxs, adjustedOrigin, -1, MASK_SOLID | MASK_WATER | CONTENTS_NOSPAWN);
+				if (trace.fraction == 1.0) // spawn is hopefully good. we're done. we're copying spawns so let's not spam them.
+				{
+					//return;
+				}
+			}
+		}
+	}
+
+}
 

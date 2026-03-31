@@ -41,6 +41,7 @@ void SP_info_player_deathmatch( gentity_t *ent ) {
 		G_Printf("^3Q3 style specific spawn found: %s, notvq3 %d, notcpm %d\n",ent->classname,ent->notVQ3,ent->notCPM);
 		level.hasQ3StyleSpecificSpawns = qtrue;
 	}
+	level.deathMatchSpawnCount++;
 }
 
 /*QUAKED info_player_start (1 0 0) (-16 -16 -24) (16 16 32)
