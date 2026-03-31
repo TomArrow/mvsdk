@@ -351,7 +351,7 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 	//self->r.broadcastClients[1] = 0u;
 
 	for ( i = 0, other = g_entities; i < MAX_CLIENTS; i++, other++ ) {
-		qboolean send = qfalse;
+		int send = 0; // 0 = let server handle vis. 1 = force send. 2 = 
 		float dist;
 		vec3_t angles;
 
@@ -366,20 +366,21 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 		}
 
 		if (g_removeSpectatorPortals.integer && other->client->sess.sessionTeam == TEAM_SPECTATOR) {
-			send = qtrue;
+			send = 1;
 		}
-		else if (g_antiWallhack.integer) {//other->client->ps.duelInProgress && self->client->ps.duelInProgress && other->client->ps.duelIndex == self->client->ps.clientNum && self->client->ps.duelIndex == other->client->ps.clientNum) {
+		else {//if (g_antiWallhack.integer) {//other->client->ps.duelInProgress && self->client->ps.duelInProgress && other->client->ps.duelIndex == self->client->ps.clientNum && self->client->ps.duelIndex == other->client->ps.clientNum) {
 			//Com_Printf("g_antiWallhack %i\n", g_antiWallhack.integer);
 			if (G_EntityOccluded(self, other)) {
-				other->r.svFlags |= SVF_NOTSINGLECLIENT;
-				other->r.singleClient = self->client->ps.clientNum;
-				continue;
+				//other->r.svFlags |= SVF_NOTSINGLECLIENT;
+				//other->r.singleClient = self->client->ps.clientNum;
+				//continue;
+				send = -1;
 			}
 			else {
 				other->r.svFlags &= ~SVF_NOTSINGLECLIENT;
-				send = qtrue;
+				send = 0;
 			}
-		}
+		}/*
 		else if (!g_antiWallhack.integer) {
 			send = qtrue;
 		}
@@ -406,15 +407,22 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 					send = qtrue;
 				}
 			}
-		}
-
-		/*if ( send ) {
-			self->r.broadcastClients[i / 32] |= (1 << (i % 32));
-			//Q_AddToBitflags( self->r.broadcastClients, i, 32 );
 		}*/
-		mv_entities[self->s.number].snapshotIgnore[other->s.number] = !send; //?
+
+		// TODO Get some global concept having an overview where this is all used including snapshothacking, so we don't get confused or create conflicts
+		mv_entities[self->s.number].snapshotIgnore[other->s.number] = send < 0;
+		mv_entities[self->s.number].snapshotEnforce[other->s.number] = send > 0;
 	}
 
-	trap_LinkEntity( self );
+	//trap_LinkEntity( self );
 }
+
+void G_ClearAllAntiWallhackSendStates() {
+	int i;
+	for (i = 0; i < level.maxclients; i++) {
+		memset(mv_entities[i].snapshotIgnore,0,sizeof(mv_entities[i].snapshotIgnore));
+		memset(mv_entities[i].snapshotEnforce,0,sizeof(mv_entities[i].snapshotEnforce));
+	}
+}
+
 #endif

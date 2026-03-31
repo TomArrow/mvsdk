@@ -1507,11 +1507,16 @@ static void G_UpdateIronmanBroadcasts ( gentity_t *self )
 
 void G_UpdateClientBroadcasts ( gentity_t *self )
 {
-
 #if _ANTIWALLHACK
+	static int g_antiWallhackModificationCount = -1;
 	if (g_antiWallhack.integer) { // experimental wallhack by bucky, based on some jka stuff
 		G_UpdateClientBroadcastsAntiWallhack(self);
 		return;
+	}
+	else if (g_antiWallhack.modificationCount != g_antiWallhackModificationCount) {
+		g_antiWallhackModificationCount = g_antiWallhack.modificationCount;
+		// antiwallhack was switched off, so clear all the snapshotignore/snapshotenforce stuff
+		G_ClearAllAntiWallhackSendStates();
 	}
 #endif
 

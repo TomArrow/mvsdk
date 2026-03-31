@@ -1307,6 +1307,7 @@ void G_SetSpecAllEntsBroadcasts(int broadcastClients[2]);
 // g_anticheat.c
 //
 void G_UpdateClientBroadcastsAntiWallhack(gentity_t* self);
+void G_ClearAllAntiWallhackSendStates();
 
 //
 // g_team.c
