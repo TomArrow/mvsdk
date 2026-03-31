@@ -2498,6 +2498,7 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("say_cross");
 	trap_AddCommand("resseg");
 	trap_AddCommand("screenshotCubeMap");
+	trap_AddCommand("ratemap");
 
 	trap_AddCommand("tffaStats");
 }
