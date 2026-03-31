@@ -70,6 +70,7 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/bg_weapons.c"
 	"${SRCDir}/game/bg_cmd.c"
 	"${SRCDir}/game/g_active.c"
+	"${SRCDir}/game/g_anticheat.c"
 	"${SRCDir}/game/g_arenas.c"
 	"${SRCDir}/game/g_bot.c"
 	"${SRCDir}/game/g_client.c"

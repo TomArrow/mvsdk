@@ -1507,6 +1507,14 @@ static void G_UpdateIronmanBroadcasts ( gentity_t *self )
 
 void G_UpdateClientBroadcasts ( gentity_t *self )
 {
+
+#if _ANTIWALLHACK
+	if (g_antiWallhack.integer) { // experimental wallhack by bucky, based on some jka stuff
+		G_UpdateClientBroadcastsAntiWallhack(self);
+		return;
+	}
+#endif
+
 	// Clear all the broadcast bits for this client
 	memset ( self->r.broadcastClients, 0, sizeof ( self->r.broadcastClients ) );
 

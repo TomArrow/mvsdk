@@ -152,6 +152,11 @@ vmCvar_t	g_scorePenaltyTeamKill;
 vmCvar_t	g_tffaAnyDeathIsEnemyScore;
 vmCvar_t	g_stackFirstSpawn; // 125/200 + bacta on first spawn, e.g. after map_restart
 
+#if _ANTIWALLHACK
+vmCvar_t	g_antiWallhack;
+vmCvar_t	g_removeSpectatorPortals;
+#endif
+
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
 vmCvar_t	g_doWarmup;
@@ -357,6 +362,11 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_scorePenaltyTeamKill, "g_scorePenaltyTeamKill", "1", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_tffaAnyDeathIsEnemyScore, "g_tffaAnyDeathIsEnemyScore", "0", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_stackFirstSpawn, "g_stackFirstSpawn", "0", CVAR_ARCHIVE, 0, qfalse  },
+
+#if _ANTIWALLHACK
+	{ &g_antiWallhack, "g_antiWallhack", "0", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_removeSpectatorPortals, "g_removeSpectatorPortals", "0", CVAR_ARCHIVE, 0, qtrue },
+#endif
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 

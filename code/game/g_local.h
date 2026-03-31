@@ -10,6 +10,8 @@
 #include "g_defrag.h"
 #include "g_dbcmds.h"
 
+#define _ANTIWALLHACK 1
+
 //==================================================================
 
 // the "gameversion" client command will print this plus compile date
@@ -1302,6 +1304,11 @@ void G_ResetUserCmdStore(int clientNum);
 void G_SetSpecAllEntsBroadcasts(int broadcastClients[2]);
 
 //
+// g_anticheat.c
+//
+void G_UpdateClientBroadcastsAntiWallhack(gentity_t* self);
+
+//
 // g_team.c
 //
 qboolean OnSameTeam( gentity_t *ent1, gentity_t *ent2 );
@@ -1548,6 +1555,11 @@ extern	vmCvar_t	g_stackFirstSpawn;
 
 extern	vmCvar_t	g_intermissionReadyDuration;
 extern	vmCvar_t	g_intermissionReadyCheck;
+
+#if _ANTIWALLHACK
+extern	vmCvar_t	g_antiWallhack;
+extern	vmCvar_t	g_removeSpectatorPortals;
+#endif
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;
