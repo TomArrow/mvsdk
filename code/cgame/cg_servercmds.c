@@ -1411,6 +1411,17 @@ qboolean CG_StringStartsWith(const char* str, const char* check) {
 	return qfalse;
 }
 
+static void CG_PostPrintCommand() {
+	const char* cmd;
+	if (!cgs.isTommyTernal) {
+		return;
+	}
+	cmd = CG_Argv(2);
+	if (!strcmp(cmd, "debugFields")) {
+		CG_DebugFieldsCommand();
+	}
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1588,6 +1599,11 @@ static void CG_ServerCommand( void ) {
 		}
 
 		CG_Printf( "%s", strEd );
+
+		if (trap_Argc() > 2) {
+			CG_PostPrintCommand();
+		}
+
 		return;
 	}
 

@@ -25,6 +25,7 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/game/bg_saga.h"
 	"${SRCDir}/game/bg_weapons.h"
 	"${SRCDir}/game/bg_cmd.h"
+	"${SRCDir}/game/bg_debug.h"
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/surfaceflags.h"
 	"${SRCDir}/game/bg_multiversion.h"
@@ -46,6 +47,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/cgame/cg_main.c" # keep this on top (qvm compiler needs VM_Main as the first compiled function)
 	"${SRCDir}/cgame/cg_dbcmds.c"
 	"${SRCDir}/cgame/cg_consolecmds.c"
+	"${SRCDir}/cgame/cg_debug.c"
 	"${SRCDir}/cgame/cg_draw.c"
 	"${SRCDir}/cgame/cg_drawtools.c"
 	"${SRCDir}/cgame/cg_effects.c"
@@ -92,6 +94,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/game/bg_slidemove.c"
 	"${SRCDir}/game/bg_weapons.c"
 	"${SRCDir}/game/bg_cmd.c"
+	"${SRCDir}/game/bg_debug.c"
 	"${SRCDir}/game/q_math.c"
 	"${SRCDir}/game/q_shared.c"
 	

@@ -126,6 +126,7 @@ vmCvar_t	g_inactivityToSpecRacers;
 vmCvar_t	g_debugMove;
 vmCvar_t	g_debugDamage;
 vmCvar_t	g_debugAlloc;
+vmCvar_t	g_debugFancy;
 vmCvar_t	g_weaponRespawn;
 vmCvar_t	g_weaponTeamRespawn;
 vmCvar_t	g_adaptRespawn;
@@ -152,10 +153,7 @@ vmCvar_t	g_scorePenaltyTeamKill;
 vmCvar_t	g_tffaAnyDeathIsEnemyScore;
 vmCvar_t	g_stackFirstSpawn; // 125/200 + bacta on first spawn, e.g. after map_restart
 
-#if _ANTIWALLHACK
 vmCvar_t	g_antiWallhack;
-vmCvar_t	g_removeSpectatorPortals;
-#endif
 
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
@@ -363,10 +361,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_tffaAnyDeathIsEnemyScore, "g_tffaAnyDeathIsEnemyScore", "0", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_stackFirstSpawn, "g_stackFirstSpawn", "0", CVAR_ARCHIVE, 0, qfalse  },
 
-#if _ANTIWALLHACK
 	{ &g_antiWallhack, "g_antiWallhack", "0", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_removeSpectatorPortals, "g_removeSpectatorPortals", "0", CVAR_ARCHIVE, 0, qtrue },
-#endif
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 
@@ -423,6 +418,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_debugMove, "g_debugMove", "0", 0, 0, qfalse },
 	{ &g_debugDamage, "g_debugDamage", "0", 0, 0, qfalse },
 	{ &g_debugAlloc, "g_debugAlloc", "0", 0, 0, qfalse },
+	{ &g_debugFancy, "g_debugFancy", "0", CVAR_TEMP, 0, qtrue },
 	{ &g_motd, "g_motd", "", 0, 0, qfalse },
 	{ &g_blood, "com_blood", "1", 0, 0, qfalse },
 
@@ -3508,6 +3504,8 @@ void G_RunFrame( int levelTime ) {
 	}
 
 	G_SetSpecAllEntsBroadcasts(specAllEntsBroadcastClients);
+
+	G_DebugHandleState();
 
 	//
 	// go through all allocated objects

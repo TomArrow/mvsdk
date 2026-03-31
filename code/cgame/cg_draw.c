@@ -2134,6 +2134,8 @@ void CG_DrawHUD(centity_t	*cent)
 	CG_DrawForceMeter();
 	CG_DrawForceJumpCharge();
 
+	CG_DebugDraw();
+
 	if(cg_drawStrafeBotFactor.integer)
 		CG_DrawStrafeBotFactor();
 

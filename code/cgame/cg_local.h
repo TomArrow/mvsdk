@@ -6,6 +6,7 @@
 #include "cg_public.h"
 #include "../ui/keycodes.h" // basejk doesn't make use of the keycodes in cgame, but it still has api functions that could
 #include "../game/bg_defrag_global.h"
+#include "../game/bg_debug.h"
 #include "../game/bg_cmd.h"
 
 #define ANNOYINGDEBUGCONDITION cg_developer.integer > 5
@@ -1569,6 +1570,12 @@ typedef struct
 } jkmod_media_t;
 
 
+typedef struct clientDebugState_s {
+	centity_t*		ent;
+	debugVar_t		debugVars[MAXDEBUGVARS];
+	int				debugVarCount;
+} clientDebugState_t;
+
 // The client game static (cgs) structure hold everything
 // loaded or calculated from the gamestate.  It will NOT
 // be cleared when a tournement restart is done, allowing
@@ -1730,6 +1737,8 @@ Ghoul2 Insert End
 	qboolean		cubeMapScreenshotsRequested;
 	int				cubeMapScreenshotsOldNotifyTime;
 	char			cubeMapScreenshotName[MAX_QPATH];
+
+	clientDebugState_t	debugState;
 } cgs_t;
 
 //==============================================================================
@@ -1777,6 +1786,7 @@ extern	vmCvar_t		cg_crosshairY;
 extern	vmCvar_t		cg_crosshairSize;
 extern	vmCvar_t		cg_crosshairHealth;
 extern	vmCvar_t		cg_drawStatus;
+extern	vmCvar_t		cg_drawDebugFancy;
 extern	vmCvar_t		cg_drawAntiLoopIndicator;
 extern	vmCvar_t		cg_antiLoopIndicatorX;
 extern	vmCvar_t		cg_antiLoopIndicatorY;
@@ -2293,6 +2303,11 @@ clientInfo_t *CG_GetFlagCarrier(team_t flag);
 qhandle_t CG_StatusHandle(int task);
 
 
+// 
+// cg_debug.c 
+//
+void CG_DebugFieldsCommand();
+void CG_DebugDraw();
 
 //
 // cg_players.c

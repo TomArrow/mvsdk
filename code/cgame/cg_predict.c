@@ -17,7 +17,7 @@ static	int			cg_numSolidEntities;
 static	centity_t	*cg_solidEntities[MAX_ENTITIES_IN_SNAPSHOT];
 static	int			cg_numTriggerEntities;
 static	centity_t	*cg_triggerEntities[MAX_ENTITIES_IN_SNAPSHOT];
-centity_t	*cg_statsEntities[MAX_CLIENTS];
+centity_t			*cg_statsEntities[MAX_CLIENTS];
 
 void CG_TeleporterTouch(playerState_t* ps, usercmd_t* ucmd, entityState_t* teleporter);
 
@@ -48,6 +48,7 @@ void CG_BuildSolidList( void ) {
 	}
 
 	memset(cg_statsEntities, 0, sizeof(cg_statsEntities));
+	cgs.debugState.ent = NULL;
 
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		VectorClear(cg_entities[i].modelScale);
@@ -56,13 +57,21 @@ void CG_BuildSolidList( void ) {
 		cent = &cg_entities[ snap->entities[ i ].number ];
 		ent = useNextSnap ? &cent->nextState : &cent->currentState;
 
-		if (cgs.isTommyTernal && ent->number >= MAX_CLIENTS && ent->eType == ET_INVISIBLE && ent->modelGhoul2 == 15 && ent->clientNum >= 0 && ent->clientNum < MAX_CLIENTS) { // client stats entity
-			cg_statsEntities[ent->clientNum] = cent;
-			if (cgs.clientinfo[ent->clientNum].playerMode == MODE_DEFRAG && ent->bolt1 == MV_Q2) {
-				// quake 2 has smaller player boxes
-				VectorSet(cg_entities[ent->clientNum].modelScale, 0.875f, 0.875f, 0.875f);
+		if (cgs.isTommyTernal && ent->number >= MAX_CLIENTS && ent->eType == ET_INVISIBLE && ent->clientNum >= 0 && ent->clientNum < MAX_CLIENTS) { 
+			if (ent->modelGhoul2 == 15) {
+				// client stats entity
+				cg_statsEntities[ent->clientNum] = cent;
+				if (cgs.clientinfo[ent->clientNum].playerMode == MODE_DEFRAG && ent->bolt1 == MV_Q2) {
+					// quake 2 has smaller player boxes
+					VectorSet(cg_entities[ent->clientNum].modelScale, 0.875f, 0.875f, 0.875f);
+				}
+				continue;
 			}
-			continue;
+			else if (ent->modelGhoul2 == 14) {
+				// debug entity
+				cgs.debugState.ent = cent;
+				continue;
+			}
 		}
 
 		if ( ent->eType == ET_ITEM || ent->eType == ET_PUSH_TRIGGER || ent->eType == ET_TELEPORT_TRIGGER ) {

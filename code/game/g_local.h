@@ -6,11 +6,11 @@
 #include "bg_public.h"
 #include "g_public.h"
 #include "bg_defrag_global.h"
+#include "bg_debug.h"
 #include "bg_cmd.h"
 #include "g_defrag.h"
 #include "g_dbcmds.h"
 
-#define _ANTIWALLHACK 1
 
 //==================================================================
 
@@ -580,6 +580,8 @@ typedef struct {
 	int			normalFollowerPing;
 	
 	tffaStats_t	tffaStats;
+
+	int			lastDebugFieldsUpdateTime;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -718,6 +720,27 @@ struct gclient_s {
 	int			bactaExtra; // extra amount restored by bacta (e.g. q3 bacta)
 };
 
+
+typedef enum debugType_s {
+	DEBUG_NONE,
+	DEBUG_ANTIWALLHACK
+} debugType_t;
+typedef struct antiWallhackDebug_s {
+	debugField_t*	tracesPerSecondCountFloat;
+	debugField_t*	tracesPerSecondSpeedFloat;
+	debugField_t*	pointContentsPerSecondCountFloat;
+	int				tracesDone;
+	int				pointContentsDone;
+	int				lastServerTime;
+} antiWallhackDebug_t;
+typedef struct debugState_s {
+	debugType_t		debug;
+	gentity_t*		ent;
+	debugVar_t		debugVars[MAXDEBUGVARS];
+	int				debugVarCount;
+} debugState_t;
+
+extern antiWallhackDebug_t antiWhDebug;
 
 //
 // this structure is cleared as each map is entered
@@ -872,6 +895,8 @@ typedef struct {
 	int			deathMatchSpawnCount;
 
 	char		tempDemoNamePrefix[20];
+
+	debugState_t	debugState;
 } level_locals_t;
 
 
@@ -1310,6 +1335,12 @@ void G_UpdateClientBroadcastsAntiWallhack(gentity_t* self);
 void G_ClearAllAntiWallhackSendStates();
 
 //
+// g_debug.c
+//
+void G_DebugHandleState();
+void G_SetDebugVar(debugField_t* field, int value, float floatValue);
+
+//
 // g_team.c
 //
 qboolean OnSameTeam( gentity_t *ent1, gentity_t *ent2 );
@@ -1530,6 +1561,7 @@ extern	vmCvar_t	g_inactivityToSpecRacers;
 extern	vmCvar_t	g_developer;
 extern	vmCvar_t	g_debugMove;
 extern	vmCvar_t	g_debugAlloc;
+extern	vmCvar_t	g_debugFancy;
 extern	vmCvar_t	g_debugDamage;
 extern	vmCvar_t	g_weaponRespawn;
 extern	vmCvar_t	g_weaponTeamRespawn;
@@ -1557,10 +1589,7 @@ extern	vmCvar_t	g_stackFirstSpawn;
 extern	vmCvar_t	g_intermissionReadyDuration;
 extern	vmCvar_t	g_intermissionReadyCheck;
 
-#if _ANTIWALLHACK
 extern	vmCvar_t	g_antiWallhack;
-extern	vmCvar_t	g_removeSpectatorPortals;
-#endif
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

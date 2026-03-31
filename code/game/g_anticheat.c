@@ -3,12 +3,13 @@
 // Antiwallhack ported from Bucky's vvv-serverside
 // https://github.com/Bucky21659/vVv-serverside/tree/antiwallhack
 
-#if _ANTIWALLHACK
 static const float maxJediMasterDistance = 2500.0f * 2500.0f; // x^2, optimisation
 static const float maxJediMasterFOV = 100.0f;
 static const float maxForceSightDistance = Square(1500.0f) * 1500.0f; // x^2, optimisation
 static const float maxForceSightFOV = 100.0f;
 extern void G_TestLine(vec3_t start, vec3_t end, int color, int time);
+
+antiWallhackDebug_t antiWhDebug = {NULL};
 
 /*
 static float VectorAngle( const vec3_t a, const vec3_t b ) {
@@ -45,6 +46,8 @@ static qboolean SE_RenderIsVisible( const gentity_t *self, const vec3_t startPos
 
 	trap_Trace( &results, startPos, NULL, NULL, testOrigin, self - g_entities, MASK_SOLID );
 
+	antiWhDebug.tracesDone++;
+
 	if ( results.fraction < 1.0f ) {
 		if ( (results.surfaceFlags & SURF_FORCEFIELD)
 			|| (results.surfaceFlags & MATERIAL_MASK) == MATERIAL_GLASS
@@ -71,6 +74,8 @@ static qboolean SE_RenderPlayerChecks( const gentity_t *self, const vec3_t playe
 	for ( i = 0; i < 9; i++ ) {
 		if ( trap_PointContents( playerPoints[i], self - g_entities ) == CONTENTS_SOLID ) {
 			trap_Trace( &results, playerOrigin, NULL, NULL, playerPoints[i], self - g_entities, MASK_SOLID );
+			antiWhDebug.tracesDone++;
+			antiWhDebug.pointContentsDone++;
 			VectorCopy( results.endpos, playerPoints[i] );
 		}
 	}
@@ -207,6 +212,7 @@ extern void G_TestLine(vec3_t start, vec3_t end, int color, int time);
 static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other ) {
 	int i,  contents;
 	vec3_t firstPersonPos, thirdPersonPos, targPos[9];
+	int whVal = g_antiWallhack.integer < 0 ? -g_antiWallhack.integer : g_antiWallhack.integer;
 
 	GetCameraPosition(self, thirdPersonPos);
 
@@ -216,6 +222,7 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 		firstPersonPos[2] -= 32;
 
 	contents = trap_PointContents( firstPersonPos, self - g_entities );
+	antiWhDebug.pointContentsDone++;
 
 	// translucent, we should probably just network them anyways
 	if ( contents & (CONTENTS_WATER | CONTENTS_LAVA | CONTENTS_SLIME) ) {
@@ -225,7 +232,7 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 	// entirely in an opaque surface, no point networking them.
 	if ( contents & (CONTENTS_SOLID | CONTENTS_TERRAIN | CONTENTS_OPAQUE) ) {
 #ifdef _DEBUG
-		if ( self->s.number == 0 ) {
+		if ( self->s.number == 0 && g_antiWallhack.integer < 0) {
 			Com_Printf( "WALLHACK[%i]: inside opaque surface\n", level.time );
 		}
 #endif // _DEBUG
@@ -239,8 +246,8 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 
 	for ( i = 0; i < 9; i++ ) {
 
-		if (g_antiWallhack.integer > 1) {
-			int offset = g_antiWallhack.integer - 2;
+		if (whVal > 1) {
+			int offset = whVal - 2;
 
 			if (offset < 0)
 				offset = 0;
@@ -259,7 +266,7 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 	}
 
 #ifdef _DEBUG
-	if ( self->s.number == 0 ) {
+	if ( self->s.number == 0 && g_antiWallhack.integer < 0) {
 		Com_Printf( "WALLHACK[%i]: not visible\n", level.time );
 	}
 #endif // _DEBUG
@@ -329,6 +336,18 @@ qboolean G_EntityOccluded( const gentity_t *self, const gentity_t *other ) {
 void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 	int i;
 	gentity_t *other;
+	if (level.debugState.debug == DEBUG_ANTIWALLHACK) {
+		if (level.time != antiWhDebug.lastServerTime) {
+			int delta = level.time - antiWhDebug.lastServerTime;
+			float tracesPerSecond = 1000.0f*(float)antiWhDebug.tracesDone/(float)delta;
+			float pointContentsPerSecond = 1000.0f*(float)antiWhDebug.pointContentsDone /(float)delta;
+			G_SetDebugVar(antiWhDebug.tracesPerSecondCountFloat,0,tracesPerSecond);
+			G_SetDebugVar(antiWhDebug.pointContentsPerSecondCountFloat,0, pointContentsPerSecond);
+			antiWhDebug.tracesDone = 0;
+			antiWhDebug.pointContentsDone = 0;
+			antiWhDebug.lastServerTime = level.time;
+		}
+	}
 
 	//if (!g_antiWallhack.integer) {
 	//	// Clear all the broadcast bits for this client
@@ -365,7 +384,7 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 			continue;
 		}
 
-		if (g_removeSpectatorPortals.integer && other->client->sess.sessionTeam == TEAM_SPECTATOR) {
+		if (g_specAllEnts.integer && other->client->sess.sessionTeam == TEAM_SPECTATOR) {
 			send = 1;
 		}
 		else {//if (g_antiWallhack.integer) {//other->client->ps.duelInProgress && self->client->ps.duelInProgress && other->client->ps.duelIndex == self->client->ps.clientNum && self->client->ps.duelIndex == other->client->ps.clientNum) {
@@ -425,4 +444,3 @@ void G_ClearAllAntiWallhackSendStates() {
 	}
 }
 
-#endif
