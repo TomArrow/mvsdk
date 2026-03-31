@@ -407,7 +407,7 @@ typedef struct {
 	qboolean	rollAngleInvalidated; // when we switch to or from strafebot mode... invalidate our roll angle since we are using it to tunnel. (this means we will only allow 0 until we get an actual 0, for safety)
 
 	qboolean		hideLasers;
-	qboolean		solo;
+	soloState_t		solo;
 	unsigned int	ignore;      // contains bits of all clients to be ignored, 0 - no one ignored, 0xFFFFFFFF - ignore all
 
 	struct {

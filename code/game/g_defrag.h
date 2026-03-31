@@ -183,6 +183,11 @@ typedef enum segmentedRunState_s {
 	SEG_REPLAY // we are replaying. do not accept any commaands or whatever.
 } segmentedRunState_t;
 
+typedef enum soloState_s {
+	SOLO_DISABLED,
+	SOLO_STYLE,
+	SOLO_ALL,
+} soloState_t;
 
 typedef enum {
 	TRIGPROP_CHECKPOINTSCORE = (1 << 0)

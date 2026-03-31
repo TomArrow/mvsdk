@@ -1250,8 +1250,8 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
-		"print \"^2/solo^7 - Hide or unhide other players\n\"",
-		"print \"Random tip: ^2/solo^7 - Hide or unhide other players\n\"",
+		"print \"^2/solo^7 - Hide or unhide other players. Call with 'style' to hide only other styles/modes.\n\"",
+		"print \"Random tip: ^2/solo^7 - Hide or unhide other players. Call with 'style' to hide only other styles/modes.\n\"",
 		qfalse,
 		qfalse
 	},
@@ -1897,15 +1897,31 @@ void Cmd_Lasers_f(gentity_t* ent) {
 	}
 }
 void Cmd_Solo_f(gentity_t* ent) {
-	if (!ent->client->sess.solo) {
-
-		trap_SendServerCommand(ent - g_entities, "print \"^1Hiding other players now.\n\"");
-		ent->client->sess.solo = qtrue;
+	soloState_t onState = SOLO_ALL;
+	if (trap_Argc() > 1) {
+		static char arg[10];
+		trap_Argv(1,arg,sizeof(arg));
+		if (!Q_stricmp(arg, "style")) {
+			onState = SOLO_STYLE;
+		}
 	}
-	else {
+	if (onState == ent->client->sess.solo) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1Disabling solo mode, showing all players.\n\"");
+		ent->client->sess.solo = SOLO_DISABLED;
+		return;
+	}
 
-		trap_SendServerCommand(ent - g_entities, "print \"^1Showing other players now.\n\"");
-		ent->client->sess.solo = qfalse;
+	ent->client->sess.solo = onState;
+	switch (onState) {
+	case SOLO_STYLE:
+		trap_SendServerCommand(ent - g_entities, "print \"^1Hiding players of other styles/modes now.\n\"");
+		break;
+	case SOLO_ALL:
+		trap_SendServerCommand(ent - g_entities, "print \"^1Hiding other players now.\n\"");
+		break;
+	default:
+		trap_SendServerCommand(ent - g_entities, "print \"^1Something weird happened wooooooot.\n\"");
+		break;
 	}
 }
 

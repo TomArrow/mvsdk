@@ -4352,6 +4352,7 @@ typedef struct playerSnapshotBackupValues_s {
 	//int event;
 	//int	trTime;
 	vec3_t	psMoverOldPos;
+	mvsharedEntity_t	mvEntState;
 } playerSnapshotBackupValues_t;
 
 //static int solidValues[MAX_GENTITIES];
@@ -4385,6 +4386,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 				//backup->trTime = es->pos.trTime;
 				//es->pos.trTime += level.time - ACTIVATORTIME(other->activatorReal);
 			//}
+			backup->mvEntState = *mvEnt; // cringe but eh.
 		}
 		else {
 			originalValueReusable = backup->solidValue;
@@ -4397,11 +4399,12 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 
 		if (es->eFlags & EF_PLAYER_EVENT) {
+			gclient_t* eventClient = g_entities[es->otherEntityNum].client;
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
+				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo;
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
 			}
 		}
 
@@ -4463,10 +4466,10 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 
 			//mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
+				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo;
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo || followedClient->sess.solo == SOLO_STYLE && (ocl->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
 			}
 			if (saveState) { 
 				backup->saberMovePS = ocl->ps.saberMove;
@@ -4502,8 +4505,9 @@ void PlayerSnapshotRestoreValues() {
 	gclient_t* cl;
 	entityState_t* es;
 	playerSnapshotBackupValues_t* backup = backupValues;
+	mvsharedEntity_t* mvEnt = mv_entities;
 	int i;
-	for (i = 0; i < level.num_entities; i++, backup++) {
+	for (i = 0; i < level.num_entities; i++, backup++, mvEnt++) {
 		other = g_entities + i;
 		if (!other->r.linked || !other->inuse) {
 			continue;
@@ -4511,6 +4515,7 @@ void PlayerSnapshotRestoreValues() {
 		es = &other->s;
 		es->solid = backup->solidValue;
 		es->saberMove = backup->saberMove; 
+		*mvEnt = backup->mvEntState;
 		//es->event = backup->event; 
 		//if (es->eType == ET_MOVER) {
 		//	es->pos.trTime = backup->trTime;
