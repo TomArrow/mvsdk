@@ -54,29 +54,59 @@ floatint_t CG_GetDebugVar(debugField_t* field, entityState_t* es) {
 	return retVal;
 }
 
+#define DEBUGDRAWAVGSIZE 128
+typedef struct avgBuffer_s {
+	floatint_t		avgBuffers[DEBUGDRAWAVGSIZE];
+	unsigned int	count;
+} avgBuffer_t;
+
 void CG_DebugDraw() {
-	static char output[8192];
-	int i;
+	//static char output[8192];
+	static avgBuffer_t avgBuffers[MAXDEBUGVARS];
+	int i,j;
+	const float scale = 0.4f;
+	int textHeight = CG_Text_Height("A", scale, FONT_NONE);
+	int yOffset = 0;
 	debugVar_t* var;
 	floatint_t val;
 	if (!cg_drawDebugFancy.integer || !cgs.isTommyTernal || !cgs.debugState.ent || !cgs.debugState.debugVarCount) {
 		return;
 	}
-	output[0] = '\0';
+	//output[0] = '\0';
 	var = cgs.debugState.debugVars;
 	for (i = 0; i < cgs.debugState.debugVarCount; i++, var++) {
 		if (!var->field) {
 			continue;
 		}
 		val = CG_GetDebugVar(var->field, &cgs.debugState.ent->currentState);
+
+		CG_Text_Paint(150, 250+ yOffset, scale, colorWhite, va("^7^0^7%s:", var->name), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_NONE, NULL);
+		avgBuffers[i].avgBuffers[avgBuffers[i].count++ % DEBUGDRAWAVGSIZE] = val;
 		if (var->field->bits == 0) {
-			Q_strcat(output,sizeof(output),va("^7^0^7%s: %f\n",var->name, val.f));
+			CG_Text_Paint(250, 250 + yOffset, scale, colorWhite, va("%.2f", val.f), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_NONE, NULL);
 		}
 		else {
-			Q_strcat(output, sizeof(output), va("^7^0^7%s: %d\n", var->name, val.i));
+			CG_Text_Paint(250, 250 + yOffset, scale, colorWhite, va("%d", val.i), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_NONE, NULL);
 		}
+		if (avgBuffers[i].count >= DEBUGDRAWAVGSIZE) {
+			floatint_t sum = { 0 };
+			for (j = 0; j < DEBUGDRAWAVGSIZE; j++) {
+				if (var->field->bits == 0) {
+					sum.f += avgBuffers[i].avgBuffers[j].f;
+				}
+				else {
+					sum.i += avgBuffers[i].avgBuffers[j].i;
+				}
+			}
+			if (var->field->bits == 0) {
+				CG_Text_Paint(350, 250 + yOffset, scale, colorWhite, va("%.2f", sum.f/(float)DEBUGDRAWAVGSIZE), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_NONE, NULL);
+			}
+			else {
+				CG_Text_Paint(350, 250 + yOffset, scale, colorWhite, va("%.2f", (float)sum.i/(float)DEBUGDRAWAVGSIZE), 0, 0, ITEM_TEXTSTYLE_SHADOWEDMORE, FONT_NONE, NULL);
+			}
+		}
+		yOffset += textHeight;
 	}
-	CG_Text_Paint(150,250,0.4f,colorWhite, output,0,0, ITEM_TEXTSTYLE_SHADOWEDMORE,FONT_NONE,NULL);
 }
 float CG_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize) {
 	floatint_t result;
