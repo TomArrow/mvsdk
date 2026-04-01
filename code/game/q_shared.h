@@ -2572,6 +2572,7 @@ extern ezDemoBuffer_t ezDemoBuffer;
 
 
 #define COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY (1<<0)
+#define COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS	(1<<1) // old trace calls behaved differently between qvm and dll due to stupidly passed parameters inside the syscall function
 
 
 // benchmark flags for COOL_APIFEATURE_BENCHMARKING

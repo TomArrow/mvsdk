@@ -1909,6 +1909,7 @@ extern int coolApi;
 extern int coolApi_dbVersion;
 extern int coolApi_jkaVersion;
 extern int coolApi_userCmdVersion;
+extern int coolApi_supportedVMFeatures;
 
 extern int gRandomUnlockAdd;
 

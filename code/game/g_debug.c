@@ -14,7 +14,7 @@ void G_ResetDebugVars() {
 	G_ResetClientDebugInfoUpdates();
 }
 void G_ResetBenchmarking() {
-	G_COOL_API_Benchmark(0,0,0,0,NULL,0);
+	G_COOL_API_Benchmark(BENCHMARK_SETMEASUREMENTS | BENCHMARK_MEASURE_VMTARGET_GAME,0,0,0,NULL,0);
 }
 
 void G_SetDebugVar(debugField_t* field, int value, float floatValue) {

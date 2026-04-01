@@ -551,6 +551,7 @@ int coolApi = 0;
 int coolApi_dbVersion = 0;
 int coolApi_jkaVersion = 0;
 int coolApi_userCmdVersion = 0;
+int coolApi_supportedVMFeatures = 0;
 vmCvar_t coolApi_supported_game_userCmdStoreVersion;
 const int coolApi_supported_game_userCmdStoreVersion_int = 1;
 vmCvar_t coolApi_supported_game;
@@ -576,7 +577,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_G_UPDATESPECTATORS
 | COOL_APIFEATURE_BENCHMARKING
 ;
-const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY;
+const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY | COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS;
 
 int Init_levelTime;
 int Init_randomSeed;
@@ -607,6 +608,8 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 	case GAME_INIT:
 		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
 		coolApi = atoi(coolApiFeaturesBuffer);
+		trap_Cvar_VariableStringBuffer("cool_apiFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		coolApi = atoi(coolApiFeaturesBuffer);
 		if (coolApi & COOL_APIFEATURE_G_USERCMDSTORE) {
 			trap_Cvar_VariableStringBuffer("cool_apiUserCmdStoreVersion", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
 			coolApi_userCmdVersion = atoi(coolApiFeaturesBuffer);
@@ -628,6 +631,9 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		else {
 			coolApi_jkaVersion = 0;
 		}
+
+		trap_Cvar_VariableStringBuffer("com_cool_supportedCoolApiVMFeatures", coolApiFeaturesBuffer, sizeof(coolApiFeaturesBuffer));
+		coolApi_supportedVMFeatures = atoi(coolApiFeaturesBuffer);
 
 		trap_Cvar_Register(&coolApi_supported_game, "coolApi_supported_game", va("%d", coolApi_supported_game_int), CVAR_ROM);
 		trap_Cvar_Register(&coolApi_supported_game_userCmdStoreVersion, "coolApi_supported_game_userCmdStoreVersion", va("%d", coolApi_supported_game_userCmdStoreVersion_int), CVAR_ROM);

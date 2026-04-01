@@ -117,7 +117,13 @@ void trap_SetBrushModel( gentity_t *ent, const char *name ) {
 }
 
 void trap_Trace( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask ) {
-	syscall( G_TRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10 );
+	if (coolApi_supportedVMFeatures & COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS) {
+		syscall(G_TRACE, results, start, mins, maxs, end, passEntityNum, contentmask);
+	}
+	else {
+		// yea this is super cringe because it can't fix it for vm as vm ignores this. but at least keep compatibility with older engines. not like these 2 extra params really do anything afaik. just to be clear: qvm was always broken as it never passed these 2. that is fixed engineside now for older qvms
+		syscall(G_TRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+	}
 }
 
 int trap_PointContents( const vec3_t point, int passEntityNum ) {
@@ -194,7 +200,13 @@ void trap_SnapVector( float *v ) {
 }
 
 void trap_TraceCapsule( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask ) {
-	syscall( G_TRACECAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10 );
+	if (coolApi_supportedVMFeatures & COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS) {
+		syscall(G_TRACECAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask);
+	}
+	else {
+		// yea this is super cringe because it can't fix it for vm as vm ignores this. but at least keep compatibility with older engines. not like these 2 extra params really do anything afaik. just to be clear: qvm was always broken as it never passed these 2. that is fixed engineside now for older qvms
+		syscall(G_TRACECAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+	}
 }
 
 qboolean trap_EntityContactCapsule( const vec3_t mins, const vec3_t maxs, const gentity_t *ent ) {
@@ -1090,16 +1102,41 @@ int trap_G_COOL_API_PlayerUserCmdGetCount(int clientNum)
 	return syscall(G_COOL_API_PLAYERUSERCMD_GETCOUNT, clientNum);
 }
 void trap_G_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
-	syscall(G_COOL_API_NONEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+	if (coolApi_supportedVMFeatures & COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS) {
+		syscall(G_COOL_API_NONEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask);
+	}
+	else {
+		// yea this is super cringe because it can't fix it for vm as vm ignores this. but at least keep compatibility with older engines. not like these 2 extra params really do anything afaik. just to be clear: qvm was always broken as it never passed these 2. that is fixed engineside now for older qvms
+		syscall(G_COOL_API_NONEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+	}
 }
 void trap_G_COOL_API_NonEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
-	syscall(G_COOL_API_NONEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+	if (coolApi_supportedVMFeatures & COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS) {
+		syscall(G_COOL_API_NONEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask);
+	}
+	else {
+		// yea this is super cringe because it can't fix it for vm as vm ignores this. but at least keep compatibility with older engines. not like these 2 extra params really do anything afaik. just to be clear: qvm was always broken as it never passed these 2. that is fixed engineside now for older qvms
+		syscall(G_COOL_API_NONEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
+	}
 }
 void trap_G_COOL_API_CustomEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
-	syscall(G_COOL_API_CUSTOMEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, customEpsilonTrace,PASSFLOAT(customEpsilon),traceCustomFlags);
+	if (coolApi_supportedVMFeatures & COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS) {
+		syscall(G_COOL_API_CUSTOMEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+	}
+	else {
+		// yea this is super cringe because it can't fix it for vm as vm ignores this. but at least keep compatibility with older engines. not like these 2 extra params really do anything afaik. just to be clear: qvm was always broken as it never passed these 2. that is fixed engineside now for older qvms
+		syscall(G_COOL_API_CUSTOMEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+	}
 }
 void trap_G_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags) {
-	syscall(G_COOL_API_CUSTOMEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+	if (coolApi_supportedVMFeatures & COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS) {
+		syscall(G_COOL_API_CUSTOMEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+	}
+	else
+	{
+		// yea this is super cringe because it can't fix it for vm as vm ignores this. but at least keep compatibility with older engines. not like these 2 extra params really do anything afaik. just to be clear: qvm was always broken as it never passed these 2. that is fixed engineside now for older qvms
+		syscall(G_COOL_API_CUSTOMEPSILONTRACE_CAPSULE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10, customEpsilonTrace, PASSFLOAT(customEpsilon), traceCustomFlags);
+	}
 }
 void trap_G_COOL_API_SendBackUCMD_GameGenerated(int clientNum, usercmd_t* ucmd) {
 	syscall(G_COOL_API_SENDBACKUCMD_GAMEGENERATED, clientNum, ucmd);
