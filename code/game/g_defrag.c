@@ -4289,6 +4289,10 @@ void JP_TraceCustomEpsilonQ2Lite(trace_t* results, const vec3_t start, const vec
 {
 	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask,qfalse,qtrue, 0.03125f,0);
 }
+void JP_TraceBenchmarked(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, int customizationFlags)
+{
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask, qfalse, qfalse, 0, TRACECUSTOMFLAG_BENCHMARK| customizationFlags);
+}
 
 /*
 =========================

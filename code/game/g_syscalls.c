@@ -1107,7 +1107,9 @@ void trap_G_COOL_API_SendBackUCMD_GameGenerated(int clientNum, usercmd_t* ucmd) 
 void trap_G_COOL_API_CrossServerCommand(const char* cmd) {
 	syscall(G_COOL_API_CROSS_SERVER_COMMAND, cmd);
 }
-
+int	trap_G_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize) {
+	return syscall(G_COOL_API_BENCHMARK, flags, param1, param2, param3, multiResultArr, multiResultArrSize);
+}
 
 qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size) {
 	return syscall(G_COOL_API_DB_ESCAPESTRING, input, size);

@@ -13,6 +13,9 @@ void G_ResetDebugVars() {
 	level.debugState.debugVarCount = 0;
 	G_ResetClientDebugInfoUpdates();
 }
+void G_ResetBenchmarking() {
+	G_COOL_API_Benchmark(0,0,0,0,NULL,0);
+}
 
 void G_SetDebugVar(debugField_t* field, int value, float floatValue) {
 	entityState_t* es;
@@ -89,6 +92,7 @@ void G_InitDebugAntiwallhack() {
 	antiWhDebug.tracesPerSecondSpeedFloat = G_GetDebugVar("Traces per second (speed)", 0, qtrue,0);
 	level.debugState.debug = DEBUG_ANTIWALLHACK;
 	G_ResetClientDebugInfoUpdates();
+	G_COOL_API_Benchmark(BENCHMARK_SETMEASUREMENTS | BENCHMARK_MEASURE_VMTARGET_GAME | BENCHMARK_MEASURE_TRACES_MARKED,0,0,0,NULL,0);
 }
 
 
@@ -119,6 +123,7 @@ void G_DebugHandleState() {
 	if (g_debugFancy.modificationCount != g_debugFancyModificationCount) {
 		g_debugFancyModificationCount = g_debugFancy.modificationCount;
 		level.debugState.debug = DEBUG_NONE;
+		G_ResetBenchmarking();
 		if (g_debugFancy.integer && level.debugState.debug != g_debugFancy.integer) {
 			switch (g_debugFancy.integer) {
 			case DEBUG_ANTIWALLHACK:
@@ -181,3 +186,19 @@ void G_DebugHandleState() {
 		}
 	}
 }
+
+
+float G_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize) {
+	floatint_t result;
+	if (!(coolApi & COOL_APIFEATURE_BENCHMARKING)) {
+		return -1;
+	}
+	result.i = trap_G_COOL_API_Benchmark(flags,param1,param2,param3,multiResultArr,multiResultArrSize);
+	return result.f;
+}
+
+
+
+
+
+

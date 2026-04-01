@@ -2542,6 +2542,9 @@ typedef struct ezDemoBuffer_s {
 extern ezDemoBuffer_t ezDemoBuffer;
 
 #define TRACECUSTOMFLAG_Q2STYLE (1<<0)
+#define TRACECUSTOMFLAG_MARKBRUSHES (1<<1)
+#define TRACECUSTOMFLAG_WALKBRUSHES (1<<2)
+#define TRACECUSTOMFLAG_BENCHMARK (1<<3)
 
 #define COOL_APIFEATURE_SETPREDICTEDMOVEMENT (1<<0)
 #define COOL_APIFEATURE_GETTEMPORARYUSERCMD (1<<1)
@@ -2565,9 +2568,38 @@ extern ezDemoBuffer_t ezDemoBuffer;
 #define COOL_APIFEATURE_JEDI_ACADEMY (1<<19)
 #define COOL_APIFEATURE_CROSS_SERVER_COMMANDS (1<<20)
 #define COOL_APIFEATURE_G_UPDATESPECTATORS (1<<21)
+#define COOL_APIFEATURE_BENCHMARKING (1<<22)
 
 
 #define COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY (1<<0)
+
+
+// benchmark flags for COOL_APIFEATURE_BENCHMARKING
+#define BENCHMARK_START_CLOCK						(1<<0) // works with the _INDEX_N bits:
+#define BENCHMARK_GET_RESTART_CLOCK					(1<<1) // so we can have multiple stopwatches running at the same time
+#define BENCHMARK_INDEX_0							(1<<2) 
+#define BENCHMARK_INDEX_1							(1<<3)
+#define BENCHMARK_INDEX_2							(1<<4)
+#define BENCHMARK_INDEX_3							(1<<5)
+#define BENCHMARK_INDEX_4							(1<<6)
+#define BENCHMARK_INDEX_5							(1<<7)
+#define BENCHMARK_INDEX_MASK						(BENCHMARK_INDEX_0|BENCHMARK_INDEX_1|BENCHMARK_INDEX_2|BENCHMARK_INDEX_3|BENCHMARK_INDEX_4|BENCHMARK_INDEX_5)
+#define BENCHMARK_MAX_INDEX_COUNT					6
+#define BENCHMARK_SETMEASUREMENTS					(1<<10) // call with flags > 17 for all the things that should get measured
+#define BENCHMARK_GETCLEARMEASUREMENT				(1<<11) // get accumulated time of measured things and clear the sampled sources
+#define BENCHMARK_MEASURE_VMTARGET_GAME				(1<<12)	// cgame and game can measure each other if they wish. this specifies measure target for measurements that are module specific. 0 = cgame. 1 = game
+#define BENCHMARK_MEASURE_TRACES					(1<<13) // respects BENCHMARK_MEASURE_VMTARGET_GAME
+#define BENCHMARK_MEASURE_TRACES_MARKED				(1<<14) // respects BENCHMARK_MEASURE_VMTARGET_GAME
+#define BENCHMARK_MEASURE_SNAPSHOTS					(1<<15) // respects BENCHMARK_MEASURE_VMTARGET_GAME
+#define BENCHMARK_MEASURE_RENDER					(1<<16) // doesn't care about BENCHMARK_MEASURE_VMTARGET_GAME (there's no server renderer)
+#define BENCHMARK_MEASURE_VMCALLS					(1<<17) // respects BENCHMARK_MEASURE_VMTARGET_GAME. enables measuring game vm calls
+#define BENCHMARK_MEASURE_VMCALLS_MASK				((1<<18)|(1<<19)|(1<<20)|(1<<21)|(1<<22)|(1<<23)) // used for BENCHMARK_GETCLEARMEASUREMENT to get specific values. there's only about 14 in game and about 25 in cgame. 6 bits is enough for 64. 30+ are MV game calls (100+). 63 = sum all.
+#define BENCHMARK_MEASURE_VMCALLS_SHIFT				18
+#define BENCHMARK_MEASURE_VMCALLS_MVOFFSET			(30-100)
+#define BENCHMARK_MAX_VMCALL_COUNT					(1<<6) // 64
+#define BENCHMARK_MULTIRESULT_ARR_FORVM				(1<<30) // multi result arrays can receive either the benchmark_index timers or the vm timers		
+
+
 
 typedef enum coolApiSetBModelCFlagsMode_s {
 	COOLAPI_BMODELCFLAGS_SET,

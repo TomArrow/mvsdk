@@ -2308,6 +2308,7 @@ qhandle_t CG_StatusHandle(int task);
 //
 void CG_DebugFieldsCommand();
 void CG_DebugDraw();
+float CG_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
 
 //
 // cg_players.c
@@ -2547,6 +2548,8 @@ void		trap_SendConsoleCommand( const char *text );
 // FIXME: replace this with a normal console command "defineCommand"?
 void		trap_AddCommand( const char *cmdName ); 
 qboolean	trap_CG_COOL_API_AddMemeCommand(const char* cmdName);
+
+int			trap_CG_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
 
 // send a string to the server over the network
 void		trap_SendClientCommand( const char *s );

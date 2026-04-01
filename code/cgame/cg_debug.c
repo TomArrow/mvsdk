@@ -78,4 +78,14 @@ void CG_DebugDraw() {
 	}
 	CG_Text_Paint(150,250,0.4f,colorWhite, output,0,0, ITEM_TEXTSTYLE_SHADOWEDMORE,FONT_NONE,NULL);
 }
+float CG_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize) {
+	floatint_t result;
+	if (!(coolApi & COOL_APIFEATURE_BENCHMARKING)) {
+		return -1;
+	}
+	result.i = trap_CG_COOL_API_Benchmark(flags, param1, param2, param3, multiResultArr, multiResultArrSize);
+	return result.f;
+}
+
+
 

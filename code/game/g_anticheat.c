@@ -44,7 +44,7 @@ static qboolean SE_RenderIsVisible( const gentity_t *self, const vec3_t startPos
 {
 	trace_t results;
 
-	trap_Trace( &results, startPos, NULL, NULL, testOrigin, self - g_entities, MASK_SOLID );
+	JP_TraceBenchmarked( &results, startPos, NULL, NULL, testOrigin, self - g_entities, MASK_SOLID, 0 );
 
 	antiWhDebug.tracesDone++;
 
@@ -73,7 +73,7 @@ static qboolean SE_RenderPlayerChecks( const gentity_t *self, const vec3_t playe
 
 	for ( i = 0; i < 9; i++ ) {
 		if ( trap_PointContents( playerPoints[i], self - g_entities ) == CONTENTS_SOLID ) {
-			trap_Trace( &results, playerOrigin, NULL, NULL, playerPoints[i], self - g_entities, MASK_SOLID );
+			JP_TraceBenchmarked( &results, playerOrigin, NULL, NULL, playerPoints[i], self - g_entities, MASK_SOLID,0 );
 			antiWhDebug.tracesDone++;
 			antiWhDebug.pointContentsDone++;
 			VectorCopy( results.endpos, playerPoints[i] );
@@ -341,7 +341,10 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 			int delta = level.time - antiWhDebug.lastServerTime;
 			float tracesPerSecond = 1000.0f*(float)antiWhDebug.tracesDone/(float)delta;
 			float pointContentsPerSecond = 1000.0f*(float)antiWhDebug.pointContentsDone /(float)delta;
+			float timeSpentTraces = G_COOL_API_Benchmark(BENCHMARK_GETCLEARMEASUREMENT | BENCHMARK_MEASURE_VMTARGET_GAME | BENCHMARK_MEASURE_TRACES_MARKED, 0,0,0, NULL, 0);
+			float tracesPerSecondSpeed = 1000.0f * (float)antiWhDebug.tracesDone / timeSpentTraces;
 			G_SetDebugVar(antiWhDebug.tracesPerSecondCountFloat,0,tracesPerSecond);
+			G_SetDebugVar(antiWhDebug.tracesPerSecondSpeedFloat,0, tracesPerSecondSpeed);
 			G_SetDebugVar(antiWhDebug.pointContentsPerSecondCountFloat,0, pointContentsPerSecond);
 			antiWhDebug.tracesDone = 0;
 			antiWhDebug.pointContentsDone = 0;
