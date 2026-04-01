@@ -80,4 +80,4 @@ debugField_t	debugFields[] =
 	{ NETF(isJediMaster), 1 }
 };
 
-debugFieldCount = sizeof(debugFields) / sizeof(debugFields[0]);
+int debugFieldCount = sizeof(debugFields) / sizeof(debugFields[0]);
