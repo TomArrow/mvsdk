@@ -162,9 +162,9 @@ static qboolean SE_RenderPlayerPoints( qboolean isCrouching, const vec3_t player
 	vec3_t playerPoints[9], vec3_t playerPointsCenter, vec3_t playerPointsMins, vec3_t playerPointsMaxs )
 {
 	int isHeight = isCrouching ? 32 : 56;
-	vec3_t	forward, right, up;
+	vec3_t	forward = { 1,0,0 }, right = { 0,1,0 }, up = { 0,0,1 }; // TA: why do we care about his orientation? his orientation doesnt matter as to whether he's visible. this just causes ppl to randomly phase in and out of visibility based on their own rotation
 
-	AngleVectors( playerAngles, forward, right, up );
+	//AngleVectors( playerAngles, forward, right, up ); // see comment about forward, right, up
 
 	VectorMA( playerOrigin, 32.0f, up, playerPoints[0] );
 	VectorMA( playerOrigin, 64.0f, forward, playerPoints[1] );
@@ -376,25 +376,10 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 		}
 	}
 
-	//if (!g_antiWallhack.integer) {
-	//	// Clear all the broadcast bits for this client
-	//	memset ( self->r.broadcastClients, 0, sizeof ( self->r.broadcastClients ) );
-
-	//	// The jedi master is broadcast to everyone in range
-	//	G_UpdateJediMasterBroadcasts ( self );
-
-	//	// Anyone with force sight on should see this client
-	//	G_UpdateForceSightBroadcasts ( self );
-	//	return;
-	//}
-
 	// we are always sent to ourselves
 	// we are always sent to other clients if we are in their PVS
 	// if we are not in their PVS, we must set the broadcastClients bit field
-	// if we do not wish to be sent to any particular entity, we must set the broadcastClients bit field and the
-	//	SVF_BROADCASTCLIENTS bit flag
-	//self->r.broadcastClients[0] = 0u;
-	//self->r.broadcastClients[1] = 0u;
+	// if we do not wish to be sent to any particular entity, we must set the ignoreClient array in the mv entity
 
 	for ( i = 0, other = g_entities; i < MAX_CLIENTS; i++, other++ ) {
 		int send = 0; // 0 = let server handle vis. 1 = force send. 2 = 
@@ -411,61 +396,35 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 			continue;
 		}
 
-		if (g_specAllEnts.integer && other->client->sess.sessionTeam == TEAM_SPECTATOR) {
-			send = 1;
+		if (other->client->sess.sessionTeam == TEAM_SPECTATOR) {
+			send = g_specAllEnts.integer ? 1 : 0;
 		}
-		else {//if (g_antiWallhack.integer) {//other->client->ps.duelInProgress && self->client->ps.duelInProgress && other->client->ps.duelIndex == self->client->ps.clientNum && self->client->ps.duelIndex == other->client->ps.clientNum) {
-			//Com_Printf("g_antiWallhack %i\n", g_antiWallhack.integer);
-			if (G_EntityOccluded(self, other)) {
-				//other->r.svFlags |= SVF_NOTSINGLECLIENT;
-				//other->r.singleClient = self->client->ps.clientNum;
-				//continue;
+		else {
+			if (G_EntityOccluded(other, self)) { // TA: Needed to flip the 2 arguments. We're checking if he can see us, not if we can see him.
 				send = -1;
 			}
 			else {
-				other->r.svFlags &= ~SVF_NOTSINGLECLIENT;
 				send = 0;
 			}
-		}/*
-		else if (!g_antiWallhack.integer) {
-			send = qtrue;
 		}
-		else
-		{
-			VectorSubtract(self->client->ps.origin, other->client->ps.origin, angles);
-			dist = VectorLengthSquared(angles);
-			vectoangles(angles, angles);
-
-			// broadcast jedi master to everyone if we are in distance/field of view
-			if (g_gametype.integer == GT_JEDIMASTER && self->client->ps.isJediMaster) {
-				if (dist < maxJediMasterDistance
-					&& InFieldOfVision(other->client->ps.viewangles, maxJediMasterFOV, angles))
-				{
-					send = qtrue;
-				}
-			}
-
-			// broadcast this client to everyone using force sight if we are in distance/field of view
-			if ((other->client->ps.fd.forcePowersActive & (1 << FP_SEE))) {
-				if (dist < maxForceSightDistance
-					&& InFieldOfVision(other->client->ps.viewangles, maxForceSightFOV, angles))
-				{
-					send = qtrue;
-				}
-			}
-		}*/
 
 		// TODO Get some global concept having an overview where this is all used including snapshothacking, so we don't get confused or create conflicts
-		mv_entities[self->s.number].snapshotIgnore[other->s.number] = send < 0;
-		mv_entities[self->s.number].snapshotEnforce[other->s.number] = send > 0;
+		if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
+			mv_entities[self->s.number].snapshotIgnoreRealClient[other->s.number] = send < 0;
+			mv_entities[self->s.number].snapshotEnforceRealClient[other->s.number] = send > 0;
+		}
+		else {
+			mv_entities[self->s.number].snapshotIgnore[other->s.number] = send < 0;
+			mv_entities[self->s.number].snapshotEnforce[other->s.number] = send > 0;
+		}
 	}
-
-	//trap_LinkEntity( self );
 }
 
 void G_ClearAllAntiWallhackSendStates() {
 	int i;
 	for (i = 0; i < level.maxclients; i++) {
+		memset(mv_entities[i].snapshotIgnoreRealClient,0,sizeof(mv_entities[i].snapshotIgnore));
+		memset(mv_entities[i].snapshotEnforceRealClient,0,sizeof(mv_entities[i].snapshotEnforce));
 		memset(mv_entities[i].snapshotIgnore,0,sizeof(mv_entities[i].snapshotIgnore));
 		memset(mv_entities[i].snapshotEnforce,0,sizeof(mv_entities[i].snapshotEnforce));
 	}

@@ -4405,43 +4405,43 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		if (es->eFlags & EF_PLAYER_EVENT) {
 			gclient_t* eventClient = g_entities[es->otherEntityNum].client;
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
 			}
 		}
 
 		if (es->eType == ET_PUSH_TRIGGER) {
 			if (other->notCPM) {
-				mvEnt->snapshotIgnore[followedClientNum] = followedClient->sess.raceMode && !MovementStyleHasVQ3OnlyJumppads(followedClient->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[followedClientNum] || followedClient->sess.raceMode && !MovementStyleHasVQ3OnlyJumppads(followedClient->sess.raceStyle.movementStyle);
 			}
 			else if (other->notVQ3) {
-				mvEnt->snapshotIgnore[followedClientNum] = followedClient->sess.raceMode && !MovementStyleHasCPMOnlyJumppads(followedClient->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[followedClientNum] || followedClient->sess.raceMode && !MovementStyleHasCPMOnlyJumppads(followedClient->sess.raceStyle.movementStyle);
 			}
 		}
 
 		if (es->eType == ET_ITEM) {
-			mvEnt->snapshotIgnore[followedClientNum] =
+			mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[followedClientNum] ||
 				((followedClient->entityStates[i] || followedClient->triggerTimes[i] >= followedClient->pers.cmd.serverTime) && followedClient->sess.raceMode)
 				|| ((other->goneForNonRacers || other->availableTimeForNonRacers >= level.time) && !followedClient->sess.raceMode);
 		}
 
 		if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex) { // dont send global screenshakes to active players unless they are not in a run
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime;
+				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] ||  cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime;
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = followedClient->sess.sessionTeam != TEAM_SPECTATOR && other->parent != followedEnt && followedClient->pers.raceStartCommandTime;
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = backup->mvEntState.snapshotIgnore[clientNum] || followedClient->sess.sessionTeam != TEAM_SPECTATOR && other->parent != followedEnt && followedClient->pers.raceStartCommandTime;
 			}
 		}
 
 		if (other->belongsToParent) { // sniper shots, lightning, etc
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = other->parent != ent && cl->sess.solo && other->parent != followedEnt; // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
+				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] || other->parent != ent && cl->sess.solo && other->parent != followedEnt; // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
 			}
 			else { // wait wtf. why so complicated? we can respect wishes of this player no? since it gets updated on each target client anyway
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = other->parent != followedEnt && followedClient->sess.solo; // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
+				mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[clientNum] = mvEnt->snapshotIgnore[clientNum] || other->parent != followedEnt && followedClient->sess.solo; // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
 			}
 		}
 
@@ -4449,10 +4449,10 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		if (es->eType == ET_BEAM &&/* other->parent != ent &&*/ es->generic1 == 3) {
 			//mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = other->parent != ent && ((cl->sess.solo && other->parent != followedEnt) || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner))); // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
+				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] || other->parent != ent && ((cl->sess.solo && other->parent != followedEnt) || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner))); // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
 			}
 			else { // wait wtf. why so complicated? we can respect wishes of this player no? since it gets updated on each target client anyway
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = other->parent != followedEnt && (followedClient->sess.solo || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner))); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = backup->mvEntState.snapshotIgnore[clientNum] || other->parent != followedEnt && (followedClient->sess.solo || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner))); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
 			}
 		}
 
@@ -4470,10 +4470,10 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 
 			//mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo || followedClient->sess.solo == SOLO_STYLE && (ocl->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo || followedClient->sess.solo == SOLO_STYLE && (ocl->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
 			}
 			if (saveState) { 
 				backup->saberMovePS = ocl->ps.saberMove;
