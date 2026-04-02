@@ -154,6 +154,7 @@ vmCvar_t	g_tffaAnyDeathIsEnemyScore;
 vmCvar_t	g_stackFirstSpawn; // 125/200 + bacta on first spawn, e.g. after map_restart
 
 vmCvar_t	g_antiWallhack;
+vmCvar_t	g_antiWallhackFast;
 
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
@@ -362,6 +363,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_stackFirstSpawn, "g_stackFirstSpawn", "0", CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_antiWallhack, "g_antiWallhack", "0", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackFast, "g_antiWallhackFast", "0", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 
@@ -576,6 +578,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_CROSS_SERVER_COMMANDS
 | COOL_APIFEATURE_G_UPDATESPECTATORS
 | COOL_APIFEATURE_BENCHMARKING
+| COOL_APIFEATURE_PRETRACE_TRACE
 ;
 const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY | COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS;
 

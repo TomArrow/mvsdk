@@ -40,11 +40,11 @@ static void MakeVector( const vec3_t ain, vec3_t vout ) {
 
 
 static qboolean SE_RenderIsVisible( const gentity_t *self, const vec3_t startPos, const vec3_t testOrigin,
-	qboolean reversedCheck )
+	qboolean reversedCheck, int traceCustomFlags )
 {
 	trace_t results;
 
-	JP_TraceBenchmarked( &results, startPos, NULL, NULL, testOrigin, self - g_entities, MASK_SOLID, 0 );
+	JP_TraceBenchmarked( &results, startPos, NULL, NULL, testOrigin, self - g_entities, MASK_SOLID, traceCustomFlags);
 
 	antiWhDebug.tracesDone++;
 
@@ -56,7 +56,7 @@ static qboolean SE_RenderIsVisible( const gentity_t *self, const vec3_t startPos
 			//FIXME: This is a quick hack to render people and things through glass and force fields, but will also take
 			//	effect even if there is another wall between them (and double glass) - which is bad, of course, but
 			//	nothing i can prevent right now.
-			if ( reversedCheck || SE_RenderIsVisible( self, testOrigin, startPos, qtrue ) ) {
+			if ( reversedCheck || SE_RenderIsVisible( self, testOrigin, startPos, qtrue, traceCustomFlags ) ) {
 				return qtrue;
 			}
 		}
@@ -67,13 +67,13 @@ static qboolean SE_RenderIsVisible( const gentity_t *self, const vec3_t startPos
 	return qtrue;
 }
 
-static qboolean SE_RenderPlayerChecks( const gentity_t *self, const vec3_t playerOrigin, vec3_t playerPoints[9] ) {
+static qboolean SE_RenderPlayerChecks( const gentity_t *self, const vec3_t playerOrigin, vec3_t playerPoints[9], int traceCustomFlags) {
 	trace_t results;
 	int i;
 
 	for ( i = 0; i < 9; i++ ) {
-		if ( trap_PointContents( playerPoints[i], self - g_entities ) == CONTENTS_SOLID ) {
-			JP_TraceBenchmarked( &results, playerOrigin, NULL, NULL, playerPoints[i], self - g_entities, MASK_SOLID,0 );
+		if ( trap_PointContents( playerPoints[i], self - g_entities ) & CONTENTS_SOLID ) {
+			JP_TraceBenchmarked( &results, playerOrigin, NULL, NULL, playerPoints[i], self - g_entities, MASK_SOLID, traceCustomFlags);
 			antiWhDebug.tracesDone++;
 			antiWhDebug.pointContentsDone++;
 			VectorCopy( results.endpos, playerPoints[i] );
@@ -159,7 +159,7 @@ static qboolean SE_IsPlayerCrouching( const gentity_t *ent ) {
 }
 
 static qboolean SE_RenderPlayerPoints( qboolean isCrouching, const vec3_t playerAngles, const vec3_t playerOrigin,
-	vec3_t playerPoints[9] )
+	vec3_t playerPoints[9], vec3_t playerPointsCenter, vec3_t playerPointsMins, vec3_t playerPointsMaxs )
 {
 	int isHeight = isCrouching ? 32 : 56;
 	vec3_t	forward, right, up;
@@ -180,6 +180,10 @@ static qboolean SE_RenderPlayerPoints( qboolean isCrouching, const vec3_t player
 	VectorMA( playerPoints[2], isHeight, up, playerPoints[6] );
 	VectorMA( playerPoints[3], isHeight, up, playerPoints[7] );
 	VectorMA( playerPoints[4], isHeight, up, playerPoints[8] );
+
+	VectorMA( playerOrigin, isHeight * 0.5f, up, playerPointsCenter);
+	VectorSet(playerPointsMins, -64.0f, -64.0f, -0.5f*isHeight);
+	VectorSet(playerPointsMaxs, 64.0f, 64.0f, 0.5f*isHeight);
 
 	return qtrue;
 }
@@ -211,8 +215,13 @@ static void GetCameraPosition(const gentity_t *self, vec3_t cameraOrigin) {
 extern void G_TestLine(vec3_t start, vec3_t end, int color, int time);
 static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other ) {
 	int i,  contents;
-	vec3_t firstPersonPos, thirdPersonPos, targPos[9];
+	vec3_t firstPersonPos, thirdPersonPos, targPos[9], targetCenter, targetMins, targetMaxs;
 	int whVal = g_antiWallhack.integer < 0 ? -g_antiWallhack.integer : g_antiWallhack.integer;
+	int preTraceFlags = TRACECUSTOMFLAG_MARKBRUSHES, traceFlags = TRACECUSTOMFLAG_WALKBRUSHES;
+
+	if (!(coolApi & COOL_APIFEATURE_PRETRACE_TRACE) || !g_antiWallhackFast.integer) {
+		preTraceFlags = traceFlags = 0;
+	}
 
 	GetCameraPosition(self, thirdPersonPos);
 
@@ -241,8 +250,23 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 
 	// plot their bbox pointer into targPos[]
 	SE_RenderPlayerPoints( SE_IsPlayerCrouching( other ), other->client->ps.viewangles, other->client->ps.origin,
-		targPos );
-	SE_RenderPlayerChecks( self, other->client->ps.origin, targPos );
+		targPos, targetCenter, targetMins, targetMaxs );
+
+	if (preTraceFlags) {
+		trace_t pretrace;
+		//JP_TraceBenchmarked(&pretrace, targetCenter, targetMins, targetMaxs, targetCenter, self - g_entities, MASK_SOLID, preTraceFlags);
+		//antiWhDebug.tracesDone++;
+		JP_TraceBenchmarked(&pretrace, thirdPersonPos, targetMins, targetMaxs, targetCenter, self - g_entities, MASK_SOLID, preTraceFlags);
+		antiWhDebug.tracesDone++;
+	}
+
+	SE_RenderPlayerChecks( self, other->client->ps.origin, targPos, traceFlags );
+
+	//if (preTraceFlags) {
+	//	trace_t pretrace;
+	//	JP_TraceBenchmarked(&pretrace, thirdPersonPos, targetMins, targetMaxs, targetCenter, self - g_entities, MASK_SOLID, //preTraceFlags);
+	//	antiWhDebug.tracesDone++;
+	//}
 
 	for ( i = 0; i < 9; i++ ) {
 
@@ -257,10 +281,10 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 			G_TestLine(thirdPersonPos, targPos[offset], 0x0000ff, 200); //check trace.fraction? ehh trace.startsolid or whatever?
 		}
 
-		if ( SE_RenderIsVisible( self, thirdPersonPos, targPos[i], qfalse ) ) {
+		if ( SE_RenderIsVisible( self, thirdPersonPos, targPos[i], qfalse, traceFlags) ) {
 			return qtrue;
 		}
-		if ( SE_RenderIsVisible( self, firstPersonPos, targPos[i], qfalse ) ) {
+		if ( SE_RenderIsVisible( self, firstPersonPos, targPos[i], qfalse, traceFlags) ) {
 			return qtrue;
 		}
 	}
