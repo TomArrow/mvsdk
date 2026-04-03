@@ -579,6 +579,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_G_UPDATESPECTATORS
 | COOL_APIFEATURE_BENCHMARKING
 | COOL_APIFEATURE_PRETRACE_TRACE
+| COOL_APIFEATURE_MVAPI_SUBMODELBYPASS_SNEAKPEEK
 ;
 const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY | COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS;
 
@@ -655,7 +656,7 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 			Init_randomSeed = arg1;
 			Init_restart = arg2;
 		}
-		if (mvapi >= 4 || coolApi & COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK) {
+		if (mvapi >= 4 || (coolApi & COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK) ) {
 			trap_MVAPI_EnablePlayerSnapshots(qtrue);
 		}
 		return requestedMvApi;
@@ -838,7 +839,7 @@ void MVAPI_AfterInit(void)
 	}
 
 	// Let the engine know we support more than 256 submodels
-	if ( mvapi >= 4 ) trap_MVAPI_EnableSubmodelBypass( qtrue );
+	if ( mvapi >= 4 || coolApi & COOL_APIFEATURE_MVAPI_SUBMODELBYPASS_SNEAKPEEK ) trap_MVAPI_EnableSubmodelBypass( qtrue );
 
 	// Call G_InitGame now, because we delayed it earilier
 	G_InitGame( Init_levelTime, Init_randomSeed, Init_restart );

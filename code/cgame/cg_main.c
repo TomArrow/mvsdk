@@ -166,6 +166,7 @@ const int coolApi_supported_cgame_int =
 | COOL_APIFEATURE_ADDMEMECOMMAND
 | COOL_APIFEATURE_JEDI_ACADEMY
 | COOL_APIFEATURE_BENCHMARKING
+| COOL_APIFEATURE_MVAPI_SUBMODELBYPASS_SNEAKPEEK
 ;
 qboolean submodelBypass = qfalse;
 int Init_serverMessageNum;
@@ -369,7 +370,7 @@ void MVAPI_AfterInit(void)
 	}
 
 	// Let the engine know we support more than 256 submodels
-	if ( mvapi >= 4 ) submodelBypass = trap_MVAPI_EnableSubmodelBypass( qtrue );
+	if ( mvapi >= 4 || (coolApi & COOL_APIFEATURE_MVAPI_SUBMODELBYPASS_SNEAKPEEK) ) submodelBypass = trap_MVAPI_EnableSubmodelBypass( qtrue );
 
 	// Call CG_Init now, because we delayed it earilier
 	CG_Init( Init_serverMessageNum, Init_serverCommandSequence, Init_clientNum );
