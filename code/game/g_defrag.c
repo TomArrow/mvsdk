@@ -4864,6 +4864,11 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			return;
 		}
 
+		if ( ent->client->pers.isTasClient && ((ent->client->sess.raceStyle.runFlags & flag) & RFL_TAS) ) {
+			G_SendServerCommand(ent - g_entities, "print \"Run flags: TAS clients are not allowed to switch TAS mode off.\n\"",qtrue);
+			return;
+		}
+
 		if (flag & RFL_SEGMENTED) {
 
 			if (!(ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
@@ -4955,9 +4960,12 @@ void UpdateClientRaceVars(gclient_t* client) {
 		}*/
 
 		client->sess.raceStyle.runFlags &= ~MovementStyleDisabledRunFlags(client->sess.raceStyle.movementStyle);
+		if (client->pers.isTasClient) {
+			client->sess.raceStyle.runFlags |= RFL_TAS;
+		}
 
 		if (client->sess.raceStyle.runFlags != oldRunFlags) { // sanity checks
-			trap_SendServerCommand(client - g_clients, "print \"Invalid run flags detected.\n\"");
+			trap_SendServerCommand(client - g_clients, "print \"Invalid run flags detected & fixed.\n\"");
 			DF_RaceStateInvalidated(g_entities + (client - g_clients), qtrue);
 		}
 
@@ -5553,6 +5561,10 @@ void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs) {
 		// the value changed from the previous map settings this client saw, and the client didn't have any custom setting
 		if (newRs->jumpLevel != sess->mapStyleBaseline.jumpLevel && sess->raceStyle.jumpLevel == sess->mapStyleBaseline.jumpLevel) {
 			newJumpLevel = newRs->jumpLevel;
+		}
+
+		if (ent->client->pers.isTasClient) { // just to make sure. 
+			newRunFlags |= RFL_TAS; 
 		}
 
 		if (sess->raceStyle.jumpLevel != newJumpLevel ||

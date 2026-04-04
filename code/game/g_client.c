@@ -1681,6 +1681,15 @@ void ClientUserinfoChanged( int clientNum ) {
 		client->pers.localClient = qtrue;
 	}
 
+	// check for TAS client (any client that does any custom hacks/scripting/whatever for defrag)
+	s = Info_ValueForKey( userinfo, "tasClient" );
+	if (!atoi(s)) {
+		client->pers.isTasClient = qfalse;
+	}
+	else {
+		client->pers.isTasClient = qtrue;
+	}
+
 	// check the item prediction
 	s = Info_ValueForKey( userinfo, "cg_predictItems" );
 	if ( !atoi( s ) ) {

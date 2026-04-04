@@ -582,6 +582,8 @@ typedef struct {
 	tffaStats_t	tffaStats;
 
 	int			lastDebugFieldsUpdateTime;
+
+	qboolean	isTasClient; // this client has identified itself as a TAS/hack client, so always force it into TAS mode in defrag.
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
