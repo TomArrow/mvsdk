@@ -1683,11 +1683,18 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// check for TAS client (any client that does any custom hacks/scripting/whatever for defrag)
 	s = Info_ValueForKey( userinfo, "tasClient" );
-	if (!atoi(s)) {
-		client->pers.isTasClient = qfalse;
+	client->pers.tasClient = atoi(s);
+
+	s = Info_ValueForKey( userinfo, "ttClFl" ); // tommyTernal clientFlags
+	client->pers.ttClientFlags = atoi(s);
+
+	// check if it's a demo bot
+	s = Info_ValueForKey(userinfo, "engine");
+	if (!Q_stricmpn(s, "jkclient", 8)) {
+		client->pers.isHeadlessClient = qtrue;
 	}
 	else {
-		client->pers.isTasClient = qtrue;
+		client->pers.isHeadlessClient = qfalse;
 	}
 
 	// check the item prediction
@@ -1911,9 +1918,9 @@ void ClientUserinfoChanged( int clientNum ) {
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
 			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay, modelColor, saberName );
 	} else {
-		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mc\\%s\\st\\%s",
+		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mc\\%s\\st\\%s\\tas\\%d",
 			client->pers.netname, client->sess.login.name, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
-			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modelColor, saberName);
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modelColor, saberName, client->pers.tasClient);
 	}
 
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );

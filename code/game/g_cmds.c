@@ -1250,8 +1250,8 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
-		"print \"^2/solo^7 - Hide or unhide other players. Call with 'style' to hide only other styles/modes.\n\"",
-		"print \"Random tip: ^2/solo^7 - Hide or unhide other players. Call with 'style' to hide only other styles/modes.\n\"",
+		"print \"^2/solo^7 - Hide or unhide other players. Call with 'style' to hide only other styles/modes. Call with 'showall' to unhide machine learning bots.\n\"",
+		"print \"Random tip: ^2/solo^7 - Hide or unhide other players. Call with 'style' to hide only other styles/modes. Call with 'showall' to unhide machine learning bots\n\"",
 		qfalse,
 		qfalse
 	},
@@ -1904,15 +1904,21 @@ void Cmd_Solo_f(gentity_t* ent) {
 		if (!Q_stricmp(arg, "style")) {
 			onState = SOLO_STYLE;
 		}
+		else if (!Q_stricmp(arg, "showall")) {
+			onState = SOLO_SHOWALL;
+		}
 	}
 	if (onState == ent->client->sess.solo) {
-		trap_SendServerCommand(ent - g_entities, "print \"^1Disabling solo mode, showing all players.\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"^1Resetting solo mode, showing all regular players.\n\"");
 		ent->client->sess.solo = SOLO_DISABLED;
 		return;
 	}
 
 	ent->client->sess.solo = onState;
 	switch (onState) {
+	case SOLO_SHOWALL:
+		trap_SendServerCommand(ent - g_entities, "print \"^1Showing all players now including machine learning bots.\n\"");
+		break;
 	case SOLO_STYLE:
 		trap_SendServerCommand(ent - g_entities, "print \"^1Hiding players of other styles/modes now.\n\"");
 		break;
@@ -4316,7 +4322,7 @@ void Cmd_Players_f(gentity_t* ent) {
 		}
 		cl = other->client;
 		millisecs = level.time - other->client->sess.lastHereTime;
-		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-25s %-10s %-4s %-5d %s %s\n\"", 
+		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-25s %-10s %-4s %-5d %s%s%s\n\"", 
 			i,
 			cl->sess.login.loggedIn ? cl->sess.login.name : "",
 			cl->sess.raceMode ? multiva("Race:%s/%s", moveStyleNames[cl->sess.raceStyle.movementStyle].string, leaderboardNames[classifyLeaderBoard(&cl->sess.raceStyle,&level.mapDefaultRaceStyle)].string) : modeNames[cl->sess.mode].string,
@@ -4324,7 +4330,8 @@ void Cmd_Players_f(gentity_t* ent) {
 			cl->sess.raceStyle.msec == -1 ? "togl" : (cl->sess.raceStyle.msec == -2 ? "flt" : (cl->sess.raceStyle.msec == 0 ? "unkn" : miniva("%d", 1000 / cl->sess.raceStyle.msec))),
 			cl->sess.raceStyle.jumpLevel,
 			other->client->pers.netname,
-			other->client->pers.stayOnMap && g_slowVote.integer ?((level.time-cl->sess.lastHereTime) < minMillisecsStayOnMap ? " ^7(wants to stay on map)" : " ^7(wants to stay on map but ^1AFK^7)") : ""
+			other->client->pers.stayOnMap && g_slowVote.integer ?((level.time-cl->sess.lastHereTime) < minMillisecsStayOnMap ? " ^7(wants to stay on map)" : " ^7(wants to stay on map but ^1AFK^7)") : "",
+			(other->client->pers.tasClient & TASCLIENT_MACHINELEARNING) ? " ^7(TAS Machine Learning Bot)" : (other->client->pers.tasClient ? " ^7(TAS Client)" : "")
 		));
 	}
 }

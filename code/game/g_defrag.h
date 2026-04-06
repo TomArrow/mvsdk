@@ -184,6 +184,7 @@ typedef enum segmentedRunState_s {
 } segmentedRunState_t;
 
 typedef enum soloState_s {
+	SOLO_SHOWALL = -1, // show all including machine learning TAS clients
 	SOLO_DISABLED,
 	SOLO_STYLE,
 	SOLO_ALL,

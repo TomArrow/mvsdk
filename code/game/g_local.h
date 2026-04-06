@@ -495,6 +495,10 @@ typedef struct tffaStats_s {
 	playerDamageTracker_t	dmgReal;	// how much real damage transpired (after accounting for absorb, shield, rage etc)
 } tffaStats_t;
 
+
+#define TASCLIENT_TASMODE			(1<<0)
+#define TASCLIENT_MACHINELEARNING	(1<<1)
+
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
 typedef struct {
@@ -583,7 +587,9 @@ typedef struct {
 
 	int			lastDebugFieldsUpdateTime;
 
-	qboolean	isTasClient; // this client has identified itself as a TAS/hack client, so always force it into TAS mode in defrag.
+	int			tasClient; // this client has identified itself as a TAS/hack client, so always force it into TAS mode in defrag. bitmask. 1 = force tas mode. 2 = hide from ingame players and follow spectators (for machine learning)
+	qboolean	isHeadlessClient;
+	int			ttClientFlags;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
