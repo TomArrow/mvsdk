@@ -2624,6 +2624,7 @@ void Cmd_Top_f( gentity_t *ent )
 			"WHEN diff2 = -2 AND diff != -2 THEN diff "
 			"ELSE IF(diff<diff2,diff,diff2) "
 			"END"
+			", LENGTH(runs.course), LENGTH(runs.subcourse)"
 		)) {
 			return;
 		}
