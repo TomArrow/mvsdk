@@ -75,7 +75,7 @@ netField_t	entityStateFields15[] =
 	{ NETF(weapon), 8 },
 	{ NETF(clientNum), 8 }, // clientnum
 	{ NETF(angles[1]), 0 },
-	{ NETF(pos.trDuration), 32 },
+	{ NETF(pos.trDuration), 32 }, // low 14 bits: discard-resposcount. then 10 bits discard-count. then 8 bit max discard depth
 	{ NETF(apos.trType), 8 },
 	{ NETF(origin[0]), 0 },
 	{ NETF(origin[1]), 0 },

@@ -661,7 +661,6 @@ argv(0) respos
 void RestorePosition(gentity_t* client, savedPosition_t* savedPosition, veci_t* diffAccum);
 void Cmd_Respos_f( gentity_t *ent ) {
 	char	*msg;
-
 	if (ent->client->noclip) {
 		trap_SendServerCommand(ent - g_entities, "print \"Can't restore position during noclip.\n\"");
 		return;
@@ -670,7 +669,17 @@ void Cmd_Respos_f( gentity_t *ent ) {
 	if (g_defrag.integer && ent->client->sess.raceMode) {
 		if (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) { // segmented restore/save pos handled elsewhere
 			if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
-				ent->client->pers.segmented.respos = qtrue;
+
+				qboolean segmentedDiscard = qfalse;
+				ent->client->pers.segmented.respos = RESPOS_NORMAL;
+				// try to discard one savepos position
+				if (trap_Argc() > 1) {
+					char arg[10];
+					trap_Argv(1, arg, sizeof(arg));
+					if (!Q_stricmp(arg, "discard")) {
+						ent->client->pers.segmented.respos = RESPOS_DISCARD;
+					}
+				}
 			}
 			return;
 		}
@@ -1348,8 +1357,8 @@ helpTip_t helpTips[] = {
 		qtrue
 	},
 	{
-		"print \"^2/respos^7 - Restore your saved state\n\"",
-		"print \"Random tip: ^2/respos^7 - Restore your saved state\n\"",
+		"print \"^2/respos^7 - Restore your saved state. In segmented mode, ^2/respos discard^7 can discard a saved point to fix mistakes.\n\"",
+		"print \"Random tip: ^2/respos^7 - Restore your saved state. In segmented mode, ^2/respos discard^7 can discard a saved point to fix mistakes.\n\"",
 		qfalse,
 		qtrue
 	},
@@ -1512,6 +1521,7 @@ void Cmd_Help_f(gentity_t* ent) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/run 5^7 - Enables/disables segmented running\n\"");
 			trap_SendServerCommand(ent - g_entities, "print \"^2/savepos^7 - Save your current state (only works after your timer starts)\n\"");
 			trap_SendServerCommand(ent - g_entities, "print \"^2/respos^7 - Restore your saved state (only works in a run after using savepos)\n\"");
+			trap_SendServerCommand(ent - g_entities, "print \"^2/respos discard^7 - Same as ^2/respos^7, but restores to a previous saved state, discarding the most recent one permanently\n\"");
 			trap_SendServerCommand(ent - g_entities, "print \"^2/resseg^7 - If your run is failing, this command will allow you to restart the playback.\n\"");
 
 			trap_SendServerCommand(ent - g_entities, "print \"\n^1Important rules:\n\"");

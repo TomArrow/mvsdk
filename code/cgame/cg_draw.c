@@ -2008,7 +2008,7 @@ void DF_RaceTimer(void)
 	}
 
 	{
-		char timerStr[100] = { 0 };
+		char timerStr[200] = { 0 };
 		char startStr[48] = { 0 };
 		vec4_t colorStartSpeed = { 1, 1, 1, 1 };
 
@@ -2061,6 +2061,13 @@ void DF_RaceTimer(void)
 						entityState_t* stats = &cg_statsEntities[cg.predictedPlayerState.clientNum]->currentState;
 						int lastSegmentedReset = stats->apos.trTime;
 						int resposCount = stats->pos.trTime;
+						// low 14 bits: discard-resposcount. then 10 bits discard-count. then 8 bit max discard depth
+						// we risk a bit less bits here since the info isnt THAT vital, and discards are gonna be less frequent than respos
+						// this allows for something like 16384 discarded respos, 1023 discards, and 255 max discard depth
+						// if we reach highest value we just show something like 255+
+						int discardedResposCount = stats->pos.trDuration & ((1 << 14) - 1);
+						int discardCount = (stats->pos.trDuration >> 14) & ((1 << 10) - 1);
+						int discardMaxDepth = (stats->pos.trDuration >> 24) & ((1 << 8) - 1);
 						if (stats->frame > 0) {
 							Q_strcat(timerStr, sizeof(timerStr), va("\n^2SEGMENTED REPLAY (%d SPs)", stats->frame));
 						}
@@ -2076,6 +2083,23 @@ void DF_RaceTimer(void)
 							Q_strcat(timerStr, sizeof(timerStr), va("\n^3Last SP: ^%c-%i:%02i.%03i", time2 < 1000 ? '1' : '3', minutes2, seconds2, milliseconds2));
 							if (resposCount) {
 								Q_strcat(timerStr, sizeof(timerStr), va(" (%d RPs)",resposCount));
+							}
+							if (discardedResposCount || discardCount || discardMaxDepth) {
+								qboolean haveOne = qfalse;
+								Q_strcat(timerStr, sizeof(timerStr), "\n^3Discards: ");
+								if (discardCount) {
+									Q_strcat(timerStr, sizeof(timerStr), va("%s%d", haveOne ? ", " : "",(int)discardCount));
+									haveOne = qtrue;
+								}
+								if (discardedResposCount) {
+									Q_strcat(timerStr, sizeof(timerStr), va("%s%d respos", haveOne ? ", " : "", (int)discardedResposCount));
+									haveOne = qtrue;
+								}
+								if (discardMaxDepth) {
+									Q_strcat(timerStr, sizeof(timerStr), va("%s%d depth", haveOne ? ", " : "", (int)discardMaxDepth));
+									haveOne = qtrue;
+								}
+								//Q_strcat(timerStr, sizeof(timerStr), ")");
 							}
 						}
 					}

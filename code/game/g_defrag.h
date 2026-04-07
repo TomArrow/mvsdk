@@ -15,7 +15,8 @@
 // Version 1: Old
 // Version 2: 2025-05-21 - Added support for target_fragsfilter
 // Version 3: 2025-05-21 - Added support for target_speed and fixed wait being read as int on trigger_multiple (0.5->0) in conversion
-#define SEMIBREAKINGCHANGEVERSIONDEFRAG 3
+// Version 4: 2026-04-07 - Added ability to discard saved positions in segmented runs, to fix a failed savepos
+#define SEMIBREAKINGCHANGEVERSIONDEFRAG 4
 
 extern int semiBreakingChangeVersionDefrag;
 
@@ -245,22 +246,44 @@ extern int segDebugFieldsCount;
 
 #endif
 
+#define SEGMENTED_MAX_RESPOS 10
+typedef struct segmentedPos_s {
+	savedPosition_t		pos;
+	int					posIndex;
+	int					msecProgress;
+	int					userCmdIndex;
+	int					resposCount;
+	struct {
+		int		resposCount;
+		int		discardCount;
+		int		maxDiscardDepth;
+	} discards;
+	veci3_t				anglesDiffAccum; // specific to this point. if we decide to remove the saved pos, we need to also add its would-be accum back
+} segmentedPos_t;
+
+typedef enum resposType_s {
+	RESPOS_NONE,
+	RESPOS_NORMAL,
+	RESPOS_DISCARD
+} resposType_t;
+
+#define RESPOSINDEX(a) (MAX((a),0) % SEGMENTED_MAX_RESPOS)
+
 typedef struct segmented_s {
 	segmentedRunState_t	state;
 
 	// requested savepos/respos
 	qboolean			savePos;
-	qboolean			respos;
+	resposType_t		respos;
 
 	// general recording state
 	savedPosition_t		startPos;
 	int					msecProgress;
 
 	// last pos related state
-	savedPosition_t		lastPos;
-	int					lastPosMsecProgress;
-	int					lastPosUserCmdIndex;
-	int					lastPosResposCount;
+	segmentedPos_t		lastPos[SEGMENTED_MAX_RESPOS];
+	int					lastPosCount;
+	//int				lowestPosIndex; // it's a circular buffer so if we're e.g. saving index 110, don't allow to go back more than SEGMENTED_MAX_RESPOS-1 as those will be overwritten. actually nvm we'll just save the index inside the array element and compare, similar to snapshots
 	veci3_t				anglesDiffAccum; // accumulated change in usercmd angles through any means since last savepos
 	veci3_t				anglesDiffAccumActual; // accumulated change in usercmd angles caused by respos, so we can store the usercmd_t as if the resposes had never happened
 	qboolean			anglesDiffResettable; // if anglesDiff changed through respawn or such, allow us to restart the segmented recording. but dont do it on pmove angle changes maybe... or? i mean it works fine with just checking accum. but breaks strafebot. make exception for strafebot.

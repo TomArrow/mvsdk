@@ -859,7 +859,7 @@ typedef struct topLeaderBoardEntry_s {
 	qboolean mainLBCompatible;
 	//raceStyle_t raceStyle;
 	float topSpeed, average,distance;
-	int savePosCount, resposCount, duration_ms_segmented_total;
+	int savePosCount, resposCount, discardCount, duration_ms_segmented_total;
 	char username[USERNAME_MAX_LEN + 1];
 	char time[25];
 	char fpsString[40];
@@ -950,6 +950,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		entry->savePosCount = G_COOL_API_DB_GetInt(10);
 		entry->resposCount = G_COOL_API_DB_GetInt(11);
 		entry->duration_ms_segmented_total = G_COOL_API_DB_GetInt(12);
+		entry->discardCount = G_COOL_API_DB_GetInt(16);
 		if (entry->msec == -1) {
 			G_COOL_API_DB_GetString(13, entry->fpsString, sizeof(entry->fpsString));
 			Q_strncpyz(entry->fpsString, DF_FormatFpsString(entry->fpsString), sizeof(entry->fpsString));
@@ -1034,7 +1035,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY),
-					!entriesHere[LB_SEGMENTED].exists ? "" : miniva("(%dSP/%dRP/%s)", entriesHere[LB_SEGMENTED].savePosCount, entriesHere[LB_SEGMENTED].resposCount, DF_MsToString(entriesHere[LB_SEGMENTED].duration_ms_segmented_total)),
+					!entriesHere[LB_SEGMENTED].exists ? "" : miniva("(%dSP/%dRP/%s%s)", entriesHere[LB_SEGMENTED].savePosCount, entriesHere[LB_SEGMENTED].resposCount, entriesHere[LB_SEGMENTED].discardCount ? miniva("%dD/", entriesHere[LB_SEGMENTED].discardCount) : "", DF_MsToString(entriesHere[LB_SEGMENTED].duration_ms_segmented_total)),
 					(!entriesHere[LB_SEGMENTED].exists || entriesHere[LB_SEGMENTED].msec != -1) ? "" : multiva(" fps:%s", entriesHere[LB_SEGMENTED].fpsString)
 				));
 				break;
@@ -1044,7 +1045,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY),
-					(!entriesHere[LB_CHEAT].exists || !(entriesHere[LB_CHEAT].runFlags & RFL_SEGMENTED)) ? "" : miniva("(%dSP/%dRP/%s)", entriesHere[LB_CHEAT].savePosCount, entriesHere[LB_CHEAT].resposCount, DF_MsToString(entriesHere[LB_CHEAT].duration_ms_segmented_total)),
+					(!entriesHere[LB_CHEAT].exists || !(entriesHere[LB_CHEAT].runFlags & RFL_SEGMENTED)) ? "" : miniva("(%dSP/%dRP/%s%s)", entriesHere[LB_CHEAT].savePosCount, entriesHere[LB_CHEAT].resposCount, entriesHere[LB_CHEAT].discardCount ? miniva("%dD/", entriesHere[LB_CHEAT].discardCount) : "", DF_MsToString(entriesHere[LB_CHEAT].duration_ms_segmented_total)),
 					(!entriesHere[LB_CHEAT].exists || entriesHere[LB_CHEAT].msec != -1) ? "" : multiva(" fps:%s", entriesHere[LB_CHEAT].fpsString)
 				));
 				break;
@@ -2543,6 +2544,9 @@ static void G_CreateRunsTable() {
 			endLessTime INT NOT NULL, \
 			saveposCount INT NOT NULL, \
 			resposCount INT NOT NULL, \
+			discardCount INT NOT NULL, \
+			discardResposCount INT NOT NULL, \
+			discardMaxDepth INT NOT NULL, \
 			lostMsecCount INT NOT NULL, \
 			lostCmdsCount INT NOT NULL, \
 			topspeed DOUBLE NOT NULL, \
@@ -2690,10 +2694,10 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 		va("SET @now=NOW();"
 			"INSERT INTO runs (userid,course,subcourse,duration_ms,duration_ms_segmented_total,topspeed,startTriggerSpeed,rollSpeed,rollTakeoffClientSpeed,average,distance,style,msec,jump,variant,runFlags,"
 			RUNFLAGS(RUNFLAGSFUNC)
-			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,lostMsecCount,lostCmdsCount,server,semiBreakingChangeVersion,checksumBsp,checksumPak) "
+			"runwhen,runfirst,warningFlags,fpsString, distanceXY,startLessTime,endLessTime,saveposCount,resposCount,discardCount,discardResposCount,discardMaxDepth,lostMsecCount,lostCmdsCount,server,semiBreakingChangeVersion,checksumBsp,checksumPak) "
 			"VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"
 			RUNFLAGS(RUNFLAGSFUNC2)
-			"@now,@now,?,?,?,?,?,?,?,?,?," GETCONNECTIONIP "," QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG) ",?,?) "
+			"@now,@now,?,?,?,?,?,?,?,?,?,?,?,?," GETCONNECTIONIP "," QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG) ",?,?) "
 			"ON DUPLICATE KEY UPDATE "
 			"duration_ms_segmented_total = IF(?<duration_ms,?,duration_ms_segmented_total),"
 			"topspeed = IF(?<duration_ms,?,topspeed),"
@@ -2710,6 +2714,9 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 			"endLessTime = IF(?<duration_ms,?,endLessTime),"
 			"saveposCount = IF(?<duration_ms,?,saveposCount),"
 			"resposCount = IF(?<duration_ms,?,resposCount),"
+			"discardCount = IF(?<duration_ms,?,discardCount),"
+			"discardResposCount = IF(?<duration_ms,?,discardResposCount),"
+			"discardMaxDepth = IF(?<duration_ms,?,discardMaxDepth),"
 			"lostMsecCount = IF(?<duration_ms,?,lostMsecCount),"
 			"lostCmdsCount = IF(?<duration_ms,?,lostCmdsCount),"
 			"checksumBsp = IF(?<duration_ms,?,checksumBsp),"
@@ -2764,6 +2771,9 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	G_COOL_API_DB_PreparedBindInt(runInfo->endLessTime);
 	G_COOL_API_DB_PreparedBindInt(runInfo->savePosCount);
 	G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->discardCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->discardRespos);
+	G_COOL_API_DB_PreparedBindInt(runInfo->discardMaxDepth);
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostPacketCount);
 	G_COOL_API_DB_PreparedBindInt(runInfo->checksumBsp);
@@ -2813,6 +2823,13 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindInt(runInfo->resposCount);
+
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->discardCount);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->discardRespos);
+	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
+	G_COOL_API_DB_PreparedBindInt(runInfo->discardMaxDepth);
 
 	G_COOL_API_DB_PreparedBindInt(runInfo->milliseconds);
 	G_COOL_API_DB_PreparedBindInt(runInfo->lostMsecCount);

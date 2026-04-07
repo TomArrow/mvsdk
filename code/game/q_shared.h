@@ -297,6 +297,7 @@ typedef enum {
 
 #define MIN(x,y) ((x)<(y)?(x):(y))
 #define MAX(x,y) ((x)>(y)?(x):(y))
+#define CLAMP(x,y,z) MIN(MAX((x),(y)),(z))
 #define CTRL(a)		((a)-'a'+1)
 #define PAD(base, alignment)	(((base)+(alignment)-1) & ~((alignment)-1))
 #define PADLEN(base, alignment)	(PAD((base), (alignment)) - (base))

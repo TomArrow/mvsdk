@@ -292,7 +292,7 @@ typedef struct finishedRunInfo_s {
 	int			resposCount;
 	int			lostMsecCount;
 	int			lostPacketCount;
-	int			placeHolder1;
+	int			discardCount, discardRespos, discardMaxDepth;	//int			placeHolder1;
 	int			placeHolder2;
 	int			placeHolder3;
 	int			placeHolder4;

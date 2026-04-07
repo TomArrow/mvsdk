@@ -446,6 +446,9 @@ typedef struct runStats_s { // zero'd out every time we leave start timer
 	float topSpeed;
 	int saveposCount;
 	int resposCount;
+	int discardCount;
+	int discardResposCount;
+	int discardMaxDepth;
 	float startTriggerSpeed;
 	int courseId;
 	char overrideMessage[COURSENAME_MAX_LEN + 1]; // on some maps we may wanna do this via start trigger

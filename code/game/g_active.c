@@ -3108,9 +3108,15 @@ void G_RunClient( gentity_t *ent ) {
 						stats->apos.trTime = cl->pers.segmented.playbackNextCmdIndex == 0 ? cl->pers.segmented.playbackStartedTime + cl->pers.segmented.playbackStartedCommandTimeOffset : cl->ps.commandTime;
 						stats->frame = cl->pers.segmented.playbackNextCmdIndex == 0 ? 1 : stats->frame + 1;
 						stats->pos.trTime = 0;
+						stats->pos.trDuration = 0;
 						break;
 					case -2:
 						stats->pos.trTime = ucmd.buttons; // this isnt time. this is count of respos of this point. will usually follow right after the -1 one.
+						// low 14 bits: discard-resposcount. then 10 bits discard-count. then 8 bit max discard depth
+						// we risk a bit less bits here since the info isnt THAT vital, and discards are gonna be less frequent than respos
+						// this allows for something like 16384 discarded respos, 1023 discards, and 255 max discard depth
+						// if we reach highest value we just show something like 255+
+						stats->pos.trDuration = CLAMP(ucmd.angles[1],0,(1<<14)-1) | (CLAMP(ucmd.angles[0], 0, (1 << 10) - 1)) << 14 | (CLAMP(ucmd.angles[2], 0, (1 << 8) - 1)) << 24;
 						break;
 					}
 					cl->pers.segmented.playbackNextCmdIndex++;
@@ -3123,7 +3129,9 @@ void G_RunClient( gentity_t *ent ) {
 			}
 			if (!success) {
 				trap_G_COOL_API_PlayerUserCmdClear(ent-g_entities);
-				cl->pers.segmented.lastPosResposCount = 0;
+				cl->pers.segmented.lastPosCount = 0;
+				cl->pers.segmented.lastPos[0].resposCount = 0;
+				memset(&cl->pers.segmented.lastPos[0].discards,0,sizeof(cl->pers.segmented.lastPos[0].discards));
 #if SEGMENTEDDEBUG
 				memset(cl->pers.segmented.debugTime, 0, sizeof(cl->pers.segmented.debugTime));
 #endif

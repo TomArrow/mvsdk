@@ -960,6 +960,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	gclient_t* cl;
 	mainLeaderboardType_t lbType;
 	int resposCountSave, savePosCountSave, startLevelTimeSave;
+	int discardCountSave, discardResposSave, discardMaxDepthSave;
 	rollState_t rollStateSave;
 	int warningFlags = 0;
 
@@ -1059,6 +1060,10 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	}
 
 	resposCountSave = cl->pers.stats.resposCount;
+	discardCountSave = cl->pers.stats.discardCount;
+	discardResposSave = cl->pers.stats.discardResposCount;
+	discardMaxDepthSave = cl->pers.stats.discardMaxDepth;
+	discardCountSave = cl->pers.stats.discardCount;
 	savePosCountSave = cl->pers.stats.saveposCount;
 	rollStateSave = cl->pers.stats.roll;
 	startLevelTimeSave = cl->pers.stats.startLevelTime;
@@ -1066,6 +1071,9 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	if (segmented && cl->pers.segmented.state == SEG_REPLAY) { // remember the amount of savepos/respos used during segmented run
 		cl->pers.stats.resposCount = resposCountSave;
 		cl->pers.stats.saveposCount = savePosCountSave;
+		cl->pers.stats.discardCount = discardCountSave;
+		cl->pers.stats.discardResposCount = discardResposSave;
+		cl->pers.stats.discardMaxDepth = discardMaxDepthSave;
 	}
 	cl->pers.stats.startLevelTime = startLevelTimeSave;
 	cl->pers.stats.startLessTime = lessTime;
@@ -1852,7 +1860,7 @@ void DF_TopRequest(gentity_t* ent, const char* coursename, const char* subcourse
 
 #define REALRANK "ROW_NUMBER() OVER (PARTITION BY userid=-1 ORDER BY besttime ASC, runwhen ASC) AS realrank" // unlogged ones shouldn't count and this way we can get the proper ones
 
-#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump, topspeed, average, runwhen, saveposCount, resposCount, duration_ms_segmented_total, fpsString, " REALRANK ",distance"
+#define TOPCOLUMNS "users.username,runs_pre.besttime,runs_pre.userid, runs_pre.runFlags, msec, jump, topspeed, average, runwhen, saveposCount, resposCount, duration_ms_segmented_total, fpsString, " REALRANK ",distance,discardCount"
 	//#define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime,MIN(runwhen) OVER (PARTITION BY userid) AS earliest FROM runs  WHERE course=? AND style=? AND variant=? AND %s ) runs_pre"
 #define RUNSPRE "(SELECT *,MIN(duration_ms) OVER (PARTITION BY userid) AS besttime FROM runs  WHERE hidden=0 AND course=? AND subcourse=? AND style=? AND variant=? AND %s ) runs_pre"
 //#define QUERY2 " FROM " RUNSPRE " LEFT JOIN users ON runs_pre.userid=users.id WHERE earliest=runwhen AND besttime=duration_ms GROUP BY userid ORDER BY besttime ASC LIMIT 11"
@@ -2260,7 +2268,12 @@ void PrintRaceTime(finishedRunInfo_t* runInfo, qboolean preliminary, qboolean sh
 			//if (level.clients[clientNum].midRunTeleCount < 1)
 			//	Q_strcat(messageStr, sizeof(messageStr), " (PRO)");
 			//else
-			Q_strcat(messageStr, sizeof(messageStr), va("(^3%i^%c SP, ^3%i^%c RP) ", runInfo->savePosCount,color, runInfo->resposCount,color));
+			if (runInfo->discardCount) {
+				Q_strcat(messageStr, sizeof(messageStr), va("(^3%i^%c SP, ^3%i^%c RP, ^3%i^%c D) ", runInfo->savePosCount, color, runInfo->resposCount, color, runInfo->discardCount, color));
+			}
+			else {
+				Q_strcat(messageStr, sizeof(messageStr), va("(^3%i^%c SP, ^3%i^%c RP) ", runInfo->savePosCount, color, runInfo->resposCount, color));
+			}
 		}
 		Q_strcat(messageStr, sizeof(messageStr), va("by^7 %s  ^%c[^%c%s^%c] ", runInfo->netname, color, runInfo->userId == -1 ? '1' : nameColor, runInfo->userId == -1 ? "!^7unlogged^1!" : runInfo->username, color));
 		
@@ -2508,6 +2521,9 @@ static void DF_FillClientRunInfo(finishedRunInfo_t* runInfo, gentity_t* ent, int
 	runInfo->topspeed = client->pers.stats.topSpeed;
 	runInfo->savePosCount = client->pers.stats.saveposCount;
 	runInfo->resposCount = client->pers.stats.resposCount;
+	runInfo->discardCount = client->pers.stats.discardCount;
+	runInfo->discardRespos = client->pers.stats.discardResposCount;
+	runInfo->discardMaxDepth = client->pers.stats.discardMaxDepth;
 	runInfo->startTriggerSpeed = client->pers.stats.startTriggerSpeed;
 	DF_MakeUsedFpsString(&client->pers.stats.fpsStats, runInfo->fpsString, sizeof(runInfo->fpsString));
 	if (client->pers.stats.roll.status == ROLL_ENDED) {
@@ -2549,7 +2565,7 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		"%d " // resposCount
 		"%d " // lostMsecCount
 		"%d " // lostPacketCount
-		"%d " // placeHolder1
+		"\"%d-%d-%d\" " // discardCount, discardResposCount, discardMaxDepth // placeHolder1
 		"%d " // placeHolder2
 		"%d " // placeHolder3
 		"%d " // placeHolder4
@@ -2590,7 +2606,8 @@ const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo) {
 		,runInfo->resposCount
 		,runInfo->lostMsecCount
 		,runInfo->lostPacketCount
-		,runInfo->placeHolder1
+		,runInfo->discardCount, runInfo->discardRespos, runInfo->discardMaxDepth
+		//,runInfo->placeHolder1
 		,runInfo->placeHolder2
 		,runInfo->placeHolder3
 		,runInfo->placeHolder4
@@ -4014,7 +4031,10 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 void DF_ResetSegmentedRun(gentity_t* ent) {
 	ent->client->pers.segmented.state = SEG_DISABLED;
 	trap_G_COOL_API_PlayerUserCmdClear(ent - g_entities); 
-	ent->client->pers.segmented.lastPosResposCount = 0;
+
+	ent->client->pers.segmented.lastPosCount = 0;
+	ent->client->pers.segmented.lastPos[0].resposCount = 0;
+	memset(&ent->client->pers.segmented.lastPos[0].discards, 0, sizeof(ent->client->pers.segmented.lastPos[0].discards));
 #if SEGMENTEDDEBUG
 	memset(ent->client->pers.segmented.debugTime, 0, sizeof(ent->client->pers.segmented.debugTime));
 #endif
@@ -5314,7 +5334,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	usercmd_t* ucmdPtr;
 	usercmd_t ucmd;
 	int clientNum;
-	qboolean resposRequested, saveposRequested;
+	resposType_t resposRequested;
+	qboolean saveposRequested;
 	qboolean strafeBotActive;
 	int msec;
 	posHashType_t posHash;
@@ -5326,7 +5347,9 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 
 	if (!cl->sess.raceMode || !(cl->sess.raceStyle.runFlags & RFL_SEGMENTED)) {
 		trap_G_COOL_API_PlayerUserCmdClear(clientNum);
-		cl->pers.segmented.lastPosResposCount = 0;
+		cl->pers.segmented.lastPosCount = 0;
+		cl->pers.segmented.lastPos[0].resposCount = 0;
+		memset(&cl->pers.segmented.lastPos[0].discards, 0, sizeof(cl->pers.segmented.lastPos[0].discards));
 		if (coolApi & COOL_APIFEATURE_SENDBACKUCMD_GAMEGENERATED) {
 			// during replay, we are providing usercmds for server to send to spectators and player for demos
 			ent->r.svFlags &= ~SVF_COOLAPI_GAMEGENERATEDSENDBACKUSERCMD;
@@ -5355,7 +5378,7 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 	}
 
 	resposRequested = cl->pers.segmented.respos;
-	cl->pers.segmented.respos = qfalse;
+	cl->pers.segmented.respos = RESPOS_NONE;
 	saveposRequested = cl->pers.segmented.savePos;
 	cl->pers.segmented.savePos = qfalse;
 
@@ -5413,7 +5436,9 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 				cl->pers.segmented.state = SEG_RECORDING;
 				cl->pers.segmented.msecProgress = 0;
 				cl->pers.segmented.anglesDiffResettable = qfalse;
-				cl->pers.segmented.lastPosResposCount = 0;
+				cl->pers.segmented.lastPosCount = 0;
+				cl->pers.segmented.lastPos[0].resposCount = 0;
+				memset(&cl->pers.segmented.lastPos[0].discards, 0, sizeof(cl->pers.segmented.lastPos[0].discards));
 			//}
 		}
 
@@ -5455,7 +5480,8 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			G_SendServerCommand(ent - g_entities, "print \"^1Cannot use savepos. Your segmented run was interrupted, e.g. by a death. Please respos.\n\"",qtrue);
 		}
 		else {
-			SavePosition(ent, &cl->pers.segmented.lastPos);
+			segmentedPos_t* savePos = &cl->pers.segmented.lastPos[RESPOSINDEX(cl->pers.segmented.lastPosCount)];
+			SavePosition(ent, &savePos->pos);
 			{
 				// mark this as a cut
 				usercmd_t cutmarker;
@@ -5464,11 +5490,15 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker,0);
 			}
 			cl->pers.stats.saveposCount++;
-			cl->pers.segmented.lastPosMsecProgress = cl->pers.segmented.msecProgress;
-			cl->pers.segmented.lastPosResposCount = 0;
+			savePos->posIndex = cl->pers.segmented.lastPosCount;
+			savePos->msecProgress = cl->pers.segmented.msecProgress;
+			savePos->resposCount = 0;
+			memset(&savePos->discards, 0, sizeof(savePos->discards));
+			savePos->userCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1;
 			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS;
-			cl->pers.segmented.lastPosUserCmdIndex = trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1;
+			VectorCopy(cl->pers.segmented.anglesDiffAccum,savePos->anglesDiffAccum);
 			VectorClear(cl->pers.segmented.anglesDiffAccum);
+			cl->pers.segmented.lastPosCount++;
 		}
 	}
 	else if(resposRequested) {
@@ -5480,26 +5510,95 @@ void DF_HandleSegmentedRunPre(gentity_t* ent) {
 			G_SendServerCommand(ent - g_entities, "print \"^1Cannot use respos during replay. WTF HOW DID WE GET HERE.\n\"",qtrue);
 		}
 		else {
+			int resposIndex = cl->pers.segmented.lastPosCount - 1;
+			segmentedPos_t* resPos = &cl->pers.segmented.lastPos[RESPOSINDEX(resposIndex)];
+			qboolean discardError = qfalse;
 
-			VectorAdd(cl->pers.segmented.anglesDiffAccumActual, cl->pers.segmented.anglesDiffAccum, cl->pers.segmented.anglesDiffAccumActual);
-			cl->pers.segmented.anglesDiffAccumActual[0] &= 65535;
-			cl->pers.segmented.anglesDiffAccumActual[1] &= 65535;
-			cl->pers.segmented.anglesDiffAccumActual[2] &= 65535;
-			VectorClear(cl->pers.segmented.anglesDiffAccum);
-			RestorePosition(ent, &cl->pers.segmented.lastPos,cl->pers.segmented.anglesDiffAccumActual);
-			cl->pers.stats.resposCount++;
-			cl->pers.segmented.lastPosResposCount++;
-			cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS; // un-invalidate.
-			cl->pers.segmented.msecProgress = cl->pers.segmented.lastPosMsecProgress;
-			trap_G_COOL_API_PlayerUserCmdRemove(clientNum, cl->pers.segmented.lastPosUserCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
-			{
-				// save how many times we respos'd this cut
-				usercmd_t cutmarker2;
-				memset(&cutmarker2, 0, sizeof(cutmarker2));
-				cutmarker2.serverTime = -2;
-				cutmarker2.buttons = cl->pers.segmented.lastPosResposCount;
-				trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker2,0);
+			if (resposRequested == RESPOS_DISCARD) {
+				// we want to discard the latest savepos and go to the previous one
+				// first check if the current respos point is valid to begin with
+				if (resposIndex >= 1) {
+					if (resPos->posIndex == resposIndex) {
+						// now check if the one before that is valid
+						int resposIndexOld = cl->pers.segmented.lastPosCount - 2;
+						segmentedPos_t* resPosOld = &cl->pers.segmented.lastPos[RESPOSINDEX(resposIndexOld)];
+						if (resPosOld->posIndex == resposIndexOld) {
+							int left;
+							// ok all good. let's roll back.
+							// add the stored accum of this point to the current accum, since we're rolling it back.
+							VectorAdd(cl->pers.segmented.anglesDiffAccum, resPos->anglesDiffAccum, cl->pers.segmented.anglesDiffAccum);
+							cl->pers.segmented.anglesDiffAccum[0] &= 65535;
+							cl->pers.segmented.anglesDiffAccum[1] &= 65535;
+							cl->pers.segmented.anglesDiffAccum[2] &= 65535;
+							// add the discarded point's resposCount to the previous point and log some stats about the discards
+							resPosOld->resposCount += resPos->resposCount; // resposCount includes everything.
+							resPosOld->discards.resposCount += resPos->resposCount; // discards.resposCount includes everything except this point's own respos count (so we can simply subtract)
+							resPosOld->discards.discardCount += resPos->discards.discardCount + 1; // discardCount is the sum of all discards including more deeply nested discards
+							resPosOld->discards.maxDiscardDepth = MAX(resPos->discards.maxDiscardDepth + 1, resPosOld->discards.maxDiscardDepth);
+
+							cl->pers.stats.discardCount++;
+							cl->pers.stats.discardResposCount += resPos->resposCount;
+							cl->pers.stats.discardMaxDepth = MAX(resPosOld->discards.maxDiscardDepth, cl->pers.stats.discardMaxDepth);
+
+							cl->pers.segmented.lastPosCount--;
+							resposIndex = cl->pers.segmented.lastPosCount - 1;
+							resPos = &cl->pers.segmented.lastPos[RESPOSINDEX(resposIndex)];
+
+							for (left = 0; left < SEGMENTED_MAX_RESPOS; left++) {
+								// find out how many more times we can do this.
+								resposIndexOld = cl->pers.segmented.lastPosCount - 2 - left;
+								resPosOld = &cl->pers.segmented.lastPos[RESPOSINDEX(resposIndexOld)];
+								if (resposIndexOld < 0 || resposIndexOld != resPosOld->posIndex) {
+									break;
+								}
+							}
+
+							G_SendServerCommand(ent - g_entities, va("print \"One saved position was discarded. %d more discards are possible.\n\"", left), qtrue);
+						}
+						else {
+							G_SendServerCommand(ent - g_entities, va("print \"^1Cannot discard saved position, previous position invalid/too old. Requested position %d, reference position %d.\n\"", resposIndexOld, resPosOld->posIndex), qtrue);
+							discardError = qtrue;
+						}
+					}
+					else {
+						G_SendServerCommand(ent - g_entities, va("print \"^1Cannot discard saved position, current position invalid/too old. Requested position %d, reference position %d. ^1THIS SHOULD NEVER HAPPEN.\n\"", resposIndex, resPos->posIndex), qtrue);
+						discardError = qtrue;
+					}
+				}
+				else {
+					G_SendServerCommand(ent - g_entities,"print \"^1Cannot discard saved position, there is nothing to go back to.\n\"", qtrue);
+					discardError = qtrue;
+				}
 			}
+
+			if (resposIndex >= 0 && resPos->posIndex != resposIndex) { // this should never happen! since we should refuse to discard a point if it meant ending up on an invalid one
+				G_SendServerCommand(ent - g_entities, va("print \"^1Cannot restore position, position invalid/too old. Requested position %d, reference position %d. ^1THIS SHOULD NEVER HAPPEN.\n\"", resposIndex, resPos->posIndex), qtrue);
+			}
+			else {
+				VectorAdd(cl->pers.segmented.anglesDiffAccumActual, cl->pers.segmented.anglesDiffAccum, cl->pers.segmented.anglesDiffAccumActual);
+				cl->pers.segmented.anglesDiffAccumActual[0] &= 65535;
+				cl->pers.segmented.anglesDiffAccumActual[1] &= 65535;
+				cl->pers.segmented.anglesDiffAccumActual[2] &= 65535;
+				VectorClear(cl->pers.segmented.anglesDiffAccum);
+				RestorePosition(ent, &resPos->pos, cl->pers.segmented.anglesDiffAccumActual);
+				cl->pers.stats.resposCount++;
+				resPos->resposCount++;
+				cl->pers.segmented.state = SEG_RECORDING_HAVELASTPOS; // un-invalidate.
+				cl->pers.segmented.msecProgress = resPos->msecProgress;
+				trap_G_COOL_API_PlayerUserCmdRemove(clientNum, resPos->userCmdIndex + 1, trap_G_COOL_API_PlayerUserCmdGetCount(clientNum) - 1);
+				{
+					// save how many times we respos'd this cut, and discards info
+					usercmd_t cutmarker2;
+					memset(&cutmarker2, 0, sizeof(cutmarker2));
+					cutmarker2.serverTime = -2;
+					cutmarker2.buttons = resPos->resposCount;
+					cutmarker2.angles[0] = resPos->discards.discardCount;
+					cutmarker2.angles[1] = resPos->discards.resposCount;
+					cutmarker2.angles[2] = resPos->discards.maxDiscardDepth;
+					trap_G_COOL_API_PlayerUserCmdAdd(clientNum, &cutmarker2, 0);
+				}
+			}
+
 		}
 	}
 
