@@ -2636,7 +2636,7 @@ void ClientSpawn(gentity_t *ent) {
 		client->ps.fd.forceDoInit = 0;
 	}
 
-	inSegmentedRun = client->sess.sessionTeam != TEAM_SPECTATOR && DF_ClientInSegmentedRunMode(client) && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY && client->pers.segmented.lastPos[RESPOSINDEX(client->pers.segmented.lastPosCount-1)].posIndex == client->pers.segmented.lastPosCount;
+	inSegmentedRun = client->sess.sessionTeam != TEAM_SPECTATOR && DF_ClientInSegmentedRunMode(client) && client->pers.segmented.state >= SEG_RECORDING_HAVELASTPOS && client->pers.segmented.state < SEG_REPLAY && client->pers.segmented.lastPos[RESPOSINDEX(client->pers.segmented.lastPosCount-1)].posIndex == (client->pers.segmented.lastPosCount - 1);
 
 	raceSpawnPossible = client->sess.sessionTeam != TEAM_SPECTATOR && client->sess.raceMode && client->pers.savedSpawnUsed;
 	useSavedSpawn = raceSpawnPossible && !inSegmentedRun && !memcmp(&client->sess.raceStyle, &client->pers.savedSpawnRaceStyle, sizeof(client->sess.raceStyle));
