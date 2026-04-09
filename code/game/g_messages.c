@@ -193,19 +193,19 @@ void G_ListUserMessagesListContinue(int status, const char* errorMessage, int af
 		// table doesn't exist. create it.
 		G_CreateUserTable();
 		G_CreateMessagesTable();
-		trap_SendServerCommand(data.clientnum, "print \"^1User message sending failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		trap_SendServerCommand(data.clientnum, "print \"^1User message listing failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
 		return;
 	}
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
-		Com_Printf("^1Client %d user message sending user search returned, user no longer valid.\n", data.clientnum);
+		Com_Printf("^1Client %d user message listing returned, user no longer valid.\n", data.clientnum);
 		return;
 	}
 	if (coolApi_dbVersion < 3) {
-		trap_SendServerCommand(data.clientnum, "print \"^1Message sending failed. Database version too low.\n\"");
+		trap_SendServerCommand(data.clientnum, "print \"^1Message listing failed. Database version too low.\n\"");
 		return;
 	}
-	trap_SendServerCommand(data.clientnum, va("print \"^7Messages involving you, page %d:\n\"",data.page));
-	trap_SendServerCommand(data.clientnum, "print \"^2-------------------------------------------------------------\n\"");
+	trap_SendServerCommand(data.clientnum, va("print \"^JMessages involving you, page %d (call with page number for more):\n\"",data.page+1));
+	trap_SendServerCommand(data.clientnum, "print \"^R-------------------------------------------------------------\n\"");
 	i = 0;
 	while (G_COOL_API_DB_NextRow())
 	{
@@ -217,20 +217,30 @@ void G_ListUserMessagesListContinue(int status, const char* errorMessage, int af
 		char	sentfrom[COURSENAME_MAX_LEN+1];
 		qboolean	unread = G_COOL_API_DB_GetInt(5);
 		int		recipientId = G_COOL_API_DB_GetInt(7);
+		int		senderId = G_COOL_API_DB_GetInt(8);
+		int		timeLeft = G_COOL_API_DB_GetInt(9);
+		int		msgLen;
 
-		if (i > 0) {
-			trap_SendServerCommand(data.clientnum, "print \"^3---------------------------------------\n\"");
-		}
-
+		//if (i > 0) {
+		//	trap_SendServerCommand(data.clientnum, "print \"^3---------------------------------------\n\"");
+		//}
+		// 
 		// do the actual sending
 		G_COOL_API_DB_GetString(0, sender, sizeof(sender));
 		G_COOL_API_DB_GetString(1, recipient, sizeof(recipient));
 		G_COOL_API_DB_GetString(2, when, sizeof(when));
 		G_COOL_API_DB_GetString(3, sentfrom, sizeof(sentfrom));
 		G_COOL_API_DB_GetString(4, msg, sizeof(msg));
-
-		trap_SendServerCommand(data.clientnum, va("print \"^7From: %10s, To: %10s, Time: %s, Sent from: %s\n\"", sender, recipient, when, sentfrom));
-		trap_SendServerCommand(data.clientnum, va("print \"^7%s\n\"", msg));
+		msgLen = strlen(msg);
+		//From: %10s, To: %10s sender, recipient
+		trap_SendServerCommand(data.clientnum, va("print \"^j%s %55s^7: ^7%s\n\"",
+			when, multiva("^u%15s %-40s",
+				senderId != data.userid ? miniva("from %s", sender) : (recipientId != data.userid ? miniva("to %s", recipient) : "to myself"),
+				multiva("^J@ %s %s left)",
+					sentfrom,
+					unread ? "^E(30d" : (timeLeft > 1440 ? miniva("^E(%dd", timeLeft / 1440) : (timeLeft > 60 ? miniva("^S(%dh", timeLeft / 60) : miniva("^y(%dm", timeLeft)))
+				)
+			), msg));
 
 		if (unread && recipientId == ent->client->sess.login.id) { // we want to auto-prune old messages so remember when they were read
 			int	id = G_COOL_API_DB_GetInt(6);
@@ -249,7 +259,8 @@ void G_ListUserMessagesListContinue(int status, const char* errorMessage, int af
 		}
 		i++;
 	}
-	trap_SendServerCommand(data.clientnum, "print \"^2-------------------------------------------------------------\n\"");
+	trap_SendServerCommand(data.clientnum, "print \"^R-------------------------------------------------------------\n\"");
+	trap_SendServerCommand(data.clientnum, "print \"^gUse ^2/messages send <username> <message> ^gto respond or write someone else. Messages are automatically deleted after 30 days. Don't use messaging for anything private.\n\"");
 
 }
 
@@ -273,28 +284,32 @@ void G_Cmd_ListUserMessages(gentity_t* ent) {
 	memset(&data, 0, sizeof(data));
 	data.clientnum = ent - g_entities;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	data.userid = ent->client->sess.login.id;
+
+	if (trap_Argc() > 2) {
+		char arg[10];
+		trap_Argv(2, arg, sizeof(arg));
+		data.page = atoi(arg)-1;
+		if (data.page < 0) {
+			data.page = 0;
+		}
+		start = data.page * 10;
+	}
 
 	// find target user.
 	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_LISTUSERMESSAGES, 
 		"SELECT users1.username AS sendername, users2.username as recipientname, "
-		"messages.created, sentfrom, content,(messages.readtime IS NULL) AS unread,messages.id,recipient "
+		"messages.created, sentfrom, content,(messages.readtime IS NULL) AS unread,messages.id,recipient,sender "
+		",TIMESTAMPDIFF(MINUTE,NOW(),messages.readtime + INTERVAL 30 DAY ) AS timeLeft "
 		"FROM messages "
 		"LEFT JOIN users AS users1 ON users1.id=sender "
 		"LEFT JOIN users AS users2 ON users2.id=recipient "
 		"WHERE (sender=? OR recipient=?) "
 		"ORDER BY created DESC "
 		"LIMIT ?,10;"
-		"UPDATE messages SET readtime=IF(readtime IS NULL,NOW(),readtime)"
 	)) {
 		G_SendServerCommand(ent - g_entities, "print \"DB connection not available to list user messages.\n\"", qfalse);
 		return;
-	}
-
-	if (trap_Argc() > 2) {
-		char arg[10];
-		trap_Argv(2, arg, sizeof(arg));
-		data.page = atoi(arg);
-		start = data.page * 10;
 	}
 
 	G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
@@ -303,9 +318,106 @@ void G_Cmd_ListUserMessages(gentity_t* ent) {
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 }
 
+
+void G_CheckUnreadUserMessagesResults(int status, const char* errorMessage, int affectedRows) {
+	gentity_t* ent = NULL;
+	int newMsgs,daysOldest;
+	char newSince[25];
+	userMessagesListStruct_t data;
+
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		G_CreateUserTable();
+		G_CreateMessagesTable();
+		if (g_developer.integer) {
+			trap_SendServerCommand(data.clientnum, "print \"^1User message listing failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		}
+		return;
+	}
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		if (g_developer.integer) {
+			Com_Printf("^1Client %d user message listing returned, user no longer valid.\n", data.clientnum);
+		}
+		return;
+	}
+	if (coolApi_dbVersion < 3) {
+		if (g_developer.integer) {
+			trap_SendServerCommand(data.clientnum, "print \"^1Message listing failed. Database version too low.\n\"");
+		}
+		return;
+	}
+	if (!G_COOL_API_DB_NextRow()) {
+		if (g_developer.integer) {
+			trap_SendServerCommand(data.clientnum, "print \"^1Checking for unread messages failed. No results returned.\n\"");
+		}
+		return;
+	}
+	newMsgs = G_COOL_API_DB_GetInt(0);
+	daysOldest = G_COOL_API_DB_GetInt(2);
+	//G_COOL_API_DB_GetString(1, newSince, sizeof(newSince));
+	if (newMsgs > 0) {
+		trap_SendServerCommand(data.clientnum, va("print \"^3You have %d UNREAD messages dating back %d day(s). Check them with ^2/messages list^3.\n\"",newMsgs, daysOldest));
+	}
+}
+
+
+// this one's called automatically on login and level change
+void G_CheckForUnreadUserMessages(gentity_t* ent) {
+	static userMessagesListStruct_t data;
+	int start = 0;
+	const char* coursename = NULL;
+	if (coolApi_dbVersion < 3) {
+		if (g_developer.integer) {
+			G_SendServerCommand(ent - g_entities, "print \"DB version too low to send user messages.\n\"", qfalse);
+		}
+		return;
+	}
+	if (!ent->client->sess.login.loggedIn) {
+		if (g_developer.integer) {
+			G_SendServerCommand(ent - g_entities, "print \"Can't list user messages unless logged in.\n\"", qfalse);
+		}
+		return;
+	}
+	//if (trap_Argc() < 4) {
+	//	G_SendServerCommand(ent - g_entities, "print \"Usage: messages list\n\"", qfalse);
+	//	return;
+	//}
+
+	memset(&data, 0, sizeof(data));
+	data.clientnum = ent - g_entities;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	data.userid = ent->client->sess.login.id;
+
+
+	// find target user.
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_CHECKUNREADUSERMESSAGES,
+		"SELECT COUNT(*) as unreadCount "
+		",MIN(created) AS minCreated "
+		",CEIL(TIMESTAMPDIFF(SECOND,messages.created,NOW())/86400) AS minCreatedDaysAge "
+		"FROM messages "
+		"WHERE (recipient=?) AND (messages.readtime IS NULL) "
+		"ORDER BY created DESC "
+	)) {
+		if (g_developer.integer) {
+			G_SendServerCommand(ent - g_entities, "print \"DB connection not available to list user messages.\n\"", qfalse);
+		}
+		return;
+	}
+
+	G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+}
+
 void G_Cmd_UserMessages(gentity_t* ent) {
 	char arg[10];
-	trap_SendServerCommand(ent - g_entities,"print \"^1MESSAGING SYSTEM IMPORTANT WARNING: ^3Do not use this messaging system for anything private. Messages are stored in plaintext. After reading, messages are ^3permanently deleted ^3after 30 days, so don't rely on them remaining available forever.\n\"");
+	if (!ent->client->messageSystemWarningShowed || ent->client->messageSystemWarningShowed < level.time-60*60*1000) {
+		// show this message if you didn't use the messaging system for an hour roughly. 
+		// might as well just show it once per level load but meh
+		trap_SendServerCommand(ent - g_entities, "print \"^1MESSAGING SYSTEM IMPORTANT WARNING: ^3Do not use this messaging system for anything private. Messages are stored in plaintext. After reading, messages are ^3permanently deleted ^3after 30 days, so don't rely on them remaining available forever.\n\"");
+	}
+	ent->client->messageSystemWarningShowed = level.time;
 	if (trap_Argc() < 2) {
 		G_SendServerCommand(ent - g_entities, "print \"Usage: messages <send|list> [recipient or page number] [message if sending].\n\"", qfalse);
 		return;

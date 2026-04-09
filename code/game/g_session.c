@@ -164,6 +164,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	
 	if (client->sess.login.loggedIn) {
 		DF_RequestPlayerDefaultTime(g_entities + (client - g_clients));
+		G_CheckForUnreadUserMessages(g_entities + (client - g_clients));
 	}
 
 	DF_SetSubContestDefaults(client); // would be nicer to keep it but lets just set defaults who cares. means a few more db requests that could be avoided, but it wont cause any issues beyond that, maybe TODO someday

@@ -2499,6 +2499,7 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("resseg");
 	trap_AddCommand("screenshotCubeMap");
 	trap_AddCommand("ratemap");
+	trap_AddCommand("messages");
 
 	trap_AddCommand("tffaStats");
 }

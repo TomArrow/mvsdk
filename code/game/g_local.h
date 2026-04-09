@@ -730,6 +730,7 @@ struct gclient_s {
 	qboolean	isIronMan;
 
 	int			bactaExtra; // extra amount restored by bacta (e.g. q3 bacta)
+	int			messageSystemWarningShowed;
 };
 
 
@@ -1173,6 +1174,7 @@ extern int gGAvoidDismember;
 // 
 void G_Cmd_UserMessages(gentity_t* ent);
 void G_UserMessagesPrune();
+void G_CheckForUnreadUserMessages(gentity_t* ent);
 
 //
 // g_missile.c

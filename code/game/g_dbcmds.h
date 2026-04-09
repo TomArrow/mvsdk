@@ -38,6 +38,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_DEMOCHECK_GETALLRUNS,
 	DBREQUEST_SENDUSERMESSAGE,
 	DBREQUEST_SENDUSERMESSAGE_ACTUAL,
+	DBREQUEST_CHECKUNREADUSERMESSAGES,
 	DBREQUEST_LISTUSERMESSAGES,
 	DBREQUEST_LISTUSERMESSAGES_UPDATEREAD,
 	DBREQUEST_PRUNEUSERMESSAGES,
@@ -125,6 +126,7 @@ typedef struct userMessagesListStruct_s {
 	int			ip[4];
 	int			clientnum;
 	int			page;
+	int			userid;
 }userMessagesListStruct_t;
 
 typedef struct userMessagesPruneStruct_s {
@@ -266,5 +268,6 @@ LIMIT 1);"
 void G_SendUserMessageContinue(int status, const char* errorMessage, int affectedRows);
 void G_SendUserMessageFinished(int status, const char* errorMessage, int affectedRows);
 void G_ListUserMessagesListContinue(int status, const char* errorMessage, int affectedRows);
+void G_CheckUnreadUserMessagesResults(int status, const char* errorMessage, int affectedRows);
 
 #endif

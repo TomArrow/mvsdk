@@ -2085,6 +2085,8 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 
 	DF_RequestPlayerDefaultTime(ent);
 
+	G_CheckForUnreadUserMessages(ent);
+
 	trap_SendServerCommand(loginData->clientnum, va("print \"^2Successfully logged in as '%s'.\n\"",loginData->username));
 	//trap_SendServerCommand(-1, va("print \"^2%s ^7logged in as '%s'.\n\"",client ? client->pers.netname : "", loginData->username));
 
@@ -2349,6 +2351,9 @@ void G_DB_CheckResponses() {
 					break;
 				case DBREQUEST_LISTUSERMESSAGES:
 					G_ListUserMessagesListContinue(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_CHECKUNREADUSERMESSAGES:
+					G_CheckUnreadUserMessagesResults(status, errorMessage, affectedRows);
 					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);
