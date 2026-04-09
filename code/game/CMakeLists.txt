@@ -86,6 +86,7 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/g_items.c"
 	"${SRCDir}/game/g_log.c"
 	"${SRCDir}/game/g_mem.c"
+	"${SRCDir}/game/g_messages.c"
 	"${SRCDir}/game/g_misc.c"
 	"${SRCDir}/game/g_missile.c"
 	"${SRCDir}/game/g_mover.c"

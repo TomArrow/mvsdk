@@ -36,6 +36,11 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_RATEMAPSHOWMINE,
 	DBREQUEST_RANK,
 	DBREQUEST_DEMOCHECK_GETALLRUNS,
+	DBREQUEST_SENDUSERMESSAGE,
+	DBREQUEST_SENDUSERMESSAGE_ACTUAL,
+	DBREQUEST_LISTUSERMESSAGES,
+	DBREQUEST_LISTUSERMESSAGES_UPDATEREAD,
+	DBREQUEST_PRUNEUSERMESSAGES,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -105,6 +110,27 @@ typedef struct rateMapStruct_s {
 	float		value;
 	int			style;
 }rateMapStruct_t;
+
+typedef struct userMessageSendStruct_s {
+	int			ip[4];
+	int			clientnum;
+	char		message[MAX_STRING_CHARS];
+	int			senderId;
+	// gotta query these first:
+	char		userName[USERNAME_MAX_LEN + 1];
+	int			recipientId;
+}userMessageSendStruct_t;
+
+typedef struct userMessagesListStruct_s {
+	int			ip[4];
+	int			clientnum;
+	int			page;
+}userMessagesListStruct_t;
+
+typedef struct userMessagesPruneStruct_s {
+	int			ip[4];
+	int			clientnum;
+}userMessagesPruneStruct_t;
 
 typedef struct latestRunsRequestStruct_s {
 	int			ip[4];
@@ -216,7 +242,8 @@ typedef struct topRequestStruct_s {
 void G_DB_CheckResponses();
 qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify); 
 void G_DB_Init();
-
+void G_CreateUserTable();
+void G_CreateMessagesTable();
 
 // bind username and userid
 #define USERIDQUERY_USERID "SET @username=?, @userid=?;SELECT @username,@userid;"
@@ -229,5 +256,15 @@ FROM users \
 WHERE instr(username, @search) \
 ORDER BY diff ASC \
 LIMIT 1);"
+
+
+
+//
+// g_messages.c
+//
+
+void G_SendUserMessageContinue(int status, const char* errorMessage, int affectedRows);
+void G_SendUserMessageFinished(int status, const char* errorMessage, int affectedRows);
+void G_ListUserMessagesListContinue(int status, const char* errorMessage, int affectedRows);
 
 #endif

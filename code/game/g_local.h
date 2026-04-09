@@ -94,6 +94,7 @@ typedef enum
 //============================================================================
 
 
+
 extern void *precachedKyle;
 extern void *g2SaberInstance;
 
@@ -1131,6 +1132,7 @@ uint32_t    trap_G_COOL_API_GetFileVersion(const char *fileName);
 
 //qboolean	G_InsertRun(gentity_t* ent, int milliseconds, float topspeed, float average, float distance, int warningFlags, int levelTimeFinish, int commandTimeFinish, int runId);
 qboolean	G_InsertRun(finishedRunInfo_t* runInfo);
+gentity_t*	DB_VerifyClient(int clientNum, ip_t ip);
 
 //
 // g_combat.c
@@ -1164,6 +1166,13 @@ extern int gGAvoidDismember;
 
 #define DAMAGE_IN_RACEMODE			0x00001000	// Damages even in racemode
 #define FAKE_DAMAGE_IN_RACEMODE		0x00002000	// "Damages" in racemode. Applies effects/knockback but no real harm.
+
+
+// 
+// g_messages.c
+// 
+void G_Cmd_UserMessages(gentity_t* ent);
+void G_UserMessagesPrune();
 
 //
 // g_missile.c

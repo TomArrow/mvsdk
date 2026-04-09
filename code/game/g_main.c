@@ -1260,6 +1260,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	if (g_defrag.integer) {
 		DF_LoadMapDefaults();
 	}
+	G_UserMessagesPrune();
 
 	// general initialization
 	G_FindTeams();
@@ -1319,6 +1320,8 @@ G_ShutdownGame
 */
 void G_ShutdownGame( int restart ) {
 	G_Printf ("==== ShutdownGame ====\n");
+
+	G_UserMessagesPrune();
 
 	G_LogWeaponOutput();
 

@@ -2018,7 +2018,9 @@ void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull,const char* courseName
 		}
 		else {
 			if (!G_COOL_API_DB_AddRequest((byte*)&data, sizeof(data), DBREQUEST_RANKUPDATEMAPREQUEST, RANKMAPQUERY_DATELIMITED)) {
-				G_SendOrPrint(requesterOrNull, "^1Error sending date-limited rank update map request query.\n");
+				if (g_developer.integer) {
+					G_SendOrPrint(requesterOrNull, "^1Error sending date-limited rank update map request query.\n");
+				}
 			}
 		}
 	}

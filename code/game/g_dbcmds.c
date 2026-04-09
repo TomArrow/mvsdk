@@ -4,14 +4,11 @@
 #include "../qcommon/crypt_blowfish.h"
 
 
-typedef int ip_t[4];
-
 //static int IPToInt() {
 //
 //}
 
 
-static void G_CreateUserTable();
 static void G_CreateRunsTable();
 static void G_CreateCheckpointsTable();
 static void G_CreateSubContestsTable();
@@ -2344,6 +2341,15 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_FORCEDLOGIN:
 					G_ForceLoginContinue(status, errorMessage, affectedRows);
 					break;
+				case DBREQUEST_SENDUSERMESSAGE:
+					G_SendUserMessageContinue(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_SENDUSERMESSAGE_ACTUAL:
+					G_SendUserMessageFinished(status, errorMessage, affectedRows);
+					break;
+				case DBREQUEST_LISTUSERMESSAGES:
+					G_ListUserMessagesListContinue(status, errorMessage, affectedRows);
+					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);
 				//	break;
@@ -2464,10 +2470,17 @@ void G_DB_LoadUserCheckpoints(gentity_t* playerent) {
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 }
 
-static void G_CreateUserTable() {
+void G_CreateUserTable() {
 	referenceSimpleString_t tableName;
 	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS users(id BIGINT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(%d) UNIQUE NOT NULL, password VARCHAR(64)  NOT NULL, lastlogin DATETIME, created DATETIME NOT NULL, lastip  INT UNSIGNED, flags  INT UNSIGNED NOT NULL DEFAULT 0)",USERNAME_MAX_LEN);
 	Q_strncpyz(tableName.s, "users", sizeof(tableName.s));
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
+}
+
+void G_CreateMessagesTable() {
+	referenceSimpleString_t tableName;
+	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS messages(id BIGINT AUTO_INCREMENT PRIMARY KEY, sender INT NOT NULL, recipient INT NOT NULL, content TEXT NOT NULL, created DATETIME NOT NULL, readtime DATETIME NULL, sentfrom VARCHAR(100) NOT NULL, type INT NOT NULL, keep TINYINT NOT NULL DEFAULT 0, flags  INT UNSIGNED NOT NULL DEFAULT 0)",USERNAME_MAX_LEN);
+	Q_strncpyz(tableName.s, "messages", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }
 
@@ -2631,6 +2644,7 @@ static void G_CreateRunsTable() {
 
 static void G_DB_CreateTables() {
 	G_CreateUserTable();
+	G_CreateMessagesTable();
 	G_CreateRunsTable();
 	G_CreateCheckpointsTable();
 	G_CreateSubContestsTable();

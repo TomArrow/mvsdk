@@ -5916,6 +5916,10 @@ void ClientCommand( int clientNum ) {
 		{
 			giveError = qtrue;
 		}
+		else if (!Q_stricmp(cmd, "messages"))
+		{
+			giveError = qtrue;
+		}
 		else if (!Q_stricmp(cmd, "maplist"))
 		{
 			giveError = qtrue;
@@ -6149,6 +6153,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_MapSearch_f(ent);
 	else if (Q_stricmp(cmd, "ratemap") == 0)
 		Cmd_RateMap_f(ent);
+	else if (Q_stricmp(cmd, "messages") == 0)
+		G_Cmd_UserMessages(ent);
 	else if (Q_stricmp(cmd, "maplist") == 0)
 		Cmd_Maplist_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)

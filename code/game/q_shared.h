@@ -244,6 +244,8 @@ typedef int		sfxHandle_t;
 typedef int		fileHandle_t;
 typedef int		clipHandle_t;
 
+typedef int		ip_t[4];
+
 #define G2_COLLISION_ENABLED
 
 #ifndef NULL
