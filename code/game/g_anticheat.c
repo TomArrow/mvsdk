@@ -217,10 +217,17 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 	int i,  contents;
 	vec3_t firstPersonPos, thirdPersonPos, targPos[9], targetCenter, targetMins, targetMaxs;
 	int whVal = g_antiWallhack.integer < 0 ? -g_antiWallhack.integer : g_antiWallhack.integer;
-	int preTraceFlags = TRACECUSTOMFLAG_MARKBRUSHES, traceFlags = TRACECUSTOMFLAG_WALKBRUSHES;
+	int preTraceFlags = 0, traceFlags = 0;
 
-	if (!(coolApi & COOL_APIFEATURE_PRETRACE_TRACE) || !g_antiWallhackFast.integer) {
-		preTraceFlags = traceFlags = 0;
+	if (g_antiWallhackFast.integer == 1 && (coolApi & COOL_APIFEATURE_PRETRACE_TRACE)) {
+		preTraceFlags = TRACECUSTOMFLAG_MARKBRUSHES, traceFlags = TRACECUSTOMFLAG_WALKBRUSHES;
+	}
+	if (g_antiWallhackFast.integer >= 2 && (coolApi & COOL_APIFEATURE_FASTHULLTRACE)) {
+		preTraceFlags = 0;
+		traceFlags = TRACECUSTOMFLAG_FASTHULLTRACE;
+		if (g_antiWallhackFast.integer == 3) {
+			traceFlags |= TRACECUSTOMFLAG_SKIPENTITYTRACE;
+		}
 	}
 
 	GetCameraPosition(self, thirdPersonPos);
