@@ -52,6 +52,7 @@ void CG_BuildSolidList( void ) {
 
 	for (i = 0; i < MAX_CLIENTS; i++) {
 		VectorClear(cg_entities[i].modelScale);
+		cg_entities[i].modelScaleZComp = qfalse;
 	}
 	for ( i = 0 ; i < snap->numEntities ; i++ ) {
 		cent = &cg_entities[ snap->entities[ i ].number ];
@@ -61,10 +62,15 @@ void CG_BuildSolidList( void ) {
 			if (ent->modelGhoul2 == 15) {
 				// client stats entity
 				cg_statsEntities[ent->clientNum] = cent;
-				if (cgs.clientinfo[ent->clientNum].playerMode == MODE_DEFRAG && ent->bolt1 == MV_Q2) {
+				if (ent->pos.trBase[2]) {
+					// forced modelscale so clients support future custom modelscales
+					VectorSet(cg_entities[ent->clientNum].modelScale, ent->pos.trBase[2], ent->pos.trBase[2], ent->pos.trBase[2]);
+					cg_entities[ent->clientNum].modelScaleZComp = (qboolean)!!(ent->eFlags & PF_RENDER_ZCOMP);
+				} else if (cgs.clientinfo[ent->clientNum].playerMode == MODE_DEFRAG && ent->bolt1 == MV_Q2) {
 					// quake 2 has smaller player boxes
 					VectorSet(cg_entities[ent->clientNum].modelScale, 0.875f, 0.875f, 0.875f);
-				}
+					cg_entities[ent->clientNum].modelScaleZComp = qtrue;
+				} 
 				continue;
 			}
 			else if (ent->modelGhoul2 == 14) {
@@ -1388,6 +1394,7 @@ restartpredict:
 		if (!cg_pmove.isSpecialPredict && (cg_pmove.cmd.serverTime > cg.antiLoopLastCommandTime || (cg_pmove.cmd.serverTime + 10000) < cg.antiLoopLastCommandTime)) { // the +10000 condition just in case commandtime ever gets reset or similar shenanigans. idk if its a real issue.
 			cg_pmove.antiLoop = cg.antiLoop;
 		}
+		cg_pmove.forcedModelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0];
 		Pmove (&cg_pmove);
 		VectorCopy(cg_pmove.ps->origin,oldPos );
 		cg.roll = cg_pmove.roll;

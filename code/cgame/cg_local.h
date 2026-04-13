@@ -245,6 +245,7 @@ typedef struct centity_s {
 	void			*ghoul2weapon; //rww - pointer to ghoul2 instance of the current 3rd person weapon
 
 	vec3_t			modelScale;
+	qboolean		modelScaleZComp;
 	float			radius;
 	int				boltInfo;
 
@@ -2014,6 +2015,8 @@ extern	vmCvar_t		cg_cl_timeNudgeAntiLagHack;
 extern	vmCvar_t		cg_cl_timeNudgeSafeServerTime;
 extern	vmCvar_t		cg_cl_aviTimeFraction;
 extern	vmCvar_t		cg_cl_mirror;
+
+extern	vmCvar_t		cg_r_zNear;
 
 extern	vmCvar_t		cg_strafebotSlopeHandling;
 

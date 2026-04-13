@@ -1816,6 +1816,7 @@ void ClientThink_real( gentity_t *ent ) {
 	qboolean	clientFpsOk;
 	qboolean	inactivityToSpec = qfalse;
 	vec3_t		prePmoveVelocity;
+	float		forcedModelScale = 0.0f;
 
 	client = ent->client;
 
@@ -1896,6 +1897,16 @@ void ClientThink_real( gentity_t *ent ) {
 			msec = 200;
 		}
 	}
+
+	level.playerStats[ent - g_entities]->s.eFlags &= ~PF_RENDER_ZCOMP;
+	if (moveStyle == MV_RATS) {
+		forcedModelScale = 0.05f;
+	}
+	else if (moveStyle == MV_Q2) {
+		forcedModelScale = 0.875f;
+		level.playerStats[ent - g_entities]->s.eFlags |= PF_RENDER_ZCOMP; // q2 keeps the -24 MINS_Z so we gotta compensate when rendering
+	}
+	level.playerStats[ent - g_entities]->s.pos.trBase[2] = forcedModelScale;
 	
 	if (g_defrag.integer && client->sess.raceMode && ent->activatedEntities) {
 		gentity_t* actEnt = ent->activatedEntities;
@@ -2447,6 +2458,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.roll = ent->client->pers.roll;
 	pm.antiLoop = ent->client->pers.antiLoop;
 	pm.oldButtons = ent->client->oldbuttons;
+	pm.forcedModelScale = forcedModelScale;
 	DF_PreDeltaAngleChange(ent->client);
 	pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 	Pmove (&pm);

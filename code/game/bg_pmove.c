@@ -1697,7 +1697,7 @@ static qboolean PM_CheckJump( void )
 				int contents = MASK_PLAYERSOLID;
 
 				VectorSet(mins, pm->mins[0],pm->mins[1],0);
-				VectorSet(maxs, pm->maxs[0],pm->maxs[1],24);
+				VectorSet(maxs, pm->maxs[0],pm->maxs[1],24 * pm->effectiveModelScale);
 				VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0);
 
 				memset(&trace, 0, sizeof(trace)); //to shut the compiler up
@@ -1807,7 +1807,7 @@ static qboolean PM_CheckJump( void )
 				if (onlyWallGrab) return qfalse;
 
 				VectorSet(mins, pm->mins[0], pm->mins[0], 0);
-				VectorSet(maxs, pm->maxs[0], pm->maxs[0], 24);
+				VectorSet(maxs, pm->maxs[0], pm->maxs[0], 24 * pm->effectiveModelScale);
 				VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0);
 
 				AngleVectors( fwdAngles, NULL, right, NULL );
@@ -1951,7 +1951,7 @@ static qboolean PM_CheckJump( void )
 					int		anim = -1;
 
 					VectorSet(mins, pm->mins[0], pm->mins[1], 0.0f);
-					VectorSet(maxs, pm->maxs[0], pm->maxs[1], 24.0f);
+					VectorSet(maxs, pm->maxs[0], pm->maxs[1], 24.0f * pm->effectiveModelScale);
 					VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0.0f);
 
 					if ( pm->cmd.rightmove )
@@ -3174,7 +3174,7 @@ static void PM_NoclipMove( void ) {
 	float		wishspeed;
 	float		scale;
 
-	pm->ps->viewheight = DEFAULT_VIEWHEIGHT;
+	pm->ps->viewheight = DEFAULT_VIEWHEIGHT * pm->effectiveModelScale;
 
 	// friction
 
@@ -3279,7 +3279,7 @@ static int PM_TryRoll( void )
 	}
 
 	VectorSet(mins, pm->mins[0],pm->mins[1],pm->mins[2]+STEPSIZE);
-	VectorSet(maxs, pm->maxs[0],pm->maxs[1],CROUCH_MAXS_2);
+	VectorSet(maxs, pm->maxs[0],pm->maxs[1],CROUCH_MAXS_2*pm->effectiveModelScale);
 
 	VectorSet(fwdAngles, 0, pm->ps->viewangles[YAW], 0);
 
@@ -3876,20 +3876,20 @@ static void PM_SetWaterLevel( void ) {
 
 	point[0] = pm->ps->origin[0];
 	point[1] = pm->ps->origin[1];
-	point[2] = pm->ps->origin[2] + MINS_Z + 1;	
+	point[2] = pm->ps->origin[2] + (MINS_Z + 1)*pm->effectiveModelScale;
 	cont = pm->pointcontents( point, pm->ps->clientNum );
 
 	if ( cont & MASK_WATER ) {
-		sample2 = pm->ps->viewheight - MINS_Z;
+		sample2 = pm->ps->viewheight - MINS_Z * pm->effectiveModelScale;
 		sample1 = sample2 / 2;
 
 		pm->watertype = cont;
 		pm->waterlevel = 1;
-		point[2] = pm->ps->origin[2] + MINS_Z + sample1;
+		point[2] = pm->ps->origin[2] + MINS_Z * pm->effectiveModelScale + sample1;
 		cont = pm->pointcontents (point, pm->ps->clientNum );
 		if ( cont & MASK_WATER ) {
 			pm->waterlevel = 2;
-			point[2] = pm->ps->origin[2] + MINS_Z + sample2;
+			point[2] = pm->ps->origin[2] + MINS_Z * pm->effectiveModelScale + sample2;
 			cont = pm->pointcontents (point, pm->ps->clientNum );
 			if ( cont & MASK_WATER ){
 				pm->waterlevel = 3;
@@ -3910,18 +3910,18 @@ static void PM_CheckDuck (void)
 {
 	trace_t	trace;
 
-	pm->mins[0] = -15;
-	pm->mins[1] = -15;
+	pm->mins[0] = -15 * pm->effectiveModelScale;
+	pm->mins[1] = -15 * pm->effectiveModelScale;
 
-	pm->maxs[0] = 15;
-	pm->maxs[1] = 15;
+	pm->maxs[0] = 15 * pm->effectiveModelScale;
+	pm->maxs[1] = 15 * pm->effectiveModelScale;
 
-	pm->mins[2] = MINS_Z;
+	pm->mins[2] = MINS_Z * pm->effectiveModelScale;
 
 	if (pm->ps->pm_type == PM_DEAD)
 	{
-		pm->maxs[2] = -8;
-		pm->ps->viewheight = DEAD_VIEWHEIGHT;
+		pm->maxs[2] = -8 * pm->effectiveModelScale;
+		pm->ps->viewheight = DEAD_VIEWHEIGHT * pm->effectiveModelScale;
 		return;
 	}
 
@@ -3935,8 +3935,8 @@ static void PM_CheckDuck (void)
 
 	if (BG_InRoll(pm->ps, pm->ps->legsAnim))
 	{
-		pm->maxs[2] = CROUCH_MAXS_2;
-		pm->ps->viewheight = DEFAULT_VIEWHEIGHT;
+		pm->maxs[2] = CROUCH_MAXS_2 * pm->effectiveModelScale;
+		pm->ps->viewheight = DEFAULT_VIEWHEIGHT * pm->effectiveModelScale;
 		pm->ps->pm_flags &= ~PMF_DUCKED;
 		pm->ps->pm_flags |= PMF_ROLLING;
 		return;
@@ -3944,7 +3944,7 @@ static void PM_CheckDuck (void)
 	else if (pm->ps->pm_flags & PMF_ROLLING)
 	{
 		// try to stand up
-		pm->maxs[2] = DEFAULT_MAXS_2;
+		pm->maxs[2] = DEFAULT_MAXS_2 * pm->effectiveModelScale;
 		pm->trace (&trace, pm->ps->origin, pm->mins, pm->maxs, pm->ps->origin, pm->ps->clientNum, pm->tracemask );
 		if (!trace.allsolid)
 			pm->ps->pm_flags &= ~PMF_ROLLING;
@@ -3959,7 +3959,7 @@ static void PM_CheckDuck (void)
 		if (pm->ps->pm_flags & PMF_DUCKED)
 		{
 			// try to stand up
-			pm->maxs[2] = DEFAULT_MAXS_2;
+			pm->maxs[2] = DEFAULT_MAXS_2 * pm->effectiveModelScale;
 			pm->trace (&trace, pm->ps->origin, pm->mins, pm->maxs, pm->ps->origin, pm->ps->clientNum, pm->tracemask );
 			if (!trace.allsolid)
 				pm->ps->pm_flags &= ~PMF_DUCKED;
@@ -3968,29 +3968,29 @@ static void PM_CheckDuck (void)
 
 	if (pm->ps->pm_flags & PMF_DUCKED)
 	{
-		pm->maxs[2] = CROUCH_MAXS_2;
-		pm->ps->viewheight = CROUCH_VIEWHEIGHT;
+		pm->maxs[2] = CROUCH_MAXS_2 * pm->effectiveModelScale;
+		pm->ps->viewheight = CROUCH_VIEWHEIGHT * pm->effectiveModelScale;
 	}
 	else if (pm->ps->pm_flags & PMF_ROLLING)
 	{
-		pm->maxs[2] = CROUCH_MAXS_2;
-		pm->ps->viewheight = DEFAULT_VIEWHEIGHT;
+		pm->maxs[2] = CROUCH_MAXS_2 * pm->effectiveModelScale;
+		pm->ps->viewheight = DEFAULT_VIEWHEIGHT * pm->effectiveModelScale;
 	}
 	else
 	{
-		pm->maxs[2] = DEFAULT_MAXS_2;
-		pm->ps->viewheight = DEFAULT_VIEWHEIGHT;
+		pm->maxs[2] = DEFAULT_MAXS_2 * pm->effectiveModelScale;
+		pm->ps->viewheight = DEFAULT_VIEWHEIGHT * pm->effectiveModelScale;
 	}
 
 	if (pm->ps->usingATST)
 	{
-		pm->mins[0] = ATST_MINS0;
-		pm->mins[1] = ATST_MINS1;
-		pm->mins[2] = ATST_MINS2;
+		pm->mins[0] = ATST_MINS0 * pm->effectiveModelScale;
+		pm->mins[1] = ATST_MINS1 * pm->effectiveModelScale;
+		pm->mins[2] = ATST_MINS2 * pm->effectiveModelScale;
 
-		pm->maxs[0] = ATST_MAXS0;
-		pm->maxs[1] = ATST_MAXS1;
-		pm->maxs[2] = ATST_MAXS2;
+		pm->maxs[0] = ATST_MAXS0 * pm->effectiveModelScale;
+		pm->maxs[1] = ATST_MAXS1 * pm->effectiveModelScale;
+		pm->maxs[2] = ATST_MAXS2 * pm->effectiveModelScale;
 	}
 }
 
@@ -4176,7 +4176,7 @@ static void PM_Footsteps( void ) {
 			PM_SetAnim(SETANIM_BOTH,rolled,SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD, 150);
 			PM_AddEventWithParm( EV_ROLL, 0 );
 			pm->maxs[2] = CROUCH_MAXS_2;
-			pm->ps->viewheight = DEFAULT_VIEWHEIGHT;
+			pm->ps->viewheight = DEFAULT_VIEWHEIGHT * pm->effectiveModelScale;
 			pm->ps->pm_flags &= ~PMF_DUCKED;
 			pm->ps->pm_flags |= PMF_ROLLING;
 		}
@@ -6363,6 +6363,8 @@ void PmoveSingle (pmove_t *pmove) {
 			return;
 		}
 	}
+
+	pm->effectiveModelScale = pm->forcedModelScale ? pm->forcedModelScale : 1.0f;
 
 	gPMDoSlowFall = PM_DoSlowFall();
 

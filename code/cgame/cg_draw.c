@@ -7630,7 +7630,23 @@ void CG_DrawActive( stereoFrame_t stereoView ) {
 	}
 
 	// draw 3D view
-	trap_R_RenderScene( &cg.refdef );
+	{
+		float mainViewModelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0];
+		float maxZNear = cg_r_zNear.value > 4.0f ? cg_r_zNear.value : 4.0f;
+		float oldZNear = cg_r_zNear.value;
+		qboolean zNearModified = qfalse;
+		if (mainViewModelScale && mainViewModelScale < 1.0f) {
+			maxZNear *= mainViewModelScale;
+			if (cg_r_zNear.value > maxZNear) {
+				zNearModified = qtrue;
+				trap_Cvar_Set("r_znear",va("%f",maxZNear));
+			}
+		}
+		trap_R_RenderScene(&cg.refdef);
+		if (zNearModified) {
+			trap_Cvar_Set("r_znear", va("%f", oldZNear));
+		}
+	}
 
 	// restore original viewpoint if running stereo
 	if ( separation != 0 ) {

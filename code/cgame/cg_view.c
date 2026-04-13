@@ -250,6 +250,19 @@ cg.refdefViewAngles
 ===============
 */
 
+
+static void CG_AdjustCameraMinsMaxs(const vec_t** cameraMinsA, const vec_t** cameraMaxsA){
+	float modelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0];
+	if (modelScale) {
+		static vec3_t	scaledCameraMins;
+		static vec3_t	scaledCameraMaxs;
+		VectorScale(cameramins, modelScale, scaledCameraMins);
+		VectorScale(cameramaxs, modelScale, scaledCameraMaxs);
+		*cameraMinsA = scaledCameraMins;
+		*cameraMaxsA = scaledCameraMaxs;
+	}
+}
+
 /*
 ===============
 CG_CalcTargetThirdPersonViewLocation
@@ -258,6 +271,7 @@ CG_CalcTargetThirdPersonViewLocation
 */
 static void CG_CalcIdealThirdPersonViewTarget(void)
 {
+	float modelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0] ? cg_entities[cg.predictedPlayerState.clientNum].modelScale[0] : 1.0f;
 	/*
 	float thirdPersonVertOffset = cg_thirdPersonVertOffset.value;
 
@@ -285,7 +299,7 @@ static void CG_CalcIdealThirdPersonViewTarget(void)
 	
 	// Add in a vertical offset from the viewpoint, which puts the actual target above the head, regardless of angle.
 	VectorCopy( cam.focus, cam.target.ideal );
-	cam.target.ideal[2] += cg_thirdPersonVertOffset.value;
+	cam.target.ideal[2] += cg_thirdPersonVertOffset.value* modelScale;
 	//VectorMA(cam.focus, cg_thirdPersonVertOffset.value, cameraup, cam.target.ideal);
 }
 
@@ -298,7 +312,8 @@ CG_CalcTargetThirdPersonViewLocation
 */
 static void CG_CalcIdealThirdPersonViewLocation(void)
 {
-	float thirdPersonRange = cg_thirdPersonRange.value;
+	float modelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0] ? cg_entities[cg.predictedPlayerState.clientNum].modelScale[0] : 1.0f;
+	float thirdPersonRange = cg_thirdPersonRange.value* modelScale;
 
 	if (cg.predictedPlayerState.saberMove == LS_A_BACK || cg.predictedPlayerState.saberMove == LS_A_BACK_CR
 		|| cg.predictedPlayerState.saberMove == LS_A_BACKSTAB) 
@@ -326,12 +341,14 @@ static void CG_CalcIdealThirdPersonViewLocation(void)
 	VectorMA(cam.target.ideal, -(thirdPersonRange), cam.fwd, cam.loc.ideal);
 }
 
-
-
 static void CG_ResetThirdPersonViewDamp(void)
 {
 	trace_t trace;
 	vec3_t	target;
+	const vec_t* cameraMinsReal = cameramins;
+	const vec_t* cameraMaxsReal = cameramaxs;
+
+	CG_AdjustCameraMinsMaxs(&cameraMinsReal,&cameraMaxsReal);
 
 	// Set the cam.target.ideal
 	CG_CalcIdealThirdPersonViewTarget();
@@ -346,7 +363,7 @@ static void CG_ResetThirdPersonViewDamp(void)
 	VectorCopy(cam.target.ideal, cam.target.prevIdeal);
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
-	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, cam.target.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_Trace(&trace, cam.focus, cameraMinsReal, cameraMaxsReal, cam.target.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
 	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
@@ -355,7 +372,7 @@ static void CG_ResetThirdPersonViewDamp(void)
 	VectorAdd(cam.target.ideal, cam.target.damp, target);
 
 	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
-	CG_Trace(&trace, target, cameramins, cameramaxs, cam.loc.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_Trace(&trace, target, cameraMinsReal, cameraMaxsReal, cam.loc.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
 	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.loc.ideal, cam.loc.damp);
@@ -416,7 +433,11 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 {
 	trace_t trace;
 	vec3_t	target;
-	float	dampfactor;
+	float	dampfactor; 
+	const vec_t* cameraMinsReal = cameramins;
+	const vec_t* cameraMaxsReal = cameramaxs;
+
+	CG_AdjustCameraMinsMaxs(&cameraMinsReal, &cameraMaxsReal);
 
 	// Set the cam.target.ideal
 	// Automatically get the ideal target, to avoid jittering.
@@ -441,7 +462,7 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 	VectorAdd(cam.target.ideal, cam.target.damp, target);
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
-	CG_Trace(&trace, cam.focus, cameramins, cameramaxs, target, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_Trace(&trace, cam.focus, cameraMinsReal, cameraMaxsReal, target, cg.snap->ps.clientNum, MASK_CAMERACLIP);
 
 	if (trace.fraction < 1.0f)
 	{
@@ -460,6 +481,10 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 	trace_t trace;
 	vec3_t	location, target;
 	float	dampfactor;
+	const vec_t* cameraMinsReal = cameramins;
+	const vec_t* cameraMaxsReal = cameramaxs;
+
+	CG_AdjustCameraMinsMaxs(&cameraMinsReal, &cameraMaxsReal);
 
 	// Set the cam.loc.ideal
 	CG_CalcIdealThirdPersonViewLocation();
@@ -504,7 +529,7 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 	VectorAdd(cam.target.ideal, cam.target.damp, target);
 
 	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
-	CG_Trace(&trace, target, cameramins, cameramaxs, location, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_Trace(&trace, target, cameraMinsReal, cameraMaxsReal, location, cg.snap->ps.clientNum, MASK_CAMERACLIP);
 
 	if (trace.fraction < 1.0f)
 	{
@@ -549,7 +574,8 @@ static void CG_OffsetThirdPersonView( void )
 {
 	vec3_t	target, location, diff;
 	vec3_t	focusAngles;
-	float	dtime;
+	float	dtime; 
+	float modelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0] ? cg_entities[cg.predictedPlayerState.clientNum].modelScale[0] : 1.0f;
 
 
 	// Set camera viewing direction.
@@ -647,7 +673,7 @@ static void CG_OffsetThirdPersonView( void )
 	if ( cg_thirdPersonHorzOffset.value != 0.0f )
 	{
 		AnglesToAxis( cg.refdefViewAngles, cg.refdef.viewaxis );
-		VectorMA( location, cg_thirdPersonHorzOffset.value,
+		VectorMA( location, cg_thirdPersonHorzOffset.value* modelScale,
 			cg.refdef.viewaxis[1], location );
 	}
 

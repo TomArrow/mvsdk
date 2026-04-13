@@ -24,6 +24,8 @@
 #define IRONMAN_RESPAWNPOSITION_MAXPOSITIONAGE 10000
 #define IRONMAN_NEARBYBROADCASTRANGE 1000.0f
 
+#define PF_RENDER_ZCOMP (1<<0)
+
 typedef enum playerMode_s { // NEVER change the order in this as it's part of the player configstring. If adding something, add it at the end. If adding something in a fork, add 1000 plus a few hundred (check github for other ppl who extended it?) to distinguish from TommyTernal modes, ty.
 	MODE_INVALID,
 	MODE_NORMAL,
@@ -57,6 +59,7 @@ typedef enum //movementstyle enum
 	MV_FORCE,//MV_SPEED,
 	MV_DREAM,//MV_SP,
 	MV_CHARGEJUMP,//MV_SLICK,
+	MV_RATS,
 	//MV_BOTCPM,
 	MV_NUMSTYLES
 } movementStyle_e;

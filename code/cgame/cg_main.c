@@ -749,6 +749,8 @@ vmCvar_t	cg_cl_timeNudgeSafeServerTime; // special physicsfps predict needs this
 vmCvar_t	cg_cl_aviTimeFraction;
 vmCvar_t	cg_cl_mirror;
 
+vmCvar_t	cg_r_zNear;
+
 vmCvar_t	cg_strafebotSlopeHandling;
 
 vmCvar_t	cg_synchronousClients;
@@ -1203,6 +1205,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_cl_timeNudgeAntiLagHack, "cl_timeNudgeAntiLagHack", "0", 0 },
 	{ &cg_cl_aviTimeFraction, "cl_aviTimeFraction", "0", 0 },
 	{ &cg_cl_mirror, "cl_mirror", "0", 0 },
+	{ &cg_r_zNear, "cg_r_zNear", "4", 0 },
 
 	{ &cg_debugMove, "cg_debugMove", "0", CVAR_TEMP },
 

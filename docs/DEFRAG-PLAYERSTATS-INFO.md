@@ -46,7 +46,7 @@ netField_t	entityStateFields15[] =
 	{ NETF(pos.trBase[1]), 0 }, // forceSpeedSmash
 	{ NETF(pos.trDelta[0]), 0 }, // fd.forceJumpCharge
 	{ NETF(pos.trDelta[1]), 0 }, // ACTUALLY NVM NOT DOING THIS: ps.groundtime (int->float)
-	{ NETF(pos.trBase[2]), 0 },
+	{ NETF(pos.trBase[2]), 0 }, // forced player modelscale
 	{ NETF(apos.trBase[1]), 0 }, // ucmd angles
 	{ NETF(pos.trDelta[2]), 0 },
 	{ NETF(apos.trBase[0]), 0 }, // ucmd angles
@@ -59,7 +59,7 @@ netField_t	entityStateFields15[] =
 	{ NETF(legsAnim), 16 },		// Maximum number of animation sequences is 2048.  Top bit is reserved for the togglebit
 	{ NETF(groundEntityNum), GENTITYNUM_BITS },
 	{ NETF(pos.trType), 8 },
-	{ NETF(eFlags), 32 },
+	{ NETF(eFlags), 32 }, // playerFlags PF_etc, e.g. PF_RENDER_ZCOMP for q2
 	{ NETF(bolt1), 8 }, // movementstyle
 	{ NETF(bolt2), GENTITYNUM_BITS },
 	{ NETF(trickedentindex), 16 }, // array of 4 past fps values //See note in PSF

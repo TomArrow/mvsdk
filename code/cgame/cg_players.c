@@ -6432,7 +6432,7 @@ void CG_G2Animated( centity_t *cent )
 		//return;
 	}
 
-	ScaleModelAxis(&legs, qtrue);
+	ScaleModelAxis(&legs, cg_entities[cent->currentState.number].modelScaleZComp);
 
 	memset( &torso, 0, sizeof(torso) );
 
@@ -7193,7 +7193,7 @@ doEssentialOne:
 		//return;
 	}
 
-	ScaleModelAxis(&legs, qtrue);
+	ScaleModelAxis(&legs, cg_entities[cent->currentState.number].modelScaleZComp);
 
 	memset( &torso, 0, sizeof(torso) );
 

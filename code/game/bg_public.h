@@ -341,6 +341,8 @@ typedef struct {
 
 	int			useEvent;
 
+	float		forcedModelScale;
+	float		effectiveModelScale; // set internally
 	vec3_t		mins, maxs;			// bounding box size
 
 	int			watertype;
