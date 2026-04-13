@@ -411,7 +411,7 @@ void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {
 				send = -1;
 			}
 			else {
-				send = 0;
+				send = g_antiWallhackEnforceVis.integer ? 1 : 0;
 			}
 		}
 

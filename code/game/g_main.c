@@ -155,6 +155,7 @@ vmCvar_t	g_stackFirstSpawn; // 125/200 + bacta on first spawn, e.g. after map_re
 
 vmCvar_t	g_antiWallhack;
 vmCvar_t	g_antiWallhackFast;
+vmCvar_t	g_antiWallhackEnforceVis;
 
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
@@ -363,7 +364,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_stackFirstSpawn, "g_stackFirstSpawn", "0", CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_antiWallhack, "g_antiWallhack", "0", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_antiWallhackFast, "g_antiWallhackFast", "0", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackFast, "g_antiWallhackFast", "2", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackEnforceVis, "g_antiWallhackEnforceVis", "0", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 

@@ -1615,6 +1615,7 @@ extern	vmCvar_t	g_intermissionReadyCheck;
 
 extern	vmCvar_t	g_antiWallhack;
 extern	vmCvar_t	g_antiWallhackFast;
+extern	vmCvar_t	g_antiWallhackEnforceVis;
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

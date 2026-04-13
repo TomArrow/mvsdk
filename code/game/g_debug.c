@@ -127,12 +127,12 @@ void G_DebugHandleState() {
 		if (g_debugFancy.integer && level.debugState.debug != g_debugFancy.integer) {
 			switch (g_debugFancy.integer) {
 			case DEBUG_ANTIWALLHACK:
-				trap_SendServerCommand(-1, "Debugging anti-wallhack.\n");
+				trap_SendServerCommand(-1, "print \"Debugging anti-wallhack.\n\"");
 				G_InitDebugAntiwallhack();
 				break;
 			default:
 				trap_Cvar_Set("g_debugFancy", "0");
-				trap_SendServerCommand(-1, "g_debugFancy: Invalid value. Turning off.\n");
+				trap_SendServerCommand(-1, "print \"g_debugFancy: Invalid value. Turning off.\n\"");
 				level.debugState.debug = DEBUG_NONE;
 				break;
 			}
