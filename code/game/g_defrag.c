@@ -4253,7 +4253,7 @@ static void JP_TraceReal(trace_t* results, const vec3_t start, const vec3_t mins
 	else {
 		trap_Trace(results, start, mins, maxs, end, passEntityNum, contentmask);
 	}
-	if (results->entityNum < ENTITYNUM_MAX_NORMAL)
+	if (results->entityNum < ENTITYNUM_MAX_NORMAL && passEntityNum >= 0)
 	{
 		gentity_t* passEnt = g_entities + passEntityNum;
 		gentity_t* ent = g_entities + results->entityNum;
