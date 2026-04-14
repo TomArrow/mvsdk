@@ -256,7 +256,7 @@ void trigger_push_touch(gentity_t *self, gentity_t *other, trace_t *trace ) {
 		return;
 	}
 
-	other->client->pers.roll.segmentDisqualified = qtrue;
+	other->client->pers.roll.segmentDisqualified |= ROLLDIS_JUMPPAD;
 
 	BG_TouchJumpPad( &other->client->ps, &self->s, (other->client->sess.raceMode && (other->client->sess.raceStyle.runFlags & RFL_JUMPPADCOMPENSATE)) ? (other->client->sess.raceStyle.msec == -2 ? -2 : other->client->lastMsecValue) : 0, level.mapDefaultRaceStyle.msec, other->client->sess.raceMode ? other->client->sess.raceStyle.movementStyle : MV_JK2);
 }
@@ -283,7 +283,7 @@ void trigger_push_velocity_touch (gentity_t *self, gentity_t *other, trace_t *tr
 		return;
 	}
 
-	other->client->pers.roll.segmentDisqualified = qtrue;
+	other->client->pers.roll.segmentDisqualified |= ROLLDIS_JUMPPAD;
 
 	if (self->s.saberInFlight) { // its a target_speed converted to a jumppad, so we must consider what would have been "wait" of the trigger_multiple
 		// evaluate wait.

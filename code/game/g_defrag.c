@@ -523,6 +523,65 @@ void G_EnqueueClipDemo(int clientnum, const char* command, int executionTime) {
 
 }
 
+void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn) {
+	const char* soundFile = "sound/weapons/rocket/lock.wav";
+	float shakeIntensity = 2.0f;
+	int shakeDuration = 400;
+	if (!isReturn) {
+		speed *= 0.5f;
+	}
+	if (speed < 700) {
+		return;
+	}
+	// TODO precache these sounds if they end up causing lag for players similar to connectlag?
+	if (speed > 800) {
+		soundFile = "sound/weapons/galak/footstep3.wav";
+		shakeIntensity = 3.0f;
+		shakeDuration = 600;
+	}
+	else if (speed > 900) {
+		soundFile = "sound/weapons/galak/skewerhit.wav";
+		shakeIntensity = 4.0f;
+		shakeDuration = 800;
+	}
+	else if (speed > 1000) {
+		soundFile = "sound/weapons/explosions/debrisexplode.wav";
+		shakeIntensity = 5.0f;
+		shakeDuration = 800;
+	}
+	else if (speed > 1200) {
+		soundFile = "sound/weapons/explosions/explosion_huge2.wav";
+		shakeIntensity = 7.5f;
+		shakeDuration = 800;
+	}
+	else if (speed > 1500) {
+		soundFile = "sound/weapons/explosions/explosion_huge3.wav";
+		shakeIntensity = 10.0f;
+		shakeDuration = 1200;
+	}
+	else if (speed > 2000) {
+		soundFile = "sound/weapons/tie_fighter/tieexplode.wav";
+		shakeIntensity = 15.0f;
+		shakeDuration = 1500;
+	}
+	else if (speed > 3000) {
+		soundFile = "sound/weapons/tie_fighter/tiepass5.wav";
+		shakeIntensity = 25.0f;
+		shakeDuration = 2000;
+	}
+	if (!isReturn) {
+		shakeIntensity *= 0.5f;
+		shakeDuration *= 0.5f;
+	}
+	if (*soundFile) {
+		gentity_t* se = G_Sound(ent, CHAN_AUTO, G_SoundIndex(soundFile));
+		se->hideFromActiveRacers = qtrue; // don't bother racers with it
+	}
+	if (shakeIntensity) {
+		G_ScreenShake(ent->client->ps.origin, NULL, shakeIntensity, shakeDuration, qtrue);
+	}
+}
+
 // only works if sv_demoPreRecord is active and svrecordclip is supported
 void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint) {
 	gclient_t* cl = ent->client;
@@ -4155,7 +4214,7 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 
 	}
 
-	ent->client->pers.roll.segmentDisqualified = qtrue;
+	ent->client->pers.roll.segmentDisqualified |= ROLLDIS_RESETTIMERS;
 
 	ent->client->ps.duelTime = ent->client->pers.raceStartCommandTime = 0;
 	ent->client->pers.stats.startLevelTime = 0; 
@@ -4591,7 +4650,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 				|| ((other->goneForNonRacers || other->availableTimeForNonRacers >= level.time) && !followedClient->sess.raceMode);
 		}
 
-		if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex) { // dont send global screenshakes to active players unless they are not in a run
+		if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex || other->hideFromActiveRacers) { // dont send global screenshakes to active players unless they are not in a run
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
 				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] ||  cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime;
 			}
@@ -6370,7 +6429,7 @@ void DF_CheckRollSpeed(gentity_t* ent) {
 	if (!ent->client->sess.raceMode) return; // dont bother outside defrag
 
 	if (roll->status == ROLL_ENDED) {
-		G_CenterPrint(ent - g_entities, 3, va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d", roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime), qfalse, qtrue, qfalse, "rollspeed");
+		G_CenterPrint(ent - g_entities, 3, va("Roll Speed: ^%c%.2f^7ups, flyoff speedmult: %d, time: %d%s", roll->rollDisqualified ? '1' : '3', roll->rollSpeed, roll->finalAirClientSpeed, roll->rollAirTime,roll->rollDisqualified ? multiva(", dis: %d", roll->rollDisqualified) : ""), qfalse, qtrue, qfalse, "rollspeed");
 		if (!roll->rollDisqualified && !ent->client->sess.raceStateInvalidated) {
 			raceStyle_t defaults = defaultRaceStyle;
 			raceStyle_t clientRs = ent->client->sess.raceStyle;

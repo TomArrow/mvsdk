@@ -222,10 +222,22 @@ typedef enum rollType_s {
 	ROLLTYPE_RIGHT,
 } rollType_t;
 
+typedef enum rollDisqualification_s {
+	ROLLDIS_TOOFASTGROUND = (1<<0),
+	ROLLDIS_SEGDIS = (1<<1), // cuz segment disqualified
+	ROLLDIS_RACESTATEINVALID = (1<<2),
+	ROLLDIS_SLIDING = (1<<3),
+	ROLLDIS_TOUCH2AIR = (1<<4),
+	ROLLDIS_RESETTIMERS = (1<<5),
+	ROLLDIS_TELEPORT = (1<<6),
+	ROLLDIS_MOVER = (1<<7),
+	ROLLDIS_JUMPPAD = (1<<8),
+} rollDisqualification_t;
+
 typedef struct rollState_s {
 	rollStatus_t	status;
-	qboolean		rollDisqualified;	// if roll is disqualified for the rollympics (touching a teleport, mover or jumppad, or isn't main LB with jk2 movement style, or has more than 1 segment, or has slide)
-	qboolean		segmentDisqualified;	// this is if an air segment has a slide. that and following air segments will disqualify the roll from rollympics
+	int				rollDisqualified;	// if roll is disqualified for the rollympics (touching a teleport, mover or jumppad, or isn't main LB with jk2 movement style, or has more than 1 segment, or has slide)
+	int				segmentDisqualified;	// this is if an air segment has a slide. that and following air segments will disqualify the roll from rollympics
 	qboolean		rollStartedInAir;
 	qboolean		lastFrameWasRoll;	// wwhether we are rolling before pmove
 	rollType_t		rollType;

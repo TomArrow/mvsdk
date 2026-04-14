@@ -355,6 +355,7 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 			DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_CTFRETURN, XYSPEED(attacker->client->ps.velocity), noKnockbackTargSpeed, 0, damage, 0);
 			if (XYSPEED(attacker->client->ps.velocity) > 700) {
 				G_SaveClipDemo(attacker, "ctfreturnover700ups", "CTF return over 700 ups");
+				G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qtrue);
 			}
 		}
 

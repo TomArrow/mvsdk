@@ -321,6 +321,8 @@ struct gentity_s {
 
 	// g_pushItems (thanks to Tr!Force and DeathSpike)
 	vec3_t		origOrigin;
+
+	qboolean	hideFromActiveRacers;
 };
 
 #define DAMAGEREDIRECT_HEAD		1
@@ -994,9 +996,9 @@ void SaveRegisteredItems( void );
 //
 // g_utils.c
 //
-int G_ModelIndex( char *name );
-int		G_SoundIndex( char *name );
-int		G_EffectIndex( char *name );
+int G_ModelIndex( const char *name );
+int		G_SoundIndex( const char *name );
+int		G_EffectIndex( const  char *name );
 void	G_TeamCommand( team_t team, char *cmd );
 void	G_KillBox (gentity_t *ent);
 gentity_t *G_Find (gentity_t *from, int fieldofs, const char *match);
@@ -1018,7 +1020,7 @@ gentity_t *G_TempEntity( vec3_t origin, int event );
 gentity_t	*G_PlayEffect(int fxID, vec3_t org, vec3_t ang);
 gentity_t *G_ScreenShake(vec3_t org, gentity_t *target, float intensity, int duration, qboolean global);
 void	G_MuteSound( int entnum, int channel );
-void	G_Sound( gentity_t *ent, int channel, int soundIndex );
+gentity_t* G_Sound( gentity_t *ent, int channel, int soundIndex );
 void	G_SoundAtLoc( vec3_t loc, int channel, int soundIndex );
 void	G_EntitySound( gentity_t *ent, int channel, int soundIndex );
 void	TryUse( gentity_t *ent );
@@ -1049,7 +1051,7 @@ const char *BuildShaderStateConfig(void);
 /*
 Ghoul2 Insert Start
 */
-int G_SkinIndex( char *name );
+int G_SkinIndex( const char *name );
 
 // CG specific API access
 void		trap_G2_ListModelSurfaces(void *ghlInfo);
@@ -1400,6 +1402,7 @@ void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int 
 qboolean DF_KeepClientZombie(gentity_t* ent);
 void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
 void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint);
+void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn);
 void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
 void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text);
 void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast);

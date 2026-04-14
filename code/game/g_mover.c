@@ -367,7 +367,7 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 		}
 
 		if (check->client) {
-			check->client->pers.roll.segmentDisqualified = qtrue; // movers could influence rolls. disqualify from rollympics.
+			check->client->pers.roll.segmentDisqualified |= ROLLDIS_MOVER; // movers could influence rolls. disqualify from rollympics.
 		}
 
 		// the entity needs to be pushed

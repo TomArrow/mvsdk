@@ -2125,6 +2125,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_KILL, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
 		if (XYSPEED(attacker->client->ps.velocity) > 900) {
 			G_SaveClipDemo(attacker, "dbskillover900ups","dbs kill over 900 ups");
+			G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qfalse);
 		}
 	}
 
@@ -2140,6 +2141,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_IRONMAN, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
 				if (XYSPEED(attacker->client->ps.velocity) > 700) {
 					G_SaveClipDemo(attacker, "ironmanreturnover700ups", "ironman return over 700 ups");
+					G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity),qtrue);
 				}
 			}
 			AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);

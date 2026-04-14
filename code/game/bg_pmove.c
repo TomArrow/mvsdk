@@ -3756,7 +3756,7 @@ static void PM_GroundTrace( void ) {
 			pml.groundPlane = qtrue;
 		}
 		pml.walking = qfalse;
-		pm->roll.segmentDisqualified = qtrue; // we are sliding, giving us extra speed. disqualify the roll.
+		pm->roll.segmentDisqualified |= ROLLDIS_SLIDING; // we are sliding, giving us extra speed. disqualify the roll.
 		return;
 	}
 
@@ -6058,8 +6058,8 @@ void PM_CheckRollEnd() {
 		case ROLL_NONE:
 			if (inRoll) {
 				pm->roll.status = ROLL_STARTED;
-				pm->roll.rollDisqualified = pm->roll.lastSpeed > 325.0f || pm->roll.lastPreRollSpeed > 325.0f; // seems that with normal (not ultra low) fps and vsnap we can reach a maximum groundpeed of absolutely maximally 325. so, allow rollympics participation for rolls out of standing basically.
-				pm->roll.segmentDisqualified = qfalse;
+				pm->roll.rollDisqualified = (pm->roll.lastSpeed > 325.0f || pm->roll.lastPreRollSpeed > 325.0f) ? ROLLDIS_TOOFASTGROUND : 0; // seems that with normal (not ultra low) fps and vsnap we can reach a maximum groundpeed of absolutely maximally 325. so, allow rollympics participation for rolls out of standing basically.
+				pm->roll.segmentDisqualified = 0;
 				pm->roll.rollAirTime = -1;
 				pm->roll.rollType = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT )- BOTH_ROLL_F;
 				pm->roll.rollSpeed = 0;
@@ -6095,7 +6095,7 @@ void PM_CheckRollEnd() {
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
 					pm->roll.rollAirTime = airDuration;
 					if (pm->roll.segmentDisqualified) {
-						pm->roll.rollDisqualified = qtrue;
+						pm->roll.rollDisqualified |= ROLLDIS_SEGDIS | pm->roll.segmentDisqualified;
 					}
 					if (pm->debugLevel > 1) {
 						Com_Printf("%i:ROLL_AIR->ROLL_ENDED %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
@@ -6116,7 +6116,7 @@ void PM_CheckRollEnd() {
 					pm->roll.finalAirClientSpeed = pm->roll.airClientSpeed;
 					pm->roll.rollAirTime = airDuration;
 					if (pm->roll.segmentDisqualified) {
-						pm->roll.rollDisqualified = qtrue;
+						pm->roll.rollDisqualified |= ROLLDIS_SEGDIS | pm->roll.segmentDisqualified;
 					}
 					if (pm->debugLevel > 1) {
 						Com_Printf("%i:ROLL_AIR->ROLL_TOUCH %.2f %d (usespeed)\n", c_pmove, pm->roll.lastSpeed, pm->roll.airClientSpeed);
@@ -6140,7 +6140,7 @@ void PM_CheckRollEnd() {
 			else if (pm->ps->groundEntityNum == ENTITYNUM_NONE) {
 				pm->roll.status = ROLL_AIR;
 				pm->roll.rollAirStarted = pm->ps->commandTime;
-				pm->roll.segmentDisqualified = qtrue;
+				pm->roll.segmentDisqualified |= ROLLDIS_TOUCH2AIR;
 				pm->roll.airClientSpeed = pm->roll.rollStartedInAir ? 0 : pm->roll.lastClientSpeed;
 				if (pm->debugLevel > 1) {
 					Com_Printf("%i:ROLL_TOUCH->ROLL_AIR\n", c_pmove);

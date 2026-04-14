@@ -2477,7 +2477,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	if (ent->client->sess.raceStateInvalidated) {
-		ent->client->pers.roll.rollDisqualified = qtrue;
+		ent->client->pers.roll.rollDisqualified |= ROLLDIS_RACESTATEINVALID;
 	}
 
 	level.playerStats[ent - g_entities]->s.pos.trBase[1] = ent->client->ps.fd.forceSpeedSmash; // for nicer force speed client prediction

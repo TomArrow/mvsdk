@@ -547,59 +547,64 @@ static void G_InsertSubcontestResult(int status, const char* errorMessage, int a
 		rank = G_COOL_API_DB_GetInt(0) + 1; // SQL result returns amount of faster runs so we add 1 (0 faster runs = #1)
 	}
 
-	if (rank == 1 && pbStatus) {
-		if (runData.userid == -1) {
-			switch (runData.contest) {
-			case SUBCONTESTS_ROLLYMPICS_FIX:
-				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the best logged roll with ^3%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent,"unloggedRollympicsWR","unofficial rollympics record");
-				break;
-			case SUBCONTESTS_DBS_SPEED:
-				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the fastest speed dbs record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "unloggedDbsSpeedWR", "unofficial dbs speed record");
-				break;
-			case SUBCONTESTS_DBS_KILL:
-				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the fastest speed dbs ^1KILL ^7record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "unloggedDbsSpeedKillWR", "unofficial dbs speed kill record");
-				break;
-			case SUBCONTESTS_DBS_IRONMAN:
-				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the fastest speed dbs ^3IRONMAN ^1RETURN ^7record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "unloggedDbsSpeedIronmanWR", "unofficial dbs speed ironman ret record");
-				break;
-			case SUBCONTESTS_DBS_CTFRETURN:
-				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the fastest speed dbs ^3CTF ^1RETURN ^7record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "unloggedDbsSpeedCTFRETWR", "unofficial dbs speed CTF ret record");
-				break;
-			default:
-				G_SaveClipDemo(ent, "undefinedUnloggedSubContestWR", "unofficial undefined record");
-				break;
+	if (pbStatus) {
+		const char* what = "undefined record";
+		const char* demo1 = "UndefinedSubcontest";
+		const char* demo2 = "undefined";
+		qboolean undefined = qfalse;
+
+		switch (runData.contest) {
+		case SUBCONTESTS_ROLLYMPICS_FIX:
+			what = "fastest roll";
+			demo1 = "Rollympics";
+			demo2 = "rollympics";
+			break;
+		case SUBCONTESTS_DBS_SPEED:
+			what = "fastest speed dbs";
+			demo1 = "DbsSpeed";
+			demo2 = "dbs speed";
+			break;
+		case SUBCONTESTS_DBS_KILL:
+			what = "fastest speed dbs ^1KILL^7";
+			demo1 = "DbsSpeedKill";
+			demo2 = "dbs speed kill";
+			break;
+		case SUBCONTESTS_DBS_IRONMAN:
+			what = "fastest speed dbs ^3IRONMAN ^1RETURN^7";
+			demo1 = "DbsSpeedIronman";
+			demo2 = "dbs speed ironman";
+			break;
+		case SUBCONTESTS_DBS_CTFRETURN:
+			what = "fastest speed dbs ^3CTF ^1RETURN^7";
+			demo1 = "DbsSpeedCTFRET";
+			demo2 = "dbs speed CTF ret";
+			break;
+		default:
+			what = multiva("undefined record (%d)", (int)runData.contest);
+			demo1 = multiva("UndefinedSubcontest%d", (int)runData.contest);
+			demo2 = multiva("undefined (%d)", (int)runData.contest);
+			break;
+		}
+		if (rank == 1) {
+			if (runData.userid == -1) {
+
+				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the %s RECORD with ^3%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				G_SaveClipDemo(ent, multiva("unlogged%sWR",demo1), multiva("unofficial %s record",demo2));
+			}
+			else {
+				trap_SendServerCommand(-1, va("print \"%s ^7now holds the %s RECORD with ^2%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				G_SaveClipDemo(ent, multiva("%c%sWR", tolower(*demo1), demo1+1), multiva("%s record", demo2));
 			}
 		}
 		else {
-			switch (runData.contest) {
-			case SUBCONTESTS_ROLLYMPICS_FIX:
-				trap_SendServerCommand(-1, va("print \"%s ^7now holds the fastest roll record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "rollympicsWR", "rollympics record");
-				break;
-			case SUBCONTESTS_DBS_SPEED:
-				trap_SendServerCommand(-1, va("print \"%s ^7now holds the fastest speed dbs record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "dbsSpeedWR", "dbs speed record");
-				break;
-			case SUBCONTESTS_DBS_KILL:
-				trap_SendServerCommand(-1, va("print \"%s ^7now holds the fastest speed dbs ^1KILL ^7record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "dbsSpeedKillWR", "dbs speed kill record");
-				break;
-			case SUBCONTESTS_DBS_IRONMAN:
-				trap_SendServerCommand(-1, va("print \"%s ^7now holds the fastest speed dbs ^3IRONMAN ^1RETURN ^7record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "dbsSpeedIronmanWR", "dbs speed ironman ret record");
-				break;
-			case SUBCONTESTS_DBS_CTFRETURN:
-				trap_SendServerCommand(-1, va("print \"%s ^7now holds the fastest speed dbs ^3CTF ^1RETURN ^7record with ^2%.2f^7ups\n\"", ent->client->pers.netname, runData.value));
-				G_SaveClipDemo(ent, "dbsSpeedCTFRETWR", "dbs speed CTF ret record");
-				break;
-			default:
-				G_SaveClipDemo(ent, "undefinedSubContestWR", "undefined record");
-				break;
+			if (runData.userid == -1) {
+
+				trap_SendServerCommand(-1, va("print \"%s ^7set a new unlogged %s best with ^3%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				G_SaveClipDemo(ent, multiva("unlogged%sBest", demo1), multiva("%s best unlogged", demo2));
+			}
+			else {
+				trap_SendServerCommand(-1, va("print \"%s ^7set a %s personal best with ^2%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				G_SaveClipDemo(ent, multiva("%c%sPB", tolower(*demo1), demo1 + 1), multiva("%s personal best", demo2));
 			}
 		}
 	}
@@ -2012,7 +2017,7 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2ROLLYMPICS\n"));
 				break;
 			default:
-				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2ROLLYMPICS\n"));
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2RECORDS\n"));
 				break;
 			}
 		}
