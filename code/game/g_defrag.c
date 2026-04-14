@@ -6280,7 +6280,7 @@ void DF_SetSubContestDefaults(gclient_t* client) {
 	}
 }
 
-#define SUBCONTESTINSERT_1 "INSERT INTO subcontests (userid, course, type, value, recordwhen, msec, extraValue1, extraValue2, extraValue3, extraValue4) VALUES (?, ?, ?, ?, @now, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
+#define SUBCONTESTINSERT_1 "INSERT INTO subcontests (userid, course, type, value, recordwhen, msec, style, extraValue1, extraValue2, extraValue3, extraValue4) VALUES (?, ?, ?, ?, @now, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE "
 
 #define MAXVALCONDITION "?>value"
 #define MINVALCONDITION "?<value"
@@ -6288,6 +6288,7 @@ void DF_SetSubContestDefaults(gclient_t* client) {
 #define SUBCONTESTINSERT_2(a) "course = IF(" a ",?,course),"\
 "recordwhen = IF(" a ",@now,recordwhen),"\
 "msec = IF(" a ",?,msec),"\
+"style = IF(" a ",?,style),"\
 "extraValue1 = IF(" a ",?,extraValue1),"\
 "extraValue2 = IF(" a ",?,extraValue2),"\
 "extraValue3 = IF(" a ",?,extraValue3),"\
@@ -6352,6 +6353,14 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 		data.value = value;
 		data.userid = ent->client->sess.login.loggedIn ? ent->client->sess.login.id : -1;
 		data.contest = subcontest;
+		data.msec = ent->client->sess.raceMode ? ent->client->sess.raceStyle.msec : ent->client->pers.physicsFps.acceptedSettingMsec;
+
+		// meta
+		data.movementStyle = ent->client->sess.raceMode ? ent->client->sess.raceStyle.movementStyle : MV_JK2;
+		data.extraValue1 = extraParam1;
+		data.extraValue2 = extraParam2;
+		data.extraValue3 = extraParam3;
+		data.extraValue4 = extraParam4;
 
 		if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_INSERTORUPDATESUBCONTEST,query)) {
 			return;
@@ -6362,7 +6371,8 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 		G_COOL_API_DB_PreparedBindString(DF_GetCourseName(qfalse));
 		G_COOL_API_DB_PreparedBindInt(subcontest);
 		G_COOL_API_DB_PreparedBindFloat(value);
-		G_COOL_API_DB_PreparedBindInt(ent->client->sess.raceStyle.msec);
+		G_COOL_API_DB_PreparedBindInt(data.msec);
+		G_COOL_API_DB_PreparedBindInt(data.movementStyle);
 		G_COOL_API_DB_PreparedBindFloat(extraParam1);
 		G_COOL_API_DB_PreparedBindFloat(extraParam2);
 		G_COOL_API_DB_PreparedBindInt(extraParam3);
@@ -6375,7 +6385,10 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 		G_COOL_API_DB_PreparedBindFloat(value); //date
 
 		G_COOL_API_DB_PreparedBindFloat(value);
-		G_COOL_API_DB_PreparedBindInt(ent->client->sess.raceStyle.msec);
+		G_COOL_API_DB_PreparedBindInt(data.msec);
+
+		G_COOL_API_DB_PreparedBindFloat(value);
+		G_COOL_API_DB_PreparedBindInt(data.movementStyle);
 
 		G_COOL_API_DB_PreparedBindFloat(value);
 		G_COOL_API_DB_PreparedBindFloat(extraParam1);

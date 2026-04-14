@@ -551,6 +551,7 @@ static void G_InsertSubcontestResult(int status, const char* errorMessage, int a
 		const char* what = "undefined record";
 		const char* demo1 = "UndefinedSubcontest";
 		const char* demo2 = "undefined";
+		const char* afterPrintData = multiva("%d %d %d %d \"%f\" \"%f\" \"%f\" %d %d \"%s\"", (int)runData.contest, (int)(ent-g_entities), (int)runData.msec, (int)runData.movementStyle, runData.value, runData.extraValue1, runData.extraValue2, runData.extraValue3, runData.extraValue4, ent->client->sess.login.loggedIn ? ent->client->sess.login.name : "!unlogged!");
 		qboolean undefined = qfalse;
 
 		switch (runData.contest) {
@@ -588,22 +589,22 @@ static void G_InsertSubcontestResult(int status, const char* errorMessage, int a
 		if (rank == 1) {
 			if (runData.userid == -1) {
 
-				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the %s RECORD with ^3%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the %s RECORD with ^3%.2f^7ups\n\" subcontest_result unloggedrecord %s", ent->client->pers.netname, what, runData.value, afterPrintData));
 				G_SaveClipDemo(ent, multiva("unlogged%sWR",demo1), multiva("unofficial %s record",demo2));
 			}
 			else {
-				trap_SendServerCommand(-1, va("print \"%s ^7now holds the %s RECORD with ^2%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				trap_SendServerCommand(-1, va("print \"%s ^7now holds the %s RECORD with ^2%.2f^7ups\n\" subcontest_result record %s", ent->client->pers.netname, what, runData.value, afterPrintData));
 				G_SaveClipDemo(ent, multiva("%c%sWR", tolower(*demo1), demo1+1), multiva("%s record", demo2));
 			}
 		}
 		else {
 			if (runData.userid == -1) {
 
-				trap_SendServerCommand(-1, va("print \"%s ^7set a new unlogged %s best with ^3%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				trap_SendServerCommand(-1, va("print \"%s ^7set a new unlogged %s best with ^6%.2f^7ups\n\" subcontest_result unloggedbest %s", ent->client->pers.netname, what, runData.value, afterPrintData));
 				G_SaveClipDemo(ent, multiva("unlogged%sBest", demo1), multiva("%s best unlogged", demo2));
 			}
 			else {
-				trap_SendServerCommand(-1, va("print \"%s ^7set a %s personal best with ^2%.2f^7ups\n\"", ent->client->pers.netname, what, runData.value));
+				trap_SendServerCommand(-1, va("print \"%s ^7set a %s personal best with ^5%.2f^7ups\n\" subcontest_result personalbest %s", ent->client->pers.netname, what, runData.value, afterPrintData));
 				G_SaveClipDemo(ent, multiva("%c%sPB", tolower(*demo1), demo1 + 1), multiva("%s personal best", demo2));
 			}
 		}
@@ -2562,7 +2563,7 @@ static void G_CreateCheckpointsTable() {
 }
 static void G_CreateSubContestsTable() {
 	referenceSimpleString_t tableName;
-	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS subcontests(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, type SMALLINT NOT NULL, value DOUBLE NOT NULL, recordwhen DATETIME NOT NULL, msec SMALLINT NOT NULL, extraValue1 DOUBLE,extraValue2 DOUBLE,extraValue3 INTEGER,extraValue4 INTEGER, UNIQUE KEY user_type (userid,type),INDEX i_value(value))";
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS subcontests(id BIGINT AUTO_INCREMENT PRIMARY KEY, userid BIGINT SIGNED NOT NULL, course VARCHAR(100) NOT NULL, type SMALLINT NOT NULL, value DOUBLE NOT NULL, recordwhen DATETIME NOT NULL, msec SMALLINT NOT NULL, style SMALLINT UNSIGNED NOT NULL, extraValue1 DOUBLE,extraValue2 DOUBLE,extraValue3 INTEGER,extraValue4 INTEGER, UNIQUE KEY user_type (userid,type),INDEX i_value(value))";
 	Q_strncpyz(tableName.s, "subcontests", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }

@@ -212,6 +212,12 @@ typedef struct insertUpdateSubContestStruct_s {
 	float				value;
 	int					userid;
 	subContests_t		contest;
+
+	// meta
+	int					msec;
+	int					movementStyle;
+	float				extraValue1, extraValue2;
+	int					extraValue3, extraValue4;
 } insertUpdateSubContestStruct_t;
 
 typedef struct subContestLeaderboardRequestStruct_s {
