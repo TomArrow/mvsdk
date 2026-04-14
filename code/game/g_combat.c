@@ -1800,7 +1800,7 @@ extern stringID_table_t animTable[MAX_ANIMATIONS+1];
 extern void DF_SegmentedRunStatusInvalidated(gentity_t* ent);
 extern void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage);
-void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath ) {
+void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath) {
 	gentity_t	*ent;
 	int			anim;
 	int			contents;
@@ -2121,6 +2121,13 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 	}
 
+	if (attacker->client && attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
+		DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_KILL, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
+		if (XYSPEED(attacker->client->ps.velocity) > 900) {
+			G_SaveClipDemo(attacker, "dbskillover900ups","dbs kill over 900 ups");
+		}
+	}
+
 	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN && self != attacker) {	// only happens in standard CTF
 		if (attacker->client) {
 			if (self->client->ps.powerups[PW_REDFLAG]) {
@@ -2128,6 +2135,12 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			}
 			else if (self->client->ps.powerups[PW_BLUEFLAG]) {
 				PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+			}
+			if (attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
+				DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_IRONMAN, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
+				if (XYSPEED(attacker->client->ps.velocity) > 700) {
+					G_SaveClipDemo(attacker, "ironmanreturnover700ups", "ironman return over 700 ups");
+				}
 			}
 			AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
 		}
@@ -2144,7 +2157,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	}
 	else {
 		// Add team bonuses
-		Team_FragBonuses(self, inflictor, attacker);
+		Team_FragBonuses(self, inflictor, attacker, damage, meansOfDeath,XYSPEED(self->client->preKnockbackVelocity));
 	}
 
 
@@ -3264,6 +3277,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	if (targ && targ->client && targ->client->ps.usingATST)
 	{
 		knockback = 0;
+	}
+
+	if (targ->client) {
+		VectorCopy(targ->client->ps.velocity, targ->client->preKnockbackVelocity);
 	}
 
 	// figure momentum add, even if the damage won't be taken

@@ -1817,6 +1817,7 @@ void ClientThink_real( gentity_t *ent ) {
 	qboolean	inactivityToSpec = qfalse;
 	vec3_t		prePmoveVelocity;
 	float		forcedModelScale = 0.0f;
+	int			oldSaberMove;
 
 	client = ent->client;
 
@@ -2461,10 +2462,15 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.forcedModelScale = forcedModelScale;
 	DF_PreDeltaAngleChange(ent->client);
 	pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
+	oldSaberMove = pm.ps->saberMove;
 	Pmove (&pm);
 	DF_PostDeltaAngleChange(ent->client,!(ent->client->sess.raceStyle.runFlags & RFL_BOT)); // qfalse if strafebot
 	ent->client->pers.roll = pm.roll;
 	ent->client->pers.antiLoop = pm.antiLoop;
+
+	if (oldSaberMove != LS_A_BACK_CR && pm.ps->saberMove == LS_A_BACK_CR) {
+		DF_SetPlayerSubContestValueSafeguarded(ent, SUBCONTESTS_DBS_SPEED, XYSPEED(pm.ps->velocity), 0, 0, 0, 0);
+	}
 
 	if (client->isIronMan) {
 		G_MaybeSaveIronmanPos(ent);

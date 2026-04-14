@@ -277,7 +277,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ NULL, "sv_mapname", "", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  },
 
 	// latched vars
-	{ &g_dfv, "dfv", "1", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  }, // we just wanna let the client know
+	{ &g_dfv, "dfv", QUOTE(SEMIBREAKINGCHANGEVERSIONDEFRAG), CVAR_SERVERINFO | CVAR_ROM, 0, qfalse  }, // we just wanna let the client know
 	{ &g_gametype, "g_gametype", "0", CVAR_SERVERINFO | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 	{ &g_MaxHolocronCarry, "g_MaxHolocronCarry", "3", CVAR_SERVERINFO | CVAR_USERINFO | CVAR_LATCH, 0, qfalse  },
 
@@ -1335,6 +1335,8 @@ void G_ShutdownGame( int restart ) {
 	}
 
 	DF_HandleUnfinishedDemos();
+
+	G_CheckEnqueuedClips(qtrue);
 
 	// write all the client session data so we can get it back
 	G_WriteSessionData();
@@ -3678,6 +3680,8 @@ void G_RunFrame( int levelTime ) {
 	if (g_modes.integer) {
 		G_CheckIronManStatus();
 	}
+
+	G_CheckEnqueuedClips(qfalse);
 
 	// Process logical entities
 	ent = &g_entities[MAX_GENTITIES];

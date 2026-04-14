@@ -570,6 +570,8 @@ typedef struct {
 	int			stopRecordingTime;
 	char		lastSubcourseFinishedName[COURSENAME_MAX_LEN + 1];
 
+	qboolean	demoClipsPending;
+
 	fpsMeasure_t	fpsMeasure;
 
 	antiLoopState_t antiLoop;
@@ -731,6 +733,8 @@ struct gclient_s {
 
 	int			bactaExtra; // extra amount restored by bacta (e.g. q3 bacta)
 	int			messageSystemWarningShowed;
+
+	vec3_t		preKnockbackVelocity;
 };
 
 
@@ -754,6 +758,20 @@ typedef struct debugState_s {
 } debugState_t;
 
 extern antiWallhackDebug_t antiWhDebug;
+
+#define MAX_QUEUED_DEMO_CLIPS 10
+typedef enum queuedDemoClipState_s {
+	QDC_INACTIVE,
+	QDC_WAITING,
+	QDC_EXECUTING,
+} queuedDemoClipState_t;
+typedef struct queuedDemoClip_s {
+	queuedDemoClipState_t	state;
+	qboolean	executing;
+	int			clientNum;
+	int			when;
+	char		cmd[MAX_STRING_CHARS];
+} queuedDemoClip_t;
 
 //
 // this structure is cleared as each map is entered
@@ -910,6 +928,8 @@ typedef struct {
 	char		tempDemoNamePrefix[20];
 
 	debugState_t	debugState;
+
+	queuedDemoClip_t	queuedDemoClips[MAX_QUEUED_DEMO_CLIPS];
 } level_locals_t;
 
 
@@ -938,6 +958,7 @@ void Cmd_ToggleSaber_f(gentity_t *ent);
 void Cmd_EngageDuel_f(gentity_t *ent);
 void G_SayTo(gentity_t* ent, gentity_t* other, int mode, int color, const char* name, const char* message, const char* append);
 char* ConcatArgsQuoted(int start);
+void G_ResetClientVote(gclient_t* client);
 
 gentity_t *G_GetDuelWinner(gclient_t *client);
 
@@ -1005,6 +1026,7 @@ void	G_SendG2KillQueue(void);
 void	G_KillG2Queue(int entNum);
 void	G_FreeEntity( gentity_t *e );
 qboolean	G_EntitiesFree( void );
+int		generateHashValue(const char* fname, const int size);
 
 void	G_TouchTriggers (gentity_t *ent);
 void	G_TouchSolids (gentity_t *ent);
@@ -1350,6 +1372,7 @@ void G_RunClient			( gentity_t *ent );
 qboolean G_GetUserCmd			(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance); 
 void G_ResetUserCmdStore(int clientNum);
 void G_SetSpecAllEntsBroadcasts(int broadcastClients[2]);
+void ClientInactivitySpecTimerReset(gentity_t* ent);
 
 //
 // g_anticheat.c
@@ -1363,6 +1386,25 @@ void G_ClearAllAntiWallhackSendStates();
 void G_DebugHandleState();
 void G_SetDebugVar(debugField_t* field, int value, float floatValue);
 float G_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
+
+
+// 
+// g_defrag.c
+// 
+void DF_PreDeltaAngleChange(gclient_t* client);
+void DF_PostDeltaAngleChange(gclient_t* client, qboolean setResettable);
+qboolean DF_ClientInSegmentedRunMode(gclient_t* client);
+void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4);
+void DF_SetPlayerSubContestValueSafeguarded(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4);
+void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int page);
+qboolean DF_KeepClientZombie(gentity_t* ent);
+void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
+void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint);
+void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
+void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text);
+void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast);
+void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast);
+void G_CheckEnqueuedClips(qboolean force);
 
 //
 // g_team.c
@@ -1987,19 +2029,4 @@ extern helpTip_t helpTips[];
 extern const int helpTipCount;
 
 
-void DF_PreDeltaAngleChange(gclient_t* client);
-void DF_PostDeltaAngleChange(gclient_t* client, qboolean setResettable);
-qboolean DF_ClientInSegmentedRunMode(gclient_t* client);
-void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4);
-void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int page);
-qboolean DF_KeepClientZombie(gentity_t* ent);
-void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
-void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text);
-void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast);
-void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast);
-void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
-
-int	generateHashValue(const char* fname, const int size);
-void G_ResetClientVote(gclient_t* client);
-void ClientInactivitySpecTimerReset(gentity_t* ent);
 

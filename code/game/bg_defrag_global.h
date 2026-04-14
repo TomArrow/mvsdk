@@ -127,6 +127,7 @@ typedef enum runFlagsIndex_s {
 
 extern const int defaultRunFlags;
 extern const int allowedRollRunFlags; // RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS;
+extern const int allowedSafeguardedSubcontestRunFlags; 
 extern const int allowedRunFlags; // RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_BOT | RFL_SEGMENTED | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
 extern const int allowedMapDefaultRunFlags; //  RFL_JUMPBUGDISABLE | RFL_NODEADRAMPS | RFL_CLIMBTECH | RFL_JUMPPADCOMPENSATE;// | RFL_NOROLLSTART | RFL_NOROLLS;
 extern const int allowedMovementStyles;
@@ -229,6 +230,7 @@ typedef struct rollState_s {
 	qboolean		lastFrameWasRoll;	// wwhether we are rolling before pmove
 	rollType_t		rollType;
 	float			lastSpeed;			// XY velocity before pmove
+	float			lastPreRollSpeed;	// XY velocity before roll started
 	int				lastClientSpeed;	// ps->speed before pmove
 	int				lastClientTime;		// commandtime before pmove
 	int				airClientSpeed;		// last ps->speed before roll ended

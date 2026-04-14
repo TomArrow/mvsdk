@@ -207,6 +207,11 @@ int segDebugFieldsCount = sizeof(segDebugFields) / sizeof(segDebugFields[0]);
 
 subContestParams_t subContestParams[SUBCONTESTS_COUNT] = {
 	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_ROLLYMPICS
+	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_ROLLYMPICS_FIX
+	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_SPEED
+	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_KILL
+	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_IRONMAN
+	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_CTFRETURNS
 };
 
 const char* nameTagTypeNames[NAMETAG_COUNT] = {
@@ -430,6 +435,141 @@ void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPri
 		));
 	}
 		
+}
+
+void G_ExecuteClipDemo(int index, qboolean nowait) {
+	queuedDemoClip_t* clip = level.queuedDemoClips + index;
+	trap_SendConsoleCommand(EXEC_APPEND, clip->cmd);
+	if (nowait) {
+		clip->state = QDC_INACTIVE;
+	}
+	else {
+		trap_SendConsoleCommand(EXEC_APPEND, va("clipdemodone %d\n", index));
+		clip->state = QDC_EXECUTING;
+	}
+	trap_SendConsoleCommand(EXEC_APPEND, "echo test1\n");
+	trap_SendConsoleCommand(EXEC_APPEND, "echo test2\n");
+}
+
+void G_SvCmd_ExecuteClipDemoCallback() {
+
+	char arg[20];
+	int clipIndex;
+	trap_Argv(1, arg, sizeof(arg));
+	clipIndex = atoi(arg);
+	if (level.queuedDemoClips[clipIndex].state == QDC_EXECUTING) {
+		if (g_developer.integer) {
+			G_Printf("Demo clip %d successfully confirmed... \n", clipIndex);
+		}
+		level.queuedDemoClips[clipIndex].state = QDC_INACTIVE;
+	}
+	else {
+		trap_SendServerCommand(-1, "print \"^1Wtf, clip demo execution confirmed, but we don't remember about this demo. This should never happen..\n\"");
+		return;
+	}
+}
+
+void G_CheckEnqueuedClips(qboolean force) {
+	int i;
+	queuedDemoClip_t* clip = NULL;
+	for (i = 0; i < level.maxclients; i++) {
+		// reset the queueddemoclips state for each client just to be safe.
+		g_entities[i].client->pers.demoClipsPending = qfalse;
+	}
+	for (i = 0, clip = level.queuedDemoClips; i < MAX_QUEUED_DEMO_CLIPS; i++, clip++) {
+		if (clip->state) {
+			g_entities[clip->clientNum].client->pers.demoClipsPending = qtrue;
+			if (clip->state == QDC_WAITING && (clip->when <= level.time || clip->when > level.time + 99999 || force)) {
+				if (g_developer.integer) {
+					G_Printf("Executing demo clip %d... \n",i);
+				}
+				G_ExecuteClipDemo(i, force);
+			}
+		}
+	}
+}
+
+void G_EnqueueClipDemo(int clientnum, const char* command, int executionTime) {
+	int i;
+	int oldestIndex= -1, oldest = INT_MAX;
+	queuedDemoClip_t* clip = NULL;
+	retry:
+	for (i = 0, clip = level.queuedDemoClips; i < MAX_QUEUED_DEMO_CLIPS; i++, clip++) {
+		if (clip->state) {
+			if (clip->state == QDC_WAITING && (oldestIndex == -1 || clip->when < oldest)) {
+				// logically u might think we can discard the executing ones first,
+				// but then we'd get an execution confirmation from them and it might confuse our state...
+				oldestIndex = i;
+				oldest = clip->when;
+			}
+			continue;
+		}
+
+		clip->state = QDC_WAITING;
+		clip->clientNum = clientnum;
+		clip->when = executionTime;
+		Q_strncpyz(clip->cmd,command,sizeof(clip->cmd));
+		g_entities[clientnum].client->pers.demoClipsPending = qtrue;
+		return;
+	}
+
+	if (oldestIndex == -1) {
+		trap_SendServerCommand(-1,"print \"^1Failed to enqueue saving clip demo.\n\"");
+		return;
+	}
+	trap_SendServerCommand(-1, "print \"^3Forcing execution of clip demo.\n\"");
+	G_ExecuteClipDemo(oldestIndex,qtrue);
+	goto retry;
+
+}
+
+// only works if sv_demoPreRecord is active and svrecordclip is supported
+void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint) {
+	gclient_t* cl = ent->client;
+	static char sanitizedCourseName[COURSENAME_MAX_LEN + 1];
+	static char sanitizedUsername[sizeof(ent->client->sess.login.name)];
+	qtime_t q;
+	if (!ent->client) {
+		return;
+	}
+	sanitizeFilename(DF_GetCourseName(qfalse), sanitizedCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
+	if (ent->client->sess.login.loggedIn) {
+		sanitizeFilename(ent->client->sess.login.name, sanitizedUsername, qfalse);
+	}
+	else {
+		Q_strncpyz(sanitizedUsername,"unlogged",sizeof(sanitizedUsername));
+	}
+	Com_Printf("^2Clip demo requested: %s\n", clipPrint);
+	//if (cl->pers.keepDemoMaybe) {
+	//	Com_Printf("^1Can't save error demo %s because the game seems to already need the demo elsewhere.\n", demoname);
+	//	return;
+	//}
+	//if (!ent->client->pers.recordingDemo) { // thanks to pre-recording we'll get a bit into the past too
+	//	int demoId = DF_GetNewDemoId();
+
+	//	Com_sprintf(cl->pers.tempDemoName, sizeof(cl->pers.tempDemoName), "%stemp/temp%d_%d", level.tempDemoNamePrefix, cl->ps.clientNum, demoId);
+	//	cl->pers.recordingDemo = qtrue;
+
+	//	trap_SendConsoleCommand(EXEC_APPEND, va("svdemometa %d dfv %d;svrecord \"%s\" %i\n", cl->ps.clientNum, g_dfv.integer, cl->pers.tempDemoName, cl->ps.clientNum));
+	//	cl->pers.demoStartedTime = level.time;
+	//}
+	//if (cl->pers.tempDemoName[0]) {
+
+	//	//char cvarstr[64];
+
+	//	qtime_t q;
+	//	trap_RealTime(&q);
+
+	//	cl->pers.keepDemoMaybe = qtrue;
+	//	cl->pers.stopRecordingTime = level.time + 10000;
+	//	trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"%s\"\n", cl->pers.tempDemoName
+	//		, va("errordemos/%4d-%02d-%02d_%02d-%02d-%02d_%s_client%d_%s", q.tm_year + 1900, q.tm_mon + 1, q.tm_mday, q.tm_hour, q.tm_min, q.tm_sec, sanitizedCourseName, ent - g_entities, demoname)
+	//	));
+	//}
+
+	trap_RealTime(&q);
+	G_EnqueueClipDemo(ent-g_entities, va("svdemometa %d dfv %d;svdemometa %d desc \"%s\";svrecordclip \"%s\" %i 10000;svdemometa %d desc\n", cl->ps.clientNum, g_dfv.integer, cl->ps.clientNum, clipPrint, va("races/clips/%4d-%02d-%02d_%02d-%02d-%02d_%s_client%d_%s_%s", q.tm_year + 1900, q.tm_mon + 1, q.tm_mday, q.tm_hour, q.tm_min, q.tm_sec, sanitizedCourseName, ent - g_entities, sanitizedUsername, demoname), cl->ps.clientNum, cl->ps.clientNum),level.time+5000);
+
 }
 
 /*
@@ -6203,6 +6343,24 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 	}
 }
 
+// just some basic common checks. wanna be in jk2 movement. and not bot movement or some other.
+void DF_SetPlayerSubContestValueSafeguarded(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4) {
+	if (ent->client->sess.raceMode) { // if in racemode, let's check weird stuff isn't going on.
+		raceStyle_t clientRs = ent->client->sess.raceStyle;
+		if ((clientRs.runFlags & (~allowedSafeguardedSubcontestRunFlags)) || clientRs.movementStyle != MV_JK2 && clientRs.movementStyle != MV_CHARGEJUMP && clientRs.movementStyle != MV_SPEED && clientRs.movementStyle != MV_FORCE && clientRs.movementStyle != MV_JK2SP) {
+			// has runflags that aren't accepted (just cheat stuff generally)
+			// or is not in jk2 movement mode (let's be a bit gatekeepy here!)
+			return;
+		}
+	}
+	if (ent->client->pers.tasClient) { // meh. we can't really PREVENT cheats but if people are honest about using a hack client, let's exclude those? eeeh
+		// TODO detect some known ones?
+		//return;
+	}
+	DF_SetPlayerSubContestValue(ent,subcontest,value,extraParam1,extraParam2,extraParam3,extraParam4);
+}
+
+
 
 
 void DF_CheckRollSpeed(gentity_t* ent) {
@@ -6219,7 +6377,7 @@ void DF_CheckRollSpeed(gentity_t* ent) {
 			defaults.runFlags = (defaults.runFlags & ~allowedRollRunFlags) | (clientRs.runFlags & allowedRollRunFlags); // allowedRollRunFlags are ones we don't care about, so we just take whatever the client has
 			if (classifyLeaderBoard(&clientRs,&defaults) == LB_MAIN && clientRs.movementStyle == MV_JK2) {
 				defaults.msec = clientRs.msec;
-				DF_SetPlayerSubContestValue(ent, SUBCONTESTS_ROLLYMPICS, roll->rollSpeed, 0, 0, roll->finalAirClientSpeed, roll->rollAirTime);
+				DF_SetPlayerSubContestValue(ent, SUBCONTESTS_ROLLYMPICS_FIX, roll->rollSpeed, 0, 0, roll->finalAirClientSpeed, roll->rollAirTime);
 			}
 		}
 		if (ent->client->pers.raceStartCommandTime) {
@@ -6246,7 +6404,7 @@ qboolean DF_KeepClientZombie(gentity_t* ent) {
 
 	isReplaying = ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state == SEG_REPLAY;
 
-	if (ent->client && (isReplaying || ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe && !ent->client->pers.raceStartCommandTime)) { // we are either in a replay or at the end of a run still recording.
+	if (ent->client && (ent->client->pers.demoClipsPending || isReplaying || ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe && !ent->client->pers.raceStartCommandTime)) { // we are either in a replay or at the end of a run still recording. or we have queued clip demos
 		ent->client->clientIsZombified = qtrue;
 		return qtrue;
 	}

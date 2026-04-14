@@ -830,6 +830,7 @@ void Svcmd_ResetScores_f(void) {
 
 char	*ConcatArgs( int start );
 
+void G_SvCmd_ExecuteClipDemoCallback();
 /*
 =================
 ConsoleCommand
@@ -910,6 +911,11 @@ qboolean	ConsoleCommand( void ) {
 
 	if (Q_stricmp (cmd, "listip") == 0) {
 		trap_SendConsoleCommand( EXEC_NOW, "g_banIPs\n" );
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "clipdemodone") == 0) {
+		G_SvCmd_ExecuteClipDemoCallback();
 		return qtrue;
 	}
 

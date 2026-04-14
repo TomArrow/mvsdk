@@ -309,7 +309,7 @@ Note that bonuses are not cumulative.  You get one, they are in importance
 order.
 ================
 */
-void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker)
+void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath, float noKnockbackTargSpeed)
 {
 	int i;
 	gentity_t *ent;
@@ -350,6 +350,13 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 		//PrintMsg(NULL, "%s" S_COLOR_WHITE " fragged %s's flag carrier!\n",
 		//	attacker->client->pers.netname, TeamName(team));
 		PrintCTFMessage(attacker->s.number, team, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+
+		if (attacker->client && attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
+			DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_CTFRETURN, XYSPEED(attacker->client->ps.velocity), noKnockbackTargSpeed, 0, damage, 0);
+			if (XYSPEED(attacker->client->ps.velocity) > 700) {
+				G_SaveClipDemo(attacker, "ctfreturnover700ups", "CTF return over 700 ups");
+			}
+		}
 
 		// the target had the flag, clear the hurt carrier
 		// field on the other team

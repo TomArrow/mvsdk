@@ -16,7 +16,7 @@
 // Version 2: 2025-05-21 - Added support for target_fragsfilter
 // Version 3: 2025-05-21 - Added support for target_speed and fixed wait being read as int on trigger_multiple (0.5->0) in conversion
 // Version 4: 2026-04-07 - Added ability to discard saved positions in segmented runs, to fix a failed savepos
-// Version 5: 2026-04-13 - Added more flexible modelScale system, which affects pmove and cgame prediction. It should not affect normal movement styles, but just for safety, i bump the number.
+// Version 5: 2026-04-13 - Added more flexible modelScale system, which affects pmove and cgame prediction. It should not affect normal movement styles, but just for safety, i bump the number. Plus, finally making this number be actually used for g_dfv. I must have forgotten earlier and left it at 1 after originally introducing it.
 #define SEMIBREAKINGCHANGEVERSIONDEFRAG 5
 
 extern int semiBreakingChangeVersionDefrag;
@@ -333,7 +333,12 @@ typedef struct userCmdBuffer_s {
 extern userCmdBuffer_t		userCmdBuffer[MAX_CLIENTS]; 
 
 typedef enum subContests_s {
-	SUBCONTESTS_ROLLYMPICS,
+	SUBCONTESTS_ROLLYMPICS, // old bugged version. let's make sure it doesnt accidentally conflict
+	SUBCONTESTS_ROLLYMPICS_FIX, 
+	SUBCONTESTS_DBS_SPEED, 
+	SUBCONTESTS_DBS_KILL, 
+	SUBCONTESTS_DBS_IRONMAN, 
+	SUBCONTESTS_DBS_CTFRETURN, 
 	SUBCONTESTS_COUNT
 } subContests_t;
 

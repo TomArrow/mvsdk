@@ -3315,6 +3315,7 @@ static int PM_TryRoll( void )
 		if ( trace.fraction >= 1.0f )
 		{
 			pm->ps->saberMove = LS_NONE;
+			pm->roll.lastPreRollSpeed = MAX(pm->roll.lastPreRollSpeed,XYSPEED(pm->ps->velocity));
 			return anim;
 		}
 	}
@@ -6057,7 +6058,7 @@ void PM_CheckRollEnd() {
 		case ROLL_NONE:
 			if (inRoll) {
 				pm->roll.status = ROLL_STARTED;
-				pm->roll.rollDisqualified = pm->roll.lastSpeed > 325.0f; // seems that with normal (not ultra low) fps and vsnap we can reach a maximum groundpeed of absolutely maximally 325. so, allow rollympics participation for rolls out of standing basically.
+				pm->roll.rollDisqualified = pm->roll.lastSpeed > 325.0f || pm->roll.lastPreRollSpeed > 325.0f; // seems that with normal (not ultra low) fps and vsnap we can reach a maximum groundpeed of absolutely maximally 325. so, allow rollympics participation for rolls out of standing basically.
 				pm->roll.segmentDisqualified = qfalse;
 				pm->roll.rollAirTime = -1;
 				pm->roll.rollType = (pm->ps->legsAnim & ~ANIM_TOGGLEBIT )- BOTH_ROLL_F;
@@ -6472,6 +6473,7 @@ void PmoveSingle (pmove_t *pmove) {
 	}
 
 	pm->roll.lastSpeed = XYSPEED(pm->ps->velocity);
+	pm->roll.lastPreRollSpeed = XYSPEED(pm->ps->velocity);
 	pm->roll.lastClientSpeed = pm->ps->speed;
 	pm->roll.lastFrameWasRoll = BG_InRoll(pm->ps, pm->ps->legsAnim);
 	pm->roll.lastClientTime = pm->ps->commandTime;
@@ -6932,7 +6934,7 @@ void PmoveSingle (pmove_t *pmove) {
 	PM_GroundTrace();
 	PM_SetWaterLevel();
 
-	PM_CheckRollEnd();
+	//PM_CheckRollEnd();
 
 
 	if (pm->cmd.forcesel != (byte)-1 && (pm->ps->fd.forcePowersKnown & (1 << pm->cmd.forcesel)))
@@ -6951,6 +6953,8 @@ void PmoveSingle (pmove_t *pmove) {
 
 	// footstep events / legs animations
 	PM_Footsteps();
+
+	PM_CheckRollEnd(); // do this here instead? since PM_Footsteps can start a roll too.
 
 	// entering / leaving water splashes
 	PM_WaterEvents();

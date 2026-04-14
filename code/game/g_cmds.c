@@ -1465,6 +1465,12 @@ helpTip_t helpTips[] = {
 		qtrue
 	},
 	{
+		"print \"^2/dbsrecords^7 - Show fastest dbs related records. Options: speed/kill/ironman/ctfret\n\"",
+		"print \"Random tip: ^2/dbsrecords^7 - Show fastest dbs related records. Options: speed/kill/ironman/ctfret\n\"",
+		qfalse,
+		qtrue
+	},
+	{
 		"print \"\n^7Client binds (named binds work in TommyTernal client):\n\"",
 		"print \"Random tip: \n^7Client binds (named binds work in TommyTernal client):\n\"",
 		qtrue,
@@ -3453,7 +3459,49 @@ void Cmd_Rollympics_f( gentity_t *ent )
 
 	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
-	DF_RequestSubContestLeaderboard(ent,SUBCONTESTS_ROLLYMPICS,page);
+	DF_RequestSubContestLeaderboard(ent, SUBCONTESTS_ROLLYMPICS_FIX,page);
+}
+/*
+=================
+Cmd_DBSRecords_f
+=================
+*/
+void Cmd_DBSRecords_f( gentity_t *ent )
+{
+	int page = 1;
+	char arg[15];
+	subContests_t category = SUBCONTESTS_DBS_SPEED;
+	if (trap_Argc() < 2) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret> [page]\n\"");
+		return;
+	}
+	
+	trap_Argv(1,arg,sizeof(arg));
+	if (!Q_stricmp(arg,"speed")) {
+		category = SUBCONTESTS_DBS_SPEED;
+	} else if (!Q_stricmp(arg, "kill")) {
+		category = SUBCONTESTS_DBS_KILL;
+	} else if (!Q_stricmp(arg, "ironman")) {
+		category = SUBCONTESTS_DBS_IRONMAN;
+	} else if (!Q_stricmp(arg, "ctfreturns")) {
+		category = SUBCONTESTS_DBS_CTFRETURN;
+	}
+	else {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret> [page]\n\"");
+		return;
+	}
+
+	if (trap_Argc() > 2) {
+		trap_Argv(1, arg, sizeof(arg));
+		page = atoi(arg);
+		if (page < 1) {
+			page = 1;
+		}
+	}
+
+	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+
+	DF_RequestSubContestLeaderboard(ent, category, page);
 }
 
 /*
@@ -6159,6 +6207,8 @@ void ClientCommand( int clientNum ) {
 		Cmd_Maplist_f(ent);
 	else if (Q_stricmp (cmd, "rollympics") == 0)
 		Cmd_Rollympics_f(ent);
+	else if (Q_stricmp (cmd, "dbsrecords") == 0)
+		Cmd_DBSRecords_f(ent);
 	else if (Q_stricmp (cmd, "time") == 0)
 		Cmd_Time_f(ent);
 	else if (Q_stricmp (cmd, "register") == 0)
