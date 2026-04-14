@@ -534,14 +534,24 @@ void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn) {
 		return;
 	}
 	// TODO precache these sounds if they end up causing lag for players similar to connectlag?
-	if (speed > 800) {
-		soundFile = "sound/weapons/galak/footstep3.wav";
-		shakeIntensity = 3.0f;
-		shakeDuration = 600;
+	if (speed > 3000) {
+		soundFile = "sound/weapons/tie_fighter/tiepass5.wav";
+		shakeIntensity = 25.0f;
+		shakeDuration = 2000;
+	} 
+	else if (speed > 2000) {
+		soundFile = "sound/weapons/tie_fighter/tieexplode.wav";
+		shakeIntensity = 15.0f;
+		shakeDuration = 1500;
 	}
-	else if (speed > 900) {
-		soundFile = "sound/weapons/galak/skewerhit.wav";
-		shakeIntensity = 4.0f;
+	else if (speed > 1500) {
+		soundFile = "sound/weapons/explosions/explosion_huge3.wav";
+		shakeIntensity = 10.0f;
+		shakeDuration = 1200;
+	}
+	else if (speed > 1200) {
+		soundFile = "sound/weapons/explosions/explosion_huge2.wav";
+		shakeIntensity = 7.5f;
 		shakeDuration = 800;
 	}
 	else if (speed > 1000) {
@@ -549,25 +559,15 @@ void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn) {
 		shakeIntensity = 5.0f;
 		shakeDuration = 800;
 	}
-	else if (speed > 1200) {
-		soundFile = "sound/weapons/explosions/explosion_huge2.wav";
-		shakeIntensity = 7.5f;
+	else if (speed > 900) {
+		soundFile = "sound/weapons/galak/skewerhit.wav";
+		shakeIntensity = 4.0f;
 		shakeDuration = 800;
 	}
-	else if (speed > 1500) {
-		soundFile = "sound/weapons/explosions/explosion_huge3.wav";
-		shakeIntensity = 10.0f;
-		shakeDuration = 1200;
-	}
-	else if (speed > 2000) {
-		soundFile = "sound/weapons/tie_fighter/tieexplode.wav";
-		shakeIntensity = 15.0f;
-		shakeDuration = 1500;
-	}
-	else if (speed > 3000) {
-		soundFile = "sound/weapons/tie_fighter/tiepass5.wav";
-		shakeIntensity = 25.0f;
-		shakeDuration = 2000;
+	else if (speed > 800) {
+		soundFile = "sound/weapons/galak/footstep3.wav";
+		shakeIntensity = 3.0f;
+		shakeDuration = 600;
 	}
 	if (!isReturn) {
 		shakeIntensity *= 0.5f;
