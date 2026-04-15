@@ -17,7 +17,7 @@ void CG_DebugFieldsCommand() {
 	count = atoi(s);
 	if (count > countMax) {
 		if (cg_developer.integer) {
-			CG_Printf("^3CG_DebugFieldsCommand: %d fields expected, only %d fields gotten.\n");
+			CG_Printf("^3CG_DebugFieldsCommand: %d fields expected, only %d fields gotten.\n", count, countMax);
 		}
 		count = countMax;
 	}

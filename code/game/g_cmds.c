@@ -86,7 +86,7 @@ void TFFAEndGameStatsMessage(int recipient, qboolean final) {
 				"^7%-4s %-23s ^7 %6d %6d %8d %10d %12d %15d %9d %9d %5d\n"
 				"\" tffaStats_playerv2 %d %d %d %d %d %d %d %d %d %d %d %d %d %d", teamname, playerName, plStats->kills, plStats->deaths, plStats->suicides, plStats->teamkills, plStats->dmgReal.norm.damageDealt, plStats->dmgReal.norm.damageReceived, plStats->dmgReal.norm.damageDealt - plStats->dmgReal.norm.damageReceived, plStats->dmgReal.team.damageDealt, cl->ps.persistant[PERS_SCORE],
 				// post-printtext data, clientnum plus all stats duplicated (for easy parsing)
-				cl - g_clients, plStats->kills, plStats->deaths, plStats->suicides, plStats->teamkills, plStats->dmgReal.norm.damageDealt, plStats->dmgReal.norm.damageReceived, plStats->dmgReal.team.damageDealt, plStats->dmgReal.team.damageReceived,plStats->dmg.norm.damageDealt, plStats->dmg.norm.damageReceived, plStats->dmg.team.damageDealt, plStats->dmg.team.damageReceived, cl->ps.persistant[PERS_SCORE]
+				(int)(cl - g_clients), plStats->kills, plStats->deaths, plStats->suicides, plStats->teamkills, plStats->dmgReal.norm.damageDealt, plStats->dmgReal.norm.damageReceived, plStats->dmgReal.team.damageDealt, plStats->dmgReal.team.damageReceived,plStats->dmg.norm.damageDealt, plStats->dmg.norm.damageReceived, plStats->dmg.team.damageDealt, plStats->dmg.team.damageReceived, cl->ps.persistant[PERS_SCORE]
 			));
 			// plStats->dmg.norm.damageDealt, plStats->dmg.norm.damageReceived, plStats->dmg.team.damageDealt, plStats->dmg.team.damageReceived
 			teamStats.kills += plStats->kills;
@@ -2887,7 +2887,7 @@ void Cmd_Maplist_f(gentity_t* ent) {
 		trap_Argv(1, arg, sizeof(arg));
 		if (!Q_stricmp(arg,"unplayed")) {
 			if (!ent->client->sess.login.loggedIn) {
-				trap_SendServerCommand(ent - g_entities, va("print \"Cannot display unplayed maps unless you are logged in.\n\"", type));
+				trap_SendServerCommand(ent - g_entities, "print \"Cannot display unplayed maps unless you are logged in.\n\"");
 				return;
 			}
 			else {
@@ -2897,7 +2897,7 @@ void Cmd_Maplist_f(gentity_t* ent) {
 				if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data,sizeof(data),DBREQUEST_MAPLISTUNPLAYED,
 					"SELECT runs.course,runs2.userid FROM runs LEFT JOIN runs AS runs2 ON (runs.course=runs2.course AND runs2.userid=?) GROUP BY runs.course HAVING runs2.userid IS NULL ORDER BY course ASC"
 				)) {
-					trap_SendServerCommand(ent - g_entities, va("print \"^1Cannot display unplayed maps - database error.\n\"", type));
+					trap_SendServerCommand(ent - g_entities, "print \"^1Cannot display unplayed maps - database error.\n\"");
 					return;
 				}
 				G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
@@ -3657,7 +3657,7 @@ void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, const char 
 
 	trap_SendServerCommand(other - g_entities, va("%s \"%s%c%c%s\"%s%s",
 		mode == SAY_TEAM ? "tchat" : "chat",
-		name, Q_COLOR_ESCAPE, color, message, ent ? miniva(" %i",ent - g_entities) : "", append ? append : "")); // lets have some privacy for private chatters
+		name, Q_COLOR_ESCAPE, color, message, ent ? miniva(" %i",(int)(ent - g_entities)) : "", append ? append : "")); // lets have some privacy for private chatters
 }
 
 #define EC		"\x19"
@@ -4540,7 +4540,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 				return;
 			}
 			votingOpinion = qtrue;
-			Com_sprintf(level.voteString, sizeof(level.voteString), "", arg1, arg2);
+			level.voteString[0] = '\0';
 			Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "^3Opinion (players): %s ", args);
 		}
 	}
@@ -4558,7 +4558,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 			}
 			votingOpinion = qtrue;
 			votingOpinionAll = qtrue;
-			Com_sprintf(level.voteString, sizeof(level.voteString), "", arg1, arg2);
+			level.voteString[0] = '\0';
 			Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "^3Opinion (all): %s ", args);
 		}
 	}

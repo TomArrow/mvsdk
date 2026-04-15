@@ -9,7 +9,7 @@
 
 qboolean		m_entersound;		// after a frame, so caching won't disrupt the sound
 
-void QDECL Com_Error( errorParm_t level, const char *error, ... ) {
+void QDECL Com_Error( errorParm_t level, PRINTF_FORMAT_STRING const char *error, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -20,7 +20,7 @@ void QDECL Com_Error( errorParm_t level, const char *error, ... ) {
 	trap_Error(text);
 }
 
-void QDECL Com_Printf( const char *msg, ... ) {
+void QDECL Com_Printf( PRINTF_FORMAT_STRING const char *msg, ... ) {
 	va_list		argptr;
 	char		text[1024];
 

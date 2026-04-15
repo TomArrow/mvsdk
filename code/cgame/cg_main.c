@@ -1704,7 +1704,7 @@ int CG_LastAttacker( void ) {
 	return cg.snap->ps.persistant[PERS_ATTACKER];
 }
 
-void QDECL CG_Printf( const char *msg, ... ) {
+void QDECL CG_Printf(PRINTF_FORMAT_STRING const char *msg, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -1715,7 +1715,7 @@ void QDECL CG_Printf( const char *msg, ... ) {
 	trap_Print( text );
 }
 
-void QDECL CG_DPrintf( const char *msg, ... ) {
+void QDECL CG_DPrintf(PRINTF_FORMAT_STRING const char *msg, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -1728,7 +1728,7 @@ void QDECL CG_DPrintf( const char *msg, ... ) {
 	}
 }
 
-Q_NORETURN void QDECL CG_Error( const char *msg, ... ) {
+Q_NORETURN void QDECL CG_Error(PRINTF_FORMAT_STRING const char *msg, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -1739,7 +1739,7 @@ Q_NORETURN void QDECL CG_Error( const char *msg, ... ) {
 	trap_Error( text );
 }
 
-Q_NORETURN void QDECL Com_Error( errorParm_t level, const char *error, ... ) {
+Q_NORETURN void QDECL Com_Error( errorParm_t level, PRINTF_FORMAT_STRING const char *error, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -1750,7 +1750,7 @@ Q_NORETURN void QDECL Com_Error( errorParm_t level, const char *error, ... ) {
 	CG_Error( "%s", text);
 }
 
-void QDECL Com_Printf( const char *msg, ... ) {
+void QDECL Com_Printf( PRINTF_FORMAT_STRING const char *msg, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -1780,7 +1780,7 @@ CG_SendConsoleCommand
 Ensures trailing newline & handles va formatting
 ================
 */
-void QDECL CG_SendConsoleCommand(const char *fmt, ...)
+void QDECL CG_SendConsoleCommand(PRINTF_FORMAT_STRING const char *fmt, ...)
 {
 	va_list argptr;
 	char buf[MAX_STRING_CHARS];

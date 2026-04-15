@@ -2505,7 +2505,7 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 
 	if (cent->nextState.pos.trType != TR_LINEAR_STOP || (cg.demoPlayback && cg_deluxePlayersPredict.integer < 3)) {
 		if (cg_deluxePlayersPredictDebug.integer > 1) {
-			Com_Printf("Deluxe predict: cent->nextState.pos.trType != TR_LINEAR_STOP || (cg.demoPlayback && cg_deluxePlayersPredict.integer < 3): Client %d\n");
+			Com_Printf("Deluxe predict: cent->nextState.pos.trType != TR_LINEAR_STOP || (cg.demoPlayback && cg_deluxePlayersPredict.integer < 3): Client %d\n",(int)(cent-cg_entities));
 		}
 		return qfalse;
 	}
@@ -2544,7 +2544,7 @@ static qboolean CG_DeluxePlayerPredict( centity_t *cent ) {
 
 	if (!averageOffsetValid) {
 		if (cg_deluxePlayersPredictDebug.integer > 4) {
-			Com_Printf("Deluxe predict: !averageOffsetValid: Client %d\n");
+			Com_Printf("Deluxe predict: !averageOffsetValid: Client %d\n", (int)(cent - cg_entities));
 		}
 		return qfalse;
 	}

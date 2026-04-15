@@ -431,7 +431,7 @@ void DF_SaveErrorDemo(gentity_t* ent, const char* demoname, const char* errorPri
 		cl->pers.keepDemoMaybe = qtrue;
 		cl->pers.stopRecordingTime = level.time + 10000;
 		trap_SendConsoleCommand(EXEC_APPEND, va("svrenamedemo \"%s\" \"%s\"\n", cl->pers.tempDemoName
-			, va("errordemos/%4d-%02d-%02d_%02d-%02d-%02d_%s_client%d_%s",q.tm_year+ 1900,q.tm_mon+1,q.tm_mday,q.tm_hour,q.tm_min,q.tm_sec, sanitizedCourseName,ent-g_entities,demoname)
+			, va("errordemos/%4d-%02d-%02d_%02d-%02d-%02d_%s_client%d_%s",q.tm_year+ 1900,q.tm_mon+1,q.tm_mday,q.tm_hour,q.tm_min,q.tm_sec, sanitizedCourseName,(int)(ent - g_entities),demoname)
 		));
 	}
 		
@@ -627,7 +627,7 @@ void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint)
 	//}
 
 	trap_RealTime(&q);
-	G_EnqueueClipDemo(ent-g_entities, va("svdemometa %d dfv %d;svdemometa %d desc \"%s\";svrecordclip \"%s\" %i 10000;svdemometa %d desc\n", cl->ps.clientNum, g_dfv.integer, cl->ps.clientNum, clipPrint, va("races/clips/%4d-%02d-%02d_%02d-%02d-%02d_%s_client%d_%s_%s", q.tm_year + 1900, q.tm_mon + 1, q.tm_mday, q.tm_hour, q.tm_min, q.tm_sec, sanitizedCourseName, ent - g_entities, sanitizedUsername, demoname), cl->ps.clientNum, cl->ps.clientNum),level.time+5000);
+	G_EnqueueClipDemo(ent-g_entities, va("svdemometa %d dfv %d;svdemometa %d desc \"%s\";svrecordclip \"%s\" %i 10000;svdemometa %d desc\n", cl->ps.clientNum, g_dfv.integer, cl->ps.clientNum, clipPrint, va("races/clips/%4d-%02d-%02d_%02d-%02d-%02d_%s_client%d_%s_%s", q.tm_year + 1900, q.tm_mon + 1, q.tm_mday, q.tm_hour, q.tm_min, q.tm_sec, sanitizedCourseName, (int)(ent - g_entities), sanitizedUsername, demoname), cl->ps.clientNum, cl->ps.clientNum),level.time+5000);
 
 }
 
@@ -765,13 +765,13 @@ int DF_InterpolateTouchTimeToOldPosOld(gentity_t* activator, gentity_t* trigger,
 		lessTime = 0;
 		VectorClear(displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_OVER;
-		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_OVER: %d\n\"", activator - g_entities,lessTime));
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_OVER: %d\n\"", (int)(activator - g_entities),lessTime));
 	}
 	else if (lessTime == msecDelta) {
 		lessTime = 0;
 		VectorClear(displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_END_EQUAL;
-		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_EQUAL: %d\n\"", activator - g_entities, lessTime));
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_END_EQUAL: %d\n\"", (int)(activator - g_entities), lessTime));
 	}
 	else {
 		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
@@ -828,7 +828,7 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 			int lessTimeCheck = DF_InterpolateTouchTimeToOldPosOld(activator, trigger, classname, displacementVector, warningFlags);
 			if (lessTime != lessTimeCheck) {
 
-				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeToOldPos: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", activator - g_entities, lessTime, lessTimeCheck, lessTimePrecise));
+				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeToOldPos: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", (int)(activator - g_entities), lessTime, lessTimeCheck, lessTimePrecise));
 			}
 		}
 #endif
@@ -914,12 +914,12 @@ int DF_InterpolateTouchTimeToOldPosThisTriggerOld(gentity_t* activator, gentity_
 		lessTime = 0;
 		VectorClear(displacementVector);
 
-		trap_SendServerCommand(-1, va("print \"^1client %d, checkpoint interpolation over: %d\n\"", activator - g_entities, lessTime));
+		trap_SendServerCommand(-1, va("print \"^1client %d, checkpoint interpolation over: %d\n\"", (int)(activator - g_entities), lessTime));
 	}
 	else if (lessTime == msecDelta) {
 		lessTime = 0;
 		VectorClear(displacementVector);
-		trap_SendServerCommand(-1, va("print \"^1client %d, checkpoint interpolation equal\n\"", activator - g_entities, lessTime));
+		trap_SendServerCommand(-1, va("print \"^1client %d, checkpoint interpolation equal\n\"", (int)(activator - g_entities)));
 	}
 	else {
 		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
@@ -976,7 +976,7 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 			int lessTimeCheck = DF_InterpolateTouchTimeToOldPosThisTriggerOld(activator, trigger, displacementVector);
 			if (lessTime != lessTimeCheck) {
 
-				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeToOldPosThisTrigger: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", activator - g_entities, lessTime, lessTimeCheck, lessTimePrecise));
+				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeToOldPosThisTrigger: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", (int)(activator - g_entities), lessTime, lessTimeCheck, lessTimePrecise));
 			}
 		}
 #endif
@@ -1052,12 +1052,12 @@ int DF_InterpolateTouchTimeForStartTimerOld(gentity_t* activator, gentity_t* tri
 		lessTime = msecDelta;
 		VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition, displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_OVER;
-		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_OVER: %d\n\"", activator - g_entities, lessTime));
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_OVER: %d\n\"", (int)(activator - g_entities), lessTime));
 	}
 	else if (lessTime == msecDelta) {
 		VectorSubtract(activator->client->prePmovePosition, activator->client->postPmovePosition, displacementVector);
 		*warningFlags |= DF_WARNING_INTERPOLATION_FAIL_START_EQUAL;
-		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_EQUAL\n\"", activator - g_entities, lessTime));
+		trap_SendServerCommand(-1, va("print \"^1client %d, DF_WARNING_INTERPOLATION_FAIL_START_EQUAL\n\"", (int)(activator - g_entities)));
 	}
 	else {
 		VectorSubtract(oldInterpOrigin, activator->client->postPmovePosition, displacementVector);
@@ -1114,7 +1114,7 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 			int lessTimeCheck = DF_InterpolateTouchTimeForStartTimerOld(activator, trigger, displacementVector, warningFlags);
 			if (lessTime != lessTimeCheck) {
 
-				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeForStartTimer: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", activator - g_entities, lessTime, lessTimeCheck, lessTimePrecise));
+				trap_SendServerCommand(-1, va("print \"^1DF_InterpolateTouchTimeForStartTimer: client %d, lessTime != lessTimeCheck: lessTime %d, lessTimeCheck(legacy) %d, lessTime(float) %f\n\"", (int)(activator - g_entities), lessTime, lessTimeCheck, lessTimePrecise));
 			}
 		}
 #endif
@@ -1143,7 +1143,7 @@ void DF_HandleUnfinishedDemos() {
 				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"%strash/trash%d\"\n", i, ent->client->pers.tempDemoName, level.tempDemoNamePrefix, i));
 			}
 			else {
-				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", i, ent->client->pers.tempDemoName, i));
+				trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", i));
 			}
 		}
 	}
@@ -1183,7 +1183,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	if (cl->pers.raceStartCommandTime && cl->pers.stats.courseId != ent->courseID) {
 		// we are already in a run on another course
 		if (g_developer.integer) {
-			G_Printf("^3DF_StartTimer_Leave: client %d already on a different course.\n",activator-g_entities);
+			G_Printf("^3DF_StartTimer_Leave: client %d already on a different course.\n",(int)(activator - g_entities));
 		}
 		return;
 	}
@@ -1372,7 +1372,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 
 	if (!cl->sess.login.loggedIn) {
-		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O', level.nonDeterministicEntities), qfalse, qtrue, qfalse, "racestarted unlogged");
+		G_CenterPrint(activator - g_entities, 3, va("^%cRace timer started! ^1Warning: Not logged in.",lbType == LB_MAIN ? '7':'O'), qfalse, qtrue, qfalse, "racestarted unlogged");
 	}
 	else if (segmented && level.nonDeterministicEntities) {
 		G_CenterPrint(activator - g_entities,3, va("^%cRace timer started! ^1Warning: ^7Map has %i non-deterministic entities. Replay/run may fail.", lbType == LB_MAIN ? '7' : 'O', level.nonDeterministicEntities),qfalse, qtrue,qfalse, "racestarted nondeterm");
@@ -3016,7 +3016,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		runInfo.warningFlags |= DF_WARNING_INVALIDRUNDISTANCE;
 		PrintRaceTime(&runInfo, qfalse, qfalse, activator);
 		trap_SendServerCommand(-1, va("print \"^1Run invalid. Distance is under or equal to 0 units: %f.\n\"",runInfo.distance));
-		DF_SaveErrorDemo(activator,multiva("raceDistanceInvalid%d", runInfo.distance), multiva("Distance invalid: %d", runInfo.distance));
+		DF_SaveErrorDemo(activator,multiva("raceDistanceInvalid%d", (int)(1000.0f * runInfo.distance)), multiva("Distance invalid: %f", runInfo.distance));
 		DF_RaceStateInvalidated(activator, qtrue);
 		return;
 	}
@@ -3024,7 +3024,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		runInfo.warningFlags |= DF_WARNING_INVALIDRUNDISTANCE;
 		PrintRaceTime(&runInfo, qfalse, qfalse, activator);
 		trap_SendServerCommand(-1, va("print \"^1Run invalid. 2D Distance is under or equal to 0 units: %f.\n\"",runInfo.distanceXY));
-		DF_SaveErrorDemo(activator,multiva("race2DDistanceInvalid%d", runInfo.distanceXY), multiva("2D Distance invalid: %d", runInfo.distanceXY));
+		DF_SaveErrorDemo(activator,multiva("race2DDistanceInvalid%d", (int)(1000.0f*runInfo.distanceXY)), multiva("2D Distance invalid: %f", runInfo.distanceXY));
 		DF_RaceStateInvalidated(activator, qtrue);
 		return;
 	}
@@ -3542,7 +3542,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			q3SpawnType = Q3COURSE_VQ3ONLY;
 			if (spawnDistances[Q3COURSE_CPMONLY] != HUGE_VALF) {
 				if (spawnDistances[Q3COURSE_VQ3ONLY] * 2 > spawnDistances[Q3COURSE_CPMONLY]) {
-					G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50% of the distance to a cpm-only spawn.\n");
+					G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50%% of the distance to a cpm-only spawn.\n");
 				}
 				else {
 					G_Printf("DEFRAG: ^3VQ3-only spawn closest to startTimer but cpm-only spawn found in PVS.\n");
@@ -3550,7 +3550,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			}
 			if (spawnDistances[Q3COURSE_UNIVERSAL] != HUGE_VALF) {
 				if (spawnDistances[Q3COURSE_VQ3ONLY] * 2 > spawnDistances[Q3COURSE_UNIVERSAL]) {
-					G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50% of the distance to a universal spawn.\n");
+					G_Printf("DEFRAG: ^1VQ3-only spawn closest to startTimer but distance is more not at least 50%% of the distance to a universal spawn.\n");
 				}
 				else {
 					G_Printf("DEFRAG: ^3VQ3-only spawn closest to startTimer but universal spawn found in PVS.\n");
@@ -3561,7 +3561,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			q3SpawnType = Q3COURSE_CPMONLY;
 			if (spawnDistances[Q3COURSE_VQ3ONLY] != HUGE_VALF) {
 				if (spawnDistances[Q3COURSE_CPMONLY] * 2 > spawnDistances[Q3COURSE_VQ3ONLY]) {
-					G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50% of the distance to a vq3-only spawn.\n");
+					G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50%% of the distance to a vq3-only spawn.\n");
 				}
 				else {
 					G_Printf("DEFRAG: ^3CPM-only spawn closest to startTimer but vq3-only spawn found in PVS.\n");
@@ -3569,7 +3569,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			}
 			if (spawnDistances[Q3COURSE_UNIVERSAL] != HUGE_VALF) {
 				if (spawnDistances[Q3COURSE_CPMONLY] * 2 > spawnDistances[Q3COURSE_UNIVERSAL]) {
-					G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50% of the distance to a universal spawn.\n");
+					G_Printf("DEFRAG: ^1CPM-only spawn closest to startTimer but distance is more not at least 50%% of the distance to a universal spawn.\n");
 				}
 				else {
 					G_Printf("DEFRAG: ^3CPM-only spawn closest to startTimer but universal spawn found in PVS.\n");
@@ -3580,7 +3580,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			q3SpawnType = Q3COURSE_UNIVERSAL;
 			if (spawnDistances[Q3COURSE_VQ3ONLY] != HUGE_VALF) {
 				if (spawnDistances[Q3COURSE_UNIVERSAL] * 2 > spawnDistances[Q3COURSE_VQ3ONLY]) {
-					G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50% of the distance to a vq3-only spawn.\n");
+					G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50%% of the distance to a vq3-only spawn.\n");
 				}
 				else {
 					G_Printf("DEFRAG: ^3Universal spawn closest to startTimer but vq3-only spawn found in PVS.\n");
@@ -3588,7 +3588,7 @@ qboolean G_Q3DefragTriggerConvert(gentity_t* trigger, gentity_t* target, q3Defra
 			}
 			if (spawnDistances[Q3COURSE_CPMONLY] != HUGE_VALF) {
 				if (spawnDistances[Q3COURSE_UNIVERSAL] * 2 > spawnDistances[Q3COURSE_CPMONLY]) {
-					G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50% of the distance to a cpm-only spawn.\n");
+					G_Printf("DEFRAG: ^1Universal spawn closest to startTimer but distance is more not at least 50%% of the distance to a cpm-only spawn.\n");
 				}
 				else {
 					G_Printf("DEFRAG: ^3Universal spawn closest to startTimer but cpm-only spawn found in PVS.\n");
@@ -4119,8 +4119,8 @@ void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag) {
 
 void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag) {
 	if (!ClientModeValid(ent, allowDefrag)) {
-		Com_Printf("^3Client %d mode invalid, resetting: %d (racemode %d)\n",ent-g_entities,ent->client->sess.mode, ent->client->sess.raceMode);
-		G_SendServerCommand(ent-g_entities,va("print \"^3Mode invalid, resetting: %d (racemode %d)\n\"",ent-g_entities,ent->client->sess.mode, ent->client->sess.raceMode),qtrue);
+		Com_Printf("^3Client %d mode invalid, resetting: %d (racemode %d)\n",(int)(ent - g_entities),ent->client->sess.mode, ent->client->sess.raceMode);
+		G_SendServerCommand(ent-g_entities,va("print \"^3Mode invalid, resetting: %d (racemode %d)\n\"",ent->client->sess.mode, ent->client->sess.raceMode),qtrue);
 		ClientSetDefaultMode(ent, allowDefrag);
 	}
 }
@@ -4298,7 +4298,7 @@ void Cmd_JumpChange_f(gentity_t* ent)
 		//char styleString[16];
 		//IntegerToRaceName(ent->client->sess.movementStyle, styleString, sizeof(styleString));
 		//trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%s)!\n\"", styleString));
-		trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%d)!\n\"", ent->client->sess.raceStyle.movementStyle));
+		trap_SendServerCommand(ent - g_entities, va("print \"This command is not allowed with your movement style (%d)!\n\"", (int)ent->client->sess.raceStyle.movementStyle));
 		return;
 	}
 
@@ -4421,19 +4421,19 @@ qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 								}
 							}
 							else {
-								Com_Printf("^1ShouldNotCollide: Ownernum max recursion level reached for item %d of class '%s'\n",other-g_entities,other->classname ? other->classname: "");
+								Com_Printf("^1ShouldNotCollide: Ownernum max recursion level reached for item %d of class '%s'\n", (int)(other - g_entities),other->classname ? other->classname: "");
 							}
 						}
 						else {
-							Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", other - g_entities, other->classname ? other->classname : "", owner - g_entities, owner->classname ? owner->classname : "");
+							Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", (int)(other - g_entities), other->classname ? other->classname : "", (int)(owner - g_entities), owner->classname ? owner->classname : "");
 						}
 					}
 					else {
-						Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", other - g_entities, other->classname ? other->classname : "", owner - g_entities, owner->classname ? owner->classname : "");
+						Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", (int)(other - g_entities), other->classname ? other->classname : "", (int)(owner - g_entities), owner->classname ? owner->classname : "");
 					}
 				}
 				else {
-					Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", other - g_entities, other->classname ? other->classname : "", owner - g_entities, owner->classname ? owner->classname : "");
+					Com_Printf("^1ShouldNotCollide: Owner of item %d of class '%s' ends as %d of class '%s'\n", (int)(other - g_entities), other->classname ? other->classname : "", (int)(owner - g_entities), owner->classname ? owner->classname : "");
 				}
 			}
 		}
@@ -5103,13 +5103,13 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 			}
 
 			if (!(coolApi & COOL_APIFEATURE_G_USERCMDSTORE)) {
-				G_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with the UserCmdStore coolAPI feature. Please use the appropriate server engine.\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
+				G_SendServerCommand(ent - g_entities,"print \"Error: Segmented runs are only available with the UserCmdStore coolAPI feature. Please use the appropriate server engine.\n\"",qtrue);
 				return;
 			}
 			if (jk2version != VERSION_1_04) {
 				// TODO is this still true?
 				// We need the JK2MV 1.04 API because we need to send playerstates from game to engine and MV playerstate conversion would mess us up.
-				G_SendServerCommand(ent - g_entities, va("print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
+				G_SendServerCommand(ent - g_entities, "print \"Error: Segmented runs are only available with 1.04 API (this does not mean they don't work in 1.02, it's a code thing).\n\"",qtrue);
 				return;
 			}
 		}

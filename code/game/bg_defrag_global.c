@@ -407,7 +407,7 @@ FIXME: make this buffer size safe someday
 */
 #define MAX_MULTIVA_STRING MAX_STRING_CHARS
 #define MAX_MULTIVA_BUFFERS 64
-char* QDECL multiva(const char* format, ...) {
+char* QDECL multiva(PRINTF_FORMAT_STRING const char* format, ...) {
 	va_list		argptr;
 	static char		string[MAX_MULTIVA_BUFFERS][MAX_MULTIVA_STRING];	// in case va is called by nested functions
 	static int		index = 0;
@@ -435,7 +435,7 @@ FIXME: make this buffer size safe someday
 */
 #define MAX_MINIVA_STRING 32
 #define MAX_MINIVA_BUFFERS 2048
-char* QDECL miniva(const char* format, ...) {
+char* QDECL miniva(PRINTF_FORMAT_STRING const char* format, ...) {
 	va_list		argptr;
 	static char		string[MAX_MINIVA_BUFFERS][MAX_MINIVA_STRING];	// in case va is called by nested functions
 	static int		index = 0;

@@ -376,7 +376,7 @@ void UI_SaberLoadParms( void )
 		{
 			if (len > sizeof(buffer) )
 			{
-				Com_Error( ERR_FATAL, "UI_SaberLoadParms: file %s too large to read (max=%d)", holdChar, sizeof(buffer) );
+				Com_Error( ERR_FATAL, "UI_SaberLoadParms: file %s too large to read (max=%d)", holdChar, (int)sizeof(buffer) );
 			}
 			trap_FS_Read( buffer, len, f );
 			trap_FS_FCloseFile( f );

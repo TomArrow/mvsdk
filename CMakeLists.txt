@@ -158,9 +158,15 @@ if (NOT InMV)
 		# 4133 = ':': incompatible types - from 'type1*' to 'type2*' (qvm enforces this too. it can be used as a cool type checking macro and may as well get a nicer error message)
 		# 4047 = 'function': 'type*' differs in levels of indirection from 'type**'
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4018 /wd4244 /wd4996 /wd4267 /wd4305 /we4013 /we4133 /we4047")
+		
+		# printf style function type checks. leads to weird errors so often when unchecked, especially in qvm
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /we3018 /we4313 /we4477 /we6063 /we6064 /we6065 /we6066 /we6067 /we6340 /we6273 /we6284 /we6328 /we6271 /we28251")
 
 		# Multithreaded
 		set(CMAKE_C_FLAGS_RELEASE "/MT")
+		
+		# Debug analyze (find va argument errors and such)
+		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /analyze")
 
 		# Platform
 		set(GlobalDefines ${GlobalDefines} "UNICODE" "_UNICODE")
@@ -179,7 +185,7 @@ if (NOT InMV)
 		set(CMAKE_C_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELEASE})
 	elseif ((${CMAKE_C_COMPILER_ID} STREQUAL GNU) OR (${CMAKE_C_COMPILER_ID} MATCHES Clang|AppleClang))
 		# Additional flags for debug configuration
-		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb3")
+		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb3 -Werror=format")
 
 		# we need sse optimizations in debug configuration, too because of the inline assembler which is sse code
 		if(ARCH_X86)

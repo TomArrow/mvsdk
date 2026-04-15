@@ -6824,7 +6824,7 @@ void PmoveSingle (pmove_t *pmove) {
 
 						if (pmove->debugLevel > 20) {
 
-							Com_Printf("strafebot: optimalDeltaAngle is NAN", pmove->accelMiss);
+							Com_Printf("strafebot: optimalDeltaAngle is NAN");
 						}
 
 					}

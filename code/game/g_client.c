@@ -3268,10 +3268,10 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 		ent->client->pers.recordingDemo = qfalse;
 		ent->client->pers.demoStoppedTime = level.time;
 		if (!ent->client->pers.keepDemoMaybe) {
-			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"%strash/trash%d\"\n", ent - g_entities, ent->client->pers.tempDemoName, level.tempDemoNamePrefix, ent - g_entities));
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i;svrenamedemo \"%s\" \"%strash/trash%d\"\n", (int)(ent - g_entities), ent->client->pers.tempDemoName, level.tempDemoNamePrefix, (int)(ent - g_entities)));
 		}
 		else {
-			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", ent - g_entities, ent->client->pers.tempDemoName, ent - g_entities));
+			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", (int)(ent - g_entities)));
 		}
 	}
 

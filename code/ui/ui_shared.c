@@ -307,7 +307,7 @@ void String_Report() {
 	f = strPoolIndex;
 	f /= STRING_POOL_SIZE;
 	f *= 100;
-#ifdef __LCC__
+#if defined(__LCC__) || defined(LIMITED_FORMATS)
 	Com_Printf("String Pool is %.1f%% full, %i bytes out of %i used.\n", f, strPoolIndex, STRING_POOL_SIZE);
 #else
 	Com_Printf("String Pool is %.1f%% full, %zu bytes out of %i used.\n", f, strPoolIndex, STRING_POOL_SIZE);
@@ -315,7 +315,7 @@ void String_Report() {
 	f = allocPoint;
 	f /= MEM_POOL_SIZE;
 	f *= 100;
-#ifdef __LCC__
+#if defined(__LCC__) || defined(LIMITED_FORMATS)
 	Com_Printf("Memory Pool is %.1f%% full, %i bytes out of %i used.\n", f, allocPoint, MEM_POOL_SIZE);
 #else
 	Com_Printf("Memory Pool is %.1f%% full, %zu bytes out of %i used.\n", f, allocPoint, MEM_POOL_SIZE);

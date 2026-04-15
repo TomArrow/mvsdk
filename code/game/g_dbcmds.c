@@ -114,7 +114,7 @@ qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 
 	if (*s == '-' || *s == '.') {
 		if (clientNumNotify > -2) {
-			trap_SendServerCommand(clientNumNotify, va("print \"^1Usernames cannot start with - or a dot.\n\"", USERNAME_MAX_LEN));
+			trap_SendServerCommand(clientNumNotify, "print \"^1Usernames cannot start with - or a dot.\n\"");
 		}
 		return qfalse;
 	}
@@ -301,7 +301,7 @@ static void G_ChangePasswordResult(int status, const char* errorMessage) {
 		trap_SendServerCommand(loginData.clientnum, va("print \"^1Change password failed with status %d and error message %s.\n\"", status, errorMessage));
 		return;
 	}
-	trap_SendServerCommand(loginData.clientnum, va("print \"^2Change password. You can now log in with your new password.\n\"", loginData.username));
+	trap_SendServerCommand(loginData.clientnum, "print \"^2Change password. You can now log in with your new password.\n\"");
 
 }
 
@@ -1048,7 +1048,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 			switch (lbRequestData.lbTypeIfSpecific) {
 			case LB_MAIN:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
+					"^J%c%2s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
@@ -1056,7 +1056,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 				break;
 			case LB_NOJUMPBUG:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
+					"^J%c%2s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_NOJUMPBUG, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
@@ -1064,7 +1064,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 				break;
 			case LB_CUSTOM:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
+					"^J%c%2s^%c %-10s ^c%4s %c%s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_CUSTOM, TIMECOLOR_CUSTOM, JUMPVALUE),
@@ -1074,7 +1074,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 				break;
 			case LB_SEGMENTED:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
+					"^J%c%2s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_SEGMENTED, TIMECOLOR_SEGMENTED, JUMPVALUE_EMPTY),
@@ -1084,7 +1084,7 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 				break;
 			case LB_CHEAT:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-					"^J%c%02s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
+					"^J%c%2s^%c %-10s ^c%4s ^u%10s" LBROWFULL_STRING "  ^c%s%s"
 					"\n\"",
 					i == 10 ? "\n" : "",
 					LBROWFULL(LB_CHEAT, TIMECOLOR_CHEAT, JUMPVALUE_EMPTY),
@@ -1096,11 +1096,11 @@ static void G_TopResult(int status, const char* errorMessage, int affectedRows) 
 		}
 		else {
 			trap_SendServerCommand(lbRequestData.clientnum, va("print \"%s^7"
-				"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-				"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-				"^J%c%02s^%c %-10s ^c%4s %c%s ^u%10s ^h| " // so middle (custom) column is 4 wider
-				"^J%c%02s^%c %-10s ^c%4s ^u%10s ^h| "
-				"^J%c%02s^%c %-10s ^c%4s ^u%10s "
+				"^J%c%2s^%c %-10s ^c%4s ^u%10s ^h| "
+				"^J%c%2s^%c %-10s ^c%4s ^u%10s ^h| "
+				"^J%c%2s^%c %-10s ^c%4s %c%s ^u%10s ^h| " // so middle (custom) column is 4 wider
+				"^J%c%2s^%c %-10s ^c%4s ^u%10s ^h| "
+				"^J%c%2s^%c %-10s ^c%4s ^u%10s "
 				"\n\"",
 				i==10 ? multiva("%31s^h|%32s^h|%36s^h|%32s^h|%32s\n","","","","","") : "",
 				LBROW(LB_MAIN, TIMECOLOR_DEFAULT, JUMPVALUE_EMPTY)
@@ -1427,7 +1427,7 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 
 	if (lbRequestData.clientnum == -1) {
 		if (g_developer.integer) {
-			Com_Printf("^3Clientless rank update map request result returned.\n", lbRequestData.clientnum);
+			Com_Printf("^3Clientless rank update map request result returned.\n");
 		}
 	} else if (!(ent = DB_VerifyClient(lbRequestData.clientnum, lbRequestData.ip))) {
 		Com_Printf("^1Client %d rank update map request results returned, user no longer valid.\n", lbRequestData.clientnum);
@@ -1457,7 +1457,7 @@ static void G_RankUpdateMapRequestResult(int status, const char* errorMessage, i
 		if (!resultIndex) {
 			if (!g_developer.integer && lbRequestData.clientnum == -1) {
 
-				Com_Printf("^3Clientless rank update map request result returned.\n", lbRequestData.clientnum);
+				Com_Printf("^3Clientless rank update map request result returned.\n");
 			}
 			G_BufferedSendOrPrint(ent, qfalse, qfalse, "Requesting map rank updates:\n");
 		}
@@ -1615,7 +1615,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 				trap_SendServerCommand(ent - g_entities, va("print \"^%c%10s %-7s %-20s\n\""
 					, '7'
 					, DF_MsToString(time)
-					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, infoHashed ? miniva("%d", (int)(infoHashed - g_arenaInfosHashed)) : "-"
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 				));
 			}
@@ -1644,7 +1644,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 					, DF_MsToString(time)
 					, miniva("%.3f", deviation)
 					, samples
-					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, infoHashed ? miniva("%d", (int)(infoHashed - g_arenaInfosHashed)) : "-"
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 				));
 			}
@@ -1667,7 +1667,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 				trap_SendServerCommand(ent - g_entities, va("print \"^%c%7s %-7s %-20s\n\""
 					, '7'
 					, miniva("%d",time)
-					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, infoHashed ? miniva("%d", (int)(infoHashed - g_arenaInfosHashed)) : "-"
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 				));
 			}
@@ -1693,7 +1693,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 					, '7'
 					, time > 0 ? miniva("%.4f",rating) : "-"
 					, time > 0 ? miniva("%d",time) : "-"
-					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, infoHashed ? miniva("%d", (int)(infoHashed - g_arenaInfosHashed)) : "-"
 					, subcourse[0] ? multiva("%s/%s", course, subcourse) : course
 				));
 			}
@@ -1729,7 +1729,7 @@ static void G_ShortestLongestResult(int status, const char* errorMessage, int af
 				trap_SendServerCommand(ent - g_entities, va("print \"^%c%5s %-7s %-7s %-12s %-7s %-9s %-8s %-20s\n\""
 					, '7'
 					, anyRuns? miniva("%d",rank) : "-"
-					, infoHashed ? miniva("%d", infoHashed - g_arenaInfosHashed) : "-"
+					, infoHashed ? miniva("%d", (int)(infoHashed - g_arenaInfosHashed)) : "-"
 					, time > 0 ? miniva("%d", time) : "-"
 					, time > 0 ? DF_MsToString(shortestRun) : "-"
 					, votecount > 0 ? miniva("%.4f", rating) : "-"
@@ -2074,7 +2074,7 @@ static void G_TimeResult(int status, const char* errorMessage, int affectedRows)
 	
 	if (Q_stricmp(lbRequestData.course, DF_GetCourseName(qfalse)) && lbRequestData.forUserInfo) {
 		// this isn't the correct course.
-		Com_Printf("^1Coursename changed, requested time not useful. Requesting new pb for client %d",ent-g_entities);
+		Com_Printf("^1Coursename changed, requested time not useful. Requesting new pb for client %d",(int)(ent - g_entities));
 		DF_RequestPlayerDefaultTime(ent);
 		return;
 	}
@@ -2550,7 +2550,7 @@ void G_CreateUserTable() {
 
 void G_CreateMessagesTable() {
 	referenceSimpleString_t tableName;
-	const char* userTableRequest = va("CREATE TABLE IF NOT EXISTS messages(id BIGINT AUTO_INCREMENT PRIMARY KEY, sender INT NOT NULL, recipient INT NOT NULL, content TEXT NOT NULL, created DATETIME NOT NULL, readtime DATETIME NULL, sentfrom VARCHAR(100) NOT NULL, type INT NOT NULL, keep TINYINT NOT NULL DEFAULT 0, flags  INT UNSIGNED NOT NULL DEFAULT 0)",USERNAME_MAX_LEN);
+	const char* userTableRequest = "CREATE TABLE IF NOT EXISTS messages(id BIGINT AUTO_INCREMENT PRIMARY KEY, sender INT NOT NULL, recipient INT NOT NULL, content TEXT NOT NULL, created DATETIME NOT NULL, readtime DATETIME NULL, sentfrom VARCHAR(100) NOT NULL, type INT NOT NULL, keep TINYINT NOT NULL DEFAULT 0, flags  INT UNSIGNED NOT NULL DEFAULT 0)";
 	Q_strncpyz(tableName.s, "messages", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 }

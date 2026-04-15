@@ -356,8 +356,8 @@ qboolean RaceStyleIsMainLeaderboard(raceStyle_t* raceStyle, raceStyle_t* default
 mainLeaderboardType_t classifyLeaderBoard(raceStyle_t* raceStyle, raceStyle_t* defaultLevelRaceStyle);
 const char* getLeaderboardSQLConditions(mainLeaderboardType_t lbType, raceStyle_t* defaultLevelRaceStyle);
 raceStyle_t getDefaultMapRaceStyle();
-char* QDECL multiva(const char* format, ...) __attribute__((format(printf, 1, 2)));
-char* QDECL miniva(const char* format, ...) __attribute__((format(printf, 1, 2)));
+char* QDECL multiva(PRINTF_FORMAT_STRING const char* format, ...) __attribute__((format(printf, 1, 2)));
+char* QDECL miniva(PRINTF_FORMAT_STRING const char* format, ...) __attribute__((format(printf, 1, 2)));
 const char* DF_DemoRaceStyleNamePart(raceStyle_t* rs);
 void DF_AntiLoop_NewAngle(antiLoopState_t* antiLoopState, vec3_t oldVelocity, vec3_t velocity, float baseSpeed, qboolean inRace);
 

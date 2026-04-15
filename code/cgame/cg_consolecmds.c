@@ -353,7 +353,7 @@ qboolean CG_FindClientFromConsoleArgs(int* clientvar, int tryskip, int skipclien
 	int		i = 0;
 
 	if (trap_Argc() < 2) {
-		Com_Printf("No player name/client number specified.\n", buf);
+		Com_Printf("No player name/client number specified.\n");
 		return qfalse;	// Error: no argument!
 	}
 
@@ -373,7 +373,7 @@ static const char* NOT_PLAYING_DEMO = "Not playing a demo.\n";
 static void CG_DemoSeekRetMode_f(void) {
 
 	if (!cg.demoPlayback) {
-		Com_Printf(NOT_PLAYING_DEMO);
+		Com_Printf("%s",NOT_PLAYING_DEMO);
 		return;
 	}
 
@@ -390,7 +390,7 @@ static void CG_DemoSeekRetMode_f(void) {
 void CG_DemoSeekToCappingOnly_f(void) {
 
 	if (!cg.demoPlayback) {
-		Com_Printf(NOT_PLAYING_DEMO);
+		Com_Printf("%s", NOT_PLAYING_DEMO);
 		return;
 	}
 
@@ -414,7 +414,7 @@ void CG_DemoSeekClientNum_f(void) {
 	int client;
 
 	if (!cg.demoPlayback) {
-		Com_Printf(NOT_PLAYING_DEMO);
+		Com_Printf("%s",NOT_PLAYING_DEMO);
 		return;
 	}
 
@@ -454,7 +454,7 @@ const char* timescaleString = "timescale";
 static void CG_DemoSeekToMapRestart_f(void) {
 
 	if (!cg.demoPlayback) {
-		Com_Printf(NOT_PLAYING_DEMO);
+		Com_Printf("%s", NOT_PLAYING_DEMO);
 		return;
 	}
 
@@ -744,7 +744,7 @@ void CG_StrafeHelper_f(void) {
 			trap_Cvar_Set("cg_strafeHelper", va("%i", value));
 		}
 		else {
-			trap_Cvar_Set("cg_strafeHelper", va("%i", (1 << index) ^ (cg_strafeHelper.integer & mask)));
+			trap_Cvar_Set("cg_strafeHelper", va("%i", (int)((1 << index) ^ (cg_strafeHelper.integer & mask))));
 		}
 		trap_Cvar_Update(&cg_strafeHelper);
 
@@ -814,7 +814,7 @@ void cg_speedometer_f(void)
 			trap_Cvar_Set("cg_speedometer", va("%i", value));
 		}
 		else {
-			trap_Cvar_Set("cg_speedometer", va("%i", (1 << index) ^ (cg_speedometer.integer & mask)));
+			trap_Cvar_Set("cg_speedometer", va("%i", (int)((1 << index) ^ (cg_speedometer.integer & mask))));
 		}
 		trap_Cvar_Update(&cg_speedometer);
 
@@ -864,7 +864,7 @@ void cg_customizeRace_f(void)
 		}
 
 
-		trap_Cvar_Set("cg_customizeRace", va("%i", (1 << index) ^ (cg_customizeRace.integer & mask)));
+		trap_Cvar_Set("cg_customizeRace", va("%i", (int)((1 << index) ^ (cg_customizeRace.integer & mask))));
 		trap_Cvar_Update(&cg_customizeRace);
 
 		Com_Printf("%s %s^7\n", customizeRaceSettings[index2].string, ((cg_customizeRace.integer & (1 << index2))

@@ -610,7 +610,7 @@ void G_BlacklistMap(const char* thisMapName)
 	const char* tmp;
 
 	if (!level.blacklistsLoaded) {
-		G_SendServerCommand(-1, va("print \"^1Can't add to blacklist, blacklists weren't loaded (can't avoid dupes).\n\"", thisMapName), qtrue);
+		G_SendServerCommand(-1, "print \"^1Can't add to blacklist, blacklists weren't loaded (can't avoid dupes).\n\"", qtrue);
 		return;
 	}
 

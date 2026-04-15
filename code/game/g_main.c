@@ -767,7 +767,7 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar) {
 
 
 
-void QDECL G_Printf( const char *fmt, ... ) {
+void QDECL G_Printf(PRINTF_FORMAT_STRING const char *fmt, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -778,7 +778,7 @@ void QDECL G_Printf( const char *fmt, ... ) {
 	trap_Printf( text );
 }
 
-Q_NORETURN void QDECL G_Error( const char *fmt, ... ) {
+Q_NORETURN void QDECL G_Error(PRINTF_FORMAT_STRING const char *fmt, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -1377,7 +1377,7 @@ void G_ShutdownGame( int restart ) {
 
 //===================================================================
 
-Q_NORETURN void QDECL Com_Error ( errorParm_t level, const char *error, ... ) {
+Q_NORETURN void QDECL Com_Error ( errorParm_t level, PRINTF_FORMAT_STRING const char *error, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -1388,7 +1388,7 @@ Q_NORETURN void QDECL Com_Error ( errorParm_t level, const char *error, ... ) {
 	G_Error( "%s", text);
 }
 
-void QDECL Com_Printf( const char *msg, ... ) {
+void QDECL Com_Printf( PRINTF_FORMAT_STRING const char *msg, ... ) {
 	va_list		argptr;
 	char		text[1024];
 
@@ -2223,7 +2223,7 @@ G_LogPrintf
 Print to the logfile with a time stamp if it is open
 =================
 */
-void QDECL G_LogPrintf( const char *fmt, ... ) {
+void QDECL G_LogPrintf(PRINTF_FORMAT_STRING const char *fmt, ... ) {
 	va_list		argptr;
 	char		string[1024];
 	int			min, tens, sec;
@@ -3158,7 +3158,7 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qbool
 	const char*		tmp;
 
 	if (!level.arenasLoaded) {
-		G_BufferedSendOrPrint(NULL,qtrue,immediatePrint,va("^1Can't generate arena, arenas weren't loaded (can't avoid dupes).\n", thisMapName));
+		G_BufferedSendOrPrint(NULL,qtrue,immediatePrint,va("^1Can't generate arena, arenas weren't loaded (can't avoid dupes).\n"));
 		return;
 	}
 

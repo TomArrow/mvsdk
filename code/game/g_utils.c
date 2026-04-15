@@ -532,7 +532,7 @@ void G_UnlistFromHashTable(gentity_t* ent) {
 		}
 		ent->nextHashed = NULL;
 		if (found > 1) {
-			Com_Printf("^3entity %d (%s) was found %d times in hashtable with hash %d!!",ent-g_entities,ent->classname,found, hash);
+			Com_Printf("^3entity %d (%s) was found %d times in hashtable with hash %d!!",(int)(ent - g_entities),ent->classname,found, hash);
 		}
 	}
 }

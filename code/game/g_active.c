@@ -933,7 +933,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 		}
 		else {
 			if (level.time > client->inactivityToSpecTime) {
-				G_Printf("^3g_inactivityToSpec: Sending client %d to spec.\n", ent - g_entities);
+				G_Printf("^3g_inactivityToSpec: Sending client %d to spec.\n", (int)(ent - g_entities));
 				trap_SendServerCommand(-1, va("print \"^3Sending %s ^3to spec for being AFK.\n\"",client->pers.netname));
 				SetTeam(ent, "s");
 				return qfalse;
@@ -947,7 +947,7 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 	}
 	if (client->markedAsInactive != wasInactive) {
 
-		G_Printf("^3g_inactivityToSpec: Client %d inactivity status changed to %d.\n", ent - g_entities, client->markedAsInactive);
+		G_Printf("^3g_inactivityToSpec: Client %d inactivity status changed to %d.\n", (int)(ent - g_entities), client->markedAsInactive);
 		G_ResetClientVote(client);
 		CalculateRanks(); // need to let the game know this client won't vote :)
 	}
@@ -2847,7 +2847,7 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 	// longer than the timeout to spectator then force this client into spectator mode
 	if ( level.time - ent->client->pers.cmd.serverTime > clampedIntMult(g_timeouttospec.integer ,1000) )
 	{
-		G_Printf("^3g_timeouttospec: Sending client %d to spec. %d time delta.\n",ent-g_entities, level.time - ent->client->pers.cmd.serverTime);
+		G_Printf("^3g_timeouttospec: Sending client %d to spec. %d time delta.\n",(int)(ent - g_entities), level.time - ent->client->pers.cmd.serverTime);
 		SetTeam ( ent, "spectator" );
 	}
 }
@@ -2965,10 +2965,10 @@ void ClientThink( int clientNum ) {
 	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || ent->client->sess.sessionInitialized && (tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate)) {
 		if (g_developer.integer) {
 			if ((level.time - ent->client->sess.lastHereTime) > 30000) {
-				Com_Printf("^3Client %d came back from AFK after %d milliseconds, fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n",ent-g_entities, level.time - ent->client->sess.lastHereTime,tmpCmdForAfkCheck.forwardmove,tmpCmdForAfkCheck.rightmove,tmpCmdForAfkCheck.upmove, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, tmpCmdForAfkCheck.buttons);
+				Com_Printf("^3Client %d came back from AFK after %d milliseconds, fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n",(int)(ent - g_entities), level.time - ent->client->sess.lastHereTime,tmpCmdForAfkCheck.forwardmove,tmpCmdForAfkCheck.rightmove,tmpCmdForAfkCheck.upmove, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, tmpCmdForAfkCheck.buttons);
 			}
 			else if (level.time < ent->client->sess.lastHereTime) {
-				Com_Printf("^3Client %d came back from AFK (glitch %d<%d), fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n", ent - g_entities, level.time, ent->client->sess.lastHereTime, tmpCmdForAfkCheck.forwardmove, tmpCmdForAfkCheck.rightmove, tmpCmdForAfkCheck.upmove, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, tmpCmdForAfkCheck.buttons);
+				Com_Printf("^3Client %d came back from AFK (glitch %d<%d), fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n", (int)(ent - g_entities), level.time, ent->client->sess.lastHereTime, tmpCmdForAfkCheck.forwardmove, tmpCmdForAfkCheck.rightmove, tmpCmdForAfkCheck.upmove, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, tmpCmdForAfkCheck.buttons);
 			}
 		}
 		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
@@ -3040,7 +3040,7 @@ void G_RunClient( gentity_t *ent ) {
 	if (!(ent->r.svFlags & SVF_BOT) && !g_synchronousClients.integer && !areSegReplaying && g_userCmdBuffer.integer && ent->client->pers.connected == CON_CONNECTED) {
 		while (G_GetUserCmd(ent - g_entities, &ent->client->pers.cmd, GETUSERCMD_ADVANCERUNCLIENT)) {
 			if (g_developer.integer > 10) {
-				G_Printf("^3executing buffered cmd for client %d\n", ent-g_entities);
+				G_Printf("^3executing buffered cmd for client %d\n", (int)(ent - g_entities));
 			}
 			ClientThink_real(ent);
 		}

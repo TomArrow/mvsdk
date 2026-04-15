@@ -439,7 +439,7 @@ void G_UserMessagesPrune() {
 		"DELETE FROM messages WHERE readtime IS NOT NULL AND readtime < (DATE(NOW()) - INTERVAL 30 DAY) AND created < (DATE(NOW()) - INTERVAL 30 DAY)"
 	)) {
 		if (g_developer.integer) {
-			Com_Printf("print \"DB connection not available to prune user messages.\n\"", qfalse);
+			Com_Printf("print \"DB connection not available to prune user messages.\n\"");
 		}
 		return;
 	}

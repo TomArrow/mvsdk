@@ -306,7 +306,7 @@ char *COM_Parse( const char **data_p )
 	return COM_ParseExt( data_p, qtrue );
 }
 
-void COM_ParseError( char *format, ... )
+void COM_ParseError( PRINTF_FORMAT_STRING char *format, ... )
 {
 	va_list argptr;
 	static char string[4096];
@@ -318,7 +318,7 @@ void COM_ParseError( char *format, ... )
 	Com_Printf("ERROR: %s, line %d: %s\n", com_parsename, com_lines, string);
 }
 
-void COM_ParseWarning( char *format, ... )
+void COM_ParseWarning( PRINTF_FORMAT_STRING char *format, ... )
 {
 	va_list argptr;
 	static char string[4096];
@@ -1089,7 +1089,7 @@ Special wrapper function for Microsoft's broken _vsnprintf() function.
 =============
 */
 
-size_t Q_vsnprintf(char *str, size_t size, const char *format, va_list ap) {
+size_t Q_vsnprintf(char *str, size_t size, PRINTF_FORMAT_STRING const char *format, va_list ap) {
 	int retval;
 	retval = _vsnprintf(str, size, format, ap);
 	if (retval < 0 || retval == size) {
@@ -1225,7 +1225,7 @@ const char *Q_strchrs( const char *string, const char *search )
 }
 
 
-void QDECL Com_sprintf( char *dest, int size, const char *fmt, ...) {
+void QDECL Com_sprintf( char *dest, int size, PRINTF_FORMAT_STRING const char *fmt, ...) {
 	int		len;
 	va_list		argptr;
 	char	bigbuffer[32000];	// big, but small enough to fit in PPC stack
@@ -1261,7 +1261,7 @@ FIXME: make this buffer size safe someday
 */
 #define MAX_VA_STRING 32000
 #define MAX_VA_BUFFERS 4 // make it 4.. save us annoying trouble from passing va into centerprint and then multiple va in there
-char	* QDECL va( const char *format, ... ) {
+char	* QDECL va( PRINTF_FORMAT_STRING const char *format, ... ) {
 	va_list		argptr;
 	static char		string[MAX_VA_BUFFERS][MAX_VA_STRING];	// in case va is called by nested functions
 	static int		index = 0;

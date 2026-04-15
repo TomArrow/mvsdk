@@ -2046,7 +2046,7 @@ void DF_RaceTimer(void)
 
 			if (cg_raceTimer.integer > 1 && !cg_raceTimerNoSpeeds.integer) {
 				if (cg.displacementSamples)
-					Q_strcat(timerStr, sizeof(timerStr), va("Max: %i\nAvg: %i", (int)((float)cg.maxSpeed + 0.5f),
+					Q_strcat(timerStr, sizeof(timerStr), va("Max: %i\nAvg: %u", (int)((float)cg.maxSpeed + 0.5f),
 						cg.displacement / cg.displacementSamples));
 				if (time < 3000)// && !cg_raceStart.integer)
 					Q_strcat(timerStr, sizeof(timerStr), va("\nStart: %i", cg.startSpeed));
@@ -7911,7 +7911,7 @@ static void CG_Speedometer(void)
 			float xOffset = 0;
 			tmp = currentSpeed * 0.05f;
 			if (cg_speedometerSpeedAlign.value != 0.0f) {
-				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE, &paintOptions);
+				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va("%.0f", currentSpeed), cg_speedometerSize.value, FONT_NONE, &paintOptions);
 			}
 			Com_sprintf(speedStr2, sizeof(speedStr2), "   %.1f", tmp);
 			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr2, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);
@@ -7922,7 +7922,7 @@ static void CG_Speedometer(void)
 			float xOffset = 0;
 			tmp = currentSpeed * 0.03106855f;
 			if (cg_speedometerSpeedAlign.value != 0.0f) {
-				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va(".0f", currentSpeed), cg_speedometerSize.value, FONT_NONE, &paintOptions);
+				xOffset = -cg_speedometerSpeedAlign.value * CG_Text_Width(va("%.0f", currentSpeed), cg_speedometerSize.value, FONT_NONE, &paintOptions);
 			}
 			Com_sprintf(speedStr3, sizeof(speedStr3), "    %.1f", tmp);
 			CG_Text_Paint(speedometerXPos + xOffset, cg_speedometerY.integer, cg_speedometerSize.value, colorWhite, accelStr3, 0.0f, 0, ITEM_ALIGN_RIGHT | ITEM_TEXTSTYLE_OUTLINED, FONT_NONE, &paintOptions);

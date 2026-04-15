@@ -111,7 +111,7 @@ static void UpdateIPBans (void)
 
 		b = (byte *)&ipFilters[i].compare;
 		Com_sprintf( iplist + strlen(iplist), sizeof(iplist) - strlen(iplist), 
-			"%i.%i.%i.%i ", b[0], b[1], b[2], b[3]);
+			"%i.%i.%i.%i ", (int)b[0], (int)b[1], (int)b[2], (int)b[3]);
 	}
 
 	trap_Cvar_Set( "g_banIPs", iplist );

@@ -1328,10 +1328,10 @@ void FindIntermissionPoint( void );
 void SetLeader(team_t team, int client);
 void CheckTeamLeader( team_t team );
 void G_RunThink (gentity_t *ent);
-void QDECL G_LogPrintf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
+void QDECL G_LogPrintf(PRINTF_FORMAT_STRING const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 void SendScoreboardMessageToAllClients( void );
-void QDECL G_Printf( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
-Q_NORETURN void QDECL G_Error( const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
+void QDECL G_Printf(PRINTF_FORMAT_STRING const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
+Q_NORETURN void QDECL G_Error(PRINTF_FORMAT_STRING const char *fmt, ... ) __attribute__ ((format (printf, 1, 2)));
 const char *G_GetStripEdString(char *refSection, char *refName);
 
 void MV_UpdateMvsdkConfigstring( char *key, char *value );
