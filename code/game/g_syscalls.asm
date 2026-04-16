@@ -273,6 +273,7 @@ equ trap_G_COOL_API_CustomEpsilonTrace					-1110	;G_COOL_API_CUSTOMEPSILONTRACE
 equ trap_G_COOL_API_CustomEpsilonTraceCapsule			-1111	;G_COOL_API_CUSTOMEPSILONTRACE_CAPSULE 
 equ trap_G_COOL_API_CrossServerCommand					-1112	;G_COOL_API_CROSS_SERVER_COMMAND 
 equ trap_G_COOL_API_Benchmark							-1113	;G_COOL_API_BENCHMARK 
+equ trap_G_COOL_API_PointContentsHullFast				-1114	;G_COOL_API_POINTCONTENTSHULLFAST 
 
 ; COOL API DB Calls
 equ trap_G_COOL_API_DB_EscapeString						-1201	;G_COOL_API_DB_ESCAPESTRING

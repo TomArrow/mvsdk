@@ -1145,6 +1145,7 @@ void trap_G_COOL_API_CustomEpsilonTrace(trace_t* results, const vec3_t start, co
 void trap_G_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, qboolean customEpsilonTrace, float customEpsilon, int traceCustomFlags);
 void trap_G_COOL_API_CrossServerCommand(const char* cmd);
 int	trap_G_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
+int trap_G_COOL_API_PointContentsHullFast(const vec3_t point);
 
 //qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
 //qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);

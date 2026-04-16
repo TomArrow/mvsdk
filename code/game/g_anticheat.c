@@ -37,7 +37,15 @@ static void MakeVector( const vec3_t ain, vec3_t vout ) {
 	vout[3] = (float)-sinf( pitch );
 }
 */
-
+static int G_AntiWH_PointContents(vec3_t pos, int passEntityNum) {
+	antiWhDebug.pointContentsDone++;
+	if (g_antiWallhackFast.integer >= 2 && (coolApi & COOL_APIFEATURE_FASTHULLTRACE)) {
+		return trap_G_COOL_API_PointContentsHullFast(pos);
+	}
+	else {
+		return trap_PointContents(pos, passEntityNum);
+	}
+}
 
 static qboolean SE_RenderIsVisible( const gentity_t *self, const vec3_t startPos, const vec3_t testOrigin,
 	qboolean reversedCheck, int traceCustomFlags )
@@ -72,10 +80,9 @@ static qboolean SE_RenderPlayerChecks( const gentity_t *self, const vec3_t playe
 	int i;
 
 	for ( i = 0; i < 9; i++ ) {
-		if ( trap_PointContents( playerPoints[i], self - g_entities ) & CONTENTS_SOLID ) {
+		if (G_AntiWH_PointContents( playerPoints[i], self - g_entities ) & CONTENTS_SOLID ) {
 			JP_TraceBenchmarked( &results, playerOrigin, NULL, NULL, playerPoints[i], self - g_entities, MASK_SOLID, traceCustomFlags);
 			antiWhDebug.tracesDone++;
-			antiWhDebug.pointContentsDone++;
 			VectorCopy( results.endpos, playerPoints[i] );
 		}
 	}
@@ -248,8 +255,7 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 	if (SE_IsPlayerCrouching(self))
 		firstPersonPos[2] -= 32;
 
-	contents = trap_PointContents( firstPersonPos, self - g_entities );
-	antiWhDebug.pointContentsDone++;
+	contents = G_AntiWH_PointContents( firstPersonPos, self - g_entities );
 
 	// translucent, we should probably just network them anyways
 	if ( contents & (CONTENTS_WATER | CONTENTS_LAVA | CONTENTS_SLIME) ) {

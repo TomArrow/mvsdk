@@ -1148,6 +1148,10 @@ int	trap_G_COOL_API_Benchmark(const int flags, const int param1, const int param
 	return syscall(G_COOL_API_BENCHMARK, flags, param1, param2, param3, multiResultArr, multiResultArrSize);
 }
 
+int trap_G_COOL_API_PointContentsHullFast(const vec3_t point) {
+	return syscall(G_COOL_API_POINTCONTENTSHULLFAST, point);
+}
+
 qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size) {
 	return syscall(G_COOL_API_DB_ESCAPESTRING, input, size);
 }
