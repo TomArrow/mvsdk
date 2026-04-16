@@ -138,8 +138,11 @@ vmCvar_t	g_tffaAnyDeathIsEnemyScore;
 vmCvar_t	g_stackFirstSpawn; // 125/200 + bacta on first spawn, e.g. after map_restart
 
 vmCvar_t	g_antiWallhack;
-vmCvar_t	g_antiWallhackFast;
-vmCvar_t	g_antiWallhackEnforceVis;
+vmCvar_t	g_antiWallhackFast;					// 1= bad attempt. 2= engine side hulltrace(fast! and ignores glass in a proper map compile)
+vmCvar_t	g_antiWallhackEnforceVis;			// if a player is visible, force him to be sent to those who can see him
+vmCvar_t	g_antiWallhackBoxSize;				// size of box around player to check if he is visible. 9 points being checked.
+vmCvar_t	g_antiWallhackRecalcOffset;			// only recalc the box around a player once he moves further than this (cuz it involves 9 traces)
+vmCvar_t	g_antiWallhackVisibleRecalcDelay;	// if a player is visible, amount of milliseconds to wait before recalc (its no harm if a player stays networked for 0.15s after going behind a corner?)
 
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
@@ -358,8 +361,11 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_stackFirstSpawn, "g_stackFirstSpawn", "0", CVAR_ARCHIVE, 0, qfalse  },
 
 	{ &g_antiWallhack, "g_antiWallhack", "0", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_antiWallhackFast, "g_antiWallhackFast", "2", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackFast, "g_antiWallhackFast", "3", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_antiWallhackEnforceVis, "g_antiWallhackEnforceVis", "0", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackBoxSize, "g_antiWallhackBoxSize", "40", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackRecalcOffset, "g_antiWallhackMoveTolerance", "15", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackVisibleRecalcDelay, "g_antiWallhackVisibleRecalcDelay", "150", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 

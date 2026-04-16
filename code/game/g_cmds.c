@@ -6081,7 +6081,7 @@ clientCommand_t clientCommands[] = {
 	{"notarget",			NULL, Cmd_Notarget_f,					CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
 	{"notwr",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
 	{"pickmode",			NULL, Cmd_Mode_f,						CMD_NOINTERMISSION},
-	{"players",				NULL, Cmd_Players_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"players",				NULL, Cmd_Players_f,					CMD_NOINTERMISSION},
 	{"race",				NULL, Cmd_Race_f,						CMD_NOINTERMISSION},
 	{"rank",				NULL, Cmd_Rank_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
 	{"ratemap",				NULL, Cmd_RateMap_f,					CMD_NOINTERMISSION},

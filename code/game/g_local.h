@@ -627,6 +627,17 @@ typedef struct bufferPrint_s {
 	int			curLen;
 } bufferedPrint_t; 
 
+typedef struct antiWallhackPlayerData_s {
+	qboolean	boxCreated;
+	vec3_t		box[9];
+	vec3_t		boxCenter, boxMins, boxMaxs;
+	vec3_t		origin;
+	qboolean	crouching;
+
+	qboolean	visibleTo[MAX_CLIENTS];
+	int			visibleToLastCheck[MAX_CLIENTS];
+} antiWallhackPlayerData_t;
+
 // this structure is cleared on each ClientSpawn(),
 // except for 'client->pers' and 'client->sess'
 struct gclient_s {
@@ -760,6 +771,8 @@ struct gclient_s {
 	int			messageSystemWarningShowed;
 
 	vec3_t		preKnockbackVelocity;
+
+	antiWallhackPlayerData_t	antiwh;
 };
 
 
@@ -1691,6 +1704,9 @@ extern	vmCvar_t	g_intermissionReadyCheck;
 extern	vmCvar_t	g_antiWallhack;
 extern	vmCvar_t	g_antiWallhackFast;
 extern	vmCvar_t	g_antiWallhackEnforceVis;
+extern	vmCvar_t	g_antiWallhackBoxSize;
+extern	vmCvar_t	g_antiWallhackRecalcOffset;
+extern	vmCvar_t	g_antiWallhackVisibleRecalcDelay;
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

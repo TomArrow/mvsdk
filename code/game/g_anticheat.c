@@ -167,14 +167,14 @@ static qboolean SE_RenderPlayerPoints( qboolean isCrouching, const vec3_t player
 	//AngleVectors( playerAngles, forward, right, up ); // see comment about forward, right, up
 
 	VectorMA( playerOrigin, 32.0f, up, playerPoints[0] );
-	VectorMA( playerOrigin, 64.0f, forward, playerPoints[1] );
-	VectorMA( playerPoints[1], 64.0f, right, playerPoints[1] );
-	VectorMA( playerOrigin, 64.0f, forward, playerPoints[2] );
-	VectorMA( playerPoints[2], -64.0f, right, playerPoints[2] );
-	VectorMA( playerOrigin, -64.0f, forward, playerPoints[3] );
-	VectorMA( playerPoints[3], 64.0f, right, playerPoints[3] );
-	VectorMA( playerOrigin, -64.0f, forward, playerPoints[4] );
-	VectorMA( playerPoints[4], -64.0f, right, playerPoints[4] );
+	VectorMA( playerOrigin, g_antiWallhackBoxSize.value, forward, playerPoints[1] );
+	VectorMA( playerPoints[1], g_antiWallhackBoxSize.value, right, playerPoints[1] );
+	VectorMA( playerOrigin, g_antiWallhackBoxSize.value, forward, playerPoints[2] );
+	VectorMA( playerPoints[2], -g_antiWallhackBoxSize.value, right, playerPoints[2] );
+	VectorMA( playerOrigin, -g_antiWallhackBoxSize.value, forward, playerPoints[3] );
+	VectorMA( playerPoints[3], g_antiWallhackBoxSize.value, right, playerPoints[3] );
+	VectorMA( playerOrigin, -g_antiWallhackBoxSize.value, forward, playerPoints[4] );
+	VectorMA( playerPoints[4], -g_antiWallhackBoxSize.value, right, playerPoints[4] );
 
 	VectorMA( playerPoints[1], isHeight, up, playerPoints[5] );
 	VectorMA( playerPoints[2], isHeight, up, playerPoints[6] );
@@ -182,8 +182,8 @@ static qboolean SE_RenderPlayerPoints( qboolean isCrouching, const vec3_t player
 	VectorMA( playerPoints[4], isHeight, up, playerPoints[8] );
 
 	VectorMA( playerOrigin, isHeight * 0.5f, up, playerPointsCenter);
-	VectorSet(playerPointsMins, -64.0f, -64.0f, -0.5f*isHeight);
-	VectorSet(playerPointsMaxs, 64.0f, 64.0f, 0.5f*isHeight);
+	VectorSet(playerPointsMins, -g_antiWallhackBoxSize.value, -g_antiWallhackBoxSize.value, -0.5f*isHeight);
+	VectorSet(playerPointsMaxs, g_antiWallhackBoxSize.value, g_antiWallhackBoxSize.value, 0.5f*isHeight);
 
 	return qtrue;
 }
@@ -215,9 +215,11 @@ static void GetCameraPosition(const gentity_t *self, vec3_t cameraOrigin) {
 extern void G_TestLine(vec3_t start, vec3_t end, int color, int time);
 static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other ) {
 	int i,  contents;
-	vec3_t firstPersonPos, thirdPersonPos, targPos[9], targetCenter, targetMins, targetMaxs;
+	vec3_t firstPersonPos, thirdPersonPos;// , targPos[9], targetCenter, targetMins, targetMaxs;
 	int whVal = g_antiWallhack.integer < 0 ? -g_antiWallhack.integer : g_antiWallhack.integer;
 	int preTraceFlags = 0, traceFlags = 0;
+	qboolean recalcTargetBox= qtrue;
+	qboolean isCrouching;
 
 	if (g_antiWallhackFast.integer == 1 && (coolApi & COOL_APIFEATURE_PRETRACE_TRACE)) {
 		preTraceFlags = TRACECUSTOMFLAG_MARKBRUSHES, traceFlags = TRACECUSTOMFLAG_WALKBRUSHES;
@@ -228,6 +230,15 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 		if (g_antiWallhackFast.integer == 3) {
 			traceFlags |= TRACECUSTOMFLAG_SKIPENTITYTRACE;
 		}
+	}
+
+	if (g_antiWallhackVisibleRecalcDelay.integer && other->client->antiwh.visibleTo[self - g_entities] && (level.time - g_antiWallhackVisibleRecalcDelay.integer) < other->client->antiwh.visibleToLastCheck[self - g_entities]) {
+		// player was visible less than 0.15s ago. just don't bother rechecking. who cares.
+		return qtrue;
+	}
+
+	if (!trap_InPVS(self->r.currentOrigin,other->r.currentOrigin)) { // not in PVS. ignore.
+		return qfalse;
 	}
 
 	GetCameraPosition(self, thirdPersonPos);
@@ -255,19 +266,37 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 		return qfalse;
 	}
 
-	// plot their bbox pointer into targPos[]
-	SE_RenderPlayerPoints( SE_IsPlayerCrouching( other ), other->client->ps.viewangles, other->client->ps.origin,
-		targPos, targetCenter, targetMins, targetMaxs );
+
+	isCrouching = SE_IsPlayerCrouching(other);
+	if (g_antiWallhackRecalcOffset.value > 0.0f && other->client->antiwh.boxCreated && isCrouching == other->client->antiwh.crouching) {
+		// already have a box, check if we can reuse
+		vec3_t moveOffset;
+		VectorSubtract(other->client->ps.origin, other->client->antiwh.origin, moveOffset);
+		if (VectorLengthSquared(moveOffset) < g_antiWallhackRecalcOffset.value * g_antiWallhackRecalcOffset.value) {
+			recalcTargetBox = qfalse;
+		}
+	}
+
+	if (recalcTargetBox) {
+		// plot their bbox pointer into targPos[]
+		other->client->antiwh.crouching = isCrouching;
+		VectorCopy(other->client->ps.origin, other->client->antiwh.origin);
+		SE_RenderPlayerPoints(other->client->antiwh.crouching, other->client->ps.viewangles, other->client->antiwh.origin,
+			other->client->antiwh.box, other->client->antiwh.boxCenter, other->client->antiwh.boxMins, other->client->antiwh.boxMaxs);
+		other->client->antiwh.boxCreated = qtrue;
+	}
 
 	if (preTraceFlags) {
 		trace_t pretrace;
 		//JP_TraceBenchmarked(&pretrace, targetCenter, targetMins, targetMaxs, targetCenter, self - g_entities, MASK_SOLID, preTraceFlags);
 		//antiWhDebug.tracesDone++;
-		JP_TraceBenchmarked(&pretrace, thirdPersonPos, targetMins, targetMaxs, targetCenter, self - g_entities, MASK_SOLID, preTraceFlags);
+		JP_TraceBenchmarked(&pretrace, thirdPersonPos, other->client->antiwh.boxMins, other->client->antiwh.boxMaxs, other->client->antiwh.boxCenter, self - g_entities, MASK_SOLID, preTraceFlags);
 		antiWhDebug.tracesDone++;
 	}
 
-	SE_RenderPlayerChecks( self, other->client->ps.origin, targPos, traceFlags );
+	if (recalcTargetBox) {
+		SE_RenderPlayerChecks( self, other->client->ps.origin, other->client->antiwh.box, traceFlags );
+	}
 
 	//if (preTraceFlags) {
 	//	trace_t pretrace;
@@ -275,6 +304,8 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 	//	antiWhDebug.tracesDone++;
 	//}
 
+	other->client->antiwh.visibleTo[self - g_entities] = qfalse;
+	other->client->antiwh.visibleToLastCheck[self - g_entities] = level.time;
 	for ( i = 0; i < 9; i++ ) {
 
 		if (whVal > 1) {
@@ -285,13 +316,15 @@ static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other 
 			if (offset > 8)
 				offset = 8;
 
-			G_TestLine(thirdPersonPos, targPos[offset], 0x0000ff, 200); //check trace.fraction? ehh trace.startsolid or whatever?
+			G_TestLine(thirdPersonPos, other->client->antiwh.box[offset], 0x0000ff, 200); //check trace.fraction? ehh trace.startsolid or whatever?
 		}
 
-		if ( SE_RenderIsVisible( self, thirdPersonPos, targPos[i], qfalse, traceFlags) ) {
+		if ( SE_RenderIsVisible( self, thirdPersonPos, other->client->antiwh.box[i], qfalse, traceFlags) ) {
+			other->client->antiwh.visibleTo[self - g_entities] = qtrue;
 			return qtrue;
 		}
-		if ( SE_RenderIsVisible( self, firstPersonPos, targPos[i], qfalse, traceFlags) ) {
+		if ( SE_RenderIsVisible( self, firstPersonPos, other->client->antiwh.box[i], qfalse, traceFlags) ) {
+			other->client->antiwh.visibleTo[self - g_entities] = qtrue;
 			return qtrue;
 		}
 	}
