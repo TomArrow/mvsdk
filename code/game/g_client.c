@@ -647,6 +647,88 @@ gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPo
 	return list_spot[rnd];
 }
 
+
+/*
+===========
+SelectRandomFurthestDuelQueueSpawnPoint
+
+Chooses a duel queue start away from other duelers.
+============
+*/
+gentity_t* SelectRandomFurthestDuelQueueSpawnPoint(gentity_t* spawningEnt, vec3_t* existingDuelers, int existingDuelersCount, vec3_t origin, vec3_t angles) {
+	gentity_t* spot;
+	vec3_t		vecto,delta;
+	float		dist;
+	float		list_dist[64];
+	gentity_t* list_spot[64];
+	int			numSpots, rnd, i, j;
+	float		existingDivider = 1.0f / (float)existingDuelersCount;
+
+	numSpots = 0;
+	spot = NULL;
+
+	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
+		if (SpotWouldTelefrag(spot->s.origin, spawningEnt)) {
+			continue;
+		}
+		if (spawningEnt&& spawningEnt->client&& spawningEnt->client->sess.raceMode&& spot->spawnDefragPriority < level.highestDefragSpawnPriority) {
+			continue; // some types of spawns get priority in defrag
+		}
+		VectorClear(delta);
+		for (i = 0; i < existingDuelersCount; i++) {
+			VectorSubtract(spot->s.origin,existingDuelers[i], vecto);
+			VectorAdd(delta, vecto, delta);
+		}
+		VectorScale(delta, existingDivider, delta); // the average distance to existing duelers is what matters.
+		dist = VectorLength(delta);
+		for (i = 0; i < numSpots; i++) {
+			if (dist > list_dist[i]) {
+				if (numSpots >= 64)
+					numSpots = 64 - 1;
+				for (j = numSpots; j > i; j--) {
+					list_dist[j] = list_dist[j - 1];
+					list_spot[j] = list_spot[j - 1];
+				}
+				list_dist[i] = dist;
+				list_spot[i] = spot;
+				numSpots++;
+				if (numSpots > 64)
+					numSpots = 64;
+				break;
+			}
+		}
+		if (i >= numSpots && numSpots < 64) {
+			list_dist[numSpots] = dist;
+			list_spot[numSpots] = spot;
+			numSpots++;
+		}
+	}
+	if (!numSpots) {
+		spot = G_FindByClassNameFast(NULL, "info_player_deathmatch");
+		if (!spot)
+		{
+			G_Error("Couldn't find a spawn point");
+		}
+		VectorCopy(spot->s.origin, origin);
+		if (g_bubbleSpawn.integer && !(spawningEnt && spawningEnt->client && spawningEnt->client->sess.raceMode) && SpotWouldTelefrag(origin, spawningEnt)) {
+			WiggleSpotTelefrag(origin, spawningEnt);
+		}
+		origin[2] += 9;
+		VectorCopy(spot->s.angles, angles);
+		return spot;
+	}
+
+	// select a random spot from the spawn points furthest away
+	rnd = random() * (numSpots / 2);
+
+	VectorCopy(list_spot[rnd]->s.origin, origin);
+	origin[2] += 9;
+	VectorCopy(list_spot[rnd]->s.angles, angles);
+
+	return list_spot[rnd];
+}
+
+
 /*
 ===========
 SelectSpawnPoint
@@ -2414,6 +2496,88 @@ static qboolean AllForceDisabled(int force)
 	return qfalse;
 }
 
+qboolean G_CheckForNearbyDuelSpawn(gentity_t* ent, vec3_t opponentOrigin, vec3_t spawn_origin, vec3_t spawn_angles) {
+	int				i;
+	vec3_t			delta;
+	//float normalSpawnDist; // wanted to check if normal spawn dist is closer but that might be too simplistic for complex level architectures
+	float			currentDist;
+	trace_t			trace;
+	qboolean		good;
+	vec3_t			goodOrigin;
+
+	int side, front, up, dist, skipvis;
+	float traceDist = DUELQUEUE_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
+	float fracRequired = 0.4;
+	good = qfalse;
+	VectorCopy(opponentOrigin, goodOrigin);
+	// we might spawn right on the opponents's ass
+	// try to move us a bit away if we can?
+	for (skipvis = 0; skipvis < 2 && !good; skipvis++) { // in emergency, dont require visual contact to opponent
+		for (dist = 0; dist < 2 && !good; dist++) { // try shorter distance if nothing fouund
+			if (dist == 1) {
+				traceDist = DUELQUEUE_RESPAWNPOSITION_MINDISTANCE_SHORT;
+				fracRequired = 0.8f;
+			}
+			for (up = 0; up < 2 && !good; up++) {
+				for (side = -1; side < 2 && !good; side++) {
+					for (front = -1; front < 2 && !good; front++) {
+						if (side == 0 && front == 0) {
+							continue;
+						}
+						goodOrigin[0] = opponentOrigin[0] + (float)front * traceDist;
+						goodOrigin[1] = opponentOrigin[1] + (float)side * traceDist;
+						goodOrigin[2] = opponentOrigin[2] + (float)up * 64.0f;
+						//if (WiggleSpotTelefrag(goodOrigin, ent)) {
+
+						if (skipvis) {
+							if (WiggleSpotTelefrag(goodOrigin, ent)) {
+								good = qtrue;
+								break;
+							}
+						}
+						else {
+							JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+							// make sure we could actually reach the capper from that place
+							if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
+								// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
+								VectorCopy(trace.endpos, goodOrigin);
+								JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition, level.ironManClientNum, MASK_PLAYERSOLID);
+								if (trace.fraction == 1.0f) {
+									if (WiggleSpotTelefrag(goodOrigin, ent)) {
+										good = qtrue;
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if (!good) {
+		VectorCopy(opponentOrigin, goodOrigin);
+		good = WiggleSpotTelefrag(goodOrigin, ent);
+	}
+
+
+
+	if (good) {
+		// ok found a good pos
+		VectorSubtract(level.ironManCurrentPosition, goodOrigin, delta);
+		VectorNormalize(delta);
+		vectoangles(delta, spawn_angles); // look at the iron man
+		spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
+
+		VectorCopy(goodOrigin, spawn_origin);
+		return qtrue;
+	}
+
+	
+
+	return qfalse;
+}
+
 
 qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
 	int				i;
@@ -3048,6 +3212,7 @@ void ClientSpawn(gentity_t *ent) {
 			client->ps.weapon = WP_SABER;
 			break;
 		case MODE_DUEL:
+		case MODE_DUELQUEUE:
 		case MODE_ALLFORCE:
 		case MODE_IRONMAN:
 			client->ps.stats[STAT_WEAPONS] = 1 << WP_SABER;

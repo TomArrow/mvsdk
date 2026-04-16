@@ -503,7 +503,7 @@ void WP_InitForcePowers( gentity_t *ent )
 	}
 
 
-	if (ent->client->sess.mode == MODE_DUEL || ent->client->sess.mode == MODE_IRONMAN) {
+	if (ent->client->sess.mode == MODE_DUEL || ent->client->sess.mode == MODE_DUELQUEUE || ent->client->sess.mode == MODE_IRONMAN) {
 		// saber attack/defend is level 3, jump is level 1, rest is 0
 		i = 0; 
 		while (i < NUM_FORCE_POWERS)

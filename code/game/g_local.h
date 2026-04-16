@@ -601,6 +601,9 @@ typedef struct {
 	rollState_t roll;
 	int			lastRaceTimerStartedCP;
 	int			lastIronmanFlagGiven;
+	int			lastDuel;
+	int			lastDuelStart;
+	int			lastDuelStatus; // -1 loss, 0 tie, 1 victory
 	qboolean	stayOnMap; // when g_slowvote enabled
 
 	struct {
@@ -1001,9 +1004,11 @@ void Cmd_EngageDuel_f(gentity_t *ent);
 void G_SayTo(gentity_t* ent, gentity_t* other, int mode, int color, const char* name, const char* message, const char* append);
 char* ConcatArgsQuoted(int start);
 void G_ResetClientVote(gclient_t* client);
-const char* G_Argv(int arg);
+const char* G_Argv(int arg); 
 
-gentity_t *G_GetDuelWinner(gclient_t *client);
+gentity_t *G_GetDuelWinner(gclient_t *client); 
+qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged);
+void G_StartDuel(gentity_t* ent, gentity_t* challenged, qboolean message);
 
 //
 // g_items.c
@@ -1318,6 +1323,8 @@ void CalculateRanks( void );
 qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt );
 qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt);
 gentity_t* SelectNearestDeathmatchSpawnPoint(vec3_t from);
+gentity_t* SelectRandomFurthestDuelQueueSpawnPoint(gentity_t* spawningEnt, vec3_t* existingDuelers, int existingDuelersCount, vec3_t origin, vec3_t angles); // picks an initial spawn
+qboolean G_CheckForNearbyDuelSpawn(gentity_t* ent, vec3_t opponentOrigin, vec3_t spawn_origin, vec3_t spawn_angles); // picks nearby place for the opponent
 
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra);
 void G_CenterPrintOrPrint(int targetNum, int autoLineWraps, const char* message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra, qboolean onlyPrint, qboolean noop);
@@ -1650,6 +1657,9 @@ extern	vmCvar_t	g_allowDuelSuicide;
 extern	vmCvar_t	g_fraglimitVoteCorrection;
 
 extern	vmCvar_t	g_duelWeaponDisable;
+extern	vmCvar_t	g_duelTimeout;
+extern	vmCvar_t	g_duelQueueTimeout;
+extern	vmCvar_t	g_duelQueueAutoRespawn;
 extern	vmCvar_t	g_fraglimit;
 extern	vmCvar_t	g_duel_fraglimit;
 extern	vmCvar_t	g_timelimit;

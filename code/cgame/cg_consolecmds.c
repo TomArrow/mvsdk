@@ -2493,6 +2493,8 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("pickmode");
 	trap_AddCommand("players");
 	trap_AddCommand("duel");
+	trap_AddCommand("duelq");
+	trap_AddCommand("duelqueue");
 	trap_AddCommand("allforce");
 	trap_AddCommand("ironman");
 	trap_AddCommand("stay");

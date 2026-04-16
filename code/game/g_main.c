@@ -81,6 +81,9 @@ vmCvar_t	g_spawnInvulnerability;
 vmCvar_t	g_forcePowerDisable;
 vmCvar_t	g_weaponDisable;
 vmCvar_t	g_duelWeaponDisable;
+vmCvar_t	g_duelTimeout;
+vmCvar_t	g_duelQueueTimeout;
+vmCvar_t	g_duelQueueAutoRespawn;
 vmCvar_t	g_allowDuelSuicide;
 vmCvar_t	g_fraglimitVoteCorrection;
 vmCvar_t	g_fraglimit;
@@ -340,6 +343,9 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_forcePowerDisable, "g_forcePowerDisable", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_weaponDisable, "g_weaponDisable", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_duelWeaponDisable, "g_duelWeaponDisable", "1", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
+	{ &g_duelTimeout, "g_duelTimeout", "10000", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_duelQueueTimeout, "g_duelQueueTimeout", "3000", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_duelQueueAutoRespawn, "g_duelQueueAutoRespawn", "0", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_allowDuelSuicide, "g_allowDuelSuicide", "0", CVAR_ARCHIVE, 0, qtrue },
 
@@ -3378,6 +3384,152 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qbool
 	trap_FS_FCloseFile(f);
 }
 
+int sortqueuedduelers(const void* a, const void* b) {
+	gentity_t* player1 = &g_entities[*(int*)a];
+	gentity_t* player2 = &g_entities[*(int*)b];
+	// whoever didnt get flag for longest time is most eligible to get it
+	if (player1->client->pers.lastDuel == player2->client->pers.lastDuel) {
+		return player2->client->pers.lastDuelStatus - player1->client->pers.lastDuelStatus; // player who won gets priority to keep playing
+	}
+	return player1->client->pers.lastDuel - player2->client->pers.lastDuel;
+}
+void G_CheckDuelQueueStatus() {
+	int i;
+	gentity_t* ent = g_entities;
+	gentity_t* ent2;
+	int queuedDuelers[MAX_CLIENTS];
+	int queuedDuelerCount = 0;
+	vec3_t existingDuelersPos[MAX_CLIENTS];
+	int existingDuelerCount = 0;
+	vec3_t spawnpoint;
+	vec3_t spawnpointAngles;
+	vec3_t spawnpointWiggled;
+	int randomteam;
+
+	// find players in duel queue mode that aren't dueling, but could be.
+	for (i = 0; i < level.maxclients; i++, ent++) {
+		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_DUELQUEUE || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+			continue;
+		}
+		if (ent->client->pers.lastDuel > level.time) {
+			ent->client->pers.lastDuel = 0; // shouldn't happen but who knows
+		}
+		if (ent->client->ps.duelInProgress) {
+			ent->client->pers.lastDuel = level.time; // doing this here so players are in sync with the lastDuel thing. unlike privateDuelTime which happens in clientthink_real
+			VectorCopy(ent->client->ps.origin,existingDuelersPos[existingDuelerCount]);
+			existingDuelerCount++;
+			continue;
+		}
+		if (!G_PlayerCanDuel(ent, qfalse,qfalse)) {
+			// in spec or already in a duel
+			continue;
+		}
+		queuedDuelers[queuedDuelerCount++] = i;
+	}
+	if (queuedDuelerCount < 2) { // need at least 2
+		return;
+	}
+
+	if (queuedDuelerCount % 2) {
+		// if we can't pair them up, sort them to see who's waited the longest
+		qsort(queuedDuelers, queuedDuelerCount, sizeof(queuedDuelers[0]), sortqueuedduelers);
+	}
+
+	if (g_developer.integer) {
+		G_Printf("Sorted duel queue candidates: \n");
+		for (i = 0; i < queuedDuelerCount; i++) {
+			ent = g_entities + queuedDuelers[i];
+			G_Printf("client %d: lastduel %d, lastduelstatus %d\n", queuedDuelers[i],ent->client->pers.lastDuel, ent->client->pers.lastDuelStatus);
+		}
+	}
+
+	queuedDuelerCount = queuedDuelerCount / 2 * 2; // round to pairs
+
+	for (i = 0; i < queuedDuelerCount; i += 2) {
+		vec3_t vecto;
+		vec3_t ang;
+		qboolean needRespawn = qtrue;
+
+		ent = g_entities + queuedDuelers[i];
+		ent2 = g_entities + queuedDuelers[i + 1];
+
+		if (g_gametype.integer >= GT_TEAM && OnSameTeam(ent, ent2)) // this player combo is not allowed
+		{
+			continue;
+		}
+
+		//if (g_duelQueueAutoRespawn.integer) { // no need to double check, already integrated in G_PlayerCanDuel
+			if (ent->health <= 0 || ent->client->ps.stats[STAT_HEALTH] < 1) {
+				respawn(ent);
+			}
+			if (ent2->health <= 0 || ent2->client->ps.stats[STAT_HEALTH] < 1) {
+				respawn(ent2);
+			}
+		//}
+
+		VectorSubtract(ent->r.currentOrigin, ent2->r.currentOrigin,vecto);
+		if (VectorLengthSquared(vecto) < 256.0f* 256.0f) {
+			trace_t trace;
+			// they are close enough to each other but can they see each other?
+			JP_Trace(&trace, ent->client->ps.origin, NULL, NULL, ent2->client->ps.origin, -1, MASK_SOLID);
+			if (trace.fraction == 1.0f) {
+				// ALL GOOD!
+				needRespawn = qfalse;
+			}
+		}
+
+		if (needRespawn) {
+			// unlink them so we can teleport them without their old positions having any influence on anything.
+			trap_UnlinkEntity(ent);
+			trap_UnlinkEntity(ent2);
+
+			// Find a spawn 
+			//SelectSpawnPoint(ent, vec3_origin, spawnpoint, spawnpointAngles);
+			SelectRandomFurthestDuelQueueSpawnPoint(ent, existingDuelersPos, existingDuelerCount, spawnpoint, spawnpointAngles);
+
+			VectorCopy(spawnpoint, spawnpointWiggled);
+			WiggleSpotTelefrag(spawnpointWiggled, ent);
+			spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
+			TeleportPlayer(ent, spawnpointWiggled, spawnpointAngles);
+			VectorClear(ent->client->ps.velocity);
+
+			// move this one away a bit
+			if (!G_CheckForNearbyDuelSpawn(ent2, ent->client->ps.origin, spawnpointWiggled, spawnpointAngles)) {
+				// uh oh
+				// gimme random spawn?
+				SelectSpawnPoint(ent2, vec3_origin, spawnpoint, spawnpointAngles);
+				VectorCopy(spawnpoint, spawnpointWiggled);
+				WiggleSpotTelefrag(spawnpointWiggled, ent2);
+			}
+			spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
+			TeleportPlayer(ent2, spawnpointWiggled, spawnpointAngles);
+			VectorClear(ent2->client->ps.velocity);
+
+			VectorSubtract(ent->r.currentOrigin, ent2->r.currentOrigin, vecto);
+		}
+
+
+		// make them look at each other.
+		vectoangles(vecto,ang);
+		DF_PreDeltaAngleChange(ent2->client);
+		SetClientViewAngle(ent2,ang);
+		DF_PostDeltaAngleChange(ent2->client,qtrue);
+		VectorScale(vecto, -1, vecto); // invert the vector
+		vectoangles(vecto, ang);
+		DF_PreDeltaAngleChange(ent->client);
+		SetClientViewAngle(ent, ang);
+		DF_PostDeltaAngleChange(ent->client, qtrue);
+
+		G_StartDuel(ent,ent2,qtrue);
+
+		ent->client->ps.fd.privateDuelTime = 0;
+		ent2->client->ps.fd.privateDuelTime = 0;
+		ent->client->ps.forceHandExtend = HANDEXTEND_DUELCHALLENGE;
+		ent2->client->ps.forceHandExtend = HANDEXTEND_DUELCHALLENGE;
+		ent->client->ps.forceHandExtendTime = level.time + 1000;
+		ent2->client->ps.forceHandExtendTime = level.time + 1000;
+	}
+}
 int sortironmanners(const void* a, const void* b) {
 	gentity_t* player1 = &g_entities[*(int*)a];
 	gentity_t* player2 = &g_entities[*(int*)b];
@@ -3865,6 +4017,7 @@ void G_RunFrame( int levelTime ) {
 
 	if (g_modes.integer) {
 		G_CheckIronManStatus();
+		G_CheckDuelQueueStatus();
 	}
 
 	G_CheckEnqueuedClips(qfalse);

@@ -2164,7 +2164,7 @@ void ClientThink_real( gentity_t *ent ) {
 		//to engage again right after he's done fighting and someone else is waiting.
 		if (!ent->client->sess.raceMode) {
 
-			ent->client->ps.fd.privateDuelTime = level.time + 10000;
+			ent->client->ps.fd.privateDuelTime = level.time + (ent->client->sess.mode == MODE_DUELQUEUE ? g_duelQueueTimeout.integer : g_duelTimeout.integer);
 
 			if (ent->client->ps.duelTime < level.time)
 			{
@@ -2222,6 +2222,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		else if (duelAgainst->health < 1 || duelAgainst->client->ps.stats[STAT_HEALTH] < 1)
 		{
+			char* s;
 			ent->client->ps.duelInProgress = 0;
 			duelAgainst->client->ps.duelInProgress = 0;
 
@@ -2251,12 +2252,48 @@ void ClientThink_real( gentity_t *ent ) {
 				//Private duel announcements are now made globally because we only want one duel at a time.
 				if (ent->health > 0 && ent->client->ps.stats[STAT_HEALTH] > 0)
 				{
-					G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) , qtrue,qfalse,qtrue, NULL);
+					int duelTime = (level.time - ent->client->pers.lastDuelStart) / 1000; // + 2000 cuz we add 2000 when the duel starts, idk why.
+					int minutes = duelTime / 60;
+					int seconds = duelTime % 60;
+
+					ent->client->pers.lastDuelStatus = 1;
+					duelAgainst->client->pers.lastDuelStatus = -1;
+
+					G_LogPrintf(
+						"DuelWin: %i %i %i %i: %s has defeated %s in %02i:%02i with %i/%i left\n",
+						ent->s.number, duelAgainst->s.number,
+						ent->client->ps.stats[STAT_HEALTH], ent->client->ps.stats[STAT_ARMOR],
+						ent->client->pers.netname, duelAgainst->client->pers.netname,
+						minutes, seconds,
+						ent->client->ps.stats[STAT_HEALTH], ent->client->ps.stats[STAT_ARMOR]);
+
+					// nicer prints from sabermod
+					s = va("print \"%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE
+						" in " S_COLOR_CYAN "%02i" S_COLOR_WHITE ":" S_COLOR_CYAN "%02i" S_COLOR_WHITE
+						" with " S_COLOR_RED "%i" S_COLOR_WHITE "/" S_COLOR_GREEN "%i" S_COLOR_WHITE " left!\n\"",
+						ent->client->pers.netname,
+						G_GetStripEdString("SVINGAME", "PLDUELWINNER"),
+						duelAgainst->client->pers.netname,
+						minutes,
+						seconds,
+						ent->client->ps.stats[STAT_HEALTH],
+						ent->client->ps.stats[STAT_ARMOR]);
+					//G_CenterPrint( -1, 3, va("%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELWINNER"), duelAgainst->client->pers.netname) , qtrue,qfalse,qtrue, NULL);
 				}
 				else
 				{ //it was a draw, because we both managed to die in the same frame
-					G_CenterPrint( -1, 3, va("%s", G_GetStripEdString("SVINGAME", "PLDUELTIE")), qtrue, qfalse,qtrue, NULL);
+					//G_CenterPrint( -1, 3, va("%s", G_GetStripEdString("SVINGAME", "PLDUELTIE")), qtrue, qfalse,qtrue, NULL);
+					G_LogPrintf("DuelTie: %i %i: The duel between %s and %s is ended in a draw, both fighters have died\n",
+						ent->s.number, duelAgainst->s.number,
+						ent->client->pers.netname, duelAgainst->client->pers.netname);
+					// nicer prints from sabermod
+					s = va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "PLDUELTIE"));
+
+
+					ent->client->pers.lastDuelStatus = 0;
+					duelAgainst->client->pers.lastDuelStatus = -0;
 				}
+				trap_SendServerCommand(-1, s);
 			}
 		}
 		else if(!ent->client->sess.raceMode)

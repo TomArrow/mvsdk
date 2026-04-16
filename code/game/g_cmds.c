@@ -5565,37 +5565,38 @@ qboolean G_OtherPlayersDueling(void)
 	return qfalse;
 }
 
-void Cmd_EngageDuel_f(gentity_t *ent)
-{
-	trace_t tr;
-	vec3_t forward, fwdOrg;
-	int		nowTime = LEVELTIME(ent->client);
-
-	if (!g_privateDuel.integer)
-	{
-		return;
-	}
+qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged) {
 
 	if (g_gametype.integer == GT_TOURNAMENT)
 	{ //rather pointless in this mode..
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NODUEL_GAMETYPE")) );
-		return;
+		if (message) {
+			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NODUEL_GAMETYPE")));
+		}
+		return qfalse;
 	}
 
 	if (g_gametype.integer >= GT_TEAM)
 	{ //no private dueling in team modes
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NODUEL_GAMETYPE")) );
-		return;
+		if (message) {
+			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NODUEL_GAMETYPE")));
+		}
+		return qfalse;
 	}
 
 	if (ent->client->ps.duelTime >= level.time)
 	{
-		return;
+		return qfalse;
 	}
 
 	if (ent->client->ps.weapon != WP_SABER)
 	{
-		return;
+		return qfalse;
+	}
+
+	if (ent->health < 1 || ent->client->ps.stats[STAT_HEALTH] < 1) {
+		if (ent->client->sess.mode != MODE_DUELQUEUE || !g_duelQueueAutoRespawn.integer) { // if in duel queue with autorespawn, we don't care.
+			return qfalse;
+		}
 	}
 
 	/*
@@ -5608,21 +5609,92 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 
 	if (ent->client->ps.saberInFlight)
 	{
-		return;
+		return qfalse;
 	}
 
 	if (ent->client->ps.duelInProgress)
 	{
+		return qfalse;
+	}
+
+	if (ent->client->sess.raceMode) {
+		return qfalse;
+	}
+
+	//New: Don't let a player duel if he just did and hasn't waited 10 seconds yet (note: If someone challenges him, his duel timer will reset so he can accept)
+	if (ent->client->sess.mode == MODE_DUELQUEUE) {
+		if (ent->client->pers.lastDuel + g_duelQueueTimeout.integer > level.time) { // privateDuelTime desyncs cuz it runs on clientthink_Real...
+			return qfalse;
+		}
+	}
+	else if (ent->client->ps.fd.privateDuelTime > level.time && !challenged)
+	{
+		if (message) {
+			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "CANTDUEL_JUSTDID")));
+		}
+		return qfalse;
+	}
+	return qtrue;
+}
+
+void G_StartDuel(gentity_t* ent, gentity_t* challenged, qboolean message) {
+	if (message) {
+		trap_SendServerCommand( /*challenged-g_entities*/-1, va("print \"%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!\n\"", challenged->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELACCEPT"), ent->client->pers.netname));
+	}
+
+	ent->client->ps.duelInProgress = qtrue;
+	challenged->client->ps.duelInProgress = qtrue;
+
+	ent->client->ps.duelTime = level.time + 2000;
+	challenged->client->ps.duelTime = level.time + 2000;
+
+	G_AddEvent(ent, EV_PRIVATE_DUEL, 1);
+	G_AddEvent(challenged, EV_PRIVATE_DUEL, 1);
+
+	//Holster their sabers now, until the duel starts (then they'll get auto-turned on to look cool)
+
+	if (!ent->client->ps.saberHolstered)
+	{
+		G_Sound(ent, CHAN_AUTO, saberOffSound);
+		ent->client->ps.weaponTime = 400;
+		ent->client->ps.saberHolstered = qtrue;
+	}
+	if (!challenged->client->ps.saberHolstered)
+	{
+		G_Sound(challenged, CHAN_AUTO, saberOffSound);
+		challenged->client->ps.weaponTime = 400;
+		challenged->client->ps.saberHolstered = qtrue;
+	}
+	
+	ent->client->ps.duelIndex = challenged - g_entities;
+	challenged->client->ps.duelIndex = ent - g_entities;
+
+	ent->client->pers.lastDuelStart = ent->client->pers.lastDuel = challenged->client->pers.lastDuelStart = challenged->client->pers.lastDuel = level.time;
+
+	ent->client->ps.stats[STAT_ARMOR] =
+		ent->client->ps.stats[STAT_HEALTH] =
+		ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+	challenged->client->ps.stats[STAT_ARMOR] =
+		challenged->client->ps.stats[STAT_HEALTH] =
+		challenged->health = challenged->client->ps.stats[STAT_MAX_HEALTH];
+}
+
+void Cmd_EngageDuel_f(gentity_t *ent)
+{
+	trace_t tr;
+	vec3_t forward, fwdOrg;
+	int		nowTime = LEVELTIME(ent->client);
+
+	if (!g_privateDuel.integer)
+	{
+		return;
+	}
+	if (ent->client->sess.mode == MODE_DUELQUEUE) // managed automatically
+	{
 		return;
 	}
 
-	if (ent->client->sess.raceMode)
-		return;
-
-	//New: Don't let a player duel if he just did and hasn't waited 10 seconds yet (note: If someone challenges him, his duel timer will reset so he can accept)
-	if (ent->client->ps.fd.privateDuelTime > level.time)
-	{
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "CANTDUEL_JUSTDID")) );
+	if (!G_PlayerCanDuel(ent,qtrue,qfalse)) {
 		return;
 	}
 
@@ -5645,9 +5717,7 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 		gentity_t *challenged = &g_entities[tr.entityNum];
 
 		if (!challenged || !challenged->client || !challenged->inuse ||
-			challenged->health < 1 || challenged->client->ps.stats[STAT_HEALTH] < 1 ||
-			challenged->client->ps.weapon != WP_SABER || challenged->client->ps.duelInProgress ||
-			challenged->client->ps.saberInFlight)
+			!G_PlayerCanDuel(challenged,qfalse,qtrue))
 		{
 			return;
 		}
@@ -5657,33 +5727,11 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 			return;
 		}
 
+		ent->client->ps.duelTime = level.time + 5000; // put this higher up so G_StartDuel can overwrite it so that our duel duration calculation is correct. all pretty dumb probably idk.
+
 		if (challenged->client->ps.duelIndex == ent->s.number && challenged->client->ps.duelTime >= level.time)
 		{
-			trap_SendServerCommand( /*challenged-g_entities*/-1, va("print \"%s" S_COLOR_WHITE " %s %s" S_COLOR_WHITE "!\n\"", challenged->client->pers.netname, G_GetStripEdString("SVINGAME", "PLDUELACCEPT"), ent->client->pers.netname) );
-
-			ent->client->ps.duelInProgress = qtrue;
-			challenged->client->ps.duelInProgress = qtrue;
-
-			ent->client->ps.duelTime = level.time + 2000;
-			challenged->client->ps.duelTime = level.time + 2000;
-
-			G_AddEvent(ent, EV_PRIVATE_DUEL, 1);
-			G_AddEvent(challenged, EV_PRIVATE_DUEL, 1);
-
-			//Holster their sabers now, until the duel starts (then they'll get auto-turned on to look cool)
-
-			if (!ent->client->ps.saberHolstered)
-			{
-				G_Sound(ent, CHAN_AUTO, saberOffSound);
-				ent->client->ps.weaponTime = 400;
-				ent->client->ps.saberHolstered = qtrue;
-			}
-			if (!challenged->client->ps.saberHolstered)
-			{
-				G_Sound(challenged, CHAN_AUTO, saberOffSound);
-				challenged->client->ps.weaponTime = 400;
-				challenged->client->ps.saberHolstered = qtrue;
-			}
+			G_StartDuel(ent, challenged, qtrue);
 		}
 		else
 		{
@@ -5698,7 +5746,6 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 		ent->client->ps.forceHandExtendTime = nowTime + 1000;
 
 		ent->client->ps.duelIndex = challenged->s.number;
-		ent->client->ps.duelTime = level.time + 5000;
 	}
 }
 
@@ -6043,6 +6090,8 @@ clientCommand_t clientCommands[] = {
 	{"debugSetSaberMove",	NULL, Cmd_DebugSetSaberMove_f,			CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
 	{"demoManage",			NULL, Cmd_DemoManage_f,					CMD_NOINTERMISSION},
 	{"duel",				NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
+	{"duelq",				NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
+	{"duelqueue",			NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
 	{"easiest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
 	{"floatphysics",		NULL, Cmd_FloatPhysics_f,				CMD_NOINTERMISSION},
 	{"follow",				NULL, Cmd_Follow_f,						CMD_NOINTERMISSION},

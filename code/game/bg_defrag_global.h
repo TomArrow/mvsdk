@@ -24,6 +24,9 @@
 #define IRONMAN_RESPAWNPOSITION_MAXPOSITIONAGE 10000
 #define IRONMAN_NEARBYBROADCASTRANGE 1000.0f
 
+
+#define DUELQUEUE_RESPAWNPOSITION_MINDISTANCE_SHORT 256.0f // for emergencies idk
+
 #define PF_RENDER_ZCOMP (1<<0)
 
 typedef enum playerMode_s { // NEVER change the order in this as it's part of the player configstring. If adding something, add it at the end. If adding something in a fork, add 1000 plus a few hundred (check github for other ppl who extended it?) to distinguish from TommyTernal modes, ty.
@@ -31,6 +34,7 @@ typedef enum playerMode_s { // NEVER change the order in this as it's part of th
 	MODE_NORMAL,
 	MODE_DEFRAG,
 	MODE_DUEL,
+	MODE_DUELQUEUE,
 	MODE_ALLFORCE,
 	MODE_IRONMAN,
 	MODE_NUM_MODES

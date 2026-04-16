@@ -4162,7 +4162,7 @@ void Cmd_Mode_f(gentity_t* ent)
 		modeNum = PlayerModeNameToInteger(mode);
 	}
 	if (modeNum == -1) {
-		trap_SendServerCommand(ent-g_entities,"print \"Invalid mode specified. Valid modes: reset, normal, defrag, duel, allforce, ironman\n\"");
+		trap_SendServerCommand(ent-g_entities,"print \"Invalid mode specified. Valid modes: reset, normal, defrag, duel, duelqueue, allforce, ironman\n\"");
 		return;
 	}
 	

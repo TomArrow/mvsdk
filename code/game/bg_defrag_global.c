@@ -66,6 +66,7 @@ bitInfo_t modeNames[MODE_NUM_MODES] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Normal" },
 	{ "Defrag" },
 	{ "Duel" },
+	{ "DuelQueue" },
 	{ "AllForce" },
 	{ "Ironman" },
 };
@@ -291,6 +292,8 @@ int PlayerModeNameToInteger(char* modeName) {
 		return MODE_DEFRAG;
 	if (!Q_stricmp(modeName, "duel"))
 		return MODE_DUEL;
+	if (!Q_stricmp(modeName, "duelq") || !Q_stricmp(modeName, "duelqueue"))
+		return MODE_DUELQUEUE;
 	if (!Q_stricmp(modeName, "allforce"))
 		return MODE_ALLFORCE;
 	if (!Q_stricmp(modeName, "ironman"))
