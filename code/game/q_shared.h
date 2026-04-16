@@ -1367,6 +1367,9 @@ default values.
 #define CVAR_VM_NOREAD		0x00004000		// the cvar can NOT be read-accessed by the vm modules
 #define CVAR_VM_NOWRITE		0x00008000		// the cvar can NOT be write-accessed by the vm modules
 
+#define CVAR_VVV			0x00100000		// is a vvv mod cvar (can we safely use this? i guess, we remove it during register hm)
+#define CVAR_CUSTOMMODMASK	0x00F00000		// we exclude these from register
+
 // nothing outside the Cvar_*() functions should modify these fields!
 typedef struct cvar_s {
 	char		*name;

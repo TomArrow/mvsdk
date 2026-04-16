@@ -783,6 +783,10 @@ void shield_power_converter_use( gentity_t *self, gentity_t *other, gentity_t *a
 		return;
 	}
 
+	if (g_pauseGame.integer && !activator->client->sess.raceMode) { // pause doesn't affect racers
+		return;
+	}
+
 	if (self->setTime < level.time)
 	{
 		if (!self->s.loopSound)

@@ -9,22 +9,6 @@
 
 level_locals_t	level;
 
-typedef struct cvarTable_s {
-	vmCvar_t	*vmCvar;
-	char		*cvarName;
-	char		*defaultString;
-	int			cvarFlags;
-	int			modificationCount;  // for tracking changes
-	qboolean	trackChange;	    // track this variable, and announce if changed
-	qboolean	teamShader;        // track and if changed, update shader state
-	struct {
-		void		(*func)(struct cvarTable_s*);
-		void*		pparam1; // some pointer
-		const char* cparam1;
-		int			iparam1;
-	} update;
-} cvarTable_t;
-
 gentity_t		g_entities[MAX_ENTITIESTOTAL];
 gentity_t*		g_entitiesHashTable[ENTITY_HASH_SIZE];
 int				g_entitiesHashTableCount = 0;
@@ -177,6 +161,7 @@ vmCvar_t	g_teamForceBalance;
 vmCvar_t	g_banIPs;
 vmCvar_t	g_filterBan;
 vmCvar_t	g_developer;
+vmCvar_t	g_debugCommandsEnable;
 vmCvar_t	g_debugForward;
 vmCvar_t	g_debugRight;
 vmCvar_t	g_debugUp;
@@ -253,6 +238,15 @@ vmCvar_t	g_kickoffFix;
 
 vmCvar_t	g_crossServerChat;
 vmCvar_t	g_crossServerDefragTimes;
+
+
+
+// vvv-serverSide features port
+vmCvar_t	g_pauseGame;
+vmCvar_t	g_pauseTimerFreeze;
+vmCvar_t	g_allowChatPause;
+
+
 
 int gDuelist1 = -1;
 int gDuelist2 = -1;
@@ -369,6 +363,11 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 
+	{ &g_pauseGame, PAUSEGAME_CVARNAME, "0", CVAR_VVV|CVAR_SYSTEMINFO, 0, qtrue, qfalse, "Pauses the game, preventing players from moving, items from respawning, etc." },
+	{ &g_allowChatPause, "g_allowChatPause", "0", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "Players not on spectator team can pause/unpause the game by using !pause and !unpause in chat." },
+	{ &g_pauseTimerFreeze, "g_pauseTimerFreeze", "0", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "Restores the game timer during pause on every second, effectively freezing it." },
+
+
 	{ &g_mapDefaultMsec, "g_mapDefaultMsec", "8", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 	{ &g_mapDefaultJump, "g_mapDefaultJump", "1", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
 	{ &g_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO | CVAR_ROM, 0, qfalse},
@@ -436,6 +435,7 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_listEntity, "g_listEntity", "0", 0, 0, qfalse },
 
 	{ &g_developer, "developer", "0", 0, 0, qfalse },
+	{ &g_debugCommandsEnable, "g_debugCommandsEnable", "0", CVAR_CHEAT, 0, qtrue },
 
 #if 0
 	{ &g_debugForward, "g_debugForward", "0", 0, 0, qfalse },
@@ -457,8 +457,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_entHUDFields, "g_entHUDFields", "1", CVAR_SYSTEMINFO|CVAR_ARCHIVE, 0, qtrue},
 
 	{ &g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO | CVAR_ARCHIVE, 0, qtrue },
-	{ &g_mineSwitchFix, "g_mineSwitchFix", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
-	{ &g_kickoffFix, "g_kickoffFix", "1", CVAR_ARCHIVE, 0, qtrue, qfalse, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
+	{ &g_mineSwitchFix, "g_mineSwitchFix", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, NULL, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
+	{ &g_kickoffFix, "g_kickoffFix", "1", CVAR_ARCHIVE, 0, qtrue, qfalse, NULL, { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX} },
 
 	{ &g_crossServerChat, "g_crossServerChat", "2", CVAR_ARCHIVE, 0, qtrue}, // 1 = receive. 2 = need special say_cross cmd to allow sharing. 3 = share all
 	{ &g_crossServerDefragTimes, "g_crossServerDefragTimes", "2", CVAR_ARCHIVE, 0, qtrue}, // Share achieved defrag time prints across servers. 1 = receive. 2 = send
@@ -937,7 +937,7 @@ void G_RegisterCvars( void ) {
 
 	for ( i = 0, cv = gameCvarTable ; i < gameCvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Register( cv->vmCvar, cv->cvarName,
-			cv->defaultString, cv->cvarFlags );
+			cv->defaultString, cv->cvarFlags & ~CVAR_CUSTOMMODMASK );
 		if ( cv->vmCvar )
 			cv->modificationCount = cv->vmCvar->modificationCount;
 		if (cv->update.func)
@@ -982,11 +982,112 @@ void G_CheckCvarChanges() {
 	}
 }
 
+// A whole lot of stuff must be done when the pauseGame cvar changed value. We check that here.
+void G_HandlePauseStateChange(cvarTable_t* cv) {
+	int val;
+	int k;
+
+	if (cv->vmCvar->integer)
+		val = 1;
+	else
+		val = 0;
+
+	//trap_SendConsoleCommand(EXEC_APPEND, va("g_synchronousClients %d\n", val));
+
+	if (val) {
+		gentity_t* ent;
+		pauseGameStartTime = level.time;
+		trap_SendServerCommand(-1, "print \"Game was paused.\n\"");
+
+		// save clients' viewangles..
+		// This is so we can restore them upon unpause. Because a
+		// client may move his mouse which will cause sudden
+		// viewangle change upon unpause. We prevent that by
+		// forcing the viewangle back to the viewangle he had at
+		// the moment of pause. 
+		for (k = 0, ent = g_entities; k < MAX_CLIENTS; ++k, ++ent) {
+			if (ent && ent->client && ent->client->pers.connected != CON_DISCONNECTED) {
+				VectorCopy(ent->client->ps.viewangles, ent->client->pauseSavedViewangles);
+			}
+		}
+	}
+	else {
+		// PAUSE STOPPED
+		level.unpauseClient = -1;
+
+		//SAFETY CHECK
+		if (pauseGameStartTime > 0 && pauseGameStartTime < level.time) {
+			//postpone all think functions
+			gentity_t* ent;
+			const int pauseDuration = level.time - pauseGameStartTime;
+
+			//postpone think functions that were blocked during pause.
+			for (k = MAX_CLIENTS; k < MAX_GENTITIES; ++k) {
+				ent = &g_entities[k];
+				if (ent && ent->inuse && ent->think && ent->nextthink > 0) {
+					ent->nextthink += pauseDuration;
+				}
+			}
+
+			// G_LogPrintf("Pause stopped after %s.\n", pauseGameStartTime, G_MsToString(pauseDuration));
+			trap_SendServerCommand(-1, va("print \"Pause ended after %s.\n\"", G_MsToStringVVV(pauseDuration)));
+
+			if (!g_pauseTimerFreeze.integer) {
+				//Roll back the time that cg_drawTimer shows
+				level.startTime += pauseDuration;
+				trap_SetConfigstring(CS_LEVEL_START_TIME, va("%i", level.startTime));
+				pauseGameStartTime = 0;
+			}
+
+			//fix so times are correct on scoreboard. we dont wanna count time while game is paused
+			for (k = 0, ent = g_entities; k < MAX_CLIENTS; ++k, ++ent) {
+				if (ent && ent->client && ent->client->pers.connected != CON_DISCONNECTED) {
+					ent->client->pers.enterTime += pauseDuration;
+
+					//ok, in case someone joined during pause, ensure they dont get negative time..
+					if (ent->client->pers.enterTime > level.time)
+						ent->client->pers.enterTime = level.time;
+
+
+					if (ent->client->pers.teamState.flagsince) {
+						//This guy is holding a flag. Update the timer so its not counting pause time.
+						ent->client->pers.teamState.flagsince += pauseDuration;
+
+						if (ent->client->pers.teamState.flagsince > level.time)
+							ent->client->pers.teamState.flagsince = level.time;
+					}
+					if (ent->client->pers.teamState.lastreturnedflag) {
+						ent->client->pers.teamState.lastreturnedflag += pauseDuration;
+					}
+					if (ent->client->pers.teamState.lastfraggedcarrier) {
+						ent->client->pers.teamState.lastfraggedcarrier += pauseDuration;
+					}
+					if (ent->client->pers.teamState.lasthurtcarrier) {
+						ent->client->pers.teamState.lasthurtcarrier += pauseDuration;
+					}
+
+					if (ent->client->sess.sessionTeam != TEAM_SPECTATOR && !ent->client->sess.raceMode) {
+						//restore this clients viewangles as the same as before pause.
+						DF_PreDeltaAngleChange(ent->client);
+						SetClientViewAngle(ent, ent->client->pauseSavedViewangles);
+						DF_PostDeltaAngleChange(ent->client, qtrue);
+					}
+
+					//Somehow, this causes bugging if someone entered the game during pause (they get infinite invulnerability)
+					// if (object->client->invulnerableTimer)
+						// object->client->invulnerableTimer += pauseDuration;
+				}
+			}
+		}
+	}
+}
+
 /*
 =================
 G_UpdateCvars
 =================
 */
+int pauseGameStartTime = 0;
 void G_UpdateCvars( void ) {
 	int			i;
 	cvarTable_t	*cv;
@@ -1006,6 +1107,12 @@ void G_UpdateCvars( void ) {
 				if ( cv->trackChange ) {
 					trap_SendServerCommand( -1, va("print \"Server: %s changed to %s\n\"", 
 						cv->cvarName, cv->vmCvar->string ) );
+				}
+
+				// hack to make smooth pauses
+				// Thanks to Daggolin for this tip!
+				if (cv->vmCvar == &g_pauseGame) {
+					G_HandlePauseStateChange(cv);
 				}
 
 				if (cv->teamShader) {
@@ -1078,6 +1185,7 @@ void G_SetupTempDemoSubfolderName();
 
 void InitClanTagHashTable();
 
+void G_InitClientCommands(void);
 /*
 ============
 G_InitGame
@@ -1307,6 +1415,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	}
 
 	G_RemapTeamShaders();
+
+	G_InitClientCommands();
 
 	if ( g_gametype.integer == GT_TOURNAMENT )
 	{
@@ -2643,7 +2753,7 @@ void CheckExitRules( void ) {
 		}
 	}
 
-	if ( g_timelimit.integer && !level.warmupTime && !g_defrag.integer) {
+	if ( g_timelimit.integer && !level.warmupTime && !g_defrag.integer && !g_pauseGame.integer) {
 		if ( level.time - level.startTime >= g_timelimit.integer*60000 ) {
 //			trap_SendServerCommand( -1, "print \"Timelimit hit.\n\"");
 			trap_SendServerCommand( -1, va("print \"%s.\n\"",G_GetStripEdString("SVINGAME", "TIMELIMIT_HIT")));
@@ -3141,6 +3251,43 @@ void CheckCvars( void ) {
 	}
 }
 
+static void G_CheckUnpause(void)
+{
+	static int lastPrint = -1;
+	int secs;
+
+	//if game is not paused, an admin unpaused, so just cancel.
+	if (!g_pauseGame.integer) {
+		level.unpauseTime = 0;
+		return;
+	}
+
+	secs = level.unpauseTime - level.time;		// how many ms until pause?
+	secs /= 1000;	//how many seconds left until game will unpause?
+	secs += 1;		//so it prints 3,2,1 instead of 2,1,0
+
+	if (secs != lastPrint) {
+		G_CenterPrint(-1,0, va("Unpause in ^5%d ^7secs", secs),qtrue,qfalse,qfalse,NULL);
+		lastPrint = secs;
+	}
+
+	if (level.time >= level.unpauseTime) {
+		//time to unpause.
+		//trap_SendConsoleCommand(EXEC_APPEND, PAUSEGAME_CVARNAME" 0\n");
+		trap_Cvar_Set(PAUSEGAME_CVARNAME, "0"); // change by bucky, but maybe it's better to append to keep the cvar state consistent with the value stored in the vmCvar_t? meh prolly irrelevant
+
+		//clear the "unpause in 1 sec" message.
+		G_CenterPrint(-1, 0, " ", qtrue, qfalse, qfalse, NULL);
+
+		level.unpauseTime = 0;
+		level.unpauseClient = -2;
+		lastPrint = -1;
+	}
+
+
+}
+
+
 #define AUTOGEN_ARENA_NAME "_autoGenArenas" // changed back to _ from 0. doesnt affect ordering anyway
 /*
 =============
@@ -3328,6 +3475,11 @@ void G_RunThink (gentity_t *ent) {
 	float	thinktime; 
 	int			nowTime = ent->s.eType == ET_MOVER ? MOVERTIME_ENT(ent) : level.time;
 
+	if (g_pauseGame.integer && !g_defrag.integer ) { // && !MOVERUSESCLIENTTIME(ent)
+		// stop thinks except if defrag is active. would mess with racers
+		return;
+	}
+
 	thinktime = ent->nextthink;
 	if (thinktime <= 0) {
 		return;
@@ -3504,6 +3656,34 @@ void G_RunFrame( int levelTime ) {
 	level.previousTime = level.time;
 	level.time = levelTime;
 	level.frameTimeMsec = msec = level.time - level.previousTime;
+
+	//if ( level.pause.state != PAUSE_NONE ) {
+	if (g_pauseGame.integer && g_pauseTimerFreeze.integer) {
+		static int lastCSTime = 0;
+		int dt = level.time - level.previousTime;
+
+		// compensate for timelimit and warmup time
+		if (level.warmupTime > 0)
+			level.warmupTime += dt;
+		level.startTime += dt;
+
+		// floor start time to avoid time flipering
+		if ((level.time - level.startTime) % 1000 >= 500)
+			level.startTime += (level.time - level.startTime) % 1000;
+
+		// initial CS update time, needed!
+		if (!lastCSTime)
+			lastCSTime = level.time;
+
+		// client needs to do the same, just adjust the configstrings periodically
+		// i can't see a way around this mess without requiring a client mod.
+		if (lastCSTime < level.time - 1000) {
+			lastCSTime += 1000;
+			trap_SetConfigstring(CS_LEVEL_START_TIME, va("%i", level.startTime));
+			if (level.warmupTime > 0)
+				trap_SetConfigstring(CS_WARMUP, va("%i", level.warmupTime));
+		}
+	}
 
 	g_TimeSinceLastFrame = (level.time - g_LastFrameTime);
 
@@ -3762,6 +3942,12 @@ end = trap_Milliseconds();
 
 	// cancel vote if timed out
 	CheckVote();
+
+	if (level.unpauseTime) {
+		// an unpause is pending.
+		G_CheckUnpause();
+	}
+
 
 	// check team votes
 	CheckTeamVote( TEAM_RED );

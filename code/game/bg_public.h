@@ -12,7 +12,7 @@
 #include "anims.h"
 #include "bg_defrag_global.h"
 
-
+#define PAUSEGAME_CVARNAME	"nt_PauseGame"
 
 #define	GAME_VERSION		"basejk-1"
 
@@ -401,6 +401,9 @@ typedef struct {
 	int				unlockRandom;
 	qboolean		mineSwitchFix;
 	qboolean		highFpsFix;
+
+	// vvv-serverSide feature porting (i dislike accessing g_vars here)
+	int				pauseGame;
 } pmove_t;
 
 extern	pmove_t		*pm;

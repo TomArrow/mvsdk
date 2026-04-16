@@ -2149,6 +2149,9 @@ extern	vmCvar_t		mme_demoFileName;
 extern	vmCvar_t		mme_autoSeekPreRecord;
 
 
+// vvv-serverSide features port (adding cgame prediction)
+extern	vmCvar_t		cg_pauseGame;
+
 /*
 Ghoul2 Insert Start
 */

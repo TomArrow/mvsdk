@@ -123,6 +123,25 @@ typedef struct hashEntry_s {
 	struct hashEntry_s* next;
 } hashEntry_t;
 
+
+typedef struct cvarTable_s {
+	vmCvar_t* vmCvar;
+	char* cvarName;
+	char* defaultString;
+	int			cvarFlags;
+	int			modificationCount;  // for tracking changes
+	qboolean	trackChange;	    // track this variable, and announce if changed
+	qboolean	teamShader;        // track and if changed, update shader state
+	const char* desc;			//add description of cvar 
+	struct {
+		void		(*func)(struct cvarTable_s*);
+		void* pparam1; // some pointer
+		const char* cparam1;
+		int			iparam1;
+	} update;
+} cvarTable_t;
+
+
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
@@ -324,6 +343,8 @@ struct gentity_s {
 
 	qboolean	hideFromActiveRacers;
 };
+
+#define SHOWNAME( x ) g_entities[x].client->pers.netname
 
 #define DAMAGEREDIRECT_HEAD		1
 #define DAMAGEREDIRECT_RLEG		2
@@ -698,6 +719,8 @@ struct gclient_s {
 
 	qboolean	fjDidJump;
 
+	vec3_t		pauseSavedViewangles;
+
 	// TODO how does restoreposition affect this?
 	vec3_t		prePmovePosition;
 	vec3_t		prePmoveMins;
@@ -852,6 +875,10 @@ typedef struct {
 	int			numSpawnVarChars;
 	char		spawnVarChars[MAX_SPAWN_VARS_CHARS];
 
+	#define		UNPAUSE_COUNTDOWN	5000
+	int			unpauseTime;			//when level.time hits this, unpause the game if it is paused.
+	int			unpauseClient;
+
 	// intermission state
 	int			intermissionQueued;		// intermission was qualified, but
 										// wait INTERMISSION_DELAY_TIME before
@@ -961,6 +988,7 @@ void Cmd_EngageDuel_f(gentity_t *ent);
 void G_SayTo(gentity_t* ent, gentity_t* other, int mode, int color, const char* name, const char* message, const char* append);
 char* ConcatArgsQuoted(int start);
 void G_ResetClientVote(gclient_t* client);
+const char* G_Argv(int arg);
 
 gentity_t *G_GetDuelWinner(gclient_t *client);
 
@@ -1289,6 +1317,7 @@ extern gentity_t *gJMSaberEnt;
 qboolean	ConsoleCommand( void );
 void G_ProcessIPBans(void);
 qboolean G_FilterPacket (char *from);
+const char* G_MsToStringVVV(const int ms);
 
 //
 // g_weapon.c
@@ -1628,6 +1657,7 @@ extern	vmCvar_t	g_inactivity;
 extern	vmCvar_t	g_inactivityToSpec;
 extern	vmCvar_t	g_inactivityToSpecRacers;
 extern	vmCvar_t	g_developer;
+extern	vmCvar_t	g_debugCommandsEnable;
 extern	vmCvar_t	g_debugMove;
 extern	vmCvar_t	g_debugAlloc;
 extern	vmCvar_t	g_debugFancy;
@@ -1741,6 +1771,12 @@ extern	vmCvar_t	g_kickoffFix;
 
 extern	vmCvar_t	g_crossServerChat;
 extern	vmCvar_t	g_crossServerDefragTimes;
+
+// vvv-serverSide features port
+extern	vmCvar_t	g_pauseGame;
+extern	vmCvar_t	g_pauseTimerFreeze;
+extern	vmCvar_t	g_allowChatPause;
+
 
 void	trap_Printf( const char *fmt );
 Q_NORETURN void	trap_Error( const char *fmt );
@@ -1983,6 +2019,9 @@ extern int coolApi_supportedVMFeatures;
 extern int gRandomUnlockAdd;
 
 extern int mvapi;
+
+extern int pauseGameStartTime;
+
 extern qboolean mvStructConversionDisabled;
 
 // JK2MV API Functions

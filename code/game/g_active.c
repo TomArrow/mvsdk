@@ -1100,6 +1100,10 @@ Actions that happen once a second
 void ClientTimerActions( gentity_t *ent, int msec ) {
 	gclient_t	*client;
 
+	if (g_pauseGame.integer && !ent->client->sess.raceMode) {
+		return;
+	}
+
 	client = ent->client;
 	client->timeResidual += msec;
 
@@ -1818,6 +1822,7 @@ void ClientThink_real( gentity_t *ent ) {
 	vec3_t		prePmoveVelocity;
 	float		forcedModelScale = 0.0f;
 	int			oldSaberMove;
+	qboolean	pauseItemUse;
 
 	client = ent->client;
 
@@ -2000,7 +2005,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if (ent && ent->client && (ent->client->ps.eFlags & EF_INVULNERABLE))
 	{
-		if (ent->client->invulnerableTimer <= nowTime)
+		if (ent->client->invulnerableTimer <= nowTime && (!g_pauseGame.integer || ent->client->sess.raceMode))
 		{
 			ent->client->ps.eFlags &= ~EF_INVULNERABLE;
 		}
@@ -2131,6 +2136,11 @@ void ClientThink_real( gentity_t *ent ) {
 	//client->ps.speed = g_speed.value;
 	client->ps.basespeed = g_speed.value; 
 	
+	if (g_pauseGame.integer && !client->sess.raceMode) {
+		//client->ps.pm_type = PM_FREEZE;
+		client->ps.pm_type = PM_SPINTERMISSION;	//no movement NOR viewangles-change allowed
+	}
+
 	if (client->sess.raceMode /* || client->ps.stats[STAT_RACEMODE]*/) {
 		//client->ps.speed = 250.0f;
 		client->ps.basespeed = 250.0f;
@@ -2420,7 +2430,7 @@ void ClientThink_real( gentity_t *ent ) {
 			vectoangles(lockDir, lockAng);
 			DF_PreDeltaAngleChange(ent->client);
 			SetClientViewAngle( ent, lockAng );
-			DF_PreDeltaAngleChange(ent->client);
+			DF_PostDeltaAngleChange(ent->client, qtrue);
 		}
 
 		if ( ( ent->client->buttons & BUTTON_ATTACK ) && ! ( ent->client->oldbuttons & BUTTON_ATTACK ) )
@@ -2460,6 +2470,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.antiLoop = ent->client->pers.antiLoop;
 	pm.oldButtons = ent->client->oldbuttons;
 	pm.forcedModelScale = forcedModelScale;
+	pm.pauseGame = ent->client->sess.raceMode ? 0 : g_pauseGame.integer;
 	DF_PreDeltaAngleChange(ent->client);
 	pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 	oldSaberMove = pm.ps->saberMove;
@@ -2541,6 +2552,7 @@ void ClientThink_real( gentity_t *ent ) {
 		pm.checkDuelLoss = 0;
 	}
 
+	pauseItemUse = (qboolean)(g_pauseGame.integer && !ent->client->sess.raceMode);
 	switch(pm.cmd.generic_cmd)
 	{
 	case 0:
@@ -2549,13 +2561,13 @@ void ClientThink_real( gentity_t *ent ) {
 		Cmd_ToggleSaber_f(ent);
 		break;
 	case GENCMD_ENGAGE_DUEL:
-		if ( g_gametype.integer == GT_TOURNAMENT )
-		{//already in a duel, made it a taunt command
-		}
-		else
-		{
+		//if ( g_gametype.integer == GT_TOURNAMENT )
+		//{//already in a duel, made it a taunt command
+		//}
+		//else
+		//{
 			Cmd_EngageDuel_f(ent);
-		}
+		//}
 		break;
 	case GENCMD_FORCE_HEAL:
 		ForceHeal(ent);
@@ -2591,7 +2603,7 @@ void ClientThink_real( gentity_t *ent ) {
 		ForceSeeing(ent);
 		break;
 	case GENCMD_USE_SEEKER:
-		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)) &&
+		if ( !pauseItemUse && (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SEEKER)) &&
 			G_ItemUsable(&ent->client->ps, HI_SEEKER,ent) )
 		{
 			ItemUse_Seeker(ent);
@@ -2600,7 +2612,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		break;
 	case GENCMD_USE_FIELD:
-		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD)) &&
+		if (!pauseItemUse && (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SHIELD)) &&
 			G_ItemUsable(&ent->client->ps, HI_SHIELD, ent) )
 		{
 			ItemUse_Shield(ent);
@@ -2609,7 +2621,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		break;
 	case GENCMD_USE_BACTA:
-		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC)) &&
+		if (!pauseItemUse && (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_MEDPAC)) &&
 			G_ItemUsable(&ent->client->ps, HI_MEDPAC, ent) )
 		{
 			ItemUse_MedPack(ent);
@@ -2648,7 +2660,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		break;
 	case GENCMD_USE_SENTRY:
-		if ( (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN)) &&
+		if (!pauseItemUse && (ent->client->ps.stats[STAT_HOLDABLE_ITEMS] & (1 << HI_SENTRY_GUN)) &&
 			G_ItemUsable(&ent->client->ps, HI_SENTRY_GUN, ent) )
 		{
 			ItemUse_Sentry(ent);
@@ -2828,6 +2840,10 @@ void G_CheckClientTimeouts ( gentity_t *ent )
 	// Only timeout supported right now is the timeout to spectator mode
 	if ( g_timeouttospec.integer <= 0 ) // one may accidentally set 9999999999999 and cause overflow and that would lead to unintended consequences
 	{
+		return;
+	}
+
+	if (g_pauseGame.integer && !ent->client->sess.raceMode) {
 		return;
 	}
 
@@ -3054,7 +3070,7 @@ void G_RunClient( gentity_t *ent ) {
 		if (g_cheats.integer || !ent->client->sess.raceMode || (ent->client->sess.sessionTeam == TEAM_SPECTATOR)) {
 			//Their demo is bad, dont keep telling game to keep it
 		}
-		else if (!areSegReplaying && (!ent->client->pers.stats.startLevelTime ||
+		else if (!areSegReplaying && (!g_pauseGame.integer || ent->client->sess.raceMode) && (!ent->client->pers.stats.startLevelTime ||
 			((ent->client->lastHereTime < level.time - 60 * 60 * 1000) && (level.time - ent->client->pers.demoStoppedTime > 10000)))
 			//  || (trap_Milliseconds() - ent->client->pers.stats.startTime > 240 * 60 * 1000)) // just give up on races longer than 4 hours lmao
 			)
@@ -3291,7 +3307,7 @@ void G_RunClient( gentity_t *ent ) {
 		stats->apos.trTime = 0;
 		stats->pos.trTime = 0;
 		stats->frame = 0;
-	
+
 		ent->client->pers.cmd.serverTime = level.time;
 		ClientThink_real(ent);
 	}

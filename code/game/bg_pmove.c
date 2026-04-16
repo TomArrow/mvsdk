@@ -2921,8 +2921,8 @@ static void PM_AirMove( void ) {
 	}
 
 	if (pm->modParms.physics == MV_JK2SP) {
-		if (!pm->ps->clientNum
-			&& pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_0
+		if (//!pm->ps->clientNum &&
+			pm->ps->fd.forcePowerLevel[FP_LEVITATION] > FORCE_LEVEL_0
 			&& pm->ps->fd.forceJumpZStart
 			&& pm->ps->velocity[2] > 0) {//I am force jumping and I'm not holding the button anymore
 			float curHeight = pm->ps->origin[2] - pm->ps->fd.forceJumpZStart + (pm->ps->velocity[2] * pml.frametime);
@@ -5040,7 +5040,7 @@ static void PM_Weapon( void )
 	if ( pm->cmd.buttons & BUTTON_USE_HOLDABLE ) {
 		if ( ! ( pm->ps->pm_flags & PMF_USE_ITEM_HELD ) ) {
 
-			if (!pm->ps->stats[STAT_HOLDABLE_ITEM])
+			if (!pm->ps->stats[STAT_HOLDABLE_ITEM] || pm->pauseGame)
 			{
 				return;
 			}
@@ -6632,6 +6632,10 @@ void PmoveSingle (pmove_t *pmove) {
 		if (pm->modParms.runFlags & RFL_BOT) {
 			pm->cmd.angles[ROLL] = oldCmdRoll;
 		}
+		return;
+	}
+
+	if (pm->pauseGame) {
 		return;
 	}
 

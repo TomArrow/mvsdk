@@ -36,7 +36,8 @@ extern int semiBreakingChangeVersionDefrag;
 //#define ACTIVATORTIMEOLD(a) level.previousTime
 
 
-#define MOVERTIME_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->pers.cmd.serverTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->pers.cmd.serverTime+(e)->activatorLevelTimeDelta) : level.time)
+#define MOVERUSESCLIENTTIME(e) (((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->pers.cmd.serverTime > 0 && g_defrag.integer)
+#define MOVERTIME_ENT(e) (MOVERUSESCLIENTTIME(e) ? (((e)->activatorReal)->client->pers.cmd.serverTime+(e)->activatorLevelTimeDelta) : level.time)
 #define MOVERTIMEOLD_ENT(e) ((((e)->activatorReal) && ((e)->activatorReal)->inuse && ((e)->activatorReal)->client && ((e)->activatorReal)->client->sess.raceMode && ((e)->activatorReal)->client->ps.commandTime > 0 && g_defrag.integer) ? (((e)->activatorReal)->client->ps.commandTime+(e)->activatorLevelTimeDelta) : level.time) // is commandtime really adequate?
 
 typedef unsigned char posHashType_t;

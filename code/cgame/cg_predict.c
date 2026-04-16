@@ -1395,6 +1395,7 @@ restartpredict:
 			cg_pmove.antiLoop = cg.antiLoop;
 		}
 		cg_pmove.forcedModelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0];
+		cg_pmove.pauseGame = (cgs.isTommyTernal && cg_pmove.ps->stats[STAT_RACEMODE]) ? 0 : cg_pauseGame.integer;
 		Pmove (&cg_pmove);
 		VectorCopy(cg_pmove.ps->origin,oldPos );
 		cg.roll = cg_pmove.roll;

@@ -17,7 +17,7 @@ void BG_CycleForce(playerState_t *ps, int direction);
 
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
-
+static void Cmd_PrintCmdDescriptions_f(gentity_t* ent);
 
 static qboolean DefragDoubleTapSafety(gentity_t* ent, doubleTapType_t type, const char* cmd ) {
 	if (!g_defragKillSafetyMinSecs.integer) {
@@ -796,6 +796,11 @@ void Cmd_Kill_f( gentity_t *ent ) {
 		return;
 	}
 	if (!DefragDoubleTapSafety(ent,DOUBLETAP_KILL,"kill")) {
+		return;
+	}
+
+	if (g_pauseGame.integer && !ent->client->sess.raceMode) {
+		G_SendServerCommand(ent - g_entities, va("print \"Can't kill yourself while game is paused :----D\n\""), qtrue);
 		return;
 	}
 
@@ -1636,6 +1641,11 @@ void Cmd_Help_f(gentity_t* ent) {
 	//trap_SendServerCommand(ent - g_entities, "print \"^2/+bouncepower^7 (^2/+button13^7) - Activates stronger bounce in bounce movement style for up to half a second\n\"");
 	//trap_SendServerCommand(ent - g_entities, "print \"^2/+strafebot^7 (^2/+button14^7) - This button must be pressed in strafebot mode to activate the strafebot. Bind to a key or type in console to keep activated\n\"");
 
+	Cmd_PrintCmdDescriptions_f(ent);
+
+	if (g_allowChatPause.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"Pausing/unpausing is currently enabled. Game can be paused by typing ^1!pause^7 in chat, and unpaused by ^1!unpause^7.\n\"");
+	}
 
 	if (ent->client->sess.login.loggedIn && ent->client->sess.login.flags) {
 		trap_SendServerCommand(ent - g_entities, "print \"\n^7Admin commands:\n\"");
@@ -1664,6 +1674,7 @@ void Cmd_Help_f(gentity_t* ent) {
 			trap_SendServerCommand(ent - g_entities, "print \"^2/amMap^7 - Force change map, call with gametype number and mapname\n\"");
 		}
 	}
+
 }
 
 /*
@@ -3660,6 +3671,149 @@ void G_SayTo( gentity_t *ent, gentity_t *other, int mode, int color, const char 
 		name, Q_COLOR_ESCAPE, color, message, ent ? miniva(" %i",(int)(ent - g_entities)) : "", append ? append : "")); // lets have some privacy for private chatters
 }
 
+
+const char* SkipWhitespace2(const char* data) {
+	while (*data == ' ')
+		++data;
+
+	return data;
+}
+static char* G_GrabToken(const char* p, qboolean skipLeadingWhiteSpace) {
+	static char token[256] = { 0 };
+	int i = 0;
+	int c;
+
+	if (!p)
+		return NULL;
+
+	memset(&token, 0, sizeof(token));
+
+	if (skipLeadingWhiteSpace)
+		while (*p == ' ') ++p;
+
+
+	while ((c = *(p++)) != 0 && i < 255) {
+		if (c == ' ')
+			break;
+		token[i++] = c;
+	}
+	token[i] = 0;
+
+	return token;
+}
+#define		CCMD_SAYALLONLY			(1<<0)
+typedef struct {
+	const char* name;
+	const char* argsMask;
+	const char* desc;
+	void 		(*fun)(gentity_t* ent, const char* args);
+	int			flags;
+} chatCommand_t;
+
+static void Cmd_PauseGame_C(gentity_t* ent, const char* args);
+static void Cmd_UnpauseGame_C(gentity_t* ent, const char* args);
+
+static const chatCommand_t chatCmds[] = {
+	{ "pause", NULL, "Pause the game", Cmd_PauseGame_C, CCMD_SAYALLONLY },
+	{ "unpause", NULL, "Unpause the game", Cmd_UnpauseGame_C, CCMD_SAYALLONLY },
+};
+static const size_t numChatCommands = ARRAY_LEN(chatCmds);
+
+static void Cmd_PauseGame_C(gentity_t* ent, const char* args) {
+	int c;
+
+	if (args && args[0]) {
+		return;
+	}
+
+	if (!g_allowChatPause.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"This command is currently disabled.\n\"");
+		return;
+	}
+
+	if (ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+		trap_SendServerCommand(ent - g_entities, "print \"Only playing players can use this command.\n\"");
+		return;
+	}
+
+
+
+	if (level.unpauseTime) {
+		//game is about to be unpaused, so we dont care if the pause cvar is on. make sure it stays paused!
+		level.unpauseTime = 0;
+	}
+	else if (g_pauseGame.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"Game is already paused.\n\"");
+		return;
+	}
+
+	level.unpauseClient = ent - g_entities + 1;
+
+	G_CenterPrint(-1,3,va("Game was paused by %s^7.", ent->client->pers.netname),qtrue,qfalse,qtrue,NULL);
+	G_LogPrintf("Game was paused by client %d\n", (int)(ent - g_entities));
+
+	trap_SendConsoleCommand(EXEC_APPEND, PAUSEGAME_CVARNAME" 1\n");
+}
+
+static void Cmd_UnpauseGame_C(gentity_t* ent, const char* args) {
+	int real;
+
+	if (args && args[0]) {
+		return;
+	}
+
+	if (!g_allowChatPause.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"This command is currently disabled.\n\"");
+		return;
+	}
+
+	if (ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+		trap_SendServerCommand(ent - g_entities, "print \"Only playing players can use this command.\n\"");
+		return;
+	}
+
+	if (!g_pauseGame.integer) {
+		trap_SendServerCommand(ent - g_entities, "print \"Game is not paused.\n\"");
+		return;
+	}
+
+	if (g_allowChatPause.integer == 2) { // g_allowChatPause 2 = only the pausing client can unpause
+		real = level.unpauseClient - 1;
+
+		if (real >= 0 && real < MAX_CLIENTS) {
+
+			if (!g_entities[real].inuse || !g_entities[real].client) {
+				//the guy who paused left. = anyone can unpause
+			}
+			else if (ent - g_entities == real) {
+				//hes the one who paused, so he can unpause.
+			}
+			else if (level.clients[real].sess.sessionTeam != TEAM_SPECTATOR) {
+				trap_SendServerCommand(ent - g_entities, va("print \"Game was paused by %s ^7(%d); only he can unpause.\n\"", SHOWNAME(real), real));
+				return;
+			}
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"no.\n\"");
+			return;
+		}
+	}
+
+	if (level.unpauseTime) {
+		trap_SendServerCommand(ent - g_entities, "print \"Unpause is already pending.\n\"");
+		return;
+	}
+
+	G_LogPrintf("Game was unpaused by client %d\n", (int)(ent - g_entities));
+
+	//instart of unpausing immediately, count down so players can prepare
+	level.unpauseTime = level.time + UNPAUSE_COUNTDOWN;		//when level.time hits this, unpause!
+}
+
+
+
+
+
 #define EC		"\x19"
 
 void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) {
@@ -3764,6 +3918,27 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 		toAllServers = qtrue;
 	}
 
+	//Check for chat cmds.
+	if (chatText[0] == '!') {
+		const char* token = G_GrabToken(++chatText, qfalse);
+		const chatCommand_t* cmd;
+
+		for (j = 0, cmd = chatCmds; j < numChatCommands; ++j, ++cmd) {
+			if (cmd && cmd->fun && !Q_stricmp(token, cmd->name)) {
+				//only allow pause cmds in say_all
+				if ((cmd->flags & CCMD_SAYALLONLY) && mode != SAY_ALL) {
+					break;
+				}
+
+
+
+				chatText += strlen(token);
+				cmd->fun(ent, SkipWhitespace2(chatText));
+				break;
+			}
+		}
+	}
+
 	// send it to all the apropriate clients
 	for (j = 0; j < level.maxclients; j++) {
 		other = &g_entities[j];
@@ -3796,6 +3971,16 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
 	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
 	G_Say( ent, NULL, mode, p );
+}
+
+static void Cmd_SayNormal_f(gentity_t* ent) {
+	Cmd_Say_f(ent, SAY_ALL, qfalse);
+}
+static void Cmd_SayCross_f(gentity_t* ent) {
+	Cmd_Say_f(ent, SAY_CROSSSERVER, qfalse);
+}
+static void Cmd_SayTeam_f(gentity_t* ent) {
+	Cmd_Say_f(ent, SAY_TEAM, qfalse);
 }
 
 /*
@@ -5274,6 +5459,10 @@ void Cmd_ToggleSaber_f(gentity_t *ent)
 //		return;
 //	}
 
+	if (g_pauseGame.integer && !ent->client->sess.raceMode) {
+		return;
+	}
+
 	if (ent->client->ps.duelTime >= level.time)
 	{
 		return;
@@ -5515,7 +5704,7 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 
 void PM_SetAnim(int setAnimParts,int anim,int setAnimFlags, int blendTime);
 
-#ifdef _DEBUG
+#if 1//defined(_DEBUG)
 extern stringID_table_t animTable[MAX_ANIMATIONS+1];
 
 void Cmd_DebugSetSaberMove_f(gentity_t *self)
@@ -5615,7 +5804,7 @@ void StandardSetBodyAnim(gentity_t *self, int anim, int flags)
 
 void DismembermentTest(gentity_t *self);
 
-#ifdef _DEBUG
+#if 1 // defined(_DEBUG)
 void DismembermentByNum(gentity_t *self, int num);
 #endif
 extern void Cmd_Race_f(gentity_t* ent);
@@ -5630,13 +5819,352 @@ extern void DF_SelectSpawn(gentity_t* ent);
 extern void DF_ResetSpawn(gentity_t* ent);
 extern void Cmd_ToggleFPS_f(gentity_t* ent);
 extern void Cmd_FloatPhysics_f(gentity_t* ent);
-extern qboolean DF_CreateCustomCheckpoint(gentity_t* playerent);
-extern qboolean DF_RemoveCheckPoints(gentity_t* playerent); 
+extern void DF_CreateCustomCheckpoint_Cmd(gentity_t* playerent);
+extern void DF_RemoveCheckPoints_Cmd(gentity_t* playerent);
 extern void DF_StealCheckpoints(gentity_t* playerent);
 extern void DF_StealSpawn(gentity_t* playerent);
 extern void DF_StealPos(gentity_t* playerent);
 extern void G_DB_SaveUserCheckpoints(gentity_t* playerent);
 extern void G_DB_LoadUserCheckpoints(gentity_t* playerent);
+
+
+const char* G_Argv(int arg) {
+	static char buf[256];
+
+	trap_Argv(arg, buf, 256);
+
+	return &buf[0];
+}
+
+static void Cmd_FollowNext_f(gentity_t* ent) {
+	Cmd_FollowCycle_f(ent, 1);
+}
+
+static void Cmd_FollowPrev_f(gentity_t* ent) {
+	Cmd_FollowCycle_f(ent, -1);
+}
+
+static void Cmd_AddBot_f(gentity_t* ent) {
+	//because addbot isn't a recognized command unless you're the server, but it is in the menus regardless
+//			trap_SendServerCommand( clientNum, va("print \"You can only add bots as the server.\n\"" ) );
+	trap_SendServerCommand(ent-g_entities, va("print \"%s.\n\"", G_GetStripEdString("SVINGAME", "ONLY_ADD_BOTS_AS_SERVER")));
+}
+
+static void Cmd_TheDestroyer_f(gentity_t* ent) {
+	if (CheatsOk(ent) && ent && ent->client && ent->client->ps.saberHolstered && ent->client->ps.weapon == WP_SABER)
+	{
+		Cmd_ToggleSaber_f(ent);
+
+		if (!ent->client->ps.saberHolstered)
+		{
+			if (ent->client->ps.dualBlade)
+			{
+				ent->client->ps.dualBlade = qfalse;
+				//ent->client->ps.fd.saberAnimLevel = FORCE_LEVEL_1;
+			}
+			else
+			{
+				ent->client->ps.dualBlade = qtrue;
+
+				trap_SendServerCommand(-1, va("print \"%sTHE DESTROYER COMETH\n\"", S_COLOR_RED));
+				G_ScreenShake(vec3_origin, NULL, 10.0f, 800, qtrue);
+				//ent->client->ps.fd.saberAnimLevel = FORCE_LEVEL_3;
+			}
+		}
+	}
+}
+
+static void Cmd_Debug_HeadExplodeY_f(gentity_t* ent) {
+	if ( CheatsOk(ent))
+	{
+		Cmd_Kill_f(ent);
+		if (ent->health < 1)
+		{
+			float presaveVel = ent->client->ps.velocity[2];
+			ent->client->ps.velocity[2] = 500;
+			DismembermentTest(ent);
+			ent->client->ps.velocity[2] = presaveVel;
+		}
+	}
+}
+
+static void Cmd_Debug_G2AnimEnt_f(gentity_t* ent) {
+	if (CheatsOk(ent))
+	{
+		G_CreateExampleAnimEnt(ent);
+	}
+}
+
+static void Cmd_Debug_LoveAndPeace_f(gentity_t* ent) {
+	if (CheatsOk(ent))
+	{
+		trace_t tr;
+		vec3_t fPos;
+
+		AngleVectors(ent->client->ps.viewangles, fPos, 0, 0);
+
+		fPos[0] = ent->client->ps.origin[0] + fPos[0] * 40;
+		fPos[1] = ent->client->ps.origin[1] + fPos[1] * 40;
+		fPos[2] = ent->client->ps.origin[2] + fPos[2] * 40;
+
+		JP_Trace(&tr, ent->client->ps.origin, 0, 0, fPos, ent->s.number, ent->clipmask);
+
+		if (tr.entityNum < MAX_CLIENTS && tr.entityNum != ent->s.number)
+		{
+			gentity_t* other = &g_entities[tr.entityNum];
+
+			if (other && other->inuse && other->client)
+			{
+				vec3_t entDir;
+				vec3_t otherDir;
+				vec3_t entAngles;
+				vec3_t otherAngles;
+
+				if (ent->client->ps.weapon == WP_SABER && !ent->client->ps.saberHolstered)
+				{
+					Cmd_ToggleSaber_f(ent);
+				}
+
+				if (other->client->ps.weapon == WP_SABER && !other->client->ps.saberHolstered)
+				{
+					Cmd_ToggleSaber_f(other);
+				}
+
+				if ((ent->client->ps.weapon != WP_SABER || ent->client->ps.saberHolstered) &&
+					(other->client->ps.weapon != WP_SABER || other->client->ps.saberHolstered))
+				{
+					VectorSubtract(other->client->ps.origin, ent->client->ps.origin, otherDir);
+					VectorCopy(ent->client->ps.viewangles, entAngles);
+					entAngles[YAW] = vectoyaw(otherDir);
+					DF_PreDeltaAngleChange(ent->client);
+					SetClientViewAngle(ent, entAngles);
+					DF_PostDeltaAngleChange(ent->client, qtrue);
+
+					StandardSetBodyAnim(ent, BOTH_KISSER1LOOP, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD | SETANIM_FLAG_HOLDLESS);
+					ent->client->ps.saberMove = LS_NONE;
+					ent->client->ps.saberBlocked = 0;
+					ent->client->ps.saberBlocking = 0;
+
+					VectorSubtract(ent->client->ps.origin, other->client->ps.origin, entDir);
+					VectorCopy(other->client->ps.viewangles, otherAngles);
+					otherAngles[YAW] = vectoyaw(entDir);
+					DF_PreDeltaAngleChange(other->client);
+					SetClientViewAngle(other, otherAngles);
+					DF_PostDeltaAngleChange(other->client, qtrue);
+
+					StandardSetBodyAnim(other, BOTH_KISSEE1LOOP, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD | SETANIM_FLAG_HOLDLESS);
+					other->client->ps.saberMove = LS_NONE;
+					other->client->ps.saberBlocked = 0;
+					other->client->ps.saberBlocking = 0;
+				}
+			}
+		}
+	}
+}
+
+static void Cmd_Debug_DebugSetBodyAnim_f(gentity_t* ent) {
+	Cmd_DebugSetBodyAnim_f(ent, SETANIM_FLAG_OVERRIDE | SETANIM_FLAG_HOLD);
+}
+static void Cmd_Debug_DebugKnockMeDown_f(gentity_t* ent) {
+	int		nowTime = LEVELTIME(ent->client);
+	ent->client->ps.forceHandExtend = HANDEXTEND_KNOCKDOWN;
+	ent->client->ps.forceDodgeAnim = 0;
+	if (trap_Argc() > 1)
+	{
+		ent->client->ps.forceHandExtendTime = nowTime + 1100;
+		ent->client->ps.quickerGetup = qfalse;
+	}
+	else
+	{
+		ent->client->ps.forceHandExtendTime = nowTime + 700;
+		ent->client->ps.quickerGetup = qtrue;
+	}
+}
+static void Cmd_Debug_DebugDismemberment_f(gentity_t* ent) {
+
+	Cmd_Kill_f(ent);
+	if (ent->health < 1)
+	{
+		char	arg[MAX_STRING_CHARS];
+		int		iArg = 0;
+
+		if (trap_Argc() > 1)
+		{
+			trap_Argv(1, arg, sizeof(arg));
+
+			if (arg[0])
+			{
+				iArg = atoi(arg);
+			}
+		}
+
+		DismembermentByNum(ent, iArg);
+	}
+}
+
+//Stuff from openJK
+#define CMD_NOINTERMISSION		(1<<0)
+#define CMD_INTERMISSIONUNKNOWN	(1<<1) // not explicitly blocked by intermission but not known either. will be printed as say. dumb, but keeping it to maintain behavior
+#define CMD_CHEAT				(1<<2)
+#define CMD_ALIVE				(1<<3)
+#define CMD_ALLOWINREPLAY		(1<<4) // allow during a segmented run replay
+#define CMD_ALLOWWHENFORCELOGIN (1<<5) // allow when force logged in by admin (we wanna encourage changing password so we disable most cmds)
+#define CMD_DEBUG				(1<<6) // cmds hidden behind _DEBUG
+
+typedef struct command_s {
+	const char* name;	//string that invokes the command
+	const char* args;	//Args mask
+	void		(*func)(gentity_t* ent);	//function to execute
+	int			flags;
+	const char* desc;	//description
+} clientCommand_t;
+
+//for bsearch
+int cmdcmp(const void* a, const void* b) {
+	return Q_stricmp((const char*)a, ((clientCommand_t*)b)->name);
+}
+
+clientCommand_t clientCommands[] = {
+	{"addbot",				NULL, Cmd_AddBot_f,						CMD_INTERMISSIONUNKNOWN},
+	{"afk",					NULL, Cmd_Afk_f,						CMD_NOINTERMISSION},
+	{"allforce",			NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
+	{"amMap",				NULL, Cmd_AmMap_f,						CMD_NOINTERMISSION},
+	{"amtele",				NULL, Cmd_Amtele_f,						CMD_NOINTERMISSION},
+	{"arenaless",			NULL, Cmd_Arenaless_f,					CMD_NOINTERMISSION},
+	{"blacklistmap",		NULL, Cmd_BlacklistMap_f,				CMD_NOINTERMISSION},
+	{"callteamvote",		NULL, Cmd_CallTeamVote_f,				CMD_NOINTERMISSION},
+	{"callvote",			NULL, Cmd_CallVote_f,					CMD_NOINTERMISSION},
+	{"changepassword",		NULL, Cmd_ChangePassword_f,				CMD_NOINTERMISSION | CMD_ALLOWWHENFORCELOGIN},
+	{"checkpoint",			NULL, DF_CreateCustomCheckpoint_Cmd,	CMD_NOINTERMISSION},
+	{"dbsrecords",			NULL, Cmd_DBSRecords_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"debugDismemberment",	NULL, Cmd_Debug_DebugDismemberment_f,	CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
+	{"debugKnockMeDown",	NULL, Cmd_Debug_DebugKnockMeDown_f,		CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
+	{"debugSetBodyAnim",	NULL, Cmd_Debug_DebugSetBodyAnim_f,		CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
+	{"debugSetSaberMove",	NULL, Cmd_DebugSetSaberMove_f,			CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
+	{"demoManage",			NULL, Cmd_DemoManage_f,					CMD_NOINTERMISSION},
+	{"duel",				NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
+	{"easiest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"floatphysics",		NULL, Cmd_FloatPhysics_f,				CMD_NOINTERMISSION},
+	{"follow",				NULL, Cmd_Follow_f,						CMD_NOINTERMISSION},
+	{"follownext",			NULL, Cmd_FollowNext_f,					CMD_NOINTERMISSION},
+	{"followprev",			NULL, Cmd_FollowPrev_f,					CMD_NOINTERMISSION},
+	{"forcechanged",		NULL, Cmd_ForceChanged_f,				0},
+	{"forcelogin",			NULL, Cmd_ForceLogin_f,					CMD_NOINTERMISSION},
+	{"freedom",				NULL, Cmd_NameTag_f,					CMD_NOINTERMISSION},
+	{"g2animent",			NULL, Cmd_Debug_G2AnimEnt_f,			CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
+	{"gc",					NULL, Cmd_GameCommand_f,				CMD_NOINTERMISSION},
+	{"genArena",			NULL, Cmd_GenArena_f,					CMD_NOINTERMISSION},
+	{"give",				NULL, Cmd_Give_f,						CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
+	{"god",					NULL, Cmd_God_f,						CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
+	{"hardest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"headexplodey",		NULL, Cmd_Debug_HeadExplodeY_f,			CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
+	{"help",				NULL, Cmd_Help_f,						CMD_NOINTERMISSION},
+	{"ignore",				NULL, Cmd_Ignore_f,						CMD_NOINTERMISSION},
+	{"ironman",				NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
+	{"jump",				NULL, Cmd_JumpChange_f,					CMD_NOINTERMISSION},
+	{"kill",				NULL, Cmd_Kill_f,						CMD_NOINTERMISSION},
+	{"lasers",				NULL, Cmd_Lasers_f,						CMD_NOINTERMISSION},
+	{"latest",				NULL, Cmd_Latest_f,						CMD_NOINTERMISSION},
+	{"launch",				NULL, Cmd_Launch_f,						CMD_NOINTERMISSION},
+	{"levelshot",			NULL, Cmd_LevelShot_f,					CMD_NOINTERMISSION},
+	{"loadcheckpoints",		NULL, G_DB_LoadUserCheckpoints,			CMD_NOINTERMISSION},
+	{"login",				NULL, Cmd_Login_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"logout",				NULL, Cmd_Logout_f,						CMD_NOINTERMISSION | CMD_ALLOWWHENFORCELOGIN},
+	{"longest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"loveandpeace",		NULL, Cmd_Debug_LoveAndPeace_f,			CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
+	{"mapdefaults",			NULL, Cmd_DF_MapDefaults_f,				CMD_NOINTERMISSION},
+	{"maplist",				NULL, Cmd_Maplist_f,					CMD_NOINTERMISSION},
+	{"messages",			NULL, G_Cmd_UserMessages,				CMD_NOINTERMISSION,	"User account message sending/receiving (don't use for anything private)"},
+	{"mostplayed",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"move",				NULL, Cmd_MovementStyle_f,				CMD_NOINTERMISSION},
+	{"noclip",				NULL, Cmd_Noclip_f,						CMD_NOINTERMISSION},
+	{"notarget",			NULL, Cmd_Notarget_f,					CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
+	{"notwr",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"pickmode",			NULL, Cmd_Mode_f,						CMD_NOINTERMISSION},
+	{"players",				NULL, Cmd_Players_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"race",				NULL, Cmd_Race_f,						CMD_NOINTERMISSION},
+	{"rank",				NULL, Cmd_Rank_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"ratemap",				NULL, Cmd_RateMap_f,					CMD_NOINTERMISSION},
+	{"register",			NULL, Cmd_Register_f,					CMD_NOINTERMISSION},
+	{"removecheckpoints",	NULL, DF_RemoveCheckPoints_Cmd,			CMD_NOINTERMISSION},
+	{"resetspawn",			NULL, DF_ResetSpawn,					CMD_NOINTERMISSION},
+	{"respos",				NULL, Cmd_Respos_f,						CMD_NOINTERMISSION},
+	{"resseg",				NULL, Cmd_DF_RestartSegmentedRun_f,		CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"rollympics",			NULL, Cmd_Rollympics_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"run",					NULL, Cmd_DF_RunSettings_f,				CMD_NOINTERMISSION},
+	{"savecheckpoints",		NULL, G_DB_SaveUserCheckpoints,			CMD_NOINTERMISSION},
+	{"savepos",				NULL, Cmd_Savepos_f,					CMD_NOINTERMISSION},
+	{"savespawn",			NULL, DF_SaveSpawn,						CMD_NOINTERMISSION},
+	{"say",					NULL, Cmd_SayNormal_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
+	{"say_cross",			NULL, Cmd_SayCross_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
+	{"say_team",			NULL, Cmd_SayTeam_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
+	{"score",				NULL, Cmd_Score_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
+	{"selectspawn",			NULL, DF_SelectSpawn,					CMD_NOINTERMISSION},
+	{"setviewpos",			NULL, Cmd_SetViewpos_f,					CMD_NOINTERMISSION},
+	{"shortest",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"solo",				NULL, Cmd_Solo_f,						CMD_NOINTERMISSION},
+	{"stats",				NULL, Cmd_Stats_f,						CMD_NOINTERMISSION},
+	{"stay",				NULL, Cmd_Stay_f,						CMD_NOINTERMISSION},
+	{"stealcheckpoints",	NULL, DF_StealCheckpoints,				CMD_NOINTERMISSION},
+	{"stealpos",			NULL, DF_StealPos,						CMD_NOINTERMISSION},
+	{"stealspawn",			NULL, DF_StealSpawn,					CMD_NOINTERMISSION},
+	{"team",				NULL, Cmd_Team_f,						CMD_NOINTERMISSION},
+	{"teamtask",			NULL, Cmd_TeamTask_f,					CMD_NOINTERMISSION},
+	{"teamvote",			NULL, Cmd_TeamVote_f,					CMD_NOINTERMISSION},
+	{"tell",				NULL, Cmd_Tell_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
+	{"tffaStats",			NULL, Cmd_TFFAStats_f,					CMD_NOINTERMISSION},
+	{"thedestroyer",		NULL, Cmd_TheDestroyer_f,				CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION}, // technically there should be a fallthrough to "unknown cmd" here but meh.
+	{"time",				NULL, Cmd_Time_f,						CMD_NOINTERMISSION},
+	{"togglefps",			NULL, Cmd_ToggleFPS_f,					CMD_NOINTERMISSION},
+	{"top",					NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"topcheat",			NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"topcustom",			NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"topmain",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"topnjb",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"topnojumpbug",		NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"toprated",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"topseg",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"topsegmented",		NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"updateRanks",			NULL, Cmd_UpdateRanks_f,				CMD_NOINTERMISSION},
+	{"vote",				NULL, Cmd_Vote_f,						CMD_NOINTERMISSION},
+	{"where",				NULL, Cmd_Where_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY },
+	{"wrs",					NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+};
+
+static const size_t numCommands = ARRAY_LEN(clientCommands);
+
+
+static void Cmd_PrintCmdDescriptions_f(gentity_t* ent)
+{
+	const clientCommand_t* cmd;
+	const int 				entNum = ent - g_entities;
+	int 					i;
+	
+	trap_SendServerCommand(entNum, "print \"\n^7Other client commands:\n\"");
+
+	for (i = 0, cmd = clientCommands; i < numCommands; ++cmd, ++i)
+	{
+		if (cmd && cmd->desc) {
+			trap_SendServerCommand(ent - g_entities, va("print \"^2/%s^7 - %s\n\"",cmd->name,cmd->desc));
+			//trap_SendServerCommand(entNum, va("print \" ^1/%s ^7%s\n"
+			//	"    %s\n\"", cmd->name, cmd->args ? cmd->args : "", cmd->desc));
+		}
+	}
+
+}
+
+
+//For qsort
+int cmdcmp2(const void* a, const void* b) {
+	return strcmp(((clientCommand_t*)a)->name, ((clientCommand_t*)b)->name);
+}
+
+void G_InitClientCommands(void) {
+	//Sort the commands array alphabetically to allow for binary search.
+	qsort(clientCommands, numCommands, sizeof(clientCommands[0]), cmdcmp2);
+}
+
+
 
 /*
 =================
@@ -5649,6 +6177,8 @@ void ClientCommand( int clientNum ) {
 	char token[BIG_INFO_STRING]; // As the engine uses Cmd_TokenizeString2 a single parameter is theoretically not limited by MAX_TOKEN_CHARS, but by BIG_INFO_STRING
 	int i, argc;
 	int		nowTime = LEVELTIME((g_entities+clientNum)->client);
+	clientCommand_t* command;
+
 
 	ent = g_entities + clientNum;
 	if ( !ent->client || ent->client->pers.connected < CON_CONNECTED ) {
@@ -5670,32 +6200,6 @@ void ClientCommand( int clientNum ) {
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
 
-	if (DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state >= SEG_REPLAY)
-	{
-		if (Q_stricmp(cmd, "say") 
-			&& Q_stricmp(cmd, "say_team") 
-			&& Q_stricmp(cmd, "tell")
-			&& Q_stricmp(cmd, "score")
-			&& Q_stricmp(cmd, "login") // is login ok?
-			&& Q_stricmp(cmd, "resseg")
-			) { // allow a few.
-			trap_SendServerCommand(clientNum, "print \"Cannot send commands during segmented run replay.\n\"");
-			return;
-		}
-	}
-
-	if (ent->client->sess.login.forceLoggedIn) {
-		if (Q_stricmp(cmd, "say")
-			&& Q_stricmp(cmd, "say_team")
-			&& Q_stricmp(cmd, "tell")
-			&& Q_stricmp(cmd, "score")
-			&& Q_stricmp(cmd, "changepassword")
-			&& Q_stricmp(cmd, "logout")
-			) { // allow a few.
-			trap_SendServerCommand(clientNum, "print \"^3You cannot send most commands because you were force-logged in by an admin. Please change your password with /changepassword, logout and log in again.\n\"");
-			return;
-		}
-	}
 
 	//rww - redirect bot commands
 	if (strstr(cmd, "bot_") && AcceptBotCommand(cmd, ent))
@@ -5704,22 +6208,54 @@ void ClientCommand( int clientNum ) {
 	}
 	//end rww
 
-	if (Q_stricmp (cmd, "say_cross") == 0) {
-		Cmd_Say_f (ent, SAY_CROSSSERVER, qfalse);
-		return;
+	command = (clientCommand_t*)bsearch(cmd, clientCommands, numCommands, sizeof(clientCommands[0]), cmdcmp);
+
+	if (!command) {
+		//
+		if (level.intermissiontime) {
+			Cmd_Say_f(ent, qfalse, qtrue);
+		}
+		else {
+			trap_SendServerCommand(clientNum, va("print \"unknown cmd %s\n\"", cmd));
+		}
 	}
-	if (Q_stricmp (cmd, "say") == 0) {
-		Cmd_Say_f (ent, SAY_ALL, qfalse);
-		return;
+	else if ((command->flags & CMD_NOINTERMISSION) && (/*level.intermissionQueued ||*/ level.intermissiontime))
+	{
+		trap_SendServerCommand(clientNum, va("print \"You cannot perform this task (%s) during the intermission.\n\"", cmd));
 	}
-	if (Q_stricmp (cmd, "say_team") == 0) {
-		Cmd_Say_f (ent, SAY_TEAM, qfalse);
-		return;
+	else if ((command->flags & CMD_INTERMISSIONUNKNOWN) && (/*level.intermissionQueued ||*/ level.intermissiontime))
+	{
+		// replicate pointless vanilla behavior :)
+		Cmd_Say_f(ent, qfalse, qtrue);
 	}
-	if (Q_stricmp (cmd, "tell") == 0) {
-		Cmd_Tell_f ( ent );
-		return;
+	else if ((command->flags & CMD_CHEAT) && !g_cheats.integer)
+	{
+		trap_SendServerCommand(clientNum, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOCHEATS")));
 	}
+	else if ((command->flags & CMD_ALIVE) && (ent->health <= 0 || ent->client->sess.sessionTeam == TEAM_SPECTATOR))
+	{
+		trap_SendServerCommand(clientNum, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MUSTBEALIVE")));
+	}
+	else if (!(command->flags & CMD_ALLOWINREPLAY) && DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state >= SEG_REPLAY)
+	{
+		trap_SendServerCommand(clientNum, "print \"Cannot send commands during segmented run replay.\n\"");
+	}
+	else if (!(command->flags & CMD_ALLOWWHENFORCELOGIN) && ent->client->sess.login.forceLoggedIn)
+	{
+		trap_SendServerCommand(clientNum, "print \"^3You cannot send most commands because you were force-logged in by an admin. Please change your password with /changepassword, logout and log in again.\n\"");
+	}
+#ifndef _DEBUG
+	else if ((command->flags & CMD_DEBUG) && !g_debugCommandsEnable.integer) {
+		// only available with _DEBUG or g_debugCommandsEnable
+		trap_SendServerCommand(clientNum, va("print \"unknown cmd %s\n\"", cmd));
+	}
+#endif
+	else {
+		command->func(ent);
+	}
+
+
+
 	/*
 	if (Q_stricmp (cmd, "vsay") == 0) {
 		Cmd_Voice_f (ent, SAY_ALL, qfalse, qfalse);
@@ -5750,521 +6286,9 @@ void ClientCommand( int clientNum ) {
 		return;
 	}
 	*/
-	if (Q_stricmp (cmd, "score") == 0) {
-		Cmd_Score_f (ent);
-		return;
-	}
 
-	// ignore all other commands when at intermission
-	if (level.intermissiontime)
-	{
-		qboolean giveError = qfalse;
 
-		if (!Q_stricmp(cmd, "give"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "god"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "notarget"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "noclip"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "savepos"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "respos"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "kill"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "teamtask"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "levelshot"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "follow"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "follownext"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "followprev"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "team"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "race"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "pickmode"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "duel"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "allforce"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "ironman"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "launch"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "help"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "togglefps"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "floatphysics"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "move"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "savespawn"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "selectspawn"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "checkpoint"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "removecheckpoints"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "stealcheckpoints"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "savecheckpoints"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "loadcheckpoints"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "stealspawn"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "stealpos"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "resetspawn"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "jump"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "run"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "resseg"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "login"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "logout"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "amtele"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "top") || Q_stricmp(cmd, "topmain") == 0 || Q_stricmp(cmd, "topnojumpbug") == 0  || Q_stricmp(cmd, "topnjb") == 0 || Q_stricmp(cmd, "topcustom") == 0 || Q_stricmp(cmd, "topseg") == 0  || Q_stricmp(cmd, "topsegmented") == 0 || Q_stricmp(cmd, "topcheat") == 0)
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "rank"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "latest"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "longest"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "shortest"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "hardest"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "easiest"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "notwr"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "wrs"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "mostplayed"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "toprated"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "ratemap"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "messages"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "maplist"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "rollympics"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "time"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "register"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "changepassword"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "lasers"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "mapdefaults"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "solo"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "ignore"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "forcechanged"))
-		{ //special case: still update force change
-			Cmd_ForceChanged_f (ent);
-			return;
-		}
-		else if (!Q_stricmp(cmd, "where"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "callvote"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "afk"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "players"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "genArena"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "arenaless"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "blacklistmap"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "updateRanks"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "demoManage"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "amMap"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "forcelogin"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "freedom"))// || !Q_stricmp(cmd, "oc9"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "vote"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "callteamvote"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "teamvote"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "gc"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "setviewpos"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "stats"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "stay"))
-		{
-			giveError = qtrue;
-		}
-		else if (!Q_stricmp(cmd, "tffaStats"))
-		{
-			giveError = qtrue;
-		}
-
-		if (giveError)
-		{
-			trap_SendServerCommand( clientNum, va("print \"You cannot perform this task (%s) during the intermission.\n\"", cmd ) );
-		}
-		else
-		{
-			Cmd_Say_f (ent, qfalse, qtrue);
-		}
-		return;
-	}
-
-	if (Q_stricmp (cmd, "give") == 0)
-	{
-		Cmd_Give_f (ent);
-	}
-	else if (Q_stricmp (cmd, "god") == 0)
-		Cmd_God_f (ent);
-	else if (Q_stricmp (cmd, "notarget") == 0)
-		Cmd_Notarget_f (ent);
-	else if (Q_stricmp (cmd, "noclip") == 0)
-		Cmd_Noclip_f (ent);
-	else if (Q_stricmp (cmd, "savepos") == 0)
-		Cmd_Savepos_f (ent);
-	else if (Q_stricmp (cmd, "respos") == 0)
-		Cmd_Respos_f (ent);
-	else if (Q_stricmp (cmd, "kill") == 0)
-		Cmd_Kill_f (ent);
-	else if (Q_stricmp (cmd, "teamtask") == 0)
-		Cmd_TeamTask_f (ent);
-	else if (Q_stricmp (cmd, "levelshot") == 0)
-		Cmd_LevelShot_f (ent);
-	else if (Q_stricmp (cmd, "follow") == 0)
-		Cmd_Follow_f (ent);
-	else if (Q_stricmp (cmd, "follownext") == 0)
-		Cmd_FollowCycle_f (ent, 1);
-	else if (Q_stricmp (cmd, "followprev") == 0)
-		Cmd_FollowCycle_f (ent, -1);
-	else if (Q_stricmp (cmd, "team") == 0)
-		Cmd_Team_f (ent);
-	else if (Q_stricmp (cmd, "race") == 0)
-		Cmd_Race_f(ent);
-	else if (Q_stricmp (cmd, "pickmode") == 0)
-		Cmd_Mode_f(ent);
-	else if (Q_stricmp (cmd, "duel") == 0 || Q_stricmp(cmd, "allforce") == 0 || Q_stricmp(cmd, "ironman") == 0)
-		Cmd_ModeCmd_f(ent);
-	else if (Q_stricmp (cmd, "launch") == 0)
-		Cmd_Launch_f(ent);
-	else if (Q_stricmp (cmd, "help") == 0)
-		Cmd_Help_f(ent);
-	else if (Q_stricmp (cmd, "togglefps") == 0)
-		Cmd_ToggleFPS_f(ent);
-	else if (Q_stricmp (cmd, "floatphysics") == 0)
-		Cmd_FloatPhysics_f(ent);
-	else if (Q_stricmp (cmd, "move") == 0)
-		Cmd_MovementStyle_f(ent);
-	else if (Q_stricmp (cmd, "savespawn") == 0)
-		DF_SaveSpawn(ent);
-	else if (Q_stricmp (cmd, "selectspawn") == 0)
-		DF_SelectSpawn(ent);
-	else if (Q_stricmp (cmd, "checkpoint") == 0)
-		DF_CreateCustomCheckpoint(ent);
-	else if (Q_stricmp (cmd, "removecheckpoints") == 0)
-		DF_RemoveCheckPoints(ent);
-	else if (Q_stricmp (cmd, "stealcheckpoints") == 0)
-		DF_StealCheckpoints(ent);
-	else if (Q_stricmp (cmd, "savecheckpoints") == 0)
-		G_DB_SaveUserCheckpoints(ent);
-	else if (Q_stricmp (cmd, "loadcheckpoints") == 0)
-		G_DB_LoadUserCheckpoints(ent);
-	else if (Q_stricmp (cmd, "stealspawn") == 0)
-		DF_StealSpawn(ent);
-	else if (Q_stricmp (cmd, "stealpos") == 0)
-		DF_StealPos(ent);
-	else if (Q_stricmp (cmd, "resetspawn") == 0)
-		DF_ResetSpawn(ent);
-	else if (Q_stricmp (cmd, "jump") == 0)
-		Cmd_JumpChange_f(ent);
-	else if (Q_stricmp (cmd, "run") == 0)
-		Cmd_DF_RunSettings_f(ent);
-	else if (Q_stricmp (cmd, "resseg") == 0)
-		Cmd_DF_RestartSegmentedRun_f(ent);
-	else if (Q_stricmp (cmd, "login") == 0)
-		Cmd_Login_f(ent);
-	else if (Q_stricmp (cmd, "logout") == 0)
-		Cmd_Logout_f(ent);
-	else if (Q_stricmp (cmd, "amtele") == 0)
-		Cmd_Amtele_f(ent);
-	else if (Q_stricmp (cmd, "top") == 0 || Q_stricmp(cmd, "topmain") == 0 || Q_stricmp(cmd, "topnojumpbug") == 0|| Q_stricmp(cmd, "topnjb") == 0 || Q_stricmp(cmd, "topcustom") == 0 || Q_stricmp(cmd, "topsegmented") == 0 || Q_stricmp(cmd, "topseg") == 0 || Q_stricmp(cmd, "topcheat") == 0)
-		Cmd_Top_f(ent);
-	else if (Q_stricmp(cmd, "latest") == 0)
-		Cmd_Latest_f(ent);
-	else if (Q_stricmp(cmd, "rank") == 0)
-		Cmd_Rank_f(ent);
-	else if (Q_stricmp(cmd, "longest") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "shortest") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "hardest") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "easiest") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "notwr") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "wrs") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "mostplayed") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "toprated") == 0)
-		Cmd_MapSearch_f(ent);
-	else if (Q_stricmp(cmd, "ratemap") == 0)
-		Cmd_RateMap_f(ent);
-	else if (Q_stricmp(cmd, "messages") == 0)
-		G_Cmd_UserMessages(ent);
-	else if (Q_stricmp(cmd, "maplist") == 0)
-		Cmd_Maplist_f(ent);
-	else if (Q_stricmp (cmd, "rollympics") == 0)
-		Cmd_Rollympics_f(ent);
-	else if (Q_stricmp (cmd, "dbsrecords") == 0)
-		Cmd_DBSRecords_f(ent);
-	else if (Q_stricmp (cmd, "time") == 0)
-		Cmd_Time_f(ent);
-	else if (Q_stricmp (cmd, "register") == 0)
-		Cmd_Register_f(ent);
-	else if (Q_stricmp (cmd, "changepassword") == 0)
-		Cmd_ChangePassword_f(ent);
-	else if (Q_stricmp (cmd, "lasers") == 0)
-		Cmd_Lasers_f(ent);
-	else if (Q_stricmp (cmd, "mapdefaults") == 0)
-		Cmd_DF_MapDefaults_f(ent);
-	else if (Q_stricmp (cmd, "solo") == 0)
-		Cmd_Solo_f(ent);
-	else if (Q_stricmp (cmd, "ignore") == 0)
-		Cmd_Ignore_f(ent);
-	else if (Q_stricmp (cmd, "forcechanged") == 0)
-		Cmd_ForceChanged_f (ent);
-	else if (Q_stricmp (cmd, "where") == 0)
-		Cmd_Where_f (ent);
-	else if (Q_stricmp (cmd, "callvote") == 0)
-		Cmd_CallVote_f (ent);
-	else if (Q_stricmp(cmd, "afk") == 0)
-		Cmd_Afk_f(ent);
-	else if (Q_stricmp(cmd, "players") == 0)
-		Cmd_Players_f(ent);
-	else if (Q_stricmp (cmd, "genArena") == 0)
-		Cmd_GenArena_f(ent);
-	else if (Q_stricmp (cmd, "arenaless") == 0)
-		Cmd_Arenaless_f(ent);
-	else if (Q_stricmp (cmd, "blacklistmap") == 0)
-		Cmd_BlacklistMap_f(ent);
-	else if (Q_stricmp (cmd, "updateRanks") == 0)
-		Cmd_UpdateRanks_f(ent);
-	else if (Q_stricmp (cmd, "demoManage") == 0)
-		Cmd_DemoManage_f(ent);
-	else if (Q_stricmp (cmd, "amMap") == 0)
-		Cmd_AmMap_f(ent);
-	else if (Q_stricmp (cmd, "forcelogin") == 0)
-		Cmd_ForceLogin_f(ent);
-	else if (!Q_stricmp(cmd, "freedom"))// || !Q_stricmp(cmd, "oc9"))
-		Cmd_NameTag_f(ent);
-	else if (Q_stricmp (cmd, "vote") == 0)
-		Cmd_Vote_f (ent);
-	else if (Q_stricmp (cmd, "callteamvote") == 0)
-		Cmd_CallTeamVote_f (ent);
-	else if (Q_stricmp (cmd, "teamvote") == 0)
-		Cmd_TeamVote_f (ent);
-	else if (Q_stricmp (cmd, "gc") == 0)
-		Cmd_GameCommand_f( ent );
-	else if (Q_stricmp (cmd, "setviewpos") == 0)
-		Cmd_SetViewpos_f( ent );
-	else if (Q_stricmp (cmd, "stats") == 0)
-		Cmd_Stats_f( ent );
-	else if (Q_stricmp (cmd, "stay") == 0)
-		Cmd_Stay_f( ent );
-	else if (Q_stricmp (cmd, "tffaStats") == 0)
-		Cmd_TFFAStats_f( ent );
+	
 	/*
 	else if (Q_stricmp(cmd, "#mm") == 0 && CheatsOk( ent ))
 	{
@@ -6273,165 +6297,6 @@ void ClientCommand( int clientNum ) {
 	*/
 	//I broke the ATST when I restructured it to use a single global anim set for all client animation.
 	//You can fix it, but you'll have to implement unique animations (per character) again.
-#ifdef _DEBUG //sigh..
-	else if (Q_stricmp(cmd, "headexplodey") == 0 && CheatsOk( ent ))
-	{
-		Cmd_Kill_f (ent);
-		if (ent->health < 1)
-		{
-			float presaveVel = ent->client->ps.velocity[2];
-			ent->client->ps.velocity[2] = 500;
-			DismembermentTest(ent);
-			ent->client->ps.velocity[2] = presaveVel;
-		}
-	}
-	else if (Q_stricmp(cmd, "g2animent") == 0 && CheatsOk( ent ))
-	{
-		G_CreateExampleAnimEnt(ent);
-	}
-	else if (Q_stricmp(cmd, "loveandpeace") == 0 && CheatsOk( ent ))
-	{
-		trace_t tr;
-		vec3_t fPos;
 
-		AngleVectors(ent->client->ps.viewangles, fPos, 0, 0);
-
-		fPos[0] = ent->client->ps.origin[0] + fPos[0]*40;
-		fPos[1] = ent->client->ps.origin[1] + fPos[1]*40;
-		fPos[2] = ent->client->ps.origin[2] + fPos[2]*40;
-
-		JP_Trace(&tr, ent->client->ps.origin, 0, 0, fPos, ent->s.number, ent->clipmask);
-
-		if (tr.entityNum < MAX_CLIENTS && tr.entityNum != ent->s.number)
-		{
-			gentity_t *other = &g_entities[tr.entityNum];
-
-			if (other && other->inuse && other->client)
-			{
-				vec3_t entDir;
-				vec3_t otherDir;
-				vec3_t entAngles;
-				vec3_t otherAngles;
-
-				if (ent->client->ps.weapon == WP_SABER && !ent->client->ps.saberHolstered)
-				{
-					Cmd_ToggleSaber_f(ent);
-				}
-
-				if (other->client->ps.weapon == WP_SABER && !other->client->ps.saberHolstered)
-				{
-					Cmd_ToggleSaber_f(other);
-				}
-
-				if ((ent->client->ps.weapon != WP_SABER || ent->client->ps.saberHolstered) &&
-					(other->client->ps.weapon != WP_SABER || other->client->ps.saberHolstered))
-				{
-					VectorSubtract( other->client->ps.origin, ent->client->ps.origin, otherDir );
-					VectorCopy( ent->client->ps.viewangles, entAngles );
-					entAngles[YAW] = vectoyaw( otherDir );
-					DF_PreDeltaAngleChange(ent->client);
-					SetClientViewAngle( ent, entAngles );
-					DF_PostDeltaAngleChange(ent->client, qtrue);
-
-					StandardSetBodyAnim(ent, BOTH_KISSER1LOOP, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_HOLDLESS);
-					ent->client->ps.saberMove = LS_NONE;
-					ent->client->ps.saberBlocked = 0;
-					ent->client->ps.saberBlocking = 0;
-
-					VectorSubtract( ent->client->ps.origin, other->client->ps.origin, entDir );
-					VectorCopy( other->client->ps.viewangles, otherAngles );
-					otherAngles[YAW] = vectoyaw( entDir );
-					DF_PreDeltaAngleChange(other->client);
-					SetClientViewAngle( other, otherAngles );
-					DF_PostDeltaAngleChange(other->client, qtrue);
-
-					StandardSetBodyAnim(other, BOTH_KISSEE1LOOP, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD|SETANIM_FLAG_HOLDLESS);
-					other->client->ps.saberMove = LS_NONE;
-					other->client->ps.saberBlocked = 0;
-					other->client->ps.saberBlocking = 0;
-				}
-			}
-		}
-	}
-#endif
-	else if (Q_stricmp(cmd, "thedestroyer") == 0 && CheatsOk( ent ) && ent && ent->client && ent->client->ps.saberHolstered && ent->client->ps.weapon == WP_SABER)
-	{
-		Cmd_ToggleSaber_f(ent);
-
-		if (!ent->client->ps.saberHolstered)
-		{
-			if (ent->client->ps.dualBlade)
-			{
-				ent->client->ps.dualBlade = qfalse;
-				//ent->client->ps.fd.saberAnimLevel = FORCE_LEVEL_1;
-			}
-			else
-			{
-				ent->client->ps.dualBlade = qtrue;
-
-				trap_SendServerCommand( -1, va("print \"%sTHE DESTROYER COMETH\n\"", S_COLOR_RED) );
-				G_ScreenShake(vec3_origin, NULL, 10.0f, 800, qtrue);
-				//ent->client->ps.fd.saberAnimLevel = FORCE_LEVEL_3;
-			}
-		}
-	}
-#ifdef _DEBUG
-	else if (Q_stricmp(cmd, "debugSetSaberMove") == 0)
-	{
-		Cmd_DebugSetSaberMove_f(ent);
-	}
-	else if (Q_stricmp(cmd, "debugSetBodyAnim") == 0)
-	{
-		Cmd_DebugSetBodyAnim_f(ent, SETANIM_FLAG_OVERRIDE|SETANIM_FLAG_HOLD);
-	}
-	else if (Q_stricmp(cmd, "debugDismemberment") == 0)
-	{
-		Cmd_Kill_f (ent);
-		if (ent->health < 1)
-		{
-			char	arg[MAX_STRING_CHARS];
-			int		iArg = 0;
-
-			if (trap_Argc() > 1)
-			{
-				trap_Argv( 1, arg, sizeof( arg ) );
-
-				if (arg[0])
-				{
-					iArg = atoi(arg);
-				}
-			}
-
-			DismembermentByNum(ent, iArg);
-		}
-	}
-	else if (Q_stricmp(cmd, "debugKnockMeDown") == 0)
-	{
-		ent->client->ps.forceHandExtend = HANDEXTEND_KNOCKDOWN;
-		ent->client->ps.forceDodgeAnim = 0;
-		if (trap_Argc() > 1)
-		{
-			ent->client->ps.forceHandExtendTime = nowTime + 1100;
-			ent->client->ps.quickerGetup = qfalse;
-		}
-		else
-		{
-			ent->client->ps.forceHandExtendTime = nowTime + 700;
-			ent->client->ps.quickerGetup = qtrue;
-		}
-	}
-#endif
-
-	else
-	{
-		if (Q_stricmp(cmd, "addbot") == 0)
-		{ //because addbot isn't a recognized command unless you're the server, but it is in the menus regardless
-//			trap_SendServerCommand( clientNum, va("print \"You can only add bots as the server.\n\"" ) );
-			trap_SendServerCommand( clientNum, va("print \"%s.\n\"", G_GetStripEdString("SVINGAME", "ONLY_ADD_BOTS_AS_SERVER")));
-		}
-		else
-		{
-			trap_SendServerCommand( clientNum, va("print \"unknown cmd %s\n\"", cmd ) );
-		}
-	}
+	//trap_SendServerCommand(clientNum, va("print \"unknown cmd %s\n\"", cmd));
 }

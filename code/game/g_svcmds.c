@@ -150,6 +150,51 @@ qboolean G_FilterPacket (char *from)
 	return g_filterBan.integer == 0;
 }
 
+
+static void Svcmd_UnpauseGame_f(void) {
+	int delay = UNPAUSE_COUNTDOWN;
+	//trap_Cvar_Set( PAUSEGAME_CVARNAME, "0");
+
+	if (!g_pauseGame.integer) {
+		return;
+	}
+
+	//instead of unpausing immediately, count down so players can prepare
+	if (trap_Argc() >= 2) {
+		delay = atoi(G_Argv(1)) * 1000;
+
+		if (delay < 0)
+			delay = UNPAUSE_COUNTDOWN;
+		else if (delay > 10000)
+			delay = 10000;
+	}
+
+	level.unpauseTime = level.time + delay;	//when level.time hits this, unpause!
+
+	G_CenterPrint(-1, 0, "Game was unpaused by admin.", qtrue, qfalse, qtrue, NULL);
+}
+
+static void Svcmd_Pausegame_f(void) {
+	if (g_pauseGame.integer) {
+		return;
+	}
+	trap_Cvar_Set(PAUSEGAME_CVARNAME, "1");
+	G_Printf("Paused game.\n");
+	G_CenterPrint(-1, 0, "Game was paused by admin.",qtrue,qfalse,qtrue,NULL);
+}
+
+static void Svcmd_PauseToggle_f(void) {
+	if (g_pauseGame.integer)
+	{
+		Svcmd_UnpauseGame_f();
+	}
+	else {
+		Svcmd_Pausegame_f();
+	}
+}
+
+
+
 /*
 =================
 AddIP
@@ -684,6 +729,31 @@ void	Svcmd_ForceTeam_f( void ) {
 	SetTeam( &g_entities[cl - level.clients], str );
 }
 
+
+const char* G_MsToStringVVV(const int ms) {
+	int	   			fsecs = ms / 1000;		//total seconds
+	int				wholemins = fsecs / 60;	//whole minutes
+	float			fremainsecs;
+
+	if (wholemins < 1)
+		return va("%d secs", fsecs);
+	else if (wholemins >= 60) {
+		const int hrs = wholemins / 60;
+
+		wholemins -= hrs * 60;
+
+		if (wholemins == 0)
+			return va("%dh", hrs);
+
+		return va("%dh%dm", hrs, wholemins);
+	}
+
+	fremainsecs = (ms - wholemins * 60000) * 0.001f;
+
+	return va("%dm%ds", wholemins, (int)fremainsecs);
+}
+
+
 /*
 ===================
 Svcmd_NumBehavior_f
@@ -906,6 +976,21 @@ qboolean	ConsoleCommand( void ) {
 
 	if (Q_stricmp (cmd, "removeip") == 0) {
 		Svcmd_RemoveIP_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "pause") == 0) {
+		Svcmd_Pausegame_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "unpause") == 0) {
+		Svcmd_UnpauseGame_f();
+		return qtrue;
+	}
+
+	if (Q_stricmp (cmd, "togglepause") == 0) {
+		Svcmd_PauseToggle_f();
 		return qtrue;
 	}
 

@@ -1534,6 +1534,10 @@ qboolean DF_RemoveCheckPoints(gentity_t* playerent) {
 	return (qboolean)(removed > 0);
 }
 
+void DF_RemoveCheckPoints_Cmd(gentity_t* playerent) {
+	DF_RemoveCheckPoints(playerent);
+}
+
 void DF_ClearCheckPointTimes(gentity_t* playerent) {
 	gentity_t* checkpoint = NULL;
 	int clientNum = playerent - g_entities;
@@ -1978,6 +1982,10 @@ qboolean DF_CreateCustomCheckpoint(gentity_t* playerent)
 	}
 	// no room
 	return qfalse;
+}
+
+void DF_CreateCustomCheckpoint_Cmd(gentity_t* playerent) {
+	DF_CreateCustomCheckpoint(playerent);
 }
 
 const char* DF_FormatFpsString(char* rawFpsString) {

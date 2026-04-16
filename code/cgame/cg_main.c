@@ -887,7 +887,8 @@ vmCvar_t	mov_captureFPS;
 vmCvar_t	mme_demoFileName;
 vmCvar_t	mme_autoSeekPreRecord;
 
-
+// vvv-serverSide features port (adding cgame prediction)
+vmCvar_t	cg_pauseGame;
 
 typedef struct cvarTable_s {
 	vmCvar_t	*vmCvar;
@@ -1202,6 +1203,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_q2Skims, "g_q2Skims", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_synchronousClients, "g_synchronousClients", "0", 0 },	// communicated by systeminfo
+	{ &cg_pauseGame, "g_pauseGame", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_cl_timeNudgeAntiLagHack, "cl_timeNudgeAntiLagHack", "0", 0 },
 	{ &cg_cl_aviTimeFraction, "cl_aviTimeFraction", "0", 0 },
 	{ &cg_cl_mirror, "cl_mirror", "0", 0 },
