@@ -1031,6 +1031,10 @@ void G_SpawnEntitiesFromString( void ) {
 		G_ConvertDefragTriggerTypes();
 	}
 
+	if (g_modes.integer) {
+		G_AnalyzeDuelQueueSpawns();
+	}
+
 	level.spawning = qfalse;			// any future calls to G_Spawn*() will be errors
 }
 

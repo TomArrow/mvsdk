@@ -648,6 +648,113 @@ gentity_t *SelectRandomFurthestSpawnPoint (gentity_t* spawningEnt,vec3_t avoidPo
 }
 
 
+void G_AnalyzeDuelQueueSpawns() {
+	gentity_t* spot = NULL;
+	trace_t trace;
+	vec3_t from, target;
+	float dims[2][2];
+	int longerdim,shorterdim,i;
+	float offCenter;
+
+	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
+		// trace to floor
+		VectorCopy(spot->s.origin, from);
+		from[2] += 9.0f; // this is what spawning does :/
+		VectorCopy(from, target);
+		target[2] -= 50.0f;
+		JP_Trace(&trace, from, playerMins, playerMaxs, target, -1, MASK_DEADSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+		if (trace.allsolid || trace.startsolid || trace.fraction == 1.0f || (trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN))) {
+			// either started in solid or we are over some abyss.
+			continue;
+		}
+		VectorCopy(trace.endpos,from);
+		from[2] += 1.0f; // to be safe?
+		// trace in 4 directions
+		// TODO improve this to trace thicker blocks? or else a map might troll us with some slim X-shaped corridor tricking us into thinking there's a lot of space?
+		// but we'd have to do it both directions to find the bigger possible rectangle, then subtract overlap or sth.... annoying
+		// Note after observation: the only problem with the current method is that it overestimates the area as many spawns tend to be at junctions between hallways and such. so definitely improve this
+		// TODO 2: do floor traces. see ffa_ns_streets.... when centering the long dim especially we need to do regular interval floor traces
+		VectorCopy(from, target);
+		target[0] += 1000.0f;
+		JP_Trace(&trace, from, playerMins, playerMaxs, target, -1, MASK_DEADSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+		if (trace.allsolid || trace.startsolid || trace.fraction == 1.0f || (trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN))) {
+			dims[0][0] = 0.0f;
+		}
+		else {
+			dims[0][0] = trace.endpos[0] - from[0];
+		}
+
+		VectorCopy(from, target);
+		target[0] -= 1000.0f;
+		JP_Trace(&trace, from, playerMins, playerMaxs, target, -1, MASK_DEADSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+		if (trace.allsolid || trace.startsolid || trace.fraction == 1.0f || (trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN))) {
+			dims[0][1] = 0.0f;
+		}
+		else {
+			dims[0][1] = trace.endpos[0] - from[0];
+		}
+
+		VectorCopy(from, target);
+		target[1] += 1000.0f;
+		JP_Trace(&trace, from, playerMins, playerMaxs, target, -1, MASK_DEADSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+		if (trace.allsolid || trace.startsolid || trace.fraction == 1.0f || (trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN))) {
+			dims[1][0] = 0.0f;
+		}
+		else {
+			dims[1][0] = trace.endpos[1] - from[1];
+		}
+
+		VectorCopy(from, target);
+		target[1] -= 1000.0f;
+		JP_Trace(&trace, from, playerMins, playerMaxs, target, -1, MASK_DEADSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+		if (trace.allsolid || trace.startsolid || trace.fraction == 1.0f || (trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN))) {
+			dims[1][1] = 0.0f;
+		}
+		else {
+			dims[1][1] = trace.endpos[1] - from[1];
+		}
+
+		// decide the wider dimension
+		longerdim = (dims[0][0] - dims[0][1]) > (dims[1][0] - dims[1][1]) ? 0 : 1;
+		shorterdim = longerdim^1;
+
+		VectorCopy(spot->s.origin, from);
+		
+		//for (i = 0; i < 2; i++) {
+			//from[i] = from[i] + (dims[i][0] + dims[i][1]) * 0.5f; // center on both dimensions first
+			// actually dont. if we are at the edge of a rectangle, we will blindly center ourselves into a random object inside that triangle
+		//}
+
+		from[longerdim] = from[longerdim] + (dims[longerdim][0] + dims[longerdim][1]) * 0.5f; // center ourselves on the longer dim 
+				
+		VectorCopy(from, spot->duelQueueSpawn.spawn1);
+		VectorCopy(from, spot->duelQueueSpawn.spawn2);
+
+		// now we spread out along the longer dim cuz we need two spawns;
+		offCenter = MIN((dims[longerdim][0] - dims[longerdim][1]), DUELQUEUE_RESPAWNPOSITION_MINDISTANCE_SHORT) * 0.49f; // 0.5f would be ideal but let's make sure float imprecision won't bite us.
+
+		if (offCenter < 50.0f) {
+			// meh.
+			continue;
+		}
+
+		spot->duelQueueSpawn.spawn1[longerdim] += offCenter;
+		spot->duelQueueSpawn.spawn2[longerdim] -= offCenter;
+		spot->duelQueueSpawn.floorarea = (dims[0][0] - dims[0][1]) * (dims[1][0] - dims[1][1]);
+		spot->duelQueueSpawn.useable = qtrue;
+
+		if (g_developer.integer) {
+			G_Printf("Potential duel queue spawn info: #%d, %f area (%fx%f), spawns: %f %f %f, %f %f %f, from origin %f %f %f\n",
+				(int)(spot-g_entities), spot->duelQueueSpawn.floorarea, (dims[0][0] - dims[0][1]), (dims[1][0] - dims[1][1]),
+				spot->duelQueueSpawn.spawn1[0], spot->duelQueueSpawn.spawn1[1], spot->duelQueueSpawn.spawn1[2],
+				spot->duelQueueSpawn.spawn2[0], spot->duelQueueSpawn.spawn2[1], spot->duelQueueSpawn.spawn2[2],
+				spot->s.origin[0], spot->s.origin[1], spot->s.origin[2]
+				);
+		}
+	}
+}
+
+
 /*
 ===========
 SelectRandomFurthestDuelQueueSpawnPoint
@@ -670,9 +777,6 @@ gentity_t* SelectRandomFurthestDuelQueueSpawnPoint(gentity_t* spawningEnt, vec3_
 	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
 		if (SpotWouldTelefrag(spot->s.origin, spawningEnt)) {
 			continue;
-		}
-		if (spawningEnt&& spawningEnt->client&& spawningEnt->client->sess.raceMode&& spot->spawnDefragPriority < level.highestDefragSpawnPriority) {
-			continue; // some types of spawns get priority in defrag
 		}
 		VectorClear(delta);
 		for (i = 0; i < existingDuelersCount; i++) {
@@ -724,6 +828,89 @@ gentity_t* SelectRandomFurthestDuelQueueSpawnPoint(gentity_t* spawningEnt, vec3_
 	VectorCopy(list_spot[rnd]->s.origin, origin);
 	origin[2] += 9;
 	VectorCopy(list_spot[rnd]->s.angles, angles);
+
+	return list_spot[rnd];
+}
+/*
+===========
+SelectRandomFurthestDuelQueueSpawnPointV2
+
+Chooses a duel queue start away from other duelers.
+New version that uses preprocessed duel start positions
+============
+*/
+int sortspotsfloorarea(const void* a, const void* b) {
+	gentity_t* spot1 = *(gentity_t**)a;
+	gentity_t* spot2 = *(gentity_t**)b;
+	return spot2->duelQueueSpawn.floorarea - spot1->duelQueueSpawn.floorarea; // player who won gets priority to keep playing
+}
+gentity_t* SelectRandomFurthestDuelQueueSpawnPointV2(gentity_t* spawningEnt, gentity_t* spawningEnt2, vec3_t* existingDuelers, int existingDuelersCount, vec3_t origin, vec3_t origin2) {
+	gentity_t* spot;
+	vec3_t		vecto,delta;
+	float		dist;
+	float		list_dist[64];
+	gentity_t*	list_spot[64];
+	int			numSpots, rnd, i, j;
+	float		existingDivider = 1.0f / (float)existingDuelersCount;
+
+	numSpots = 0;
+	spot = NULL;
+
+	while ((spot = G_FindByClassNameFast(spot, "info_player_deathmatch")) != NULL) {
+		if (!spot->duelQueueSpawn.useable || SpotWouldTelefrag(spot->duelQueueSpawn.spawn1, spawningEnt) || SpotWouldTelefrag(spot->duelQueueSpawn.spawn2, spawningEnt2)) {
+			continue;
+		}
+		VectorClear(delta);
+		for (i = 0; i < existingDuelersCount; i++) {
+			VectorSubtract(spot->s.origin,existingDuelers[i], vecto);
+			VectorAdd(delta, vecto, delta);
+		}
+		VectorScale(delta, existingDivider, delta); // the average distance to existing duelers is what matters.
+		dist = VectorLength(delta);
+		for (i = 0; i < numSpots; i++) {
+			if (dist > list_dist[i]) {
+				if (numSpots >= 64)
+					numSpots = 64 - 1;
+				for (j = numSpots; j > i; j--) {
+					list_dist[j] = list_dist[j - 1];
+					list_spot[j] = list_spot[j - 1];
+				}
+				list_dist[i] = dist;
+				list_spot[i] = spot;
+				numSpots++;
+				if (numSpots > 64)
+					numSpots = 64;
+				break;
+			}
+		}
+		if (i >= numSpots && numSpots < 64) {
+			list_dist[numSpots] = dist;
+			list_spot[numSpots] = spot;
+			numSpots++;
+		}
+	}
+	if (!numSpots) {
+		return NULL;
+	}
+
+	if (numSpots > 2) {
+		// among those we would choose from, sort by floor area
+		qsort(list_spot, numSpots / 2, sizeof(list_spot[0]), sortspotsfloorarea);
+	}
+
+	// they're ordered by distance to existing duelers now, but i'd like th
+
+
+	// select a random spot from the spawn points furthest away
+	// pick out of the remaining half of the half.
+	// first half: sorted by distance to existing duelers.
+	// second half: sorted by floor area.
+	rnd = random() * (numSpots / 4);
+
+	VectorCopy(list_spot[rnd]->duelQueueSpawn.spawn1, origin);
+	origin[2] += 9;
+	VectorCopy(list_spot[rnd]->duelQueueSpawn.spawn2, origin2);
+	origin2[2] += 9;
 
 	return list_spot[rnd];
 }

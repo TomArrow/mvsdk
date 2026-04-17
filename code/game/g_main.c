@@ -3479,33 +3479,62 @@ void G_CheckDuelQueueStatus() {
 		}
 
 		if (needRespawn) {
+			vec3_t pos2;
 			// unlink them so we can teleport them without their old positions having any influence on anything.
 			trap_UnlinkEntity(ent);
 			trap_UnlinkEntity(ent2);
 
-			// Find a spawn 
-			//SelectSpawnPoint(ent, vec3_origin, spawnpoint, spawnpointAngles);
-			SelectRandomFurthestDuelQueueSpawnPoint(ent, existingDuelersPos, existingDuelerCount, spawnpoint, spawnpointAngles);
+			// try nice method with precalculated spawn points first. 
+			if (SelectRandomFurthestDuelQueueSpawnPointV2(ent, ent2, existingDuelersPos, existingDuelerCount, spawnpoint, pos2)) {
+				VectorClear(spawnpointAngles);
 
-			VectorCopy(spawnpoint, spawnpointWiggled);
-			WiggleSpotTelefrag(spawnpointWiggled, ent);
-			spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
-			TeleportPlayer(ent, spawnpointWiggled, spawnpointAngles);
-			VectorClear(ent->client->ps.velocity);
-
-			// move this one away a bit
-			if (!G_CheckForNearbyDuelSpawn(ent2, ent->client->ps.origin, spawnpointWiggled, spawnpointAngles)) {
-				// uh oh
-				// gimme random spawn?
-				SelectSpawnPoint(ent2, vec3_origin, spawnpoint, spawnpointAngles);
 				VectorCopy(spawnpoint, spawnpointWiggled);
-				WiggleSpotTelefrag(spawnpointWiggled, ent2);
-			}
-			spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
-			TeleportPlayer(ent2, spawnpointWiggled, spawnpointAngles);
-			VectorClear(ent2->client->ps.velocity);
+				WiggleSpotTelefrag(spawnpointWiggled, ent);
+				spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
+				TeleportPlayer(ent, spawnpointWiggled, spawnpointAngles);
+				VectorClear(ent->client->ps.velocity);
 
-			VectorSubtract(ent->r.currentOrigin, ent2->r.currentOrigin, vecto);
+				VectorCopy(pos2, spawnpointWiggled);
+				WiggleSpotTelefrag(spawnpointWiggled, ent2);
+				spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
+				TeleportPlayer(ent2, spawnpointWiggled, spawnpointAngles);
+				VectorClear(ent2->client->ps.velocity);
+
+				if (g_developer.integer) {
+					G_Printf("Duel queue locations chosen via cool method.\n");
+				}
+			}
+			else {
+				// fallback to shittyer method
+				// Find a spawn 
+				//SelectSpawnPoint(ent, vec3_origin, spawnpoint, spawnpointAngles);
+				SelectRandomFurthestDuelQueueSpawnPoint(ent, existingDuelersPos, existingDuelerCount, spawnpoint, spawnpointAngles);
+
+				VectorCopy(spawnpoint, spawnpointWiggled);
+				WiggleSpotTelefrag(spawnpointWiggled, ent);
+				spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
+				TeleportPlayer(ent, spawnpointWiggled, spawnpointAngles);
+				VectorClear(ent->client->ps.velocity);
+
+				// move this one away a bit
+				if (!G_CheckForNearbyDuelSpawn(ent2, ent->client->ps.origin, spawnpointWiggled, spawnpointAngles)) {
+					// uh oh
+					// gimme random spawn?
+					SelectSpawnPoint(ent2, vec3_origin, spawnpoint, spawnpointAngles);
+					VectorCopy(spawnpoint, spawnpointWiggled);
+					WiggleSpotTelefrag(spawnpointWiggled, ent2);
+				}
+				spawnpointWiggled[2] -= 1.0f; // since teleportplayer adds that
+				TeleportPlayer(ent2, spawnpointWiggled, spawnpointAngles);
+				VectorClear(ent2->client->ps.velocity);
+
+				VectorSubtract(ent->r.currentOrigin, ent2->r.currentOrigin, vecto);
+
+				if (g_developer.integer) {
+					G_Printf("Duel queue locations chosen via dumb method.\n");
+				}
+			}
+
 		}
 
 

@@ -342,6 +342,13 @@ struct gentity_s {
 	vec3_t		origOrigin;
 
 	qboolean	hideFromActiveRacers;
+
+	struct {
+		qboolean useable;
+		vec3_t spawn1;
+		vec3_t spawn2;
+		float floorarea;
+	} duelQueueSpawn;
 };
 
 #define SHOWNAME( x ) g_entities[x].client->pers.netname
@@ -1324,7 +1331,9 @@ qboolean SpotWouldTelefrag( vec3_t origin, gentity_t* spawningEnt );
 qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt);
 gentity_t* SelectNearestDeathmatchSpawnPoint(vec3_t from);
 gentity_t* SelectRandomFurthestDuelQueueSpawnPoint(gentity_t* spawningEnt, vec3_t* existingDuelers, int existingDuelersCount, vec3_t origin, vec3_t angles); // picks an initial spawn
+gentity_t* SelectRandomFurthestDuelQueueSpawnPointV2(gentity_t* spawningEnt, gentity_t* spawningEnt2, vec3_t* existingDuelers, int existingDuelersCount, vec3_t origin, vec3_t origin2);
 qboolean G_CheckForNearbyDuelSpawn(gentity_t* ent, vec3_t opponentOrigin, vec3_t spawn_origin, vec3_t spawn_angles); // picks nearby place for the opponent
+void G_AnalyzeDuelQueueSpawns(); // called at level load
 
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra);
 void G_CenterPrintOrPrint(int targetNum, int autoLineWraps, const char* message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra, qboolean onlyPrint, qboolean noop);
