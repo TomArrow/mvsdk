@@ -146,6 +146,17 @@ typedef struct cvarTable_s {
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
 
+typedef enum simpleEntityClass_s { // so we can quickly check for some entity classes without string comparisons
+	SEC_UNSPECIFIED,
+	SEC_LASERTRAP,
+	SEC_DETPACK,
+} simpleEntityClass_t;
+
+typedef enum entityCollisionFlags_s {
+	ECF_NORACERS = (1<<0),
+	ECF_NODUELERS = (1<<1),
+} entityCollisionFlags_t;
+
 struct gentity_s {
 	entityState_t	s;				// communicated by server to clients
 	entityShared_t	r;				// shared by both the server system and game
@@ -350,6 +361,9 @@ struct gentity_s {
 		vec3_t spawn2;
 		float floorarea;
 	} duelQueueSpawn;
+
+	simpleEntityClass_t		simpleClass;
+	entityCollisionFlags_t	collisionFlags;
 };
 
 #define SHOWNAME( x ) g_entities[x].client->pers.netname
@@ -706,7 +720,11 @@ typedef struct {
 
 	bsRecord_t	savedbs;
 	int			numbs;
+
+	float		lastDbsSpeed;
 #endif
+
+	int			lastDueled[MAX_CLIENTS]; // when we last dueled someone
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -1778,6 +1796,7 @@ extern	vmCvar_t	g_duelWeaponDisable;
 extern	vmCvar_t	g_duelTimeout;
 extern	vmCvar_t	g_duelQueueTimeout;
 extern	vmCvar_t	g_duelQueueAutoRespawn;
+extern	vmCvar_t	g_duelSeverDistance;
 extern	vmCvar_t	g_fraglimit;
 extern	vmCvar_t	g_duel_fraglimit;
 extern	vmCvar_t	g_timelimit;

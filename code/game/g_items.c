@@ -453,6 +453,8 @@ qboolean PlaceShield(gentity_t *playerent)
 			shield->nextthink = level.time + 500;	// power up after .5 seconds
 			shield->parent = playerent;
 
+			shield->collisionFlags |= ECF_NORACERS;
+
 			// Set team number.
 			shield->s.otherEntityNum2 = playerent->client->sess.sessionTeam;
 
@@ -629,6 +631,10 @@ static qboolean pas_find_enemies( gentity_t *self )
 		{
 			continue;
 		}
+		// yea but what if a map places them? wasn't there one that did?
+		//if (target->client->sess.raceMode) {
+		//	continue;
+		//}
 
 		if ( target->client )
 		{
@@ -1065,6 +1071,7 @@ void ItemUse_Sentry( gentity_t *ent )
 	sentry = G_Spawn();
 
 	G_SetClassName(sentry, "sentryGun");
+	sentry->collisionFlags |= ECF_NORACERS;
 	sentry->s.modelindex = G_ModelIndex("models/items/psgun.glm"); //replace ASAP
 
 	sentry->s.g2radius = 30.0f;

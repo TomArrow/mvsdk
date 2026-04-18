@@ -34,9 +34,9 @@ typedef enum playerMode_s { // NEVER change the order in this as it's part of th
 	MODE_NORMAL,
 	MODE_DEFRAG,
 	MODE_DUEL,
-	MODE_DUELQUEUE,
 	MODE_ALLFORCE,
 	MODE_IRONMAN,
+	MODE_DUELQUEUE,
 	MODE_NUM_MODES
 } playerMode_e;
 

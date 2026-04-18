@@ -2310,7 +2310,7 @@ void ClientThink_real( gentity_t *ent ) {
 				trap_SendServerCommand(-1, s);
 			}
 		}
-		else if(!ent->client->sess.raceMode)
+		else if(!ent->client->sess.raceMode && g_duelSeverDistance.value != 0.0f)
 		{
 			vec3_t vSub;
 			float subLen = 0;
@@ -2318,7 +2318,7 @@ void ClientThink_real( gentity_t *ent ) {
 			VectorSubtract(ent->client->ps.origin, duelAgainst->client->ps.origin, vSub);
 			subLen = VectorLength(vSub);
 
-			if (subLen >= 1024)
+			if (subLen >= g_duelSeverDistance.value)
 			{
 				ent->client->ps.duelInProgress = 0;
 				duelAgainst->client->ps.duelInProgress = 0;
@@ -2531,6 +2531,7 @@ void ClientThink_real( gentity_t *ent ) {
 	ent->client->pers.antiLoop = pm.antiLoop;
 
 	if (oldSaberMove != LS_A_BACK_CR && pm.ps->saberMove == LS_A_BACK_CR) {
+		ent->client->pers.lastDbsSpeed = XYSPEED(pm.ps->velocity);
 		DF_SetPlayerSubContestValueSafeguarded(ent, SUBCONTESTS_DBS_SPEED, XYSPEED(pm.ps->velocity), 0, 0, 0, 0);
 	}
 

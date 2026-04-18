@@ -580,6 +580,11 @@ static void G_InsertSubcontestResult(int status, const char* errorMessage, int a
 			demo1 = "DbsSpeedCTFRET";
 			demo2 = "dbs speed CTF ret";
 			break;
+		case SUBCONTESTS_DBS_KILL_SPEEDLOSS:
+			what = "fastest speed dbs ^5KILL WITH SPEEDLOSS^7";
+			demo1 = "DbsSpeedKillSpeedLoss";
+			demo2 = "dbs speed kill with speedloss";
+			break;
 		default:
 			what = multiva("undefined record (%d)", (int)runData.contest);
 			demo1 = multiva("UndefinedSubcontest%d", (int)runData.contest);
@@ -2006,6 +2011,9 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 				break;
 			case SUBCONTESTS_DBS_KILL:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2DBS KILL SPEED RECORDS\n"));
+				break;
+			case SUBCONTESTS_DBS_KILL_SPEEDLOSS:
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2DBS KILL SPEED WITH SPEEDLOSS RECORDS\n"));
 				break;
 			case SUBCONTESTS_DBS_IRONMAN:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2DBS IRONMAN RETURN SPEED RECORDS\n"));

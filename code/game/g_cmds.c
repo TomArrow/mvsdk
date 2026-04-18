@@ -3575,13 +3575,15 @@ void Cmd_DBSRecords_f( gentity_t *ent )
 		category = SUBCONTESTS_DBS_SPEED;
 	} else if (!Q_stricmp(arg, "kill")) {
 		category = SUBCONTESTS_DBS_KILL;
+	} else if (!Q_stricmp(arg, "killslowed")) {
+		category = SUBCONTESTS_DBS_KILL_SPEEDLOSS;
 	} else if (!Q_stricmp(arg, "ironman")) {
 		category = SUBCONTESTS_DBS_IRONMAN;
 	} else if (!Q_stricmp(arg, "ctfreturns")) {
 		category = SUBCONTESTS_DBS_CTFRETURN;
 	}
 	else {
-		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret> [page]\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret|killslowed> [page]\n\"");
 		return;
 	}
 
@@ -5727,12 +5729,13 @@ qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged) 
 	}
 
 	//New: Don't let a player duel if he just did and hasn't waited 10 seconds yet (note: If someone challenges him, his duel timer will reset so he can accept)
-	if (ent->client->sess.mode == MODE_DUELQUEUE) {
-		if (ent->client->pers.lastDuel + g_duelQueueTimeout.integer > level.time) { // privateDuelTime desyncs cuz it runs on clientthink_Real...
-			return qfalse;
-		}
-	}
-	else if (ent->client->ps.fd.privateDuelTime > level.time && !challenged)
+	//if (ent->client->sess.mode == MODE_DUELQUEUE) {
+	//	if (ent->client->pers.lastDuel + g_duelQueueTimeout.integer > level.time) { // privateDuelTime desyncs cuz it runs on clientthink_Real...
+	//		return qfalse;
+	//	}
+	//}
+	//else 
+	if (ent->client->sess.mode != MODE_DUELQUEUE && ent->client->ps.fd.privateDuelTime > level.time && !challenged)
 	{
 		if (message) {
 			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "CANTDUEL_JUSTDID")));
@@ -5773,6 +5776,9 @@ void G_StartDuel(gentity_t* ent, gentity_t* challenged, qboolean message) {
 	
 	ent->client->ps.duelIndex = challenged - g_entities;
 	challenged->client->ps.duelIndex = ent - g_entities;
+
+	ent->client->pers.lastDueled[challenged - g_entities] = level.time;
+	challenged->client->pers.lastDueled[ent - g_entities] = level.time;
 
 	ent->client->pers.lastDuelStart = ent->client->pers.lastDuel = challenged->client->pers.lastDuelStart = challenged->client->pers.lastDuel = level.time;
 

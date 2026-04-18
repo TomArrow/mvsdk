@@ -212,6 +212,7 @@ subContestParams_t subContestParams[SUBCONTESTS_COUNT] = {
 	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_KILL
 	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_IRONMAN
 	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_CTFRETURNS
+	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_KILL_SPEEDLOSS
 };
 
 const char* nameTagTypeNames[NAMETAG_COUNT] = {
@@ -4352,15 +4353,29 @@ static int saved[MAX_GENTITIES];
 
 qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 {
+	// we are in the duel queue but not in a duel, make everyone else nonsolid
+	if (entity->client && entity->client->sess.mode == MODE_DUELQUEUE && !entity->client->ps.duelInProgress) {
+		if (entity != other) {
+			if ((other->inuse) &&
+				(other->s.eType == ET_PLAYER ||
+					(other->s.eType == ET_GENERAL &&
+						((qtrue) &&
+							(other->simpleClass == SEC_LASERTRAP ||
+								(other->simpleClass == SEC_DETPACK))))))
+			{
+				return qtrue;
+			}
+		}
+	}
 	// since we are in a duel, make everyone else nonsolid
-	if (entity->client && entity->client->ps.duelInProgress) {
+	else if (entity->client && entity->client->ps.duelInProgress) {
 			if (entity != other && (other-g_entities) != entity->client->ps.duelIndex) {
-				if ((other->inuse) &&
-					((other->s.eType == ET_PLAYER) ||
-						((other->s.eType == ET_GENERAL) &&
+				if (other->inuse &&
+					((other->collisionFlags & ECF_NODUELERS) || other->s.eType == ET_PLAYER ||
+						(other->s.eType == ET_GENERAL &&
 							((qtrue) &&
-								(!(Q_stricmp(other->classname, "laserTrap")) ||
-									(!(Q_stricmp(other->classname, "detpack"))))))))
+								(other->simpleClass == SEC_LASERTRAP ||
+									(other->simpleClass == SEC_DETPACK))))))
 				{
 					return qtrue;
 				}
@@ -4368,15 +4383,15 @@ qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 	}
 	else if (entity->client && (entity->client->sess.raceMode || other->client && other->client->sess.mode != entity->client->sess.mode)) { //Have to check all entities because swoops can be racemode too :/
 			if (other != entity) {
-				if ((other->inuse) &&
-					((other->s.eType == ET_PLAYER) ||
+				if (other->inuse &&
+					((other->collisionFlags & ECF_NORACERS) && entity->client->sess.raceMode || other->s.eType == ET_PLAYER ||
 					// im not sure yet. do i want doors to not be a thing for racers? limits the map choice a little bit.
 					//	((other->s.eType == ET_MOVER) &&
 					//		(!(Q_stricmp(other->classname, "func_door")) ||
 					//			(!(Q_stricmp(other->classname, "func_plat"))))) ||
-						((other->s.eType == ET_GENERAL) &&
-							(!(Q_stricmp(other->classname, "laserTrap")) || // TODO sth more efficient than string comparison?
-								(!(Q_stricmp(other->classname, "detpack")))))))
+						(other->s.eType == ET_GENERAL &&
+							(other->simpleClass == SEC_LASERTRAP || // TODO sth more efficient than string comparison?
+								(other->simpleClass == SEC_DETPACK)))))
 				{
 					return qtrue;
 				}
@@ -6429,17 +6444,16 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 
 // just some basic common checks. wanna be in jk2 movement. and not bot movement or some other.
 void DF_SetPlayerSubContestValueSafeguarded(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4) {
+	if (ent->client->pers.tasClient || ent->client->pers.isHeadlessClient) {
+		return;
+	}
 	if (ent->client->sess.raceMode) { // if in racemode, let's check weird stuff isn't going on.
 		raceStyle_t clientRs = ent->client->sess.raceStyle;
-		if ((clientRs.runFlags & (~allowedSafeguardedSubcontestRunFlags)) || clientRs.movementStyle != MV_JK2 && clientRs.movementStyle != MV_CHARGEJUMP && clientRs.movementStyle != MV_SPEED && clientRs.movementStyle != MV_FORCE && clientRs.movementStyle != MV_JK2SP) {
+		if ((clientRs.runFlags & (~allowedSafeguardedSubcontestRunFlags)) || clientRs.movementStyle != MV_JK2 && clientRs.movementStyle != MV_CHARGEJUMP && clientRs.movementStyle != MV_SPEED && clientRs.movementStyle != MV_FORCE && clientRs.movementStyle != MV_JK2SP || ent->client->sess.raceStateInvalidated) {
 			// has runflags that aren't accepted (just cheat stuff generally)
 			// or is not in jk2 movement mode (let's be a bit gatekeepy here!)
 			return;
 		}
-	}
-	if (ent->client->pers.tasClient) { // meh. we can't really PREVENT cheats but if people are honest about using a hack client, let's exclude those? eeeh
-		// TODO detect some known ones?
-		//return;
 	}
 	DF_SetPlayerSubContestValue(ent,subcontest,value,extraParam1,extraParam2,extraParam3,extraParam4);
 }

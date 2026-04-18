@@ -84,6 +84,7 @@ vmCvar_t	g_duelWeaponDisable;
 vmCvar_t	g_duelTimeout;
 vmCvar_t	g_duelQueueTimeout;
 vmCvar_t	g_duelQueueAutoRespawn;
+vmCvar_t	g_duelSeverDistance; // vanilla is 1024 but its kinda weird. TODO do an afk sever? but the afk guy can still be killed so its whatever
 vmCvar_t	g_allowDuelSuicide;
 vmCvar_t	g_fraglimitVoteCorrection;
 vmCvar_t	g_fraglimit;
@@ -352,6 +353,7 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 	{ &g_duelTimeout, "g_duelTimeout", "10000", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_duelQueueTimeout, "g_duelQueueTimeout", "3000", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_duelQueueAutoRespawn, "g_duelQueueAutoRespawn", "0", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_duelSeverDistance, "g_duelSeverDistance", "0", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_allowDuelSuicide, "g_allowDuelSuicide", "0", CVAR_ARCHIVE, 0, qtrue },
 
@@ -3488,6 +3490,17 @@ int sortqueuedduelers(const void* a, const void* b) {
 	}
 	return player1->client->pers.lastDuel - player2->client->pers.lastDuel;
 }
+typedef struct playerDuelPairup_s {
+	int	player1;
+	int player2;
+	int lastTime;
+}playerDuelPairup_t;
+int sortqueuedduelcombos(const void* a, const void* b) {
+	playerDuelPairup_t* combo1 = (playerDuelPairup_t*)a;
+	playerDuelPairup_t* combo2 = (playerDuelPairup_t*)b;
+	// whichever combo didn't happen the longest gets priority
+	return combo1->lastTime - combo2->lastTime;
+}
 void G_CheckDuelQueueStatus() {
 	int i;
 	gentity_t* ent = g_entities;
@@ -3499,11 +3512,16 @@ void G_CheckDuelQueueStatus() {
 	vec3_t spawnpoint;
 	vec3_t spawnpointAngles;
 	vec3_t spawnpointWiggled;
+	qboolean anyPastTimeout = qfalse;
 	int randomteam;
 
 	// find players in duel queue mode that aren't dueling, but could be.
+	// TODO ignore afk players if g_duelQueueAutoRespawn is 1?
 	for (i = 0; i < level.maxclients; i++, ent++) {
 		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_DUELQUEUE || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+			continue;
+		}
+		if (clampedIntAdd(level.time,-ent->client->sess.lastHereTime) > 30000) { // ignore afk player
 			continue;
 		}
 		if (ent->client->pers.lastDuel > level.time) {
@@ -3519,9 +3537,14 @@ void G_CheckDuelQueueStatus() {
 			// in spec or already in a duel
 			continue;
 		}
+		if (ent->client->pers.lastDuel + g_duelQueueTimeout.integer <= level.time) {
+			anyPastTimeout = qtrue;
+		}
 		queuedDuelers[queuedDuelerCount++] = i;
 	}
-	if (queuedDuelerCount < 2) { // need at least 2
+	if (queuedDuelerCount < 2 || !anyPastTimeout) {
+		// need at least 2 and at least one person should be past the timeout.
+		// idea is: the timeout allows new player combinations. otherwise the timing will guarantee that it's always the same pairs of ppl playing together
 		return;
 	}
 
@@ -3540,9 +3563,42 @@ void G_CheckDuelQueueStatus() {
 
 	queuedDuelerCount = queuedDuelerCount / 2 * 2; // round to pairs
 
+	// ok now we need to do some magic to try to get new player combinations
+	// if there's 4 players and their matches ended recently, they are going to be sorted such that they will most likely end up paired
+	// with the same person again
+	// so let us make a list of all possible player combos with the current player pool and prioritize the ones that haven't happened for a while
+	if(queuedDuelerCount > 2){
+		playerDuelPairup_t pairs[(MAX_CLIENTS * (MAX_CLIENTS-1)) / 2] = { 0 }; 
+		int pairsSet = 0;
+		int clientMask = 0;
+		int j;
+		for (i = 0; i < queuedDuelerCount; i ++) {
+			for (j = i+1; j < queuedDuelerCount; j++) {
+				ent = g_entities + queuedDuelers[i];
+				ent2 = g_entities + queuedDuelers[j];
+				pairs[pairsSet].player1 = queuedDuelers[i];
+				pairs[pairsSet].player2 = queuedDuelers[j];
+				pairs[pairsSet].lastTime = MIN(ent->client->pers.lastDueled[queuedDuelers[j]], ent2->client->pers.lastDueled[queuedDuelers[i]]); // double cuz a client can disconnect and i cba cleaning it up in all other clients, pointless waste of time.
+				pairsSet++;
+			}
+		}
+		qsort(pairs, pairsSet, sizeof(pairs[0]), sortqueuedduelcombos);
+		queuedDuelerCount = 0;
+		for (i = 0; i < pairsSet; i++) {
+			if (!(clientMask & (1 << pairs[i].player1)) && !(clientMask & (1 << pairs[i].player2))) {
+				// this combo is still possible (both players not used yet)
+				clientMask |= (1 << pairs[i].player1);
+				clientMask |= (1 << pairs[i].player2);
+				queuedDuelers[queuedDuelerCount++] = pairs[i].player1;
+				queuedDuelers[queuedDuelerCount++] = pairs[i].player2;
+			}
+		}
+	}
+
 	for (i = 0; i < queuedDuelerCount; i += 2) {
 		vec3_t vecto;
 		vec3_t ang;
+		float distsq;
 		qboolean needRespawn = qtrue;
 
 		ent = g_entities + queuedDuelers[i];
@@ -3563,7 +3619,8 @@ void G_CheckDuelQueueStatus() {
 		//}
 
 		VectorSubtract(ent->r.currentOrigin, ent2->r.currentOrigin,vecto);
-		if (VectorLengthSquared(vecto) < 256.0f* 256.0f) {
+		distsq = VectorLengthSquared(vecto);
+		if (distsq < 256.0f* 256.0f && distsq > 80.0f*80.0f) { // is within a reasonable range. not too far away, not too close
 			trace_t trace;
 			// they are close enough to each other but can they see each other?
 			JP_Trace(&trace, ent->client->ps.origin, NULL, NULL, ent2->client->ps.origin, -1, MASK_SOLID);
@@ -3623,17 +3680,17 @@ void G_CheckDuelQueueStatus() {
 				TeleportPlayer(ent2, spawnpointWiggled, spawnpointAngles);
 				VectorClear(ent2->client->ps.velocity);
 
-				VectorSubtract(ent->r.currentOrigin, ent2->r.currentOrigin, vecto);
-
 				if (g_developer.integer) {
 					G_Printf("Duel queue locations chosen via dumb method.\n");
 				}
 			}
 
+			VectorSubtract(ent->r.currentOrigin, ent2->r.currentOrigin, vecto);
 		}
 
 
 		// make them look at each other.
+		VectorNormalize(vecto);
 		vectoangles(vecto,ang);
 		DF_PreDeltaAngleChange(ent2->client);
 		SetClientViewAngle(ent2,ang);
@@ -3657,6 +3714,13 @@ void G_CheckDuelQueueStatus() {
 int sortironmanners(const void* a, const void* b) {
 	gentity_t* player1 = &g_entities[*(int*)a];
 	gentity_t* player2 = &g_entities[*(int*)b];
+	qboolean afk1 = clampedIntAdd(level.time, -player1->client->sess.lastHereTime) > 30000;
+	qboolean afk2 = clampedIntAdd(level.time, -player2->client->sess.lastHereTime) > 30000;
+
+	if (afk1 != afk2) {
+		return afk1 - afk2; // people who are afk shouldn't get the flag
+	}
+
 	// whoever didnt get flag for longest time is most eligible to get it
 	return player1->client->pers.lastIronmanFlagGiven - player2->client->pers.lastIronmanFlagGiven;
 }

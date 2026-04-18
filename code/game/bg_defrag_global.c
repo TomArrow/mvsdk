@@ -66,9 +66,9 @@ bitInfo_t modeNames[MODE_NUM_MODES] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Normal" },
 	{ "Defrag" },
 	{ "Duel" },
-	{ "DuelQueue" },
 	{ "AllForce" },
 	{ "Ironman" },
+	{ "DuelQueue" },
 };
 
 bitInfo_t moveStyleNames[MV_NUMSTYLES] = { 

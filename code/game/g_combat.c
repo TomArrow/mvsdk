@@ -2137,16 +2137,20 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 	}
 
-	if (attacker->client && attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
+	if (attacker && attacker->client && attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
 		DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_KILL, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
-		if (XYSPEED(attacker->client->ps.velocity) > 900) {
-			G_SaveClipDemo(attacker, "dbskillover900ups","dbs kill over 900 ups");
+		if (XYSPEED(attacker->client->ps.velocity) < attacker->client->pers.lastDbsSpeed - 100) {
+			// sometimes u can get a rly cool dbs kill but u lose speed upon impact. lets count those in a separate category as a consolation price
+			DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_KILL_SPEEDLOSS, attacker->client->pers.lastDbsSpeed, XYSPEED(self->client->preKnockbackVelocity), XYSPEED(attacker->client->ps.velocity), damage, 0);
+		}
+		if (XYSPEED(attacker->client->ps.velocity) > 750 || attacker->client->pers.lastDbsSpeed > 750) {
+			G_SaveClipDemo(attacker, "dbskillover750ups","dbs kill over 750 ups");
 			G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qfalse);
 		}
 	}
 
 	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN && self != attacker) {	// only happens in standard CTF
-		if (attacker->client) {
+		if (attacker && attacker->client) {
 			if (self->client->ps.powerups[PW_REDFLAG]) {
 				PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
 			}
@@ -2155,8 +2159,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			}
 			if (attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
 				DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_IRONMAN, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
-				if (XYSPEED(attacker->client->ps.velocity) > 700) {
-					G_SaveClipDemo(attacker, "ironmanreturnover700ups", "ironman return over 700 ups");
+				if (XYSPEED(attacker->client->ps.velocity) > 600 || attacker->client->pers.lastDbsSpeed > 600) {
+					G_SaveClipDemo(attacker, "ironmanreturnover600ups", "ironman return over 600 ups");
 					G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity),qtrue);
 				}
 			}
