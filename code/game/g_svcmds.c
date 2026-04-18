@@ -1336,7 +1336,7 @@ static void Svcmd_Poll_f(void) {
 
 	Q_strncpyz(buf, ConcatArgs(1), sizeof(buf));
 
-	Com_sprintf(level.voteString, sizeof(level.voteString), "");
+	level.voteString[0] = '\0';
 	Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "^3%s^7", buf);
 
 

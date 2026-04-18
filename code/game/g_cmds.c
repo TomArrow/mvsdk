@@ -1758,7 +1758,7 @@ qboolean SetTeam_User( gentity_t *ent, const char *s ) {
 	}
 
 	if (!DefragDoubleTapSafety(ent, DOUBLETAP_TEAM, "team")) {
-		return;
+		return qfalse;
 	}
 
 	if (level.lockedTeams && newTeam == TEAM_FREE && g_gametype.integer >= GT_TEAM) {
@@ -1785,7 +1785,7 @@ qboolean SetTeam_User( gentity_t *ent, const char *s ) {
 		&& oldTeam == TEAM_FREE) {//in a tournament game
 		//disallow changing teams
 		trap_SendServerCommand(ent - g_entities, "print \"Cannot switch teams in Duel\n\"");
-		return;
+		return qfalse;
 		//FIXME: why should this be a loss???
 		//ent->client->sess.losses++;
 	}
