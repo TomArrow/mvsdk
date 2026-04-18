@@ -6460,7 +6460,7 @@ clientCommand_t clientCommands[] = {
 	{"say",					NULL, Cmd_SayNormal_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
 	{"say_cross",			NULL, Cmd_SayCross_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
 	{"say_team",			NULL, Cmd_SayTeam_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
-	{"score",				NULL, Cmd_Score_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
+	{"score",				NULL, Cmd_Score_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
 	{"selectspawn",			NULL, DF_SelectSpawn,					CMD_NOINTERMISSION},
 	{"setviewpos",			NULL, Cmd_SetViewpos_f,					CMD_NOINTERMISSION},
 	{"shortest",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
