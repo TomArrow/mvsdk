@@ -805,7 +805,7 @@ static void Svcmd_LockTeam_f(void) {
 			}
 		}
 		else
-			G_Printf(fail);
+			G_Printf("%s", fail);
 
 		return;
 	}
@@ -883,7 +883,7 @@ static void Svcmd_LockTeam_f(void) {
 	team = G_TeamForString(buf, qfalse);
 
 	if (team == -1) {
-		G_Printf(fail);
+		G_Printf("%s", fail);
 		return;
 	}
 
@@ -1788,7 +1788,7 @@ static void Svcmd_Cvars_f (void) {
 		if (cv->desc && cv->desc[0])
 			pch = mystrcat(buf, sizeof(buf), va("    %s\n\n", cv->desc));
 
-		G_Printf( buf );
+		G_Printf( "%s", buf);
 	}
 }
 
