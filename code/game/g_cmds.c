@@ -6470,7 +6470,7 @@ clientCommand_t clientCommands[] = {
 	{"stealcheckpoints",	NULL, DF_StealCheckpoints,				CMD_NOINTERMISSION},
 	{"stealpos",			NULL, DF_StealPos,						CMD_NOINTERMISSION},
 	{"stealspawn",			NULL, DF_StealSpawn,					CMD_NOINTERMISSION},
-	{"team",				NULL, Cmd_Team_f,						CMD_NOINTERMISSION},
+	{"team",				NULL, Cmd_Team_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"teamtask",			NULL, Cmd_TeamTask_f,					CMD_NOINTERMISSION},
 	{"teamvote",			NULL, Cmd_TeamVote_f,					CMD_NOINTERMISSION},
 	{"tell",				NULL, Cmd_Tell_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},

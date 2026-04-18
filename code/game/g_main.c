@@ -146,6 +146,7 @@ vmCvar_t	g_antiWallhackEnforceVis;			// if a player is visible, force him to be 
 vmCvar_t	g_antiWallhackBoxSize;				// size of box around player to check if he is visible. 9 points being checked.
 vmCvar_t	g_antiWallhackRecalcOffset;			// only recalc the box around a player once he moves further than this (cuz it involves 9 traces)
 vmCvar_t	g_antiWallhackVisibleRecalcDelay;	// if a player is visible, amount of milliseconds to wait before recalc (its no harm if a player stays networked for 0.15s after going behind a corner?)
+vmCvar_t	g_antiWallhackViewerBoxSize;		// if not 0, we make a "box" around the viewer too instead of looking at the actual camera pos. more traces, but we can debounce it as well and completely eliminate a lot of traces
 
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
@@ -377,6 +378,7 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 	{ &g_antiWallhackBoxSize, "g_antiWallhackBoxSize", "40", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_antiWallhackRecalcOffset, "g_antiWallhackMoveTolerance", "15", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_antiWallhackVisibleRecalcDelay, "g_antiWallhackVisibleRecalcDelay", "150", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackViewerBoxSize, "g_antiWallhackViewerBoxSize", "80", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 
@@ -441,7 +443,7 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 	{ &g_adaptRespawn, "g_adaptrespawn", "1", CVAR_ARCHIVE, 0, qtrue  },		// Make weapons respawn faster with a lot of players.
 	{ &g_forcerespawn, "g_forcerespawn", "60", 0, 0, qtrue },		// One minute force respawn.  Give a player enough time to reallocate force.
 	{ &g_startWeaponAlwaysSaber, "g_startWeaponAlwaysSaber", "1", CVAR_ARCHIVE, 0, qtrue },
-	{ &g_afkCmdMinSecs, "g_afkCmdMinSecs", "30", 0, 0, qfalse },
+	{ &g_afkCmdMinSecs, "g_afkCmdMinSecs", "30", CVAR_ARCHIVE, 0, qfalse },
 	{ &g_inactivity, "g_inactivity", "0", 0, 0, qtrue },
 	{ &g_inactivityToSpec, "g_inactivityToSpec", "300", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_inactivityToSpecRacers, "g_inactivityToSpecRacers", "0", CVAR_ARCHIVE, 0, qtrue },

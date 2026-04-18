@@ -717,10 +717,12 @@ typedef struct bufferPrint_s {
 
 typedef struct antiWallhackPlayerData_s {
 	qboolean	boxCreated;
-	vec3_t		box[9];
 	vec3_t		boxCenter, boxMins, boxMaxs;
 	vec3_t		origin;
 	qboolean	crouching;
+	vec3_t		box[9];		// viewee
+
+	vec3_t		wideBox[9]; // viewer: origin, and 8 points on a circle around
 
 	qboolean	visibleTo[MAX_CLIENTS];
 	int			visibleToLastCheck[MAX_CLIENTS];
@@ -1834,6 +1836,7 @@ extern	vmCvar_t	g_antiWallhackEnforceVis;
 extern	vmCvar_t	g_antiWallhackBoxSize;
 extern	vmCvar_t	g_antiWallhackRecalcOffset;
 extern	vmCvar_t	g_antiWallhackVisibleRecalcDelay;
+extern	vmCvar_t	g_antiWallhackViewerBoxSize;
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;

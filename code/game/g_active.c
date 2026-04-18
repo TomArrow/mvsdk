@@ -918,7 +918,9 @@ Returns qfalse if the client is put to spec
 */
 qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 	gclient_t* client = ent->client;
-	qboolean clientIsAfk = clampedIntAdd(level.time, -client->sess.lastHereTime) >= clampedIntMult(g_inactivityToSpec.integer, 1000);
+	int afkTime = clampedIntAdd(level.time, -client->sess.lastHereTime);
+	int afkSpecTime = clampedIntMult(g_inactivityToSpec.integer, 1000);
+	qboolean clientIsAfk = g_inactivityToSpec.integer && afkTime >= afkSpecTime;
 	qboolean wasInactive = client->markedAsInactive;
 	client->markedAsInactive = qfalse;
 
@@ -944,16 +946,16 @@ qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 			}
 		}
 		else {
-			if (level.time > client->pers.inactivityToSpecTime) {
+			if (clientIsAfk) {
 				G_Printf("^3g_inactivityToSpec: Sending client %d to spec.\n", (int)(ent - g_entities));
 				trap_SendServerCommand(-1, va("print \"^3Sending %s ^3to spec for being AFK.\n\"",client->pers.netname));
 				SetTeam(ent, "s");
 				return qfalse;
 			}
 
-			if (level.time > client->pers.inactivityToSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
+			if (afkTime > afkSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
 				client->randomLastCenterprint = level.time;
-				G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!", (client->pers.inactivityToSpecTime - level.time) / 1000), qfalse, qtrue, qfalse, NULL);
+				G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!", (afkSpecTime - afkTime) / 1000), qfalse, qtrue, qfalse, NULL);
 			}
 		}
 	}
