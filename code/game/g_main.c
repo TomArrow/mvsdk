@@ -189,6 +189,7 @@ vmCvar_t	g_enableBreath;
 vmCvar_t	g_dismember;
 vmCvar_t	g_forceDodge;
 vmCvar_t	g_timeouttospec;
+vmCvar_t	g_timescale;
 vmCvar_t	g_sv_fps;
 vmCvar_t	g_sv_gameFps;
 vmCvar_t	g_sv_gameFpsAllowIrregular;
@@ -251,6 +252,10 @@ vmCvar_t	g_crossServerDefragTimes;
 vmCvar_t	g_pauseGame;
 vmCvar_t	g_pauseTimerFreeze;
 vmCvar_t	g_allowChatPause;
+vmCvar_t	g_analyzebs;
+vmCvar_t	g_logbs;
+vmCvar_t	g_voteAsSpec; // this is probably broken. cuz level.numVotingClients won't change for it... so fix at some point
+vmCvar_t	g_debugFps; 
 
 
 
@@ -261,7 +266,7 @@ int gRandomUnlockAdd = 0;
 
 static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 // bk001129 - made static to avoid aliasing
-static cvarTable_t		gameCvarTable[] = {
+/* static */cvarTable_t		gameCvarTable[] = {
 
 	//must be at the start so that its already registered when other cvars are evaluated that affect it
 	{ &g_ttFlags, "ttFlags", "15", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue }, // to communicate special tommyternal server features to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE|TTFLAGSSERVERINFO_HASCROSSSERVERCHAT))
@@ -388,6 +393,16 @@ static cvarTable_t		gameCvarTable[] = {
 
 	{ &g_strafebotSlopeHandling, "g_strafebotSlopeHandling", "1", CVAR_SYSTEMINFO | CVAR_CHEAT, 0, qfalse},
 
+#ifdef ANALYZE_BS
+	{ &g_analyzebs, "g_analyzebs", "0", CVAR_ARCHIVE | CVAR_VVV, 0, qfalse, qfalse, "Analyze d/bs events of players" },
+	{ &g_logbs, "g_logbs", "0", CVAR_ARCHIVE | CVAR_VVV, 0, qfalse, qfalse, "Log all d/bs events to disk (needs g_analyzebs 1)" },
+#endif
+#ifdef DEBUGFPS
+	{ &g_debugFps, "g_debugFps", "0", CVAR_TEMP | CVAR_VVV, 0, qfalse, qfalse, "Collect server FPS stats for debugging (temporary cvar)" },
+#endif
+
+	{ &g_voteAsSpec, "g_voteAsSpec", "0", CVAR_ARCHIVE | CVAR_VVV, 0, qfalse, qfalse, "Allow voting for spectators (Buggy, don't use)" },
+
 	{ &g_saberInterpolate, "g_saberInterpolate", "1", CVAR_ARCHIVE, 0, qtrue },
 
 	{ &g_friendlyFire, "g_friendlyFire", "0", CVAR_ARCHIVE, 0, qtrue  },
@@ -481,7 +496,8 @@ static cvarTable_t		gameCvarTable[] = {
 	{ &g_forceDodge, "g_forceDodge", "1", 0, 0, qtrue  },
 
 	{ &g_timeouttospec, "g_timeouttospec", "70", CVAR_ARCHIVE, 0, qfalse },
-	{ &g_sv_fps, "sv_fps", "100", 0, 0, qfalse },
+	{ &g_timescale, "timescale", "", 0, 0, qtrue },
+	{ &g_sv_fps, "sv_fps", "100", 0, 0, qtrue },
 	{ &g_sv_gameFps, "sv_gameFps", "100", 0, 0, qfalse },
 	{ &g_sv_gameFpsAllowIrregular, "sv_gameFpsAllowIrregular", "0", 0, 0, qfalse },
 	{ &g_cm_checksumBsp, "cm_checksumBsp", "0", 0, 0, qfalse },
@@ -541,7 +557,7 @@ static cvarTable_t		gameCvarTable[] = {
 };
 
 // bk001129 - made static to avoid aliasing
-static int gameCvarTableSize = sizeof( gameCvarTable ) / sizeof( gameCvarTable[0] );
+/* static */int gameCvarTableSize = sizeof(gameCvarTable) / sizeof(gameCvarTable[0]);
 
 
 void G_InitGame					( int levelTime, int randomSeed, int restart );
@@ -1127,6 +1143,12 @@ void G_UpdateCvars( void ) {
 					G_HandlePauseStateChange(cv);
 				}
 
+#ifdef DEBUGFPS
+				else if (cv->vmCvar == &g_sv_fps || cv->vmCvar == &g_sv_gameFps || cv->vmCvar == &g_timescale) {
+					FPS_ResetStats();
+				}
+#endif
+
 				if (cv->teamShader) {
 					remapped = qtrue;
 				}
@@ -1284,6 +1306,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	level.snd_fry = G_SoundIndex("sound/player/fry.wav");	// FIXME standing in lava / slime
 
 	//trap_SP_RegisterServer("mp_svgame");
+
+	//for logging d/bs events
+#ifdef ANALYZE_BS
+	trap_FS_FOpenFile("bsevents.dat", &level.bsLogFile, FS_APPEND_SYNC);
+#endif
 
 	if ( g_log.string[0] ) {
 		if ( g_logSync.integer ) {
@@ -1459,6 +1486,12 @@ void G_ShutdownGame( int restart ) {
 	DF_HandleUnfinishedDemos();
 
 	G_CheckEnqueuedClips(qtrue);
+
+#ifdef ANALYZE_BS
+	if (level.bsLogFile) {
+		trap_FS_FCloseFile(level.bsLogFile);
+	}
+#endif
 
 	// write all the client session data so we can get it back
 	G_WriteSessionData();
@@ -2338,6 +2371,65 @@ void ExitLevel (void) {
 
 }
 
+
+
+typedef struct {
+	//8 bytes. can we make it 4?
+	byte tm_sec;     /* seconds after the minute - [0,59] */
+	byte tm_min;     /* minutes after the hour - [0,59] */
+	byte tm_hour;    /* hours since midnight - [0,23] */
+	byte tm_mday;    /* day of the month - [1,31] */
+	byte tm_mon;     /* months since January - [0,11] */
+	byte tm_year;    /* years since 1900 */		//as of 2015, value is 115, so we still have a few years before we hit 127
+	byte tm_wday;	 /* days since Sunday - [0,6] */
+	byte tm_isdst;	 /* daylight savings time flag */
+} smallTime_t;
+
+void QtimeToSmallTime(qtime_t* qt, smallTime_t* st) {
+	st->tm_sec = (byte)qt->tm_sec;
+	st->tm_min = (byte)qt->tm_min;
+	st->tm_hour = (byte)qt->tm_hour;
+	st->tm_mday = (byte)qt->tm_mday;
+	st->tm_mon = (byte)qt->tm_mon;
+	st->tm_year = (byte)qt->tm_year;
+	st->tm_wday = (byte)qt->tm_wday;
+	st->tm_isdst = (byte)qt->tm_isdst;
+}
+#ifdef ANALYZE_BS
+void QDECL G_LogBsEvent(bsRecord_t* bsr, gentity_t* ent) {
+	int 			len;
+	qtime_t			time;
+	smallTime_t 	smalltime;
+	unsigned char	ipb[4];		//bytes
+	mvclientSession_t* mvSess = &mv_clientSessions[ent - g_entities];
+
+	if (!level.bsLogFile) {
+		return;
+	}
+
+	trap_RealTime(&time);
+	QtimeToSmallTime(&time, &smalltime);
+
+	ipb[0] = mvSess->clientIP[0];
+	ipb[1] = mvSess->clientIP[1];
+	ipb[2] = mvSess->clientIP[2];
+	ipb[3] = mvSess->clientIP[3];
+
+	//write player IP in 4 bytes
+	trap_FS_Write(&ipb, sizeof(ipb), level.bsLogFile);
+
+	//write player name; use len+1 so we write the 0 byte also
+	len = strlen(ent->client->pers.netnameClean);
+	trap_FS_Write(ent->client->pers.netnameClean, len + 1, level.bsLogFile);
+
+	//write timestamp
+	trap_FS_Write(&smalltime, sizeof(smallTime_t), level.bsLogFile);
+
+	//write the BS record data
+	trap_FS_Write(bsr, sizeof(bsRecord_t), level.bsLogFile);
+}
+#endif
+
 /*
 =================
 G_LogPrintf
@@ -3024,6 +3116,7 @@ CheckVote
 ==================
 */
 void CheckVote( void ) {
+	int requiredClients = g_voteAsSpec.integer ? level.numFullyConnectedClients : level.numVotingClients;
 	if ( level.voteExecuteTime && level.voteExecuteTime < level.time ) {
 		level.voteExecuteTime = 0;
 		trap_SendConsoleCommand( EXEC_APPEND, va("%s\n", level.voteString ) );
@@ -3085,7 +3178,7 @@ void CheckVote( void ) {
 		}
 	}
 	else if (level.votingOpinion) {
-		if (level.time - level.voteTime >= VOTE_TIME || (level.voteYes+ level.voteNo) >= level.numVotingClients) {
+		if (level.time - level.voteTime >= VOTE_TIME || (level.voteYes+ level.voteNo) >= requiredClients) {
 			trap_SendServerCommand(-1, va("print \"^3%s^7results: %d Yes vs %d No\n\"", level.voteDisplayString, level.voteYes, level.voteNo));
 			level.votingOpinion = qfalse;
 			level.votingOpinionAll = qfalse;
@@ -3100,7 +3193,7 @@ void CheckVote( void ) {
 			trap_SendServerCommand(-1, va("print \"%s: %d Yes vs %d No\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
 		}
 		else {
-			if (level.voteYes > level.numVotingClients / 2 && (!g_slowVote.integer || level.voteYes == level.numVotingClients)) {
+			if (level.voteYes > requiredClients / 2 && (!g_slowVote.integer || level.voteYes == requiredClients)) {
 				// execute the command, then remove the vote
 				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED"), level.voteYes, level.voteNo));
 				level.voteExecuteTime = level.time + G_CalculateVoteExecuteTime();
@@ -3108,7 +3201,7 @@ void CheckVote( void ) {
 			else if (level.voteNo > 0 && g_slowVote.integer) {
 				trap_SendServerCommand(-1, va("print \"%s (slow voting enabled): %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
 			}
-			else if (level.voteNo >= level.numVotingClients / 2) {
+			else if (level.voteNo >= requiredClients / 2) {
 				// same behavior as a timeout
 				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
 			}
@@ -3838,6 +3931,40 @@ void G_RunFrame( int levelTime ) {
 	if ( level.restarted ) {
 		return;
 	}
+
+#ifdef DEBUGFPS
+#define	FPS_FRAMES	16	//orig
+	if(g_debugFps.integer){
+		static int	previousTimes[FPS_FRAMES];
+		static int	index = 0, previous = 0;
+		int			i, total, fps;
+		int			t, frameTime;
+
+		t = trap_Milliseconds();
+		frameTime = t - previous;
+		previous = t;
+
+		// frameTime = cg.realframetime;	 HAX!
+		previousTimes[index % FPS_FRAMES] = frameTime;
+		if (++index > FPS_FRAMES) {
+			// average multiple frames together to smooth changes out a bit
+			total = 0;
+			for (i = 0; i < FPS_FRAMES; i++) {
+				total += previousTimes[i];
+			}
+			if (!total) {
+				total = 1;
+			}
+			fps = 1000 * FPS_FRAMES / total;
+
+			level.avgfps = fps;
+
+			level.fpsSamples++;
+			level.fpsFrameTime += frameTime;
+		}
+	}
+#endif
+
 
 	level.framenum++;
 	level.previousTime = level.time;

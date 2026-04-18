@@ -3001,6 +3001,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		//cl->ps.eFlags |= EF_SEGMENTEDREPLAY;
 		//cl->ps.duelTime = cl->pers.raceStartCommandTime = 0;
 		//cl->pers.stats.startLevelTime = 0;
+
+		ClientInactivitySpecTimerReset(activator, 10000); // just to be safe?
 		return;
 	}
 
@@ -3036,6 +3038,8 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		DF_RaceStateInvalidated(activator, qtrue);
 		return;
 	}
+	
+	ClientInactivitySpecTimerReset(activator, 10000); // dont send a client to spec directly after finishing a run if he's afk (mostly related to segmented runs)
 
 	//isInserting = G_InsertRun(activator, timeLast,0,0,0, warningFlags, level.time, runId, cl->ps.commandTime - lessTime);
 	isInserting = G_InsertRun(&runInfo);
@@ -4263,7 +4267,7 @@ void DF_SegmentedRunStatusInvalidated(gentity_t* ent) {
 
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print)
 {
-	ClientInactivitySpecTimerReset(ent); // the client did something to invalidate his racetime, e.g. /kill. Reset his afk timer so he doesn't get sent to spec immediately
+	ClientInactivitySpecTimerReset(ent, 500); // the client did something to invalidate his racetime, e.g. /kill. Reset his afk timer so he doesn't get sent to spec immediately
 	ResetSpecificPlayerTimers(ent, print);
 	DF_ResetSegmentedRun(ent);
 	ent->client->ps.fd.forcePower = 100; //Reset their force back to full i guess!

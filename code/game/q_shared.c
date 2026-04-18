@@ -806,6 +806,24 @@ int Q_isalpha( int c )
 	return ( 0 );
 }
 
+char* Q_stristr(const char* str, const char* charset) {
+	int i;
+
+	while (*str) {
+		for (i = 0; charset[i] && str[i]; i++) {
+			if (toupper(charset[i]) != toupper(str[i])) {
+				break;
+			}
+		}
+		if (!charset[i]) {
+			return (char*)str;
+		}
+		str++;
+	}
+
+	return NULL;
+}
+
 char* Q_strrchr( const char* string, int c )
 {
 	char cc = c;
@@ -969,6 +987,33 @@ void Q_strcat( char *dest, int size, const char *src ) {
 		Com_Error( ERR_FATAL, "Q_strcat: already overflowed" );
 	}
 	Q_strncpyz( dest + l1, src, size - l1 );
+}
+
+// from VVV. honestly not sure why *shrug*
+//safe strcat which returns pointer to end of string after concatenation
+char* mystrcat(char* dest, int size, const char* src) {
+	int	 maxchars;
+	char* p;
+
+	if (!dest)
+		Com_Error(ERR_FATAL, "mystrcat: NULL dest");
+	if (!src)
+		Com_Error(ERR_FATAL, "mystrcat: NULL src");
+	if (size < 1)
+		Com_Error(ERR_FATAL, "mystrcat: size < 1");
+
+	p = dest;
+	while (*p) ++p;		//p now points to the null byte of the original string
+
+	maxchars = size - (p - dest);	//how many chars can we insert?
+	maxchars--;				//make room for 0 byte
+
+	for (; *src && maxchars; --maxchars) {
+		*(p++) = *(src++);
+	}
+	*p = 0;
+
+	return(p);	//return a pointer to the end of the new string
 }
 
 

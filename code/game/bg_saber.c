@@ -1,7 +1,9 @@
 #include "q_shared.h"
 #include "bg_public.h"
 #include "bg_local.h"
-#if JK2_CGAME
+#ifdef JK2_GAME
+#include "g_local.h"
+#elif JK2_CGAME
 #include "../cgame/cg_local.h"
 #endif
 
@@ -1496,6 +1498,15 @@ saberMoveName_t PM_SaberAttackForMovement(saberMoveName_t curmove)
 				{ //weak attack
 					newmove = LS_A_BACKSTAB;
 				}
+
+#if JK2_GAME
+				#ifdef ANALYZE_BS
+				//How did his yaw angles change up to this backstab attack?
+				if (g_analyzebs.integer) {
+					CheckBackStab(pm->ps->clientNum);
+				}
+				#endif
+#endif
 			}
 			else
 			{

@@ -838,7 +838,7 @@ void SpectatorThink( gentity_t *ent, usercmd_t *ucmd ) {
 	}
 
 	// alt attack button cycles backwards
-	if ( client->sess.spectatorState == SPECTATOR_FOLLOW && (client->buttons & BUTTON_ALT_ATTACK) && !(client->oldbuttons & BUTTON_ALT_ATTACK) )
+	if ( (client->sess.amflags & AMFLAG_ALTFOLLOW) && client->sess.spectatorState == SPECTATOR_FOLLOW && (client->buttons & BUTTON_ALT_ATTACK) && !(client->oldbuttons & BUTTON_ALT_ATTACK) )
 	{
 		Cmd_FollowCycle_f( ent, -1 );
 	}
@@ -890,15 +890,22 @@ ClientInactivitySpecTimerReset
 Call manually to reset the timer for sending a player to spec. E.g. on /kill
 =================
 */
-void ClientInactivitySpecTimerReset(gentity_t* ent) {
+void ClientInactivitySpecTimerReset(gentity_t* ent, int delay) {
 	gclient_t* client = ent->client;
-	if (g_inactivityToSpec.integer <= 0) {
+	int oldTime = client->pers.inactivityToSpecTime;
+	if (delay) {
+		client->pers.inactivityToSpecTime = clampedIntAdd(level.time, delay);
+	}
+	else if (g_inactivityToSpec.integer <= 0) {
 		// give everyone some time, so if the operator sets g_inactivityToSpec during
 		// gameplay, everyone isn't spectated
-		client->inactivityToSpecTime = clampedIntAdd(level.time, 60 * 1000);
+		client->pers.inactivityToSpecTime = clampedIntAdd(level.time, 10 * 1000);
 	}
 	else {
-		client->inactivityToSpecTime = clampedIntAdd(level.time, clampedIntMult(g_inactivityToSpec.integer, 1000));
+		client->pers.inactivityToSpecTime = clampedIntAdd(level.time, clampedIntMult(g_inactivityToSpec.integer, 1000)); // hmm why this number?
+	}
+	if (oldTime > client->pers.inactivityToSpecTime) {
+		client->pers.inactivityToSpecTime = oldTime;
 	}
 }
 
@@ -911,37 +918,42 @@ Returns qfalse if the client is put to spec
 */
 qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
 	gclient_t* client = ent->client;
+	qboolean clientIsAfk = clampedIntAdd(level.time, -client->sess.lastHereTime) >= clampedIntMult(g_inactivityToSpec.integer, 1000);
 	qboolean wasInactive = client->markedAsInactive;
 	client->markedAsInactive = qfalse;
+
+	// 2026-04-17 new logic: unifying afk detection. lastHereTime is the authoritative source for deciding if someone's afk. 
+	// inactivityToSpecTime is still used to prevent sending people to spec early in some situations. (segmented replay finished etc)
+
 	if (g_inactivityToSpec.integer <= 0 || client->sess.sessionTeam == TEAM_SPECTATOR || level.intermissiontime) {
 		// give everyone some time, so if the operator sets g_inactivityToSpec during
 		// gameplay, everyone isn't spectated
-		client->inactivityToSpecTime = clampedIntAdd(level.time, 60 * 1000);
+		client->pers.inactivityToSpecTime = clampedIntAdd(level.time, 10 * 1000); // inactivityToSpecTime
 	}
-	else if (client->pers.cmd.forwardmove ||
-		client->pers.cmd.rightmove ||
-		client->pers.cmd.upmove ||
-		(client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
-		client->inactivityToSpecTime = clampedIntAdd( level.time , clampedIntMult(g_inactivityToSpec.integer, 1000));
-	}
+	//else if (client->pers.cmd.forwardmove ||
+	//	client->pers.cmd.rightmove ||
+	//	client->pers.cmd.upmove ||
+	//	(client->pers.cmd.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK))) {
+	//	client->inactivityToSpecTime = clampedIntAdd( level.time , clampedIntMult(g_inactivityToSpec.integer, 1000));
+	//}
 	else if(level.numPlayingClients > 1){ // dont bother sending to spec or marking as inactive if only 1 player is in anyway
 		if (ent->client->sess.raceMode && (ent->client->pers.raceStartCommandTime || ent->client->pers.recordingDemo && ent->client->pers.keepDemoMaybe) && !g_inactivityToSpecRacers.integer) {
 			// dont spec ppl in the middle of a run, but mark them as inactive
-			if (level.time > client->inactivityToSpecTime) {
+			if (level.time > client->pers.inactivityToSpecTime && clientIsAfk) {
 				client->markedAsInactive = qtrue;
 			}
 		}
 		else {
-			if (level.time > client->inactivityToSpecTime) {
+			if (level.time > client->pers.inactivityToSpecTime) {
 				G_Printf("^3g_inactivityToSpec: Sending client %d to spec.\n", (int)(ent - g_entities));
 				trap_SendServerCommand(-1, va("print \"^3Sending %s ^3to spec for being AFK.\n\"",client->pers.netname));
 				SetTeam(ent, "s");
 				return qfalse;
 			}
 
-			if (level.time > client->inactivityToSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
+			if (level.time > client->pers.inactivityToSpecTime - 20000 && (level.time - client->randomLastCenterprint > 1000 || level.time < client->randomLastCenterprint)) {
 				client->randomLastCenterprint = level.time;
-				G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!", (client->inactivityToSpecTime - level.time) / 1000), qfalse, qtrue, qfalse, NULL);
+				G_CenterPrint(client - level.clients, 3, va("^1%d seconds until you are sent to spec for being AFK!", (client->pers.inactivityToSpecTime - level.time) / 1000), qfalse, qtrue, qfalse, NULL);
 			}
 		}
 	}
@@ -3000,6 +3012,116 @@ qboolean G_GetUserCmd(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance) 
 	return didAdvance;
 }
 
+
+
+#ifdef ANALYZE_BS
+const char* BsRecordText(int i, bsFrameSample_t* frame) {
+
+	int buttons = frame->buttons;
+	int frametime = frame->frametime;
+	int moves = frame->moves;
+
+	return va("[%02d]  %4.3f   ms  %2d    %c%c%c%c  %c  %s",
+		i, frame->yawdelta, frame->frametime,
+		(buttons & BUTTON_ATTACK) ? 'M' : ' ',
+#if 0
+		(frame->forwardmove > 0) ? 'W' : ((frame->forwardmove < 0) ? 'S' : ' '),
+		(frame->rightmove > 0) ? 'D' : ((frame->rightmove < 0) ? 'A' : ' '),
+		(frame->upmove > 0) ? 'J' : ((frame->upmove < 0) ? 'C' : ' '),
+#else
+		(moves & MOVE_FORWARD) ? 'W' : (moves & MOVE_BACK ? 'S' : ' '),
+		(moves & MOVE_RIGHT) ? 'D' : (moves & MOVE_LEFT ? 'A' : ' '),
+		(moves & MOVE_UP) ? 'J' : (moves & MOVE_DOWN ? 'C' : ' '),
+#endif
+		(buttons & BUTTON_ANY) ? '_' : ' ',
+		(buttons & BUTTON_DBS) ? "d/bs" : "");
+
+}
+
+
+void CheckBackStab(int clientNum) {
+	//This guy just got permission to do a backstab.
+	//Let's see how his angles evolved up until this attack.
+	clientPersistant_t* pers;
+	int last;
+
+	if (clientNum >= MAX_CLIENTS || clientNum < 0 || !g_entities[clientNum].client)
+		return;
+
+	pers = &g_entities[clientNum].client->pers;
+
+	//mark the current yaw angle (it was the yaw angle at which he performed the bs)
+	last = (pers->cmdstack - 1) & ANGLES_MASK;		// the LATEST YAW (index)
+
+	pers->backupcmd[last].buttons |= BUTTON_DBS;
+	pers->analyzestart = pers->cmdstack + BS_ANALYZE_SAMPLES;	//when cmdstack hits this, we will analyze the move.
+}
+
+void BuildBsRecord(bsRecord_t* bsr, gclient_t* client)
+{
+	clientPersistant_t* pers = &client->pers;
+	const int 		    first = pers->cmdstack & ANGLES_MASK;		// the earliest cmd recorded (index)
+	int 				i, ind;
+
+	usercmd_t* prev = &pers->backupcmd[first & ANGLES_MASK];
+
+	//build a bsRecord_t
+	ind = first + 1;
+	for (i = 0; i < NUM_BS_FRAME_SAMPLES; ++i, ++ind) {
+		bsFrameSample_t* frame = &bsr->frame[i];
+		usercmd_t* cmd = &pers->backupcmd[ind & ANGLES_MASK];
+
+		frame->yawdelta = AngleDelta(SHORT2ANGLE(cmd->angles[YAW]), SHORT2ANGLE(prev->angles[YAW]));
+		frame->frametime = cmd->serverTime - prev->serverTime;
+		frame->buttons = cmd->buttons;
+
+#if 0
+		frame->forwardmove = cmd->forwardmove;
+		frame->rightmove = cmd->rightmove;
+		frame->upmove = cmd->upmove;
+#else
+		frame->moves = 0;
+		if (cmd->forwardmove > 0)
+			frame->moves |= MOVE_FORWARD;
+		else if (cmd->forwardmove < 0)
+			frame->moves |= MOVE_BACK;
+
+		if (cmd->rightmove > 0)
+			frame->moves |= MOVE_RIGHT;
+		else if (cmd->rightmove < 0)
+			frame->moves |= MOVE_LEFT;
+
+		if (cmd->upmove > 0)
+			frame->moves |= MOVE_UP;
+		else if (cmd->upmove < 0)
+			frame->moves |= MOVE_DOWN;
+#endif
+
+		prev = cmd;
+	}
+}
+
+void AnalyzeBS(gentity_t* ent) {
+	bsRecord_t* bsr = &ent->client->pers.savedbs;
+
+	BuildBsRecord(bsr, ent->client);
+
+	if (g_logbs.integer)
+	{
+		//save all bs events to disk
+		G_LogBsEvent(bsr, ent);
+	}
+
+	++ent->client->pers.numbs;
+	level.lastBsClient = ent - g_entities;
+}
+
+#else
+void CheckBackStab(int clientNum) {
+}
+#endif
+
+
 /*
 ==================
 ClientThink
@@ -3011,26 +3133,46 @@ void ClientThink( int clientNum ) {
 	gentity_t *ent = g_entities + clientNum;
 	usercmd_t tmpCmdForAfkCheck; // only used for checking if player is active or afk, rest is handled via G_GetUserCmd
 	qboolean segmentedReplay = DF_ClientInSegmentedRunMode(ent->client) && ent->client->pers.segmented.state == SEG_REPLAY;
+	int newbuttons;
 
 	trap_GetUsercmd(clientNum, &tmpCmdForAfkCheck);
-	//if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || (tmpCmdForAfkCheck.buttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK)) || ((tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate) & BUTTON_TALK)) {
-	tmpCmdForAfkCheck.buttons &= ~65536; // netcode for usercmds is a bit weird. encoding does 1 bit less than decoding. buttons is a 16 bit val so 16th bit ends up "random", so we can't use it for afk detection
-	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || ent->client->sess.sessionInitialized && (tmpCmdForAfkCheck.buttons^ ent->client->sess.oldbuttons_immediate)) {
+	newbuttons = tmpCmdForAfkCheck.buttons;
+	//if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || (newbuttons & (BUTTON_ATTACK | BUTTON_ALT_ATTACK)) || ((newbuttons^ ent->client->sess.oldbuttons_immediate) & BUTTON_TALK)) {
+	newbuttons &= ~(65536|BUTTON_TALK); // netcode for usercmds is a bit weird. encoding does 1 bit less than decoding. buttons is a 16 bit val so 16th bit ends up "random", so we can't use it for afk detection
+	// BUTTON_TALK is also unreliable. map changes will for example change console status etc. 
+	if (tmpCmdForAfkCheck.forwardmove || tmpCmdForAfkCheck.rightmove || tmpCmdForAfkCheck.upmove || ent->client->sess.sessionInitialized && (newbuttons ^ ent->client->sess.oldbuttons_immediate)) {
 		if (g_developer.integer) {
-			if ((level.time - ent->client->sess.lastHereTime) > 30000) {
-				Com_Printf("^3Client %d came back from AFK after %d milliseconds, fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n",(int)(ent - g_entities), level.time - ent->client->sess.lastHereTime,tmpCmdForAfkCheck.forwardmove,tmpCmdForAfkCheck.rightmove,tmpCmdForAfkCheck.upmove, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, tmpCmdForAfkCheck.buttons);
+			if (clampedIntAdd(level.time, -ent->client->sess.lastHereTime) > 30000) {
+				Com_Printf("^3Client %d came back from AFK after %d milliseconds, fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n",(int)(ent - g_entities), clampedIntAdd(level.time, -ent->client->sess.lastHereTime),tmpCmdForAfkCheck.forwardmove,tmpCmdForAfkCheck.rightmove,tmpCmdForAfkCheck.upmove, newbuttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, newbuttons);
 			}
 			else if (level.time < ent->client->sess.lastHereTime) {
-				Com_Printf("^3Client %d came back from AFK (glitch %d<%d), fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n", (int)(ent - g_entities), level.time, ent->client->sess.lastHereTime, tmpCmdForAfkCheck.forwardmove, tmpCmdForAfkCheck.rightmove, tmpCmdForAfkCheck.upmove, tmpCmdForAfkCheck.buttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, tmpCmdForAfkCheck.buttons);
+				Com_Printf("^3Client %d came back from AFK (glitch %d<%d), fm %d, rm %d, um %d, btnchange %d, oldbuttons %d, buttons %d.\n", (int)(ent - g_entities), level.time, ent->client->sess.lastHereTime, tmpCmdForAfkCheck.forwardmove, tmpCmdForAfkCheck.rightmove, tmpCmdForAfkCheck.upmove, newbuttons ^ ent->client->sess.oldbuttons_immediate, ent->client->sess.oldbuttons_immediate, newbuttons);
 			}
 		}
 		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	}
-	ent->client->sess.oldbuttons_immediate = tmpCmdForAfkCheck.buttons;
+	ent->client->sess.oldbuttons_immediate = newbuttons;
 
 	//if (!segmentedReplay) {
 	//	canRun = G_GetUserCmd(clientNum, &ent->client->pers.cmd,qtrue);
 	//}
+
+#ifdef ANALYZE_BS
+	//Copy the newly arrived usercmd into circular buffer
+	if (!(ent->r.svFlags & SVF_BOT) && g_analyzebs.integer) {
+		usercmd_t* sm = &ent->client->pers.backupcmd[ent->client->pers.cmdstack & ANGLES_MASK];
+
+		memcpy(sm, &tmpCmdForAfkCheck, sizeof(usercmd_t));
+
+		sm->buttons &= ~(BUTTON_DBS); // same value as BUTTON_LASERPOINTER on this mod. lets ignore the laserpointer for this i guess.
+
+		if (++ent->client->pers.cmdstack == ent->client->pers.analyzestart) {
+			AnalyzeBS(ent);
+			ent->client->pers.analyzestart = -1;
+		}
+	}
+#endif
+
 
 	// mark the time we got info, so we can display the
 	// phone jack if they don't get any for a while
@@ -3161,6 +3303,9 @@ void G_RunClient( gentity_t *ent ) {
 	if (areSegReplaying) {
 		usercmd_t ucmd;
 		gclient_t* cl = ent->client;
+
+		ClientInactivitySpecTimerReset(ent, 10000); // if we are in a segmented replay, don't let a player be sent to spec immediately after the replay ends. cuz ugly.
+
 		if (!cl->pers.segmented.playbackNextCmdIndex) {
 			RestorePosition(ent, &cl->pers.segmented.startPos, NULL);
 			VectorCopy(cl->pers.segmented.startPos.ps.delta_angles, cl->ps.delta_angles); //keep this so we can replay properly. we won't let the person move anyway.
@@ -3447,12 +3592,15 @@ void ClientEndFrameServerFrame(gentity_t* ent) {
 
 	// add the EF_CONNECTION flag if we haven't gotten commands recently
 	if (level.time - ent->client->lastCmdTime > 1000 && !(ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state == SEG_REPLAY)) { // let it be ok during replays (if ppl time out/ disconnect)
+		//fix so all clients get this information and can draw lag sprites if their client mod supports that // TA: but why would u wanna see it on urself?
+		ent->client->ps.eFlags |= EF_CONNECTION;
 		ent->s.eFlags |= EF_CONNECTION;
 		if (level.time - ent->client->lastCmdTime > 3000) {
 			G_ClearActivatedEntities(ent); // dont let this client bug out all the movers he touched while he's having connection issues
 		}
 	}
 	else {
+		ent->client->ps.eFlags &= ~EF_CONNECTION;
 		ent->s.eFlags &= ~EF_CONNECTION;
 	}
 

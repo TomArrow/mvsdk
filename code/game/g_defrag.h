@@ -129,10 +129,10 @@ typedef struct savedPosition_s {
 		// pers.
 		struct {
 			struct {
-				float		lasthurtcarrier;
-				float		lastreturnedflag;
-				float		flagsince;
-				float		lastfraggedcarrier;
+				int			lasthurtcarrier;
+				int			lastreturnedflag;
+				int			flagsince;
+				int			lastfraggedcarrier;
 			} teamState;
 			struct {
 				//int	startLevelTime; // this stuff is more for demo cutting so no need to compensate.

@@ -549,6 +549,9 @@ void AddScore( gentity_t *ent, vec3_t origin, int score ) {
 	if ( level.warmupTime ) {
 		return;
 	}
+
+	level.teamstats[BinaryTeam(ent)].score += score;
+
 	// show score plum
 	//ScorePlum(ent, origin, score);
 	//
@@ -1933,6 +1936,17 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		ent->s.otherEntityNum2 = killer;
 		ent->r.svFlags = SVF_BROADCAST;	// send to everyone
 		ent->s.isJediMaster = wasJediMaster;
+
+		// if this guy held a flag, let us know for how long he held it
+		if (self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG]) {
+			const int holdtime = level.time - self->client->pers.teamState.flagsince;
+
+			ent->s.genericenemyindex = holdtime;	//this one has 32 bits
+
+			self->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] += holdtime;
+
+			level.teamstats[BinaryTeam(self)].flaghold += holdtime;
+		}
 	}
 	self->enemy = attacker;
 
@@ -1943,6 +1957,8 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	{
 		self->client->ps.fd.suicides++;
 	}
+	else if (attacker && attacker->client)
+		level.teamstats[BinaryTeam(attacker)].frags++;
 
 	if (attacker && attacker->client) {
 		attacker->client->lastkilled_client = self->s.number;

@@ -141,6 +141,7 @@ typedef struct cvarTable_s {
 	} update;
 } cvarTable_t;
 
+#define TEAM_PLAYING	99		// team is != spectator
 
 typedef struct gentity_s gentity_t;
 typedef struct gclient_s gclient_t;
@@ -386,11 +387,12 @@ typedef struct {
 	int			flagrecovery;
 	int			fragcarrier;
 	int			assists;
+	int			flagsteal, flaghold;
 
-	float		lasthurtcarrier;
-	float		lastreturnedflag;
-	float		flagsince;
-	float		lastfraggedcarrier;
+	int			lasthurtcarrier;
+	int			lastreturnedflag;
+	int			flagsince;		//why was this a float!!?
+	int			lastfraggedcarrier;
 } playerTeamState_t;
 
 typedef struct {
@@ -410,6 +412,13 @@ typedef struct {
 // number, but instead follow the first two active players
 #define	FOLLOW_ACTIVE1	-1
 #define	FOLLOW_ACTIVE2	-2
+
+// vvv-serverside amflags
+#define AMFLAG_MUTED 			1
+#define AMFLAG_MUTED_PUBONLY 	2
+#define AMFLAG_LOCKEDNAME		4
+#define AMFLAG_LOCKEDTEAM		8
+#define AMFLAG_ALTFOLLOW		16  //client can use alt-attack to follow prev client in spec
 
 // client data that stays across multiple levels or tournament restarts
 // this is achieved by writing all the data to cvar strings at game shutdown
@@ -456,6 +465,9 @@ typedef struct {
 	qboolean	sessionInitialized; // so for afk detection, when comparing to old buttons, we are comparing to a real value.
 
 	nameTagType_t	nameTag;
+
+	// vvv-serverside
+	int					amflags;
 } clientSession_t;
 
 // JK2MV
@@ -467,6 +479,41 @@ typedef struct {
 //
 #define MAX_NETNAME			64	// was 36
 #define	MAX_VOTE_COUNT		3
+
+
+#define ANALYZE_BS
+#define DEBUGFPS
+
+#ifdef ANALYZE_BS
+
+#define BUTTON_DBS			4096
+#define ANGLES_HISTORY		32	//must be power of 2
+#define ANGLES_MASK			(ANGLES_HISTORY-1)
+
+typedef struct {
+	char	frametime;	//ms since previous usercmd_t
+	char 	moves;		//bitmask of movement buttons held
+	short	buttons;	//button_attack etc, buttons held this frame
+	float	yawdelta;	//how many degrees did he turn in yaw, from previous frame till this?
+} bsFrameSample_t;
+
+#define NUM_BS_FRAME_SAMPLES		(ANGLES_HISTORY-1)	//-1 because we need one extra for making "delta" frames
+typedef struct {
+	bsFrameSample_t	frame[NUM_BS_FRAME_SAMPLES];
+} bsRecord_t;
+
+#define MOVE_FORWARD		1
+#define MOVE_BACK			2
+#define MOVE_LEFT			4
+#define MOVE_RIGHT			8
+#define MOVE_UP				16
+#define MOVE_DOWN			32
+
+void QDECL G_LogBsEvent(bsRecord_t* bsr, gentity_t* ent);
+
+const char* BsRecordText(int i, bsFrameSample_t* frame);
+void BuildBsRecord(bsRecord_t* bsr, gclient_t* client);
+#endif
 
 
 typedef struct runStats_s { // zero'd out every time we leave start timer
@@ -530,6 +577,17 @@ typedef struct tffaStats_s {
 } tffaStats_t;
 
 
+typedef struct {
+	int		rets;
+	int		defense;
+	int		assist;
+	int		flaghold;
+	int		flaggrabs;
+	int		frags;
+	int		score;
+} teamStats_t;
+
+
 #define TASCLIENT_TASMODE			(1<<0)
 #define TASCLIENT_MACHINELEARNING	(1<<1)
 
@@ -543,6 +601,7 @@ typedef struct {
 	qboolean	predictItemPickup;	// based on cg_predictItems userinfo
 	qboolean	pmoveFixed;			//
 	char		netname[MAX_NETNAME];
+	char		netnameClean[MAX_NETNAME]; // from vvv-serverside. to search for clients ez i guess
 
 	// name dedupe
 	char		wantedNameColor[MAX_NETNAME];
@@ -557,7 +616,7 @@ typedef struct {
 	int			voteCount;			// to prevent people from constantly calling votes
 	int			voteValue;			// to prevent people from constantly calling votes
 	int			teamVoteCount;		// to prevent people from constantly calling votes
-	qboolean	teamInfo;			// send team overlay updates?
+	int			teamInfo;			// send team overlay updates?
 	qboolean	botDelayed;			// Is ClientBegin still outstanding for this bot, because it was delayed?
 
 	// savepos/respos
@@ -629,6 +688,25 @@ typedef struct {
 	int			tasClient; // this client has identified itself as a TAS/hack client, so always force it into TAS mode in defrag. bitmask. 1 = force tas mode. 2 = hide from ingame players and follow spectators (for machine learning)
 	qboolean	isHeadlessClient;
 	int			ttClientFlags;
+
+	int			inactivityToSpecTime;		// prevent ppl from being sent to spec for inactivity if this level.time is smaller than this
+
+	// connectTime must be here so it clears on map_restart, cus else the time is fucked.
+	int			connectTime;			//level.time the client connected
+
+#ifdef ANALYZE_BS
+	usercmd_t	backupcmd[ANGLES_HISTORY];	//a circular buffer containing info from latest usercmd_t's
+	int			cmdstack;
+
+	//after someone just succeeded in getting bs animation, collect few more samples so we can analyse
+	//the client's yaw angles before and after the move
+	//the d/bs sample will be in the "middle" and we get equally many samples before and after the bs move
+#define BS_ANALYZE_SAMPLES			(ANGLES_HISTORY / 2)
+	int			analyzestart;
+
+	bsRecord_t	savedbs;
+	int			numbs;
+#endif
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -700,7 +778,6 @@ struct gclient_s {
 	// timers
 	int			respawnTime;		// can respawn when time > this, force after g_forcerespwan
 	int			inactivityTime;		// kick players when time > this
-	int			inactivityToSpecTime;		// spec players when time > this
 	qboolean	markedAsInactive;
 	int			lastHereTime;		//japro to optimize bots / autorecord
 	qboolean	inactivityWarning;	// qtrue if the five seoond warning has been given
@@ -837,7 +914,10 @@ typedef struct {
 
 	int			warmupTime;			// restart match at this time
 
-	fileHandle_t	logFile;
+	fileHandle_t	logFile;	
+#ifdef ANALYZE_BS
+	fileHandle_t	bsLogFile;
+#endif
 
 	// store latched cvars here that we want to get at often
 	int			maxclients;
@@ -858,6 +938,18 @@ typedef struct {
 
 	qboolean	restarted;				// waiting for a map_restart to fire
 
+#ifdef DEBUGFPS
+	float	avgfps;
+	int		fpsSamples;
+	int		fpsFrameTime;
+#endif
+
+	int 		lockedTeams;
+
+#define G_BLUETEAM		0
+#define G_REDTEAM		1
+	teamStats_t	teamstats[2];
+
 	int			numConnectedClients;
 	int			numFullyConnectedClients;
 	int			numNonSpectatorClients;	// includes connecting clients
@@ -877,6 +969,12 @@ typedef struct {
 	int			voteYes;
 	int			voteNo;
 	int			numVotingClients;		// set by CalculateRanks
+
+#ifdef ANALYZE_BS
+	int 		lastBsClient;
+	bsRecord_t	lastSuspiciousBs;
+	char		lastSuspiciousBsInfo[256];
+#endif
 
 	qboolean	votingOpinion;
 	qboolean	votingOpinionAll;
@@ -1012,6 +1110,11 @@ void G_SayTo(gentity_t* ent, gentity_t* other, int mode, int color, const char* 
 char* ConcatArgsQuoted(int start);
 void G_ResetClientVote(gclient_t* client);
 const char* G_Argv(int arg); 
+int G_FindPlayerFromString(const char* buf);
+const char* G_ClientNameWithPrefix(gentity_t* ent, const int maxNameChars);
+const char* G_ClientNameFixedLength(gentity_t* ent, const int numChars);
+char ColorCodeForClient(gentity_t* target, qboolean botSpecialColor);
+char* ConcatArgs(int start);
 
 gentity_t *G_GetDuelWinner(gclient_t *client); 
 qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged);
@@ -1348,6 +1451,8 @@ qboolean	ConsoleCommand( void );
 void G_ProcessIPBans(void);
 qboolean G_FilterPacket (char *from);
 const char* G_MsToStringVVV(const int ms);
+qboolean G_IsBot(int client);
+void FPS_ResetStats(void);
 
 //
 // g_weapon.c
@@ -1433,7 +1538,8 @@ void G_RunClient			( gentity_t *ent );
 qboolean G_GetUserCmd			(int clientNum, usercmd_t* ucmd, getUserCmdType_t advance); 
 void G_ResetUserCmdStore(int clientNum);
 void G_SetSpecAllEntsBroadcasts(int broadcastClients[2]);
-void ClientInactivitySpecTimerReset(gentity_t* ent);
+void ClientInactivitySpecTimerReset(gentity_t* ent, int delay);
+void CheckBackStab(int clientNum);
 
 //
 // g_anticheat.c
@@ -1472,7 +1578,8 @@ void G_CheckEnqueuedClips(qboolean force);
 // g_team.c
 //
 qboolean OnSameTeam( gentity_t *ent1, gentity_t *ent2 );
-void Team_CheckDroppedItem( gentity_t *dropped );
+void Team_CheckDroppedItem( gentity_t *dropped ); 
+int BinaryTeam(gentity_t* ent);
 
 //
 // g_mem.c
@@ -1760,6 +1867,7 @@ extern	vmCvar_t	g_singlePlayer;
 extern	vmCvar_t	g_dismember;
 extern	vmCvar_t	g_forceDodge;
 extern	vmCvar_t	g_timeouttospec;
+extern	vmCvar_t	g_timescale;
 extern	vmCvar_t	g_sv_fps;
 extern	vmCvar_t	g_sv_gameFps;
 extern	vmCvar_t	g_sv_gameFpsAllowIrregular;
@@ -1812,6 +1920,10 @@ extern	vmCvar_t	g_crossServerDefragTimes;
 extern	vmCvar_t	g_pauseGame;
 extern	vmCvar_t	g_pauseTimerFreeze;
 extern	vmCvar_t	g_allowChatPause;
+extern	vmCvar_t	g_analyzebs;
+extern	vmCvar_t	g_logbs;
+extern	vmCvar_t	g_voteAsSpec;
+extern	vmCvar_t	g_debugFps;
 
 
 void	trap_Printf( const char *fmt );

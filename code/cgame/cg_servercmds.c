@@ -86,6 +86,44 @@ static void CG_PauseGameEnded(void) {
 	pauseGameStartedTime = 0;
 }
 
+// from vvv serverside. not doing anything with it rn tho
+#define NUM_TEAMSTATS_FIELDS	7
+static void CG_ParseTeamStats(void) {
+	/*
+		format for 1 team: (6 stat fields)
+		%d %d %d %d %d %d
+		rets, defense, assist, flaghold, flaggrabs, frags, score
+	*/
+	const int argc = trap_Argc();
+	const int expectedArgc = (NUM_TEAMSTATS_FIELDS * 2 + 1);
+	int i, arg;
+
+
+	if (argc != expectedArgc) {
+		CG_Printf("CG_ParseTeamStats: bad argcount %d, expected %d\n", argc, expectedArgc);
+		return;
+	}
+
+	//team order: blue, red
+	for (i = 0, arg = 1; i < 2; ++i) {
+		teamStats_t* ts = &cg.teamstats[i];
+
+		ts->rets = atoi(CG_Argv(arg++));
+		ts->defense = atoi(CG_Argv(arg++));
+		ts->assist = atoi(CG_Argv(arg++));
+		ts->flaghold = atoi(CG_Argv(arg++));
+		ts->flaggrabs = atoi(CG_Argv(arg++));
+		ts->frags = atoi(CG_Argv(arg++));
+		ts->score = atoi(CG_Argv(arg++));
+	}
+
+	cg.teamstatsreceived = cg.time;
+
+#ifdef XDEVELOPER
+	CG_Printf("CG_ParseTeamStats()\n");
+#endif
+}
+
 /*
 =================
 CG_ParseScores
@@ -1705,6 +1743,11 @@ static void CG_ServerCommand( void ) {
 
 	if ( !strcmp( cmd, "tinfo" ) ) {
 		CG_ParseTeamInfo();
+		return;
+	}
+
+	if ( !strcmp( cmd, "tstats" ) ) { // vvv feature. to be done.
+		CG_ParseTeamStats();
 		return;
 	}
 

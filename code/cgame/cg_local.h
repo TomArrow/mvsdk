@@ -472,6 +472,17 @@ typedef struct localEntity_s {
 
 //======================================================================
 
+typedef struct {
+	int		rets;
+	int		defense;
+	//int		caps;		//can be inferred
+	int		assist;
+	int		flaghold;
+	int		flaggrabs;
+	int		frags;
+	int		score;
+} teamStats_t;
+
 
 typedef struct {
 	int				client;
@@ -955,6 +966,12 @@ typedef struct {
 	int			bobcycle;
 	float		xyspeed;
 	int     nextOrbitTime;
+
+#define CG_BLUETEAM		0
+#define CG_REDTEAM		1
+	teamStats_t	teamstats[2];		//info sent from server if supported
+	int			teamstatsreceived;
+
 
 	//qboolean cameraMode;		// if rendering from a loaded camera
 	int			loadLCARSStage;

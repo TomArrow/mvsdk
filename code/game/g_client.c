@@ -2007,8 +2007,12 @@ void ClientUserinfoChanged( int clientNum ) {
 		memset( ptr, '.', 3 );
 		ptr = strstr( s, "@@@" );
 	}
-	
+
 	ClientCleanName( s, ent->client->pers.netname, sizeof(ent->client->pers.netname) );
+
+	if (client->sess.amflags & AMFLAG_LOCKEDNAME && oldname[0])	//do these checks for map_restarts where the locked name wont survive
+		Q_strncpyz(client->pers.netname, oldname, sizeof(client->pers.netname));
+
 	Info_RemoveKey( userinfo, "name" );
 	Info_SetValueForKey( userinfo, "name", ent->client->pers.netname );
 	trap_SetUserinfo( clientNum, userinfo );
@@ -2022,6 +2026,9 @@ void ClientUserinfoChanged( int clientNum ) {
 			Q_strncpyz( client->pers.netname, "scoreboard", sizeof(client->pers.netname) );
 		}
 	}
+
+	Q_strncpyz(client->pers.netnameClean, client->pers.netname, sizeof(client->pers.netnameClean));
+	Q_CleanStr(client->pers.netnameClean,qtrue,qtrue);
 
 	// thanks to anonymous donor
 	if (!g_allowNameDupes.integer)
@@ -2150,12 +2157,16 @@ void ClientUserinfoChanged( int clientNum ) {
 	if (g_gametype.integer >= GT_TEAM) {
 		client->pers.teamInfo = qtrue;
 	} else {
-		s = Info_ValueForKey( userinfo, "teamoverlay" );
-		if ( ! *s || atoi( s ) != 0 ) {
-			client->pers.teamInfo = qtrue;
-		} else {
-			client->pers.teamInfo = qfalse;
-		}
+		int _atoi;
+		s = Info_ValueForKey(userinfo, "teamoverlay");
+
+		_atoi = atoi(s);
+		if (_atoi == 2)
+			client->pers.teamInfo = 2;
+		else if (!*s || _atoi != 0)
+			client->pers.teamInfo = 1;
+		else
+			client->pers.teamInfo = 0;
 	}
 	/*
 	s = Info_ValueForKey( userinfo, "cg_pmove_fixed" );
@@ -2398,7 +2409,11 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 
 	memset( client, 0, sizeof(*client) );
 
+	client->pers.connectTime = level.time;
 	client->pers.connected = CON_CONNECTING;
+	if (firstTime) { // if map changed and he is auto-"connected" back, don't signal him as not afk.
+		client->sess.lastHereTime = level.time;
+	}
 
 	// read or initialize the session data
 	if ( firstTime || level.newSession ) {
@@ -2571,6 +2586,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	// so the viewpoint doesn't interpolate through the
 	// world to the new position
 	flags = client->ps.eFlags;
+
+	DeathmatchScoreboardMessage(ent);		//add so you get fresh scores once joining/changing teams.
 
 	i = 0;
 
@@ -3499,7 +3516,7 @@ void ClientSpawn(gentity_t *ent) {
 
 	client->respawnTime = nowTime;
 	client->inactivityTime = level.time + g_inactivity.integer * 1000;
-	client->inactivityToSpecTime = level.time + g_inactivityToSpec.integer * 1000;
+	//client->inactivityToSpecTime = level.time + g_inactivityToSpec.integer * 1000; someone could be stuck falling into a death trigger on a weird map and never go to spec.
 	client->latched_buttons = 0;
 
 	// set default animations
@@ -3658,6 +3675,8 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 			StopFollowing(&g_entities[i]);
 		}
 	}
+
+	level.clients[i].sess.amflags = 0;
 
 	// send effect if they were completely connected
 	if (ent->client->pers.connected == CON_CONNECTED

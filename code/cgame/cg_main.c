@@ -1184,7 +1184,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayersDebug, "cg_deferPlayersDebug", "0", CVAR_TEMP },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
-	{ &cg_teamOverlayUserinfo, "teamoverlay", "0", CVAR_ROM | CVAR_USERINFO },
+	{ &cg_teamOverlayUserinfo, "teamoverlay", "2", CVAR_ROM | CVAR_USERINFO },
 	{ &cg_stats, "cg_stats", "0", 0 },
 	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },
 	{ &cg_teamChatsOnly, "cg_teamChatsOnly", "0", CVAR_ARCHIVE },
@@ -1608,7 +1608,7 @@ void CG_UpdateCvars( void ) {
 			trap_Cvar_Set( "teamoverlay", "0" );
 		}
 		// FIXME E3 HACK
-		trap_Cvar_Set( "teamoverlay", "1" );
+		trap_Cvar_Set( "teamoverlay", "2" );
 	}
 
 	// if force model changed

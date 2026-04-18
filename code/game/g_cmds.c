@@ -118,6 +118,34 @@ void TFFAEndGameStatsMessage(int recipient, qboolean final) {
 	trap_SendServerCommand(recipient, "print \"\" tffaStats_end");
 }
 
+
+#define TEAMSTATS_CMD		"tstats"
+static void G_SendTeamStats(gentity_t* ent) {
+	/*
+		format for 1 team: (6 stat fields)
+		%d %d %d %d %d %d
+		rets, defense, assist, flaghold, flaggrabs, frags, score
+	*/
+	char msg[1024] = { 0 };
+	int i;
+	char* pch = &msg[0];
+
+
+	for (i = 0; i < 2; ++i) {
+		teamStats_t* ts = &level.teamstats[i];
+		const char* s;
+
+		s = va("%d %d %d %d %d %d %d ", ts->rets, ts->defense, ts->assist, ts->flaghold, ts->flaggrabs, ts->frags, ts->score);
+		pch = mystrcat(pch, sizeof(msg), s);
+	}
+
+	pch = va(TEAMSTATS_CMD" %s", msg);
+
+	trap_SendServerCommand(ent - g_entities, pch);
+}
+
+
+
 /*
 ==================
 DeathmatchScoreboardMessage
@@ -190,6 +218,8 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 	}
 
 	trap_SendServerCommand( ent-g_entities, string );
+	if (g_gametype.integer == GT_CTF && ent->client->pers.teamInfo == 2)
+		G_SendTeamStats(ent);
 
 	ent->client->lastScoresMessage = level.time;
 }
@@ -1140,7 +1170,13 @@ void StopFollowing( gentity_t *ent ) {
 	ent->client->ps.clientNum = ent - g_entities;
 	ent->client->ps.weapon = WP_NONE;
 
+	//ent->client->ps.viewangles[ROLL] = 0; // could this fix weirdness with strafebot? idk
 	SetClientViewAngle(ent, ent->client->ps.viewangles); //Fix viewangles getting fucked up when we stop spectating someone?
+
+	// don't use dead view angles (from vvv-serverside, which quotes ioq3, dunno if we need this)
+	if (ent->client->ps.stats[STAT_HEALTH] <= 0) {
+		ent->client->ps.stats[STAT_HEALTH] = 1;
+	}
 }
 
 qboolean SlowVotingActive(gentity_t* ent) {
@@ -1519,8 +1555,6 @@ void Cmd_Help_f(gentity_t* ent) {
 	char arg1[20];
 	int i;
 
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
-
 	if (trap_Argc() > 1) {
 		trap_Argv(1,arg1,sizeof(arg1));
 		if (!Q_stricmpn(arg1, "seg", 3)) {
@@ -1676,6 +1710,98 @@ void Cmd_Help_f(gentity_t* ent) {
 	}
 
 }
+int G_TeamForString(const char* str, qboolean allowTeamPlaying);
+
+//Called when a user tried to change his team himself
+//separated so admins and code can use normal setteam, but setteam_user will check for locked teams, etc.
+// TODO check if this needs to be used in other places like setclientmode etc
+qboolean SetTeam_User( gentity_t *ent, const char *s ) {
+	int oldTeam;
+	int newTeam;
+	const char *found = NULL;
+
+	if (!ent || !ent->client)
+		return qfalse;
+
+	oldTeam = ent->client->sess.sessionTeam;
+
+	//check if hes not allowed to change team
+	if (ent->client->sess.amflags & AMFLAG_LOCKEDTEAM) {
+		trap_SendServerCommand( ent - g_entities, "print \"You have been denied permission to change team.\n\"" );
+		return qfalse;
+	}
+
+	#if 0	//i guess this is not standard behaviour..
+	if (level.lockedTeams & (1 << oldTeam)) {
+		//This client's current team is locked, so dont let him escape it
+		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", "Your team is locked; you can't leave it.") );
+		return qfalse;
+	}
+	#endif
+
+	if ( (newTeam = G_TeamForString(s, qfalse)) == -1) {
+		trap_SendServerCommand( ent - g_entities,va("print \"Unknown team '%s'.\n\"", s));
+		return qfalse;
+	}
+
+
+
+	if ( ent->client->switchTeamTime > level.time ) {
+		trap_SendServerCommand( ent-g_entities,va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOSWITCH")) );
+		return qfalse;
+	}
+
+
+	if (level.lockedTeams & (1 << newTeam)) {
+		trap_SendServerCommand( ent-g_entities, "print \"That team is locked.\n\"" );
+		return qfalse;
+	}
+
+	if (!DefragDoubleTapSafety(ent, DOUBLETAP_TEAM, "team")) {
+		return;
+	}
+
+	if (level.lockedTeams && newTeam == TEAM_FREE && g_gametype.integer >= GT_TEAM) {
+		//prevent players from using team free which will assign players to either blue or red in team games,
+		//when those teams are locked
+
+		if ( !(level.lockedTeams & (1 << TEAM_RED)) )
+			found = "r";
+		else if ( !(level.lockedTeams & (1 << TEAM_BLUE)) )
+			found = "b";
+		else
+			found = NULL;
+
+		if (!found) {
+			trap_SendServerCommand( ent-g_entities, "print \"Teams ^1RED^7 and ^4BLUE^7 are both locked.\n\"" );
+			return qfalse;
+		}
+
+		s = found;
+	}
+
+	// if they are playing a tournement game, count as a loss
+	if ((g_gametype.integer == GT_TOURNAMENT)
+		&& oldTeam == TEAM_FREE) {//in a tournament game
+		//disallow changing teams
+		trap_SendServerCommand(ent - g_entities, "print \"Cannot switch teams in Duel\n\"");
+		return;
+		//FIXME: why should this be a loss???
+		//ent->client->sess.losses++;
+	}
+
+	//all checks parsed, he can change team
+	if (SetTeam(ent, (char*)s)) {
+		// team changed
+		ent->client->switchTeamTime = level.time + 3000; // MOVED and reduced time from 5000
+	}
+	else {
+		// same team or no change
+		// make this less annoying when we accidentally hit spectate at start of game (BUT WE ALREADY ARE ANYWAY!)
+		ent->client->switchTeamTime = level.time + 1000;
+	}
+	return qtrue;
+}
 
 /*
 =================
@@ -1705,41 +1831,15 @@ void Cmd_Team_f( gentity_t *ent ) {
 		return;
 	}
 
-	if ( ent->client->switchTeamTime > level.time ) {
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOSWITCH")) );
-		return;
-	}
-
-	if (!DefragDoubleTapSafety(ent, DOUBLETAP_TEAM, "team")) {
-		return;
-	}
 
 	if (gEscaping)
 	{
 		return;
 	}
 
-	// if they are playing a tournement game, count as a loss
-	if ( (g_gametype.integer == GT_TOURNAMENT )
-		&& ent->client->sess.sessionTeam == TEAM_FREE ) {//in a tournament game
-		//disallow changing teams
-		trap_SendServerCommand( ent-g_entities, "print \"Cannot switch teams in Duel\n\"" );
-		return;
-		//FIXME: why should this be a loss???
-		//ent->client->sess.losses++;
-	}
-
 	trap_Argv( 1, s, sizeof( s ) );
 
-	if (SetTeam(ent, s)) {
-		// team changed
-		ent->client->switchTeamTime = level.time + 5000;
-	}
-	else {
-		// same team or no change
-		// make this less annoying when we accidentally hit spectate at start of game (BUT WE ALREADY ARE ANYWAY!)
-		ent->client->switchTeamTime = level.time + 1000;
-	}
+	SetTeam_User(ent, s);
 
 }
 
@@ -2086,8 +2186,6 @@ void Cmd_Login_f( gentity_t *ent )
 	static char thirdparam[MAX_TOKEN_CHARS];
 	static loginRegisterStruct_t loginData;
 
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
-
 	if (ent->client->sess.login.loggedIn) {
 		trap_SendServerCommand(ent - g_entities, va("print \"^1You are already logged in as '%s'.\n\"", ent->client->sess.login.name));
 		return;
@@ -2223,8 +2321,6 @@ Cmd_Logout_f
 */
 void Cmd_Logout_f( gentity_t *ent )
 {
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
-
 	if (!ent->client->sess.login.loggedIn) {
 		trap_SendServerCommand(ent - g_entities, "print \"You are already logged out.\n\"");
 		return;
@@ -2513,8 +2609,6 @@ void Cmd_Top_f( gentity_t *ent )
 	char cmd[MAX_TOKEN_CHARS];
 	const char* thisMapName = DF_GetCourseName(qfalse);
 	const char* mainSubCourseName = DF_GetMainSubcourseName();
-
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
 	data.page = 1;
 	data.style = MV_JK2;
@@ -2891,8 +2985,6 @@ void Cmd_Maplist_f(gentity_t* ent) {
 	qboolean	first = qtrue;
 	int			n = 0;
 
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
-
 	if (trap_Argc() > 1) {
 		char arg[10];
 		trap_Argv(1, arg, sizeof(arg));
@@ -2957,8 +3049,6 @@ void Cmd_Latest_f(gentity_t* ent) {
 	//char pageNum[10];
 	const int args = trap_Argc();
 	char inputString[15];
-
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
 	memset(&data, 0, sizeof(data));
 	
@@ -3161,10 +3251,7 @@ void Cmd_MapSearch_f(gentity_t* ent) {
 	char inputString[15];
 	char cmd[15];
 	trap_Argv(0,cmd,sizeof(cmd));
-
-
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
-	
+		
 	memset(&data, 0, sizeof(data));
 	data.userSearchTerm[0] = '\0';
 	
@@ -3384,8 +3471,6 @@ void Cmd_Rank_f(gentity_t* ent) {
 	rankRequestStruct_t data;
 	const int args = trap_Argc();
 	char inputString[15];
-
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	
 	memset(&data, 0, sizeof(data));
 	
@@ -3468,8 +3553,6 @@ void Cmd_Rollympics_f( gentity_t *ent )
 		}
 	}
 
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
-
 	DF_RequestSubContestLeaderboard(ent, SUBCONTESTS_ROLLYMPICS_FIX,page);
 }
 /*
@@ -3509,8 +3592,6 @@ void Cmd_DBSRecords_f( gentity_t *ent )
 			page = 1;
 		}
 	}
-
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
 	DF_RequestSubContestLeaderboard(ent, category, page);
 }
@@ -3562,7 +3643,7 @@ void Cmd_Follow_f( gentity_t *ent ) {
 
 	// first set them to spectator
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		SetTeam( ent, "spectator" );
+		SetTeam_User( ent, "spectator" );
 	}
 
 	ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -3592,7 +3673,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir ) {
 	}
 	// first set them to spectator
 	if ( ent->client->sess.spectatorState == SPECTATOR_NOT ) {
-		SetTeam( ent, "spectator" );
+		SetTeam_User( ent, "spectator" );
 	}
 
 	if ( dir != 1 && dir != -1 ) {
@@ -3812,6 +3893,18 @@ static void Cmd_UnpauseGame_C(gentity_t* ent, const char* args) {
 
 
 
+//for limiting user args length so we're not wasting bandwidth echoing bad user requests.
+const char* ShortString(const char* str) {
+	static char buf[32] = { 0 };
+
+	if (str)
+		Q_strncpyz(buf, str, sizeof(buf));
+	else
+		buf[0] = 0;
+
+	return &buf[0];
+}
+
 
 
 #define EC		"\x19"
@@ -3870,6 +3963,16 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 	}
 
 	nameToAll[0] = '\0';
+
+	// CHECK MUTE
+	if (ent->client->sess.amflags & AMFLAG_MUTED) {
+		trap_SendServerCommand(ent - g_entities, "cp \"You are muted.\"");
+		return;
+	}
+	else if ((ent->client->sess.amflags & AMFLAG_MUTED_PUBONLY) && mode != SAY_TEAM) {
+		trap_SendServerCommand(ent - g_entities, "cp \"You can only talk in team chat.\"");
+		return;
+	}
 
 	switch ( mode ) {
 	default:
@@ -3968,8 +4071,6 @@ static void Cmd_Say_f( gentity_t *ent, int mode, qboolean arg0 ) {
 		p = ConcatArgs( 1 );
 	}
 
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
-
 	G_Say( ent, NULL, mode, p );
 }
 
@@ -4008,8 +4109,6 @@ static void Cmd_Tell_f( gentity_t *ent ) {
 	if ( !target || !target->inuse || !target->client ) {
 		return;
 	}
-
-	ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 
 	p = ConcatArgs( 2 );
 
@@ -4512,6 +4611,7 @@ void Cmd_BlacklistMap_f(gentity_t* ent) {
 
 typedef struct afkClient_s {
 	int afkTime;
+	int	specSendIn;
 	int clientNum;
 } afkClient_t;
 
@@ -4532,12 +4632,17 @@ void Cmd_Afk_f(gentity_t* ent) {
 		if (!other->inuse || !other->client) {
 			continue;
 		}
-		millisecs = level.time - other->client->sess.lastHereTime;
+		millisecs = clampedIntAdd(level.time, -other->client->sess.lastHereTime);
 		if (millisecs < minMillisecs) {
 			continue;
 		}
 		afkTimes[afkCount].afkTime = millisecs;
-		afkTimes[afkCount++].clientNum = i;
+		afkTimes[afkCount].clientNum = i;
+		if (g_inactivityToSpec.integer && millisecs >= clampedIntMult(g_inactivityToSpec.integer,1000)) {
+			millisecs = clampedIntAdd(other->client->pers.inactivityToSpecTime, -level.time);
+			afkTimes[afkCount].specSendIn = millisecs;
+		}
+		afkCount++;
 	}
 	if (!afkCount) {
 
@@ -4548,7 +4653,7 @@ void Cmd_Afk_f(gentity_t* ent) {
 	trap_SendServerCommand(ent - g_entities, "print \"Players AFK status:\n\"");
 	for (i = 0; i < afkCount; i++) {
 		other = g_entities + afkTimes[i].clientNum;
-		trap_SendServerCommand(ent - g_entities, va("print \"%15s %2d %s\n\"",DF_MsToString(afkTimes[i].afkTime), afkTimes[i].clientNum,other->client->pers.netname));
+		trap_SendServerCommand(ent - g_entities, va("print \"%15s%s %2d %s\n\"",DF_MsToString(afkTimes[i].afkTime),afkTimes[i].specSendIn > 0 ? miniva(" (to spec in %s)", DF_MsToString(afkTimes[i].specSendIn)) : "", afkTimes[i].clientNum, other->client->pers.netname));
 	}
 }
 
@@ -4565,7 +4670,7 @@ void Cmd_Players_f(gentity_t* ent) {
 			continue;
 		}
 		cl = other->client;
-		millisecs = level.time - other->client->sess.lastHereTime;
+		millisecs = clampedIntAdd(level.time, -other->client->sess.lastHereTime);
 		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-25s %-10s %-4s %-5d %s%s%s\n\"", 
 			i,
 			cl->sess.login.loggedIn ? cl->sess.login.name : "",
@@ -4574,7 +4679,7 @@ void Cmd_Players_f(gentity_t* ent) {
 			cl->sess.raceStyle.msec == -1 ? "togl" : (cl->sess.raceStyle.msec == -2 ? "flt" : (cl->sess.raceStyle.msec == 0 ? "unkn" : miniva("%d", 1000 / cl->sess.raceStyle.msec))),
 			cl->sess.raceStyle.jumpLevel,
 			other->client->pers.netname,
-			other->client->pers.stayOnMap && g_slowVote.integer ?((level.time-cl->sess.lastHereTime) < minMillisecsStayOnMap ? " ^7(wants to stay on map)" : " ^7(wants to stay on map but ^1AFK^7)") : "",
+			other->client->pers.stayOnMap && g_slowVote.integer ?(clampedIntAdd(level.time,-cl->sess.lastHereTime) < minMillisecsStayOnMap ? " ^7(wants to stay on map)" : " ^7(wants to stay on map but ^1AFK^7)") : "",
 			(other->client->pers.tasClient & TASCLIENT_MACHINELEARNING) ? " ^7(TAS Machine Learning Bot)" : (other->client->pers.tasClient ? " ^7(TAS Client)" : "")
 		));
 	}
@@ -4597,7 +4702,7 @@ int G_SlowVoteProhibits(int ownclientNum) {
 			continue;
 		}
 		// extend this to any segmented runner? but how to avoid trolling?
-		if (oEnt->client->pers.stayOnMap && oEnt->client->sess.sessionTeam != TEAM_SPECTATOR && (level.time - oEnt->client->sess.lastHereTime) < minMillisecs) {
+		if (oEnt->client->pers.stayOnMap && oEnt->client->sess.sessionTeam != TEAM_SPECTATOR && clampedIntAdd(level.time,-oEnt->client->sess.lastHereTime) < minMillisecs) {
 			stayers++;
 		}
 	}
@@ -5034,7 +5139,7 @@ void Cmd_Vote_f( gentity_t *ent ) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEALREADY")) );
 		return;
 	}
-	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR && !level.votingOpinionAll) {
+	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR && !level.votingOpinionAll && !g_voteAsSpec.integer) {
 		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTEASSPEC")) );
 		return;
 	}
@@ -5575,7 +5680,7 @@ qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged) 
 		return qfalse;
 	}
 
-	if (g_gametype.integer >= GT_TEAM)
+	if (g_gametype.integer >= GT_TEAM && ent->client->sess.mode == MODE_NORMAL)
 	{ //no private dueling in team modes
 		if (message) {
 			trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NODUEL_GAMETYPE")));
@@ -5748,6 +5853,209 @@ void Cmd_EngageDuel_f(gentity_t *ent)
 		ent->client->ps.duelIndex = challenged->s.number;
 	}
 }
+
+
+
+const char* G_ClientNameWithPrefix(gentity_t* ent, const int maxNameChars) {
+
+	const char col = ColorCodeForClient(ent, qfalse);
+	static char buf[256] = { 0 };
+
+	memset(&buf, 0, 256);
+
+	if (ent && ent->client)
+		Com_sprintf(buf, sizeof(buf), "%02d^%c) ^7 %s", (int)(ent - g_entities), col, maxNameChars > 0 ?
+			G_ClientNameFixedLength(ent, maxNameChars) :
+			ent->client->pers.netname);
+	else
+		Q_strncpyz(buf, "?", sizeof(buf));
+
+	return &buf[0];
+}
+
+#define G_MAXBUFNAMELEN	256		//...
+//if clampMax is true, dont let string be longer than numChars visible chars
+const char* G_StringFixedLength(const char* str, int numChars, char fillChar, qboolean clampMax) {
+	int nc = 0, m;
+
+	const char* ret;
+	const int _strlen = strlen(str);
+	static char outName[2][G_MAXBUFNAMELEN];
+	static int index = 0;
+
+	if (numChars <= 0)
+		numChars = 1024;
+
+	for (m = 0; nc < numChars && m < G_MAXBUFNAMELEN - 1; ++m, ++nc) {
+		int c;
+
+		if (m < _strlen) {
+			c = str[m];
+
+			if (Q_IsColorString(str + m)) {
+				nc -= 2;	//this char and the next will not count
+			}
+		}
+		else if (!clampMax) {
+			break;
+		}
+		else {
+			c = fillChar;
+		}
+
+		outName[index][m] = c;
+	}
+	outName[index][m] = 0;
+
+	ret = outName[index];
+	index ^= 1;
+	return ret;
+}
+
+
+const char* G_ClientNameFixedLength(gentity_t* ent, const int numChars) {
+	return G_StringFixedLength(ent->client->pers.netname, numChars, ' ', qtrue);
+}
+
+//"cheap" findplayer version for use by clients. Only checks clean names, and only checks Q_stricmp and q_stristr (both case insensitive)
+//ent = guy who wants to find someone.
+int G_FindPlayerFromStringCheap(gentity_t* ent, const char* find, qboolean trySkipSpecs) {
+	int			i, k;
+	int ret = -1;
+	gclient_t* cl;
+
+	if (!find || !find[0])
+		return -1;
+
+	if (ent && ent->client && ent->inuse && !Q_stricmp(find, "self")) {
+		return ent - g_entities;
+	}
+
+	if (find[0] >= '0' && find[0] <= '9') {
+		i = atoi(find);
+
+		if (i >= 0 && i < MAX_CLIENTS && level.clients[i].pers.connected != CON_DISCONNECTED) {
+			return i;
+		}
+
+		return -1;
+	}
+
+	for (k = 0; k < 2; ++k) {
+		for (i = 0, cl = level.clients; i < MAX_CLIENTS; ++i, ++cl) {
+			const char* name = NULL;
+
+			if (!cl || cl->pers.connected == CON_DISCONNECTED)
+				continue;
+
+			if (trySkipSpecs && cl->sess.sessionTeam == TEAM_SPECTATOR)
+				continue;
+
+			name = cl->pers.netnameClean;
+
+			switch (k)
+			{
+			case 0:
+				if (!Q_stricmp(name, find)) ret = i;		//case insensitive string compare.
+				break;
+			case 1:
+				if (Q_stristr(name, find)) ret = i;		//case insensitive substring search.
+				break;
+			}
+		}
+	}
+
+	if (trySkipSpecs && ret == -1) {
+		return G_FindPlayerFromStringCheap(ent, find, qfalse);
+	}
+
+	return ret;
+}
+
+//this thing is rather ineffective/slow, but that should not be a problem since its only used for server / rcon commands.
+int G_FindPlayerFromString(const char* buf) {
+	int			i, k;
+	gclient_t* cl;
+
+	if (!buf || !buf[0])
+		return -1;
+
+	if (buf[0] >= '0' && buf[0] <= '9') {
+		i = atoi(buf);
+
+		if (i >= 0 && i < MAX_CLIENTS && level.clients[i].pers.connected != CON_DISCONNECTED) {
+			return i;
+		}
+
+		return -1;
+	}
+
+	for (k = 0; k < 8; ++k) {
+		for (i = 0, cl = level.clients; i < MAX_CLIENTS; ++i, ++cl) {
+			char		nameStr[256] = { 0 };
+			const char* name;
+
+			if (!cl || cl->pers.connected == CON_DISCONNECTED)
+				continue;
+
+
+			if (k % 2) {
+				name = cl->pers.netnameClean;
+			}
+			else {
+				name = cl->pers.netname;
+			}
+
+			switch (k)
+			{
+			case 0:
+			case 1:
+				if (!strcmp(name, buf)) return i;			//case sensitive string compare.
+				break;
+			case 2:
+			case 3:
+				if (!Q_stricmp(name, buf)) return i;		//case insensitive string compare.
+				break;
+			case 4:
+			case 5:
+				if (strstr(name, buf)) return i;		//case sensitive substring search.
+				break;
+			case 6:
+			case 7:
+				if (Q_stristr(name, buf)) return i;		//case insensitive substring search.
+				break;
+			}
+		}
+	}
+
+	return -1;	// Client isnt valid
+}
+
+char ColorCodeForClient(gentity_t* target, qboolean botSpecialColor) {
+	char col = '7';
+
+	//set a special color according to team or connect status
+	if (botSpecialColor && target->r.svFlags & SVF_BOT) {
+		col = '5';	//Cyan for bots!
+	}
+	else if (target->client->pers.connected == CON_CONNECTING) {
+		col = '2';
+	}
+	else if (target->client->sess.sessionTeam == TEAM_BLUE) {
+		col = '4';
+	}
+	else if (target->client->sess.sessionTeam == TEAM_RED) {
+		col = '1';
+	}
+	else if (target->client->sess.sessionTeam == TEAM_SPECTATOR) {
+		col = '3';
+	}
+
+	return col;
+
+}
+
+
 
 void PM_SetAnim(int setAnimParts,int anim,int setAnimFlags, int blendTime);
 
@@ -6057,6 +6365,7 @@ static void Cmd_Debug_DebugDismemberment_f(gentity_t* ent) {
 #define CMD_ALLOWINREPLAY		(1<<4) // allow during a segmented run replay
 #define CMD_ALLOWWHENFORCELOGIN (1<<5) // allow when force logged in by admin (we wanna encourage changing password so we disable most cmds)
 #define CMD_DEBUG				(1<<6) // cmds hidden behind _DEBUG
+#define CMD_SIGNALSPRESENCE		(1<<7) // usage of this cmd resets the afk timer for a player
 
 typedef struct command_s {
 	const char* name;	//string that invokes the command
@@ -6073,7 +6382,11 @@ int cmdcmp(const void* a, const void* b) {
 
 clientCommand_t clientCommands[] = {
 	{"addbot",				NULL, Cmd_AddBot_f,						CMD_INTERMISSIONUNKNOWN},
+#ifdef _DEBUG
+	{"afk",					NULL, Cmd_Afk_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+#else
 	{"afk",					NULL, Cmd_Afk_f,						CMD_NOINTERMISSION},
+#endif
 	{"allforce",			NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
 	{"amMap",				NULL, Cmd_AmMap_f,						CMD_NOINTERMISSION},
 	{"amtele",				NULL, Cmd_Amtele_f,						CMD_NOINTERMISSION},
@@ -6083,7 +6396,7 @@ clientCommand_t clientCommands[] = {
 	{"callvote",			NULL, Cmd_CallVote_f,					CMD_NOINTERMISSION},
 	{"changepassword",		NULL, Cmd_ChangePassword_f,				CMD_NOINTERMISSION | CMD_ALLOWWHENFORCELOGIN},
 	{"checkpoint",			NULL, DF_CreateCustomCheckpoint_Cmd,	CMD_NOINTERMISSION},
-	{"dbsrecords",			NULL, Cmd_DBSRecords_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"dbsrecords",			NULL, Cmd_DBSRecords_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
 	{"debugDismemberment",	NULL, Cmd_Debug_DebugDismemberment_f,	CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
 	{"debugKnockMeDown",	NULL, Cmd_Debug_DebugKnockMeDown_f,		CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
 	{"debugSetBodyAnim",	NULL, Cmd_Debug_DebugSetBodyAnim_f,		CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
@@ -6092,7 +6405,7 @@ clientCommand_t clientCommands[] = {
 	{"duel",				NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
 	{"duelq",				NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
 	{"duelqueue",			NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
-	{"easiest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"easiest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"floatphysics",		NULL, Cmd_FloatPhysics_f,				CMD_NOINTERMISSION},
 	{"follow",				NULL, Cmd_Follow_f,						CMD_NOINTERMISSION},
 	{"follownext",			NULL, Cmd_FollowNext_f,					CMD_NOINTERMISSION},
@@ -6105,52 +6418,52 @@ clientCommand_t clientCommands[] = {
 	{"genArena",			NULL, Cmd_GenArena_f,					CMD_NOINTERMISSION},
 	{"give",				NULL, Cmd_Give_f,						CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
 	{"god",					NULL, Cmd_God_f,						CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
-	{"hardest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"hardest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"headexplodey",		NULL, Cmd_Debug_HeadExplodeY_f,			CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
-	{"help",				NULL, Cmd_Help_f,						CMD_NOINTERMISSION},
+	{"help",				NULL, Cmd_Help_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"ignore",				NULL, Cmd_Ignore_f,						CMD_NOINTERMISSION},
 	{"ironman",				NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
 	{"jump",				NULL, Cmd_JumpChange_f,					CMD_NOINTERMISSION},
-	{"kill",				NULL, Cmd_Kill_f,						CMD_NOINTERMISSION},
+	{"kill",				NULL, Cmd_Kill_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"lasers",				NULL, Cmd_Lasers_f,						CMD_NOINTERMISSION},
-	{"latest",				NULL, Cmd_Latest_f,						CMD_NOINTERMISSION},
+	{"latest",				NULL, Cmd_Latest_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"launch",				NULL, Cmd_Launch_f,						CMD_NOINTERMISSION},
 	{"levelshot",			NULL, Cmd_LevelShot_f,					CMD_NOINTERMISSION},
 	{"loadcheckpoints",		NULL, G_DB_LoadUserCheckpoints,			CMD_NOINTERMISSION},
-	{"login",				NULL, Cmd_Login_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"logout",				NULL, Cmd_Logout_f,						CMD_NOINTERMISSION | CMD_ALLOWWHENFORCELOGIN},
-	{"longest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"login",				NULL, Cmd_Login_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"logout",				NULL, Cmd_Logout_f,						CMD_NOINTERMISSION | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
+	{"longest",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"loveandpeace",		NULL, Cmd_Debug_LoveAndPeace_f,			CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
 	{"mapdefaults",			NULL, Cmd_DF_MapDefaults_f,				CMD_NOINTERMISSION},
-	{"maplist",				NULL, Cmd_Maplist_f,					CMD_NOINTERMISSION},
+	{"maplist",				NULL, Cmd_Maplist_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"messages",			NULL, G_Cmd_UserMessages,				CMD_NOINTERMISSION,	"User account message sending/receiving (don't use for anything private)"},
-	{"mostplayed",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"mostplayed",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"move",				NULL, Cmd_MovementStyle_f,				CMD_NOINTERMISSION},
-	{"noclip",				NULL, Cmd_Noclip_f,						CMD_NOINTERMISSION},
+	{"noclip",				NULL, Cmd_Noclip_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"notarget",			NULL, Cmd_Notarget_f,					CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
-	{"notwr",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"notwr",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"pickmode",			NULL, Cmd_Mode_f,						CMD_NOINTERMISSION},
 	{"players",				NULL, Cmd_Players_f,					CMD_NOINTERMISSION},
 	{"race",				NULL, Cmd_Race_f,						CMD_NOINTERMISSION},
-	{"rank",				NULL, Cmd_Rank_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"rank",				NULL, Cmd_Rank_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
 	{"ratemap",				NULL, Cmd_RateMap_f,					CMD_NOINTERMISSION},
 	{"register",			NULL, Cmd_Register_f,					CMD_NOINTERMISSION},
 	{"removecheckpoints",	NULL, DF_RemoveCheckPoints_Cmd,			CMD_NOINTERMISSION},
 	{"resetspawn",			NULL, DF_ResetSpawn,					CMD_NOINTERMISSION},
-	{"respos",				NULL, Cmd_Respos_f,						CMD_NOINTERMISSION},
-	{"resseg",				NULL, Cmd_DF_RestartSegmentedRun_f,		CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"rollympics",			NULL, Cmd_Rollympics_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"respos",				NULL, Cmd_Respos_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
+	{"resseg",				NULL, Cmd_DF_RestartSegmentedRun_f,		CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"rollympics",			NULL, Cmd_Rollympics_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
 	{"run",					NULL, Cmd_DF_RunSettings_f,				CMD_NOINTERMISSION},
 	{"savecheckpoints",		NULL, G_DB_SaveUserCheckpoints,			CMD_NOINTERMISSION},
-	{"savepos",				NULL, Cmd_Savepos_f,					CMD_NOINTERMISSION},
+	{"savepos",				NULL, Cmd_Savepos_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"savespawn",			NULL, DF_SaveSpawn,						CMD_NOINTERMISSION},
-	{"say",					NULL, Cmd_SayNormal_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
-	{"say_cross",			NULL, Cmd_SayCross_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
-	{"say_team",			NULL, Cmd_SayTeam_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
-	{"score",				NULL, Cmd_Score_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
+	{"say",					NULL, Cmd_SayNormal_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
+	{"say_cross",			NULL, Cmd_SayCross_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
+	{"say_team",			NULL, Cmd_SayTeam_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
+	{"score",				NULL, Cmd_Score_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
 	{"selectspawn",			NULL, DF_SelectSpawn,					CMD_NOINTERMISSION},
 	{"setviewpos",			NULL, Cmd_SetViewpos_f,					CMD_NOINTERMISSION},
-	{"shortest",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"shortest",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"solo",				NULL, Cmd_Solo_f,						CMD_NOINTERMISSION},
 	{"stats",				NULL, Cmd_Stats_f,						CMD_NOINTERMISSION},
 	{"stay",				NULL, Cmd_Stay_f,						CMD_NOINTERMISSION},
@@ -6160,24 +6473,24 @@ clientCommand_t clientCommands[] = {
 	{"team",				NULL, Cmd_Team_f,						CMD_NOINTERMISSION},
 	{"teamtask",			NULL, Cmd_TeamTask_f,					CMD_NOINTERMISSION},
 	{"teamvote",			NULL, Cmd_TeamVote_f,					CMD_NOINTERMISSION},
-	{"tell",				NULL, Cmd_Tell_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
+	{"tell",				NULL, Cmd_Tell_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
 	{"tffaStats",			NULL, Cmd_TFFAStats_f,					CMD_NOINTERMISSION},
 	{"thedestroyer",		NULL, Cmd_TheDestroyer_f,				CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION}, // technically there should be a fallthrough to "unknown cmd" here but meh.
 	{"time",				NULL, Cmd_Time_f,						CMD_NOINTERMISSION},
 	{"togglefps",			NULL, Cmd_ToggleFPS_f,					CMD_NOINTERMISSION},
-	{"top",					NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"topcheat",			NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"topcustom",			NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"topmain",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"topnjb",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"topnojumpbug",		NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"toprated",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
-	{"topseg",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
-	{"topsegmented",		NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY},
+	{"top",					NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"topcheat",			NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"topcustom",			NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"topmain",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"topnjb",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"topnojumpbug",		NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"toprated",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
+	{"topseg",				NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
+	{"topsegmented",		NULL, Cmd_Top_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
 	{"updateRanks",			NULL, Cmd_UpdateRanks_f,				CMD_NOINTERMISSION},
 	{"vote",				NULL, Cmd_Vote_f,						CMD_NOINTERMISSION},
 	{"where",				NULL, Cmd_Where_f,						CMD_NOINTERMISSION | CMD_ALLOWINREPLAY },
-	{"wrs",					NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION},
+	{"wrs",					NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE },
 };
 
 static const size_t numCommands = ARRAY_LEN(clientCommands);
@@ -6301,6 +6614,10 @@ void ClientCommand( int clientNum ) {
 #endif
 	else {
 		command->func(ent);
+	}
+
+	if (command && (command->flags & CMD_SIGNALSPRESENCE)) {
+		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	}
 
 

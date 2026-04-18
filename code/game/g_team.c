@@ -116,6 +116,20 @@ gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage)
 	te->r.svFlags |= SVF_BROADCAST;
 	te->s.eventParm = ctfMessage;
 	te->s.trickedentindex = plIndex;
+
+	if (ctfMessage == CTFMESSAGE_PLAYER_CAPTURED_FLAG && plIndex < MAX_CLIENTS && plIndex >= 0) {
+		//add flag hold time
+		const int holdtime = level.time - level.clients[plIndex].pers.teamState.flagsince;
+
+		te->s.genericenemyindex = holdtime;
+
+		// pers_gauntlet_frag_count = total flag hold time
+		g_entities[plIndex].client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] += holdtime;
+		g_entities[plIndex].client->pers.teamState.flaghold += holdtime;
+
+		level.teamstats[BinaryTeam(g_entities + plIndex)].flaghold += holdtime;
+	}
+
 	if (ctfMessage == CTFMESSAGE_PLAYER_CAPTURED_FLAG)
 	{
 		if (teamIndex == TEAM_RED)
@@ -300,6 +314,15 @@ void Team_ForceGesture(team_t team) {
 	}
 }
 
+
+int BinaryTeam(gentity_t* ent) {
+
+	if (ent->client->sess.sessionTeam == TEAM_RED)
+		return G_REDTEAM;
+
+	return G_BLUETEAM;
+}
+
 /*
 ================
 Team_FragBonuses
@@ -347,6 +370,9 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 		attacker->client->pers.teamState.lastfraggedcarrier = nowTimeAttacker;
 		AddScore(attacker, targ->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
 		attacker->client->pers.teamState.fragcarrier++;
+
+		level.teamstats[BinaryTeam(attacker)].rets++;
+
 		//PrintMsg(NULL, "%s" S_COLOR_WHITE " fragged %s's flag carrier!\n",
 		//	attacker->client->pers.netname, TeamName(team));
 		PrintCTFMessage(attacker->s.number, team, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
@@ -358,6 +384,14 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 				G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qtrue);
 			}
 		}
+
+		//impressive count is now equal to number of returning frags
+		attacker->client->ps.persistant[PERS_IMPRESSIVE_COUNT]++;
+		// add the sprite over the player's head
+		attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP);
+		attacker->client->ps.eFlags |= EF_AWARD_IMPRESSIVE;
+		attacker->client->rewardTime = level.time + REWARD_SPRITE_TIME;
+
 
 		// the target had the flag, clear the hurt carrier
 		// field on the other team
@@ -397,6 +431,8 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 		attacker->client->pers.teamState.carrierdefense++;
 		targ->client->pers.teamState.lasthurtcarrier = 0;
 
+		level.teamstats[BinaryTeam(attacker)].defense++;
+
 		attacker->client->ps.persistant[PERS_DEFEND_COUNT]++;
 		team = attacker->client->sess.sessionTeam;
 		// add the sprite over the player's head
@@ -415,6 +451,8 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 
 		attacker->client->pers.teamState.carrierdefense++;
 		targ->client->pers.teamState.lasthurtcarrier = 0;
+
+		level.teamstats[BinaryTeam(attacker)].defense++;
 
 		attacker->client->ps.persistant[PERS_DEFEND_COUNT]++;
 		team = attacker->client->sess.sessionTeam;
@@ -473,6 +511,8 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 		AddScore(attacker, targ->r.currentOrigin, CTF_FLAG_DEFENSE_BONUS);
 		attacker->client->pers.teamState.basedefense++;
 
+		level.teamstats[BinaryTeam(attacker)].defense++;
+
 		attacker->client->ps.persistant[PERS_DEFEND_COUNT]++;
 		// add the sprite over the player's head
 		attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
@@ -493,6 +533,8 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 			attacker->client->sess.sessionTeam != targ->client->sess.sessionTeam) {
 			AddScore(attacker, targ->r.currentOrigin, CTF_CARRIER_PROTECT_BONUS);
 			attacker->client->pers.teamState.carrierdefense++;
+
+			level.teamstats[BinaryTeam(attacker)].defense++;
 
 			attacker->client->ps.persistant[PERS_DEFEND_COUNT]++;
 			// add the sprite over the player's head
@@ -796,6 +838,8 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 				AddScore (player, ent->r.currentOrigin, CTF_RETURN_FLAG_ASSIST_BONUS);
 				other->client->pers.teamState.assists++;
 
+				level.teamstats[BinaryTeam(player)].assist++;
+
 				player->client->ps.persistant[PERS_ASSIST_COUNT]++;
 				// add the sprite over the player's head
 				player->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
@@ -807,6 +851,9 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 				AddScore(player, ent->r.currentOrigin, CTF_FRAG_CARRIER_ASSIST_BONUS);
 				other->client->pers.teamState.assists++;
 				player->client->ps.persistant[PERS_ASSIST_COUNT]++;
+
+				level.teamstats[BinaryTeam(player)].assist++;
+
 				// add the sprite over the player's head
 				player->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
 				player->client->ps.eFlags |= EF_AWARD_ASSIST;
@@ -827,6 +874,8 @@ int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 	//PrintMsg (NULL, "%s" S_COLOR_WHITE " got the %s flag!\n",
 	//	other->client->pers.netname, TeamName(team));
 	PrintCTFMessage(other->s.number, team, CTFMESSAGE_PLAYER_GOT_FLAG);
+
+	level.teamstats[BinaryTeam(other)].flaggrabs++;
 
 	if (team == TEAM_RED)
 		cl->ps.powerups[PW_REDFLAG] = INT_MAX; // flags never expire
