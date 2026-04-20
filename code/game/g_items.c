@@ -1462,6 +1462,16 @@ void RespawnItem( gentity_t *ent ) {
 		VectorCopy(ent->origOrigin, ent->r.currentOrigin);
 	}
 
+	if (g_defrag.integer) {
+		int i;
+		// kinda cringe
+		ent->goneForNonRacers = qfalse;
+		for (i = 0; i < level.maxclients; i++) {
+			(g_entities + i)->client->entityStates[ent - g_entities] = 0;
+		}
+	}
+
+
 	ent->r.contents = CONTENTS_TRIGGER;
 	//ent->s.eFlags &= ~EF_NODRAW;
 	ent->s.eFlags &= ~(EF_NODRAW | EF_ITEMPLACEHOLDER);
@@ -1716,11 +1726,21 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace) {
 	// to be placed on movers.
 	if (g_defrag.integer) {
 
-		if (!isRacer) {
-			ent->availableTimeForNonRacers = level.time + respawn * 1000;
+		if (respawn <= 0) {
+			if (!isRacer) {
+				ent->goneForNonRacers = qtrue;
+			}
+			else {
+				other->client->entityStates[ent - g_entities] = 1;
+			}
 		}
 		else {
-			other->client->triggerTimes[ent - g_entities] = nowTime + respawn * 1000;
+			if (!isRacer) {
+				ent->availableTimeForNonRacers = level.time + respawn * 1000;
+			}
+			else {
+				other->client->triggerTimes[ent - g_entities] = nowTime + respawn * 1000;
+			}
 		}
 	} else {
 		if (!(ent->flags & FL_DROPPED_ITEM) && (ent->item->giType == IT_WEAPON || ent->item->giType == IT_POWERUP))

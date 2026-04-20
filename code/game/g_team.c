@@ -314,6 +314,13 @@ void Team_ForceGesture(team_t team) {
 	}
 }
 
+qboolean IsCapper(gentity_t* ent) {
+	if (ent && ent->client && ent->client->sess.sessionTeam != TEAM_SPECTATOR &&
+		(ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG]))
+		return qtrue;
+
+	return qfalse;
+}
 
 int BinaryTeam(gentity_t* ent) {
 
@@ -743,6 +750,15 @@ void Team_DroppedFlagThink(gentity_t *ent) {
 }
 
 
+//OPENJK:
+// This is to account for situations when there are more players standing
+// on flag stand and then flag gets returned. This leaded to bit random flag
+// grabs/captures, improved version takes distance to the center of flag stand
+// into consideration (closer player will get/capture the flag).
+static vec3_t	minFlagRange = { 50, 36, 36 };
+static vec3_t	maxFlagRange = { 44, 36, 36 };
+int Team_TouchEnemyFlag(gentity_t* ent, gentity_t* other, int team);
+
 /*
 ==============
 Team_DroppedFlagThink
@@ -793,6 +809,70 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	// flag, he's just won!
 	if (!cl->ps.powerups[enemy_flag])
 		return 0; // We don't have the flag
+
+	// fix from openJK: captures after timelimit hit could
+	// cause game ending with tied score
+	if (level.intermissionQueued)
+		return 0;
+
+	// ported from vvv-serverside
+	if (g_fairFlag.integer) {
+		//Openjk
+		int			num, j, enemyTeam;
+		vec3_t		mins, maxs;
+		int			touch[MAX_GENTITIES];
+		gentity_t*	enemy;
+		float		enemyDist, dist;
+
+		//OPENJK
+		// check for enemy closer to grab the flag
+		VectorSubtract( ent->s.pos.trBase, minFlagRange, mins );
+		VectorAdd( ent->s.pos.trBase, maxFlagRange, maxs );
+
+		num = trap_EntitiesInBox( mins, maxs, touch, MAX_GENTITIES );
+
+		dist = Distance( ent->s.pos.trBase, other->client->ps.origin );
+
+		if (other->client->sess.sessionTeam == TEAM_RED)
+			enemyTeam = TEAM_BLUE;
+		else
+			enemyTeam = TEAM_RED;
+
+		for (j = 0; j < num; j++) {
+			enemy = (g_entities + touch[j]);
+
+			if (!enemy || !enemy->inuse || !enemy->client)
+				continue;
+
+			if (enemy->client->pers.connected != CON_CONNECTED)
+				continue;
+
+			//ignore specs
+			if (enemy->client->sess.sessionTeam == TEAM_SPECTATOR)
+				continue;
+
+			//check if its alive
+			if (enemy->health < 1)
+				continue;		// dead people can't pickup
+
+			//check if this is enemy
+			if ((enemy->client->sess.sessionTeam != TEAM_RED && enemy->client->sess.sessionTeam != TEAM_BLUE) ||
+				enemy->client->sess.sessionTeam != enemyTeam){
+				continue;
+			}
+
+			//check if enemy is closer to our flag than us
+			enemyDist = Distance(ent->s.pos.trBase, enemy->client->ps.origin);
+			if (enemyDist < dist) {
+				// possible recursion is hidden in this, but
+				// infinite recursion wont happen, because we cant
+				// have a < b and b < a at the same time
+				return Team_TouchEnemyFlag( ent, enemy, team );
+			}
+		}
+	}
+
+
 	//PrintMsg( NULL, "%s" S_COLOR_WHITE " captured the %s flag!\n", cl->pers.netname, TeamName(OtherTeam(team)));
 	PrintCTFMessage(other->s.number, team, CTFMESSAGE_PLAYER_CAPTURED_FLAG);
 
@@ -870,6 +950,57 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 
 int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 	gclient_t *cl = other->client;
+
+	if (g_fairFlag.integer) {
+		vec3_t		mins, maxs;
+		int			num, j, ourFlag;
+		int			touch[MAX_GENTITIES];
+		gentity_t* enemy;
+		float		enemyDist, dist;
+
+		VectorSubtract(ent->s.pos.trBase, minFlagRange, mins);
+		VectorAdd(ent->s.pos.trBase, maxFlagRange, maxs);
+
+		num = trap_EntitiesInBox(mins, maxs, touch, MAX_GENTITIES);
+
+		dist = Distance(ent->s.pos.trBase, other->client->ps.origin);
+
+		if (other->client->sess.sessionTeam == TEAM_RED) {
+			ourFlag = PW_REDFLAG;
+		}
+		else {
+			ourFlag = PW_BLUEFLAG;
+		}
+
+		for (j = 0; j < num; ++j) {
+			enemy = (g_entities + touch[j]);
+
+			if (!enemy || !enemy->inuse || !enemy->client)
+				continue;
+
+			//ignore specs
+			if (enemy->client->sess.sessionTeam == TEAM_SPECTATOR)
+				continue;
+
+			//check if its alive
+			if (enemy->health < 1)
+				continue;		// dead people can't pick up items
+
+			//lets check if he has our flag (he must have our flag)
+			if (!enemy->client->ps.powerups[ourFlag])
+				continue;
+
+			//check if enemy is closer to our flag than us
+			enemyDist = Distance(ent->s.pos.trBase, enemy->client->ps.origin);
+			if (enemyDist < dist) {
+				// possible recursion is hidden in this, but
+				// infinite recursion wont happen, because we cant
+				// have a < b and b < a at the same time
+				return Team_TouchOurFlag(ent, enemy, team);
+			}
+		}
+	}
+
 
 	//PrintMsg (NULL, "%s" S_COLOR_WHITE " got the %s flag!\n",
 	//	other->client->pers.netname, TeamName(team));
@@ -1118,7 +1249,7 @@ Format:
 
 ==================
 */
-void TeamplayInfoMessage( gentity_t *ent ) {
+void TeamplayInfoMessage( gentity_t *ent, const team_t team) {
 	char		entry[1024];
 	char		string[8192];
 	int			stringlength;
@@ -1136,8 +1267,7 @@ void TeamplayInfoMessage( gentity_t *ent ) {
 	// but in client order (so they don't keep changing position on the overlay)
 	for (i = 0, cnt = 0; i < g_maxclients.integer && cnt < TEAM_MAXOVERLAY; i++) {
 		player = g_entities + level.sortedClients[i];
-		if (player->inuse && player->client->sess.sessionTeam == 
-			ent->client->sess.sessionTeam ) {
+		if (player->inuse && player->client->sess.sessionTeam == team ) {
 			clients[cnt++] = level.sortedClients[i];
 		}
 	}
@@ -1151,8 +1281,7 @@ void TeamplayInfoMessage( gentity_t *ent ) {
 
 	for (i = 0, cnt = 0; i < g_maxclients.integer && cnt < TEAM_MAXOVERLAY; i++) {
 		player = g_entities + i;
-		if (player->inuse && player->client->sess.sessionTeam == 
-			ent->client->sess.sessionTeam ) {
+		if (player->inuse && player->client->sess.sessionTeam == team ) {
 
 			h = player->client->ps.stats[STAT_HEALTH];
 			a = player->client->ps.stats[STAT_ARMOR];
@@ -1175,6 +1304,20 @@ void TeamplayInfoMessage( gentity_t *ent ) {
 
 	trap_SendServerCommand( ent-g_entities, va("tinfo %i %s", cnt, string) );
 }
+
+// from vVv-serverside
+//nasty
+team_t G_SpeccingClientTeam(gentity_t* ent) {
+
+	if (ent->client->sess.sessionTeam == TEAM_SPECTATOR && ent->client->sess.spectatorState == SPECTATOR_FOLLOW
+		&& ent->client->ps.clientNum >= 0 && ent->client->ps.clientNum < MAX_CLIENTS) {
+
+		return level.clients[ent->client->ps.clientNum].sess.sessionTeam;
+	}
+
+	return -1;
+}
+
 
 void CheckTeamStatus(void) {
 	int i;
@@ -1201,14 +1344,24 @@ void CheckTeamStatus(void) {
 		}
 
 		for (i = 0; i < g_maxclients.integer; i++) {
+			team_t refteam;
 			ent = g_entities + i;
 
-			if ( ent->client->pers.connected != CON_CONNECTED ) {
+			if (!ent->client || !ent->inuse || ent->client->pers.connected != CON_CONNECTED ) {
 				continue;
 			}
 
-			if (ent->inuse && (ent->client->sess.sessionTeam == TEAM_RED ||	ent->client->sess.sessionTeam == TEAM_BLUE)) {
-				TeamplayInfoMessage( ent );
+			if (!ent->client->pers.teamInfo)
+				continue;
+
+			refteam = ent->client->sess.sessionTeam;
+			if (refteam == TEAM_SPECTATOR) {
+				refteam = G_SpeccingClientTeam(ent);
+			}
+
+			//if (ent->inuse && (ent->client->sess.sessionTeam == TEAM_RED ||	ent->client->sess.sessionTeam == TEAM_BLUE)) {
+			if (refteam == TEAM_RED || refteam == TEAM_BLUE) {
+				TeamplayInfoMessage( ent, refteam );
 			}
 		}
 	}

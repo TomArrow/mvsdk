@@ -482,6 +482,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	qboolean	robustTriggerEvaluation = qfalse;
 	qboolean	isTraced;
 	int			nowTime = LEVELTIME(ent->client);
+	qboolean	needExtraItemsPass = !ent->client->sess.raceMode;
 
 	if ( !ent->client ) {
 		return;
@@ -594,7 +595,9 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		}
 		
 		// put them all in the right order so it respects order of entities in map
-		qsort(touch,num,sizeof(touch[0]), int_cmp);
+		if (!needExtraItemsPass) { // items pass will do it itself
+			qsort(touch, num, sizeof(touch[0]), int_cmp);
+		}
 
 	}
 	else {
@@ -605,6 +608,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		else {
 			VectorSubtract(ent->client->ps.origin, range, mins);
 			VectorAdd(ent->client->ps.origin, range, maxs);
+			needExtraItemsPass = qfalse;
 		}
 
 		num = trap_EntitiesInBox(mins, maxs, touch, MAX_GENTITIES);
@@ -612,6 +616,32 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		// can't use ent->r.absmin, because that has a one unit pad
 		VectorAdd(ent->client->ps.origin, ent->r.mins, mins);
 		VectorAdd(ent->client->ps.origin, ent->r.maxs, maxs); // TODO uhm how does this relate to g_triggersrobust? think about this...
+	}
+
+	if (needExtraItemsPass) {
+		// vanilla item touch range is not what you'd expect from their actual r.mins/r.maxs bounding boxes.
+		// item bounding boxes are really tiny, around radius 8 or so.
+		// but their search detection radius is very big (see 'range' var in this function)
+		// and BG_PlayerTouchesItem adds even more confusion into the mix, as it doesn't seem to be coherent with the
+		// range var here, and also seemingly confused dimension 0 with dimension 2, such that the horizontal detection box
+		// is actually an off-center rectangle. 
+		// TLDR: to preserve vanilla item touch behavior, we need this extra pass when using g_triggersrobust
+		int num2;
+		int	touch2[MAX_GENTITIES];
+		vec3_t		minsItems, maxsItems;
+		VectorSubtract(ent->client->ps.origin, range, minsItems);
+		VectorAdd(ent->client->ps.origin, range, maxsItems);
+		num2 = trap_EntitiesInBox(minsItems, maxsItems, touch2, MAX_GENTITIES); // this is guaranteed to get the remaining stuff because 
+		for (i = 0; i < num2; i++) {
+			hit = &g_entities[touch2[i]];
+			if (!(hit->r.contents & CONTENTS_TRIGGER) || hit->s.eType != ET_ITEM) {
+				continue; // no need to worry about dupes since we removed CONTENTS_TRIGGER from the already done ones
+			}
+			touchViaTrace[touch2[i]] = qfalse;
+			touch[num++] = touch2[i];
+			if (num == MAX_GENTITIES) break; // oh well :(
+		}
+		qsort(touch, num, sizeof(touch[0]), int_cmp);
 	}
 
 	for ( i=0 ; i<num ; i++ ) {

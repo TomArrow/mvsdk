@@ -258,6 +258,7 @@ vmCvar_t	g_analyzebs;
 vmCvar_t	g_logbs;
 vmCvar_t	g_voteAsSpec; // this is probably broken. cuz level.numVotingClients won't change for it... so fix at some point
 vmCvar_t	g_debugFps; 
+vmCvar_t	g_fairFlag; 
 
 
 
@@ -386,7 +387,8 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 
 	{ &g_pauseGame, PAUSEGAME_CVARNAME, "0", CVAR_VVV|CVAR_SYSTEMINFO, 0, qtrue, qfalse, "Pauses the game, preventing players from moving, items from respawning, etc." },
 	{ &g_allowChatPause, "g_allowChatPause", "0", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "Players not on spectator team can pause/unpause the game by using !pause and !unpause in chat." },
-	{ &g_pauseTimerFreeze, "g_pauseTimerFreeze", "0", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "Restores the game timer during pause on every second, effectively freezing it." },
+	{ &g_pauseTimerFreeze, "g_pauseTimerFreeze", "0", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "Restores the game timer during pause on every second, effectively freezing it." }, 
+	{ &g_fairFlag, "g_fairflag", "1", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "If the setting is enabled: in situations where more than one player is standing/touching a ctf flag, checks will be made to ensure that the guy standing closest to it will get/cap it, as an alternative to randomness deciding who should get it." },
 
 
 	{ &g_mapDefaultMsec, "g_mapDefaultMsec", "8", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },

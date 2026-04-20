@@ -3676,7 +3676,7 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 		}
 	}
 
-	level.clients[i].sess.amflags = 0;
+	level.clients[clientNum].sess.amflags = 0;
 
 	// send effect if they were completely connected
 	if (ent->client->pers.connected == CON_CONNECTED

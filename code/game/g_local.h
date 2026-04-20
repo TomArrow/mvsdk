@@ -1600,6 +1600,7 @@ void G_CheckEnqueuedClips(qboolean force);
 qboolean OnSameTeam( gentity_t *ent1, gentity_t *ent2 );
 void Team_CheckDroppedItem( gentity_t *dropped ); 
 int BinaryTeam(gentity_t* ent);
+qboolean IsCapper(gentity_t* ent);
 
 //
 // g_mem.c
@@ -1946,6 +1947,7 @@ extern	vmCvar_t	g_analyzebs;
 extern	vmCvar_t	g_logbs;
 extern	vmCvar_t	g_voteAsSpec;
 extern	vmCvar_t	g_debugFps;
+extern	vmCvar_t	g_fairFlag;
 
 
 void	trap_Printf( const char *fmt );

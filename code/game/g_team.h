@@ -44,7 +44,7 @@ gentity_t *SelectCTFSpawnPoint (gentity_t* spawningEnt, team_t team, int teamsta
 gentity_t *SelectSagaSpawnPoint (gentity_t* spawningEnt, team_t team, int teamstate, vec3_t origin, vec3_t angles );
 gentity_t *Team_GetLocation(gentity_t *ent);
 qboolean Team_GetLocationMsg(gentity_t *ent, char *loc, int loclen);
-void TeamplayInfoMessage( gentity_t *ent );
+void TeamplayInfoMessage( gentity_t *ent, const team_t team);
 void CheckTeamStatus(void);
 
 int Pickup_Team( gentity_t *ent, gentity_t *other );

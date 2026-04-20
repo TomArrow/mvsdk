@@ -4640,7 +4640,7 @@ void Cmd_Afk_f(gentity_t* ent) {
 		}
 		afkTimes[afkCount].afkTime = millisecs;
 		afkTimes[afkCount].clientNum = i;
-		if (g_inactivityToSpec.integer && millisecs >= clampedIntMult(g_inactivityToSpec.integer,1000)) {
+		if (g_inactivityToSpec.integer && other->client->sess.sessionTeam != TEAM_SPECTATOR && millisecs >= clampedIntMult(g_inactivityToSpec.integer,1000)) {
 			millisecs = clampedIntAdd(other->client->pers.inactivityToSpecTime, -level.time);
 			afkTimes[afkCount].specSendIn = millisecs;
 		}
@@ -6578,6 +6578,10 @@ void ClientCommand( int clientNum ) {
 
 	command = (clientCommand_t*)bsearch(cmd, clientCommands, numCommands, sizeof(clientCommands[0]), cmdcmp);
 
+	if (command && (command->flags & CMD_SIGNALSPRESENCE)) {
+		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+	}
+
 	if (!command) {
 		//
 		if (level.intermissiontime) {
@@ -6620,10 +6624,6 @@ void ClientCommand( int clientNum ) {
 #endif
 	else {
 		command->func(ent);
-	}
-
-	if (command && (command->flags & CMD_SIGNALSPRESENCE)) {
-		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
 	}
 
 
