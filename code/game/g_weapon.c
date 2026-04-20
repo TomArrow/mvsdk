@@ -2125,6 +2125,7 @@ void CreateLaserTrap( gentity_t *laserTrap, vec3_t start, gentity_t *owner )
 {
 	G_SetClassName(laserTrap, "laserTrap");
 	laserTrap->simpleClass = SEC_LASERTRAP;
+	laserTrap->collisionFlags = ECF_NODUELERS | ECF_NORACERS;
 	laserTrap->s.eFlags = EF_BOUNCE_HALF;
 	laserTrap->s.eFlags |= EF_MISSILE_STICK;
 	laserTrap->splashDamage = LT_SPLASH_DAM;//*2;
@@ -2414,6 +2415,7 @@ void drop_charge (gentity_t *self, vec3_t start, vec3_t dir)
 	bolt = G_Spawn();
 	G_SetClassName(bolt, "detpack");
 	bolt->simpleClass = SEC_DETPACK;
+	bolt->collisionFlags = ECF_NODUELERS | ECF_NORACERS;
 	bolt->nextthink = level.time + FRAMETIME;
 	bolt->think = G_RunObject;
 	bolt->s.eType = ET_GENERAL;

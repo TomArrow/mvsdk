@@ -2500,7 +2500,7 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 			item = BG_FindItemForPowerup( i );
 			if ( item )
 			{
-				drop = Drop_Item( ent, item, 45 );
+				drop = Drop_Item( ent, item, 45, 0 );
 				// decide how many seconds it has left
 				drop->count = ( ent->client->ps.powerups[ i ] - nowTime ) / 1000;
 				if ( drop->count < 1 ) {
@@ -3674,9 +3674,8 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 			&& level.clients[i].sess.spectatorClient == clientNum) {
 			StopFollowing(&g_entities[i]);
 		}
+		level.clients[i].sess.ignore &= ~(1 << clientNum);
 	}
-
-	level.clients[clientNum].sess.amflags = 0;
 
 	// send effect if they were completely connected
 	if (ent->client->pers.connected == CON_CONNECTED
@@ -3686,7 +3685,7 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 
 		// They don't get to take powerups with them!
 		// Especially important for stuff like CTF flags
-		TossClientItems(ent);
+		TossClientItems(ent, -1);
 	}
 
 	G_LogPrintf("ClientDisconnect: %i\n", clientNum);

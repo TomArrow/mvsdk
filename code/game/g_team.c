@@ -124,7 +124,9 @@ gentity_t* PrintCTFMessage(int plIndex, int teamIndex, int ctfMessage)
 		te->s.genericenemyindex = holdtime;
 
 		// pers_gauntlet_frag_count = total flag hold time
-		g_entities[plIndex].client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] += holdtime;
+		if (g_ctfPersStats.integer > 1) {
+			g_entities[plIndex].client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] += holdtime;
+		}
 		g_entities[plIndex].client->pers.teamState.flaghold += holdtime;
 
 		level.teamstats[BinaryTeam(g_entities + plIndex)].flaghold += holdtime;
@@ -392,8 +394,10 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 			}
 		}
 
-		//impressive count is now equal to number of returning frags
-		attacker->client->ps.persistant[PERS_IMPRESSIVE_COUNT]++;
+		if (g_ctfPersStats.integer) {
+			//impressive count is now equal to number of returning frags
+			attacker->client->ps.persistant[PERS_IMPRESSIVE_COUNT]++;
+		}
 		// add the sprite over the player's head
 		attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP);
 		attacker->client->ps.eFlags |= EF_AWARD_IMPRESSIVE;
@@ -1007,6 +1011,14 @@ int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 	PrintCTFMessage(other->s.number, team, CTFMESSAGE_PLAYER_GOT_FLAG);
 
 	level.teamstats[BinaryTeam(other)].flaggrabs++;
+
+	// excellent count = flag steal count
+	if (!level.intermissionQueued) {
+		if (g_ctfPersStats.integer > 1) {
+			other->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
+		}
+		other->client->pers.teamState.flagsteal++;
+	}
 
 	if (team == TEAM_RED)
 		cl->ps.powerups[PW_REDFLAG] = INT_MAX; // flags never expire

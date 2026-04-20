@@ -1155,8 +1155,8 @@ void RespawnItem( gentity_t *ent );
 
 void UseHoldableItem( gentity_t *ent );
 void PrecacheItem (gitem_t *it);
-gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle );
-gentity_t *LaunchItem( gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t velocity );
+gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle, int ammoCount);
+gentity_t *LaunchItem( gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t velocity, int ammoCount);
 void SetRespawn (gentity_t *ent, float delay);
 void G_SpawnItem (gentity_t *ent, gitem_t *item);
 void FinishSpawningItem( gentity_t *ent );
@@ -1344,7 +1344,7 @@ void G_Damage (gentity_t *targ, gentity_t *inflictor, gentity_t *attacker, vec3_
 qboolean G_RadiusDamage (vec3_t origin, gentity_t *attacker, float damage, float radius, gentity_t *ignore, int mod);
 void body_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int damage, int meansOfDeath );
 void TossClientWeapon(gentity_t *self, vec3_t direction, float speed);
-void TossClientItems( gentity_t *self );
+void TossClientItems( gentity_t *self, int meansOfDeath);
 void TossClientCubes( gentity_t *self );
 void ExplodeDeath( gentity_t *self );
 void G_CheckForDismemberment(gentity_t *ent, vec3_t point, int damage, int deathAnim);
@@ -1941,6 +1941,7 @@ extern	vmCvar_t	g_crossServerDefragTimes;
 
 // vvv-serverSide features port
 extern	vmCvar_t	g_pauseGame;
+extern	vmCvar_t	g_minefix;
 extern	vmCvar_t	g_pauseTimerFreeze;
 extern	vmCvar_t	g_allowChatPause;
 extern	vmCvar_t	g_analyzebs;
@@ -1948,6 +1949,8 @@ extern	vmCvar_t	g_logbs;
 extern	vmCvar_t	g_voteAsSpec;
 extern	vmCvar_t	g_debugFps;
 extern	vmCvar_t	g_fairFlag;
+extern	vmCvar_t	g_moverfix;
+extern	vmCvar_t	g_ctfPersStats;
 
 
 void	trap_Printf( const char *fmt );

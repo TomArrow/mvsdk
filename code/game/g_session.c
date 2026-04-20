@@ -29,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -53,6 +53,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.oldbuttons_immediate,
 		(int)client->sess.nameTag,
 		client->sess.amflags,
+		client->sess.ignore,
 		client->sess.login.loggedIn,
 		client->sess.login.id,
 		client->sess.login.flags,
@@ -109,7 +110,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -133,6 +134,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&client->sess.oldbuttons_immediate,
 		&nameTagType,
 		&client->sess.amflags,				//VVV
+		&client->sess.ignore, // actually not sure we should do this. what if someone disconnects during level load?
 		&loggedIn,
 		&client->sess.login.id,
 		&client->sess.login.flags,

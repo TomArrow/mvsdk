@@ -1288,7 +1288,13 @@ int Pickup_Ammo (gentity_t *ent, gentity_t *other)
 int Pickup_Weapon (gentity_t *ent, gentity_t *other) {
 	int		quantity;
 
-	if ( ent->count < 0 ) {
+	if (ent->teamnodmg) {
+		//ADD minefix
+
+		quantity = ent->teamnodmg;
+		ent->teamnodmg = 0;
+	}
+	else if ( ent->count < 0 ) {
 		quantity = 0; // None for you, sir!
 	} else {
 		if ( ent->count ) {
@@ -1782,7 +1788,7 @@ LaunchItem
 Spawns an item and tosses it forward
 ================
 */
-gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t velocity ) {
+gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t velocity, int ammoCount) {
 	gentity_t	*dropped;
 
 	dropped = G_Spawn();
@@ -1858,6 +1864,10 @@ gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t 
 
 	dropped->physicsObject = qtrue;
 
+	if (ammoCount) {
+		dropped->teamnodmg = ammoCount;	//minefix
+	}
+
 	trap_LinkEntity (dropped);
 
 	return dropped;
@@ -1870,7 +1880,7 @@ Drop_Item
 Spawns an item and tosses it forward
 ================
 */
-gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
+gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle, int ammoCount) {
 	vec3_t	velocity;
 	vec3_t	angles;
 
@@ -1882,7 +1892,7 @@ gentity_t *Drop_Item( gentity_t *ent, gitem_t *item, float angle ) {
 	VectorScale( velocity, 150, velocity );
 	velocity[2] += 200 + ((ent->client && ent->client->sess.raceMode) ? 0 : (crandom() * 50));
 	
-	return LaunchItem( ent, item, ent->s.pos.trBase, velocity );
+	return LaunchItem( ent, item, ent->s.pos.trBase, velocity, ammoCount );
 }
 
 

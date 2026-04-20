@@ -607,7 +607,7 @@ void TossClientWeapon(gentity_t *self, vec3_t direction, float speed)
 	vel[1] = direction[1]*speed;
 	vel[2] = direction[2]*speed;
 
-	launched = LaunchItem(self, item, self->client->ps.origin, vel);
+	launched = LaunchItem(self, item, self->client->ps.origin, vel, 0);
 
 	launched->s.generic1 = self->s.number;
 	launched->s.powerups = level.time + 1500;
@@ -641,7 +641,7 @@ TossClientItems
 Toss the weapon and powerups for the killed player
 =================
 */
-void TossClientItems( gentity_t *self ) {
+void TossClientItems( gentity_t *self, int meansOfDeath ) {
 	gitem_t		*item;
 	int			weapon;
 	float		angle;
@@ -675,6 +675,7 @@ void TossClientItems( gentity_t *self ) {
 		weapon != WP_TURRET &&
 		self->client->ps.ammo[ weaponData[weapon].ammoIndex ] ) {
 		gentity_t *te;
+		int ammo = 0;
 
 		// find the item type for this weapon
 		item = BG_FindItemForWeapon( weapon );
@@ -684,8 +685,33 @@ void TossClientItems( gentity_t *self ) {
 		te->r.svFlags |= SVF_BROADCAST;
 		te->s.eventParm = self->s.number;
 
+		//fix mine drops incorrect ammo count
+		if (g_minefix.integer && item->giType == IT_WEAPON && item->giTag == WP_TRIP_MINE) {
+			qboolean clampToMaxThree = qfalse;
+			int setting = g_minefix.integer;
+
+			if (g_minefix.integer < 0) {
+				//for negative values of minefix, we will clamp number of mines dropped to max 3.
+				clampToMaxThree = qtrue;
+				setting *= -1;
+			}
+
+			if (setting == 1) {
+				//1 = ALWAYS drop true mine count
+				ammo = self->client->ps.ammo[ weaponData[weapon].ammoIndex ];
+			} else {
+				//2 = only true amount if he suicided
+				if (meansOfDeath == MOD_SUICIDE)
+					ammo = self->client->ps.ammo[ weaponData[weapon].ammoIndex ];
+			}
+
+			if (clampToMaxThree && ammo > 3) {
+				ammo = 3;
+			}
+		}
+
 		// spawn the item
-		Drop_Item( self, item, 0 );
+		Drop_Item( self, item, 0, ammo );
 	}
 
 	// drop all the powerups if not in teamplay
@@ -697,7 +723,7 @@ void TossClientItems( gentity_t *self ) {
 				if ( !item ) {
 					continue;
 				}
-				drop = Drop_Item( self, item, angle );
+				drop = Drop_Item( self, item, angle, 0 );
 				// decide how many seconds it has left
 				drop->count = ( self->client->ps.powerups[ i ] - nowTime ) / 1000;
 				if ( drop->count < 1 ) {
@@ -1943,7 +1969,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 
 			ent->s.genericenemyindex = holdtime;	//this one has 32 bits
 
-			self->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] += holdtime;
+			if (g_ctfPersStats.integer > 1) {
+				self->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT] += holdtime;
+			}
 
 			level.teamstats[BinaryTeam(self)].flaghold += holdtime;
 		}
@@ -2060,30 +2088,32 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 					AddScore( attacker, self->r.currentOrigin, 1 );
 			}
 
-			if( meansOfDeath == MOD_STUN_BATON ) {
+			if (g_ctfPersStats.integer < 2 || g_gametype.integer != GT_CTF && g_gametype.integer != GT_CTY && attacker->client->sess.mode != MODE_IRONMAN) {
+				if( meansOfDeath == MOD_STUN_BATON ) {
 				
-				// play humiliation on player
-				attacker->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT]++;
+					// play humiliation on player
+					attacker->client->ps.persistant[PERS_GAUNTLET_FRAG_COUNT]++;
 
-				// add the sprite over the player's head
-				attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
-				attacker->client->ps.eFlags |= EF_AWARD_GAUNTLET;
-				attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
+					// add the sprite over the player's head
+					attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
+					attacker->client->ps.eFlags |= EF_AWARD_GAUNTLET;
+					attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
 
-				// also play humiliation on target
-				self->client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_GAUNTLETREWARD;
-			}
+					// also play humiliation on target
+					self->client->ps.persistant[PERS_PLAYEREVENTS] ^= PLAYEREVENT_GAUNTLETREWARD;
+				}
 
-			// check for two kills in a short amount of time
-			// if this is close enough to the last kill, give a reward sound
-			if ( LEVELTIME(attacker->client) - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
-				// play excellent on player
-				attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
+				// check for two kills in a short amount of time
+				// if this is close enough to the last kill, give a reward sound
+				if ( LEVELTIME(attacker->client) - attacker->client->lastKillTime < CARNAGE_REWARD_TIME ) {
+					// play excellent on player
+					attacker->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 
-				// add the sprite over the player's head
-				attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
-				attacker->client->ps.eFlags |= EF_AWARD_EXCELLENT;
-				attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
+					// add the sprite over the player's head
+					attacker->client->ps.eFlags &= ~(EF_AWARD_IMPRESSIVE | EF_AWARD_EXCELLENT | EF_AWARD_GAUNTLET | EF_AWARD_ASSIST | EF_AWARD_DEFEND | EF_AWARD_CAP );
+					attacker->client->ps.eFlags |= EF_AWARD_EXCELLENT;
+					attacker->client->rewardTime = LEVELTIME(attacker->client) + REWARD_SPRITE_TIME;
+				}
 			}
 			attacker->client->lastKillTime = LEVELTIME(attacker->client);
 
@@ -2157,6 +2187,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			else if (self->client->ps.powerups[PW_BLUEFLAG]) {
 				PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
 			}
+			if (g_ctfPersStats.integer) {
+				attacker->client->ps.persistant[PERS_IMPRESSIVE_COUNT]++;
+			}
 			if (attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
 				DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_IRONMAN, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
 				if (XYSPEED(attacker->client->ps.velocity) > 600 || attacker->client->pers.lastDbsSpeed > 600) {
@@ -2202,7 +2235,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	// if client is in a nodrop area, don't drop anything (but return CTF flags!)
 	contents = trap_PointContents( self->r.currentOrigin, -1 );
 	if ( !( contents & CONTENTS_NODROP ) && !self->client->ps.fallingToDeath) {
-		TossClientItems( self );
+		TossClientItems( self, meansOfDeath );
 	}
 	else {
 		if ( self->client->ps.powerups[PW_NEUTRALFLAG] ) {		// only happens in One Flag CTF

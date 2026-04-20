@@ -1306,7 +1306,7 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
-		"print \"^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"",
+		"print \"^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7 or call with 'list' to list your ignores, 'clear' to clear all your ignores or 'all' to ignore all)\n\"",
 		"print \"Random tip: ^2/ignore^7 - Ignore or unignore a player (call with client number from ^2/clientlist^7)\n\"",
 		qfalse,
 		qfalse
@@ -1995,10 +1995,98 @@ argCheck:
 	}
 }
 gentity_t* GetClientNumArg();
-void Cmd_Ignore_f(gentity_t* ent) {
+
+
+static void Cmd_IgnoreClear_f (gentity_t *ent) {
+	int i;
+	const int clNum = ent - g_entities;
+
+	if (!ent->client->sess.ignore) {
+		trap_SendServerCommand(clNum,"print \"Your ignorelist is already empty.\n\"");
+	} else {
+		trap_SendServerCommand(clNum,"print \"Your ignorelist was cleared.\n\"");
+	}
+
+	ent->client->sess.ignore = 0;
+}
+
+static void Cmd_IgnoreList_f (gentity_t *ent) {
+	int i;
+	const int clNum = ent - g_entities;
+
+	if (!ent->client->sess.ignore) {
+		trap_SendServerCommand(clNum,"print \"Your ignorelist is empty.\n\"");
+		return;
+	}
+
+	trap_SendServerCommand(clNum,"print \"^5Ignorelist:\n\"");
+
+	for (i = 0; i < MAX_CLIENTS; ++i) {
+		if (level.clients[i].pers.connected == CON_DISCONNECTED)
+			continue;
+
+		if (ent->client->sess.ignore & (1 << i)) {
+			const char *str = va("  %02d^%c)^7 %s \n", i, ColorCodeForClient(&g_entities[i], qfalse), g_entities[i].client->pers.netname);
+
+			trap_SendServerCommand(clNum, va("print \"%s\"", str));
+		}
+	}
+}
+
+void Cmd_Ignore_f(gentity_t* ent) { // TODO make this able to do "all" and finding by name, like vvv-serverside
 	gentity_t* client = GetClientNumArg();
 	int clientnum;
 	if (!client) {
+		if (trap_Argc() > 1) {
+			char arg[10];
+			trap_Argv(1, arg, sizeof(arg));
+			if (!Q_stricmp(arg,"list")) {
+				Cmd_IgnoreList_f(ent);
+				return;
+			}
+			else if (!Q_stricmp(arg,"clear")) {
+				Cmd_IgnoreClear_f(ent);
+				return;
+			}
+			else if (!Q_stricmp(arg,"all")) {
+				// from vvv-serverside
+				int i;
+				qboolean ignore = qfalse;
+
+				//check if all are ignored
+				for (i = 0; i < MAX_CLIENTS; ++i) {
+					if (level.clients[i].pers.connected == CON_DISCONNECTED)
+						continue;
+
+					if (!(ent->client->sess.ignore & (1 << i))) {
+						// we must ignore all.
+						ignore = qtrue;
+						break;
+					}
+				}
+
+				for (i = 0; i < MAX_CLIENTS; ++i) {
+					if (level.clients[i].pers.connected == CON_DISCONNECTED)
+						continue;
+
+					if (ignore) {
+						ent->client->sess.ignore |= (1 << i);
+					}
+					else {
+						ent->client->sess.ignore &= ~(1 << i);
+					}
+				}
+
+				if (ignore) {
+					trap_SendServerCommand(ent - g_entities, "print \"All are now being ignored.\n\"");
+				}
+				else {
+					trap_SendServerCommand(ent - g_entities, "print \"All have been unignored.\n\"");
+				}
+
+				return;
+			}
+		}
 		trap_SendServerCommand(ent - g_entities, "print \"^1Invalid client number specified.\n\"");
 		return;
 	}
@@ -6189,6 +6277,48 @@ extern void G_DB_SaveUserCheckpoints(gentity_t* playerent);
 extern void G_DB_LoadUserCheckpoints(gentity_t* playerent);
 
 
+static void Cmd_SpectatorList_f (gentity_t *sendToMe) {
+	int i;
+	gentity_t *ent = g_entities;
+	const int clNum = sendToMe - g_entities;
+	int c = 0;
+	qboolean matchme = qfalse;
+
+	if (!Q_stricmp(G_Argv(1), "me"))
+		matchme = qtrue;
+
+	trap_SendServerCommand(clNum,va("print \"%s%24s     %s\n\"", "     ", "^5spectators", "speccing"));
+
+	for (i = 0; i < MAX_CLIENTS; ++i, ++ent) {
+
+		if (!ent || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.sessionTeam != TEAM_SPECTATOR)
+			continue;
+
+		if (matchme && ent->client->ps.clientNum != clNum)
+			continue;
+
+		if (ent->client->sess.spectatorState == SPECTATOR_FOLLOW &&
+			ent->client->ps.clientNum >= 0 && ent->client->ps.clientNum < MAX_CLIENTS) {
+
+			char extra[8] = {0};
+
+			if (ent->client->ps.clientNum == clNum) {
+				//he is speccing me
+				Q_strncpyz(extra, " (YOU)", sizeof(extra));
+			}
+
+			trap_SendServerCommand( clNum,va("print \"%s^7   %s^7 (%d)%s\n\"", G_ClientNameWithPrefix(ent, 24),
+				SHOWNAME(ent->client->ps.clientNum), ent->client->ps.clientNum, extra ));
+		} else {
+			trap_SendServerCommand( clNum,va("print \"%24s^7   (nobody)\n\"", G_ClientNameWithPrefix(ent, 24)) );
+		}
+		++c;
+	}
+
+	if (!c)
+		trap_SendServerCommand( clNum, "print \"<no spectators to list>\n\"" );
+}
+
 const char* G_Argv(int arg) {
 	static char buf[256];
 
@@ -6363,6 +6493,25 @@ static void Cmd_Debug_DebugDismemberment_f(gentity_t* ent) {
 	}
 }
 
+
+static void Cmd_AltFolow_f( gentity_t *ent ) {
+	if (!ent || !ent->client)
+		return;
+
+	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		trap_SendServerCommand(ent - g_entities,"print \"You need to be on spectator team to use this feature.\n\"");
+		return;
+	}
+
+
+	//setting persists through maprestarts
+	ent->client->sess.amflags ^= AMFLAG_ALTFOLLOW;
+	if (ent->client->sess.amflags & AMFLAG_ALTFOLLOW)
+		trap_SendServerCommand(ent - g_entities,"print \"Alt-follow is now ^2enabled^7 (use alt-attack to spectate the previous player.)\n\"");
+	else
+		trap_SendServerCommand(ent - g_entities,"print \"Alt-follow is now ^1disabled^7.\n\"");
+}
+
 //Stuff from openJK
 #define CMD_NOINTERMISSION		(1<<0)
 #define CMD_INTERMISSIONUNKNOWN	(1<<1) // not explicitly blocked by intermission but not known either. will be printed as say. dumb, but keeping it to maintain behavior
@@ -6394,6 +6543,7 @@ clientCommand_t clientCommands[] = {
 	{"afk",					NULL, Cmd_Afk_f,						CMD_NOINTERMISSION},
 #endif
 	{"allforce",			NULL, Cmd_ModeCmd_f,					CMD_NOINTERMISSION},
+	{"altf",				NULL, Cmd_AltFolow_f,					CMD_NOINTERMISSION, "Toggle being able to use alt-attack to spec the previous player." },
 	{"amMap",				NULL, Cmd_AmMap_f,						CMD_NOINTERMISSION},
 	{"amtele",				NULL, Cmd_Amtele_f,						CMD_NOINTERMISSION},
 	{"arenaless",			NULL, Cmd_Arenaless_f,					CMD_NOINTERMISSION},
@@ -6468,9 +6618,10 @@ clientCommand_t clientCommands[] = {
 	{"say_team",			NULL, Cmd_SayTeam_f,					CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
 	{"score",				NULL, Cmd_Score_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN},
 	{"selectspawn",			NULL, DF_SelectSpawn,					CMD_NOINTERMISSION},
-	{"setviewpos",			NULL, Cmd_SetViewpos_f,					CMD_NOINTERMISSION},
+	{"setviewpos",			NULL, Cmd_SetViewpos_f,					CMD_CHEAT | CMD_NOINTERMISSION},
 	{"shortest",			NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"solo",				NULL, Cmd_Solo_f,						CMD_NOINTERMISSION},
+	{"specs",				NULL, Cmd_SpectatorList_f,				CMD_NOINTERMISSION, "Print a list of spectators and whom they are spectating." },
 	{"stats",				NULL, Cmd_Stats_f,						CMD_NOINTERMISSION},
 	{"stay",				NULL, Cmd_Stay_f,						CMD_NOINTERMISSION},
 	{"stealcheckpoints",	NULL, DF_StealCheckpoints,				CMD_NOINTERMISSION},

@@ -66,6 +66,9 @@ TELEPORTERS
 
 void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	gentity_t	*tent;
+	//qboolean noAngles;
+
+	//noAngles = (angles[0] > 999999.0); // ioq3 thing. whats the point?
 
 	if ( player->client->sess.spectatorState == SPECTATOR_FOLLOW )
 	{ // Follow spectators don't need to teleport. And calling BG_PlayerStateToEntityState on them corrupts their s.number.
@@ -91,6 +94,8 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	player->client->ps.origin[2] += 1;
 
 	// spit the player out
+	//if (!noAngles) {	//ioq3. can we trust this? whats the point?
+
 	AngleVectors( angles, player->client->ps.velocity, NULL, NULL );
 	VectorScale( player->client->ps.velocity, 400, player->client->ps.velocity );
 	player->client->ps.pm_time = 160;		// hold time
@@ -103,6 +108,8 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	DF_PreDeltaAngleChange(player->client);
 	SetClientViewAngle( player, angles );
 	DF_PostDeltaAngleChange(player->client, qtrue);
+
+	//}
 
 	// kill anything at the destination
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR && !player->client->sess.raceMode) {

@@ -252,6 +252,7 @@ vmCvar_t	g_crossServerDefragTimes;
 
 // vvv-serverSide features port
 vmCvar_t	g_pauseGame;
+vmCvar_t	g_minefix;
 vmCvar_t	g_pauseTimerFreeze;
 vmCvar_t	g_allowChatPause;
 vmCvar_t	g_analyzebs;
@@ -259,6 +260,8 @@ vmCvar_t	g_logbs;
 vmCvar_t	g_voteAsSpec; // this is probably broken. cuz level.numVotingClients won't change for it... so fix at some point
 vmCvar_t	g_debugFps; 
 vmCvar_t	g_fairFlag; 
+vmCvar_t	g_moverfix;
+vmCvar_t	g_ctfPersStats;
 
 
 
@@ -386,9 +389,16 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 
 	{ &g_pauseGame, PAUSEGAME_CVARNAME, "0", CVAR_VVV|CVAR_SYSTEMINFO, 0, qtrue, qfalse, "Pauses the game, preventing players from moving, items from respawning, etc." },
+	{ &g_minefix, "g_minefix", "1", CVAR_VVV | CVAR_ARCHIVE, 0, qtrue, qfalse, "This setting is a fix to the behavior where mines that are dropped by a player always will have an ammo count of 3. There are several values:\n"
+		"1 : ammo count will always be the true amount, no matter if the player suicided or was killed\n"
+		"2 : ammo count will only be the true amount if the player who dropped them suicided\n"
+		"In addition, using a value of -1 or -2 will work the same way as 1 and 2, however, the ammo count will be a maximum of 3."
+	},
 	{ &g_allowChatPause, "g_allowChatPause", "0", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "Players not on spectator team can pause/unpause the game by using !pause and !unpause in chat." },
 	{ &g_pauseTimerFreeze, "g_pauseTimerFreeze", "0", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "Restores the game timer during pause on every second, effectively freezing it." }, 
-	{ &g_fairFlag, "g_fairflag", "1", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "If the setting is enabled: in situations where more than one player is standing/touching a ctf flag, checks will be made to ensure that the guy standing closest to it will get/cap it, as an alternative to randomness deciding who should get it." },
+	{ &g_fairFlag, "g_fairflag", "1", CVAR_VVV | CVAR_ARCHIVE, 0, qfalse, qfalse, "If the setting is enabled: in situations where more than one player is standing/touching a ctf flag, checks will be made to ensure that the guy standing closest to it will get/cap it, as an alternative to randomness deciding who should get it." }, 
+	{ &g_moverfix, "g_moverfix", "1", CVAR_VVV | CVAR_ARCHIVE/* |CVAR_SERVERINFO */, 0, qfalse, qfalse, "If set, dead bodies will not block side doors in ctf_yavin." },
+	{ &g_ctfPersStats, "g_ctfPersStats", "2", CVAR_VVV | CVAR_LATCH | CVAR_ARCHIVE | CVAR_SYSTEMINFO/* |CVAR_SERVERINFO */, 0, qfalse, qfalse, "If set, PERS_IMPRESSIVE_COUNT is used for flag returns in CTF/CTY. If value is 2, PERS_EXCELLENT_COUNT and PERS_GAUNTLET_FRAG_COUNT are used for flag grabs and flag hold time in CTF/CTY." }, // reason for value 2 is that it then overrides some other stats in PERS_EXCELLENT_COUNT and PERS_GAUNTLET_FRAG_COUNT (which are arguably useless but whatever)
 
 
 	{ &g_mapDefaultMsec, "g_mapDefaultMsec", "8", CVAR_SYSTEMINFO|CVAR_ROM, 0, qfalse  },
@@ -728,6 +738,37 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		ClientDisconnect( arg0 );
 		return 0;
 	case GAME_CLIENT_BEGIN:
+		// TA: Ported anti-flageat from vvv-serverside. This is probably not needed anymore in the jk2mv/mvsdk age because other places in the code have been implemented to fix this. But do it anyway?
+		//This one is called after bad people have tried to eat flags and on transition between teams and stuff.
+		//However, we are sure this one is called by the engine after the flag eating cmd, so we only need to check for some stuff here and not elsewhere.
+		//Basically, if this guy appears to have any flag, return it.
+#define FLAGEAT
+#ifdef FLAGEAT
+		if (arg0 >= 0 && arg0 < MAX_CLIENTS) {
+			gentity_t* ent = &g_entities[arg0];
+			qboolean naughty = qfalse;
+
+			if (ent && ent->client && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+				if (ent->client->ps.powerups[PW_REDFLAG]) {
+					Team_ReturnFlag(TEAM_RED);
+					naughty = qtrue;
+				}
+				if (ent->client->ps.powerups[PW_BLUEFLAG]) {
+					Team_ReturnFlag(TEAM_BLUE);
+					naughty = qtrue;
+				}
+			}
+
+			if (naughty) {
+				//we just returned flag instantly in above code, so make sure the flag doesnt drop to the ground in ClientDisconnect when hes kicked.
+				ent->client->ps.powerups[PW_BLUEFLAG] = ent->client->ps.powerups[PW_REDFLAG] = 0;
+
+				//G_SecurityLogPrint("Flag eating attempt", ent);
+				trap_DropClient(arg0, "was kicked for trying to do very bad thing!");
+				return 0;
+			}
+		}
+#endif
 		ClientBegin( arg0, qtrue );
 		return 0;
 	case GAME_CLIENT_COMMAND:
@@ -1000,6 +1041,7 @@ void G_RegisterCvars( void ) {
 	if ( g_gametype.integer < 0 || g_gametype.integer >= GT_MAX_GAME_TYPE ) {
 		G_Printf( "g_gametype %i is out of range, defaulting to 0\n", g_gametype.integer );
 		trap_Cvar_Set( "g_gametype", "0" );
+		trap_Cvar_Update(&g_gametype);
 	}
 
 	level.warmupModificationCount = g_warmup.modificationCount;
@@ -2565,7 +2607,7 @@ void CheckIntermissionExit( void ) {
 		if ( cl->pers.connected != CON_CONNECTED ) {
 			continue;
 		}
-		if ( g_entities[cl->ps.clientNum].r.svFlags & SVF_BOT ) {
+		if ( g_entities[i].r.svFlags & SVF_BOT ) { // used cl->ps.clientNum as index here previously. change from vvv-serverside
 			continue;
 		}
 
@@ -3517,6 +3559,10 @@ void G_CheckDuelQueueStatus() {
 	qboolean anyPastTimeout = qfalse;
 	int randomteam;
 
+	if (level.intermissiontime || level.intermissionQueued) {
+		return;
+	}
+
 	// find players in duel queue mode that aren't dueling, but could be.
 	// TODO ignore afk players if g_duelQueueAutoRespawn is 1?
 	for (i = 0; i < level.maxclients; i++, ent++) {
@@ -3738,7 +3784,7 @@ void G_CheckIronManStatus() {
 	vec3_t spawnpointWiggled;
 	int randomteam;
 
-	if (level.intermissiontime || level.lastIronManKilled + IRONMAN_NEXTCAPPER_TIMEOUT > level.time) { // leave us 3 seconds to breathe after ironman is killed
+	if (level.intermissiontime || level.intermissionQueued || level.lastIronManKilled + IRONMAN_NEXTCAPPER_TIMEOUT > level.time) { // leave us 3 seconds to breathe after ironman is killed
 		return; 
 	}
 
@@ -3805,6 +3851,10 @@ void G_CheckIronManStatus() {
 	randomteam = Q_irand(PW_REDFLAG, 2, qfalse, PW_REDFLAG);
 	ent->client->ps.powerups[randomteam] = INT_MAX; // lets not do neutral flag cuz its not actually visible :/
 	PrintCTFMessage(ent - g_entities, randomteam == PW_REDFLAG ? TEAM_RED : TEAM_BLUE, CTFMESSAGE_PLAYER_GOT_FLAG);
+
+	if (g_ctfPersStats.integer > 1) {
+		ent->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
+	}
 
 	VectorCopy(ent->client->ps.origin, level.ironManCurrentPosition);
 	level.ironManCurrentPositionSet = qtrue;

@@ -1746,14 +1746,14 @@ qboolean DF_CloneCustomCheckpoint(gentity_t* oldShield, gentity_t* playerent) {
 }
 
 gentity_t* GetClientNumArg() {
-	char	arg[MAX_STRING_CHARS];
+	char	arg[10];
 	int sourcePlayer = -1;
 	//gentity_t* sourcePlayerEnt;
 	if (trap_Argc() > 1)
 	{
 		trap_Argv(1, arg, sizeof(arg));
 
-		if (arg[0])
+		if (arg[0] >= '0' && arg[0] <= '9')
 		{
 			sourcePlayer = atoi(arg);
 			if (sourcePlayer >= 0 && sourcePlayer < MAX_CLIENTS) {
@@ -4356,12 +4356,9 @@ qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 	// we are in the duel queue but not in a duel, make everyone else nonsolid
 	if (entity->client && entity->client->sess.mode == MODE_DUELQUEUE && !entity->client->ps.duelInProgress) {
 		if (entity != other) {
-			if ((other->inuse) &&
+			if (other->inuse &&
 				(other->s.eType == ET_PLAYER ||
-					(other->s.eType == ET_GENERAL &&
-						((qtrue) &&
-							(other->simpleClass == SEC_LASERTRAP ||
-								(other->simpleClass == SEC_DETPACK))))))
+					(other->collisionFlags & ECF_NODUELERS)))
 			{
 				return qtrue;
 			}
@@ -4371,11 +4368,7 @@ qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 	else if (entity->client && entity->client->ps.duelInProgress) {
 			if (entity != other && (other-g_entities) != entity->client->ps.duelIndex) {
 				if (other->inuse &&
-					((other->collisionFlags & ECF_NODUELERS) || other->s.eType == ET_PLAYER ||
-						(other->s.eType == ET_GENERAL &&
-							((qtrue) &&
-								(other->simpleClass == SEC_LASERTRAP ||
-									(other->simpleClass == SEC_DETPACK))))))
+					((other->collisionFlags & ECF_NODUELERS) || other->s.eType == ET_PLAYER))
 				{
 					return qtrue;
 				}
@@ -4384,14 +4377,12 @@ qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other)
 	else if (entity->client && (entity->client->sess.raceMode || other->client && other->client->sess.mode != entity->client->sess.mode)) { //Have to check all entities because swoops can be racemode too :/
 			if (other != entity) {
 				if (other->inuse &&
-					((other->collisionFlags & ECF_NORACERS) && entity->client->sess.raceMode || other->s.eType == ET_PLAYER ||
+					((other->collisionFlags & ECF_NORACERS) && entity->client->sess.raceMode || other->s.eType == ET_PLAYER))
 					// im not sure yet. do i want doors to not be a thing for racers? limits the map choice a little bit.
 					//	((other->s.eType == ET_MOVER) &&
 					//		(!(Q_stricmp(other->classname, "func_door")) ||
 					//			(!(Q_stricmp(other->classname, "func_plat"))))) ||
-						(other->s.eType == ET_GENERAL &&
-							(other->simpleClass == SEC_LASERTRAP || // TODO sth more efficient than string comparison?
-								(other->simpleClass == SEC_DETPACK)))))
+						
 				{
 					return qtrue;
 				}

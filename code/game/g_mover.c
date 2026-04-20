@@ -381,6 +381,22 @@ qboolean G_MoverPush( gentity_t *pusher, vec3_t move, vec3_t amove, gentity_t **
 			continue;
 		}
 
+		// facts: on ctf_yavin, the mid doors have speed=400.f, and the slow side doors have speed=30.f
+		if (g_moverfix.integer && pusher->speed == 400.f) {
+			if (check->s.eType == ET_BODY ||
+				(check->s.eType == ET_PLAYER && check->health < 1))
+			{ //whatever, just crush it
+				G_Damage(check, pusher, pusher, NULL, NULL, 999, 0, MOD_CRUSH);
+				continue;
+			}
+
+			if ((check->r.contents & CONTENTS_TRIGGER) && check->s.weapon == G2_MODEL_PART)
+			{//keep limbs from blocking elevators.  Kill the limb and keep moving.
+				G_FreeEntity(check);
+				continue;
+			}
+		}
+
 		// the move was blocked an entity
 
 		// bobbing entities are instant-kill and never get blocked
