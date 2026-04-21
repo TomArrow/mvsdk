@@ -16,6 +16,7 @@ typedef enum DBTable_s {
 	DBT_MAPRACEDEFAULTS,
 	DBT_META,
 	DBT_MAPRATINGS,
+	DBT_MAPTAGS,
 	DBT_COUNT_TABLES
 } DBTable_t;
 typedef void(QDECL* dbTableCreateFunc_t)();
@@ -285,8 +286,14 @@ ORDER BY diff ASC \
 LIMIT 1);"
 
 
+
 // 
-// generic requests
+// generic requests concretes
+//
+#define MAPTAG_MAX_LEN	40
+
+// 
+// generic requests boilerplate
 //
 struct gentity_s;
 struct genericDbRequestStruct_s;
@@ -295,7 +302,9 @@ typedef enum genericDbRequestFlags_s {
 	GDBRF_RETURNEVENIFENTINVALID = (1<<0), // call the callback even if the ent/user is no longer valid
 }genericDbRequestFlags_t;
 #define GENERIC_DB_REQUESTTYPES(a) \
-	a(GDBREQUEST_TEST)
+	a(GDBREQUEST_TEST)\
+	a(GDBREQUEST_TAG)
+
 typedef enum genericDbRequestType_s {
 #define GDBREQUEST_ENUM(a) a,
 	GENERIC_DB_REQUESTTYPES(GDBREQUEST_ENUM)
@@ -312,6 +321,18 @@ typedef struct genericDbRequestStruct_s {
 	char							ident[10]; // some short identifier, for debug messages
 	genericDbRequestFlags_t			flags;
 	genericDbRequestType_t			callbackType;
+	struct {
+		int status;
+		int affectedRows; // for INSERT INTO ON DUPLICATE KEY UPDATE: 0 = no change. 1 = new entry. 2 = updated row
+		const char* errorMessage;
+	} resultInfo;
+	union {
+		struct {
+			int	requestType;
+			char tag[MAPTAG_MAX_LEN + 1];
+			qboolean defrag;
+		} maptag;
+	} specifics;
 } genericDbRequestStruct_t;
 typedef enum dbRequestParamType_s {
 	PARAM_INT,
@@ -324,6 +345,8 @@ typedef struct genericDbRequestCallbackInfo_s {
 extern genericDBRequestCallback_t GDBREQUEST_TESTBlah;
 extern genericDbRequestCallbackInfo_t* genericDBRequestCallbacks[GDBREQUEST_COUNT_TYPES];
 #define REGISTER_DBREQUEST_CALLBACK(type,callbackA) genericDbRequestCallbackInfo_t type##_CallbackInfo = {(callbackA)}
+
+int G_DB_GetPageArg(int pageArg);
 genericDbRequestStruct_t G_DB_GenericRequest_Prepare(struct gentity_s* ent, genericDbRequestType_t type, int tables, const char* ident, int pageArg);
 // convenience wrapper around prepared statement generation. the printf format string is not evaluated into a normal printf string, but rather all placeholders are replaced with ? and the parameter types are applied for the prepared statement and the parameters are bound correctly.
 // DO NOT WRAP THE QUERY IN va() OR SIMILAR BEFORE. THAT WILL CREATE A MAJOR SQL INJECTION SECURITY RISK. YOU MUST PASS THE FORMAT STRING DIRECTLY TO THIS FUNCTION, IT WILL CONVERT THE QUERY INTO A PREPARED STATEMENT WITH BOUND PARAMETERS

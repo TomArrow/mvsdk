@@ -2605,6 +2605,22 @@ static void G_CreateMapRatingsTable() {
 	Q_strncpyz(tableName.s, "mapratings", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
 }
+static void G_CreateMapTagsTable() {
+	referenceSimpleString_t tableName;
+	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS maptags(\
+			course VARCHAR(100) NOT NULL, \
+			userid BIGINT SIGNED NOT NULL, \
+			tag VARCHAR(" QUOTEME(MAPTAG_MAX_LEN) ") NOT NULL, \
+			setwhen DATETIME NOT NULL, \
+			updatedwhen DATETIME NOT NULL, \
+			PRIMARY KEY(course,userid,tag), \
+			INDEX i_tag(tag), \
+			INDEX i_course(course), \
+			INDEX i_tag_course(tag,course) \
+			)";
+	Q_strncpyz(tableName.s, "maptags", sizeof(tableName.s));
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
+}
 static void G_CreateMetaTable() {
 	referenceSimpleString_t tableName;
 	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS meta(\
@@ -2736,6 +2752,7 @@ dbTableCreateFunc_t tableCreateFuncs[DBT_COUNT_TABLES] = {
 	G_CreateMapRaceDefaultsTable,
 	G_CreateMetaTable,
 	G_CreateMapRatingsTable,
+	G_CreateMapTagsTable,
 };
 static void G_DB_CreateTables() {
 	int i;
@@ -3018,6 +3035,19 @@ genericDbRequestCallbackInfo_t* genericDBRequestCallbacks[GDBREQUEST_COUNT_TYPES
 	GENERIC_DB_REQUESTTYPES(GDBREQUEST_CALLBACKS)
 #undef GDBREQUEST_CALLBACKS
 };
+// convenience function to get a valid page from an arg
+int G_DB_GetPageArg(int pageArg) {
+	int page = 0;
+	if (pageArg && trap_Argc() > pageArg) {
+		char argpage[20];
+		trap_Argv(pageArg, argpage, sizeof(argpage));
+		page = atoi(argpage) - 1;
+		if (page < 0) {
+			page = 0;
+		}
+	}
+	return page;
+}
 genericDbRequestStruct_t G_DB_GenericRequest_Prepare(gentity_t* ent, genericDbRequestType_t type, int tables, const char* ident, int pageArg) {
 	genericDbRequestStruct_t data;
 	if (type >= GDBREQUEST_COUNT_TYPES) {
@@ -3222,6 +3252,9 @@ void G_GenericDBRequestResults(int status, const char* errorMessage, int affecte
 		return;
 	}
 	if (genericDBRequestCallbacks[data.callbackType]->callback) {
+		data.resultInfo.status = status;
+		data.resultInfo.affectedRows = affectedRows;
+		data.resultInfo.errorMessage = errorMessage;
 		genericDBRequestCallbacks[data.callbackType]->callback(ent, &data);
 	}
 }

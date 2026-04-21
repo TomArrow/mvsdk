@@ -3989,6 +3989,7 @@ static qboolean QDECL TestCallback(gentity_t* ent, genericDbRequestStruct_t* dat
 		G_COOL_API_DB_GetString(0, result, sizeof(result));
 		trap_SendServerCommand(ent - g_entities, va("print \"test: %s\n\"", result));
 	}
+	return qtrue;
 }
 REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_TEST,TestCallback);
 
@@ -4000,7 +4001,212 @@ static void Cmd_Test_f(gentity_t* ent) {
 	}
 	userid = atoi(G_Argv(1));
 	if (!G_DB_GenericRequest_Send(data,"SELECT course FROM runs GROUP BY course HAVING COUNT(*)=%d",userid)) {
-		trap_SendServerCommand(ent-g_entities,"Error sending test request");
+		trap_SendServerCommand(ent-g_entities,"print \"Error sending test request.\n\"");
+	}
+}
+
+typedef enum tagMapSubCmd_s {
+	TAGMAP_ADD,
+	TAGMAP_REMOVE,
+	TAGMAP_CLEAR,
+	TAGMAP_LIST,
+	TAGMAP_LISTALL,
+	TAGMAP_SEARCH,
+} tagMapSubCmd_t;
+static qboolean QDECL TagCallback(gentity_t* ent, genericDbRequestStruct_t* data) {
+	int rows = 0;
+	switch (data->specifics.maptag.requestType) {
+		case TAGMAP_ADD:
+			if (data->resultInfo.affectedRows == 0) {
+				trap_SendServerCommand(ent - g_entities, va("print \"^1Unknown Error setting tag '%s'.\n\"", data->specifics.maptag.tag));
+			}
+			else if (data->resultInfo.affectedRows == 1) {
+				trap_SendServerCommand(ent - g_entities, va("print \"^2Tag '%s' successfully added.\n\"", data->specifics.maptag.tag));
+			}
+			else if (data->resultInfo.affectedRows == 2) {
+				trap_SendServerCommand(ent - g_entities, va("print \"^3Tag '%s' has already been set by you.\n\"", data->specifics.maptag.tag));
+			}
+			break;
+		case TAGMAP_REMOVE:
+			if (!data->resultInfo.affectedRows) {
+				trap_SendServerCommand(ent - g_entities, va("print \"^1Tag '%s' could not be removed. It didn't exist?\n\"", data->specifics.maptag.tag));
+			}
+			else {
+				trap_SendServerCommand(ent - g_entities, va("print \"^2Tag '%s' successfully removed.\n\"", data->specifics.maptag.tag));
+			}
+			break;
+		case TAGMAP_CLEAR:
+			if (!data->resultInfo.affectedRows) {
+				trap_SendServerCommand(ent - g_entities, "print \"^1Tags were not cleared. No tags found?\n\"");
+			}
+			else {
+				trap_SendServerCommand(ent - g_entities, "print \"^2Your tags for this map were successfully cleared.\n\"");
+			}
+			break;
+		case TAGMAP_LIST:
+			trap_SendServerCommand(ent - g_entities, va("print \"^2Active tags on this map, page %d:\n\"", data->page+1));
+			while (G_COOL_API_DB_NextRow()) {
+				char tag[MAPTAG_MAX_LEN + 1];
+				int taggers = G_COOL_API_DB_GetInt(1);
+				int byme = G_COOL_API_DB_GetInt(2);
+				G_COOL_API_DB_GetString(0, tag, sizeof(tag));
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%s (%d taggers)\n\"", byme? '2':'7',tag,taggers));
+				rows++;
+			}
+			if (rows) {
+				trap_SendServerCommand(ent - g_entities, "print \"^2Green ^7tags are tags that you yourself have added to this map.\n\"");
+			}
+			break;
+		case TAGMAP_LISTALL:
+			trap_SendServerCommand(ent - g_entities, va("print \"^2List of all tags, page %d:\n\"", data->page + 1));
+			while (G_COOL_API_DB_NextRow()) {
+				char tag[MAPTAG_MAX_LEN + 1];
+				int taggers = G_COOL_API_DB_GetInt(1);
+				int byme = G_COOL_API_DB_GetInt(2);
+				int maps = G_COOL_API_DB_GetInt(3);
+				G_COOL_API_DB_GetString(0, tag, sizeof(tag));
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%s (%d taggers, %d maps)\n\"", byme? '2':'7',tag,taggers,maps));
+				rows++;
+			}
+			if (rows) {
+				trap_SendServerCommand(ent - g_entities, "print \"^2Green ^7tags are tags that you yourself have used.\n\"");
+			}
+			break;
+		case TAGMAP_SEARCH:
+			trap_SendServerCommand(ent - g_entities, va("print \"^2Maps matching tag '%s', page %d:\n\"", data->specifics.maptag.tag, data->page + 1));
+			while (G_COOL_API_DB_NextRow()) {
+				char map[COURSENAME_MAX_LEN + 1];
+				int taggers = G_COOL_API_DB_GetInt(1);
+				int byme = G_COOL_API_DB_GetInt(2);
+				int runners = data->specifics.maptag.defrag ? G_COOL_API_DB_GetInt(3) : 0;
+				G_COOL_API_DB_GetString(0, map, sizeof(map));
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%s (%d taggers%s)\n\"", byme ? '2' : '7', map, taggers, data->specifics.maptag.defrag ? multiva(", %d players",runners) : ""));
+				rows++;
+			}
+			if (rows) {
+				trap_SendServerCommand(ent - g_entities, "print \"^2Green ^7maps are maps that you yourself have tagged with this tag.\n\"");
+			}
+			break;
+		default:
+			trap_SendServerCommand(ent - g_entities, "print \"^3Unknown map tag request finished.\n\"");
+			break;
+	}
+	//if (G_COOL_API_DB_NextRow()) {
+	//	char result[20]; 
+	//	G_COOL_API_DB_GetString(0, result, sizeof(result));
+	//	trap_SendServerCommand(ent - g_entities, va("print \"test: %s\n\"", result));
+	//}
+	return qtrue;
+}
+REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_TAG,TagCallback);
+static const char* ValidateMapTag(const char* tagName) {
+	int len = strlen(tagName);
+	if (len > MAPTAG_MAX_LEN) {
+		return miniva("Map tag too long (up to %d characters).", MAPTAG_MAX_LEN);
+	} else if (len < 3) {
+		return "Map tag is too short (minimum 3 characters).";
+	}
+	while (*tagName) {
+		if (*tagName >= '0' && *tagName <= '9' || *tagName >= 'a' && *tagName <= 'z' || *tagName >= 'A' && *tagName <= 'Z' || *tagName == '_') {
+			tagName++;
+			continue;
+		}
+		else {
+			return "Invalid character in map tag."; //  miniva("Invalid character in map tag.");
+		}
+	}
+	return NULL;
+}
+static void Cmd_TagMap_f(gentity_t* ent) {
+	int userid;
+	const char* arg;
+	int arglen = trap_Argc();
+	const char* courseName;
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_TAG,(1<<DBT_USERS) | (1 << DBT_MAPTAGS),"tagmap", 0);
+	if (arglen < 2) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <tagname> - Add a tag\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <remove> <tagname> - Remove a tag you added\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <list|listall|clear> - List the map's tags, all known tags, or clear your own tags of this map\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <search> <tagname> - Find maps that have a tag\n\"");
+		return;
+	}
+	arg = G_Argv(1);
+
+	courseName = DF_GetCourseName(qfalse);
+
+	if (!Q_stricmp(arg, "search") && arglen > 2) {
+		const char* tag = G_Argv(2);
+		const char* validateError = ValidateMapTag(tag);
+		data.specifics.maptag.requestType = TAGMAP_SEARCH;
+		if (validateError) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot search for tag: %s.\n\"", validateError));
+			return;
+		}
+		Q_strncpyz(data.specifics.maptag.tag, tag, sizeof(data.specifics.maptag.tag));
+		data.page = G_DB_GetPageArg(3);
+		if (g_defrag.integer) {
+			data.specifics.maptag.defrag = qtrue;
+			data.requiredTables |= (1<<DBT_RUNS);
+			if (!G_DB_GenericRequest_Send(data, "SELECT maptags.course,COUNT(DISTINCT maptags.userid) AS taggers,MAX(%d=maptags.userid) AS ismine,COUNT(DISTINCT runs.userid) AS runners FROM maptags \
+				LEFT JOIN runs ON (runs.course=maptags.course) \
+				WHERE tag=%s GROUP BY course HAVING runners > 0 ORDER BY ismine DESC, taggers DESC, runners DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
+				trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+			}
+		}
+		else {
+			if (!G_DB_GenericRequest_Send(data, "SELECT course,COUNT(DISTINCT userid) AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE tag=%s GROUP BY course ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
+				trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+			}
+		}
+	}
+	else if (!Q_stricmp(arg, "list")) {
+		data.specifics.maptag.requestType = TAGMAP_LIST;
+		data.page = G_DB_GetPageArg(2);
+		if (!G_DB_GenericRequest_Send(data, "SELECT tag,COUNT(DISTINCT userid) AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE course=%s GROUP BY tag ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, courseName, data.page * 10)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		}
+	}
+	else if (!Q_stricmp(arg, "listall")) {
+		data.specifics.maptag.requestType = TAGMAP_LISTALL;
+		data.page = G_DB_GetPageArg(2);
+		if (!G_DB_GenericRequest_Send(data, "SELECT tag,COUNT(DISTINCT userid) AS taggers,MAX(%d=userid) AS ismine,COUNT(DISTINCT maptags.course) AS maps FROM maptags GROUP BY tag ORDER BY maps DESC, taggers DESC,ismine DESC LIMIT %d,10", ent->client->sess.login.id,data.page*10)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		}
+	}
+	else if (!ent->client->sess.login.loggedIn) {
+		trap_SendServerCommand(ent - g_entities, "print \"Login is required for adding, removing or clearing tags.\n\"");
+		return;
+	}
+	else if (!Q_stricmp(arg,"remove") && arglen > 2) {
+		const char* tag = G_Argv(2);
+		const char* validateError = ValidateMapTag(tag);
+		data.specifics.maptag.requestType = TAGMAP_REMOVE;
+		if (validateError) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot remove tag: %s.\n\"", validateError));
+			return;
+		}
+		Q_strncpyz(data.specifics.maptag.tag, tag, sizeof(data.specifics.maptag.tag));
+		if (!G_DB_GenericRequest_Send(data, "DELETE FROM maptags WHERE course=%s AND userid=%d AND tag=%s", courseName, ent->client->sess.login.id, tag)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		}
+
+	} else if (!Q_stricmp(arg,"clear")) {
+		data.specifics.maptag.requestType = TAGMAP_CLEAR;
+		if (!G_DB_GenericRequest_Send(data, "DELETE FROM maptags WHERE course=%s AND userid=%d", courseName, ent->client->sess.login.id)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		}
+	} else  {
+		const char* tag = arg;
+		const char* validateError = ValidateMapTag(tag);
+		data.specifics.maptag.requestType = TAGMAP_ADD;
+		if (validateError) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot set tag: %s.\n\"", validateError));
+			return;
+		} 
+		Q_strncpyz(data.specifics.maptag.tag,tag,sizeof(data.specifics.maptag.tag));
+		if (!G_DB_GenericRequest_Send(data, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen) VALUES (%s,%d,%s,NOW(),NOW()) ON DUPLICATE KEY UPDATE updatedwhen=NOW()", courseName, ent->client->sess.login.id, tag)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		}
 	}
 }
 
@@ -6650,6 +6856,7 @@ clientCommand_t clientCommands[] = {
 	{"stealcheckpoints",	NULL, DF_StealCheckpoints,				CMD_NOINTERMISSION},
 	{"stealpos",			NULL, DF_StealPos,						CMD_NOINTERMISSION},
 	{"stealspawn",			NULL, DF_StealSpawn,					CMD_NOINTERMISSION},
+	{"tag",					NULL, Cmd_TagMap_f,						CMD_NOINTERMISSION, "Tag a mag, search for tagged maps or list a map's tags."},
 	{"team",				NULL, Cmd_Team_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"teamtask",			NULL, Cmd_TeamTask_f,					CMD_NOINTERMISSION},
 	{"teamvote",			NULL, Cmd_TeamVote_f,					CMD_NOINTERMISSION},
