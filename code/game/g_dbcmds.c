@@ -3060,7 +3060,7 @@ genericDbRequestStruct_t G_DB_GenericRequest_Prepare(gentity_t* ent, genericDbRe
 	genericDbRequestStruct_t data;
 	if (type >= GDBREQUEST_COUNT_TYPES) {
 		Com_Error(ERR_FATAL,"G_DB_GenericRequest_Prepare: Invalid type %d. Be sure to add every type to GENERIC_DB_REQUESTTYPES and register with REGISTER_DBREQUEST_CALLBACK()\n",(int)type);
-		return;
+		return data;
 	}
 	memset(&data, 0, sizeof(data));
 	data.clientnum = ent - g_entities;
