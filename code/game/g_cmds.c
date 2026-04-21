@@ -3990,14 +3990,15 @@ static qboolean QDECL TestCallback(gentity_t* ent, genericDbRequestStruct_t* dat
 		trap_SendServerCommand(ent - g_entities, va("print \"test: %s\n\"", result));
 	}
 }
+REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_TEST,TestCallback);
+
 static void Cmd_Test_f(gentity_t* ent) {
 	int userid;
-	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent,(1<<DBT_USERS),"testcmd", 0);
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_TEST,(1<<DBT_USERS),"testcmd", 0);
 	if (trap_Argc() < 2) {
 		return;
 	}
 	userid = atoi(G_Argv(1));
-	data.callback = TestCallback;
 	if (!G_DB_GenericRequest_Send(data,"SELECT course FROM runs GROUP BY course HAVING COUNT(*)=%d",userid)) {
 		trap_SendServerCommand(ent-g_entities,"Error sending test request");
 	}

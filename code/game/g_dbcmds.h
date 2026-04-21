@@ -294,6 +294,14 @@ struct genericDbRequestStruct_s;
 typedef enum genericDbRequestFlags_s {
 	GDBRF_RETURNEVENIFENTINVALID = (1<<0), // call the callback even if the ent/user is no longer valid
 }genericDbRequestFlags_t;
+#define GENERIC_DB_REQUESTTYPES(a) \
+	a(GDBREQUEST_TEST)
+typedef enum genericDbRequestType_s {
+#define GDBREQUEST_ENUM(a) a,
+	GENERIC_DB_REQUESTTYPES(GDBREQUEST_ENUM)
+#undef GDBREQUEST_ENUM
+	GDBREQUEST_COUNT_TYPES
+} genericDbRequestType_t;
 typedef qboolean (QDECL* genericDBRequestCallback_t)(struct gentity_s* ent,struct genericDbRequestStruct_s* data);
 typedef struct genericDbRequestStruct_s {
 	int								ip[4];
@@ -303,14 +311,20 @@ typedef struct genericDbRequestStruct_s {
 	int								requiredTables; // bitmask
 	char							ident[10]; // some short identifier, for debug messages
 	genericDbRequestFlags_t			flags;
-	genericDBRequestCallback_t		callback;
+	genericDbRequestType_t			callbackType;
 } genericDbRequestStruct_t;
 typedef enum dbRequestParamType_s {
 	PARAM_INT,
 	PARAM_FLOAT,
 	PARAM_STRING,
 } dbRequestParamType_t;
-genericDbRequestStruct_t G_DB_GenericRequest_Prepare(struct gentity_s* ent, int tables, const char* ident, int pageArg);
+typedef struct genericDbRequestCallbackInfo_s {
+	genericDBRequestCallback_t		callback;
+} genericDbRequestCallbackInfo_t;
+extern genericDBRequestCallback_t GDBREQUEST_TESTBlah;
+extern genericDbRequestCallbackInfo_t* genericDBRequestCallbacks[GDBREQUEST_COUNT_TYPES];
+#define REGISTER_DBREQUEST_CALLBACK(type,callbackA) genericDbRequestCallbackInfo_t type##_CallbackInfo = {(callbackA)}
+genericDbRequestStruct_t G_DB_GenericRequest_Prepare(struct gentity_s* ent, genericDbRequestType_t type, int tables, const char* ident, int pageArg);
 // convenience wrapper around prepared statement generation. the printf format string is not evaluated into a normal printf string, but rather all placeholders are replaced with ? and the parameter types are applied for the prepared statement and the parameters are bound correctly.
 // DO NOT WRAP THE QUERY IN va() OR SIMILAR BEFORE. THAT WILL CREATE A MAJOR SQL INJECTION SECURITY RISK. YOU MUST PASS THE FORMAT STRING DIRECTLY TO THIS FUNCTION, IT WILL CONVERT THE QUERY INTO A PREPARED STATEMENT WITH BOUND PARAMETERS
 qboolean QDECL G_DB_GenericRequest_Send(genericDbRequestStruct_t data, PRINTF_FORMAT_STRING char* fmt, ...) __attribute__((format(printf, 2, 3)));

@@ -3010,11 +3010,24 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 //
 // Generic request system to reduce repetitive code and add more stability
 //
-genericDbRequestStruct_t G_DB_GenericRequest_Prepare(gentity_t* ent, int tables, const char* ident, int pageArg) {
+#define GDBREQUEST_CALLBACKS(a) extern genericDbRequestCallbackInfo_t a##_CallbackInfo;
+GENERIC_DB_REQUESTTYPES(GDBREQUEST_CALLBACKS)
+#undef GDBREQUEST_CALLBACKS
+genericDbRequestCallbackInfo_t* genericDBRequestCallbacks[GDBREQUEST_COUNT_TYPES] = {
+#define GDBREQUEST_CALLBACKS(a) &a##_CallbackInfo,
+	GENERIC_DB_REQUESTTYPES(GDBREQUEST_CALLBACKS)
+#undef GDBREQUEST_CALLBACKS
+};
+genericDbRequestStruct_t G_DB_GenericRequest_Prepare(gentity_t* ent, genericDbRequestType_t type, int tables, const char* ident, int pageArg) {
 	genericDbRequestStruct_t data;
+	if (type >= GDBREQUEST_COUNT_TYPES) {
+		Com_Error(ERR_FATAL,"G_DB_GenericRequest_Prepare: Invalid type %d. Be sure to add every type to GENERIC_DB_REQUESTTYPES and register with REGISTER_DBREQUEST_CALLBACK()\n",(int)type);
+		return;
+	}
 	memset(&data, 0, sizeof(data));
 	data.clientnum = ent - g_entities;
 	data.requiredTables = tables;
+	data.callbackType = type;
 	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
 	data.userid = ent->client->sess.login.loggedIn ? ent->client->sess.login.id : -1;
 	Q_strncpyz(data.ident,ident,sizeof(data.ident));
@@ -3208,8 +3221,8 @@ void G_GenericDBRequestResults(int status, const char* errorMessage, int affecte
 		}
 		return;
 	}
-	if (data.callback) {
-		data.callback(ent, &data);
+	if (genericDBRequestCallbacks[data.callbackType]->callback) {
+		genericDBRequestCallbacks[data.callbackType]->callback(ent, &data);
 	}
 }
 
