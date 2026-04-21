@@ -333,7 +333,7 @@ typedef struct userCmdBuffer_s {
 
 extern userCmdBuffer_t		userCmdBuffer[MAX_CLIENTS]; 
 
-typedef enum subContests_s {
+typedef enum subContests_s { // always add at the end here cuz entries in the db rely on this staying consistent
 	SUBCONTESTS_ROLLYMPICS, // old bugged version. let's make sure it doesnt accidentally conflict
 	SUBCONTESTS_ROLLYMPICS_FIX, 
 	SUBCONTESTS_DBS_SPEED, 
@@ -341,6 +341,7 @@ typedef enum subContests_s {
 	SUBCONTESTS_DBS_IRONMAN, 
 	SUBCONTESTS_DBS_CTFRETURN, 
 	SUBCONTESTS_DBS_KILL_SPEEDLOSS, 
+	SUBCONTESTS_DBS_STUPIDSPEED, // dbs speed without any restrictions
 	SUBCONTESTS_COUNT
 } subContests_t;
 

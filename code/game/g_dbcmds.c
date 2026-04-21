@@ -568,6 +568,11 @@ static void G_InsertSubcontestResult(int status, const char* errorMessage, int a
 			demo1 = "DbsSpeed";
 			demo2 = "dbs speed";
 			break;
+		case SUBCONTESTS_DBS_STUPIDSPEED:
+			what = "fastest ^1stoopid^7speed (hax) dbs";
+			demo1 = "DbsStupidSpeed";
+			demo2 = "dbs stupid hax speed";
+			break;
 		case SUBCONTESTS_DBS_KILL:
 			what = "fastest speed dbs ^1KILL^7";
 			demo1 = "DbsSpeedKill";
@@ -2011,6 +2016,9 @@ static void G_SubContestLBResult(int status, const char* errorMessage, int affec
 			switch (lbRequestData.contest) {
 			case SUBCONTESTS_DBS_SPEED:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2DBS TRIGGER SPEED RECORDS\n"));
+				break;
+			case SUBCONTESTS_DBS_STUPIDSPEED:
+				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2DBS ^1STOOPID^7 (hax) TRIGGER SPEED RECORDS\n"));
 				break;
 			case SUBCONTESTS_DBS_KILL:
 				trap_SendServerCommand(lbRequestData.clientnum, va("print \"^2DBS KILL SPEED RECORDS\n"));

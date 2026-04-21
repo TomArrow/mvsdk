@@ -2562,7 +2562,10 @@ void ClientThink_real( gentity_t *ent ) {
 
 	if (oldSaberMove != LS_A_BACK_CR && pm.ps->saberMove == LS_A_BACK_CR) {
 		ent->client->pers.lastDbsSpeed = XYSPEED(pm.ps->velocity);
-		DF_SetPlayerSubContestValueSafeguarded(ent, SUBCONTESTS_DBS_SPEED, XYSPEED(pm.ps->velocity), 0, 0, 0, 0);
+		if (!DF_SetPlayerSubContestValueSafeguarded(ent, SUBCONTESTS_DBS_SPEED, XYSPEED(pm.ps->velocity), 0, 0, 0, 0)) {
+			// let's allow a stupidcontest. where u can just use /launch to launch urself at 10000 ups for a stupidly fast dbs
+			DF_SetPlayerSubContestValue(ent, SUBCONTESTS_DBS_STUPIDSPEED, XYSPEED(pm.ps->velocity), 0, 0, 0, 0);
+		}
 	}
 
 	if (client->isIronMan) {

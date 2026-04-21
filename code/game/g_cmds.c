@@ -3661,6 +3661,8 @@ void Cmd_DBSRecords_f( gentity_t *ent )
 	trap_Argv(1,arg,sizeof(arg));
 	if (!Q_stricmp(arg,"speed")) {
 		category = SUBCONTESTS_DBS_SPEED;
+	} else if (!Q_stricmp(arg,"stupidspeed")) {
+		category = SUBCONTESTS_DBS_STUPIDSPEED;
 	} else if (!Q_stricmp(arg, "kill")) {
 		category = SUBCONTESTS_DBS_KILL;
 	} else if (!Q_stricmp(arg, "killslowed")) {

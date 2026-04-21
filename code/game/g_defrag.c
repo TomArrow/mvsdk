@@ -6434,19 +6434,20 @@ void DF_SetPlayerSubContestValue(gentity_t* ent, subContests_t subcontest, float
 }
 
 // just some basic common checks. wanna be in jk2 movement. and not bot movement or some other.
-void DF_SetPlayerSubContestValueSafeguarded(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4) {
-	if (ent->client->pers.tasClient || ent->client->pers.isHeadlessClient) {
-		return;
+qboolean DF_SetPlayerSubContestValueSafeguarded(gentity_t* ent, subContests_t subcontest, float value, float extraParam1, float extraParam2, int extraParam3, int extraParam4) {
+	if (g_cheats.integer || ent->client->pers.tasClient || ent->client->pers.isHeadlessClient) {
+		return qfalse;
 	}
 	if (ent->client->sess.raceMode) { // if in racemode, let's check weird stuff isn't going on.
 		raceStyle_t clientRs = ent->client->sess.raceStyle;
 		if ((clientRs.runFlags & (~allowedSafeguardedSubcontestRunFlags)) || clientRs.movementStyle != MV_JK2 && clientRs.movementStyle != MV_CHARGEJUMP && clientRs.movementStyle != MV_SPEED && clientRs.movementStyle != MV_FORCE && clientRs.movementStyle != MV_JK2SP || ent->client->sess.raceStateInvalidated) {
 			// has runflags that aren't accepted (just cheat stuff generally)
 			// or is not in jk2 movement mode (let's be a bit gatekeepy here!)
-			return;
+			return qfalse;
 		}
 	}
 	DF_SetPlayerSubContestValue(ent,subcontest,value,extraParam1,extraParam2,extraParam3,extraParam4);
+	return qtrue;
 }
 
 
