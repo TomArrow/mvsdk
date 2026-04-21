@@ -3853,6 +3853,7 @@ void G_CheckIronManStatus() {
 	PrintCTFMessage(ent - g_entities, randomteam == PW_REDFLAG ? TEAM_RED : TEAM_BLUE, CTFMESSAGE_PLAYER_GOT_FLAG);
 
 	if (g_ctfPersStats.integer > 1) {
+		ent->client->pers.teamState.flagsince = level.time;
 		ent->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 	}
 

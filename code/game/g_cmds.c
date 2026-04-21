@@ -3983,6 +3983,28 @@ static void Cmd_UnpauseGame_C(gentity_t* ent, const char* args) {
 
 
 
+static qboolean QDECL TestCallback(gentity_t* ent, genericDbRequestStruct_t* data) {
+	if (G_COOL_API_DB_NextRow()) {
+		char result[20]; 
+		G_COOL_API_DB_GetString(0, result, sizeof(result));
+		trap_SendServerCommand(ent - g_entities, va("print \"test: %s\n\"", result));
+	}
+}
+static void Cmd_Test_f(gentity_t* ent) {
+	int userid;
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent,(1<<DBT_USERS),"testcmd", 0);
+	if (trap_Argc() < 2) {
+		return;
+	}
+	userid = atoi(G_Argv(1));
+	data.callback = TestCallback;
+	if (!G_DB_GenericRequest_Send(data,"SELECT course FROM runs GROUP BY course HAVING COUNT(*)=%d",userid)) {
+		trap_SendServerCommand(ent-g_entities,"Error sending test request");
+	}
+}
+
+
+
 //for limiting user args length so we're not wasting bandwidth echoing bad user requests.
 const char* ShortString(const char* str) {
 	static char buf[32] = { 0 };
@@ -6631,6 +6653,7 @@ clientCommand_t clientCommands[] = {
 	{"teamtask",			NULL, Cmd_TeamTask_f,					CMD_NOINTERMISSION},
 	{"teamvote",			NULL, Cmd_TeamVote_f,					CMD_NOINTERMISSION},
 	{"tell",				NULL, Cmd_Tell_f,						CMD_ALLOWINREPLAY | CMD_ALLOWWHENFORCELOGIN | CMD_SIGNALSPRESENCE},
+	{"test",				NULL, Cmd_Test_f,						CMD_NOINTERMISSION},
 	{"tffaStats",			NULL, Cmd_TFFAStats_f,					CMD_NOINTERMISSION},
 	{"thedestroyer",		NULL, Cmd_TheDestroyer_f,				CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION}, // technically there should be a fallthrough to "unknown cmd" here but meh.
 	{"time",				NULL, Cmd_Time_f,						CMD_NOINTERMISSION},

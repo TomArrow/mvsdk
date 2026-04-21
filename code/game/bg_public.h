@@ -464,11 +464,11 @@ typedef enum {
 	PERS_ATTACKEE_ARMOR,			// health/armor of last person we attacked
 	PERS_KILLED,					// count of the number of times you died
 	// player awards tracking
-	PERS_IMPRESSIVE_COUNT,			// two railgun hits in a row
-	PERS_EXCELLENT_COUNT,			// two successive kills in a short amount of time
+	PERS_IMPRESSIVE_COUNT,			// two railgun hits in a row						RETURN FRAGS
+	PERS_EXCELLENT_COUNT,			// two successive kills in a short amount of time	FLAG STEALS
 	PERS_DEFEND_COUNT,				// defend awards
 	PERS_ASSIST_COUNT,				// assist awards
-	PERS_GAUNTLET_FRAG_COUNT,		// kills with the guantlet
+	PERS_GAUNTLET_FRAG_COUNT,		// kills with the guantlet							FLAG HOLD TIME // TA: actually, why put it in here? why bother communicating it in a field that's only 16 bit. it will overflow after 30 seconds of flaghold...
 	PERS_CAPTURES					// captures
 } persEnum_t;
 

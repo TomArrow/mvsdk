@@ -18,6 +18,9 @@ static void G_CreateMapRatingsTable();
 const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
+
+void G_GenericDBRequestResults(int status, const char* errorMessage, int affectedRows);
+
 gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 	gentity_t* ent;
 
@@ -2429,6 +2432,9 @@ void G_DB_CheckResponses() {
 				case DBREQUEST_CHECKUNREADUSERMESSAGES:
 					G_CheckUnreadUserMessagesResults(status, errorMessage, affectedRows);
 					break;
+				case DBREQUEST_GENERIC:
+					G_GenericDBRequestResults(status, errorMessage, affectedRows);
+					break;
 				//case DBREQUEST_GETCHATS:
 				//	G_DB_GetChatsResponse(status);
 				//	break;
@@ -2721,15 +2727,21 @@ static void G_CreateRunsTable() {
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_UPDATECOLUMNS, columnsUpdateRequest);
 }
 
+dbTableCreateFunc_t tableCreateFuncs[DBT_COUNT_TABLES] = {
+	G_CreateUserTable,
+	G_CreateMessagesTable,
+	G_CreateRunsTable,
+	G_CreateCheckpointsTable,
+	G_CreateSubContestsTable,
+	G_CreateMapRaceDefaultsTable,
+	G_CreateMetaTable,
+	G_CreateMapRatingsTable,
+};
 static void G_DB_CreateTables() {
-	G_CreateUserTable();
-	G_CreateMessagesTable();
-	G_CreateRunsTable();
-	G_CreateCheckpointsTable();
-	G_CreateSubContestsTable();
-	G_CreateMapRaceDefaultsTable();
-	G_CreateMetaTable();
-	G_CreateMapRatingsTable();
+	int i;
+	for (i = 0; i < DBT_COUNT_TABLES; i++) {
+		tableCreateFuncs[i]();
+	}
 }
 
 void G_DB_Init() {
@@ -2985,6 +2997,224 @@ qboolean G_InsertRun(finishedRunInfo_t* runInfo) {
 	//G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, userTableRequest);
 	return qtrue;
 }
+
+
+
+
+
+
+
+
+
+// 
+//
+// Generic request system to reduce repetitive code and add more stability
+//
+genericDbRequestStruct_t G_DB_GenericRequest_Prepare(gentity_t* ent, int tables, const char* ident, int pageArg) {
+	genericDbRequestStruct_t data;
+	memset(&data, 0, sizeof(data));
+	data.clientnum = ent - g_entities;
+	data.requiredTables = tables;
+	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	data.userid = ent->client->sess.login.loggedIn ? ent->client->sess.login.id : -1;
+	Q_strncpyz(data.ident,ident,sizeof(data.ident));
+	if (pageArg && trap_Argc() > pageArg) {
+		char argpage[20];
+		trap_Argv(pageArg,argpage,sizeof(argpage));
+		data.page = atoi(argpage) - 1;
+		if (data.page < 0) {
+			data.page = 0;
+		}
+	}
+	return data;
+}
+#define to_digit_macro(c)		((c) - '0')
+#define is_digit_macro(c)		((unsigned)to_digit_macro(c) <= 9)
+qboolean QDECL G_DB_GenericRequest_Send(genericDbRequestStruct_t data, PRINTF_FORMAT_STRING char* fmt, ...) {
+	va_list		argptr;
+	char query[BIG_INFO_STRING];
+	dbRequestParamType_t paramTypes[GENERICDBREQUEST_MAX_PARAMS];
+	int paramCount = 0; 
+	char* o = query;
+	int i;
+	
+	// first we pre-parse to replace %d with ? etc. this is essentially the vsnprintf function from bg_lib.c, but dumbed down a bit.
+	char	*buf_p;
+	char	ch;
+	char	* const buf_end = query + sizeof(query) - 1;
+
+	if (coolApi_dbVersion < 3) {
+		if (g_developer.integer) {
+			trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed. Database version too low.\n\"", data.ident));
+		}
+		return qfalse;
+	}
+
+	buf_p = query;
+
+	while( 1 ) {
+		// run through the format string until we hit a '%' or '\0'
+		while ( 1 ) {
+			ch = *fmt++;
+
+			if ( ch == '\0' ) {
+				goto done;
+			} else if ( ch == '%' ) {
+				break;
+			}
+			if ( buf_p < buf_end ) {
+				*buf_p = ch;
+			}
+
+			buf_p++;
+		}
+
+
+rflag:
+		ch = *fmt++;
+reswitch:
+		switch( ch ) {
+		case '\0':
+			goto done;
+		case '-':
+			goto rflag;
+		case '+':
+			goto rflag;
+		case '.':
+			while(is_digit_macro( ( ch = *fmt++ ) ) ) {
+			}
+			goto reswitch;
+		case '0':
+			goto rflag;
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+			do {
+				ch = *fmt++;
+			} while( is_digit_macro( ch ) );
+			goto reswitch;
+		case 'd':
+		case 'i':
+			paramTypes[paramCount++] = PARAM_INT;
+			*buf_p = '?';
+			buf_p++;
+			break;
+		case 'u':
+			paramTypes[paramCount++] = PARAM_INT;
+			*buf_p = '?';
+			buf_p++;
+			break;
+		case 'f':
+			paramTypes[paramCount++] = PARAM_FLOAT;
+			*buf_p = '?';
+			buf_p++;
+			break;
+		case 's':
+			paramTypes[paramCount++] = PARAM_STRING;
+			*buf_p = '?';
+			buf_p++;
+			break;
+		case '%':
+			if ( buf_p < buf_end ) {
+				*buf_p = ch;
+			}
+			buf_p++;
+			break;
+		case 'c':
+		default:
+			Com_Error(ERR_FATAL,"G_DB_GenericRequest_Send: Unsupported parameter type '%c'\n",ch);
+			break;
+		}
+	}
+
+done:
+	if ( buf_p < buf_end )
+		*buf_p = '\0';
+	else
+		*buf_end = '\0';
+
+	assert( buf_p <= buf_end );
+
+	if (!G_COOL_API_DB_AddPreparedStatement((byte*)&data, sizeof(data), DBREQUEST_GENERIC, o)) {
+		return qfalse;
+	}
+
+	va_start(argptr, fmt);
+
+	for (i = 0; i < paramCount; i++) {
+		switch (paramTypes[i]) {
+		case PARAM_INT:
+			G_COOL_API_DB_PreparedBindInt(va_arg(argptr, int));
+			break;
+		case PARAM_FLOAT:
+			G_COOL_API_DB_PreparedBindFloat(va_arg(argptr, float));
+			break;
+		case PARAM_STRING:
+			G_COOL_API_DB_PreparedBindString(va_arg(argptr, char*));
+			break;
+		}
+	}
+
+	va_end(argptr);
+
+	return G_COOL_API_DB_FinishAndSendPreparedStatement();
+}
+
+
+void G_GenericDBRequestResults(int status, const char* errorMessage, int affectedRows) {
+	gentity_t* ent = NULL;
+	genericDbRequestStruct_t data;
+
+	G_COOL_API_DB_GetReference((byte*)&data, sizeof(data));
+
+	if (status == 1146) {
+		// table doesn't exist. create it.
+		int i;
+		for (i = 0; i < DBT_COUNT_TABLES; i++) {
+			if (data.requiredTables & (1<<i)) {
+				tableCreateFuncs[i]();
+			}
+		}
+		if (g_developer.integer) {
+			trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed due to table not existing. Attempting to create. Please try again shortly.\n\"",data.ident));
+		}
+		return;
+	}
+	else if (status == 1062) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s': entry with this key already exists.\n\"",data.ident));
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed with status %d and error message %s.\n\"", data.ident, status, errorMessage));
+		return;
+	}
+	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+		if (g_developer.integer) {
+			Com_Printf("^1Client %d generic DB request '%s' returned, user no longer valid.\n", data.clientnum, data.ident);
+		}
+		if (!(data.flags & GDBRF_RETURNEVENIFENTINVALID)) {
+			return;
+		}
+	}
+	if (coolApi_dbVersion < 3) {
+		if (g_developer.integer) {
+			trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed. Database version too low.\n\"",data.ident));
+		}
+		return;
+	}
+	if (data.callback) {
+		data.callback(ent, &data);
+	}
+}
+
+
+
 
 
 

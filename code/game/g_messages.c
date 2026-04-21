@@ -20,6 +20,10 @@ void G_SendUserMessageFinished(int status, const char* errorMessage, int affecte
 		trap_SendServerCommand(data.clientnum, "print \"^1User message sending failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
 		return;
 	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1User message sending failed with status %d.\n\"",status));
+		return;
+	}
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d user message sending user search returned, user no longer valid.\n", data.clientnum);
 		return;
@@ -48,6 +52,10 @@ void G_SendUserMessageContinue(int status, const char* errorMessage, int affecte
 		G_CreateUserTable();
 		G_CreateMessagesTable();
 		trap_SendServerCommand(data.clientnum, "print \"^1User message sending failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1User message sending failed with status %d.\n\"", status));
 		return;
 	}
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
@@ -196,6 +204,10 @@ void G_ListUserMessagesListContinue(int status, const char* errorMessage, int af
 		trap_SendServerCommand(data.clientnum, "print \"^1User message listing failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
 		return;
 	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1User message listing failed with status %d.\n\"", status));
+		return;
+	}
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		Com_Printf("^1Client %d user message listing returned, user no longer valid.\n", data.clientnum);
 		return;
@@ -332,8 +344,12 @@ void G_CheckUnreadUserMessagesResults(int status, const char* errorMessage, int 
 		G_CreateUserTable();
 		G_CreateMessagesTable();
 		if (g_developer.integer) {
-			trap_SendServerCommand(data.clientnum, "print \"^1User message listing failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
+			trap_SendServerCommand(data.clientnum, "print \"^1User message unread checking failed due to table not existing. Attempting to create. Please try again shortly.\n\"");
 		}
+		return;
+	}
+	else if (status) {
+		trap_SendServerCommand(data.clientnum, va("print \"^1User message unread checking failed with status %d.\n\"", status));
 		return;
 	}
 	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
