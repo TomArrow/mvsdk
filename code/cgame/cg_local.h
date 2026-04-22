@@ -1880,6 +1880,8 @@ extern	vmCvar_t		cg_dismember;
 #define CUSTOM_HUD_STRINGS_MAXLEN 1024
 extern	vmCvar_t		cg_customHUDString[CUSTOM_HUD_STRINGS_COUNT];
 
+extern	vmCvar_t		tt_clientFlags;
+
 extern	vmCvar_t		cg_raceTimer;
 extern	vmCvar_t		cg_raceTimerSize;
 extern	vmCvar_t		cg_raceTimerNoSpeeds;
@@ -2093,6 +2095,11 @@ extern	vmCvar_t		cg_duelModeSpec;
 extern	vmCvar_t		cg_ui_myteam;
 extern	vmCvar_t		cg_com_maxfps;
 extern	vmCvar_t		cg_com_physicsFps;
+
+extern	vmCvar_t		cg_ui_mapRatingStyle;
+extern	vmCvar_t		cg_ui_mapRating;
+extern	vmCvar_t		cg_ui_mapRatingStylesDone;
+extern	vmCvar_t		cg_ui_mapRatingState;
 
 extern	vmCvar_t		cg_mv_fixbrokenmodelsclient;
 extern	vmCvar_t		cg_drawPlayerSprites;

@@ -72,6 +72,11 @@ typedef struct bitInfo_s {
 	const char* string;
 } bitInfo_t;
 
+typedef struct bitInfoMVStyle_s {
+	const char* string;
+	const char* alias; // for /move command
+} bitInfoMVStyle_t;
+
 typedef enum mainLeaderboardType_s {
 	LB_MAIN,
 	LB_NOJUMPBUG, // main fps but nojumpbug
@@ -141,7 +146,7 @@ extern bitInfo_t runFlagsNames[];
 extern bitInfo_t runFlagsShortNames[];
 extern bitInfo_t runFlagsVeryShortNames[];
 extern bitInfo_t modeNames[MODE_NUM_MODES];
-extern bitInfo_t moveStyleNames[MV_NUMSTYLES];
+extern bitInfoMVStyle_t moveStyleNames[MV_NUMSTYLES];
 extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 
 

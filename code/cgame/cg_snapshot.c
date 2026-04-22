@@ -127,6 +127,10 @@ void CG_SetInitialSnapshot( snapshot_t *snap ) {
 	// what the server has indicated the current weapon is
 	CG_Respawn();
 
+	if (cgs.isTommyTernal) {
+		trap_Cvar_Set("ui_mapRatingStyle", va("%d", cg.snap->ps.stats[STAT_RACEMODE] ? cg.snap->ps.stats[STAT_MOVEMENTSTYLE] : MV_JK2));
+	}
+
 	for ( i = 0 ; i < cg.snap->numEntities ; i++ ) {
 		state = &cg.snap->entities[ i ];
 		cent = &cg_entities[ state->number ];
@@ -231,6 +235,10 @@ static void CG_TransitionSnapshot( void ) {
 		}
 		else if (cg_cameraFPS.integer >= CAMERA_MIN_FPS) {
 			cg.thisFrameTeleport = qfalse; // clear for interpolated player with new camera damping
+		}
+
+		if (cgs.isTommyTernal && (ps->stats[STAT_RACEMODE] != ops->stats[STAT_RACEMODE] || ps->stats[STAT_MOVEMENTSTYLE] != ops->stats[STAT_MOVEMENTSTYLE])) {
+			trap_Cvar_Set("ui_mapRatingStyle", va("%d", ps->stats[STAT_RACEMODE] ? ps->stats[STAT_MOVEMENTSTYLE] : MV_JK2));
 		}
 
 		// if we are not doing client side movement prediction for any

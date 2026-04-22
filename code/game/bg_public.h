@@ -68,6 +68,7 @@
 #define TTFLAGS_GAMEPLAY_SERVERINFO_KICKOFFFIX			(1<<1) 
 
 #define TTFLAGS_CLIENT_SHOWALLPLAYERSINCLUDINGMLBOTS	(1<<0)
+#define TTFLAGS_CLIENT_SUPPORTS_TTCMD					(1<<1) // "ttcmd" which other cmds can piggyback onto without showing client errors if the cmd isn't known
 
 
 //jk2pro

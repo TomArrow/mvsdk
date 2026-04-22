@@ -2166,7 +2166,7 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	}
 
 	if(coolApi & COOL_APIFEATURE_SETUSERANGLES) {
-		if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_BOT)) {
+		if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] && (cg.predictedPlayerState.stats[STAT_RUNFLAGS] & RFL_BOT) && cg.predictedPlayerState.clientNum == cg.clientNum) {
 			short convertedValue = fp16_ieee_from_fp32_value(cg_strafebotFactor.value-1.0f);
 			trap_CG_COOL_API_SetUserAngles(0, 0, convertedValue, 4); // we tunnel the strafebot offset value through roll. roll is fkin useless anyway. :)
 		}

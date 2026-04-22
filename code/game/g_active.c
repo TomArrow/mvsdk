@@ -1846,7 +1846,6 @@ once for each server frame, which makes for smooth demo recording.
 */
 void DF_HandleSegmentedRunPre(gentity_t* ent);
 posHashType_t DF_GetPositionHash(playerState_t* ps);
-void UpdateClientRaceVars(gclient_t* client);
 //void DF_SetRaceMode(gentity_t* ent, qboolean value); 
 void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag);
 void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);

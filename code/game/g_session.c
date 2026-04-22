@@ -168,6 +168,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	
 	if (client->sess.login.loggedIn) {
 		DF_RequestPlayerDefaultTime(g_entities + (client - g_clients));
+		G_CheckPlayerMapRatings(g_entities + (client - g_clients));
 		G_CheckForUnreadUserMessages(g_entities + (client - g_clients));
 	}
 
@@ -212,7 +213,6 @@ Called on a first-time connect
 ================
 */
 extern void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag);
-extern void UpdateClientRaceVars(gclient_t* client);
 void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	clientSession_t	*sess;
 	const char		*value;
@@ -276,7 +276,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 			case GT_JEDIMASTER:
 			case GT_SINGLE_PLAYER:
 				if ( g_maxGameClients.integer > 0 && 
-					level.numNonSpectatorClients >= g_maxGameClients.integer || g_connectSpecAlways.integer) {
+					level.numNonSpectatorClients >= g_maxGameClients.integer || g_connectSpecAlways.integer && !isBot || g_connectSpecAlways.integer >= 2) {
 					sess->sessionTeam = TEAM_SPECTATOR;
 				} else {
 					sess->sessionTeam = TEAM_FREE;

@@ -593,6 +593,7 @@ vmCvar_t	cg_dismember;
 
 //jk2pro Client Cvars - start
 vmCvar_t	cjp_client;
+vmCvar_t	tt_clientFlags;
 
 vmCvar_t	cg_customHUDStringExample;
 vmCvar_t	cg_customHUDString[CUSTOM_HUD_STRINGS_COUNT];
@@ -818,6 +819,11 @@ vmCvar_t	cg_ui_myteam;
 vmCvar_t	cg_com_maxfps;
 vmCvar_t	cg_com_physicsFps;
 
+vmCvar_t	cg_ui_mapRatingStyle;
+vmCvar_t	cg_ui_mapRating;
+vmCvar_t	cg_ui_mapRatingStylesDone;
+vmCvar_t	cg_ui_mapRatingState;
+
 vmCvar_t	cg_mv_fixbrokenmodelsclient;
 vmCvar_t	cg_drawPlayerSprites;
 //vmCvar_t	cg_developer;
@@ -1033,6 +1039,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	//jk2pro Client Cvars start
 	{ &cjp_client, "cjp_client", "1.4JAPRO", CVAR_USERINFO|CVAR_ROM },
+	{ &tt_clientFlags, "ttClFl", "2", CVAR_USERINFO | CVAR_ROM}, // TTFLAGS_CLIENT_SUPPORTS_TTCMD
 	{ &cg_customHUDStringExample, "cg_customHUDStringExample", "x y size align monospace text blahblahblah", CVAR_ROM },
 	{ &cg_customHUDString[0], "cg_customHUDString0", "", CVAR_TEMP },
 	{ &cg_customHUDString[1], "cg_customHUDString1", "", CVAR_TEMP },
@@ -1246,6 +1253,10 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_duelModeSpec, "cg_duelModeSpec", "0", CVAR_TEMP},
 
 	{ &cg_ui_myteam, "ui_myteam", "0", CVAR_ROM|CVAR_INTERNAL},
+	{ &cg_ui_mapRatingStyle, "ui_mapRatingStyle", "0", CVAR_TEMP | CVAR_INTERNAL },
+	{ &cg_ui_mapRating, "ui_mapRating", "_", CVAR_TEMP | CVAR_INTERNAL },
+	{ &cg_ui_mapRatingStylesDone, "ui_mapRatingStylesDone", "", CVAR_TEMP | CVAR_INTERNAL },
+	{ &cg_ui_mapRatingState, "ui_mapRatingState", "0", CVAR_TEMP | CVAR_INTERNAL },
 	{ &cg_com_maxfps, "com_maxfps", "", 0},
 	{ &cg_com_physicsFps, "com_physicsFps", "", 0},
 
@@ -3949,6 +3960,11 @@ Ghoul2 Insert End
 				CG_SendConsoleCommand("exec %s.cfg\n", mapname_noExt);
 		}
 	}
+
+	trap_Cvar_Set("ui_mapRatingStylesDone", "0");
+	trap_Cvar_Set("ui_mapRatingStyle", "0");
+	trap_Cvar_Set("ui_mapRatingState", "0");
+	trap_Cvar_Set("ui_mapRating", "_");
 
 }
 

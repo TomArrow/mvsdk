@@ -11,7 +11,6 @@ void DF_RaceStateInvalidated(gentity_t* ent, qboolean print);
 const char* DF_RacePrintAppendage(finishedRunInfo_t* runInfo);
 void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace);
 void DF_CarryClientOverToNewRaceStyle(gentity_t* ent, raceStyle_t* newRs);
-void UpdateClientRaceVars(gclient_t* client);
 void DF_StartSegmentedReplay(gentity_t* ent, qboolean restart);
 
 #define VALIDATEPTR(type, p) ((void*) (1 ? (p) : (type*)0)) // C/QVM compiler enforces this for us. little sanity check.
@@ -4645,12 +4644,14 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 
 		if (es->eFlags & EF_PLAYER_EVENT) {
 			gclient_t* eventClient = g_entities[es->otherEntityNum].client;
+			#define IGNORETAS (!canSeeTASClients && (eventClient->pers.tasClient & TASCLIENT_MACHINELEARNING) && (eventClient->sess.raceMode || eventClient->sess.mode != cl->sess.mode)) // don't hide clients that could hurt us
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = !canSeeTASClients && (eventClient->pers.tasClient & TASCLIENT_MACHINELEARNING) || backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnoreRealClient[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = !canSeeTASClients && (eventClient->pers.tasClient & TASCLIENT_MACHINELEARNING) || backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
 			}
+			#undef IGNORETAS
 		}
 
 		if (es->eType == ET_PUSH_TRIGGER) {
@@ -4708,14 +4709,15 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 		if (other->client) {
 			ocl = other->client;
-
+			#define IGNORETAS (!canSeeTASClients && (ocl->pers.tasClient & TASCLIENT_MACHINELEARNING) && (ocl->sess.raceMode || ocl->sess.mode != cl->sess.mode)) // don't hide clients that could hurt us
 			//mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = !canSeeTASClients && (ocl->pers.tasClient & TASCLIENT_MACHINELEARNING) || backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnoreRealClient[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = !canSeeTASClients && (ocl->pers.tasClient & TASCLIENT_MACHINELEARNING) || backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && (ocl->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && (ocl->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
 			}
+			#undef IGNORETAS
 			if (saveState) { 
 				backup->saberMovePS = ocl->ps.saberMove;
 				backup->pmfFollowPS = ocl->ps.pm_flags & PMF_FOLLOW;

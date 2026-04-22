@@ -71,8 +71,8 @@ bitInfo_t modeNames[MODE_NUM_MODES] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "DuelQueue" },
 };
 
-bitInfo_t moveStyleNames[MV_NUMSTYLES] = { 
-	{ "JK2" },//0
+bitInfoMVStyle_t moveStyleNames[MV_NUMSTYLES] = {
+	{ "JK2"},//0
 	{ "PJK2" },//1
 	{ "JK2SP" },//1
 	{ "Speed" },//2
@@ -81,10 +81,10 @@ bitInfo_t moveStyleNames[MV_NUMSTYLES] = {
 	{ "Bounce" },//5
 	{ "Pinball" },//6
 	{ "CSS" },//7
-	{ "Q2" },//8
+	{ "Q2","quake2"},//8
 	{ "Force" },//9
 	{ "Dream" },//10
-	{ "ChargeJump" },//11
+	{ "ChargeJump", "charge"},//11
 	{ "Rats" },//11
 };
 
@@ -229,37 +229,15 @@ const char* RunFlagsToString(int runFlags, int defaultRunFlags, int lengthFactor
 }
 
 int RaceNameToInteger(char* style) {
+	int i = 0;
 	Q_strlwr(style);
 	Q_CleanStr(style,qtrue,qtrue);
 
-	if (!Q_stricmp(style, "jk2"))
-		return MV_JK2;
-	if (!Q_stricmp(style, "pjk2"))
-		return MV_PJK2;
-	if (!Q_stricmp(style, "jk2sp"))
-		return MV_JK2SP;
-	if (!Q_stricmp(style, "speed"))
-		return MV_SPEED;
-	if (!Q_stricmp(style, "sicko"))
-		return MV_SICKO;
-	if (!Q_stricmp(style, "quajk"))
-		return MV_QUAJK;
-	if (!Q_stricmp(style, "bounce"))
-		return MV_BOUNCE;
-	if (!Q_stricmp(style, "pinball"))
-		return MV_PINBALL;
-	if (!Q_stricmp(style, "q2") || !Q_stricmp(style, "quake2"))
-		return MV_Q2;
-	if (!Q_stricmp(style, "css"))
-		return MV_CSS;
-	if (!Q_stricmp(style, "force"))
-		return MV_FORCE;
-	if (!Q_stricmp(style, "dream"))
-		return MV_DREAM;
-	if (!Q_stricmp(style, "charge") || !Q_stricmp(style, "chargejump"))
-		return MV_CHARGEJUMP;
-	if (!Q_stricmp(style, "rats"))
-		return MV_RATS;
+	for (i = 0; i < MV_NUMSTYLES; i++) {
+		if (!Q_stricmp(moveStyleNames[i].string, style) || moveStyleNames[i].alias && !Q_stricmp(moveStyleNames[i].alias, style)) {
+			return i;
+		}
+	}
 	return -1;
 }
 int LeaderboardNameToInteger(char* lbType) {

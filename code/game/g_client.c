@@ -2466,7 +2466,6 @@ char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot ) {
 }
 
 void G_WriteClientSessionData( gclient_t *client );
-extern void UpdateClientRaceVars(gclient_t* client);
 //void DF_SetRaceMode(gentity_t* ent, qboolean value);
 void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag);
 /*

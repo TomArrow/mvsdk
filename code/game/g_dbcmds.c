@@ -1860,7 +1860,14 @@ static void G_RateMapResult(int status, const char* errorMessage, int affectedRo
 		return;
 	}
 
+
 	trap_SendServerCommand(data.clientnum, va("print \"Thank you. You have rated this map ^%c%f/10^7 for style %s.%s\n\"", data.value > 6.5 ? '2' : (data.value > 4 ? '3' : '1'),data.value,data.style < MV_NUMSTYLES ? moveStyleNames[data.style].string : "UNKNOWN",affectedRows == 0 ? " ^3No change." : ""));
+
+	if (data.style < MV_NUMSTYLES) {
+		ent->client->pers.mapRatings[data.style].rated = qtrue;
+		ent->client->pers.mapRatings[data.style].rating = data.value;
+		G_SendPlayerMapRatingsUIInfo(ent);
+	}
 
 }
 static void G_RateMapShowMineResult(int status, const char* errorMessage, int affectedRows) {
@@ -2170,6 +2177,8 @@ static void G_LoginContinue(loginRegisterStruct_t* loginData) {
 
 	DF_RequestPlayerDefaultTime(ent);
 
+	G_CheckPlayerMapRatings(ent);
+
 	G_CheckForUnreadUserMessages(ent);
 
 	trap_SendServerCommand(loginData->clientnum, va("print \"^2Successfully logged in as '%s'.\n\"",loginData->username));
@@ -2244,6 +2253,8 @@ static void G_ForceLoginContinue(int status, const char* errorMessage, int affec
 	DF_SetSubContestDefaults(client);
 
 	DF_RequestPlayerDefaultTime(ent);
+
+	G_SendPlayerMapRatingsUIInfo(ent);
 
 	trap_SendServerCommand(data.clientnum, va("print \"^3You were force-logged in by an admin as '%s'. Change your password with /changepassword, then log out and log in again.\n\"", usernameDb));
 	//trap_SendServerCommand(-1, va("print \"^2%s ^7logged in as '%s'.\n\"",client ? client->pers.netname : "", loginData->username));

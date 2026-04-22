@@ -944,6 +944,7 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 	spectatorState_t	specState;
 	int					specClient;
 	int					teamLeader;
+	int					i;
 
 	//
 	// see what change is requested
@@ -1085,6 +1086,11 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 	// execute the team change
 	//
 
+	// unfollow any spectators
+	if (team == TEAM_SPECTATOR) {
+		StopFollowingClient(ent);
+	}
+
 	G_ResetClientVote(client);
 
 	DF_RaceStateInvalidated(ent, qfalse);
@@ -1159,7 +1165,9 @@ void StopFollowing( gentity_t *ent ) {
 		gentity_t* followed = g_entities + ent->client->sess.spectatorClient;
 		if (followed->client && followed != ent && followed->client->sess.raceMode && (followed->client->sess.raceStyle.runFlags & RFL_BOT)) {
 			ent->client->ps.viewangles[ROLL] = 0; // in case we were following a strafebotter. so we don't get stuck with a weird angled view
-			//ent->client->sess.rollAngleInvalidated = qtrue; // does this make sense? idk
+			if (!ent->client->sess.raceMode || !(ent->client->sess.raceStyle.runFlags & RFL_BOT)) {
+				ent->client->sess.rollAngleInvalidated = qtrue; // does this make sense? idk. yep. cuz my dumbass sent a bad roll cmd even when just spectating someone who's botting
+			}
 		}
 	}
 	ent->client->ps.persistant[ PERS_TEAM ] = TEAM_SPECTATOR;	
@@ -1170,12 +1178,43 @@ void StopFollowing( gentity_t *ent ) {
 	ent->client->ps.clientNum = ent - g_entities;
 	ent->client->ps.weapon = WP_NONE;
 
+	// random fixes from TaystJK:
+	ent->client->ps.emplacedIndex = 0; // Reset emplacedIndex when stopping following just in case. (ensiform)
+	ent->client->ps.forceHandExtend = HANDEXTEND_NONE;
+	ent->client->ps.forceHandExtendTime = 0;
+	ent->client->ps.zoomMode = 0;
+	ent->client->ps.zoomLocked = qfalse; // [MP] Misc fixes and cleanup. (ensiform)
+	ent->client->ps.zoomLockTime = 0;
+	ent->client->ps.saberMove = LS_NONE; // [MP] Fix JACoders#423: spectator bug after special move (xycaleth)
+	ent->client->ps.legsAnim = 0;
+	ent->client->ps.legsTimer = 0;
+	ent->client->ps.torsoAnim = 0;
+	ent->client->ps.torsoTimer = 0;
+	ent->client->ps.isJediMaster = qfalse; // major exploit if you are spectating somebody and they are JM and you reconnect (mrwonko)
+	ent->client->ps.bobCycle = 0; // (mrwonko)
+	ent->client->ps.pm_type = PM_SPECTATOR;
+	ent->client->ps.eFlags &= ~EF_DISINTEGRATION;
+	memset(ent->client->ps.powerups,0,sizeof(ent->client->ps.powerups)); // (mrwonko) // TA: made this a memset instead of a loop
+
 	//ent->client->ps.viewangles[ROLL] = 0; // could this fix weirdness with strafebot? idk
 	SetClientViewAngle(ent, ent->client->ps.viewangles); //Fix viewangles getting fucked up when we stop spectating someone?
 
 	// don't use dead view angles (from vvv-serverside, which quotes ioq3, dunno if we need this)
 	if (ent->client->ps.stats[STAT_HEALTH] <= 0) {
 		ent->client->ps.stats[STAT_HEALTH] = 1;
+	}
+
+	UpdateClientRaceVars(ent->client); // make sure our race stuff is updated, especially RFL_BOT runflag.
+}
+
+// make anyone who's following this client stop doing so
+void StopFollowingClient( gentity_t* ent ) {
+	int i;
+	gentity_t* other = g_entities;
+	for (i = 0; i < level.maxclients; i++, other++) {
+		if (other->inuse && other->client && other->client->pers.connected == CON_CONNECTED && other->client->sess.sessionTeam == TEAM_SPECTATOR && other->client->sess.spectatorState == SPECTATOR_FOLLOW && other->client->sess.spectatorClient == (ent-g_entities)) {
+			StopFollowing(other);
+		}
 	}
 }
 
@@ -1191,8 +1230,8 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
-		"print \"^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman (^2/duel^7,^2/allforce^7 and ^2/ironman^7 are their own commands too)\n\"",
-		"print \"Random tip: ^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, allforce, ironman (^2/duel^7,^2/allforce^7 and ^2/ironman^7 are their own commands too)\n\"",
+		"print \"^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, duelqueue, allforce, ironman (^2/duel^7,^2/allforce^7 and ^2/ironman^7 are their own commands too)\n\"",
+		"print \"Random tip: ^2/pickmode^7 - Pick a game mode from: normal, defrag, duel, duelqueue, allforce, ironman (^2/duel^7,^2/allforce^7 and ^2/ironman^7 are their own commands too)\n\"",
 		qfalse,
 		qfalse
 	},
@@ -2421,6 +2460,8 @@ void Cmd_Logout_f( gentity_t *ent )
 		CalculateRanks();
 	}
 	ClientUserinfoChanged(ent - g_entities);
+	memset(ent->client->pers.mapRatings,0,sizeof(ent->client->pers.mapRatings));
+	G_SendPlayerMapRatingsUIInfo(ent);
 }
 
 extern const char* DF_GetMainSubcourseName();
@@ -3251,6 +3292,73 @@ void Cmd_Latest_f(gentity_t* ent) {
 	G_COOL_API_DB_PreparedBindInt(first);
 	G_COOL_API_DB_FinishAndSendPreparedStatement();
 
+}
+
+void G_SendPlayerMapRatingsUIInfo(gentity_t* ent) {
+	char cmd[MAX_STRING_CHARS];
+	char addbit[20];
+	int i,j;
+	int len = 0;
+	if (!ent->client) {
+		return;
+	}
+	if (!(ent->client->pers.ttClientFlags & TTFLAGS_CLIENT_SUPPORTS_TTCMD)) {
+		return;
+	}
+	if (!ent->client->sess.login.loggedIn) {
+		trap_SendServerCommand(ent-g_entities,"ttCmd rateMapState 0");
+		return;
+	}
+	Q_strncpyz(cmd, "ttCmd rateMapState 1 ", sizeof(cmd));
+	len = strlen(cmd);
+	for (i = 0; i < MV_NUMSTYLES; i++) {
+		cmd[len++] = ent->client->pers.mapRatings[i].rated ? '1' : '0';
+	}
+	for (i = 0; i < MV_NUMSTYLES; i++) {
+		if (!ent->client->pers.mapRatings[i].rated) {
+			continue;
+		}
+		Com_sprintf(addbit,sizeof(addbit)," %.4f", ent->client->pers.mapRatings[i].rating);
+
+		j = strlen(addbit);
+		if (len + j > 1022)
+			break;
+
+		Q_strncpyz(cmd + len, addbit, sizeof(cmd) - len);
+		len += j;
+	}
+
+	cmd[len] = '\0';
+	trap_SendServerCommand(ent - g_entities, cmd);
+
+}
+
+static qboolean QDECL PlayerMapRatingsFetchResult(gentity_t* ent, genericDbRequestStruct_t* data) {
+	memset(&ent->client->pers.mapRatings, 0, sizeof(ent->client->pers.mapRatings));
+	if (!ent->client || !ent->client->sess.login.loggedIn) {
+		return qfalse;
+	}
+	while (G_COOL_API_DB_NextRow()) {
+		int style = G_COOL_API_DB_GetInt(0);
+		float rating;
+		G_COOL_API_DB_GetFloat(1,&rating);
+		if (style >= 0 && style < MV_NUMSTYLES) {
+			ent->client->pers.mapRatings[style].rated = qtrue;
+			ent->client->pers.mapRatings[style].rating = rating;
+		}
+	}
+	G_SendPlayerMapRatingsUIInfo(ent);
+	return qtrue;
+}
+REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_MAPRATINGSFETCH, PlayerMapRatingsFetchResult);
+void G_CheckPlayerMapRatings(gentity_t* ent) {
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_MAPRATINGSFETCH, (1 << DBT_MAPRATINGS), "mapratingsfetch", 0);
+	if (!ent->client || !ent->client->sess.login.loggedIn) {
+		return;
+	}
+	if (!G_DB_GenericRequest_Send(data, "SELECT style, rating FROM mapratings WHERE userid=%d AND course=%s ORDER BY style ASC", ent->client->sess.login.id, DF_GetCourseName(qfalse))) {
+		trap_SendServerCommand(ent - g_entities, "print \"Error sending user map ratings request.\n\"");
+	}
 }
 
 void Cmd_RateMap_f(gentity_t* ent) {

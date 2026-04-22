@@ -605,6 +605,11 @@ typedef struct {
 #define TASCLIENT_TASMODE			(1<<0)
 #define TASCLIENT_MACHINELEARNING	(1<<1)
 
+typedef struct mapRating_s {
+	qboolean	rated;
+	float		rating;
+} mapRating_t;
+
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
 typedef struct {
@@ -725,6 +730,7 @@ typedef struct {
 #endif
 
 	int			lastDueled[MAX_CLIENTS]; // when we last dueled someone
+	mapRating_t	mapRatings[MV_NUMSTYLES];
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -1119,6 +1125,7 @@ char *G_NewString( const char *string );
 //
 void Cmd_Score_f (gentity_t *ent);
 void StopFollowing( gentity_t *ent );
+void StopFollowingClient(gentity_t* ent);
 void BroadcastTeamChange( gclient_t *client, int oldTeam );
 qboolean SetTeam( gentity_t *ent, char *s );
 void Cmd_FollowCycle_f( gentity_t *ent, int dir );
@@ -1135,6 +1142,8 @@ const char* G_ClientNameWithPrefix(gentity_t* ent, const int maxNameChars);
 const char* G_ClientNameFixedLength(gentity_t* ent, const int numChars);
 char ColorCodeForClient(gentity_t* target, qboolean botSpecialColor);
 char* ConcatArgs(int start);
+void G_SendPlayerMapRatingsUIInfo(gentity_t* ent); 
+void G_CheckPlayerMapRatings(gentity_t* ent);
 
 gentity_t *G_GetDuelWinner(gclient_t *client); 
 qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged);
@@ -1592,7 +1601,9 @@ void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
 void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text);
 void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast);
 void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast);
-void G_CheckEnqueuedClips(qboolean force);
+void G_CheckEnqueuedClips(qboolean force); 
+void UpdateClientRaceVars(gclient_t* client);
+
 
 //
 // g_team.c

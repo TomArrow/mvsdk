@@ -15,6 +15,8 @@ set(MVUIHEADERS
 	"${SRCDir}/ui/ui_multiversion.h"
 	"${SRCDir}/ui/ui_multiversion_syscalls.h"
 
+	"${SRCDir}/game/bg_cmd.h"
+	"${SRCDir}/game/bg_defrag_global.h"
 	"${SRCDir}/game/bg_weapons.h"
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/bg_multiversion.h"
@@ -29,6 +31,8 @@ set(MVUISOURCES
 	"${SRCDir}/ui/ui_multiversion.c"
 	"${SRCDir}/ui/ui_saber.c"
 
+	"${SRCDir}/game/bg_cmd.c"
+	"${SRCDir}/game/bg_defrag_global.c"
 	"${SRCDir}/game/bg_misc.c"
 	"${SRCDir}/game/bg_weapons.c"
 	"${SRCDir}/game/q_math.c"

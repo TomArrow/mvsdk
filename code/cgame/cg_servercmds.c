@@ -308,6 +308,9 @@ static void CG_ParseServerinfo( const char *info ) {
 	cgs.isolateDuels = qfalse;
 	cgs.isCaMod = qfalse;
 	cgs.jcinfo = 0;
+
+	trap_Cvar_Set("ui_isTommyTernal","0");
+
 	v = Info_ValueForKey(info, "gamename");
 	if (v)
 	{
@@ -317,6 +320,7 @@ static void CG_ParseServerinfo( const char *info ) {
 		}
 		if (!Q_stricmpn(v, "tommyternal", 11)) {
 			cgs.isTommyTernal = qtrue;
+			trap_Cvar_Set("ui_isTommyTernal", "1");
 			cgs.ttFlags = atoi(Info_ValueForKey(info, "ttFlags"));
 			cgs.ttFlagsGp = atoi(Info_ValueForKey(info, "ttFlagsGp"));
 			v = Info_ValueForKey(info, "jcinfo");
@@ -1460,6 +1464,105 @@ static void CG_PostPrintCommand() {
 	}
 }
 
+static void CG_TommyTernalCommand() {
+	const char* cmd;
+	if (!cgs.isTommyTernal) {
+		return;
+	}
+	cmd = CG_Argv(1);
+	if (!strcmp(cmd, "rateMapState")) { // inspired by "nfr"?
+		char styleRatings[MAX_STRING_CHARS];
+		char styleMask[MV_NUMSTYLES + 1];
+		int i,styleRatingsCount=0;
+		int ratingAllowed = 0;
+		int currentStyle = cg.predictedPlayerState.stats[STAT_RACEMODE] ? cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE] : MV_JK2;
+		int argc = trap_Argc();
+		qboolean currentStyleRated = qfalse;
+		float currentRating = 0.0f;
+
+		trap_Cvar_Set("ui_mapRatingStylesDone", "0");
+		trap_Cvar_Set("ui_mapRatingStyle", "0");
+		trap_Cvar_Set("ui_mapRatingState", "0");
+		trap_Cvar_Set("ui_mapRating", "_");
+
+		// format: ttCmd rateMapState 1 00101101 3.53 1.234 6.5 3.4
+		// 1 means rating is allowed
+		// 00101101 is a mask of styles that have a rating already
+		// after that come the actual ratings for the styles that have one
+
+		if (argc < 3)
+		{
+#ifdef _DEBUG
+			Com_Printf("WARNING: Invalid rateMapState string\n");
+#endif
+			return;
+		}
+
+		styleRatings[0] = '\0'; 
+		styleMask[MV_NUMSTYLES] = '\0';
+
+		ratingAllowed = atoi(CG_Argv(2));
+
+		if (ratingAllowed && argc < 4) {
+#ifdef _DEBUG
+			Com_Printf("WARNING: Invalid rateMapState string (2)\n");
+#endif
+		}
+
+		if (!ratingAllowed) {
+			return;
+		}
+
+		Q_strncpyz(styleMask, CG_Argv(3), sizeof(styleMask));
+		for (i = 0; i < MV_NUMSTYLES; i++) {
+
+			if (styleMask[i] == '\0') {
+				styleMask[i] = 0;
+			}
+			else if (styleMask[i] >= '1' && styleMask[i] <= '9') {
+				styleMask[i] = '1';
+				if (argc <= (4 + styleRatingsCount)) {
+#ifdef _DEBUG
+					Com_Printf("WARNING: rateMapState string truncated\n");
+#endif
+					//return;
+					if (currentStyle == i) {
+						currentRating = -1.0f;
+					}
+				}
+				else {
+					Q_strcat(styleRatings, sizeof(styleRatings), va(" %.4f", atof(CG_Argv(4 + styleRatingsCount))));
+					if (currentStyle == i) {
+						currentRating = atof(CG_Argv(4 + styleRatingsCount));
+					}
+				}
+				if (currentStyle == i) {
+					currentStyleRated = qtrue;
+				}
+				styleRatingsCount++;
+			}
+			else if (styleMask[i] != '0') {
+#ifdef _DEBUG
+				Com_Printf("WARNING: Invalid rateMapState string (3)\n");
+#endif
+				return;
+			}
+		}
+
+		styleMask[MV_NUMSTYLES] = '\0';
+
+		trap_Cvar_Set("ui_mapRatingStylesDone", va("ignoreme %s%s", styleMask, styleRatings)); // ignoreme prefix so cvar module doesnt throw integer conversion error
+		trap_Cvar_Set("ui_mapRatingStyle", va("%d", currentStyle));
+		trap_Cvar_Set("ui_mapRatingState", ratingAllowed ? (currentStyleRated ? "2" : "1") : "0");
+		trap_Cvar_Set("ui_mapRating", (currentStyleRated && currentRating != -1.0f ? va("%.4f",currentRating) : "_"));
+
+		//if (!(trap_Key_GetCatcher() & KEYCATCH_UI) && doMenu)
+		//{
+		//	trap_OpenUIMenu(3);
+		//}
+	}
+}
+
 /*
 =================
 CG_ServerCommand
@@ -1772,6 +1875,11 @@ static void CG_ServerCommand( void ) {
 	// the menu system during development
 	if ( !strcmp( cmd, "clientLevelShot" ) ) {
 		cg.levelShot = qtrue;
+		return;
+	}
+
+	if ( !strcmp(cmd, "ttCmd") ) {
+		CG_TommyTernalCommand();
 		return;
 	}
 

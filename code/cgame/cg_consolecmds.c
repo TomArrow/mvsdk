@@ -1564,6 +1564,19 @@ static void CG_ListRemaps_f(void) {
 }
 
 
+static void CG_UIRateMapConfirmed_f(void) {
+	if (!*cg_ui_mapRating.string || *cg_ui_mapRating.string < '0' || *cg_ui_mapRating.string > '9' || cg_ui_mapRating.value < 0.0f || cg_ui_mapRating.value > 10.0f || !Q_stricmp(cg_ui_mapRating.string, "_")) {
+		Com_Printf("Please set a valid rating before confirming.\n");
+		return;
+	}
+	if (cg_ui_mapRatingStyle.integer < 0 || cg_ui_mapRatingStyle.integer > MV_NUMSTYLES) {
+		Com_Printf("Invalid style set.\n");
+		return;
+	}
+	trap_SendClientCommand(va("ratemap %s %f",moveStyleNames[cg_ui_mapRatingStyle.integer].string, cg_ui_mapRating.value));
+}
+
+
 void CG_Do_f(void) //loda fixme
 {
 	char vstr[MAX_QPATH], delay[32];
@@ -2124,6 +2137,7 @@ static consoleCommand_t	commands[] = {
 	{ "screenshotCubeMapAdvance", CG_ScreenshotCubemapAdvance_f }, // don't use by hand, internal
 	{ "remapShader", CG_RemapShader_f },
 	{ "listRemaps", CG_ListRemaps_f },
+	{ "uiRateMapConfirmed", CG_UIRateMapConfirmed_f },
 
 	{ "do", CG_Do_f },
 	{ "flipkick", CG_Flipkick_f },

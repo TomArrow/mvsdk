@@ -1458,6 +1458,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	if (g_defrag.integer) {
 		DF_LoadMapDefaults();
 	}
+
 	G_UserMessagesPrune();
 
 	// general initialization

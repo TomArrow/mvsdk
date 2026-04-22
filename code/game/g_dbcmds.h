@@ -303,6 +303,7 @@ typedef enum genericDbRequestFlags_s {
 }genericDbRequestFlags_t;
 #define GENERIC_DB_REQUESTTYPES(a) \
 	a(GDBREQUEST_TEST)\
+	a(GDBREQUEST_MAPRATINGSFETCH)\
 	a(GDBREQUEST_TAG)
 
 typedef enum genericDbRequestType_s {

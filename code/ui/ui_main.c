@@ -19,6 +19,10 @@ USER INTERFACE MAIN
 #include "../cgame/animtable.h" //we want this to be compiled into the module because we access it in the shared module.
 #include "../game/bg_saga.h"
 #include "mvsdk_setup.h"
+#ifndef JK2MV_MENU
+#include "../game/bg_cmd.h"
+#include "../game/bg_defrag_global.h"
+#endif
 
 extern void UI_SaberAttachToChar( itemDef_t *item );
 
@@ -1173,6 +1177,11 @@ int frameCount = 0;
 int startTime;
 
 vmCvar_t	ui_rankChange;
+vmCvar_t	ui_isTommyTernal;
+vmCvar_t	ui_mapRatingStyle;
+vmCvar_t	ui_mapRating;
+vmCvar_t	ui_mapRatingStylesDone;
+vmCvar_t	ui_mapRatingState;
 vmCvar_t	ui_menuFileParseSpam;
 static void UI_BuildPlayerList();
 char parsedFPMessage[1024];
@@ -11116,6 +11125,11 @@ static const cvarTable_t cvarTable[] = {
 	{ &ui_teamName, "ui_teamName", "Empire", CVAR_ARCHIVE|CVAR_INTERNAL },
 	{ &ui_opponentName, "ui_opponentName", "Rebellion", CVAR_ARCHIVE|CVAR_INTERNAL },
 	{ &ui_rankChange, "ui_rankChange", "0", CVAR_ARCHIVE|CVAR_INTERNAL },
+	{ &ui_isTommyTernal, "ui_isTommyTernal", "0", CVAR_TEMP|CVAR_INTERNAL },
+	{ &ui_mapRatingStyle, "ui_mapRatingStyle", "0", CVAR_TEMP|CVAR_INTERNAL },
+	{ &ui_mapRating, "ui_mapRating", "_", CVAR_TEMP|CVAR_INTERNAL },
+	{ &ui_mapRatingStylesDone, "ui_mapRatingStylesDone", "", CVAR_TEMP|CVAR_INTERNAL },
+	{ &ui_mapRatingState, "ui_mapRatingState", "0", CVAR_TEMP|CVAR_INTERNAL },
 	{ &ui_menuFileParseSpam, "ui_menuFileParseSpam", "0", CVAR_ARCHIVE },
 	{ &ui_freeSaber, "ui_freeSaber", "0", CVAR_ARCHIVE|CVAR_INTERNAL },
 	{ &ui_forcePowerDisable, "ui_forcePowerDisable", "0", CVAR_ARCHIVE|CVAR_INTERNAL },
@@ -11198,6 +11212,72 @@ static const cvarTable_t cvarTable[] = {
 // bk001129 - made static to avoid aliasing
 static int		cvarTableSize = sizeof(cvarTable) / sizeof(cvarTable[0]);
 
+
+
+//int ui_mapRating_modificationCount = -1;
+int ui_mapRatingState_modificationCount = -1;
+int ui_mapRatingStyle_modificationCount = -1;
+int ui_mapRatingStylesDone_modificationCount = -1;
+static void UI_CheckMapRatingsCvars() {
+#ifndef JK2MV_MENU
+	if (//ui_mapRating_modificationCount != ui_mapRating.modificationCount || 
+		ui_mapRatingState_modificationCount != ui_mapRatingState.modificationCount ||
+		ui_mapRatingStyle_modificationCount != ui_mapRatingStyle.modificationCount ||
+		ui_mapRatingStylesDone_modificationCount != ui_mapRatingStylesDone.modificationCount
+		) {
+		int argc;
+		BG_Cmd_TokenizeString(ui_mapRatingStylesDone.string);
+		argc = BG_Cmd_Argc();
+		do {
+			int i,j;
+			int len;
+			char styleMask[MV_NUMSTYLES + 1];
+			if (argc < 2 || ui_mapRatingStyle.integer < 0) {
+				trap_Cvar_Set("ui_mapRating", "_");
+				if (ui_mapRatingState.integer > 0) {
+					trap_Cvar_Set("ui_mapRatingState", "1");
+				}
+				break;
+			}
+			Q_strncpyz(styleMask, BG_Cmd_Argv(1), sizeof(styleMask));
+			len = strlen(styleMask);
+			if (ui_mapRatingStyle.integer >= len) {
+				trap_Cvar_Set("ui_mapRating", "_");
+				if (ui_mapRatingState.integer > 0) {
+					trap_Cvar_Set("ui_mapRatingState", "1");
+				}
+				break;
+			}
+			if (ui_mapRatingState.integer > 0) {
+				trap_Cvar_Set("ui_mapRatingState", styleMask[ui_mapRatingStyle.integer] != '0' ? "2" : "1");
+			}
+			if (styleMask[ui_mapRatingStyle.integer] == '0') {
+				trap_Cvar_Set("ui_mapRating", "_");
+				break;
+			}
+			for (i = 0,j=0; i < ui_mapRatingStyle.integer; i++) {
+				if (styleMask[i] != '0') {
+					j++;
+				}
+			}
+			if ((2+ j) >= argc) {
+				trap_Cvar_Set("ui_mapRating", "_");
+				break;
+			}
+			trap_Cvar_Set("ui_mapRating", va("%f",atof(BG_Cmd_Argv(2 + j))));
+		} while (0);
+
+		trap_Cvar_Update(&ui_mapRating);
+		trap_Cvar_Update(&ui_mapRatingState);
+		
+		//ui_mapRating_modificationCount = ui_mapRating.modificationCount;
+		ui_mapRatingState_modificationCount = ui_mapRatingState.modificationCount;
+		ui_mapRatingStyle_modificationCount = ui_mapRatingStyle.modificationCount;
+		ui_mapRatingStylesDone_modificationCount = ui_mapRatingStylesDone.modificationCount;
+	}
+#endif
+}
+
 int widescreenModificationCount = - 1;
 int modelModificationCount = -1;
 int teamModelModificationCount = -1;
@@ -11221,6 +11301,8 @@ void UI_RegisterCvars( void ) {
 	teamModelModificationCount = ui_team_model.modificationCount;
 	spLanguageModificationCount = ui_sp_language.modificationCount;
 	seLanguageModificationCount = ui_se_language.modificationCount;
+
+	UI_CheckMapRatingsCvars();
 }
 
 /*
@@ -11264,6 +11346,8 @@ void UI_UpdateCvars( void ) {
 			UI_UpdateTextLanguageCvar(qfalse);
 		}
 	}
+
+	UI_CheckMapRatingsCvars();
 }
 
 
