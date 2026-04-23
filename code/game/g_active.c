@@ -1553,6 +1553,50 @@ static void G_UpdateIronmanBroadcasts ( gentity_t *self )
 	}
 }
 
+static void G_UpdateDuelQueueBroadcasts ( gentity_t *self )
+{
+	int i;
+
+	// Not duel queue mode then nothing to do
+	if ( self->client->sess.mode != MODE_DUELQUEUE )
+	{
+		return;
+	}
+
+	// This client isnt in a duel so it shouldnt broadcast
+	if ( !self->client->ps.duelInProgress )
+	{
+		// actually... let ppl waiting around see everything, why not
+		//return;
+	}
+
+	// Broadcast ourself to all iron manners
+	for ( i = 0; i < level.numConnectedClients; i ++ )
+	{
+		gentity_t *ent = &g_entities[level.sortedClients[i]];
+		float	  dist;
+		vec3_t	  angles;
+
+		if ( ent == self )
+		{
+			continue;
+		}
+
+		if (ent->client->sess.mode != MODE_DUELQUEUE) {
+			continue;
+		}
+
+		// client is busy with his own duel, he doesn't need to see anything else
+		if (ent->client->ps.duelInProgress) {
+			continue;
+		}
+
+		// Turn on the broadcast bit for the master and since there is only one
+		// master we are done
+		self->r.broadcastClients[ent->s.number/32] |= (1 << (ent->s.number%32));
+	}
+}
+
 void G_UpdateClientBroadcasts ( gentity_t *self )
 {
 	static int g_antiWallhackModificationCount = -1;
@@ -1573,7 +1617,14 @@ void G_UpdateClientBroadcasts ( gentity_t *self )
 	G_UpdateJediMasterBroadcasts ( self );
 
 	// The ironman is broadcast to everyone
-	G_UpdateIronmanBroadcasts( self );
+	if (self->client->sess.mode == MODE_IRONMAN) {
+		G_UpdateIronmanBroadcasts( self );
+	}
+
+	// players in duelqueue get broadcast to anyone who is waiting for a duel, so he doesn't get bored.
+	if (self->client->sess.mode == MODE_DUELQUEUE) {
+		G_UpdateDuelQueueBroadcasts( self );
+	}
 
 	// Anyone with force sight on should see this client
 	G_UpdateForceSightBroadcasts ( self );

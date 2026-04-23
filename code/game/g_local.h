@@ -731,6 +731,8 @@ typedef struct {
 
 	int			lastDueled[MAX_CLIENTS]; // when we last dueled someone
 	mapRating_t	mapRatings[MV_NUMSTYLES];
+
+	int			lastLevelSpawnTime; // for scheduling FP_SEE in duel queue. always the level.time, not commandtime. never use for gameplay sensitive things (that could mess up a segmented replay)
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -1807,6 +1809,7 @@ extern	vmCvar_t	g_fraglimitVoteCorrection;
 extern	vmCvar_t	g_duelWeaponDisable;
 extern	vmCvar_t	g_duelTimeout;
 extern	vmCvar_t	g_duelQueueTimeout;
+extern	vmCvar_t	g_duelQueueTimeoutMulti;
 extern	vmCvar_t	g_duelQueueAutoRespawn;
 extern	vmCvar_t	g_duelSeverDistance;
 extern	vmCvar_t	g_fraglimit;

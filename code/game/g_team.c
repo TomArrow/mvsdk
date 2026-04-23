@@ -388,8 +388,10 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 
 		if (attacker->client && attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
 			DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_CTFRETURN, XYSPEED(attacker->client->ps.velocity), noKnockbackTargSpeed, 0, damage, 0);
-			if (XYSPEED(attacker->client->ps.velocity) > 700) {
-				G_SaveClipDemo(attacker, "ctfreturnover700ups", "CTF return over 700 ups");
+			if (XYSPEED(attacker->client->ps.velocity) > 600 || attacker->client->pers.lastDbsSpeed > 600) {
+				int speed = XYSPEED(attacker->client->ps.velocity);
+				speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
+				G_SaveClipDemo(attacker, multiva("ctfDBSreturnover600ups_%dups", speed), multiva("CTF DBS return over 600 ups at %d ups", speed));
 				G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qtrue);
 			}
 		}

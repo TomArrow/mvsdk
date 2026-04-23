@@ -83,6 +83,7 @@ vmCvar_t	g_weaponDisable;
 vmCvar_t	g_duelWeaponDisable;
 vmCvar_t	g_duelTimeout;
 vmCvar_t	g_duelQueueTimeout;
+vmCvar_t	g_duelQueueTimeoutMulti;
 vmCvar_t	g_duelQueueAutoRespawn;
 vmCvar_t	g_duelSeverDistance; // vanilla is 1024 but its kinda weird. TODO do an afk sever? but the afk guy can still be killed so its whatever
 vmCvar_t	g_allowDuelSuicide;
@@ -355,7 +356,8 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 	{ &g_weaponDisable, "g_weaponDisable", "0", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_duelWeaponDisable, "g_duelWeaponDisable", "1", CVAR_SERVERINFO | CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_duelTimeout, "g_duelTimeout", "10000", CVAR_ARCHIVE, 0, qtrue  },
-	{ &g_duelQueueTimeout, "g_duelQueueTimeout", "3000", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_duelQueueTimeout, "g_duelQueueTimeout", "3000", CVAR_ARCHIVE, 0, qtrue,qfalse, "Duel queue: Timeout period for next duel to start after the previous."},
+	{ &g_duelQueueTimeoutMulti, "g_duelQueueTimeoutMulti", "4000", CVAR_ARCHIVE, 0, qtrue, qfalse, "Duel queue: Timeout period for next duel to start after the previous if enough players for multiple duels exist. If more than 1 duel ends within this period, the next duels start early to allow some player shuffling."},
 	{ &g_duelQueueAutoRespawn, "g_duelQueueAutoRespawn", "0", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_duelSeverDistance, "g_duelSeverDistance", "0", CVAR_ARCHIVE, 0, qtrue  },
 
@@ -3548,7 +3550,7 @@ int sortqueuedduelcombos(const void* a, const void* b) {
 }
 void G_CheckDuelQueueStatus() {
 	int i;
-	gentity_t* ent = g_entities;
+	gentity_t* ent;
 	gentity_t* ent2;
 	int queuedDuelers[MAX_CLIENTS];
 	int queuedDuelerCount = 0;
@@ -3557,49 +3559,82 @@ void G_CheckDuelQueueStatus() {
 	vec3_t spawnpoint;
 	vec3_t spawnpointAngles;
 	vec3_t spawnpointWiggled;
-	qboolean anyPastTimeout = qfalse;
+	int pastTimeoutCount = 0;
 	int randomteam;
+	int playerCount = 0;
+	int timeout = g_duelQueueTimeout.integer;
 
 	if (level.intermissiontime || level.intermissionQueued) {
 		return;
 	}
 
+	// count players first and reset force sight
+	for (i = 0, ent = g_entities; i < level.maxclients; i++, ent++) {
+		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_DUELQUEUE) {
+			continue;
+		}
+		ent->client->ps.fd.forcePowersActive &= ~(1 << FP_SEE);
+		if (ent->client->sess.sessionTeam == TEAM_SPECTATOR || clampedIntAdd(level.time,-ent->client->sess.lastHereTime) > 30000) { // ignore afk player
+			continue;
+		}
+		playerCount++;
+	}
+	if (playerCount >= 4) // wait longer with multiple simultaneous duels, to increase likelihood of new pairups
+	{
+		timeout = g_duelQueueTimeoutMulti.integer;
+	}
 	// find players in duel queue mode that aren't dueling, but could be.
 	// TODO ignore afk players if g_duelQueueAutoRespawn is 1?
-	for (i = 0; i < level.maxclients; i++, ent++) {
+	for (i = 0, ent = g_entities; i < level.maxclients; i++, ent++) {
 		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_DUELQUEUE || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
 			continue;
 		}
-		if (clampedIntAdd(level.time,-ent->client->sess.lastHereTime) > 30000) { // ignore afk player
+		if (ent->client->ps.duelInProgress) {
+			ent->client->pers.lastDuel = level.time; // doing this here so players are in sync with the lastDuel thing. unlike privateDuelTime which happens in clientthink_real
+			VectorCopy(ent->client->ps.origin, existingDuelersPos[existingDuelerCount]);
+			existingDuelerCount++;
 			continue;
 		}
 		if (ent->client->pers.lastDuel > level.time) {
 			ent->client->pers.lastDuel = 0; // shouldn't happen but who knows
 		}
-		if (ent->client->ps.duelInProgress) {
-			ent->client->pers.lastDuel = level.time; // doing this here so players are in sync with the lastDuel thing. unlike privateDuelTime which happens in clientthink_real
-			VectorCopy(ent->client->ps.origin,existingDuelersPos[existingDuelerCount]);
-			existingDuelerCount++;
+		if (clampedIntAdd(level.time,-ent->client->sess.lastHereTime) > 30000) { // ignore afk player
+			if (ent->client->pers.lastDuel + timeout <= level.time || ent->client->pers.lastLevelSpawnTime > ent->client->pers.lastDuel) {
+				ent->client->ps.fd.forcePowersActive |= (1 << FP_SEE); // let him see, he's just standing around.
+			}
 			continue;
 		}
 		if (!G_PlayerCanDuel(ent, qfalse,qfalse)) {
 			// in spec or already in a duel
+			if (ent->client->pers.lastDuel + timeout <= level.time || ent->client->pers.lastLevelSpawnTime > ent->client->pers.lastDuel) {
+				ent->client->ps.fd.forcePowersActive |= (1 << FP_SEE); // let him see
+			}
 			continue;
 		}
-		if (ent->client->pers.lastDuel + g_duelQueueTimeout.integer <= level.time) {
-			anyPastTimeout = qtrue;
+		if (ent->client->pers.lastDuel + timeout <= level.time) {
+			pastTimeoutCount++;
 		}
 		queuedDuelers[queuedDuelerCount++] = i;
 	}
-	if (queuedDuelerCount < 2 || !anyPastTimeout) {
+	if (queuedDuelerCount < 2 || pastTimeoutCount < 2) {
 		// need at least 2 and at least one person should be past the timeout.
 		// idea is: the timeout allows new player combinations. otherwise the timing will guarantee that it's always the same pairs of ppl playing together
+		for (i = 0; i < queuedDuelerCount;i++) {
+			ent = g_entities + queuedDuelers[i];
+			if (ent->client->pers.lastDuel + timeout <= level.time || ent->client->pers.lastLevelSpawnTime > ent->client->pers.lastDuel) {
+				ent->client->ps.fd.forcePowersActive |= (1 << FP_SEE); // let him see
+			}
+		}
 		return;
 	}
 
 	if (queuedDuelerCount % 2) {
 		// if we can't pair them up, sort them to see who's waited the longest
 		qsort(queuedDuelers, queuedDuelerCount, sizeof(queuedDuelers[0]), sortqueuedduelers);
+		ent = g_entities + queuedDuelers[queuedDuelerCount - 1];
+		if (ent->client->pers.lastDuel + timeout <= level.time || ent->client->pers.lastLevelSpawnTime > ent->client->pers.lastDuel) {
+			ent->client->ps.fd.forcePowersActive |= (1 << FP_SEE); // he won't play, so let him see
+		}
 	}
 
 	if (g_developer.integer) {
@@ -3758,6 +3793,11 @@ void G_CheckDuelQueueStatus() {
 		ent2->client->ps.forceHandExtend = HANDEXTEND_DUELCHALLENGE;
 		ent->client->ps.forceHandExtendTime = level.time + 1000;
 		ent2->client->ps.forceHandExtendTime = level.time + 1000;
+
+		VectorCopy(ent->r.currentOrigin, existingDuelersPos[existingDuelerCount]);
+		existingDuelerCount++;
+		VectorCopy(ent2->r.currentOrigin, existingDuelersPos[existingDuelerCount]);
+		existingDuelerCount++;
 	}
 }
 int sortironmanners(const void* a, const void* b) {

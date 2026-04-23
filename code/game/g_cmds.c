@@ -3762,7 +3762,7 @@ void Cmd_DBSRecords_f( gentity_t *ent )
 	char arg[15];
 	subContests_t category = SUBCONTESTS_DBS_SPEED;
 	if (trap_Argc() < 2) {
-		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret> [page]\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret|killslowed|stupidspeed> [page]\n\"");
 		return;
 	}
 	
@@ -3773,7 +3773,7 @@ void Cmd_DBSRecords_f( gentity_t *ent )
 		category = SUBCONTESTS_DBS_STUPIDSPEED;
 	} else if (!Q_stricmp(arg, "kill")) {
 		category = SUBCONTESTS_DBS_KILL;
-	} else if (!Q_stricmp(arg, "killslowed")) {
+	} else if (!Q_stricmp(arg, "killslowed") || !Q_stricmp(arg, "speedloss")) {
 		category = SUBCONTESTS_DBS_KILL_SPEEDLOSS;
 	} else if (!Q_stricmp(arg, "ironman")) {
 		category = SUBCONTESTS_DBS_IRONMAN;

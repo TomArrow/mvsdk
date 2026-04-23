@@ -603,22 +603,22 @@ static void G_InsertSubcontestResult(int status, const char* errorMessage, int a
 			if (runData.userid == -1) {
 
 				trap_SendServerCommand(-1, va("print \"%s ^7unofficially beat the %s RECORD with ^3%.2f^7ups\n\" subcontest_result unloggedrecord %s", ent->client->pers.netname, what, runData.value, afterPrintData));
-				G_SaveClipDemo(ent, multiva("unlogged%sWR",demo1), multiva("unofficial %s record",demo2));
+				G_SaveClipDemo(ent, multiva("unlogged%sWR_%d",demo1,(int)runData.value), multiva("unofficial %s record (%.2f)",demo2, runData.value));
 			}
 			else {
 				trap_SendServerCommand(-1, va("print \"%s ^7now holds the %s RECORD with ^2%.2f^7ups\n\" subcontest_result record %s", ent->client->pers.netname, what, runData.value, afterPrintData));
-				G_SaveClipDemo(ent, multiva("%c%sWR", tolower(*demo1), demo1+1), multiva("%s record", demo2));
+				G_SaveClipDemo(ent, multiva("%c%sWR_%d", tolower(*demo1), demo1+1, (int)runData.value), multiva("%s record (%.2f)", demo2, runData.value));
 			}
 		}
 		else {
 			if (runData.userid == -1) {
 
 				trap_SendServerCommand(-1, va("print \"%s ^7set a new unlogged %s best with ^6%.2f^7ups\n\" subcontest_result unloggedbest %s", ent->client->pers.netname, what, runData.value, afterPrintData));
-				G_SaveClipDemo(ent, multiva("unlogged%sBest", demo1), multiva("%s best unlogged", demo2));
+				G_SaveClipDemo(ent, multiva("unlogged%sBest_%d", demo1, (int)runData.value), multiva("%s best unlogged (%.2f)", demo2, runData.value));
 			}
 			else {
 				trap_SendServerCommand(-1, va("print \"%s ^7set a %s personal best with ^5%.2f^7ups\n\" subcontest_result personalbest %s", ent->client->pers.netname, what, runData.value, afterPrintData));
-				G_SaveClipDemo(ent, multiva("%c%sPB", tolower(*demo1), demo1 + 1), multiva("%s personal best", demo2));
+				G_SaveClipDemo(ent, multiva("%c%sPB_%d", tolower(*demo1), demo1 + 1, (int)runData.value), multiva("%s personal best (%.2f)", demo2, runData.value));
 			}
 		}
 	}

@@ -3513,7 +3513,8 @@ void ClientSpawn(gentity_t *ent) {
 	client->ps.pm_flags |= PMF_TIME_KNOCKBACK;
 	client->ps.pm_time = 100;
 
-	client->respawnTime = nowTime;
+	client->respawnTime = nowTime; // i think for invulnerability shell and such?
+	client->pers.lastLevelSpawnTime = level.time; // always level.time, never commandtime, never use for gameplay sensitive things (that could mess up a segmented replay)
 	client->inactivityTime = level.time + g_inactivity.integer * 1000;
 	//client->inactivityToSpecTime = level.time + g_inactivityToSpec.integer * 1000; someone could be stuck falling into a death trigger on a weird map and never go to spec.
 	client->latched_buttons = 0;

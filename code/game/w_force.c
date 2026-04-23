@@ -516,6 +516,11 @@ void WP_InitForcePowers( gentity_t *ent )
 				ent->client->ps.fd.forcePowerBaseLevel[i] = ent->client->ps.fd.forcePowerLevel[i] = FORCE_LEVEL_1;
 				ent->client->ps.fd.forcePowersKnown |= (1 << i);
 			}
+			else if (i == FP_SEE && ent->client->sess.mode == MODE_DUELQUEUE) {
+				ent->client->ps.fd.forcePowerBaseLevel[i] = ent->client->ps.fd.forcePowerLevel[i] = FORCE_LEVEL_3;
+				// mega hack. we wanna be able to just activate the power serverside, but not allow manual activation
+				ent->client->ps.fd.forcePowersKnown &= ~(1 << i);
+			}
 			else {
 				ent->client->ps.fd.forcePowerBaseLevel[i] = ent->client->ps.fd.forcePowerLevel[i] = FORCE_LEVEL_0;
 				ent->client->ps.fd.forcePowersKnown &= ~(1 << i);
@@ -1459,6 +1464,11 @@ void ForceSeeing( gentity_t *self )
 	int nowTime = LEVELTIME(self->client);
 	if ( self->health <= 0 )
 	{
+		return;
+	}
+
+	if (self->client->sess.mode == MODE_DUELQUEUE ) {
+		// don't allow manual control
 		return;
 	}
 
@@ -5148,7 +5158,7 @@ void WP_ForcePowersUpdate( gentity_t *self, usercmd_t *ucmd)
 			}
 		}
 	}
-	if ( !self->client->ps.fd.forcePowersActive || self->client->ps.fd.forcePowersActive == (1 << FP_DRAIN) )
+	if ( !self->client->ps.fd.forcePowersActive || self->client->ps.fd.forcePowersActive == (1 << FP_DRAIN) || self->client->sess.mode == MODE_DUELQUEUE && self->client->ps.fd.forcePowersActive == (1 << FP_SEE) )
 	{//when not using the force, regenerate at 1 point per half second
 		if ( !self->client->ps.saberInFlight && self->client->ps.fd.forcePowerRegenDebounceTime < nowTime)
 		{

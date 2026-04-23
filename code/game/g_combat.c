@@ -2174,7 +2174,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_KILL_SPEEDLOSS, attacker->client->pers.lastDbsSpeed, XYSPEED(self->client->preKnockbackVelocity), XYSPEED(attacker->client->ps.velocity), damage, 0);
 		}
 		if (XYSPEED(attacker->client->ps.velocity) > 750 || attacker->client->pers.lastDbsSpeed > 750) {
-			G_SaveClipDemo(attacker, "dbskillover750ups","dbs kill over 750 ups");
+			int speed = XYSPEED(attacker->client->ps.velocity);
+			speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
+			G_SaveClipDemo(attacker, multiva("dbskillover750ups_%dups", speed), multiva("dbs kill over 750 ups at %d ups", speed));
 			G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qfalse);
 		}
 	}
@@ -2193,7 +2195,9 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			if (attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
 				DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_IRONMAN, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
 				if (XYSPEED(attacker->client->ps.velocity) > 600 || attacker->client->pers.lastDbsSpeed > 600) {
-					G_SaveClipDemo(attacker, "ironmanreturnover600ups", "ironman return over 600 ups");
+					int speed = XYSPEED(attacker->client->ps.velocity);
+					speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
+					G_SaveClipDemo(attacker, multiva("ironmanDbsReturnOver600ups_%dups", speed), multiva("ironman DBS return over 600 ups at %d ups", speed));
 					G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity),qtrue);
 				}
 			}
