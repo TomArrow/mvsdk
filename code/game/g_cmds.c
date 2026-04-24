@@ -5071,6 +5071,9 @@ void Cmd_Afk_f(gentity_t* ent) {
 			millisecs = clampedIntAdd(other->client->pers.inactivityToSpecTime, -level.time);
 			afkTimes[afkCount].specSendIn = millisecs;
 		}
+		else {
+			afkTimes[afkCount].specSendIn = 0;
+		}
 		afkCount++;
 	}
 	if (!afkCount) {
