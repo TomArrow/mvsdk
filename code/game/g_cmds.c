@@ -197,7 +197,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 		perfect = ( cl->ps.persistant[PERS_RANK] == 0 && cl->ps.persistant[PERS_KILLED] == 0 ) ? 1 : 0;
 
 		time = (level.time - cl->pers.enterTime) / 60000;
-		fulltime = (level.time - cl->pers.firstEnterTime) / 60000;
+		fulltime = (level.time - cl->sess.firstEnterTime) / 60000;
 
 		Com_sprintf (entry, sizeof(entry),
 			" %i %i %i%s %i%s %i %i %i %i %i %i %i %i %i %i", level.sortedClients[i],

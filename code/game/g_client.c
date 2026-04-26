@@ -2573,9 +2573,9 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 
 	client->pers.connected = CON_CONNECTED;
 	client->pers.enterTime = level.time;
-	if (!client->pers.firstEnterTimeSet) {
-		client->pers.firstEnterTime = level.time;
-		client->pers.firstEnterTimeSet = qtrue;
+	if (!client->sess.firstEnterTimeSet) {
+		client->sess.firstEnterTime = level.time;
+		client->sess.firstEnterTimeSet = qtrue;
 	}
 	client->pers.teamState.state = TEAM_BEGIN;
 

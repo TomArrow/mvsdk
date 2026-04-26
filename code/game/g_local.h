@@ -482,6 +482,9 @@ typedef struct {
 
 	// vvv-serverside
 	int					amflags;
+
+	qboolean			firstEnterTimeSet;
+	int					firstEnterTime;		// level.time the client first entered the game. could be negative when carried across map changes.
 } clientSession_t;
 
 // JK2MV
@@ -629,8 +632,6 @@ typedef struct {
 
 	int			maxHealth;			// for handicapping
 	int			enterTime;			// level.time the client entered the game
-	int			firstEnterTime;		// level.time the client first entered the game
-	qboolean	firstEnterTimeSet;
 	playerTeamState_t teamState;	// status in teamplay games
 	int			voteCount;			// to prevent people from constantly calling votes
 	int			voteValue;			// to prevent people from constantly calling votes

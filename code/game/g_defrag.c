@@ -4032,9 +4032,9 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 		ent->client->ps.fd.suicides = 0;
 		ent->client->pers.enterTime = level.time; //reset scoreboard kills/deaths i guess... and time?
 
-		if (!ent->client->pers.firstEnterTimeSet) {
-			ent->client->pers.firstEnterTime = level.time;
-			ent->client->pers.firstEnterTimeSet = qtrue;
+		if (!ent->client->sess.firstEnterTimeSet) {
+			ent->client->sess.firstEnterTime = level.time;
+			ent->client->sess.firstEnterTimeSet = qtrue;
 		}
 	}
 	UpdateClientRaceVars(ent->client);

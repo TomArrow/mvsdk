@@ -29,7 +29,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -50,6 +50,8 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		(int)client->sess.mapStyleBaseline.jumpLevel,
 		client->sess.raceStateInvalidated,
 		(int)clampedIntAdd(level.time,-client->sess.lastHereTime),
+		(int)client->sess.firstEnterTimeSet,
+		(int)clampedIntAdd(level.time,-client->sess.firstEnterTime),
 		client->sess.oldbuttons_immediate,
 		(int)client->sess.nameTag,
 		client->sess.amflags,
@@ -106,11 +108,13 @@ void G_ReadSessionData( gclient_t *client ) {
 	int loggedIn;
 	int lastHereTimeOffset;
 	int nameTagType;
+	int firstEnterSet;
+	int firstEnterOffset;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -131,6 +135,8 @@ void G_ReadSessionData( gclient_t *client ) {
 		&baseJumpLevel,
 		&raceStateInvalidated,
 		&lastHereTimeOffset,
+		&firstEnterSet,
+		&firstEnterOffset,
 		&client->sess.oldbuttons_immediate,
 		&nameTagType,
 		&client->sess.amflags,				//VVV
@@ -157,6 +163,8 @@ void G_ReadSessionData( gclient_t *client ) {
 	client->sess.raceStateInvalidated = qtrue;//likely map change. old stuff wont be valid anymore. // (qboolean)raceStateInvalidated;
 	client->sess.login.loggedIn = loggedIn;
 	client->sess.lastHereTime = clampedIntAdd(level.time,-lastHereTimeOffset);
+	client->sess.firstEnterTimeSet = (qboolean)firstEnterSet;
+	client->sess.firstEnterTime = clampedIntAdd(level.time,-firstEnterOffset);
 	client->sess.nameTag  = nameTagType;
 
 	//client->sess.raceStyle.msec = 7; // just default to this *shrug*// Nope, keep it so we remember floatphysics/toggle
@@ -231,6 +239,8 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess->raceStyle = sess->mapStyleBaseline;
 	sess->raceStyle.msec = 7; // make old client versions work nicely? maybe? probably wont work but whatever
 	sess->lastHereTime = level.time;
+	sess->firstEnterTime = 0;
+	sess->firstEnterTimeSet = qfalse;
 	UpdateClientRaceVars(client);
 	//client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 
