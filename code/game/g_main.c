@@ -391,7 +391,7 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 
 	{ &g_synchronousClients, "g_synchronousClients", "0", CVAR_SYSTEMINFO, 0, qfalse  },
 
-	{ &g_pauseGame, PAUSEGAME_CVARNAME, "0", CVAR_VVV|CVAR_SYSTEMINFO, 0, qtrue, qfalse, "Pauses the game, preventing players from moving, items from respawning, etc." },
+	{ &g_pauseGame, PAUSEGAME_CVARNAME, "0", CVAR_VVV, 0, qtrue, qfalse, "Pauses the game, preventing players from moving, items from respawning, etc.", { G_BitMaskCvarUpdated, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_GAMEPAUSED} },
 	{ &g_minefix, "g_minefix", "1", CVAR_VVV | CVAR_ARCHIVE, 0, qtrue, qfalse, "This setting is a fix to the behavior where mines that are dropped by a player always will have an ammo count of 3. There are several values:\n"
 		"1 : ammo count will always be the true amount, no matter if the player suicided or was killed\n"
 		"2 : ammo count will only be the true amount if the player who dropped them suicided\n"
@@ -1016,7 +1016,7 @@ void G_RegisterCvars( void ) {
 
 	for ( i = 0, cv = gameCvarTable ; i < gameCvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Register( cv->vmCvar, cv->cvarName,
-			cv->defaultString, cv->cvarFlags & ~CVAR_CUSTOMMODMASK );
+			cv->defaultString, cv->cvarFlags & ~CVAR_CUSTOMCVARMASK);
 		if ( cv->vmCvar )
 			cv->modificationCount = cv->vmCvar->modificationCount;
 		if (cv->update.func)

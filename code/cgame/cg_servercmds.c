@@ -431,7 +431,9 @@ had set it to, which can lead to prediction errors etc.
 static void CG_ParseSysteminfo( const char *info ) {
 
 	CG_ClearUnsetSystemInfoCvars(info);
-
+	if (cg.demoPlayback) {
+		CG_DemoSetSystemInfoCvars();
+	}
 }
 
 

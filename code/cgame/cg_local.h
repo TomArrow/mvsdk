@@ -2175,7 +2175,7 @@ extern	vmCvar_t		mme_autoSeekPreRecord;
 
 
 // vvv-serverSide features port (adding cgame prediction)
-extern	vmCvar_t		cg_pauseGame;
+//extern	vmCvar_t		cg_pauseGame;
 
 /*
 Ghoul2 Insert Start
@@ -2203,6 +2203,7 @@ void CG_StartMusic( qboolean bForceStart );
 
 void CG_UpdateCvars( void );
 void CG_ClearUnsetSystemInfoCvars(const char* systemInfo);
+void CG_DemoSetSystemInfoCvars();
 
 int CG_CrosshairPlayer( void );
 int CG_LastAttacker( void );

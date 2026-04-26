@@ -1897,6 +1897,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 
 	cg.time = serverTime;
 	cg.timeFraction = 0;
+	if (demoPlayback && !cg.demoPlayback) {
+		CG_DemoSetSystemInfoCvars();
+	}
 	cg.demoPlayback = demoPlayback;
 	if (mmeEngine) { // mme compatibility
 		mmeEnginePlaybackType = demoPlayback;

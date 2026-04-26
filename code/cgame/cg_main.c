@@ -895,7 +895,7 @@ vmCvar_t	mme_demoFileName;
 vmCvar_t	mme_autoSeekPreRecord;
 
 // vvv-serverSide features port (adding cgame prediction)
-vmCvar_t	cg_pauseGame;
+//vmCvar_t	cg_pauseGame;
 
 typedef struct cvarTable_s {
 	vmCvar_t	*vmCvar;
@@ -1204,15 +1204,15 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_buildScript, "com_buildScript", "0", 0 },	// force loading of all possible data amd error on failures
 	{ &cg_paused, "cl_paused", "0", CVAR_ROM },
 	{ &cg_blood, "com_blood", "1", CVAR_ARCHIVE },
-	{ &cg_mapDefaultMsec, "g_mapDefaultMsec", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
-	{ &cg_mapDefaultJump, "g_mapDefaultJump", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
+	{ &cg_mapDefaultMsec, "g_mapDefaultMsec", "0", CVAR_SYSTEMINFO | CVAR_DEMOSYSTEMINFO },	// communicated by systeminfo
+	{ &cg_mapDefaultJump, "g_mapDefaultJump", "0", CVAR_SYSTEMINFO | CVAR_DEMOSYSTEMINFO },	// communicated by systeminfo
 	{ &cg_strafebotSlopeHandling, "g_strafebotSlopeHandling", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
-	{ &cg_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
+	{ &cg_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO | CVAR_DEMOSYSTEMINFO },	// communicated by systeminfo
 	{ &cg_q2trace, "g_q2trace", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_q2Skims, "g_q2Skims", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_g_unlockRandom, "g_unlockRandom", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_synchronousClients, "g_synchronousClients", "0", 0 },	// communicated by systeminfo
-	{ &cg_pauseGame, "g_pauseGame", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
+	//{ &cg_pauseGame, "g_pauseGame", "0", CVAR_SYSTEMINFO },	// communicated by systeminfo
 	{ &cg_cl_timeNudgeAntiLagHack, "cl_timeNudgeAntiLagHack", "0", 0 },
 	{ &cg_cl_aviTimeFraction, "cl_aviTimeFraction", "0", 0 },
 	{ &cg_cl_mirror, "cl_mirror", "0", 0 },
@@ -1326,6 +1326,21 @@ void CG_ClearUnsetSystemInfoCvars(const char* systemInfo) {
 	}
 }
 
+// when playing a demo, engine wont set our CVAR_SYSTEMINFO for us. but we want that for some.
+// only call this when playing back a demo. although it should not do too much damage otherwise.
+void CG_DemoSetSystemInfoCvars() {
+	cvarTable_t* cv = systemInfoCvars;
+	const char* systemInfo = CG_ConfigString(CS_SYSTEMINFO);
+
+	while (cv) {
+		if(Info_HasKey(systemInfo, cv->cvarName) && (cv->cvarFlags & CVAR_DEMOSYSTEMINFO)) {
+			trap_Cvar_Set(cv->cvarName, Info_ValueForKey(systemInfo, cv->cvarName));
+			trap_Cvar_Update(cv->vmCvar);
+		}
+		cv = cv->nextSystemInfoCvar;
+	}
+}
+
 void CG_UpdateCustomHUDStrings() {
 	int i;
 	for (i = 0; i < CUSTOM_HUD_STRINGS_COUNT; i++) {
@@ -1359,7 +1374,7 @@ void CG_RegisterCvars( void ) {
 
 	for ( i = 0, cv = cvarTable ; i < cvarTableSize ; i++, cv++ ) {
 		trap_Cvar_Register( cv->vmCvar, cv->cvarName,
-			cv->defaultString, cv->cvarFlags );
+			cv->defaultString, cv->cvarFlags & ~CVAR_CUSTOMCVARMASK);
 
 		// remember all systeminfo cvars so we can reset them if they're not in systeminfo.
 		if (cv->cvarFlags & CVAR_SYSTEMINFO) {
