@@ -7,7 +7,6 @@ static const float maxJediMasterDistance = 2500.0f * 2500.0f; // x^2, optimisati
 static const float maxJediMasterFOV = 100.0f;
 static const float maxForceSightDistance = Square(1500.0f) * 1500.0f; // x^2, optimisation
 static const float maxForceSightFOV = 100.0f;
-extern void G_TestLine(vec3_t start, vec3_t end, int color, int time);
 
 antiWallhackDebug_t antiWhDebug = {NULL};
 
@@ -219,7 +218,6 @@ static void GetCameraPosition(const gentity_t *self, vec3_t cameraOrigin) {
 		cameraOrigin[2] -= 32;
 }
 
-extern void G_TestLine(vec3_t start, vec3_t end, int color, int time);
 static qboolean SE_NetworkPlayer( const gentity_t *self, const gentity_t *other ) {
 	int i,  contents;
 	vec3_t firstPersonPos, thirdPersonPos;// , targPos[9], targetCenter, targetMins, targetMaxs;

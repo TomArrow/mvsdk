@@ -1847,6 +1847,7 @@ extern	vmCvar_t		cg_fov;
 extern	vmCvar_t		cg_zoomFov;
 
 extern	vmCvar_t		cg_swingAngles;
+extern	vmCvar_t		cg_realAngles;
 
 extern	vmCvar_t		cg_oldPainSounds;
 
@@ -2926,6 +2927,8 @@ qboolean	trap_G2API_GetBoltMatrix(void *ghoul2, const int modelIndex, const int 
 								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
 qboolean	trap_G2API_GetBoltMatrix_NoReconstruct(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
 								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);
+qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot_1_04(void* ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t* matrix,
+	const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t* modelList, vec3_t scale);
 /*
 qboolean	trap_G2API_GetBoltMatrix_NoRecNoRot(void *ghoul2, const int modelIndex, const int boltIndex, mdxaBone_t *matrix,
 								const vec3_t angles, const vec3_t position, const int frameNum, qhandle_t *modelList, vec3_t scale);

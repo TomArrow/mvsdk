@@ -1714,6 +1714,9 @@ int		InFieldOfVision	( vec3_t viewangles, float fov, vec3_t angles);
 void B_InitAlloc(void);
 void B_CleanupAlloc(void);
 
+// ai_wpnav.c
+void G_TestLine(vec3_t start, vec3_t end, int color, int time);
+
 //bot settings
 typedef struct bot_settings_s
 {
@@ -1920,6 +1923,7 @@ extern	vmCvar_t	g_saberDmgDelay_Idle;
 extern	vmCvar_t	g_saberDmgDelay_Wound;
 
 extern	vmCvar_t	g_saberDebugPrint;
+extern	vmCvar_t	g_saberDebugBox;
 
 extern	vmCvar_t	g_austrian;
 

@@ -3196,6 +3196,354 @@ void CG_G2ClientSpineAngles( centity_t *cent, vec3_t viewAngles, const vec3_t an
 	llAngles[ROLL] = viewAngles[ROLL]*0.45f;
 }
 
+
+//NOTE: If C` is modified this function should be modified as well (and vice versa)
+void CG_G_G2ClientSpineAngles_1_02( centity_t *cent, vec3_t viewAngles, const vec3_t angles, vec3_t thoracicAngles, vec3_t ulAngles, vec3_t llAngles )
+{
+	int ang = 0;
+	const int runFlags = CG_GetRunFlags(cent);
+	int nowTime = cg.time;
+
+	VectorClear(ulAngles);
+	VectorClear(llAngles);
+
+	viewAngles[YAW] = AngleDelta( cent->lerpAngles[YAW], angles[YAW] );
+
+	if ( !BG_FlippingAnim( cent->currentState.legsAnim ) &&
+		!BG_SpinningSaberAnim( cent->currentState.legsAnim ) &&
+		!BG_SpinningSaberAnim( cent->currentState.torsoAnim ) &&
+		!BG_InSpecialJump( cent->currentState.legsAnim , runFlags) &&
+		!BG_InSpecialJump( cent->currentState.torsoAnim , runFlags) &&
+		!CG_InRoll(cent) &&
+		!BG_SaberInSpecial(cent->currentState.saberMove) &&
+		!BG_SaberInSpecialAttack(cent->currentState.torsoAnim) &&
+		!BG_SaberInSpecialAttack(cent->currentState.legsAnim) )
+	{
+		//adjust for motion offset
+		mdxaBone_t	boltMatrix;
+		vec3_t		motionFwd, motionAngles;
+
+		trap_G2API_GetBoltMatrix_NoReconstruct( cent->ghoul2, 0, cgs.clientinfo[cent->currentState.number].bolt_motion, &boltMatrix, vec3_origin, cent->lerpOrigin, cg.time, /*cgs.gameModels*/0, vec3_origin); // not using nowTime here because using it on G2 made the server have extreme hitches and idk the cause
+		//trap_G2API_GiveMeVectorFromMatrix( &boltMatrix, POSITIVE_X, motionFwd );
+		//POSITIVE_X:
+		/*
+		motionFwd[0] = boltMatrix.matrix[0][0];
+		motionFwd[1] = boltMatrix.matrix[1][0];
+		motionFwd[2] = boltMatrix.matrix[2][0];
+		*/
+		
+
+		//NEGATIVE_Y:
+		motionFwd[0] = -boltMatrix.matrix[0][1];
+		motionFwd[1] = -boltMatrix.matrix[1][1];
+		motionFwd[2] = -boltMatrix.matrix[2][1];
+
+		vectoangles( motionFwd, motionAngles );
+		for ( ang = 0; ang < 3; ang++ )
+		{
+			viewAngles[ang] = AngleNormalize180( viewAngles[ang] - AngleNormalize180( motionAngles[ang] ) );
+		}
+
+		if (viewAngles[YAW] < -90)
+		{
+			viewAngles[YAW] += 360;
+		}
+
+		viewAngles[YAW] -= 90;
+	}
+	//distribute the angles differently up the spine
+	//NOTE: each of these distributions must add up to 1.0f
+	thoracicAngles[PITCH] = 0;//viewAngles[PITCH]*0.20f;
+	llAngles[PITCH] = 0;//viewAngles[PITCH]*0.40f;
+	ulAngles[PITCH] = 0;//viewAngles[PITCH]*0.40f;
+
+	thoracicAngles[YAW] = viewAngles[YAW]*0.20f - (viewAngles[PITCH]*(viewAngles[YAW]*.020f));
+	ulAngles[YAW] = viewAngles[YAW]*0.25f - (viewAngles[PITCH]*(viewAngles[YAW]*.0005f));
+	llAngles[YAW] = viewAngles[YAW]*0.25f - (viewAngles[PITCH]*(viewAngles[YAW]*.0005f));
+
+	if (thoracicAngles[YAW] > 20)
+	{
+		thoracicAngles[YAW] = 20;
+	}
+	if (ulAngles[YAW] > 20)
+	{
+		ulAngles[YAW] = 20;
+	}
+	if (llAngles[YAW] > 20)
+	{
+		llAngles[YAW] = 20;
+	}
+
+	thoracicAngles[ROLL] = viewAngles[ROLL]*0.20f;
+	ulAngles[ROLL] = viewAngles[ROLL]*0.35f;
+	llAngles[ROLL] = viewAngles[ROLL]*0.45f;
+
+	for ( ang = 0; ang < 3; ang++ )
+	{
+		if (ulAngles[ang] < 0)
+		{
+			ulAngles[ang] += 360;
+		}
+	}
+
+	//thoracic is added modified again by neckAngle calculations, so don't set it until then
+//	BG_G2SetBoneAngles( cent, cent->gent, cent->gent->upperLumbarBone, ulAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, cgs.model_draw); 
+//	BG_G2SetBoneAngles( cent, cent->gent, cent->gent->lowerLumbarBone, llAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, cgs.model_draw); 
+
+//	trap_G2API_SetBoneAngles(cent->ghoul2, 0, "upper_lumbar", ulAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, cgs.gameModels, 0, cg.time); 
+//	trap_G2API_SetBoneAngles(cent->ghoul2, 0, "lower_lumbar", llAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, cgs.gameModels, 0, cg.time); 
+//	trap_G2API_SetBoneAngles(cent->ghoul2, 0, "thoracic", thoracicAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, cgs.gameModels, 0, cg.time); 
+}
+void CG_G_G2ClientSpineAngles( centity_t *cent, vec3_t viewAngles, const vec3_t angles, vec3_t thoracicAngles, vec3_t ulAngles, vec3_t llAngles )
+{
+	int nowTime = cg.time;
+	if ( jk2version == VERSION_1_02 || jk2gameplay == VERSION_1_02 ) // If either the gameplay demands 1.02 here or if the jk2version is 1.02 and doesn't offer the neccessary syscalls for 1.04 behaviour we are going to call 1.02 behaviour.
+	{
+		CG_G_G2ClientSpineAngles_1_02( cent, viewAngles, angles, thoracicAngles, ulAngles, llAngles );
+		return;
+	}
+	viewAngles[YAW] = AngleDelta( cent->lerpAngles[YAW], angles[YAW] );
+
+	if ( !BG_FlippingAnim( cent->currentState.legsAnim ) 
+		&& !BG_SpinningSaberAnim( cent->currentState.legsAnim ) 
+		&& !BG_SpinningSaberAnim( cent->currentState.torsoAnim )
+		&& cent->currentState.legsAnim != cent->currentState.torsoAnim )//NOTE: presumes your legs & torso are on the same frame, though they *should* be because PM_SetAnimFinal tries to keep them in synch
+	{//FIXME: no need to do this if legs and torso on are same frame
+		//adjust for motion offset
+		mdxaBone_t	boltMatrix;
+		vec3_t		motionFwd, motionAngles;
+		vec3_t		motionRt, tempAng;
+		int			ang;
+
+		trap_G2API_GetBoltMatrix_NoRecNoRot_1_04(cent->ghoul2, 0, cgs.clientinfo[cent->currentState.number].bolt_motion, &boltMatrix, vec3_origin, cent->lerpOrigin, cg.time, /*cgs.gameModels*/0, vec3_origin); // not using nowTime here because using it on G2 made the server have extreme hitches and idk the cause
+		//trap_G2API_GiveMeVectorFromMatrix( &boltMatrix, NEGATIVE_Y, motionFwd );
+		motionFwd[0] = -boltMatrix.matrix[0][1];
+		motionFwd[1] = -boltMatrix.matrix[1][1];
+		motionFwd[2] = -boltMatrix.matrix[2][1];
+
+		vectoangles( motionFwd, motionAngles );
+
+		//trap_G2API_GiveMeVectorFromMatrix( &boltMatrix, NEGATIVE_X, motionRt );
+		motionRt[0] = -boltMatrix.matrix[0][0];
+		motionRt[1] = -boltMatrix.matrix[1][0];
+		motionRt[2] = -boltMatrix.matrix[2][0];
+		vectoangles( motionRt, tempAng );
+		motionAngles[ROLL] = -tempAng[PITCH];
+
+		for ( ang = 0; ang < 3; ang++ )
+		{
+			viewAngles[ang] = AngleNormalize180( viewAngles[ang] - AngleNormalize180( motionAngles[ang] ) );
+		}
+	}
+	//distribute the angles differently up the spine
+	//NOTE: each of these distributions must add up to 1.0f
+	thoracicAngles[PITCH] = viewAngles[PITCH]*0.20f;
+	llAngles[PITCH] = viewAngles[PITCH]*0.40f;
+	ulAngles[PITCH] = viewAngles[PITCH]*0.40f;
+
+	thoracicAngles[YAW] = viewAngles[YAW]*0.20f;
+	ulAngles[YAW] = viewAngles[YAW]*0.35f;
+	llAngles[YAW] = viewAngles[YAW]*0.45f;
+
+	thoracicAngles[ROLL] = viewAngles[ROLL]*0.20f;
+	ulAngles[ROLL] = viewAngles[ROLL]*0.35f;
+	llAngles[ROLL] = viewAngles[ROLL]*0.45f;
+}
+
+void CG_G_G2PlayerAngles(centity_t* cent, vec3_t legs[3], vec3_t legsAngles) {
+	vec3_t		torsoAngles, headAngles;
+	// float		dest;
+	static	int	movementOffsets[8] = { 0, 22, 45, -22, 0, 22, -45, -22 };
+	vec3_t		velocity;
+	float		speed;
+	int			dir;
+	vec3_t		velPos, velAng;
+	int			adddir = 0;
+	float		dif;
+	float		degrees_negative = 0;
+	float		degrees_positive = 0;
+	vec3_t		ulAngles, llAngles, viewAngles, angles, thoracicAngles = { 0,0,0 };
+	int nowTime = cg.time;
+
+	VectorCopy(cent->lerpAngles, headAngles);
+	headAngles[YAW] = AngleMod(headAngles[YAW]);
+	VectorClear(legsAngles);
+	VectorClear(torsoAngles);
+
+	// --------- yaw -------------
+
+	// adjust legs for movement dir
+	dir = cent->currentState.angles2[YAW];
+	if (dir < 0 || dir > 7) {
+		return;
+	}
+
+	torsoAngles[YAW] = headAngles[YAW] + 0.25 * movementOffsets[dir];
+
+	// --------- pitch -------------
+
+	/*
+	// only show a fraction of the pitch angle in the torso
+	if ( headAngles[PITCH] > 180 ) {
+		dest = (-360 + headAngles[PITCH]) * 0.75;
+	} else {
+		dest = headAngles[PITCH] * 0.75;
+	}
+	*/
+
+	torsoAngles[PITCH] = cent->lerpAngles[PITCH];
+
+	// --------- roll -------------
+
+
+	// lean towards the direction of travel
+	VectorCopy(cent->currentState.pos.trDelta, velocity);
+	speed = VectorNormalize(velocity);
+
+	if (speed) {
+		vec3_t	axis[3];
+		float	side;
+
+		speed *= 0.05f;
+
+		AnglesToAxis(legsAngles, axis);
+		side = speed * DotProduct(velocity, axis[1]);
+		legsAngles[ROLL] -= side;
+
+		side = speed * DotProduct(velocity, axis[0]);
+		legsAngles[PITCH] += side;
+	}
+
+	//rww - crazy velocity-based leg angle calculation
+	legsAngles[YAW] = headAngles[YAW];
+	velPos[0] = cent->lerpOrigin[0] + velocity[0];
+	velPos[1] = cent->lerpOrigin[1] + velocity[1];
+	velPos[2] = cent->lerpOrigin[2] + velocity[2];
+
+	if (cent->currentState.groundEntityNum == ENTITYNUM_NONE)
+	{ //off the ground, no direction-based leg angles
+		VectorCopy(cent->lerpOrigin, velPos);
+	}
+
+	VectorSubtract(cent->lerpOrigin, velPos, velAng);
+
+	if (!VectorCompare(velAng, vec3_origin))
+	{
+		vectoangles(velAng, velAng);
+
+		if (velAng[YAW] <= legsAngles[YAW])
+		{
+			degrees_negative = (legsAngles[YAW] - velAng[YAW]);
+			degrees_positive = (360 - legsAngles[YAW]) + velAng[YAW];
+		}
+		else
+		{
+			degrees_negative = legsAngles[YAW] + (360 - velAng[YAW]);
+			degrees_positive = (velAng[YAW] - legsAngles[YAW]);
+		}
+
+		if (degrees_negative < degrees_positive)
+		{
+			dif = degrees_negative;
+			adddir = 0;
+		}
+		else
+		{
+			dif = degrees_positive;
+			adddir = 1;
+		}
+
+		if (dif > 90)
+		{
+			dif = (180 - dif);
+		}
+
+		if (dif > 60)
+		{
+			dif = 60;
+		}
+
+		//Slight hack for when playing is running backward
+		if (dir == 3 || dir == 5)
+		{
+			dif = -dif;
+		}
+
+		if (adddir)
+		{
+			legsAngles[YAW] -= dif;
+		}
+		else
+		{
+			legsAngles[YAW] += dif;
+		}
+	}
+
+
+	// at ridiculously high speeds this can happen
+	// causes asasertion fail in anglesubtract
+	// idk if this is the right solution
+	if (fabsf(legsAngles[PITCH]) >= 1800) {
+		legsAngles[PITCH] = AngleNormalize180(legsAngles[PITCH]);
+	}
+	if (fabsf(legsAngles[ROLL]) >= 1800) {
+		legsAngles[ROLL] = AngleNormalize180(legsAngles[ROLL]);
+	}
+
+	legsAngles[YAW] = cent->lerpAngles[YAW];
+
+	legsAngles[ROLL] = 0;
+	torsoAngles[ROLL] = 0;
+
+	// pull the angles back out of the hierarchial chain
+	AnglesSubtract(headAngles, torsoAngles, headAngles);
+	AnglesSubtract(torsoAngles, legsAngles, torsoAngles);
+	AnglesToAxis(legsAngles, legs);
+	// we assume that model 0 is the player model.
+
+	VectorCopy(cent->lerpAngles, viewAngles);
+
+	if (viewAngles[PITCH] > 290)
+	{ //keep the same general range as lerpAngles on the client so we can use the same spine correction
+		viewAngles[PITCH] -= 360;
+	}
+
+	viewAngles[YAW] = viewAngles[ROLL] = 0;
+	viewAngles[PITCH] *= 0.5;
+
+	if (jk2gameplay != VERSION_1_02)
+	{
+		VectorCopy(legsAngles, angles);
+	}
+	else
+	{
+		VectorCopy(cent->lerpAngles, angles);
+		angles[PITCH] = 0;
+	}
+
+	CG_G_G2ClientSpineAngles(cent, viewAngles, angles, thoracicAngles, ulAngles, llAngles);
+
+	if (jk2gameplay == VERSION_1_02)
+	{
+		ulAngles[YAW] += torsoAngles[YAW] * 0.3;
+		llAngles[YAW] += torsoAngles[YAW] * 0.3;
+		thoracicAngles[YAW] += torsoAngles[YAW] * 0.4;
+
+		ulAngles[PITCH] = torsoAngles[PITCH] * 0.3;
+		llAngles[PITCH] = torsoAngles[PITCH] * 0.3;
+		thoracicAngles[PITCH] = torsoAngles[PITCH] * 0.4;
+
+		ulAngles[ROLL] += torsoAngles[ROLL] * 0.3;
+		llAngles[ROLL] += torsoAngles[ROLL] * 0.3;
+		thoracicAngles[ROLL] += torsoAngles[ROLL] * 0.4;
+	}
+
+	trap_G2API_SetBoneAngles(cent->ghoul2, 0, "upper_lumbar", ulAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, NULL, 0, cg.time);
+	trap_G2API_SetBoneAngles(cent->ghoul2, 0, "lower_lumbar", llAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, NULL, 0, cg.time);
+	trap_G2API_SetBoneAngles(cent->ghoul2, 0, "thoracic", thoracicAngles, BONE_ANGLES_POSTMULT, POSITIVE_X, NEGATIVE_Y, NEGATIVE_Z, NULL, 0, cg.time);  // not using nowTime here because using it on G2 made the server have extreme hitches and idk the cause
+}
+
+
 static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngles){
 	vec3_t		torsoAngles, headAngles;
 	float		dest;
@@ -3210,6 +3558,12 @@ static void CG_G2PlayerAngles( centity_t *cent, vec3_t legs[3], vec3_t legsAngle
 	float		degrees_positive = 0;
 	vec3_t		ulAngles, llAngles, viewAngles, angles, thoracicAngles = {0,0,0};
 	const int	runFlags = CG_GetRunFlags(cent);
+
+	if (cg_realAngles.integer) {
+		// TODO figure out what the actual difference is that makes it wrong in 1.02 and then just fix the code below instead of copypasting game code. since it seems to work fine in 1.04
+		CG_G_G2PlayerAngles(cent,legs,legsAngles);
+		return;
+	}
 
 	VectorCopy( cent->lerpAngles, headAngles );
 	headAngles[YAW] = AngleMod( headAngles[YAW] );

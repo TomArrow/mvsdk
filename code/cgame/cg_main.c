@@ -565,6 +565,7 @@ vmCvar_t	cg_fov;
 vmCvar_t	cg_zoomFov;
 
 vmCvar_t	cg_swingAngles;
+vmCvar_t	cg_realAngles;
 
 vmCvar_t	cg_oldPainSounds;
 
@@ -1011,6 +1012,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },
 
 	{ &cg_swingAngles, "cg_swingAngles", "1", 0 },
+	{ &cg_realAngles, "cg_realAngles", "0", CVAR_TEMP },
 
 	{ &cg_oldPainSounds, "cg_oldPainSounds", "0", 0 },
 

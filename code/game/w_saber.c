@@ -23,7 +23,7 @@ float RandFloat(float min, float max) {
 	return ((myrand() * (max - min)) / 32768.0F) + min; // On linux rand() behaves different than on Winodws or in a qvm, ...
 }
 
-//#define DEBUG_SABER_BOX
+#define DEBUG_SABER_BOX
 
 #ifdef DEBUG_SABER_BOX
 void	G_DebugBoxLines(vec3_t mins, vec3_t maxs, int duration)
@@ -108,15 +108,17 @@ void SaberUpdateSelf(gentity_t *ent)
 	else
 	{ //Standard contents (saber is active)
 #ifdef DEBUG_SABER_BOX
-		vec3_t dbgMins;
-		vec3_t dbgMaxs;
+		if(g_saberDebugBox.integer >= 0){
+			vec3_t dbgMins;
+			vec3_t dbgMaxs;
 
-		if (ent->r.ownerNum == 0)
-		{
-			VectorAdd( ent->r.currentOrigin, ent->r.mins, dbgMins );
-			VectorAdd( ent->r.currentOrigin, ent->r.maxs, dbgMaxs );
+			if (ent->r.ownerNum == g_saberDebugBox.integer)
+			{
+				VectorAdd( ent->r.currentOrigin, ent->r.mins, dbgMins );
+				VectorAdd( ent->r.currentOrigin, ent->r.maxs, dbgMaxs );
 
-			G_DebugBoxLines(dbgMins, dbgMaxs, 100);
+				G_DebugBoxLines(dbgMins, dbgMaxs, 100);
+			}
 		}
 #endif
 

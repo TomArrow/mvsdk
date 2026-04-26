@@ -208,6 +208,7 @@ vmCvar_t	g_saberDmgDelay_Idle;
 vmCvar_t	g_saberDmgDelay_Wound;
 
 vmCvar_t	g_saberDebugPrint;
+vmCvar_t	g_saberDebugBox;
 
 vmCvar_t	g_austrian;
 
@@ -530,6 +531,7 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 	{ &g_saberDmgDelay_Wound, "g_saberDmgDelay_Wound", "0", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_saberDebugPrint, "g_saberDebugPrint", "0", CVAR_CHEAT, 0, qfalse  },
+	{ &g_saberDebugBox, "g_saberDebugBox", "-1", CVAR_TEMP, 0, qfalse  },
 
 	{ &g_austrian, "g_austrian", "0", CVAR_ARCHIVE, 0, qfalse  },
 	{ &g_pushItems, "g_pushItems", "0", CVAR_ARCHIVE, 0, qfalse  },
