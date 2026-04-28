@@ -1193,19 +1193,19 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 		return;
 	}
 	if (cl->sess.raceStateInvalidated) {
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue, NULL);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Your race state is invalidated. Please respawn before running.",qfalse,qtrue,qtrue, "racestartfailed invalidated hard");
 		cl->pers.lastRaceTimerStartedCP = level.time;
 		return;
 	}
 	if (cl->sess.login.forceLoggedIn) {
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7You were force-logged in by admin and cannot run. Please change your password with /changepassword, logout and log in again.",qfalse,qtrue,qtrue, NULL);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7You were force-logged in by admin and cannot run. Please change your password with /changepassword, logout and log in again.",qfalse,qtrue,qtrue, "racestartfailed forceloggedin");
 		return;
 	}
 	if (cl->sess.raceStateSoftInvalidated) {
 		//DF_RaceStateInvalidated(activator,qfalse); // dont reset or it becomes impossible to save spawn on maps with reverse course but without extra spawn
 		//if ((cl->pers.lastRaceFinishTime + 1000 > level.time || level.time < cl->pers.lastRaceFinishTime) && !(ent->ttFlags & TTFLAGS_STARTTIMER_Q3RALLYSTYLE)) { // q3 rally: dont bother player with message directly after run finished
 		if ((cl->pers.lastRaceFinishTime + 1000 < level.time || level.time < cl->pers.lastRaceFinishTime)) { // dont bother player with message directly after run finished (especially annoying on maps with reverse courses)
-			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue, NULL);
+			G_CenterPrint(activator - g_entities, 3, "^1Warning: ^7Your race state is soft-invalidated. Please respawn before running.", qfalse, qtrue, qtrue, "racestartfailed invalidated soft");
 		}
 		cl->pers.lastRaceTimerStartedCP = level.time;
 		return;
@@ -1226,7 +1226,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	segmented = cl->sess.raceStyle.runFlags & RFL_SEGMENTED;
 
 	if (segmented && cl->pers.segmented.state != SEG_RECORDING && cl->pers.segmented.state != SEG_REPLAY) {
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run in a faulty state. Please respawn and try again.",qfalse,qtrue,qtrue, NULL);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run in a faulty state. Please respawn and try again.",qfalse,qtrue,qtrue, "racestartfailed segfaulty");
 		DF_RaceStateInvalidated(activator, qfalse);
 		cl->pers.lastRaceTimerStartedCP = level.time;
 		return;
@@ -1234,13 +1234,13 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	else if (segmented && cl->pers.segmented.state != SEG_REPLAY) {
 
 		if (segmented && cl->pers.segmented.msecProgress > 5000) {
-			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is over 5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, NULL);
+			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is over 5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, "racestartfailed segprerecordlong");
 			DF_RaceStateInvalidated(activator, qfalse);
 			cl->pers.lastRaceTimerStartedCP = level.time;
 			return;
 		}
 		else if (segmented && cl->pers.segmented.msecProgress < 500) {
-			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, NULL);
+			G_CenterPrint(activator - g_entities,3, "^1Warning: ^7Segmented run pre-record is under 0.5 seconds. Please respawn and try again.",qfalse,qtrue,qfalse, "racestartfailed segprerecordshort");
 			DF_RaceStateInvalidated(activator, qfalse);
 			cl->pers.lastRaceTimerStartedCP = level.time;
 			return;
@@ -1251,7 +1251,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 
 	if (!DF_PrePmoveValid(activator)) {
 		Com_Printf("^1Defrag Start Trigger Warning:^7 %s ^7didn't have valid pre-pmove info.", cl->pers.netname);
-		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7No valid pre-pmove info. Please restart.",qfalse,qtrue,qfalse, NULL);
+		G_CenterPrint(activator - g_entities,3, "^1Warning: ^7No valid pre-pmove info. Please restart.",qfalse,qtrue,qfalse,"racestartfailed prepmove");
 		return;
 	}
 	else {
