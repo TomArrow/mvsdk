@@ -1371,7 +1371,7 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 	}
 
 	// if we are in teamplay, only grab a model if the skin is correct
-	if ( cgs.gametype >= GT_TEAM && ci->team >= TEAM_RED && ci->team <= TEAM_BLUE) {
+	if ( cgs.gametype >= GT_TEAM && ci->team >= TEAM_RED && ci->team <= TEAM_BLUE) { // TA: only relevant if in red or blue team. spec/free we don't care
 		for ( i = 0 ; i < cgs.maxclients ; i++ ) {
 			match = &cgs.clientinfo[ i ];
 			if ( !match->infoValid || match->deferred ) {
@@ -1383,8 +1383,14 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 			//if ((Q_stricmp(ci->skinName, match->skinName) && Q_stricmpn(ci->modelName, "jedi_", 5)) ||
 			//	(cgs.gametype >= GT_TEAM && ci->team != match->team)) {
 			//	continue;
-			//}
-			if (ci->team != match->team) {
+			//} // TA: he's already in the right taem, why do we need to check the skin? if we allowed him in with a wrong skin, that's already a bug to be solved elsewhere.
+			if (ci->team != match->team) { 
+				// TODO for multipart skins: allow the team to differ. the color is set via RGB, so why would we care about the team matching? as long as the coloroverride is set correctly, we will be just fine.
+				// actually... since we no longer write the actually used skinname back into the ci->skinName (cuz let's not corrupt the actual data we got from clientinfo configstring), we can't check if it's truly a multiparted skin from the skinName. 
+				// but we could potentially save the info into some other ci-> property?
+				// not like it matters THAT much if we have one load per team but meh.
+				// on a related note: can we just pre-load team color versions versions right from the start? for a fake client let's say?
+				// and then if nothing is found we just grab that and have 0 lag always.
 				continue;
 			}
 			ci->deferred = qtrue;
