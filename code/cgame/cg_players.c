@@ -1379,7 +1379,7 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 	if ( cgs.gametype >= GT_TEAM && ci->team >= TEAM_RED && ci->team <= TEAM_BLUE) { // TA: only relevant if in red or blue team. spec/free we don't care
 		for ( i = 0 ; i < cgs.maxclients ; i++ ) {
 			match = &cgs.clientinfo[ i ];
-			if ( !match->infoValid || match->deferred ) {
+			if ( !match->infoValid ) { // || match->deferred // TA: do allow going from a deferred one. why? else if enough clients change the skin until we have no more non-deferred player, we will run out of stuff to copy and a disk access will be forced 
 				continue;
 			}
 			if (match->jk2gameplay != ci->jk2gameplay) {
