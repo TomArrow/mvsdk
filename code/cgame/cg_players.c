@@ -1366,7 +1366,12 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 			continue;
 		}
 		// just load the real info cause it uses the same models and skins
-		CG_LoadClientInfo( ci );
+		//CG_LoadClientInfo( ci );
+		// TA: Don't do this. we are in jk2, not q3. q3 might be clever with caching models, but our CG_LoadClientInfo()
+		// will almost certainly do unprecached file accesses. 
+		// so just defer it.
+		ci->deferred = qtrue;
+		CG_CopyClientInfoModel(match, ci);
 		return;
 	}
 
