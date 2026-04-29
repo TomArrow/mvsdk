@@ -1752,6 +1752,26 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	newInfo.ATST = wasATST;
 
+
+	// don't do a full CG_ValidateSkinForTeam here, we just copy a skin from the same team until deferred is loaded
+	// but do set the coloroverride just in case we are copying an rgb skin so it has the right color.
+	if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc ) // avoid connect lag. this is done in CG_RegisterClientModelname anyway?
+	{
+		if (newInfo.team == TEAM_RED)
+		{
+			newInfo.colorOverride[0] = 1.0f;
+			newInfo.colorOverride[1] = 0.0f;
+			newInfo.colorOverride[2] = 0.0f;
+			newInfo.colorOverride[3] = 1.0f;
+		}
+		else if (newInfo.team == TEAM_BLUE)
+		{
+			newInfo.colorOverride[0] = 0.0f;
+			newInfo.colorOverride[1] = 0.0f;
+			newInfo.colorOverride[2] = 1.0f;
+			newInfo.colorOverride[3] = 1.0f;
+		}
+	}
 	//if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc ) // avoid connect lag. this is done in CG_RegisterClientModelname anyway?
 	//{
 	//	CG_ValidateSkinForTeam( newInfo.modelName, newInfo.skinName, newInfo.team, newInfo.colorOverride );
