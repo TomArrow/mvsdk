@@ -269,10 +269,11 @@ void G_SendOrPrint(gentity_t* playerOrNull, const char* text) {
 
 static bufferedPrint_t broadcastPrint = { 0 };
 // to avoid server command overflow when sending a LOT of prints
-void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text) {
+void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text, qboolean includeSpectators) {
+	if (broadcast) includeSpectators = qfalse;
 	if (normalPrint && (playerOrNull || broadcast)) {
 		int clNum = broadcast ? -1 : (playerOrNull - g_entities);
-		trap_SendServerCommand(clNum, va("print \"%s\"", text));
+		G_SendServerCommand(clNum, va("print \"%s\"", text),includeSpectators);
 	}
 	else
 	{
@@ -283,13 +284,13 @@ void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean
 			int lenNew = strlen(text);
 			if ((lenOld + lenNew) > BUFFERED_TEXT_MAX_LENGTH) {
 				// overflowing, flush what's already there and buffer the new text
-				trap_SendServerCommand(clNum, va("print \"%s\"", bufferedPrint->buffer));
+				G_SendServerCommand(clNum, va("print \"%s\"", bufferedPrint->buffer),includeSpectators);
 				Q_strncpyz(bufferedPrint->buffer, text, sizeof(bufferedPrint->buffer));
 				bufferedPrint->curLen = lenNew;
 			}
 			else if ((lenOld + lenNew) == BUFFERED_TEXT_MAX_LENGTH) {
 				// can't fit any more after this, so just send immediately
-				trap_SendServerCommand(clNum, va("print \"%s%s\"", bufferedPrint->buffer, text));
+				G_SendServerCommand(clNum, va("print \"%s%s\"", bufferedPrint->buffer, text),includeSpectators);
 				*bufferedPrint->buffer = '\0';
 				bufferedPrint->curLen = 0;
 			}
@@ -305,22 +306,24 @@ void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean
 		}
 	}
 }
-void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast) {
+void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast, qboolean includeSpectators) {
 	bufferedPrint_t* bufferedPrint = broadcast ? &broadcastPrint : (playerOrNull ? &playerOrNull->client->bufferedPrint : NULL);
+	if (broadcast) includeSpectators = qfalse;
 	if (bufferedPrint && *bufferedPrint->buffer) {
 		int clNum = broadcast ? -1 : (playerOrNull - g_entities);
-		trap_SendServerCommand(clNum,va("print \"%s\"", bufferedPrint->buffer));
+		G_SendServerCommand(clNum,va("print \"%s\"", bufferedPrint->buffer),includeSpectators);
 		*bufferedPrint->buffer = '\0';
 		bufferedPrint->curLen = 0;
 		bufferedPrint->bufferLastFlushedOrUpdated = level.time;
 	}
 }
-void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast) {
+void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast, qboolean includeSpectators) {
 	bufferedPrint_t* bufferedPrint = broadcast ? &broadcastPrint : (playerOrNull ? &playerOrNull->client->bufferedPrint : NULL);
+	if (broadcast) includeSpectators = qfalse;
 	if (bufferedPrint && *bufferedPrint->buffer) {
 		if (bufferedPrint->bufferLastFlushedOrUpdated + 1000 < level.time || level.time < bufferedPrint->bufferLastFlushedOrUpdated) {
 			Com_Printf("^3Flushing client print buffer due to 1000ms passing without flush or update. Code logic problem? (broadcast %d)\n",broadcast);
-			G_BufferedSendOrPrintFlush(playerOrNull, broadcast);
+			G_BufferedSendOrPrintFlush(playerOrNull, broadcast, includeSpectators);
 		}
 	}
 }

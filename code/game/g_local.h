@@ -1601,9 +1601,9 @@ void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNam
 void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint);
 void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn);
 void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
-void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text);
-void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast);
-void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast);
+void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text, qboolean includeSpectators);
+void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast, qboolean includeSpectators);
+void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast, qboolean includeSpectators);
 void G_CheckEnqueuedClips(qboolean force); 
 void UpdateClientRaceVars(gclient_t* client);
 

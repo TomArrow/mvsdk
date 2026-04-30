@@ -3139,7 +3139,7 @@ void Cmd_Maplist_f(gentity_t* ent) {
 		}
 	}
 
-	G_BufferedSendOrPrint(ent, qfalse, qfalse, "^2----------^7INSTALLED MAPS^2---------\n");
+	G_BufferedSendOrPrint(ent, qfalse, qfalse, "^2----------^7INSTALLED MAPS^2---------\n",qfalse);
 
 	for (n = 0; n < g_numArenas; n++) {
 
@@ -3148,24 +3148,24 @@ void Cmd_Maplist_f(gentity_t* ent) {
 		if (strlen(type) < 1 || !Q_stricmp(type, "<NULL>")) {
 
 			if (n == (g_numArenas - 1)) {
-				G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n");
+				G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n", qfalse);
 				mapsinmessage = 0;
 			}
 			continue;
 		}
 
 		Q_strncpyz(currentMap, type, 24);
-		G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^7[^2%03i^7] %-24s", n, currentMap));
+		G_BufferedSendOrPrint(ent, qfalse, qfalse, va("^7[^2%03i^7] %-24s", n, currentMap), qfalse);
 
 		mapsinmessage++;
 
 		if ((mapsinmessage >= 5) || (n == (g_numArenas - 1))) {
-			G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n");
+			G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n", qfalse);
 			mapsinmessage = 0;
 		}
 	}
-	G_BufferedSendOrPrint(ent, qfalse, qfalse, "\nWhen logged in, you can call ^2/maplist unplayed^7 to see maps that were finished by other people that you haven't played yet.\n");
-	G_BufferedSendOrPrintFlush(ent, qfalse);
+	G_BufferedSendOrPrint(ent, qfalse, qfalse, "\nWhen logged in, you can call ^2/maplist unplayed^7 to see maps that were finished by other people that you haven't played yet.\n", qfalse);
+	G_BufferedSendOrPrintFlush(ent, qfalse, qfalse);
 
 }
 

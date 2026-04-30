@@ -3463,7 +3463,7 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qbool
 	const char*		tmp;
 
 	if (!level.arenasLoaded) {
-		G_BufferedSendOrPrint(NULL,qtrue,immediatePrint,va("^1Can't generate arena, arenas weren't loaded (can't avoid dupes).\n"));
+		G_BufferedSendOrPrint(NULL,qtrue,immediatePrint,va("^1Can't generate arena, arenas weren't loaded (can't avoid dupes).\n"), qfalse);
 		return;
 	}
 
@@ -3472,25 +3472,25 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qbool
 		int i;
 
 		if (!Q_stricmp(thisMapName, DF_GetCourseName(qfalse)) && level.hasArenaInfo) {
-			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
+			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName), qfalse);
 		}
 
 		if (G_DoesMapHaveArena(thisMapName)) {
 			if (!silentSkip) {
-				G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName));
+				G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s already has arena info.\n", thisMapName), qfalse);
 			}
 			return;
 		}
 
 		if (G_IsMapBlacklisted(thisMapName)) {
-			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s is blacklisted.\n", thisMapName));
+			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^3Arena auto generation skipped, %s is blacklisted.\n", thisMapName), qfalse);
 			return;
 		}
 
 		tmp = va("maps/%s.bsp", thisMapName);
 		trap_FS_FOpenFile(tmp, &f, FS_READ);
 		if (!f) {
-			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^1Arena auto generation skipped, cannot find/open %s.\n",tmp));
+			G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^1Arena auto generation skipped, cannot find/open %s.\n",tmp), qfalse);
 			return;
 		}
 		trap_FS_FCloseFile(f);
@@ -3518,11 +3518,11 @@ void G_AutoGenerateArena(const char* thisMapName, qboolean checkBspExists, qbool
 	trap_FS_FOpenFile(va("scripts/" AUTOGEN_ARENA_NAME "%d.arena", arenaFileIndex), &f, FS_APPEND);
 
 	if (!f) {
-		G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^1Arena auto generation failed, cannot open scripts/" AUTOGEN_ARENA_NAME "%d.arena for writing.\n", arenaFileIndex));
+		G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^1Arena auto generation failed, cannot open scripts/" AUTOGEN_ARENA_NAME "%d.arena for writing.\n", arenaFileIndex), qfalse);
 		return;
 	}
 	else {
-		G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^2Generating arena for %s (length %d) in scripts/" AUTOGEN_ARENA_NAME "%d.arena (length %d).\n", thisMapName, arenaTextLength, arenaFileIndex, len));
+		G_BufferedSendOrPrint(NULL, qtrue, immediatePrint, va("^2Generating arena for %s (length %d) in scripts/" AUTOGEN_ARENA_NAME "%d.arena (length %d).\n", thisMapName, arenaTextLength, arenaFileIndex, len), qfalse);
 	}
 
 	trap_FS_Write(arenaText,arenaTextLength,f);
@@ -4030,7 +4030,7 @@ void G_RunFrame( int levelTime ) {
 		ent->client->pers.normalFollowerPing = ent->client->ps.ping; // server (except on map restarts and such) calcs proper pings and saves them to the ps before running game frame. intercept it here so we know it and can send the real ping even for clients that are spectating.
 	}
 
-	G_BufferedSendOrPrintFlushIfNeeded(NULL, qtrue);
+	G_BufferedSendOrPrintFlushIfNeeded(NULL, qtrue, qfalse);
 
 	if (gDoSlowMoDuel)
 	{
