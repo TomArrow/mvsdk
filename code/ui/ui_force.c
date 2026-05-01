@@ -190,6 +190,11 @@ void UI_UpdateClientForcePowers(const char *teamArg)
 		{
 			trap_Cmd_ExecuteText( EXEC_APPEND, "forcechanged\n" );
 		}
+	} 
+	// if we are actually trying to join a team, still send this, even if nothing changed.
+	else if (teamArg && teamArg[0] && Q_stricmp(teamArg, "none") && Q_stricmp(teamArg, "same") && Q_stricmp(teamArg, ";"))
+	{
+		trap_Cmd_ExecuteText(EXEC_APPEND, va("forcechanged \"%s\"\n", teamArg));
 	}
 
 	gTouchedForce = qfalse;
