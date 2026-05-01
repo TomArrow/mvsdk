@@ -638,16 +638,16 @@ typedef struct {
 #endif
 
 // heads: head_a1, head_b1, head_c1, ...
-#define MAX_PLAYER_SPECIE_HEADS 32
+#define MAX_PLAYER_SPECIE_HEADS 128
 
 // torsos: torso_a1, torso_b1, torso_c1, ...
-#define MAX_PLAYER_SPECIE_TORSOS 32
+#define MAX_PLAYER_SPECIE_TORSOS 128
 
 // lowers: lower_a1, lower_b1, lower_c1, ...
-#define MAX_PLAYER_SPECIE_LOWERS 32
+#define MAX_PLAYER_SPECIE_LOWERS 128
 
 // predefined colors from PlayerChoice.txt: green, purple, white, ...
-#define MAX_PLAYER_SPECIE_COLORS 32
+#define MAX_PLAYER_SPECIE_COLORS 128
 
 #define MAX_SCROLLTEXT_SIZE		4096
 #define MAX_SCROLLTEXT_LINES		64

@@ -171,18 +171,26 @@ qboolean CG_FileExists(const char *fileName)
 	return qfalse;
 }
 
+
 qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team, float *colors )
 {
-	if (!Q_stricmpn(modelName, "jedi_",5))
-	{ //argh, it's a custom player skin!
-		if (team == TEAM_RED && colors)
+	qboolean isMultiPartedSkin = qfalse;
+
+	if (Q_stricmpn(modelName, "jedi_", 5) == 0 || strchr(skinName, '|') != NULL)
+	{
+		isMultiPartedSkin = qtrue;
+	}
+
+	if (colors != NULL)
+	{
+		if (team == TEAM_RED)
 		{
 			colors[0] = 1.0f;
 			colors[1] = 0.0f;
 			colors[2] = 0.0f;
 			colors[3] = 1.0f;
 		}
-		else if (team == TEAM_BLUE && colors)
+		else if (team == TEAM_BLUE)
 		{
 			colors[0] = 0.0f;
 			colors[1] = 0.0f;
@@ -197,11 +205,14 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 		{//not "red"
 			if ( Q_stricmp( "blue", skinName ) == 0
 				|| Q_stricmp( "default", skinName ) == 0
-				|| strchr(skinName, '|')//a multi-skin playerModel
 				|| !CG_IsValidCharacterModel(modelName, skinName) )
 			{
 				Q_strncpyz(skinName, "red", MAX_QPATH);
 				return qfalse;
+			}
+			else if (isMultiPartedSkin)
+			{
+				return qtrue;
 			}
 			else
 			{//need to set it to red
@@ -230,8 +241,8 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 				if ( !CG_FileExists( va( "models/players/%s/model_%s.skin", modelName, skinName ) ) )
 				{
 					Q_strncpyz(skinName, "red", MAX_QPATH);
+					return qfalse;
 				}
-				return qfalse;
 			}
 		}
 
@@ -242,11 +253,14 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 		{
 			if ( Q_stricmp( "red", skinName ) == 0
 				|| Q_stricmp( "default", skinName ) == 0
-				|| strchr(skinName, '|')//a multi-skin playerModel
 				|| !CG_IsValidCharacterModel(modelName, skinName) )
 			{
 				Q_strncpyz(skinName, "blue", MAX_QPATH);
 				return qfalse;
+			}
+			else if (isMultiPartedSkin)
+			{
+				return qtrue;
 			}
 			else
 			{//need to set it to blue
@@ -275,8 +289,8 @@ qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team
 				if ( !CG_FileExists( va( "models/players/%s/model_%s.skin", modelName, skinName ) ) )
 				{
 					Q_strncpyz(skinName, "blue", MAX_QPATH);
+					return qfalse;
 				}
-				return qfalse;
 			}
 		}
 	}
@@ -381,7 +395,7 @@ qboolean CG_ParseSurfsFile( const char *modelName, const char *skinName, char *s
 CG_RegisterClientModelname
 ==========================
 */
-static qboolean CG_RegisterClientModelname( clientInfo_t *ci, const char *modelName, const char *skinName, const char *teamName, int clientNum ) {
+static qboolean CG_RegisterClientModelname( clientInfo_t *ci, const char *modelName, const char *skinNameA, const char *teamName, int clientNum ) {
 	int handle;
 	char		afilename[MAX_QPATH];
 	char		/**GLAName,*/ *slash;
@@ -395,8 +409,16 @@ static qboolean CG_RegisterClientModelname( clientInfo_t *ci, const char *modelN
 	char	*useSkinName;
 	char	iconName[MAX_QPATH * 2];
 	const char *iconStart;
+	char	skinName[MAX_QPATH];
+
+	if (cg_debugDeferred.integer) {
+		Com_Printf("^1Deferred debug: Model load: client %d, %s - %s\n", clientNum, modelName, skinNameA);
+	}
+
+	Q_strncpyz(skinName, skinNameA, sizeof(skinName));
 
 retryModel:
+
 	if (ci->ATST && clientNum == -1)
 	{
 		Q_strncpyz(ci->teamName, teamName, sizeof(ci->teamName));
@@ -406,7 +428,7 @@ retryModel:
 	if (badModel)
 	{
 		modelName = "kyle";
-		skinName = "default";
+		Q_strncpyz(skinName, "default", sizeof(skinName));
 		// MVSDK: Suppress warning message for other client models
 		if (cg_developer.integer || clientNum == -1 || clientNum == cg.clientNum) {
 			Com_Printf("WARNING: Attempted to load an unsupported multiplayer model! (bad or missing bone, or missing animation sequence)\n");
@@ -418,13 +440,13 @@ retryModel:
 	if ( (cg_mv_fixbrokenmodelsclient.integer == 1 || (cg_mv_fixbrokenmodelsclient.integer && jk2startversion > VERSION_1_02)) && !CG_IsValidCharacterModel(modelName, skinName))
 	{
 		modelName = "kyle";
-		skinName = "default";
+		Q_strncpyz(skinName, "default", sizeof(skinName));
 	} 
 	else if (!Q_stricmp(modelName, "secret_quigon"))
 	{
 		if (!secretQuiGonAllowed) {
 			modelName = "kyle";
-			skinName = "default";
+			Q_strncpyz(skinName, "default", sizeof(skinName));
 		}
 	}
 
@@ -436,8 +458,7 @@ retryModel:
 
 	if ( cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
 	{
-		CG_ValidateSkinForTeam( ci->modelName, ci->skinName, ci->team, ci->colorOverride );
-		skinName = ci->skinName;
+		CG_ValidateSkinForTeam( modelName, skinName, ci->team, ci->colorOverride );
 	}
 	else
 	{
@@ -484,7 +505,11 @@ retryModel:
 	}
 	if (handle<0)
 	{
-		return qfalse;
+		if (retriedAlready) {
+			return qfalse;
+		}
+		badModel = qtrue;
+		goto retryModel;
 	}
 
 	// The model is now loaded.
@@ -1236,8 +1261,8 @@ static qboolean CG_ScanForExistingClientInfo( clientInfo_t *ci, int clientNum ) 
 			&& !Q_stricmp( ci->saber2Name, match->saber2Name)
 //			&& !Q_stricmp( ci->headModelName, match->headModelName )
 //			&& !Q_stricmp( ci->headSkinName, match->headSkinName ) 
-			&& !Q_stricmp( ci->blueTeam, match->blueTeam ) 
-			&& !Q_stricmp( ci->redTeam, match->redTeam )
+//			&& !Q_stricmp( ci->blueTeam, match->blueTeam ) 
+//			&& !Q_stricmp( ci->redTeam, match->redTeam )
 			&& (cgs.gametype < GT_TEAM || ci->team == match->team) 
 			&& ci->jk2gameplay == match->jk2gameplay
 			&& match->ghoul2Model
@@ -1341,22 +1366,36 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 			continue;
 		}
 		// just load the real info cause it uses the same models and skins
-		CG_LoadClientInfo( ci );
+		//CG_LoadClientInfo( ci );
+		// TA: Don't do this. we are in jk2, not q3. q3 might be clever with caching models, but our CG_LoadClientInfo()
+		// will almost certainly do unprecached file accesses. 
+		// so just defer it.
+		ci->deferred = qtrue;
+		CG_CopyClientInfoModel(match, ci);
 		return;
 	}
 
 	// if we are in teamplay, only grab a model if the skin is correct
-	if ( cgs.gametype >= GT_TEAM ) {
+	if ( cgs.gametype >= GT_TEAM && ci->team >= TEAM_RED && ci->team <= TEAM_BLUE) { // TA: only relevant if in red or blue team. spec/free we don't care
 		for ( i = 0 ; i < cgs.maxclients ; i++ ) {
 			match = &cgs.clientinfo[ i ];
-			if ( !match->infoValid || match->deferred ) {
+			if ( !match->infoValid ) { // || match->deferred // TA: do allow going from a deferred one. why? else if enough clients change the skin until we have no more non-deferred player, we will run out of stuff to copy and a disk access will be forced 
 				continue;
 			}
 			if (match->jk2gameplay != ci->jk2gameplay) {
 				continue;
 			}
-			if ((Q_stricmp(ci->skinName, match->skinName) && Q_stricmpn(ci->modelName, "jedi_", 5)) ||
-				(cgs.gametype >= GT_TEAM && ci->team != match->team)) {
+			//if ((Q_stricmp(ci->skinName, match->skinName) && Q_stricmpn(ci->modelName, "jedi_", 5)) ||
+			//	(cgs.gametype >= GT_TEAM && ci->team != match->team)) {
+			//	continue;
+			//} // TA: he's already in the right taem, why do we need to check the skin? if we allowed him in with a wrong skin, that's already a bug to be solved elsewhere.
+			if (ci->team != match->team) { 
+				// TODO for multipart skins: allow the team to differ. the color is set via RGB, so why would we care about the team matching? as long as the coloroverride is set correctly, we will be just fine.
+				// actually... since we no longer write the actually used skinname back into the ci->skinName (cuz let's not corrupt the actual data we got from clientinfo configstring), we can't check if it's truly a multiparted skin from the skinName. 
+				// but we could potentially save the info into some other ci-> property?
+				// not like it matters THAT much if we have one load per team but meh.
+				// on a related note: can we just pre-load team color versions versions right from the start? for a fake client let's say?
+				// and then if nothing is found we just grab that and have 0 lag always.
 				continue;
 			}
 			ci->deferred = qtrue;
@@ -1724,14 +1763,34 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	newInfo.ATST = wasATST;
 
-	if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc )
+
+	// don't do a full CG_ValidateSkinForTeam here, we just copy a skin from the same team until deferred is loaded
+	// but do set the coloroverride just in case we are copying an rgb skin so it has the right color.
+	if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc ) // avoid connect lag. this is done in CG_RegisterClientModelname anyway?
 	{
-		CG_ValidateSkinForTeam( newInfo.modelName, newInfo.skinName, newInfo.team, newInfo.colorOverride );
+		if (newInfo.team == TEAM_RED)
+		{
+			newInfo.colorOverride[0] = 1.0f;
+			newInfo.colorOverride[1] = 0.0f;
+			newInfo.colorOverride[2] = 0.0f;
+			newInfo.colorOverride[3] = 1.0f;
+		}
+		else if (newInfo.team == TEAM_BLUE)
+		{
+			newInfo.colorOverride[0] = 0.0f;
+			newInfo.colorOverride[1] = 0.0f;
+			newInfo.colorOverride[2] = 1.0f;
+			newInfo.colorOverride[3] = 1.0f;
+		}
 	}
-	else
-	{
-		newInfo.colorOverride[0] = newInfo.colorOverride[1] = newInfo.colorOverride[2] = newInfo.colorOverride[3] = 0.0f;
-	}
+	//if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc ) // avoid connect lag. this is done in CG_RegisterClientModelname anyway?
+	//{
+	//	CG_ValidateSkinForTeam( newInfo.modelName, newInfo.skinName, newInfo.team, newInfo.colorOverride );
+	//}
+	//else
+	//{
+	//	newInfo.colorOverride[0] = newInfo.colorOverride[1] = newInfo.colorOverride[2] = newInfo.colorOverride[3] = 0.0f;
+	//}
 
 	// scan for an existing clientinfo that matches this modelname
 	// so we can avoid loading checks if possible
