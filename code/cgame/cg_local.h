@@ -850,6 +850,8 @@ typedef struct {
 
 	// scoreboard
 	int			scoresRequestTime;
+	int			allowAutoCommands;
+	int			lastTimeAllowedAutoCommands;
 	int			numScores;
 	int			selectedScore;
 	int			teamScores[2];
@@ -2132,6 +2134,7 @@ extern	vmCvar_t		cg_autoFollowManualInterruptDuration;
 
 extern	vmCvar_t		cg_scoreboardDisconnectedPlayersDrawTime;
 extern	vmCvar_t		cg_autoScoreboardFetchInterval;
+extern	vmCvar_t		cg_autoCommandMenuChatWait;
 
 // Stuff from vVv mod
 extern	vmCvar_t		x3_forcefieldPredictionDisable;

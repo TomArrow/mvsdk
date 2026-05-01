@@ -1673,6 +1673,17 @@ static void CG_AutoFollowCheckManualInputs() {
 	oldCmdnum = cmdnum;
 }
 
+static void CG_CheckAutoCommandBlock() {
+	qboolean pendingManualCmd = cg_paused.integer || (trap_Key_GetCatcher() & KEYCATCH_MESSAGE);
+	if (!pendingManualCmd || cg.time < cg.lastTimeAllowedAutoCommands || !cg_autoCommandMenuChatWait.integer) {
+		cg.allowAutoCommands = qtrue;
+		cg.lastTimeAllowedAutoCommands = cg.time;
+	}
+	else {
+		cg.allowAutoCommands = cg.time - cg.lastTimeAllowedAutoCommands > cg_autoCommandMenuChatWait.integer * 1000;
+	}
+}
+
 static void CG_AutoFollow() {
 	int i;
 	vec3_t deltaVector;
@@ -2309,6 +2320,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	// actually issue the rendering calls
 	CG_DrawActive( stereoView );
 
+	// sets cg.allowAutoCommands. don't send anything if in a menu or writing a message so we don't kick ourselves in the butt by running into rate limits. 
+	CG_CheckAutoCommandBlock();
+
 	if (cgs.cubeMapScreenshotsLeft && !cgs.cubeMapScreenshotsRequested) {
 		static const char* cubeSides[6] = {"ft","lf","bk","rt","up","dn"};
 		if (trap_Key_GetCatcher() & KEYCATCH_CONSOLE)
@@ -2319,8 +2333,10 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 
 	// Fetch scoreboard regularly even if we are not viewing it.
 	if (cg_autoScoreboardFetchInterval.integer && !cg.demoPlayback && (cg.lastScoresReceived > cg.time || (cg.time - cg.lastScoresReceived) > (cg_autoScoreboardFetchInterval.integer * 1000)) && cg.scoresRequestTime + 2000 < cg.time) { //don't clear the scoreboard when watching a demo
-		cg.scoresRequestTime = cg.time;
-		trap_SendClientCommand("score");
+		if (cg.allowAutoCommands) {
+			cg.scoresRequestTime = cg.time;
+			trap_SendClientCommand("score");
+		}
 	}
 
 	if ((!cgs.stayScoreboard || cgs.gametype != GT_TOURNAMENT) && cg_duelModeSpec.integer >= 2 && cg.snap && cg.snap->ps.persistant[PERS_TEAM] == TEAM_SPECTATOR && (cg.snap->ps.pm_flags & PMF_SCOREBOARD)) {
@@ -2328,7 +2344,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	}
 
 	if ((!cgs.stayScoreboard || cgs.gametype != GT_TOURNAMENT) && cg_autoFollow.integer) {
-		CG_AutoFollow();
+		if (cg.allowAutoCommands){
+			CG_AutoFollow();
+		}
 	}
 
 	//jk2pro

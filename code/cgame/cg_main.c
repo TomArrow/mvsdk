@@ -859,6 +859,7 @@ vmCvar_t	cg_autoFollowManualInterruptDuration;
 
 vmCvar_t	cg_scoreboardDisconnectedPlayersDrawTime;
 vmCvar_t	cg_autoScoreboardFetchInterval;
+vmCvar_t	cg_autoCommandMenuChatWait;
 
 // Stuff from vVv mod
 vmCvar_t	x3_forcefieldPredictionDisable;
@@ -1014,6 +1015,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	{ &cg_scoreboardDisconnectedPlayersDrawTime, "cg_scoreboardDisconnectedPlayersDrawTime", "30", CVAR_ARCHIVE },
 	{ &cg_autoScoreboardFetchInterval, "cg_autoScoreboardFetchInterval", "20", CVAR_ARCHIVE },
+	{ &cg_autoCommandMenuChatWait, "cg_autoCommandMenuChatWait", "60", CVAR_ARCHIVE },
 
 	{ &cg_swingAngles, "cg_swingAngles", "1", 0 },
 	{ &cg_realAngles, "cg_realAngles", "0", CVAR_TEMP },
