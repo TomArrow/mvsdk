@@ -794,6 +794,7 @@ static void CG_OffsetFirstPersonView( void ) {
 	float			f;
 	vec3_t			predictedVelocity;
 	int				timeDelta;
+	int				rigid = (cgs.isTommyTernal && cg.snap->ps.stats[STAT_RACEMODE]) ? cg_firstPersonRigid.integer : 0;
 	
 	if ( cg.snap->ps.pm_type == PM_INTERMISSION ) {
 		return;
@@ -804,9 +805,16 @@ static void CG_OffsetFirstPersonView( void ) {
 
 	// if dead, fix the angle and don't add any kick
 	if ( cg.snap->ps.stats[STAT_HEALTH] <= 0 ) {
-		angles[ROLL] = 40;
-		angles[PITCH] = -15;
-		angles[YAW] = cg.snap->ps.stats[STAT_DEAD_YAW];
+		if (!(rigid & 2)) {
+			angles[ROLL] = 40;
+			angles[PITCH] = -15;
+			angles[YAW] = cg.snap->ps.stats[STAT_DEAD_YAW];
+		}
+		origin[2] += cg.predictedPlayerState.viewheight;
+		return;
+	}
+
+	if (rigid & 1) {
 		origin[2] += cg.predictedPlayerState.viewheight;
 		return;
 	}
