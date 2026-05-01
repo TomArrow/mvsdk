@@ -3599,7 +3599,16 @@ void ClientSpawn(gentity_t *ent) {
 	}
 
 	if (useSavedSpawn) {
+		int oldTeleBit = client->ps.eFlags & EF_TELEPORT_BIT;
 		RestorePosition(ent, &client->pers.savedSpawn, client->pers.segmented.anglesDiffAccum);
+
+		// lets make sure tele bit doesn't get messed up.
+		// don't do this in other places where we use RestorePosition, because EF_TELEPORT_BIT
+		// can have an effect on some things like robust trigger logic, and segmented runs need to 
+		// remain 100% stable at all times.
+		// but on spawn (which inevitably isn't during a race) it's fair game)
+		client->ps.eFlags &= ~EF_TELEPORT_BIT;
+		client->ps.eFlags |= oldTeleBit;
 	}
 
 	// clear entity state values

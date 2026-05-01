@@ -298,7 +298,8 @@ static void CG_SetNextSnap( snapshot_t *snap ) {
 	}
 
 	// if changing follow mode, don't interpolate
-	if ( cg.nextSnap->ps.clientNum != cg.snap->ps.clientNum ) {
+	if ( cg.nextSnap->ps.clientNum != cg.snap->ps.clientNum || cg.nextSnap->ps.persistant[PERS_SPAWN_COUNT] != cg.snap->ps.persistant[PERS_SPAWN_COUNT] ) {
+		// TA: compare PERS_SPAWN_COUNT here too. it shouldn't technically be needed because EF_TELEPORT_BIT should take care of it but in my defrag game code i sometimes don't/didn't have EF_TELEPORT_BIT set correctly so there was a little screen flash when resetting via /kill, from player position being interpolated because PERS_SPAWN_COUNT is used to set cg.thisFrameTeleport, but never to set cg.nextFrameTeleport.
 		cg.nextFrameTeleport = qtrue;
 	}
 
