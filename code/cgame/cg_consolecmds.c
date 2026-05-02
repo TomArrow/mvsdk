@@ -2042,6 +2042,94 @@ void CG_LastWeapon_f(void) //loda fixme. japro
 }
 
 
+#define NUDGEHELPER_USAGE "usage:\nnudgeHelper (no arguments to disable or see help)\nnudgeHelper save (remember current position for later)\nnudgeHelper savewpitch (remember current position for later, including pitch angle)\nnudgeHelper last (use last remembered)\nnudgeHelper <x> <y>\nnudgeHelper <x> <y> <z>\nnudgeHelper <x> <y> <z> <yaw>\nnudgeHelper <x> <y> <z> <yaw> <pitch>\nNote: The last remember pos is stored in cg_nudgeHelperPos. You can edit it or make value bindings like with any other cvar.\n"
+void CG_NudgeHelper_f(void) {
+	char buffer[512];
+	qboolean usingSaved = qfalse;
+	float values[6] = { 0 };
+	int found = 0;
+	if (cg.nudgeHelper.active) {
+		cg.nudgeHelper.active = qfalse;
+		Com_Printf("Nudgehelper deactivated.\n");
+	}
+	if (trap_Argc() >= 3 || trap_Argc() > 6) {
+		trap_Args(buffer, sizeof(buffer));
+	}
+	else {
+		const char* arg0 = CG_Argv(1);
+		if (!Q_stricmp(arg0, "savewpitch")) {
+			trap_Cvar_Set("cg_nudgeHelperPos", va("%f %f %f %f %f",cg.predictedPlayerState.origin[0],cg.predictedPlayerState.origin[1],cg.predictedPlayerState.origin[2],cg.predictedPlayerState.viewangles[YAW],cg.predictedPlayerState.viewangles[PITCH]));
+			Com_Printf("Current position is saved for nudgeHelper (with pitch angle).\n");
+			return;
+		} else if (!Q_stricmp(arg0, "save")) {
+			trap_Cvar_Set("cg_nudgeHelperPos", va("%f %f %f %f",cg.predictedPlayerState.origin[0],cg.predictedPlayerState.origin[1],cg.predictedPlayerState.origin[2],cg.predictedPlayerState.viewangles[YAW]));
+			Com_Printf("Current position is saved for nudgeHelper (without pitch angle).\n");
+			return;
+		} else if (!Q_stricmp(arg0, "last")) {
+			Q_strncpyz(buffer, cg_nudgeHelperPos.string, sizeof(buffer));
+			usingSaved = qtrue;
+		}
+		else {
+			Com_Printf("Invalid arguments. %s", NUDGEHELPER_USAGE);
+			return;
+		}
+	}
+	// funny enough, we only want 5. but we scan for 6. so sscanf tells us if there are too many :)
+	found = sscanf(buffer, "%f %f %f %f %f %f", &values[0], &values[1], &values[2], &values[3], &values[4], &values[5]);
+	if (found < 2 || found > 5) {
+		if (usingSaved) {
+			Com_Printf("Neither the provided nor any saved arguments from previous times contain a valid position or angles.\n");
+			Com_Printf("%s", NUDGEHELPER_USAGE);
+		}
+		else {
+			Com_Printf("The provided arguments don't contain a valid position or angles.\n");
+			Com_Printf("%s", NUDGEHELPER_USAGE);
+		}
+		return;
+	}
+
+	if (!usingSaved) { // save it for next time without args
+		trap_Cvar_Set("cg_nudgeHelperPos", buffer);
+	}
+
+	if (found == 2) {
+		cg.nudgeHelper.active = qtrue;
+		cg.nudgeHelper.setVals = (1 << 0) | (1 << 1); // x and y
+		cg.nudgeHelper.pos[0] = values[0];
+		cg.nudgeHelper.pos[1] = values[1];
+
+		Com_Printf("Nudgehelper activated with %d values (x and y position).\n", found);
+	} else if (found == 3) {
+		cg.nudgeHelper.active = qtrue;
+		cg.nudgeHelper.setVals = (1 << 0) | (1 << 1) | (1 << 2); // x and y
+		cg.nudgeHelper.pos[0] = values[0];
+		cg.nudgeHelper.pos[1] = values[1];
+		cg.nudgeHelper.pos[2] = values[2];
+
+		Com_Printf("Nudgehelper activated with %d values (x, y and z position).\n", found);
+	} else if (found == 4) {
+		cg.nudgeHelper.active = qtrue;
+		cg.nudgeHelper.setVals = (1 << 0) | (1 << 1) | (1 << 2) | (1 << (3+YAW)); // x and y
+		cg.nudgeHelper.pos[0] = values[0];
+		cg.nudgeHelper.pos[1] = values[1];
+		cg.nudgeHelper.pos[2] = values[2];
+		cg.nudgeHelper.angle[YAW] = values[3];
+
+		Com_Printf("Nudgehelper activated with %d values (x, y and z position and yaw angle).\n", found);
+	} else if (found == 5) {
+		cg.nudgeHelper.active = qtrue;
+		cg.nudgeHelper.setVals = (1 << 0) | (1 << 1) | (1 << 2) | (1 << (3+YAW)) | (1 << (3+PITCH)); // x and y
+		cg.nudgeHelper.pos[0] = values[0];
+		cg.nudgeHelper.pos[1] = values[1];
+		cg.nudgeHelper.pos[2] = values[2];
+		cg.nudgeHelper.angle[YAW] = values[3];
+		cg.nudgeHelper.angle[PITCH] = values[4];
+
+		Com_Printf("Nudgehelper activated with %d values (x, y and z position and yaw and pitch angles).\n", found);
+	}
+}
+
+
 typedef struct {
 	char	*cmd;
 	void	(*function)(void);
@@ -2144,7 +2232,8 @@ static consoleCommand_t	commands[] = {
 	{ "lowjump", CG_Lowjump_f },
 	{ "+duck", CG_NorollDown_f },
 	{ "-duck", CG_NorollUp_f },
-	{ "weaplast", CG_LastWeapon_f }
+	{ "weaplast", CG_LastWeapon_f },
+	{ "nudgeHelper", CG_NudgeHelper_f }
 };
 static consoleCommand_t	memecommands[] = {
 	{ "disco", CG_DiscoLights_f },

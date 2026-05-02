@@ -1899,6 +1899,101 @@ void CG_AddLightShow()
 	}
 }
 
+
+void CG_DrawRectangle(vec3_t pos, float width, int color) {
+	vec3_t points[4];
+	VectorSet(points[0], pos[0] - width, pos[1] - width, pos[2]);
+	VectorSet(points[1], pos[0] + width, pos[1] - width, pos[2]);
+	VectorSet(points[2], pos[0] + width, pos[1] + width, pos[2]);
+	VectorSet(points[3], pos[0] - width, pos[1] + width, pos[2]);
+	CG_TestLine(points[0], points[1], 1, color, 1);
+	CG_TestLine(points[1], points[2], 1, color, 1);
+	CG_TestLine(points[2], points[3], 1, color, 1);
+	CG_TestLine(points[3], points[0], 1, color, 1);
+}
+void CG_DrawOrientedCross(vec3_t pos, vec3_t angles, float size, int color) {
+	vec3_t dirVec;
+	vec3_t dirVecRight; 
+	vec3_t points[4];
+
+	AngleVectors(angles, dirVec, dirVecRight, NULL);
+	VectorScale(dirVec, size, dirVec);
+	VectorScale(dirVecRight, size, dirVecRight);
+	VectorMA(pos, -1.0f, dirVec, points[0]);
+	VectorMA(pos, 1.0f, dirVec, points[1]);
+	VectorMA(pos, -1.0f, dirVecRight, points[2]);
+	VectorMA(pos, 1.0f, dirVecRight, points[3]);
+
+	CG_TestLine(points[0], points[1], 1, color, 1);
+	CG_TestLine(points[2], points[3], 1, color, 1);
+}
+void CG_AddNudgeHelper() {
+	vec3_t pos = { 0 };
+	vec3_t angles = { 0 };
+	vec3_t tmp;
+	const vec3_t badColor = { 1,0,0 };
+	const vec3_t goodColor = { 0,1,0 };
+	vec3_t lerpColor;
+	color4ub_i_t color;
+	float distance;
+	//float scale = 1.0f / cg_nudgeHelperExaggerate.value;
+	//float rescale = cg_nudgeHelperExaggerate.value;
+	if (!(cg.nudgeHelper.setVals & 3)) {
+		return; // don't even have the bare minimum
+	}
+	pos[0] = cg.nudgeHelper.pos[0];
+	pos[1] = cg.nudgeHelper.pos[1];
+	pos[2] = (cg.nudgeHelper.setVals & (1<<2)) ? cg.nudgeHelper.pos[2] : cg.predictedPlayerState.origin[2];
+	angles[YAW] = (cg.nudgeHelper.setVals & (1 << (3+YAW))) ? cg.nudgeHelper.angle[YAW] : 0;
+	angles[PITCH] = (cg.nudgeHelper.setVals & (1 << (3+PITCH))) ? cg.nudgeHelper.angle[PITCH] : 0;
+	angles[ROLL] = 0;
+
+	// draw position rectangles
+	VectorSubtract(cg.predictedPlayerState.origin,pos,tmp);
+	distance = VectorLength(tmp);
+	VectorScale(tmp, cg_nudgeHelperExaggerate.value, tmp);
+	VectorAdd(tmp, cg.predictedPlayerState.origin,tmp);
+
+	distance = MAX(0.0f,MIN(1.0f,distance));
+	VectorScale(badColor,distance,lerpColor);
+	distance = 1.0f - distance;
+	VectorMA(lerpColor,distance,goodColor,lerpColor);
+	color.color[0] = (byte)MIN(255,(int)(lerpColor[0] * 255.0f));
+	color.color[1] = (byte)MIN(255,(int)(lerpColor[1] * 255.0f));
+	color.color[2] = (byte)MIN(255,(int)(lerpColor[2] * 255.0f));
+
+	CG_DrawRectangle(pos, 30.0f, color.colori);
+	CG_DrawRectangle(tmp, 30.0f, color.colori);
+
+	// now do the angle line
+	if ((cg.nudgeHelper.setVals & ((1 << (3 + YAW))| (1 << (3 + PITCH))))) {
+		vec3_t dirVec;
+		VectorSubtract(cg.predictedPlayerState.viewangles, angles, tmp);
+		tmp[ROLL] = 0;
+		if (!(cg.nudgeHelper.setVals & (1 << (3 + PITCH)))) {
+			tmp[PITCH] = 0;
+		}
+		distance = VectorLength(tmp);
+		VectorScale(tmp, cg_nudgeHelperExaggerate.value, tmp);
+		VectorAdd(tmp, angles, tmp);
+		tmp[ROLL] = 0;
+		if (!(cg.nudgeHelper.setVals & (1 << (3 + PITCH)))) {
+			tmp[PITCH] = 0;
+		}
+
+		distance = MAX(0.0f, MIN(1.0f, distance));
+		VectorScale(badColor, distance, lerpColor);
+		distance = 1.0f - distance;
+		VectorMA(lerpColor, distance, goodColor, lerpColor);
+		color.color[0] = (byte)MIN(255, (int)(lerpColor[0] * 255.0f));
+		color.color[1] = (byte)MIN(255, (int)(lerpColor[1] * 255.0f));
+		color.color[2] = (byte)MIN(255, (int)(lerpColor[2] * 255.0f));
+
+		CG_DrawOrientedCross(cg.predictedPlayerState.origin, tmp, 30.0f, color.colori);
+		CG_DrawOrientedCross(pos, angles, 30.0f, color.colori);
+	}
+}
+
 void CG_CheckQuiGon();
 /*
 =================
@@ -2240,6 +2335,9 @@ void CG_DrawActiveFrame( int serverTime, stereoFrame_t stereoView, int demoPlayb
 	// build the render lists
 	if ( !cg.hyperspace ) {
 		CG_AddPacketEntities();			// adter calcViewValues, so predicted player state is correct
+		if (cg.nudgeHelper.active) {
+			CG_AddNudgeHelper();
+		}
 		CG_AddMarks();
 		CG_AddParticles ();
 		CG_AddLocalEntities();

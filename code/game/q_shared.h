@@ -270,6 +270,11 @@ typedef union {
 	unsigned int ui;
 } floatint_t;
 
+typedef union {
+	byte	color[4];
+	int		colori;
+} color4ub_i_t;
+
 typedef int		qhandle_t;
 typedef int		fxHandle_t;
 typedef int		sfxHandle_t;

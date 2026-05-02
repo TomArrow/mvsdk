@@ -688,6 +688,8 @@ vmCvar_t	cg_thirdPersonFlagAlpha;
 vmCvar_t	cg_drawNonDuelers;
 vmCvar_t	cg_brightskins;
 vmCvar_t	cg_drawHitBox;
+vmCvar_t	cg_nudgeHelperExaggerate;
+vmCvar_t	cg_nudgeHelperPos;
 vmCvar_t	cg_playerLOD;
 vmCvar_t	cg_privateDuelShell;
 vmCvar_t	cg_forceShell;
@@ -1146,6 +1148,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawNonDuelers, "cg_drawNonDuelers", "0", 0 },
 	{ &cg_brightskins, "cg_brightskins", "0", CVAR_ARCHIVE },
 	{ &cg_drawHitBox, "cg_drawHitBox", "0", CVAR_TEMP },
+	{ &cg_nudgeHelperPos, "cg_nudgeHelperPos", "", CVAR_ARCHIVE },
+	{ &cg_nudgeHelperExaggerate, "cg_nudgeHelperExaggerate", "10.0", CVAR_ARCHIVE },
 	{ &cg_playerLOD, "cg_playerLOD", "0", CVAR_ARCHIVE },
 	{ &cg_privateDuelShell,	"cg_privateDuelShell", "1", CVAR_ARCHIVE },
 	{ &cg_forceShell,	"cg_forceShell", "0", CVAR_TEMP },
