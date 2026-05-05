@@ -5821,23 +5821,34 @@ static void UI_GetCharacterCvars ( void )
 		skin++;
 		//now get the the individual files
 
-		//advance to second
-		p2 = strchr(skin, '|'); 
-		assert(p2);
-		*p2=0;
-		p2++;
-		Q_strncpyz (skinhead, skin,sizeof(skinhead));
+		do {
+
+			//advance to second
+			p2 = strchr(skin, '|');
+			if (!p2) {
+				Q_strncpyz(skinhead, skin, sizeof(skinhead));
+				skintorso[0] = '\0';
+				skinlower[0] = '\0';
+				break;
+			}
+			*p2 = 0;
+			p2++;
+			Q_strncpyz(skinhead, skin, sizeof(skinhead));
 
 
-		//advance to third
-		skin = strchr(p2, '|');
-		assert(skin);
-		*skin=0;
-		skin++;
-		Q_strncpyz (skintorso,p2,sizeof(skintorso));
+			//advance to third
+			skin = strchr(p2, '|');
+			if (!skin) {
+				Q_strncpyz(skintorso, p2, sizeof(skintorso));
+				skinlower[0] = '\0';
+				break;
+			}
+			*skin = 0;
+			skin++;
+			Q_strncpyz(skintorso, p2, sizeof(skintorso));
 
-		Q_strncpyz (skinlower,skin,sizeof(skinlower));
-
+			Q_strncpyz(skinlower, skin, sizeof(skinlower));
+		} while (qfalse);
 
 
 		trap_Cvar_Set("ui_char_model", model);

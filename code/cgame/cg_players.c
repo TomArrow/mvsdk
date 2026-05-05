@@ -505,11 +505,7 @@ retryModel:
 	}
 	if (handle<0)
 	{
-		if (retriedAlready) {
-			return qfalse;
-		}
-		badModel = qtrue;
-		goto retryModel;
+		return qfalse;
 	}
 
 	// The model is now loaded.
@@ -936,13 +932,18 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 
 		// fall back to default team name
 		if( cgs.gametype >= GT_TEAM) {
+			const char* skinName = NULL;
 			// keep skin name
 			if( ci->team == TEAM_BLUE ) {
 				Q_strncpyz(teamname, DEFAULT_BLUETEAM_NAME, sizeof(teamname) );
+				skinName = "blue";
+			} else if( ci->team == TEAM_RED ) {
+				Q_strncpyz(teamname, DEFAULT_REDTEAM_NAME, sizeof(teamname));
+				skinName = "red";
 			} else {
-				Q_strncpyz(teamname, DEFAULT_REDTEAM_NAME, sizeof(teamname) );
+				skinName = "default";
 			}
-			if ( !CG_RegisterClientModelname( ci, defaultModel, ci->skinName, teamname, -1 ) ) {
+			if ( !CG_RegisterClientModelname( ci, defaultModel, skinName, teamname, -1 ) ) {
 				CG_Error( "DEFAULT_TEAM_MODEL / skin (%s/%s) failed to register", defaultModel, ci->skinName );
 			}
 		} else {
