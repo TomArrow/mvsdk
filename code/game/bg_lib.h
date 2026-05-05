@@ -77,9 +77,7 @@ int tolower( int c );
 int toupper( int c );
 
 double atof( const char *string );
-double _atof( const char **stringPtr );
 int atoi( const char *string );
-int _atoi( const char **stringPtr );
 
 int vsnprintf( char *buffer, size_t size, const char *fmt, va_list argptr ) __attribute__ ((format (printf, 3, 4)));
 int sscanf( const char *buffer, const char *fmt, ... ) __attribute__ ((format (scanf, 2, 3)));

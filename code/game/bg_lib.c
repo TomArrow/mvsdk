@@ -832,11 +832,12 @@ double atof( const char *string ) {
 	return value * sign;
 }
 
-double _atof( const char **stringPtr ) {
+static int _atof( const char **stringPtr, float* outval ) {
 	const char	*string;
 	float sign;
 	float value;
 	int		c = '0'; // bk001211 - uninitialized use possible
+	int     digits = 0;
 
 	string = *stringPtr;
 
@@ -844,6 +845,7 @@ double _atof( const char **stringPtr ) {
 	while ( *string <= ' ' ) {
 		if ( !*string ) {
 			*stringPtr = string;
+			*outval = 0;
 			return 0;
 		}
 		string++;
@@ -872,11 +874,12 @@ double _atof( const char **stringPtr ) {
 			if ( c < '0' || c > '9' ) {
 				break;
 			}
+			digits++;
 			c -= '0';
 			value = value * 10 + c;
 		} while ( 1 );
 	//}
-
+	
 	// check for decimal point
 	if ( c == '.' ) {
 		double fraction;
@@ -887,6 +890,7 @@ double _atof( const char **stringPtr ) {
 			if ( c < '0' || c > '9' ) {
 				break;
 			}
+			digits++;
 			c -= '0';
 			value += c * fraction;
 			fraction *= 0.1;
@@ -895,9 +899,10 @@ double _atof( const char **stringPtr ) {
 	}
 
 	// not handling 10e10 notation...
-	*stringPtr = string;
+	*stringPtr = string- (!c ? 1 : 0);
 
-	return value * sign;
+	*outval = value * sign;
+	return digits;
 }
 
 
@@ -952,17 +957,19 @@ int atoi( const char *string ) {
 }
 
 
-int _atoi( const char **stringPtr ) {
+static int _atoi( const char **stringPtr, int* outval ) {
 	int		sign;
 	int		value;
 	int		c;
 	const char	*string;
+	int     digits = 0;
 
 	string = *stringPtr;
 
 	// skip whitespace
 	while ( *string <= ' ' ) {
 		if ( !*string ) {
+		    *outval = 0;
 			return 0;
 		}
 		string++;
@@ -990,15 +997,16 @@ int _atoi( const char **stringPtr ) {
 		if ( c < '0' || c > '9' ) {
 			break;
 		}
+		digits++;
 		c -= '0';
 		value = value * 10 + c;
 	} while ( 1 );
 
 	// not handling 10e10 notation...
+	*stringPtr = string - (!c ? 1 : 0);
 
-	*stringPtr = string;
-
-	return value * sign;
+	*outval = value * sign;
+	return digits;
 }
 
 int abs( int n ) {
@@ -1531,7 +1539,7 @@ done:
 }
 
 
-static void sscanf_stringparse( const char **stringPtr,char *out ) {
+static int sscanf_stringparse( const char **stringPtr,char *out ) {
 	const char	*string;
 	float sign;
 	float value;
@@ -1544,7 +1552,7 @@ static void sscanf_stringparse( const char **stringPtr,char *out ) {
 		if ( !*string ) {
 			*stringPtr = string;
 			*out = '\0';
-			return;
+			return 0;
 		}
 		string++;
 	}
@@ -1555,6 +1563,7 @@ static void sscanf_stringparse( const char **stringPtr,char *out ) {
 		string++;
 	}
 	*out = '\0';
+	return 1;
 }
 
 
@@ -1562,10 +1571,12 @@ static void sscanf_stringparse( const char **stringPtr,char *out ) {
 /* this is really crappy */
 int sscanf( const char *buffer, const char *fmt, ... ) {
 	int		cmd;
-	int		**arg;
+	int		arg = 0;
 	int		count;
+	va_list		argptr;
+    
+	va_start (argptr,fmt);
 
-	arg = (int **)&fmt + 1;
 	count = 0;
 
 	while ( *fmt ) {
@@ -1576,23 +1587,37 @@ int sscanf( const char *buffer, const char *fmt, ... ) {
 
 		cmd = fmt[1];
 		fmt += 2;
+		
+		if(!*buffer){
+		    break;
+		}
 
 		switch ( cmd ) {
 		case 'i':
 		case 'd':
 		case 'u':
-			**arg = _atoi( &buffer );
+		    if(!_atoi( &buffer, va_arg(argptr,int*) )){
+			    goto done;
+		    }
 			break;
 		case 's':
-			sscanf_stringparse( &buffer,(char*)*arg ); // lol
+			if(!sscanf_stringparse( &buffer,va_arg(argptr,char*) )){// lol
+			    goto done;
+			} 
 			break;
 		case 'f':
-			*(float *)*arg = _atof( &buffer );
+			if(!_atof( &buffer,va_arg(argptr,float*) )){
+			    goto done;
+			}
 			break;
 		}
 		arg++;
+		count++;
 	}
+	done:
 
+	va_end (argptr);
+	
 	return count;
 }
 

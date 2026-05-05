@@ -6969,7 +6969,7 @@ clientCommand_t clientCommands[] = {
 	{"stealcheckpoints",	NULL, DF_StealCheckpoints,				CMD_NOINTERMISSION},
 	{"stealpos",			NULL, DF_StealPos,						CMD_NOINTERMISSION},
 	{"stealspawn",			NULL, DF_StealSpawn,					CMD_NOINTERMISSION},
-	{"tag",					NULL, Cmd_TagMap_f,						CMD_NOINTERMISSION, "Tag a mag, search for tagged maps or list a map's tags."},
+	{"tag",					NULL, Cmd_TagMap_f,						CMD_NOINTERMISSION, "Tag a map, search for tagged maps or list a map's tags."},
 	{"team",				NULL, Cmd_Team_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"teamtask",			NULL, Cmd_TeamTask_f,					CMD_NOINTERMISSION},
 	{"teamvote",			NULL, Cmd_TeamVote_f,					CMD_NOINTERMISSION},
