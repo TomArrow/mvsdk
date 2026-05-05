@@ -874,7 +874,7 @@ static void G_TopMapSearchResult(int status, const char* errorMessage, int affec
 		G_SendServerCommand(ent - g_entities, "print \"^1Nothing.\n\"", afterRun);
 	}
 	else {
-		G_BufferedSendOrPrintFlush(ent, qfalse, qtrue);
+		G_BufferedSendOrPrintFlush(ent, qfalse, afterRun);
 	}
 
 
