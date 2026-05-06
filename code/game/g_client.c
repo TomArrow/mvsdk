@@ -2677,6 +2677,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	G_ClearClientLog(clientNum);
 
 	trap_SendServerCommand(clientNum, "print \"Welcome. Type ^2/help^7 for info about commands and how to play.\n\"");
+
+	G_SendPlayerMapRatingsUIInfo(ent);
 }
 
 static qboolean AllForceDisabled(int force)
