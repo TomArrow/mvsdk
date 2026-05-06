@@ -67,6 +67,7 @@
 #define TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX		(1<<0) 
 #define TTFLAGS_GAMEPLAY_SERVERINFO_KICKOFFFIX			(1<<1) 
 #define TTFLAGS_GAMEPLAY_SERVERINFO_GAMEPAUSED			(1<<2) 
+#define TTFLAGS_GAMEPLAY_SERVERINFO_PLAYERBUMPMASK		((1<<3)|(1<<4)) 
 
 #define TTFLAGS_CLIENT_SHOWALLPLAYERSINCLUDINGMLBOTS	(1<<0)
 #define TTFLAGS_CLIENT_SUPPORTS_TTCMD					(1<<1) // "ttcmd" which other cmds can piggyback onto without showing client errors if the cmd isn't known
@@ -403,6 +404,8 @@ typedef struct {
 	int				unlockRandom;
 	qboolean		mineSwitchFix;
 	qboolean		highFpsFix;
+
+	int				playerBump; // preserve speed when bumping into players moving at high speed
 
 	// vvv-serverSide feature porting (i dislike accessing g_vars here)
 	int				pauseGame;

@@ -1396,6 +1396,7 @@ restartpredict:
 		}
 		cg_pmove.forcedModelScale = cg_entities[cg.predictedPlayerState.clientNum].modelScale[0];
 		cg_pmove.pauseGame = (cgs.isTommyTernal && cg_pmove.ps->stats[STAT_RACEMODE]) ? 0 : !!(cgs.ttFlagsGp & TTFLAGS_GAMEPLAY_SERVERINFO_GAMEPAUSED);
+		cg_pmove.playerBump = (cgs.isTommyTernal && cg_pmove.ps->stats[STAT_RACEMODE]) ? 0 : ((cgs.ttFlagsGp & TTFLAGS_GAMEPLAY_SERVERINFO_PLAYERBUMPMASK) >> 3);
 		Pmove (&cg_pmove);
 		VectorCopy(cg_pmove.ps->origin,oldPos );
 		cg.roll = cg_pmove.roll;

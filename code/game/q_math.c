@@ -2,7 +2,9 @@
 //
 // q_math.c -- stateless support routines that are included in each code module
 #include "q_shared.h"
-
+#if _MSC_VER
+#include <intrin.h>
+#endif
 
 vec3_t	vec3_origin = {0,0,0};
 vec3_t	axisDefault[3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
@@ -1071,6 +1073,27 @@ int Q_log2( int val ) {
 	return answer;
 }
 
+// Count the consecutive zero bits (trailing) on the right by casting to a float 
+// https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightFloatCast
+// result of 0 is undefined
+int Q_ctz(unsigned int v) {
+#define NEEDFALLBACK 1
+#ifdef __has_builtin
+#if __has_builtin (__builtin_ctz)
+#define NEEDFALLBACK 0
+	return __builtin_ctz(v);
+#endif
+#elif defined(_MSC_VER) && !defined(__clang__)
+#define NEEDFALLBACK 0
+	unsigned int retVal = 0;
+	_BitScanForward(&retVal,v);
+	return retVal;
+#endif
+#if NEEDFALLBACK
+	float f = (float)(v & -v);
+	return (*(unsigned int*)&f >> 23) - 0x7f;
+#endif
+}
 
 
 /*

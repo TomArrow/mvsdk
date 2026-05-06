@@ -14,6 +14,7 @@ output: origin, velocity, impacts, stairup boolean
 
 */
 
+bgEntity_t* PM_BGEntForNum(int num);
 extern float MovementOverbounceFactor(int moveStyle, playerState_t* ps, usercmd_t* ucmd);
 vec3_t flatNormal = {0,0,1};
 
@@ -515,6 +516,31 @@ void PM_CheckBounceJump(vec3_t normal, vec3_t velocity) {
 }
 
 
+typedef struct planePlayerInfo_s {
+	qboolean	isPlayer;
+	vec3_t		velocity;
+}planePlayerInfo_t;
+
+
+static void PM_PlayerBumpVelocityPreservation(vec3_t oldVelocity, vec3_t newVelocity, vec3_t planeVelocity, vec3_t outRestoreVelocity) {
+	float magnitude;
+	float magnitudeKept;
+	float dot;
+	vec3_t tmp;
+
+	// calculate the velocity vector that should be allowed to persist. 
+	// it's a vector in the direction of the original velocity, limited by the velocity in the same direction of the other-player-plane we bumped into
+	VectorCopy(oldVelocity, tmp);
+	tmp[2] = 0; // we only do this horizontally (for now) or we start messing with gravity which isn't nice.
+	magnitude = VectorNormalize(tmp);
+	dot = DotProduct(tmp, planeVelocity);
+	magnitude = MAX(0, MIN(dot, magnitude)); // this is the magnitude of velocity we should have kept.
+	magnitudeKept = DotProduct(tmp, newVelocity); // this is the magnitude we did keep
+
+	magnitude = MAX(0, magnitude- magnitudeKept); // this is the magnitude we need to restore
+	VectorMA(outRestoreVelocity, magnitude, tmp, outRestoreVelocity);
+}
+
 /*
 ==================
 PM_SlideMove
@@ -539,9 +565,22 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 	vec3_t		endVelocity;
 	vec3_t		endClipVelocity;
 	float		overbounce = MovementOverbounceFactor(pm->modParms.physics, pm->ps, &pm->cmd);
+
+	// player bump compensation:
+	planePlayerInfo_t	planePlayerInfo[MAX_CLIP_PLANES]; // if we bump into players, and its desired, avoid losing all speed
+	vec3_t		restoreVelocity = { 0 };
+	vec3_t		endRestoreVelocity = { 0 };
+	vec3_t		rememberVelocity = { 0 };
+	vec3_t		endRememberVelocity = { 0 };
+	int			playerBumps = 0;
+	qboolean	playerBumpComp = (qboolean)(!pm->modParms.raceMode && pm->playerBump);
 	
 	VectorClear( endVelocity );
 	VectorClear( endClipVelocity );
+
+	if (playerBumpComp) {
+		memset(planePlayerInfo, 0, sizeof(planePlayerInfo));
+	}
 
 	numbumps = 4;
 
@@ -649,6 +688,12 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				continue;
 			}
 		}
+
+		if (playerBumpComp && trace.entityNum < MAX_CLIENTS && normal[2] == 0.0f) { // if we are trying to compensate player bumps, remember the velocity of this player we bumped into.
+			bgEntity_t* otherPlayer = PM_BGEntForNum(trace.entityNum);
+			planePlayerInfo[numplanes].isPlayer = qtrue;
+			VectorCopy(otherPlayer->s.pos.trDelta,planePlayerInfo[numplanes].velocity);
+		}
 		VectorCopy (normal, planes[numplanes]);
 		numplanes++;
 
@@ -679,6 +724,15 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
 			}
 
+			if (playerBumpComp && planePlayerInfo[i].isPlayer) {
+				// we bumped into a player. save off an adequate fraction of the velocity we lost in restoreVelocity vars.
+				// we cannot just ignore the bump because then we'd be moving inside the player on this frame, so we simply restore the
+				// lost velocity at the end of the slidemove, somewhat similar to how skimming with pm_time works. ugly, but meh
+				PM_PlayerBumpVelocityPreservation(pm->ps->velocity, clipVelocity, planePlayerInfo[i].velocity, restoreVelocity);
+				PM_PlayerBumpVelocityPreservation(endVelocity, endClipVelocity, planePlayerInfo[i].velocity, endRestoreVelocity);
+				playerBumps++;
+			}
+
 			// see if there is a second plane that the new move enters
 			for ( j = 0 ; j < numplanes ; j++ ) {
 				if ( j == i ) {
@@ -687,6 +741,12 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				if ( DotProduct( clipVelocity, planes[j] ) >= 0.1f ) {
 					continue;		// move doesn't interact with the plane
 				}
+				
+				if (playerBumpComp && planePlayerInfo[j].isPlayer) {
+					// we are bumping into a player. save off the pre bump velocity for after.
+					VectorCopy(clipVelocity, rememberVelocity);
+					VectorCopy(endClipVelocity, endRememberVelocity);
+				}
 
 				// try clipping the move to the plane
 				PM_ClipVelocity( clipVelocity, planes[j], clipVelocity, overbounce);
@@ -694,6 +754,15 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				pml.groundBounces = pml.groundBounces || planes[j][2] >= MIN_WALK_NORMAL; 
 				if (planes[j][2] >= MIN_WALK_NORMAL) {
 					pml.clippedWalkable = qtrue; // uh am i putting this the right place? idk
+				}
+
+				if (playerBumpComp && planePlayerInfo[j].isPlayer) {
+					// we bumped into a player. save off an adequate fraction of the velocity we lost in restoreVelocity vars.
+					// we cannot just ignore the bump because then we'd be moving inside the player on this frame, so we simply restore the
+					// lost velocity at the end of the slidemove, somewhat similar to how skimming with pm_time works. ugly, but meh
+					PM_PlayerBumpVelocityPreservation(rememberVelocity, clipVelocity, planePlayerInfo[j].velocity, restoreVelocity);
+					PM_PlayerBumpVelocityPreservation(endRememberVelocity, endClipVelocity, planePlayerInfo[j].velocity, endRestoreVelocity);
+					playerBumps++;
 				}
 
 				// TODO MAYBE jaPRO player collision physics fix?
@@ -734,6 +803,12 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 			VectorCopy( endClipVelocity, endVelocity );
 			break;
 		}
+	}
+
+	if (playerBumpComp && playerBumps) {
+		// we bumped into one or more players and lost velocity. restore it.
+		VectorAdd(pm->ps->velocity, restoreVelocity, pm->ps->velocity);
+		VectorAdd(endVelocity, endRestoreVelocity, endVelocity);
 	}
 
 	if ( gravity ) {

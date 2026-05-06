@@ -128,6 +128,7 @@ vmCvar_t	g_mapDefaultJump;
 vmCvar_t	g_mapDefaultRunFlags;
 vmCvar_t	g_q2trace;
 vmCvar_t	g_q2Skims;
+vmCvar_t	g_playerBump;
 
 vmCvar_t	g_strafebotSlopeHandling;
 
@@ -273,6 +274,7 @@ int gDuelist2 = -1;
 int gRandomUnlockAdd = 0;
 
 static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
+static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 // bk001129 - made static to avoid aliasing
 /* static */cvarTable_t		gameCvarTable[] = {
 
@@ -409,6 +411,8 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar);
 	{ &g_mapDefaultRunFlags, "g_mapDefaultRunFlags", "0", CVAR_SYSTEMINFO | CVAR_ROM, 0, qfalse},
 	{ &g_q2trace, "g_q2trace", "1", CVAR_SYSTEMINFO, 0, qtrue},
 	{ &g_q2Skims, "g_q2Skims", "0", CVAR_SYSTEMINFO, 0, qtrue},
+
+	{ &g_playerBump, "g_playerBump", "0", CVAR_ARCHIVE, 0, qtrue, qfalse, NULL, { G_BitMaskCvarUpdatedMask, (void*)&g_ttFlagsGp, "ttFlagsGp", TTFLAGS_GAMEPLAY_SERVERINFO_PLAYERBUMPMASK } },
 
 	{ &g_strafebotSlopeHandling, "g_strafebotSlopeHandling", "1", CVAR_SYSTEMINFO | CVAR_CHEAT, 0, qfalse},
 
@@ -839,6 +843,40 @@ static void	G_BitMaskCvarUpdated(cvarTable_t* cvar) {
 	else {
 		cvarBase->integer &= ~cvar->update.iparam1;
 	}
+
+	trap_Cvar_Set(cvar->update.cparam1, va("%d", cvarBase->integer));
+	trap_Cvar_Update(cvarBase);
+}
+
+// iparam1 is base value, iparam2 is bit count
+static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar) {
+	vmCvar_t* cvarBase = (vmCvar_t*)cvar->update.pparam1;
+	int mask, offset, width, newval;
+
+	if (!cvarBase) {
+		Com_Error(ERR_FATAL, "G_BitMaskCvarUpdatedMask: pparam1 must be a vmCvar_t* pointer");
+	}
+	if (!cvar->update.iparam1) {
+		Com_Error(ERR_FATAL, "G_BitMaskCvarUpdatedMask: iparam1 mask must not be 0");
+	}
+
+	// determine the shape of the mask
+	mask = cvar->update.iparam1;
+	offset = Q_ctz(mask);
+	mask >>= offset;
+	width = Q_ctz(~mask);
+	mask = (1 << width) - 1;
+
+	// mask the value
+	newval = MIN(mask, MAX(0, cvar->vmCvar->integer)) & mask;
+
+	// shift it back and add it to the target cvar
+	mask <<= offset;
+	newval <<= offset;
+	mask &= cvar->update.iparam1;
+	newval &= cvar->update.iparam1;
+	cvarBase->integer &= ~mask;
+	cvarBase->integer |= newval;
 
 	trap_Cvar_Set(cvar->update.cparam1, va("%d", cvarBase->integer));
 	trap_Cvar_Update(cvarBase);

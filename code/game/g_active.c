@@ -2602,6 +2602,7 @@ void ClientThink_real( gentity_t *ent ) {
 	pm.oldButtons = ent->client->oldbuttons;
 	pm.forcedModelScale = forcedModelScale;
 	pm.pauseGame = ent->client->sess.raceMode ? 0 : g_pauseGame.integer;
+	pm.playerBump = ent->client->sess.raceMode ? 0 : g_playerBump.integer;
 	DF_PreDeltaAngleChange(ent->client);
 	pm.positionChangedOutsidePmove = !VectorCompare(ent->client->ps.origin, client->oldPostPmovePosition);
 	oldSaberMove = pm.ps->saberMove;
