@@ -522,23 +522,20 @@ typedef struct planePlayerInfo_s {
 }planePlayerInfo_t;
 
 
-static void PM_PlayerBumpVelocityPreservation(vec3_t oldVelocity, vec3_t newVelocity, vec3_t planeVelocity, vec3_t outRestoreVelocity) {
+static void PM_PlayerBumpVelocityPreservation(vec3_t oldVelocity, vec3_t newVelocity, vec3_t plane, vec3_t planeVelocity, vec3_t outRestoreVelocity) {
 	float magnitude;
 	float magnitudeKept;
 	float dot;
-	vec3_t tmp;
 
 	// calculate the velocity vector that should be allowed to persist. 
 	// it's a vector in the direction of the original velocity, limited by the velocity in the same direction of the other-player-plane we bumped into
-	VectorCopy(oldVelocity, tmp);
-	tmp[2] = 0; // we only do this horizontally (for now) or we start messing with gravity which isn't nice.
-	magnitude = VectorNormalize(tmp);
-	dot = DotProduct(tmp, planeVelocity);
+	magnitude = -DotProduct(oldVelocity, plane);
+	dot = -DotProduct(plane, planeVelocity);
 	magnitude = MAX(0, MIN(dot, magnitude)); // this is the magnitude of velocity we should have kept.
-	magnitudeKept = DotProduct(tmp, newVelocity); // this is the magnitude we did keep
+	magnitudeKept = -DotProduct(plane, newVelocity); // this is the magnitude we did keep
 
-	magnitude = MAX(0, magnitude- magnitudeKept); // this is the magnitude we need to restore
-	VectorMA(outRestoreVelocity, magnitude, tmp, outRestoreVelocity);
+	magnitude = MAX(0, magnitude - magnitudeKept); // this is the magnitude we need to restore
+	VectorMA(outRestoreVelocity, -magnitude, plane, outRestoreVelocity);
 }
 
 /*
@@ -728,8 +725,8 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 				// we bumped into a player. save off an adequate fraction of the velocity we lost in restoreVelocity vars.
 				// we cannot just ignore the bump because then we'd be moving inside the player on this frame, so we simply restore the
 				// lost velocity at the end of the slidemove, somewhat similar to how skimming with pm_time works. ugly, but meh
-				PM_PlayerBumpVelocityPreservation(pm->ps->velocity, clipVelocity, planePlayerInfo[i].velocity, restoreVelocity);
-				PM_PlayerBumpVelocityPreservation(endVelocity, endClipVelocity, planePlayerInfo[i].velocity, endRestoreVelocity);
+				PM_PlayerBumpVelocityPreservation(pm->ps->velocity, clipVelocity, planes[i], planePlayerInfo[i].velocity, restoreVelocity);
+				PM_PlayerBumpVelocityPreservation(endVelocity, endClipVelocity, planes[i], planePlayerInfo[i].velocity, endRestoreVelocity);
 				playerBumps++;
 			}
 
@@ -760,8 +757,8 @@ qboolean	PM_SlideMove( qboolean gravity ) {
 					// we bumped into a player. save off an adequate fraction of the velocity we lost in restoreVelocity vars.
 					// we cannot just ignore the bump because then we'd be moving inside the player on this frame, so we simply restore the
 					// lost velocity at the end of the slidemove, somewhat similar to how skimming with pm_time works. ugly, but meh
-					PM_PlayerBumpVelocityPreservation(rememberVelocity, clipVelocity, planePlayerInfo[j].velocity, restoreVelocity);
-					PM_PlayerBumpVelocityPreservation(endRememberVelocity, endClipVelocity, planePlayerInfo[j].velocity, endRestoreVelocity);
+					PM_PlayerBumpVelocityPreservation(rememberVelocity, clipVelocity, planes[j], planePlayerInfo[j].velocity, restoreVelocity);
+					PM_PlayerBumpVelocityPreservation(endRememberVelocity, endClipVelocity, planes[j], planePlayerInfo[j].velocity, endRestoreVelocity);
 					playerBumps++;
 				}
 
