@@ -1219,7 +1219,7 @@ void StopFollowingClient( gentity_t* ent ) {
 }
 
 qboolean SlowVotingActive(gentity_t* ent) {
-	return g_slowVote.integer;
+	return g_slowVote.integer && ent->client->sess.raceMode || g_slowVote.integer > 1;
 }
 
 helpTip_t helpTips[] = {
@@ -5094,6 +5094,7 @@ void Cmd_Players_f(gentity_t* ent) {
 	gclient_t* cl;
 	int i;
 	int millisecs,minMillisecs = clampedIntMult(g_afkCmdMinSecs.integer, 1000), minMillisecsStayOnMap = clampedIntMult(g_slowVoteAFKThreshold.integer, 1000);
+	qboolean slowVoteActive = G_SlowVoteActive();
 	trap_SendServerCommand(ent - g_entities, "print \"Players:\n\"");
 	trap_SendServerCommand(ent - g_entities, "print \"^2#  User       Mode                      AFK        FPS  Jump  Name\n\"");
 	for (i = 0; i < level.maxclients; i++) {
@@ -5111,10 +5112,33 @@ void Cmd_Players_f(gentity_t* ent) {
 			cl->sess.raceStyle.msec == -1 ? "togl" : (cl->sess.raceStyle.msec == -2 ? "flt" : (cl->sess.raceStyle.msec == 0 ? "unkn" : miniva("%d", 1000 / cl->sess.raceStyle.msec))),
 			cl->sess.raceStyle.jumpLevel,
 			other->client->pers.netname,
-			other->client->pers.stayOnMap && g_slowVote.integer ?(clampedIntAdd(level.time,-cl->sess.lastHereTime) < minMillisecsStayOnMap ? " ^7(wants to stay on map)" : " ^7(wants to stay on map but ^1AFK^7)") : "",
+			other->client->pers.stayOnMap && slowVoteActive ?(clampedIntAdd(level.time,-cl->sess.lastHereTime) < minMillisecsStayOnMap ? " ^7(wants to stay on map)" : " ^7(wants to stay on map but ^1AFK^7)") : "",
 			(other->client->pers.tasClient & TASCLIENT_MACHINELEARNING) ? " ^7(TAS Machine Learning Bot)" : (other->client->pers.tasClient ? " ^7(TAS Client)" : "")
 		));
 	}
+}
+
+// g_slow
+qboolean G_SlowVoteActive() {
+	int minMillisecs = clampedIntMult(g_slowVoteAFKThreshold.integer, 1000);
+	if (g_slowVote.integer > 1) { // 2 = always active
+		return qtrue;
+	}
+	else if(g_slowVote.integer){ // 1 = only active if ppl are racing
+		gentity_t* oEnt;
+		int i;
+		for (i = 0; i < level.maxclients; i++) {
+			oEnt = g_entities + i;
+
+			if (oEnt->client->pers.connected != CON_CONNECTED) {
+				continue;
+			}
+			if (oEnt->client->sess.raceMode && oEnt->client->sess.sessionTeam != TEAM_SPECTATOR && clampedIntAdd(level.time, -oEnt->client->sess.lastHereTime) < minMillisecs) {
+				return qtrue;
+			}
+		}
+	}
+	return qfalse;
 }
 
 extern int DF_GetSegmentedRunnerCount();
@@ -5124,8 +5148,9 @@ int G_SlowVoteProhibits(int ownclientNum) {
 	int i;
 	int stayers = 0;
 	int minMillisecs = clampedIntMult(g_slowVoteAFKThreshold.integer, 1000);
+	qboolean slowVoteActive = G_SlowVoteActive();
 
-	if (!g_slowVote.integer) return 0;
+	if (!slowVoteActive) return 0;
 
 	for (i = 0; i < level.maxclients; i++) {
 		oEnt = g_entities + i;
@@ -5840,8 +5865,14 @@ void Cmd_Stats_f( gentity_t *ent ) {
 }
 
 void Cmd_Stay_f(gentity_t* ent) {
-	if (!g_slowVote.integer) {
-		trap_SendServerCommand(ent - g_entities, "print \"^3Slow voting is not enabled on this server.\n\"");
+	qboolean slowVoteActive = G_SlowVoteActive();
+	if (!slowVoteActive && !ent->client->pers.stayOnMap) {
+		if (g_slowVote.integer == 1) {
+			trap_SendServerCommand(ent - g_entities, "print \"^3Slow voting is not currently active on this server because nobody is in racemode.\n\"");
+		}
+		else {
+			trap_SendServerCommand(ent - g_entities, "print \"^3Slow voting is not currently active on this server.\n\"");
+		}
 		return;
 	}
 	if (!ent->client->pers.stayOnMap) {

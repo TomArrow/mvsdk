@@ -1147,6 +1147,7 @@ char ColorCodeForClient(gentity_t* target, qboolean botSpecialColor);
 char* ConcatArgs(int start);
 void G_SendPlayerMapRatingsUIInfo(gentity_t* ent); 
 void G_CheckPlayerMapRatings(gentity_t* ent);
+qboolean G_SlowVoteActive();
 
 gentity_t *G_GetDuelWinner(gclient_t *client); 
 qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged);

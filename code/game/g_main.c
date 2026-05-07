@@ -164,7 +164,7 @@ vmCvar_t	g_podiumDist;
 vmCvar_t	g_podiumDrop;
 vmCvar_t	g_allowVote;
 vmCvar_t	g_allowVoteShuffle;
-vmCvar_t	g_slowVote;
+vmCvar_t	g_slowVote; // 1 = active if people are racing. 2 = active always
 vmCvar_t	g_slowVoteAFKThreshold;
 vmCvar_t	g_teamAutoJoin;
 vmCvar_t	g_teamForceBalance;
@@ -3207,6 +3207,7 @@ CheckVote
 ==================
 */
 void CheckVote( void ) {
+	qboolean slowVoteActive = G_SlowVoteActive();
 	int requiredClients = g_voteAsSpec.integer ? level.numFullyConnectedClients : level.numVotingClients;
 	if ( level.voteExecuteTime && level.voteExecuteTime < level.time ) {
 		level.voteExecuteTime = 0;
@@ -3284,12 +3285,12 @@ void CheckVote( void ) {
 			trap_SendServerCommand(-1, va("print \"%s: %d Yes vs %d No\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
 		}
 		else {
-			if (level.voteYes > requiredClients / 2 && (!g_slowVote.integer || level.voteYes == requiredClients)) {
+			if (level.voteYes > requiredClients / 2 && (!slowVoteActive || level.voteYes == requiredClients)) {
 				// execute the command, then remove the vote
 				trap_SendServerCommand(-1, va("print \"%s: %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEPASSED"), level.voteYes, level.voteNo));
 				level.voteExecuteTime = level.time + G_CalculateVoteExecuteTime();
 			}
-			else if (level.voteNo > 0 && g_slowVote.integer) {
+			else if (level.voteNo > 0 && slowVoteActive) {
 				trap_SendServerCommand(-1, va("print \"%s (slow voting enabled): %d vs %d\n\"", G_GetStripEdString("SVINGAME", "VOTEFAILED"), level.voteYes, level.voteNo));
 			}
 			else if (level.voteNo >= requiredClients / 2) {
