@@ -479,6 +479,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 	static vec3_t	range = { 40, 40, 52 };
 	static vec3_t	playerMinsDefault = { -15, -15, DEFAULT_MINS_2 };
 	static vec3_t	playerMaxsDefault = { 15, 15, DEFAULT_MAXS_2 };
+	qboolean	wantRobustTriggers = g_triggersRobust.integer && ent->client->sess.raceMode || g_triggersRobust.integer > 1;
 	qboolean	robustTriggerEvaluation = qfalse;
 	qboolean	isTraced;
 	int			nowTime = LEVELTIME(ent->client);
@@ -493,7 +494,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 		return;
 	}
 
-	robustTriggerEvaluation = g_triggersRobust.integer && ent->client->prePmovePositionSet && !((ent->client->ps.eFlags ^ ent->client->prePmoveEFlags) & EF_TELEPORT_BIT);
+	robustTriggerEvaluation = wantRobustTriggers && ent->client->prePmovePositionSet && !((ent->client->ps.eFlags ^ ent->client->prePmoveEFlags) & EF_TELEPORT_BIT);
 
 	// if we have a past position, move from that to the current one. 
 	// teleport bit check may not be needed since there doesn't appear to be any respawn/teleport
@@ -601,7 +602,7 @@ void	G_TouchTriggers( gentity_t *ent ) {
 
 	}
 	else {
-		if (g_triggersRobust.integer) {
+		if (wantRobustTriggers) {
 			VectorAdd(ent->client->ps.origin, playerMinsDefault, mins);
 			VectorAdd(ent->client->ps.origin, playerMaxsDefault, maxs);
 		}
