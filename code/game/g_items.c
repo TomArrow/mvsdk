@@ -39,7 +39,7 @@ from Tr!force's JediKnightPlus mod
 */
 int JKMod_ItemRespawnTime(gentity_t* ent)
 {
-	float respawnTime;
+	float respawnTime = 0;
 
 	// Respawn time based on giType
 	if (ent->item->giType == IT_ARMOR)

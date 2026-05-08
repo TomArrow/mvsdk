@@ -2205,7 +2205,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 		level.lastIronManKilled = level.time;
 	}
-	else if (self->client->sess.mode == MODE_IRONMAN && attacker && attacker->client && attacker->client->sess.mode == MODE_IRONMAN && attacker->client->isIronMan && attacker != self) {
+	else if (self->client->sess.mode == MODE_IRONMAN && attacker && attacker->client && attacker->client->sess.mode == MODE_IRONMAN && attacker->client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER && attacker != self) {
 		// give shield bonus to iron man if he kills someone
 		if (attacker->client->ps.stats[STAT_ARMOR] < 100) {
 			attacker->client->ps.stats[STAT_ARMOR] += 20;
@@ -3446,10 +3446,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			}
 		}
 
-		if (targ->client && attacker->client && targ->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN 
-			&& !attacker->client->isIronMan && !targ->client->isIronMan && attacker != targ) {
+		if (targ->client && attacker->client && ModePreventDamage(attacker, targ)) {
 			return; // don't let "team mates" in iron man damage each other
 		}
+		//if (targ->client && attacker->client && targ->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN 
+		//	&& !attacker->client->isIronMan && !targ->client->isIronMan && attacker != targ) {
+		//	return; // don't let "team mates" in iron man damage each other
+		//}
 
 		if (g_gametype.integer == GT_JEDIMASTER && !g_friendlyFire.integer &&
 			targ && targ->client && attacker && attacker->client &&
@@ -3470,10 +3473,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 				{
 					return;
 				}
-				if (targown->client && attacker->client && targown->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN
-					&& !attacker->client->isIronMan && !targown->client->isIronMan) {
+				if (targown->client && attacker->client && ModePreventDamage(attacker, targown)) {
 					return; // don't let "team mates" in iron man damage each other (does it make sense to do this here too? idk)
 				}
+				//if (targown->client && attacker->client && targown->client->sess.mode == MODE_IRONMAN && attacker->client->sess.mode == MODE_IRONMAN
+				//	&& !attacker->client->isIronMan && !targown->client->isIronMan) {
+				//	return; // don't let "team mates" in iron man damage each other (does it make sense to do this here too? idk)
+				//}
 			}
 		}
 

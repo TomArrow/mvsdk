@@ -1922,20 +1922,27 @@ void ClientUserinfoChanged( int clientNum ) {
 	//char	headModel[MAX_QPATH];
 	char	forcePowers[MAX_QPATH];
 	char	oldname[MAX_STRING_CHARS];
+	char	oldnameNoModeTeam[MAX_STRING_CHARS];
 	gclient_t	*client;
 	char	c1[MAX_INFO_STRING];
 	char	c2[MAX_INFO_STRING];
 	char	redTeam[MAX_INFO_STRING];
 	char	blueTeam[MAX_INFO_STRING];
 	char	userinfo[MAX_INFO_STRING];
+	char	modeTeamString[MAX_INFO_STRING];
+	int		modeTeamPrefixLength = 0;
+	modeTeam_t* modeTeamData;
 
 	// NameCrashFix (whitelisted characters)
 	static const char	validChars[]  = " ~QqWwEeRrTtYyUuIiOoPpAaSsDdFfGgHhJjKkLlZzXxCcVvBbNnMm1234567890<>?,./';:][{}`-=!@#$^&*()_+|";
 	int					i, j, isValidChar;
 	char				*ptr;
+	const char*			namekey = (coolApi & COOL_APIFEATURE_CLIENTREALNAME) ? "ttrn" : "name";
 
 	ent = g_entities + clientNum;
 	client = ent->client;
+
+	modeTeamData = &modeTeams[ent->client->sess.modeTeam];
 
 	trap_GetUserinfo( clientNum, userinfo, sizeof( userinfo ) );
 
@@ -1985,7 +1992,8 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// set name
 	Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
-	s = Info_ValueForKey (userinfo, "name");
+	Q_strncpyz (oldnameNoModeTeam, client->pers.netnameNoModeTeam, sizeof(oldnameNoModeTeam) );
+	s = Info_ValueForKey (userinfo, namekey);
 		
 	// NameCrashFix
 	for ( i = 0; i < (int)strlen(s); i++ )
@@ -2027,9 +2035,6 @@ void ClientUserinfoChanged( int clientNum ) {
 		}
 	}
 
-	Q_strncpyz(client->pers.netnameClean, client->pers.netname, sizeof(client->pers.netnameClean));
-	Q_CleanStr(client->pers.netnameClean,qtrue,qtrue);
-
 	// thanks to anonymous donor
 	if (!g_allowNameDupes.integer)
 	{
@@ -2070,7 +2075,7 @@ void ClientUserinfoChanged( int clientNum ) {
 					}
 				}
 				NameDedupe_SanitizeString(client->pers.netname, temp);
-				NameDedupe_SanitizeString(g_entities[i].client->pers.netname, temp2);
+				NameDedupe_SanitizeString(g_entities[i].client->pers.netnameNoModeTeam, temp2);
 				if (!Q_stricmp(temp2, temp))
 				{
 					client->pers.nameNumber = client->pers.nameNumber + 1;
@@ -2088,11 +2093,21 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	}
 
-	if ( client->pers.connected == CON_CONNECTED ) {
-		if ( strcmp( oldname, client->pers.netname ) ) {
-			trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s %s\n\"", oldname, G_GetStripEdString("SVINGAME", "PLRENAME"),
-				client->pers.netname) );
-		}
+	Q_strncpyz(client->pers.netnameNoModeTeam, client->pers.netname, sizeof(client->pers.netnameNoModeTeam));
+
+	Q_strncpyz(client->pers.netnameClean, client->pers.netname, sizeof(client->pers.netnameClean));
+	Q_CleanStr(client->pers.netnameClean, qtrue, qtrue);
+
+	if (modeTeamData->applyPrefix && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		const char* prefix = multiva("^%c[%s]^7 ", modeTeamData->teamPrefixColor, modeTeamData->shortname);
+		modeTeamPrefixLength = strlen(prefix);
+		Q_strncpyz(ent->client->pers.netname, va("%s%s", prefix, ent->client->pers.netname), sizeof(ent->client->pers.netname));
+	}
+
+	// trying to not show the rename on modeteam changes, cuz why spam.
+	if (client->pers.connected == CON_CONNECTED && strcmp( oldnameNoModeTeam, client->pers.netnameNoModeTeam)) {
+		trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s %s\n\"", oldname, G_GetStripEdString("SVINGAME", "PLRENAME"),
+			client->pers.netname) );
 	}
 
 	// set max health
@@ -2108,7 +2123,25 @@ void ClientUserinfoChanged( int clientNum ) {
 		Q_strncpyz( model, Info_ValueForKey (userinfo, "team_model"), sizeof( model ) );
 		//Q_strncpyz( headModel, Info_ValueForKey (userinfo, "team_headmodel"), sizeof( headModel ) );
 	} else {
-		Q_strncpyz( model, Info_ValueForKey (userinfo, "model"), sizeof( model ) );
+		Q_strncpyz(model, Info_ValueForKey(userinfo, "model"), sizeof(model));
+		if (modeTeamData->applyTeamColors && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+			if (Q_stricmpn(model, "jedi_", 5) && strchr(model, '|') == NULL) { // don't override multipart models
+				char* slash = strchr(model, '/');
+				const char* targetSkin = "/default";
+				switch (modeTeamData->realTeam) {
+					case TEAM_RED:
+						targetSkin = "/red";
+						break;
+					case TEAM_BLUE:
+						targetSkin = "/blue";
+						break;
+				}
+				if (slash) {
+					*slash = '\0';
+				}
+				Q_strcat(model, sizeof(model), targetSkin);
+			}
+		}
 		//Q_strncpyz( headModel, Info_ValueForKey (userinfo, "headmodel"), sizeof( headModel ) );
 	}
 	
@@ -2124,7 +2157,23 @@ void ClientUserinfoChanged( int clientNum ) {
 	}
 
 	// model color
-	G_SetModelColor(modelColor, userinfo);
+	if (modeTeamData->applyTeamColors && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		switch (modeTeamData->realTeam) {
+			default:
+			case TEAM_FREE:
+				Q_strncpyz(modelColor, "FFFFFFFF", sizeof(modelColor));
+				break;
+			case TEAM_BLUE:
+				Q_strncpyz(modelColor, "0000FFFF", sizeof(modelColor));
+				break;
+			case TEAM_RED:
+				Q_strncpyz(modelColor, "FF0000FF", sizeof(modelColor));
+				break;
+		}
+	}
+	else {
+		G_SetModelColor(modelColor, userinfo);
+	}
 
 	// saber name
 	G_SetSaberName(saberName, userinfo);
@@ -2184,8 +2233,25 @@ void ClientUserinfoChanged( int clientNum ) {
 	teamLeader = client->sess.teamLeader;
 
 	// colors
-	Q_strncpyz(c1, Info_ValueForKey( userinfo, "color1" ),sizeof(c1));
 	Q_strncpyz(c2, Info_ValueForKey( userinfo, "color2" ),sizeof(c2));
+
+	if (modeTeamData->applyTeamColors && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		switch (modeTeamData->realTeam) {
+		default:
+		case TEAM_FREE:
+			Q_strncpyz(c1, "3", sizeof(c1));
+			break;
+		case TEAM_RED:
+			Q_strncpyz(c1, "0", sizeof(c1));
+			break;
+		case TEAM_BLUE:
+			Q_strncpyz(c1, "4", sizeof(c1));
+			break;
+		}
+	}
+	else {
+		Q_strncpyz(c1, Info_ValueForKey(userinfo, "color1"), sizeof(c1));
+	}
 
 	Q_strncpyz(redTeam, Info_ValueForKey( userinfo, "g_redteam" ),sizeof(redTeam));
 	Q_strncpyz(blueTeam, Info_ValueForKey( userinfo, "g_blueteam" ),sizeof(blueTeam));
@@ -2198,9 +2264,15 @@ void ClientUserinfoChanged( int clientNum ) {
 			client->pers.maxHealth, client->sess.wins, client->sess.losses,
 			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay, modelColor, saberName );
 	} else {
-		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mc\\%s\\st\\%s\\tas\\%d",
+		if (client->sess.modeTeam > MODE_NORMAL) {
+			Com_sprintf(modeTeamString, sizeof(modeTeamString), "%d/%d/%d/%d/%s", client->sess.modeTeam, modeTeamData->applyTeamColors ? modeTeamData->realTeam : -1, modeTeamData->friendlyTeam, modeTeamPrefixLength, modeTeamData->name);
+		}
+		else {
+			modeTeamString[0] = '\0';
+		}
+		s = va("n\\%s\\un\\%s\\t\\%i\\model\\%s\\g_redteam\\%s\\g_blueteam\\%s\\c1\\%s\\c2\\%s\\hc\\%i\\w\\%i\\l\\%i\\tt\\%d\\tl\\%d\\mvgp\\%i\\jkrace\\%i\\mode\\%i\\mote\\%s\\mc\\%s\\st\\%s\\tas\\%d",
 			client->pers.netname, client->sess.login.name, client->sess.sessionTeam, model, redTeam, blueTeam, c1, c2,
-			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modelColor, saberName, client->pers.tasClient);
+			client->pers.maxHealth, client->sess.wins, client->sess.losses, teamTask, teamLeader, jk2gameplay, client->pers.raceBestTime, client->sess.mode, modeTeamString, modelColor, saberName, client->pers.tasClient);
 	}
 
 	trap_SetConfigstring( CS_PLAYERS+clientNum, s );
@@ -2922,6 +2994,13 @@ retry:
 		}
 
 	}
+
+	if (allowShortPos < 2) {
+		// let's try with allowing shorter distances
+		allowShortPos++;
+		goto retry;
+	}
+
 	return qfalse;
 
 	
@@ -3081,7 +3160,7 @@ void ClientSpawn(gentity_t *ent) {
 		}
 	}
 
-	if (client->sess.mode == MODE_IRONMAN && !client->isIronMan) {
+	if (client->sess.mode == MODE_IRONMAN && client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER) {
 		if (G_CheckForCloserIronmanSpawn(ent,spawn_origin,spawn_angles,spawn_velocity)) {
 			spawnPoint = NULL;
 			spawn_velocity_set = qtrue;
@@ -3186,6 +3265,8 @@ void ClientSpawn(gentity_t *ent) {
 	//	//	client->sess.raceMode = qfalse;
 	//	//}
 	//}
+
+	ModeClientRespawning(ent);
 
 	//if (client->sess.raceMode)
 	//	client->ps.stats[STAT_RACEMODE] = 1;

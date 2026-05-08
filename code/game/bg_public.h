@@ -11,6 +11,7 @@
 #include "bg_weapons.h"
 #include "anims.h"
 #include "bg_defrag_global.h"
+#include "bg_modes.h"
 
 #define PAUSEGAME_CVARNAME	"nt_PauseGame"
 
@@ -71,6 +72,7 @@
 
 #define TTFLAGS_CLIENT_SHOWALLPLAYERSINCLUDINGMLBOTS	(1<<0)
 #define TTFLAGS_CLIENT_SUPPORTS_TTCMD					(1<<1) // "ttcmd" which other cmds can piggyback onto without showing client errors if the cmd isn't known
+#define TTFLAGS_CLIENT_UNDERSTANDS_MODETEAMS			(1<<2) // client understands the "mote" modeteam CS_PLAYERS key.
 
 
 //jk2pro

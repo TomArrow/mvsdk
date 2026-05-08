@@ -1498,7 +1498,7 @@ static void G_UpdateIronmanBroadcasts ( gentity_t *self )
 	}
 
 	// This client isnt the ironman so it shouldnt broadcast
-	if ( !self->client->isIronMan )
+	if ( self->client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER )
 	{
 		// check if we are at least close to the ironman
 		if (level.ironManCurrentPositionSet) {
@@ -1838,7 +1838,7 @@ void G_MaybeSaveIronmanPos(gentity_t* ent) {
 	VectorCopy(client->ps.origin,level.ironManCurrentPosition);
 	level.ironManCurrentPositionSet = qtrue;
 
-	if (!client->isIronMan || client->sess.mode != MODE_IRONMAN || client->ps.groundEntityNum != ENTITYNUM_WORLD) {
+	if (client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER || client->sess.mode != MODE_IRONMAN || client->ps.groundEntityNum != ENTITYNUM_WORLD) {
 		return;
 	}
 
@@ -2620,7 +2620,7 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 	}
 
-	if (client->isIronMan) {
+	if (client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER) {
 		G_MaybeSaveIronmanPos(ent);
 	}
 

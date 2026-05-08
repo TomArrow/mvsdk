@@ -682,11 +682,8 @@ static void CG_Camera_f( void ) {
 */
 
 //jk2pro stuff
-typedef struct bitInfo_S {
-	const char	*string;
-} bitInfo_T;
 
-static bitInfo_T strafeTweaks[] = {
+static bitInfo_t strafeTweaks[] = {
 	{ "Original style" },//0
 	{ "Updated style" },//1
 	{ "Cgaz style" },//2
@@ -753,7 +750,7 @@ void CG_StrafeHelper_f(void) {
 	}
 }
 
-static bitInfo_T speedometerSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
+static bitInfo_t speedometerSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Enable speedometer" },//0
 	{ "Pre-speed display" },//1
 	{ "Jump height display" },//2
@@ -823,7 +820,7 @@ void cg_speedometer_f(void)
 	}
 }
 
-static bitInfo_T customizeRaceSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
+static bitInfo_t customizeRaceSettings[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 	{ "Hide roll speed centerprints" },//0
 	{ "Hide checkpoint centerprints" },//1
 	{ "Hide anti-loop restart blocked centerprints" },//2

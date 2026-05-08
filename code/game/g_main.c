@@ -43,6 +43,7 @@ vmCvar_t	g_saberTraceSaberFirst;
 
 vmCvar_t	g_modes;
 vmCvar_t	g_modesDefault;
+vmCvar_t	g_modeTeamIronman;
 vmCvar_t	g_defrag;
 vmCvar_t	g_defragLastRunId;
 vmCvar_t	g_defragLastDemoId;
@@ -320,6 +321,7 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 
 	{ &g_modes, "g_modes", "1", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_modesDefault, "g_modesDefault", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  }, // default value from playerModes_e enum
+	{ &g_modeTeamIronman, "g_modeTeamIronman", "0", CVAR_ARCHIVE, 0, qtrue  }, // default value from playerModes_e enum
 	{ &g_defrag, "g_defrag", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_defragAutoDemo, "g_defragAutoDemo", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragKillSafetyMinSecs, "g_defragKillSafetyMinSecs", "240", CVAR_ARCHIVE, 0, qtrue  },
@@ -635,6 +637,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_PRETRACE_TRACE
 | COOL_APIFEATURE_MVAPI_SUBMODELBYPASS_SNEAKPEEK
 | COOL_APIFEATURE_FASTHULLTRACE
+| COOL_APIFEATURE_CLIENTREALNAME
 ;
 const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY | COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS;
 
@@ -1094,9 +1097,25 @@ void G_RegisterCvars( void ) {
 
 void G_CheckCvarChanges() {
 	static int lastModCountRandomUnlock = -1;
+	static int lastModCountModeTeamIronman = -1;
 	if (lastModCountRandomUnlock != g_unlockRandom.modificationCount) {
 		gRandomUnlockAdd = g_unlockRandom.integer ? 1 : 0;
 		lastModCountRandomUnlock = g_unlockRandom.modificationCount;
+	}
+	if (lastModCountModeTeamIronman != g_modeTeamIronman.modificationCount) {
+		int i;
+		gentity_t* ent = g_entities;
+		modeTeams[MODETEAM_IRONMAN_CAPPER].applyPrefix = !!(g_modeTeamIronman.integer & 1);
+		modeTeams[MODETEAM_IRONMAN_CAPPER].applyTeamColors = !!(g_modeTeamIronman.integer & 2);
+		modeTeams[MODETEAM_IRONMAN_CHASER].applyPrefix = !!(g_modeTeamIronman.integer & 4);
+		modeTeams[MODETEAM_IRONMAN_CHASER].applyTeamColors = !!(g_modeTeamIronman.integer & 8);
+		for (i = 0; i < level.maxclients; i++, ent++) {
+			if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+				continue;
+			}
+			ClientUserinfoChanged(i);
+		}
+		lastModCountModeTeamIronman = g_modeTeamIronman.modificationCount;
 	}
 }
 
@@ -3865,6 +3884,7 @@ void G_CheckIronManStatus() {
 	vec3_t spawnpointAngles;
 	vec3_t spawnpointWiggled;
 	int randomteam;
+	qboolean applyTeamColors = g_gametype.integer < GT_TEAM && (modeTeams[MODETEAM_IRONMAN_CAPPER].applyTeamColors || modeTeams[MODETEAM_IRONMAN_CHASER].applyTeamColors);
 
 	if (level.intermissiontime || level.intermissionQueued || level.lastIronManKilled + IRONMAN_NEXTCAPPER_TIMEOUT > level.time) { // leave us 3 seconds to breathe after ironman is killed
 		return; 
@@ -3874,6 +3894,11 @@ void G_CheckIronManStatus() {
 
 	for (i = 0; i < level.maxclients; i++, ent++) {
 		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
+			if (ent->client->sess.mode == MODE_IRONMAN && ent->client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER) {
+				// i'm not sure if this can happen. maybe on mapchanges or such. let's just clean it up.
+				Com_Printf("^3Cient %d in invalid ironman state. Resetting.\n", (int)(ent - g_entities));
+				ClientSetModeTeam(ent,MODETEAM_IRONMAN_CHASER);
+			}
 			continue;
 		}
 		if (ent->client->ps.powerups[PW_BLUEFLAG] || ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_NEUTRALFLAG]) {
@@ -3911,11 +3936,15 @@ void G_CheckIronManStatus() {
 			// unlink us so we can wiggle without our own position affecting us. teleportplayer will relink us anyway
 			trap_UnlinkEntity(ent);
 		}
-		ent->client->isIronMan = qfalse;
+		ClientSetModeTeam(ent, i== 0 ? MODETEAM_IRONMAN_CAPPER :  MODETEAM_IRONMAN_CHASER);
 		ent->health = 100;
 		ent->client->ps.stats[STAT_HEALTH] = 100;
 		ent->client->ps.stats[STAT_ARMOR] = 25;
-		ent->client->isIronMan = qfalse;
+		if (!(ent->client->pers.ttClientFlags & TTFLAGS_CLIENT_UNDERSTANDS_MODETEAMS) && applyTeamColors) {
+			// is this a bitch move? hmmm
+			// but this way he will see the ironman teams properly
+			trap_SendServerCommand(ent - g_entities, "loaddefered");
+		}
 
 		VectorCopy(spawnpoint, spawnpointWiggled);
 		WiggleSpotTelefrag(spawnpointWiggled,ent);
@@ -3925,13 +3954,19 @@ void G_CheckIronManStatus() {
 	}
 
 	// set data for the iron man (ent will be the ironman as we counted backwards in the looop)
-	ent->client->isIronMan = qtrue;
 	ent->client->ps.stats[STAT_ARMOR] = 100; // ironman gets full armor
 	ent->client->ps.eFlags |= EF_INVULNERABLE;
 	ent->client->invulnerableTimer = level.time + 3000; // give ironman 2 seconds of invulnerability to not get insta killed
 	ent->client->pers.lastIronmanFlagGiven = level.time;
 	randomteam = Q_irand(PW_REDFLAG, 2, qfalse, PW_REDFLAG);
 	ent->client->ps.powerups[randomteam] = INT_MAX; // lets not do neutral flag cuz its not actually visible :/
+	if (!(ent->client->pers.ttClientFlags & TTFLAGS_CLIENT_UNDERSTANDS_MODETEAMS) && applyTeamColors) {
+		// is this a bitch move? hmmm
+		// but this way he will see the ironman teams properly
+		// well... he is the ironman... his own skin changes... he gets lagged anyway because deferral doesn't work for yourself
+		trap_SendServerCommand(ent - g_entities, "loaddefered");
+	}
+
 	PrintCTFMessage(ent - g_entities, randomteam == PW_REDFLAG ? TEAM_RED : TEAM_BLUE, CTFMESSAGE_PLAYER_GOT_FLAG);
 
 	if (g_ctfPersStats.integer > 1) {

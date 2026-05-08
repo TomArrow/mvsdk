@@ -937,7 +937,8 @@ void G_ResetClientVote(gclient_t* client) {
 SetTeam
 =================
 */
-qboolean SetTeam( gentity_t *ent, char *s ) {
+int setTeamDepth = 0;
+qboolean SetTeam( gentity_t *ent, const char *s ) {
 	team_t				team, oldTeam;
 	gclient_t			*client;
 	int					clientNum;
@@ -945,6 +946,14 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 	int					specClient;
 	int					teamLeader;
 	int					i;
+
+	setTeamDepth++; // kinda for debugging tbh but the whole setteam logic with all all the intertwined calls of ClientSpawn, modes, etc, can be a bit hard to grasp.
+	if (setTeamDepth > 1) {
+		Com_Printf("^1SetTeam: ^3Recursion level of %d. client %d\n",setTeamDepth-1,(int)(ent-g_entities));
+	} else if(setTeamDepth > 10) {
+		trap_SendServerCommand(-1,"print \"^1SetTeam: ^3Possible infinite recursion stopped.\n\"");
+		return qfalse;
+	}
 
 	//
 	// see what change is requested
@@ -1021,6 +1030,8 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 					trap_SendServerCommand( ent->client->ps.clientNum, 
 						va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "TOOMANYRED")) );
 				}
+
+				setTeamDepth--;
 				return qfalse; // ignore the request
 			}
 			if ( team == TEAM_BLUE && counts[TEAM_BLUE] - counts[TEAM_RED] > 1 ) {
@@ -1037,6 +1048,7 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 					trap_SendServerCommand( ent->client->ps.clientNum, 
 						va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "TOOMANYBLUE")) );
 				}
+				setTeamDepth--;
 				return qfalse; // ignore the request
 			}
 
@@ -1050,11 +1062,13 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 			if (team == TEAM_BLUE && ent->client->ps.fd.forceSide != FORCE_LIGHTSIDE)
 			{
 				trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MUSTBELIGHT")) );
+				setTeamDepth--;
 				return;
 			}
 			if (team == TEAM_RED && ent->client->ps.fd.forceSide != FORCE_DARKSIDE)
 			{
 				trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MUSTBEDARK")) );
+				setTeamDepth--;
 				return;
 			}
 		}
@@ -1074,11 +1088,18 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 		team = TEAM_SPECTATOR;
 	}
 
+	// some mode teams enforce specific real teams
+	team = ValidateClientModeTeam(ent,team);
+	if (team != TEAM_SPECTATOR) {
+		specState = SPECTATOR_NOT;
+	}
+
 	//
 	// decide if we will allow the change
 	//
 	oldTeam = client->sess.sessionTeam;
 	if ( team == oldTeam && team != TEAM_SPECTATOR ) {
+		setTeamDepth--;
 		return qfalse;
 	}
 
@@ -1149,6 +1170,7 @@ qboolean SetTeam( gentity_t *ent, char *s ) {
 	memset( ent->client->ps.powerups, 0, sizeof(ent->client->ps.powerups) ); // Ensure following spectators don't take flags or such into ClientBegin and trigger the FlagEatingFix (this allows us to check for powerups in the playerState to prevent flagEating when calling ClientBegin)
 	ClientBegin( clientNum, qfalse );
 
+	setTeamDepth--;
 	return team != oldTeam;
 }
 
@@ -6602,6 +6624,12 @@ void Cmd_DebugSetBodyAnim_f(gentity_t *self, int flags)
 
 	pm = &pmv;
 	PM_SetAnim(SETANIM_BOTH, i, flags, 0);
+	if (pmv.ps->pm_type >= PM_DEAD) {
+		pmv.ps->legsAnim =
+			((pmv.ps->legsAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT) | i;
+		pmv.ps->torsoAnim =
+			((pmv.ps->torsoAnim & ANIM_TOGGLEBIT) ^ ANIM_TOGGLEBIT) | i;
+	}
 
 	Com_Printf("Set body anim to %s\n", arg);
 }

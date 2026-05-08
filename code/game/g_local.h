@@ -6,9 +6,11 @@
 #include "bg_public.h"
 #include "g_public.h"
 #include "bg_defrag_global.h"
+#include "bg_modes.h"
 #include "bg_debug.h"
 #include "bg_cmd.h"
 #include "g_defrag.h"
+#include "g_modes.h"
 #include "g_dbcmds.h"
 
 
@@ -451,6 +453,7 @@ typedef struct {
 	qboolean	teamLeader;			// true when this client is a team leader
 
 	playerMode_e	mode; // 1 when normal, 2 when racemode, and then theres extra modes so ppl can play different gamestyles of their choice (duel, all force, ironman...)
+	modeTeam_e	modeTeam;
 	qboolean	raceMode;
 	raceStyle_t	raceStyle;
 	raceStyle_t	mapStyleBaseline;	// The racestyle these settings are relative to. So that when we update a map style, we can update only the values that the player didn't customize.
@@ -623,6 +626,7 @@ typedef struct {
 	qboolean	predictItemPickup;	// based on cg_predictItems userinfo
 	qboolean	pmoveFixed;			//
 	char		netname[MAX_NETNAME];
+	char		netnameNoModeTeam[MAX_NETNAME];
 	char		netnameClean[MAX_NETNAME]; // from vvv-serverside. to search for clients ez i guess
 
 	// name dedupe
@@ -881,7 +885,7 @@ struct gclient_s {
 
 	int			lastScoresMessage;
 
-	qboolean	isIronMan;
+	//qboolean	isIronMan;
 
 	int			bactaExtra; // extra amount restored by bacta (e.g. q3 bacta)
 	int			messageSystemWarningShowed;
@@ -1130,7 +1134,7 @@ void Cmd_Score_f (gentity_t *ent);
 void StopFollowing( gentity_t *ent );
 void StopFollowingClient(gentity_t* ent);
 void BroadcastTeamChange( gclient_t *client, int oldTeam );
-qboolean SetTeam( gentity_t *ent, char *s );
+qboolean SetTeam( gentity_t *ent, const char *s );
 void Cmd_FollowCycle_f( gentity_t *ent, int dir );
 void Cmd_SaberAttackCycle_f(gentity_t *ent);
 int G_ItemUsable(playerState_t *ps, int forcedUse,gentity_t* ent);
@@ -1181,6 +1185,15 @@ void Touch_Item (gentity_t *ent, gentity_t *other, trace_t *trace);
 void ClearRegisteredItems( void );
 void RegisterItem( gitem_t *item );
 void SaveRegisteredItems( void );
+
+//
+// g_modes.c
+//
+void ModeClientRespawning(gentity_t* ent);
+qboolean ModePreventDamage(gentity_t* attacker, gentity_t* target);
+team_t ValidateClientModeTeam(gentity_t* ent, team_t wishTeam);
+qboolean ClientSetModeTeam(gentity_t* ent, modeTeam_e modeTeam);
+void SetClientMode(gentity_t* ent, playerMode_e mode);
 
 //
 // g_utils.c
@@ -1770,6 +1783,7 @@ extern	vmCvar_t	g_saberTraceSaberFirst;
 
 extern	vmCvar_t	g_modes;
 extern	vmCvar_t	g_modesDefault;
+extern	vmCvar_t	g_modeTeamIronman;
 
 extern	vmCvar_t	g_defrag;
 extern	vmCvar_t	g_defragLastRunId;

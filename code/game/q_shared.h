@@ -283,6 +283,11 @@ typedef int		clipHandle_t;
 
 typedef int		ip_t[4];
 
+
+typedef struct bitInfo_s {
+	const char* string;
+} bitInfo_t;
+
 #define G2_COLLISION_ENABLED
 
 #ifndef NULL
@@ -2623,6 +2628,7 @@ extern ezDemoBuffer_t ezDemoBuffer;
 #define COOL_APIFEATURE_PRETRACE_TRACE (1<<23)
 #define COOL_APIFEATURE_MVAPI_SUBMODELBYPASS_SNEAKPEEK (1<<24)
 #define COOL_APIFEATURE_FASTHULLTRACE (1<<25)
+#define COOL_APIFEATURE_CLIENTREALNAME (1<<26)
 
 
 #define COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY (1<<0)

@@ -29,17 +29,6 @@
 
 #define PF_RENDER_ZCOMP (1<<0)
 
-typedef enum playerMode_s { // NEVER change the order in this as it's part of the player configstring. If adding something, add it at the end. If adding something in a fork, add 1000 plus a few hundred (check github for other ppl who extended it?) to distinguish from TommyTernal modes, ty.
-	MODE_INVALID,
-	MODE_NORMAL,
-	MODE_DEFRAG,
-	MODE_DUEL,
-	MODE_ALLFORCE,
-	MODE_IRONMAN,
-	MODE_DUELQUEUE,
-	MODE_NUM_MODES
-} playerMode_e;
-
 typedef struct ironManPos_s { // we periodically save ironman pos so we can spawn near him
 	vec3_t		origin;
 	vec3_t		velocity;
@@ -68,9 +57,6 @@ typedef enum //movementstyle enum
 	MV_NUMSTYLES
 } movementStyle_e;
 
-typedef struct bitInfo_s {
-	const char* string;
-} bitInfo_t;
 
 typedef struct bitInfoMVStyle_s {
 	const char* string;
@@ -145,7 +131,6 @@ extern const int MAX_RUN_FLAGS;
 extern bitInfo_t runFlagsNames[];
 extern bitInfo_t runFlagsShortNames[];
 extern bitInfo_t runFlagsVeryShortNames[];
-extern bitInfo_t modeNames[MODE_NUM_MODES];
 extern bitInfoMVStyle_t moveStyleNames[MV_NUMSTYLES];
 extern bitInfo_t leaderboardNames[LB_TYPES_COUNT];
 

@@ -26,6 +26,7 @@ set(MVCGAMEHEADERS
 	"${SRCDir}/game/bg_weapons.h"
 	"${SRCDir}/game/bg_cmd.h"
 	"${SRCDir}/game/bg_debug.h"
+	"${SRCDir}/game/bg_modes.h"
 	"${SRCDir}/game/q_shared.h"
 	"${SRCDir}/game/surfaceflags.h"
 	"${SRCDir}/game/bg_multiversion.h"
@@ -95,6 +96,7 @@ set(MVCGAMESOURCES
 	"${SRCDir}/game/bg_weapons.c"
 	"${SRCDir}/game/bg_cmd.c"
 	"${SRCDir}/game/bg_debug.c"
+	"${SRCDir}/game/bg_modes.c"
 	"${SRCDir}/game/q_math.c"
 	"${SRCDir}/game/q_shared.c"
 	

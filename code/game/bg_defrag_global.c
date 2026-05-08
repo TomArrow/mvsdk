@@ -61,16 +61,6 @@ bitInfo_t runFlagsVeryShortNames[] = { // MAX_WEAPON_TWEAKS tweaks (24)
 //	{ "wlsp" },//9 // was just a test for db column generation
 };
 
-bitInfo_t modeNames[MODE_NUM_MODES] = { // MAX_WEAPON_TWEAKS tweaks (24)
-	{ "Invalid" },
-	{ "Normal" },
-	{ "Defrag" },
-	{ "Duel" },
-	{ "AllForce" },
-	{ "Ironman" },
-	{ "DuelQueue" },
-};
-
 bitInfoMVStyle_t moveStyleNames[MV_NUMSTYLES] = {
 	{ "JK2"},//0
 	{ "PJK2" },//1
