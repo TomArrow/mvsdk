@@ -826,6 +826,8 @@ int DF_InterpolateTouchTimeToOldPos(gentity_t* activator, gentity_t* trigger, co
 
 		lessTimePrecise = (float)msecDelta * (1.0f - trace.fraction);
 		lessTime = (int)lessTimePrecise;
+		VectorSubtract(trace.endpos, activator->client->postPmovePosition, displacementVector);
+
 #if DEBUGTRACETRIGGER
 		{
 			int lessTimeCheck = DF_InterpolateTouchTimeToOldPosOld(activator, trigger, classname, displacementVector, warningFlags);
@@ -974,6 +976,7 @@ int DF_InterpolateTouchTimeToOldPosThisTrigger(gentity_t* activator, gentity_t* 
 
 		lessTimePrecise = (float)msecDelta * (1.0f - trace.fraction);
 		lessTime = (int)lessTimePrecise;
+		VectorSubtract(trace.endpos, activator->client->postPmovePosition, displacementVector);
 #if DEBUGTRACETRIGGER
 		{
 			int lessTimeCheck = DF_InterpolateTouchTimeToOldPosThisTriggerOld(activator, trigger, displacementVector);
@@ -1112,6 +1115,7 @@ int DF_InterpolateTouchTimeForStartTimer(gentity_t* activator, gentity_t* trigge
 
 		lessTimePrecise = (float)msecDelta * trace.fraction;
 		lessTime = (int)lessTimePrecise;
+		VectorSubtract(trace.endpos, activator->client->postPmovePosition, displacementVector);
 #if DEBUGTRACETRIGGER
 		{
 			int lessTimeCheck = DF_InterpolateTouchTimeForStartTimerOld(activator, trigger, displacementVector, warningFlags);
@@ -1158,7 +1162,7 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 {
 	int	lessTime = 0;
 	qboolean segmented = qfalse;
-	vec3_t interpolationDisplacement;
+	vec3_t interpolationDisplacement = { 0,0,0 };
 	gclient_t* cl;
 	mainLeaderboardType_t lbType;
 	int resposCountSave, savePosCountSave, startLevelTimeSave;
@@ -1280,8 +1284,14 @@ void DF_StartTimer_Leave(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	cl->pers.stats.startLevelTime = startLevelTimeSave;
 	cl->pers.stats.startLessTime = lessTime;
 	cl->pers.stats.distanceTraveled = VectorLength(interpolationDisplacement);
+	if (fpclassify(cl->pers.stats.distanceTraveled) == FP_NAN) {
+		trap_SendServerCommand(-1, va("print \"^1CRITICAL ERROR: StartTimer_Leave: distanceTraveled is NAN. %f %f %f\n\"", interpolationDisplacement[0], interpolationDisplacement[1], interpolationDisplacement[2]));
+	}
 	interpolationDisplacement[2] = 0;
 	cl->pers.stats.distanceTraveled2D = VectorLength(interpolationDisplacement);
+	if (fpclassify(cl->pers.stats.distanceTraveled2D) == FP_NAN) {
+		trap_SendServerCommand(-1, va("print \"^1CRITICAL ERROR: StartTimer_Leave: distanceTraveled2D is NAN. %f %f %f\n\"", interpolationDisplacement[0], interpolationDisplacement[1], interpolationDisplacement[2]));
+	}
 	cl->pers.stats.topSpeed = XYSPEED(cl->ps.velocity);
 	cl->pers.stats.courseId = ent->courseID;
 	cl->pers.stats.startTriggerSpeed = XYSPEED(cl->ps.velocity);
@@ -2847,7 +2857,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	//char timeLastStr[32];// , timeBestStr[32];
 	int warningFlags = 0;
 	qboolean isInserting = qfalse;
-	vec3_t interpolationDisplacement;
+	vec3_t interpolationDisplacement = { 0,0,0 };
 	static finishedRunInfo_t runInfo;
 	
 	// Check client
@@ -2951,8 +2961,14 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 	}
 
 	cl->pers.stats.distanceTraveled -= VectorLength(interpolationDisplacement);
+	if (fpclassify(cl->pers.stats.distanceTraveled) == FP_NAN) {
+		trap_SendServerCommand(-1, va("print \"^1CRITICAL ERROR: DF_FinishTimer_Touch: distanceTraveled is NAN. %f %f %f\n\"", interpolationDisplacement[0], interpolationDisplacement[1], interpolationDisplacement[2]));
+	}
 	interpolationDisplacement[2] = 0;
 	cl->pers.stats.distanceTraveled2D -= VectorLength(interpolationDisplacement);
+	if (fpclassify(cl->pers.stats.distanceTraveled2D) == FP_NAN) {
+		trap_SendServerCommand(-1, va("print \"^1CRITICAL ERROR: DF_FinishTimer_Touch: distanceTraveled2D is NAN. %f %f %f\n\"", interpolationDisplacement[0], interpolationDisplacement[1], interpolationDisplacement[2]));
+	}
 
 	// Set info
 	if (cl->sess.raceStyle.runFlags & RFL_SEGMENTED) {
@@ -3093,7 +3109,7 @@ void DF_FinishTimer_Touch(gentity_t* ent, gentity_t* activator, trace_t* trace)
 void DF_CheckpointTimer_Touch(gentity_t* trigger, gentity_t* activator, trace_t* trace) // TODO Make this only trigger on first contact
 {
 	gclient_t* cl;
-	vec3_t interpolationDisplacement;
+	vec3_t interpolationDisplacement = { 0,0,0 };
 	int	timeCheck, lessTime=0;
 	checkpointTime_t* bestTime;
 	int nowTime = LEVELTIME(activator->client);
