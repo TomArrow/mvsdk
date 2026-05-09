@@ -43,6 +43,8 @@
 #define SB_SCORELINE_X_DEFRAG		(SCOREBOARD_X+30)
 #define SB_SCORELINE_WIDTH_DEFRAG	(cgs.screenWidth - SB_SCORELINE_X_DEFRAG * 2)
 
+#define SB_BOTICON_X_DEFRAG		(SCOREBOARD_X-26)
+
 #define SB_NAME_X_DEFRAG		(SB_SCORELINE_X_DEFRAG)
 #define SB_USERNAME_X_DEFRAG	(SB_SCORELINE_X_DEFRAG + .35 * SB_SCORELINE_WIDTH_DEFRAG)
 #define SB_PB_X_DEFRAG			(SB_SCORELINE_X_DEFRAG + .52 * SB_SCORELINE_WIDTH_DEFRAG)
@@ -104,6 +106,7 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	float		scale;
 	qboolean	playerDisconnected = qfalse;
 	qboolean	defragScoreboard = cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE];
+	int botIconX = SB_BOTICON_X;
 
 	int scoreLineX = SB_SCORELINE_X;
 	int scoreLineWidth = SB_SCORELINE_WIDTH;
@@ -111,6 +114,7 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 	if (defragScoreboard) {
 		scoreLineX = SB_SCORELINE_X_DEFRAG;
 		scoreLineWidth = SB_SCORELINE_WIDTH_DEFRAG;
+		botIconX = SB_BOTICON_X_DEFRAG;
 	}
 
 
@@ -136,7 +140,7 @@ static void CG_DrawClientScore( int y, score_t *score, float *color, float fade,
 		playerDisconnected = qtrue;
 	}
 
-	iconx = SB_BOTICON_X + (SB_RATING_WIDTH / 2);
+	iconx = botIconX + (SB_RATING_WIDTH / 2);
 
 	// draw the handicap or bot skill marker (unless player has flag)
 	if ( ci->powerups & ( 1 << PW_NEUTRALFLAG ) ) {
@@ -390,6 +394,18 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 	int		count;
 	int		playersCountedBitmask = 0;
 	clientInfo_t	*ci;
+	int lastModeTeam = 0;
+	qboolean	defragScoreboard = cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE];
+	float textX = (defragScoreboard ? SB_NAME_X_DEFRAG : SB_NAME_X) + 12;
+	float textScale = (lineHeight == SB_NORMAL_HEIGHT) ? (1.0f*0.9f) :(0.75f*0.9f);
+
+	int scoreLineX = SB_SCORELINE_X;
+	int scoreLineWidth = SB_SCORELINE_WIDTH;
+
+	if (defragScoreboard) {
+		scoreLineX = SB_SCORELINE_X_DEFRAG;
+		scoreLineWidth = SB_SCORELINE_WIDTH_DEFRAG;
+	}
 
 	color[0] = color[1] = color[2] = 1.0;
 	color[3] = fade;
@@ -410,6 +426,18 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 
 		if ( !countOnly )
 		{
+			if (team == TEAM_FREE) { // dumb xd
+				if (lastModeTeam != ci->modeTeam.index) {
+					// custom mode header
+					trap_R_SetColor(NULL);
+					CG_Text_Paint(textX+40, y + lineHeight * count + lineHeight*0.25f, textScale * 0.75f, colorWhite, ci->modeTeam.name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL);
+					lastModeTeam = ci->modeTeam.index;
+					count++;
+				}
+				if (ci->modeTeam.index) {
+					CG_DrawCustomTeamBackground(scoreLineX - 5, y + lineHeight * count + 2, scoreLineWidth + 10, lineHeight, ci->modeTeam.scoreBgColor);
+				}
+			}
 			CG_DrawClientScore( y + lineHeight * count, score, color, fade, lineHeight == SB_NORMAL_HEIGHT );
 		}
 
@@ -431,7 +459,19 @@ static int CG_TeamScoreboard( int y, team_t team, float fade, int maxClients, in
 
 				if (!countOnly)
 				{
-					score->client = i;
+					score->client = i; 
+					if (team == TEAM_FREE) { // dumb xd
+						if (lastModeTeam != ci->modeTeam.index) {
+							// custom mode header
+							trap_R_SetColor(NULL);
+							CG_Text_Paint(textX + 40, y + lineHeight * count + lineHeight * 0.25f, textScale*0.75f, colorWhite, ci->modeTeam.name, 0, 0, ITEM_TEXTSTYLE_OUTLINED, FONT_MEDIUM, NULL);
+							lastModeTeam = ci->modeTeam.index;
+							count++;
+						}
+						if (ci->modeTeam.index) {
+							CG_DrawCustomTeamBackground(scoreLineX - 5, y + lineHeight * count + 2, scoreLineWidth + 10, lineHeight, ci->modeTeam.scoreBgColor);
+						}
+					}
 					CG_DrawClientScore(y + lineHeight * count, score, color, fade, lineHeight == SB_NORMAL_HEIGHT);
 				}
 
@@ -450,6 +490,7 @@ int CG_GetTeamCount(team_t team, int maxClients)
 	int playersCountedBitmask = 0;
 	clientInfo_t	*ci;
 	score_t	*score;
+	int lastModeTeam = 0;
 
 	for ( i = 0 ; i < cg.numScores && count < maxClients ; i++ )
 	{
@@ -466,6 +507,11 @@ int CG_GetTeamCount(team_t team, int maxClients)
 			continue;
 		}
 
+		if (team == TEAM_FREE && lastModeTeam != ci->modeTeam.index) { // mode team headers
+			count++;
+			lastModeTeam = ci->modeTeam.index;
+		}
+
 		count++;
 		playersCountedBitmask |= (1 << score->client);
 	}
@@ -479,6 +525,10 @@ int CG_GetTeamCount(team_t team, int maxClients)
 				if (team != ci->team)
 				{
 					continue;
+				}
+				if (team == TEAM_FREE && lastModeTeam != ci->modeTeam.index) { // mode team headers
+					count++;
+					lastModeTeam = ci->modeTeam.index;
 				}
 				count++;
 			}

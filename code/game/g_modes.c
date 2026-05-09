@@ -73,6 +73,7 @@ qboolean ClientSetModeTeam(gentity_t* ent, modeTeam_e modeTeam) {
 	if (needUserInfoChange) {
 		ClientUserinfoChanged(ent - g_entities);
 		settingModeTeam[ent - g_entities]--;
+		CalculateRanks();
 		return qtrue;
 	}
 
@@ -92,6 +93,7 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 
 	if (!ClientSetModeTeam(ent, modeDefaultTeams[mode])) { // ClientSetModeTeam already calls ClientUserinfoChanged if it changes something. No need to do it twice.
 		ClientUserinfoChanged(ent - g_entities);
+		CalculateRanks();
 	}
 
 	ent->s.weapon = WP_SABER; //Dont drop our weapon

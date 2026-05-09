@@ -1954,17 +1954,24 @@ int QDECL SortRanks( const void *a, const void *b ) {
 		return -1;
 	}
 
-	if (raceA
-		< raceB) {
-		return -1;
+	if ( ca->sess.mode != cb->sess.mode ) { // lower index modes sort higher
+		return ca->sess.mode - cb->sess.mode;
 	}
-	if (raceA
-		> raceB) {
-		return 1;
+	if (ca->sess.modeTeam != cb->sess.modeTeam) { // lower index mode teams sort higher
+		return ca->sess.modeTeam - cb->sess.modeTeam;
 	}
 
-	scoreA = ca->sess.raceMode ? 32767 : ca->ps.persistant[PERS_SCORE];
-	scoreB = cb->sess.raceMode ? 32767 : cb->ps.persistant[PERS_SCORE];
+	if (ca->sess.raceMode != cb->sess.raceMode) { // racemode sorts higher
+		return cb->sess.raceMode - ca->sess.raceMode;
+	}
+
+	if (ca->sess.raceMode && cb->sess.raceMode) { // lower racetime ranks higher
+		return raceA - raceB;
+	}
+
+	// higher score ranks higher
+	scoreA = ca->ps.persistant[PERS_SCORE];
+	scoreB = cb->ps.persistant[PERS_SCORE];
 
 	// then sort by score
 	if (scoreA

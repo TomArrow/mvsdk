@@ -2334,6 +2334,7 @@ void CG_DrawHead( float x, float y, float w, float h, int clientNum, vec3_t head
 void CG_DrawActive( stereoFrame_t stereoView );
 void CG_DrawFlagModel( float x, float y, float w, float h, int team, qboolean force2D );
 void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team );
+void CG_DrawCustomTeamBackground(int x, int y, int w, int h, vec4_t customColor);
 void CG_OwnerDraw(float x, float y, float w, float h, float text_x, float text_y, int ownerDraw, int ownerDrawFlags, int align, float special, float scale, vec4_t color, qhandle_t shader, int textStyle,int font);
 void CG_Text_Paint(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont, paintOptions_t* paintOptions);
 void CG_Text_Paint_UI(float x, float y, float scale, const vec4_t color, const char *text, float adjust, int limit, int style, int iMenuFont);

@@ -3008,6 +3008,28 @@ CG_DrawTeamBackground
 
 ================
 */
+void CG_DrawCustomTeamBackground(int x, int y, int w, int h, vec4_t customColor)
+{
+	vec4_t		hcolor;
+	Vector4Copy(customColor, hcolor);
+
+	if (hcolor[3] <= 0.0f) {
+		return;
+	}
+
+	//	trap_R_SetColor( hcolor );
+
+	CG_FillRect(x, y, w, h, hcolor);
+	//	CG_DrawPic( x, y, w, h, cgs.media.teamStatusBar );
+	trap_R_SetColor(NULL);
+}
+
+/*
+================
+CG_DrawTeamBackground
+
+================
+*/
 void CG_DrawTeamBackground( int x, int y, int w, int h, float alpha, int team )
 {
 	vec4_t		hcolor;

@@ -327,9 +327,9 @@ typedef struct bitInfo_s {
 #endif
 
 #define	MAX_NAME_LENGTH		48		// max length of a client name (was 32)
-#define MAX_NETNAME			64		// was 36
+#define MAX_NETNAME			96		// was 36
 
-#define	MAX_SAY_TEXT	150
+#define	MAX_SAY_TEXT	200
 
 // paramters for command buffer stuffing
 typedef enum {

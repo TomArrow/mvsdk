@@ -497,7 +497,7 @@ typedef struct {
 } mvclientSession_t;
 
 //
-#define MAX_NETNAME			64	// was 36
+#define MAX_NETNAME			96	// was 36
 #define	MAX_VOTE_COUNT		3
 
 

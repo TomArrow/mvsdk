@@ -47,7 +47,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
-		"fff3",		// soreboard bgcolor
+		"fff1",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 	//MODETEAM_DUEL,
@@ -59,7 +59,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
-		"ff75",		// soreboard bgcolor
+		"ff73",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 	//MODETEAM_ALLFORCE,
@@ -71,20 +71,8 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
-		"5f55",		// soreboard bgcolor
+		"5f53",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
-	},
-	//MODETEAM_IRONMAN_CHASER,
-	{
-		"ironman_chaser",	// team name
-		"chaser",	// team name
-		MTH_FRIENDLY,
-		qtrue,		// force real team
-		qtrue,		// force team colors
-		qtrue,		// don't prefix
-		'Y',		// team prefix color
-		"f555",		// soreboard bgcolor
-		TEAM_RED	// real associated team
 	},
 	//MODETEAM_IRONMAN_CAPPER,
 	{
@@ -98,6 +86,18 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		"55f5",		// soreboard bgcolor
 		TEAM_BLUE,	// real associated team
 		MODETEAM_IRONMAN_CHASER // after dying, become a chaser again
+	},
+	//MODETEAM_IRONMAN_CHASER,
+	{
+		"ironman_chaser",	// team name
+		"chaser",	// team name
+		MTH_FRIENDLY,
+		qtrue,		// force real team
+		qtrue,		// force team colors
+		qtrue,		// don't prefix
+		'Y',		// team prefix color
+		"f555",		// soreboard bgcolor
+		TEAM_RED	// real associated team
 	},
 	//MODETEAM_DUELQUEUE,
 	{
