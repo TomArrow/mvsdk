@@ -172,7 +172,7 @@ qboolean CG_FileExists(const char *fileName)
 }
 
 
-qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, int team, float *colors )
+qboolean CG_ValidateSkinForTeam( const char *modelName, char *skinName, const int team, float *colors )
 {
 	qboolean isMultiPartedSkin = qfalse;
 
@@ -456,9 +456,9 @@ retryModel:
 		trap_G2API_CleanGhoul2Models(&(ci->ghoul2Model));
 	}
 
-	if ( cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
+	if ( cgs.gametype >= GT_TEAM && !cgs.jediVmerc || ci->modeTeam.index && ci->modeTeam.forceTeamColor )
 	{
-		CG_ValidateSkinForTeam( modelName, skinName, ci->team, ci->colorOverride );
+		CG_ValidateSkinForTeam( modelName, skinName, ci->skinTeam, ci->colorOverride );
 	}
 	else
 	{
@@ -931,13 +931,13 @@ void CG_LoadClientInfo( clientInfo_t *ci ) {
 		}
 
 		// fall back to default team name
-		if( cgs.gametype >= GT_TEAM) {
+		if( cgs.gametype >= GT_TEAM || ci->modeTeam.index && ci->modeTeam.forceTeamColor ) {
 			const char* skinName = NULL;
 			// keep skin name
-			if( ci->team == TEAM_BLUE ) {
+			if( ci->skinTeam == TEAM_BLUE ) {
 				Q_strncpyz(teamname, DEFAULT_BLUETEAM_NAME, sizeof(teamname) );
 				skinName = "blue";
-			} else if( ci->team == TEAM_RED ) {
+			} else if(ci->skinTeam == TEAM_RED ) {
 				Q_strncpyz(teamname, DEFAULT_REDTEAM_NAME, sizeof(teamname));
 				skinName = "red";
 			} else {
@@ -1247,6 +1247,7 @@ CG_ScanForExistingClientInfo
 static qboolean CG_ScanForExistingClientInfo( clientInfo_t *ci, int clientNum ) {
 	int		i;
 	clientInfo_t	*match;
+	qboolean		needTeamSkin = cgs.gametype >= GT_TEAM || ci->modeTeam.index && ci->modeTeam.forceTeamColor;
 
 	for ( i = 0 ; i < cgs.maxclients ; i++ ) {
 		match = &cgs.clientinfo[ i ];
@@ -1264,7 +1265,7 @@ static qboolean CG_ScanForExistingClientInfo( clientInfo_t *ci, int clientNum ) 
 //			&& !Q_stricmp( ci->headSkinName, match->headSkinName ) 
 //			&& !Q_stricmp( ci->blueTeam, match->blueTeam ) 
 //			&& !Q_stricmp( ci->redTeam, match->redTeam )
-			&& (cgs.gametype < GT_TEAM || ci->team == match->team) 
+			&& (!needTeamSkin || ci->skinTeam == match->skinTeam)
 			&& ci->jk2gameplay == match->jk2gameplay
 			&& match->ghoul2Model
 			&& match->bolt_head) //if the bolts haven't been initialized, this "match" is useless to us
@@ -1349,6 +1350,7 @@ client's info to use until we have some spare time.
 static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 	int		i;
 	clientInfo_t	*match;
+	qboolean		needTeamSkin = cgs.gametype >= GT_TEAM || ci->modeTeam.index && ci->modeTeam.forceTeamColor;
 
 	// if someone else is already the same models and skins we
 	// can just load the client info
@@ -1363,7 +1365,7 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 			 Q_stricmp(ci->saber2Name, match->saber2Name) ||
 //			 Q_stricmp( ci->headModelName, match->headModelName ) ||
 //			 Q_stricmp( ci->headSkinName, match->headSkinName ) ||
-			 (cgs.gametype >= GT_TEAM && ci->team != match->team) ) {
+			 (needTeamSkin && ci->skinTeam != match->skinTeam) ) {
 			continue;
 		}
 		// just load the real info cause it uses the same models and skins
@@ -1377,7 +1379,7 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 	}
 
 	// if we are in teamplay, only grab a model if the skin is correct
-	if ( cgs.gametype >= GT_TEAM && ci->team >= TEAM_RED && ci->team <= TEAM_BLUE) { // TA: only relevant if in red or blue team. spec/free we don't care
+	if ( needTeamSkin && ci->skinTeam >= TEAM_RED && ci->skinTeam <= TEAM_BLUE) { // TA: only relevant if in red or blue team. spec/free we don't care
 		for ( i = 0 ; i < cgs.maxclients ; i++ ) {
 			match = &cgs.clientinfo[ i ];
 			if ( !match->infoValid ) { // || match->deferred // TA: do allow going from a deferred one. why? else if enough clients change the skin until we have no more non-deferred player, we will run out of stuff to copy and a disk access will be forced 
@@ -1390,7 +1392,7 @@ static void CG_SetDeferredClientInfo( clientInfo_t *ci ) {
 			//	(cgs.gametype >= GT_TEAM && ci->team != match->team)) {
 			//	continue;
 			//} // TA: he's already in the right taem, why do we need to check the skin? if we allowed him in with a wrong skin, that's already a bug to be solved elsewhere.
-			if (ci->team != match->team) { 
+			if (ci->skinTeam != match->skinTeam) {
 				// TODO for multipart skins: allow the team to differ. the color is set via RGB, so why would we care about the team matching? as long as the coloroverride is set correctly, we will be just fine.
 				// actually... since we no longer write the actually used skinname back into the ci->skinName (cuz let's not corrupt the actual data we got from clientinfo configstring), we can't check if it's truly a multiparted skin from the skinName. 
 				// but we could potentially save the info into some other ci-> property?
@@ -1505,6 +1507,161 @@ void CG_SetSaberName(const char *name, clientInfo_t *ci, int clientNum)
 	Q_strncpyz(ci->saber2Name, clientSaberName, sizeof(ci->saber2Name));
 }
 
+void CG_SetModeTeamName(const char* encoded, char* out, int sizeout) {
+	qboolean upper = qtrue;
+	while (*encoded && sizeout > 1) {
+		if (*encoded == '_' || *encoded == ' ') {
+			upper = qtrue;
+			*out = ' ';
+		}
+		else if (*encoded < 32 || *encoded > 126) {
+			upper = qtrue;
+			*out = '?';
+		}
+		else if(upper) {
+			*out = toupper(*encoded);
+			upper = qfalse;
+		}
+		else {
+			*out = *encoded;
+		}
+		out++;
+		sizeout--;
+		encoded++;
+	}
+	if (*encoded) {
+		Com_Printf("CG_SetModeTeamName: string overflow\n");
+	}
+	*out = '\0';
+}
+qboolean CG_ParseModeTeamHexCol(const char* s, vec4_t colorOut) {
+
+	byte color[4];
+	char hex[5];
+	const float mult = 1.0f / 255.0f;
+	char* b = strchr(s, '/');
+	int len = strlen(s);
+
+	if (len < 4) {
+		return qfalse;
+	}
+	Q_strnncpyz(hex,s,4,sizeof(hex));
+
+	if (strchr(hex, '/')) {
+		return qfalse;
+	}
+	if (!parseHexShort(hex, color)) {
+		return qfalse;
+	}
+
+	colorOut[0] = (float)color[0] * mult;
+	colorOut[1] = (float)color[1] * mult;
+	colorOut[2] = (float)color[2] * mult;
+	colorOut[3] = (float)color[3] * mult;
+	return qtrue;
+}
+void CG_SetKnownModeTeam(int index, cgModeTeam_t* mt) {
+	modeTeam_t* md;
+	byte color[4];
+	const float mult = 1.0f / 255.0f;
+	if (index < 0 || index >= MODETEAM_NUM_MODETEAMS) {
+		memset(mt, 0, sizeof(*mt));
+		return;
+	}
+	md = &modeTeams[index];
+	mt->index = index;
+	mt->forceTeamColor = md->applyTeamColors;
+	mt->realTeam = md->realTeam;
+	mt->friendlyTeam = md->friendlyTeam;
+	mt->prefixlen = 0; // can't know for sure
+
+	if (!CG_ParseModeTeamHexCol(md->scoreHexColor, mt->scoreBgColor)) {
+		memset(mt, 0, sizeof(*mt));
+		return;
+	}
+
+	CG_SetModeTeamName(md->name, mt->name, sizeof(mt->name));
+
+	if (mt->realTeam < 0 || mt->realTeam >= TEAM_NUM_TEAMS ) {
+		mt->realTeam = TEAM_FREE;
+	}
+	if (mt->friendlyTeam < 0 || mt->friendlyTeam >= MTH_COUNT_TYPES) {
+		mt->friendlyTeam = 0;
+	}
+}
+void CG_ParseModeTeam(const char* s, cgModeTeam_t* mt) {
+	if (!*s) {
+		memset(mt,0,sizeof(*mt));
+		return;
+	}
+	mt->index = atoi(s);
+	if (!mt->index) {
+		memset(mt, 0, sizeof(*mt));
+		return;
+	}
+
+	s = strchr(s, '/');
+	if (!s || !*(s + 1)) {
+		CG_SetKnownModeTeam(mt->index,mt);
+		return;
+	}
+	s++;
+	mt->forceTeamColor = atoi(s);
+
+	s = strchr(s, '/');
+	if (!s || !*(s+1)) {
+		CG_SetKnownModeTeam(mt->index,mt);
+		return;
+	}
+	s++;
+	mt->realTeam = atoi(s);
+
+	s = strchr(s, '/');
+	if (!s || !*(s + 1)) {
+		CG_SetKnownModeTeam(mt->index, mt);
+		return;
+	}
+	s++;
+	mt->friendlyTeam = atoi(s);
+
+	s = strchr(s, '/');
+	if (!s || !*(s + 1)) {
+		CG_SetKnownModeTeam(mt->index,mt);
+		return;
+	}
+	s++;
+	mt->prefixlen = atoi(s);
+
+	s = strchr(s, '/');
+	if (!s || !*(s + 1)) {
+		CG_SetKnownModeTeam(mt->index,mt);
+		return;
+	}
+	else {
+		s++;
+		if (!CG_ParseModeTeamHexCol(s, mt->scoreBgColor)) {
+			CG_SetKnownModeTeam(mt->index, mt);
+			return;
+		}
+	}
+
+
+	s = strchr(s, '/');
+	if (!s || !*(s + 1)) {
+		CG_SetKnownModeTeam(mt->index, mt);
+		return;
+	}
+	s++;
+	CG_SetModeTeamName(s, mt->name, sizeof(mt->name));
+
+	if (mt->realTeam < 0 || mt->realTeam >= TEAM_NUM_TEAMS) {
+		mt->realTeam = TEAM_FREE;
+	}
+	if (mt->friendlyTeam < 0 || mt->friendlyTeam >= MTH_COUNT_TYPES) {
+		mt->friendlyTeam = 0;
+	}
+}
+
 extern qboolean ezdemoSeeking;	//dont defer players if we precached demo cuz then we loaded all player models in advance
 
 void WP_SetSaber( saberInfo_t *sabers, int saberNum, const char *saberName );
@@ -1559,9 +1716,28 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	// the old value
 	memset( &newInfo, 0, sizeof( newInfo ) );
 
+	if (cgs.isTommyTernal) {
+		v = Info_ValueForKey(configstring, "mote");
+		CG_ParseModeTeam(v, &newInfo.modeTeam);
+	}
+	else {
+		memset(&newInfo.modeTeam, 0, sizeof(newInfo.modeTeam));
+	}
+
 	// isolate the player's name
 	v = Info_ValueForKey(configstring, "n");
-	Q_strncpyz( newInfo.name, v, sizeof( newInfo.name ) );
+	if (newInfo.modeTeam.index) {
+		int len = strlen(v);
+		if (len >= newInfo.modeTeam.prefixlen) {
+			Q_strncpyz(newInfo.name, v+ newInfo.modeTeam.prefixlen, sizeof(newInfo.name));
+		}
+		else {
+			Q_strncpyz(newInfo.name, v, sizeof(newInfo.name));
+		}
+	}
+	else {
+		Q_strncpyz(newInfo.name, v, sizeof(newInfo.name));
+	}
 
 	if (cgs.isTommyTernal) {
 		v = Info_ValueForKey(configstring, "un");
@@ -1604,6 +1780,8 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 	// team
 	v = Info_ValueForKey( configstring, "t" );
 	newInfo.team = atoi( v );
+	newInfo.skinTeam = (newInfo.modeTeam.index && newInfo.modeTeam.forceTeamColor) ? newInfo.modeTeam.realTeam : newInfo.team;
+
 
 	// team task
 	v = Info_ValueForKey( configstring, "tt" );
@@ -1767,16 +1945,16 @@ void CG_NewClientInfo( int clientNum, qboolean entitiesInitialized ) {
 
 	// don't do a full CG_ValidateSkinForTeam here, we just copy a skin from the same team until deferred is loaded
 	// but do set the coloroverride just in case we are copying an rgb skin so it has the right color.
-	if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc ) // avoid connect lag. this is done in CG_RegisterClientModelname anyway?
+	if (cgs.gametype >= GT_TEAM	&& !cgs.jediVmerc || newInfo.modeTeam.index && newInfo.modeTeam.forceTeamColor ) // avoid connect lag. this is done in CG_RegisterClientModelname anyway?
 	{
-		if (newInfo.team == TEAM_RED)
+		if (newInfo.skinTeam == TEAM_RED)
 		{
 			newInfo.colorOverride[0] = 1.0f;
 			newInfo.colorOverride[1] = 0.0f;
 			newInfo.colorOverride[2] = 0.0f;
 			newInfo.colorOverride[3] = 1.0f;
 		}
-		else if (newInfo.team == TEAM_BLUE)
+		else if (newInfo.skinTeam == TEAM_BLUE)
 		{
 			newInfo.colorOverride[0] = 0.0f;
 			newInfo.colorOverride[1] = 0.0f;
@@ -5320,6 +5498,7 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	vec3_t otherPos, otherDir, otherEnd;
 	float dualLen = 0.7f;
 	int clientnum = cent->currentState.clientNum;
+	qboolean needTeamColors = cgs.gametype >= GT_TEAM;
 
 	if (clientnum < 0 || clientnum >= MAX_CLIENTS) {
 		return;
@@ -5340,6 +5519,9 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	if (client != NULL)
 	{
 		saberLenMax = client->saber[0].blade[0].lengthMax;
+		if (client->modeTeam.index && client->modeTeam.forceTeamColor) {
+			needTeamColors = qtrue;
+		}
 	}
 	else
 	{
@@ -5441,14 +5623,14 @@ Ghoul2 Insert Start
 
 	scolor = client->icolor1;
 
-	if (cgs.gametype >= GT_TEAM && !cgs.jediVmerc )
+	if (needTeamColors && !cgs.jediVmerc )
 	{
-		if (client->team == TEAM_RED &&
+		if (client->skinTeam == TEAM_RED &&
 			(cg_saberTeamColors.integer || scolor == SABER_BLUE))
 		{
 			scolor = SABER_RED;
 		}
-		else if (client->team == TEAM_BLUE &&
+		else if (client->skinTeam == TEAM_BLUE &&
 			(cg_saberTeamColors.integer || scolor == SABER_RED))
 		{
 			scolor = SABER_BLUE;

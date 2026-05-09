@@ -2265,7 +2265,7 @@ void ClientUserinfoChanged( int clientNum ) {
 			Info_ValueForKey( userinfo, "skill" ), teamTask, teamLeader, jk2gameplay, modelColor, saberName );
 	} else {
 		if (client->sess.modeTeam > MODE_NORMAL) {
-			Com_sprintf(modeTeamString, sizeof(modeTeamString), "%d/%d/%d/%d/%s", client->sess.modeTeam, modeTeamData->applyTeamColors ? modeTeamData->realTeam : -1, modeTeamData->friendlyTeam, modeTeamPrefixLength, modeTeamData->name);
+			Com_sprintf(modeTeamString, sizeof(modeTeamString), "%d/%d/%d/%d/%d/%s/%s", client->sess.modeTeam, modeTeamData->applyTeamColors, modeTeamData->realTeam, modeTeamData->friendlyTeam, modeTeamPrefixLength, modeTeamData->scoreHexColor, modeTeamData->name);
 		}
 		else {
 			modeTeamString[0] = '\0';

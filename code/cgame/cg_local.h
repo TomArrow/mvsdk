@@ -519,11 +519,22 @@ typedef struct {
 // usually as a result of a userinfo (name, model, etc) change
 #define	MAX_CUSTOM_SOUNDS	32
 
+typedef struct cgModeTeam_s {
+	int					index;
+	int					prefixlen;
+	char				name[64];
+	qboolean			forceTeamColor;
+	modeTeamHurtMode_e	friendlyTeam;
+	int					realTeam;
+	vec4_t				scoreBgColor;
+} cgModeTeam_t;
+
 typedef struct {
 	qboolean		infoValid;
 
 	char			name[MAX_QPATH];
 	team_t			team;
+	team_t			skinTeam;
 
 	int				botSkill;		// 0 = not bot, 1-5 = bot
 
@@ -609,6 +620,7 @@ typedef struct {
 	char			username[MAX_QPATH];
 
 	playerMode_e	playerMode; // tommyternal gamemodes (duel, ironman etc)
+	cgModeTeam_t	modeTeam;
 	float			colorOverride[4];
 	byte			modelColor[4];
 	qboolean		useModelColor;

@@ -1049,7 +1049,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 
 	//jk2pro Client Cvars start
 	{ &cjp_client, "cjp_client", "1.4JAPRO", CVAR_USERINFO|CVAR_ROM },
-	{ &tt_clientFlags, "ttClFl", "2", CVAR_USERINFO | CVAR_ROM}, // TTFLAGS_CLIENT_SUPPORTS_TTCMD // | TTFLAGS_CLIENT_UNDERSTANDS_MODETEAMS (do that later. have it apply correct colors etc)
+	{ &tt_clientFlags, "ttClFl", "6", CVAR_USERINFO | CVAR_ROM}, // TTFLAGS_CLIENT_SUPPORTS_TTCMD // | TTFLAGS_CLIENT_UNDERSTANDS_MODETEAMS (do that later. have it apply correct colors etc)
 	{ &cg_customHUDStringExample, "cg_customHUDStringExample", "x y size align monospace text blahblahblah", CVAR_ROM },
 	{ &cg_customHUDString[0], "cg_customHUDString0", "", CVAR_TEMP },
 	{ &cg_customHUDString[1], "cg_customHUDString1", "", CVAR_TEMP },

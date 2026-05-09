@@ -23,6 +23,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
+		"0f05",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 	//MODETEAM_NORMAL,
@@ -34,6 +35,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
+		"fff0",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 	//MODETEAM_DEFRAG,
@@ -45,6 +47,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
+		"fff3",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 	//MODETEAM_DUEL,
@@ -56,6 +59,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
+		"ff75",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 	//MODETEAM_ALLFORCE,
@@ -67,6 +71,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
+		"5f55",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 	//MODETEAM_IRONMAN_CHASER,
@@ -78,6 +83,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qtrue,		// force team colors
 		qtrue,		// don't prefix
 		'Y',		// team prefix color
+		"f555",		// soreboard bgcolor
 		TEAM_RED	// real associated team
 	},
 	//MODETEAM_IRONMAN_CAPPER,
@@ -89,6 +95,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qtrue,		// force team colors
 		qtrue,		// don't prefix
 		'T',		// team prefix color
+		"55f5",		// soreboard bgcolor
 		TEAM_BLUE,	// real associated team
 		MODETEAM_IRONMAN_CHASER // after dying, become a chaser again
 	},
@@ -101,6 +108,7 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qfalse,		// dont force team colors
 		qfalse,		// don't prefix
 		's',		// team prefix color
+		"ff35",		// soreboard bgcolor
 		TEAM_FREE	// real associated team
 	},
 };

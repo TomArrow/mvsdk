@@ -32,7 +32,8 @@ typedef enum modeTeams_ee{ // NEVER change the order in this as it's part of the
 typedef enum modeTeamHurtMode_s {
 	MTH_INHERIT,	// inherit from ingame teams. team_Free can hurt each other, others cant
 	MTH_HURT,		// hurt.
-	MTH_FRIENDLY	// don't hurt.
+	MTH_FRIENDLY,	// don't hurt.
+	MTH_COUNT_TYPES
 } modeTeamHurtMode_e;
 
 // mode-specific teams.
@@ -45,7 +46,8 @@ typedef struct modeTeam_s {
 	qboolean			applyRealTeam;	// when gametype >= GT_TEAM, should we force a real team for this modeteam? (spectator is unaffected)
 	qboolean			applyTeamColors;// when gametype < GT_TEAM, should we force team colors?
 	qboolean			applyPrefix;	// should we prefix the team name in front of playernames?
-	char				teamPrefixColor;
+	const char			teamPrefixColor;
+	const char*			scoreHexColor;
 	int					realTeam;		// corresponding team if gametype >= GT_TEAM
 	modeTeam_e			respawnTeam;	// which modeTeam do we respawn in after death? default MODETEAM_INVALID, which just does nothing.
 } modeTeam_t;

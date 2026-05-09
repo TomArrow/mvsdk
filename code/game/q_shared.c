@@ -1996,3 +1996,19 @@ qboolean parseHex(const char hex[9], byte outColor[4]){
 	}
 	return qtrue;
 }
+qboolean parseHexShort(const char hex[5], byte outColor[4]){
+	int i,a;
+	int len = strlen(hex);
+	int vals = len;
+	char val= 0;
+	if(vals != 4){
+		return qfalse;
+	}
+	for(i=0;i< vals;i++){
+		val = hex[i];
+		a = toupper(val);
+		a = HEXTOVALUE(a);
+		outColor[i] = a*17;
+	}
+	return qtrue;
+}
