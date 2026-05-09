@@ -1241,7 +1241,7 @@ void StopFollowingClient( gentity_t* ent ) {
 }
 
 qboolean SlowVotingActive(gentity_t* ent) {
-	return g_slowVote.integer && ent->client->sess.raceMode || g_slowVote.integer > 1;
+	return g_slowVote.integer && (!ent || !ent->client || ent->client->sess.raceMode) || g_slowVote.integer > 1;
 }
 
 helpTip_t helpTips[] = {
