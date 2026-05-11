@@ -1937,7 +1937,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	static const char	validChars[]  = " ~QqWwEeRrTtYyUuIiOoPpAaSsDdFfGgHhJjKkLlZzXxCcVvBbNnMm1234567890<>?,./';:][{}`-=!@#$^&*()_+|";
 	int					i, j, isValidChar;
 	char				*ptr;
-	const char*			namekey = (coolApi & COOL_APIFEATURE_CLIENTREALNAME) ? "ttrn" : "name";
+	const char*			namekey = "name";
 
 	ent = g_entities + clientNum;
 	client = ent->client;
@@ -1949,6 +1949,15 @@ void ClientUserinfoChanged( int clientNum ) {
 	// check for malformed or illegal info strings
 	if ( !Info_Validate(userinfo) ) {
 		Q_strncpyz (userinfo, "\\name\\badinfo",sizeof(userinfo));
+	}
+
+	if (coolApi & COOL_APIFEATURE_CLIENTREALNAME) {
+		if (Info_HasKey(userinfo, "ttrn")) {
+			namekey = "ttrn";
+		}
+		else {
+			Com_Printf("^3ClientUserinfoChanged: real name API supported but client %d ttrn key not found. defaulting to normal behavior\n",clientNum);
+		}
 	}
 
 	// check for local client
