@@ -280,6 +280,11 @@ void	CG_Trace( trace_t *result, const vec3_t start, const vec3_t mins, const vec
 	
 	CG_TraceReal(result,start,mins,maxs,end,skipNumber,mask,qfalse,0,0);
 }
+void	CG_TraceCustomized( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
+					 int skipNumber, int mask, int traceCustomizationFlags ) {
+	
+	CG_TraceReal(result,start,mins,maxs,end,skipNumber,mask,qfalse,0, traceCustomizationFlags);
+}
 void	CG_TraceQ2Style( trace_t *result, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, 
 					 int skipNumber, int mask ) {
 	

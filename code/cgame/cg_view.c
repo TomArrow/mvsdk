@@ -363,7 +363,7 @@ static void CG_ResetThirdPersonViewDamp(void)
 	VectorCopy(cam.target.ideal, cam.target.prevIdeal);
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
-	CG_Trace(&trace, cam.focus, cameraMinsReal, cameraMaxsReal, cam.target.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_TraceCustomized(&trace, cam.focus, cameraMinsReal, cameraMaxsReal, cam.target.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP, TRACECUSTOMFLAG_NOINVIS);
 	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.target.ideal, cam.target.damp);
@@ -372,7 +372,7 @@ static void CG_ResetThirdPersonViewDamp(void)
 	VectorAdd(cam.target.ideal, cam.target.damp, target);
 
 	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
-	CG_Trace(&trace, target, cameraMinsReal, cameraMaxsReal, cam.loc.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_TraceCustomized(&trace, target, cameraMinsReal, cameraMaxsReal, cam.loc.ideal, cg.snap->ps.clientNum, MASK_CAMERACLIP, TRACECUSTOMFLAG_NOINVIS);
 	if (trace.fraction < 1.0f)
 	{
 		VectorSubtract(trace.endpos, cam.loc.ideal, cam.loc.damp);
@@ -462,7 +462,7 @@ static void CG_UpdateThirdPersonTargetDamp(float dtime)
 	VectorAdd(cam.target.ideal, cam.target.damp, target);
 
 	// First thing we do is trace from the first person viewpoint out to the new target location.
-	CG_Trace(&trace, cam.focus, cameraMinsReal, cameraMaxsReal, target, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_TraceCustomized(&trace, cam.focus, cameraMinsReal, cameraMaxsReal, target, cg.snap->ps.clientNum, MASK_CAMERACLIP, TRACECUSTOMFLAG_NOINVIS);
 
 	if (trace.fraction < 1.0f)
 	{
@@ -529,7 +529,7 @@ static void CG_UpdateThirdPersonCameraDamp(float dtime, float stiffFactor, float
 	VectorAdd(cam.target.ideal, cam.target.damp, target);
 
 	// Now we trace from the new target location to the new view location, to make sure there is nothing in the way.
-	CG_Trace(&trace, target, cameraMinsReal, cameraMaxsReal, location, cg.snap->ps.clientNum, MASK_CAMERACLIP);
+	CG_TraceCustomized(&trace, target, cameraMinsReal, cameraMaxsReal, location, cg.snap->ps.clientNum, MASK_CAMERACLIP, TRACECUSTOMFLAG_NOINVIS);
 
 	if (trace.fraction < 1.0f)
 	{
@@ -739,7 +739,7 @@ static void CG_OffsetThirdPersonView( void ) {
 	// in a solid block.  Use an 8 by 8 block to prevent the view from near clipping anything
 
 	if (!cg_cameraMode.integer) {
-		CG_Trace( &trace, cg.refdef.vieworg, mins, maxs, view, cg.predictedPlayerState.clientNum, MASK_CAMERACLIP);
+		CG_TraceCustomized( &trace, cg.refdef.vieworg, mins, maxs, view, cg.predictedPlayerState.clientNum, MASK_CAMERACLIP,TRACECUSTOMFLAG_NOINVIS);
 
 		if ( trace.fraction != 1.0 ) {
 			VectorCopy( trace.endpos, view );
@@ -747,7 +747,7 @@ static void CG_OffsetThirdPersonView( void ) {
 			// try another trace to this position, because a tunnel may have the ceiling
 			// close enogh that this is poking out
 
-			CG_Trace( &trace, cg.refdef.vieworg, mins, maxs, view, cg.predictedPlayerState.clientNum, MASK_CAMERACLIP);
+			CG_TraceCustomized( &trace, cg.refdef.vieworg, mins, maxs, view, cg.predictedPlayerState.clientNum, MASK_CAMERACLIP,TRACECUSTOMFLAG_NOINVIS);
 			VectorCopy( trace.endpos, view );
 		}
 	}

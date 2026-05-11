@@ -2601,6 +2601,8 @@ extern ezDemoBuffer_t ezDemoBuffer;
 #define TRACECUSTOMFLAG_BENCHMARK (1<<3)
 #define TRACECUSTOMFLAG_FASTHULLTRACE (1<<4)
 #define TRACECUSTOMFLAG_SKIPENTITYTRACE (1<<5)
+#define TRACECUSTOMFLAG_NOPATCH (1<<6)
+#define TRACECUSTOMFLAG_NOINVIS (1<<7) // mostly only affects patches right now. for cgame camera trace.
 
 #define COOL_APIFEATURE_SETPREDICTEDMOVEMENT (1<<0)
 #define COOL_APIFEATURE_GETTEMPORARYUSERCMD (1<<1)

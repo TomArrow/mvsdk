@@ -4361,6 +4361,10 @@ void JP_TraceBenchmarked(trace_t* results, const vec3_t start, const vec3_t mins
 {
 	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask, qfalse, qfalse, 0, TRACECUSTOMFLAG_BENCHMARK| customizationFlags);
 }
+void JP_TraceCustomized(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, int customizationFlags)
+{
+	JP_TraceReal(results, start, mins, maxs, end, passEntityNum, contentmask, qfalse, qfalse, 0, customizationFlags);
+}
 
 /*
 =========================
