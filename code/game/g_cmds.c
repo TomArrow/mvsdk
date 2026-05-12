@@ -5491,10 +5491,10 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 		if (*s) {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
-			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap) %s %s" S_COLOR_WHITE "; set nextmap %s", "map", mapname, s );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %d) %s %s" S_COLOR_WHITE "; set nextmap %s", mapnum, "map", mapname, s );
 		} else {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
-			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap) %s", level.voteString );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %d) %s", mapnum, level.voteString );
 		}
 	}
 	else if ( !Q_stricmp ( arg1, "clientkick" ) && canVoteBesideMap)
