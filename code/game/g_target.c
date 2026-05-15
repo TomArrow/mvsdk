@@ -402,6 +402,13 @@ void target_teleporter_use( gentity_t *self, gentity_t *other, gentity_t *activa
 		return;
 	if (activator->client->noclip)
 		return;
+
+	if (activator->client->sess.raceMode &&
+		(self->notCPM && !MovementStyleHasVQ3OnlyJumppads(activator->client->sess.raceStyle.movementStyle)
+			|| self->notVQ3 && !MovementStyleHasCPMOnlyJumppads(activator->client->sess.raceStyle.movementStyle))
+		) {
+		return;
+	}
 	dest = 	G_PickTarget( self->target, !activator->client->sess.raceMode, NULL);
 	if (!dest) {
 		G_Printf ("Couldn't find teleporter destination\n");

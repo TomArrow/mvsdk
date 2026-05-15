@@ -4488,7 +4488,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			#undef IGNORETAS
 		}
 
-		if (es->eType == ET_PUSH_TRIGGER) {
+		if (es->eType == ET_PUSH_TRIGGER || es->eType == ET_TELEPORT_TRIGGER) {
 			if (other->notCPM) {
 				mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[followedClientNum] || followedClient->sess.raceMode && !MovementStyleHasVQ3OnlyJumppads(followedClient->sess.raceStyle.movementStyle);
 			}

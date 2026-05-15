@@ -508,6 +508,13 @@ void trigger_teleporter_touch (gentity_t *self, gentity_t *other, trace_t *trace
 	if (other->client->noclip) {
 		return;
 	}
+	if (other->client->sess.raceMode &&
+		(self->notCPM && !MovementStyleHasVQ3OnlyJumppads(other->client->sess.raceStyle.movementStyle)
+			|| self->notVQ3 && !MovementStyleHasCPMOnlyJumppads(other->client->sess.raceStyle.movementStyle))
+		) {
+		return;
+	}
+
 	// Spectators only?
 	if ( ( self->spawnflags & 1 ) && 
 		other->client->sess.sessionTeam != TEAM_SPECTATOR ) {
@@ -552,6 +559,9 @@ void SP_trigger_teleport( gentity_t *self ) {
 
 	self->s.eType = ET_TELEPORT_TRIGGER;
 	self->touch = trigger_teleporter_touch;
+
+	self->s.generic1 = self->notCPM;
+	self->s.genericenemyindex = self->notVQ3;
 
 	// for cgame prediction:
 	self->think = trigger_teleporter_setupdefaulttarget;

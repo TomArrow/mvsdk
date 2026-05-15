@@ -634,7 +634,16 @@ static void CG_TouchTriggerPrediction( int msec, qboolean isSpecialPredict ) {
 		}
 
 		if ( ent->eType == ET_TELEPORT_TRIGGER ) {
-			if (cgs.isTommyTernal && ent->trickedentindex3 && (cg.predictedPlayerState.stats[STAT_RACEMODE] || ent->trickedentindex3 > 1)) {
+			if (cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE] &&
+				(ent->generic1 && !MovementStyleHasVQ3OnlyJumppads(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE])
+					|| ent->genericenemyindex && !MovementStyleHasCPMOnlyJumppads(cg.predictedPlayerState.stats[STAT_MOVEMENTSTYLE])
+					)
+				) {
+				// this is a vq3 only jumppad, dont use it in other types of movements.
+				// generic1 = notCpm
+				// genericenemyindex = notvq3
+			}
+			else if (cgs.isTommyTernal && ent->trickedentindex3 && (cg.predictedPlayerState.stats[STAT_RACEMODE] || ent->trickedentindex3 > 1)) {
 				// in racemode, only first teleporter target is used, so we can predict.
 				// alternatively, server can force the predict (if only one target is found for example)
 				CG_TeleporterTouch(&cg.predictedPlayerState, &cg_pmove.cmd,ent);

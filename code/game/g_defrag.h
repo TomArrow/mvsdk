@@ -18,7 +18,8 @@
 // Version 4: 2026-04-07 - Added ability to discard saved positions in segmented runs, to fix a failed savepos
 // Version 5: 2026-04-13 - Added more flexible modelScale system, which affects pmove and cgame prediction. It should not affect normal movement styles, but just for safety, i bump the number. Plus, finally making this number be actually used for g_dfv. I must have forgotten earlier and left it at 1 after originally introducing it.
 // Version 6: 2026-05-08 - Turns out... distance values were wrong ALL THIS TIME. And such average. Debug builds zero-initialized displacementVector, but i never wrote to it in the beginning with the new interpolation code.
-#define SEMIBREAKINGCHANGEVERSIONDEFRAG 6
+// Version 7: 2026-05-15 - Respect notCPM and notVQ3 for teleports.
+#define SEMIBREAKINGCHANGEVERSIONDEFRAG 7
 
 extern int semiBreakingChangeVersionDefrag;
 
