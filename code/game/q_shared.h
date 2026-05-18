@@ -1380,6 +1380,10 @@ default values.
 #define CVAR_VM_NOREAD		0x00004000		// the cvar can NOT be read-accessed by the vm modules
 #define CVAR_VM_NOWRITE		0x00008000		// the cvar can NOT be write-accessed by the vm modules
 
+//#define CVAR_TTSTATUS		0x00010000		// these arent serverinfo but we want them included in status responses
+
+//#define CVAR_TTCVARTYPES	0x000F0000		// we exclude these from register if no tommyternal engine
+
 #define CVAR_VVV			0x00100000		// is a vvv mod cvar (can we safely use this? i guess, we remove it during register hm)
 
 #define CVAR_DEMOSYSTEMINFO	0x01000000		// systeminfo cvar that should also be set for demos. for example map defaults for defrag.
