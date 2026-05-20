@@ -5499,6 +5499,7 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 	float dualLen = 0.7f;
 	int clientnum = cent->currentState.clientNum;
 	qboolean needTeamColors = cgs.gametype >= GT_TEAM;
+	qboolean isFirstSaberFrame = qfalse;
 
 	if (clientnum < 0 || clientnum >= MAX_CLIENTS) {
 		return;
@@ -5536,6 +5537,7 @@ void CG_AddSaberBlade( centity_t *cent, centity_t *scent, refEntity_t *saber, in
 		{
 			cent->saberLength = 1;
 			cent->saberExtendTime = cg.time;
+			isFirstSaberFrame = qtrue;
 		}
 
 		if (cent->saberLength < saberLenMax)
@@ -5771,7 +5773,8 @@ CheckTrail:
 	//	the system with very small trail slices...but perhaps doing it by distance would yield better results?
 	if ( cg.time > saberTrail->lastTime + 2 ) // 2ms
 	{
-		if ( (saberMoveData[cent->currentState.saberMove].trailLength > 0 || ((cent->currentState.powerups & (1 << PW_SPEED) && cg_speedTrail.integer)) || cent->currentState.saberInFlight) && cg.time < saberTrail->lastTime + 2000 ) // if we have a stale segment, don't draw until we have a fresh one
+		if ( (saberMoveData[cent->currentState.saberMove].trailLength > 0 || ((cent->currentState.powerups & (1 << PW_SPEED) && cg_speedTrail.integer)) || cent->currentState.saberInFlight) && cg.time < saberTrail->lastTime + 2000 && !isFirstSaberFrame) // if we have a stale segment, don't draw until we have a fresh one
+			// TA: (this is a shitty and possibly wrong explanation re. isFirstSaberFrame but: if this is the first frame of saber being drawn dont do sabertrail. this "accidentally" worked in the past due to a weird glitch in pmove/bg_saber. going from ls_ready to attack would start a transition but then for some reasn we would go back to LS_READY, thus our first frame here would be ls_ready and prevent a sabertrail, thus being glitchless. but in demos or with cg_nopredict or when using physicsfps, we would get a ghost trail when going attack->saberdown->attack in less than 2 seconds. cuz the first frame wouldnt be the ls_ready which it accidentally was otherwise. weird shit.
 		{
 			vec3_t	rgb1={255.0f,255.0f,255.0f};
 
@@ -5915,7 +5918,15 @@ CheckTrail:
 
 				trap_FX_AddPrimitive(&fx);
 			}
+			//if (clientnum == cg.clientNum) {
+			//	Com_Printf("trail; sabermove %d name %s\n", cent->currentState.saberMove, saberMoveData[cent->currentState.saberMove].name);
+			//}
 		}
+		//else {
+		//	if (clientnum == cg.clientNum) {
+		//		Com_Printf("notrail; sabermove %d name %s\n", cent->currentState.saberMove, saberMoveData[cent->currentState.saberMove].name);
+		//	}
+		//}
 
 		// we must always do this, even if we aren't active..otherwise we won't know where to pick up from
 		VectorCopy( org_, saberTrail->base );

@@ -1455,8 +1455,21 @@ restartpredict:
 
 		if (cmdNum > current) {
 			// We only want the new positions from the special predict, leave animations alone to avoid misprediction glitches.
+			if (cg_pmove.ps->legsAnim != preSpecialPredictPlayerState.legsAnim) {
+				cg_pmove.ps->legsTimer = preSpecialPredictPlayerState.legsTimer;
+			}
 			cg_pmove.ps->legsAnim = preSpecialPredictPlayerState.legsAnim;
+			if (cg_pmove.ps->torsoAnim != preSpecialPredictPlayerState.torsoAnim) {
+				cg_pmove.ps->torsoTimer = preSpecialPredictPlayerState.torsoTimer;
+			}
 			cg_pmove.ps->torsoAnim = preSpecialPredictPlayerState.torsoAnim;
+			cg_pmove.ps->saberMove = preSpecialPredictPlayerState.saberMove;
+			cg_pmove.ps->saberActive = preSpecialPredictPlayerState.saberActive;
+			cg_pmove.ps->saberHolstered = preSpecialPredictPlayerState.saberHolstered;
+			cg_pmove.ps->saberLockFrame = preSpecialPredictPlayerState.saberLockFrame;
+			cg_pmove.ps->saberAttackChainCount = preSpecialPredictPlayerState.saberAttackChainCount;
+			cg_pmove.ps->weaponTime = preSpecialPredictPlayerState.weaponTime;
+			cg_pmove.ps->weaponstate = preSpecialPredictPlayerState.weaponstate;
 			cg_pmove.ps->legsAnimExecute = preSpecialPredictPlayerState.legsAnimExecute;
 		}
 	}
