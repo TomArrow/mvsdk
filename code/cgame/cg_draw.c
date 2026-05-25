@@ -1985,6 +1985,7 @@ static void CG_DrawSimpleForcePower(const centity_t *cent)
 
 void DF_RaceTimer(void)
 {
+	int referenceTime = cg.predictedPlayerState.commandTime;//cg.time;
 	paintOptions_t paintOptions = { 0 };
 
 	if (!(cgs.isTommyTernal && cg.predictedPlayerState.stats[STAT_RACEMODE]) || !cg.predictedPlayerState.duelTime) {
@@ -1993,6 +1994,13 @@ void DF_RaceTimer(void)
 		cg.maxSpeed = 0;
 		cg.displacementSamples = 0;
 		return;
+	}
+
+	if (cg.nextSnap && cg.nextSnap->ps.duelTime) { 
+		// if race timer is over on next frame, dont interpolate commandtime or timer will temporarily show a too high race timer.
+		// final race finish time will usually still be somewhere between this and next frame but i'd rather if the race timer stops
+		// counting up a couple milliseconds too early than counting too high.
+		referenceTime += cg.predictedTimeFrac;
 	}
 
 	if (cg_raceTimerMonospace.value != 0.0f) {
@@ -2012,7 +2020,7 @@ void DF_RaceTimer(void)
 		char startStr[48] = { 0 };
 		vec4_t colorStartSpeed = { 1, 1, 1, 1 };
 
-		const int time = (cg.time - cg.predictedPlayerState.duelTime);
+		const int time = (referenceTime - cg.predictedPlayerState.duelTime);
 		const int minutes = (time / 1000) / 60;
 		const int seconds = (time / 1000) % 60;
 		const int milliseconds = (time % 1000);
