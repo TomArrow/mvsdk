@@ -805,6 +805,7 @@ typedef struct {
 	qboolean		strafehelperVelocityIsInterpolated;
 	vec3_t			strafehelperRealVel; // for realaccel helper we need a real vel, not interpolated one
 	playerState_t	predictedPlayerState;
+	playerState_t	predictedPlayerStateNoSpecialPredict; // to fix error decay
 	centity_t		predictedPlayerEntity;
 	rollState_t		roll;
 	antiLoopState_t antiLoop;

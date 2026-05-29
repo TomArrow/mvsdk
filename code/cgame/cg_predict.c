@@ -1317,7 +1317,7 @@ restartpredict:
 		// from the snapshot, but on a wan we will have
 		// to predict several commands to get to the point
 		// we want to compare
-		if ( cg.predictedPlayerState.commandTime == oldPlayerState.commandTime ) {
+		if ( cg.predictedPlayerState.commandTime == cg.predictedPlayerStateNoSpecialPredict.commandTime ) {
 			vec3_t	delta;
 			float	len;
 
@@ -1334,11 +1334,11 @@ restartpredict:
 					cg.predictedPlayerState.groundEntityNum, cg.physicsTime, cg.oldTime, adjusted );
 
 				if ( cg_showmiss.integer ) {
-					if (!VectorCompare( oldPlayerState.origin, adjusted )) {
+					if (!VectorCompare(cg.predictedPlayerStateNoSpecialPredict.origin, adjusted )) {
 						CG_Printf("prediction error\n");
 					}
 				}
-				VectorSubtract( oldPlayerState.origin, adjusted, delta );
+				VectorSubtract(cg.predictedPlayerStateNoSpecialPredict.origin, adjusted, delta );
 				len = VectorLength( delta );
 				if ( len > 0.1 ) {
 					if ( cg_showmiss.integer ) {
@@ -1473,6 +1473,8 @@ restartpredict:
 			cg_pmove.ps->legsAnimExecute = preSpecialPredictPlayerState.legsAnimExecute;
 		}
 	}
+
+	cg.predictedPlayerStateNoSpecialPredict = preSpecialPredictPlayerState;
 
 	CG_COOL_API_SetPredictedMovement(specialPredictPhysicsFpsWasApplied ? &preSpecialPredictPlayerState: &cg.predictedPlayerState);
 
