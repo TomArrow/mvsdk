@@ -525,6 +525,7 @@ vmCvar_t	cg_drawCenterAlways;
 vmCvar_t	cg_drawStrafeHelperSpeedometerAlways;
 vmCvar_t	cg_drawMovementKeysAlways;
 vmCvar_t	cg_drawStatus;
+vmCvar_t	cg_drawFlagStatus;
 vmCvar_t	cg_drawDebugFancy;
 vmCvar_t	cg_drawAntiLoopIndicator;
 vmCvar_t	cg_antiLoopIndicatorX;
@@ -927,6 +928,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawStrafeHelperSpeedometerAlways, "cg_drawStrafeHelperSpeedometerAlways", "0", CVAR_ARCHIVE  },
 	{ &cg_drawMovementKeysAlways, "cg_drawMovementKeysAlways", "0", CVAR_ARCHIVE  },
 	{ &cg_drawStatus, "cg_drawStatus", "1", CVAR_ARCHIVE  },
+	{ &cg_drawFlagStatus, "cg_drawFlagStatus", "1", CVAR_ARCHIVE  },
 	{ &cg_drawDebugFancy, "cg_drawDebugFancy", "1", CVAR_ARCHIVE  },
 	{ &cg_drawAntiLoopIndicator, "cg_drawAntiLoopIndicator", "1", CVAR_ARCHIVE  },
 	{ &cg_antiLoopIndicatorX, "cg_antiLoopIndicatorX", "300", CVAR_ARCHIVE  },

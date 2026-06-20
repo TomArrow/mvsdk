@@ -1827,6 +1827,7 @@ extern	vmCvar_t		cg_crosshairY;
 extern	vmCvar_t		cg_crosshairSize;
 extern	vmCvar_t		cg_crosshairHealth;
 extern	vmCvar_t		cg_drawStatus;
+extern	vmCvar_t		cg_drawFlagStatus;
 extern	vmCvar_t		cg_drawDebugFancy;
 extern	vmCvar_t		cg_drawAntiLoopIndicator;
 extern	vmCvar_t		cg_antiLoopIndicatorX;

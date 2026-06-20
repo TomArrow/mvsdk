@@ -4002,7 +4002,7 @@ static void CG_DrawInventory(int y)
 		y += ico_size;
 	}
 
-	if (!cg.snap->ps.stats[STAT_HOLDABLE_ITEM] || !cg.snap->ps.stats[STAT_HOLDABLE_ITEMS])
+	if (!cg.snap->ps.stats[STAT_HOLDABLE_ITEMS])
 		return;
 
 	for (i = 0; i < HI_NUM_HOLDABLE; i++)
@@ -7487,7 +7487,7 @@ static void CG_Draw2D( void ) {
 				break;
 			}
 
-			if (cg_drawStatus.integer)
+			if (cg_drawStatus.integer && cg_drawFlagStatus.integer)
 			{
 				//Powerups now done with upperright stuff
 				//CG_DrawPowerupIcons();

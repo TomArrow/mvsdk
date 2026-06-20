@@ -2048,6 +2048,7 @@ void CG_NudgeHelper_f(void) {
 	if (cg.nudgeHelper.active) {
 		cg.nudgeHelper.active = qfalse;
 		Com_Printf("Nudgehelper deactivated.\n");
+		return;
 	}
 	if (trap_Argc() >= 3 || trap_Argc() > 6) {
 		trap_Args(buffer, sizeof(buffer));
