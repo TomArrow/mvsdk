@@ -1832,6 +1832,7 @@ void G_MaybeSaveIronmanPos(gentity_t* ent) {
 	gclient_t* client = ent->client;
 	vec3_t diffToOld;
 	trace_t trace;
+	int allowMidJumpSaves = 0;
 	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
 	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
 
@@ -1858,9 +1859,26 @@ void G_MaybeSaveIronmanPos(gentity_t* ent) {
 				return;
 			}
 		}
-		else {
+		else if (level.lastIronManPosSaved + IRONMAN_SAVEPOSITION_MINTIMEFORCESURELYEVENJUMP > level.time) {
 			// well now TRULY a lot of time passed. just go.
 		}
+		else if (level.lastIronManPosSaved + IRONMAN_SAVEPOSITION_MINTIMEFORCESURELYEVENJUMP2 > level.time) {
+			// well now TRULY a lot of time passed. just go.
+			allowMidJumpSaves = 1;
+		}
+		else {
+			// well now TRULY a lot of time passed and somehow jump was still pressed i guess? cant do much then, just go...
+			allowMidJumpSaves = 2;
+		}
+	}
+
+	// try to avoid saving mid-jump or at the start of a jump, otherwise people spawning will spawn in the middle of what was supposed
+	// to be a force jump and then they might fall to their doom.
+	if (allowMidJumpSaves == 0 && ((client->ps.pm_flags & PMF_JUMP_HELD) || client->pers.cmd.upmove > 0)) {
+		return;
+	}
+	else if (allowMidJumpSaves == 1 && (client->ps.pm_flags & PMF_JUMP_HELD)) {
+		return;
 	}
 	
 	JP_Trace(&trace, client->ps.origin, playerMins, playerMaxs, client->ps.origin,ent-g_entities, MASK_PLAYERSOLID);
