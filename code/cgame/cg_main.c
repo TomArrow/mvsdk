@@ -777,6 +777,8 @@ vmCvar_t	cg_predictItems;
 vmCvar_t	cg_deferPlayers;
 vmCvar_t	cg_deferPlayersDebug;
 vmCvar_t	cg_drawTeamOverlay;
+vmCvar_t	cg_drawTeamOverlayMaxPlayers;
+vmCvar_t	cg_drawTeamOverlayFollowTeamOnly;
 vmCvar_t	cg_teamOverlayUserinfo;
 vmCvar_t	cg_drawFriend;
 vmCvar_t	cg_teamChatsOnly;
@@ -1206,6 +1208,8 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayersDebug, "cg_deferPlayersDebug", "0", CVAR_TEMP },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
+	{ &cg_drawTeamOverlayMaxPlayers, "cg_drawTeamOverlayMaxPlayers", "32", CVAR_ARCHIVE },
+	{ &cg_drawTeamOverlayFollowTeamOnly, "cg_drawTeamOverlayFollowTeamOnly", "0", CVAR_ARCHIVE },
 	{ &cg_teamOverlayUserinfo, "teamoverlay", "2", CVAR_ROM | CVAR_USERINFO },
 	{ &cg_stats, "cg_stats", "0", 0 },
 	{ &cg_drawFriend, "cg_drawFriend", "1", CVAR_ARCHIVE },

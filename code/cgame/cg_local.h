@@ -1821,6 +1821,8 @@ extern	vmCvar_t		cg_drawScores;
 extern	vmCvar_t		cg_dynamicCrosshair;
 extern	vmCvar_t		cg_drawRewards;
 extern	vmCvar_t		cg_drawTeamOverlay;
+extern	vmCvar_t		cg_drawTeamOverlayMaxPlayers;
+extern	vmCvar_t		cg_drawTeamOverlayFollowTeamOnly;
 extern	vmCvar_t		cg_teamOverlayUserinfo;
 extern	vmCvar_t		cg_crosshairX;
 extern	vmCvar_t		cg_crosshairY;

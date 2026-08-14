@@ -3721,8 +3721,8 @@ static float CG_DrawRamps( float y ) {
 =================
 CG_DrawTeamOverlay
 =================
+2026-08-14 overlay for all teams when in spec and server supports it, provided by scharp, modified by tom
 */
-
 static float CG_DrawTeamOverlay( float y, qboolean right, qboolean upper ) {
 	float x, w, xx;
 	int h;
@@ -3735,23 +3735,45 @@ static float CG_DrawTeamOverlay( float y, qboolean right, qboolean upper ) {
 	clientInfo_t *ci;
 	gitem_t	*item;
 	team_t team = (team_t)cg.snap->ps.persistant[PERS_TEAM];
+	team_t realTeam = cgs.clientinfo[cg.clientNum].team;
 	int ret_y, count;
+	static int teamState, lastFrameTeamState = 0;
+	qboolean specMode = qfalse;
+	static vec4_t	teamColors[TEAM_NUM_TEAMS] = {
+		{	0.8f,	0.8f,	0.0f,	0.33f	}, // free (3 team ctf, lets ignore the cgs.isCTFMod && cgs.CTF3ModeActive check. what difference does it make?)
+		{	1.0f,	0.0f,	0.0f,	0.33f	}, // red
+		{	0.0f,	0.0f,	1.0f,	0.33f	}, // blue
+		{	0.65f,	0.65f,	0.65f,	0.33f	}, // spec (spec mode by scharp)
+	};
 
 	if ( !cg_drawTeamOverlay.integer ) {
 		return y;
 	}
 
-	if ( cg.snap->ps.persistant[PERS_TEAM] != TEAM_RED && cg.snap->ps.persistant[PERS_TEAM] != TEAM_BLUE && !(cg.snap->ps.persistant[PERS_TEAM] == TEAM_FREE && cgs.isCTFMod && cgs.CTF3ModeActive) ) {
-		return y; // Not on any team
+	// depending on server mod/support, overlay data may or may not be sent to spectators, follow spectators, free float spectators...
+	// since we cannot reliably deduce this in a reasonable manner, let's clear the overlay data each time our "state" changes
+	// in order to make sure we don't switch to a state that doesn't send data, leaving us with stale data
+	// as "state" we choose our connected client's actual team (not PERS_TEAM of ps, which is affected by who we follow)
+	// and the PMF_FOLLOW flag of ps. so if we switch our own real team, the state is cleared. if we switch between follow and free float spec, same.
+	teamState = !!(cg.snap->ps.pm_flags & PMF_FOLLOW) | ((int)realTeam << 1);
+	if (lastFrameTeamState != teamState)
+		numSortedTeamPlayers = 0;
+	lastFrameTeamState = teamState;
+
+	if ( !numSortedTeamPlayers || team == TEAM_FREE && !(cg.snap->ps.pm_flags & PMF_FOLLOW) && (!cgs.isCTFMod || !cgs.CTF3ModeActive)) {
+		return y; // nothing to draw
 	}
 	plyrs = 0;
 
+	// specMode means: show all teams
+	specMode = team == TEAM_SPECTATOR || ((cg.snap->ps.pm_flags & PMF_FOLLOW) && !cg_drawTeamOverlayFollowTeamOnly.integer);
+
 	// max player name width
 	pwidth = 0;
-	count = numSortedTeamPlayers;
+	count = (numSortedTeamPlayers > cg_drawTeamOverlayMaxPlayers.integer) ? cg_drawTeamOverlayMaxPlayers.integer : numSortedTeamPlayers;
 	for (i = 0; i < count; i++) {
 		ci = cgs.clientinfo + sortedTeamPlayers[i];
-		if ( ci->infoValid && ci->team == team ) {
+		if ( ci->infoValid && ( ci->team == team || specMode ) ) {
 			plyrs++;
 			len = CG_DrawStrlen(ci->name);
 			if (len > pwidth)
@@ -3795,39 +3817,27 @@ static float CG_DrawTeamOverlay( float y, qboolean right, qboolean upper ) {
 		ret_y = y;
 	}
 
-	switch (team) {
-		case TEAM_RED:
-			hcolor[0] = 1.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 0.0f;
-			break;
-		case TEAM_BLUE:
-			hcolor[0] = 0.0f;
-			hcolor[1] = 0.0f;
-			hcolor[2] = 1.0f;
-			break;
-		case TEAM_FREE:
-			if (cgs.isCTFMod && cgs.CTF3ModeActive) {
-				hcolor[0] = 0.8f;
-				hcolor[1] = 0.8f;
-				hcolor[2] = 0.0f;
-				break;
-			}
-		default:
-			hcolor[0] = 0.8f;
-			hcolor[1] = 0.8f;
-			hcolor[2] = 0.8f;
-			break;
+	Vector4Copy(teamColors[team], hcolor);
+
+	if (!specMode) { // in spec mode, we draw this per-player.
+		trap_R_SetColor(hcolor);
+		CG_DrawPic(x, y, w, h, cgs.media.teamStatusBar);
 	}
-	hcolor[3] = 0.33f;
-	trap_R_SetColor( hcolor );
-	CG_DrawPic( x, y, w, h, cgs.media.teamStatusBar );
-	trap_R_SetColor( NULL );
+	trap_R_SetColor(NULL);
 
 	for (i = 0; i < count; i++) {
 		ci = cgs.clientinfo + sortedTeamPlayers[i];
-		if ( ci->infoValid && ci->team == team ) {
-			hcolor[0] = hcolor[1] = hcolor[2] = hcolor[3] = 1.0;
+		if ( ci->infoValid && ( ci->team == team || specMode ) ) {
+
+			if (specMode) {
+				// draw bg color per-player to have the correct color
+				Vector4Copy(teamColors[ci->team], hcolor);
+				trap_R_SetColor(hcolor);
+				CG_DrawPic(x, y, w, TINYCHAR_HEIGHT, cgs.media.teamStatusBar);
+				trap_R_SetColor(NULL);
+			}
+
+			Vector4Copy(colorWhite, hcolor);
 
 			xx = x + TINYCHAR_WIDTH;
 
@@ -4027,7 +4037,7 @@ static void CG_DrawUpperRight( void ) {
 
 	y = 0;
 
-	if ( cgs.gametype >= GT_TEAM && cg_drawTeamOverlay.integer ) {
+	if ( /*cgs.gametype >= GT_TEAM &&*/ cg_drawTeamOverlay.integer ) {
 		y = CG_DrawTeamOverlay( y, qtrue, qtrue );
 	} 
 	if ( cg_drawSnapshot.integer ) {
