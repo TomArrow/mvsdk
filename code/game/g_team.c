@@ -1263,11 +1263,11 @@ Format:
 
 ==================
 */
-void TeamplayInfoMessage( gentity_t *ent, const team_t team) {
+void TeamplayInfoMessage( gentity_t *ent, const team_t team, const qboolean allteams ) {
 	char		entry[1024];
 	char		string[8192];
 	int			stringlength;
-	int			i, j;
+	int			i, j, l;
 	gentity_t	*player;
 	int			cnt;
 	int			h, a;
@@ -1293,26 +1293,32 @@ void TeamplayInfoMessage( gentity_t *ent, const team_t team) {
 	string[0] = 0;
 	stringlength = 0;
 
-	for (i = 0, cnt = 0; i < g_maxclients.integer && cnt < TEAM_MAXOVERLAY; i++) {
-		player = g_entities + i;
-		if (player->inuse && player->client->sess.sessionTeam == team ) {
+	cnt = 0;
+	for (l = 0; l < 2; l++) { // do the refteam first, then other players (if we reach the limit, refteam is prioritized)
+		if (l > 0 && !allteams) {
+			break;
+		}
+		for (i = 0; i < g_maxclients.integer && cnt < TEAM_MAXOVERLAY; i++) {
+			player = g_entities + i;
+			if (player->inuse && (l == 0 && player->client->sess.sessionTeam == team || l > 0 && player->client->sess.sessionTeam != team && player->client->sess.sessionTeam != TEAM_SPECTATOR)) {
 
-			h = player->client->ps.stats[STAT_HEALTH];
-			a = player->client->ps.stats[STAT_ARMOR];
-			if (h < 0) h = 0;
-			if (a < 0) a = 0;
+				h = player->client->ps.stats[STAT_HEALTH];
+				a = player->client->ps.stats[STAT_ARMOR];
+				if (h < 0) h = 0;
+				if (a < 0) a = 0;
 
-			Com_sprintf (entry, sizeof(entry),
-				" %i %i %i %i %i %i", 
-//				level.sortedClients[i], player->client->pers.teamState.location, h, a, 
-				i, player->client->pers.teamState.location, h, a, 
-				player->client->ps.weapon, player->s.powerups);
-			j = strlen(entry);
-			if (stringlength + j > (int)sizeof(string))
-				break;
-			Q_strncpyz (string + stringlength, entry,sizeof(string)- stringlength);
-			stringlength += j;
-			cnt++;
+				Com_sprintf (entry, sizeof(entry),
+					" %i %i %i %i %i %i", 
+	//				level.sortedClients[i], player->client->pers.teamState.location, h, a, 
+					i, player->client->pers.teamState.location, h, a, 
+					player->client->ps.weapon, player->s.powerups);
+				j = strlen(entry);
+				if (stringlength + j > (int)sizeof(string))
+					break;
+				Q_strncpyz (string + stringlength, entry,sizeof(string)- stringlength);
+				stringlength += j;
+				cnt++;
+			}
 		}
 	}
 
@@ -1359,6 +1365,7 @@ void CheckTeamStatus(void) {
 
 		for (i = 0; i < g_maxclients.integer; i++) {
 			team_t refteam;
+			qboolean allteams = qfalse;
 			ent = g_entities + i;
 
 			if (!ent->client || !ent->inuse || ent->client->pers.connected != CON_CONNECTED ) {
@@ -1370,12 +1377,15 @@ void CheckTeamStatus(void) {
 
 			refteam = ent->client->sess.sessionTeam;
 			if (refteam == TEAM_SPECTATOR) {
+				if (g_teamOverlaySpecAll.integer) {
+					allteams = qtrue;
+				}
 				refteam = G_SpeccingClientTeam(ent);
 			}
 
 			//if (ent->inuse && (ent->client->sess.sessionTeam == TEAM_RED ||	ent->client->sess.sessionTeam == TEAM_BLUE)) {
-			if (refteam == TEAM_RED || refteam == TEAM_BLUE) {
-				TeamplayInfoMessage( ent, refteam );
+			if (refteam == TEAM_RED || refteam == TEAM_BLUE || g_teamOverlaySpecAll.integer) {
+				TeamplayInfoMessage( ent, refteam, allteams );
 			}
 		}
 	}

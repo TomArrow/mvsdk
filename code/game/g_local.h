@@ -1974,6 +1974,8 @@ extern	vmCvar_t	g_kickoffFix;
 extern	vmCvar_t	g_crossServerChat;
 extern	vmCvar_t	g_crossServerDefragTimes;
 
+extern	vmCvar_t	g_teamOverlaySpecAll;
+
 // vvv-serverSide features port
 extern	vmCvar_t	g_pauseGame;
 extern	vmCvar_t	g_minefix;

@@ -252,6 +252,8 @@ vmCvar_t	g_kickoffFix;
 vmCvar_t	g_crossServerChat;
 vmCvar_t	g_crossServerDefragTimes;
 
+vmCvar_t	g_teamOverlaySpecAll;
+
 
 
 // vvv-serverSide features port
@@ -514,6 +516,8 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 
 	{ &g_crossServerChat, "g_crossServerChat", "2", CVAR_ARCHIVE, 0, qtrue}, // 1 = receive. 2 = need special say_cross cmd to allow sharing. 3 = share all
 	{ &g_crossServerDefragTimes, "g_crossServerDefragTimes", "2", CVAR_ARCHIVE, 0, qtrue}, // Share achieved defrag time prints across servers. 1 = receive. 2 = send
+	
+	{ &g_teamOverlaySpecAll, "g_teamOverlaySpecAll", "1", CVAR_ARCHIVE, 0, qfalse}, // team overlay sent for all players to spectators
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 
