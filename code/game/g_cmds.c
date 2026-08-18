@@ -4150,13 +4150,28 @@ static qboolean QDECL TagCallback(gentity_t* ent, genericDbRequestStruct_t* data
 	switch (data->specifics.maptag.requestType) {
 		case TAGMAP_ADD:
 			if (data->resultInfo.affectedRows == 0) {
-				trap_SendServerCommand(ent - g_entities, va("print \"^1Unknown Error setting tag '%s'.\n\"", data->specifics.maptag.tag));
+				if (data->specifics.maptag.value > 0) { // no change
+					trap_SendServerCommand(ent - g_entities, va("print \"^3Tag '%s' has already been set by you.\n\"", data->specifics.maptag.tag));
+				}
+				else {
+					trap_SendServerCommand(ent - g_entities, va("print \"^3Negative Tag '%s' has already been set by you.\n\"", data->specifics.maptag.tag));
+				}
 			}
-			else if (data->resultInfo.affectedRows == 1) {
-				trap_SendServerCommand(ent - g_entities, va("print \"^2Tag '%s' successfully added.\n\"", data->specifics.maptag.tag));
+			else if (data->resultInfo.affectedRows == 1) { // new entry
+				if (data->specifics.maptag.value > 0) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^2Tag '%s' successfully added.\n\"", data->specifics.maptag.tag));
+				}
+				else {
+					trap_SendServerCommand(ent - g_entities, va("print \"^2Negative tag '%s' successfully added.\n\"", data->specifics.maptag.tag));
+				}
 			}
-			else if (data->resultInfo.affectedRows == 2) {
-				trap_SendServerCommand(ent - g_entities, va("print \"^3Tag '%s' has already been set by you.\n\"", data->specifics.maptag.tag));
+			else if (data->resultInfo.affectedRows == 2) { // value was updated
+				if (data->specifics.maptag.value > 0) {
+					trap_SendServerCommand(ent - g_entities, va("print \"^2Negative tag '%s' successfully updated to positive.\n\"", data->specifics.maptag.tag));
+				}
+				else {
+					trap_SendServerCommand(ent - g_entities, va("print \"^2Tag '%s' successfully updated to negative.\n\"", data->specifics.maptag.tag));
+				}
 			}
 			break;
 		case TAGMAP_REMOVE:
@@ -4255,17 +4270,23 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 	int arglen = trap_Argc();
 	const char* courseName;
 	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_TAG,(1<<DBT_USERS) | (1 << DBT_MAPTAGS),"tagmap", 0);
+	qboolean negative = qfalse;
 	if (arglen < 2) {
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <tagname> - Add a tag\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tagnot <tagname> - Add a negative tag.\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <remove> <tagname> - Remove a tag you added\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <list|listall|clear> - List the map's tags, all known tags, or clear your own tags of this map\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <search> <tagname> - Find maps that have a tag\n\"");
 		return;
 	}
+	negative = !Q_stricmp("tagnot", G_Argv(0));
+
 	arg = G_Argv(1);
 
 	courseName = DF_GetCourseName(qfalse);
 
+//#define TAGCOUNT_SQL "COUNT(DISTINCT maptags.userid)"
+#define TAGCOUNT_SQL "SUM(maptags.value)"
 	if (!Q_stricmp(arg, "search") && arglen > 2) {
 		const char* tag = G_Argv(2);
 		const char* validateError = ValidateMapTag(tag);
@@ -4279,14 +4300,14 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 		if (g_defrag.integer) {
 			data.specifics.maptag.defrag = qtrue;
 			data.requiredTables |= (1<<DBT_RUNS);
-			if (!G_DB_GenericRequest_Send(data, "SELECT maptags.course,COUNT(DISTINCT maptags.userid) AS taggers,MAX(%d=maptags.userid) AS ismine,COUNT(DISTINCT runs.userid) AS runners FROM maptags \
+			if (!G_DB_GenericRequest_Send(data, "SELECT maptags.course," TAGCOUNT_SQL " AS taggers,MAX(%d=maptags.userid) AS ismine,COUNT(DISTINCT runs.userid) AS runners FROM maptags \
 				LEFT JOIN runs ON (runs.course=maptags.course) \
 				WHERE tag=%s GROUP BY course HAVING runners > 0 ORDER BY ismine DESC, taggers DESC, runners DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
 				trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 			}
 		}
 		else {
-			if (!G_DB_GenericRequest_Send(data, "SELECT course,COUNT(DISTINCT userid) AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE tag=%s GROUP BY course ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
+			if (!G_DB_GenericRequest_Send(data, "SELECT course," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE tag=%s GROUP BY course ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
 				trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 			}
 		}
@@ -4294,14 +4315,14 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 	else if (!Q_stricmp(arg, "list")) {
 		data.specifics.maptag.requestType = TAGMAP_LIST;
 		data.page = G_DB_GetPageArg(2);
-		if (!G_DB_GenericRequest_Send(data, "SELECT tag,COUNT(DISTINCT userid) AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE course=%s GROUP BY tag ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, courseName, data.page * 10)) {
+		if (!G_DB_GenericRequest_Send(data, "SELECT tag," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE course=%s GROUP BY tag ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, courseName, data.page * 10)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
 	else if (!Q_stricmp(arg, "listall")) {
 		data.specifics.maptag.requestType = TAGMAP_LISTALL;
 		data.page = G_DB_GetPageArg(2);
-		if (!G_DB_GenericRequest_Send(data, "SELECT tag,COUNT(DISTINCT userid) AS taggers,MAX(%d=userid) AS ismine,COUNT(DISTINCT maptags.course) AS maps FROM maptags GROUP BY tag ORDER BY maps DESC, taggers DESC,ismine DESC LIMIT %d,10", ent->client->sess.login.id,data.page*10)) {
+		if (!G_DB_GenericRequest_Send(data, "SELECT tag," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine,COUNT(DISTINCT maptags.course) AS maps FROM maptags GROUP BY tag ORDER BY maps DESC, taggers DESC,ismine DESC LIMIT %d,10", ent->client->sess.login.id,data.page*10)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
@@ -4331,12 +4352,13 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 		const char* tag = arg;
 		const char* validateError = ValidateMapTag(tag);
 		data.specifics.maptag.requestType = TAGMAP_ADD;
+		data.specifics.maptag.value = negative ? -1 : 1;
 		if (validateError) {
 			trap_SendServerCommand(ent - g_entities, va("print \"Cannot set tag: %s.\n\"", validateError));
 			return;
 		} 
 		Q_strncpyz(data.specifics.maptag.tag,tag,sizeof(data.specifics.maptag.tag));
-		if (!G_DB_GenericRequest_Send(data, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen) VALUES (%s,%d,%s,NOW(),NOW()) ON DUPLICATE KEY UPDATE updatedwhen=NOW()", courseName, ent->client->sess.login.id, tag)) {
+		if (!G_DB_GenericRequest_Send(data, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen,value) VALUES (%s,%d,%s,NOW(),NOW(),%d) ON DUPLICATE KEY UPDATE value=%d", courseName, ent->client->sess.login.id, tag, data.specifics.maptag.value, data.specifics.maptag.value)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
@@ -7029,6 +7051,7 @@ clientCommand_t clientCommands[] = {
 	{"stealpos",			NULL, DF_StealPos,						CMD_NOINTERMISSION},
 	{"stealspawn",			NULL, DF_StealSpawn,					CMD_NOINTERMISSION},
 	{"tag",					NULL, Cmd_TagMap_f,						CMD_NOINTERMISSION, "Tag a map, search for tagged maps or list a map's tags."},
+	{"tagnot",				NULL, Cmd_TagMap_f,						CMD_NOINTERMISSION, "Add a negative tag for a map."},
 	{"team",				NULL, Cmd_Team_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"teamtask",			NULL, Cmd_TeamTask_f,					CMD_NOINTERMISSION},
 	{"teamvote",			NULL, Cmd_TeamVote_f,					CMD_NOINTERMISSION},

@@ -15,6 +15,7 @@ static void G_CreateSubContestsTable();
 static void G_CreateMapRaceDefaultsTable();
 static void G_CreateMetaTable();
 static void G_CreateMapRatingsTable();
+static void G_CreateMapTagsTable();
 const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
@@ -2639,6 +2640,7 @@ static void G_CreateMapTagsTable() {
 			tag VARCHAR(" QUOTEME(MAPTAG_MAX_LEN) ") NOT NULL, \
 			setwhen DATETIME NOT NULL, \
 			updatedwhen DATETIME NOT NULL, \
+			value TINYINT(2) SIGNED NOT NULL, \
 			PRIMARY KEY(course,userid,tag), \
 			INDEX i_tag(tag), \
 			INDEX i_course(course), \
