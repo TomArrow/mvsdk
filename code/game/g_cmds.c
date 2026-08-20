@@ -4187,12 +4187,12 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 			}
 			if (!lastValidArena) {
 				trap_SendServerCommand(ent - g_entities, "print \"No available map matching this tag was found.\n\"");
-				return;
+				return qtrue;
 			}
 			Q_strncpyz(mapname, lastValidArena->name, sizeof(mapname));
 
 			if (!CallvoteMapOk(ent, mapname)) {
-				return;
+				return qtrue;
 			}
 			
 			trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
