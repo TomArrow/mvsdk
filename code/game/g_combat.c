@@ -1838,6 +1838,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	char		*killerName, *obit;
 	qboolean	wasJediMaster = qfalse;
 	int			nowTime = LEVELTIME(self->client);
+	int			newMod = meansOfDeath;
 
 	if ( !self || !self->client ) return;
 
@@ -1885,10 +1886,16 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	self->client->ps.fd.forceDeactivateAll = 1;
 
 	if ((self == attacker || !attacker->client) &&
-		(meansOfDeath == MOD_CRUSH || meansOfDeath == MOD_FALLING || meansOfDeath == MOD_TRIGGER_HURT || meansOfDeath == MOD_UNKNOWN || meansOfDeath == MOD_LAVA || meansOfDeath == MOD_SLIME) && // TA: Give credit for lava/slime kills too :)
+		(meansOfDeath == MOD_CRUSH || meansOfDeath == MOD_FALLING || meansOfDeath == MOD_TRIGGER_HURT ||  meansOfDeath == MOD_TELEFRAG || meansOfDeath == MOD_UNKNOWN || meansOfDeath == MOD_LAVA || meansOfDeath == MOD_SLIME) && // TA: Give credit for lava/slime kills too :)
 		self->client->ps.otherKillerTime > nowTime)
 	{
 		attacker = &g_entities[self->client->ps.otherKiller];
+		if (meansOfDeath == MOD_TELEFRAG) {
+			// probably a kill trigger we were pushed into.
+			// but if we keep MOD_TELEFRAG it will say "crushed into another dimension" if a killer is specified.
+			// so as dumb as it is, switch over to MOD_TRIGGER_HURT
+			newMod = MOD_TRIGGER_HURT;
+		}
 	}
 
 	// check for an almost capture
@@ -1957,9 +1964,10 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	// broadcast the death event to everyone
 	if (!self->client->sess.raceMode || (self != attacker && attacker && (attacker - g_entities)<MAX_CLIENTS)/* || meansOfDeath != MOD_SUICIDE*/) {
 		ent = G_TempEntity(self->r.currentOrigin, EV_OBITUARY);
-		ent->s.eventParm = meansOfDeath;
+		ent->s.eventParm = newMod;
 		ent->s.otherEntityNum = self->s.number;
 		ent->s.otherEntityNum2 = killer;
+		ent->s.groundEntityNum = meansOfDeath; // we may have changed meansofdeath (see uses of newMod) :/
 		ent->r.svFlags = SVF_BROADCAST;	// send to everyone
 		ent->s.isJediMaster = wasJediMaster;
 

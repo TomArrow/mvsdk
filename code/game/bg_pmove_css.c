@@ -774,12 +774,15 @@ void PMCSS_CatagorizePosition(void)
 	//
 	pmcss->waterlevel = 0;
 	pmcss->watertype = 0;
+	pmcss->contenttype = 0;
 
 	sample2 = pmcss->ps->viewheight - pmcss->mins[2];
 	sample1 = sample2 / 2;
 
 	point[2] = pmlcss.origin[2] + pmcss->mins[2] + 1;
 	cont = pmcss->pointcontents(point, pmcss->ps->clientNum);
+
+	pmcss->contenttype = cont & CONTENTS_NOSPAWN;
 
 	if (cont & MASK_WATER)
 	{
@@ -1341,6 +1344,7 @@ void PmoveCSS(pmovecss_t* pmove)
 	pmcss->ps->groundEntityNum = ENTITYNUM_NONE;
 	pmcss->watertype = 0;
 	pmcss->waterlevel = 0;
+	pmcss->contenttype = 0;
 
 	// clear all pmove local vars
 	memset(&pmlcss, 0, sizeof(pmlcss));

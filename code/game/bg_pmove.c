@@ -3874,11 +3874,14 @@ static void PM_SetWaterLevel( void ) {
 	//
 	pm->waterlevel = 0;
 	pm->watertype = 0;
+	pm->contenttype = 0;
 
 	point[0] = pm->ps->origin[0];
 	point[1] = pm->ps->origin[1];
 	point[2] = pm->ps->origin[2] + (MINS_Z + 1)*pm->effectiveModelScale;
 	cont = pm->pointcontents( point, pm->ps->clientNum );
+
+	pm->contenttype = cont & CONTENTS_NOSPAWN;
 
 	if ( cont & MASK_WATER ) {
 		sample2 = pm->ps->viewheight - MINS_Z * pm->effectiveModelScale;
@@ -6382,6 +6385,7 @@ void PmoveSingle (pmove_t *pmove) {
 	pm->numtouch = 0;
 	pm->watertype = 0;
 	pm->waterlevel = 0;
+	pm->contenttype = 0;
 
 	if (pm->ps->pm_type == PM_FLOAT)
 	{ //You get no control over where you go in grip movement

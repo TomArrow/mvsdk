@@ -967,12 +967,15 @@ void PMQ2_CatagorizePosition(int type)
 	//
 	pmq2->waterlevel = 0;
 	pmq2->watertype = 0;
+	pmq2->contenttype = 0;
 
 	sample2 = pmq2->ps->viewheight - pmq2->mins[2];
 	sample1 = sample2 / 2;
 
 	point[2] = pmlq2.origin[2] + pmq2->mins[2] + 1;
 	cont = pmq2->pointcontents(point,pmq2->ps->clientNum);
+
+	pmq2->contenttype = cont & CONTENTS_NOSPAWN;
 
 	if (cont & MASK_WATER)
 	{
@@ -1548,6 +1551,7 @@ void PmoveQ2(pmoveq2_t* pmove)
 	pmq2->ps->viewheight = 0;
 	//pmq2->ps->groundEntityNum = ENTITYNUM_NONE;
 	pmq2->watertype = 0;
+	pmq2->contenttype = 0;
 	pmq2->waterlevel = 0;
 
 	// clear all pmove local vars

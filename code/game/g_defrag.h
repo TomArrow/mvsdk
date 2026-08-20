@@ -87,6 +87,7 @@ typedef struct savedPosition_s {
 	//int			count; // idk
 	int				watertype;
 	int				waterlevel;
+	int				contenttype;
 	//int				hurt_timestamp;
 
 	//r.

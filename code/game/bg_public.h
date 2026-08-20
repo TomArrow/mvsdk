@@ -63,6 +63,7 @@
 #define TTFLAGSSERVERINFO_HASFORCESPEEDSMASH	(1<<1) 
 #define TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE	(1<<2) 
 #define TTFLAGSSERVERINFO_HASCROSSSERVERCHAT	(1<<3) 
+#define TTFLAGSSERVERINFO_OBITUARY_GEN_REALMOD	(1<<4) // real meansofdeath for EV_OBITUARY in its groundentitynum. actual MoD may be modified for better attributed kill messages, e.g. with MOD_TELEFRAG
 
 
 #define TTFLAGS_GAMEPLAY_SERVERINFO_MINESWITCHFIX		(1<<0) 
@@ -352,6 +353,8 @@ typedef struct {
 
 	int			watertype;
 	int			waterlevel;
+
+	int			contenttype; // e.g. if we're in CONTENTS_NOSPAWN
 
 	int			gametype;
 

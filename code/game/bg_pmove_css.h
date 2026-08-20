@@ -67,6 +67,8 @@ typedef struct
 	int			watertype;
 	int			waterlevel;
 
+	int			contenttype; // e.g. if we're in CONTENTS_NOSPAWN
+
 	int			tracemask;
 
 	antiLoopState_t* antiLoop;

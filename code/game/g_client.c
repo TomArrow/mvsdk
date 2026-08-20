@@ -3261,6 +3261,7 @@ void ClientSpawn(gentity_t *ent) {
 	ent->die = player_die;
 	ent->waterlevel = 0;
 	ent->watertype = 0;
+	ent->contenttype = 0;
 	ent->flags = 0;
 
 	ResetClientModeIfInvalid(ent, (qboolean)!(ent->r.svFlags& SVF_BOT));

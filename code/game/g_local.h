@@ -290,6 +290,8 @@ struct gentity_s {
 	int			watertype;
 	int			waterlevel;
 
+	int			contenttype; // e.g. if we're in CONTENTS_NOSPAWN
+
 	int			noise_index;
 	int			courseID;
 

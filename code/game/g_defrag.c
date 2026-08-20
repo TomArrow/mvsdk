@@ -115,6 +115,7 @@ char clientColors[MAX_CLIENTS] = {
 		FIELDSFUNC(pain_debounce_time)\
 		FIELDSFUNC(fly_sound_debounce_time)\
 		FIELDSFUNC(watertype)\
+		FIELDSFUNC(contenttype)\
 		FIELDSFUNC(waterlevel)\
 		FIELDSFUNC(r.contents)
 

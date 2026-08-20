@@ -282,7 +282,7 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 /* static */cvarTable_t		gameCvarTable[] = {
 
 	//must be at the start so that its already registered when other cvars are evaluated that affect it
-	{ &g_ttFlags, "ttFlags", "15", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue }, // to communicate special tommyternal server features to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE|TTFLAGSSERVERINFO_HASCROSSSERVERCHAT))
+	{ &g_ttFlags, "ttFlags", "31", CVAR_SERVERINFO | CVAR_ROM, 0, qtrue }, // to communicate special tommyternal server features to the client. value 7 means: (va("%d",TTFLAGSSERVERINFO_HASANTILOOPSTATS|TTFLAGSSERVERINFO_HASFORCESPEEDSMASH|TTFLAGSSERVERINFO_HASFORCEJUMPCHARGE|TTFLAGSSERVERINFO_HASCROSSSERVERCHAT|TTFLAGSSERVERINFO_OBITUARY_GEN_REALMOD))
 	{ &g_ttFlagsGp, "ttFlagsGp", "0", CVAR_SERVERINFO | CVAR_ROM, 0, qfalse }, // gameplay ttflags. 
 
 	// don't override the cheat state set by the system
