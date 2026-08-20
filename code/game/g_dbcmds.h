@@ -304,7 +304,8 @@ typedef enum genericDbRequestFlags_s {
 #define GENERIC_DB_REQUESTTYPES(a) \
 	a(GDBREQUEST_TEST)\
 	a(GDBREQUEST_MAPRATINGSFETCH)\
-	a(GDBREQUEST_TAG)
+	a(GDBREQUEST_TAG)\
+	a(GDBREQUEST_VOTE_MAPSEARCH)
 
 typedef enum genericDbRequestType_s {
 #define GDBREQUEST_ENUM(a) a,
@@ -334,6 +335,11 @@ typedef struct genericDbRequestStruct_s {
 			qboolean defrag;
 			int value;
 		} maptag;
+		struct {
+			int requestType;
+			char tag[MAPTAG_MAX_LEN + 1];
+			qboolean defrag;
+		} callvoteMapsearch;
 	} specifics;
 } genericDbRequestStruct_t;
 typedef enum dbRequestParamType_s {

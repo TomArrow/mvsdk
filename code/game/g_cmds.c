@@ -17,7 +17,13 @@ void BG_CycleForce(playerState_t *ps, int direction);
 
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
+static const char* ValidateMapTag(const char* tagName);
+
 static void Cmd_PrintCmdDescriptions_f(gentity_t* ent);
+
+static qboolean CallvoteAllowed(gentity_t* ent, const char* arg1); // can this user do a callvote?
+static void CallvoteSetupFinish(gentity_t* ent, qboolean votingOpinion, qboolean votingOpinionAll); // finish up creating the callvote
+static qboolean CallvoteMapOk(gentity_t* ent, const char* mapname); // check if map is ok to be voted
 
 static qboolean DefragDoubleTapSafety(gentity_t* ent, doubleTapType_t type, const char* cmd ) {
 	if (!g_defragKillSafetyMinSecs.integer) {
@@ -1313,8 +1319,8 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
-		"print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"",
-		"print \"Random tip: ^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice.\n\"",
+		"print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap ^3[tag]^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice (optionally limited by a map tag).\n\"",
+		"print \"Random tip: ^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap ^3[tag]^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice (optionally limited by a map tag).\n\"",
 		qfalse,
 		qfalse
 	},
@@ -4137,6 +4143,122 @@ static void Cmd_Test_f(gentity_t* ent) {
 	}
 }
 
+typedef enum callvoteMapSearchSubCmd_s {
+	CVMS_TAG,
+} callvoteMapSearchSubCmd_t;
+static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequestStruct_t* data) {
+	int rows = 0;
+	const char* currentMap = DF_GetCourseName(qfalse);
+	switch (data->specifics.callvoteMapsearch.requestType) {
+	case CVMS_TAG:
+		{
+			int targetProbability = 0;
+			int sumProbabilities = 0;
+			char map[COURSENAME_MAX_LEN + 1];
+			char s[MAX_STRING_CHARS];
+			char mapname[MAX_STRING_CHARS];
+			int tmp;
+			infoHashed_t* lastValidArena = NULL;
+			while (G_COOL_API_DB_NextRow()) {
+				char map[COURSENAME_MAX_LEN + 1];
+				int value = G_COOL_API_DB_GetInt(1);
+				int probability = G_COOL_API_DB_GetInt(2);
+				infoHashed_t* tmpArena;
+
+				if (!rows) {
+					int sumProbabilitiesAll = G_COOL_API_DB_GetInt(3);
+					targetProbability = Q_irand(0, sumProbabilitiesAll, qfalse, 0)+1;
+				}
+
+				G_COOL_API_DB_GetString(0, map, sizeof(map));
+
+				tmpArena = G_GetArenaInfoByMap(map);
+				if (tmpArena && Q_stricmp(tmpArena->name, currentMap)) { // dont vote onto the same map we are already on
+					lastValidArena = tmpArena;
+				}
+
+				sumProbabilities += probability;
+				rows++;
+
+				if (sumProbabilities >= targetProbability && lastValidArena) {
+					break;
+				}
+
+			}
+			if (!lastValidArena) {
+				trap_SendServerCommand(ent - g_entities, "print \"No available map matching this tag was found.\n\"");
+				return;
+			}
+			Q_strncpyz(mapname, lastValidArena->name, sizeof(mapname));
+
+			if (!CallvoteMapOk(ent, mapname)) {
+				return;
+			}
+			
+			trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
+			if (*s) {
+				Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
+				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s %s" S_COLOR_WHITE "; set nextmap %s",data->specifics.callvoteMapsearch.tag, targetProbability, "map", mapname, s );
+			} else {
+				Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
+				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s", data->specifics.callvoteMapsearch.tag, targetProbability, level.voteString );
+			}
+			CallvoteSetupFinish(ent, qfalse, qfalse);
+		}
+		break;
+	}
+	return qtrue;
+}
+
+REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_VOTE_MAPSEARCH, CallvoteMapSearchCallback);
+
+static void CallvoteMapSearch(gentity_t* ent, const char* tag) {
+	int userid;
+	const char* validateError;
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_VOTE_MAPSEARCH, (1 << DBT_USERS) | (1 << DBT_MAPTAGS), "vote_mapsearch", 0);
+
+	//#define TAGCOUNT_SQL "COUNT(DISTINCT maptags.userid)"
+#define TAGCOUNT_SQL "SUM(maptags.value)"
+	validateError = ValidateMapTag(tag);
+	data.specifics.callvoteMapsearch.requestType = CVMS_TAG;
+	if (validateError) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Cannot search for tag: %s.\n\"", validateError));
+		return;
+	}
+	Q_strncpyz(data.specifics.callvoteMapsearch.tag, tag, sizeof(data.specifics.callvoteMapsearch.tag));
+
+	if (g_defrag.integer) {
+		data.specifics.callvoteMapsearch.defrag = qtrue;
+		data.requiredTables |= (1 << DBT_RUNS);
+		if (!G_DB_GenericRequest_Send(data, "SELECT *,SUM(probability) OVER () AS total_probability \
+			FROM(\
+				SELECT runs.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value))) AS probability\
+				FROM(SELECT DISTINCT runs.course FROM runs) runs\
+				LEFT JOIN maptags ON(maptags.course = runs.course AND maptags.tag = %s)\
+				GROUP BY runs.course\
+			) taggedcourses\
+			WHERE probability > 0\
+			ORDER BY probability DESC\
+			", tag)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		}
+	}
+	else {
+		if (!G_DB_GenericRequest_Send(data, "SELECT *,SUM(probability) OVER () AS total_probability \
+			FROM(\
+				SELECT maptags.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value))) AS probability\
+				FROM maptags\
+				WHERE maptags.tag = %s\
+				GROUP BY maptags.course\
+			) taggedcourses\
+			WHERE probability > 0\
+			ORDER BY probability DESC", tag)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		}
+	}
+	
+}
+
 typedef enum tagMapSubCmd_s {
 	TAGMAP_ADD,
 	TAGMAP_REMOVE,
@@ -5210,6 +5332,86 @@ int G_SlowVoteProhibits(int ownclientNum) {
 	return stayers;
 }
 
+static qboolean CallvoteAllowed(gentity_t* ent, const char* arg1) {
+	if (!g_allowVote.integer) {
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE")));
+		return qfalse;
+	}
+
+	if (level.voteExecuteTime) {
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", "Cannot call a vote, old vote not yet exceuted, please wait."));
+		return qfalse;
+	}
+
+	if (level.voteTime) {
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEINPROGRESS")));
+		return qfalse;
+	}
+	if (ent->client->pers.voteCount >= MAX_VOTE_COUNT) {
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MAXVOTES")));
+		return qfalse;
+	}
+	if (ent->client->sess.sessionTeam == TEAM_SPECTATOR && Q_stricmp(arg1, "opinion") && Q_stricmp(arg1, "opinionAll")) { // opinions can be initiated from spec
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOSPECVOTE")));
+		return qfalse;
+	}
+	return qtrue;
+}
+
+static qboolean CallvoteMapOk(gentity_t* ent, const char* mapname) {
+	int tmp;
+	if (!mapname || !mapname[0]) {
+		trap_SendServerCommand(ent - g_entities, "print \"Map found but name is empty wtf?\n\"");
+		return qfalse;
+	}
+	if (DF_GetSegmentedRunnerCount()) {
+		trap_SendServerCommand(ent - g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"");
+		return qfalse;
+	}
+
+	if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
+		trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"", tmp));
+		return qfalse;
+	}
+
+	if (!G_DoesMapSupportGametype(mapname, trap_Cvar_VariableIntegerValue("g_gametype")))
+	{
+		//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
+		trap_SendServerCommand(ent - g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE_MAPNOTSUPPORTEDBYGAME")));
+		return qfalse;
+	}
+	return qtrue;
+}
+
+static void CallvoteSetupFinish(gentity_t* ent, qboolean votingOpinion, qboolean votingOpinionAll) {
+	int i;
+	level.votingOpinion = votingOpinion;
+	level.votingOpinionAll = votingOpinionAll;
+
+	trap_SendServerCommand(-1, va("print \"%s" S_COLOR_WHITE " %s: %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLCALLEDVOTE"), level.voteDisplayString));
+
+	// start the voting, the caller autoamtically votes yes
+	level.voteTime = level.time;
+	level.voteYes = level.votingOpinion ? 0 : 1;
+	level.voteNo = 0;
+
+	for (i = 0; i < level.maxclients; i++) {
+		level.clients[i].ps.eFlags &= ~EF_VOTED;
+	}
+	if (!level.votingOpinion) {
+		ent->client->ps.eFlags |= EF_VOTED;
+		ent->client->pers.voteValue = qtrue;
+	}
+
+	// Append white colorcode at the end of the display string as workaround for cgame leaking colors
+	Q_strcat(level.voteDisplayString, sizeof(level.voteDisplayString), S_COLOR_WHITE);
+
+	trap_SetConfigstring(CS_VOTE_TIME, va("%i", level.voteTime));
+	trap_SetConfigstring(CS_VOTE_STRING, level.voteDisplayString);
+	trap_SetConfigstring(CS_VOTE_YES, va("%i", level.voteYes));
+	trap_SetConfigstring(CS_VOTE_NO, va("%i", level.voteNo));
+}
+
 /*
 ==================
 Cmd_CallVote_f
@@ -5226,27 +5428,8 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	qboolean	votingOpinion = qfalse;
 	qboolean	votingOpinionAll = qfalse;
 
-	if ( !g_allowVote.integer ) {
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE")) );
-		return;
-	}
-
-	if ( level.voteExecuteTime ) {
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", "Cannot call a vote, old vote not yet exceuted, please wait.") );
-		return;
-	}
-
-	if ( level.voteTime ) {
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "VOTEINPROGRESS")) );
-		return;
-	}
-	if ( ent->client->pers.voteCount >= MAX_VOTE_COUNT ) {
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "MAXVOTES")) );
-		return;
-	}
 	trap_Argv(1, arg1, sizeof(arg1));
-	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR && Q_stricmp(arg1, "opinion") && Q_stricmp(arg1, "opinionAll")) { // opinions can be initiated from spec
-		trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOSPECVOTE")) );
+	if (!CallvoteAllowed(ent,arg1)) {
 		return;
 	}
 
@@ -5278,7 +5461,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	} else if ( !Q_stricmp( arg1, "shuffle" ) || !Q_stricmp( arg1, "scrambleteams" ) ) {
 	} else {
 		trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
-		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap, opinion <anything>, opinionAll <anything>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>, shuffle.\n\"" );
+		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap [tag], opinion <anything>, opinionAll <anything>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>, shuffle.\n\"" );
 		return;
 	}
 
@@ -5359,21 +5542,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		// this allows a player to change maps, but not upset the map rotation
 		char	s[MAX_STRING_CHARS];
 		
-
-		if (DF_GetSegmentedRunnerCount()) {
-			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
-			return;
-		}
-
-		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
-			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"", tmp));
-			return;
-		}
-
-		if (!G_DoesMapSupportGametype(arg2, trap_Cvar_VariableIntegerValue("g_gametype")))
-		{
-			//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
-			trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE_MAPNOTSUPPORTEDBYGAME")) );
+		if (!CallvoteMapOk(ent, arg2)) {
 			return;
 		}
 
@@ -5422,25 +5591,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		//Q_strncpyz(mapname,Info_ValueForKey(g_arenaInfos[mapnum], "map"),sizeof(mapname));
 		Q_strncpyz(mapname,g_arenaInfosHashed[mapnum].name,sizeof(mapname));
 
-		if (!mapname || !mapname[0]) {
-			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum (wtf?!).\n\"");
-			return;
-		}
-
-		if (DF_GetSegmentedRunnerCount()) {
-			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
-			return;
-		}
-
-		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
-			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"", tmp));
-			return;
-		}
-
-		if (!G_DoesMapSupportGametype(mapname, trap_Cvar_VariableIntegerValue("g_gametype")))
-		{
-			//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
-			trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE_MAPNOTSUPPORTEDBYGAME")) );
+		if (!CallvoteMapOk(ent, mapname)) {
 			return;
 		}
 
@@ -5460,9 +5611,16 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		char			mapname[MAX_STRING_CHARS];
 		int				mapnum = -1; //atoi(arg2);
 		int				tries = 0;
+		const char*		currentMap = DF_GetCourseName(qfalse);
 
 		if (g_numArenas < 1) {
 			trap_SendServerCommand(ent - g_entities, "print \"No maps found.\n\"");
+			return;
+		}
+
+		if (trap_Argc() > 2) { // randommap from a tag
+			trap_Argv(2, s, sizeof(s));
+			CallvoteMapSearch(ent,s);
 			return;
 		}
 
@@ -5473,7 +5631,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 				Com_Printf("WEIRD! randommap Map could not be found from mapnum %d, g_numArenas %d.\n", mapnum, g_numArenas);
 				return;
 			}
-			if (!Q_stricmp(g_arenaInfosHashed[mapnum].name,DF_GetCourseName(qfalse))) { // dont go on the same map we are on now
+			if (!Q_stricmp(g_arenaInfosHashed[mapnum].name, currentMap)) { // dont go on the same map we are on now
 				mapnum = -1;
 			}
 			tries++;
@@ -5488,25 +5646,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		//Q_strncpyz(mapname,Info_ValueForKey(g_arenaInfos[mapnum], "map"),sizeof(mapname));
 		Q_strncpyz(mapname,g_arenaInfosHashed[mapnum].name,sizeof(mapname));
 
-		if (!mapname || !mapname[0]) {
-			trap_SendServerCommand(ent - g_entities, "print \"Map could not be found from mapnum (wtf?!).\n\"");
-			return;
-		}
-
-		if (DF_GetSegmentedRunnerCount()) {
-			trap_SendServerCommand( ent-g_entities, "print \"Cannot vote for a new map while segmented runs are being replayed.\n\"" );
-			return;
-		}
-
-		if (tmp = G_SlowVoteProhibits(ent - g_entities)) {
-			trap_SendServerCommand(ent - g_entities, va("print \"Cannot vote for a new map, slow voting is active and %d other active players with to stay.\n\"", tmp));
-			return;
-		}
-
-		if (!G_DoesMapSupportGametype(mapname, trap_Cvar_VariableIntegerValue("g_gametype")))
-		{
-			//trap_SendServerCommand( ent-g_entities, "print \"You can't vote for this map, it isn't supported by the current gametype.\n\"" );
-			trap_SendServerCommand( ent-g_entities, va("print \"%s\n\"", G_GetStripEdString("SVINGAME", "NOVOTE_MAPNOTSUPPORTEDBYGAME")) );
+		if (!CallvoteMapOk(ent, mapname)) {
 			return;
 		}
 
@@ -5596,32 +5736,7 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		return;
 	}
 
-
-	level.votingOpinion = votingOpinion;
-	level.votingOpinionAll = votingOpinionAll;
-
-	trap_SendServerCommand( -1, va("print \"%s" S_COLOR_WHITE " %s: %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLCALLEDVOTE"), level.voteDisplayString ) );
-
-	// start the voting, the caller autoamtically votes yes
-	level.voteTime = level.time;
-	level.voteYes = level.votingOpinion ? 0 : 1;
-	level.voteNo = 0;
-
-	for ( i = 0 ; i < level.maxclients ; i++ ) {
-		level.clients[i].ps.eFlags &= ~EF_VOTED;
-	}
-	if (!level.votingOpinion) {
-		ent->client->ps.eFlags |= EF_VOTED;
-		ent->client->pers.voteValue = qtrue;
-	}
-
-	// Append white colorcode at the end of the display string as workaround for cgame leaking colors
-	Q_strcat( level.voteDisplayString, sizeof(level.voteDisplayString), S_COLOR_WHITE );
-
-	trap_SetConfigstring( CS_VOTE_TIME, va("%i", level.voteTime ) );
-	trap_SetConfigstring( CS_VOTE_STRING, level.voteDisplayString );	
-	trap_SetConfigstring( CS_VOTE_YES, va("%i", level.voteYes ) );
-	trap_SetConfigstring( CS_VOTE_NO, va("%i", level.voteNo ) );	
+	CallvoteSetupFinish(ent, votingOpinion, votingOpinionAll);
 }
 
 /*
