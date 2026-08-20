@@ -886,6 +886,7 @@ struct gclient_s {
 	int			lastScoresMessage;
 
 	//qboolean	isIronMan;
+	int			ironmanDangerPoints; // for every 10 seconds of being near an enemy, you gain 1 point as ironman
 
 	int			bactaExtra; // extra amount restored by bacta (e.g. q3 bacta)
 	int			messageSystemWarningShowed;

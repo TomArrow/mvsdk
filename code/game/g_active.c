@@ -123,9 +123,12 @@ void P_WorldEffects( gentity_t *ent ) {
 	qboolean	envirosuit;
 	int			waterlevel;
 	int			nowTime = LEVELTIME(ent->client);
+	qboolean	isIronman = (ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG] || ent->client->ps.powerups[PW_NEUTRALFLAG]) && ent->client->sess.mode == MODE_IRONMAN;
+	int			airOutTime = isIronman ? 1000 : 12000;
+	int			drownLevel = isIronman ? 1 : 3; // ironman capper starts drowning really fast and in shallow water. prevent annoying stalling tactics.
 
 	if ( ent->client->noclip ) {
-		ent->client->airOutTime = nowTime + 12000;	// don't need air
+		ent->client->airOutTime = nowTime + airOutTime;	// don't need air
 		return;
 	}
 
@@ -136,7 +139,7 @@ void P_WorldEffects( gentity_t *ent ) {
 	//
 	// check for drowning
 	//
-	if ( waterlevel == 3 ) {
+	if ( waterlevel >= drownLevel) {
 		// envirosuit give air
 		if ( envirosuit ) {
 			ent->client->airOutTime = nowTime + 10000;
@@ -180,7 +183,7 @@ void P_WorldEffects( gentity_t *ent ) {
 			}
 		}
 	} else {
-		ent->client->airOutTime = nowTime + 12000;
+		ent->client->airOutTime = nowTime + airOutTime;
 		ent->damage = 2;
 	}
 
@@ -1132,6 +1135,64 @@ static qboolean ClientCheckNotifyPhysicsFps(gentity_t* ent) {
 	}
 	else {
 		return qtrue;
+	}
+}
+
+#define IRONMAN_DANGERPOINTS_MAXDISTANCE 350.0f
+#define IRONMAN_DANGERPOINTS_MSECS_PER_POINT 10000
+void IronmanDangerPoints(gentity_t* self, int msec) {
+	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
+	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+	int i;
+
+	if (self->client->sess.mode != MODE_IRONMAN || self->client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER || self->health <= 0 || clampedIntAdd(level.time, -self->client->sess.lastHereTime) > 10000) {
+		return;
+	}
+
+	// Broadcast ourself to all iron manners
+	for (i = 0; i < level.numConnectedClients; i++)
+	{
+		gentity_t* ent = &g_entities[level.sortedClients[i]];
+		float	  dist;
+		vec3_t	  angles;
+		trace_t   trace;
+
+		if (ent == self)
+		{
+			continue;
+		}
+
+		if (ent->client->sess.mode != MODE_IRONMAN || clampedIntAdd(level.time, -ent->client->sess.lastHereTime) > 10000) {
+			// ignore non-ironmanners and afk ppl
+			continue;
+		}
+
+		VectorSubtract(self->client->ps.origin, ent->client->ps.origin, angles);
+		dist = VectorLengthSquared(angles);
+
+		if (dist > IRONMAN_DANGERPOINTS_MAXDISTANCE * IRONMAN_DANGERPOINTS_MAXDISTANCE)
+		{
+			continue;
+		}
+
+		// check if this played could hit the ironman
+		// we err to the side of being restrictive
+		// if theres water, clips or solid stuff inbetween, no points!
+		JP_Trace(&trace, ent->client->ps.origin, playerMins, playerMaxs, self->client->ps.origin, ent-g_entities, MASK_DEADSOLID | MASK_WATER | CONTENTS_NOSPAWN);
+
+		if ((trace.fraction < 1.0f || trace.allsolid || trace.startsolid) && trace.entityNum != (self - g_entities)) {
+			// we hit sth else...
+			continue;
+		}
+
+		self->client->ironmanDangerPoints += msec;
+	}
+	if (self->client->ironmanDangerPoints >= IRONMAN_DANGERPOINTS_MSECS_PER_POINT) {
+		// we have accumulated 10000 msecs (10 seconds) with nearby enemies)
+		// give points
+		int pointsToAward = self->client->ironmanDangerPoints / IRONMAN_DANGERPOINTS_MSECS_PER_POINT;
+		self->client->ironmanDangerPoints -= pointsToAward * IRONMAN_DANGERPOINTS_MSECS_PER_POINT;
+		AddScore(self, self->client->ps.origin, pointsToAward);
 	}
 }
 
@@ -2969,6 +3030,9 @@ void ClientThink_real( gentity_t *ent ) {
 		}
 		return;
 	}
+
+	// give ironman points for being near danger
+	IronmanDangerPoints( ent, msec );
 
 	// perform once-a-second actions
 	ClientTimerActions( ent, msec );

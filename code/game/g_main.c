@@ -3971,6 +3971,8 @@ void G_CheckIronManStatus() {
 	ent->client->pers.lastIronmanFlagGiven = level.time;
 	randomteam = Q_irand(PW_REDFLAG, 2, qfalse, PW_REDFLAG);
 	ent->client->ps.powerups[randomteam] = INT_MAX; // lets not do neutral flag cuz its not actually visible :/
+	ent->client->airOutTime = LEVELTIME(ent->client) + 1000; // ironman drowns fast and in shallow water :)
+	ent->client->ironmanDangerPoints = 0;
 	if (!(ent->client->pers.ttClientFlags & TTFLAGS_CLIENT_UNDERSTANDS_MODETEAMS) && applyTeamColors) {
 		// is this a bitch move? hmmm
 		// but this way he will see the ironman teams properly

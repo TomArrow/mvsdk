@@ -2181,27 +2181,33 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 		}
 	}
 
-	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN && self != attacker) {	// only happens in standard CTF
-		if (attacker && attacker->client) {
-			if (self->client->ps.powerups[PW_REDFLAG]) {
-				PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
-			}
-			else if (self->client->ps.powerups[PW_BLUEFLAG]) {
-				PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
-			}
-			if (g_ctfPersStats.integer) {
-				attacker->client->ps.persistant[PERS_IMPRESSIVE_COUNT]++;
-			}
-			if (attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
-				DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_IRONMAN, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
-				if (XYSPEED(attacker->client->ps.velocity) > 600 || attacker->client->pers.lastDbsSpeed > 600) {
-					int speed = XYSPEED(attacker->client->ps.velocity);
-					speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
-					G_SaveClipDemo(attacker, multiva("ironmanDbsReturnOver600ups_%dups", speed), multiva("ironman DBS return over 600 ups at %d ups", speed));
-					G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity),qtrue);
+	if ((self->client->ps.powerups[PW_REDFLAG] || self->client->ps.powerups[PW_BLUEFLAG] || self->client->ps.powerups[PW_NEUTRALFLAG]) && self->client->sess.mode == MODE_IRONMAN) {	// only happens in ironman
+		if(self != attacker){
+			if (attacker && attacker->client) {
+				if (self->client->ps.powerups[PW_REDFLAG]) {
+					PrintCTFMessage(attacker->s.number, TEAM_BLUE, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
 				}
+				else if (self->client->ps.powerups[PW_BLUEFLAG]) {
+					PrintCTFMessage(attacker->s.number, TEAM_RED, CTFMESSAGE_FRAGGED_FLAG_CARRIER);
+				}
+				if (g_ctfPersStats.integer) {
+					attacker->client->ps.persistant[PERS_IMPRESSIVE_COUNT]++;
+				}
+				if (attacker->client->ps.saberMove == LS_A_BACK_CR && meansOfDeath == MOD_SABER) {
+					DF_SetPlayerSubContestValueSafeguarded(attacker, SUBCONTESTS_DBS_IRONMAN, XYSPEED(attacker->client->ps.velocity), XYSPEED(self->client->preKnockbackVelocity), 0, damage, 0);
+					if (XYSPEED(attacker->client->ps.velocity) > 600 || attacker->client->pers.lastDbsSpeed > 600) {
+						int speed = XYSPEED(attacker->client->ps.velocity);
+						speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
+						G_SaveClipDemo(attacker, multiva("ironmanDbsReturnOver600ups_%dups", speed), multiva("ironman DBS return over 600 ups at %d ups", speed));
+						G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity),qtrue);
+					}
+				}
+				AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
 			}
-			AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
+		}
+		else if (meansOfDeath = MOD_SUICIDE) {
+			// punish selfkilling ironmen
+			AddScore(attacker, self->r.currentOrigin, CTF_IRONMAN_SELFKILL_PENALTY);
 		}
 		level.lastIronManKilled = level.time;
 	}

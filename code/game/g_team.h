@@ -8,6 +8,8 @@
 #define CTF_FRAG_CARRIER_BONUS	20		// what you get for fragging enemy flag carrier
 #define CTF_FLAG_RETURN_TIME	40000	// seconds until auto return
 
+#define CTF_IRONMAN_SELFKILL_PENALTY		-50	// what you get for selfkilling via /kill as ironman capper
+
 #define CTF_CARRIER_DANGER_PROTECT_BONUS	5	// bonus for fraggin someone who has recently hurt your flag carrier
 #define CTF_CARRIER_PROTECT_BONUS			2	// bonus for fraggin someone while either you or your target are near your flag carrier
 #define CTF_FLAG_DEFENSE_BONUS				10	// bonus for fraggin someone while either you or your target are near your flag
