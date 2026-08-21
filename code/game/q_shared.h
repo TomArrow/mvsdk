@@ -346,6 +346,7 @@ typedef enum {
 #define PAD(base, alignment)	(((base)+(alignment)-1) & ~((alignment)-1))
 #define PADLEN(base, alignment)	(PAD((base), (alignment)) - (base))
 #define PADP(base, alignment)	((void *) PAD((intptr_t) (base), (alignment)))
+#define ZERO_ONE_MINUSONE(a) ((a & 1) - ((a >> 1) & 1)) // nice loop helper if you do 0-2 loop and want 0,1,-1 order (jitter etc)
 
 #define ARRAY_LEN(x) (sizeof (x) / sizeof( *(x) ))
 

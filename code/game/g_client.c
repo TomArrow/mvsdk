@@ -402,10 +402,10 @@ qboolean WiggleSpotTelefrag(vec3_t origin, gentity_t* spawningEnt) {
 	for (height = 0; height < 3; height++) {
 		test[2] = original[2]+64.0f*height;
 		testdown[2] = original[2] - BUBBLESPAWN_DOWNTRACE;
-		for (front = -1; front < 2; front++) {
-			testdown[0] = test[0] = original[0]+32.0f*front;
-			for (right = -1; right < 2; right++) {
-				testdown[1] = test[1] = original[1]+32.0f*right;
+		for (front = 0; front < 3; front++) {
+			testdown[0] = test[0] = original[0]+32.0f*ZERO_ONE_MINUSONE(front);
+			for (right = 0; right < 3; right++) {
+				testdown[1] = test[1] = original[1]+32.0f*ZERO_ONE_MINUSONE(right);
 				if (!SpotWouldTelefrag(test, spawningEnt)) { // cool, we could spawn here and not kill anyone.
 					JP_Trace(&groundTrace,test,playerMins,playerMaxs,testdown,-1, MASK_PLAYERSOLID | MASK_WATER | CONTENTS_NOSPAWN);
 					if (groundTrace.startsolid || groundTrace.allsolid || (groundTrace.contents & (MASK_WATER | CONTENTS_NOSPAWN))) {
