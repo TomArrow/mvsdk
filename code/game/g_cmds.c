@@ -4217,8 +4217,6 @@ static void CallvoteMapSearch(gentity_t* ent, const char* tag) {
 	const char* validateError;
 	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_VOTE_MAPSEARCH, (1 << DBT_USERS) | (1 << DBT_MAPTAGS), "vote_mapsearch", 0);
 
-	//#define TAGCOUNT_SQL "COUNT(DISTINCT maptags.userid)"
-#define TAGCOUNT_SQL "SUM(maptags.value)"
 	validateError = ValidateMapTag(tag);
 	data.specifics.callvoteMapsearch.requestType = CVMS_TAG;
 	if (validateError) {
@@ -4408,7 +4406,8 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 	courseName = DF_GetCourseName(qfalse);
 
 //#define TAGCOUNT_SQL "COUNT(DISTINCT maptags.userid)"
-#define TAGCOUNT_SQL "SUM(maptags.value)"
+//#define TAGCOUNT_SQL "SUM(maptags.value)"
+#define TAGCOUNT_SQL "SUM(maptags.value)/(COUNT(*) / COUNT(DISTINCT maptags.userid))" // left join messes with us otherwise :)
 	if (!Q_stricmp(arg, "search") && arglen > 2) {
 		const char* tag = G_Argv(2);
 		const char* validateError = ValidateMapTag(tag);
