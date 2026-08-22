@@ -2429,12 +2429,13 @@ static void CG_RegisterGraphics( void ) {
 		cgs.media.teamBlueShader = trap_R_RegisterShader( "sprites/team_blue" );
 		cgs.media.teamYellowShader = trap_R_RegisterShader( "sprites/team_yellow" );
 		cgs.media.redQuadShader = trap_R_RegisterShader("powerups/blueflag" );
-		cgs.media.teamStatusBar = trap_R_RegisterShader( "gfx/2d/colorbar.tga" );
 	}
 	else if ( cgs.gametype == GT_JEDIMASTER )
 	{
 		cgs.media.teamRedShader = trap_R_RegisterShader( "sprites/team_red" );
 	}
+
+	cgs.media.teamStatusBar = trap_R_RegisterShader("gfx/2d/colorbar.tga"); // using this in all modes now sometimes, not just >= GT_TEAM (cg_drawTeamOverlay)
 
 	cgs.media.armorModel = 0;//trap_R_RegisterModel( "models/powerups/armor/armor_yel.md3" );
 	cgs.media.armorIcon  = 0;//trap_R_RegisterShaderNoMip( "icons/iconr_yellow" );
