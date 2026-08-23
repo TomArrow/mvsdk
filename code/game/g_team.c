@@ -1265,29 +1265,31 @@ Format:
 */
 void TeamplayInfoMessage( gentity_t *ent, const team_t team, const qboolean allteams ) {
 	char		entry[1024];
-	char		string[8192];
+	char		string[1400];
 	int			stringlength;
 	int			i, j, l;
 	gentity_t	*player;
 	int			cnt;
 	int			h, a;
-	int			clients[TEAM_MAXOVERLAY];
+	//int		clients[TEAM_MAXOVERLAY];
+	int			clientsActual[TEAM_MAXOVERLAY];
 
 	if ( ! ent->client->pers.teamInfo )
 		return;
 
+	// TA: commenting this out for now, doesnt seem to do anything.
 	// figure out what client should be on the display
 	// we are limited to 32, but we want to use the top eight players
 	// but in client order (so they don't keep changing position on the overlay)
-	for (i = 0, cnt = 0; i < g_maxclients.integer && cnt < TEAM_MAXOVERLAY; i++) {
-		player = g_entities + level.sortedClients[i];
-		if (player->inuse && player->client->sess.sessionTeam == team ) {
-			clients[cnt++] = level.sortedClients[i];
-		}
-	}
+	//for (i = 0, cnt = 0; i < g_maxclients.integer && cnt < TEAM_MAXOVERLAY; i++) {
+	//	player = g_entities + level.sortedClients[i];
+	//	if (player->inuse && player->client->sess.sessionTeam == team ) {
+	//		clients[cnt++] = level.sortedClients[i];
+	//	}
+	//}
 
 	// We have the top eight players, sort them by clientNum
-	qsort( clients, cnt, sizeof( clients[0] ), SortClients );
+	//qsort( clients, cnt, sizeof( clients[0] ), SortClients );
 
 	// send the latest information on all clients
 	string[0] = 0;
@@ -1302,27 +1304,35 @@ void TeamplayInfoMessage( gentity_t *ent, const team_t team, const qboolean allt
 			player = g_entities + i;
 			if (player->inuse && (l == 0 && player->client->sess.sessionTeam == team || l > 0 && player->client->sess.sessionTeam != team && player->client->sess.sessionTeam != TEAM_SPECTATOR)) {
 
-				h = player->client->ps.stats[STAT_HEALTH];
-				a = player->client->ps.stats[STAT_ARMOR];
-				if (h < 0) h = 0;
-				if (a < 0) a = 0;
 
-				Com_sprintf (entry, sizeof(entry),
-					" %i %i %i %i %i %i", 
-	//				level.sortedClients[i], player->client->pers.teamState.location, h, a, 
-					i, player->client->pers.teamState.location, h, a, 
-					player->client->ps.weapon, player->s.powerups);
-				j = strlen(entry);
-				if (stringlength + j > (int)sizeof(string))
-					break;
-				Q_strncpyz (string + stringlength, entry,sizeof(string)- stringlength);
-				stringlength += j;
-				cnt++;
+				clientsActual[cnt++] = i;
 			}
 		}
 	}
 
-	trap_SendServerCommand( ent-g_entities, va("tinfo %i %s", cnt, string) );
+	Com_sprintf(string, sizeof(string), "tinfo %i", cnt);
+	stringlength = strlen(string);
+
+	for (i = 0; i < cnt; i++) {
+		player = g_entities + clientsActual[i];
+		h = player->client->ps.stats[STAT_HEALTH];
+		a = player->client->ps.stats[STAT_ARMOR];
+		if (h < 0) h = 0;
+		if (a < 0) a = 0;
+
+		Com_sprintf(entry, sizeof(entry),
+			" %i %i %i %i %i %i",
+			//				level.sortedClients[i], player->client->pers.teamState.location, h, a, 
+			clientsActual[i], player->client->pers.teamState.location, h, a,
+			player->client->ps.weapon, player->s.powerups);
+		j = strlen(entry);
+		if (stringlength + j > 1022)
+			break;
+		Q_strncpyz(string + stringlength, entry, sizeof(string) - stringlength);
+		stringlength += j;
+	}
+
+	trap_SendServerCommand( ent-g_entities, string );
 }
 
 // from vVv-serverside
