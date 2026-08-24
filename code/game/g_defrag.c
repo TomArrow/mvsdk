@@ -4048,8 +4048,8 @@ static void ResetSpecificPlayerTimers(gentity_t* ent, qboolean print) {
 		ent->client->ps.powerups[PW_YSALAMIRI] = 0; //beh, only in racemode so wont fuck with ppl using amtele as checkpoints midcourse
 		ent->client->ps.powerups[PW_FORCE_BOON] = 0;
 		if (ent->health > 0) {
-			ent->client->ps.stats[STAT_HEALTH] = ent->health = 100;
-			ent->client->ps.stats[STAT_ARMOR] = 25;
+			ClientSetStatHealth(ent->client, ent->health = 100);
+			ClientSetStatArmor(ent->client, 25);
 		}
 		if (MovementStyleAllowsWeapons(ent->client->sess.raceStyle.movementStyle)) { //Get rid of their rockets when they tele/noclip..? Do this for every style..
 			DeletePlayerProjectiles(ent);

@@ -268,7 +268,7 @@ void JMSaberTouch(gentity_t *self, gentity_t *other, trace_t *trace)
 
 	if (other->health < 200 && other->health > 0)
 	{ //full health when you become the Jedi Master
-		other->client->ps.stats[STAT_HEALTH] = other->health = 200;
+		ClientSetStatHealth(other->client, other->health = 200);
 	}
 
 	if (other->client->ps.fd.forcePower < 100)
@@ -3566,7 +3566,7 @@ void ClientSpawn(gentity_t *ent) {
 	WP_SpawnInitForcePowers( ent );
 
 	// health will count down towards max_health
-	ent->health = client->ps.stats[STAT_HEALTH] = client->ps.stats[STAT_MAX_HEALTH] * 1.25;
+	ClientSetStatHealth(client, ent->health = client->ps.stats[STAT_MAX_HEALTH] * 1.25);
 
 	// Start with a small amount of armor as well.
 	client->ps.stats[STAT_ARMOR] = client->ps.stats[STAT_MAX_HEALTH] * 0.25;

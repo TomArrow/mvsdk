@@ -850,7 +850,7 @@ void Cmd_Kill_f( gentity_t *ent ) {
 	}
 
 	ent->flags &= ~FL_GODMODE;
-	ent->client->ps.stats[STAT_HEALTH] = ent->health = -999;
+	ClientSetStatHealth(ent->client, ent->health = -999);
 	player_die (ent, ent, ent, 100000, MOD_SUICIDE);
 }
 
@@ -1132,7 +1132,7 @@ qboolean SetTeam( gentity_t *ent, const char *s ) {
 	if ( oldTeam != TEAM_SPECTATOR ) {
 		// Kill him (makes sure he loses flags, etc)
 		ent->flags &= ~FL_GODMODE;
-		ent->client->ps.stats[STAT_HEALTH] = ent->health = 0;
+		ClientSetStatHealth(ent->client, ent->health = 0);
 		player_die (ent, ent, ent, 100000, MOD_SUICIDE);
 
 	}
@@ -1151,9 +1151,11 @@ qboolean SetTeam( gentity_t *ent, const char *s ) {
 		}
 	}
 
+	level.teamLocationChanged |= (1 << client->sess.sessionTeam) | (1 << team);
 	client->sess.sessionTeam = team;
 	client->sess.spectatorState = specState;
 	client->sess.spectatorClient = specClient;
+	client->pers.lastTeamInfoMessageSent = 0; // reset this
 
 	client->sess.teamLeader = qfalse;
 	if ( team == TEAM_RED || team == TEAM_BLUE ) {
@@ -1201,6 +1203,7 @@ void StopFollowing( gentity_t *ent ) {
 	ent->client->ps.persistant[ PERS_TEAM ] = TEAM_SPECTATOR;	
 	ent->client->sess.sessionTeam = TEAM_SPECTATOR;	
 	ent->client->sess.spectatorState = SPECTATOR_FREE;
+	ent->client->pers.lastTeamInfoMessageSent = 0; // reset this
 	ent->client->ps.pm_flags &= ~PMF_FOLLOW;
 	ent->r.svFlags &= ~SVF_BOT;
 	ent->client->ps.clientNum = ent - g_entities;
@@ -1230,6 +1233,7 @@ void StopFollowing( gentity_t *ent ) {
 	// don't use dead view angles (from vvv-serverside, which quotes ioq3, dunno if we need this)
 	if (ent->client->ps.stats[STAT_HEALTH] <= 0) {
 		ent->client->ps.stats[STAT_HEALTH] = 1;
+		level.teamLocationChanged |= (1 << ent->client->sess.sessionTeam);
 	}
 
 	UpdateClientRaceVars(ent->client); // make sure our race stuff is updated, especially RFL_BOT runflag.
@@ -3876,6 +3880,7 @@ void Cmd_Follow_f( gentity_t *ent ) {
 
 	ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
 	ent->client->sess.spectatorClient = i;
+	ent->client->pers.lastTeamInfoMessageSent = 0; // reset this
 }
 
 /*
@@ -3935,6 +3940,7 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir ) {
 		// this is good, we can use it
 		ent->client->sess.spectatorClient = clientnum;
 		ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
+		ent->client->pers.lastTeamInfoMessageSent = 0; // reset this
 		return;
 	} while ( clientnum != original );
 
@@ -6401,12 +6407,10 @@ void G_StartDuel(gentity_t* ent, gentity_t* challenged, qboolean message) {
 
 	ent->client->pers.lastDuelStart = ent->client->pers.lastDuel = challenged->client->pers.lastDuelStart = challenged->client->pers.lastDuel = level.time;
 
-	ent->client->ps.stats[STAT_ARMOR] =
-		ent->client->ps.stats[STAT_HEALTH] =
-		ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
-	challenged->client->ps.stats[STAT_ARMOR] =
-		challenged->client->ps.stats[STAT_HEALTH] =
-		challenged->health = challenged->client->ps.stats[STAT_MAX_HEALTH];
+	ClientSetStatHealth(ent->client, ent->health = ent->client->ps.stats[STAT_MAX_HEALTH]);
+	ClientSetStatArmor(ent->client, ent->client->ps.stats[STAT_MAX_HEALTH]);
+	ClientSetStatHealth(challenged->client, challenged->health = challenged->client->ps.stats[STAT_MAX_HEALTH]);
+	ClientSetStatArmor(challenged->client, challenged->client->ps.stats[STAT_MAX_HEALTH]);
 }
 
 void Cmd_EngageDuel_f(gentity_t *ent)

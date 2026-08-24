@@ -1219,12 +1219,26 @@ void ClientTimerActions( gentity_t *ent, int msec ) {
 
 		// count down health when over max
 		if ( ent->health > client->ps.stats[STAT_MAX_HEALTH] ) {
+			if (ent->health != client->ps.stats[STAT_HEALTH] || !(g_teamOverlayDynamicIgnoreDecay.integer & 1)) {
+				// this is a bit cringe. idk. normally STAT_HEALTH isnt set here. 
+				// i basically wanna check if the ONLY change here is the reduction by 1
+				// so we can ignore decay in the teaminfo messages if desired.
+				// for this reason i also need to set STAT_HEALTH below (which it normally isnt)
+				// so that it doesnt trigger the new teaminfo message on its own when STAT_HEALTH = ent->health at a later point.
+				// however ent->health may have changed already in some other place, and that SHOULD trigger the teaminfo message.
+				// hence the condition... really dumb
+				level.teamLocationChanged |= (1 << client->sess.sessionTeam);
+			}
 			ent->health--;
+			client->ps.stats[STAT_HEALTH] = ent->health; // i hope this is safe. SP does it but we dont normally?
 		}
 
 		// count down armor when over max
 		if ( client->ps.stats[STAT_ARMOR] > client->ps.stats[STAT_MAX_HEALTH] ) {
 			client->ps.stats[STAT_ARMOR]--;
+			if (!(g_teamOverlayDynamicIgnoreDecay.integer & 1)) {
+				level.teamLocationChanged |= (1 << client->sess.sessionTeam);
+			}
 		}
 	}
 }
@@ -2409,7 +2423,7 @@ void ClientThink_real( gentity_t *ent ) {
 				{
 					if (ent->health < ent->client->ps.stats[STAT_MAX_HEALTH])
 					{
-						ent->client->ps.stats[STAT_HEALTH] = ent->health = ent->client->ps.stats[STAT_MAX_HEALTH];
+						ClientSetStatHealth(ent->client, ent->health = ent->client->ps.stats[STAT_MAX_HEALTH]);
 					}
 
 					if (g_spawnInvulnerability.integer)
@@ -3707,6 +3721,7 @@ void SpectatorClientEndFrame( gentity_t *ent ) {
 				// drop them to free spectators unless they are dedicated camera followers
 				if ( ent->client->sess.spectatorClient >= 0 ) {
 					ent->client->sess.spectatorState = SPECTATOR_FREE;
+					ent->client->pers.lastTeamInfoMessageSent = 0; // reset this
 					memset( ent->client->ps.powerups, 0, sizeof(ent->client->ps.powerups) ); // Ensure following spectators don't take flags or such into ClientBegin and trigger the FlagEatingFix
 					ClientBegin( ent->client - level.clients, qtrue );
 				}
@@ -3760,7 +3775,7 @@ void ClientEndFrameRaceCritical(gentity_t* ent) {
 void ClientEndFrameServerFrame(gentity_t* ent) {
 	// defrag: keep stuff below in a loop that is actually at the end to have up to date values.
 
-	ent->client->ps.stats[STAT_HEALTH] = ent->health;	// FIXME: get rid of ent->health...
+	ClientSetStatHealth(ent->client, ent->health); // FIXME: get rid of ent->health...	
 
 	// add the EF_CONNECTION flag if we haven't gotten commands recently
 	if (level.time - ent->client->lastCmdTime > 1000 && !(ent->client->sess.raceMode && (ent->client->sess.raceStyle.runFlags & RFL_SEGMENTED) && ent->client->pers.segmented.state == SEG_REPLAY)) { // let it be ok during replays (if ppl time out/ disconnect)

@@ -1332,7 +1332,12 @@ void TeamplayInfoMessage( gentity_t *ent, const team_t team, const qboolean allt
 		stringlength += j;
 	}
 
+	if (ent->client->pers.lastTeamInfoMessageSent && ent->client->pers.lastTeamInfoMessageSent < level.time && level.time - ent->client->pers.lastTeamInfoMessageSent < TEAM_LOCATION_UPDATE_TIME_MIN && !strcmp(ent->client->pers.lastTeamInfoMessage,string)) {
+		return;
+	}
 	trap_SendServerCommand( ent-g_entities, string );
+	Q_strncpyz(ent->client->pers.lastTeamInfoMessage, string, sizeof(ent->client->pers.lastTeamInfoMessage));
+	ent->client->pers.lastTeamInfoMessageSent = level.time;
 }
 
 // from vVv-serverside
@@ -1348,14 +1353,30 @@ team_t G_SpeccingClientTeam(gentity_t* ent) {
 	return -1;
 }
 
+void ClientSetStatHealth(gclient_t* client, int value) {
+	if (client->ps.stats[STAT_HEALTH] != value) {
+		level.teamLocationChanged |= (1 << client->sess.sessionTeam);
+	}
+	client->ps.stats[STAT_HEALTH] = value;
+}
+
+void ClientSetStatArmor(gclient_t* client, int value) {
+	if (client->ps.stats[STAT_ARMOR] != value) {
+		level.teamLocationChanged |= (1 << client->sess.sessionTeam);
+	}
+	client->ps.stats[STAT_ARMOR] = value;
+}
+
+#define TEAMINFO_DATACHANGED_RELEVANTTEAMS (~(1 << TEAM_SPECTATOR))
 
 void CheckTeamStatus(void) {
 	int i;
 	gentity_t *loc, *ent;
 
-	if (level.time - level.lastTeamLocationTime > TEAM_LOCATION_UPDATE_TIME) {
+	if (level.time - level.lastTeamLocationTime > TEAM_LOCATION_UPDATE_TIME || g_teamOverlayDynamic.integer && (level.teamLocationChanged & TEAMINFO_DATACHANGED_RELEVANTTEAMS) && !G_RateLimit(&level.teamLocationRateLimiter, g_teamOverlayDynamic.integer, 333, level.time,"tinfo messages")) {
 
 		level.lastTeamLocationTime = level.time;
+		level.teamLocationChanged = 0;
 
 		for (i = 0; i < g_maxclients.integer; i++) {
 			ent = g_entities + i;
@@ -1394,7 +1415,7 @@ void CheckTeamStatus(void) {
 			}
 
 			//if (ent->inuse && (ent->client->sess.sessionTeam == TEAM_RED ||	ent->client->sess.sessionTeam == TEAM_BLUE)) {
-			if (refteam == TEAM_RED || refteam == TEAM_BLUE || g_teamOverlaySpecAll.integer) {
+			if (refteam == TEAM_RED || refteam == TEAM_BLUE || allteams) {
 				TeamplayInfoMessage( ent, refteam, allteams );
 			}
 		}

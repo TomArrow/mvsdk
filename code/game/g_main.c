@@ -253,6 +253,8 @@ vmCvar_t	g_crossServerChat;
 vmCvar_t	g_crossServerDefragTimes;
 
 vmCvar_t	g_teamOverlaySpecAll;
+vmCvar_t	g_teamOverlayDynamic;
+vmCvar_t	g_teamOverlayDynamicIgnoreDecay;
 
 
 
@@ -518,6 +520,13 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 	{ &g_crossServerDefragTimes, "g_crossServerDefragTimes", "2", CVAR_ARCHIVE, 0, qtrue}, // Share achieved defrag time prints across servers. 1 = receive. 2 = send
 	
 	{ &g_teamOverlaySpecAll, "g_teamOverlaySpecAll", "1", CVAR_ARCHIVE, 0, qfalse}, // team overlay sent for all players to spectators
+	{ &g_teamOverlayDynamic, "g_teamOverlayDynamic", "3", CVAR_ARCHIVE, 0, qfalse}, // 0 = normal. number = ratelimit factor similar to sv_floodProtect. BUT interval is 333ms. so the overall rate should be max 1 tinfo every 1/3 seconds. but we allow bursts of 3 when needed quickly.
+	{ &g_teamOverlayDynamicIgnoreDecay, "g_teamOverlayDynamicIgnoreDecay", "15", CVAR_ARCHIVE, 0, qfalse}, // When using dynamic teaminfo messages, don't waste a lot of them on just simple things like armor/health decay and other high-frequency changes. Bitmask
+	// 1 = armor/health decay when over max_health
+	// 2 = rage health decay
+	// 4 = force lightning damage
+	// 8 = shield charger armor increase
+	// 15 = all together
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 
@@ -976,6 +985,42 @@ void MVAPI_AfterInit(void)
 
 	// Inform JK2MV that we can handle level.time resetting on mapchanges
 	if ( mvapi >= 4 ) trap_MVAPI_ResetServerTime( qtrue );
+}
+
+/*
+================
+SVC_RateLimit
+
+Allows one packet per period msec with bucket size of burst
+================
+*/
+qboolean G_RateLimit(leakyBucket_t *bucket, int burst, int period, int now, const char* purpose) {
+	if (bucket != NULL) {
+		int interval = now - bucket->lastTime;
+		int expired = interval / period;
+		int expiredRemainder = interval % period;
+
+		if (expired > bucket->burst || interval < 0) {
+			bucket->burst = 0;
+			bucket->lastTime = now;
+		} else {
+			bucket->burst -= expired;
+			bucket->lastTime = now - expiredRemainder;
+		}
+
+		if (bucket->burst < burst) {
+			bucket->burst++;
+
+			return qfalse;
+		}
+
+		if (g_developer.integer > 2) {
+			Com_Printf("^3G_RateLimit: Limited (%s)\n",purpose);
+		}
+		return qtrue;
+	} else {
+		return qfalse;
+	}
 }
 
 /*
@@ -3949,8 +3994,8 @@ void G_CheckIronManStatus() {
 		}
 		ClientSetModeTeam(ent, i== 0 ? MODETEAM_IRONMAN_CAPPER :  MODETEAM_IRONMAN_CHASER);
 		ent->health = 100;
-		ent->client->ps.stats[STAT_HEALTH] = 100;
-		ent->client->ps.stats[STAT_ARMOR] = 25;
+		ClientSetStatHealth(ent->client, 100);
+		ClientSetStatArmor(ent->client, 25);
 		if (!(ent->client->pers.ttClientFlags & TTFLAGS_CLIENT_UNDERSTANDS_MODETEAMS) && applyTeamColors) {
 			// is this a bitch move? hmmm
 			// but this way he will see the ironman teams properly
@@ -3965,7 +4010,7 @@ void G_CheckIronManStatus() {
 	}
 
 	// set data for the iron man (ent will be the ironman as we counted backwards in the looop)
-	ent->client->ps.stats[STAT_ARMOR] = 100; // ironman gets full armor
+	ClientSetStatArmor(ent->client, 100); // ironman gets full armor
 	ent->client->ps.eFlags |= EF_INVULNERABLE;
 	ent->client->invulnerableTimer = level.time + 3000; // give ironman 2 seconds of invulnerability to not get insta killed
 	ent->client->pers.lastIronmanFlagGiven = level.time;

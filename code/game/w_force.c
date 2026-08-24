@@ -413,6 +413,7 @@ void WP_InitForcePowers( gentity_t *ent )
 					//Make them a spectator so they can set their powerups up without being bothered.
 					ent->client->sess.sessionTeam = TEAM_SPECTATOR;
 					ent->client->sess.spectatorState = SPECTATOR_FREE;
+					ent->client->pers.lastTeamInfoMessageSent = 0; // reset this
 					ent->client->sess.spectatorClient = 0;
 
 					ent->client->pers.teamState.state = TEAM_BEGIN;
@@ -1250,11 +1251,7 @@ void ForceTeamHeal( gentity_t *self )
 		if (g_entities[pl[i]].client->ps.stats[STAT_HEALTH] > 0 &&
 			g_entities[pl[i]].health > 0)
 		{
-			g_entities[pl[i]].client->ps.stats[STAT_HEALTH] += healthadd;
-			if (g_entities[pl[i]].client->ps.stats[STAT_HEALTH] > g_entities[pl[i]].client->ps.stats[STAT_MAX_HEALTH])
-			{
-				g_entities[pl[i]].client->ps.stats[STAT_HEALTH] = g_entities[pl[i]].client->ps.stats[STAT_MAX_HEALTH];
-			}
+			ClientSetStatHealth(g_entities[pl[i]].client, MIN(g_entities[pl[i]].client->ps.stats[STAT_MAX_HEALTH], g_entities[pl[i]].client->ps.stats[STAT_HEALTH] + healthadd));
 
 			g_entities[pl[i]].health = g_entities[pl[i]].client->ps.stats[STAT_HEALTH];
 
@@ -1698,7 +1695,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 				if (dmg)
 				{
 					//rww - Shields can now absorb lightning too.
-					G_Damage( traceEnt, self, self, dir, impactPoint, dmg, 0, MOD_FORCE_DARK );
+					G_Damage( traceEnt, self, self, dir, impactPoint, dmg, DAMAGE_LIGHTNING, MOD_FORCE_DARK );
 				}
 				if ( traceEnt->client )
 				{
@@ -1717,7 +1714,7 @@ void ForceLightningDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec
 		else if(self->client->sess.raceMode && traceEnt->damageindefrag){ // allow us to open doors that open when shot via force lightning
 			if (ForcePowerUsableOn(self, traceEnt, FP_LIGHTNING))
 			{
-				G_Damage(traceEnt, self, self, dir, impactPoint, 1, DAMAGE_IN_RACEMODE, MOD_FORCE_DARK);
+				G_Damage(traceEnt, self, self, dir, impactPoint, 1, DAMAGE_IN_RACEMODE | DAMAGE_LIGHTNING, MOD_FORCE_DARK);
 			}
 		}
 	}
@@ -1959,7 +1956,7 @@ void ForceDrainDamage( gentity_t *self, gentity_t *traceEnt, vec3_t dir, vec3_t 
 					{
 						self->health = self->client->ps.stats[STAT_MAX_HEALTH];
 					}
-					self->client->ps.stats[STAT_HEALTH] = self->health;
+					ClientSetStatHealth(self->client, self->health);
 				}
 
 				traceEnt->client->ps.fd.forcePowerRegenDebounceTime = LEVELTIME(traceEnt->client) + 800; //don't let the client being drained get force power back right away
@@ -3934,6 +3931,7 @@ static void WP_UpdateMindtrickEnts(gentity_t *self)
 static void WP_ForcePowerRun( gentity_t *self, forcePowers_t forcePower, usercmd_t *cmd )
 {
 	int			nowTime = LEVELTIME(self->client);
+	qboolean	rageHealthWasSame;
 	switch( (int)forcePower )
 	{
 	case FP_HEAL:
@@ -4011,6 +4009,7 @@ static void WP_ForcePowerRun( gentity_t *self, forcePowers_t forcePower, usercmd
 		}
 		break;
 	case FP_RAGE:
+		rageHealthWasSame = self->health == self->client->ps.stats[STAT_HEALTH];
 		if (self->health < 1)
 		{
 			WP_ForcePowerStop(self, forcePower);
@@ -4040,9 +4039,11 @@ static void WP_ForcePowerRun( gentity_t *self, forcePowers_t forcePower, usercmd
 		if (self->health < 1)
 		{
 			self->health = 1;
+			level.teamLocationChanged |= (1 << self->client->sess.sessionTeam);
 			WP_ForcePowerStop(self, forcePower);
+		} else if (self->client->ps.stats[STAT_HEALTH] != self->health && (!rageHealthWasSame || !(g_teamOverlayDynamicIgnoreDecay.integer & 2)) ) {
+			level.teamLocationChanged |= (1 << self->client->sess.sessionTeam);
 		}
-
 		self->client->ps.stats[STAT_HEALTH] = self->health;
 		break;
 	case FP_DRAIN:

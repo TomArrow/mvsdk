@@ -2222,10 +2222,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 	else if (self->client->sess.mode == MODE_IRONMAN && attacker && attacker->client && attacker->client->sess.mode == MODE_IRONMAN && attacker->client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER && attacker != self) {
 		// give shield bonus to iron man if he kills someone
 		if (attacker->client->ps.stats[STAT_ARMOR] < 100) {
-			attacker->client->ps.stats[STAT_ARMOR] += 20;
-			if (attacker->client->ps.stats[STAT_ARMOR] > 100) {
-				attacker->client->ps.stats[STAT_ARMOR] = 100;
-			}
+			ClientSetStatArmor(attacker->client, MIN(100, attacker->client->ps.stats[STAT_ARMOR] + 20));
 		}
 	}
 	else {
@@ -2444,6 +2441,9 @@ int CheckArmor(gentity_t* ent, int damage, int dflags, int* realArmorLoss)
 		{
 			*realArmorLoss += save;
 			client->ps.stats[STAT_ARMOR] -= save;
+		}
+		if (!( (dflags & DAMAGE_LIGHTNING) && (g_teamOverlayDynamicIgnoreDecay.integer & 4) )) {
+			level.teamLocationChanged |= (1 << client->sess.sessionTeam);
 		}
 	}
 
@@ -3181,7 +3181,7 @@ void G_Kill(gentity_t* ent) {
 	//	DeletePlayerProjectiles(ent); //Not sure how ppl could realisticly abuse this.. but might as well add it
 
 	ent->flags &= ~FL_GODMODE;
-	ent->client->ps.stats[STAT_HEALTH] = ent->health = -999;
+	ClientSetStatHealth(ent->client, ent->health = -999);
 	player_die(ent, ent, ent, 100000, MOD_SUICIDE);
 }
 
@@ -3226,6 +3226,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 	int			armorloss = 0;
 	int			nowTime = inflictor ? LEVELTIME(inflictor->client) : level.time;
 	int			nowTimeTarg = LEVELTIME(targ->client);
+	qboolean	clientHealthWasSame = qtrue;
 
 	if ( !targ /*|| !targ->client */) return;
 
@@ -3237,6 +3238,10 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 
 	if (!targ->takedamage) {
 		return;
+	}
+
+	if (targ && targ->client && targ->health != targ->client->ps.stats[STAT_HEALTH]) {
+		clientHealthWasSame = qfalse;
 	}
 
 	if (targ && targ->client && targ->client->ps.duelInProgress)
@@ -3743,7 +3748,13 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			take /= (targ->client->ps.fd.forcePowerLevel[FP_RAGE]+1);
 		}
 
-		targ->health = targ->health - take;
+		targ->health = targ->health - take; 
+		if (targ->client) {
+			if (targ->client->ps.stats[STAT_HEALTH] != targ->health && !(clientHealthWasSame && targ->health > 0 && (dflags & DAMAGE_LIGHTNING) && (g_teamOverlayDynamicIgnoreDecay.integer & 4))) {
+				level.teamLocationChanged |= (1 << targ->client->sess.sessionTeam);
+			}
+			targ->client->ps.stats[STAT_HEALTH] = targ->health;
+		}
 
 		if (targ->client && (targ->client->ps.fd.forcePowersActive & (1 << FP_RAGE)) && (inflictor->client || attacker->client))
 		{
@@ -3754,6 +3765,7 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 			if (targ->client->ps.stats[STAT_HEALTH] <= 0)
 			{
 				targ->client->ps.stats[STAT_HEALTH] = 1;
+				level.teamLocationChanged |= (1 << targ->client->sess.sessionTeam);
 			}
 		}
 
@@ -3761,7 +3773,6 @@ void G_Damage( gentity_t *targ, gentity_t *inflictor, gentity_t *attacker,
 		if (targ->client && mod != MOD_TELEFRAG && (mod != MOD_CRUSH || rawdamage < 200)) { // try to exclude the ridiculously high crush damages so they don't destroy the stats. mod_falling with fallingtodeath also directly calls player_die
 			int totalloss = armorloss + oldHealth - targ->health;
 			gentity_t* realAttacker = attacker;
-			targ->client->ps.stats[STAT_HEALTH] = targ->health;
 			if (inflictor && inflictor->activator && !inflictor->client && !realAttacker->client &&
 				inflictor->activator->client && inflictor->activator->inuse &&
 				inflictor->s.weapon == WP_TURRET)

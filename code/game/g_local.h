@@ -740,6 +740,9 @@ typedef struct {
 	mapRating_t	mapRatings[MV_NUMSTYLES];
 
 	int			lastLevelSpawnTime; // for scheduling FP_SEE in duel queue. always the level.time, not commandtime. never use for gameplay sensitive things (that could mess up a segmented replay)
+
+	char		lastTeamInfoMessage[1400]; // very cringe but reasonably readable. TODO do something more efficient
+	int			lastTeamInfoMessageSent;
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -934,6 +937,11 @@ typedef struct queuedDemoClip_s {
 	char		cmd[MAX_STRING_CHARS];
 } queuedDemoClip_t;
 
+typedef struct leakyBucket_s {
+	int					lastTime;
+	int					burst;
+} leakyBucket_t;
+
 //
 // this structure is cleared as each map is entered
 //
@@ -968,6 +976,8 @@ typedef struct {
 
 	int			teamScores[TEAM_NUM_TEAMS];
 	int			lastTeamLocationTime;		// last time of client team location update
+	int			teamLocationChanged;		// when health/armor changes. send early updates
+	leakyBucket_t	teamLocationRateLimiter;
 
 	qboolean	newSession;				// don't use any old session data, because
 										// we changed gametype
@@ -1397,6 +1407,7 @@ extern int gGAvoidDismember;
 
 #define DAMAGE_IN_RACEMODE			0x00001000	// Damages even in racemode
 #define FAKE_DAMAGE_IN_RACEMODE		0x00002000	// "Damages" in racemode. Applies effects/knockback but no real harm.
+#define DAMAGE_LIGHTNING			0x00004000	// marks damage as force lightning for teaminfo message timing :/
 
 
 // 
@@ -1550,6 +1561,8 @@ const char *G_GetStripEdString(char *refSection, char *refName);
 void MV_UpdateMvsdkConfigstring( char *key, char *value );
 void MV_UpdateSvFlags( void );
 
+qboolean G_RateLimit(leakyBucket_t* bucket, int burst, int period, int now, const char* purpose);
+
 void G_StringAppendSubstring( char *dst, size_t dstSize, const char *src, size_t srcLen );
 
 // On linux rand() behaves different than on Winodws or in a qvm, ...
@@ -1632,6 +1645,8 @@ qboolean OnSameTeam( gentity_t *ent1, gentity_t *ent2 );
 void Team_CheckDroppedItem( gentity_t *dropped ); 
 int BinaryTeam(gentity_t* ent);
 qboolean IsCapper(gentity_t* ent);
+void ClientSetStatHealth(gclient_t* client, int value);
+void ClientSetStatArmor(gclient_t* client, int value);
 
 //
 // g_mem.c
@@ -1978,6 +1993,8 @@ extern	vmCvar_t	g_crossServerChat;
 extern	vmCvar_t	g_crossServerDefragTimes;
 
 extern	vmCvar_t	g_teamOverlaySpecAll;
+extern	vmCvar_t	g_teamOverlayDynamic;
+extern	vmCvar_t	g_teamOverlayDynamicIgnoreDecay;
 
 // vvv-serverSide features port
 extern	vmCvar_t	g_pauseGame;
