@@ -354,8 +354,6 @@ typedef struct {
 	int			watertype;
 	int			waterlevel;
 
-	int			contenttype; // e.g. if we're in CONTENTS_NOSPAWN
-
 	int			gametype;
 
 	int			debugMelee;
@@ -414,6 +412,9 @@ typedef struct {
 
 	// vvv-serverSide feature porting (i dislike accessing g_vars here)
 	int				pauseGame;
+	int			contenttype; // e.g. if we're in CONTENTS_NOSPAWN
+	int			contenttype2; // e.g. if we're in CONTENTS_NOSPAWN
+	int			contenttype4; // e.g. if we're in CONTENTS_NOSPAWN
 } pmove_t;
 
 extern	pmove_t		*pm;
