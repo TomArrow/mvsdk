@@ -2213,7 +2213,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 				AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);
 			}
 		}
-		else if (meansOfDeath = MOD_SUICIDE) {
+		else if (attacker->client && meansOfDeath == MOD_SUICIDE) {
 			// punish selfkilling ironmen
 			AddScore(attacker, self->r.currentOrigin, CTF_IRONMAN_SELFKILL_PENALTY);
 		}

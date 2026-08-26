@@ -46,7 +46,7 @@ typedef struct modeTeam_s {
 	qboolean			applyRealTeam;	// when gametype >= GT_TEAM, should we force a real team for this modeteam? (spectator is unaffected)
 	qboolean			applyTeamColors;// when gametype < GT_TEAM, should we force team colors?
 	qboolean			applyPrefix;	// should we prefix the team name in front of playernames?
-	const char			teamPrefixColor;
+	int					teamPrefixColor;// i made the horrible mistake of making this a const char. QVM flipped the fuck out and started doing program stack corruptions, the values of the modeTeams array were scrambled, etc etc. INSANE. oh yea it just being a char instead of an int -> same problems.
 	const char*			scoreHexColor;
 	int					realTeam;		// corresponding team if gametype >= GT_TEAM
 	modeTeam_e			respawnTeam;	// which modeTeam do we respawn in after death? default MODETEAM_INVALID, which just does nothing.

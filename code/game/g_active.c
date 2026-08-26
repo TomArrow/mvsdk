@@ -168,7 +168,7 @@ void P_WorldEffects( gentity_t *ent ) {
 
 				// play a gurp sound instead of a normal pain sound
 				if (ent->health <= ent->damage) {
-					G_Sound(ent, CHAN_VOICE, G_SoundIndex(/*"*drown.wav"*/"sound/player/gurp1.wav"));
+					G_Sound(ent, CHAN_VOICE, G_SoundIndex("sound/player/gurp1.wav")); // "*drown.wav"
 				} else if (rand()&1) {
 					G_Sound(ent, CHAN_VOICE, G_SoundIndex("sound/player/gurp1.wav"));
 				} else {
@@ -1148,8 +1148,7 @@ void IronmanDangerPoints(gentity_t* self, int msec) {
 	if (self->client->sess.mode != MODE_IRONMAN || self->client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER || self->health <= 0 || clampedIntAdd(level.time, -self->client->sess.lastHereTime) > 10000) {
 		return;
 	}
-
-	// Broadcast ourself to all iron manners
+	
 	for (i = 0; i < level.numConnectedClients; i++)
 	{
 		gentity_t* ent = &g_entities[level.sortedClients[i]];

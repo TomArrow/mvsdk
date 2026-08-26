@@ -1615,6 +1615,7 @@ void G_ClearAllAntiWallhackSendStates();
 void G_DebugHandleState();
 void G_SetDebugVar(debugField_t* field, int value, float floatValue);
 float G_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
+void G_WriteDump(const char* name, void* data, int length);
 
 
 // 

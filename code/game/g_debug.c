@@ -197,7 +197,17 @@ float G_COOL_API_Benchmark(const int flags, const int param1, const int param2, 
 	return result.f;
 }
 
+void G_WriteDump(const char* name,void* data, int length) {
+	int len;
+	fileHandle_t f;
+	trap_FS_FOpenFile(va("debugdumps/%s.bin", name),&f,FS_WRITE);
 
+	if (!f) {
+		return;
+	}
+	trap_FS_Write(data, length, f);
+	trap_FS_FCloseFile(f);
+}
 
 
 
