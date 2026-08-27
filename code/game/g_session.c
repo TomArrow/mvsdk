@@ -93,25 +93,26 @@ void G_ReadSessionData( gclient_t *client ) {
 	const char	*var;
 
 	// bk001205 - format
-	int teamLeader;
-	int spectatorState;
-	int sessionTeam;
-	int setForce;
-	int tempMode;
-	int tempModeTeam;
-	int tempRaceMode;
-	int movementStyle;
-	int runFlags;
-	int jumpLevel;
-	int msec;
-	int baseRunFlags;
-	int baseJumpLevel;
-	int raceStateInvalidated;
-	int loggedIn;
-	int lastHereTimeOffset;
-	int nameTagType;
-	int firstEnterSet;
-	int firstEnterOffset;
+	// TA: setting some "valid" default values for when we switch from a VM that doesnt set the session the same way or with less values. or we could get access violations and other problems
+	int teamLeader = 0;
+	int spectatorState = SPECTATOR_FREE;
+	int sessionTeam = TEAM_SPECTATOR;
+	int setForce = 0;
+	int tempMode = MODE_INVALID;
+	int tempModeTeam = MODETEAM_INVALID;
+	int tempRaceMode = g_defrag.integer;
+	int movementStyle = MV_JK2;
+	int runFlags = 0;
+	int jumpLevel = 1;
+	int msec = 7;
+	int baseRunFlags = 0;
+	int baseJumpLevel = 1;
+	int raceStateInvalidated = qtrue;
+	int loggedIn = qfalse;
+	int lastHereTimeOffset = 0;
+	int nameTagType = 0;
+	int firstEnterSet = 0;
+	int firstEnterOffset = 0;
 
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
