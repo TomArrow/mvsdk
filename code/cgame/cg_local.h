@@ -2617,6 +2617,7 @@ void		trap_AddCommand( const char *cmdName );
 qboolean	trap_CG_COOL_API_AddMemeCommand(const char* cmdName);
 
 int			trap_CG_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
+qboolean	trap_CG_COOL_API_MakeASCIIMinimap(const char* bspFile, char* buffer, int buffersize, int width, int height, qboolean autoshrink, byte* floatbuf, int floatbufsize, int* finalWidth, int* finalHeight); // floatbuf is optional for raw normal data returned
 
 // send a string to the server over the network
 void		trap_SendClientCommand( const char *s );

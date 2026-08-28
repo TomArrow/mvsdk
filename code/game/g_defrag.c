@@ -265,11 +265,14 @@ void G_SendOrPrint(gentity_t* playerOrNull, const char* text) {
 		Com_Printf("%s",text);
 	}
 }
+
+// TODO double check this respects the 1022 limit?
 #define BUFFERED_TEXT_MAX_LENGTH (MAX_STRING_CHARS-sizeof("print \"\"")-1)
 
 
 static bufferedPrint_t broadcastPrint = { 0 };
 // to avoid server command overflow when sending a LOT of prints
+// also splits up too long prints (useful for ascii minimaps)
 void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text, qboolean includeSpectators) {
 	if (broadcast) includeSpectators = qfalse;
 	if (normalPrint && (playerOrNull || broadcast)) {
@@ -285,9 +288,20 @@ void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean
 			int lenNew = strlen(text);
 			if ((lenOld + lenNew) > BUFFERED_TEXT_MAX_LENGTH) {
 				// overflowing, flush what's already there and buffer the new text
+				const char* s = text;
+				int lenNewLeft = lenNew;
 				G_SendServerCommand(clNum, va("print \"%s\"", bufferedPrint->buffer),includeSpectators);
-				Q_strncpyz(bufferedPrint->buffer, text, sizeof(bufferedPrint->buffer));
-				bufferedPrint->curLen = lenNew;
+				while (lenNewLeft > BUFFERED_TEXT_MAX_LENGTH) {
+					char tmp[BUFFERED_TEXT_MAX_LENGTH+1];
+					// text is too long. split it up.
+					int offset = 0;
+					Q_strncpyz(tmp,text, sizeof(tmp));
+					s += BUFFERED_TEXT_MAX_LENGTH;
+					lenNewLeft -= BUFFERED_TEXT_MAX_LENGTH;
+					G_SendServerCommand(clNum, va("print \"%s\"", tmp), includeSpectators);
+				}
+				Q_strncpyz(bufferedPrint->buffer, s, sizeof(bufferedPrint->buffer));
+				bufferedPrint->curLen = lenNewLeft;
 			}
 			else if ((lenOld + lenNew) == BUFFERED_TEXT_MAX_LENGTH) {
 				// can't fit any more after this, so just send immediately

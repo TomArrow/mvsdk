@@ -942,6 +942,13 @@ typedef struct leakyBucket_s {
 	int					burst;
 } leakyBucket_t;
 
+typedef enum miniMapAutoGenState_s {
+	MMAGS_QUEUED,
+	MMAGS_CHECKEXISTENCE,
+	MMAGS_EXISTS,
+	MMAGS_NOTEXISTS,
+}miniMapAutoGenState_t;
+
 //
 // this structure is cleared as each map is entered
 //
@@ -1092,6 +1099,13 @@ typedef struct {
 	qboolean	hasQ3StyleSpecificSpawns;
 	qboolean	mustGenerateArena;
 	qboolean	allRaceGenerationAlreadyCalled;
+	struct {
+		int mapIterator;
+		int lastUpdate;
+		miniMapAutoGenState_t state;
+	} minimap;
+	int			minimapGenerationIterator;
+	int			lastMinimapGeneration;
 	qboolean	arenasLoaded;
 	qboolean	blacklistsLoaded;
 	qboolean	shouldUpdateMapRanks;
@@ -1165,6 +1179,8 @@ char* ConcatArgs(int start);
 void G_SendPlayerMapRatingsUIInfo(gentity_t* ent); 
 void G_CheckPlayerMapRatings(gentity_t* ent);
 qboolean G_SlowVoteActive();
+void G_MiniMapInsert(const char* course, const char* minimap);
+void G_MiniMapCheckExistence(const char* requestmap);
 
 gentity_t *G_GetDuelWinner(gclient_t *client); 
 qboolean G_PlayerCanDuel(gentity_t* ent, qboolean message, qboolean challenged);
@@ -1320,6 +1336,7 @@ void trap_G_COOL_API_CustomEpsilonTraceCapsule(trace_t* results, const vec3_t st
 void trap_G_COOL_API_CrossServerCommand(const char* cmd);
 int	trap_G_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
 int trap_G_COOL_API_PointContentsHullFast(const vec3_t point);
+qboolean trap_G_COOL_API_MakeASCIIMinimap(const char* bspFile, char* buffer, int buffersize, int width, int height, qboolean autoshrink, byte* floatbuf, int floatbufsize, int* finalWidth, int* finalHeight); // floatbuf is optional for raw normal data returned
 
 //qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
 //qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
@@ -1949,6 +1966,7 @@ extern	vmCvar_t	g_sv_gameFps;
 extern	vmCvar_t	g_sv_gameFpsAllowIrregular;
 extern	vmCvar_t	g_cm_checksumBsp;
 extern	vmCvar_t	g_cm_checksumPak;
+extern	vmCvar_t	g_cm_miniMapASCII;
 
 extern	vmCvar_t	g_fpsToggleDelay;
 

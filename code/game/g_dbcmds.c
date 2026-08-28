@@ -16,6 +16,7 @@ static void G_CreateMapRaceDefaultsTable();
 static void G_CreateMetaTable();
 static void G_CreateMapRatingsTable();
 static void G_CreateMapTagsTable();
+static void G_CreateMapMinimapsTable();
 const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
@@ -2649,6 +2650,18 @@ static void G_CreateMapTagsTable() {
 	Q_strncpyz(tableName.s, "maptags", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
 }
+static void G_CreateMapMinimapsTable() {
+	referenceSimpleString_t tableName;
+	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS minimaps(\
+			course VARCHAR(100) NOT NULL, \
+			minimap TEXT NOT NULL, \
+			setwhen DATETIME NOT NULL, \
+			updatedwhen DATETIME NOT NULL, \
+			PRIMARY KEY(course) \
+			)";
+	Q_strncpyz(tableName.s, "mapminimaps", sizeof(tableName.s));
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
+}
 static void G_CreateMetaTable() {
 	referenceSimpleString_t tableName;
 	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS meta(\
@@ -2781,6 +2794,7 @@ dbTableCreateFunc_t tableCreateFuncs[DBT_COUNT_TABLES] = {
 	G_CreateMetaTable,
 	G_CreateMapRatingsTable,
 	G_CreateMapTagsTable,
+	G_CreateMapMinimapsTable,
 };
 static void G_DB_CreateTables() {
 	int i;
@@ -3083,11 +3097,16 @@ genericDbRequestStruct_t G_DB_GenericRequest_Prepare(gentity_t* ent, genericDbRe
 		return data;
 	}
 	memset(&data, 0, sizeof(data));
-	data.clientnum = ent - g_entities;
+	if (ent) {
+		data.clientnum = ent - g_entities;
+		data.userid = ent->client->sess.login.loggedIn ? ent->client->sess.login.id : -1;
+		memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
+	}
+	else {
+		data.clientnum = -1;
+	}
 	data.requiredTables = tables;
 	data.callbackType = type;
-	memcpy(data.ip, mv_clientSessions[data.clientnum].clientIP, sizeof(data.ip));
-	data.userid = ent->client->sess.login.loggedIn ? ent->client->sess.login.id : -1;
 	Q_strncpyz(data.ident,ident,sizeof(data.ident));
 	if (pageArg && trap_Argc() > pageArg) {
 		char argpage[20];
@@ -3116,9 +3135,18 @@ qboolean QDECL G_DB_GenericRequest_Send(genericDbRequestStruct_t data, PRINTF_FO
 
 	if (coolApi_dbVersion < 3) {
 		if (g_developer.integer) {
-			trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed. Database version too low.\n\"", data.ident));
+			if (data.clientnum == -1) {
+				Com_Printf("^1Generic DB request '%s' failed. Database version too low.\n", data.ident);
+			}
+			else {
+				trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed. Database version too low.\n\"", data.ident));
+			}
 		}
 		return qfalse;
+	}
+
+	if (!(data.flags & GDBRF_NOENT) && data.clientnum == -1) {
+		Com_Error(ERR_FATAL, "G_DB_GenericRequest_Send: No client associated, but GDBRF_NOENT flag missing.\n");
 	}
 
 	buf_p = query;
@@ -3265,7 +3293,10 @@ void G_GenericDBRequestResults(int status, const char* errorMessage, int affecte
 		trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed with status %d and error message %s.\n\"", data.ident, status, errorMessage));
 		return;
 	}
-	if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
+	if ((data.flags & GDBRF_NOENT) && data.clientnum == -1) {
+		// this is fine. clientless request
+	}
+	else if (!(ent = DB_VerifyClient(data.clientnum, data.ip))) {
 		if (g_developer.integer) {
 			Com_Printf("^1Client %d generic DB request '%s' returned, user no longer valid.\n", data.clientnum, data.ident);
 		}

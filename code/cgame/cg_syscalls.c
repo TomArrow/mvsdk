@@ -283,6 +283,10 @@ int			trap_CG_COOL_API_Benchmark(const int flags, const int param1, const int pa
 	return syscall(CG_COOL_API_BENCHMARK, flags, param1, param2, param3, multiResultArr, multiResultArrSize);
 }
 
+qboolean trap_CG_COOL_API_MakeASCIIMinimap(const char* bspFile, char* buffer, int buffersize, int width, int height, qboolean autoshrink, byte* floatbuf, int floatbufsize, int* finalWidth, int* finalHeight) {
+	return syscall(CG_COOL_API_MAKEASCIIMINIMAP, bspFile, buffer, buffersize, width, height, (int)autoshrink, floatbuf, floatbufsize, finalWidth, finalHeight);
+}
+
 //void trap_CG_COOL_API_NonEpsilonTrace(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask) {
 //	syscall(CG_COOL_API_NONEPSILONTRACE, results, start, mins, maxs, end, passEntityNum, contentmask, 0, 10);
 //}

@@ -17,6 +17,7 @@ typedef enum DBTable_s {
 	DBT_META,
 	DBT_MAPRATINGS,
 	DBT_MAPTAGS,
+	DBT_MAPMINIMAPS,
 	DBT_COUNT_TABLES
 } DBTable_t;
 typedef void(QDECL* dbTableCreateFunc_t)();
@@ -59,6 +60,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_LISTUSERMESSAGES_UPDATEREAD,
 	DBREQUEST_PRUNEUSERMESSAGES,
 	DBREQUEST_GENERIC,
+	DBREQUEST_INSERTMINIMAP,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -300,12 +302,14 @@ struct genericDbRequestStruct_s;
 #define GENERICDBREQUEST_MAX_PARAMS 64
 typedef enum genericDbRequestFlags_s {
 	GDBRF_RETURNEVENIFENTINVALID = (1<<0), // call the callback even if the ent/user is no longer valid
+	GDBRF_NOENT = (1<<1), // request has no caller
 }genericDbRequestFlags_t;
 #define GENERIC_DB_REQUESTTYPES(a) \
 	a(GDBREQUEST_TEST)\
 	a(GDBREQUEST_MAPRATINGSFETCH)\
 	a(GDBREQUEST_TAG)\
-	a(GDBREQUEST_VOTE_MAPSEARCH)
+	a(GDBREQUEST_VOTE_MAPSEARCH)\
+	a(GDBREQUEST_MAPMINIMAP)
 
 typedef enum genericDbRequestType_s {
 #define GDBREQUEST_ENUM(a) a,
@@ -329,6 +333,10 @@ typedef struct genericDbRequestStruct_s {
 		const char* errorMessage;
 	} resultInfo;
 	union {
+		struct {
+			int	requestType;
+			char course[COURSENAME_MAX_LEN + 1];
+		} minimap;
 		struct {
 			int	requestType;
 			char tag[MAPTAG_MAX_LEN + 1];

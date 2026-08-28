@@ -4137,6 +4137,7 @@ static qboolean QDECL TestCallback(gentity_t* ent, genericDbRequestStruct_t* dat
 }
 REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_TEST,TestCallback);
 
+
 static void Cmd_Test_f(gentity_t* ent) {
 	int userid;
 	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_TEST,(1<<DBT_USERS),"testcmd", 0);
@@ -4148,6 +4149,132 @@ static void Cmd_Test_f(gentity_t* ent) {
 		trap_SendServerCommand(ent-g_entities,"print \"Error sending test request.\n\"");
 	}
 }
+
+
+
+typedef enum minimapSubCmd_s {
+	MMS_SAVE,
+	MMS_GET,
+	MMS_CHECKEXISTS,
+	MMS_GETMISSING,
+} minimapSubCmd_t;
+static void PrintMapMinimap(gentity_t* ent, const char* course, const char* minimapASCII) {
+
+	trap_SendServerCommand(ent - g_entities, va("print \"Minimap for %s:\n\"", course));
+	G_BufferedSendOrPrint(ent, qfalse, qfalse, minimapASCII, qfalse);
+	G_BufferedSendOrPrint(ent, qfalse, qfalse, "\n", qfalse);
+	G_BufferedSendOrPrintFlush(ent, qfalse, qfalse);
+}
+static qboolean QDECL MapMinimapCallback(gentity_t* ent, genericDbRequestStruct_t* data) {
+	int row = 0;
+	switch (data->specifics.minimap.requestType) {
+	case MMS_CHECKEXISTS:
+		if (level.minimap.state == MMAGS_CHECKEXISTENCE) {
+			if (G_COOL_API_DB_NextRow()) {
+				if (g_developer.integer > 1) {
+					Com_Printf("^3MapMinimapCallback: MMS_CHECKEXISTS: map %s already has minimap\n", data->specifics.minimap.course);
+				}
+				level.minimap.state = MMAGS_EXISTS;
+			}
+			else {
+				if (g_developer.integer) {
+					Com_Printf("^3MapMinimapCallback: MMS_CHECKEXISTS: map %s does not have minimap yet\n", data->specifics.minimap.course);
+				}
+				level.minimap.state = MMAGS_NOTEXISTS;
+			}
+			level.minimap.lastUpdate = level.time;
+		}
+		else {
+			Com_Printf("^1MapMinimapCallback: MMS_CHECKEXISTS received but level.minimap.state != MMAGS_CHECKEXISTENCE\n");
+		}
+		break;
+	case MMS_GET:
+		while (G_COOL_API_DB_NextRow()) {
+			char course[COURSENAME_MAX_LEN + 1];
+			if (!row) {
+				char s[4096];
+				G_COOL_API_DB_GetString(0, course, sizeof(course));
+				G_COOL_API_DB_GetString(1, s, sizeof(s));
+				trap_SendServerCommand(ent - g_entities, va("print \"Minimap for %s:\n\"", course));
+				G_BufferedSendOrPrint(ent, qfalse, qfalse, s, qfalse);
+				if (!Q_stricmp(course,data->specifics.minimap.course)) {
+					// exact match
+					break;
+				}
+			}
+			else {
+				G_COOL_API_DB_GetString(0, course, sizeof(course));
+				if (row == 1) {
+					G_BufferedSendOrPrint(ent, qfalse, qfalse, va("\nPossible other maps for the search term: %s", course), qfalse);
+				}
+				else {
+					G_BufferedSendOrPrint(ent, qfalse, qfalse, va(", %s", course), qfalse);
+				}
+			}
+			row++;
+		}
+		G_BufferedSendOrPrintFlush(ent, qfalse,qfalse);
+		break;
+	}
+	return qtrue;
+}
+REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_MAPMINIMAP, MapMinimapCallback);
+
+void G_MiniMapInsert( const char* course, const char* minimap) {
+	if (!G_COOL_API_DB_AddPreparedStatement(NULL, 0, DBREQUEST_INSERTMINIMAP, "INSERT INTO minimaps (course,minimap,setwhen,updatedwhen) VALUES " // order stuff nicely and logically. best match comes first,
+		"(?,?,NOW(),NOW()) "
+		"ON DUPLICATE KEY UPDATE minimap=?,updatedwhen=NOW()")) {
+		Com_Printf("^1Error inserting minimap into database.\n");
+		return;
+	}
+	G_COOL_API_DB_PreparedBindString(course);
+	G_COOL_API_DB_PreparedBindString(minimap);
+	G_COOL_API_DB_PreparedBindString(minimap);
+	G_COOL_API_DB_FinishAndSendPreparedStatement();
+}
+
+void G_MiniMapCheckExistence( const char* requestmap) {
+
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(NULL, GDBREQUEST_MAPMINIMAP, (1 << DBT_MAPMINIMAPS), "mapminimap", 0);
+	data.specifics.minimap.requestType = MMS_CHECKEXISTS;
+	data.flags |= GDBRF_NOENT;
+	Q_strncpyz(data.specifics.minimap.course, requestmap, sizeof(data.specifics.minimap.course));
+	if (!G_DB_GenericRequest_Send(data,
+		"SELECT minimaps.course,minimaps.minimap "
+		"FROM minimaps "
+		"WHERE minimaps.course=%s", // order stuff nicely and logically. best match comes first,
+		data.specifics.minimap.course)) {
+		Com_Printf("Error sending minimap check request.\n");
+	}
+}
+static void Cmd_PeekMap_f(gentity_t* ent) {
+	const char* requestmap;
+	const char* currentmap = DF_GetCourseName(qfalse);
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_MAPMINIMAP, (1 << DBT_MAPMINIMAPS), "mapminimap", 0);
+	if (trap_Argc() < 2) {
+		return;
+	}
+	requestmap = G_Argv(1);
+	if (!Q_stricmp(currentmap, requestmap) && g_cm_miniMapASCII.string[0]) {
+		char minimap[4096];
+		trap_Cvar_VariableStringBuffer("cm_miniMapASCII", minimap, sizeof(minimap));
+		PrintMapMinimap(ent, currentmap, minimap);
+		return;
+	}
+	data.specifics.minimap.requestType = MMS_GET;
+	Q_strncpyz(data.specifics.minimap.course, requestmap, sizeof(data.specifics.minimap.course));
+	if (!G_DB_GenericRequest_Send(data, 
+		"SELECT minimaps.course,minimaps.minimap "
+		",instr(minimaps.course,%s) +instr(REVERSE(minimaps.course),REVERSE(%s))-2 AS diff "
+		"FROM minimaps "
+		"WHERE instr(minimaps.course, %s)"
+		"ORDER BY diff", // order stuff nicely and logically. best match comes first,
+		data.specifics.minimap.course, data.specifics.minimap.course, data.specifics.minimap.course)) {
+		trap_SendServerCommand(ent - g_entities, "print \"Error sending minimap peek request.\n\"");
+	}
+}
+
+
 
 typedef enum callvoteMapSearchSubCmd_s {
 	CVMS_TAG,
@@ -7139,6 +7266,7 @@ clientCommand_t clientCommands[] = {
 	{"noclip",				NULL, Cmd_Noclip_f,						CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"notarget",			NULL, Cmd_Notarget_f,					CMD_CHEAT | CMD_ALIVE | CMD_NOINTERMISSION},
 	{"notwr",				NULL, Cmd_MapSearch_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
+	{"peekmap",				NULL, Cmd_PeekMap_f,					CMD_NOINTERMISSION},
 	{"pickmode",			NULL, Cmd_Mode_f,						CMD_NOINTERMISSION},
 	{"players",				NULL, Cmd_Players_f,					CMD_NOINTERMISSION},
 	{"race",				NULL, Cmd_Race_f,						CMD_NOINTERMISSION},

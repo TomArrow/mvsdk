@@ -1151,6 +1151,9 @@ int	trap_G_COOL_API_Benchmark(const int flags, const int param1, const int param
 int trap_G_COOL_API_PointContentsHullFast(const vec3_t point) {
 	return syscall(G_COOL_API_POINTCONTENTSHULLFAST, point);
 }
+qboolean trap_G_COOL_API_MakeASCIIMinimap(const char* bspFile, char* buffer, int buffersize, int width, int height, qboolean autoshrink, byte* floatbuf, int floatbufsize, int* finalWidth, int* finalHeight) {
+	return syscall(G_COOL_API_MAKEASCIIMINIMAP, bspFile, buffer, buffersize, width, height, (int)autoshrink, floatbuf, floatbufsize, finalWidth, finalHeight);
+}
 
 qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size) {
 	return syscall(G_COOL_API_DB_ESCAPESTRING, input, size);

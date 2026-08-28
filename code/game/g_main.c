@@ -200,6 +200,7 @@ vmCvar_t	g_sv_gameFps;
 vmCvar_t	g_sv_gameFpsAllowIrregular;
 vmCvar_t	g_cm_checksumBsp;
 vmCvar_t	g_cm_checksumPak;
+vmCvar_t	g_cm_miniMapASCII;
 
 vmCvar_t	g_fpsToggleDelay;
 
@@ -540,6 +541,7 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 	{ &g_sv_gameFpsAllowIrregular, "sv_gameFpsAllowIrregular", "0", 0, 0, qfalse },
 	{ &g_cm_checksumBsp, "cm_checksumBsp", "0", 0, 0, qfalse },
 	{ &g_cm_checksumPak, "cm_checksumPak", "0", 0, 0, qfalse },
+	{ &g_cm_miniMapASCII, "cm_miniMapASCII", "", 0, 0, qfalse },
 
 	{ &g_fpsToggleDelay, "g_fpsToggleDelay", "0", CVAR_ARCHIVE, 0, qfalse }, // e.g. set to 300 for 300 second (5 minute) delay between allowed com_physicsFps changes by the client
 
@@ -651,6 +653,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_MVAPI_SUBMODELBYPASS_SNEAKPEEK
 | COOL_APIFEATURE_FASTHULLTRACE
 | COOL_APIFEATURE_CLIENTREALNAME
+| COOL_APIFEATURE_ASCIIMINIMAP
 ;
 const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY | COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS;
 
@@ -1567,6 +1570,11 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	level.arenasLoaded = qfalse;
 	if (g_defrag.integer) {
 		DF_LoadMapDefaults();
+	}
+	if (g_cm_miniMapASCII.string[0]) {
+		char minimap[4096];
+		trap_Cvar_VariableStringBuffer("cm_miniMapASCII", minimap,sizeof(minimap));
+		G_MiniMapInsert(DF_GetCourseName(qfalse), minimap);
 	}
 
 	G_UserMessagesPrune();
@@ -4153,6 +4161,7 @@ void G_RunFrame( int levelTime ) {
 	gentity_t	*ent;
 	int			msec;
 	int start, end;
+	int			ingameClientsCount = 0;
 	int			activeRunnerCount = 0;
 	int			specAllEntsBroadcastClients[2] = { 0,0 };
 
@@ -4418,6 +4427,10 @@ void G_RunFrame( int levelTime ) {
 				activeRunnerCount++;
 			}
 
+			if (ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+				ingameClientsCount++;
+			}
+
 			continue;
 		}
 
@@ -4428,6 +4441,59 @@ void G_RunFrame( int levelTime ) {
 		G_AutoGenerateArena(DF_GetCourseName(qfalse),qfalse,qtrue,qfalse);
 		level.mustGenerateArena = qfalse;
 		level.hasArenaInfo = qtrue;
+	}
+
+	if (!ingameClientsCount && !activeRunnerCount && level.arenasLoaded && level.minimap.mapIterator < g_numArenas && clampedIntAdd(level.minimap.lastUpdate,1000) < level.time) {
+		infoHashed_t* info = &g_arenaInfosHashed[level.minimap.mapIterator];
+		switch(level.minimap.state) {
+			case MMAGS_QUEUED:
+			{
+				char course[COURSENAME_MAX_LEN + 1];
+				char* s = course;
+				Q_strncpyz(course,info->name,sizeof(course));
+				while (*s) { // make it lowercase
+					*s = tolower(*s);
+					s++;
+				}
+				G_MiniMapCheckExistence(course);
+
+				if (g_developer.integer > 1) {
+					Com_Printf("^3ASCII minimaps: Checking eixstence of map %s's minimap\n", course);
+				}
+				level.minimap.state = MMAGS_CHECKEXISTENCE;
+				level.minimap.lastUpdate = level.time;
+			}
+				break;
+			case MMAGS_CHECKEXISTENCE:
+				break;
+			case MMAGS_EXISTS:
+				level.minimap.state = MMAGS_QUEUED;
+				level.minimap.lastUpdate = level.time;
+				level.minimap.mapIterator++;
+				break;
+			case MMAGS_NOTEXISTS:
+			{
+				char minimap[4096];
+				if (trap_G_COOL_API_MakeASCIIMinimap(va("maps/%s.bsp", info->name), minimap, sizeof(minimap), 90, 25, qtrue, NULL, 0, NULL, NULL)) {
+					char course[COURSENAME_MAX_LEN + 1];
+					char* s = course;
+					Q_strncpyz(course, info->name, sizeof(course));
+					while (*s) { // make it lowercase
+						*s = tolower(*s);
+						s++;
+					}
+					Com_Printf("Generated ASCII minimap for '%s'\n",course);
+					G_MiniMapInsert(course, minimap);
+				}
+				else {
+					Com_Printf("Failed to generate ASCII minimap for '%s'\n", info->name);
+				}
+				level.minimap.state = MMAGS_QUEUED;
+				level.minimap.mapIterator++;
+				level.minimap.lastUpdate = level.time;
+			}
+				break;
+		}
 	}
 
 	if (!level.nextRandomTip) {
