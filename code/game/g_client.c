@@ -2921,7 +2921,7 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 		{2,2}, // allow wrong dir totally, and short pos
 		{3,2}, // allow all
 	};
-	static const searchSettingsCount = sizeof(searchSettings)/sizeof(searchSettings[0]);
+	static const int searchSettingsCount = sizeof(searchSettings)/sizeof(searchSettings[0]);
 	//vec3_t			velNorm;
 	if (!level.ironManPosCount || !level.ironManCurrentPositionSet || level.ironManClientNum == -1) {
 		return qfalse;
