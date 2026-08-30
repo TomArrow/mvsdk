@@ -414,6 +414,9 @@ typedef struct {
 
 	// vvv-serverSide feature porting (i dislike accessing g_vars here)
 	int				pauseGame;
+
+	qboolean		touchedGroundOrSlide;
+	qboolean		touchedWalkableGround;
 } pmove_t;
 
 extern	pmove_t		*pm;

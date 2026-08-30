@@ -94,6 +94,16 @@ void G_InitDebugAntiwallhack() {
 	G_ResetClientDebugInfoUpdates();
 	G_COOL_API_Benchmark(BENCHMARK_SETMEASUREMENTS | BENCHMARK_MEASURE_VMTARGET_GAME | BENCHMARK_MEASURE_TRACES_MARKED,0,0,0,NULL,0);
 }
+void G_InitDebugIronmanSpawns() {
+	int i;
+	G_ResetDebugVars();
+	for (i = 0; i < IRONMAN_DEBUG_PASTPOINTS; i++) {
+		ironmanDebug.points[i].intDistance = G_GetDebugVar(va("Point %d intdist",i), 0, qtrue, 0);
+		ironmanDebug.points[i].realDistance = G_GetDebugVar(va("Point %d realdist",i), 0, qtrue, 0);
+	}
+	level.debugState.debug = DEBUG_IRONMANSPAWNS;
+	G_ResetClientDebugInfoUpdates();
+}
 
 
 const char* G_DebugCreateInfoPrint() {
@@ -129,6 +139,10 @@ void G_DebugHandleState() {
 			case DEBUG_ANTIWALLHACK:
 				trap_SendServerCommand(-1, "print \"Debugging anti-wallhack.\n\"");
 				G_InitDebugAntiwallhack();
+				break;
+			case DEBUG_IRONMANSPAWNS:
+				trap_SendServerCommand(-1, "print \"Debugging ironman spawnsk.\n\"");
+				G_InitDebugIronmanSpawns();
 				break;
 			default:
 				trap_Cvar_Set("g_debugFancy", "0");

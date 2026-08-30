@@ -215,6 +215,9 @@ subContestParams_t subContestParams[SUBCONTESTS_COUNT] = {
 	{SUBCONTEST_TYPE_MAXVAL}, // SUBCONTESTS_DBS_KILL_SPEEDLOSS
 };
 
+ironmanDebug_t ironmanDebug = { NULL };
+
+
 const char* nameTagTypeNames[NAMETAG_COUNT] = {
 	"none",
 	"freedom",

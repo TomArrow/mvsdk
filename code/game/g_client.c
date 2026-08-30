@@ -2822,12 +2822,12 @@ qboolean G_CheckForNearbyDuelSpawn(gentity_t* ent, vec3_t opponentOrigin, vec3_t
 							}
 						}
 						else {
-							JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+							JP_Trace(&trace, level.ironManCurrentPosition.origin, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
 							// make sure we could actually reach the capper from that place
 							if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
 								// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
 								VectorCopy(trace.endpos, goodOrigin);
-								JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition, level.ironManClientNum, MASK_PLAYERSOLID);
+								JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition.origin, level.ironManClientNum, MASK_PLAYERSOLID);
 								if (trace.fraction == 1.0f) {
 									if (WiggleSpotTelefrag(goodOrigin, ent)) {
 										good = qtrue;
@@ -2850,7 +2850,7 @@ qboolean G_CheckForNearbyDuelSpawn(gentity_t* ent, vec3_t opponentOrigin, vec3_t
 
 	if (good) {
 		// ok found a good pos
-		VectorSubtract(level.ironManCurrentPosition, goodOrigin, delta);
+		VectorSubtract(level.ironManCurrentPosition.origin, goodOrigin, delta);
 		VectorNormalize(delta);
 		vectoangles(delta, spawn_angles); // look at the iron man
 		spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
@@ -2865,99 +2865,195 @@ qboolean G_CheckForNearbyDuelSpawn(gentity_t* ent, vec3_t opponentOrigin, vec3_t
 }
 
 
+qboolean G_LineUnobstructed(vec3_t sourceOrigin, vec3_t targetOrigin) {
+	trace_t trace;
+	JP_Trace(&trace, targetOrigin, playerMins, playerMaxs, sourceOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+	// make sure we could actually reach the capper from that place
+	if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction == 1.0f) { // let's be at least 0.6*min distance away
+		// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
+		JP_Trace(&trace, sourceOrigin, playerMins, playerMaxs, targetOrigin, level.ironManClientNum, MASK_PLAYERSOLID);
+		if (trace.fraction == 1.0f) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+typedef struct ironmanPosMeta_s {
+	qboolean checked;
+	qboolean reachable;
+	int unusable; // 1 = not usable with simple wiggle. 2 = wont work even with the advanced
+	float currentDist;
+	int	currentDistInt;
+	float distanceCompensation;
+	float capperVelDot; // dot of capper velocity vs pos velocity
+	float capperPosDot; // dot of capper position vs pos velocity
+	float intDistanceRatio;
+}ironmanPosMeta_t;
+
+typedef struct searchSettings_s {
+	int				allowShortPos; // 0 to 3
+	int				allowWrongDir; // 0 to 2
+} searchSettings_t;
+
 qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
-	int				i;
+	int				i,set;
 	int				allowShortPos = 0;
+	int				allowWrongDir = 0;
 	vec3_t			delta;
 	//float normalSpawnDist; // wanted to check if normal spawn dist is closer but that might be too simplistic for complex level architectures
 	float			currentDist;
 	qboolean		good = qfalse;
+	qboolean		keepAngles = qtrue;
+	qboolean		keepSpeed = qtrue;
 	simplePos_t*	pos;
 	trace_t			trace;
+	ironmanPosMeta_t	posMetas[IRONMAN_MAX_PAST_POSITIONS_COUNT];
+	ironmanPosMeta_t*	posMeta;
+	static const searchSettings_t searchSettings[] = { // staggered relaxation of rules for nice spawns, trying to find the best compromise at each stage
+		{0,0}, // only long pos, no wrong dir
+		{1,0}, // lets try medium pos, no wrong dir
+		{0,1}, // ok allow wrong dir (but not past us), but again only long pos
+		{1,1}, // ok allow wrong dir (but not past us), and medium pos
+		{0,2}, // fully allow wrong dir, only long pos
+		//{1,2}, // fully allow wrong dir, allow medium pos
+		{2,1}, // allow wrong dir (but not past us), and short pos
+		{2,2}, // allow wrong dir totally, and short pos
+		{3,2}, // allow all
+	};
+	static const searchSettingsCount = sizeof(searchSettings)/sizeof(searchSettings[0]);
 	//vec3_t			velNorm;
 	if (!level.ironManPosCount || !level.ironManCurrentPositionSet || level.ironManClientNum == -1) {
 		return qfalse;
 	}
 
+	memset(posMetas,0,sizeof(posMetas));
+
 	//VectorSubtract(level.ironManCurrentPosition, spawn_origin, delta);
 	//normalSpawnDist = VectorLengthSquared(delta);
 
-retry:
-	for (i = level.ironManPosCount - 1; i >= MAX(0, level.ironManPosCount - IRONMAN_MAX_PAST_POSITIONS_COUNT + 1); i--) {
-		pos = &level.ironManPos[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
-		if (pos->when + IRONMAN_RESPAWNPOSITION_MAXPOSITIONAGE < level.time) {
-			// position is too old
-			if (allowShortPos < 2) {
-				// let's try with allowing shorter distances
-				allowShortPos++;
-				goto retry;
-			}
-			else {
-				// fuck it
-				return qfalse;
-			}
-		}
+	for (set = 0; set < searchSettingsCount; set++) {
+		allowShortPos = searchSettings[set].allowShortPos;
+		allowWrongDir = searchSettings[set].allowWrongDir;
 
-		VectorSubtract(pos->origin, level.ironManCurrentPosition, delta);
-		currentDist = VectorLengthSquared(delta);
+		for (i = level.ironManPosCount - 1; i >= MAX(0, level.ironManPosCount - IRONMAN_MAX_PAST_POSITIONS_COUNT + 1); i--) {
+			pos = &level.ironManPos[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
+			posMeta = &posMetas[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
+			if (pos->when + IRONMAN_RESPAWNPOSITION_MAXPOSITIONAGE < level.time) {
+				// position is too old
+				break;
+			}
+
+			if (!posMeta->checked) { // let's only calc various info for this point once and then its done.
+				vec3_t velNorm;
+				VectorSubtract(level.ironManCurrentPosition.origin, pos->origin, delta);
+				posMeta->currentDist = VectorLength(delta);
+				posMeta->currentDistInt = (float)(level.ironManCurrentPosition.distanceTraveled - pos->distanceTraveled);
+
+				VectorCopy(pos->velocity,velNorm);
+				VectorNormalize(velNorm);
+				posMeta->capperPosDot = DotProduct(delta, velNorm); // capper position relative to the velocity this position is pointing at
+
+				VectorNormalize(delta);
+				posMeta->capperVelDot = DotProduct(level.ironManCurrentPosition.velocity,pos->velocity);
+
+				posMeta->distanceCompensation = 1.0f;
+				posMeta->intDistanceRatio = posMeta->currentDistInt / MAX(1.0f, posMeta->currentDist); // avoid division by 0
+				if (posMeta->intDistanceRatio < 1.15f) { // are we handling a simple linear chase situation?
+					// the ratio in a pure chase situation will usually be somewhere around 1.10. (the int distance traveled will accumulate more distance due to the ups and downs from jumps compared to a straight line)
+					float currentSpeedTowardCapper;
+					currentSpeedTowardCapper = DotProduct(delta, pos->velocity)/* - DotProduct(delta, level.ironManCurrentPosition.velocity)*/; // i thought about subtracting the capper's velocity but... we're just always gonna be hovering around 0 or below 0. pointless
+					if(currentSpeedTowardCapper > 250.0f){
+						// compensate a bit. if we are moving towards the capper slower than the intended reference speed, make the distance seem higher than it is.
+						// if we are moving fast than intended, make it lower than it is.
+						// in other words, try to keep a consistent-ish time to reach the capper (if he deadstopped rn) rather than a fixed distance.
+						// if people are cruising at 2000ups, a fixed distance starts feeling less meaningful
+						// don't make the compensation too extreme tho, so temper it with sqrtf?
+						posMeta->distanceCompensation = sqrtf(IRONMAN_RESPAWNPOSITION_REFERENCESPEED / currentSpeedTowardCapper);
+						posMeta->currentDist *= posMeta->distanceCompensation;
+					}
+				}
+				posMeta->reachable = G_LineUnobstructed(pos->origin, level.ironManCurrentPosition.origin);
+				posMeta->checked = qtrue;
+			}
+
+			currentDist = posMeta->currentDist;
 		
-		if (allowShortPos == 2) {
-			// we are desperate. spawn right on top of his head if needed! maybe hes camping or sth xd
-			good = qtrue;
-		}
-		else if (currentDist > IRONMAN_RESPAWNPOSITION_MINDISTANCE* IRONMAN_RESPAWNPOSITION_MINDISTANCE) {
-			good = qtrue;
-		}
-		else if (allowShortPos && currentDist > IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT* IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT) {
-			good = qtrue;
-		}
+			// with allowShortPos 2 we are desperate. spawn right on top of his head if needed! maybe hes camping or sth xd
+			if (!allowShortPos && currentDist <= IRONMAN_RESPAWNPOSITION_MINDISTANCE && (posMeta->reachable || posMeta->currentDistInt <= IRONMAN_RESPAWNPOSITION_MINDISTANCE)) {
+				continue;
+			}
+			else if (allowShortPos == 1 && currentDist <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_MEDIUM && (posMeta->reachable || posMeta->currentDistInt <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_MEDIUM)) {
+				continue;
+			}
+			else if (allowShortPos == 2 && currentDist <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT && (posMeta->reachable || posMeta->currentDistInt <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT)) {
+				continue;
+			}
+			else if (posMeta->unusable && posMeta->unusable >= allowShortPos) { // already tried this one. no need to do it again
+				continue;
+			}
+			else if (!allowWrongDir && posMeta->capperVelDot < 500 && posMeta->reachable) {
+				// specific situation: capper is moving opposite of this pos' velocity
+				// limit the check to at least 500 speed in opposite direction, so we dont force a very close spawn on someone who is just having a bit of a battle and walking around?
+				continue;
+			}
+			else if (allowWrongDir == 1 && posMeta->capperVelDot < 500 && posMeta->capperPosDot < 500.0f && posMeta->reachable) {
+				// specific situation: capper is moving opposite of this pos' velocity, but allowWrongDir 1 would allow that
+				// however ideally we wanna check for one where we ostensibly have an opportunity to intercept him as he is coming towards us,
+				// so he should be no closer than 500 units to us in the direction we would end up traveling.
+				// capperPosDot < 0 would imply we already spawn in a place that overshoots the place he is currently at
+				continue;
+			}
 
-		if (good) {
-			vec3_t goodOrigin;
-			float speed;
+			good = qtrue;
 
-			if (allowShortPos == 2) {
-				int side, front, up, dist, skipvis;
-				float traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
-				float fracRequired = 0.4;
-				good = qfalse;
-				VectorCopy(pos->origin, goodOrigin);
-				// we might spawn right on the capper's ass
-				// try to move us a bit away if we can?
-				for (skipvis = 0; skipvis < 2 && !good; skipvis++) { // in emergency, dont require visual contact to capper
-					for (dist = 0; dist < 2 && !good; dist++) { // try shorter distance if nothing fouund
-						if (dist == 1) {
-							traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
-							fracRequired = 0.8f;
-						}
-						for (up = 0; up < 2 && !good; up++) {
-							for (side = -1; side < 2 && !good; side++) {
-								for (front = -1; front < 2 && !good; front++) {
-									if (side == 0 && front == 0) {
-										continue;
-									}
-									goodOrigin[0] = pos->origin[0] + (float)front * traceDist;
-									goodOrigin[1] = pos->origin[1] + (float)side * traceDist;
-									goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
-									//if (WiggleSpotTelefrag(goodOrigin, ent)) {
+			if (good) {
+				vec3_t goodOrigin;
+				float speed;
 
-									if (skipvis) {
-										if (WiggleSpotTelefrag(goodOrigin, ent)) {
-											good = qtrue;
-											break;
+				if (allowShortPos == 3) {
+					int side, front, up, dist, skipvis;
+					float traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
+					float fracRequired = 0.4;
+					good = qfalse;
+					VectorCopy(pos->origin, goodOrigin);
+					// we might spawn right on the capper's ass
+					// try to move us a bit away if we can?
+					for (skipvis = 0; skipvis < 2 && !good; skipvis++) { // in emergency, dont require visual contact to capper
+						for (dist = 0; dist < 2 && !good; dist++) { // try shorter distance if nothing fouund
+							if (dist == 1) {
+								traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
+								fracRequired = 0.8f;
+							}
+							for (up = 0; up < 2 && !good; up++) {
+								for (side = -1; side < 2 && !good; side++) {
+									for (front = -1; front < 2 && !good; front++) {
+										if (side == 0 && front == 0) {
+											continue;
 										}
-									}
-									else {
-										JP_Trace(&trace, level.ironManCurrentPosition, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
-										// make sure we could actually reach the capper from that place
-										if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
-											// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
-											VectorCopy(trace.endpos, goodOrigin);
-											JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition, level.ironManClientNum, MASK_PLAYERSOLID);
-											if (trace.fraction == 1.0f) {
-												if (WiggleSpotTelefrag(goodOrigin, ent)) {
-													good = qtrue;
-													break;
+										goodOrigin[0] = pos->origin[0] + (float)front * traceDist;
+										goodOrigin[1] = pos->origin[1] + (float)side * traceDist;
+										goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
+										//if (WiggleSpotTelefrag(goodOrigin, ent)) {
+
+										if (skipvis) {
+											if (WiggleSpotTelefrag(goodOrigin, ent)) {
+												good = qtrue;
+												break;
+											}
+										}
+										else {
+											JP_Trace(&trace, level.ironManCurrentPosition.origin, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+											// make sure we could actually reach the capper from that place
+											if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
+												// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
+												VectorCopy(trace.endpos, goodOrigin);
+												JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition.origin, level.ironManClientNum, MASK_PLAYERSOLID);
+												if (trace.fraction == 1.0f) {
+													if (WiggleSpotTelefrag(goodOrigin, ent)) {
+														good = qtrue;
+														break;
+													}
 												}
 											}
 										}
@@ -2966,48 +3062,87 @@ retry:
 							}
 						}
 					}
+					if (good) {
+						keepAngles = qfalse;
+						if (VectorLengthSquared(level.ironManCurrentPosition.velocity) < 400*400 && VectorLengthSquared(pos->velocity) < 400*400) {
+							// just in case we are in an area where its easy to fall down.... kill our speedif both the saved position and the
+							// capper's current velocity don't justify keeping our velocity anyway due to everything moving slow atm
+							// and as a nice bonus we are much less likely to fall into lava or other annoying things.
+							keepSpeed = qfalse;
+						}
+					}
+					else {
+						VectorCopy(pos->origin, goodOrigin);
+						good = WiggleSpotTelefrag(goodOrigin, ent);
+					}
+					if (!good) {
+						posMeta->unusable = 2;
+					}
 				}
-				if (!good) {
+				else {
 					VectorCopy(pos->origin, goodOrigin);
 					good = WiggleSpotTelefrag(goodOrigin, ent);
+					if (!good) {
+						posMeta->unusable = 1;
+					}
 				}
-			}
-			else {
-				VectorCopy(pos->origin, goodOrigin);
-				good = WiggleSpotTelefrag(goodOrigin, ent);
-			}
 
 
 
-			if (good) {
-				// ok found a good pos
-				VectorCopy(pos->velocity, spawn_velocity);
-				VectorSubtract(level.ironManCurrentPosition,goodOrigin,delta);
-				VectorNormalize(delta);
-				vectoangles(delta, spawn_angles); // look at the iron man
-				spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
+				if (good) {
+					// ok found a good pos
+					if (keepSpeed) {
+						VectorCopy(pos->velocity, spawn_velocity);
+					}
+					else {
+						VectorClear(spawn_velocity);
+					}
+					if (!keepAngles) {
+						VectorSubtract(level.ironManCurrentPosition.origin, goodOrigin, delta);
+						VectorNormalize(delta);
+						vectoangles(delta, spawn_angles); // look at the iron man
+						spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
+					}
+					else {
+						VectorCopy(pos->angles, spawn_angles);
+					}
 
-				//VectorCopy(pos->velocity, velNorm);
-				//speed = VectorNormalize(velNorm);
-				//if (speed > 10) {
-				//	vectoangles(velNorm, spawn_angles);
-				//	spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
-				//}
-				//else {
-				//	VectorCopy(pos->angles,spawn_angles);
-				//}
-				VectorCopy(goodOrigin, spawn_origin);
-				return qtrue;
+					//VectorCopy(pos->velocity, velNorm);
+					//speed = VectorNormalize(velNorm);
+					//if (speed > 10) {
+					//	vectoangles(velNorm, spawn_angles);
+					//	spawn_angles[ROLL] = spawn_angles[PITCH] = 0;
+					//}
+					//else {
+					//	VectorCopy(pos->angles,spawn_angles);
+					//}
+					VectorCopy(goodOrigin, spawn_origin);
+					return qtrue;
+				}
+
 			}
 
 		}
-
+		
 	}
 
-	if (allowShortPos < 2) {
-		// let's try with allowing shorter distances
-		allowShortPos++;
-		goto retry;
+	{
+		// okay really nothing huh... k lets try spawning directly on his head, literally. maybe he's floating in the air somewhere.
+		vec3_t goodOrigin;
+		pos = &level.ironManCurrentPosition;
+		for (i = 0; i < 2; i++) {
+			VectorCopy(pos->origin, goodOrigin);
+			if (i == 0) {
+				goodOrigin[2] += 64.1f; // exactly one playerheight up. 0.1f for good measure with float imprecisions and such.
+			}
+			good = WiggleSpotTelefrag(goodOrigin, ent);
+			if (good) {
+				VectorCopy(pos->velocity, spawn_velocity);
+				VectorCopy(pos->angles, spawn_angles);
+				VectorCopy(goodOrigin, spawn_origin);
+				return qtrue;
+			}
+		}
 	}
 
 	return qfalse;
@@ -3058,6 +3193,7 @@ void ClientSpawn(gentity_t *ent) {
 	int			nowTime = LEVELTIME(ent->client); // at the start of a client (ClientBegin) pers.cmd.serverTime is empty
 	vec3_t		spawn_velocity;
 	qboolean	spawn_velocity_set = qfalse;
+	qboolean	spawn_precise_location_velocity = qfalse;
 
 	index = ent - g_entities;
 	client = ent->client;
@@ -3169,10 +3305,11 @@ void ClientSpawn(gentity_t *ent) {
 		}
 	}
 
-	if (client->sess.mode == MODE_IRONMAN && client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER) {
+	if (client->sess.sessionTeam != TEAM_SPECTATOR && client->sess.mode == MODE_IRONMAN && client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER) {
 		if (G_CheckForCloserIronmanSpawn(ent,spawn_origin,spawn_angles,spawn_velocity)) {
 			spawnPoint = NULL;
 			spawn_velocity_set = qtrue;
+			spawn_precise_location_velocity = qtrue;
 		}
 	}
 
@@ -3664,9 +3801,21 @@ void ClientSpawn(gentity_t *ent) {
 		client->ps.commandTime = (savedCommandTime >0) ? savedCommandTime : nowTime; // how will things work out when fps anti toggle is active?
 	}
 	
-
 	// positively link the client, even if the command times are weird
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
+
+		if (spawn_precise_location_velocity) {
+			// ironman spawn with velocity. we really should restore it very precisely, else ppl will be falling in death triggers on spawns in the middle of precise-ish jumps
+			// we need to do this because of the 100ms settle-things-down frame thats played above. it will change the player's position, which we don't want. we do want the animations etc to init tho, so we're keeping it originally
+			trap_UnlinkEntity( ent );
+			G_SetOrigin(ent, spawn_origin);
+			VectorCopy(spawn_origin, client->ps.origin);
+			G_KillBox(ent); // should do nothing at this point, but just to be safe in case of some unexpected weirdness during that 100ms frame
+			if (spawn_velocity_set) {
+				VectorCopy(spawn_velocity, client->ps.velocity);
+			}
+		}
+
 		BG_PlayerStateToEntityState( &client->ps, &ent->s, g_snapPlayerPosAngles.integer);
 		VectorCopy( ent->client->ps.origin, ent->r.currentOrigin );
 		trap_LinkEntity( ent );

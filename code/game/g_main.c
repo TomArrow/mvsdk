@@ -3979,6 +3979,7 @@ void G_CheckIronManStatus() {
 	qsort(ironManners,ironmannerCount,sizeof(ironManners[0]),sortironmanners);
 
 	level.ironManPosCount = 0;
+	level.ironManPosCountQuick = 0;
 	level.lastIronManPosSaved = 0;
 
 	// unlink all ironmanners so we can teleport them without their old positions having any influence on anything.
@@ -4040,7 +4041,11 @@ void G_CheckIronManStatus() {
 		ent->client->ps.persistant[PERS_EXCELLENT_COUNT]++;
 	}
 
-	VectorCopy(ent->client->ps.origin, level.ironManCurrentPosition);
+	VectorCopy(ent->client->ps.origin, level.ironManCurrentPosition.origin);
+	VectorCopy(ent->client->ps.velocity, level.ironManCurrentPosition.velocity);
+	VectorCopy(ent->client->ps.viewangles, level.ironManCurrentPosition.angles);
+	level.ironManCurrentPosition.when = level.time;
+	level.ironManCurrentPosition.distanceTraveled = ent->client->pers.distanceTraveled;
 	level.ironManCurrentPositionSet = qtrue;
 }
 

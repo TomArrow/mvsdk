@@ -3726,6 +3726,11 @@ static void PM_GroundTrace( void ) {
 		return;
 	}
 
+	pm->touchedGroundOrSlide = qtrue;
+	if (trace.plane.normal[2] < MIN_WALK_NORMAL) {
+		pm->touchedWalkableGround = qtrue;
+	}
+
 	// check if getting thrown off the ground
 	if ( pm->ps->velocity[2] > 0 && DotProduct( pm->ps->velocity, trace.plane.normal ) > kickoffSpeed) {
 		if ( pm->debugLevel ) {

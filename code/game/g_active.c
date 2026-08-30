@@ -1577,7 +1577,7 @@ static void G_UpdateIronmanBroadcasts ( gentity_t *self )
 		// check if we are at least close to the ironman
 		if (level.ironManCurrentPositionSet) {
 			vec3_t delta;
-			VectorSubtract(level.ironManCurrentPosition,self->client->ps.origin,delta);
+			VectorSubtract(level.ironManCurrentPosition.origin,self->client->ps.origin,delta);
 			if (VectorLengthSquared(delta) > IRONMAN_NEARBYBROADCASTRANGE* IRONMAN_NEARBYBROADCASTRANGE) {
 				// broadcast players near the ironman as well. so demos dont miss out on any cool dbs :)
 				// we don't rly care about wallhack or anything in ironman anyway
@@ -1902,18 +1902,53 @@ void HandleClientLaserPointer(gentity_t* ent) {
 }
 
 // save positions of the iron man so we can respawn his chasers at a reasonable distance to him and not make them run half a minute to reach him again
-void G_MaybeSaveIronmanPos(gentity_t* ent) {
+void G_MaybeSaveIronmanPos(gentity_t* ent, qboolean touchedGround) {
 	gclient_t* client = ent->client;
 	vec3_t diffToOld;
 	trace_t trace;
 	int allowMidJumpSaves = 0;
 	static vec3_t	playerMins = { -15, -15, DEFAULT_MINS_2 };
 	static vec3_t	playerMaxs = { 15, 15, DEFAULT_MAXS_2 };
+	simplePos_t* targetPos = NULL;
+	qboolean usingQuickpos = qfalse;
 
-	VectorCopy(client->ps.origin,level.ironManCurrentPosition);
+	VectorCopy(client->ps.origin,level.ironManCurrentPosition.origin);
+	VectorCopy(client->ps.velocity,level.ironManCurrentPosition.velocity);
+	VectorCopy(client->ps.viewangles,level.ironManCurrentPosition.angles);
+	level.ironManCurrentPosition.when = level.time;
+	level.ironManCurrentPosition.distanceTraveled = client->pers.distanceTraveled;
 	level.ironManCurrentPositionSet = qtrue;
 
-	if (client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER || client->sess.mode != MODE_IRONMAN || client->ps.groundEntityNum != ENTITYNUM_WORLD) {
+	if (g_debugFancy.integer == DEBUG_IRONMANSPAWNS) {
+		int i, j = 0;
+		simplePos_t* pos;
+		float dist;
+		for (i = level.ironManPosCount - 1; i >= MAX(0, level.ironManPosCount - IRONMAN_MAX_PAST_POSITIONS_COUNT + 1) && j < IRONMAN_DEBUG_PASTPOINTS; i--, j++) {
+			pos = &level.ironManPos[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
+			dist = client->pers.distanceTraveled - pos->distanceTraveled; // quickly find distance traveled since that pos was saved
+			G_SetDebugVar(ironmanDebug.points[j].intDistance, 0, dist);
+			dist = Distance(pos->origin, client->ps.origin);
+			G_SetDebugVar(ironmanDebug.points[j].realDistance, 0, dist);
+		}
+		for (; j < IRONMAN_DEBUG_PASTPOINTS; j++) {
+			pos = &level.ironManPos[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
+			G_SetDebugVar(ironmanDebug.points[j].intDistance, 0, 0);
+			G_SetDebugVar(ironmanDebug.points[j].realDistance, 0, 0);
+		}
+	}
+
+	if((!level.ironManPosCountQuick || level.lastIronManQuickPosSaved + IRONMAN_SAVEPOSITION_QUICK_MINTIME < level.time) && !(client->ps.pm_flags & PMF_JUMP_HELD) && client->pers.cmd.upmove <= 0 && !client->ps.pm_time){ // quick pos saving
+		simplePos_t* targetPosQuick = &level.ironManPosQuick[level.ironManPosCountQuick % IRONMAN_MAX_PAST_POSITIONS_COUNT_QUICK];
+		VectorCopy(client->ps.origin, targetPosQuick->origin);
+		VectorCopy(client->ps.velocity, targetPosQuick->velocity);
+		VectorCopy(client->ps.viewangles, targetPosQuick->angles);
+		targetPosQuick->when = level.time;
+		targetPosQuick->distanceTraveled = client->pers.distanceTraveled; // this is an integer distance traveled. to keep a permanent distance traveled counter that never has to be reset and isnt affected by floating point imprecision
+		level.ironManPosCountQuick++;
+		level.lastIronManQuickPosSaved = level.time;
+	}
+
+	if (client->sess.modeTeam != MODETEAM_IRONMAN_CAPPER || client->sess.mode != MODE_IRONMAN || !touchedGround && level.lastIronManPosSaved + IRONMAN_SAVEPOSITION_MINTIMEFORCESURELYEVENJUMP > level.time) {
 		return;
 	}
 
@@ -1945,31 +1980,62 @@ void G_MaybeSaveIronmanPos(gentity_t* ent) {
 			allowMidJumpSaves = 2;
 		}
 	}
-
-	// try to avoid saving mid-jump or at the start of a jump, otherwise people spawning will spawn in the middle of what was supposed
-	// to be a force jump and then they might fall to their doom.
-	if (allowMidJumpSaves == 0 && ((client->ps.pm_flags & PMF_JUMP_HELD) || client->pers.cmd.upmove > 0)) {
-		return;
-	}
-	else if (allowMidJumpSaves == 1 && (client->ps.pm_flags & PMF_JUMP_HELD)) {
-		return;
-	}
-	
+		
 	JP_Trace(&trace, client->ps.origin, playerMins, playerMaxs, client->ps.origin,ent-g_entities, MASK_PLAYERSOLID);
 
 	if (trace.allsolid || trace.startsolid) {
 		return; // maybe hes crouching somewhere in a hole or sth. Can't save it because anyone spawning would get stuck.
 	}
 
-	VectorCopy(client->ps.origin,level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].origin);
-	VectorCopy(client->ps.velocity,level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].velocity);
-	VectorCopy(client->ps.viewangles,level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].angles);
-	client->ps.velocity, level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT].when = level.time;
+	targetPos = &level.ironManPos[level.ironManPosCount % IRONMAN_MAX_PAST_POSITIONS_COUNT];
 
-	if (g_developer.integer) {
-		Com_Printf("Saving ironman position: %f %f %f", client->ps.origin[0], client->ps.origin[1], client->ps.origin[2]);
+	if (level.ironManPosCountQuick) {
+		// go back in time up to a second, through the quickly saved positions.
+		// logic: we only save main positions when we are on ground.
+		// but especially on maps with tricky jumps at higher speed, this means we could spawn with full speed at a place
+		// and the logic forces us to jump off, when in reality we needed to pause/groundframe
+		// ergo: let us go back in time before reaching the ground, so the player can see whats coming and can react to it
+		int i;
+		simplePos_t* pos;
+		int age;
+		for (i = level.ironManPosCountQuick - 1; i >= MAX(0, level.ironManPosCountQuick - IRONMAN_MAX_PAST_POSITIONS_COUNT_QUICK + 1); i--) {
+			pos = &level.ironManPosQuick[i % IRONMAN_MAX_PAST_POSITIONS_COUNT_QUICK];
+			age = level.time - pos->when;
+			if (age > 400 && age < 1000) {
+				// anything in sweet spot?
+				usingQuickpos = qtrue;
+				*targetPos = *pos;
+				break;
+			}
+		}
 	}
 
+	if (level.ironManPosCount > 0 && !usingQuickpos) { // quickpos ALWAYS include midjump saves
+
+		// try to avoid saving mid-jump or at the start of a jump, otherwise people spawning will spawn in the middle of what was supposed
+		// to be a force jump and then they might fall to their doom.
+		// also avoid saving during a skim (since that wont be properly restored by a spawn atm)
+		if (allowMidJumpSaves == 0 && ((client->ps.pm_flags & PMF_JUMP_HELD) || client->pers.cmd.upmove > 0 || client->ps.pm_time)) {
+			return;
+		}
+		else if (allowMidJumpSaves == 1 && (client->ps.pm_flags & PMF_JUMP_HELD)) {
+			return;
+		}
+	}
+
+	if (!usingQuickpos) {
+		VectorCopy(client->ps.origin, targetPos->origin);
+		VectorCopy(client->ps.velocity, targetPos->velocity);
+		VectorCopy(client->ps.viewangles, targetPos->angles);
+		targetPos->when = level.time;
+		targetPos->distanceTraveled = client->pers.distanceTraveled; // this is an integer distance traveled. to keep a permanent distance traveled counter that never has to be reset and isnt affected by floating point imprecision
+	}
+
+	if (g_developer.integer) {
+		Com_Printf("Saving ironman position of age %d: %f %f %f", level.time - targetPos->when, targetPos->origin[0], targetPos->origin[1], targetPos->origin[2]);
+	}
+
+	level.ironManPosCountQuick = 0; // clear them now to avoid weirdness
 	level.ironManPosCount++;
 	level.lastIronManPosSaved = level.time;
 
@@ -2714,7 +2780,7 @@ void ClientThink_real( gentity_t *ent ) {
 	}
 
 	if (client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER) {
-		G_MaybeSaveIronmanPos(ent);
+		G_MaybeSaveIronmanPos(ent, client->ps.groundEntityNum == ENTITYNUM_WORLD || pm.touchedGroundOrSlide);
 	}
 
 	if (ent->client->sess.raceStateInvalidated) {
@@ -2738,15 +2804,24 @@ void ClientThink_real( gentity_t *ent ) {
 	UpdateClientPastFpsStats(ent,msec);
 	//client->lastMsecValue = msec;
 
-	if (client->pers.raceStartCommandTime && DF_PrePmoveValid(ent)) { // is this accurate? can there be any movement outside of pmove? other than teleport, that is.
+	if (DF_PrePmoveValid(ent)) { // is this accurate? can there be any movement outside of pmove? other than teleport, that is.
 		vec3_t displacementAdd;
 		float currentXYSpeed = XYSPEED(client->ps.velocity);
+		float distanceTraveled;
+		int fractionIntegerized;
 		VectorSubtract(client->postPmovePosition, client->prePmovePosition, displacementAdd);
-		client->pers.stats.distanceTraveled += VectorLength(displacementAdd);
-		displacementAdd[2] = 0;
-		client->pers.stats.distanceTraveled2D += VectorLength(displacementAdd);
-		if (currentXYSpeed > client->pers.stats.topSpeed) {
-			client->pers.stats.topSpeed = currentXYSpeed;
+		distanceTraveled = VectorLength(displacementAdd);
+		client->pers.distanceTraveledFraction += distanceTraveled;
+		fractionIntegerized = client->pers.distanceTraveledFraction;
+		client->pers.distanceTraveled += fractionIntegerized;
+		client->pers.distanceTraveledFraction -= (float)fractionIntegerized;
+		if (client->pers.raceStartCommandTime) {
+			client->pers.stats.distanceTraveled += distanceTraveled;
+			displacementAdd[2] = 0;
+			client->pers.stats.distanceTraveled2D += VectorLength(displacementAdd);
+			if (currentXYSpeed > client->pers.stats.topSpeed) {
+				client->pers.stats.topSpeed = currentXYSpeed;
+			}
 		}
 	}
 

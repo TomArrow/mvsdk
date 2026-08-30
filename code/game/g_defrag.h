@@ -328,6 +328,19 @@ typedef struct userCmdBuffer_s {
 	int			msecThisFrame;
 } userCmdBuffer_t;
 
+#define IRONMAN_DEBUG_PASTPOINTS 5
+typedef struct ironmanDebugPoint_s {
+	debugField_t* intDistance;
+	debugField_t* realDistance;
+} ironmanDebugPoint_t;
+typedef struct ironmanDebug_s {
+	ironmanDebugPoint_t points[IRONMAN_DEBUG_PASTPOINTS];
+} ironmanDebug_t;
+ironmanDebug_t;
+extern ironmanDebug_t ironmanDebug;
+
+
+
 
 #define Q3SPAWNFLAG_TARGET_FRAGSFILTER_REMOVER		(1<<0)
 #define Q3SPAWNFLAG_TARGET_FRAGSFILTER_SILENT		(1<<2)

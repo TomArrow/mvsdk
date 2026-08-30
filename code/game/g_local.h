@@ -741,6 +741,10 @@ typedef struct {
 
 	int			lastLevelSpawnTime; // for scheduling FP_SEE in duel queue. always the level.time, not commandtime. never use for gameplay sensitive things (that could mess up a segmented replay)
 
+	// this is for ironman spawns, to see how far the capper has traveled since any given saved pos
+	int			distanceTraveled;
+	float		distanceTraveledFraction;
+
 	char		lastTeamInfoMessage[1400]; // very cringe but reasonably readable. TODO do something more efficient
 	int			lastTeamInfoMessageSent;
 } clientPersistant_t;
@@ -904,7 +908,8 @@ struct gclient_s {
 
 typedef enum debugType_s {
 	DEBUG_NONE,
-	DEBUG_ANTIWALLHACK
+	DEBUG_ANTIWALLHACK,
+	DEBUG_IRONMANSPAWNS
 } debugType_t;
 typedef struct antiWallhackDebug_s {
 	debugField_t*	tracesPerSecondCountFloat;
@@ -1125,12 +1130,15 @@ typedef struct {
 	int			lastAllRankUpdate;
 	int			nextRandomTip;
 	int			lastIronManKilled;
-	vec3_t		ironManCurrentPosition;
+	simplePos_t	ironManCurrentPosition;
 	qboolean	ironManCurrentPositionSet;
 	int			ironManClientNum;
 	simplePos_t	ironManPos[IRONMAN_MAX_PAST_POSITIONS_COUNT];
 	int			ironManPosCount;
 	int			lastIronManPosSaved;
+	simplePos_t	ironManPosQuick[IRONMAN_MAX_PAST_POSITIONS_COUNT_QUICK];
+	int			ironManPosCountQuick;
+	int			lastIronManQuickPosSaved;
 	
 	int			highestDefragSpawnPriority;
 	int			deathMatchSpawnCount;
