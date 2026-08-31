@@ -2896,6 +2896,21 @@ typedef struct searchSettings_s {
 	int				allowWrongDir; // 0 to 2
 } searchSettings_t;
 
+typedef struct searchSettingsShortDistance_s {
+	int				traceDist; // index into traceDistances[]
+	float			fracRequired;
+	int				skipvis; // 0 = need visibility, 1 = need visibility or capper->chaser must be invisible too (to avoid 1-way clips), 2 = anything goes
+} searchSettingsShortDistance_t;
+
+typedef struct traceResultsCache_s {
+	qboolean	traceDone;
+	qboolean	traceOk;
+	float		fraction;
+	vec3_t		tracePos;
+	qboolean	traceBackDone;
+	qboolean	traceBackOk;
+} traceResultsCache_t;
+
 qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
 	int				i,set;
 	int				allowShortPos = 0;
@@ -3015,52 +3030,96 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 					int side, front, up, dist, skipvis;
 					float traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f;
 					float fracRequired = 0.4;
+					static const float traceDistances[] = {
+						IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT * 2.0f,
+						IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT
+					};
+					static const searchSettingsShortDistance_t searchSettingsShortDist[] = {
+						{0, 0.4f, 0 },
+						{1, 0.8f, 0 },
+						{1, 0.4f, 0 },
+						{1, 0.2f, 0 },
+						{1, 0.0f, 0 }, // ultimately... rather have visual contact and be very close than to end up with a one-sided clip situation
+						{0, 0.4f, 1 },
+						{1, 0.8f, 1 },
+						{1, 0.4f, 1 },
+						{1, 0.2f, 1 },
+						{1, 0.0f, 1 }, // ultimately... rather have visual contact and be very close than to end up with a one-sided clip situation
+						{0, 0.4f, 2 },
+						{1, 0.8f, 2 },
+						{1, 0.4f, 2 },
+						{1, 0.2f, 2 },
+						{1, 0.0f, 2 }, // ultimately... rather have visual contact and be very close than to end up with a one-sided clip situation
+					};
+					static const int searchSettingsShortDistCount = sizeof(searchSettingsShortDist) / sizeof(searchSettingsShortDist[0]);
+					traceResultsCache_t traceCache[sizeof(traceDistances) / sizeof(traceDistances[0])][2][3][3] = { 0 };
+					int subset;
 					good = qfalse;
 					VectorCopy(pos->origin, goodOrigin);
 					// we might spawn right on the capper's ass
 					// try to move us a bit away if we can?
-					for (skipvis = 0; skipvis < 2 && !good; skipvis++) { // in emergency, dont require visual contact to capper
-						for (dist = 0; dist < 2 && !good; dist++) { // try shorter distance if nothing fouund
-							if (dist == 1) {
-								traceDist = IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT;
-								fracRequired = 0.8f;
-							}
-							for (up = 0; up < 2 && !good; up++) {
-								for (side = -1; side < 2 && !good; side++) {
-									for (front = -1; front < 2 && !good; front++) {
-										if (side == 0 && front == 0) {
-											continue;
-										}
-										goodOrigin[0] = pos->origin[0] + (float)front * traceDist;
-										goodOrigin[1] = pos->origin[1] + (float)side * traceDist;
-										goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
-										//if (WiggleSpotTelefrag(goodOrigin, ent)) {
+					for(subset=0;subset< searchSettingsShortDistCount && !good;subset++){
+						traceDist = traceDistances[searchSettingsShortDist[subset].traceDist];
+						fracRequired = searchSettingsShortDist[subset].fracRequired;
+						skipvis = searchSettingsShortDist[subset].skipvis;
 
-										if (skipvis) {
+						for (up = 0; up < 2 && !good; up++) {
+							for (side = -1; side < 2 && !good; side++) {
+								for (front = -1; front < 2 && !good; front++) {
+									traceResultsCache_t* cacheEntry = &traceCache[searchSettingsShortDist[subset].traceDist][up][side+1][front+1];
+									if (side == 0 && front == 0) {
+										continue;
+									}
+									goodOrigin[0] = pos->origin[0] + (float)front * traceDist;
+									goodOrigin[1] = pos->origin[1] + (float)side * traceDist;
+									goodOrigin[2] = pos->origin[2] + (float)up * 64.0f;
+									//if (WiggleSpotTelefrag(goodOrigin, ent)) {
+
+									if (skipvis == 2) {
+										if (WiggleSpotTelefrag(goodOrigin, ent)) {
+											good = qtrue;
+											break;
+										}
+									}
+									else {
+										if (!cacheEntry->traceDone) {
+											JP_Trace(&trace, level.ironManCurrentPosition.origin, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
+											cacheEntry->traceOk = !trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN));
+											cacheEntry->fraction = trace.fraction;
+											VectorCopy(trace.endpos, cacheEntry->tracePos);
+											cacheEntry->traceDone = qtrue;
+										}
+										// make sure we could actually reach the capper from that place
+										if (cacheEntry->traceOk && cacheEntry->fraction > fracRequired) { // let's be at least 0.6*min distance away
+											// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
+											VectorCopy(cacheEntry->tracePos, goodOrigin);
+											if (!cacheEntry->traceBackDone) {
+												JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition.origin, level.ironManClientNum, MASK_PLAYERSOLID);
+												cacheEntry->traceBackOk = trace.fraction == 1.0f;
+												cacheEntry->traceBackDone = qtrue;
+											}
+											if (cacheEntry->traceBackOk) {
+												if (WiggleSpotTelefrag(goodOrigin, ent)) {
+													good = qtrue;
+													break;
+												}
+											}
+										}
+										else if (skipvis == 1) {
+											// hows this different from skipvis 2? simple.
+											// skipvis 2 could allow for a successful trace capper->chaser but a failed trace chaser->capper
+											// which could indicate a one-way clip, which is something we very much want to avoid
 											if (WiggleSpotTelefrag(goodOrigin, ent)) {
 												good = qtrue;
 												break;
-											}
-										}
-										else {
-											JP_Trace(&trace, level.ironManCurrentPosition.origin, playerMins, playerMaxs, goodOrigin, level.ironManClientNum, MASK_PLAYERSOLID | CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN);
-											// make sure we could actually reach the capper from that place
-											if (!trace.allsolid && !trace.startsolid && !(trace.contents & (CONTENTS_LAVA | CONTENTS_SLIME | CONTENTS_NOSPAWN)) && trace.fraction > fracRequired) { // let's be at least 0.6*min distance away
-												// trace back in other direction (due to patches/1-way clips only being recognized in one direction)
-												VectorCopy(trace.endpos, goodOrigin);
-												JP_Trace(&trace, goodOrigin, playerMins, playerMaxs, level.ironManCurrentPosition.origin, level.ironManClientNum, MASK_PLAYERSOLID);
-												if (trace.fraction == 1.0f) {
-													if (WiggleSpotTelefrag(goodOrigin, ent)) {
-														good = qtrue;
-														break;
-													}
-												}
 											}
 										}
 									}
 								}
 							}
 						}
+							
+						
 					}
 					if (good) {
 						keepAngles = qfalse;
