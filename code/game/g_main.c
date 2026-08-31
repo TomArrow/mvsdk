@@ -41,6 +41,8 @@ vmCvar_t	g_saberLocking;
 vmCvar_t	g_saberLockFactor;
 vmCvar_t	g_saberTraceSaberFirst;
 
+vmCvar_t	g_lastSessionId;
+
 vmCvar_t	g_modes;
 vmCvar_t	g_modesDefault;
 vmCvar_t	g_modeTeamIronman;
@@ -266,6 +268,7 @@ vmCvar_t	g_pauseTimerFreeze;
 vmCvar_t	g_allowChatPause;
 vmCvar_t	g_analyzebs;
 vmCvar_t	g_logbs;
+vmCvar_t	g_logbsBig;
 vmCvar_t	g_voteAsSpec; // this is probably broken. cuz level.numVotingClients won't change for it... so fix at some point
 vmCvar_t	g_debugFps; 
 vmCvar_t	g_fairFlag; 
@@ -333,6 +336,7 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 	{ &g_defragSimpleResetSpawn, "g_defragSimpleResetSpawn", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_defragLastRunId, "g_defragLastRunId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_defragLastDemoId, "g_defragLastDemoId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
+	{ &g_lastSessionId, "g_lastSessionId", "0", CVAR_ROM | CVAR_NORESTART, 0, qfalse  },
 	{ &g_triggersRobust, "g_triggersRobust", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_bubbleSpawn, "g_bubbleSpawn", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_reuseCTFSpawns, "g_reuseCTFSpawns", "1", CVAR_ARCHIVE, 0, qtrue  },
@@ -426,6 +430,7 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 #ifdef ANALYZE_BS
 	{ &g_analyzebs, "g_analyzebs", "0", CVAR_ARCHIVE | CVAR_VVV, 0, qfalse, qfalse, "Analyze d/bs events of players" },
 	{ &g_logbs, "g_logbs", "0", CVAR_ARCHIVE | CVAR_VVV, 0, qfalse, qfalse, "Log all d/bs events to disk (needs g_analyzebs 1)" },
+	{ &g_logbsBig, "g_logbsBig", "0", CVAR_ARCHIVE | CVAR_LATCH | CVAR_VVV, 0, qfalse, qfalse, "Log all d/bs events to disk with dated filenames and full usercmd_t structs (needs g_analyzebs 1)" },
 #endif
 #ifdef DEBUGFPS
 	{ &g_debugFps, "g_debugFps", "0", CVAR_TEMP | CVAR_VVV, 0, qfalse, qfalse, "Collect server FPS stats for debugging (temporary cvar)" },
@@ -1456,6 +1461,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 	memset( &level, 0, sizeof( level ) );
 	level.time = levelTime;
 	level.startTime = levelTime;
+	level.startUnixTime = trap_RealTime(NULL);
 	level.frameTimeMsec = 0;
 
 	G_SetupTempDemoSubfolderName();
@@ -1472,11 +1478,12 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	//for logging d/bs events
 #ifdef ANALYZE_BS
-	if (g_logSync.integer) {
-		trap_FS_FOpenFile("bsevents.dat", &level.bsLogFile, FS_APPEND_SYNC);
-	}
-	else {
-		trap_FS_FOpenFile("bsevents.dat", &level.bsLogFile, FS_APPEND);
+	trap_FS_FOpenFile("bsevents.dat", &level.bsLogFile, FS_APPEND_SYNC);
+	if (g_logbsBig.integer) {
+		qtime_t q;
+		const char* sanitizedCourseName = G_GetSanitizedCourseName();
+		trap_RealTime(&q);
+		trap_FS_FOpenFile(va("bsEvents/%4d-%02d-%02d_%02d-%02d-%02d_%s_bsevents.dat", q.tm_year + 1900, q.tm_mon + 1, q.tm_mday, q.tm_hour, q.tm_min, q.tm_sec, sanitizedCourseName), &level.bsLogFileBig, FS_APPEND);
 	}
 #endif
 
@@ -1664,6 +1671,9 @@ void G_ShutdownGame( int restart ) {
 #ifdef ANALYZE_BS
 	if (level.bsLogFile) {
 		trap_FS_FCloseFile(level.bsLogFile);
+	}
+	if (level.bsLogFileBig) {
+		trap_FS_FCloseFile(level.bsLogFileBig);
 	}
 #endif
 
@@ -2554,17 +2564,7 @@ void ExitLevel (void) {
 
 
 
-typedef struct {
-	//8 bytes. can we make it 4?
-	byte tm_sec;     /* seconds after the minute - [0,59] */
-	byte tm_min;     /* minutes after the hour - [0,59] */
-	byte tm_hour;    /* hours since midnight - [0,23] */
-	byte tm_mday;    /* day of the month - [1,31] */
-	byte tm_mon;     /* months since January - [0,11] */
-	byte tm_year;    /* years since 1900 */		//as of 2015, value is 115, so we still have a few years before we hit 127
-	byte tm_wday;	 /* days since Sunday - [0,6] */
-	byte tm_isdst;	 /* daylight savings time flag */
-} smallTime_t;
+
 
 void QtimeToSmallTime(qtime_t* qt, smallTime_t* st) {
 	st->tm_sec = (byte)qt->tm_sec;
@@ -2609,6 +2609,20 @@ void QDECL G_LogBsEvent(bsRecord_t* bsr, gentity_t* ent) {
 
 	//write the BS record data
 	trap_FS_Write(bsr, sizeof(bsRecord_t), level.bsLogFile);
+}
+void QDECL G_LogBsEventBig(bsRecordBig_t* bsr, gentity_t* ent) {
+	int 			len;
+	qtime_t			time;
+	smallTime_t 	smalltime;
+	unsigned char	ipb[4] = { 0 };		//bytes
+	mvclientSession_t* mvSess = &mv_clientSessions[ent - g_entities];
+
+	if (!level.bsLogFileBig) {
+		return;
+	}
+
+	//write the BS record data
+	trap_FS_Write(bsr, sizeof(*bsr), level.bsLogFileBig);
 }
 #endif
 

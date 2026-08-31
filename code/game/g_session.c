@@ -18,6 +18,19 @@ and tournament restarts.
 =======================================================================
 */
 
+
+
+static int G_GetNewSessionId() {
+	char s[15];
+	int num;
+	trap_Cvar_VariableStringBuffer("g_lastSessionId", s, sizeof(s));
+	num = atoi(s);
+	num++;
+	trap_Cvar_Set("g_lastSessionId", va("%d", num));
+	return num;
+}
+
+
 /*
 ================
 G_WriteClientSessionData
@@ -29,7 +42,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 	const char	*s;
 	const char	*var;
 
-	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
+	s = va("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
 		client->sess.sessionTeam,
 		client->sess.spectatorOrder,
 		client->sess.spectatorState,
@@ -40,6 +53,7 @@ void G_WriteClientSessionData( gclient_t *client ) {
 		client->sess.setForce,
 		client->sess.saberLevel,
 		client->sess.selectedFP,
+		client->sess.sessionId,
 		client->sess.mode,
 		client->sess.modeTeam,
 		client->sess.raceMode,
@@ -117,7 +131,7 @@ void G_ReadSessionData( gclient_t *client ) {
 	var = va( "session%i", (int)(client - level.clients) );
 	trap_Cvar_VariableStringBuffer( var, s, sizeof(s) );
 
-	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
+	sscanf( s, "%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %u %i %i %i %s",
 		&sessionTeam,                 // bk010221 - format
 		&client->sess.spectatorOrder,
 		&spectatorState,              // bk010221 - format
@@ -128,6 +142,7 @@ void G_ReadSessionData( gclient_t *client ) {
 		&setForce,
 		&client->sess.saberLevel,
 		&client->sess.selectedFP,
+		&client->sess.sessionId,
 		&tempMode,
 		&tempModeTeam,
 		&tempRaceMode,
@@ -246,6 +261,7 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess->lastHereTime = level.time;
 	sess->firstEnterTime = 0;
 	sess->firstEnterTimeSet = qfalse;
+	sess->sessionId = G_GetNewSessionId();
 	UpdateClientRaceVars(client);
 	//client->ps.fd.forcePowerLevel[FP_LEVITATION] = client->sess.raceStyle.jumpLevel;
 

@@ -455,6 +455,8 @@ typedef struct {
 	int			updateUITime;		// only update userinfo for FP/SL if < level.time
 	qboolean	teamLeader;			// true when this client is a team leader
 
+	int			sessionId;			// to identify a unique session during this run of the executable
+
 	playerMode_e	mode; // 1 when normal, 2 when racemode, and then theres extra modes so ppl can play different gamestyles of their choice (duel, all force, ironman...)
 	modeTeam_e	modeTeam;
 	qboolean	raceMode;
@@ -514,6 +516,20 @@ typedef struct {
 #define ANGLES_MASK			(ANGLES_HISTORY-1)
 
 typedef struct {
+	//8 bytes. can we make it 4?
+	byte tm_sec;     /* seconds after the minute - [0,59] */
+	byte tm_min;     /* minutes after the hour - [0,59] */
+	byte tm_hour;    /* hours since midnight - [0,23] */
+	byte tm_mday;    /* day of the month - [1,31] */
+	byte tm_mon;     /* months since January - [0,11] */
+	byte tm_year;    /* years since 1900 */		//as of 2015, value is 115, so we still have a few years before we hit 127
+	byte tm_wday;	 /* days since Sunday - [0,6] */
+	byte tm_isdst;	 /* daylight savings time flag */
+} smallTime_t;
+
+void QtimeToSmallTime(qtime_t* qt, smallTime_t* st);
+
+typedef struct {
 	char	frametime;	//ms since previous usercmd_t
 	char 	moves;		//bitmask of movement buttons held
 	short	buttons;	//button_attack etc, buttons held this frame
@@ -525,6 +541,18 @@ typedef struct {
 	bsFrameSample_t	frame[NUM_BS_FRAME_SAMPLES];
 } bsRecord_t;
 
+typedef struct {
+	usercmd_t		frame[ANGLES_HISTORY];
+	char			name[21];
+	char			uname[USERNAME_MAX_LEN+1];
+	int				sessionId;
+	int				clientNum;
+	int				unixtimeGameStart;
+	int				unixtime;
+	smallTime_t		time;
+	unsigned int	checksum;
+} bsRecordBig_t;
+
 #define MOVE_FORWARD		1
 #define MOVE_BACK			2
 #define MOVE_LEFT			4
@@ -533,6 +561,7 @@ typedef struct {
 #define MOVE_DOWN			32
 
 void QDECL G_LogBsEvent(bsRecord_t* bsr, gentity_t* ent);
+void QDECL G_LogBsEventBig(bsRecordBig_t* bsr, gentity_t* ent);
 
 const char* BsRecordText(int i, bsFrameSample_t* frame);
 void BuildBsRecord(bsRecord_t* bsr, gclient_t* client);
@@ -1013,6 +1042,7 @@ typedef struct {
 	fileHandle_t	logFile;	
 #ifdef ANALYZE_BS
 	fileHandle_t	bsLogFile;
+	fileHandle_t	bsLogFileBig;
 #endif
 
 	// store latched cvars here that we want to get at often
@@ -1025,6 +1055,7 @@ typedef struct {
 	int			frameTimeMsec;
 
 	int			startTime;				// level.time the map was started
+	int			startUnixTime;
 
 	int			teamScores[TEAM_NUM_TEAMS];
 	int			lastTeamLocationTime;		// last time of client team location update
@@ -1697,6 +1728,7 @@ void DF_RequestSubContestLeaderboard(gentity_t* ent, subContests_t contest, int 
 qboolean DF_KeepClientZombie(gentity_t* ent);
 void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
 void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint);
+const char* G_GetSanitizedCourseName();
 void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn);
 void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
 void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text, qboolean includeSpectators);
@@ -1871,6 +1903,8 @@ extern	vmCvar_t	g_saberTraceSaberFirst;
 extern	vmCvar_t	g_modes;
 extern	vmCvar_t	g_modesDefault;
 extern	vmCvar_t	g_modeTeamIronman;
+
+extern	vmCvar_t	g_lastSessionId;
 
 extern	vmCvar_t	g_defrag;
 extern	vmCvar_t	g_defragLastRunId;
@@ -2073,6 +2107,7 @@ extern	vmCvar_t	g_pauseTimerFreeze;
 extern	vmCvar_t	g_allowChatPause;
 extern	vmCvar_t	g_analyzebs;
 extern	vmCvar_t	g_logbs;
+extern	vmCvar_t	g_logbsBig;
 extern	vmCvar_t	g_voteAsSpec;
 extern	vmCvar_t	g_debugFps;
 extern	vmCvar_t	g_fairFlag;

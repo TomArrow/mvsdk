@@ -603,6 +603,12 @@ void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn) {
 	}
 }
 
+const char* G_GetSanitizedCourseName() {
+	static char sanitizedCourseName[COURSENAME_MAX_LEN + 1];
+	sanitizeFilename(DF_GetCourseName(qfalse), sanitizedCourseName, qfalse); // take care of possible special cahrs the filesystem may not like
+	return sanitizedCourseName;
+}
+
 // only works if sv_demoPreRecord is active and svrecordclip is supported
 void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint) {
 	gclient_t* cl = ent->client;

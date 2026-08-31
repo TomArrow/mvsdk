@@ -3361,6 +3361,54 @@ void BuildBsRecord(bsRecord_t* bsr, gclient_t* client)
 	}
 }
 
+unsigned int SimpleXORChecksum(byte* data, int size) {
+	int realsize = size / 4;
+	int leftover = size % 4;
+	unsigned int checksum = 0;
+	unsigned int* dataInt = (unsigned int*)data;
+	int i;
+	for (i = 0; i < realsize; i++, dataInt++) {
+		checksum ^= *dataInt;
+	}
+	if (leftover) {
+		byte* out = (byte*)&checksum;
+		byte* rest = (byte*)dataInt;
+		for (i = 0; i < leftover; i++,out++,rest++) {
+			*out ^= *rest;
+		}
+	}
+	return checksum;
+}
+
+void BuildBsRecordBig(bsRecordBig_t* bsr, gclient_t* client)
+{
+	clientPersistant_t* pers = &client->pers;
+	const int 		    first = pers->cmdstack & ANGLES_MASK;		// the earliest cmd recorded (index)
+	int 				i, ind;
+	qtime_t				qtime;
+
+	memset(bsr, 0, sizeof(*bsr));
+
+	//build a bsRecord_t
+	ind = first;
+	for (i = 0; i < ANGLES_HISTORY; ++i, ++ind) {
+		usercmd_t* frame = &bsr->frame[i];
+		usercmd_t* cmd = &pers->backupcmd[ind & ANGLES_MASK];
+
+		*frame = *cmd;
+	}
+
+	Q_strncpyz(bsr->name, client->pers.netnameClean, sizeof(bsr->name));
+	Q_strncpyz(bsr->uname, client->sess.login.name, sizeof(bsr->uname));
+	bsr->sessionId = client->sess.sessionId;
+	bsr->clientNum = client - g_clients;
+	bsr->unixtimeGameStart = level.startUnixTime;
+	bsr->unixtime = trap_RealTime(&qtime);
+	QtimeToSmallTime(&qtime, &bsr->time);
+	bsr->checksum = SimpleXORChecksum((byte*)bsr,sizeof(*bsr)-sizeof(bsr->checksum));
+
+}
+
 void AnalyzeBS(gentity_t* ent) {
 	bsRecord_t* bsr = &ent->client->pers.savedbs;
 
@@ -3370,6 +3418,11 @@ void AnalyzeBS(gentity_t* ent) {
 	{
 		//save all bs events to disk
 		G_LogBsEvent(bsr, ent);
+	}
+	if (g_logbsBig.integer) {
+		bsRecordBig_t bigBsr;
+		BuildBsRecordBig(&bigBsr, ent->client);
+		G_LogBsEventBig(&bigBsr, ent);
 	}
 
 	++ent->client->pers.numbs;
