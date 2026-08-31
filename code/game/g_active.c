@@ -3410,6 +3410,7 @@ void ClientThink( int clientNum ) {
 			}
 		}
 		ent->client->sess.lastHereTime = level.time; // for afk tracking for players
+		ent->client->pers.lastMovementTime = level.time; // for /kill allowance as ironman capper and such
 	}
 	ent->client->sess.oldbuttons_immediate = newbuttons;
 

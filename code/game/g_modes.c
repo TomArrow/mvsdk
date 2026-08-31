@@ -18,6 +18,31 @@ static const char* teamSetStrings[TEAM_NUM_TEAMS] = {
 
 int settingModeTeam[MAX_CLIENTS] = { 0 };
 
+
+// if capper, returns amounts of milliseconds since begin of capping
+// strict = always return qtrue if player is capper. not strict: check if theres any other non-afk ironman players and only return qtrue if there are. (we are only interested in whether we should restrict the capper's actions like /kill etc)
+int G_ClientIsIronmanCapper(gentity_t* ent, qboolean strict) {
+	if (ent->client->sess.sessionTeam != TEAM_SPECTATOR && ent->client->sess.mode == MODE_IRONMAN && ent->client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER && (ent->client->ps.powerups[PW_REDFLAG] || ent->client->ps.powerups[PW_BLUEFLAG] || ent->client->ps.powerups[PW_NEUTRALFLAG])) {
+		if (!strict) {
+			int i;
+			gentity_t* other;
+			int ironmanchasers = 0;
+			for (i = 0; i < level.maxclients; i++) {
+				other = g_entities + i;
+				if (!other->inuse || !other->client || other->client->sess.sessionTeam == TEAM_SPECTATOR || other == ent) {
+					continue;
+				}
+				if (other->client->sess.mode == MODE_IRONMAN && clampedIntAdd(level.time, -other->client->sess.lastHereTime) < 10000) {
+					return level.time - ent->client->pers.lastIronmanFlagGiven;
+				}
+			}
+			return 0;
+		}
+		return level.time - ent->client->pers.lastIronmanFlagGiven;
+	}
+	return 0;
+}
+
 // check if we need to adjust mode team on respawn
 void ModeClientRespawning(gentity_t* ent) {
 	modeTeam_t* modeTeamData = &modeTeams[ent->client->sess.modeTeam];
@@ -269,6 +294,7 @@ void Cmd_ModeCmd_f(gentity_t* ent)
 {
 	char mode[20];
 	int modeNum;
+	sanction_t* sanction;
 	if (!ent->client)
 		return;
 
@@ -282,6 +308,11 @@ void Cmd_ModeCmd_f(gentity_t* ent)
 	}
 	else {
 		modeNum = PlayerModeNameToInteger(mode);
+		if (sanction = G_CheckIPSanctionMatchParam1(ent, SANCTION_MODERESTRICTION, modeNum)) {
+			int				time = trap_RealTime(NULL);
+			trap_SendServerCommand(ent - g_entities, va("print \"You are currently not allowed to enter this mode. Reason: %s. Restriction expires in %d seconds\n\"",sanction->reason,sanction->expires-time));
+			return;
+		}
 	}
 	if (modeNum == -1) {
 		trap_SendServerCommand(ent - g_entities, "print \"Invalid mode specified. Valid modes: reset, normal, defrag, duel, duelqueue, allforce, ironman\n\"");

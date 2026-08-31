@@ -112,6 +112,7 @@ extern int gEscapeTime;
 #define TT_ACCOUNTFLAG_A_BLACKLISTMAPS					(1<<6) 
 #define TT_ACCOUNTFLAG_A_DEMOMANAGE						(1<<7) 
 #define TT_ACCOUNTFLAG_A_CHANGEMAP						(1<<8) 
+#define TT_ACCOUNTFLAG_A_SANCTION						(1<<9) 
 
 typedef enum getUserCmdType_s
 {
@@ -538,6 +539,41 @@ void BuildBsRecord(bsRecord_t* bsr, gclient_t* client);
 #endif
 
 
+
+// ip sanctions
+// temporary sanctions for bad behavior
+// these aren't persisted across mapchanges atm.
+//#define MAX_SANCTIONS_CLIENT 5//10
+#define MAX_SANCTIONS_GLOBAL 200//1000
+typedef enum sanctionType_s {
+	SANCTION_INVALID,
+	SANCTION_MODERESTRICTION,
+} sanctionType_t;
+typedef struct sanction_s {
+	sanctionType_t	type;
+	int				param1;
+	unsigned		param2;
+	int				expires;
+	char			reason[30];
+} sanction_t;
+typedef struct ipSanction_s {
+	int						ip[4];
+	sanction_t				sanction;
+	struct ipSanction_s*	next;
+} ipSanction_t;
+
+extern ipSanction_t ipSanctions[MAX_SANCTIONS_GLOBAL];
+extern ipSanction_t* ipSanctionsFree;
+extern ipSanction_t* ipSanctionsActive;
+
+void G_InitIPSanctions(void);
+void G_AddIPSanction(gentity_t* ent, int seconds, sanctionType_t type, int param1, unsigned int param2, const char* reason);
+sanction_t* G_CheckIPSanctionMatchParam1(gentity_t* ent, sanctionType_t type, int param1);
+sanction_t* G_CheckIPSanctionMatchParam2(gentity_t* ent, sanctionType_t type, unsigned int param2);
+sanction_t* G_CheckIPSanctionMatchParams(gentity_t* ent, sanctionType_t type, int param1, unsigned int param2);
+
+
+
 typedef struct runStats_s { // zero'd out every time we leave start timer
 	int	startLevelTime;
 	int startLessTime;
@@ -706,6 +742,8 @@ typedef struct {
 	int			lastSpawnPoint;
 	int			chosenDefragSpawnPoint;
 	int			normalFollowerPing;
+
+	int			lastMovementTime; // for letting people /kill after not moving 10 seconds (when stuck somewhere or so)
 	
 	tffaStats_t	tffaStats;
 
@@ -747,6 +785,8 @@ typedef struct {
 
 	char		lastTeamInfoMessage[1400]; // very cringe but reasonably readable. TODO do something more efficient
 	int			lastTeamInfoMessageSent;
+
+	//sanction_t	sanctions[MAX_SANCTIONS_CLIENT];
 } clientPersistant_t;
 
 typedef struct bufferPrint_s {
@@ -1231,6 +1271,7 @@ qboolean ModePreventDamage(gentity_t* attacker, gentity_t* target);
 team_t ValidateClientModeTeam(gentity_t* ent, team_t wishTeam);
 qboolean ClientSetModeTeam(gentity_t* ent, modeTeam_e modeTeam);
 void SetClientMode(gentity_t* ent, playerMode_e mode);
+int G_ClientIsIronmanCapper(gentity_t* ent, qboolean strict);
 
 //
 // g_utils.c
@@ -1633,6 +1674,7 @@ void CheckBackStab(int clientNum);
 //
 void G_UpdateClientBroadcastsAntiWallhack(gentity_t* self);
 void G_ClearAllAntiWallhackSendStates();
+void G_InitIPSanctions(void);
 
 //
 // g_debug.c
@@ -1662,6 +1704,7 @@ void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast, qbo
 void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadcast, qboolean includeSpectators);
 void G_CheckEnqueuedClips(qboolean force); 
 void UpdateClientRaceVars(gclient_t* client);
+gentity_t* GetClientNumArg();
 
 
 //

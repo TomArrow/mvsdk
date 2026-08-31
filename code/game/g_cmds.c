@@ -17,6 +17,8 @@ void BG_CycleForce(playerState_t *ps, int direction);
 
 extern void DF_SetSubContestDefaults(gclient_t* client);
 
+void Cmd_Sanction_f(gentity_t* ent);
+
 static const char* ValidateMapTag(const char* tagName);
 
 static void Cmd_PrintCmdDescriptions_f(gentity_t* ent);
@@ -825,6 +827,7 @@ Cmd_Kill_f
 =================
 */
 void Cmd_Kill_f( gentity_t *ent ) {
+	int number;
 	if ( ent->client->sess.sessionTeam == TEAM_SPECTATOR ) {
 		return;
 	}
@@ -838,6 +841,20 @@ void Cmd_Kill_f( gentity_t *ent ) {
 	if (g_pauseGame.integer && !ent->client->sess.raceMode) {
 		G_SendServerCommand(ent - g_entities, va("print \"Can't kill yourself while game is paused :----D\n\""), qtrue);
 		return;
+	}
+
+	if (number = G_ClientIsIronmanCapper(ent,qfalse)) {
+		if (number > 30000) {
+			int afkTime = clampedIntAdd(level.time, -ent->client->pers.lastMovementTime);
+			if (afkTime < 10000) {
+				G_SendServerCommand(ent - g_entities, va("print \"Can't kill yourself when you are the ironman capper. If you got stuck somewhere, don't press any keys for 10 seconds, then try again.\n\""), qtrue);
+				return;
+			}
+		}
+		else {
+			G_SendServerCommand(ent - g_entities, va("print \"Can't kill yourself when you are the ironman capper.\n\""), qtrue);
+			return;
+		}
 	}
 
 	if (g_gametype.integer == GT_TOURNAMENT && level.numPlayingClients > 1 && !level.warmupTime)
@@ -1790,6 +1807,7 @@ qboolean SetTeam_User( gentity_t *ent, const char *s ) {
 	int oldTeam;
 	int newTeam;
 	const char *found = NULL;
+	int number;
 
 	if (!ent || !ent->client)
 		return qfalse;
@@ -1799,6 +1817,11 @@ qboolean SetTeam_User( gentity_t *ent, const char *s ) {
 	//check if hes not allowed to change team
 	if (ent->client->sess.amflags & AMFLAG_LOCKEDTEAM) {
 		trap_SendServerCommand( ent - g_entities, "print \"You have been denied permission to change team.\n\"" );
+		return qfalse;
+	}
+
+	if (number = G_ClientIsIronmanCapper(ent, qfalse)) {
+		trap_SendServerCommand(ent - g_entities, "print \"You cannot change teams while being the ironman capper.\n\"");
 		return qfalse;
 	}
 
@@ -1901,7 +1924,6 @@ void Cmd_Team_f( gentity_t *ent ) {
 		}
 		return;
 	}
-
 
 	if (gEscaping)
 	{
@@ -2065,7 +2087,6 @@ argCheck:
 		Cmd_Team_f(ent);
 	}
 }
-gentity_t* GetClientNumArg();
 
 
 static void Cmd_IgnoreClear_f (gentity_t *ent) {
@@ -3875,7 +3896,9 @@ void Cmd_Follow_f( gentity_t *ent ) {
 
 	// first set them to spectator
 	if ( ent->client->sess.sessionTeam != TEAM_SPECTATOR ) {
-		SetTeam_User( ent, "spectator" );
+		if (!SetTeam_User(ent, "spectator")) {
+			return;
+		}
 	}
 
 	ent->client->sess.spectatorState = SPECTATOR_FOLLOW;
@@ -3906,7 +3929,9 @@ void Cmd_FollowCycle_f( gentity_t *ent, int dir ) {
 	}
 	// first set them to spectator
 	if ( ent->client->sess.spectatorState == SPECTATOR_NOT ) {
-		SetTeam_User( ent, "spectator" );
+		if (!SetTeam_User(ent, "spectator")) {
+			return;
+		}
 	}
 
 	if ( dir != 1 && dir != -1 ) {
@@ -7279,6 +7304,7 @@ clientCommand_t clientCommands[] = {
 	{"resseg",				NULL, Cmd_DF_RestartSegmentedRun_f,		CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
 	{"rollympics",			NULL, Cmd_Rollympics_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
 	{"run",					NULL, Cmd_DF_RunSettings_f,				CMD_NOINTERMISSION},
+	{"sanction",			NULL, Cmd_Sanction_f,					CMD_NOINTERMISSION},
 	{"savecheckpoints",		NULL, G_DB_SaveUserCheckpoints,			CMD_NOINTERMISSION},
 	{"savepos",				NULL, Cmd_Savepos_f,					CMD_NOINTERMISSION | CMD_SIGNALSPRESENCE},
 	{"savespawn",			NULL, DF_SaveSpawn,						CMD_NOINTERMISSION},

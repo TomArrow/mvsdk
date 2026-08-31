@@ -474,3 +474,236 @@ void G_ClearAllAntiWallhackSendStates() {
 	}
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+// 
+//
+// IP SANCTION SYSTEM
+// for now, these are temporary ip restrictions that don't persist across level restarts/map changes
+//
+//
+//
+ipSanction_t ipSanctions[MAX_SANCTIONS_GLOBAL] = { 0 };
+ipSanction_t* ipSanctionsFree = ipSanctions;
+ipSanction_t* ipSanctionsActive = NULL;
+void G_InitIPSanctions(void) {
+	int i;
+	memset(ipSanctions, 0, sizeof(ipSanctions));
+	for (i = 0; i < MAX_SANCTIONS_GLOBAL-1; i++) {
+		ipSanctions[i].next = &ipSanctions[i+1];
+	}
+	ipSanctionsFree = ipSanctions;
+	ipSanctionsActive = NULL;
+}
+void G_RemoveIPSanction(ipSanction_t* ipSanction) {
+	if (ipSanction == ipSanctionsActive) {
+		ipSanctionsActive = ipSanction->next;
+		ipSanction->next = ipSanctionsFree;
+		ipSanctionsFree = ipSanction;
+		if (g_developer.integer) {
+			Com_Printf("^3G_RemoveIPSanction: IP sanction removed (0).\n");
+		}
+		return;
+	}
+	else {
+		ipSanction_t* sanction;
+		ipSanction_t* previous;
+		if (!ipSanctionsActive) {
+			Com_Error(ERR_FATAL, "G_RemoveIPSanction: Trying to remove sanction when no sanctions exist.");
+			return;
+		}
+		previous = ipSanctionsActive;
+		sanction = ipSanctionsActive->next;
+		while (sanction) {
+			if (sanction == ipSanction) {
+				previous->next = sanction->next;
+				sanction->next = ipSanctionsFree;
+				ipSanctionsFree = sanction;
+				if (g_developer.integer) {
+					Com_Printf("^3G_RemoveIPSanction: IP sanction removed (n).\n");
+				}
+				return;
+			}
+			previous = sanction;
+			sanction = sanction->next;
+		}
+		Com_Error(ERR_FATAL, "G_RemoveIPSanction: Trying to remove sanction that doesn't exist.");
+		return;
+	}
+}
+void G_CleanIPSanctions(qboolean forceOneFree) {
+	ipSanction_t*	sanction = ipSanctionsActive;
+	ipSanction_t*	sanctionNext;
+	ipSanction_t*	oldest = NULL;
+	int				oldestExpire = INT_MAX;
+	int				time = trap_RealTime(NULL);
+
+	sanction = ipSanctionsActive;
+	while (sanction) {
+		sanctionNext = sanction->next;
+		if (sanction->sanction.expires <= time) {
+			G_RemoveIPSanction(sanction);
+		}
+		else if(!oldest || sanction->sanction.expires < oldestExpire) {
+			oldestExpire = sanction->sanction.expires;
+			oldest = sanction;
+		}
+		sanction = sanctionNext;
+	}
+
+	if (forceOneFree && !ipSanctionsFree) {
+		if (!oldest) {
+			Com_Error(ERR_FATAL, "G_CleanIPSanctions: Trying to clear one sanction slot, but no suitable slot was found.");
+			return;
+		}
+		if (g_developer.integer) {
+			Com_Printf("^3G_CleanIPSanctions: Oldest sanction removed to make space.\n");
+		}
+		G_RemoveIPSanction(oldest);
+	}
+}
+void G_AddIPSanction(gentity_t* ent, int seconds, sanctionType_t type, int param1, unsigned int param2, const char* reason) {
+	ipSanction_t*	sanction;
+	int				time = trap_RealTime(NULL);
+	G_CleanIPSanctions(qtrue);
+	if (!ipSanctionsFree) {
+		Com_Error(ERR_FATAL, "G_AddIPSanction: Error allocating ip sanction.");
+		return;
+	}
+	sanction = ipSanctionsFree;
+	ipSanctionsFree = sanction->next;
+	sanction->next = ipSanctionsActive;
+	ipSanctionsActive = sanction;
+
+	sanction->sanction.type = type;
+	sanction->sanction.param1 = param1;
+	sanction->sanction.param2 = param2;
+	sanction->sanction.expires = time + seconds;
+	Q_strncpyz(sanction->sanction.reason,reason,sizeof(sanction->sanction.reason));
+	memcpy(sanction->ip, mv_clientSessions[ent - g_entities].clientIP, sizeof(sanction->ip));
+}
+
+sanction_t* G_CheckIPSanctionMatchParam1(gentity_t* ent, sanctionType_t type, int param1) {
+	ipSanction_t*	sanction;
+	ipSanction_t*	sanctionNext;
+	//ipSanction_t*	highestExpireSanction = NULL;
+	//int				highestExpire = INT_MIN;
+	int				time = trap_RealTime(NULL);
+	sanction = ipSanctionsActive;
+	while (sanction) {
+		sanctionNext = sanction->next;
+		if (sanction->sanction.expires <= time) { // clean up on the fly
+			G_RemoveIPSanction(sanction);
+		}
+		else if (sanction->sanction.type == type && sanction->sanction.param1 == param1 && !memcmp(sanction->ip,mv_clientSessions[ent - g_entities].clientIP,sizeof(sanction->ip))) {
+			//if (!highestExpireSanction || highestExpire < sanction->sanction.expires) {
+			//	highestExpireSanction = sanction;
+			//	highestExpire = sanction->sanction.expires;
+			//}
+			return &sanction->sanction;
+		}
+		sanction = sanctionNext;
+	}
+	//return highestExpireSanction; // meh keep it simple
+	return NULL;
+}
+
+
+sanction_t* G_CheckIPSanctionMatchParam2(gentity_t* ent, sanctionType_t type, unsigned int param2) {
+	ipSanction_t* sanction;
+	ipSanction_t* sanctionNext;
+	int				time = trap_RealTime(NULL);
+	sanction = ipSanctionsActive;
+	while (sanction) {
+		sanctionNext = sanction->next;
+		if (sanction->sanction.expires <= time) { // clean up on the fly
+			G_RemoveIPSanction(sanction);
+		}
+		else if (sanction->sanction.type == type && sanction->sanction.param2 == param2 && !memcmp(sanction->ip, mv_clientSessions[ent - g_entities].clientIP, sizeof(sanction->ip))) {
+			return &sanction->sanction;
+		}
+		sanction = sanctionNext;
+	}
+	return NULL;
+}
+sanction_t* G_CheckIPSanctionMatchParams(gentity_t* ent, sanctionType_t type, int param1, unsigned int param2) {
+	ipSanction_t* sanction;
+	ipSanction_t* sanctionNext;
+	int				time = trap_RealTime(NULL);
+	sanction = ipSanctionsActive;
+	while (sanction) {
+		sanctionNext = sanction->next;
+		if (sanction->sanction.expires <= time) { // clean up on the fly
+			G_RemoveIPSanction(sanction);
+		}
+		else if (sanction->sanction.type == type && sanction->sanction.param1 == param1 && sanction->sanction.param2 == param2 && !memcmp(sanction->ip, mv_clientSessions[ent - g_entities].clientIP, sizeof(sanction->ip))) {
+			return &sanction->sanction;
+		}
+		sanction = sanctionNext;
+	}
+	return NULL;
+}
+
+
+void Cmd_Sanction_f(gentity_t* ent) {
+	qboolean allRace = qfalse;
+	int clientnum, seconds, type, param1, param2;
+	const char* reason;
+	gentity_t* sourcePlayerEnt = GetClientNumArg();
+
+	if (!ent->client->sess.login.loggedIn || !(ent->client->sess.login.flags & TT_ACCOUNTFLAG_A_SANCTION)) {
+		trap_SendServerCommand(ent - g_entities, "print \"^1You do not have permission to use this command.\n\"");
+		return;
+	}
+
+	if (trap_Argc() < 5) {
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: sanction [clientnum] [seconds] [type] [param1] [param2] ([reason]).\n\"");
+		return;
+	}
+
+	if (!sourcePlayerEnt || !sourcePlayerEnt->inuse || !sourcePlayerEnt->client) {
+		trap_SendServerCommand(ent - g_entities, "print \"Please specify a valid client number who you wish to sanction.\n\"");
+		return;
+	}
+
+	clientnum = atoi(G_Argv(1));
+	seconds = atoi(G_Argv(2));
+	type = atoi(G_Argv(3));
+	param1 = atoi(G_Argv(4));
+	param2 = atoi(G_Argv(5));
+	reason = ConcatArgs(6);
+
+	G_AddIPSanction(sourcePlayerEnt, seconds, type, param1, param2, reason);
+
+	trap_SendServerCommand(ent - g_entities, "print \"Sanction added.\n\"");
+
+}
+
+

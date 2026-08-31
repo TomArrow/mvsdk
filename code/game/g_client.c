@@ -4004,6 +4004,12 @@ void ClientDisconnect( int clientNum ) {
 
 	G_ResetClientVote(ent->client);
 
+	if (G_ClientIsIronmanCapper(ent, qfalse)) {
+		// Player disconnected while playing as ironman capper. Give him a 2 minute cooldown for ironman mode.
+		// If he genuinely meant to leave, he won't mind. If he just tried to get out of capping duties, annoy him a bit.
+		G_AddIPSanction(ent, 120, SANCTION_MODERESTRICTION, MODE_IRONMAN, 0, "Disconnect as ironman capper");
+	}
+
 	if (DF_KeepClientZombie(ent)) {
 		return;
 	}

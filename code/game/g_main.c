@@ -1448,6 +1448,8 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	G_ProcessIPBans();
 
+	G_InitIPSanctions();
+
 	G_InitMemory();
 
 	// set some level globals
@@ -1470,7 +1472,12 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	//for logging d/bs events
 #ifdef ANALYZE_BS
-	trap_FS_FOpenFile("bsevents.dat", &level.bsLogFile, FS_APPEND_SYNC);
+	if (g_logSync.integer) {
+		trap_FS_FOpenFile("bsevents.dat", &level.bsLogFile, FS_APPEND_SYNC);
+	}
+	else {
+		trap_FS_FOpenFile("bsevents.dat", &level.bsLogFile, FS_APPEND);
+	}
 #endif
 
 	if ( g_log.string[0] ) {
@@ -2574,7 +2581,7 @@ void QDECL G_LogBsEvent(bsRecord_t* bsr, gentity_t* ent) {
 	int 			len;
 	qtime_t			time;
 	smallTime_t 	smalltime;
-	unsigned char	ipb[4];		//bytes
+	unsigned char	ipb[4] = { 0 };		//bytes
 	mvclientSession_t* mvSess = &mv_clientSessions[ent - g_entities];
 
 	if (!level.bsLogFile) {
@@ -2584,10 +2591,11 @@ void QDECL G_LogBsEvent(bsRecord_t* bsr, gentity_t* ent) {
 	trap_RealTime(&time);
 	QtimeToSmallTime(&time, &smalltime);
 
-	ipb[0] = mvSess->clientIP[0];
-	ipb[1] = mvSess->clientIP[1];
-	ipb[2] = mvSess->clientIP[2];
-	ipb[3] = mvSess->clientIP[3];
+	// actually dont do this, for privacy reasons
+	//ipb[0] = mvSess->clientIP[0];
+	//ipb[1] = mvSess->clientIP[1];
+	//ipb[2] = mvSess->clientIP[2];
+	//ipb[3] = mvSess->clientIP[3];
 
 	//write player IP in 4 bytes
 	trap_FS_Write(&ipb, sizeof(ipb), level.bsLogFile);
