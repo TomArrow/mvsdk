@@ -1340,8 +1340,8 @@ helpTip_t helpTips[] = {
 		qfalse
 	},
 	{
-		"print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap ^3[tag]^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice (optionally limited by a map tag).\n\"",
-		"print \"Random tip: ^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap ^3[tag]^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice (optionally limited by a map tag).\n\"",
+		"print \"^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap ^3[[notag:]tag]^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice (optionally limited by a map tag, with an optional param notag for untagged maps).\n\"",
+		"print \"Random tip: ^2/callvote map^7,^2/callvote mapnum^7,^2/callvote randommap ^3[[notag:]tag]^7 - Call a vote to switch to a map: By name, by map number (from ^2/maplist^7), or by random choice (optionally limited by a map tag, with an optional param notag for untagged maps).\n\"",
 		qfalse,
 		qfalse
 	},
@@ -4317,31 +4317,72 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 			char mapname[MAX_STRING_CHARS];
 			int tmp;
 			infoHashed_t* lastValidArena = NULL;
-			while (G_COOL_API_DB_NextRow()) {
-				char map[COURSENAME_MAX_LEN + 1];
-				int value = G_COOL_API_DB_GetInt(1);
-				int probability = G_COOL_API_DB_GetInt(2);
-				infoHashed_t* tmpArena;
+			if (!data->specifics.callvoteMapsearch.defrag && (data->specifics.callvoteMapsearch.searchFlags & MAPSEARCHFLAGS_NOTAG)) {
+				byte arenaTagged[sizeof(g_arenaInfosHashed) / sizeof(g_arenaInfosHashed[0])] = { 0 };
+				// this is a bit stupid. we don't have a list of available maps in the database, only the tags
+				// so instead, we return all the maps that ARE tagged. and we just set a byte in our array here to 1
+				// when it does have the tag. 
+				// and then we iterate through the remaining ones
+				int numArenas = g_numArenas;
+				int i;
+				while (G_COOL_API_DB_NextRow()) {
+					char map[COURSENAME_MAX_LEN + 1];
+					infoHashed_t* tmpArena;
 
-				if (!rows) {
-					int sumProbabilitiesAll = G_COOL_API_DB_GetInt(3);
-					targetProbability = Q_irand(0, sumProbabilitiesAll, qfalse, 0)+1;
+					G_COOL_API_DB_GetString(0, map, sizeof(map));
+
+					tmpArena = G_GetArenaInfoByMap(map);
+					if (tmpArena) {
+						arenaTagged[tmpArena - g_arenaInfosHashed] = 1;
+						numArenas--;
+					}
 				}
-
-				G_COOL_API_DB_GetString(0, map, sizeof(map));
-
-				tmpArena = G_GetArenaInfoByMap(map);
-				if (tmpArena && Q_stricmp(tmpArena->name, currentMap)) { // dont vote onto the same map we are already on
-					lastValidArena = tmpArena;
+				if (numArenas <= 0) {
+					trap_SendServerCommand(ent - g_entities, "print \"No available map missing this tag was found.\n\"");
+					return qtrue;
 				}
-
-				sumProbabilities += probability;
-				rows++;
-
-				if (sumProbabilities >= targetProbability && lastValidArena) {
-					break;
+				targetProbability = Q_irand(0, numArenas, qfalse, 0) + 1;
+				for (i = 0; i < g_numArenas; i++) {
+					infoHashed_t* tmpArena;
+					if (arenaTagged[i]) {
+						continue;
+					}
+					tmpArena = &g_arenaInfosHashed[i];
+					if (tmpArena && Q_stricmp(tmpArena->name, currentMap)) { // dont vote onto the same map we are already on
+						lastValidArena = tmpArena;
+					}
+					sumProbabilities += 1;
+					if (sumProbabilities >= targetProbability && lastValidArena) {
+						break;
+					}
 				}
+			} else{
+				while (G_COOL_API_DB_NextRow()) {
+					char map[COURSENAME_MAX_LEN + 1];
+					int value = G_COOL_API_DB_GetInt(1);
+					int probability = G_COOL_API_DB_GetInt(2);
+					infoHashed_t* tmpArena;
 
+					if (!rows) {
+						int sumProbabilitiesAll = G_COOL_API_DB_GetInt(3);
+						targetProbability = Q_irand(0, sumProbabilitiesAll, qfalse, 0)+1;
+					}
+
+					G_COOL_API_DB_GetString(0, map, sizeof(map));
+
+					tmpArena = G_GetArenaInfoByMap(map);
+					if (tmpArena && Q_stricmp(tmpArena->name, currentMap)) { // dont vote onto the same map we are already on
+						lastValidArena = tmpArena;
+					}
+
+					sumProbabilities += probability;
+					rows++;
+
+					if (sumProbabilities >= targetProbability && lastValidArena) {
+						break;
+					}
+
+				}
 			}
 			if (!lastValidArena) {
 				trap_SendServerCommand(ent - g_entities, "print \"No available map matching this tag was found.\n\"");
@@ -4356,10 +4397,10 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 			trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 			if (*s) {
 				Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
-				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s %s" S_COLOR_WHITE "; set nextmap %s",data->specifics.callvoteMapsearch.tag, targetProbability, "map", mapname, s );
+				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s %s" S_COLOR_WHITE "; set nextmap %s",data->specifics.callvoteMapsearch.fullsearchline, targetProbability, "map", mapname, s );
 			} else {
 				Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
-				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s", data->specifics.callvoteMapsearch.tag, targetProbability, level.voteString );
+				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s", data->specifics.callvoteMapsearch.fullsearchline, targetProbability, level.voteString );
 			}
 			CallvoteSetupFinish(ent, qfalse, qfalse);
 		}
@@ -4370,48 +4411,127 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 
 REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_VOTE_MAPSEARCH, CallvoteMapSearchCallback);
 
-static void CallvoteMapSearch(gentity_t* ent, const char* tag) {
+
+static const char* ParseMapSearchParam(gentity_t* ent, const char* input, mapSearchFlags_t* flagsOut) {
+	char inputCopy[100];
+	char* result, *search;
+	if (flagsOut) {
+		*flagsOut = MAPSEARCHFLAGS_TAG; // default unless overridden
+	}
+	Q_strncpyz(inputCopy, input, sizeof(inputCopy));
+	search = inputCopy;
+retry:
+	while (*search && (result = strchr(search, ':'))) {
+		*result = '\0';
+		if (!Q_stricmp(search,"nottag") || !Q_stricmp(search, "notag")) {
+			if (flagsOut) {
+				*flagsOut |= MAPSEARCHFLAGS_NOTAG;
+			}
+		}
+		else {
+			if (ent) {
+				trap_SendServerCommand(ent - g_entities, va("print \"^1Invalid mapsearch param '%s'.\n\"", search));
+			}
+			if (flagsOut) {
+				*flagsOut |= MAPSEARCHFLAGS_BADPARAM;
+			}
+			return "";
+		}
+		search = result + 1;
+	}
+	return search;
+}
+
+static void CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 	int userid;
 	const char* validateError;
 	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(ent, GDBREQUEST_VOTE_MAPSEARCH, (1 << DBT_USERS) | (1 << DBT_MAPTAGS), "vote_mapsearch", 0);
+	mapSearchFlags_t searchFlags = 0;;
 
-	validateError = ValidateMapTag(tag);
-	data.specifics.callvoteMapsearch.requestType = CVMS_TAG;
-	if (validateError) {
-		trap_SendServerCommand(ent - g_entities, va("print \"Cannot search for tag: %s.\n\"", validateError));
+	Q_strncpyz(data.specifics.callvoteMapsearch.fullsearchline, searchParam, sizeof(data.specifics.callvoteMapsearch.fullsearchline));
+	searchParam = ParseMapSearchParam(ent,searchParam, &searchFlags);
+
+	if (searchFlags & MAPSEARCHFLAGS_BADPARAM) {
 		return;
 	}
-	Q_strncpyz(data.specifics.callvoteMapsearch.tag, tag, sizeof(data.specifics.callvoteMapsearch.tag));
 
-	if (g_defrag.integer) {
-		data.specifics.callvoteMapsearch.defrag = qtrue;
-		data.requiredTables |= (1 << DBT_RUNS);
-		if (!G_DB_GenericRequest_Send(data, "SELECT *,SUM(probability) OVER () AS total_probability \
-			FROM(\
-				SELECT runs.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value))) AS probability\
-				FROM(SELECT DISTINCT runs.course FROM runs) runs\
-				LEFT JOIN maptags ON(maptags.course = runs.course AND maptags.tag = %s)\
-				GROUP BY runs.course\
-			) taggedcourses\
-			WHERE probability > 0\
-			ORDER BY probability DESC\
-			", tag)) {
-			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+	if (searchFlags & MAPSEARCHFLAGS_TAG) {
+		const char* tag = searchParam;
+		validateError = ValidateMapTag(tag);
+		data.specifics.callvoteMapsearch.requestType = CVMS_TAG;
+		data.specifics.callvoteMapsearch.searchFlags = searchFlags;
+		if (validateError) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot search for tag: %s.\n\"", validateError));
+			return;
 		}
-	}
-	else {
-		if (!G_DB_GenericRequest_Send(data, "SELECT *,SUM(probability) OVER () AS total_probability \
-			FROM(\
-				SELECT maptags.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value))) AS probability\
-				FROM maptags\
-				WHERE maptags.tag = %s\
-				GROUP BY maptags.course\
-			) taggedcourses\
-			WHERE probability > 0\
-			ORDER BY probability DESC", tag)) {
-			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+		Q_strncpyz(data.specifics.callvoteMapsearch.tag, tag, sizeof(data.specifics.callvoteMapsearch.tag));
+		data.specifics.callvoteMapsearch.defrag = !!g_defrag.integer;
+
+		if (searchFlags & MAPSEARCHFLAGS_NOTAG) {
+			// find maps that HAVEN't been tagged with this tag at all, neither negative nor positive
+
+			if (g_defrag.integer) {
+				data.requiredTables |= (1 << DBT_RUNS);
+				if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability,tagcount\
+					FROM(\
+						SELECT runs.course, SUM(maptags.value) AS value, 1 AS probability, COUNT(maptags.tag) AS tagcount\
+						FROM(SELECT DISTINCT runs.course FROM runs) runs\
+						LEFT JOIN maptags ON(maptags.course = runs.course AND maptags.tag = %s)\
+						GROUP BY runs.course\
+					) taggedcourses\
+					WHERE tagcount = 0\
+					ORDER BY tagcount DESC\
+				", tag)) {
+					trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+				}
+			}
+			else {
+				if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability, tagcount\
+					FROM(\
+						SELECT maptags.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value))) AS probability, COUNT(maptags.tag) AS tagcount\
+						FROM maptags\
+						WHERE maptags.tag = %s\
+						GROUP BY maptags.course\
+					) taggedcourses\
+					WHERE tagcount > 0\
+					ORDER BY probability DESC", tag)) {
+					trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+				}
+			}
 		}
+		else {
+			if (g_defrag.integer) {
+				data.requiredTables |= (1 << DBT_RUNS);
+				if (!G_DB_GenericRequest_Send(data, "SELECT *,SUM(probability) OVER () AS total_probability \
+				FROM(\
+					SELECT runs.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value))) AS probability\
+					FROM(SELECT DISTINCT runs.course FROM runs) runs\
+					LEFT JOIN maptags ON(maptags.course = runs.course AND maptags.tag = %s)\
+					GROUP BY runs.course\
+				) taggedcourses\
+				WHERE probability > 0\
+				ORDER BY probability DESC\
+				", tag)) {
+					trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+				}
+			}
+			else {
+				if (!G_DB_GenericRequest_Send(data, "SELECT *,SUM(probability) OVER () AS total_probability \
+				FROM(\
+					SELECT maptags.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value))) AS probability\
+					FROM maptags\
+					WHERE maptags.tag = %s\
+					GROUP BY maptags.course\
+				) taggedcourses\
+				WHERE probability > 0\
+				ORDER BY probability DESC", tag)) {
+					trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
+				}
+			}
+		}
+
 	}
+	
 	
 }
 

@@ -318,6 +318,15 @@ typedef enum genericDbRequestType_s {
 	GDBREQUEST_COUNT_TYPES
 } genericDbRequestType_t;
 typedef qboolean (QDECL* genericDBRequestCallback_t)(struct gentity_s* ent,struct genericDbRequestStruct_s* data);
+
+
+
+typedef enum mapSearchFlags_s {
+	MAPSEARCHFLAGS_TAG = (1 << 0), // search for maps that have a positive rank on this tag
+	MAPSEARCHFLAGS_NOTAG = (1 << 1), // search for maps that didn't have a particular tag set at all, aka uncategorized
+	MAPSEARCHFLAGS_BADPARAM = (1 << 2), // error parsing params
+}mapSearchFlags_t;
+
 typedef struct genericDbRequestStruct_s {
 	int								ip[4];
 	int								clientnum;
@@ -345,8 +354,10 @@ typedef struct genericDbRequestStruct_s {
 		} maptag;
 		struct {
 			int requestType;
+			char fullsearchline[MAPTAG_MAX_LEN + 20 + 1];
 			char tag[MAPTAG_MAX_LEN + 1];
 			qboolean defrag;
+			mapSearchFlags_t searchFlags;
 		} callvoteMapsearch;
 	} specifics;
 } genericDbRequestStruct_t;
