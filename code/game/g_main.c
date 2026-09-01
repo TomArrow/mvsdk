@@ -3980,8 +3980,9 @@ void G_CheckIronManStatus() {
 
 	for (i = 0; i < level.maxclients; i++, ent++) {
 		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.mode != MODE_IRONMAN || ent->client->sess.sessionTeam == TEAM_SPECTATOR) {
-			if (ent->client->sess.mode == MODE_IRONMAN && ent->client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER) {
+			if (ent->inuse && ent->client && ent->client->pers.connected == CON_CONNECTED && ent->client->sess.mode == MODE_IRONMAN && ent->client->sess.modeTeam == MODETEAM_IRONMAN_CAPPER) {
 				// i'm not sure if this can happen. maybe on mapchanges or such. let's just clean it up.
+				// hmm why did i do this again? this seemed to cause disconnected players to get a Padawan fake client into configstrings if they were cappers during the disconnect. but the (ent->inuse && ent->client && ent->client->pers.connected == CON_CONNECTED) check should fix?
 				Com_Printf("^3Cient %d in invalid ironman state. Resetting.\n", (int)(ent - g_entities));
 				ClientSetModeTeam(ent,MODETEAM_IRONMAN_CHASER);
 			}
