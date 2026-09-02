@@ -2044,12 +2044,13 @@ static void Cmd_Launch_f(gentity_t* ent)
 }
 
 
+
 /*
 =================
 Cmd_Team_f
 =================
 */
-void Cmd_ForceChanged_f( gentity_t *ent )
+void Cmd_ForceChanged_Real_f( gentity_t *ent, qboolean isCmd )
 {
 	char fpChStr[1024];
 	const char *buf;
@@ -2075,7 +2076,7 @@ argCheck:
 		return;
 	}
 
-	if (trap_Argc() > 1)
+	if (isCmd && trap_Argc() > 1)
 	{
 		char	arg[MAX_TOKEN_CHARS];
 
@@ -2088,6 +2089,9 @@ argCheck:
 	}
 }
 
+static void Cmd_ForceChanged_f(gentity_t* ent) {
+	Cmd_ForceChanged_Real_f(ent, qtrue);
+}
 
 static void Cmd_IgnoreClear_f (gentity_t *ent) {
 	int i;

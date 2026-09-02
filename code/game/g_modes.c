@@ -6,7 +6,7 @@ void SetClientPhysicsFps(gentity_t* ent, int clientSetting);
 void RemoveLaserTraps(gentity_t* ent);
 void RemoveDetpacks(gentity_t* ent);
 void DeletePlayerProjectiles(gentity_t* ent);
-void Cmd_ForceChanged_f(gentity_t* ent);
+void Cmd_ForceChanged_Real_f(gentity_t* ent, qboolean isCmd);
 void ResetPhysicsFpsStuff(gentity_t* ent);
 
 static const char* teamSetStrings[TEAM_NUM_TEAMS] = {
@@ -122,7 +122,7 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 	}
 
 	ent->s.weapon = WP_SABER; //Dont drop our weapon
-	if (!isRace) Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S//Delete all their projectiles / saved stuff
+	if (!isRace) Cmd_ForceChanged_Real_f(ent,qfalse);//Make sure their jump level is valid.. if leaving racemode :S//Delete all their projectiles / saved stuff
 
 	// reset physicsfps because racemode has different rules for validating that.
 	ResetPhysicsFpsStuff(ent);
@@ -211,7 +211,7 @@ void SetClientMode(gentity_t* ent, playerMode_e mode) {
 		{//this is ok
 
 			ent->s.weapon = WP_SABER; //Dont drop our weapon
-			Cmd_ForceChanged_f(ent);//Make sure their jump level is valid.. if leaving racemode :S
+			Cmd_ForceChanged_Real_f(ent,qfalse);//Make sure their jump level is valid.. if leaving racemode :S
 
 			ent->client->sess.mode = MODE_INVALID; // we will reset this
 			ent->client->sess.raceMode = qfalse;//Set it false here cuz we are flipping it next // TA: (wut? oh.)

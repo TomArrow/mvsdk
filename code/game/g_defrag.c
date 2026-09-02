@@ -4032,7 +4032,6 @@ void SetClientPhysicsFps(gentity_t* ent, int clientSetting);
 void RemoveLaserTraps(gentity_t* ent);
 void RemoveDetpacks(gentity_t* ent);
 void DeletePlayerProjectiles(gentity_t* ent);
-void Cmd_ForceChanged_f(gentity_t* ent);
 
 void ResetPhysicsFpsStuff(gentity_t* ent) {
 
