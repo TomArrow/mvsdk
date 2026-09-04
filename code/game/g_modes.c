@@ -293,10 +293,15 @@ void Cmd_Mode_f(gentity_t* ent)
 void Cmd_ModeCmd_f(gentity_t* ent)
 {
 	char mode[20];
-	int modeNum;
+	int modeNum,number;
 	sanction_t* sanction;
 	if (!ent->client)
 		return;
+
+	if (number = G_ClientIsIronmanCapper(ent, qfalse)) {
+		trap_SendServerCommand(ent - g_entities, "print \"You cannot change modes while being the ironman capper.\n\"");
+		return;
+	}
 
 	trap_Argv(0, mode, sizeof(mode));
 	if (!Q_stricmp(mode, "reset"))
