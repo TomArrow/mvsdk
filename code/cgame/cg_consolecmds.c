@@ -2301,6 +2301,8 @@ qboolean CG_ConsoleCommand( void ) {
 	if (levenshtein("login", lowercaseCmd) <= 3 // suspiciously similar to login
 		&& Q_stricmp("logout", cmd) // could be logout, allow that
 		&& Q_stricmp("admin", cmd) // could be admin, allow that
+		&& Q_stricmp("join", cmd) 
+		&& Q_stricmp("losing", cmd) 
 		) {
 		if (!Q_stricmp("amlogin", cmd)) {
 			CG_Login_f();

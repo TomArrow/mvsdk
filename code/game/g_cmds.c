@@ -4887,7 +4887,7 @@ void G_Say( gentity_t *ent, gentity_t *target, int mode, const char *chatText ) 
 		}
 
 		if ((
-			(levenshtein("login", lowercaseCmd) <= 2 && Q_stricmp("logout", pseudoCmd) && Q_stricmp("admin", pseudoCmd) && Q_stricmp("losing", pseudoCmd))  // allow "admin"/"logout" tho. "losing" (the word" is also ok :)
+			(levenshtein("login", lowercaseCmd) <= 2 && Q_stricmp("logout", pseudoCmd) && Q_stricmp("admin", pseudoCmd) && Q_stricmp("join", pseudoCmd) && Q_stricmp("losing", pseudoCmd))  // allow "admin"/"logout" tho. "losing" (the word" is also ok :)
 			|| levenshtein("register", lowercaseCmd) <= 2
 			) && pseudoArgC >=3 && pseudoArgC <= 5) {
 			G_LogPrintf("clientSay accidental credentials? (mode %d): %s : %s %s ****** %s\n", mode, ent->client->pers.netname, pseudoCmd, pseudoArg1, BG_Cmd_ArgsFrom(3));
