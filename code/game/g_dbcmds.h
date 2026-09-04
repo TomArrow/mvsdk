@@ -328,6 +328,7 @@ typedef enum mapSearchFlags_s {
 	MAPSEARCHFLAGS_TAG = (1 << 0), // search for maps that have a positive rank on this tag
 	MAPSEARCHFLAGS_NOTAG = (1 << 1), // search for maps that didn't have a particular tag set at all, aka uncategorized
 	MAPSEARCHFLAGS_BADPARAM = (1 << 2), // error parsing params
+	MAPSEARCHFLAGS_BORINGRANDOM = (1 << 3), // normal random search
 }mapSearchFlags_t;
 
 typedef struct genericDbRequestStruct_s {
