@@ -2889,11 +2889,14 @@ typedef struct ironmanPosMeta_s {
 	float capperVelDot; // dot of capper velocity vs pos velocity
 	float capperPosDot; // dot of capper position vs pos velocity
 	float intDistanceRatio;
+	qboolean wouldBlock;
+	qboolean wouldBeBlocked;
 }ironmanPosMeta_t;
 
 typedef struct searchSettings_s {
 	int				allowShortPos; // 0 to 3
 	int				allowWrongDir; // 0 to 2
+	int				allowBlocks; // 0 to 2
 } searchSettings_t;
 
 typedef struct searchSettingsShortDistance_s {
@@ -2911,10 +2914,42 @@ typedef struct traceResultsCache_s {
 	qboolean	traceBackOk;
 } traceResultsCache_t;
 
+qboolean PosWouldBlock(vec3_t origin, vec3_t velocity, vec3_t blockerOrigin, vec3_t blockerVel) {
+	vec3_t normVel;
+	vec3_t toPos;
+	vec3_t toPosProjected;
+	float syncedBlockedSpeed;
+	float distToPos;
+	float speed;
+	float linedist;
+	// check if we would block this player
+	VectorCopy(velocity, normVel);
+	speed = VectorNormalize(normVel);
+	VectorSubtract(blockerOrigin, origin, toPos);
+	distToPos = DotProduct(toPos, normVel);
+	if (distToPos > 500.0f || distToPos <= 0.0f) {
+		return qfalse; // meh its fine
+	}
+	syncedBlockedSpeed = DotProduct(normVel, blockerVel);
+	if ((syncedBlockedSpeed > speed || (speed- syncedBlockedSpeed) < 0.5f * distToPos) && distToPos > 50.0f) {
+		// wouldnt block as blocker is faster
+		// or at least speed diff will take at least 2 seconds to catch up
+		return qfalse;
+	}
+	// alright, it seems like a block MIGHT happen. so check if the trajectory would even allow for such a block to begin with
+	// calculate distance of the blocker from the velocity line
+	// for this, simply remove the normVel component from toPos
+	VectorMA(toPos, -distToPos, normVel, toPosProjected );
+	linedist = VectorLengthSquared(toPosProjected);
+	return linedist < 200.0f*200.0f; // less than 200 units from the line. is reasonably likely to block.
+}
+
+
 qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
 	int				i,set;
 	int				allowShortPos = 0;
 	int				allowWrongDir = 0;
+	int				allowBlocks = 0;
 	vec3_t			delta;
 	//float normalSpawnDist; // wanted to check if normal spawn dist is closer but that might be too simplistic for complex level architectures
 	float			currentDist;
@@ -2926,15 +2961,31 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 	ironmanPosMeta_t	posMetas[IRONMAN_MAX_PAST_POSITIONS_COUNT];
 	ironmanPosMeta_t*	posMeta;
 	static const searchSettings_t searchSettings[] = { // staggered relaxation of rules for nice spawns, trying to find the best compromise at each stage
-		{0,0}, // only long pos, no wrong dir
-		{1,0}, // lets try medium pos, no wrong dir
-		{0,1}, // ok allow wrong dir (but not past us), but again only long pos
-		{1,1}, // ok allow wrong dir (but not past us), and medium pos
-		{0,2}, // fully allow wrong dir, only long pos
-		//{1,2}, // fully allow wrong dir, allow medium pos
-		{2,1}, // allow wrong dir (but not past us), and short pos
-		{2,2}, // allow wrong dir totally, and short pos
-		{3,2}, // allow all
+		{0,0,0}, // only long pos, no wrong dir
+		{0,0,1}, 
+		{0,0,2}, 
+		{1,0,0}, // lets try medium pos, no wrong dir
+		{1,0,1},
+		{1,0,2},
+		{0,1,0}, // ok allow wrong dir (but not past us), but again only long pos
+		{0,1,1},
+		{0,1,2},
+		{1,1,0}, // ok allow wrong dir (but not past us), and medium pos
+		{1,1,1},
+		{1,1,2},
+		{0,2,0}, // fully allow wrong dir, only long pos
+		{0,2,1},
+		{0,2,2},
+		//{1,2,0}, // fully allow wrong dir, allow medium pos
+		{2,1,0}, // allow wrong dir (but not past us), and short pos
+		{2,1,1},
+		{2,1,2},
+		{2,2,0}, // allow wrong dir totally, and short pos
+		{2,2,1},
+		{2,2,2},
+		{3,2,0}, // allow all
+		{3,2,1},
+		{3,2,2},
 	};
 	static const int searchSettingsCount = sizeof(searchSettings)/sizeof(searchSettings[0]);
 	//vec3_t			velNorm;
@@ -2950,6 +3001,7 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 	for (set = 0; set < searchSettingsCount; set++) {
 		allowShortPos = searchSettings[set].allowShortPos;
 		allowWrongDir = searchSettings[set].allowWrongDir;
+		allowBlocks = searchSettings[set].allowBlocks;
 
 		for (i = level.ironManPosCount - 1; i >= MAX(0, level.ironManPosCount - IRONMAN_MAX_PAST_POSITIONS_COUNT + 1); i--) {
 			pos = &level.ironManPos[i % IRONMAN_MAX_PAST_POSITIONS_COUNT];
@@ -2961,6 +3013,7 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 
 			if (!posMeta->checked) { // let's only calc various info for this point once and then its done.
 				vec3_t velNorm;
+				int k;
 				VectorSubtract(level.ironManCurrentPosition.origin, pos->origin, delta);
 				posMeta->currentDist = VectorLength(delta);
 				posMeta->currentDistInt = (float)(level.ironManCurrentPosition.distanceTraveled - pos->distanceTraveled);
@@ -2989,13 +3042,26 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 					}
 				}
 				posMeta->reachable = G_LineUnobstructed(pos->origin, level.ironManCurrentPosition.origin);
+				posMeta->wouldBlock = qfalse;
+				posMeta->wouldBeBlocked = qfalse;
+				for (k = 0; k < level.maxclients; k++) {
+					gentity_t* other = g_entities + k;
+					if (!other->inuse || !other->client || other == ent || other->client->sess.sessionTeam == TEAM_SPECTATOR || other->client->sess.mode != MODE_IRONMAN || other->client->sess.modeTeam != MODETEAM_IRONMAN_CHASER) {
+						continue;
+					}
+					posMeta->wouldBlock = posMeta->wouldBlock || PosWouldBlock(other->client->ps.origin,other->client->ps.velocity,pos->origin,pos->velocity);
+					posMeta->wouldBeBlocked = posMeta->wouldBeBlocked || PosWouldBlock(pos->origin,pos->velocity, other->client->ps.origin, other->client->ps.velocity);
+				}
 				posMeta->checked = qtrue;
 			}
 
 			currentDist = posMeta->currentDist;
 		
+			if (posMeta->wouldBlock && allowBlocks != 2 || posMeta->wouldBeBlocked && !allowBlocks) {
+				continue; // allowblock 0 = no blocks at all. 1 = allow spawning person to be blocked. 2 = also allow others to be blocked by the spawner
+			}
 			// with allowShortPos 2 we are desperate. spawn right on top of his head if needed! maybe hes camping or sth xd
-			if (!allowShortPos && currentDist <= IRONMAN_RESPAWNPOSITION_MINDISTANCE && (posMeta->reachable || posMeta->currentDistInt <= IRONMAN_RESPAWNPOSITION_MINDISTANCE)) {
+			else if (!allowShortPos && currentDist <= IRONMAN_RESPAWNPOSITION_MINDISTANCE && (posMeta->reachable || posMeta->currentDistInt <= IRONMAN_RESPAWNPOSITION_MINDISTANCE)) {
 				continue;
 			}
 			else if (allowShortPos == 1 && currentDist <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_MEDIUM && (posMeta->reachable || posMeta->currentDistInt <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_MEDIUM)) {
