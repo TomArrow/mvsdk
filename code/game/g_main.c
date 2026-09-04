@@ -1666,6 +1666,8 @@ void G_ShutdownGame( int restart ) {
 
 	DF_HandleUnfinishedDemos();
 
+	G_MapMetaSetLastPlayed(DF_GetCourseName(qfalse));
+
 	G_CheckEnqueuedClips(qtrue);
 
 #ifdef ANALYZE_BS

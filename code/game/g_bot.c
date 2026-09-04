@@ -1578,6 +1578,8 @@ infoHashed_t *G_GetBotInfoByName( const char *name ) {
 void LoadPath_ThisLevel(void);
 //end rww
 
+void G_TouchMapMetaForRegisteredArenas();
+
 /*
 ===============
 G_InitBots
@@ -1587,6 +1589,8 @@ void G_InitBots( qboolean restart ) {
 	G_LoadBots();
 	G_LoadMapBlacklists();
 	G_LoadArenas();
+	G_TouchMapMetaForRegisteredArenas();
+	G_MapMetaSetLastPlayed(DF_GetCourseName(qfalse));
 
 	trap_Cvar_Register( &bot_minplayers, "bot_minplayers", "0", CVAR_SERVERINFO );
 
@@ -1594,3 +1598,102 @@ void G_InitBots( qboolean restart ) {
 	LoadPath_ThisLevel();
 	//end rww
 }
+
+
+
+
+
+
+typedef enum mapMetaSubCmd_s {
+	MMSC_ADDMAPS,
+	MMSC_SETMAPLASTPLAYED,
+} mapMetaSubCmd_t;
+static qboolean QDECL MapMetacallBack(gentity_t* ent, genericDbRequestStruct_t* data) {
+	int row = 0;
+	switch (data->specifics.mapmeta.requestType) {
+		case MMSC_ADDMAPS:
+		case MMSC_SETMAPLASTPLAYED:
+		break;
+	}
+	return qtrue;
+}
+
+REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_MAPMETA, MapMetacallBack);
+
+
+void G_MapMetaSetLastPlayed(const char* map) {
+
+	genericDbRequestStruct_t data = G_DB_GenericRequest_Prepare(NULL, GDBREQUEST_MAPMETA, (1 << DBT_MAPMETA), "mapmeta", 0);
+	data.specifics.mapmeta.requestType = MMSC_SETMAPLASTPLAYED;
+	data.flags |= GDBRF_NOENT;
+	Q_strncpyz(data.specifics.mapmeta.course, map, sizeof(data.specifics.mapmeta.course));
+	if (!G_DB_GenericRequest_Send(data,
+		"INSERT INTO mapmeta (course,firstseen,lastplayed) VALUES (%s,NOW(),NOW()) "
+		"ON DUPLICATE KEY UPDATE lastplayed=NOW()", // order stuff nicely and logically. best match comes first,
+		data.specifics.mapmeta.course)) {
+		Com_Printf("Error setting mapmeta lastplayed.\n");
+	}
+}
+
+#define MAPMETAROW_INSERT "(?,NOW())"
+void G_TouchMapMetaForRegisteredArenas() {
+	char request[MAX_STRING_CHARS];
+	int i, start = 0;
+	int len = 0;
+	char* s = request;
+	int insertlen = strlen(MAPMETAROW_INSERT)+1;//the (a,b,c) plus the comma
+	*request = '\0';
+
+	for (i = 0; i < g_numArenas; i++) {
+		if (len + insertlen >= sizeof(request)) {
+			// flush
+
+			if (!G_COOL_API_DB_AddPreparedStatement(NULL, 0, DBREQUEST_TOUCHMAPMETA, request)) {
+				Com_Printf("^1Error touching map meta.\n");
+				return;
+			}
+			for (; start < i; start++) {
+				infoHashed_t* map = &g_arenaInfosHashed[start];
+				G_COOL_API_DB_PreparedBindString(map->name);
+			}
+			G_COOL_API_DB_FinishAndSendPreparedStatement();
+			*request = '\0';
+			s = request;
+			len = 0;
+			start = i;
+		}
+
+		if (!len) {
+			start = i;
+			Q_strncpyz(request,"INSERT IGNORE INTO mapmeta (course,firstseen) VALUES " MAPMETAROW_INSERT,sizeof(request));
+			len = strlen(request);
+			s = request + len;
+			continue;
+		}
+
+		Q_strncpyz(s,"," MAPMETAROW_INSERT, sizeof(request)-len);
+		len += insertlen;
+		s += insertlen;
+	}	
+	if (*request) {
+		// flush final
+
+		if (!G_COOL_API_DB_AddPreparedStatement(NULL, 0, DBREQUEST_TOUCHMAPMETA, request)) {
+			Com_Printf("^1Error touching map meta (2).\n");
+			return;
+		}
+		for (; start < i; start++) {
+			infoHashed_t* map = &g_arenaInfosHashed[i];
+			G_COOL_API_DB_PreparedBindString(map->name);
+		}
+		G_COOL_API_DB_FinishAndSendPreparedStatement();
+		return;
+	}
+
+}
+
+
+
+
+
+

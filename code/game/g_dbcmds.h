@@ -18,6 +18,7 @@ typedef enum DBTable_s {
 	DBT_MAPRATINGS,
 	DBT_MAPTAGS,
 	DBT_MAPMINIMAPS,
+	DBT_MAPMETA,
 	DBT_COUNT_TABLES
 } DBTable_t;
 typedef void(QDECL* dbTableCreateFunc_t)();
@@ -61,6 +62,7 @@ typedef enum DBRequestTypes_s {
 	DBREQUEST_PRUNEUSERMESSAGES,
 	DBREQUEST_GENERIC,
 	DBREQUEST_INSERTMINIMAP,
+	DBREQUEST_TOUCHMAPMETA,
 } DBRequestTypes_t;
 
 typedef struct loginRegisterStruct_s {
@@ -309,6 +311,7 @@ typedef enum genericDbRequestFlags_s {
 	a(GDBREQUEST_MAPRATINGSFETCH)\
 	a(GDBREQUEST_TAG)\
 	a(GDBREQUEST_VOTE_MAPSEARCH)\
+	a(GDBREQUEST_MAPMETA)\
 	a(GDBREQUEST_MAPMINIMAP)
 
 typedef enum genericDbRequestType_s {
@@ -346,6 +349,10 @@ typedef struct genericDbRequestStruct_s {
 			int	requestType;
 			char course[COURSENAME_MAX_LEN + 1];
 		} minimap;
+		struct {
+			int	requestType;
+			char course[COURSENAME_MAX_LEN + 1];
+		} mapmeta;
 		struct {
 			int	requestType;
 			char tag[MAPTAG_MAX_LEN + 1];

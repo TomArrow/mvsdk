@@ -1791,6 +1791,7 @@ void BotInterbreedEndMatch( void );
 qboolean G_DoesMapSupportGametype(const char *mapname, int gametype);
 qboolean G_DoesMapHaveArena(const char* mapname);
 const char *G_RefreshNextMap(int gametype, qboolean forced);
+void G_MapMetaSetLastPlayed();
 
 // w_force.c / w_saber.c
 gentity_t *G_PreDefSound(vec3_t org, int pdSound);

@@ -16,6 +16,7 @@ static void G_CreateMapRaceDefaultsTable();
 static void G_CreateMetaTable();
 static void G_CreateMapRatingsTable();
 static void G_CreateMapTagsTable();
+static void G_CreateMapMetaTable();
 static void G_CreateMapMinimapsTable();
 const char* DF_GetMainSubcourseName();
 extern void DF_SetSubContestDefaults(gclient_t* client);
@@ -2662,6 +2663,17 @@ static void G_CreateMapMinimapsTable() {
 	Q_strncpyz(tableName.s, "mapminimaps", sizeof(tableName.s));
 	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
 }
+static void G_CreateMapMetaTable() {
+	referenceSimpleString_t tableName;
+	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS mapmeta(\
+			course VARCHAR(100) NOT NULL, \
+			firstseen DATETIME NOT NULL, \
+			lastplayed DATETIME, \
+			PRIMARY KEY(course) \
+			)";
+	Q_strncpyz(tableName.s, "mapmeta", sizeof(tableName.s));
+	G_COOL_API_DB_AddRequest((byte*)&tableName,sizeof(referenceSimpleString_t), DBREQUEST_CREATETABLE, metaTableRequest);
+}
 static void G_CreateMetaTable() {
 	referenceSimpleString_t tableName;
 	const char* metaTableRequest = "CREATE TABLE IF NOT EXISTS meta(\
@@ -2795,6 +2807,7 @@ dbTableCreateFunc_t tableCreateFuncs[DBT_COUNT_TABLES] = {
 	G_CreateMapRatingsTable,
 	G_CreateMapTagsTable,
 	G_CreateMapMinimapsTable,
+	G_CreateMapMetaTable,
 };
 static void G_DB_CreateTables() {
 	int i;
