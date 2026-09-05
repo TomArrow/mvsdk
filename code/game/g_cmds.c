@@ -4361,6 +4361,8 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 					}
 				}
 			} else{
+#define WEIGHTED_RESERVOIR_SAMPLING 1
+#if !WEIGHTED_RESERVOIR_SAMPLING
 				while (G_COOL_API_DB_NextRow()) {
 					char map[COURSENAME_MAX_LEN + 1];
 					int value = G_COOL_API_DB_GetInt(1);
@@ -4387,6 +4389,36 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 					}
 
 				}
+#else
+				// switch to weighted reservoir sampling (https://en.wikipedia.org/wiki/Reservoir_sampling)
+				// more accurate since not all maps returned from the query are necessarily available to actually choose on the current server
+				// so let's say all the available maps are clustered around the end of the dataset, and all the unavailable maps have high
+				// probabilities, we will almost always end up with our random target somewhere among the unavailable maps and then 
+				// end up always picking the first available map, defeating the point of doing randomness at all
+				// 
+				// means we have to actually iterate through all rows and calculate rand for each, but it's gonna be more accurate
+				while (G_COOL_API_DB_NextRow()) {
+					char map[COURSENAME_MAX_LEN + 1];
+					int value = G_COOL_API_DB_GetInt(1);
+					int probability = G_COOL_API_DB_GetInt(2);
+					infoHashed_t* tmpArena;
+
+					G_COOL_API_DB_GetString(0, map, sizeof(map));
+
+					tmpArena = G_GetArenaInfoByMap(map);
+
+					if (tmpArena && Q_stricmp(tmpArena->name, currentMap)) { // dont vote onto the same map we are already on
+						sumProbabilities += probability;
+						if ((!lastValidArena || Q_irand(0, sumProbabilities, qfalse, 0) < probability)) {
+							lastValidArena = tmpArena;
+							//targetProbability = tmpArena - g_arenaInfosHashed;
+							targetProbability = sumProbabilities; // just cuz it gets printed out
+						}
+					}
+
+
+				}
+#endif
 			}
 			if (!lastValidArena) {
 				trap_SendServerCommand(ent - g_entities, "print \"No available map matching this tag was found.\n\"");
@@ -4401,7 +4433,8 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 			trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 			if (*s) {
 				Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
-				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s %s" S_COLOR_WHITE "; set nextmap %s",data->specifics.callvoteMapsearch.fullsearchline, targetProbability, "map", mapname, s );
+				//Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s %s" S_COLOR_WHITE "; set nextmap %s",data->specifics.callvoteMapsearch.fullsearchline, targetProbability, "map", mapname, s );
+				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s %s" S_COLOR_WHITE,data->specifics.callvoteMapsearch.fullsearchline, targetProbability, "map", mapname );
 			} else {
 				Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
 				Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %s %d) %s", data->specifics.callvoteMapsearch.fullsearchline, targetProbability, level.voteString );
@@ -4498,6 +4531,14 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 	//
 
 #define LASTPLAYEDMULT "(CAST(IF(lastplayed IS NULL,100,3*SQRT((TO_SECONDS(NOW())-TO_SECONDS(lastplayed))/86400)+1) AS UNSIGNED INTEGER))"
+#if WEIGHTED_RESERVOIR_SAMPLING
+	// weighted reservoir sampling allows us to actually do proper valid randomness even if the total probability sum isn't known while going through the rows
+	// so we can actually do a nice clean ORDER BY
+	// whereas with the inaccurate old method (see callback) the ORDER BY RAND() was a shitty way of trying to make it somewhat work
+#define RANDOMMAP_RESULT_ORDER "ORDER BY probability DESC"
+#else
+#define RANDOMMAP_RESULT_ORDER "ORDER BY RAND()"
+#endif
 
 	if (searchFlags & MAPSEARCHFLAGS_BORINGRANDOM) {
 		data.specifics.callvoteMapsearch.requestType = CVMS_TAG; // reuse this for now, the randomness logic is OK-ish
@@ -4508,7 +4549,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 					GROUP BY mapmeta.course\
 				) taggedcourses\
 				WHERE probability > 0\
-				ORDER BY RAND()\
+				" RANDOMMAP_RESULT_ORDER "\
 				")) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending enhanced randommap request. Defaulting to normal randommap.\n\"");
 			return qfalse;
@@ -4546,6 +4587,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 				}
 			}
 			else {
+				// actually select maps that are tagged. and then we just mark them as unavailable and pick a random from the remaining ones (dumb)
 				if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability, tagcount\
 					FROM(\
 						SELECT maptags.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value)))*"  LASTPLAYEDMULT " AS probability, COUNT(maptags.tag) AS tagcount\
@@ -4555,7 +4597,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 						GROUP BY maptags.course\
 					) taggedcourses\
 					WHERE tagcount > 0\
-					ORDER BY RAND()", tag)) {
+					" RANDOMMAP_RESULT_ORDER, tag)) {
 					trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 					return qfalse;
 				}
@@ -4573,7 +4615,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 					GROUP BY runs.course\
 				) taggedcourses\
 				WHERE probability > 0\
-				ORDER BY RAND()\
+				" RANDOMMAP_RESULT_ORDER "\
 				", tag)) {
 					trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 					return qfalse;
@@ -4589,7 +4631,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 					GROUP BY maptags.course\
 				) taggedcourses\
 				WHERE probability > 0\
-				ORDER BY RAND()", tag)) {
+				" RANDOMMAP_RESULT_ORDER "", tag)) {
 					trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 					return qfalse;
 				}
@@ -6002,7 +6044,8 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		trap_Cvar_VariableStringBuffer( "nextmap", s, sizeof(s) );
 		if (*s) {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s; set nextmap \"%s\"", "map", mapname, s );
-			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %d) %s %s" S_COLOR_WHITE "; set nextmap %s", mapnum, "map", mapname, s );
+			//Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %d) %s %s" S_COLOR_WHITE "; set nextmap %s", mapnum, "map", mapname, s );
+			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %d) %s %s" S_COLOR_WHITE, mapnum, "map", mapname );
 		} else {
 			Com_sprintf( level.voteString, sizeof( level.voteString ), "%s %s", "map", mapname);
 			Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "(randommap %d) %s", mapnum, level.voteString );
