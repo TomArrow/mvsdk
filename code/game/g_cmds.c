@@ -1941,7 +1941,7 @@ static void Cmd_Launch_f(gentity_t* ent)
 {
 	char xySpeedStr[16], xStr[16], yStr[16], zStr[16], yawStr[16], zSpeedStr[16];
 	vec3_t fwdAngles, jumpFwd;
-	const int clampSpeed = 25000;
+	const int clampSpeed = 10000000;// 25000;
 	int frameTime;
 
 	if (!ent->client)
