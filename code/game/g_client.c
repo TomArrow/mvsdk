@@ -2894,6 +2894,7 @@ typedef struct ironmanPosMeta_s {
 }ironmanPosMeta_t;
 
 typedef struct searchSettings_s {
+	int				allowLongPos; // 0 to 2
 	int				allowShortPos; // 0 to 3
 	int				allowWrongDir; // 0 to 2
 	int				allowBlocks; // 0 to 2
@@ -2947,6 +2948,7 @@ qboolean PosWouldBlock(vec3_t origin, vec3_t velocity, vec3_t blockerOrigin, vec
 
 qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_t spawn_angles, vec3_t spawn_velocity) {
 	int				i,set;
+	int				allowLongPos = 0;
 	int				allowShortPos = 0;
 	int				allowWrongDir = 0;
 	int				allowBlocks = 0;
@@ -2961,31 +2963,54 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 	ironmanPosMeta_t	posMetas[IRONMAN_MAX_PAST_POSITIONS_COUNT];
 	ironmanPosMeta_t*	posMeta;
 	static const searchSettings_t searchSettings[] = { // staggered relaxation of rules for nice spawns, trying to find the best compromise at each stage
-		{0,0,0}, // only long pos, no wrong dir
-		{0,0,1}, 
-		{0,0,2}, 
-		{1,0,0}, // lets try medium pos, no wrong dir
-		{1,0,1},
-		{1,0,2},
-		{0,1,0}, // ok allow wrong dir (but not past us), but again only long pos
-		{0,1,1},
-		{0,1,2},
-		{1,1,0}, // ok allow wrong dir (but not past us), and medium pos
-		{1,1,1},
-		{1,1,2},
-		{0,2,0}, // fully allow wrong dir, only long pos
-		{0,2,1},
-		{0,2,2},
-		//{1,2,0}, // fully allow wrong dir, allow medium pos
-		{2,1,0}, // allow wrong dir (but not past us), and short pos
-		{2,1,1},
-		{2,1,2},
-		{2,2,0}, // allow wrong dir totally, and short pos
-		{2,2,1},
-		{2,2,2},
-		{3,2,0}, // allow all
-		{3,2,1},
-		{3,2,2},
+		
+		{0,0,0,0}, // only long pos, no wrong dir
+		{0,1,0,0}, // lets try medium pos, no wrong dir
+		{0,0,1,0}, // wrong dir (but not past us), but again only long pos
+		{0,1,1,0}, // wrong dir (but not past us), and medium pos
+		{0,2,0,0}, // lets try short pos, no wrong dir
+		{0,2,1,0}, // wrong dir (but not past us), short pos
+
+		{0,0,0,1}, // only long pos, no wrong dir, allow being blocked
+		{0,0,0,2}, // only long pos, no wrong dir, allow blocking
+		{0,1,0,1}, // lets try medium pos, no wrong dir, allow being blocked
+		{0,1,0,2}, // lets try medium pos, no wrong dir, allow blocking
+		{0,0,1,1}, // wrong dir (but not past us), but again only long pos, allow being blocked
+		{0,0,1,2}, // wrong dir (but not past us), but again only long pos, allow blocking
+		{0,1,1,1}, // wrong dir (but not past us), and medium pos, allow being blocked
+		{0,1,1,2}, // wrong dir (but not past us), and medium pos, allow blocking
+		{0,2,0,1}, // lets try short pos, no wrong dir, allow being blocked
+		{0,2,0,2}, // lets try short pos, no wrong dir, allow blocking
+		{0,2,1,1}, // wrong dir (but not past us), short pos, allow being blocked
+		{0,2,1,2}, // wrong dir (but not past us), short pos, allow blocking
+
+		{1,2,0,0}, // allow long pos 1, allow short pos, no wrong dir
+
+		//{0,0,2,0}, // only long pos, fully wrong dir
+		{0,1,2,0}, // medium pos, fully wrong dir
+		{0,2,2,0}, // short pos, fully wrong dir
+
+		{0,1,2,1}, // medium pos, fully wrong dir, allow being blocked
+		{0,2,2,1}, // short pos, fully wrong dir, allow being blocked
+
+		{0,1,2,2}, // medium pos, fully wrong dir, allow blocking
+		{0,2,2,2}, // short pos, fully wrong dir, allow blocking
+
+		{1,2,0,1}, // allow long pos 1, allow short pos, no wrong dir, allow being blocked
+		{1,2,0,2}, // allow long pos 1, allow short pos, no wrong dir, allow blocking
+
+		{0,3,0,0}, // allow very close, no wrong dir
+		{0,3,0,1}, // allow very close, allow being blocked
+		{0,3,0,2}, // allow very close, allow blocking
+		{0,3,2,0}, // allow very close, full wrong dir
+		{0,3,2,1}, // allow very close, full wrong dir, allow being blocked
+		{0,3,2,2}, // allow very close, full wrong dir, allow blocking
+
+		{2,2,0,0}, // allow long pos 2, allow short pos, no wrong dir
+		{2,2,0,1}, // allow long pos 2, allow short pos, no wrong dir, allow being blocked
+		{2,2,0,2}, // allow long pos 2, allow short pos, no wrong dir, allow blocking
+
+		{2,3,2,2}, // allow anything
 	};
 	static const int searchSettingsCount = sizeof(searchSettings)/sizeof(searchSettings[0]);
 	//vec3_t			velNorm;
@@ -2999,6 +3024,7 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 	//normalSpawnDist = VectorLengthSquared(delta);
 
 	for (set = 0; set < searchSettingsCount; set++) {
+		allowLongPos = searchSettings[set].allowLongPos;
 		allowShortPos = searchSettings[set].allowShortPos;
 		allowWrongDir = searchSettings[set].allowWrongDir;
 		allowBlocks = searchSettings[set].allowBlocks;
@@ -3068,6 +3094,12 @@ qboolean G_CheckForCloserIronmanSpawn(gentity_t* ent, vec3_t spawn_origin, vec3_
 				continue;
 			}
 			else if (allowShortPos == 2 && currentDist <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT && (posMeta->reachable || posMeta->currentDistInt <= IRONMAN_RESPAWNPOSITION_MINDISTANCE_SHORT)) {
+				continue;
+			}
+			else if (!allowLongPos && (currentDist > IRONMAN_RESPAWNPOSITION_MAXDISTANCE || posMeta->currentDistInt > IRONMAN_RESPAWNPOSITION_MAXDISTANCE)) {
+				continue;
+			}
+			else if (allowLongPos == 1 && (currentDist > IRONMAN_RESPAWNPOSITION_MAXDISTANCE_LONG || posMeta->currentDistInt > IRONMAN_RESPAWNPOSITION_MAXDISTANCE_LONG)) {
 				continue;
 			}
 			else if (posMeta->unusable && posMeta->unusable >= allowShortPos) { // already tried this one. no need to do it again
