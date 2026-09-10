@@ -340,6 +340,7 @@ typedef struct genericDbRequestStruct_s {
 	char							ident[10]; // some short identifier, for debug messages
 	genericDbRequestFlags_t			flags;
 	genericDbRequestType_t			callbackType;
+	int								skipResultSets; // how many resultsets to skip for multi-query statements
 	struct {
 		int status;
 		int affectedRows; // for INSERT INTO ON DUPLICATE KEY UPDATE: 0 = no change. 1 = new entry. 2 = updated row

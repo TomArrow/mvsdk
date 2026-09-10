@@ -3337,6 +3337,17 @@ void G_GenericDBRequestResults(int status, const char* errorMessage, int affecte
 		data.resultInfo.status = status;
 		data.resultInfo.affectedRows = affectedRows;
 		data.resultInfo.errorMessage = errorMessage;
+		if (data.skipResultSets) {
+			int i;
+			for (i = 0; i < data.skipResultSets; i++) {
+				if (!G_COOL_API_DB_GetMoreResults(&data.resultInfo.affectedRows)) {
+					if (g_developer.integer) {
+						trap_SendServerCommand(data.clientnum, va("print \"^1Generic DB request '%s' failed. Non-existing resultset requested.\n\"", data.ident));
+					}
+					return;
+				}
+			}
+		}
 		genericDBRequestCallbacks[data.callbackType]->callback(ent, &data);
 	}
 }
