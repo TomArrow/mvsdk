@@ -359,6 +359,7 @@ typedef struct genericDbRequestStruct_s {
 			char tag[MAPTAG_MAX_LEN + 1];
 			qboolean defrag;
 			int value;
+			int mine;
 		} maptag;
 		struct {
 			int requestType;

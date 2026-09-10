@@ -8,6 +8,59 @@
 #include "../ui/menudef.h"			// for the voice chats
 #include "../qcommon/levenshtein.h"
 
+
+	// this is a list of keywords we shoulnd't allow the user to use for usernames, tagnames and such, since it would interfere with the normal operation of some commands like /latest
+static const char* g_registeredKeywords[] = {
+	// generick keywords
+	"mine",
+	"notmine",
+	"unlogged",
+	"all",
+	"self",
+	"me",
+	"remove",
+	"list",
+	"listall",
+	"clear",
+	"recent",
+	"search",
+	"tag",
+};
+
+const int g_registeredKeywordCount = sizeof(g_registeredKeywords) / sizeof(g_registeredKeywords[0]);
+
+qboolean G_IsRegisteredKeyword(const char* s, qboolean allowModeNames, qboolean allowMovementModes, qboolean allowLeaderboardNames, qboolean allowAllNumbers) {
+	qboolean allnumbers = qtrue;
+	int i;
+	for (i = 0; i < g_registeredKeywordCount; i++) {
+		if (!Q_stricmp(s, g_registeredKeywords[i])) {
+			return qtrue;
+		}
+	}
+	if (!allowModeNames || !allowMovementModes || !allowLeaderboardNames) {
+		char editable[MAX_STRING_CHARS]; // cuz these dumbass comparison functions all do a color stripping. why? idk! gotta fix up sometime.
+		Q_strncpyz(editable,s,sizeof(editable));
+		if (!allowModeNames && PlayerModeNameToInteger(editable) != -1) {
+			return qtrue;
+		}
+		if (!allowMovementModes && RaceNameToInteger(editable) != -1) {
+			return qtrue;
+		}
+		if (!allowLeaderboardNames && LeaderboardNameToInteger(editable) != -1) {
+			return qtrue;
+		}
+	}
+	while (*s) {
+		if (!(*s >= '0' && *s <= '9')) {
+			allnumbers = qfalse;
+			break;
+		}
+	}
+	return !allowAllNumbers && allnumbers; // we don't wanna allow all numbers stuff because we use numbers for paging.
+}
+
+
+
 //rww - for getting bot commands...
 int AcceptBotCommand(char *cmd, gentity_t *pl);
 //end rww
@@ -4651,6 +4704,7 @@ typedef enum tagMapSubCmd_s {
 	TAGMAP_LIST,
 	TAGMAP_LISTALL,
 	TAGMAP_SEARCH,
+	TAGMAP_RECENT,
 } tagMapSubCmd_t;
 static qboolean QDECL TagCallback(gentity_t* ent, genericDbRequestStruct_t* data) {
 	int rows = 0;
@@ -4726,6 +4780,27 @@ static qboolean QDECL TagCallback(gentity_t* ent, genericDbRequestStruct_t* data
 				trap_SendServerCommand(ent - g_entities, "print \"^2Green ^7tags are tags that you yourself have used.\n\"");
 			}
 			break;
+		case TAGMAP_RECENT:
+			trap_SendServerCommand(ent - g_entities, va("print \"^2List of recently added tags, page %d:\n\"", data->page + 1));
+			trap_SendServerCommand(ent - g_entities, va("print \"^c%-20s %-25s %-5s %-5s %-10s %-10s %s\n\"", "TAG", "WHEN","TYPE","MINE","MAPSUM","TAGGERS", "MAP"));
+			while (G_COOL_API_DB_NextRow()) {
+				char tag[MAPTAG_MAX_LEN + 1];
+				char course[COURSENAME_MAX_LEN + 1];
+				char time[25];
+				int value = G_COOL_API_DB_GetInt(3);
+				int byme = G_COOL_API_DB_GetInt(4);
+				int sum = G_COOL_API_DB_GetInt(5);
+				int totaltaggers = G_COOL_API_DB_GetInt(6);
+				G_COOL_API_DB_GetString(0, tag, sizeof(tag));
+				G_COOL_API_DB_GetString(1, course, sizeof(course));
+				G_COOL_API_DB_GetString(2, time, sizeof(time));
+				trap_SendServerCommand(ent - g_entities, va("print \"^%c%-20s %-25s %-5s %-5s %-10s %-10s %s\n\"", byme ? (value > 0 ? '2' : '1') : (value > 0 ? 'C' : 'v'), tag, time, value > 0 ? "+" : "-", byme ? "YES" : "NO", miniva("%d", sum), miniva("%d", totaltaggers), course));
+				rows++;
+			}
+			if (rows) {
+				trap_SendServerCommand(ent - g_entities, "print \"^2Green^7/^1red ^7tags are tags that you yourself have placed.\n\"");
+			}
+			break;
 		case TAGMAP_SEARCH:
 			trap_SendServerCommand(ent - g_entities, va("print \"^2Maps matching tag '%s', page %d:\n\"", data->specifics.maptag.tag, data->page + 1));
 			while (G_COOL_API_DB_NextRow()) {
@@ -4760,6 +4835,9 @@ static const char* ValidateMapTag(const char* tagName) {
 	} else if (len < 3) {
 		return "Map tag is too short (minimum 3 characters).";
 	}
+	if (!(*tagName >= 'a' && *tagName <= 'z' || *tagName >= 'A' && *tagName <= 'Z')) {
+		return "Map tag must start with a letter.";
+	}
 	while (*tagName) {
 		if (*tagName >= '0' && *tagName <= '9' || *tagName >= 'a' && *tagName <= 'z' || *tagName >= 'A' && *tagName <= 'Z' || *tagName == '_') {
 			tagName++;
@@ -4783,6 +4861,7 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tagnot <tagname> - Add a negative tag.\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <remove> <tagname> - Remove a tag you added\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <list|listall|clear> - List the map's tags, all known tags, or clear your own tags of this map\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <recent> [<tagname>] [<mine|notmine>] - List recently added tags. Optionally, specify a tag. Optionally, specify 'mine' to only show your tags or 'notmine' to exclude yours.\n\"");
 		trap_SendServerCommand(ent - g_entities, "print \"Usage: /tag <search> <tagname> - Find maps that have a tag\n\"");
 		return;
 	}
@@ -4827,6 +4906,73 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
+	else if (!Q_stricmp(arg, "recent")) {
+		int i;
+		char query[MAX_STRING_CHARS];
+		data.specifics.maptag.requestType = TAGMAP_RECENT;
+		data.page = G_DB_GetPageArg(2);
+		for (i = 2; i < arglen; i++) {
+			const char* otherarg = G_Argv(i);
+			if (!Q_stricmp(otherarg,"mine")) {
+				data.specifics.maptag.mine = 1;
+			} else if (!Q_stricmp(otherarg,"notmine")) {
+				data.specifics.maptag.mine = -1;
+			} else if (*otherarg >= 'a' && *otherarg <= 'z' || *otherarg >= 'A' && *otherarg <= 'Z') {
+				const char* validateError = ValidateMapTag(otherarg);
+				if (validateError) {
+					trap_SendServerCommand(ent - g_entities, va("print \"Cannot list recent for tag: %s.\n\"", validateError));
+					return;
+				}
+				Q_strncpyz(data.specifics.maptag.tag, otherarg, sizeof(data.specifics.maptag.tag));
+			}
+		}
+
+		*query = '\0';
+		Q_strncpyz(query,"SELECT maptags.tag,maptags.course,maptags.updatedwhen,maptags.value,%d=maptags.userid AS ismine, SUM(maptags2.value) AS total, COUNT(DISTINCT maptags2.userid) AS totaltaggers\
+			FROM maptags\
+			LEFT JOIN maptags AS maptags2 ON(maptags.course = maptags2.course AND maptags.tag = maptags2.tag)\
+			GROUP BY maptags.tag, maptags.course, maptags.userid\
+			 ",sizeof(query));
+		if (*data.specifics.maptag.tag || data.specifics.maptag.mine) {
+			const char* prefix = " HAVING ";
+			if (*data.specifics.maptag.tag) {
+				Q_strcat(query, sizeof(query), prefix);
+				Q_strcat(query, sizeof(query), " maptags.tag=%s ");
+				prefix = " AND ";
+			} 
+			if (data.specifics.maptag.mine) {
+				Q_strcat(query, sizeof(query), prefix);
+				if (data.specifics.maptag.mine > 0) {
+					Q_strcat(query, sizeof(query), " maptags.userid=%d ");
+				}
+				else {
+					Q_strcat(query, sizeof(query), " maptags.userid!=%d ");
+				}
+				prefix = " AND ";
+			}
+		}
+
+		Q_strcat(query, sizeof(query), " ORDER BY updatedwhen DESC LIMIT %d,10");
+
+		if (*data.specifics.maptag.tag && data.specifics.maptag.mine) {
+			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, data.specifics.maptag.tag, ent->client->sess.login.id, data.page * 10)) {
+				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
+			}
+		} else if (*data.specifics.maptag.tag) {
+			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, data.specifics.maptag.tag, data.page * 10)) {
+				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
+			}
+		} else if (data.specifics.maptag.mine) {
+			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, ent->client->sess.login.id, data.page * 10)) {
+				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
+			}
+		} else {
+			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, data.page * 10)) {
+				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
+			}
+		}
+
+	}
 	else if (!Q_stricmp(arg, "listall")) {
 		data.specifics.maptag.requestType = TAGMAP_LISTALL;
 		data.page = G_DB_GetPageArg(2);
@@ -4865,6 +5011,10 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 			trap_SendServerCommand(ent - g_entities, va("print \"Cannot set tag: %s.\n\"", validateError));
 			return;
 		} 
+		if (G_IsRegisteredKeyword(tag,qtrue,qtrue,qtrue,qfalse)) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Cannot set tag, it is a registered game keyword.\n\""));
+			return;
+		}
 		Q_strncpyz(data.specifics.maptag.tag,tag,sizeof(data.specifics.maptag.tag));
 		if (!G_DB_GenericRequest_Send(data, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen,value) VALUES (%s,%d,%s,NOW(),NOW(),%d) ON DUPLICATE KEY UPDATE value=%d", courseName, ent->client->sess.login.id, tag, data.specifics.maptag.value, data.specifics.maptag.value)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");

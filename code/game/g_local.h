@@ -1236,6 +1236,7 @@ char *G_NewString( const char *string );
 //
 // g_cmds.c
 //
+qboolean G_IsRegisteredKeyword(const char* s, qboolean allowModeNames, qboolean allowMovementModes, qboolean allowLeaderboardNames, qboolean allowAllNumbers);
 void Cmd_Score_f (gentity_t *ent);
 void StopFollowing( gentity_t *ent );
 void StopFollowingClient(gentity_t* ent);

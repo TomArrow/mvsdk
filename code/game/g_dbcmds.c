@@ -184,6 +184,11 @@ qboolean G_DB_VerifyUsername(const char* username, int clientNumNotify) {
 		return qfalse;
 	}
 
+	if (G_IsRegisteredKeyword(username,qfalse,qfalse,qfalse,qfalse)) {
+		trap_SendServerCommand(clientNumNotify, "print \"^1Your chosen username is not valid because it is a reserved game keyword.\n\"");
+		return qfalse;
+	}
+
 	return qtrue;
 }
 
