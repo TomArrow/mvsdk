@@ -1627,7 +1627,7 @@ void G_MapMetaSetLastPlayed(const char* map) {
 	data.specifics.mapmeta.requestType = MMSC_SETMAPLASTPLAYED;
 	data.flags |= GDBRF_NOENT;
 	Q_strncpyz(data.specifics.mapmeta.course, map, sizeof(data.specifics.mapmeta.course));
-	if (!G_DB_GenericRequest_Send(data,
+	if (!G_DB_GenericRequest_Send(data, qtrue,
 		"INSERT INTO mapmeta (course,firstseen,lastplayed) VALUES (%s,NOW(),NOW()) "
 		"ON DUPLICATE KEY UPDATE lastplayed=NOW()", // order stuff nicely and logically. best match comes first,
 		data.specifics.mapmeta.course)) {

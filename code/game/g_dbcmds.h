@@ -386,7 +386,8 @@ int G_DB_GetPageArg(int pageArg);
 genericDbRequestStruct_t G_DB_GenericRequest_Prepare(struct gentity_s* ent, genericDbRequestType_t type, int tables, const char* ident, int pageArg);
 // convenience wrapper around prepared statement generation. the printf format string is not evaluated into a normal printf string, but rather all placeholders are replaced with ? and the parameter types are applied for the prepared statement and the parameters are bound correctly.
 // DO NOT WRAP THE QUERY IN va() OR SIMILAR BEFORE. THAT WILL CREATE A MAJOR SQL INJECTION SECURITY RISK. YOU MUST PASS THE FORMAT STRING DIRECTLY TO THIS FUNCTION, IT WILL CONVERT THE QUERY INTO A PREPARED STATEMENT WITH BOUND PARAMETERS
-qboolean QDECL G_DB_GenericRequest_Send(genericDbRequestStruct_t data, PRINTF_FORMAT_STRING char* fmt, ...) __attribute__((format(printf, 2, 3)));
+// If parameter send is not specified, you can do further variable bindings (non-printf style) and then call G_COOL_API_DB_FinishAndSendPreparedStatement yourself. Keep in mind when combining printf-style bindings and ? bindings, printf-style ones are converted to ? ones anyway and executed first. So the printf-style ones MUST always come first.
+qboolean QDECL G_DB_GenericRequest_Send(genericDbRequestStruct_t data, qboolean send, PRINTF_FORMAT_STRING char* fmt, ...) __attribute__((format(printf, 3, 4)));
 
 //
 // g_messages.c

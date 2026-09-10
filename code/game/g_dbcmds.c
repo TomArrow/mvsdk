@@ -3138,7 +3138,7 @@ genericDbRequestStruct_t G_DB_GenericRequest_Prepare(gentity_t* ent, genericDbRe
 }
 #define to_digit_macro(c)		((c) - '0')
 #define is_digit_macro(c)		((unsigned)to_digit_macro(c) <= 9)
-qboolean QDECL G_DB_GenericRequest_Send(genericDbRequestStruct_t data, PRINTF_FORMAT_STRING char* fmt, ...) {
+qboolean QDECL G_DB_GenericRequest_Send(genericDbRequestStruct_t data, qboolean send, PRINTF_FORMAT_STRING char* fmt, ...) {
 	va_list		argptr;
 	char query[BIG_INFO_STRING];
 	dbRequestParamType_t paramTypes[GENERICDBREQUEST_MAX_PARAMS];
@@ -3280,7 +3280,12 @@ done:
 
 	va_end(argptr);
 
-	return G_COOL_API_DB_FinishAndSendPreparedStatement();
+	if (send) {
+		return G_COOL_API_DB_FinishAndSendPreparedStatement();
+	}
+	else {
+		return qtrue;
+	}
 }
 
 

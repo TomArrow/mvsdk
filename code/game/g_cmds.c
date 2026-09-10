@@ -3466,7 +3466,7 @@ void G_CheckPlayerMapRatings(gentity_t* ent) {
 	if (!ent->client || !ent->client->sess.login.loggedIn) {
 		return;
 	}
-	if (!G_DB_GenericRequest_Send(data, "SELECT style, rating FROM mapratings WHERE userid=%d AND course=%s ORDER BY style ASC", ent->client->sess.login.id, DF_GetCourseName(qfalse))) {
+	if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT style, rating FROM mapratings WHERE userid=%d AND course=%s ORDER BY style ASC", ent->client->sess.login.id, DF_GetCourseName(qfalse))) {
 		trap_SendServerCommand(ent - g_entities, "print \"Error sending user map ratings request.\n\"");
 	}
 }
@@ -4227,7 +4227,7 @@ static void Cmd_Test_f(gentity_t* ent) {
 		return;
 	}
 	userid = atoi(G_Argv(1));
-	if (!G_DB_GenericRequest_Send(data,"SELECT course FROM runs GROUP BY course HAVING COUNT(*)=%d",userid)) {
+	if (!G_DB_GenericRequest_Send(data, qtrue,"SELECT course FROM runs GROUP BY course HAVING COUNT(*)=%d",userid)) {
 		trap_SendServerCommand(ent-g_entities,"print \"Error sending test request.\n\"");
 	}
 }
@@ -4321,7 +4321,7 @@ void G_MiniMapCheckExistence( const char* requestmap) {
 	data.specifics.minimap.requestType = MMS_CHECKEXISTS;
 	data.flags |= GDBRF_NOENT;
 	Q_strncpyz(data.specifics.minimap.course, requestmap, sizeof(data.specifics.minimap.course));
-	if (!G_DB_GenericRequest_Send(data,
+	if (!G_DB_GenericRequest_Send(data, qtrue,
 		"SELECT minimaps.course,minimaps.minimap "
 		"FROM minimaps "
 		"WHERE minimaps.course=%s", // order stuff nicely and logically. best match comes first,
@@ -4345,7 +4345,7 @@ static void Cmd_PeekMap_f(gentity_t* ent) {
 	}
 	data.specifics.minimap.requestType = MMS_GET;
 	Q_strncpyz(data.specifics.minimap.course, requestmap, sizeof(data.specifics.minimap.course));
-	if (!G_DB_GenericRequest_Send(data, 
+	if (!G_DB_GenericRequest_Send(data, qtrue,
 		"SELECT minimaps.course,minimaps.minimap "
 		",instr(minimaps.course,%s) +instr(REVERSE(minimaps.course),REVERSE(%s))-2 AS diff "
 		"FROM minimaps "
@@ -4595,7 +4595,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 
 	if (searchFlags & MAPSEARCHFLAGS_BORINGRANDOM) {
 		data.specifics.callvoteMapsearch.requestType = CVMS_TAG; // reuse this for now, the randomness logic is OK-ish
-		if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability \
+		if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability \
 				FROM(\
 					SELECT mapmeta.course, 1 AS value, "  LASTPLAYEDMULT " AS probability\
 					FROM mapmeta\
@@ -4624,7 +4624,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 
 			if (g_defrag.integer) {
 				data.requiredTables |= (1 << DBT_RUNS);
-				if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability,tagcount\
+				if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability,tagcount\
 					FROM(\
 						SELECT runs.course, SUM(maptags.value) AS value, "  LASTPLAYEDMULT " AS probability, COUNT(maptags.tag) AS tagcount\
 						FROM(SELECT DISTINCT runs.course FROM runs) runs\
@@ -4641,7 +4641,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 			}
 			else {
 				// actually select maps that are tagged. and then we just mark them as unavailable and pick a random from the remaining ones (dumb)
-				if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability, tagcount\
+				if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability, tagcount\
 					FROM(\
 						SELECT maptags.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value)))*"  LASTPLAYEDMULT " AS probability, COUNT(maptags.tag) AS tagcount\
 						FROM maptags\
@@ -4659,7 +4659,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 		else {
 			if (g_defrag.integer) {
 				data.requiredTables |= (1 << DBT_RUNS);
-				if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability \
+				if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability \
 				FROM(\
 					SELECT runs.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value)))*"  LASTPLAYEDMULT " AS probability\
 					FROM(SELECT DISTINCT runs.course FROM runs) runs\
@@ -4675,7 +4675,7 @@ static qboolean CallvoteMapSearch(gentity_t* ent, const char* searchParam) {
 				}
 			}
 			else {
-				if (!G_DB_GenericRequest_Send(data, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability \
+				if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT course,value,probability,SUM(probability) OVER () AS total_probability \
 				FROM(\
 					SELECT maptags.course, SUM(maptags.value) AS value, IF(ISNULL(value), 0, GREATEST(0, SUM(maptags.value)))*"  LASTPLAYEDMULT " AS probability\
 					FROM maptags\
@@ -4887,14 +4887,14 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 		if (g_defrag.integer) {
 			data.specifics.maptag.defrag = qtrue;
 			data.requiredTables |= (1<<DBT_RUNS);
-			if (!G_DB_GenericRequest_Send(data, "SELECT maptags.course," TAGCOUNT_SQL " AS taggers,MAX(%d=maptags.userid) AS ismine,COUNT(DISTINCT runs.userid) AS runners FROM maptags \
+			if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT maptags.course," TAGCOUNT_SQL " AS taggers,MAX(%d=maptags.userid) AS ismine,COUNT(DISTINCT runs.userid) AS runners FROM maptags \
 				LEFT JOIN runs ON (runs.course=maptags.course) \
 				WHERE tag=%s GROUP BY course HAVING runners > 0 ORDER BY ismine DESC, taggers DESC, runners DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
 				trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 			}
 		}
 		else {
-			if (!G_DB_GenericRequest_Send(data, "SELECT course," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE tag=%s GROUP BY course ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
+			if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT course," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE tag=%s GROUP BY course ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, tag, data.page * 10)) {
 				trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 			}
 		}
@@ -4902,7 +4902,7 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 	else if (!Q_stricmp(arg, "list")) {
 		data.specifics.maptag.requestType = TAGMAP_LIST;
 		data.page = G_DB_GetPageArg(2);
-		if (!G_DB_GenericRequest_Send(data, "SELECT tag," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE course=%s GROUP BY tag ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, courseName, data.page * 10)) {
+		if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT tag," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine FROM maptags WHERE course=%s GROUP BY tag ORDER BY ismine DESC, taggers DESC LIMIT %d,10", ent->client->sess.login.id, courseName, data.page * 10)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
@@ -4937,46 +4937,44 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 			const char* prefix = " HAVING ";
 			if (*data.specifics.maptag.tag) {
 				Q_strcat(query, sizeof(query), prefix);
-				Q_strcat(query, sizeof(query), " maptags.tag=%s ");
+				Q_strcat(query, sizeof(query), " maptags.tag=? ");
 				prefix = " AND ";
 			} 
 			if (data.specifics.maptag.mine) {
 				Q_strcat(query, sizeof(query), prefix);
 				if (data.specifics.maptag.mine > 0) {
-					Q_strcat(query, sizeof(query), " maptags.userid=%d ");
+					Q_strcat(query, sizeof(query), " maptags.userid=? ");
 				}
 				else {
-					Q_strcat(query, sizeof(query), " maptags.userid!=%d ");
+					Q_strcat(query, sizeof(query), " maptags.userid!=? ");
 				}
 				prefix = " AND ";
 			}
 		}
 
-		Q_strcat(query, sizeof(query), " ORDER BY updatedwhen DESC LIMIT %d,10");
+		Q_strcat(query, sizeof(query), " ORDER BY updatedwhen DESC LIMIT ?,10");
 
-		if (*data.specifics.maptag.tag && data.specifics.maptag.mine) {
-			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, data.specifics.maptag.tag, ent->client->sess.login.id, data.page * 10)) {
-				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
-			}
-		} else if (*data.specifics.maptag.tag) {
-			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, data.specifics.maptag.tag, data.page * 10)) {
-				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
-			}
-		} else if (data.specifics.maptag.mine) {
-			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, ent->client->sess.login.id, data.page * 10)) {
-				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
-			}
-		} else {
-			if (!G_DB_GenericRequest_Send(data, query, ent->client->sess.login.id, data.page * 10)) {
-				trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
-			}
+		// calling this with send param qfalse because the query is variable and we need to manually bind some stuff based on the circumstances
+		if (!G_DB_GenericRequest_Send(data, qfalse, query, ent->client->sess.login.id)) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request.\n\"");
+			return;
+		}
+		if (*data.specifics.maptag.tag) {
+			G_COOL_API_DB_PreparedBindString(data.specifics.maptag.tag);
+		}
+		if (data.specifics.maptag.mine) {
+			G_COOL_API_DB_PreparedBindInt(ent->client->sess.login.id);
+		}
+		G_COOL_API_DB_PreparedBindInt(data.page * 10);
+		if (!G_COOL_API_DB_FinishAndSendPreparedStatement()) {
+			trap_SendServerCommand(ent - g_entities, "print \"Error sending recent maptag request (2).\n\"");
 		}
 
 	}
 	else if (!Q_stricmp(arg, "listall")) {
 		data.specifics.maptag.requestType = TAGMAP_LISTALL;
 		data.page = G_DB_GetPageArg(2);
-		if (!G_DB_GenericRequest_Send(data, "SELECT tag," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine,COUNT(DISTINCT maptags.course) AS maps FROM maptags GROUP BY tag ORDER BY maps DESC, taggers DESC,ismine DESC LIMIT %d,10", ent->client->sess.login.id,data.page*10)) {
+		if (!G_DB_GenericRequest_Send(data, qtrue, "SELECT tag," TAGCOUNT_SQL " AS taggers,MAX(%d=userid) AS ismine,COUNT(DISTINCT maptags.course) AS maps FROM maptags GROUP BY tag ORDER BY maps DESC, taggers DESC,ismine DESC LIMIT %d,10", ent->client->sess.login.id,data.page*10)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
@@ -4993,13 +4991,13 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 			return;
 		}
 		Q_strncpyz(data.specifics.maptag.tag, tag, sizeof(data.specifics.maptag.tag));
-		if (!G_DB_GenericRequest_Send(data, "DELETE FROM maptags WHERE course=%s AND userid=%d AND tag=%s", courseName, ent->client->sess.login.id, tag)) {
+		if (!G_DB_GenericRequest_Send(data, qtrue, "DELETE FROM maptags WHERE course=%s AND userid=%d AND tag=%s", courseName, ent->client->sess.login.id, tag)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 
 	} else if (!Q_stricmp(arg,"clear")) {
 		data.specifics.maptag.requestType = TAGMAP_CLEAR;
-		if (!G_DB_GenericRequest_Send(data, "DELETE FROM maptags WHERE course=%s AND userid=%d", courseName, ent->client->sess.login.id)) {
+		if (!G_DB_GenericRequest_Send(data, qtrue, "DELETE FROM maptags WHERE course=%s AND userid=%d", courseName, ent->client->sess.login.id)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	} else  {
@@ -5016,7 +5014,7 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 			return;
 		}
 		Q_strncpyz(data.specifics.maptag.tag,tag,sizeof(data.specifics.maptag.tag));
-		if (!G_DB_GenericRequest_Send(data, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen,value) VALUES (%s,%d,%s,NOW(),NOW(),%d) ON DUPLICATE KEY UPDATE value=%d", courseName, ent->client->sess.login.id, tag, data.specifics.maptag.value, data.specifics.maptag.value)) {
+		if (!G_DB_GenericRequest_Send(data, qtrue, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen,value) VALUES (%s,%d,%s,NOW(),NOW(),%d) ON DUPLICATE KEY UPDATE value=%d", courseName, ent->client->sess.login.id, tag, data.specifics.maptag.value, data.specifics.maptag.value)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
