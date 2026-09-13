@@ -5014,7 +5014,7 @@ static void Cmd_TagMap_f(gentity_t* ent) {
 			return;
 		}
 		Q_strncpyz(data.specifics.maptag.tag,tag,sizeof(data.specifics.maptag.tag));
-		if (!G_DB_GenericRequest_Send(data, qtrue, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen,value) VALUES (%s,%d,%s,NOW(),NOW(),%d) ON DUPLICATE KEY UPDATE value=%d", courseName, ent->client->sess.login.id, tag, data.specifics.maptag.value, data.specifics.maptag.value)) {
+		if (!G_DB_GenericRequest_Send(data, qtrue, "INSERT INTO maptags (course,userid,tag,setwhen,updatedwhen,value) VALUES (%s,%d,%s,NOW(),NOW(),%d) ON DUPLICATE KEY UPDATE updatedwhen=IF(value!=%d,NOW(),updatedwhen),value=%d", courseName, ent->client->sess.login.id, tag, data.specifics.maptag.value, data.specifics.maptag.value, data.specifics.maptag.value)) {
 			trap_SendServerCommand(ent - g_entities, "print \"Error sending maptag request.\n\"");
 		}
 	}
