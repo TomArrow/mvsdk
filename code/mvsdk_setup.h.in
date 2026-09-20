@@ -3,4 +3,8 @@
 
 #define MVSDK_VERSION "@MVSDK_VERSION@"
 
+#define MVSDK_HISTORY @MVSDK_HISTORY@
+
+#define MV_HISTORY @MV_HISTORY@
+
 #endif /* MVSDK_SETUP_H */
