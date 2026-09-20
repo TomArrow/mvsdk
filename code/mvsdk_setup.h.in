@@ -3,4 +3,10 @@
 
 #define MVSDK_VERSION "@MVSDK_VERSION@"
 
+#define HISTORY_ITEM(a,b,c,d,e,f,g,h) {a,b,c,d,e,f,g,h}
+
+#define MVSDK_HISTORY @MVSDK_HISTORY@
+
+#define MV_HISTORY @MV_HISTORY@
+
 #endif /* MVSDK_SETUP_H */

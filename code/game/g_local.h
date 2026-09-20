@@ -683,6 +683,28 @@ typedef struct mapRating_s {
 	float		rating;
 } mapRating_t;
 
+typedef struct gitRevision_s {
+	const char* commitHashShort;
+	unsigned int			unixtime;
+	int						year; // qvm doesnt support short initialization
+#if Q3_VM // for some reason qvm loses its shit when you have bytes in structs :)
+	int					month;
+	int					day;
+	int					hour;
+	int					minutes;
+	int					seconds;
+	int					pad;
+#else
+	byte				month;
+	byte				day;
+	byte				hour;
+	byte				minutes;
+	byte				seconds;
+	byte				pad;
+#endif
+	struct gitRevision_s* next; // for hashtable
+} gitRevision_t;
+
 // client data that stays across multiple respawns, but is cleared
 // on each level change or team change at ClientBegin()
 typedef struct {
@@ -814,6 +836,9 @@ typedef struct {
 
 	char		lastTeamInfoMessage[1400]; // very cringe but reasonably readable. TODO do something more efficient
 	int			lastTeamInfoMessageSent;
+
+	gitRevision_t*	mvsdkVersion;
+	gitRevision_t*	mvVersion;
 
 	//sanction_t	sanctions[MAX_SANCTIONS_CLIENT];
 } clientPersistant_t;
@@ -1674,6 +1699,7 @@ void MV_ModelindexToTime2( gentity_t *ent );
 // g_client.c
 //
 char *ClientConnect( int clientNum, qboolean firstTime, qboolean isBot );
+void G_InitGitHistoryHashTable();
 void ClientUserinfoChanged( int clientNum );
 qboolean ClientPhysicsFpsChanged( int clientNum );
 void ClientDisconnect( int clientNum );

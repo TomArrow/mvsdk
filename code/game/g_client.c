@@ -2,6 +2,7 @@
 //
 #include "g_local.h"
 #include "../ghoul2/G2.h"
+#include "mvsdk_setup.h"
 
 // g_client.c -- client functions that don't happen every frame
 
@@ -1901,6 +1902,107 @@ void G_SetSaberName(char saberName[MAX_QPATH], const char *userinfo)
 	Q_strncpyz(saberName, serverSaberName, MAX_QPATH);
 }
 
+
+
+
+gitRevision_t mvHistoryCommits[] = {
+	{NULL},
+	MV_HISTORY
+};
+gitRevision_t mvsdkHistoryCommits[] = {
+	{NULL},
+	MVSDK_HISTORY
+};
+
+#define GIT_HASH_SIZE 100
+typedef struct gitRevisionCategory_s {
+	int				count;
+	int				commitHashLen;
+	gitRevision_t*	hashTable[GIT_HASH_SIZE];
+} gitRevisionCategory_t;
+
+gitRevisionCategory_t	mvHistory = { sizeof(mvHistoryCommits) / sizeof(mvHistoryCommits[0]),0,{0} };
+gitRevisionCategory_t	mvsdkHistory = { sizeof(mvsdkHistoryCommits) / sizeof(mvsdkHistoryCommits[0]),0,{0} };
+
+
+void G_InitGitHistoryHashTableIndividual(gitRevision_t* items, gitRevisionCategory_t* category) {
+	int i, hash;
+	gitRevision_t* itm = items;
+	char commitHash7[8]; // DO NOT make this array bigger. we want to hash only based on the first 7 chars
+	// quick explainer about the max length of 7 for the commithash char array:
+	// the versions we get are made using git log/describe, which uses 7 OR MORE(!!) chars to give us the short version 
+	// of the hash
+	// since we could get older or newer clients that have more or less chars than we have right now, we default to the 
+	// minimum of 7 for the hash
+	for (i = 0; i < category->count; i++, itm++) {
+		if (!itm->commitHashShort) {
+			continue;
+		}
+		category->commitHashLen = MAX(category->commitHashLen, strlen(itm->commitHashShort));
+		Q_strncpyz(commitHash7, itm->commitHashShort, sizeof(commitHash7));
+		hash = generateHashValue(commitHash7, GIT_HASH_SIZE);
+		itm->next = category->hashTable[hash];
+		category->hashTable[hash] = itm;
+	}
+}
+
+void G_InitGitHistoryHashTable() {
+	G_InitGitHistoryHashTableIndividual(mvHistoryCommits, &mvHistory);
+	G_InitGitHistoryHashTableIndividual(mvsdkHistoryCommits, &mvsdkHistory);
+}
+ 
+static gitRevision_t* G_FindGitRevision(const char* commitshort, gitRevisionCategory_t* category) {
+	int hash;
+	gitRevision_t* item;
+	int len;
+	char commitHash7[8];
+	if (!commitshort) {
+		return NULL;
+	}
+	len = strlen(commitshort);
+	Q_strncpyz(commitHash7, commitshort, sizeof(commitHash7));
+	hash = generateHashValue(commitHash7, GIT_HASH_SIZE);
+	item = category->hashTable[hash];
+
+	if (!item) {
+		return NULL;
+	}
+
+	if (len > category->commitHashLen) {
+		// this client's short hash is longer than ours,
+		// so we can safely conclude the client is newer than any commits known
+		// to us. so we cannot say how old this client is.
+		return NULL;
+	}
+	
+	if (len == category->commitHashLen) {
+		// client transmitted commit hash of the same length as us. so we can do a simple normal string compare
+		// first match is good.
+		while (item && Q_stricmpn(item->commitHashShort, commitshort, strlen(commitshort))) {
+			item = item->next;
+		}
+		return item;
+	}
+	else {
+		// commithash provided to us is shorter than the typical one we have from git log,
+		// bias us towards the oldest entry, because we might have a dupe of that commit hash now,
+		// however since the connecting client is showing a shorter hash, we know that at the time
+		// that client was compiled, that commit hash length was sufficient. so the oldest matching
+		// shoud be fine
+		unsigned int oldestMatchingCommitTime = UINT_MAX;
+		gitRevision_t* oldestMatch = NULL;
+		while (item) {
+			if (!Q_stricmpn(item->commitHashShort, commitshort, len) && (!oldestMatch || oldestMatchingCommitTime > item->unixtime)) {
+				oldestMatch = item;
+				oldestMatchingCommitTime = item->unixtime;
+			}
+			item = item->next;
+		}
+		return oldestMatch;
+	}
+
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -1958,6 +2060,29 @@ void ClientUserinfoChanged( int clientNum ) {
 		else {
 			Com_Printf("^3ClientUserinfoChanged: real name API supported but client %d ttrn key not found. defaulting to normal behavior\n",clientNum);
 		}
+	}
+
+
+	// check for client version
+	s = Info_ValueForKey(userinfo, "JK2MV");
+	if (s=strstr(s,"-g")) {
+		char* x;
+		s += 2;
+		x = s;
+		while (x = strstr(x, "-g")) {
+			s = x;
+		}
+		client->pers.mvVersion = G_FindGitRevision(s,&mvHistory);
+	}
+	s = Info_ValueForKey(userinfo, "cg_MVSDK");
+	if (s = strstr(s, "-g")) {
+		char* x;
+		s += 2;
+		x = s;
+		while (x = strstr(x,"-g")) {
+			s = x;
+		}
+		client->pers.mvsdkVersion = G_FindGitRevision(s,&mvsdkHistory);
 	}
 
 	// check for local client

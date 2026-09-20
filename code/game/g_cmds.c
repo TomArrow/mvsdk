@@ -4503,7 +4503,7 @@ REGISTER_DBREQUEST_CALLBACK(GDBREQUEST_VOTE_MAPSEARCH, CallvoteMapSearchCallback
 
 
 static const char* ParseMapSearchParam(gentity_t* ent, const char* input, mapSearchFlags_t* flagsOut) {
-	char inputCopy[100];
+	static char inputCopy[100];
 	char* result, *search;
 	if (!input || !*input) {
 		*inputCopy = '\0';
@@ -5789,14 +5789,39 @@ void Cmd_Afk_f(gentity_t* ent) {
 	}
 }
 
+const char* FormatClientAge(gclient_t* cl, unsigned int unixTime) {
+	int num;
+	static char retVal[12];
+	retVal[0] = '\0';
+	if (cl->pers.mvVersion) {
+		num = unixTime - cl->pers.mvVersion->unixtime;
+		num /= 86400;
+		Q_strcat(retVal, sizeof(retVal), miniva("%id", num));
+	}
+	else {
+		Q_strcat(retVal, sizeof(retVal), "-");
+	}
+	Q_strcat(retVal, sizeof(retVal), "/");
+	if (cl->pers.mvsdkVersion) {
+		num = unixTime - cl->pers.mvsdkVersion->unixtime;
+		num /= 86400;
+		Q_strcat(retVal, sizeof(retVal), miniva("%id", num));
+	}
+	else {
+		Q_strcat(retVal, sizeof(retVal), "-");
+	}
+	return retVal;
+}
+
 void Cmd_Players_f(gentity_t* ent) {
 	gentity_t* other;
 	gclient_t* cl;
+	unsigned int unixTime = (unsigned int)trap_RealTime(NULL);
 	int i;
 	int millisecs,minMillisecs = clampedIntMult(g_afkCmdMinSecs.integer, 1000), minMillisecsStayOnMap = clampedIntMult(g_slowVoteAFKThreshold.integer, 1000);
 	qboolean slowVoteActive = G_SlowVoteActive();
 	trap_SendServerCommand(ent - g_entities, "print \"Players:\n\"");
-	trap_SendServerCommand(ent - g_entities, "print \"^2#  User       Mode                      AFK        FPS  Jump  Name\n\"");
+	trap_SendServerCommand(ent - g_entities, "print \"^2#  ClientAge   User       Mode                      AFK        FPS  Jump  Name\n\"");
 	for (i = 0; i < level.maxclients; i++) {
 		other = g_entities + i;
 		if (!other->inuse || !other->client) {
@@ -5804,8 +5829,9 @@ void Cmd_Players_f(gentity_t* ent) {
 		}
 		cl = other->client;
 		millisecs = clampedIntAdd(level.time, -other->client->sess.lastHereTime);
-		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-10s %-25s %-10s %-4s %-5d %s%s%s\n\"", 
+		trap_SendServerCommand(ent - g_entities, va("print \"%-2d %-11s %-10s %-25s %-10s %-4s %-5d %s%s%s\n\"",
 			i,
+			FormatClientAge(cl,unixTime),
 			cl->sess.login.loggedIn ? cl->sess.login.name : "",
 			cl->sess.raceMode ? multiva("Race:%s/%s", moveStyleNames[cl->sess.raceStyle.movementStyle].string, leaderboardNames[classifyLeaderBoard(&cl->sess.raceStyle,&level.mapDefaultRaceStyle)].string) : modeNames[cl->sess.mode].string,
 			millisecs >= minMillisecs ? DF_MsToString(millisecs) : "",

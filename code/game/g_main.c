@@ -1403,6 +1403,7 @@ void G_InitGame( int levelTime, int randomSeed, int restart ) {
 
 	InitFpsTable();
 	InitClanTagHashTable();
+	G_InitGitHistoryHashTable();
 	
 	if ( jk2version == VERSION_UNDEF )
 	{ // We don't know the version of the server, yet...

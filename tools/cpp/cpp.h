@@ -1,4 +1,4 @@
-#define	INS	32768		/* input buffer */
+#define	INS	4194304		/* input buffer */
 #define	OBS	4096		/* outbut buffer */
 #define	NARG	32		/* Max number arguments to a macro */
 #define	NINCLUDE 32		/* Max number of include directories (-I) */
