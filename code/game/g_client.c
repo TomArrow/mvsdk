@@ -1970,12 +1970,26 @@ static gitRevision_t* G_FindGitRevision(const char* commitshort, gitRevisionCate
 
 	if (len > category->commitHashLen) {
 		// this client's short hash is longer than ours,
-		// so we can safely conclude the client is newer than any commits known
+		// you'd think we can safely conclude the client is newer than any commits known
 		// to us. so we cannot say how old this client is.
-		return NULL;
+		// HOWEVER that is not true because git seems to decide the short commithash length based on 
+		// factors outside of just the current ancestry of HEAD. different versions of git and different
+		// fetched remotes etc might yield different results.
+		// so what do we do? just check that we only get 1 match.
+		gitRevision_t* match = NULL;
+		while (item) {
+			if (!Q_stricmpn(item->commitHashShort, commitshort, category->commitHashLen)) {
+				if (match) { 
+					// we already had a match, so we got a duplicate situation on our hands.
+					return NULL;
+				}
+				match = item;
+			}
+			item = item->next;
+		}
+		return match;
 	}
-	
-	if (len == category->commitHashLen) {
+	else if (len == category->commitHashLen) {
 		// client transmitted commit hash of the same length as us. so we can do a simple normal string compare
 		// first match is good.
 		while (item && Q_stricmpn(item->commitHashShort, commitshort, strlen(commitshort))) {
