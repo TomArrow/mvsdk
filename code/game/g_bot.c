@@ -1683,7 +1683,7 @@ void G_TouchMapMetaForRegisteredArenas() {
 			return;
 		}
 		for (; start < i; start++) {
-			infoHashed_t* map = &g_arenaInfosHashed[i];
+			infoHashed_t* map = &g_arenaInfosHashed[start];
 			G_COOL_API_DB_PreparedBindString(map->name);
 		}
 		G_COOL_API_DB_FinishAndSendPreparedStatement();

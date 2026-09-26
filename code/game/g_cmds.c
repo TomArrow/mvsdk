@@ -55,6 +55,7 @@ qboolean G_IsRegisteredKeyword(const char* s, qboolean allowModeNames, qboolean 
 			allnumbers = qfalse;
 			break;
 		}
+		s++;
 	}
 	return !allowAllNumbers && allnumbers; // we don't wanna allow all numbers stuff because we use numbers for paging.
 }
