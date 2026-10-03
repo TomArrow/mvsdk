@@ -840,6 +840,7 @@ typedef struct {
 	gitRevision_t*	mvsdkVersion;
 	gitRevision_t*	mvVersion;
 
+	int			antiWallhackBoxIndex; // each time we update the player's antiwh box, we increment this. that way we can determine if the vis status between 2 players needs to be updated (we remember the last status and boxindex for both players)
 	//sanction_t	sanctions[MAX_SANCTIONS_CLIENT];
 } clientPersistant_t;
 
@@ -849,17 +850,45 @@ typedef struct bufferPrint_s {
 	int			curLen;
 } bufferedPrint_t; 
 
+#define ANTIWH_PRETRACE 0 // this was a fun experiment but its actually slower in release builds. the bsp-tree trace is much faster. don't wanna keep maintaining it so i'm defining it out and keeping it only as a historical curiosity.
+
+typedef struct awhVis_s {
+	qboolean	visible;
+	int			winLineViewer;
+	int			winLineViewee;
+	int			lastCheck;
+	int			viewerBoxIndex;
+	int			vieweeBoxIndex;
+} awhVis_t;
+
+
+#define ANTIWH_BOX_BASESIZE 9
+#define ANTIWH_WIDEBOX_SIZE (ANTIWH_BOX_BASESIZE + 2) // viewer: same as viewee, but also firstpersonpos. no thirdpersonpos, it kills our optimization ideas
+#define ANTIWH_WIDEBOX_FIRSTPERSONPOS (ANTIWH_WIDEBOX_SIZE - 2) // previous to last entry in widebox is firstperson
+#define ANTIWH_WIDEBOX_THIRDPERSONPOS (ANTIWH_WIDEBOX_SIZE - 1) // last entry in widebox is thirdpersonpos (unused if viewer box is enabled)
+#define ANTIWH_ALTORIGIN_POINTMASK ((1<<5)|(1<<6)|(1<<7)|(1<<8)) // see SE_RenderPlayerPoints. these indexes are offset from an alternate origin point inside the bounding box
 typedef struct antiWallhackPlayerData_s {
-	qboolean	boxCreated;
+	int			boxIndex; // based on continuously incrementing antiWallhackBoxIndex in pers
+	float		boxSize;
+	int			boxCreatedBitmask; // which indexes are already updated for given origin and crouching in this same struct
+#if ANTIWH_PRETRACE
 	vec3_t		boxCenter, boxMins, boxMaxs;
+#endif
 	vec3_t		origin;
-	qboolean	crouching;
-	vec3_t		box[9];		// viewee
+	vec3_t		altOrigin; // for the top box parts, we trace from here
+	int			maxsZ;
+	vec3_t		box[ANTIWH_BOX_BASESIZE];		// viewee
 
-	vec3_t		wideBox[9]; // viewer: origin, and 8 points on a circle around
+	float		viewerBoxSize;
+	int			wideBoxCheckMask; // which indexes to check.
+	vec3_t		viewerBox[ANTIWH_WIDEBOX_SIZE];  // base ANTIWH_BOX_BASESIZE indexes same as box
 
-	qboolean	visibleTo[MAX_CLIENTS];
-	int			visibleToLastCheck[MAX_CLIENTS];
+	awhVis_t	visibleTo[MAX_CLIENTS];
+
+	int			nextTestLine;
+	int			nextTestLineWin;
+	int			nextTestLineBox;
+	int			lastBoxUpdate;
 } antiWallhackPlayerData_t;
 
 // this structure is cleared on each ClientSpawn(),
@@ -2040,6 +2069,8 @@ extern	vmCvar_t	g_antiWallhackBoxSize;
 extern	vmCvar_t	g_antiWallhackRecalcOffset;
 extern	vmCvar_t	g_antiWallhackVisibleRecalcDelay;
 extern	vmCvar_t	g_antiWallhackViewerBoxSize;
+extern	vmCvar_t	g_antiWallhackDebugBox;
+extern	vmCvar_t	g_antiWallhackDebugWinLine;
 
 extern	vmCvar_t	g_synchronousClients;
 extern	vmCvar_t	g_motd;
