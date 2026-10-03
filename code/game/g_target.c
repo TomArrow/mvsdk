@@ -514,10 +514,11 @@ void SP_target_position( gentity_t *self ){
 	G_SetOrigin( self, self->s.origin );
 }
 
-static void target_location_linkup(gentity_t *ent)
+static void target_location_linkup(gentity_t *entCaller)
 {
 	int i;
 	int n;
+	gentity_t* ent = NULL;
 
 	if (level.locationLinked) 
 		return;
@@ -528,17 +529,14 @@ static void target_location_linkup(gentity_t *ent)
 
 	trap_SetConfigstring( CS_LOCATIONS, "unknown" );
 
-	for (i = 0, ent = g_entities, n = 1;
-			i < level.num_entities;
-			i++, ent++) {
-		if (ent->classname && !Q_stricmp(ent->classname, "target_location")) {
-			// lets overload some variables!
-			ent->health = n; // use for location marking
-			trap_SetConfigstring( CS_LOCATIONS + n, ent->message );
-			n++;
-			ent->nextTrain = level.locationHead;
-			level.locationHead = ent;
-		}
+	n = 1;
+	while (ent = G_FindByClassNameFast(ent,"target_location")) {
+		// lets overload some variables!
+		ent->health = n; // use for location marking
+		trap_SetConfigstring( CS_LOCATIONS + n, ent->message );
+		n++;
+		ent->nextTrain = level.locationHead;
+		level.locationHead = ent;
 	}
 
 	// All linked together now
