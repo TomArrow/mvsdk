@@ -148,6 +148,7 @@ vmCvar_t	g_stackFirstSpawn; // 125/200 + bacta on first spawn, e.g. after map_re
 
 vmCvar_t	g_antiWallhack;						// value 2+ = debug given offset line
 vmCvar_t	g_antiWallhackFast;					// 1= bad attempt. 2= engine side hulltrace(fast! and ignores glass in a proper map compile)
+vmCvar_t	g_antiWallhackFastPVS;				// Setting for early antiwh-trace skip. 1 = use normal InPVS. 0 = use same method that server snapshots use. It will avoid false negatives (falsely invisible people) in some places like ffa_bespin stairs, but it allows almost anything, so it will result in a lot more traces.
 vmCvar_t	g_antiWallhackEnforceVis;			// if a player is visible, force him to be sent to those who can see him
 vmCvar_t	g_antiWallhackBoxSize;				// size of box around player to check if he is visible. 9 points being checked.
 vmCvar_t	g_antiWallhackRecalcOffset;			// only recalc the box around a player once he moves further than this (cuz it involves 9 traces)
@@ -155,6 +156,7 @@ vmCvar_t	g_antiWallhackVisibleRecalcDelay;	// if a player is visible, amount of 
 vmCvar_t	g_antiWallhackViewerBoxSize;		// if not 0, we make a "box" around the viewer too instead of looking at the actual camera pos. more traces, but we can debounce it as well and completely eliminate a lot of traces
 vmCvar_t	g_antiWallhackDebugBox;				// show the boxes
 vmCvar_t	g_antiWallhackDebugWinLine;			// show the winning trace line, if any
+vmCvar_t	g_antiWallhackDebugReason;			// show the winning trace line, if any
 
 vmCvar_t	g_synchronousClients;
 vmCvar_t	g_warmup;
@@ -398,6 +400,7 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 
 	{ &g_antiWallhack, "g_antiWallhack", "0", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_antiWallhackFast, "g_antiWallhackFast", "3", CVAR_ARCHIVE, 0, qtrue },
+	{ &g_antiWallhackFastPVS, "g_antiWallhackFastPVS", "1", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_antiWallhackEnforceVis, "g_antiWallhackEnforceVis", "0", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_antiWallhackBoxSize, "g_antiWallhackBoxSize", "35", CVAR_ARCHIVE, 0, qtrue },
 	{ &g_antiWallhackRecalcOffset, "g_antiWallhackMoveTolerance", "15", CVAR_ARCHIVE, 0, qtrue },
@@ -663,6 +666,7 @@ const int coolApi_supported_game_int =
 | COOL_APIFEATURE_FASTHULLTRACE
 | COOL_APIFEATURE_CLIENTREALNAME
 | COOL_APIFEATURE_ASCIIMINIMAP
+| COOL_APIFEATURE_INPVSENTITY
 ;
 const int coolApi_supported_game_vmflags_int = COOL_APIFEATURE_VMGAME_FLAG_SEGMENTEDREPLAY | COOL_APIFEATURE_VMGAME_GAME_FIX_TRACECALLS;
 

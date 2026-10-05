@@ -13,7 +13,6 @@ antiWallhackDebug_t antiWhDebug = {NULL};
 static const int	altPlayerOriginIndexes = ANTIWH_ALTORIGIN_POINTMASK;
 static const int	dirCheckIndexes = ANTIWH_DIRCHECK_POINTMASK;
 
-const vec3_t	forward = { 1,0,0 }, right = { 0,1,0 }, up = { 0,0,1 }; // TA: why do we care about his orientation? his orientation doesnt matter as to whether he's visible. this just causes ppl to randomly phase in and out of visibility based on their own rotation
 static vec3_t	boxDirs[9] = { {0,0,0},
 	{1,1,0}, // forward + right
 	{1,-1,0}, // forward - right
@@ -29,6 +28,20 @@ static vec3_t boxToOriginDirs[9] = { 0 };
 static qboolean boxToOriginDirsInited = qfalse;
 
 #define	CM_SURFACE_CLIP_EPSILON	0.125f
+
+const char* awhHiddenReasonStrings[AWHFAIL_COUNT_REASONS] = {
+	"no path found",
+	"viewer in surface",
+	"not in pvs",
+	"skipping impossible viewerpoint",
+	"wallblocked viewerpoint plane skip",
+	"(hard)",
+	"wallblocked vieweepoint plane skip",
+	"(hard)",
+	"viewerpoint direction check skip",
+	"trace fail",
+};
+
 /*
 static float VectorAngle( const vec3_t a, const vec3_t b ) {
 	const float lA = VectorLength( a );
@@ -125,6 +138,14 @@ static int G_AntiWH_PointContents(vec3_t pos, int passEntityNum) {
 	}
 	else {
 		return trap_PointContents(pos, passEntityNum);
+	}
+}
+static int G_AntiWH_InPVS(vec3_t pos, gentity_t* ent, vec3_t pos2Fallback) {
+	if (!g_antiWallhackFastPVS.integer && (coolApi & COOL_APIFEATURE_INPVSENTITY)) {
+		return trap_G_COOL_API_InPVSEntity(pos,ent);
+	}
+	else {
+		return trap_InPVS(pos, pos2Fallback);
 	}
 }
 
@@ -326,6 +347,13 @@ static qboolean SE_IsPlayerCrouching( gentity_t *ent ) {
 }
 #endif
 
+// basic thought: the normal player box is 30*30*(variable height)
+// we want our top box points to be extensions of the player box that have equal angles in relation to each of the box's adjacent sides
+// this way we have nice elegant and logical geometry AND we can do a single trace for the basic viewer and viewee points, since they lie on the same line
+// 
+// 
+const float topBoxOffset = 15.0f;  // if we subdivide the real player box top side into 4 equal parts on top, we get 15x15 slices. then we also move 15 down. if we trace the top points from there, we get a nice 45/45/45 line out
+
 // boxSize and wideBoxSize are half the side lengths of the box desired.
 static void SE_RenderPlayerPoints( antiWallhackPlayerData_t* awh, float boxSize, float wideBoxSize
 #if ANTIWH_PRETRACE
@@ -336,6 +364,9 @@ static void SE_RenderPlayerPoints( antiWallhackPlayerData_t* awh, float boxSize,
 	int box,i;
 	//AngleVectors( playerAngles, forward, right, up ); // see comment about forward, right, up
 	
+
+	const vec3_t	forward = { 1,0,0 }, right = { 0,1,0 }, up = { 0,0,1 }; // TA: why do we care about his orientation? his orientation doesnt matter as to whether he's visible. this just causes ppl to randomly phase in and out of visibility based on their own rotation
+
 	if (!boxToOriginDirsInited) {
 		for (i = 1; i < 9; i++) {
 			VectorScale(boxDirs[i], -1.0f, boxToOriginDirs[i]);
@@ -344,12 +375,6 @@ static void SE_RenderPlayerPoints( antiWallhackPlayerData_t* awh, float boxSize,
 		boxToOriginDirsInited = qtrue;
 	}
 
-	// basic thought: the normal player box is 30*30*(variable height)
-	// we want our top box points to be extensions of the player box that have equal angles in relation to each of the box's adjacent sides
-	// this way we have nice elegant and logical geometry AND we can do a single trace for the basic viewer and viewee points, since they lie on the same line
-	// 
-	// 
-	const float topBoxOffset = 15;  // if we subdivide the real player box top side into 4 equal parts on top, we get 15x15 slices. then we also move 15 down. if we trace the top points from there, we get a nice 45/45/45 line out
 
 	VectorSet(awh->altOrigin,awh->origin[0],awh->origin[1],awh->origin[2]+awh->maxsZ-topBoxOffset);
 
@@ -454,6 +479,8 @@ static qboolean SE_CheckUpdatePlayerBoxes(gentity_t* other, int traceFlags) {
 	}
 
 	VectorCopy(other->client->ps.origin, awh->viewerBox[ANTIWH_WIDEBOX_FIRSTPERSONPOS].pos);
+	// technically viewheight would be the intended value, BUT there's a glitch when you roll into a narrow space. 
+	// your viewheight will reset, but your hitbox wont since there is no space to uncrouch
 	awh->viewerBox[ANTIWH_WIDEBOX_FIRSTPERSONPOS].pos[2] += other->r.maxs[2];
 
 	if (!g_antiWallhackViewerBoxSize.value) {
@@ -471,6 +498,11 @@ static qboolean SE_CheckUpdatePlayerBoxes(gentity_t* other, int traceFlags) {
 	awh->maxsZ = other->r.maxs[2];
 	VectorCopy(other->client->ps.origin, awh->origin);
 	VectorCopy(other->r.currentOrigin, awh->rOrigin);
+
+	// this is for the pvs check. using r.currentOrigin makes it die a horrible death on ffa_bespin stairs :)
+	VectorCopy(other->client->ps.origin, awh->realViewHeightOrigin); 
+	awh->realViewHeightOrigin[2] += other->client->ps.viewheight;
+
 	SE_RenderPlayerPoints(&other->client->antiwh, g_antiWallhackBoxSize.value, g_antiWallhackViewerBoxSize.value
 #if ANTIWH_PRETRACE
 		, awh->boxCenter, awh->boxMins, awh->boxMaxs
@@ -526,28 +558,29 @@ static void SE_DebugBox( gentity_t* self ) {
 static void SE_DebugWinLine( gentity_t* self, gentity_t* other) {
 	int i,b;
 	awhVis_t* visMemory = &other->client->antiwh.visibleTo[self - g_entities];
-	if (!g_antiWallhackDebugWinLine.integer || level.time < other->client->antiwh.nextTestLineWin || !visMemory->visible) {
+	if (!g_antiWallhackDebugWinLine.integer || level.time < other->client->antiwh.nextTestLineWin || visMemory->hidden) {
 		return;
 	}
 	G_TestLineBetter(self, self->client->antiwh.viewerBox[visMemory->winLineViewer].pos, other->client->antiwh.box[visMemory->winLineViewee].pos, 0x0000ff, 200);
 		other->client->antiwh.nextTestLine = level.time + 100;
 }
 
-static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
+static int SE_MustHidePlayer( gentity_t *viewer, gentity_t *viewee ) {
 	int i,j,viewerIndex,vieweeIndex,  contents;
 	int whVal = g_antiWallhack.integer < 0 ? -g_antiWallhack.integer : g_antiWallhack.integer;
 #if ANTIWH_PRETRACE
 	int preTraceFlags = 0
 #endif
 	int traceFlags = 0;
-	antiWallhackPlayerData_t* awhViewer = &self->client->antiwh;
-	antiWallhackPlayerData_t* awhViewee = &other->client->antiwh;
-	awhVis_t* visMemory = &awhViewee->visibleTo[self - g_entities];
+	antiWallhackPlayerData_t* awhViewer = &viewer->client->antiwh;
+	antiWallhackPlayerData_t* awhViewee = &viewee->client->antiwh;
+	awhVis_t* visMemory = &awhViewee->visibleTo[viewer - g_entities];
 	vec3_t enemyPointToViewerPoint;
 	awhBoxPt_t* viewerPt, * vieweePt;
 	float dot;
 	int inpvs;
 	int impossibleVieweePoints = 0;
+	int hideReasons = 0;
 	
 #if ANTIWH_PRETRACE
 	if (g_antiWallhackFast.integer == 1 && (coolApi & COOL_APIFEATURE_PRETRACE_TRACE)) {
@@ -565,17 +598,17 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 	}
 
 	// who cares, let him see.
-	if (other->health <= 0 || other->client->ps.stats[STAT_HEALTH] <= 0 || !other->r.linked || !self->r.linked) {
-		return qtrue;
+	if (viewee->health <= 0 || viewee->client->ps.stats[STAT_HEALTH] <= 0 || !viewee->r.linked || !viewer->r.linked) {
+		return 0;
 	}
 
-	if (g_antiWallhackVisibleRecalcDelay.integer && visMemory->visible && (level.time - g_antiWallhackVisibleRecalcDelay.integer) < visMemory->lastCheck) {
+	if (g_antiWallhackVisibleRecalcDelay.integer && !visMemory->hidden && (level.time - g_antiWallhackVisibleRecalcDelay.integer) < visMemory->lastCheck) {
 		// player was visible less than 0.15s ago. just don't bother rechecking. who cares.
-		return qtrue;
+		return 0;
 	}
 
-	SE_CheckUpdatePlayerBoxes(other, traceFlags & ~(TRACECUSTOMFLAG_WALKBRUSHES));
-	SE_CheckUpdatePlayerBoxes(self, traceFlags & ~(TRACECUSTOMFLAG_WALKBRUSHES));
+	SE_CheckUpdatePlayerBoxes(viewee, traceFlags & ~(TRACECUSTOMFLAG_WALKBRUSHES));
+	SE_CheckUpdatePlayerBoxes(viewer, traceFlags & ~(TRACECUSTOMFLAG_WALKBRUSHES));
 
 #if ANTIWH_PRETRACE // this used to be before SE_RenderPlayerChecks. doesn't make much sense now :) part of the reason i got rid of this, to make refactoring not a pita
 	if (preTraceFlags) {
@@ -601,7 +634,7 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 
 	if (visMemory->viewerBoxIndex == awhViewer->boxIndex && visMemory->vieweeBoxIndex == awhViewee->boxIndex) {
 		// nothing changed enough to warrant a recalc.
-		return visMemory->visible;
+		return visMemory->hidden;
 	}
 
 	// close enough that no wall can be in-between
@@ -613,54 +646,58 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 	//	visMemory->viewerBoxIndex = awhViewer->boxIndex;
 	//	visMemory->vieweeBoxIndex = awhViewee->boxIndex;
 	//}
-
-	inpvs = trap_InPVS(awhViewer->rOrigin, awhViewee->rOrigin);
+	
+	// using r.currentOrigin for the viewer makes it die a horrible death on ffa_bespin stairs near big shield
+	//	 if one person is on the stairs near the shield and another above him beind the railing (what's a better english word?) :)
+	// why? who the hell knows. it's actually WEIRD AS FUCK
+	// weirdest part is: it fixes it in both directions, but without the fix, jumping up from the stairs doesn't even fix it.
+	// even though r.currentOrigin is basically the same, just lower.
+	// BONUS: we now use a InPVSEntity trap that simulates the exact server snapshot PVS check, including multiple clusters for the viewed entity.
+	inpvs = G_AntiWH_InPVS(awhViewer->realViewHeightOrigin, viewee, awhViewee->rOrigin);
 
 	if (!inpvs) { // not in PVS. ignore.
-		visMemory->visible = qfalse;
+		visMemory->hidden = (1<<AWHFAIL_INPVS_SKIP);
 		visMemory->lastCheck = level.time;
 		visMemory->viewerBoxIndex = awhViewer->boxIndex;
 		visMemory->vieweeBoxIndex = awhViewee->boxIndex;
-		return qfalse;
+		return visMemory->hidden;
 	}
 	else if (g_antiWallhackFast.integer >= 2 && coolApi && inpvs > 1) {
 		// same leaf. consider visible.
-		visMemory->visible = qtrue;
+		visMemory->hidden = 0;
 		visMemory->lastCheck = level.time;
 		visMemory->viewerBoxIndex = awhViewer->boxIndex;
 		visMemory->vieweeBoxIndex = awhViewee->boxIndex;
+		return visMemory->hidden;
 	}
 
-	contents = G_AntiWH_PointContents(awhViewer->viewerBox[ANTIWH_WIDEBOX_FIRSTPERSONPOS].pos, self - g_entities);
+	contents = G_AntiWH_PointContents(awhViewer->viewerBox[ANTIWH_WIDEBOX_FIRSTPERSONPOS].pos, viewer - g_entities);
 
 	// translucent, we should probably just network them anyways
 	// TA: isnt this a bit stoopid? :/
 	if (contents & (CONTENTS_WATER | CONTENTS_LAVA | CONTENTS_SLIME)) {
-		visMemory->visible = qtrue;
+		visMemory->hidden = 0;
 		visMemory->lastCheck = level.time;
 		visMemory->viewerBoxIndex = awhViewer->boxIndex;
 		visMemory->vieweeBoxIndex = awhViewee->boxIndex;
-		return qtrue;
+		return visMemory->hidden;
 	}
 
 	// entirely in an opaque surface, no point networking them.
 	if (contents & (CONTENTS_SOLID | CONTENTS_TERRAIN | CONTENTS_OPAQUE)) {
-#ifdef _DEBUG
-		if (self->s.number == 0 && g_antiWallhack.integer < 0) {
-			Com_Printf("WALLHACK[%i]: inside opaque surface\n", level.time);
-		}
-#endif // _DEBUG
-		visMemory->visible = qfalse;
+		visMemory->hidden = (1<<AWHFAIL_INSURFACE);
 		visMemory->lastCheck = level.time;
 		visMemory->viewerBoxIndex = awhViewer->boxIndex;
 		visMemory->vieweeBoxIndex = awhViewee->boxIndex;
-		return qfalse;
+		return visMemory->hidden;
 	}
 
-	visMemory->visible = qfalse;
+	visMemory->hidden = (1<<AWHFAIL_NOPATHFOUND);
 	visMemory->lastCheck = level.time;
 	visMemory->viewerBoxIndex = awhViewer->boxIndex;
 	visMemory->vieweeBoxIndex = awhViewee->boxIndex;
+	visMemory->traces = 0;
+	visMemory->tracesTotal = 0;
 	for( j = 0; j < ANTIWH_WIDEBOX_SIZE; j++ ) {
 
 		viewerIndex = ( j + visMemory->winLineViewer ) % ANTIWH_WIDEBOX_SIZE;
@@ -670,7 +707,7 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 		}
 
 		if (!(awhViewer->boxCreatedBitmask & (1 << viewerIndex))) {
-			if (SE_CheckBoxIndex(&self->client->antiwh, viewerIndex, (other - g_entities), traceFlags)) {
+			if (SE_CheckBoxIndex(&viewer->client->antiwh, viewerIndex, (viewee - g_entities), traceFlags)) {
 				awhViewer->lastBoxUpdate = level.time;
 			}
 		}
@@ -679,16 +716,19 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 
 		for ( i = 0; i < ANTIWH_BOX_BASESIZE; i++ ) {
 
+			visMemory->tracesTotal++;
+
 			// optimization: start at the indexes that were successful last time (aka skip the indexes that failed previously and do them later)
 			// ideally we only need to recheck a single line again.
 			vieweeIndex = ( i + visMemory->winLineViewee ) % ANTIWH_BOX_BASESIZE;
 
 			if (impossibleVieweePoints & (1 << vieweeIndex)) {
+				visMemory->hidden |= (1<<AWHFAIL_IMPOSS_VIEWERPOINT_SKIP);
 				continue;
 			}
 
 			if (!(awhViewee->boxCreatedBitmask & (1 << vieweeIndex))) {
-				if (SE_CheckBoxIndex(&other->client->antiwh, vieweeIndex, (self - g_entities), traceFlags)) {
+				if (SE_CheckBoxIndex(&viewee->client->antiwh, vieweeIndex, (viewer - g_entities), traceFlags)) {
 					awhViewee->lastBoxUpdate = level.time;
 				}
 			}
@@ -700,8 +740,10 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 				if (dot < -1.0f) {
 					// well, there's a wall there, and the viewee point lies behind the plane of the wall so... no chance bucko.
 					if (dot < -awhViewee->boxMaxDiagonal) {
+						visMemory->hidden |= (1<<AWHFAIL_VIEWERPOINT_WALLBLOCK_PLANE_SKIP);
 						break; // yea this point lies behind the wall normal farther than the entire viewee max box size, so no chance ANY of the viewee points will be visible. may as well stop trying.
 					}
+					visMemory->hidden |= (1<<AWHFAIL_VIEWERPOINT_WALLBLOCK_PLANE_SKIP_HARD);
 					continue;
 				}
 			}
@@ -711,8 +753,10 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 				if (dot < -1.0f) {
 					// well, there's a wall there, and the viewer point lies behind the plane of the wall so... no chance bucko.
 					if (dot < -awhViewer->boxMaxDiagonal ) {
+						visMemory->hidden |= (1<<AWHFAIL_VIEWEEPOINT_WALLBLOCK_PLANE_SKIP_HARD);
 						impossibleVieweePoints |= (1 << vieweeIndex); // yea this viewer point lies behind the wall normal farther than the entire viewer max box size, so no chance ANY of the viewer points will see this viewee point. may as well stop trying.
 					}
+					visMemory->hidden |= (1<<AWHFAIL_VIEWEEPOINT_WALLBLOCK_PLANE_SKIP);
 					continue;
 				}
 			}
@@ -722,26 +766,23 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 				VectorNormalize(enemyPointToViewerPoint);
 				if (DotProduct(enemyPointToViewerPoint, boxToOriginDirs[viewerIndex]) > 0.707f) {
 					// if the viewer camera was at this place, there's no way we could see that enemy
+					visMemory->hidden |= (1<<AWHFAIL_VIEWERPOINT_DIRCHECK_SKIP);
 					continue;
 				}
 			}
 
-			if ( SE_RenderIsVisible( self, awhViewer->viewerBox[viewerIndex].pos, vieweePt->pos, qfalse, traceFlags) ) {
-				visMemory->visible = qtrue;
+			visMemory->traces++;
+			if ( SE_RenderIsVisible( viewer, awhViewer->viewerBox[viewerIndex].pos, vieweePt->pos, qfalse, traceFlags) ) {
+				visMemory->hidden = 0;
 				visMemory->winLineViewee = vieweeIndex;
 				visMemory->winLineViewer = viewerIndex;
-				return qtrue;
+				return visMemory->hidden;
 			}
 		}
 	}
 
-#ifdef _DEBUG
-	if ( self->s.number == 0 && g_antiWallhack.integer < 0) {
-		Com_Printf( "WALLHACK[%i]: not visible\n", level.time );
-	}
-#endif // _DEBUG
 
-	return qfalse;
+	return visMemory->hidden;
 }
 
 /*
@@ -772,8 +813,8 @@ static qboolean SE_RenderInFOV( gentity_t *self, const vec3_t testOrigin ) {
 // Tracing non-players seems to have a bad effect, we know players are limited to 32 per frame, however other gentities
 //	that are being added are not! It's stupid to actually add traces for it, even with a limited form i used before of 2
 //	traces per object. There are to many too track and simply networking them takes less FPS either way
-qboolean G_EntityOccluded( gentity_t *self, gentity_t *other ) {
-	qboolean network;
+int G_EntityOccluded( gentity_t *self, gentity_t *other ) {
+	int nonetwork;
 	// This is a non-player object, just send it (see above).
 	if ( !other->inuse || other->s.number >= level.maxclients ) {
 		return qtrue;
@@ -797,7 +838,28 @@ qboolean G_EntityOccluded( gentity_t *self, gentity_t *other ) {
 	*/
 
 	// Not rendering; this player's traces did not appear in my screen.
-	network = SE_NetworkPlayer(self, other);
+	nonetwork = SE_MustHidePlayer(self, other);
+
+#ifdef _DEBUG
+	if (nonetwork && self->s.number == 0 && g_antiWallhack.integer < 0) {
+		char failReasons[MAX_STRING_CHARS];
+		int i,added = 0;
+		awhVis_t* visMemory = &other->client->antiwh.visibleTo[self - g_entities];
+		*failReasons = '\0';
+		for (i = 0; i < AWHFAIL_COUNT_REASONS; i++) {
+			if (!(nonetwork & (1 << i))) {
+				continue;
+			}
+			if (added) {
+				Q_strcat(failReasons, sizeof(failReasons), ",");
+			}
+			Q_strcat(failReasons, sizeof(failReasons), awhHiddenReasonStrings[i]);
+			added++;
+		}
+		Com_Printf("WALLHACK[%i]: not visible;%s reasons: %s\n", level.time, (nonetwork & (1 << AWHFAIL_NOPATHFOUND)) ? multiva(" traces done: %d/%d;", visMemory->traces,visMemory->tracesTotal) : "", failReasons);
+	}
+#endif // _DEBUG
+
 	if (g_antiWallhackDebugBox.integer) {
 		SE_DebugBox(self);
 		SE_DebugBox(other);
@@ -805,11 +867,7 @@ qboolean G_EntityOccluded( gentity_t *self, gentity_t *other ) {
 	if (g_antiWallhackDebugWinLine.integer) {
 		SE_DebugWinLine(self,other);
 	}
-	if ( !network ) {
-		return qtrue;
-	}
-
-	return qfalse;
+	return nonetwork;
 }
 
 void G_UpdateClientBroadcastsAntiWallhack( gentity_t *self ) {

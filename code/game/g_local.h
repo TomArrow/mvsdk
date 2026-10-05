@@ -852,13 +852,31 @@ typedef struct bufferPrint_s {
 
 #define ANTIWH_PRETRACE 0 // this was a fun experiment but its actually slower in release builds. the bsp-tree trace is much faster. don't wanna keep maintaining it so i'm defining it out and keeping it only as a historical curiosity.
 
+typedef enum awhHiddenReasons_s {
+	AWHFAIL_NOPATHFOUND,
+	AWHFAIL_INSURFACE,
+	AWHFAIL_INPVS_SKIP,
+	AWHFAIL_IMPOSS_VIEWERPOINT_SKIP,
+	AWHFAIL_VIEWERPOINT_WALLBLOCK_PLANE_SKIP,
+	AWHFAIL_VIEWERPOINT_WALLBLOCK_PLANE_SKIP_HARD,
+	AWHFAIL_VIEWEEPOINT_WALLBLOCK_PLANE_SKIP,
+	AWHFAIL_VIEWEEPOINT_WALLBLOCK_PLANE_SKIP_HARD,
+	AWHFAIL_VIEWERPOINT_DIRCHECK_SKIP,
+	AWHFAIL_VIEWERPOINT_TRACE_FAIL,
+	AWHFAIL_COUNT_REASONS
+}awhHiddenReasons_t;
+
+extern const char* awhHiddenReasonStrings[AWHFAIL_COUNT_REASONS];
+
 typedef struct awhVis_s {
-	qboolean	visible;
+	int			hidden; // bitmask of reasons (awhHiddenReasons_t)
 	int			winLineViewer;
 	int			winLineViewee;
 	int			lastCheck;
 	int			viewerBoxIndex;
 	int			vieweeBoxIndex;
+	int			traces;
+	int			tracesTotal;
 } awhVis_t;
 
 typedef struct awhBoxPt_s {
@@ -883,8 +901,9 @@ typedef struct antiWallhackPlayerData_s {
 	vec3_t		boxCenter, boxMins, boxMaxs;
 #endif
 	vec3_t		origin;
-	vec3_t		rOrigin;
 	vec3_t		altOrigin; // for the top box parts, we trace from here
+	vec3_t		rOrigin; // linked entity origin
+	vec3_t		realViewHeightOrigin;
 	int			maxsZ;
 	awhBoxPt_t	box[ANTIWH_BOX_BASESIZE];		// viewee
 	float		boxMaxDiagonal;
@@ -1484,6 +1503,7 @@ void trap_G_COOL_API_CrossServerCommand(const char* cmd);
 int	trap_G_COOL_API_Benchmark(const int flags, const int param1, const int param2, const int param3, float* multiResultArr, const int multiResultArrSize);
 int trap_G_COOL_API_PointContentsHullFast(const vec3_t point);
 qboolean trap_G_COOL_API_MakeASCIIMinimap(const char* bspFile, char* buffer, int buffersize, int width, int height, qboolean autoshrink, byte* floatbuf, int floatbufsize, int* finalWidth, int* finalHeight); // floatbuf is optional for raw normal data returned
+int trap_G_COOL_API_InPVSEntity(const vec3_t p1, gentity_t* ent);
 
 //qboolean	trap_G_COOL_API_DB_EscapeString(char* input, int size);
 //qboolean	trap_G_COOL_API_DB_AddRequest(byte* reference, int referenceLength, int requestType, const char* request);
@@ -2078,6 +2098,7 @@ extern	vmCvar_t	g_intermissionReadyCheck;
 
 extern	vmCvar_t	g_antiWallhack;
 extern	vmCvar_t	g_antiWallhackFast;
+extern	vmCvar_t	g_antiWallhackFastPVS;
 extern	vmCvar_t	g_antiWallhackEnforceVis;
 extern	vmCvar_t	g_antiWallhackBoxSize;
 extern	vmCvar_t	g_antiWallhackRecalcOffset;
