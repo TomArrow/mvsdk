@@ -604,8 +604,8 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 
 			if ( SE_RenderIsVisible( self, self->client->antiwh.viewerBox[viewerIndex], other->client->antiwh.box[vieweeIndex], qfalse, traceFlags) ) {
 				visMemory->visible = qtrue;
-				visMemory->winLineViewee = viewerIndex;
-				visMemory->winLineViewer = vieweeIndex;
+				visMemory->winLineViewee = vieweeIndex;
+				visMemory->winLineViewer = viewerIndex;
 				return qtrue;
 			}
 		}
