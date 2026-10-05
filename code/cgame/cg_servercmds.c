@@ -476,6 +476,44 @@ static void CG_ShaderStateChanged( const char *o ) {
 	}
 }
 
+const char* possibleLocationParts[] = {
+	"(A)",
+	"(B)",
+	" B)",
+	" A)",
+	"(B ",
+	"(A ",
+};
+const int possibleLocationPartsCount = sizeof(possibleLocationParts) / sizeof(possibleLocationParts[1]);
+static void CG_SetLocationString( int num, const char* str) {
+	int len = strlen(str);
+	cgs.locationStringOverrides[num][0] = '\0';
+	if (len + 4 < sizeof(cgs.locationStringOverrides[num]) && !Q_stricmpn(cgs.mapname, "maps/ctf_yavin", 14) && str[0] == '^' && (str[1] == '1' || str[1] == '5')) {
+		int i;
+		team_t team = str[1] == '5' ? TEAM_BLUE : TEAM_RED;
+		int type = 0;
+		const char* aOrB = NULL;
+		const char* replacement = NULL;
+		for (i = 0; i < possibleLocationPartsCount && !aOrB; i++) {
+			aOrB = strstr(str, possibleLocationParts[i]);
+		}
+		if (aOrB) {
+			if (aOrB[1] == 'A' && team == TEAM_BLUE || aOrB[1] == 'B' && team == TEAM_RED) {
+
+				replacement = "Right";
+			}
+			else {
+				replacement = "Left";
+			}
+		}
+		if (replacement) {
+			Q_strncpyz(cgs.locationStringOverrides[num], str, MIN(sizeof(cgs.locationStringOverrides[num]), aOrB - str + 1 + 1));
+			Q_strcat(cgs.locationStringOverrides[num], sizeof(cgs.locationStringOverrides[num]), replacement);
+			Q_strcat(cgs.locationStringOverrides[num], sizeof(cgs.locationStringOverrides[num]), aOrB+2);
+		}
+	}
+}
+
 /*
 ================
 CG_ConfigStringModified
@@ -524,6 +562,10 @@ void CG_UpdateConfigString( int num, qboolean init )
 		if ( (!init || str[0]) /*&& str[0] != '*'*/ ) {
 			cgs.gameEffects[ num-CS_EFFECTS ] = trap_FX_RegisterEffect( str );
 		}
+	}
+	else if ( num >= CS_LOCATIONS && num < CS_LOCATIONS +MAX_LOCATIONS )
+	{
+		CG_SetLocationString(num-CS_LOCATIONS,str);
 	}
 	else if ( num >= CS_PLAYERS && num < CS_PLAYERS+MAX_CLIENTS )
 	{

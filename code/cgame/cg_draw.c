@@ -3717,6 +3717,15 @@ static float CG_DrawRamps( float y ) {
 }
 
 
+const char* CG_GetLocationString(int location) {
+	if (!cg_drawTeamOverlayLocationOverrides.integer || !*cgs.locationStringOverrides[location]) {
+		return CG_ConfigString(CS_LOCATIONS + location);
+	}
+	else {
+		return cgs.locationStringOverrides[location];
+	}
+}
+
 /*
 =================
 CG_DrawTeamOverlay
@@ -3790,7 +3799,7 @@ static float CG_DrawTeamOverlay( float y, qboolean right, qboolean upper ) {
 	// max location name width
 	lwidth = 0;
 	for (i = 1; i < MAX_LOCATIONS; i++) {
-		p = CG_ConfigString(CS_LOCATIONS + i);
+		p = CG_GetLocationString(i);
 		if (p && *p) {
 			len = CG_DrawStrlen(p);
 			if (len > lwidth)
@@ -3846,7 +3855,7 @@ static float CG_DrawTeamOverlay( float y, qboolean right, qboolean upper ) {
 				TINYCHAR_WIDTH, TINYCHAR_HEIGHT, TEAM_OVERLAY_MAXNAME_WIDTH);
 
 			if (lwidth) {
-				p = CG_ConfigString(CS_LOCATIONS + ci->location);
+				p = CG_GetLocationString(ci->location);
 				if (!p || !*p)
 					p = "unknown";
 				len = CG_DrawStrlen(p);

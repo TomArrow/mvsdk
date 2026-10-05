@@ -531,6 +531,22 @@ static void target_location_linkup(gentity_t *entCaller)
 
 	n = 1;
 	while (ent = G_FindByClassNameFast(ent,"target_location")) {
+
+		if (n >= MAX_LOCATIONS) {
+			gentity_t* tmp;
+			G_Printf("Maximum target_locations hit (%d)! Remaining locations will be removed.\n", MAX_LOCATIONS);
+			while(ent) {
+				tmp = ent->nextHashed;
+				G_FreeEntity(ent);
+				ent = tmp;
+			}
+			while (ent = G_FindByClassName(ent, "target_location")) {
+				// can't do G_FindByClassNameFast because freeing the entity will break it.
+				G_FreeEntity(ent);
+			}
+			return;
+		}
+
 		// lets overload some variables!
 		ent->health = n; // use for location marking
 		trap_SetConfigstring( CS_LOCATIONS + n, ent->message );

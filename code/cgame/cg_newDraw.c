@@ -512,7 +512,7 @@ void CG_DrawNewTeamInfo(rectDef_t *rect, float text_x, float text_y, float scale
 	// max location name width
 	lwidth = 0;
 	for (i = 1; i < MAX_LOCATIONS; i++) {
-		p = CG_ConfigString(CS_LOCATIONS + i);
+		p = CG_GetLocationString(i);
 		if (p && *p) {
 			len = CG_Text_Width(p, scale, 0, NULL);
 			if (len > lwidth)
@@ -586,7 +586,7 @@ void CG_DrawNewTeamInfo(rectDef_t *rect, float text_x, float text_y, float scale
 
 			CG_Text_Paint_Limit(&maxx, xx, y + text_y, scale, color, ci->name, 0, 0, FONT_MEDIUM); 
 
-			p = CG_ConfigString(CS_LOCATIONS + ci->location);
+			p = CG_GetLocationString(ci->location);
 			if (!p || !*p) {
 				p = "unknown";
 			}

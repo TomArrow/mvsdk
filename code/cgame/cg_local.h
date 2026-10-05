@@ -1698,6 +1698,7 @@ typedef struct {
 	qhandle_t		gameModels[MAX_MODELS];
 	sfxHandle_t		gameSounds[MAX_SOUNDS];
 	fxHandle_t		gameEffects[MAX_FX];
+	char			locationStringOverrides[MAX_LOCATIONS][64];
 /*
 Ghoul2 Insert Start
 */
@@ -1821,6 +1822,7 @@ extern	vmCvar_t		cg_drawScores;
 extern	vmCvar_t		cg_dynamicCrosshair;
 extern	vmCvar_t		cg_drawRewards;
 extern	vmCvar_t		cg_drawTeamOverlay;
+extern	vmCvar_t		cg_drawTeamOverlayLocationOverrides;
 extern	vmCvar_t		cg_drawTeamOverlayMaxPlayers;
 extern	vmCvar_t		cg_drawTeamOverlayFollowTeamOnly;
 extern	vmCvar_t		cg_teamOverlayUserinfo;
@@ -2366,6 +2368,7 @@ qboolean CG_YourTeamHasFlag(void);
 qboolean CG_OtherTeamHasFlag(void);
 clientInfo_t *CG_GetFlagCarrier(team_t flag);
 qhandle_t CG_StatusHandle(int task);
+const char* CG_GetLocationString(int location);
 
 
 // 

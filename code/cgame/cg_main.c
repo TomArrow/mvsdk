@@ -777,6 +777,7 @@ vmCvar_t	cg_predictItems;
 vmCvar_t	cg_deferPlayers;
 vmCvar_t	cg_deferPlayersDebug;
 vmCvar_t	cg_drawTeamOverlay;
+vmCvar_t	cg_drawTeamOverlayLocationOverrides;
 vmCvar_t	cg_drawTeamOverlayMaxPlayers;
 vmCvar_t	cg_drawTeamOverlayFollowTeamOnly;
 vmCvar_t	cg_teamOverlayUserinfo;
@@ -1208,6 +1209,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_deferPlayers, "cg_deferPlayers", "1", CVAR_ARCHIVE },
 	{ &cg_deferPlayersDebug, "cg_deferPlayersDebug", "0", CVAR_TEMP },
 	{ &cg_drawTeamOverlay, "cg_drawTeamOverlay", "0", CVAR_ARCHIVE },
+	{ &cg_drawTeamOverlayLocationOverrides, "cg_drawTeamOverlayLocationOverrides", "0", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlayMaxPlayers, "cg_drawTeamOverlayMaxPlayers", "32", CVAR_ARCHIVE },
 	{ &cg_drawTeamOverlayFollowTeamOnly, "cg_drawTeamOverlayFollowTeamOnly", "0", CVAR_ARCHIVE },
 	{ &cg_teamOverlayUserinfo, "teamoverlay", "2", CVAR_ROM | CVAR_USERINFO },
@@ -2211,6 +2213,21 @@ static void CG_RegisterEffects( void )
 
 	// Set up the glass effects mini-system.
 	CG_InitGlass();
+}
+
+//-------------------------------------
+// CG_RegisterLocations
+// 
+// Applies optional location overrides
+// 
+static void CG_RegisterLocations( void )
+{
+	int			i;
+
+	for ( i = 0 ; i < MAX_LOCATIONS ; i++ ) 
+	{
+		CG_UpdateConfigString( CS_LOCATIONS + i, qtrue );
+	}
 }
 
 //===================================================================================
@@ -3954,6 +3971,8 @@ Ghoul2 Insert End
 	CG_RegisterGraphics();
 
 	JKMod_CG_RegisterMedia();
+
+	CG_RegisterLocations(); // this is very lightweight, meh
 
 	CG_LoadingString( "clients" );
 
