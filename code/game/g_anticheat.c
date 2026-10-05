@@ -473,6 +473,17 @@ static void SE_DebugBox( gentity_t* self ) {
 	}
 }
 
+static void SE_DebugWinLine( gentity_t* self, gentity_t* other) {
+	int i,b;
+	vec3_t* box;
+	awhVis_t* visMemory = &other->client->antiwh.visibleTo[self - g_entities];
+	if (!g_antiWallhackDebugWinLine.integer || level.time < other->client->antiwh.nextTestLineWin || !visMemory->visible) {
+		return;
+	}
+	G_TestLineBetter(self, self->client->antiwh.viewerBox[visMemory->winLineViewer], other->client->antiwh.box[visMemory->winLineViewee], 0x0000ff, 200);
+		other->client->antiwh.nextTestLine = level.time + 100;
+}
+
 static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 	int i,j,viewerIndex,vieweeIndex,  contents;
 	int whVal = g_antiWallhack.integer < 0 ? -g_antiWallhack.integer : g_antiWallhack.integer;
@@ -592,10 +603,6 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 			}
 
 			if ( SE_RenderIsVisible( self, self->client->antiwh.viewerBox[viewerIndex], other->client->antiwh.box[vieweeIndex], qfalse, traceFlags) ) {
-				if (g_antiWallhackDebugWinLine.integer && level.time >= other->client->antiwh.nextTestLineWin) {
-					G_TestLineBetter(self,self->client->antiwh.viewerBox[viewerIndex], other->client->antiwh.box[vieweeIndex], 0x0000ff, 200);
-					other->client->antiwh.nextTestLine = level.time + 100;
-				}
 				visMemory->visible = qtrue;
 				visMemory->winLineViewee = viewerIndex;
 				visMemory->winLineViewer = vieweeIndex;
@@ -670,6 +677,9 @@ qboolean G_EntityOccluded( gentity_t *self, gentity_t *other ) {
 	if (g_antiWallhackDebugBox.integer) {
 		SE_DebugBox(self);
 		SE_DebugBox(other);
+	}
+	if (g_antiWallhackDebugWinLine.integer) {
+		SE_DebugWinLine(self,other);
 	}
 	if ( !network ) {
 		return qtrue;
