@@ -4442,6 +4442,124 @@ static qboolean CG_AdjustPositionForClientTimeMover(const vec3_t in, int moverNu
 	// FIXME: origin change when on a rotating object
 }
 
+int GetPlayerVisibilityForPlayer(gclient_t* cl, qboolean canSeeTASClients, gclient_t* ocl) {
+	qboolean ignore = 
+		// machine learning tas client hiding (but don't hide clients that could hurt us)
+		(!canSeeTASClients && (ocl->pers.tasClient & TASCLIENT_MACHINELEARNING) && (ocl->sess.raceMode || ocl->sess.mode != cl->sess.mode))
+		
+		// hide others when ignoring (nah don't do it)
+		//|| (cl->sess.ignore & (1 << i))
+
+		// hide others when soloing
+		|| cl->sess.solo == SOLO_ALL 
+
+		// hide others when soloing in same-style mode and their style is different
+		|| cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
+	return ignore ? -1 : 0;
+}
+
+
+// 1=  force visibility. 0 = no change. -1 = hide!
+// mvEnt must be UNCHANGED mvSharedEntity of other before any hacking!!
+int GetEntVisibilityForPlayer(int clientNum, int entNum, gentity_t* other, mvsharedEntity_t* mvEnt) {
+	gentity_t* ent = g_entities + clientNum;
+	gclient_t* cl = ent->client;
+	gclient_t* ocl;
+	entityState_t* es = &other->s;
+	qboolean	canSeeTASClients = (cl->sess.solo == SOLO_SHOWALL || cl->pers.isHeadlessClient || (cl->pers.ttClientFlags & TTFLAGS_CLIENT_SHOWALLPLAYERSINCLUDINGMLBOTS));
+	int tmp;
+	int ignore = mvEnt->snapshotIgnoreRealClient[clientNum];
+	int enforce = mvEnt->snapshotEnforceRealClient[clientNum];
+	//int followedClientNum = (cl->sess.spectatorState == SPECTATOR_FOLLOW && cl->sess.spectatorClient >= 0 && cl->sess.spectatorClient < MAX_CLIENTS) ? cl->sess.spectatorClient : clientNum;
+	int followedClientNum = cl->ps.clientNum; // is this simplification ok? should be, right? we are at snapshot creation stage, this is all that really matters?
+	gentity_t* followedEnt = g_entities + followedClientNum;
+	gclient_t* followedClient = followedEnt->client;
+
+	if (ignore > 0) { 
+		// if game already wants ignore (e.g. antiwallhack), skip all this.
+		// ignore overrides enforce in engine so any possible enforce doesn't matter anymore.
+		return -ignore;
+	}
+	
+#define APPLYVIS(vis) if(vis < 0 ){ ignore++; } else if (vis > 0) { enforce++; }
+
+	// player vents (hop sounds and such)
+	if (es->eFlags & EF_PLAYER_EVENT) {
+		gclient_t* eventClient = g_entities[es->otherEntityNum].client;
+		if (eventClient != followedClient && eventClient != cl) {
+			// EF_PLAYER_EVENT is already automatically skipped in engine for whoever we are following and for ourselves.
+			// Since you know... playerstate has that info already
+			tmp = GetPlayerVisibilityForPlayer(cl, canSeeTASClients, eventClient);
+			APPLYVIS(tmp);
+		}
+	}
+
+	// these are things where we choose purely based on ourselves:
+	if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex || other->hideFromActiveRacers) { // dont send global screenshakes to active players unless they are not in a run
+		if (cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime) {
+			ignore++;
+		}
+	}
+
+	// these are things where we choose either based on ourselves or whoever we are following:
+	if (es->eType == ET_PUSH_TRIGGER || es->eType == ET_TELEPORT_TRIGGER) {
+		if (other->notCPM) {
+			if (followedClient->sess.raceMode && !MovementStyleHasVQ3OnlyJumppads(followedClient->sess.raceStyle.movementStyle)) {
+				ignore++;
+			}
+		}
+		else if (other->notVQ3) {
+			if (followedClient->sess.raceMode && !MovementStyleHasCPMOnlyJumppads(followedClient->sess.raceStyle.movementStyle)) {
+				ignore++;
+			}
+		}
+	}
+
+	if (es->eType == ET_ITEM) {
+		if (((followedClient->entityStates[entNum] || followedClient->triggerTimes[entNum] >= followedClient->pers.cmd.serverTime) && followedClient->sess.raceMode)
+			|| ((other->goneForNonRacers || other->availableTimeForNonRacers >= level.time) && !followedClient->sess.raceMode)) {
+			ignore++;
+		}
+	}
+
+	if (other->belongsToParent) { // sniper shots, lightning, etc
+		if (other->parent != ent && other->parent != followedEnt) { // our own and our followed's things are allowed by default
+			// shouldn't really need this check but let's be safe
+			tmp = GetPlayerVisibilityForPlayer(cl, canSeeTASClients, other->parent->client);
+			APPLYVIS(tmp);
+		}
+	}
+
+	// TODO rethink this. see comments below.
+	if (es->eType == ET_BEAM &&/* other->parent != ent &&*/ es->generic1 == 3) {
+		if (other->parent != ent) {
+			if (cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner))) { // don't wanna see lasers period
+				ignore++;
+			}
+			else { // otherwise treat same as any other player-owned thing 
+				tmp = GetPlayerVisibilityForPlayer(cl, canSeeTASClients, other->parent->client);
+				APPLYVIS(tmp);
+			}
+		}
+	}
+	if (other->client) {
+		ocl = other->client;
+		if (ocl != followedClient && ocl != cl) {
+			// obviously only point to do this if we are not this person or not following this person
+			tmp = GetPlayerVisibilityForPlayer(cl, canSeeTASClients, ocl);
+			APPLYVIS(tmp);
+		}
+	}
+
+	if (ignore > 0) { // ignore takes precedence over enforce in engine
+		return -ignore;
+	}
+	else {
+		return enforce; // will be 0 if no enforce.
+	}
+}
+
+
 
 typedef struct playerSnapshotBackupValues_s {
 	int solidValue;
@@ -4473,6 +4591,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 	gclient_t* soloRelevantClient = (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) ? cl : followedClient;
 	qboolean	canSeeTASClients = (soloRelevantClient->sess.solo == SOLO_SHOWALL || soloRelevantClient->pers.isHeadlessClient || (soloRelevantClient->pers.ttClientFlags & TTFLAGS_CLIENT_SHOWALLPLAYERSINCLUDINGMLBOTS));
 	int i, originalValueReusable;
+	int visibility;
 	for (i = 0; i < level.num_entities; i++, backup++, mvEnt++) {
 		other = g_entities + i;
 		if (!other->r.linked || !other->inuse) {
@@ -4499,59 +4618,21 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 			es->solid = originalValueReusable;
 		}
 
-		if (es->eFlags & EF_PLAYER_EVENT) {
-			gclient_t* eventClient = g_entities[es->otherEntityNum].client;
-			#define IGNORETAS (!canSeeTASClients && (eventClient->pers.tasClient & TASCLIENT_MACHINELEARNING) && (eventClient->sess.raceMode || eventClient->sess.mode != cl->sess.mode)) // don't hide clients that could hurt us
+		visibility = GetEntVisibilityForPlayer(clientNum, i, other, &backup->mvEntState);
+		if (visibility < 0) {
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnoreRealClient[clientNum] = MIN(-visibility,255);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && eventClient && (eventClient->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && eventClient->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
-			}
-			#undef IGNORETAS
-		}
-
-		if (es->eType == ET_PUSH_TRIGGER || es->eType == ET_TELEPORT_TRIGGER) {
-			if (other->notCPM) {
-				mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[followedClientNum] || followedClient->sess.raceMode && !MovementStyleHasVQ3OnlyJumppads(followedClient->sess.raceStyle.movementStyle);
-			}
-			else if (other->notVQ3) {
-				mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[followedClientNum] || followedClient->sess.raceMode && !MovementStyleHasCPMOnlyJumppads(followedClient->sess.raceStyle.movementStyle);
+				mvEnt->snapshotIgnore[followedClientNum] = MIN(-visibility, 255);
 			}
 		}
-
-		if (es->eType == ET_ITEM) {
-			mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[followedClientNum] ||
-				((followedClient->entityStates[i] || followedClient->triggerTimes[i] >= followedClient->pers.cmd.serverTime) && followedClient->sess.raceMode)
-				|| ((other->goneForNonRacers || other->availableTimeForNonRacers >= level.time) && !followedClient->sess.raceMode);
-		}
-
-		if (es->eType == (ET_EVENTS + EV_SCREENSHAKE) && !es->modelindex || other->hideFromActiveRacers) { // dont send global screenshakes to active players unless they are not in a run
+		else if (visibility > 0) {
 			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] ||  cl->sess.sessionTeam != TEAM_SPECTATOR && other->parent != ent && cl->pers.raceStartCommandTime;
+				mvEnt->snapshotEnforceRealClient[clientNum] = MIN(-visibility, 255);
 			}
 			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = backup->mvEntState.snapshotIgnore[clientNum] || followedClient->sess.sessionTeam != TEAM_SPECTATOR && other->parent != followedEnt && followedClient->pers.raceStartCommandTime;
-			}
-		}
-
-		if (other->belongsToParent) { // sniper shots, lightning, etc
-			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] || other->parent != ent && cl->sess.solo > 0 && other->parent != followedEnt; // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
-			}
-			else { // wait wtf. why so complicated? we can respect wishes of this player no? since it gets updated on each target client anyway
-				mvEnt->snapshotIgnore[followedClientNum] = backup->mvEntState.snapshotIgnore[clientNum] = mvEnt->snapshotIgnore[clientNum] || other->parent != followedEnt && followedClient->sess.solo > 0; // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
-			}
-		}
-
-		// TODO rethink this. see comments below.
-		if (es->eType == ET_BEAM &&/* other->parent != ent &&*/ es->generic1 == 3) {
-			//mvEnt->snapshotIgnore[clientNum] = cl->sess.solo || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner));
-			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = backup->mvEntState.snapshotIgnoreRealClient[clientNum] || other->parent != ent && ((cl->sess.solo > 0 && other->parent != followedEnt) || cl->sess.hideLasers || (cl->sess.ignore & (1 << es->owner))); // if engine suppoorts it, respect wishes of spectator instead of client that's being followed
-			}
-			else { // wait wtf. why so complicated? we can respect wishes of this player no? since it gets updated on each target client anyway
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = backup->mvEntState.snapshotIgnore[clientNum] || other->parent != followedEnt && (followedClient->sess.solo > 0 || followedClient->sess.hideLasers || (followedClient->sess.ignore & (1 << es->owner))); // snapshot of the follower might happen before the client himself, and snapshotIgnore is based on clientnum in ps. Uhm does that make sense?
+				mvEnt->snapshotEnforce[followedClientNum] = MIN(-visibility, 255);
 			}
 		}
 
@@ -4566,15 +4647,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 		if (other->client) {
 			ocl = other->client;
-			#define IGNORETAS (!canSeeTASClients && (ocl->pers.tasClient & TASCLIENT_MACHINELEARNING) && (ocl->sess.raceMode || ocl->sess.mode != cl->sess.mode)) // don't hide clients that could hurt us
-			//mvEnt->snapshotIgnore[clientNum] = /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo;
-			if (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) {
-				mvEnt->snapshotIgnoreRealClient[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnoreRealClient[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ cl->sess.solo == SOLO_ALL || cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
-			}
-			else {
-				mvEnt->snapshotIgnore[followedClientNum] = mvEnt->snapshotIgnore[clientNum] = IGNORETAS || backup->mvEntState.snapshotIgnore[clientNum] || /*(cl->sess.ignore & (1 << i)) ||*/ followedClient->sess.solo == SOLO_ALL || followedClient->sess.solo == SOLO_STYLE && (ocl->sess.mode != followedClient->sess.mode || followedClient->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != followedClient->sess.raceStyle.movementStyle);
-			}
-			#undef IGNORETAS
+			
 			if (saveState) { 
 				backup->saberMovePS = ocl->ps.saberMove;
 				backup->pmfFollowPS = ocl->ps.pm_flags & PMF_FOLLOW;
