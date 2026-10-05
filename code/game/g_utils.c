@@ -118,6 +118,31 @@ int G_EffectIndex( const char *name )
 
 //=====================================================================
 
+// sets a bit in the clientmask for any client that is able to see the provided entity
+void G_GetClientsPVSMask(gentity_t* entityToSee,qboolean serverLike, int clientMask[2]) {
+	int i;
+	gentity_t* ent = g_entities;
+	int vis;
+	vec3_t pos;
+	for (i = 0; i < level.maxclients; i++, ent++) {
+		if (!ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED) {
+			continue;
+		}
+		VectorCopy(ent->client->ps.origin,pos);
+		pos[2] += ent->client->ps.viewheight;
+		if (serverLike && (coolApi & COOL_APIFEATURE_INPVSENTITY)) {
+			vis = trap_G_COOL_API_InPVSEntity(pos, entityToSee);
+		}
+		else {
+			vis = trap_InPVS(pos, entityToSee->r.currentOrigin);
+		}
+		if (vis) {
+			clientMask[ent->s.number / 32] |= (1 << (ent->s.number % 32));
+		}
+	}
+
+}
+
 
 /*
 ================

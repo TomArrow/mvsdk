@@ -1427,6 +1427,7 @@ void	G_KillG2Queue(int entNum);
 void	G_FreeEntity( gentity_t *e );
 qboolean	G_EntitiesFree( void );
 int		generateHashValue(const char* fname, const int size);
+void	G_GetClientsPVSMask(gentity_t* entityToSee, qboolean serverLike, int clientMask[2]);
 
 void	G_TouchTriggers (gentity_t *ent);
 void	G_TouchSolids (gentity_t *ent);
@@ -1819,7 +1820,7 @@ qboolean DF_KeepClientZombie(gentity_t* ent);
 void DF_UpdateRanksMainRequest(gentity_t* requesterOrNull, const char* courseNameOrNull, qboolean forceAll, int limitCount);
 void G_SaveClipDemo(gentity_t* ent, const char* demoname, const char* clipPrint);
 const char* G_GetSanitizedCourseName();
-void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn);
+void G_FastDBSEffects(gentity_t* ent, gentity_t* target, float speed, qboolean isReturn);
 void G_SendOrPrint(gentity_t* playerOrNull, const char* text);
 void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean normalPrint, const char* text, qboolean includeSpectators);
 void G_BufferedSendOrPrintFlush(gentity_t* playerOrNull, qboolean broadcast, qboolean includeSpectators);
@@ -2194,6 +2195,10 @@ extern	vmCvar_t	g_crossServerDefragTimes;
 extern	vmCvar_t	g_teamOverlaySpecAll;
 extern	vmCvar_t	g_teamOverlayDynamic;
 extern	vmCvar_t	g_teamOverlayDynamicIgnoreDecay;
+
+
+extern	vmCvar_t	g_dbsShake;
+extern	vmCvar_t	g_dbsShakeIntensity;
 
 // vvv-serverSide features port
 extern	vmCvar_t	g_pauseGame;

@@ -544,7 +544,8 @@ void G_EnqueueClipDemo(int clientnum, const char* command, int executionTime) {
 
 }
 
-void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn) {
+
+void G_FastDBSEffects(gentity_t* ent, gentity_t* target, float speed, qboolean isReturn) {
 	const char* soundFile = "sound/weapons/rocket/lock.wav";
 	float shakeIntensity = 2.0f;
 	int shakeDuration = 400;
@@ -552,6 +553,9 @@ void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn) {
 		speed *= 0.5f;
 	}
 	if (speed < 700) {
+		return;
+	}
+	if (!g_dbsShake.integer) {
 		return;
 	}
 	// TODO precache these sounds if they end up causing lag for players similar to connectlag?
@@ -599,7 +603,25 @@ void G_FastDBSEffects(gentity_t* ent, float speed, qboolean isReturn) {
 		se->hideFromActiveRacers = qtrue; // don't bother racers with it
 	}
 	if (shakeIntensity) {
-		G_ScreenShake(ent->client->ps.origin, NULL, shakeIntensity, shakeDuration, qtrue);
+		gentity_t* shake = G_ScreenShake(ent->client->ps.origin, NULL, shakeIntensity*g_dbsShakeIntensity.value, shakeDuration, g_dbsShake.integer >= 4);
+		if (g_dbsShake.integer < 3 ) {
+			int targetClient = target - g_entities;
+			mvsharedEntity_t* mvEnt = mv_entities + (shake-g_entities);
+			// when 4, send to everyone
+			// when 3, send to everyone who was in pvs
+			// when 2, send to victim too
+			// when 1, only send to client that caused it
+
+			shake->r.svFlags |= SVF_NOCLIENT; // overridden by snapshotEnforce
+
+			// we explicitly want followers of them to see it too, so not using snapshotEnforceReal.
+			mvEnt->snapshotEnforce[ent - g_entities] = qtrue;
+			if (g_dbsShake.integer > 1 && targetClient >= 0 && targetClient < MAX_CLIENTS) {
+				mvEnt->snapshotEnforce[targetClient] = qtrue;
+			}
+		}
+		shake->parent = ent;
+		shake->belongsToParent = qtrue;
 	}
 }
 

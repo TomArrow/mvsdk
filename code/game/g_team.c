@@ -392,7 +392,7 @@ void Team_FragBonuses(gentity_t *targ, gentity_t *inflictor, gentity_t *attacker
 				int speed = XYSPEED(attacker->client->ps.velocity);
 				speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
 				G_SaveClipDemo(attacker, multiva("ctfDBSreturnover600ups_%dups", speed), multiva("CTF DBS return over 600 ups at %d ups", speed));
-				G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qtrue);
+				G_FastDBSEffects(attacker,targ, XYSPEED(attacker->client->ps.velocity), qtrue);
 			}
 		}
 

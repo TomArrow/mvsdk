@@ -2185,7 +2185,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 			int speed = XYSPEED(attacker->client->ps.velocity);
 			speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
 			G_SaveClipDemo(attacker, multiva("dbskillover750ups_%dups", speed), multiva("dbs kill over 750 ups at %d ups", speed));
-			G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity), qfalse);
+			G_FastDBSEffects(attacker, self, XYSPEED(attacker->client->ps.velocity), qfalse);
 		}
 	}
 
@@ -2207,7 +2207,7 @@ void player_die( gentity_t *self, gentity_t *inflictor, gentity_t *attacker, int
 						int speed = XYSPEED(attacker->client->ps.velocity);
 						speed = MAX(speed, attacker->client->pers.lastDbsSpeed);
 						G_SaveClipDemo(attacker, multiva("ironmanDbsReturnOver600ups_%dups", speed), multiva("ironman DBS return over 600 ups at %d ups", speed));
-						G_FastDBSEffects(attacker, XYSPEED(attacker->client->ps.velocity),qtrue);
+						G_FastDBSEffects(attacker, self, XYSPEED(attacker->client->ps.velocity),qtrue);
 					}
 				}
 				AddScore(attacker, self->r.currentOrigin, CTF_FRAG_CARRIER_BONUS);

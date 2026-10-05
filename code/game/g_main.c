@@ -264,6 +264,9 @@ vmCvar_t	g_teamOverlayDynamic;
 vmCvar_t	g_teamOverlayDynamicIgnoreDecay;
 
 
+vmCvar_t	g_dbsShake;
+vmCvar_t	g_dbsShakeIntensity;
+
 
 // vvv-serverSide features port
 vmCvar_t	g_pauseGame;
@@ -540,6 +543,9 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 	// 4 = force lightning damage
 	// 8 = shield charger armor increase
 	// 15 = all together
+
+	{ &g_dbsShake, "g_dbsShake", "3", 0, 0, qfalse},
+	{ &g_dbsShakeIntensity, "g_dbsShakeIntensity", "1.0", 0, 0, qfalse},
 
 	{ &g_rankings, "g_rankings", "0", 0, 0, qfalse},
 
