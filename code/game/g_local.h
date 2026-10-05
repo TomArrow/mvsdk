@@ -761,6 +761,7 @@ typedef struct {
 	} df_checkpointData;
 
 	int			laserPointerNum;
+	int			laserPointerKeyStarted;
 
 	qboolean	recordingDemo;//japro autodemo for defrag... :S
 	qboolean	keepDemoMaybe;//japro autodemo for defrag... :S

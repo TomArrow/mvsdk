@@ -1820,6 +1820,7 @@ void ClientLaserPointer(gentity_t* ent) {
 	qboolean eventflip = qfalse;
 	trace_t tr;
 	int flipDelay = 1000/g_sv_fps.integer;
+	int intensity = 255*MAX(0,(5000 - level.time + ent->client->pers.laserPointerKeyStarted))/5000;
 	if (ent->client->pers.laserPointerNum) {
 		lp = g_entities + ent->client->pers.laserPointerNum;
 		if (!(lp->s.eType == ET_BEAM && lp->parent == ent && lp->s.generic1 == 3)) { // hmm sth went wrong
@@ -1870,7 +1871,8 @@ void ClientLaserPointer(gentity_t* ent) {
 		lp->laserPointerLastEventFlip = level.time;
 	}
 	lp->s.time2 = flipDelay*4;
-	lp->s.weapon = 0x0000ff;
+	//lp->s.weapon = 0x0000ff;
+	lp->s.weapon = intensity;
 	lp->eventTime = level.time;
 	//lp->r.svFlags |= SVF_BROADCAST;
 	
@@ -1890,10 +1892,20 @@ void ClientKillLaserPointer(gentity_t* ent) {
 }
 
 void HandleClientLaserPointer(gentity_t* ent) {
+	qboolean keyIsPressed = !!(ent->client->pers.cmd.buttons & BUTTON_LASERPOINTER);
 	if (!g_defrag.integer) {
 		return;
 	}
-	if ((ent->client->pers.cmd.buttons & BUTTON_LASERPOINTER) && ent->client->sess.spectatorState != SPECTATOR_FOLLOW ) {
+	if (!keyIsPressed) {
+		ent->client->pers.laserPointerKeyStarted = 0;
+	}
+	else if(!ent->client->pers.laserPointerKeyStarted) {
+		ent->client->pers.laserPointerKeyStarted = level.time;
+	} else if (ent->client->pers.laserPointerKeyStarted && (level.time - ent->client->pers.laserPointerKeyStarted) > 5000) {
+		// after it "fades out" we hide it
+		keyIsPressed = qfalse;
+	}
+	if (keyIsPressed && ent->client->sess.spectatorState != SPECTATOR_FOLLOW ) {
 		ClientLaserPointer(ent);
 	}
 	else {
