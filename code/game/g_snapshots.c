@@ -204,7 +204,7 @@ typedef struct playerSnapshotBackupValues_s {
 static playerSnapshotBackupValues_t backupValues[MAX_GENTITIES];
 
 
-int PlayerSnapshotUpdateEntityVis() {
+static void PlayerSnapshotUpdateEntityVis() {
 	int entitites[MAX_GENTITIES];
 	int entityCount = 0;
 	int i;
