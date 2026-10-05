@@ -861,12 +861,20 @@ typedef struct awhVis_s {
 	int			vieweeBoxIndex;
 } awhVis_t;
 
+typedef struct awhBoxPt_s {
+	vec3_t		pos;
+	int			wallblocked; // 0 = not blocked; 1 = hit wall; 2 = all/startsolid
+	vec3_t		wallblocknormal;
+	float		wallblockdist;
+} awhBoxPt_t;
+
 
 #define ANTIWH_BOX_BASESIZE 9
 #define ANTIWH_WIDEBOX_SIZE (ANTIWH_BOX_BASESIZE + 2) // viewer: same as viewee, but also firstpersonpos. no thirdpersonpos, it kills our optimization ideas
 #define ANTIWH_WIDEBOX_FIRSTPERSONPOS (ANTIWH_WIDEBOX_SIZE - 2) // previous to last entry in widebox is firstperson
 #define ANTIWH_WIDEBOX_THIRDPERSONPOS (ANTIWH_WIDEBOX_SIZE - 1) // last entry in widebox is thirdpersonpos (unused if viewer box is enabled)
 #define ANTIWH_ALTORIGIN_POINTMASK ((1<<5)|(1<<6)|(1<<7)|(1<<8)) // see SE_RenderPlayerPoints. these indexes are offset from an alternate origin point inside the bounding box
+#define ANTIWH_DIRCHECK_POINTMASK ((1<<1)|(1<<2)|(1<<3)|(1<<4)|(1<<5)|(1<<6)|(1<<7)|(1<<8)) // these are the points forming the large outer viewerbox. we can skip checking some of them if the dot product between the vector pointing back at the origin and the vector from the enemy point to the point is negative. the camera at that position would have no way of seeing him
 typedef struct antiWallhackPlayerData_s {
 	int			boxIndex; // based on continuously incrementing antiWallhackBoxIndex in pers
 	float		boxSize;
@@ -875,13 +883,16 @@ typedef struct antiWallhackPlayerData_s {
 	vec3_t		boxCenter, boxMins, boxMaxs;
 #endif
 	vec3_t		origin;
+	vec3_t		rOrigin;
 	vec3_t		altOrigin; // for the top box parts, we trace from here
 	int			maxsZ;
-	vec3_t		box[ANTIWH_BOX_BASESIZE];		// viewee
+	awhBoxPt_t	box[ANTIWH_BOX_BASESIZE];		// viewee
+	float		boxMaxDiagonal;
 
 	float		viewerBoxSize;
 	int			wideBoxCheckMask; // which indexes to check.
-	vec3_t		viewerBox[ANTIWH_WIDEBOX_SIZE];  // base ANTIWH_BOX_BASESIZE indexes same as box
+	awhBoxPt_t	viewerBox[ANTIWH_WIDEBOX_SIZE];  // base ANTIWH_BOX_BASESIZE indexes same as box
+	float		viewerBoxMaxDiagonal;
 
 	awhVis_t	visibleTo[MAX_CLIENTS];
 

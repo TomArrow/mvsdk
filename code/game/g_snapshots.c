@@ -284,8 +284,10 @@ void PlayerSnapshotUpdateBroadcasts() {
 			continue;
 		}
 
-		// nicer place to do this :) this includes antiwh... so should reduce load a bit, especially with lower snaps, allowing us to reduce snaps if antiwh starts eating too much resoruces
-		G_UpdateClientBroadcasts(ent);
+		if (ent->client && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+			// nicer place to do this :) this includes antiwh... so should reduce load a bit, especially with lower snaps, allowing us to reduce snaps if antiwh starts eating too much resoruces
+			G_UpdateClientBroadcasts(ent);
+		}
 
 		if (level.playerStats[i]) { // only send player stats of active clients, dont be wasteful
 			if ((g_entities+i)->inuse) {
