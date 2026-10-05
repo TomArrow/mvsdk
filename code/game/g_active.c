@@ -3127,7 +3127,9 @@ void ClientThink_real( gentity_t *ent ) {
 	// perform once-a-second actions
 	ClientTimerActions( ent, msec );
 
-	G_UpdateClientBroadcasts ( ent );
+	if (!level.playerSnapshotsConfirmed) {
+		G_UpdateClientBroadcasts(ent);
+	}
 
 
 

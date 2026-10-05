@@ -357,7 +357,6 @@ void SP_info_jedimaster_start(gentity_t *ent)
 
 =======================================================================
 */
-qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other);
 /*
 ================
 SpotWouldTelefrag

@@ -828,10 +828,12 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 		if (mvapi >= 4 || coolApi & COOL_APIFEATURE_MVAPI_PLAYERSNAPSHOT_SNEAKPEEK) {
 			static int lastPlayerSnapshotNum = -1;
 			int playerNum = arg0;
+			level.playerSnapshotsConfirmed = qtrue;
 			if (playerNum == -1) {
 				if (lastPlayerSnapshotNum != -1) {
 					PlayerSnapshotRestoreValues();
 				}
+				lastPlayerSnapshotNum = playerNum;
 			}
 			else
 			{
@@ -846,8 +848,8 @@ intptr_t JK2_vmMain( intptr_t command, intptr_t arg0, intptr_t arg1, intptr_t ar
 				client->lastSnapshotSentCommandTime = client->ps.commandTime;
 				client->lastSnapshotSent = level.time;
 				client->anyClientMovedSinceSnapshot = qfalse;
+				lastPlayerSnapshotNum = playerNum;
 			}
-			lastPlayerSnapshotNum = playerNum;
 			return qtrue;
 		}
 		break;

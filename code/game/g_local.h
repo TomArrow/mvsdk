@@ -1273,6 +1273,7 @@ typedef struct {
 	debugState_t	debugState;
 
 	queuedDemoClip_t	queuedDemoClips[MAX_QUEUED_DEMO_CLIPS];
+	qboolean	playerSnapshotsConfirmed; // we have confirmed that we are receiving playersnapshot api calls from the engine.
 } level_locals_t;
 
 
@@ -1755,6 +1756,7 @@ void G_ResetUserCmdStore(int clientNum);
 void G_SetSpecAllEntsBroadcasts(int broadcastClients[2]);
 void ClientInactivitySpecTimerReset(gentity_t* ent, int delay);
 void CheckBackStab(int clientNum);
+void G_UpdateClientBroadcasts ( gentity_t *self );
 
 //
 // g_anticheat.c
@@ -1793,6 +1795,7 @@ void G_BufferedSendOrPrintFlushIfNeeded(gentity_t* playerOrNull, qboolean broadc
 void G_CheckEnqueuedClips(qboolean force); 
 void UpdateClientRaceVars(gclient_t* client);
 gentity_t* GetClientNumArg();
+qboolean ShouldNotCollide(gentity_t* entity, gentity_t* other);
 
 
 //

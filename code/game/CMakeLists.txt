@@ -97,6 +97,7 @@ set(MVGAMESOURCES
 	"${SRCDir}/game/g_object.c"
 	"${SRCDir}/game/g_saga.c"
 	"${SRCDir}/game/g_session.c"
+	"${SRCDir}/game/g_snapshots.c"
 	"${SRCDir}/game/g_spawn.c"
 	"${SRCDir}/game/g_svcmds.c"
 	"${SRCDir}/game/g_target.c"
