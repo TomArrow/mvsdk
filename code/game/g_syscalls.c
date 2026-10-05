@@ -131,11 +131,11 @@ int trap_PointContents( const vec3_t point, int passEntityNum ) {
 }
 
 
-qboolean trap_InPVS( const vec3_t p1, const vec3_t p2 ) {
+int trap_InPVS( const vec3_t p1, const vec3_t p2 ) {
 	return syscall( G_IN_PVS, p1, p2 );
 }
 
-qboolean trap_InPVSIgnorePortals( const vec3_t p1, const vec3_t p2 ) {
+int trap_InPVSIgnorePortals( const vec3_t p1, const vec3_t p2 ) {
 	return syscall( G_IN_PVS_IGNORE_PORTALS, p1, p2 );
 }
 

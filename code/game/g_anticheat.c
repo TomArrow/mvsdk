@@ -546,6 +546,7 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 	vec3_t enemyPointToViewerPoint;
 	awhBoxPt_t* viewerPt, * vieweePt;
 	float dot;
+	int inpvs;
 	int impossibleVieweePoints = 0;
 	
 #if ANTIWH_PRETRACE
@@ -564,7 +565,7 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 	}
 
 	// who cares, let him see.
-	if (other->health <= 0 || other->client->ps.stats[STAT_HEALTH] <= 0) {
+	if (other->health <= 0 || other->client->ps.stats[STAT_HEALTH] <= 0 || !other->r.linked || !self->r.linked) {
 		return qtrue;
 	}
 
@@ -603,12 +604,31 @@ static qboolean SE_NetworkPlayer( gentity_t *self, gentity_t *other ) {
 		return visMemory->visible;
 	}
 
-	if (!trap_InPVS(awhViewer->rOrigin, awhViewee->rOrigin)) { // not in PVS. ignore.
+	// close enough that no wall can be in-between
+	// eh, that's gonna happen practically never, why even waste processing power on it.
+	//if (DistanceSquared(awhViewer->rOrigin, awhViewee->rOrigin) < 30.0f) {
+	//	// same leaf. consider visible.
+	//	visMemory->visible = qtrue;
+	//	visMemory->lastCheck = level.time;
+	//	visMemory->viewerBoxIndex = awhViewer->boxIndex;
+	//	visMemory->vieweeBoxIndex = awhViewee->boxIndex;
+	//}
+
+	inpvs = trap_InPVS(awhViewer->rOrigin, awhViewee->rOrigin);
+
+	if (!inpvs) { // not in PVS. ignore.
 		visMemory->visible = qfalse;
 		visMemory->lastCheck = level.time;
 		visMemory->viewerBoxIndex = awhViewer->boxIndex;
 		visMemory->vieweeBoxIndex = awhViewee->boxIndex;
 		return qfalse;
+	}
+	else if (g_antiWallhackFast.integer >= 2 && coolApi && inpvs > 1) {
+		// same leaf. consider visible.
+		visMemory->visible = qtrue;
+		visMemory->lastCheck = level.time;
+		visMemory->viewerBoxIndex = awhViewer->boxIndex;
+		visMemory->vieweeBoxIndex = awhViewee->boxIndex;
 	}
 
 	contents = G_AntiWH_PointContents(awhViewer->viewerBox[ANTIWH_WIDEBOX_FIRSTPERSONPOS].pos, self - g_entities);

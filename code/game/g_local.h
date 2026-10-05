@@ -2223,8 +2223,8 @@ void	JP_TraceCustomEpsilonQ2Lite(trace_t* results, const vec3_t start, const vec
 void	JP_TraceBenchmarked(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, int customizationFlags);
 void	JP_TraceCustomized(trace_t* results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, int customizationFlags);
 int		trap_PointContents( const vec3_t point, int passEntityNum );
-qboolean trap_InPVS( const vec3_t p1, const vec3_t p2 );
-qboolean trap_InPVSIgnorePortals( const vec3_t p1, const vec3_t p2 );
+int		trap_InPVS( const vec3_t p1, const vec3_t p2 );
+int		trap_InPVSIgnorePortals( const vec3_t p1, const vec3_t p2 );
 void	trap_AdjustAreaPortalState( gentity_t *ent, qboolean open );
 qboolean trap_AreasConnected( int area1, int area2 );
 void	trap_LinkEntity( gentity_t *ent );
