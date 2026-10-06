@@ -303,18 +303,12 @@ void PlayerSnapshotUpdateBroadcasts() {
 }
 
 void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
-	gentity_t* ent = g_entities + clientNum;
+	gentity_t* ent = g_entities + clientNum; // right now the recipient is only used for solid value
 	gentity_t* other;
-	gclient_t* cl = ent->client;
 	gclient_t* ocl;
 	entityState_t* es;
 	playerSnapshotBackupValues_t* backup = backupValues;
 	mvsharedEntity_t* mvEnt = mv_entities;
-	int followedClientNum = (cl->sess.spectatorState == SPECTATOR_FOLLOW && cl->sess.spectatorClient >= 0 && cl->sess.spectatorClient < MAX_CLIENTS) ? cl->sess.spectatorClient : clientNum;
-	gentity_t* followedEnt = g_entities + followedClientNum;
-	gclient_t* followedClient = followedEnt->client;
-	gclient_t* soloRelevantClient = (coolApi & COOL_APIFEATURE_MVSHAREDENTITY_REALCLIENTS) ? cl : followedClient;
-	qboolean	canSeeTASClients = (soloRelevantClient->sess.solo == SOLO_SHOWALL || soloRelevantClient->pers.isHeadlessClient || (soloRelevantClient->pers.ttClientFlags & TTFLAGS_CLIENT_SHOWALLPLAYERSINCLUDINGMLBOTS));
 	int i, originalValueReusable;
 	int visibility;
 
