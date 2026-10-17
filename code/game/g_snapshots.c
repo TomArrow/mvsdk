@@ -293,9 +293,11 @@ void PlayerSnapshotUpdateBroadcasts() {
 			if ((g_entities+i)->inuse) {
 				// client active
 				level.playerStats[i]->r.svFlags |= SVF_BROADCAST;
+				level.playerStats[i]->r.svFlags &= ~SVF_NOCLIENT;
 			}
 			else {
 				level.playerStats[i]->r.svFlags &= ~SVF_BROADCAST;
+				level.playerStats[i]->r.svFlags |= SVF_NOCLIENT;
 			}
 		}
 	}
