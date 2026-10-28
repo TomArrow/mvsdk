@@ -207,21 +207,34 @@ CG_ParseTeamInfo
 =================
 */
 static void CG_ParseTeamInfo( void ) {
-	int		i;
+	int		i, j;
 	int		client;
 
 	numSortedTeamPlayers = atoi( CG_Argv( 1 ) );
 
-	for ( i = 0 ; i < numSortedTeamPlayers ; i++ ) {
+	if (numSortedTeamPlayers < 0) {
+		return;
+	}
+	else if (numSortedTeamPlayers > TEAM_MAXOVERLAY) {
+		numSortedTeamPlayers = TEAM_MAXOVERLAY;
+	}
+
+	for ( i = 0, j = 0 ; i < numSortedTeamPlayers ; i++ ) {
 		client = atoi( CG_Argv( i * 6 + 2 ) );
 
-		sortedTeamPlayers[i] = client;
+		if (client < 0 || client >= MAX_CLIENTS) {
+			continue;
+		}
+
+		sortedTeamPlayers[j] = client;
 
 		cgs.clientinfo[ client ].location = atoi( CG_Argv( i * 6 + 3 ) );
 		cgs.clientinfo[ client ].health = atoi( CG_Argv( i * 6 + 4 ) );
 		cgs.clientinfo[ client ].armor = atoi( CG_Argv( i * 6 + 5 ) );
 		cgs.clientinfo[ client ].curWeapon = atoi( CG_Argv( i * 6 + 6 ) );
 		cgs.clientinfo[ client ].powerups = atoi( CG_Argv( i * 6 + 7 ) );
+
+		j++;
 	}
 }
 
@@ -452,12 +465,10 @@ static void CG_ShaderStateChanged( const char *o ) {
 		n = strstr(o, "=");
 		if (n && *n) {
 			Q_strnncpyz(originalShader, o, n-o,sizeof(originalShader));
-			originalShader[n-o] = 0;
 			n++;
 			t = strstr(n, ":");
 			if (t && *t) {
 				Q_strnncpyz(newShader, n, t-n,sizeof(newShader));
-				newShader[t-n] = 0;
 			} else {
 				break;
 			}
@@ -465,7 +476,6 @@ static void CG_ShaderStateChanged( const char *o ) {
 			o = strstr(t, "@");
 			if (o) {
 				Q_strnncpyz(timeOffset, t, o-t,sizeof(timeOffset));
-				timeOffset[o-t] = 0;
 				o++;
 				if (cg_remaps.integer && Q_stricmpn(originalShader, "console", 7)) //JAPRO - Clientside - Allow noremaps
 					trap_R_RemapShader( originalShader, newShader, timeOffset );
@@ -616,7 +626,7 @@ void CG_UpdateConfigString( int num, qboolean init )
 			int c = 0;
 			int i = 0;
 
-			while (str[i] && str[i] != '|')
+			while (str[i] && str[i] != '|' && c < sizeof(buf)-1)
 			{
 				buf[c] = str[i];
 				c++;
@@ -628,7 +638,7 @@ void CG_UpdateConfigString( int num, qboolean init )
 			c = 0;
 
 			i++;
-			while (str[i])
+			while (str[i] && c < sizeof(buf) - 1)
 			{
 				buf[c] = str[i];
 				c++;
@@ -1465,8 +1475,10 @@ void CG_CheckSVStripEdRef(char *buf, int bufSize, const char *str)
 
 		if (!gotStrip)
 		{
-			buf[b] = str[i];
-			b++;
+			if( b < bufSize - 1 ){
+				buf[b] = str[i];
+				b++;
+			}
 		}
 		i++;
 	}

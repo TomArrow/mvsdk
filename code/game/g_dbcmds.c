@@ -39,7 +39,7 @@ gentity_t* DB_VerifyClient(int clientNum, ip_t ip) {
 		return NULL;
 	}
 
-	if (memcmp(ip, mv_clientSessions[clientNum].clientIP, sizeof(ip))) {
+	if (memcmp(ip, mv_clientSessions[clientNum].clientIP, sizeof(ip_t))) {
 		Com_Printf("DB_VerifyClient: no longer the same client.\n");
 		return NULL;
 	}

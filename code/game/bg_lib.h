@@ -125,6 +125,7 @@ bsearch (const void *key,
 #define cosf cos
 #define tanf tan
 #define fabsf fabs
+#define floorf floor
 
 #define FP_NAN         0
 #define FP_INFINITE    1

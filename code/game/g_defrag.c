@@ -298,7 +298,7 @@ void G_BufferedSendOrPrint(gentity_t* playerOrNull, qboolean broadcast, qboolean
 					char tmp[BUFFERED_TEXT_MAX_LENGTH+1];
 					// text is too long. split it up.
 					int offset = 0;
-					Q_strncpyz(tmp,text, sizeof(tmp));
+					Q_strncpyz(tmp, s, sizeof(tmp));
 					s += BUFFERED_TEXT_MAX_LENGTH;
 					lenNewLeft -= BUFFERED_TEXT_MAX_LENGTH;
 					G_SendServerCommand(clNum, va("print \"%s\"", tmp), includeSpectators);
@@ -4501,7 +4501,10 @@ void Cmd_DF_MapDefaults_f(gentity_t* ent)
 			index2 = index;
 			flag = 1 << index;
 
-			//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
+			if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
+				G_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1), qtrue);
+				return;
+			}
 			if (~allowedMapDefaultRunFlags & flag) {
 				trap_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1));
 				return;
@@ -4733,7 +4736,10 @@ void Cmd_DF_RunSettings_f(gentity_t* ent)
 		index2 = index;
 		flag = 1 << index;
 
-		//if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
+		if (index2 < 0 || index2 >= MAX_RUN_FLAGS) {
+			G_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1), qtrue);
+			return;
+		}
 		if (~allowedRunFlags & flag) {
 			G_SendServerCommand(ent - g_entities, va("print \"Run flags: Invalid flag: %i [0, %i]\n\"", index2, MAX_RUN_FLAGS - 1),qtrue);
 			return;

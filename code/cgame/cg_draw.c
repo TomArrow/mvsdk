@@ -5666,10 +5666,11 @@ static void CG_DrawTeamVote(void) {
 		{
 			int voteIndex = 0;
 			char voteIndexStr[256];
+			const char* who;
 
 			i++;
 
-			while (cgs.teamVoteString[cs_offset][i])
+			while (cgs.teamVoteString[cs_offset][i] && voteIndex < sizeof(voteIndexStr) - 1)
 			{
 				voteIndexStr[voteIndex] = cgs.teamVoteString[cs_offset][i];
 				voteIndex++;
@@ -5679,7 +5680,14 @@ static void CG_DrawTeamVote(void) {
 
 			voteIndex = atoi(voteIndexStr);
 
-			s = va("TEAMVOTE(%i):(Make %s" S_COLOR_WHITE " the new team leader) yes:%i no:%i", sec, cgs.clientinfo[voteIndex].name,
+			if (voteIndex < 0 || voteIndex >= MAX_CLIENTS) {
+				who = "[invalid player]";
+			}
+			else {
+				who = cgs.clientinfo[voteIndex].name;
+			}
+
+			s = va("TEAMVOTE(%i):(Make %s" S_COLOR_WHITE " the new team leader) yes:%i no:%i", sec, who,
 									cgs.teamVoteYes[cs_offset], cgs.teamVoteNo[cs_offset] );
 		}
 		else

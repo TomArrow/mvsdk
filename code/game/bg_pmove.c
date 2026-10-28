@@ -2781,7 +2781,7 @@ static void PM_FlyMove( void ) {
 		//turbo boost
 		scale *= 10;
 	}
-	if (pm->cmd.buttons & BUTTON_BOUNCEPOWER) {	//turbo boost for bounce mode (comfier to use mouse2 with it)
+	if ( pm->ps->pm_type == PM_SPECTATOR && pm->cmd.buttons & BUTTON_BOUNCEPOWER) {	//turbo boost for bounce mode (comfier to use mouse2 with it)
 		scale *= 10;
 	}
 

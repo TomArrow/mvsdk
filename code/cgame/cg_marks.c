@@ -986,7 +986,7 @@ void CG_AddParticleToScene (cparticle_t *p, vec3_t org, float alpha)
 		}
 
 		i = p->shaderAnim;
-		j = (int)floor(ratio * shaderAnimCounts[p->shaderAnim]);
+		j = (int)floorf(ratio * shaderAnimCounts[p->shaderAnim]);
 		p->pshader = shaderAnims[i][j];
 
 		if (p->roll) {

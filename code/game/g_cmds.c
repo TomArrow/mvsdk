@@ -3153,7 +3153,7 @@ void Cmd_AmMap_f(gentity_t* ent)
 		return;
 	}
 
-	if (gametype[0] < '0' && gametype[0] > '8')
+	if (gametype[0] < '0' || gametype[0] > '8')
 	{
 		trap_SendServerCommand(ent - g_entities, "print \"Invalid gametype.\n\"");
 		return;
@@ -4478,6 +4478,12 @@ static qboolean QDECL CallvoteMapSearchCallback(gentity_t* ent, genericDbRequest
 				trap_SendServerCommand(ent - g_entities, "print \"No available map matching this tag was found.\n\"");
 				return qtrue;
 			}
+
+			if (!CallvoteAllowed(ent, "randommap")) {
+				trap_SendServerCommand(ent - g_entities, "print \"Vote cannot be started due to unknown error. Possibly another vote started while searching for a suitable map.\n\"");
+				return qtrue;
+			}
+
 			Q_strncpyz(mapname, lastValidArena->name, sizeof(mapname));
 
 			if (!CallvoteMapOk(ent, mapname)) {
@@ -6230,12 +6236,17 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	{
 		int n = atoi ( arg2 );
 
-		if ( n < 0 || n >= MAX_CLIENTS )
+		if ( n < 0 || n >= level.maxclients )
 		{
 			trap_SendServerCommand( ent-g_entities, va("print \"invalid client number %d.\n\"", n ) );
 			return;
 		}
 
+		if( !g_entities[n].client ){
+			trap_SendServerCommand(ent - g_entities, va("print \"invalid client found for client number %d.\n\"", n));
+			return;
+		}
+		
 		if ( g_entities[n].client->pers.connected == CON_DISCONNECTED )
 		{
 			trap_SendServerCommand( ent-g_entities, va("print \"there is no client with the client number %d.\n\"", n ) );
@@ -7783,7 +7794,7 @@ static void Cmd_PrintCmdDescriptions_f(gentity_t* ent)
 
 //For qsort
 int cmdcmp2(const void* a, const void* b) {
-	return strcmp(((clientCommand_t*)a)->name, ((clientCommand_t*)b)->name);
+	return Q_stricmp(((clientCommand_t*)a)->name, ((clientCommand_t*)b)->name);
 }
 
 void G_InitClientCommands(void) {

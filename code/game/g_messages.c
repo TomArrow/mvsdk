@@ -87,6 +87,7 @@ void G_SendUserMessageContinue(int status, const char* errorMessage, int affecte
 			}
 			if (pastTimeframeCounts[i] >= pastTimeframeLimits[i]) {
 				trap_SendServerCommand(data.clientnum, va("print \"^1You can only send up to %d messages in a %d minute timeframe. Anti-spam blocked your message.\n\" antispam_lim", pastTimeframeLimits[i], pastTimeframes[i]));
+				return;
 			}
 		}
 		if (contains) {
