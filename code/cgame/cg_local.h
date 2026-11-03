@@ -2052,6 +2052,8 @@ extern	vmCvar_t		cg_stereoSeparation;
 extern	vmCvar_t		cg_lagometer;
 extern	vmCvar_t		cg_drawEnemyInfo;
 
+extern	vmCvar_t		cg_screenCoordFix;
+
 extern	vmCvar_t		cg_strafebotFactor;
 
 extern	vmCvar_t		cg_leadSounds;

@@ -4886,8 +4886,14 @@ qboolean CG_WorldCoordToScreenCoordCustomAngles(vec3_t worldCoord, float *x, flo
 		return qfalse;
 	}
 
-	xzi = xcenter / transformed[2] * (90.0/cg.refdef.fov_x);
-	yzi = ycenter / transformed[2] * (90.0/cg.refdef.fov_y);
+	if (cg_screenCoordFix.integer) {
+		xzi = xcenter / transformed[2] * 1.0f / tanf(cg.refdef.fov_x * 0.5f * M_PI / 180.0f);
+		yzi = ycenter / transformed[2] * 1.0f / tanf(cg.refdef.fov_y * 0.5f * M_PI / 180.0f);
+	}
+	else {
+		xzi = xcenter / transformed[2] * (90.0 / cg.refdef.fov_x);
+		yzi = ycenter / transformed[2] * (90.0 / cg.refdef.fov_y);
+	}
 
 	*x = xcenter + xzi * transformed[0];
 	*y = ycenter - yzi * transformed[1];

@@ -740,6 +740,8 @@ vmCvar_t	cg_stereoSeparation;
 vmCvar_t	cg_lagometer;
 vmCvar_t	cg_drawEnemyInfo;
 
+vmCvar_t	cg_screenCoordFix;
+
 vmCvar_t	cg_strafebotFactor;
 
 vmCvar_t	cg_leadSounds;
@@ -950,6 +952,7 @@ static cvarTable_t cvarTable[] = { // bk001129
 	{ &cg_drawIcons, "cg_drawIcons", "1", CVAR_ARCHIVE  },
 	{ &cg_drawAmmoWarning, "cg_drawAmmoWarning", "0", CVAR_ARCHIVE  },
 	{ &cg_drawEnemyInfo, "cg_drawEnemyInfo", "1", CVAR_ARCHIVE  },
+	{ &cg_screenCoordFix, "cg_screenCoordFix", "1", CVAR_ARCHIVE  },
 	{ &cg_strafebotFactor, "cg_strafebotFactor", "1.0", CVAR_ARCHIVE  },
 	{ &cg_leadSounds, "cg_leadSounds", "1", CVAR_ARCHIVE  },
 	{ &cg_leadSoundsRace, "cg_leadSoundsRace", "1", CVAR_ARCHIVE  },
