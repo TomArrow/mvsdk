@@ -8944,6 +8944,9 @@ static void Item_TextScroll_BuildLines ( itemDef_t* item )
 		qboolean bIsTrailingPunctuation;
 		unsigned int uiLetter;
 
+		if (!scrollPtr || !psText)
+			return;
+
 		if (Item_IsJKA(item) && *psText == '@')	// string reference
 		{
 			trap_SP_GetStringTextString( &psText[1], text, sizeof(text));
