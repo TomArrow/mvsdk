@@ -1252,6 +1252,8 @@ void respawn( gentity_t *ent ) {
 	// add a teleportation effect
 	if (!ent->client->sess.raceMode) {
 		tent = G_TempEntity(ent->client->ps.origin, EV_PLAYER_TELEPORT_IN);
+		tent->belongsToParent = qtrue;
+		tent->parent = ent;
 		tent->s.clientNum = ent->s.clientNum;
 	}
 }
@@ -2882,6 +2884,8 @@ void ClientBegin( int clientNum, qboolean allowTeamReset ) {
 	if ( client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		// send event
 		tent = G_TempEntity( ent->client->ps.origin, EV_PLAYER_TELEPORT_IN );
+		tent->belongsToParent = qtrue;
+		tent->parent = ent;
 		tent->s.clientNum = ent->s.clientNum;
 
 		if ( g_gametype.integer != GT_TOURNAMENT  ) {
@@ -4166,6 +4170,7 @@ extern qboolean DF_RemoveCheckPoints(gentity_t* playerent);
 
 void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 	gentity_t* tent;
+	mvsharedEntity_t* mvEnt;
 	int			i;
 
 	// remove this player as the activator from any activated ents
@@ -4188,6 +4193,12 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 		else {
 			trap_SendConsoleCommand(EXEC_APPEND, va("svstoprecord %i\n", (int)(ent - g_entities)));
 		}
+	}
+
+	mvEnt = mv_entities;
+	for (i = 0; i < MAX_GENTITIES; i++, mvEnt++) {
+		// just in case, clear visibility of all entities for this client slot. it should not be needed if everything is working well but bugs can happen
+		mvEnt->snapshotEnforce[clientNum] = mvEnt->snapshotEnforceRealClient[clientNum] = mvEnt->snapshotIgnore[clientNum] = mvEnt->snapshotIgnoreRealClient[clientNum] = 0;
 	}
 
 	i = 0;
@@ -4227,6 +4238,8 @@ void ClientDisconnectFinish(int clientNum, gentity_t* ent) {
 	if (ent->client->pers.connected == CON_CONNECTED
 		&& ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
 		tent = G_TempEntity(ent->client->ps.origin, EV_PLAYER_TELEPORT_OUT);
+		tent->belongsToParent = qtrue;
+		tent->parent = ent;
 		tent->s.clientNum = ent->s.clientNum;
 
 		// They don't get to take powerups with them!

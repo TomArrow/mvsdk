@@ -2559,6 +2559,7 @@ void CG_InitConsoleCommands( void ) {
 	trap_AddCommand("togglefps");
 	trap_AddCommand("floatphysics");
 	trap_AddCommand("checkpoint");
+	trap_AddCommand("clearcheckpoints");
 	trap_AddCommand("removecheckpoints");
 	trap_AddCommand("stealcheckpoints");
 	trap_AddCommand("stealspawn");

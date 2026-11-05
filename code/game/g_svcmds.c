@@ -912,10 +912,18 @@ static void Svcmd_ForceTeam_f(void) {
 	int i;
 	const char* botsonly = "allbots";
 	gentity_t* ent;
+	qboolean protectracers = qfalse;
 
 	if (trap_Argc() < 3) {
 		G_Printf("Usage: forceteam <client or 'all'> <team>\n");
 		return;
+	}
+
+	if (trap_Argc() >= 4) {
+		trap_Argv(3, str, sizeof(str));
+		if (!Q_stricmp(str, "protectracers")) {
+			protectracers = qtrue;
+		}
 	}
 
 	// find the player
@@ -945,10 +953,16 @@ static void Svcmd_ForceTeam_f(void) {
 			if (!ent || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED)
 				continue;
 
+			if (protectracers && (ent->client->sess.mode == MODE_DEFRAG || ent->client->sess.raceMode) && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+				continue;
+			}
+
 			if (ent->r.svFlags & SVF_BOT)
 				SetTeam(ent, str); //SetTeam_Bot(ent, str);
 			else if (!botsOnly)
 				SetTeam(ent, str);
+
+			trap_SendServerCommand(i, va("print \"Your team was forced to %s^7.\n\"", G_TeamNameColoured(team)));
 		}
 
 		return;
@@ -978,6 +992,11 @@ static void Svcmd_ForceTeam_f(void) {
 		return;
 	}
 
+	if (protectracers && (ent->client->sess.mode == MODE_DEFRAG || ent->client->sess.raceMode) && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		G_Printf("Racer protection is active. Can't move client.\n");
+		return;
+	}
+
 
 	// set the team
 	if (G_IsBot(num))
@@ -988,6 +1007,111 @@ static void Svcmd_ForceTeam_f(void) {
 
 	G_Printf("%s^7's (%d) team was forced to %s^7.\n", SHOWNAME(num), num, G_TeamNameColoured(i));
 	trap_SendServerCommand(num,va("print \"Your team was forced to %s^7.\n\"", G_TeamNameColoured(i)));
+}
+
+
+static void Svcmd_ForceMode_f(void) {
+	char		str[MAX_TOKEN_CHARS];
+	int num = -1;
+	int i;
+	const char* botsonly = "allbots";
+	gentity_t* ent;
+	int oldmode = -2;
+	int mode;
+
+	if (trap_Argc() < 3) {
+		G_Printf("Usage: forcemode <client or 'all' or oldmode> <mode>\n");
+		return;
+	}
+
+	trap_Argv(2, str, sizeof(str));
+
+	mode = PlayerModeNameToInteger(str);
+	if (mode == -1) {
+		G_Printf("Unrecognised mode '%s'.\n", str);
+		return;
+	}
+	
+	if (!g_defrag.integer && mode == MODE_DEFRAG) {
+		G_Printf("^5This command is not allowed!\n");
+		return;
+	}
+	if (mode > MODE_DEFRAG && !g_modes.integer) {
+		G_Printf("^5This command is not allowed!\n");
+		return;
+	}
+
+	if (mode >= MODE_NUM_MODES || mode < 0) {
+		G_Printf("print \"^5Invalid mode specified!\n\"");
+		return;
+	}
+
+	// find the player
+	trap_Argv(1, str, sizeof(str));
+
+	//force all to a team if we want
+	if (!Q_stricmp(str, "all") || !Q_stricmp(str, botsonly) || (oldmode=PlayerModeNameToInteger(str)) >= MODE_NORMAL) {
+		qboolean botsOnly = (qboolean)(Q_stricmp(str, botsonly) == 0);
+
+
+		ent = g_entities;
+		for (i = 0; i < MAX_CLIENTS; ++i, ++ent) {
+
+			if (!ent || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED)
+				continue;
+
+			if (botsOnly && !(ent->r.svFlags & SVF_BOT)) {
+				continue;
+			}
+
+			if (oldmode >= MODE_NORMAL && ent->client->sess.mode != oldmode) {
+				continue;
+			}
+
+			if (ent->client->sess.mode == mode) {
+				continue;
+			}
+
+			if ((ent->client->sess.mode == MODE_DEFRAG || ent->client->sess.raceMode) && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+				continue;
+			}
+
+			ClientSetModeReal(ent,mode);
+
+			trap_SendServerCommand(i, va("print \"^3Your mode was forced to %s^7.\n\"", modeNames[mode].string));
+		}
+
+		return;
+	}
+
+	//force a player's team
+	num = G_FindPlayerFromString(str);	// str is arg1
+
+	if (num == -1) {
+		G_Printf("Couldn't find player or mode '%s'\n", str);
+		return;
+	}
+
+	ent = &g_entities[num];
+
+	i = mode;
+
+	if (ent->client->sess.mode == i) {
+		G_Printf("He is already on mode %s^7.\n", modeNames[i].string);
+		return;
+	}
+
+	if ((ent->client->sess.mode == MODE_DEFRAG || ent->client->sess.raceMode) && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		G_Printf("Cannot force change mode on an active racer.\n");
+		return;
+	}
+
+
+	ClientSetModeReal(ent, mode);
+
+
+	G_Printf("%s^7's (%d) team was forced to %s^7.\n", SHOWNAME(num), num, modeNames[i].string);
+	trap_SendServerCommand(num,va("print \"^3Your mode was forced to %s^7.\n\"", modeNames[i].string));
 }
 
 /*
@@ -1715,6 +1839,7 @@ static const gameAdminCommand_t G_AdminGameCommands[] = {
 
     {"mute", NULL, "<client number> [pub]",	"Mute or unmute a client from chatting on the server. If 'pub' is given as additional parameter, the client may still use team chats", Svcmd_Mute_f },
 
+    {"forcemode", NULL, "<client number|all|oldmode> <mode>", "Force a client (or 'all', or anyone in a specific mode) to be in a specific mode. Will not affect players in racemode.", Svcmd_ForceMode_f },
     {"forceteam", "team", "<client number> <team>", "Force a client (or 'all') to be on a specific team", Svcmd_ForceTeam_f, SVCMD_ALIASONLYDEDICATED },
     {"lockteam", "lock", "<team> OR <client number>", "Lock a team from players joining or leaving it OR prevent a client from changing his team", Svcmd_LockTeam_f },
 

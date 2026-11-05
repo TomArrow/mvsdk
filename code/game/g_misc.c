@@ -81,9 +81,13 @@ void TeleportPlayer( gentity_t *player, vec3_t origin, vec3_t angles ) {
 	// from getting dropped by a second player event
 	if ( player->client->sess.sessionTeam != TEAM_SPECTATOR ) {
 		tent = G_TempEntity( player->client->ps.origin, EV_PLAYER_TELEPORT_OUT );
+		tent->belongsToParent = qtrue;
+		tent->parent = player;
 		tent->s.clientNum = player->s.clientNum;
 
 		tent = G_TempEntity( origin, EV_PLAYER_TELEPORT_IN );
+		tent->belongsToParent = qtrue;
+		tent->parent = player;
 		tent->s.clientNum = player->s.clientNum;
 	}
 

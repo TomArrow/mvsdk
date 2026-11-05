@@ -1606,6 +1606,11 @@ void DF_ClearCheckPointTimes(gentity_t* playerent) {
 	}
 }
 
+void DF_ClearCheckPointTimes_Cmd(gentity_t* playerent) {
+
+	DF_ClearCheckPointTimes(playerent);
+}
+
 // sanity check that the client still exists and knows about this checkpoint andsuch.
 void df_checkCheckpointValid(gentity_t* ent) {
 	gentity_t* owner;

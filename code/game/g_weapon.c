@@ -473,6 +473,8 @@ static void WP_DisruptorMainFire( gentity_t *ent )
 				tent->parent = ent;
 
 				te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+				te->belongsToParent = qtrue;
+				te->parent = ent;
 				VectorCopy(tr.endpos, te->s.origin);
 				VectorCopy(tr.plane.normal, te->s.angles);
 				if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])
@@ -650,6 +652,8 @@ void WP_DisruptorAltFire( gentity_t *ent )
 				tent->s.eventParm = ent->s.number;
 
 				te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+				te->belongsToParent = qtrue;
+				te->parent = ent;
 				VectorCopy(tr.endpos, te->s.origin);
 				VectorCopy(tr.plane.normal, te->s.angles);
 				if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])

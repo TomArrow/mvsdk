@@ -784,7 +784,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 	}
 
 	if ( ent->flags & FL_DROPPED_ITEM ) {
-		if (other->client->sess.mode == MODE_IRONMAN) {
+		if (other->client->sess.mode == MODE_IRONMAN && ent->simpleClass == SEC_IRONMANFLAG) {
 			// hey, its not home.  return it by teleporting it back
 			//PrintMsg( NULL, "%s" S_COLOR_WHITE " returned the %s flag!\n", 
 			//	cl->pers.netname, TeamName(team));
@@ -796,7 +796,7 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 			Team_ReturnFlagSound(other, team);
 			return 0;
 		}
-		else {
+		else if( other->client->sess.mode <= MODE_NORMAL && ent->simpleClass != SEC_IRONMANFLAG){
 			// hey, its not home.  return it by teleporting it back
 			//PrintMsg( NULL, "%s" S_COLOR_WHITE " returned the %s flag!\n", 
 			//	cl->pers.netname, TeamName(team));
@@ -809,6 +809,11 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 			Team_ReturnFlagSound(Team_ResetFlag(team), team);
 			return 0;
 		}
+	}
+
+	if (other->client->sess.mode > MODE_NORMAL || ent->simpleClass == SEC_IRONMANFLAG) {
+		// we don't want anyone outside of normal mode to do any scoring or such
+		return 0;
 	}
 
 	// the flag is at home base.  if the player has the enemy
@@ -956,6 +961,11 @@ int Team_TouchOurFlag( gentity_t *ent, gentity_t *other, int team ) {
 
 int Team_TouchEnemyFlag( gentity_t *ent, gentity_t *other, int team ) {
 	gclient_t *cl = other->client;
+		
+	if (other->client->sess.mode > MODE_NORMAL || ent->simpleClass == SEC_IRONMANFLAG) {
+		// we don't want anyone outside of normal mode to do any scoring or such
+		return 0;
+	}
 
 	if (g_fairFlag.integer) {
 		vec3_t		mins, maxs;

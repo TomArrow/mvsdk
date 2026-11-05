@@ -240,7 +240,6 @@ G_InitSessionData
 Called on a first-time connect
 ================
 */
-extern void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag);
 void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	clientSession_t	*sess;
 	const char		*value;

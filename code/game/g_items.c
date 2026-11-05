@@ -1815,10 +1815,13 @@ gentity_t *LaunchItem(gentity_t* oldOwner, gitem_t *item, vec3_t origin, vec3_t 
 	if (oldOwner && oldOwner->client && oldOwner->client->sess.mode == MODE_IRONMAN && item->giType == IT_TEAM) { // Ironman flags are simplified
 		dropped->think = G_FreeEntity;
 		dropped->nextthink = level.time + IRONMAN_FLAGRESPAWNTIME;
+		dropped->simpleClass = SEC_IRONMANFLAG;
+		dropped->belongsToMode = MODE_IRONMAN;
 
 	} else if ((g_gametype.integer == GT_CTF || g_gametype.integer == GT_CTY) && item->giType == IT_TEAM) { // Special case for CTF flags
 		dropped->think = Team_DroppedFlagThink;
 		dropped->nextthink = level.time + 30000;
+		dropped->belongsToMode = MODE_NORMAL;
 		Team_CheckDroppedItem( dropped );
 
 		//rww - so bots know
@@ -2015,6 +2018,14 @@ void FinishSpawningItem( gentity_t *ent ) {
 		{
 			G_FreeEntity( ent );
 			return;
+		}
+	}
+	else if ((g_gametype.integer == GT_CTF ||
+		g_gametype.integer == GT_CTY) && ent->item->giType == IT_TEAM) {
+		
+		// just so we can make sure this flag isnt visible to ironmanners when mode isolation is active
+		if (ent->item->giTag == PW_REDFLAG || ent->item->giTag == PW_BLUEFLAG || ent->item->giTag == PW_NEUTRALFLAG) {
+			ent->belongsToMode = MODE_NORMAL;
 		}
 	}
 

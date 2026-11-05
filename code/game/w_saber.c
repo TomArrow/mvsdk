@@ -1734,6 +1734,8 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 		if (g_entities[tr.entityNum].client && !unblockable && WP_SaberCanBlock(&g_entities[tr.entityNum], tr.endpos, 0, MOD_SABER, qfalse, attackStr))
 		{
 			te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+			te->belongsToParent = qtrue;
+			te->parent = self;
 			VectorCopy(tr.endpos, te->s.origin);
 			VectorCopy(tr.plane.normal, te->s.angles);
 			te->s.eventParm = 1;
@@ -1820,6 +1822,8 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 			G_Damage(&g_entities[tr.entityNum], self, self, dir, tr.endpos, dmg, 0, MOD_SABER);
 
 			te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+			te->belongsToParent = qtrue;
+			te->parent = self;
 			VectorCopy(tr.endpos, te->s.origin);
 			VectorCopy(tr.plane.normal, te->s.angles);
 			
@@ -1881,6 +1885,8 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 		didHit = qtrue;
 
 		te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+		te->belongsToParent = qtrue;
+		te->parent = self;
 
 		VectorCopy(tr.endpos, te->s.origin);
 		VectorCopy(tr.plane.normal, te->s.angles);
@@ -2272,6 +2278,8 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 		if (g_entities[tr.entityNum].client && !unblockable && WP_SaberCanBlock(&g_entities[tr.entityNum], tr.endpos, 0, MOD_SABER, qfalse, attackStr))
 		{
 			te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+			te->belongsToParent = qtrue;
+			te->parent = self;
 			if (dmg <= SABER_NONATTACK_DAMAGE)
 			{
 				self->client->ps.saberIdleWound = nowTime + g_saberDmgDelay_Idle.integer;
@@ -2346,6 +2354,8 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 			G_Damage(&g_entities[tr.entityNum], self, self, dir, tr.endpos, dmg, 0, MOD_SABER);
 
 			te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+			te->belongsToParent = qtrue;
+			te->parent = self;
 
 			VectorCopy(tr.endpos, te->s.origin);
 			VectorCopy(tr.plane.normal, te->s.angles);
@@ -2408,6 +2418,8 @@ qboolean CheckSaberDamage(gentity_t *self, vec3_t saberStart, vec3_t saberEnd, q
 		self->client->ps.saberIdleWound = nowTime + g_saberDmgDelay_Idle.integer;
 
 		te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+		te->belongsToParent = qtrue;
+		te->parent = self;
 		if (dmg <= SABER_NONATTACK_DAMAGE)
 		{
 			self->client->ps.saberIdleWound = nowTime + g_saberDmgDelay_Idle.integer;
@@ -2789,6 +2801,10 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 					if ( jk2gameplay != VERSION_1_02 ) WP_SaberBlockNonRandom(ent, tr.endpos, qfalse);
 
 					te = G_TempEntity( tr.endpos, EV_SABER_BLOCK );
+					if (saberOwner->client) {
+						te->belongsToParent = qtrue;
+						te->parent = saberOwner;
+					}
 					VectorCopy(tr.endpos, te->s.origin);
 					VectorCopy(tr.plane.normal, te->s.angles);
 					if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])
@@ -2827,6 +2843,10 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 					}
 
 					te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+					if (saberOwner->client) {
+						te->belongsToParent = qtrue;
+						te->parent = saberOwner;
+					}
 					VectorCopy(tr.endpos, te->s.origin);
 					VectorCopy(tr.plane.normal, te->s.angles);
 					if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])
@@ -2875,6 +2895,10 @@ qboolean CheckThrownSaberDamaged(gentity_t *saberent, gentity_t *saberOwner, gen
 				}
 
 				te = G_TempEntity( tr.endpos, EV_SABER_HIT );
+				if (saberOwner && saberOwner->client) {
+					te->belongsToParent = qtrue;
+					te->parent = saberOwner;
+				}
 				VectorCopy(tr.endpos, te->s.origin);
 				VectorCopy(tr.plane.normal, te->s.angles);
 				if (!te->s.angles[0] && !te->s.angles[1] && !te->s.angles[2])
@@ -3679,6 +3703,8 @@ void WP_SaberPositionUpdate( gentity_t *self, usercmd_t *ucmd)
 				gentity_t *te;
 				vec3_t dir;
 				te = G_TempEntity( g_entities[self->client->ps.saberEntityNum].r.currentOrigin, EV_SABER_BLOCK );
+				te->belongsToParent = qtrue;
+				te->parent = self;
 				VectorSet( dir, 0, 1, 0 );
 				VectorCopy(g_entities[self->client->ps.saberEntityNum].r.currentOrigin, te->s.origin);
 				VectorCopy(dir, te->s.angles);

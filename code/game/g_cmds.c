@@ -221,6 +221,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 	int			i, j;
 	gclient_t	*cl;
 	int			numSorted, scoreFlags, accuracy, perfect;
+	int			flagPowerupsRemovalMask = g_modesIsolate.integer && ent->client->sess.solo != SOLO_SHOWALL && (g_modesIsolate.integer > 1 || g_gametype.integer >= GT_CTF) ? ~((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG) | (1 << PW_NEUTRALFLAG)) : 0;
 
 	// send the latest information on all clients
 	string[0] = 0;
@@ -236,42 +237,55 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 	Com_sprintf( string, sizeof(string), "scores %i %i %i", level.numConnectedClients, level.teamScores[TEAM_RED], level.teamScores[TEAM_BLUE] );
 	stringlength = strlen( string );
 
-	for (i=0 ; i < numSorted ; i++) {
+	for (i = 0; i < numSorted; i++) {
 		int		ping, normalFollowerPing;
 		int		time, fulltime;
+		int		powerups;
+		qboolean isFollowSpectator;
 
 		cl = &level.clients[level.sortedClients[i]];
 
-		if ( cl->pers.connected == CON_CONNECTING ) {
+		if (cl->pers.connected == CON_CONNECTING) {
 			ping = -1;
 			normalFollowerPing = -1;
-		} else {
+		}
+		else {
 			ping = cl->ps.ping < 999 ? cl->ps.ping : 999;
 			normalFollowerPing = cl->pers.normalFollowerPing < 999 ? cl->pers.normalFollowerPing : 999;
 		}
 
-		if( cl->accuracy_shots ) {
+		if (cl->accuracy_shots) {
 			accuracy = cl->accuracy_hits * 100 / cl->accuracy_shots;
 		}
 		else {
 			accuracy = 0;
 		}
-		perfect = ( cl->ps.persistant[PERS_RANK] == 0 && cl->ps.persistant[PERS_KILLED] == 0 ) ? 1 : 0;
+		perfect = (cl->ps.persistant[PERS_RANK] == 0 && cl->ps.persistant[PERS_KILLED] == 0) ? 1 : 0;
 
 		time = (level.time - cl->pers.enterTime) / 60000;
 		fulltime = (level.time - cl->sess.firstEnterTime) / 60000;
 
+		powerups = g_entities[level.sortedClients[i]].s.powerups;
+
+		// hide normal ctf and ironman ctf flags from each other on scoreboard. kinda cringe tho.
+		if (flagPowerupsRemovalMask && (ent->client->sess.mode <= MODE_NORMAL) != (cl->sess.mode <= MODE_NORMAL)) {
+			powerups &= flagPowerupsRemovalMask;
+		}
+
+		// don't pollute the spectators in scoreboard with the data of the person they're following.
+		isFollowSpectator = cl->sess.sessionTeam == TEAM_SPECTATOR && cl->sess.spectatorState == SPECTATOR_FOLLOW && (cl->ps.pm_flags & PMF_FOLLOW);
+
 		Com_sprintf (entry, sizeof(entry),
 			" %i %i %i%s %i%s %i %i %i %i %i %i %i %i %i %i", level.sortedClients[i],
 			cl->ps.persistant[PERS_SCORE], normalFollowerPing, normalFollowerPing == ping ? "" : miniva("/%i",ping), time, time==fulltime ? "" : miniva("/%i", fulltime),
-			scoreFlags, g_entities[level.sortedClients[i]].s.powerups, accuracy, 
-			cl->ps.persistant[PERS_IMPRESSIVE_COUNT],
-			cl->ps.persistant[PERS_EXCELLENT_COUNT],
-			cl->ps.persistant[PERS_GAUNTLET_FRAG_COUNT], 
-			cl->ps.persistant[PERS_DEFEND_COUNT], 
-			cl->ps.persistant[PERS_ASSIST_COUNT], 
-			perfect,
-			cl->ps.persistant[PERS_CAPTURES]);
+			isFollowSpectator ? cl->sess.spectatorClient + 1 : scoreFlags, isFollowSpectator ? 0 : powerups, accuracy,
+			isFollowSpectator ? 0 : cl->ps.persistant[PERS_IMPRESSIVE_COUNT],
+			isFollowSpectator ? 0 : cl->ps.persistant[PERS_EXCELLENT_COUNT],
+			isFollowSpectator ? 0 : cl->ps.persistant[PERS_GAUNTLET_FRAG_COUNT],
+			isFollowSpectator ? 0 : cl->ps.persistant[PERS_DEFEND_COUNT],
+			isFollowSpectator ? 0 : cl->ps.persistant[PERS_ASSIST_COUNT],
+			isFollowSpectator ? 0 : perfect,
+			isFollowSpectator ? 0 : cl->ps.persistant[PERS_CAPTURES]);
 		j = strlen(entry);
 		if (stringlength + j > 1022)
 			break;
@@ -3888,11 +3902,11 @@ void Cmd_DBSRecords_f( gentity_t *ent )
 		category = SUBCONTESTS_DBS_KILL_SPEEDLOSS;
 	} else if (!Q_stricmp(arg, "ironman")) {
 		category = SUBCONTESTS_DBS_IRONMAN;
-	} else if (!Q_stricmp(arg, "ctfreturns")) {
+	} else if (!Q_stricmp(arg, "ctfreturns") || !Q_stricmp(arg, "ctfret")) {
 		category = SUBCONTESTS_DBS_CTFRETURN;
 	}
 	else {
-		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret|killslowed> [page]\n\"");
+		trap_SendServerCommand(ent - g_entities, "print \"Usage: dbsrecords <speed|kill|ironman|ctfret|killslowed|stupidspeed> [page]\n\"");
 		return;
 	}
 
@@ -5952,10 +5966,13 @@ static qboolean CallvoteMapOk(gentity_t* ent, const char* mapname) {
 
 static void CallvoteSetupFinish(gentity_t* ent, qboolean votingOpinion, qboolean votingOpinionAll) {
 	int i;
+	char voteDisplayStringFiltered[MAX_STRING_CHARS];
 	level.votingOpinion = votingOpinion;
 	level.votingOpinionAll = votingOpinionAll;
 
-	trap_SendServerCommand(-1, va("print \"%s" S_COLOR_WHITE " %s: %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLCALLEDVOTE"), level.voteDisplayString));
+	Q_strncpyz(voteDisplayStringFiltered, level.voteDisplayString, sizeof(voteDisplayStringFiltered));
+	Q_strstrip(voteDisplayStringFiltered,"\"","''"); // double quotes break print
+	trap_SendServerCommand(-1, va("print \"%s" S_COLOR_WHITE " %s: %s\n\"", ent->client->pers.netname, G_GetStripEdString("SVINGAME", "PLCALLEDVOTE"), voteDisplayStringFiltered));
 
 	// start the voting, the caller autoamtically votes yes
 	level.voteTime = level.time;
@@ -6023,12 +6040,14 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 	} else if ( !Q_stricmp( arg1, "kick" ) ) {
 	} else if ( !Q_stricmp( arg1, "clientkick" ) ) {
 	} else if ( !Q_stricmp( arg1, "g_doWarmup" ) ) {
+	} else if ( !Q_stricmp( arg1, "capturelimit" ) ) {
 	} else if ( !Q_stricmp( arg1, "timelimit" ) ) {
 	} else if ( !Q_stricmp( arg1, "fraglimit" ) ) {
 	} else if ( !Q_stricmp( arg1, "shuffle" ) || !Q_stricmp( arg1, "scrambleteams" ) ) {
+	} else if ( !Q_stricmp( arg1, "forcemode" ) || !Q_stricmp( arg1, "forceteam" ) ) {
 	} else {
 		trap_SendServerCommand( ent-g_entities, "print \"Invalid vote string.\n\"" );
-		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap [tag], opinion <anything>, opinionAll <anything>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, timelimit <time>, fraglimit <frags>, shuffle.\n\"" );
+		trap_SendServerCommand( ent-g_entities, "print \"Vote commands are: map_restart, nextmap, map <mapname>, mapnum <mapnum>, randommap [tag], opinion <anything>, opinionAll <anything>, g_gametype <n>, kick <player>, clientkick <clientnum>, g_doWarmup, capturelimit <captures>, timelimit <time>, fraglimit <frags>, shuffle, forceteam, forcemode.\n\"" );
 		return;
 	}
 
@@ -6296,9 +6315,60 @@ void Cmd_CallVote_f( gentity_t *ent ) {
 		Com_sprintf( level.voteString, sizeof( level.voteString ), "vstr nextmap");
 		Com_sprintf( level.voteDisplayString, sizeof( level.voteDisplayString ), "%s", level.voteString );
 	} 
+	else if (canVoteBesideMap && !Q_stricmp(arg1, "forcemode")) {
+		char	arg3[MAX_STRING_TOKENS];
+		int newmode = -1;
+
+		if (trap_Argc() != 4) {
+			trap_SendServerCommand(ent - g_entities, "print \"Usage: forcemode <client or 'all' or oldmode> <mode>.\n\"");
+			return;
+		}
+
+		if (!(*arg2 >= '0' && *arg2 <= '9' && (!arg2[1] || !arg2[2] && arg2[1] >= '0' && arg2[1] <= '9')) && Q_stricmp(arg2, "all") && Q_stricmp(arg2, "allbots") && (newmode = PlayerModeNameToInteger(arg2)) == -1) {
+			trap_SendServerCommand(ent - g_entities, "print \"Invalid player selection. Use 'all', 'allbots', a client number, or a source mode name.\n\"");
+			return;
+		}
+
+		trap_Argv(3, arg3, sizeof(arg3));
+
+		newmode = PlayerModeNameToInteger(arg3);
+		if (newmode < 0 || newmode >= MODE_NUM_MODES) {
+			trap_SendServerCommand(ent - g_entities, "print \"Invalid target mode specified.\n\"");
+			return;
+		}
+
+		Com_sprintf(level.voteString, sizeof(level.voteString), "%s \"%s\" \"%s\"", arg1, arg2, arg3);
+		Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "%s", level.voteString);
+	}
+	else if (canVoteBesideMap && !Q_stricmp(arg1, "forceteam")) {
+		char	arg3[MAX_STRING_TOKENS];
+		int newteam = -1;
+
+		if (trap_Argc() != 4) {
+			trap_SendServerCommand(ent - g_entities, "print \"Usage: forcemode <client or 'all' or oldmode> <mode>.\n\"");
+			return;
+		}
+
+		if (!(*arg2 >= '0' && *arg2 <= '9' && (!arg2[1] || !arg2[2] && arg2[1] >= '0' && arg2[1] <= '9')) && Q_stricmp(arg2, "all") && Q_stricmp(arg2, "allbots")) {
+			trap_SendServerCommand(ent - g_entities, "print \"Invalid player selection. Use 'all', 'allbots', a client number, or a source mode name.\n\"");
+			return;
+		}
+
+		trap_Argv(3, arg3, sizeof(arg3));
+
+		newteam = G_TeamForString(arg3, qfalse);
+
+		if (newteam == -1 && Q_stricmp(arg3, "scoreboard") && Q_stricmp(arg3, "score")) {
+			trap_SendServerCommand(ent - g_entities, va("print \"Unrecognized team '%s'\n\"", arg3));
+			return;
+		}
+		
+		Com_sprintf(level.voteString, sizeof(level.voteString), "%s \"%s\" \"%s\" protectracers", arg1, arg2, arg3);
+		Com_sprintf(level.voteDisplayString, sizeof(level.voteDisplayString), "%s \"%s\" \"%s\"", arg1, arg2, arg3);
+	}
 	else if(canVoteBesideMap)
 	{
-		if ( !Q_stricmp( arg1, "g_doWarmup" ) || !Q_stricmp( arg1, "timelimit" ) || !Q_stricmp( arg1, "fraglimit" ) )
+		if ( !Q_stricmp( arg1, "g_doWarmup" ) || !Q_stricmp( arg1, "capturelimit" ) || !Q_stricmp( arg1, "timelimit" ) || !Q_stricmp( arg1, "fraglimit" ) )
 		{
 			if ( strlen(arg2) >= MAX_CVAR_VALUE_STRING )
 			{
@@ -7384,6 +7454,7 @@ extern void Cmd_ToggleFPS_f(gentity_t* ent);
 extern void Cmd_FloatPhysics_f(gentity_t* ent);
 extern void DF_CreateCustomCheckpoint_Cmd(gentity_t* playerent);
 extern void DF_RemoveCheckPoints_Cmd(gentity_t* playerent);
+extern void DF_ClearCheckPointTimes(gentity_t* playerent);
 extern void DF_StealCheckpoints(gentity_t* playerent);
 extern void DF_StealSpawn(gentity_t* playerent);
 extern void DF_StealPos(gentity_t* playerent);
@@ -7666,6 +7737,7 @@ clientCommand_t clientCommands[] = {
 	{"callvote",			NULL, Cmd_CallVote_f,					CMD_NOINTERMISSION},
 	{"changepassword",		NULL, Cmd_ChangePassword_f,				CMD_NOINTERMISSION | CMD_ALLOWWHENFORCELOGIN},
 	{"checkpoint",			NULL, DF_CreateCustomCheckpoint_Cmd,	CMD_NOINTERMISSION},
+	{"clearcheckpoints",	NULL, DF_ClearCheckPointTimes,			CMD_NOINTERMISSION},
 	{"dbsrecords",			NULL, Cmd_DBSRecords_f,					CMD_NOINTERMISSION | CMD_ALLOWINREPLAY | CMD_SIGNALSPRESENCE},
 	{"debugDismemberment",	NULL, Cmd_Debug_DebugDismemberment_f,	CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},
 	{"debugKnockMeDown",	NULL, Cmd_Debug_DebugKnockMeDown_f,		CMD_INTERMISSIONUNKNOWN | CMD_DEBUG},

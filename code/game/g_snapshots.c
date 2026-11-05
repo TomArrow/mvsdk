@@ -73,7 +73,10 @@ int GetPlayerVisibilityForPlayer(gclient_t* cl, qboolean canSeeTASClients, gclie
 		|| cl->sess.solo == SOLO_ALL 
 
 		// hide others when soloing in same-style mode and their style is different
-		|| cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle);
+		|| cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle)
+		
+		// hide others when mode isolatuion is active.
+		|| g_modesIsolate.integer && cl->sess.solo != SOLO_SHOWALL && (g_modesIsolate.integer > 1 || g_gametype.integer > GT_FFA) && ((ocl->sess.mode <= MODE_NORMAL) != (cl->sess.mode <= MODE_NORMAL)) || g_modesIsolate.integer > 2 && ocl->sess.mode != cl->sess.mode;
 	return ignore ? -1 : 0;
 }
 
@@ -143,6 +146,20 @@ int GetEntVisibilityForPlayerReal(gentity_t* ent, int clientNum, int entNum, gen
 		}
 	}
 
+	if (other->belongsToMode) {
+		
+		if (
+			// hide others when soloing in same-style mode and their style is different
+			(cl->sess.solo == SOLO_STYLE || cl->sess.solo == SOLO_ALL) && other->belongsToMode != cl->sess.mode
+
+			// hide irrelevant flags when mode isolatuion is active.
+			|| g_modesIsolate.integer && cl->sess.solo != SOLO_SHOWALL && (g_modesIsolate.integer > 1 || g_gametype.integer > GT_FFA) && ((other->belongsToMode <= MODE_NORMAL) != (cl->sess.mode <= MODE_NORMAL)) || g_modesIsolate.integer > 2 && other->belongsToMode != cl->sess.mode
+			
+			) {
+			ignore++;
+		}
+	}
+
 	// TODO rethink this. see comments below.
 	if (es->eType == ET_BEAM &&/* other->parent != ent &&*/ es->generic1 == 3) {
 		if (other->parent != ent) {
@@ -191,6 +208,7 @@ int GetEntVisibilityForPlayer(int clientNum, int entNum, gentity_t* other, mvsha
 
 
 typedef struct playerSnapshotBackupValues_s {
+	int backupFrame;
 	int solidValue;
 	int saberMove;
 	int saberMovePS;
@@ -201,7 +219,8 @@ typedef struct playerSnapshotBackupValues_s {
 	mvsharedEntity_t	mvEntState;
 } playerSnapshotBackupValues_t;
 
-static playerSnapshotBackupValues_t backupValues[MAX_GENTITIES];
+static playerSnapshotBackupValues_t backupValues[MAX_GENTITIES] = { 0 };
+static int backupFrame = 0;
 
 
 static void PlayerSnapshotUpdateEntityVis() {
@@ -220,8 +239,10 @@ static void PlayerSnapshotUpdateEntityVis() {
 
 	// first make a quick list of entities. so we don't loop over hundreds of unused entities for each client
 	other = g_entities;
-	for (i = 0; i < level.num_entities; i++, other++) {
-		if (!other->inuse) {
+	backup = backupValues;
+	for (i = 0; i < level.num_entities; i++, other++, backup++) {
+		//if (!other->inuse || !other->r.linked) {
+		if (backup->backupFrame != backupFrame) {
 			continue;
 		}
 		entitites[entityCount++] = i;
@@ -325,6 +346,7 @@ void PlayerSnapshotHackValues(qboolean saveState, int clientNum) {
 		}
 		es = &other->s;
 		if (saveState) {
+			backup->backupFrame = backupFrame;
 			originalValueReusable = es->solid;
 			backup->solidValue = es->solid;
 			//backup->event = es->event;
@@ -406,13 +428,15 @@ void PlayerSnapshotRestoreValues() {
 	int i;
 	for (i = 0; i < level.num_entities; i++, backup++, mvEnt++) {
 		other = g_entities + i;
-		if (!other->r.linked || !other->inuse) {
+		//if (!other->r.linked || !other->inuse) {
+		if (backup->backupFrame != backupFrame) {
 			continue;
 		}
 		es = &other->s;
 		es->solid = backup->solidValue;
 		es->saberMove = backup->saberMove; 
 		*mvEnt = backup->mvEntState;
+
 		//es->event = backup->event; 
 		//if (es->eType == ET_MOVER) {
 		//	es->pos.trTime = backup->trTime;
@@ -424,4 +448,6 @@ void PlayerSnapshotRestoreValues() {
 			VectorCopy(backup->psMoverOldPos, cl->ps.origin);
 		}
 	}
+
+	backupFrame++;
 }

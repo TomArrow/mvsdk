@@ -264,9 +264,20 @@ void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag) {
 void Cmd_Mode_f(gentity_t* ent)
 {
 	char mode[20];
-	int modeNum;
+	int modeNum,number;
 	if (!ent->client)
 		return;
+
+	//check if hes not allowed to change team
+	if (ent->client->sess.amflags & AMFLAG_LOCKEDTEAM) {
+		trap_SendServerCommand(ent - g_entities, "print \"You have been denied permission to change mode.\n\"");
+		return;
+	}
+
+	if (number = G_ClientIsIronmanCapper(ent, qfalse)) {
+		trap_SendServerCommand(ent - g_entities, "print \"You cannot change teams while being the ironman capper.\n\"");
+		return;
+	}
 
 	trap_Argv(1, mode, sizeof(mode));
 	if (!Q_stricmp(mode, "reset"))
@@ -297,6 +308,12 @@ void Cmd_ModeCmd_f(gentity_t* ent)
 	sanction_t* sanction;
 	if (!ent->client)
 		return;
+	
+	//check if hes not allowed to change team
+	if (ent->client->sess.amflags & AMFLAG_LOCKEDTEAM) {
+		trap_SendServerCommand( ent - g_entities, "print \"You have been denied permission to change mode.\n\"" );
+		return;
+	}
 
 	if (number = G_ClientIsIronmanCapper(ent, qfalse)) {
 		trap_SendServerCommand(ent - g_entities, "print \"You cannot change modes while being the ironman capper.\n\"");

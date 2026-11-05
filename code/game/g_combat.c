@@ -2784,6 +2784,10 @@ void G_GetDismemberBolt(gentity_t *self, vec3_t boltPoint, int limbType)
 			boltAngles[2] = -boltMatrix.matrix[2][1];
 
 			te = G_TempEntity( boltPoint, EV_SABER_HIT );
+			if(self && self->client){
+				te->belongsToParent = qtrue;
+				te->parent = self;
+			}
 
 			VectorCopy(boltPoint, te->s.origin);
 			VectorCopy(boltAngles, te->s.angles);

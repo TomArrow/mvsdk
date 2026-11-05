@@ -153,6 +153,7 @@ typedef enum simpleEntityClass_s { // so we can quickly check for some entity cl
 	SEC_UNSPECIFIED,
 	SEC_LASERTRAP,
 	SEC_DETPACK,
+	SEC_IRONMANFLAG
 } simpleEntityClass_t;
 
 typedef enum entityCollisionFlags_s {
@@ -369,6 +370,7 @@ struct gentity_s {
 
 	simpleEntityClass_t		simpleClass;
 	entityCollisionFlags_t	collisionFlags;
+	playerMode_e			belongsToMode;
 };
 
 #define SHOWNAME( x ) g_entities[x].client->pers.netname
@@ -1390,6 +1392,8 @@ team_t ValidateClientModeTeam(gentity_t* ent, team_t wishTeam);
 qboolean ClientSetModeTeam(gentity_t* ent, modeTeam_e modeTeam);
 void SetClientMode(gentity_t* ent, playerMode_e mode);
 int G_ClientIsIronmanCapper(gentity_t* ent, qboolean strict);
+void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag);
+void ClientSetModeReal(gentity_t* ent, playerMode_e mode);
 
 //
 // g_utils.c
@@ -1995,6 +1999,7 @@ extern	vmCvar_t	g_saberTraceSaberFirst;
 
 extern	vmCvar_t	g_modes;
 extern	vmCvar_t	g_modesDefault;
+extern	vmCvar_t	g_modesIsolate;
 extern	vmCvar_t	g_modeTeamIronman;
 
 extern	vmCvar_t	g_lastSessionId;

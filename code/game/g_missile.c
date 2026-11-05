@@ -390,6 +390,10 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 		int otherDefLevel = other->client->ps.fd.forcePowerLevel[FP_SABERDEFEND];
 
 		te = G_TempEntity( ent->r.currentOrigin, EV_SABER_BLOCK );
+		if (ent->parent && ent->parent->client) {
+			te->belongsToParent = qtrue;
+			te->parent = other;
+		}
 		VectorCopy(ent->r.currentOrigin, te->s.origin);
 		VectorCopy(trace->plane.normal, te->s.angles);
 		te->s.eventParm = 0;
@@ -456,6 +460,10 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 			WP_SaberCanBlock(otherOwner, ent->r.currentOrigin, 0, 0, qtrue, 0);
 
 			te = G_TempEntity( ent->r.currentOrigin, EV_SABER_BLOCK );
+			if (ent->parent && ent->parent->client) {
+				te->belongsToParent = qtrue;
+				te->parent = other;
+			}
 			VectorCopy(ent->r.currentOrigin, te->s.origin);
 			VectorCopy(trace->plane.normal, te->s.angles);
 			te->s.eventParm = 0;

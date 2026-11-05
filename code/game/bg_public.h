@@ -44,7 +44,7 @@
 #define CROUCH_VIEWHEIGHT	(CROUCH_MAXS_2+STANDARD_VIEWHEIGHT_OFFSET)//12
 #define	DEAD_VIEWHEIGHT		-16
 
-#define MAX_CLIENT_SCORE_SEND 20
+#define MAX_CLIENT_SCORE_SEND 32 //20 // TA: Increased this. Should be safe since vanilla clients automatically clamp it anyway
 
 #define SHIELD_HALFTHICKNESS		4
 
