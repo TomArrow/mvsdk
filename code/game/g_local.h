@@ -1890,6 +1890,7 @@ const char *G_RefreshNextMap(int gametype, qboolean forced);
 void G_MapMetaSetLastPlayed(const char* map);
 
 // w_force.c / w_saber.c
+void G_FlushSaberStance(gentity_t* self);
 gentity_t *G_PreDefSound(vec3_t org, int pdSound);
 qboolean HasSetSaberOnly(void);
 void SaberUpdateSelf(gentity_t *ent);
@@ -1996,6 +1997,7 @@ extern	vmCvar_t	g_privateDuel;
 extern	vmCvar_t	g_saberLocking;
 extern	vmCvar_t	g_saberLockFactor;
 extern	vmCvar_t	g_saberTraceSaberFirst;
+extern	vmCvar_t	g_saberFixOffensiveParries;
 
 extern	vmCvar_t	g_modes;
 extern	vmCvar_t	g_modesDefault;

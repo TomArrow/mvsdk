@@ -40,6 +40,7 @@ vmCvar_t	g_privateDuel;
 vmCvar_t	g_saberLocking;
 vmCvar_t	g_saberLockFactor;
 vmCvar_t	g_saberTraceSaberFirst;
+vmCvar_t	g_saberFixOffensiveParries;
 
 vmCvar_t	g_lastSessionId;
 
@@ -334,6 +335,7 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 	{ &g_saberLocking, "g_saberLocking", "1", CVAR_SERVERINFO | CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberLockFactor, "g_saberLockFactor", "6", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_saberTraceSaberFirst, "g_saberTraceSaberFirst", "1", CVAR_ARCHIVE, 0, qtrue  },
+	{ &g_saberFixOffensiveParries, "g_saberFixOffensiveParries", "1", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_modes, "g_modes", "1", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
 	{ &g_modesDefault, "g_modesDefault", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  }, // default value from playerModes_e enum

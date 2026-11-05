@@ -1561,6 +1561,19 @@ qboolean G_SaberInBackAttack(int move)
 	return qfalse;
 }
 
+// By Bucky, thanks (I massacred it a bit)
+void G_FlushSaberStance(gentity_t* self) {
+	if (!g_saberFixOffensiveParries.integer || self->client->sess.raceMode || jk2gameplay != VERSION_1_02) { // don't wanna mess with racemode, keep it vanilla, just to be safe. also not sure how this would affect 1.03/1.04, leave it out there for now
+		return;
+	}
+	if (self->client->saberCycleQueue && (self->client->saberCycleQueue != self->client->ps.fd.saberAnimLevel || self->client->saberCycleQueue != self->client->ps.fd.saberDrawAnimLevel))
+    {
+        self->client->ps.fd.saberDrawAnimLevel = self->client->ps.fd.saberAnimLevel = self->client->saberCycleQueue;
+        self->client->saberCycleQueue = 0;
+        //self->client->ps.weaponTime = 0;
+    }
+}
+
 //rww - MP version of the saber damage function. This is where all the things like blocking, triggering a parry,
 //triggering a broken parry, doing actual damage, etc. are done for the saber. It doesn't resemble the SP
 //version very much, but functionality is (hopefully) about the same.
@@ -1770,6 +1783,10 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 				self->client->ps.weaponstate = WEAPON_READY;
 				self->client->ps.saberBlocked = BLOCKED_ATK_BOUNCE;
 
+				if (g_saberFixOffensiveParries.integer) {
+					G_FlushSaberStance(self);
+				}
+
 				self->client->ps.saberBlockTime = nowTime + (350 - (self->client->ps.fd.forcePowerLevel[FP_SABERDEFEND]*100));//300;
 			}
 			self->client->ps.saberAttackWound = nowTime + 300;
@@ -1779,6 +1796,10 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 				g_entities[tr.entityNum].client->ps.weaponTime = 0;
 				g_entities[tr.entityNum].client->ps.weaponstate = WEAPON_READY;
 				g_entities[tr.entityNum].client->ps.saberBlocked = BLOCKED_ATK_BOUNCE;
+
+				if (g_saberFixOffensiveParries.integer) {
+					G_FlushSaberStance(&g_entities[tr.entityNum]);
+				}
 
 				g_entities[tr.entityNum].client->ps.saberBlockTime = LEVELTIME(g_entities[tr.entityNum].client) + (350 - (g_entities[tr.entityNum].client->ps.fd.forcePowerLevel[FP_SABERDEFEND]*100));//300;
 			}
@@ -1796,6 +1817,10 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 					otherhit->client->ps.weaponTime = 0;
 					otherhit->client->ps.weaponstate = WEAPON_READY;
 					otherhit->client->ps.saberBlocked = BLOCKED_ATK_BOUNCE;
+
+					if (g_saberFixOffensiveParries.integer) {
+						G_FlushSaberStance(otherhit);
+					}
 
 					self->client->ps.saberBlockTime = nowTime + 300;
 
@@ -1904,6 +1929,11 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 			self->client->ps.weaponTime = 0;
 			self->client->ps.weaponstate = WEAPON_READY;
 			self->client->ps.saberBlocked = BLOCKED_ATK_BOUNCE;
+
+			if (g_saberFixOffensiveParries.integer) {
+				G_FlushSaberStance(self);
+			}
+
 			self->client->ps.saberBlockTime = nowTime + (350 - (self->client->ps.fd.forcePowerLevel[FP_SABERDEFEND]*100));//300;
 
 			if (otherOwner && otherOwner->client)
@@ -1923,6 +1953,11 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 					otherOwner->client->ps.weaponTime = 0;
 					otherOwner->client->ps.weaponstate = WEAPON_READY;
 					otherOwner->client->ps.saberBlocked = BLOCKED_ATK_BOUNCE;
+
+					if (g_saberFixOffensiveParries.integer) {
+						G_FlushSaberStance(otherOwner);
+					}
+
 					otherOwner->client->ps.saberBlockTime = LEVELTIME(otherOwner->client) + (350 - (otherOwner->client->ps.fd.forcePowerLevel[FP_SABERDEFEND]*100));//300;
 				}
 			}
@@ -1952,6 +1987,10 @@ qboolean CheckSaberDamage_1_02(gentity_t *self, vec3_t saberStart, vec3_t saberE
 				otherOwner->client->ps.weaponTime = 0;
 				otherOwner->client->ps.weaponstate = WEAPON_READY;
 				otherOwner->client->ps.saberBlocked = BLOCKED_ATK_BOUNCE;
+
+				if (g_saberFixOffensiveParries.integer) {
+					G_FlushSaberStance(otherOwner);
+				}
 
 				self->client->ps.saberBlockTime = nowTime + (350 - (self->client->ps.fd.forcePowerLevel[FP_SABERDEFEND]*100));//300;
 
