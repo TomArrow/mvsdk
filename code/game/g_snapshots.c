@@ -139,7 +139,10 @@ int GetEntVisibilityForPlayerReal(gentity_t* ent, int clientNum, int entNum, gen
 	}
 
 	if (other->belongsToParent) { // sniper shots, lightning, etc
-		if (other->parent != ent && other->parent != followedEnt) { // our own and our followed's things are allowed by default
+		if (!other->parent->client) {
+			trap_SendServerCommand(-1,va("print \"^1Weird Error: Entity with classname %s and entity type %d belongs to parent but has no client parent.\n\"",other->classname,other->s.eType));
+		}
+		if (other->parent != ent && other->parent != followedEnt && other->parent->client) { // our own and our followed's things are allowed by default
 			// shouldn't really need this check but let's be safe
 			tmp = GetPlayerVisibilityForPlayer(cl, canSeeTASClients, other->parent->client);
 			APPLYVIS(tmp);
@@ -220,7 +223,7 @@ typedef struct playerSnapshotBackupValues_s {
 } playerSnapshotBackupValues_t;
 
 static playerSnapshotBackupValues_t backupValues[MAX_GENTITIES] = { 0 };
-static int backupFrame = 0;
+static int backupFrame = 1;
 
 
 static void PlayerSnapshotUpdateEntityVis() {

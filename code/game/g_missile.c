@@ -462,7 +462,7 @@ void G_MissileImpact( gentity_t *ent, trace_t *trace ) {
 			te = G_TempEntity( ent->r.currentOrigin, EV_SABER_BLOCK );
 			if (ent->parent && ent->parent->client) {
 				te->belongsToParent = qtrue;
-				te->parent = other;
+				te->parent = ent->parent;
 			}
 			VectorCopy(ent->r.currentOrigin, te->s.origin);
 			VectorCopy(trace->plane.normal, te->s.angles);
