@@ -46,6 +46,7 @@ vmCvar_t	g_lastSessionId;
 
 vmCvar_t	g_modes;
 vmCvar_t	g_modesDefault;
+vmCvar_t	g_modesDefaultMajority; // set connecting players to the mode the majority of players have
 vmCvar_t	g_modesIsolate; // 1 = people in the default mode are isolated from people in other modes, except in FFA. 2 = same as 1, but also in FFA. 3 = isolate all modes from each other.
 vmCvar_t	g_modeTeamIronman;
 vmCvar_t	g_defrag;
@@ -338,7 +339,8 @@ static void	G_BitMaskCvarUpdatedMask(cvarTable_t* cvar);
 	{ &g_saberFixOffensiveParries, "g_saberFixOffensiveParries", "1", CVAR_ARCHIVE, 0, qtrue  },
 
 	{ &g_modes, "g_modes", "1", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
-	{ &g_modesDefault, "g_modesDefault", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  }, // default value from playerModes_e enum
+	{ &g_modesDefault, "g_modesDefault", "0", CVAR_ARCHIVE, 0, qtrue  }, // default value from playerModes_e enum
+	{ &g_modesDefaultMajority, "g_modesDefaultMajority", "0", CVAR_ARCHIVE, 0, qtrue  }, // default value from playerModes_e enum
 	{ &g_modesIsolate, "g_modesIsolate", "1", CVAR_ARCHIVE, 0, qtrue  },
 	{ &g_modeTeamIronman, "g_modeTeamIronman", "0", CVAR_ARCHIVE, 0, qtrue  }, // default value from playerModes_e enum
 	{ &g_defrag, "g_defrag", "0", CVAR_ARCHIVE | CVAR_LATCH, 0, qtrue  },
@@ -3989,6 +3991,7 @@ void G_CheckIronManStatus() {
 	int ironManners[MAX_CLIENTS];
 	int ironmannerCount = 0;
 	int flagCount = 0;
+	static vec3_t oldSpawnPoint = { 0 };
 	vec3_t spawnpoint;
 	vec3_t spawnpointAngles;
 	vec3_t spawnpointWiggled;
@@ -4036,7 +4039,8 @@ void G_CheckIronManStatus() {
 	}
 
 	// Spawn somewhere
-	SelectSpawnPoint(ent, vec3_origin, spawnpoint, spawnpointAngles);
+	SelectSpawnPoint(ent, oldSpawnPoint, spawnpoint, spawnpointAngles);
+	VectorCopy(spawnpoint, oldSpawnPoint);
 
 	for (i = ironmannerCount-1; i >= 0; i--) { // spawn the ironman last so if theres anything dimension crushing, he still survives
 		ent = &g_entities[ironManners[i]];

@@ -1394,6 +1394,7 @@ void SetClientMode(gentity_t* ent, playerMode_e mode);
 int G_ClientIsIronmanCapper(gentity_t* ent, qboolean strict);
 void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag);
 void ClientSetModeReal(gentity_t* ent, playerMode_e mode);
+int GetDefaultPlayerMode(qboolean allowDefrag, int clientNum);
 
 //
 // g_utils.c
@@ -2001,6 +2002,7 @@ extern	vmCvar_t	g_saberFixOffensiveParries;
 
 extern	vmCvar_t	g_modes;
 extern	vmCvar_t	g_modesDefault;
+extern	vmCvar_t	g_modesDefaultMajority;
 extern	vmCvar_t	g_modesIsolate;
 extern	vmCvar_t	g_modeTeamIronman;
 

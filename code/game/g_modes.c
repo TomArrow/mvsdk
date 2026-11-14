@@ -165,14 +165,38 @@ void ClientSetModeReal(gentity_t* ent, playerMode_e mode) {
 }
 
 
-int GetDefaultPlayerMode(qboolean allowDefrag) {
+int GetDefaultPlayerMode(qboolean allowDefrag, int clientNum) {
 	playerMode_e mode = MODE_NORMAL;
 
 	if (g_defrag.integer && allowDefrag) {
 		mode = MODE_DEFRAG;
 	}
-	else if (g_modes.integer && g_modesDefault.integer && g_modesDefault.integer < MODE_NUM_MODES) {
-		mode = g_modesDefault.integer;
+	else if (g_modes.integer) {
+		qboolean defaultMajority = qfalse;
+		if (g_modesDefaultMajority.integer) {
+			byte playerCounts[MODE_NUM_MODES] = { 0 };
+			byte maxPlayerCount = 0;
+			playerMode_e majorityMode = -1;
+			gentity_t* ent = g_entities;
+			int i;
+			for (i = 0; i < level.maxclients; i++, ent++) {
+				if (clientNum == i || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.sessionTeam == TEAM_SPECTATOR || ent->client->sess.mode < 0 || ent->client->sess.mode >= MODE_NUM_MODES) {
+					continue;
+				}
+				playerCounts[ent->client->sess.mode]++;
+				if (playerCounts[ent->client->sess.mode] > 1 && playerCounts[ent->client->sess.mode] > maxPlayerCount) {
+					maxPlayerCount = playerCounts[ent->client->sess.mode];
+					majorityMode = ent->client->sess.mode;
+				}
+			}
+			if (majorityMode != -1) {
+				mode = majorityMode;
+				defaultMajority = qtrue;
+			}
+		}
+		if (!defaultMajority && g_modesDefault.integer && g_modesDefault.integer < MODE_NUM_MODES) {
+			mode = g_modesDefault.integer;
+		}
 	}
 	if (mode == MODE_DEFRAG && !allowDefrag || mode == MODE_INVALID) {
 		mode = MODE_NORMAL;
@@ -231,7 +255,7 @@ void SetClientMode(gentity_t* ent, playerMode_e mode) {
 
 	// toggle
 	if (mode == ent->client->sess.mode && mode != MODE_NORMAL) {
-		int defaultMode = GetDefaultPlayerMode(qtrue);
+		int defaultMode = GetDefaultPlayerMode(qtrue, ent-g_entities);
 		if (g_modes.integer && mode == defaultMode) {
 			mode = MODE_NORMAL;
 		}
@@ -250,7 +274,7 @@ qboolean ClientModeValid(gentity_t* ent, qboolean allowDefrag) {
 
 void ClientSetDefaultMode(gentity_t* ent, qboolean allowDefrag) {
 	ent->client->sess.mode = MODE_INVALID; // force it 
-	ClientSetModeReal(ent, GetDefaultPlayerMode(allowDefrag));
+	ClientSetModeReal(ent, GetDefaultPlayerMode(allowDefrag, ent-g_entities));
 }
 
 void ResetClientModeIfInvalid(gentity_t* ent, qboolean allowDefrag) {
@@ -282,7 +306,7 @@ void Cmd_Mode_f(gentity_t* ent)
 	trap_Argv(1, mode, sizeof(mode));
 	if (!Q_stricmp(mode, "reset"))
 	{
-		modeNum = GetDefaultPlayerMode(qtrue);
+		modeNum = GetDefaultPlayerMode(qtrue, ent-g_entities);
 		if (modeNum == ent->client->sess.mode) {
 			ent->client->sess.mode = MODE_INVALID; // force a reset
 		}
@@ -323,7 +347,7 @@ void Cmd_ModeCmd_f(gentity_t* ent)
 	trap_Argv(0, mode, sizeof(mode));
 	if (!Q_stricmp(mode, "reset"))
 	{
-		modeNum = GetDefaultPlayerMode(qtrue);
+		modeNum = GetDefaultPlayerMode(qtrue, ent-g_entities);
 		if (modeNum == ent->client->sess.mode) {
 			ent->client->sess.mode = MODE_INVALID; // force a reset
 		}
