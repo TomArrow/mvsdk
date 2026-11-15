@@ -85,7 +85,8 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		'T',		// team prefix color
 		"55f5",		// soreboard bgcolor
 		TEAM_BLUE,	// real associated team
-		MODETEAM_IRONMAN_CHASER // after dying, become a chaser again
+		MODETEAM_IRONMAN_CHASER, // after dying, become a chaser again
+		qtrue
 	},
 	//MODETEAM_IRONMAN_CHASER,
 	{
@@ -97,7 +98,9 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		qtrue,		// don't prefix
 		'Y',		// team prefix color
 		"f555",		// soreboard bgcolor
-		TEAM_RED	// real associated team
+		TEAM_RED,	// real associated team
+		MODETEAM_INVALID,
+		qtrue
 	},
 	//MODETEAM_DUELQUEUE,
 	{
@@ -112,6 +115,18 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 		TEAM_FREE	// real associated team
 	},
 };
+
+int modeTeamTeamChangeKeepScorePersistantIndexes = 
+	(1 << PERS_SCORE)
+	|| (1 << PERS_HITS)
+	|| (1 << PERS_KILLED)
+	|| (1 << PERS_IMPRESSIVE_COUNT)
+	|| (1 << PERS_EXCELLENT_COUNT)
+	|| (1 << PERS_DEFEND_COUNT)
+	|| (1 << PERS_ASSIST_COUNT)
+	|| (1 << PERS_GAUNTLET_FRAG_COUNT)
+	|| (1 << PERS_CAPTURES)
+;
 
 modeTeam_e modeDefaultTeams[MODE_NUM_MODES] = {
 	MODETEAM_INVALID,

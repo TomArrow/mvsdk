@@ -1028,6 +1028,7 @@ void G_ResetClientVote(gclient_t* client) {
 SetTeam
 =================
 */
+extern int settingModeTeam[MAX_CLIENTS];
 int setTeamDepth = 0;
 qboolean SetTeam( gentity_t *ent, const char *s ) {
 	team_t				team, oldTeam;
@@ -1261,7 +1262,24 @@ qboolean SetTeam( gentity_t *ent, const char *s ) {
 	ClientUserinfoChanged( clientNum );
 	
 	memset( ent->client->ps.powerups, 0, sizeof(ent->client->ps.powerups) ); // Ensure following spectators don't take flags or such into ClientBegin and trigger the FlagEatingFix (this allows us to check for powerups in the playerState to prevent flagEating when calling ClientBegin)
-	ClientBegin( clientNum, qfalse );
+	if (settingModeTeam[clientNum] && modeTeams[ent->client->sess.modeTeam].teamChangeKeepScore) {
+		// keep our score
+		int		persistant[MAX_PERSISTANT];
+		for (i = 0; i < MAX_PERSISTANT; i++) {
+			persistant[i] = client->ps.persistant[i];
+		}
+		ClientBegin( clientNum, qfalse );
+		for (i = 0; i < MAX_PERSISTANT; i++) {
+			if (!(modeTeamTeamChangeKeepScorePersistantIndexes & (1 << i))) {
+				continue; // we don't keep all these, some of them do make sense to reset on teamchange for real to keep original logic more intact
+			}
+			client->ps.persistant[i] = persistant[i];
+		}
+	}
+	else {
+		
+		ClientBegin( clientNum, qfalse );
+	}
 
 	setTeamDepth--;
 	return team != oldTeam;

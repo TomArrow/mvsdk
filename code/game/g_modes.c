@@ -180,11 +180,11 @@ int GetDefaultPlayerMode(qboolean allowDefrag, int clientNum) {
 			gentity_t* ent = g_entities;
 			int i;
 			for (i = 0; i < level.maxclients; i++, ent++) {
-				if (clientNum == i || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.sessionTeam == TEAM_SPECTATOR || ent->client->sess.mode < 0 || ent->client->sess.mode >= MODE_NUM_MODES) {
+				if (clientNum == i || !ent->inuse || !ent->client || ent->client->pers.connected != CON_CONNECTED || ent->client->sess.sessionTeam == TEAM_SPECTATOR && (g_modesDefaultMajority.integer < 3 || ent->client->pers.ingameTime < 30000 && g_modesDefaultMajority.integer < 4) || ent->client->sess.mode < 0 || ent->client->sess.mode >= MODE_NUM_MODES) {
 					continue;
 				}
 				playerCounts[ent->client->sess.mode]++;
-				if (playerCounts[ent->client->sess.mode] > 1 && playerCounts[ent->client->sess.mode] > maxPlayerCount) {
+				if (playerCounts[ent->client->sess.mode] > (g_modesDefaultMajority.integer < 2 ? 1 : 0) && playerCounts[ent->client->sess.mode] > maxPlayerCount) {
 					maxPlayerCount = playerCounts[ent->client->sess.mode];
 					majorityMode = ent->client->sess.mode;
 				}

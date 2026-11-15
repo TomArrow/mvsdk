@@ -950,13 +950,18 @@ ClientInactivitySpecTimer
 Returns qfalse if the client is put to spec
 =================
 */
-qboolean ClientInactivitySpecTimer( gentity_t* ent ) {
+qboolean ClientInactivitySpecTimer( gentity_t* ent, int msec ) {
 	gclient_t* client = ent->client;
 	int afkTime = clampedIntAdd(level.time, -client->sess.lastHereTime);
 	int afkSpecTime = clampedIntMult(g_inactivityToSpec.integer, 1000);
 	qboolean clientIsAfk = g_inactivityToSpec.integer && afkTime >= afkSpecTime;
 	qboolean wasInactive = client->markedAsInactive;
 	client->markedAsInactive = qfalse;
+
+	if (afkTime < 1000 && ent->client->sess.sessionTeam != TEAM_SPECTATOR) {
+		// remember that this player, at some point, spent some time actually playing ingame.
+		client->pers.ingameTime += msec;
+	}
 
 	// 2026-04-17 new logic: unifying afk detection. lastHereTime is the authoritative source for deciding if someone's afk. 
 	// inactivityToSpecTime is still used to prevent sending people to spec early in some situations. (segmented replay finished etc)
@@ -2249,7 +2254,7 @@ void ClientThink_real( gentity_t *ent ) {
 
 	HandleClientLaserPointer(ent); // logically should be after intermission but eh, can use some memes
 
-	inactivityToSpec = !ClientInactivitySpecTimer(ent);
+	inactivityToSpec = !ClientInactivitySpecTimer(ent, msec);
 
 	//
 	// check for exiting intermission

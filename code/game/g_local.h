@@ -843,6 +843,8 @@ typedef struct {
 	gitRevision_t*	mvsdkVersion;
 	gitRevision_t*	mvVersion;
 
+	int			ingameTime; // amount of time spent ingame non-afk not on spectator team. so we can decide if this player should be relevant for g_modesDefaultMajority
+
 	int			antiWallhackBoxIndex; // each time we update the player's antiwh box, we increment this. that way we can determine if the vis status between 2 players needs to be updated (we remember the last status and boxindex for both players)
 	//sanction_t	sanctions[MAX_SANCTIONS_CLIENT];
 } clientPersistant_t;

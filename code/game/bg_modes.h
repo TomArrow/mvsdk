@@ -50,8 +50,10 @@ typedef struct modeTeam_s {
 	const char*			scoreHexColor;
 	int					realTeam;		// corresponding team if gametype >= GT_TEAM
 	modeTeam_e			respawnTeam;	// which modeTeam do we respawn in after death? default MODETEAM_INVALID, which just does nothing.
+	qboolean			teamChangeKeepScore; // whether to keep your score when your team changes (in dynamic modes like ironman u might wanna do that)
 } modeTeam_t;
 
+extern int modeTeamTeamChangeKeepScorePersistantIndexes;
 
 extern bitInfo_t modeNames[MODE_NUM_MODES];
 extern modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS];
