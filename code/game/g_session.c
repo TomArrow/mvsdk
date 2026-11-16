@@ -247,7 +247,11 @@ void G_InitSessionData( gclient_t *client, char *userinfo, qboolean isBot ) {
 	sess = &client->sess;
 
 	sess->amflags = AMFLAG_ALTFOLLOW;		//now enabled by default.
-	
+
+	// set a quick temporary netname because the code below might broadcast team changes (dunno why) despite not yet being fully connected with the netname set.
+	G_NameToNetname(userinfo, client->pers.netname, sizeof(client->pers.netname), -1);
+
+	sess->sessionTeam = TEAM_SPECTATOR; // quickly avoid triggering teamchange in mode setting
 	ClientSetDefaultMode(&g_entities[client-g_clients], !isBot);
 
 	//sess->raceStyle.movementStyle = MV_JK2;

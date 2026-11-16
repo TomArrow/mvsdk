@@ -1690,6 +1690,7 @@ gentity_t* SelectRandomFurthestDuelQueueSpawnPoint(gentity_t* spawningEnt, vec3_
 gentity_t* SelectRandomFurthestDuelQueueSpawnPointV2(gentity_t* spawningEnt, gentity_t* spawningEnt2, vec3_t* existingDuelers, int existingDuelersCount, vec3_t origin, vec3_t origin2);
 qboolean G_CheckForNearbyDuelSpawn(gentity_t* ent, vec3_t opponentOrigin, vec3_t spawn_origin, vec3_t spawn_angles); // picks nearby place for the opponent
 void G_AnalyzeDuelQueueSpawns(); // called at level load
+void G_NameToNetname(char* userinfo, char* netname, int netnameBufferSize, int clientNum);
 
 void G_CenterPrint( int targetNum, int autoLineWraps, const char *message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra);
 void G_CenterPrintOrPrint(int targetNum, int autoLineWraps, const char* message, qboolean printInDefrag, qboolean alsoFollowers, qboolean alwaysPrint, const char* extra, qboolean onlyPrint, qboolean noop);

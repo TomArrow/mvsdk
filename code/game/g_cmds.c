@@ -221,7 +221,7 @@ void DeathmatchScoreboardMessage( gentity_t *ent ) {
 	int			i, j;
 	gclient_t	*cl;
 	int			numSorted, scoreFlags, accuracy, perfect;
-	int			flagPowerupsRemovalMask = g_modesIsolate.integer && ent->client->sess.solo != SOLO_SHOWALL && (g_modesIsolate.integer > 1 || g_gametype.integer >= GT_CTF) ? ~((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG) | (1 << PW_NEUTRALFLAG)) : 0;
+	int			flagPowerupsRemovalMask = ent->client->sess.sessionTeam != TEAM_SPECTATOR && g_modesIsolate.integer && !CANSEEALLCLIENTS(ent->client) && (g_modesIsolate.integer > 1 || g_gametype.integer >= GT_CTF) ? ~((1 << PW_REDFLAG) | (1 << PW_BLUEFLAG) | (1 << PW_NEUTRALFLAG)) : 0;
 
 	// send the latest information on all clients
 	string[0] = 0;
@@ -1256,7 +1256,9 @@ qboolean SetTeam( gentity_t *ent, const char *s ) {
 		CheckTeamLeader( oldTeam );
 	}
 
-	BroadcastTeamChange( client, oldTeam );
+	if (!(settingModeTeam[clientNum] && client->pers.connected == CON_CONNECTING)) { // if we are setting a mode team during connecting.. dont bother broadcasting it.
+		BroadcastTeamChange(client, oldTeam);
+	}
 
 	// get and distribute relevent paramters
 	ClientUserinfoChanged( clientNum );

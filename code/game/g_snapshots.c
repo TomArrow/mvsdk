@@ -6,8 +6,6 @@
 #include "g_local.h"
 
 
-
-
 /*
 =========================
 CG_AdjustPositionForMover
@@ -76,7 +74,7 @@ int GetPlayerVisibilityForPlayer(gclient_t* cl, qboolean canSeeTASClients, gclie
 		|| cl->sess.solo == SOLO_STYLE && (ocl->sess.mode != cl->sess.mode || cl->sess.mode == MODE_DEFRAG && ocl->sess.raceStyle.movementStyle != cl->sess.raceStyle.movementStyle)
 		
 		// hide others when mode isolatuion is active.
-		|| g_modesIsolate.integer && cl->sess.solo != SOLO_SHOWALL && (g_modesIsolate.integer > 1 || g_gametype.integer > GT_FFA) && ((ocl->sess.mode <= MODE_NORMAL) != (cl->sess.mode <= MODE_NORMAL)) || g_modesIsolate.integer > 2 && ocl->sess.mode != cl->sess.mode;
+		|| cl->sess.sessionTeam != TEAM_SPECTATOR && g_modesIsolate.integer && !CANSEEALLCLIENTS(cl) && (g_modesIsolate.integer > 1 || g_gametype.integer > GT_FFA) && ((ocl->sess.mode <= MODE_NORMAL) != (cl->sess.mode <= MODE_NORMAL)) || g_modesIsolate.integer > 2 && ocl->sess.mode != cl->sess.mode;
 	return ignore ? -1 : 0;
 }
 
@@ -156,7 +154,7 @@ int GetEntVisibilityForPlayerReal(gentity_t* ent, int clientNum, int entNum, gen
 			(cl->sess.solo == SOLO_STYLE || cl->sess.solo == SOLO_ALL) && other->belongsToMode != cl->sess.mode
 
 			// hide irrelevant flags when mode isolatuion is active.
-			|| g_modesIsolate.integer && cl->sess.solo != SOLO_SHOWALL && (g_modesIsolate.integer > 1 || g_gametype.integer > GT_FFA) && ((other->belongsToMode <= MODE_NORMAL) != (cl->sess.mode <= MODE_NORMAL)) || g_modesIsolate.integer > 2 && other->belongsToMode != cl->sess.mode
+			|| cl->sess.sessionTeam != TEAM_SPECTATOR && g_modesIsolate.integer && !CANSEEALLCLIENTS(cl) && (g_modesIsolate.integer > 1 || g_gametype.integer > GT_FFA) && ((other->belongsToMode <= MODE_NORMAL) != (cl->sess.mode <= MODE_NORMAL)) || g_modesIsolate.integer > 2 && other->belongsToMode != cl->sess.mode
 			
 			) {
 			ignore++;

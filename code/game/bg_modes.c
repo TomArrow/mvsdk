@@ -118,14 +118,14 @@ modeTeam_t modeTeams[MODETEAM_NUM_MODETEAMS] = {
 
 int modeTeamTeamChangeKeepScorePersistantIndexes = 
 	(1 << PERS_SCORE)
-	|| (1 << PERS_HITS)
-	|| (1 << PERS_KILLED)
-	|| (1 << PERS_IMPRESSIVE_COUNT)
-	|| (1 << PERS_EXCELLENT_COUNT)
-	|| (1 << PERS_DEFEND_COUNT)
-	|| (1 << PERS_ASSIST_COUNT)
-	|| (1 << PERS_GAUNTLET_FRAG_COUNT)
-	|| (1 << PERS_CAPTURES)
+	| (1 << PERS_HITS)
+	| (1 << PERS_KILLED)
+	| (1 << PERS_IMPRESSIVE_COUNT)
+	| (1 << PERS_EXCELLENT_COUNT)
+	| (1 << PERS_DEFEND_COUNT)
+	| (1 << PERS_ASSIST_COUNT)
+	| (1 << PERS_GAUNTLET_FRAG_COUNT)
+	| (1 << PERS_CAPTURES)
 ;
 
 modeTeam_e modeDefaultTeams[MODE_NUM_MODES] = {

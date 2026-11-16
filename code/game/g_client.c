@@ -2046,6 +2046,54 @@ static gitRevision_t* G_FindGitRevision(const char* commitshort, gitRevisionCate
 
 }
 
+
+void G_NameToNetname(char* userinfo, char* netname, int netnameBufferSize, int clientNum ) {
+
+	// NameCrashFix (whitelisted characters)
+	static const char	validChars[] = " ~QqWwEeRrTtYyUuIiOoPpAaSsDdFfGgHhJjKkLlZzXxCcVvBbNnMm1234567890<>?,./';:][{}`-=!@#$^&*()_+|";
+	int					i, j, isValidChar;
+	const char* namekey = "name";
+	char* ptr, *s;
+
+	// check for malformed or illegal info strings
+	if (!Info_Validate(userinfo)) {
+		Q_strncpyz(userinfo, "\\name\\badinfo", sizeof(userinfo));
+	} else 
+	if (coolApi & COOL_APIFEATURE_CLIENTREALNAME) {
+		if (Info_HasKey(userinfo, "ttrn")) {
+			namekey = "ttrn";
+		}
+		else {
+			Com_Printf("^3G_NameToNetname: real name API supported but client %d ttrn key not found. defaulting to normal behavior\n", clientNum);
+		}
+	}
+
+	s = Info_ValueForKey(userinfo, namekey);
+
+	// NameCrashFix
+	for (i = 0; i < (int)strlen(s); i++)
+	{
+		isValidChar = 0;
+
+		for (j = 0; validChars[j]; j++)
+		{
+			if (s[i] == validChars[j]) isValidChar = 1; //The char is on the whitelist - it's a valid Char...
+		}
+
+		if (!isValidChar)	s[i] = '.';
+	}
+
+	// Don't let players use @@@ in their names (multi-language strings)
+	ptr = strstr(s, "@@@");
+	while (ptr)
+	{
+		memset(ptr, '.', 3);
+		ptr = strstr(s, "@@@");
+	}
+
+	ClientCleanName(s, netname, netnameBufferSize);
+}
+
 /*
 ===========
 ClientUserInfoChanged
@@ -2078,11 +2126,7 @@ void ClientUserinfoChanged( int clientNum ) {
 	int		modeTeamPrefixLength = 0;
 	modeTeam_t* modeTeamData;
 
-	// NameCrashFix (whitelisted characters)
-	static const char	validChars[]  = " ~QqWwEeRrTtYyUuIiOoPpAaSsDdFfGgHhJjKkLlZzXxCcVvBbNnMm1234567890<>?,./';:][{}`-=!@#$^&*()_+|";
-	int					i, j, isValidChar;
-	char				*ptr;
-	const char*			namekey = "name";
+	int					i, j;
 
 	ent = g_entities + clientNum;
 	client = ent->client;
@@ -2093,18 +2137,8 @@ void ClientUserinfoChanged( int clientNum ) {
 
 	// check for malformed or illegal info strings
 	if ( !Info_Validate(userinfo) ) {
-		Q_strncpyz (userinfo, "\\name\\badinfo",sizeof(userinfo));
+		Q_strncpyz (userinfo, "\\name\\badinfo\\ttrn\\badinfo",sizeof(userinfo));
 	}
-
-	if (coolApi & COOL_APIFEATURE_CLIENTREALNAME) {
-		if (Info_HasKey(userinfo, "ttrn")) {
-			namekey = "ttrn";
-		}
-		else {
-			Com_Printf("^3ClientUserinfoChanged: real name API supported but client %d ttrn key not found. defaulting to normal behavior\n",clientNum);
-		}
-	}
-
 
 	// check for client version
 	s = Info_ValueForKey(userinfo, "JK2MV");
@@ -2170,30 +2204,8 @@ void ClientUserinfoChanged( int clientNum ) {
 	// set name
 	Q_strncpyz ( oldname, client->pers.netname, sizeof( oldname ) );
 	Q_strncpyz (oldnameNoModeTeam, client->pers.netnameNoModeTeam, sizeof(oldnameNoModeTeam) );
-	s = Info_ValueForKey (userinfo, namekey);
 		
-	// NameCrashFix
-	for ( i = 0; i < (int)strlen(s); i++ )
-	{
-		isValidChar = 0;
-
-		for ( j = 0; validChars[j]; j++ )
-		{
-			if ( s[i] == validChars[j] ) isValidChar = 1; //The char is on the whitelist - it's a valid Char...
-		}
-
-		if ( !isValidChar )	s[i] = '.';
-	}
-	
-	// Don't let players use @@@ in their names (multi-language strings)
-	ptr = strstr( s, "@@@" );
-	while ( ptr )
-	{
-		memset( ptr, '.', 3 );
-		ptr = strstr( s, "@@@" );
-	}
-
-	ClientCleanName( s, ent->client->pers.netname, sizeof(ent->client->pers.netname) );
+	G_NameToNetname(userinfo, ent->client->pers.netname, sizeof(ent->client->pers.netname), clientNum);
 
 	if (client->sess.amflags & AMFLAG_LOCKEDNAME && oldname[0])	//do these checks for map_restarts where the locked name wont survive
 		Q_strncpyz(client->pers.netname, oldname, sizeof(client->pers.netname));

@@ -5,6 +5,8 @@
 #include "bg_defrag_global.h"
 #include "q_shared.h"
 
+#define CANSEEALLCLIENTS(a) ((a)->sess.solo == SOLO_SHOWALL || (a)->pers.isHeadlessClient || ((a)->pers.ttClientFlags & TTFLAGS_CLIENT_SHOWALLPLAYERSINCLUDINGMLBOTS))
+
 #define SEGMENTEDDEBUG 0
 
 #define QUOT2(a) #a
